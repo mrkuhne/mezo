@@ -1,2 +1,111 @@
 /* ── Folyadék · Fuel · trendek (mezo-n4wf5.5, slice F5) ── area F · Trendek (week, day box, horizon). Rules of this area only, class prefix `.fr-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the week navigator (fuel.js `.fb-wn`, `.fb-wnn`): the hero's control ── */
+.fr-wn { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin: 12px 14px 0; }
+.fr-wn > button { height: 38px; padding: 0 12px; border: 0; border-radius: 13px; background: rgba(255, 255, 255, .85); box-shadow: 0 4px 10px -6px rgba(15, 30, 51, .3), inset 0 0 0 1px rgba(15, 30, 51, .05);
+  font-family: var(--ff-body); font-size: 13px; font-weight: 650; white-space: nowrap; color: var(--fo-ink); cursor: pointer; position: relative; }
+/* the 38 px pill keeps a 44 px hit area */
+.fr-wn > button::after { content: ''; position: absolute; inset: -3px 0; }
+.fr-wn > button[disabled] { opacity: .4; cursor: default; }
+.fr-wn > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fr-wn > b { min-width: 0; text-align: center; font-family: var(--ff-display); font-size: 15px; font-weight: 700; color: var(--fo-ink); }
+.fr-wnn { margin: 8px 18px 0; font-size: 12.5px; line-height: 1.4; color: var(--fo-sub); text-align: center; }
+
+/* ── the hero: label → the week's vessels → the neutral reading (prototype `gHero`: the graphic stands ABOVE the verdict) ── */
+.fr-hero { display: flex; flex-direction: column; }
+.fr-hero > .fo-hero-lbl { order: 0; }
+.fr-hero > .fr-hg { order: 1; }
+.fr-hero > .fo-hero-verdict { order: 2; }
+.fr-hero > .fo-hero-sub { order: 3; }
+.fr-hero[data-closed="true"]::after { order: 9; }
+.fr-read b { font-weight: inherit; white-space: nowrap; }
+
+/* the seven vessels of the week (fuel.js `.fu-wk`, `.fu-wd`, `.fu-tb`) */
+.fr-wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 14px 0 8px; }
+.fr-wd { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; padding: 0; border: 0; background: none; color: var(--fo-ink); font-family: var(--ff-body); cursor: pointer; }
+.fr-wd[disabled] { cursor: default; }
+.fr-wd:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 3px; border-radius: 12px; }
+.fr-wd > em { display: grid; place-items: center; min-height: 17px; font-style: normal; font-family: var(--ff-display); font-size: 12.5px; font-weight: 800; }
+.fr-wd > em > svg { width: 16px; height: 16px; }
+.fr-tb { position: relative; display: block; width: 100%; max-width: 34px; height: 132px; border-radius: 999px; overflow: hidden;
+  background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--dom) 5%, #fff)); box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09), 0 12px 14px -12px var(--liq2); }
+.fr-tb > i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.fr-tb > s { position: absolute; left: 0; right: 0; background: color-mix(in srgb, var(--fo-warn) 75%, #fff); }
+.fr-tb > u { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed color-mix(in srgb, var(--fo-ink) 60%, transparent); }
+.fr-wd.we > .fr-tb { background: linear-gradient(180deg, color-mix(in srgb, var(--dom2) 14%, #fff), color-mix(in srgb, var(--dom2) 30%, #fff)); }
+.fr-wd.gap > .fr-tb { background: none; box-shadow: none; outline: 1.5px dashed var(--fo-faint); outline-offset: -1.5px; }
+.fr-wd.gap.we > .fr-tb { background: color-mix(in srgb, var(--dom2) 12%, #fff); }
+.fr-wd.on > .fr-tb { box-shadow: inset 0 0 0 2.5px var(--liq2), 0 12px 14px -12px var(--liq2); }
+.fr-wd.rec > .fr-tb > i { background: linear-gradient(180deg, color-mix(in srgb, var(--fx-lilac) 40%, #fff), color-mix(in srgb, var(--fx-lilac) 75%, #fff)); }
+.fr-wd > b { font-size: 12px; font-weight: 700; }
+.fr-wd.on > b { color: var(--dom); }
+.fr-wd.we > b { padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--dom2) 30%, #fff); }
+.fr-wd > small { display: block; width: 6px; height: 6px; border-radius: 50%; line-height: 1; }
+.fr-wd > small.tr { background: #F2683A; }
+
+/* the hero's key (fuel.js `.fu-lg` with the Trendek kinds `we`, `rec`, `tr`) */
+.fr-lg { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 12px; margin: 8px 0 12px; font-size: 11.5px; color: var(--fo-sub); }
+.fr-lg > span { display: inline-flex; align-items: center; gap: 5px; }
+.fr-lg > span > i { width: 12px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
+.fr-lg > span > i.liq { background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.fr-lg > span > i.over { background: color-mix(in srgb, var(--fo-warn) 70%, #fff); }
+.fr-lg > span > i.line { width: 14px; height: 0; border-radius: 0; border-top: 2px dashed color-mix(in srgb, var(--fo-ink) 60%, transparent); }
+.fr-lg > span > i.gap { background: none; outline: 1.5px dashed var(--fo-faint); outline-offset: -1.5px; }
+.fr-lg > span > i.we { background: color-mix(in srgb, var(--dom2) 30%, #fff); box-shadow: inset 0 0 0 1px rgba(10, 42, 60, .1); }
+.fr-lg > span > i.rec { background: color-mix(in srgb, var(--fx-lilac) 60%, #fff); }
+.fr-lg > span > i.tr { width: 7px; height: 7px; border-radius: 50%; background: #F2683A; }
+
+/* ── 1 · the three plain tiles (fuel.js `.fb-t3`): no level, the glyph on top, the change from last week as the quiet last line ── */
+.fr-t3 { gap: 8px; }
+.fr-t3 > .fo-stat { min-height: 128px; padding: 12px 10px; }
+.fr-t3 > .fo-stat > .fo-stat-ic { position: static; width: 34px; height: 34px; margin: 0 0 8px; }
+.fr-t3 > .fo-stat > .fo-stat-ic > .t-ico { width: 22px; height: 22px; }
+.fr-t3 > .fo-stat > .fo-stat-k { padding-right: 0; font-size: 11.5px; line-height: 1.2; }
+.fr-t3 > .fo-stat > .fo-stat-n { font-size: 21px; white-space: nowrap; }
+.fr-t3 > .fo-stat > .fo-stat-n > small { font-size: 10.5px; }
+.fr-t3 > .fo-stat > .fo-stat-s { margin-top: 6px; font-size: 11px; line-height: 1.25; }
+
+/* ── 2 · weekdays and weekend: two communicating vessels with the budget line (fuel.js `.fu-lk` + `linked`) ── */
+.fr-lk { display: flex; justify-content: center; padding: 4px 0 2px; }
+.fr-linked { display: block; width: 250px; max-width: 100%; height: auto; }
+.fr-linked text { font-family: var(--ff-body); }
+.fr-split-note b { color: var(--fo-ink); }
+
+/* ── 3 · the longer term: weekly points as a liquid surface, a gap is a real break (fuel.js `seriesG`, `.fh-chart`, `.fb-ser`) ── */
+.fr-ser { display: block; width: 100%; height: auto; margin: 6px 0 2px; overflow: visible; }
+.fr-ser text { font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; fill: var(--fo-sub); }
+.fr-horizon > .fx-lg { justify-content: center; }
+.fr-horizon > .fx-lg > span > i.dot { background: color-mix(in srgb, var(--fo-ink) 38%, #fff); }
+
+/* ── 4 · patterns: links to their home in Mezo ── */
+.fr-pattern { text-decoration: none; color: inherit; }
+
+/* ── the day sheet (fuel.js `sheetsB.day`): the two rating aspects as levels, the nutrition facts one per row (`mrow`, `.fh-mus.fu-mr`) ── */
+.fr-eqb { margin: 8px 0 12px; }
+.fr-mrs { list-style: none; margin: 0; padding: 0; }
+.fr-mr { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid var(--fo-hair); }
+.fr-mr:first-child { border-top: 0; }
+.fr-mr > .l { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; }
+.fr-mr > .v { font-size: 14px; white-space: nowrap; color: var(--fo-sub); }
+.fr-mr > .v > b { color: var(--fo-ink); font-weight: 700; }
+.fr-mr > .fo-level { width: 76px; flex: 0 0 auto; }
+.fr-fact b { font-weight: 700; }
+
+@media (max-width: 360px) {
+  .fr-wn { gap: 5px; margin: 12px 10px 0; }
+  .fr-wn > button { padding: 0 8px; font-size: 12px; }
+  .fr-wn > b { font-size: 12.5px; }
+  .fr-t3 { gap: 6px; }
+  .fr-t3 > .fo-stat { padding: 10px 8px; }
+  .fr-t3 > .fo-stat > .fo-stat-n { font-size: 18px; }
+  .fr-t3 > .fo-stat > .fo-stat-k { font-size: 10.5px; }
+  .fr-mr > .fo-level { width: 54px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fr-tb > i { animation: fr-rise 1s cubic-bezier(.2, .8, .2, 1) both; transform-origin: bottom; }
+  @keyframes fr-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+}
+/* the unit stands beside the numeral on these narrow tiles (fuel.js `.fh-stat .n small`: inline, 3 px off) */
+.fr-t3 > .fo-stat > .fo-stat-n > small { display: inline; margin: 0 0 0 3px; }

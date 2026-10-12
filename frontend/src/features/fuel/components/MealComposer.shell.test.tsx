@@ -77,23 +77,23 @@ test('héj nélkül a kézi források akkor is ott vannak, ha a hívó nem mond 
 
 test('tétel nélkül nincs üres tétel-lista és nincs mentés gomb', () => {
   renderComposer({ shellOwnsEntry: true })
-  expect(screen.queryByText('TÉTELEK')).not.toBeInTheDocument()
-  expect(screen.queryByText('MIKOR')).not.toBeInTheDocument()
+  expect(screen.queryByText(/^Tételek · \d+$/)).not.toBeInTheDocument()
+  expect(screen.queryByText('Mikor')).not.toBeInTheDocument()
   expect(screen.queryByText(/Még nincs tétel/)).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Logolás · \+10 XP/ })).not.toBeInTheDocument()
 })
 
 test('az első tétel megjelenésével jön a megerősítő rész', () => {
   renderComposer({ shellOwnsEntry: true, seedLine: true })
-  expect(screen.getByText('TÉTELEK')).toBeInTheDocument()
-  expect(screen.getByText('MIKOR')).toBeInTheDocument()
+  expect(screen.getByText(/^Tételek · \d+$/)).toBeInTheDocument()
+  expect(screen.getByText('Mikor')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Logolás · \+10 XP/ })).toBeInTheDocument()
 })
 
 test('héj nélkül tétel nélkül is a megszokott teljes szerkesztő jön (overlay-bejáratok)', () => {
   renderComposer()
-  expect(screen.getByText('TÉTELEK')).toBeInTheDocument()
-  expect(screen.getByText('MIKOR')).toBeInTheDocument()
+  expect(screen.getByText(/^Tételek · \d+$/)).toBeInTheDocument()
+  expect(screen.getByText('Mikor')).toBeInTheDocument()
   expect(screen.getByText(/Még nincs tétel/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Logolás · \+10 XP/ })).toBeDisabled()
 })
@@ -107,6 +107,6 @@ test('a kiszállás ajtaja héj alatt, tétel nélkül is nyitva van', () => {
 
 test('rögzített ablaknál a MIKOR továbbra sem jelenik meg', () => {
   renderComposer({ shellOwnsEntry: true, fixedSlot: 'snack', seedLine: true })
-  expect(screen.queryByText('MIKOR')).not.toBeInTheDocument()
-  expect(screen.getByText('TÉTELEK')).toBeInTheDocument()
+  expect(screen.queryByText('Mikor')).not.toBeInTheDocument()
+  expect(screen.getByText(/^Tételek · \d+$/)).toBeInTheDocument()
 })

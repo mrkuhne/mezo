@@ -1,18 +1,16 @@
 // ============================================================
 // Mezo · FuelKonyhaPage — a Konyha hub (Fuel Titanium S4, mezo-hygp; fagyasztott manifeszt
 // B1 · B2 · B3 · B4 · B10). Ez az a cél, amibe a Receptek és a Kamra összeolvad, és a
-// vezérgondolata a „Mentsd el, ami jött": a két rögzítő művelet áll elöl.
+// vezérgondolata a „Mentsd el, ami jött".
 //
-// Vizuális referencia (Üvegesítés U2, mezo-me75u.2): docs/design_2.0/prototypes/
-// uveg-fuel-tobbi.html `konyha()` + docs/design_2.0/2026-09-23-uveg-style-bible.md — a két
-// rögzítő kártya és a három poszter `.glass` a saját hue-jukban (`--c`), a 3D ikonkészlettel;
-// a Műhely cél-chipjei és a tálkák lapos cellák (üvegben nincs üveg).
+// Folyadék (F5, mezo-n4wf5.5) — build target: docs/design_2.0/prototypes/vilagos/fuel.js `konyha()`.
 // Anatómia fentről le:
-//   a két rögzítő kártya — Recept mentése (a kézi szerkesztőbe) és Új elem a kamrába (a
-//     meglévő import-sheet fotó + link karjával),
-//   a Receptműhely SAJÁT posztere (owner-döntés: a gomb lejött a recept-listáról),
-//   két ajtó-poszter — Receptek és Kamra, poszter-anatómiával: kiskapitális fejléc,
-//     clay-szimbólum és EGY nagy szám; nem lista (owner-döntés).
+//   hős — az ÜRES fazék a Receptműhely meghívója (owner-döntés: itt nincs mért szint); a támasztó tény a
+//     valódi darabszám (a polc tételei). A cél-sor DÍSZ, ahogy az élőben is: nem indít vázlatot — a Műhelyt
+//     a hős gombja nyitja,
+//   1 · Gyors felvétel — Recept mentése (a kézi szerkesztőbe) és Új elem a kamrába (a meglévő import-lap),
+//   2 · Receptek — egy sor a darabszámmal és a legtöbbször evett recepttel, alatta az első öt recept jele,
+//   3 · Kamra — egy sor a darabszámmal, alatta a polc megoszlása (Étel · Kiegészítő; minden szó egyszer).
 //
 // Owner-DROPok, amik SZÁNDÉKOS hiányok — ne „javítsd" vissza őket:
 //   • B5 vonalkód-beolvasás: a backend végpont érintetlen marad, de NINCS UI-hívója,
@@ -22,32 +20,35 @@
 //   • B17 „mit főzzünk itthon lévőből": nincs ilyen felület,
 //   • B1 link-alapú RECEPT-import: soha nem volt, és az owner kivette a körből. (A kamra
 //     URL-importja ettől független, és marad.)
+//   • a cél-gombok mint külön indítók (a prototípus „Kikerült" listája).
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePantry, useRecipes } from '@/data/hooks'
+import type { RecipeCategory } from '@/data/types'
+import { useM } from '@/shared/i18n'
+import type { Icon3DName } from '@/shared/ui/clay'
+import { Btn, Bub, Card, Hero, Page, Pair, Row, Section, useFrameTitle } from '@/shared/ui/folyadek'
+import { Pot, SplitBar } from '@/features/fuel/components/folyadek'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
-import { ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 import { ImportItemSheet } from '@/features/fuel/sheets/ImportItemSheet'
-import { recipeSlotFace } from '@/features/fuel/logic/recipeSlotFace'
 
-/** A Receptműhely öt preset-célja a Konyha poszterén — a prototípus `GOALS` sora.
- *  Csak ARC (ikon + felirat): a célok viselkedése a Műhely lapjáé, ez itt a meghívó.
- *  Üveg (mezo-me75u.2): lapos chipek a 3D ikonnal és a felirattal (uveg-fuel-tobbi.html). */
-const WORKSHOP_GOAL_FACES: { id: string; label: string; icon: Icon3DName }[] = [
-  { id: 'high_protein', label: 'Magas fehérje', icon: 't-meat' },
-  { id: 'pre_workout', label: 'Edzés előtt', icon: 't-bolt' },
-  { id: 'post_workout', label: 'Edzés után', icon: 't-dumbbell' },
-  { id: 'before_bed', label: 'Lefekvés előtt', icon: 't-moon' },
-  { id: 'breakfast', label: 'Reggeli', icon: 't-sun' },
-]
+/** A Receptműhely öt preset-célja a hősben — a prototípus `GOALS` sora. Csak ARC (jel + felirat): a célok
+ *  viselkedése a Műhely lapjáé, ez itt a meghívó. A felirat a katalógusból jön, rendereléskor. */
+const WORKSHOP_GOALS = [
+  { id: 'high_protein', icon: 't-meat' },
+  { id: 'pre_workout', icon: 't-bolt' },
+  { id: 'post_workout', icon: 't-dumbbell' },
+  { id: 'before_bed', icon: 't-moon' },
+  { id: 'breakfast', icon: 't-sun' },
+] as const satisfies readonly { id: string; icon: Icon3DName }[]
 
-type Hue = React.CSSProperties & Record<'--c' | '--i', string | number>
+/** Egy recept jele az étkezése szerint (prototípus `CAT`); ismeretlen kategóriára a tányér. */
+const RECIPE_ICON: Record<RecipeCategory, Icon3DName> = { breakfast: 't-sun', lunch: 't-bowl', snack: 't-snack', dinner: 't-moon' }
 
 export function FuelKonyhaPage() {
+  const M = useM()
+  const K = M.fuelKamra
   const navigate = useNavigate()
   const { recipes } = useRecipes()
   const { ingredients, stash } = usePantry()
@@ -56,124 +57,64 @@ export function FuelKonyhaPage() {
   const items = buildKamraItems(ingredients, stash)
   const foods = items.filter(it => it.kind === 'food').length
   const extras = items.length - foods
-  // A felpörgő szám KÖZTES értéke tört — az ajtók darabszáma viszont mindig egész,
-  // ezért a megjelenítés kerekít (a többi Fuel-számláló is így tesz).
-  const recipeCount = Math.round(useFuelCountUp(recipes.length))
-  const pantryCount = Math.round(useFuelCountUp(items.length))
-  // A poszter alján az a recept áll, amit a LEGTÖBBSZÖR ettél — ha egyszer sem ettél
-  // semmit, a sor őszintén elmarad (nem írunk oda kitalált kedvencet).
+  // A sor alján az a recept áll, amit a LEGTÖBBSZÖR ettél — ha egyszer sem ettél
+  // semmit, a sor őszintén megmondja (nem írunk oda kitalált kedvencet).
   const favourite = [...recipes].sort((a, b) => (b.timesLogged ?? 0) - (a.timesLogged ?? 0))[0]
   const favouriteTimes = favourite?.timesLogged ?? 0
 
+  useFrameTitle({ eyebrow: K.konyha.eyebrow(K.recipes(recipes.length)) })
+
   return (
-    <MozaikPage tone="gold" className="fkx-page">
-      <EntranceGroup>
-        <PageBody className="fkx-body">
-          {/* A18/E11 (mezo-qt5q): a Kalauz horgonya — a két gyors-felvétel feltétel nélkül
-              renderel, tehát a „Mutasd meg a képernyőn" itt sosem degradál némán. */}
-          <div className="fkx-captures" data-kalauz-anchor="konyha-felvetel">
-            <button type="button" className="fkx-capture glass rise"
-              style={{ '--c': 'var(--dv-lav)', '--i': 0 } as Hue}
-              onClick={() => navigate('/fuel/recipes/new')}>
-              <span className="fkx-capture-art" aria-hidden="true"><Icon3D name="t-book" size={50} /></span>
-              <b className="fkx-plus" aria-hidden="true">＋</b>
-              <strong>Recept mentése</strong>
-              <small>Kézzel, a saját szavaiddal</small>
-            </button>
-            <button type="button" className="fkx-capture glass rise"
-              style={{ '--c': 'var(--dv-amber)', '--i': 1 } as Hue}
-              onClick={() => setImportOpen(true)}>
-              <span className="fkx-capture-art" aria-hidden="true"><Icon3D name="t-stack" size={50} /></span>
-              <b className="fkx-plus" aria-hidden="true">＋</b>
-              <strong>Új elem a kamrába</strong>
-              <small>Fotó a címkéről vagy egy termék linkje</small>
-            </button>
+    <Page className="fp-konyha">
+      <Hero
+        label={K.konyha.heroLabel}
+        verdict={K.konyha.verdict}
+        sub={K.konyha.sub(items.length)}
+        left={<span className="fp-pot" aria-hidden="true"><Pot pct={0} size={96} /></span>}
+        actions={<Btn onClick={() => navigate('/fuel/recipes/muhely')}>{K.konyha.open}</Btn>}
+      >
+        {/* A cél-sor dísz: ígéret arról, mit lehet a Műhelyben kérni — nem gombok. */}
+        <div className="fp-goals" aria-hidden="true">
+          {WORKSHOP_GOALS.map(g => <span key={g.id}><Bub icon={g.icon} size={24} />{K.konyha.goals[g.id]}</span>)}
+        </div>
+      </Hero>
+
+      <Section n={1} title={K.konyha.quick} />
+      {/* A18/E11 (mezo-qt5q): a Kalauz horgonya — a két gyors-felvétel feltétel nélkül
+          renderel, tehát a „Mutasd meg a képernyőn" itt sosem degradál némán. */}
+      <Card data-kalauz-anchor="konyha-felvetel">
+        <Pair className="fp-pair" items={[
+          { icon: 't-book', label: <>{K.konyha.saveRecipe}<small>{K.konyha.saveRecipeSub}</small></>, onClick: () => navigate('/fuel/recipes/new') },
+          { icon: 't-camera', label: <>{K.konyha.newItem}<small>{K.konyha.newItemSub}</small></>, onClick: () => setImportOpen(true) },
+        ]} />
+      </Card>
+
+      <Section n={2} title={K.konyha.recipesSection} />
+      <Card>
+        <Row icon="t-book" title={K.recipes(recipes.length)}
+          sub={favouriteTimes > 0 ? K.konyha.favourite(favourite.name, favouriteTimes) : K.konyha.noRecipes}
+          onClick={() => navigate('/fuel/recipes')} />
+        {recipes.length > 0 && (
+          <div className="fp-bubs" aria-hidden="true">
+            {recipes.slice(0, 5).map(r => <Bub key={r.id} icon={RECIPE_ICON[r.category] ?? 't-plate'} size={42} />)}
           </div>
+        )}
+      </Card>
 
-          {/* B10: a Receptműhely a hub SAJÁT posztere — a gomb lejött a recept-listáról. */}
-          <button type="button" className="fkx-poster is-workshop glass rise"
-            style={{ '--c': 'var(--dv-lav)', '--i': 2 } as Hue}
-            onClick={() => navigate('/fuel/recipes/muhely')}>
-            <span className="fkx-poster-head">
-              <span className="fkx-poster-title">
-                <span aria-hidden="true"><Icon3D name="t-chef" size={34} /></span>
-                <strong>Receptműhely</strong>
-              </span>
-              <b aria-hidden="true">↗</b>
-            </span>
-            <span className="fkx-ws-copy">
-              <strong className="uv-voice">Főzzünk ki valamit</strong>
-              <small>Te mondod a célt, én a hozzávalót — a számokat a kamrád adja.</small>
-            </span>
-            {/* A jóváhagyott poszter cél-sora: a Műhely öt preset-célja egy pillantásra — ígéret
-                arról, mit lehet itt kérni. Lapos chipek (üvegben nincs üveg). */}
-            <span className="fkx-ws-goals" aria-hidden="true">
-              {WORKSHOP_GOAL_FACES.map(g => (
-                <i key={g.id}>
-                  <Icon3D name={g.icon} size={18} />{g.label}
-                </i>
-              ))}
-            </span>
-          </button>
-
-          <button type="button" className="fkx-poster is-recipes glass rise"
-            style={{ '--c': 'var(--dv-sage)', '--i': 3 } as Hue}
-            onClick={() => navigate('/fuel/recipes')}>
-            <span className="fkx-poster-head">
-              <span className="fkx-poster-title">
-                <span aria-hidden="true"><Icon3D name="t-book" size={34} /></span>
-                <strong>Receptek</strong>
-              </span>
-              <b aria-hidden="true">↗</b>
-            </span>
-            <span className="fkx-poster-main">
-              <strong>{recipeCount}</strong>
-              <small aria-hidden="true">recept</small>
-            </span>
-            <span className="fkx-bowls" aria-hidden="true">
-              {recipes.slice(0, 5).map(r => {
-                const face = recipeSlotFace(r.category)
-                return (
-                  <i key={r.id} style={{ '--slot': face.color } as React.CSSProperties}>
-                    <ContentIcon name={face.icon} size={26} />
-                  </i>
-                )
-              })}
-            </span>
-            {favouriteTimes > 0 && (
-              <span className="fkx-poster-foot">
-                <span aria-hidden="true"><Icon3D name="t-score" size={18} /></span>
-                <span>Kedvenced most: <b>{favourite.name}</b> · {favouriteTimes}× etted</span>
-              </span>
-            )}
-          </button>
-
-          <button type="button" className="fkx-poster is-pantry glass rise"
-            style={{ '--c': 'var(--dv-amber)', '--i': 4 } as Hue}
-            onClick={() => navigate('/fuel/kamra')}>
-            <span className="fkx-poster-head">
-              <span className="fkx-poster-title">
-                <span aria-hidden="true"><Icon3D name="t-stack" size={34} /></span>
-                <strong>Kamra</strong>
-              </span>
-              <b aria-hidden="true">↗</b>
-            </span>
-            <span className="fkx-poster-main">
-              <strong>{pantryCount}</strong>
-              <small aria-hidden="true">tétel</small>
-            </span>
-            <span className="fkx-split" role="img" aria-label={`${foods} étel, ${extras} kiegészítő`}>
-              <i style={{ '--w': `${items.length ? (foods / items.length) * 100 : 0}%` } as React.CSSProperties} />
-            </span>
-            <span className="fkx-legend">
-              <em><span aria-hidden="true"><Icon3D name="t-carb" size={20} /></span>{foods} étel</em>
-              <em><span aria-hidden="true"><Icon3D name="t-supps" size={20} /></span>{extras} kiegészítő</em>
-            </span>
-          </button>
-        </PageBody>
-      </EntranceGroup>
+      <Section n={3} title={K.konyha.pantrySection} />
+      <Card>
+        <Row icon="t-stack" title={K.konyha.onShelf(items.length)} sub={K.konyha.pantrySub} onClick={() => navigate('/fuel/kamra')} />
+        {items.length > 0 && (
+          <div className="fp-shelfsplit" role="img" aria-label={K.konyha.splitAria(foods, extras)}>
+            <SplitBar height={18} parts={[
+              { label: K.konyha.food, pct: foods, color: 'var(--dom)', value: String(foods) },
+              { label: K.konyha.supplements, pct: extras, color: 'var(--fx-water)', value: String(extras) },
+            ]} />
+          </div>
+        )}
+      </Card>
 
       {importOpen && <ImportItemSheet onClose={() => setImportOpen(false)} />}
-    </MozaikPage>
+    </Page>
   )
 }

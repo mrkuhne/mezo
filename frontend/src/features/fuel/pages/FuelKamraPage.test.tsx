@@ -7,6 +7,8 @@ import { FuelKamraPage } from '@/features/fuel/pages/FuelKamraPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ingredients } from '@/data/fuel/pantry'
 
 // FuelKamraPage reads usePantry (a dual-mode TanStack query since Task 7). Pin mock
 // mode for the static seed + wrap in a QueryClientProvider.
@@ -32,25 +34,73 @@ const renderView = () =>
     </QueryWrapper>,
   )
 
-// Titán anatómia (mezo-hygp): a Mozaik-váz (PageHero nagy számmal + StatStrip + „Polc"
-// lista-fejléc) helyét a prototípus `kamraPage`-e vette át: al-fejléc + kereső + darabszámos
-// típus-szűrők + két-hasábos csempe-rács. A vissza-gomb a Konyhába visz (korábban '‹ Fuel').
-test('Titán váz: al-fejléc, kereső, darabszámos típus-szűrők, csempe-rács', () => {
+// Folyadék váz (mezo-n4wf5.5, prototípus `kamra()`): hős (négy üveg fajtánként + ítélet-mondat + a három
+// felvevő művelet) → kereső + darabszámos fajta-szűrők → két-hasábos csempe-rács. A cím a keretben él
+// (`useFrameTitle`); keret nélkül a lap a saját vissza-gombját rajzolja, ami a Konyhába visz.
+test('Folyadék váz: hős, kereső, darabszámos fajta-szűrők, csempe-rács', () => {
   const { container } = renderView()
-  expect(container.querySelector('.mz-page')).toBeNull()
-  expect(container.querySelector('.mz-statstrip')).toBeNull()
+  expect(container.querySelector('.mz-page, .fmx-page, .glass, .fkx-item')).toBeNull()
   expect(screen.queryByText('Polc')).toBeNull()
-  expect(screen.getByText('Kamra')).toBeInTheDocument()
-  // A vissza-vezérlő 40px-es kerek glyph-chip: a szöveges felirat kilógott belőle és ráült a
-  // címre (mezo-jb84). A szülőt a szemöldök-sor nevezi meg, a gomb a hozzáférhető nevét viszi.
+  const hero = container.querySelector('.fo-hero')!
+  expect(hero).toHaveTextContent('A polcod · fajtánként')
+  expect(hero).toHaveTextContent(/\d+ tétel van a polcodon: \d+ étel és \d+ kiegészítő\./)
+  expect(hero.querySelectorAll('.fo-vial, .fo-vials > *').length).toBeGreaterThanOrEqual(4)
   expect(screen.getByRole('button', { name: 'Vissza a Konyhába' })).toBeInTheDocument()
   expect(screen.getByLabelText('Keresés a kamrában')).toBeInTheDocument()
-  // The type axis is a segmented switcher — FIVE segments (audit gap #19: med gets its own
-  // Gyógyszer segment instead of folding silently into "Mind").
-  expect(screen.getByRole('button', { name: /^Supp/ })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /^Gyógyszer/ })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /^Mind\d+$/ })).toBeInTheDocument()
-  expect(container.querySelectorAll('.fkx-tile-grid .fkx-item').length).toBeGreaterThan(0)
+  // The type axis — FIVE pills (audit gap #19: med gets its own Gyógyszer pill instead of folding
+  // silently into "Mind"). „Supp / Stim" → „Kiegészítő / Stimuláns" (wording table, mezo-n4wf5.5).
+  const kinds = container.querySelector('[data-kalauz-anchor="kamra-tabs"]')!
+  expect(kinds).toHaveAttribute('role', 'group')
+  expect(screen.getByRole('button', { name: /^Kiegészítő\d+$/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Stimuláns\d+$/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Gyógyszer\d+$/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Mind\d+$/ })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.queryByRole('button', { name: /^Supp|^Stim\d/ })).toBeNull()
+  expect(container.querySelectorAll('.fp-shelf .fo-stats > button.fo-stat').length).toBeGreaterThan(0)
+})
+
+// A csempe szintje a fehérje-sűrűség (25 g / 100 g-nál tele), és CSAK ismert fehérjénél rajzolódik:
+// őszinte null — „—" / „nincs adat", sosem 0 (pantry.md §4). Kiegészítőnél az adag áll, szint nélkül.
+test('a csempe szintje a fehérje-sűrűség; kiegészítőnél nincs szint', () => {
+  const { container } = renderView()
+  const tile = (name: RegExp) => [...container.querySelectorAll<HTMLElement>('.fp-shelf button.fo-stat')].find(b => name.test(b.textContent ?? ''))!
+  const chicken = tile(/Csirkemell/)
+  expect(chicken).toHaveClass('lv')
+  expect(chicken.style.getPropertyValue('--p')).toBe('92%') // 23 g / 25 g
+  expect(chicken).toHaveTextContent('kcal / 100 g')
+  expect(chicken).toHaveTextContent(/23 g fehérje · .* · katalógus/)
+  const supp = [...container.querySelectorAll<HTMLElement>('.fp-shelf button.fo-stat')].find(b => /adag/.test(b.textContent ?? ''))!
+  expect(supp).not.toHaveClass('lv')
+  expect(supp.style.getPropertyValue('--p')).toBe('')
+})
+
+test('tápérték nélküli étel: „—" és „nincs adat", szint nélkül (őszinte null)', () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  qc.setQueryData(['pantry'], {
+    ingredients: [{ ...ingredients[0], id: 'no-macro', name: 'Házi baracklekvár', brand: null, source: 'manual', macros: undefined }],
+    stash: [], imports: [], suggestions: [],
+  })
+  const { container } = render(
+    <QueryClientProvider client={qc}><MemoryRouter><FuelKamraPage /></MemoryRouter></QueryClientProvider>,
+  )
+  const tile = container.querySelector('.fp-shelf button.fo-stat')!
+  expect(tile).not.toHaveClass('lv')
+  expect(tile.querySelector('.fo-stat-n')!.textContent).toBe('—')
+  expect(tile).toHaveTextContent('nincs adat · kézi')
+  expect(tile.textContent).not.toMatch(/\b0\b/)
+})
+
+// Üres polc (prototípus `kamra.ures`): a hős négy üres üveggel hív, és ugyanaz a három művelet áll rajta.
+test('üres kamra: a hős hív az első tétel felvételére', async () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  qc.setQueryData(['pantry'], { ingredients: [], stash: [], imports: [], suggestions: [] })
+  render(<QueryClientProvider client={qc}><MemoryRouter><FuelKamraPage /></MemoryRouter></QueryClientProvider>)
+  expect(screen.getByText('A kamra üres.')).toBeInTheDocument()
+  expect(screen.queryByLabelText('Keresés a kamrában')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Import' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Közös katalógus' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Első tétel felvétele' }))
+  expect(await screen.findByText('Új kamra-tétel')).toBeInTheDocument()
 })
 
 // B14 owner-DROP: a „Legutóbbi importok" feed leválik — az eredet a tétel részletlapján él.
@@ -69,7 +119,11 @@ test('a kamra nem hivatkozik készletre vagy lejáratra', () => {
 // B13: az okosabb csere ott marad, ahol volt.
 test('az okosabb csere szekció megmarad', () => {
   renderView()
-  expect(screen.getByRole('heading', { name: 'Okosabb csere' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /Okosabb csere$/ })).toBeInTheDocument()
+  // a javaslat kártyája NEM koppintható (owner: a koppintható csere-javaslat kikerült)
+  const swap = document.querySelector('.fp-swap')!
+  expect(swap.tagName).toBe('DIV')
+  expect(swap.querySelector('button, a')).toBeNull()
 })
 
 test('Gyógyszer segment isolates medication items (honestly empty — mock tracks no medication)', async () => {
@@ -96,7 +150,7 @@ test('type switcher filters the list to one type', async () => {
   renderView()
   // A food item is visible in "Mind"; switching to Stim hides it.
   expect(screen.getByText(/Csirkemell/)).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: /^Stim/ }))
+  await userEvent.click(screen.getByRole('button', { name: /^Stimuláns/ }))
   expect(screen.queryByText(/Csirkemell/)).not.toBeInTheDocument()
 })
 test('query filters to empty-state', async () => {
@@ -119,14 +173,18 @@ test('Szűrők sheet selects a category and AND-filters the list', async () => {
   await userEvent.click(screen.getByRole('button', { name: /Szűrők/ }))
   // The sheet lists present categories with counts — pick "Gyümölcs" (fruit).
   await userEvent.click(await screen.findByRole('button', { name: /Gyümölcs/ }))
-  await userEvent.click(screen.getByRole('button', { name: /Szűrés \(/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Szűrés · \d+ tétel/ }))
 
   // Once the sheet has closed, only fruits remain — Banán stays, Csirkemell (protein)
-  // is filtered out, and the "Szűrők" button carries the active-count badge.
-  await waitFor(() => expect(screen.queryByRole('button', { name: /Szűrés \(/ })).not.toBeInTheDocument())
+  // is filtered out, and the "Szűrők" link names the active count; the chosen category
+  // stands as its own removable pill.
+  await waitFor(() => expect(screen.queryByRole('button', { name: /Szűrés ·/ })).not.toBeInTheDocument())
   expect(screen.getByText(/Banán/)).toBeInTheDocument()
   expect(screen.queryByText(/Csirkemell/)).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Szűrők\s*1/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Szűrők · 1 kategória' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Gyümölcs szűrő levétele' }))
+  expect(screen.getByText(/Csirkemell/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Szűrők · kategória szerint' })).toBeInTheDocument()
 })
 
 // Loading skeleton (mezo-f2z) — real mode shows the KamraSkeleton (role="status")
@@ -158,19 +216,17 @@ describe('FuelKamraPage (mock mode)', () => {
   })
 })
 
-// Silent-static regression (fidelity audit, mezo-d20.11): the page once carried `.rise`
-// elements with NO EntranceGroup around them — they rendered correctly, never animated, and
-// nothing failed. Both halves stay pinned: the wrapper exists AND no `.rise` sits outside it.
+// Folyadék (mezo-n4wf5.5): a lapon nincs belépő-koreográfia (`EntranceGroup` / `.rise`) — a szintek a kit
+// CSS-ével emelkednek, csak `prefers-reduced-motion: no-preference` alatt. A régi „árva .rise" hiba (fidelity
+// audit, mezo-d20.11) így szerkezetileg nem tud visszajönni: egyetlen `.rise` sincs a lapon.
 describe('FuelKamraPage entrance choreography', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  it('arms an EntranceGroup and leaves no orphan .rise outside it', () => {
+  it('carries no .rise at all (no orphan can exist)', () => {
     const { container } = renderView()
-    const play = container.querySelector('.mz-play')
-    expect(play).not.toBeNull()
-    const all = [...container.querySelectorAll('.rise')]
-    expect(all.length).toBeGreaterThan(2)
-    expect(all.every(el => play?.contains(el))).toBe(true)
+    expect(container.querySelector('.fo-page')).not.toBeNull()
+    expect(container.querySelectorAll('.rise')).toHaveLength(0)
+    expect(container.querySelector('.mz-play')).toBeNull()
   })
 })

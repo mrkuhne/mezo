@@ -1,2 +1,123 @@
 /* ── Folyadék · Fuel · etkezes (mezo-n4wf5.5, slice F5) ── area C · étkezés + Mezo értékelése (meal detail, score surface, quality blocks, glycemic + meal-clock sheets). Rules of this area only, class prefix `.fe-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* the hero whose graphic stands ABOVE the verdict (prototype `gHero`): label → graphic → verdict → support → actions */
+.fe-ghero { display: flex; flex-direction: column; }
+.fe-ghero > .fo-hero-lbl { order: -3; }
+.fe-ghero > .fx-ng, .fe-ghero > .fe-sc { order: -2; }
+.fe-ghero > .fe-8 { order: -1; }
+
+/* ── the meal page (`meal.<id>`) ── */
+.fe-pendl { color: #fff; font-weight: 700; font-size: 15px; }
+.fe-mealhero .fx-ng > .nn > .fx-pk { margin-top: 8px; }
+.fe-doors > .fo-row > .g > small { white-space: normal; }
+
+/* ── the shared quality sections (`FuelQualityBlocks`) ── */
+.fe-shn { flex: 0 0 auto; font-size: 11.5px; color: var(--fo-sub); }
+.fe-ing > .fo-note, .fe-mic > .fo-note, .fe-qc > .fo-note, .fe-mac > .fo-note { margin-top: 10px; }
+.fe-q > .fo-stat { min-height: 118px; }
+.fe-q > .fo-stat > .fo-stat-n { font-size: 24px; }
+.fe-q > .fo-stat > .fo-stat-n > small { display: block; margin: 3px 0 0; }
+.fe-q > :nth-child(3):last-child { grid-column: 1 / -1; }
+.fe-micro.is-unknown > .g > strong { color: var(--fo-sub); }
+
+/* ── Mezo's rating (`score.<id>`, `score.r-<id>`) ── */
+.fe-sc { display: flex; align-items: center; gap: 14px; margin: 10px 0 14px; }
+.fe-sc > .fo-big { font-size: 56px; white-space: nowrap; }
+.fe-sc > .c { flex: 1; min-width: 0; }
+.fe-8 { display: grid; gap: 14px; margin-bottom: 16px; }
+.fe-8 > .fo-vials { margin-top: 0; }
+.fe-8 > .fo-vials > .fo-vial > small { font-size: 11px; }
+.fe-8 > .fo-vials > .fo-vial > small > i { white-space: nowrap; }
+.fe-det { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.fe-imp { color: var(--fo-ok); }
+.fe-impc > .fo-row > .g > strong { font-weight: 500; line-height: 1.4; }
+.fe-fbc > .fo-note:first-child { margin-top: 0; }
+
+/* ── one aspect (sheet `dim`) ── */
+.fe-chips > span { padding: 5px 11px; background: color-mix(in srgb, var(--dom) 6%, #fff); box-shadow: none; }
+.fe-eqb { margin: 8px 0 12px; }
+.fe-panel:empty { display: none; }
+.fe-warn { color: var(--fo-warn); font-weight: 600; }
+.fe-nvi { list-style: none; margin: 4px 0 0; padding: 0; }
+.fe-nvi > li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--fo-hair); font-size: 13.5px; color: var(--fo-ink); }
+.fe-nvi > li > span:first-child { flex: 1; min-width: 0; }
+.fe-nvi > li > .fx-tags { flex: 0 0 auto; }
+/* the day as one axis (0–24 h): the window is the liquid, the log a white-rimmed drop — amber outside, never the error colour */
+.fe-tl { position: relative; height: 46px; margin: 10px 8px 6px; }
+.fe-tl > .trk { position: absolute; left: 0; right: 0; top: 12px; height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--dom) 8%, #fff); box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
+.fe-tl > .band { position: absolute; top: 12px; height: 10px; border-radius: 999px; background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.fe-tl > .band.is-any { background: color-mix(in srgb, var(--dom) 18%, #fff); }
+.fe-tl > .miss-lnk { position: absolute; top: 16px; height: 0; border-top: 2px dashed var(--fo-warn); }
+.fe-tl > .dot { position: absolute; top: 9px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--liq2); box-shadow: 0 0 0 2.5px #fff, 0 2px 6px -2px rgba(10, 42, 60, .4); }
+.fe-tl > .dot.is-miss { background: var(--fo-warn); }
+.fe-tl > .tlab { position: absolute; top: -8px; transform: translateX(-50%); font-family: var(--ff-display); font-size: 11.5px; font-weight: 800; color: var(--fo-ink); white-space: nowrap; }
+.fe-tl > .tlab.is-miss { color: var(--fo-warn); }
+.fe-tl > .ax { position: absolute; top: 30px; transform: translateX(-50%); font-size: 10.5px; font-weight: 600; color: var(--fo-faint); }
+
+/* ── the blood sugar response (sheet `glu`) ── a band and a shape, never a number */
+.fe-gl1 { margin-bottom: 4px; }
+.fe-gcv { display: block; width: 100%; height: auto; overflow: visible; margin: 6px 0 10px; }
+.fe-gcv text { font-family: var(--ff-body); font-size: 9px; font-weight: 500; fill: var(--fo-sub); }
+.fe-gcv text.val { fill: var(--fo-ink); font-weight: 650; }
+.fe-gcv > .base { fill: none; stroke: var(--fo-ink); stroke-width: 1; stroke-dasharray: 3 5; opacity: .45; }
+.fe-gcv > .line { fill: none; stroke: var(--gc); stroke-width: 2.8; stroke-linecap: round; }
+.fe-gcv > .peak { fill: #fff; stroke: var(--gc); stroke-width: 2.6; }
+.fe-gcv .tick { fill: none; stroke: var(--fo-faint); stroke-width: 1.2; }
+.fe-next { margin: 0; }
+.fe-result { color: var(--fo-ink); }
+
+/* ── the meal clock (sheet `ora`) ── the one allowed circle: a real 24-hour clock */
+.fe-ob { text-align: center; margin: 4px 0 6px; }
+.fe-ob > small { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--fo-sub); }
+.fe-ob > .fo-big { display: block; font-size: 38px; margin: 4px 0; }
+.fe-ob > p { font-size: 13px; color: var(--fo-sub); margin-bottom: 6px; }
+.fe-dd24 { display: block; width: min(100%, 230px); height: auto; margin: 6px auto 4px; }
+.fe-dd24 circle { fill: none; }
+.fe-dd24 > .face { fill: #fff; stroke: rgba(10, 42, 60, .10); stroke-width: 1.5; }
+.fe-dd24 .awake { stroke: color-mix(in srgb, var(--dom) 10%, #fff); stroke-width: 12; }
+.fe-dd24 .night { stroke: rgba(10, 42, 60, .16); stroke-width: 12; }
+.fe-dd24 .other { stroke: color-mix(in srgb, var(--liq2) 34%, #fff); stroke-width: 12; }
+.fe-dd24 .this { stroke: var(--liq2); stroke-width: 12; stroke-linecap: round; }
+.fe-dd24 .train { stroke: var(--fx-protein); stroke-width: 5; stroke-linecap: round; }
+.fe-dd24 > .nowhand { stroke: var(--fo-ink); stroke-width: 3; stroke-linecap: round; }
+.fe-dd24 > .logdot { fill: var(--liq2); stroke: #fff; stroke-width: 2.5; }
+.fe-dd24 > .logdot.out { fill: var(--fo-warn); }
+.fe-dd24 text.hr { font: 600 11px var(--ff-mono, var(--ff-body)); fill: var(--fo-faint); }
+.fe-dd24 text.c1 { font: 700 9.5px var(--ff-body); letter-spacing: .6px; fill: var(--fo-sub); }
+.fe-dd24 text.c2 { font: 800 21px var(--ff-display); letter-spacing: -.6px; fill: var(--fo-ink); }
+.fe-dd24 text.c2.rng { font-size: 16px; letter-spacing: -.4px; }
+.fe-dd24 text.c3 { font: 600 10.5px var(--ff-body); fill: var(--fo-sub); }
+.fe-dd24 use { --ic: var(--fo-sub); --ic2: transparent; color: var(--fo-sub); }
+.fe-lg { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 12px; margin: 8px 0 12px; font-size: 11.5px; color: var(--fo-sub); }
+.fe-lg > span { display: inline-flex; align-items: center; gap: 5px; }
+.fe-lg > span > i { width: 12px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
+.fe-lg > span > i.liq { background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.fe-lg > span > i.oth { background: color-mix(in srgb, var(--liq2) 34%, #fff); }
+.fe-lg > span > i.trn { height: 4px; background: var(--fx-protein); }
+.fe-lg > span > i.ngt { background: rgba(10, 42, 60, .16); }
+.fe-ogl { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: var(--gc); }
+.fe-ogl > .fx-gmini { width: 84px; height: 38px; flex: 0 0 auto; }
+.fe-ogl > b { font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: var(--fo-ink); }
+.fe-tv { display: flex; align-items: flex-start; gap: 12px; }
+.fe-tv > .fx-tip { flex: 1; min-width: 0; }
+.fe-tv > em { align-self: center; font-style: normal; font-family: var(--ff-display); font-weight: 800; font-size: 14px; white-space: nowrap; color: var(--fo-ink); }
+/* the small clock button of a block (`MealClock`): the shared `Dial` in a 44 px target */
+.fe-mclock { display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.fe-mclock:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+@media (max-width: 360px) {
+  .fe-sc > .fo-big { font-size: 44px; }
+  .fe-8 > .fo-vials { gap: 5px; }
+  .fe-8 > .fo-vials > .fo-vial > small { font-size: 10px; }
+  .fe-8 > .fo-vials > .fo-vial > small > i { font-size: 9px; letter-spacing: -.2px; }
+  .fe-q > .fo-stat > .fo-stat-n { font-size: 20px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* the response curve draws itself once; reduced motion shows the finished shape */
+  .fe-gcv > .line { stroke-dasharray: 420; stroke-dashoffset: 420; animation: fe-draw .9s cubic-bezier(.22, 1, .36, 1) .15s forwards; }
+  .fe-gcv > .fill, .fe-gcv > .peak { opacity: 0; animation: fe-fade .5s ease .7s forwards; }
+}
+@keyframes fe-draw { to { stroke-dashoffset: 0; } }
+@keyframes fe-fade { to { opacity: 1; } }

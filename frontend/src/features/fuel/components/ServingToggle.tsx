@@ -1,36 +1,28 @@
 // ============================================================
-// Mezo · ServingToggle (/adag ↔ egész)
-// The segmented basis switch from docs/archive/design-v1/recipes-detail.html (.segtoggle).
-// Used by RecipeDetailPage's macro hero, RecipeEditorPage's live total card and the Műhely hero.
-// `servings` is the real recipe value; the "whole" label echoes it.
+// Mezo · ServingToggle (egy adag ↔ egész recept)
+// The basis switch of the recipe page's hero, the editor's live total and the Műhely hero.
+// `servings` is the real recipe value; the "whole" label echoes it (`short` = the Műhely's
+// narrow cell beside the servings stepper: „Egész" alone).
+// Folyadék (mezo-n4wf5.5, fuel.js `servSeg`): the kit `Seg`; words in `fuelRecept.basis`.
 // ============================================================
+import { useM } from '@/shared/i18n'
+import { Seg } from '@/shared/ui/folyadek'
+
 export type ServingBasis = 'serving' | 'whole'
 
 export interface ServingToggleProps {
   value: ServingBasis
   servings: number
   onChange: (b: ServingBasis) => void
+  /** The whole-recipe segment without the serving count. */
+  short?: boolean
 }
 
-const SEGS: { id: ServingBasis; label: (n: number) => string }[] = [
-  { id: 'serving', label: () => '1 adag' },
-  { id: 'whole', label: n => `Egész · ${n} adag` },
-]
-
-export function ServingToggle({ value, servings, onChange }: ServingToggleProps) {
-  // Üveg U2 (mezo-me75u.2, prototype `.seg`): a flat recessed pill; the active basis fills sage
-  // and glows. Styled in prototype.css `── uveg fuel receptek (`.
+export function ServingToggle({ value, servings, onChange, short }: ServingToggleProps) {
+  const M = useM()
+  const B = M.fuelRecept.basis
   return (
-    <div className="fkx-seg" role="group" aria-label="Makró-bázis">
-      {SEGS.map(s => {
-        const active = value === s.id
-        return (
-          <button key={s.id} type="button" className={active ? 'is-on' : undefined}
-            aria-pressed={active} onClick={() => onChange(s.id)}>
-            {s.label(servings)}
-          </button>
-        )
-      })}
-    </div>
+    <Seg<ServingBasis> aria-label={B.aria} value={value} onChange={onChange}
+      items={[{ key: 'serving', label: B.serving }, { key: 'whole', label: short ? B.wholeShort : B.whole(servings) }]} />
   )
 }

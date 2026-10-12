@@ -13,7 +13,7 @@
 //
 // Linkelhető kulcs nélkül a sor EGYÁLTALÁN nem jelenik meg: inkább semmit, mint másolatot.
 // ============================================================
-import { engineStatusCopy } from '@/features/insights/logic/lifecycle'
+import { m } from '@/shared/i18n'
 import type { Pattern } from '@/data/types'
 
 /** Egy hivatkozó sor — szándékosan a minimum, amiből a felhasználó felismeri és odalép. */
@@ -21,22 +21,24 @@ export interface FuelPatternRef {
   pairKey: string
   /** A minta KANONIKUS címe, változtatás nélkül — címke, nem átírt szöveg. */
   title: string
-  /** Egy-szavas állapot. A ház MEGLÉVŐ szótárából (PatternDecisionCard /
-   *  engineStatusCopy; a volt PatternDetailHero szavai, mezo-rstt7 óta csak itt élnek) — itt nem születik új megfogalmazás. */
+  /** Az állapot neve az alkalmazás nyelvén (a prototípus `PSTAT` szavai). */
   stateLabel: string
   /** A kanonikus Mezo-útvonal — ide lépünk, itt NEM másolunk. */
   route: string
 }
 
-/** A `PatternRowStatus` → a ház saját, máshol már kimondott állapot-szavai. A `refuted`/`dormant`
- *  sorszövegét a motor saját helpere (`engineStatusCopy`) adja, hogy egy helyen legyen. */
+/** A `PatternRowStatus` → egy állapot-szó az alkalmazás nyelvén (`fuelTrendek.patterns.status`, a jóváhagyott prototípus
+ *  `PSTAT` párjai). HÍVÁSI időben olvasva; ismeretlen / hiányzó állapot = „Döntésre vár". */
 function stateLabelFor(status: Pattern['status']): string {
-  const engine = engineStatusCopy(status)
-  if (engine) return engine
-  if (status === 'confirmed') return 'Megerősítve'   // PatternDecisionCard
-  if (status === 'monitoring') return 'Figyeljük'    // PatternDecisionCard
-  if (status === 'rejected') return 'Elvetve'        // a volt PatternDetailHero szava
-  return 'Döntésre vár'                              // a volt PatternDetailHero szava
+  const S = m().fuelTrendek.patterns.status
+  switch (status) {
+    case 'confirmed': return S.confirmed
+    case 'monitoring': return S.monitoring
+    case 'rejected': return S.rejected
+    case 'refuted': return S.refuted
+    case 'dormant': return S.dormant
+    default: return S.proposed
+  }
 }
 
 /** Táplálkozási jelzés-tokenek. A pár-kulcs gépi metrika-nevein ÉS a magyar címen is keresünk,

@@ -94,8 +94,8 @@ describe('AddPantryItemSheet', () => {
       </QueryClientProvider>,
     )
     expect(screen.queryByText('Adag')).not.toBeInTheDocument()
-    expect(screen.getByText('Makrók · /100 g')).toBeInTheDocument()
-    expect(screen.getByText('Tápanyag · /100 g')).toBeInTheDocument()
+    expect(screen.getByText('Makrók · 100 g-ban')).toBeInTheDocument()
+    expect(screen.getByText('Tápanyag · 100 g-ban')).toBeInTheDocument()
   })
 
   it('create always lands on the per-100 g / grams basis (mezo-0gjr)', async () => {

@@ -93,5 +93,5 @@ test('picking an item calls onPick and the sheet STAYS OPEN (multi-add)', async 
 
 test('opening the sheet does NOT focus the search box — no surprise mobile keyboard', () => {
   renderSheet()
-  expect(screen.getByRole('textbox', { name: 'Keresés a kamrában' })).not.toHaveFocus()
+  expect(screen.getByRole('searchbox', { name: 'Keresés a kamrában' })).not.toHaveFocus()
 })

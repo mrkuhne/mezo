@@ -4,6 +4,9 @@
 // A Protokoll SAJÁT oldal, mert a kombinált görgetés átláthatatlan volt (owner). Tételenként
 // mutatja a miértet és az elhelyezést; a szerkesztés (D3) és az étkezési kötések (D4) ennek a
 // lapnak a szekciói. D7: a verziótörténet adat marad, felület nélkül.
+//
+// Folyadék F5 (mezo-n4wf5.5): a hős idősávonként egy fiola + három tény + ítélet; minden idősáv egy
+// kártya a fejében a zónával és az idővel, soraiban az adag, a „kézi / automatikus" és a tárolt indok.
 // ============================================================
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -67,8 +70,12 @@ describe('FuelStackProtocolPage', () => {
     serveProtocol()
     renderProtocol()
     const row = await screen.findByRole('listitem', { name: /D3 \+ K2/ })
-    expect(within(row).getByText(/Ebéd/)).toBeInTheDocument()
+    // the slot is the card's head; the row says the dose, who placed it and the stored reason
+    expect(screen.getByRole('heading', { level: 3, name: /^Ebéd · \d\d:\d\d · 1$/ })).toBeInTheDocument()
+    expect(within(row).getByText(/4000 IU · automatikus/)).toBeInTheDocument()
     expect(within(row).getByText(/zsíros étkezéssel/i)).toBeInTheDocument()
+    expect(screen.getByText('Minden elemet én időzítettem.')).toBeInTheDocument()
+    expect(screen.getByText(/3\. változat · 86%-os bizalom\./)).toBeInTheDocument()
   })
 
   // D2: az elhelyezés INDOKA a motorból jön — nem a felület találja ki.
@@ -95,7 +102,7 @@ describe('FuelStackProtocolPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'D3 + K2 beállítások' }))
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByLabelText('Dózis')).toBeInTheDocument()
-    expect(within(dialog).getByText('Mozgatás másik zónába')).toBeInTheDocument()
+    expect(within(dialog).getByText('Áthelyezés másik idősávba')).toBeInTheDocument()
   })
 
   test('a betöltési hiba őszinte, nem üres lista', async () => {
@@ -103,12 +110,16 @@ describe('FuelStackProtocolPage', () => {
     renderProtocol()
     expect(await screen.findByText('A protokoll most nem tölthető be.')).toBeInTheDocument()
     expect(screen.queryByRole('listitem')).toBeNull()
+    // the live error face has no retry
+    expect(screen.queryByRole('button', { name: /Újra/ })).toBeNull()
   })
 
   test('az Új elem ajtó a beállító oldalra visz', async () => {
     serveProtocol()
     renderProtocol()
-    await userEvent.click(await screen.findByRole('button', { name: /Új elem/ }))
+    // loaded: the door is the hero's button (while loading it is a row of its own)
+    await screen.findByRole('listitem', { name: /D3 \+ K2/ })
+    await userEvent.click(screen.getByRole('button', { name: 'Új elem beállítása' }))
     expect(screen.getByTestId('location')).toHaveTextContent('/fuel/stack/manage/add')
   })
 })
@@ -120,21 +131,24 @@ describe('FuelStackProtocolPage — mock', () => {
   test('az étkezési kötések al-szekcióként jelennek meg', () => {
     renderProtocol()
     const section = screen.getByRole('region', { name: 'Étkezési kötések' })
-    expect(within(section).getByText('Étkezéshez')).toBeInTheDocument()
-    expect(within(section).getByRole('link', { name: 'Csirke + édesburgonya + spenót' }))
+    expect(screen.getByRole('heading', { level: 2, name: /Étkezéshez · \d/ })).toBeInTheDocument()
+    expect(within(section).getByText('Étkezés-egyeztetés · makró és mikro')).toBeInTheDocument()
+    expect(within(section).getByRole('link', { name: /Csirke \+ édesburgonya \+ spenót/ }))
       .toHaveAttribute('href', expect.stringMatching(/^\/fuel\/recipes\//))
   })
 
   test('a teljes protokoll minden zónáját és eredetét mutatja', () => {
     const { container } = renderProtocol()
-    expect(screen.getByText('Protokoll')).toBeInTheDocument()
-    expect(screen.getByText('8 tétel')).toBeInTheDocument()
-    expect(screen.getByText('v3 · 86% bizalom')).toBeInTheDocument()
+    expect(screen.getByText(/^A napi rended · \d idősáv$/)).toBeInTheDocument()
+    // the three facts of the hero: items · time slots · placed by hand
+    const facts = container.querySelector('.fo-facts')!
+    expect(facts).toHaveTextContent(/^8elem\didősáv\dkézzel elhelyezve$/)
+    expect(screen.getByText(/3\. változat · 86%-os bizalom\./)).toBeInTheDocument()
     expect(screen.getByRole('listitem', { name: /Kreatin monohidrát/ })).toBeInTheDocument()
-    expect(screen.getAllByText('auto').length).toBeGreaterThan(0)
-    // Üveg (mezo-me75u.2): the hero wears the 3D protocol icon; every zone group is glass.
-    expect(container.querySelector('use[href="#t-protocol"]')).toBeInTheDocument()
-    expect(container.querySelectorAll('.fsx-proto-group.glass').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/· automatikus/).length).toBeGreaterThan(0)
+    // one vial per time slot in the hero; every slot is a white card with its head — no glass
+    expect(container.querySelectorAll('.fk-zv .fo-vial').length).toBe(screen.getAllByRole('heading', { level: 3 }).length)
+    expect(container.querySelector('.glass, .mz-page')).toBeNull()
     expect(screen.queryByRole('button', { name: /bevétel jelölése/ })).not.toBeInTheDocument()
   })
 

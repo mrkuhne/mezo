@@ -54,14 +54,14 @@ test('empty draft has no time control; confirmation starts collapsed at the curr
   expect(toggle).toHaveAttribute('aria-expanded', 'false')
   expect(toggle).toHaveTextContent('Most · 14:10')
   expect(screen.queryByLabelText('Evés időpontja')).not.toBeInTheDocument()
-  expect(screen.queryByText('MIKOR')).not.toBeInTheDocument()
+  expect(screen.queryByText('Mikor')).not.toBeInTheDocument()
 })
 
 test('opening and closing keeps the draft node and scroll position', async () => {
   const user = userEvent.setup()
   renderComposer({ seedLine: true, aiPanelOpenOnMount: true })
   const text = screen.getByLabelText('Mit ettél?')
-  const scroller = text.closest('.logflow-composer') as HTMLElement
+  const scroller = text.closest('.fg-composer') as HTMLElement
   scroller.scrollTop = 44
   const toggle = screen.getByRole('button', { name: /Mikor ettél/ })
   await user.click(toggle)
@@ -89,7 +89,7 @@ test('native time input updates the preview before leaving the field', async () 
   renderComposer({ seedLine: true, logDate: '2026-09-27' })
   await user.click(screen.getByRole('button', { name: /Mikor ettél/ }))
   fireEvent.input(screen.getByLabelText('Evés időpontja'), { target: { value: '09:15' } })
-  expect(screen.getByRole('button', { name: /Mikor ettél/ })).toHaveTextContent('09:15 · Reggeli')
+  expect(screen.getByRole('button', { name: /Mikor ettél/ })).toHaveTextContent(/09:15.*Reggeli · 07:00–10:00/)
 })
 
 test('future time today blocks save, while edit mode keeps its existing time field', async () => {
@@ -97,7 +97,7 @@ test('future time today blocks save, while edit mode keeps its existing time fie
   renderComposer({ seedLine: true })
   await user.click(screen.getByRole('button', { name: /Mikor ettél/ }))
   fireEvent.change(screen.getByLabelText('Evés időpontja'), { target: { value: '15:00' } })
-  expect(screen.getByText(/jövőbeli időpontot nem lehet menteni/)).toBeInTheDocument()
+  expect(screen.getByText(/Jövőbeli időpontot nem lehet menteni/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Logolás/ })).toBeDisabled()
   cleanup()
   renderComposer({ editMealId: 'existing', seedLine: true })
@@ -148,5 +148,5 @@ test('a rejected save leaves the edited time and draft in place', async () => {
   await waitFor(() => expect(spies.logMealAsync).toHaveBeenCalled())
   expect(onSaved).not.toHaveBeenCalled()
   expect(screen.getByLabelText('Evés időpontja')).toHaveValue('09:15')
-  expect(screen.getByText('TÉTELEK')).toBeInTheDocument()
+  expect(screen.getByText(/^Tételek · \d+$/)).toBeInTheDocument()
 })

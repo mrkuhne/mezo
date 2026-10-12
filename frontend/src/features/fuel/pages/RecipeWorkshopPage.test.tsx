@@ -90,27 +90,36 @@ test('a turn renders the draft on the canvas — pantry rows + the BECSLÉS row 
   // pantry line names land as rows, the AI line carries the MealComposer becslés tag
   expect(screen.getByText('Csirkemell · friss')).toBeInTheDocument()
   expect(screen.getByText('Citrom + fűszerek')).toBeInTheDocument()
-  // Üveg U2: the ✨ emoji became the 3D score icon — the tag reads just „becslés"
+  // the tag reads just „becslés" — and the estimate line HAS a kcal (its own estimate), it is not a dash
   expect(screen.getByText('becslés')).toBeInTheDocument()
   expect(screen.queryByText(/✨/)).toBeNull()
+  const est = screen.getByText('Citrom + fűszerek').closest('.fx-ln') as HTMLElement
+  expect(est.querySelector('.fx-lnk')).toHaveTextContent('15kcal')
 
-  // …and while it is there, `draftToInput` returns null → the gate note shows, save disabled
-  expect(screen.getByText(/becslés-sorok: cseréld kamra-itemre/)).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Mentés a Receptkönyvbe/ })).toBeDisabled()
+  // …and while it is there, `draftToInput` returns null → the hero says why, save disabled
+  expect(screen.getByText('Egy sor még becslés, addig nem menthető.')).toBeInTheDocument()
+  expect(screen.getByText('Cseréld kamra-tételre vagy töröld a sort.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mentés a Receptek közé' })).toBeDisabled()
+  // the canvas is the kit page: the hero with the pot, the dock a card of the page (no floating bar)
+  expect(document.querySelector('.fo-page.fc-page > .fo-hero .fx-pot')).not.toBeNull()
+  expect(document.querySelector('.fo-page.fc-page > .fo-card .fc-dock')).not.toBeNull()
+  expect(document.querySelector('.wsh-bottom, .glass, .fmx-subhead')).toBeNull()
 })
 
 test('Csere swaps the estimate line for a pantry item — the gate opens and saving lands on the list', async () => {
   renderPage()
   await sendFirstTurn()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Csere kamra-itemre' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Csere kamra-tételre' }))
+  expect(await screen.findByText('Kamra · csere a becsült sor helyett')).toBeInTheDocument()
   const pick = await screen.findAllByRole('button', { name: /hozzáadása$/ })
   await userEvent.click(pick[0])
 
   await waitFor(() => expect(screen.queryByText('becslés')).not.toBeInTheDocument())
-  expect(screen.queryByText(/becslés-sorok: cseréld/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/addig nem menthető/)).not.toBeInTheDocument()
+  expect(screen.getByText('Menthető: minden sor a kamrádból jön.')).toBeInTheDocument()
 
-  const save = screen.getByRole('button', { name: /Mentés a Receptkönyvbe/ })
+  const save = screen.getByRole('button', { name: 'Mentés a Receptek közé' })
   expect(save).toBeEnabled()
   await userEvent.click(save)
   expect(await screen.findByTestId('location')).toHaveTextContent('/fuel/recipes')
@@ -123,7 +132,7 @@ test('a failed turn keeps the message and offers Újra / Szerkesztés (F7.5 bubb
   await userEvent.type(screen.getByLabelText('Üzenet a Műhelynek'), 'Valami gyors vacsora')
   await userEvent.click(screen.getByRole('button', { name: 'Küldés' }))
 
-  expect(await screen.findByText('A Műhely most nem elérhető — az üzeneted megvan.')).toBeInTheDocument()
+  expect(await screen.findByText('A Műhely most nem elérhető. Az üzeneted megvan.')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
   expect(screen.getByLabelText('Üzenet a Műhelynek')).toHaveValue('Valami gyors vacsora')
 })
@@ -135,8 +144,9 @@ test('a preset chip sets the goal and sends its own instruction turn', async () 
   await userEvent.click(screen.getByRole('button', { name: 'Magas fehérje' }))
   await waitFor(() => expect(turnImpl).toHaveBeenCalledTimes(2))
   expect(turnImpl.mock.calls[1][0].goal).toBe('high_protein')
-  // the goal rides on the canvas as the prototype's cél-chip
-  expect(await screen.findByText('Magas fehérje', { selector: '.fkx-chip.is-goal' })).toBeInTheDocument()
+  // the goal rides on the canvas: the hero's label names it, and its pill is pressed
+  expect(await screen.findByText('Vázlat · Magas fehérje')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Magas fehérje' })).toHaveAttribute('aria-pressed', 'true')
 })
 
 // M1 (mezo-uavr wipe class): a ?recipeId session that never touches a goal preset must save the
@@ -172,7 +182,7 @@ test('Újra re-sends the failed message without duplicating it into the history 
 
   await userEvent.type(screen.getByLabelText('Üzenet a Műhelynek'), 'Valami gyors vacsora')
   await userEvent.click(screen.getByRole('button', { name: 'Küldés' }))
-  await screen.findByText('A Műhely most nem elérhető — az üzeneted megvan.')
+  await screen.findByText('A Műhely most nem elérhető. Az üzeneted megvan.')
 
   await userEvent.click(screen.getByRole('button', { name: 'Újra' }))
   await waitFor(() => expect(turnImpl).toHaveBeenCalledTimes(2))
@@ -191,11 +201,11 @@ test('an estimate amount cleared to 0 and retyped rescales from the original bas
   const field = screen.getByLabelText('Citrom + fűszerek mennyisége')
   await userEvent.clear(field)
   await userEvent.type(field, '200')
-  expect(screen.getByText('3000')).toBeInTheDocument()
+  expect(screen.getByText('3 000')).toBeInTheDocument()
 
   await userEvent.clear(field)      // passes through amount 0 — est must survive untouched
   await userEvent.type(field, '300')
-  expect(screen.getByText('4500')).toBeInTheDocument()
+  expect(screen.getByText('4 500')).toBeInTheDocument()
 })
 
 // ── S4 (mezo-hygp): az ÉLŐ ELŐNÉZET. Owner-döntés: a Műhelyben előre látszik, milyen lesz a
@@ -205,9 +215,14 @@ test('an estimate amount cleared to 0 and retyped rescales from the original bas
 test('a vázlat előnézete a recept-részletlap blokkjait mutatja', async () => {
   renderPage()
   await sendFirstTurn()
-  for (const name of ['Makrók', 'Hozzávalók', 'Minőség', 'Mikrotápanyagok']) {
+  // 1 Hozzávalók (the editable lines) → 2 Makrók és minőség (the shared blocks: vials, tiles, the four facts)
+  // → 3 Elkészítés → 4 Kérj módosítást (the dock)
+  for (const name of [/^1\s*Hozzávalók · \d+$/, /^2\s*Makrók és minőség$/, /^3\s*Elkészítés · \d+ lépés$/, /^4\s*Kérj módosítást$/]) {
     expect(screen.getByRole('heading', { name })).toBeInTheDocument()
   }
+  expect(screen.getByRole('group', { name: 'A vázlat energiájának megoszlása' })).toBeInTheDocument()
+  expect(screen.getByText('Alapanyag-arány')).toBeInTheDocument()
+  expect(screen.getByText('Rost')).toBeInTheDocument()
 })
 
 // Őszinte-null: az AI NEM talál ki tápanyag-tényt — amire nincs kamra-sor, az „—".
@@ -215,20 +230,23 @@ test('kamra-tény nélküli sor nem ad számot a minőség-lapkáknak', async ()
   renderPage()
   await sendFirstTurn()
   // a becsült sornak (Citrom + fűszerek) nincs NOVA-ja, ezért az Alapanyag-arány őszintén „—"
-  const quality = screen.getByRole('heading', { name: 'Minőség' }).closest('section') as HTMLElement
-  const base = within(quality).getByText('Alapanyag-arány').closest('.fmx-nutri-tile') as HTMLElement
+  const base = screen.getByText('Alapanyag-arány').parentElement as HTMLElement
   expect(within(base).getByText('—')).toBeInTheDocument()
-  expect(base.className).toContain('is-unknown')
+  expect(within(base).getByText('nincs adat')).toBeInTheDocument()
+  // …and the page says why the numbers are missing
+  expect(screen.getByText(/A becsült sor nem ad minőség-tényt/)).toBeInTheDocument()
 })
 
 test('a mikrotápanyag-blokk csak a négy tárolt tényt viszi, vitamint nem', async () => {
   renderPage()
   await sendFirstTurn()
-  const micro = screen.getByRole('heading', { name: 'Mikrotápanyagok' }).closest('section') as HTMLElement
+  const micro = screen.getByText('Rost').closest('section') as HTMLElement
   for (const label of ['Rost', 'Cukor', 'Só', 'Telített zsír']) {
     expect(within(micro).getByText(label)).toBeInTheDocument()
   }
-  expect(within(micro).queryByText(/vitamin/i)).toBeNull()
+  const rows = [...micro.querySelectorAll('.fo-row')]
+  expect(rows).toHaveLength(4)
+  expect(rows.some(row => /vitamin/i.test(row.textContent ?? ''))).toBe(false)
 })
 
 // B1 owner-DROP: link-alapú RECEPT-import nincs (a kamra URL-importja ettől független).
@@ -255,14 +273,16 @@ test('?fromMeal seeds the canvas from the logged meal — the estimate line hold
   expect(await screen.findByDisplayValue('Reggeli tál')).toBeInTheDocument()
   expect(screen.getByText('Házi lekvár')).toBeInTheDocument()
   expect(screen.getByText('becslés')).toBeInTheDocument()
-  expect(screen.getByText(/becslés-sorok: cseréld kamra-itemre/)).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Mentés a Receptkönyvbe/ })).toBeDisabled()
+  expect(screen.getByText('Vázlat · logolt étkezésből')).toBeInTheDocument()
+  expect(screen.getByText('Egy sor még becslés, addig nem menthető.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mentés a Receptek közé' })).toBeDisabled()
 })
 
 test('an all-pantry logged meal saves as a NEW recipe (create, never update)', async () => {
   renderPage('/fuel/recipes/muhely?fromMeal=meal-pantry')
   await screen.findByDisplayValue('Zabos tál')
-  await userEvent.click(screen.getByRole('button', { name: /Mentés a Receptkönyvbe/ }))
+  expect(screen.getByText('Új receptként mentjük; a logolt étkezésed nem változik.')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Mentés a Receptek közé' }))
   expect(updateSpy).not.toHaveBeenCalled()
   expect(createSpy).toHaveBeenCalledTimes(1)
   const [input] = createSpy.mock.calls[0]
@@ -278,4 +298,48 @@ test('an unknown ?fromMeal opens the empty workshop', () => {
   renderPage('/fuel/recipes/muhely?fromMeal=nope')
   expect(screen.queryByDisplayValue('Zabos tál')).toBeNull()
   expect(screen.getByLabelText('Üzenet a Műhelynek')).toBeInTheDocument()
+  // the empty canvas: the empty pot, the opening question, how it works
+  expect(screen.getByText('Mit főzzünk ki?')).toBeInTheDocument()
+  expect(screen.getByText('Receptműhely · üres fazék')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /Így dolgozunk/ })).toBeInTheDocument()
+})
+
+// The dock's states (prototype `muhely.dolgozik`, `.kamrabol`, sheet `thread`).
+test('busy says so and locks the goals; the last reply opens the conversation', async () => {
+  let release: (() => void) | undefined
+  turnImpl.mockImplementationOnce((req: Parameters<typeof mockWorkshopTurn>[0]) =>
+    new Promise(resolve => { release = () => resolve(mockWorkshopTurn(req)) }))
+  renderPage()
+  await userEvent.type(screen.getByLabelText('Üzenet a Műhelynek'), 'Csirkés ebédet kérek')
+  await userEvent.click(screen.getByRole('button', { name: 'Küldés' }))
+  expect(await screen.findByText('A Műhely dolgozik…')).toBeInTheDocument()
+  expect(screen.getByText('Készül az első vázlat.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Magas fehérje' })).toBeDisabled()
+  release?.()
+  await screen.findByDisplayValue('Citromos-joghurtos csirketál')
+  expect(screen.queryByText('A Műhely dolgozik…')).toBeNull()
+
+  await userEvent.click(screen.getByRole('button', { name: /^A beszélgetés megnyitása/ }))
+  const sheet = await screen.findByRole('dialog', { name: 'Amiről eddig beszéltünk' })
+  expect(within(sheet).getByText('Műhely · beszélgetés')).toBeInTheDocument()
+  expect(within(sheet).getByText('TE')).toBeInTheDocument()
+  expect(within(sheet).getByText('MŰHELY')).toBeInTheDocument()
+  expect(within(sheet).getByText('Csirkés ebédet kérek')).toBeInTheDocument()
+})
+
+test('a pantry item marked for the next round rides in the message, and can be left out again', async () => {
+  renderPage()
+  await userEvent.click(screen.getByRole('button', { name: 'Kamra' }))
+  expect(await screen.findByText('Kamra · a következő körbe')).toBeInTheDocument()
+  const adds = await screen.findAllByRole('button', { name: /hozzáadása$/ })
+  const first = adds[0].getAttribute('aria-label')!.replace(/ hozzáadása$/, '')
+  const second = adds[1].getAttribute('aria-label')!.replace(/ hozzáadása$/, '')
+  await userEvent.click(adds[0])
+  await userEvent.click(adds[1])
+  await userEvent.click(screen.getByRole('button', { name: 'Kész' }))
+  await userEvent.click(await screen.findByRole('button', { name: `${second} elvétele a következő körből` }))
+  await userEvent.type(screen.getByLabelText('Üzenet a Műhelynek'), 'Ebből főzzünk')
+  await userEvent.click(screen.getByRole('button', { name: 'Küldés' }))
+  await waitFor(() => expect(turnImpl).toHaveBeenCalledTimes(1))
+  expect(turnImpl.mock.calls[0][0].message).toBe(`Ebből főzzünk\n(Kamrából: ${first})`)
 })

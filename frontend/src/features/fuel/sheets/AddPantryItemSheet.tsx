@@ -3,47 +3,38 @@
 // Manual add/edit form for a Kamra item. Real CRUD via usePantryActions:
 //   - add mode (no editId): addItem(input) → appends to the ['pantry'] cache
 //   - edit mode (editId set): updateItem(editId, input)
-// Reuses the shared <Sheet> shell (portal + drag-to-close + Escape). The form now
-// edits EVERY value (docs/archive/design-v1/kamra-detail-edit-v1.html · phone 3), grouped in
-// chamfer-chrome sections: Alap / Makrók / Tápanyag / Készlet · ár. The kind toggle
-// gates the dose vs macro/nutrition fields where it makes sense; food exposes all
-// numeric nutrition fields.
-// Üveg (mezo-me75u.2, uveg-fuel-tobbi.html `SH.add`): the sheet is one gold glass surface; the
-// fields are flat cells with an eyebrow label, the sections eyebrow rows, Mégse flat and the
-// save a gold-lit flat pill (never glass in glass). Behavior (fields, gating, the definition/state split) unchanged.
+// Reuses the shared <Sheet> shell (portal + drag-to-close + Escape). The form edits EVERY value. The kind
+// select gates the dose vs macro/nutrition fields; food exposes all numeric nutrition fields.
+// Folyadék (F5, mezo-n4wf5.5; prototype `fuel.js` `sheetsC.add`): the light sheet + `FoSheetHead` (the title, under it the
+// item's name when editing or „kézi felvétel"); every field is a kit `Lab` + `Input` / `Select`; the four macro and the four
+// nutrient fields stand four across (two at ≤360 px); the foot is the small primary button with „Mégse" beside it.
+// Behavior (fields, gating, the definition/state split, the definition lock on a shared catalogue entry) unchanged.
 // ============================================================
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { usePantryActions } from '@/data/hooks'
 import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
 import { pantryCategoryMeta } from '@/data/fuel/pantry'
 import { pantrySources, type PantrySourceKey } from '@/data/pantrySources'
 import type { PantryItemInput, PantryItemKind } from '@/data/types'
+import { useM } from '@/shared/i18n'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
+import { Acts, Btn, Input, Lab, Lk, Note, Select, TwoBtn } from '@/shared/ui/folyadek'
+import { KAMRA_KINDS, pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
+import { pantrySourceLabel } from '@/features/fuel/logic/pantryProvenance'
 import { KamraSheetHead, KAMRA_SHEET_CLASS } from '@/features/fuel/sheets/KamraSheetHead'
-
-const kinds: { id: PantryItemKind; label: string }[] = [
-  { id: 'food', label: 'Étel' },
-  { id: 'supplement', label: 'Supplement' },
-  { id: 'stim', label: 'Stimuláns' },
-  { id: 'med', label: 'Gyógyszer' },
-]
 
 const categoryKeys = Object.keys(pantryCategoryMeta)
 const sourceKeys = Object.keys(pantrySources) as PantrySourceKey[]
 
-// A single form field (eyebrow label on top, the flat control below — `.fkk-inp`).
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+// A single form field: the kit label on top, the control below. `children` gets the id the label points at.
+function Field({ label, children }: { label: string; children: (id: string) => React.ReactNode }) {
+  const id = useId()
   return (
-    <label className="fkk-field">
-      <span className="uv-eyebrow">{label}</span>
-      {children}
-    </label>
+    <div>
+      <Lab htmlFor={id}>{label}</Lab>
+      {children(id)}
+    </div>
   )
-}
-
-function SectionHead({ children }: { children: React.ReactNode }) {
-  return <div className="fkk-sh-sec uv-eyebrow">{children}</div>
 }
 const numProps = { inputMode: 'decimal' as const }
 const toNum = (s: string): number | undefined => (s.trim() === '' ? undefined : Number(s))
@@ -64,6 +55,7 @@ export function AddPantryItemSheet({
    *  inputs lock; price/stock/dose stay editable (they are the caller's own facts). */
   definitionLocked?: boolean
 }) {
+  const M = useM()
   const lock = definitionLocked === true
   const { addItem, updateItem } = usePantryActions()
   const [kind, setKind] = useState<PantryItemKind>(initial?.kind ?? 'food')
@@ -164,115 +156,94 @@ export function AddPantryItemSheet({
   }
 
   if (!open) return null
+  const A = M.fuelKamra.add
+  const num = (label: string, value: string, set: (v: string) => void, placeholder: string, locked = lock) => (
+    <Field label={label}>
+      {id => <Input id={id} disabled={locked} {...numProps} value={value} onChange={e => set(e.target.value)} placeholder={placeholder} />}
+    </Field>
+  )
 
   return (
     <Sheet onClose={onClose} labelledBy="add-pantry-item-title" className={KAMRA_SHEET_CLASS}>
       {(close) => (
-        <>
-          <KamraSheetHead icon="t-journal" titleId="add-pantry-item-title" onClose={close}
-            eyebrow={editId ? 'Tétel · szerkesztés' : 'Új tétel · kézi'}
-            title={editId ? 'Tétel szerkesztése' : 'Új kamra-tétel'} />
+        <div className="fp-form">
+          <KamraSheetHead icon="t-journal" titleId="add-pantry-item-title"
+            title={editId ? A.titleEdit : A.titleNew}
+            eyebrow={editId ? (initial?.name ?? '') : A.subNew} />
 
-          {/* Alap */}
-          <SectionHead>Alap</SectionHead>
-          <div className="fkk-grid2">
-            <Field label="Típus">
-              <select disabled={lock} value={kind} onChange={e => setKind(e.target.value as PantryItemKind)} className="fkk-inp">
-                {kinds.map(k => <option key={k.id} value={k.id}>{k.label}</option>)}
-              </select>
+          <TwoBtn className="fp-two">
+            <Field label={A.type}>
+              {id => (
+                <Select id={id} disabled={lock} value={kind} onChange={e => setKind(e.target.value as PantryItemKind)}>
+                  {KAMRA_KINDS.map(k => <option key={k} value={k}>{M.fuelKamra.kindOption[k]}</option>)}
+                </Select>
+              )}
             </Field>
-            <Field label="Kategória">
-              <select disabled={lock} value={category} onChange={e => setCategory(e.target.value)} className="fkk-inp">
-                {category === '' && <option value="">— nincs —</option>}
-                {categoryKeys.map(c => <option key={c} value={c}>{pantryCategoryMeta[c].label}</option>)}
-              </select>
+            <Field label={A.category}>
+              {id => (
+                <Select id={id} disabled={lock} value={category} onChange={e => setCategory(e.target.value)}>
+                  {category === '' && <option value="">{A.noCategory}</option>}
+                  {categoryKeys.map(c => <option key={c} value={c}>{pantryCategoryLabel(c)}</option>)}
+                </Select>
+              )}
             </Field>
-          </div>
-          <div className="fkk-grid1">
-            <Field label="Név">
-              <input disabled={lock} value={name} onChange={e => setName(e.target.value)} placeholder="pl. Görög joghurt 10%" className="fkk-inp" />
-            </Field>
-          </div>
-          <div className="fkk-grid2">
-            <Field label="Forrás">
-              <select disabled={lock} value={source} onChange={e => setSource(e.target.value as PantrySourceKey)} className="fkk-inp">
-                {sourceKeys.map(s => <option key={s} value={s}>{pantrySources[s].label}</option>)}
-              </select>
-            </Field>
-          </div>
-          {legacyPer != null && (
-            <p className="fkk-sh-note">
-              Bázis: /{legacyPer} {initial?.unit ?? 'g'} · örökölt
-            </p>
-          )}
-          {lock && (
-            <p className="fkk-sh-note">
-              Közös katalógus-tétel: az adatait csak a szerző vagy a tulajdonos szerkesztheti. Az ár, a készlet és a dózis a tiéd.
-            </p>
-          )}
+          </TwoBtn>
+          <Field label={A.name}>
+            {id => <Input id={id} disabled={lock} value={name} onChange={e => setName(e.target.value)} placeholder={A.namePlaceholder} />}
+          </Field>
+          <Field label={A.source}>
+            {id => (
+              <Select id={id} disabled={lock} value={source} onChange={e => setSource(e.target.value as PantrySourceKey)}>
+                {sourceKeys.map(k => <option key={k} value={k}>{pantrySourceLabel(k)}</option>)}
+              </Select>
+            )}
+          </Field>
+          {legacyPer != null && <Note>{A.legacyBasis(legacyPer, initial?.unit ?? 'g')}</Note>}
+          {lock && <Note className="fp-warn">{A.locked}</Note>}
 
           {isFood ? (
             <>
               {/* Makrók — the label's per-100 g column, verbatim (mezo-0gjr) */}
-              <SectionHead>Makrók · /100 g</SectionHead>
-              <div className="fkk-grid2">
-                <Field label="kcal"><input disabled={lock} {...numProps} value={kcal} onChange={e => setKcal(e.target.value)} placeholder="119" className="fkk-inp" /></Field>
-                <Field label="Fehérje"><input disabled={lock} {...numProps} value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="6" className="fkk-inp" /></Field>
+              <Lab className="fp-grp">{A.macros}</Lab>
+              <div className="fp-4">
+                {num(A.kcal, kcal, setKcal, '119')}
+                {num(M.fuelKozos.macro.protein, proteinG, setProteinG, '6')}
+                {num(M.fuelKozos.macro.carbs, carbsG, setCarbsG, '4')}
+                {num(M.fuelKozos.macro.fat, fatG, setFatG, '9')}
               </div>
-              <div className="fkk-grid2">
-                <Field label="Szénhidrát"><input disabled={lock} {...numProps} value={carbsG} onChange={e => setCarbsG(e.target.value)} placeholder="4" className="fkk-inp" /></Field>
-                <Field label="Zsír"><input disabled={lock} {...numProps} value={fatG} onChange={e => setFatG(e.target.value)} placeholder="9" className="fkk-inp" /></Field>
-              </div>
-
               {/* Tápanyag — same per-100 g basis as the macros */}
-              <SectionHead>Tápanyag · /100 g</SectionHead>
-              <div className="fkk-grid2">
-                <Field label="Rost"><input disabled={lock} {...numProps} value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="0" className="fkk-inp" /></Field>
-                <Field label="Cukor"><input disabled={lock} {...numProps} value={sugarG} onChange={e => setSugarG(e.target.value)} placeholder="0" className="fkk-inp" /></Field>
-              </div>
-              <div className="fkk-grid2">
-                <Field label="Tel. zsír"><input disabled={lock} {...numProps} value={saturatedFatG} onChange={e => setSaturatedFatG(e.target.value)} placeholder="0" className="fkk-inp" /></Field>
-                <Field label="Só"><input disabled={lock} {...numProps} value={saltG} onChange={e => setSaltG(e.target.value)} placeholder="0" className="fkk-inp" /></Field>
+              <Lab className="fp-grp">{A.nutrients}</Lab>
+              <div className="fp-4">
+                {num(M.fuelKozos.factsLong.fiber, fiberG, setFiberG, '0')}
+                {num(M.fuelKozos.factsLong.sugar, sugarG, setSugarG, '0')}
+                {num(A.satFat, saturatedFatG, setSaturatedFatG, '0')}
+                {num(M.fuelKozos.factsLong.salt, saltG, setSaltG, '0')}
               </div>
             </>
           ) : (
-            <>
-              {/* Dózis (supplement/stim/med) */}
-              <SectionHead>Dózis</SectionHead>
-              <div className="fkk-grid1">
-                <Field label="Dózis">
-                  <input value={dose} onChange={e => setDose(e.target.value)} placeholder="pl. 5 g" className="fkk-inp" />
-                </Field>
-              </div>
-            </>
+            /* Dózis (supplement/stim/med) — the caller's own fact, never locked */
+            <Field label={A.dose}>
+              {id => <Input id={id} value={dose} onChange={e => setDose(e.target.value)} placeholder={A.dosePlaceholder} />}
+            </Field>
           )}
 
-          {/* Készlet · ár — stock input hidden (deferred, mezo-6nu); price kept */}
-          <SectionHead>{SHOW_PANTRY_STOCK ? 'Készlet · ár' : 'Ár'}</SectionHead>
-          <div className="fkk-grid2">
-            {SHOW_PANTRY_STOCK && (
-              <Field label="Készlet">
-                <span className="fkk-grid2 is-tight">
-                  <input {...numProps} value={stockQty} onChange={e => setStockQty(e.target.value)} placeholder="—" className="fkk-inp" />
-                  <input value={stockUnit} onChange={e => setStockUnit(e.target.value)} placeholder="g" className="fkk-inp" />
-                </span>
+          {/* Készlet — hidden behind its flag (deferred, mezo-6nu); the price stays */}
+          {SHOW_PANTRY_STOCK && (
+            <TwoBtn className="fp-two">
+              {num(A.stock, stockQty, setStockQty, '—', false)}
+              <Field label={A.stockUnit}>
+                {id => <Input id={id} value={stockUnit} onChange={e => setStockUnit(e.target.value)} placeholder="g" />}
               </Field>
-            )}
-            <Field label="Ár (Ft)">
-              <input {...numProps} value={price} onChange={e => setPrice(e.target.value)} placeholder="750" className="fkk-inp" />
-            </Field>
-          </div>
+            </TwoBtn>
+          )}
+          {num(A.price, price, setPrice, '750', false)}
 
-          {/* Actions */}
-          <div className="fkk-sh-acts">
-            <button type="button" className="fkk-btn is-flat" onClick={close}>
-              Mégse
-            </button>
-            <button type="button" className="fkk-btn is-go" disabled={!name.trim()} onClick={submit}>
-              <Icon name="check" size={14} /> {editId ? 'Mentés' : 'Polcra'}
-            </button>
-          </div>
-        </>
+          <Acts>
+            <Btn sm disabled={!name.trim()} onClick={submit}>{editId ? A.save : A.toShelf}</Btn>
+            <Lk onClick={close}>{M.kit.cancel}</Lk>
+          </Acts>
+          {!editId && <Note>{A.needsName}</Note>}
+        </div>
       )}
     </Sheet>
   )

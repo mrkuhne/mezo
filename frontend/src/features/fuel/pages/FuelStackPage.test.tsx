@@ -3,6 +3,9 @@
 //
 // A hub főnézete a MAI lista, idősávokra bontva, egyérintéses pipálással (owner). A korábbi
 // négy-csempés hub + `/fuel/stack/today` páros ÖSSZEVONT: a mai lista itt él.
+//
+// Folyadék F5 (mezo-n4wf5.5): a hős a nap adagjai kapszulákban + „Következik: …" a Bevettem gombbal;
+// minden napszak egy számozott szekció a saját kártyájával; a három ajtó egy kártya sorai.
 // ============================================================
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -47,23 +50,31 @@ describe('FuelStackPage — mock hub', () => {
   // D1 (mezo-g2vl): a főnézet a mai lista, idősávokra bontva, egyérintéses pipálással.
   test('a mai lista idősávokban jelenik meg, duplikált page header nélkül', () => {
     const { container } = renderView()
-    expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
-    expect(container.querySelector('.mz-page-head')).toBeNull()
-    expect(container.querySelector('.mz-page-hero')).toBeNull()
-    expect(container.querySelectorAll('.fsx-band').length).toBeGreaterThan(0)
-    expect(screen.getByText('MIT VESZEK BE MA?')).toBeInTheDocument()
-    // Üveg (mezo-me75u.2): the content icons are the Titanium 3D set; the bands are glass.
-    expect(container.querySelector('use[href="#t-supps"]')).toBeInTheDocument()
+    expect(container.querySelector('.fo-page.fk-page')).toBeInTheDocument()
+    // the old skin is gone: no Mozaik page, no glass, no page head of its own
+    expect(container.querySelector('.mz-page, .glass, .mz-page-head, .mz-page-hero')).toBeNull()
+    // one numbered section per part of the day, then „Protokoll és beállítás"
+    const sections = screen.getAllByRole('heading', { level: 2 })
+    expect(sections.length).toBeGreaterThan(2)
+    expect(sections[0]).toHaveTextContent(/^1Reggel · \d \/ \d/)
+    expect(sections[sections.length - 1]).toHaveTextContent('Protokoll és beállítás')
+    expect(screen.getByText(/^Mit veszek be ma\? · \d \/ 8 bevéve$/)).toBeInTheDocument()
+    // the hero's verdict is the next dose, with the one-tap button on the liquid
+    expect(screen.getByText(/^Következik: .+\.$/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Bevettem' })).toBeInTheDocument()
+    expect(container.querySelector('[data-kalauz-anchor="stack-hero"]')).toHaveClass('fo-hero')
+    // the icons are the Folyadék-jel sprite
+    expect(container.querySelector('use[href="#t-protocol"]')).toBeInTheDocument()
     expect(container.querySelector('use[href="#i-kiegeszito"]')).toBeNull()
-    expect(container.querySelectorAll('.fsx-band.glass').length)
-      .toBe(container.querySelectorAll('.fsx-band').length)
   })
 
-  test('hozzáférhető haladás-műszer mutatja a mai készültséget', () => {
+  // The day's doses are capsules (no ring): one per dose, named for screen readers.
+  test('a nap adagjai kapszulákban állnak, a készültség fel van olvasva', () => {
     renderView()
-    const progress = screen.getByRole('progressbar', { name: 'Mai kiegészítő-haladás' })
-    expect(progress).toHaveAttribute('aria-valuemin', '0')
-    expect(progress).toHaveAttribute('aria-valuemax', '8')
+    const caps = screen.getByRole('img', { name: /^A mai adagok napszakonként: \d \/ 8 bevéve$/ })
+    expect(caps.querySelectorAll('i')).toHaveLength(8)
+    expect(caps.querySelectorAll('i.nx')).toHaveLength(1)
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
   })
 
   test('egy érintés bevettre állítja a tételt, és a bevétel visszavonható', async () => {
@@ -71,9 +82,10 @@ describe('FuelStackPage — mock hub', () => {
     const tick = screen.getAllByRole('button', { name: /Origin PWO: bevettem/ })[0]
     await userEvent.click(tick)
     expect(await screen.findByRole('status')).toHaveTextContent('Origin PWO bevéve')
-    // the taken mark is the 3D tick in the lit well (U11: it replaced the ✓ glyph)
+    // the taken mark is the kit's round tick; the state is aria-pressed
     const taken = screen.getAllByRole('button', { name: /Origin PWO: visszavonom/ })[0]
-    expect(taken.querySelector('use[href="#t-tick"]')).not.toBeNull()
+    expect(taken).toHaveClass('fo-tk', 'on')
+    expect(taken).toHaveAttribute('aria-pressed', 'true')
     expect(taken.textContent).not.toMatch(/✓/)
     await userEvent.click(screen.getByRole('button', { name: 'Visszavonás' }))
     await waitFor(() => expect(
@@ -84,20 +96,22 @@ describe('FuelStackPage — mock hub', () => {
   // A most esedékes sáv kiemelten áll, de a többi nem tűnik el.
   test('a most esedékes sáv kiemelt', () => {
     const { container } = renderView()
-    expect(container.querySelectorAll('.fsx-band.is-due')).toHaveLength(1)
-    expect(container.querySelectorAll('.fsx-band').length).toBeGreaterThan(1)
+    expect(screen.getAllByText('most esedékes')).toHaveLength(1)
+    expect(container.querySelectorAll('.fo-sec.fk-bandsec').length).toBeGreaterThan(1)
   })
 
-  // Egy tétel koppintása üvegkártyát nyit a részleteivel.
-  test('a tétel koppintása üvegkártyát nyit', async () => {
+  // Egy tétel koppintása a részletező dobozt nyitja (világos lap).
+  test('a tétel koppintása a részletező dobozt nyitja', async () => {
     renderView()
     await userEvent.click(screen.getByRole('button', { name: /D3 \+ K2 részletei/ }))
     const box = screen.getByRole('dialog')
-    expect(box.className).toContain('glass')
+    expect(box.className).toContain('fo-sheet')
+    expect(box.className).not.toContain('glass')
+    expect(within(box).getByRole('heading', { name: 'D3 + K2' })).toBeInTheDocument()
     expect(within(box).getByText(/Miért/i)).toBeInTheDocument()
     expect(within(box).getByText(/nem orvosi tanács/i)).toBeInTheDocument()
     await userEvent.click(within(box).getByRole('button', { name: 'Bezárom' }))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
   test.each([
@@ -117,9 +131,11 @@ describe('FuelStackPage — real honest states', () => {
   // Üres stack: hívás cselekvésre, nem üres képernyő.
   test('üres stacknél a felvétel a következő lépés', async () => {
     renderView()
-    expect(await screen.findByText('A protokollod még üres')).toBeInTheDocument()
-    expect(screen.queryByText('MIT VESZEK BE MA?')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /Új elem/ }))
+    expect(await screen.findByText('A protokollod még üres.')).toBeInTheDocument()
+    expect(document.querySelector('[data-kalauz-anchor="stack-hero"]')).toHaveClass('fo-hero')
+    expect(screen.queryByRole('button', { name: 'Bevettem' })).not.toBeInTheDocument()
+    // the hero's own button is the next step
+    await userEvent.click(screen.getAllByRole('button', { name: /Új elem/ })[0])
     expect(screen.getByTestId('location')).toHaveTextContent('/fuel/stack/manage/add')
   })
 
@@ -143,7 +159,7 @@ describe('FuelStackPage — real honest states', () => {
     let goalsCalls = 0
     server.use(http.get(`${API_BASE}/api/goals`, () => { goalsCalls += 1; return HttpResponse.json([]) }))
     renderView()
-    await screen.findByText('A protokollod még üres')
+    await screen.findByText('A protokollod még üres.')
     expect(goalsCalls).toBe(0)
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })

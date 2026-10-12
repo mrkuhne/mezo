@@ -96,7 +96,7 @@ describe('fat-bound zone suggestion', () => {
       time: '12:30',
       recipeId: 'fatty',
       recipeName: 'Recipe fatty',
-      metric: '32g zsír / adag',
+      metric: '32 g zsír / adag',
     })
   })
 })
@@ -117,7 +117,7 @@ describe('protein-bound post_workout suggestion', () => {
       zone: 'post_workout',
       recipeId: 'shake',
       recipeName: 'Recipe shake',
-      metric: '42g fehérje / adag',
+      metric: '42 g fehérje / adag',
     })
   })
 })
@@ -134,7 +134,7 @@ describe('candidate filter narrows to the zone category/role', () => {
     ]
     const result = matchMealsToStack(slots, recipes, [], [])
     expect(result.suggestions).toHaveLength(1)
-    expect(result.suggestions[0]).toMatchObject({ zone: 'lunch', recipeId: 'lunch-lean', metric: '10g zsír / adag' })
+    expect(result.suggestions[0]).toMatchObject({ zone: 'lunch', recipeId: 'lunch-lean', metric: '10 g zsír / adag' })
   })
 
   test('a higher-protein standard-role recipe is excluded from a post_workout suggestion — role=post_workout wins', () => {
@@ -147,7 +147,7 @@ describe('candidate filter narrows to the zone category/role', () => {
     ]
     const result = matchMealsToStack(slots, recipes, [], [])
     expect(result.suggestions).toHaveLength(1)
-    expect(result.suggestions[0]).toMatchObject({ zone: 'post_workout', recipeId: 'pwo-shake', metric: '30g fehérje / adag' })
+    expect(result.suggestions[0]).toMatchObject({ zone: 'post_workout', recipeId: 'pwo-shake', metric: '30 g fehérje / adag' })
   })
 })
 
@@ -191,7 +191,7 @@ describe('today verdict', () => {
       dayLabel: 'ma',
       mealTitle: 'Csirke rizzsel',
       ok: true,
-      metric: '28g zsír',
+      metric: '28 g zsír',
       advice: null,
     })
   })
@@ -208,8 +208,8 @@ describe('today verdict', () => {
       dayLabel: 'ma',
       mealTitle: 'Saláta',
       ok: false,
-      metric: '6g zsír',
-      advice: 'A D3 zsíros étkezést kér — legközelebb tedd zsírosabb fogás mellé, vagy mozgasd vacsorára.',
+      metric: '6 g zsír',
+      advice: 'A D3 zsíros étkezést kér. Legközelebb tedd zsírosabb fogás mellé, vagy mozgasd vacsorára.',
     })
   })
 })
@@ -223,7 +223,7 @@ describe('yesterday verdict', () => {
     const yesterdayMeals: FuelMeal[] = [meal({ slot: 'dinner', loggedAt: '2026-08-02T19:10:00', title: 'Lazac', f: 22 })]
     const result = matchMealsToStack(slots, [], [], yesterdayMeals)
     expect(result.verdicts).toHaveLength(1)
-    expect(result.verdicts[0]).toMatchObject({ zone: 'dinner', dayLabel: 'tegnap', mealTitle: 'Lazac', ok: true, metric: '22g zsír' })
+    expect(result.verdicts[0]).toMatchObject({ zone: 'dinner', dayLabel: 'tegnap', mealTitle: 'Lazac', ok: true, metric: '22 g zsír' })
   })
 })
 

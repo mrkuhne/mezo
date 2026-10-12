@@ -1,26 +1,40 @@
 // ============================================================
-// Mezo · WaterLogSheet — the víz-gyűrű's tap target (mezo-c9t5, keret-hero Task 2). Rides the
+// Mezo · WaterLogSheet — the water vial's tap target (mezo-c9t5, keret-hero Task 2). Rides the
 // shared `Sheet` primitive; 250/400/500 ml single-select chips or a manual ml input (typing
 // a manual value deselects the chip and takes over — "kézi input felülírja"), Mentés logs
 // the selected/typed amount via `onLog` then dismisses. The opener owns `useWaterActions`
 // (`logWater`) and wires it into `onLog` — this component has no `@/data/*` import.
 // Design: docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2.
+// Folyadék (mezo-n4wf5.5): build target docs/design_2.0/prototypes/vilagos/fuel.js `waterSheet()`. The
+// glass shows TODAY's level and, dashed, where the chosen amount would take it; the big number is the
+// amount to log. Water is saved with Mentés only (no tap-the-glass-to-add).
+// „Visszavonom az utolsót" (new, owner OK 2026-10-12): the undo is session-based and lives in the
+// OPENER's `useWaterActions` instance (its stack is per hook instance), so it arrives through the two
+// OPTIONAL props `onUndo` + `canUndo`; without them the link is not drawn. The sheet stays open.
 // ============================================================
 import { useState } from 'react'
-import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon3D } from '@/shared/ui/clay'
-import { CtaPrimary } from '@/shared/ui/Cta'
-import { hu1 } from '@/shared/lib/huNum'
+import { useToast } from '@/shared/ui/ToastProvider'
+import { useM } from '@/shared/i18n'
+import { fmtNum } from '@/shared/lib/format'
+import { Acts, Btn, FoSheetHead, Input, Lk, Pill, Pills } from '@/shared/ui/folyadek'
+import { Glass } from '@/features/fuel/components/folyadek'
 
 const CHIP_ML = [250, 400, 500] as const
 
-export function WaterLogSheet({ currentMl, targetMl, onLog, onClose }: {
+export function WaterLogSheet({ currentMl, targetMl, onLog, onClose, onUndo, canUndo }: {
   currentMl: number
   targetMl: number
   onLog: (ml: number) => void
   onClose: () => void
+  /** `useWaterActions().undoLastWater` of the opener — takes back the last amount logged in this session. */
+  onUndo?: () => void
+  /** `useWaterActions().canUndo` of the opener. */
+  canUndo?: boolean
 }) {
+  const M = useM()
+  const W = M.fuelTanulas.water
+  const { show } = useToast()
   const [chip, setChip] = useState<number | null>(null)
   const [manual, setManual] = useState('')
 
@@ -38,50 +52,37 @@ export function WaterLogSheet({ currentMl, targetMl, onLog, onClose }: {
     close()
   }
 
+  const pct = (ml: number) => (targetMl > 0 ? (ml / targetMl) * 100 : 0)
+  const now = fmtNum(currentMl / 1000, 1)
+  const goal = fmtNum(targetMl / 1000, 1)
+
   return (
-    <Sheet onClose={onClose} labelledBy="water-log-title" className="capture-sheet capture-tone-water glass">
+    <Sheet onClose={onClose} labelledBy="water-log-title" className="fo-sheet ft-water">
       {(close) => (
-        <div className="col" style={{ padding: '4px 4px 8px', textAlign: 'center' }}>
-          <CaptureHeader id="water-log-title" title="Mennyit ittál?" subtitle="Egy korty szünet." kind="water" eyebrow="Víz" onClose={close} />
-          {/* Üveg (mezo-me75u.3, `SH.water`): the one loud value — a frameless sky wash with the
-              64px/200 glowing numeral; today's running total is its sub line. */}
-          <div className="capture-hero capture-water-hero">
-            <output className="capture-hero-value capture-water-value" aria-label="Rögzítendő vízmennyiség" aria-live="polite">{selected ?? '—'}<small> ml</small></output>
-            <p className="capture-hero-sub">
-              ma eddig {hu1(currentMl / 1000)} / {hu1(targetMl / 1000)} l
-            </p>
+        <>
+          <FoSheetHead icon="t-water" titleId="water-log-title" title={W.title} sub={W.sub} onClose={close} />
+          <div className="ft-wat">
+            <Glass pct={pct(currentMl)} nextPct={canSave ? Math.min(105, pct(currentMl + selected)) : null} label={W.glassAria(now, goal)} />
+            <div>
+              <output className="ft-wbig" aria-label={W.amountAria} aria-live="polite">{selected ?? 0}<small>ml</small></output>
+              <p>{W.soFar(now, goal)}</p>
+            </div>
           </div>
-          <div className="row gap-sm mt-lg" style={{ justifyContent: 'center' }}>
-            {CHIP_ML.map(ml => (
-              <button
-                key={ml}
-                type="button"
-                aria-pressed={chip === ml}
-                // Üveg (mezo-me75u.2, `SH.water`): lapos égszín-cellák, a választott kitöltve, fénnyel.
-                className={'flp-wchip' + (chip === ml ? ' is-on' : '')}
-                onClick={() => pickChip(ml)}
-              >
-                {ml} ml
-              </button>
-            ))}
-          </div>
-          <div className="row gap-sm mt-md" style={{ justifyContent: 'center', alignItems: 'center' }}>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              placeholder="pl. 330"
-              aria-label="Víz mennyisége kézzel (ml)"
-              value={manual}
-              onChange={e => editManual(e.target.value)}
-              className="flp-winput"
+          <Pills className="ft-wch">
+            {CHIP_ML.map(ml => <Pill key={ml} on={chip === ml} onClick={() => pickChip(ml)}>{W.chip(ml)}</Pill>)}
+          </Pills>
+          <div className="ft-wman">
+            <Input
+              type="number" inputMode="numeric" min={1} placeholder={W.placeholder} aria-label={W.manualAria}
+              value={manual} onChange={e => editManual(e.target.value)}
             />
-            <span className="flp-wunit">ml kézzel</span>
+            <span>{W.manual}</span>
           </div>
-          <CtaPrimary className="capture-save" style={{ marginTop: 22, width: '100%' }} disabled={!canSave} onClick={() => save(close)}>
-            <Icon3D name="t-tick" size={22} /> Mentés
-          </CtaPrimary>
-        </div>
+          <Acts>
+            <Btn grow disabled={!canSave} onClick={() => save(close)}>{W.save}</Btn>
+            {canUndo && onUndo && <Lk onClick={() => { onUndo(); show({ kind: 'success', text: W.undone }) }}>{W.undo}</Lk>}
+          </Acts>
+        </>
       )}
     </Sheet>
   )

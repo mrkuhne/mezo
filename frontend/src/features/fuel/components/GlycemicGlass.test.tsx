@@ -1,15 +1,15 @@
 // ============================================================
-// Mezo · GlycemicGlass — a vércukor-válasz üvegdoboza (mezo-6mi43)
+// Mezo · GlycemicGlass — a vércukor-válasz lapja (mezo-6mi43; Folyadék F5, mezo-n4wf5.5: világos lap, nem üvegdoboz)
 //
 // Amit ezek a körök őriznek (owner-döntések, mindkettő kétszer megerősítve):
 //   · a dobozban SEMMILYEN glikémiás index nem jelenik meg — se a szó, se index-szám;
 //   · a felület szava „vércukor-válasz";
 //   · a „magas" sáv sem hibáztat;
 //   · ha a cukor becsült, a doboz KIMONDJA — feltevést mért adatként bemutatni tilos;
-//   · nem natív <dialog>: az a böngésző-ablakhoz méreteződik és kiszabadul a telefon-keretből
-//     (a `GlassBox` fejléce írja le, miért — 641 px-es doboz egy 416 px-es telefon fölött).
+//   · nem natív <dialog>: az a böngésző-ablakhoz méreteződik és kiszabadul a telefon-keretből — a közös `Sheet`
+//     a telefon-keretbe portáloz.
 // ============================================================
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { GlycemicGlass, GlycemicMiniCurve } from '@/features/fuel/components/GlycemicGlass'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
@@ -35,16 +35,29 @@ const ESTIMATED = glycemicBand({ c: 64, sugarG: null, fiberG: 7, p: 22, f: 9 })!
 const boxOf = () => screen.getByRole('dialog')
 
 describe('GlycemicGlass · a sáv szava, szám helyett', () => {
-  test('a hero a sáv magyar szavát mutatja, és a felület „vércukor-válasz"-t mond', () => {
+  test('a lap címe a sáv magyar szava, és a felület „vércukor-válasz"-t mond', () => {
     render(<GlycemicGlass band={HIGH} onClose={() => {}} />)
     const box = boxOf()
-    expect(within(box).getByText('magas')).toBeInTheDocument()
-    expect(box.textContent).toContain('Vércukor-válasz')
+    expect(within(box).getByRole('heading', { level: 2 })).toHaveTextContent(/^Magas$/)
+    expect(box).toHaveAccessibleName('Magas')
+    expect(box.textContent).toContain('Vércukor-válasz · várható hatás')
+    // a háromsávos csík az aktív sávot jelöli
+    expect(within(box).getByRole('img', { name: 'Vércukor-válasz sávja: magas' }).querySelector('.on')).toHaveTextContent('Magas')
+    expect(within(box).getByText('Ez most megdobja.')).toBeInTheDocument()
   })
 
-  test('a sáv-hero egyetlen számjegyet sem tartalmaz', () => {
+  test('világos lap, nem üvegdoboz', () => {
     render(<GlycemicGlass band={HIGH} onClose={() => {}} />)
-    expect(boxOf().querySelector('.fmx-glu-hero')!.textContent).not.toMatch(/\d/)
+    expect(boxOf().className).toContain('fo-sheet')
+    expect(boxOf().className).not.toMatch(/glass|fmx-/)
+    expect(boxOf().querySelector('[class*="fmx-"]')).toBeNull()
+  })
+
+  test('a lap feje egyetlen számjegyet sem tartalmaz, és a görbe tengelyén csak idő áll', () => {
+    render(<GlycemicGlass band={HIGH} onClose={() => {}} />)
+    expect(boxOf().querySelector('.fo-shh')!.textContent).not.toMatch(/\d/)
+    const texts = Array.from(boxOf().querySelectorAll('.fe-gcv text')).map(t => t.textContent)
+    expect(texts).toEqual(['alapszint', 'csúcs', 'visszaesés', 'evés', '+1 ó', '+2 ó', '+3 ó'])
   })
 
   test('se a „glikémiás index" szó, se index-szám nem jelenik meg — semelyik sávon', () => {
@@ -93,15 +106,27 @@ describe('GlycemicGlass · a tányér tényei és a kilátás', () => {
     expect(box.textContent).toContain(ESTIMATED.tip.title)
   })
 
-  test('a görbe alakja a sávot követi, és a felolvasó elől el van rejtve', () => {
+  test('a görbe alakja a sávot követi, és a felolvasónak az ALAKOT mondja, számot nem', () => {
     const { unmount } = render(<GlycemicGlass band={HIGH} onClose={() => {}} />)
-    const high = boxOf().querySelector('.fmx-glu-curve')!
-    expect(high.getAttribute('aria-hidden')).toBe('true')
-    const highPath = high.querySelector('path')!.getAttribute('d')
+    const high = boxOf().querySelector('.fe-gcv')!
+    expect(high.getAttribute('role')).toBe('img')
+    expect(high.getAttribute('aria-label')).toBe('A várható vércukor-válasz alakja három órán át: csúcs')
+    const highPath = high.querySelector('path.line')!.getAttribute('d')
     unmount()
     render(<GlycemicGlass band={LOW} onClose={() => {}} />)
-    const lowPath = boxOf().querySelector('.fmx-glu-curve path')!.getAttribute('d')
-    expect(lowPath).not.toBe(highPath)
+    const low = boxOf().querySelector('.fe-gcv')!
+    expect(low.getAttribute('aria-label')).toBe('A várható vércukor-válasz alakja három órán át: lapos domb')
+    expect(low.querySelector('path.line')!.getAttribute('d')).not.toBe(highPath)
+  })
+
+  test('két görbe egy lapon sem osztozik színátmenet-azonosítón', () => {
+    render(<><GlycemicGlass band={HIGH} onClose={() => {}} /><GlycemicGlass band={LOW} onClose={() => {}} /></>)
+    const ids = Array.from(document.querySelectorAll('.fe-gcv linearGradient')).map(g => g.id)
+    expect(ids).toHaveLength(2)
+    expect(new Set(ids).size).toBe(2)
+    for (const svg of Array.from(document.querySelectorAll('.fe-gcv'))) {
+      expect(svg.querySelector('path.fill')!.getAttribute('fill')).toBe(`url(#${svg.querySelector('linearGradient')!.id})`)
+    }
   })
 })
 
@@ -119,7 +144,7 @@ describe('GlycemicGlass · adherencia-semleges hang', () => {
 })
 
 describe('GlycemicGlass · a keretben él, és csökkentett mozgás mellett áll', () => {
-  test('nem natív <dialog> — a `GlassBox` portálja adja a dobozt', () => {
+  test('nem natív <dialog> — a `Sheet` portálja adja a lapot', () => {
     render(<GlycemicGlass band={MID} onClose={() => {}} />)
     expect(document.querySelector('dialog')).toBeNull()
     expect(boxOf().getAttribute('aria-modal')).toBe('true')
@@ -129,26 +154,36 @@ describe('GlycemicGlass · a keretben él, és csökkentett mozgás mellett áll
     const onClose = vi.fn()
     render(<GlycemicGlass band={MID} onClose={onClose} />)
     within(boxOf()).getByRole('button', { name: 'Bezárom' }).click()
-    expect(onClose).toHaveBeenCalledTimes(1)
+    // a lap a közös csúszó zárással megy le, utána szól a hívónak
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
   })
 
-  test('csökkentett mozgás mellett a görbe-rajzolás nem indul el', () => {
+  // Folyadék: a mozgás a stíluslap `prefers-reduced-motion: no-preference` ágában él, nem JS-osztályban — a jelölés
+  // mindkét beállításnál ugyanaz, és a kész alak az alap-képkocka.
+  test('csökkentett mozgás mellett a görbe kész alakja áll (nincs JS-vezérelt rajzolás)', () => {
     stubReduced(true)
     render(<GlycemicGlass band={HIGH} onClose={() => {}} />)
-    expect(boxOf().querySelector('.fmx-glu-curve')!.classList.contains('is-draw')).toBe(false)
+    const curve = boxOf().querySelector('.fe-gcv')!
+    expect(curve.classList.contains('is-draw')).toBe(false)
+    expect(curve.querySelector('path.line')!.getAttribute('style')).toBeNull()
   })
 
-  test('mozgás-preferencia nélkül a görbe megrajzolja magát', () => {
+  test('mozgás-preferencia nélkül is ugyanaz a jelölés: a rajzolást a stíluslap adja', () => {
     stubReduced(false)
     render(<GlycemicGlass band={HIGH} onClose={() => {}} />)
-    expect(boxOf().querySelector('.fmx-glu-curve')!.classList.contains('is-draw')).toBe(true)
+    const curve = boxOf().querySelector('.fe-gcv')!
+    expect(curve.classList.contains('is-draw')).toBe(false)
+    expect(curve.querySelector('path.line')).not.toBeNull()
   })
 
   test('„Legközelebb így lesz laposabb": két lépés és az őszinte eredménysor; alacsonyon nincs', () => {
     const { unmount } = render(<GlycemicGlass band={HIGH} onClose={() => {}} />)
     const section = within(boxOf()).getByRole('region', { name: 'Legközelebb így lesz laposabb' })
-    expect(section.querySelectorAll('li')).toHaveLength(2)
-    expect(section.querySelector('.fmx-glu-improve-result')!.textContent).toMatch(/A kettővel együtt/)
+    const steps = Array.from(section.querySelectorAll('.fx-tip b')).map(b => b.textContent)
+    expect(steps).toHaveLength(2)
+    expect(steps[0]).toMatch(/^1\. /)
+    expect(steps[1]).toMatch(/^2\. /)
+    expect(section.querySelector('.fe-result')!.textContent).toMatch(/A kettővel együtt/)
     unmount()
     render(<GlycemicGlass band={LOW} onClose={() => {}} />)
     expect(within(boxOf()).queryByRole('region', { name: 'Legközelebb így lesz laposabb' })).toBeNull()
@@ -162,9 +197,11 @@ describe('GlycemicGlass · a keretben él, és csökkentett mozgás mellett áll
     render(<GlycemicGlass band={HIGH} onClose={() => {}} aiTips={tips} />)
     const section = within(boxOf()).getByRole('region', { name: 'Legközelebb így lesz laposabb' })
     expect(section.textContent).toContain('A mézből elég a fele')
-    expect(section.textContent).toContain('A coach javaslata')
+    expect(section.textContent).toContain('1. A mézből elég a fele')
+    expect(section.textContent).toContain('Javaslat a tányérod tételeiből.')
+    expect(section.textContent).not.toMatch(/coach/i)
     // a számolt eredménysor csak a számolt cseréké — az AI-hoz nem ígérünk sávot
-    expect(section.querySelector('.fmx-glu-improve-result')).toBeNull()
+    expect(section.querySelector('.fe-result')).toBeNull()
   })
 
   test('üres AI-lista: a coach szerint nincs mit simítani — a rész elmarad', () => {
@@ -176,11 +213,12 @@ describe('GlycemicGlass · a keretben él, és csökkentett mozgás mellett áll
 describe('GlycemicMiniCurve · a késő esti szellem görbe (mezo-tegkf)', () => {
   test('alapértelmezésben (lateGhost nélkül) nincs szellem görbe', () => {
     const { container } = render(<GlycemicMiniCurve level="high" />)
-    expect(container.querySelector('.fmx-glu-ghost')).toBeNull()
+    expect(container.querySelector('.fx-gmini')).not.toBeNull()
+    expect(container.querySelector('.fx-gmini .late')).toBeNull()
   })
 
   test('lateGhost=true esetén megjelenik a szaggatott szellem görbe', () => {
     const { container } = render(<GlycemicMiniCurve level="high" lateGhost />)
-    expect(container.querySelector('.fmx-glu-ghost')).not.toBeNull()
+    expect(container.querySelector('.fx-gmini .late')).not.toBeNull()
   })
 })

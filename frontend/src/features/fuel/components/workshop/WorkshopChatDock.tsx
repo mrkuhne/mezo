@@ -1,23 +1,22 @@
 // ============================================================
-// Mezo · WorkshopChatDock (Receptműhely — dokkolt chat, mezo-92pb)
-// The prototype's `.dock`: cél-preset chipek, az utolsó válasz előnézete (koppintásra
-// a teljes beszélgetés sheetben nyílik), és a composer a 🏺 kamra-gombbal.
+// Mezo · WorkshopChatDock (Receptműhely — the request dock, mezo-92pb)
+// Goal buttons (a tap is a request), the pantry items marked for the next round, the busy line,
+// the error with its two exits, the last reply (a tap opens the whole conversation in a sheet),
+// and the message field with the pantry button, the mic and send.
 //
-// The canvas is the page; the chat is a strip under it — so the thread itself lives in a
-// Sheet, opened from the last-reply preview, rather than eating the surface.
-// The error path is the F7.5 retry-bubble idiom VERBATIM (`.mzc-bub-err` + `.mzc-ebtn`,
-// ChatPage): amber, never red — a hiccup, not a scolding (ADR 0010) — with `Újra`
-// re-sending the SAME failed message and `Szerkesztés` handing the text back to the field.
-// Üveg U2 (mezo-me75u.2, prototype `muhely()` dock): the dock is ONE lavender glass card; the
-// preset chips (each with its 3D goal icon), context chips, last-reply preview and composer are
-// flat inside it, the send button a lit lavender disc. The thread sheet's bubbles are flat cells.
+// The canvas is the page; the chat is one card of it — so the thread itself lives in a Sheet,
+// opened from the last-reply preview, rather than eating the surface.
+// The error is amber, never red — a hiccup, not a scolding (ADR 0010) — with `Újra` re-sending
+// the SAME failed message and `Szerkesztés` handing the text back to the field.
+// Folyadék (mezo-n4wf5.5, fuel.js `dock` + `SH.thread`): kit pills with the goal glyphs, the
+// composer as one page-grey field; the thread sheet is the light sheet with plain bubbles.
+// Words in `fuelRecept.workshop`; what Mezo answered is stored text and prints as written.
 // ============================================================
 import { useCallback, useRef, useState } from 'react'
-import { Icon } from '@/shared/ui/Icon'
+import { useM } from '@/shared/i18n'
 import { Sheet } from '@/shared/ui/Sheet'
-import { ContentIcon, type Icon3DName } from '@/shared/ui/clay'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Display } from '@/shared/ui/Display'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { Acts, Btn, Bub, Chev, FoSheetHead, Lk, Pill, Pills } from '@/shared/ui/folyadek'
 import type { WorkshopGoal } from '@/data/types'
 import { appendDictation, useVoiceInput } from '@/shared/lib/voice/useVoiceInput'
 import { MicTile } from '@/shared/ui/voice/VoiceField'
@@ -44,19 +43,21 @@ export interface WorkshopChatDockProps {
   onDropContext: (name: string) => void
 }
 
-const PRESETS: { id: WorkshopGoal; label: string; icon: Icon3DName }[] = [
-  { id: 'high_protein', label: 'Magas fehérje', icon: 't-meat' },
-  { id: 'pre_workout', label: 'Edzés előtt', icon: 't-bolt' },
-  { id: 'post_workout', label: 'Edzés után', icon: 't-dumbbell' },
-  { id: 'before_bed', label: 'Lefekvés előtt', icon: 't-moon' },
-  { id: 'breakfast', label: 'Reggeli', icon: 't-sun' },
+const PRESETS: { id: WorkshopGoal; icon: Icon3DName }[] = [
+  { id: 'high_protein', icon: 't-meat' },
+  { id: 'pre_workout', icon: 't-bolt' },
+  { id: 'post_workout', icon: 't-dumbbell' },
+  { id: 'before_bed', icon: 't-moon' },
+  { id: 'breakfast', icon: 't-sun' },
 ]
 
 export function WorkshopChatDock({
   goal, onGoal, text, onText, busy, history, error,
   onSend, onRetry, onEditFailed, onOpenPantry, contextNames, onDropContext,
 }: WorkshopChatDockProps) {
-  // Hang mindenhol (mezo-xojq8): the composer bar keeps its layout; the mic tile sits before
+  const M = useM()
+  const W = M.fuelRecept.workshop
+  // Hang mindenhol (mezo-xojq8): the composer keeps its layout; the mic tile sits before
   // send and appends to what's typed. Refs: the recorder keeps the callback from record-start.
   const textRef = useRef(text)
   textRef.current = text
@@ -67,112 +68,81 @@ export function WorkshopChatDock({
   const lastReply = [...history].reverse().find(m => m.role === 'assistant')?.text ?? null
 
   return (
-    <div className="wsh-dock glass" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
-      <div className="wsh-presets" role="group" aria-label="Cél-presetek">
+    <div className="fc-dock">
+      <Pills className="fc-goals" role="group" aria-label={W.goalsAria}>
         {PRESETS.map(p => (
-          <button
-            key={p.id}
-            type="button"
-            className={'wsh-pchip' + (goal === p.id ? ' on' : '')}
-            aria-pressed={goal === p.id}
-            disabled={busy}
-            onClick={() => onGoal(p.id)}
-          >
-            <ContentIcon name={p.icon} size={18} />{p.label}
-          </button>
+          <Pill key={p.id} icon={p.icon} on={goal === p.id} disabled={busy} onClick={() => onGoal(p.id)}>
+            {W.goal[p.id]}
+          </Pill>
         ))}
-      </div>
+      </Pills>
 
       {contextNames.length > 0 && (
-        <div className="fkx-chips">
+        <div className="fc-cats">
           {contextNames.map(n => (
-            <button
-              key={n}
-              type="button"
-              className="fkx-chip"
-              onClick={() => onDropContext(n)}
-              aria-label={`${n} elvétele a következő körből`}
-            >
-              {n} <Icon name="x" size={9} />
+            <button key={n} type="button" onClick={() => onDropContext(n)} aria-label={W.dropContext(n)}>
+              {n}<b aria-hidden="true">×</b>
             </button>
           ))}
         </div>
       )}
 
       {busy && (
-        <p className="wsh-busy">A Műhely dolgozik…</p>
+        <p className="fc-busy" role="status"><Bub icon="t-chef" size={28} />{W.busy}</p>
       )}
 
       {error && (
-        <div className="mzc-bub-err">
-          <p style={{ fontSize: 12, lineHeight: 1.5 }}><b>{error.message}</b></p>
-          <div className="row gap-sm" style={{ marginTop: 8 }}>
-            <button type="button" className="mzc-ebtn go" onClick={onRetry} disabled={busy}>Újra</button>
-            <button type="button" className="mzc-ebtn ghost" onClick={onEditFailed}>Szerkesztés</button>
-          </div>
+        <div className="fc-err" role="alert">
+          <b>{error.message}</b>
+          <Acts>
+            <Btn sm onClick={onRetry} disabled={busy}>{W.retry}</Btn>
+            <Lk onClick={onEditFailed}>{W.editFailed}</Lk>
+          </Acts>
         </div>
       )}
 
       {lastReply && !error && (
-        <button type="button" className="wsh-last" onClick={() => setThreadOpen(true)}>
-          <ContentIcon name="t-chef" size={22} />
+        <button type="button" className="fc-last" onClick={() => setThreadOpen(true)} aria-label={`${W.openThread}: ${lastReply}`}>
+          <Bub icon="t-chef" size={30} />
           <span className="tx">{lastReply}</span>
-          <span aria-hidden="true" className="wsh-last-chev">▲</span>
+          <Chev />
         </button>
       )}
 
-      <div className="wsh-composer">
-        <button type="button" className="wsh-cbtn" aria-label="Kamra" onClick={onOpenPantry}>
-          <ContentIcon name="t-stack" size={22} />
+      <div className="fc-cmp">
+        <button type="button" aria-label={W.pantry} onClick={onOpenPantry}>
+          <Icon3D name="t-stack" size={24} />
         </button>
-        <div className="wsh-cfield">
-          <input
-            value={text}
-            onChange={e => onText(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onSend() } }}
-            placeholder="Mit főzzünk? Mondd el szabadon…"
-            aria-label="Üzenet a Műhelynek"
-          />
-        </div>
+        <textarea
+          value={text}
+          rows={2}
+          onChange={e => onText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend() } }}
+          placeholder={W.messagePlaceholder}
+          aria-label={W.messageAria}
+        />
         <MicTile voice={voice} size="sm" />
-        <button
-          type="button"
-          className="wsh-cbtn send"
-          aria-label="Küldés"
-          disabled={busy || text.trim().length === 0}
-          onClick={onSend}
-        >
-          <Icon name="send" size={14} />
+        <button type="button" className="go" aria-label={W.send} disabled={busy || text.trim().length === 0} onClick={onSend}>
+          <Icon3D name="t-send" size={24} />
         </button>
       </div>
 
       <VoiceBubble voice={voice} domain="fuel" />
 
       {threadOpen && (
-        <Sheet glass onClose={() => setThreadOpen(false)} className="fkx-rsheet-host uvl-fuel" labelledBy="workshop-thread-title">
+        <Sheet onClose={() => setThreadOpen(false)} className="fo-sheet fc-thread" labelledBy="workshop-thread-title">
           {close => (
             <>
-              <div className="fkx-rsheet-head">
-                <ContentIcon name="t-chef" size={40} />
-                <div className="col">
-                  <Eyebrow brand>Műhely · beszélgetés</Eyebrow>
-                  <div id="workshop-thread-title" style={{ marginTop: 4 }}>
-                    <Display size="md">Amiről eddig beszéltünk</Display>
-                  </div>
-                </div>
-                <button className="fkx-rsheet-x" aria-label="Bezárás" onClick={close}>
-                  <Icon name="x" size={12} />
-                </button>
-              </div>
-              <div className="fkx-rsheet fkx-thread">
+              <FoSheetHead icon="t-chef" title={W.threadTitle} titleId="workshop-thread-title" sub={W.threadSub} onClose={close} />
+              <div className="fc-bubs">
                 {history.map((m, i) => (
-                  <div key={i} className={'fkx-bubble uv-flat' + (m.role === 'user' ? ' is-user' : '')}>
-                    <span className="uv-eyebrow">{m.role === 'user' ? 'TE' : 'MŰHELY'}</span>
+                  <div key={i} className={'fc-bub' + (m.role === 'user' ? ' me' : '')}>
+                    <small>{m.role === 'user' ? W.you : W.workshop}</small>
                     <p>{m.text}</p>
                   </div>
                 ))}
               </div>
-              <div style={{ height: 24 }} />
+              <Acts><Lk onClick={close}>{M.fuelRecept.common.close}</Lk></Acts>
             </>
           )}
         </Sheet>

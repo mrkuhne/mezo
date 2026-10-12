@@ -35,36 +35,73 @@ function renderDetail(id: string, qc: QueryClient) {
 
 const newQc = () => new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
-test('the back control is the round glass ‹ (Üveg U2, mezo-me75u.2)', () => {
-  // Was the "‹ Kamra" text chip (Kamra v2, mezo-d20.4.5). The approved üveg prototype
-  // (uveg-fuel-tobbi.html `kamraItem()`) draws the shared 44px round glass back button, the
-  // same one every re-dressed Fuel detail page wears; the accessible name still says where it goes.
-  renderDetail('ing-csirkemell', newQc())
-  const back = screen.getByRole('button', { name: 'Vissza' })
-  expect(back).toHaveTextContent('‹')
-  expect(back).toHaveClass('glass', 'is-round')
+test('the back control goes to the Kamra (Folyadék: the frame draws it; without a frame the page draws its pill)', () => {
+  // Inside the app frame the title bar draws back (history, fallback /fuel/kamra) and carries the item's name
+  // as the title. Rendered alone, the page keeps its own „‹ Kamra" pill, named by where it goes.
+  const { container } = renderDetail('ing-csirkemell', newQc())
+  const back = screen.getByRole('button', { name: 'Vissza a Kamrába' })
+  expect(back).toHaveTextContent('‹ Kamra')
+  expect(back).toHaveClass('fo-backpill')
+  expect(container.querySelector('.glass, .fmx-page, .fkx-detail')).toBeNull()
 })
 
-// Titán anatómia (mezo-hygp): a Mozaik `MCells`/`km-ncells` celláit a prototípus
-// `pantryDetailPage`-e váltotta — osztott hős (kcal / 100 g) + makró-gyűrűk + per-100 g
-// Minőség lapkák. A lapkák NAGY kezdőbetűs feliratot viselnek, a bázissal együtt.
-test('renders a food item with the hero kcal, macro rings and the per-100 g quality tiles', () => {
+// Folyadék anatómia (mezo-n4wf5.5, prototípus `kamraItem()`): hős (márka · kcal / 100 g · ítélet-mondat ·
+// „Mi van 100 grammban?") → Makrók (három fiola: a gramm a szám, a szint az energia-rész) → Minőség · 100 g (sorok).
+test('renders a food item with the hero kcal, the verdict, the macro vials and the per-100 g quality rows', () => {
   // ing-csirkemell · Csirkemell · friss — macros 110/23/0/1.5, protein category.
-  renderDetail('ing-csirkemell', newQc())
-  expect(screen.getByText(/Csirkemell/)).toBeInTheDocument()
-  expect(screen.getByText('110')).toBeInTheDocument()            // kcal a hősben
-  expect(screen.getByText(/kcal \/ 100 g/)).toBeInTheDocument()
-  // a makró-gyűrűk a tétel saját összetételét mondják
-  expect(screen.getByRole('heading', { name: 'Makrók' })).toBeInTheDocument()
-  // A gramm a gyűrű NAGY száma (mezo-n9peo), és az egységét saját elem viszi — ezért a
-  // gyűrű belsejét olvassuk, nem egy összefüggő szövegdarabot keresünk.
-  const macros = screen.getByRole('heading', { name: 'Makrók' }).closest('section') as HTMLElement
-  expect(macros.querySelector('.fmx-share-g')!.textContent!.replace(/\s+/g, ' ')).toBe('23 g') // fehérje
-  // a per-100 g minőség-lapkák
-  const quality = screen.getByRole('heading', { name: 'Minőség' }).closest('section') as HTMLElement
-  expect(within(quality).getByText(/^Cukor · 100 g$/)).toBeInTheDocument()
-  expect(within(quality).getByText(/^Só · 100 g$/)).toBeInTheDocument()
-  expect(within(quality).getByText(/^Telített zsír · 100 g$/)).toBeInTheDocument()
+  const { container } = renderDetail('ing-csirkemell', newQc())
+  const hero = container.querySelector('.fo-hero') as HTMLElement
+  expect(within(hero).getByText('110')).toBeInTheDocument()            // kcal a hősben
+  expect(within(hero).getByText('kcal / 100 g')).toBeInTheDocument()
+  expect(hero).toHaveTextContent('23 g fehérje van 100 grammjában.')
+  // a 100 g-os összetétel sávja: mindhárom makró megvan
+  expect(within(hero).getByText('Mi van 100 grammban?')).toBeInTheDocument()
+  expect(hero.querySelector('.fx-leg')).toHaveTextContent('Egyéb (víz, rost…)75,5 g')
+  // a fiolák a tétel saját összetételét mondják
+  const macros = screen.getByRole('heading', { name: /Makrók$/ }).nextElementSibling as HTMLElement
+  expect(within(macros).getByText('23 g')).toBeInTheDocument() // fehérje
+  expect(within(macros).getByText('87% energia')).toBeInTheDocument()
+  expect(macros.querySelector('svg circle')).toBeNull() // nincs gyűrű: a mennyiség szint
+  // a per-100 g minőség-sorok
+  const quality = screen.getByRole('heading', { name: /Minőség · 100 g$/ }).nextElementSibling as HTMLElement
+  expect(within(quality).getByText('Cukor')).toBeInTheDocument()
+  expect(within(quality).getByText('Só')).toBeInTheDocument()
+  expect(within(quality).getByText('Telített zsír')).toBeInTheDocument()
+  expect(within(quality).getByText('Feldolgozottság')).toBeInTheDocument()
+})
+
+// A „Mi van 100 grammban?" sáv csak teljes makró-hármasnál rajzolható; a hiányzó makró „—" / „nincs adat".
+test('a missing macro hides the 100 g bar and shows the honest dash on its vial', () => {
+  const qc = newQc()
+  qc.setQueryData(['pantry'], {
+    ingredients: [{ ...ingredients[0], id: 'part', macros: { kcal: 110, p: 23, c: 0, f: null } }],
+    stash: [], imports: [], suggestions: [],
+  })
+  const { container } = renderDetail('part', qc)
+  const hero = container.querySelector('.fo-hero') as HTMLElement
+  expect(within(hero).queryByText('Mi van 100 grammban?')).toBeNull()
+  expect(hero).toHaveTextContent('Ehhez a tételhez csak részben van tápérték.')
+  const macros = screen.getByRole('heading', { name: /Makrók$/ }).nextElementSibling as HTMLElement
+  expect(within(macros).getByText('nincs adat')).toBeInTheDocument()
+  expect(within(macros).getByText('—')).toBeInTheDocument()
+})
+
+// Tápérték nélküli étel (prototípus `kamra.lekvar`): „—", a saját mondata, se Makrók, se Minőség, se Logolás.
+test('a food item without any macro says so and offers no log button', () => {
+  const qc = newQc()
+  qc.setQueryData(['pantry'], {
+    ingredients: [{ ...ingredients[0], id: 'bare', brand: null, category: null, macros: undefined }],
+    stash: [], imports: [], suggestions: [],
+  })
+  const { container } = renderDetail('bare', qc)
+  const hero = container.querySelector('.fo-hero') as HTMLElement
+  expect(hero).toHaveTextContent('Ehhez a tételhez még nincs tápérték.')
+  expect(hero).toHaveTextContent('A forrás nem adott értéket. A Szerkesztésnél kézzel beírhatod.')
+  expect(hero.querySelector('.fp-n')!.textContent).toBe('—kcal / 100 g')
+  expect(screen.queryByRole('heading', { name: /Makrók$/ })).toBeNull()
+  expect(screen.queryByRole('heading', { name: /Minőség/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /logolás/i })).toBeNull()
+  expect(screen.getByText('nincs márka megadva')).toBeInTheDocument()
 })
 
 // B14 ellenpárja (mezo-hygp): az eltávolított import-feed helyett a per-tétel EREDET a
@@ -73,8 +110,21 @@ test('a kamraelem részletlapja mutatja a forrást és az időt', () => {
   renderDetail('ing-csirkemell', newQc())
   const src = screen.getByRole('region', { name: /Forrás/i })
   expect(within(src).getByText(/fotó|link|katalógus|kézi/i)).toBeInTheDocument()
+  expect(within(src).getByText(/^Így került a polcra: (fotó|link|katalógus|kézi)$/)).toBeInTheDocument()
   // a seed `scrapedAt`-je a felvétel ideje — kitalált dátumot nem gyártunk
   expect(within(src).getByText(new RegExp(ingredients[0].scrapedAt!.split(' ·')[0]))).toBeInTheDocument()
+})
+
+// A szerver ISO-időpontot küld (adat): a dátum és az óra itt készül, a nyelv szerint.
+test('ISO scrapedAt is formatted on the client (month, day, time)', () => {
+  const qc = newQc()
+  qc.setQueryData(['pantry'], {
+    ingredients: [{ ...ingredients[0], id: 'iso', scrapedAt: '2026-05-20T09:14:00' }],
+    stash: [], imports: [], suggestions: [],
+  })
+  renderDetail('iso', qc)
+  const src = screen.getByRole('region', { name: /Forrás/i })
+  expect(within(src).getByText(/· Máj 20 · 09:14$/)).toBeInTheDocument()
 })
 
 test('időpont nélküli tételnél a forrás-kártya megmondja, hogy nincs rögzítve', () => {
@@ -90,15 +140,17 @@ test('időpont nélküli tételnél a forrás-kártya megmondja, hogy nincs rög
 
 test('a nutrient the seed never recorded renders the honest dash, not a fabricated 0', () => {
   // ing-kreatin carries macros (all zero, real values) but no fiberG/sugarG/saltG/
-  // saturatedFatG at all — every per-100 g Minőség cell with a missing fact must show "—".
+  // saturatedFatG at all — every per-100 g Minőség row with a missing fact must show "—".
   renderDetail('ing-kreatin', newQc())
-  const quality = screen.getByRole('heading', { name: 'Minőség' }).closest('section') as HTMLElement
+  const quality = screen.getByRole('heading', { name: /Minőség ·/ }).nextElementSibling as HTMLElement
   expect(within(quality).getAllByText('—').length).toBeGreaterThanOrEqual(3)
 })
 
 test('a missing id shows the not-found fallback', () => {
+  // The title („Nincs ilyen tétel") lives in the frame; the page says what happened and offers the way back.
   renderDetail('does-not-exist', newQc())
-  expect(screen.getByText('Nincs ilyen tétel.')).toBeInTheDocument()
+  expect(screen.getByText(/Lehet, hogy közben levetted a polcról\./)).toBeInTheDocument()
+  expect(screen.getAllByRole('button', { name: 'Vissza a Kamrába' }).length).toBeGreaterThanOrEqual(1)
 })
 
 test('Szerkesztés opens the edit drawer prefilled', async () => {
@@ -111,8 +163,7 @@ test('Szerkesztés opens the edit drawer prefilled', async () => {
 
 test('opens LogFlowPage pre-filled when "+ Logolás" is tapped', async () => {
   renderDetail('ing-csirkemell', newQc())
-  await screen.findByText(/Csirkemell/)
-  fireEvent.click(screen.getByRole('button', { name: /logolás/i }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Logolás · mai étkezésbe' }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
 
@@ -170,12 +221,15 @@ test('Törlés on a stash supplement deletes via the unprefixed backend id (seco
   expect(screen.getByTestId('location').textContent).toBe('/fuel/kamra')
 })
 
-test('a supplement in today\'s stack shows the "a stackben" cross-link chip', () => {
+test('a supplement in today\'s protocol shows the "a kiegészítőid között" cross-link and its time-slot sentence', () => {
   // Kreatin is both an Ingredient (stashRefId: 'kreatin') AND a stash-derived stack
   // occurrence anchored to the 'wake' zone — the chip must resolve via stashRefId,
   // not the displayed backend id (they differ for this dual-represented item).
-  renderDetail('ing-kreatin', newQc())
-  expect(screen.getByText(/a stackben · Ébredés/)).toBeInTheDocument()
+  // „a stackben" → „a kiegészítőid között" (wording table, mezo-n4wf5.5); the hero says ONE sentence per time slot.
+  const { container } = renderDetail('ing-kreatin', newQc())
+  expect(screen.getByText(/^a kiegészítőid között · Ébredés \d{2}:\d{2}$/)).toBeInTheDocument()
+  expect(container.querySelector('.fo-hero')).toHaveTextContent('Ébredés után szeded.')
+  expect(container.textContent).not.toMatch(/stack|idején szeded/i)
 })
 
 test('"Receptekben" chips surface the real recipes that use this ingredient (audit gap #5)', () => {
@@ -207,9 +261,14 @@ test('a dose/protocol supplement with an always-present but all-null macros obje
     }],
     imports: [], suggestions: [],
   })
-  renderDetail('stash-dose-only', qc)
-  expect(screen.getByText(/D3-vitamin/)).toBeInTheDocument()
+  const { container } = renderDetail('stash-dose-only', qc)
+  const hero = container.querySelector('.fo-hero') as HTMLElement
+  expect(within(hero).getByText('2000 NE')).toBeInTheDocument() // the dose is the hero's numeral
+  expect(hero).toHaveTextContent('Nincs időzítve.')
   expect(screen.queryByRole('button', { name: /logolás/i })).not.toBeInTheDocument()
+  // no macro → the hero's primary button opens Supplements instead; no Makrók / Minőség blocks
+  expect(within(hero).getByRole('button', { name: 'Kiegészítők megnyitása' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: /Makrók$/ })).toBeNull()
 })
 
 test('inputFromItem omits null macros instead of sending an explicit null (mezo-6omv)', () => {
@@ -252,14 +311,14 @@ test('inputFromItem keeps a genuinely zero price (mezo-xaq5)', () => {
   expect(input.priceUnit).toBe('/db')
 })
 
-test('a shared-catalog item shows "közös · <author>" and locks the edit sheet\'s definition fields', async () => {
+test('a shared-catalog item shows "közös · <author>" on its own line and locks the edit sheet\'s definition fields', async () => {
   const qc = newQc()
   qc.setQueryData(['pantry'], {
     ingredients: [{ ...ingredients[0], id: 'shared-1', catalogId: 'cat-skyr', sharedFrom: { authorName: 'Anna' }, catalogEditable: false }],
     stash: [], imports: [], suggestions: [],
   })
   renderDetail('shared-1', qc)
-  expect(screen.getByText('közös · Anna')).toBeInTheDocument()
+  expect(screen.getByText('közös · Anna')).toHaveClass('fp-shared')
   await userEvent.click(screen.getByRole('button', { name: /Szerkesztés/ }))
   expect(await screen.findByText('Tétel szerkesztése')).toBeInTheDocument()
   expect(screen.getByLabelText(/név/i)).toBeDisabled()

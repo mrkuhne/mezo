@@ -11,5 +11,5 @@ vi.mock('@/data/hooks', () => ({
 test('canonical biometrics retain the energy explanation previously opened from Én', async () => {
   render(<MemoryRouter><MeSettingsPage editor="biometrics" /></MemoryRouter>)
   await userEvent.click(screen.getByRole('button', { name: 'Energia-bontás magyarázata' }))
-  expect(screen.getByRole('dialog', { name: 'Honnan jön a 2200 kcal?' })).toBeInTheDocument()
+  expect(screen.getByRole('dialog', { name: 'Honnan jön a 2 200 kcal?' })).toBeInTheDocument()
 })

@@ -1,99 +1,88 @@
 // ============================================================
-// Mezo · GlycemicGlass — a vércukor-válasz üvegdoboza (Fuel Titanium, mezo-6mi43)
+// Mezo · GlycemicGlass — a vércukor-válasz lapja (Fuel Titanium, mezo-6mi43; Folyadék F5, mezo-n4wf5.5)
 //
-// Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/food.js
-// `glucoseView` (:107) + `glucoseCurve` (:62) + `glucoseExpectHtml` (:105), a food.css
-// `.fcer-glu*` blokkjaival. Anatómia: üveg-hero (a SÁV SZAVA a nagy „numerál") → sáv-pilula →
-// a stilizált válasz-görbe → a tányér négy ténye → mit érzel majd (energia · alapszint · éhség)
-// → egy tipp → lábjegyzet. A számok és a mondatok a `glycemicBand` deriválásából jönnek, ami a
-// prototípus `glycemicFor`-ját viszi tovább szó szerint.
+// FOLYADÉK (prototípus `vilagos/fuel.js`, `glu` lap): világos lap (`Sheet.fo-sheet` + `FoSheetHead`) — a SÁV SZAVA a cím →
+// a háromsávos csík → egy mondat → a várható válasz ALAKJA folyadék-felszínként → a tányér négy ténye → mit érzel majd
+// (energia · alapszint · éhség) → egy tipp mostanra → két csere legközelebbre → jegyzet. A számok és a mondatok a
+// `glycemicBand` deriválásából jönnek. A komponens neve és a propjai változatlanok (a Mai és az étkezés lapja nyitja).
 //
 // HÁROM DOLOG, AMIT EGY KÉSŐBBI MENET MEG FOG AKARNI „JAVÍTANI" — NE:
-//  1. Nincs glikémiás index. Se a szó, se szám. A doboz a SÁV SZAVÁT mutatja nagyban, mert a
-//     vegyes étkezés GI-matematikája 22-50%-ot téved (owner-döntés, kétszer megerősítve). A
-//     felület szava „vércukor-válasz".
-//  2. A „magas" sáv nem kudarc: nincs piros hibaállapot, nincs hibáztató mondat. A színt a
-//     `lvl-*` osztály adja, ami hangulat, nem érdemjegy.
-//  3. Ha a cukor becsült (`sugarEstimated`), a doboz KIMONDJA. Feltevést mért adatként
-//     bemutatni tilos — ez a ház őszinte-null szabálya.
+//  1. Nincs glikémiás index. Se a szó, se szám. A lap a SÁV SZAVÁT mutatja nagyban, mert a vegyes étkezés
+//     GI-matematikája 22-50%-ot téved (owner-döntés, kétszer megerősítve). A felület szava „vércukor-válasz". A görbe
+//     tengelyén sincs érték: csak az idő (evés · +1 ó · +2 ó · +3 ó) és az alapszint.
+//  2. A „magas" sáv nem kudarc: lila, nem hiba-szín, és nincs hibáztató mondat.
+//  3. Ha a cukor becsült (`sugarEstimated`), a lap KIMONDJA. Feltevést mért adatként bemutatni tilos.
 //
-// NEM natív <dialog>: a `showModal()` a böngésző TOP LAYER-jébe teszi az elemet, ami az ABLAKHOZ
-// méreteződik, nem a telefon-kerethez — élesben ez 641 px-es dobozt adott egy 416 px-es telefon
-// fölé. A `GlassBox` a `.phone-screen`-be portáloz; a részleteket az ő fejléce írja le.
-//
-// Csökkentett mozgás: a görbe önrajzolása CSAK a `is-draw` osztállyal indul, amit a
-// `useReducedMotion` kapuz — a CSS `reduce` ága pedig külön is kivezeti.
+// Mozgás: a görbe egyszer megrajzolja magát, kizárólag a stíluslap `prefers-reduced-motion: no-preference` ágában;
+// csökkentett mozgásnál a kész alak áll.
 // ============================================================
 import { useId } from 'react'
-import { ContentIcon } from '@/shared/ui/clay'
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
-import { GlassBox } from '@/features/fuel/components/GlassBox'
+import { Sheet } from '@/shared/ui/Sheet'
+import { useM } from '@/shared/i18n'
+import { Acts, FoSheetHead, Lab, Lk, Note, Txt } from '@/shared/ui/folyadek'
 import { useMealCoachFor } from '@/data/hooks'
 import type { GlycemicBand, GlycemicLevel } from '@/features/fuel/logic/glycemicBand'
+import { GLY_COLOR, GLY_CURVE, GlyBand, GlyMini, Kv, Tip } from '@/features/fuel/components/folyadek'
 
-/** A prototípus három görbéje, 1:1 (food.js `glucoseCurve`, :62). */
-export const CURVE: Record<GlycemicLevel, { path: string; peak: [number, number]; note: string }> = {
-  high: {
-    path: 'M8 78C46 76 62 14 90 12 112 11 122 52 142 82 160 106 208 90 232 84',
-    peak: [90, 12],
-    note: 'csúcs',
-  },
-  mid: {
-    path: 'M8 78C50 76 76 42 116 40 158 40 190 68 232 78',
-    peak: [116, 40],
-    note: 'enyhe emelkedés',
-  },
-  low: {
-    path: 'M8 78C56 76 92 62 128 60 166 60 200 72 232 78',
-    peak: [128, 60],
-    note: 'lapos domb',
-  },
+/** A három válasz-alak — a közös `GLY_CURVE` (a Mai sor chipje ugyanezt hordja kicsiben). A `note` a régi felirat volt;
+ *  a felirat már a katalógusból jön (`fuelEtkezes.glu.shape`), az export a régi hívók kedvéért marad. */
+export const CURVE: Record<GlycemicLevel, { path: string; peak: [number, number] }> = {
+  high: { path: GLY_CURVE.high.d, peak: GLY_CURVE.high.peak },
+  mid: { path: GLY_CURVE.mid.d, peak: GLY_CURVE.mid.peak },
+  low: { path: GLY_CURVE.low.d, peak: GLY_CURVE.low.peak },
 }
 
-/** A doboz címe, a prototípus szavaival (food.js `glucoseView`). */
-const HEADLINE: Record<GlycemicLevel, string> = {
-  high: 'Ez most megdobja.',
-  mid: 'Egy szelídebb domb.',
-  low: 'Szépen simít.',
-}
-
-/** Az eredménysor sávszava, a `glycemicBand` LABELS-ével azonos. */
-const LEVEL_WORD: Record<GlycemicLevel, string> = { low: 'alacsony', mid: 'közepes', high: 'magas' }
-
-const AXIS: [number, string][] = [[8, 'evés'], [82, '+1 ó'], [157, '+2 ó'], [218, '+3 ó']]
+const AXIS: Array<[x: number, key: 'meal' | 'h1' | 'h2' | 'h3', anchor: 'start' | 'middle' | 'end']> = [
+  [8, 'meal', 'start'], [82, 'h1', 'middle'], [157, 'h2', 'middle'], [232, 'h3', 'end'],
+]
 
 /**
- * A görbe ikon-méretben (mezo-ya2wp) — a Mai sor chipje ezt hordja a pontszámtól balra.
- * UGYANAZOK a path-ok, mint a dobozé: a chip a doboz kicsinyített előképe, nem külön rajz.
- * Feliratok és tengely nélkül — ekkora méretben a FORMA a jel, a szöveget a doboz hozza.
+ * A görbe ikon-méretben (mezo-ya2wp). A Folyadék felületek a közös `GlyMini`-t rajzolják; ez az export addig marad, amíg a
+ * vezérlő ki nem veszi (a Mai blokkjai már nem használják), és ugyanazt a darabot adja vissza.
  */
 export function GlycemicMiniCurve({ level, lateGhost = false }: { level: GlycemicLevel; lateGhost?: boolean }) {
-  const curve = CURVE[level]
+  return <GlyMini level={level} late={lateGhost} />
+}
+
+/** A várható válasz alakja három órán át (prototípus `gCurve`): folyadék-felszín a sáv színében, az alapszint szaggatott
+ *  vonala, a csúcs pontja a nevével; a tengelyen csak idő áll. */
+function ResponseCurve({ level }: { level: GlycemicLevel }) {
+  const M = useM()
+  const G = M.fuelEtkezes.glu
+  const id = `fe-gc-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
+  const c = GLY_CURVE[level]
   return (
-    <svg className="fmx-glu-mini" viewBox="0 0 240 108" aria-hidden="true">
-      <line x1="8" y1="78" x2="232" y2="78" strokeDasharray="3 5" className="fmx-glu-base" />
-      {/* Késő esti „szellem" görbe (mezo-tegkf): magasabb és tovább emelkedő domb, a
-          rendes vonal MÖGÖTT — prototípus fuel-ora-ablak.html `curve(band, late)` `.ghost`-ja. */}
-      {lateGhost && (
-        <path
-          d={curve.path}
-          className="fmx-glu-ghost"
-          transform="translate(8 78) scale(1.12 1.13) translate(-8 -78)"
-        />
-      )}
-      <path d={`${curve.path} L232 108 8 108Z`} className="fmx-glu-fill" />
-      <path d={curve.path} className="fmx-glu-line" />
-      <circle cx={curve.peak[0]} cy={curve.peak[1]} r="5" className="fmx-glu-dot" />
+    <svg className="fe-gcv" viewBox="0 0 240 128" role="img" aria-label={G.curveAria(G.shape[level])}
+      style={{ ['--gc' as string]: GLY_COLOR[level] }}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: 'var(--gc)' }} stopOpacity=".75" />
+          <stop offset="1" style={{ stopColor: 'var(--gc)' }} stopOpacity=".12" />
+        </linearGradient>
+      </defs>
+      <path className="fill" d={`${c.d} L232 78 8 78Z`} fill={`url(#${id})`} />
+      <path className="base" d="M8 78H232" />
+      <text x="8" y="91">{G.baseline}</text>
+      <path className="line" d={c.d} />
+      <circle className="peak" cx={c.peak[0]} cy={c.peak[1]} r="4.5" />
+      <text className="val" x={c.peak[0] + 10} y={Math.max(14, c.peak[1] - 2)}>{G.shape[level]}</text>
+      {level === 'high' && <text className="val" x="176" y="70">{G.dip}</text>}
+      {AXIS.map(([x, key, anchor]) => (
+        <g key={key}>
+          <path className="tick" d={`M${x === 8 ? 9 : x === 232 ? 231 : x} 110v5`} />
+          <text x={x} y="125" textAnchor={anchor}>{G.axis[key]}</text>
+        </g>
+      ))}
     </svg>
   )
 }
 
-/** Egy AI-javaslat a „Legközelebb" részhez — a tányér SAJÁT tételeit nevezi meg. */
+/** Egy AI-javaslat a „Legközelebb" részhez — a tányér SAJÁT tételeit nevezi meg (tárolt szöveg, nem fordítjuk). */
 export interface GlucoseTip { title: string; body: string }
 
 /**
- * A doboz egy LOGOLT étkezéshez: az AI-coach ugyanabban a hívásban írja a vércukor-tippeket, amiben
- * az értékelést (owner, 2026-09-26) — mentéskor magától lefut, és ha mégsem, ez a lekérés pótolja.
+ * A lap egy LOGOLT étkezéshez: Mezo ugyanabban a hívásban írja a vércukor-tippeket, amiben az értékelést
+ * (owner, 2026-09-26) — mentéskor magától lefut, és ha mégsem, ez a lekérés pótolja.
  */
 export function GlycemicGlassFor({ mealId, band, onClose }: {
   mealId: string
@@ -107,123 +96,62 @@ export function GlycemicGlassFor({ mealId, band, onClose }: {
 export function GlycemicGlass({ band, onClose, aiTips = null }: {
   band: GlycemicBand
   onClose: () => void
-  /** Az AI-coach tippjei; `null` → a kiszámolt cserék, `[]` → az AI szerint nincs mit simítani. */
+  /** Az AI tippjei; `null` → a kiszámolt cserék, `[]` → az AI szerint nincs mit simítani. */
   aiTips?: GlucoseTip[] | null
 }) {
+  const M = useM()
+  const G = M.fuelEtkezes.glu
+  const W = M.fuelKozos.gly
   const titleId = useId()
-  const reduced = useReducedMotion()
-  const curve = CURVE[band.level]
+  const ai = band.level !== 'low' && aiTips && aiTips.length > 0 ? aiTips : null
+  const computed = aiTips == null ? band.improve : null
 
   return (
-    <GlassBox onClose={onClose} className={`fmx-glu-glass lvl-${band.level}`} labelledBy={titleId}>
-      <div className="fmx-glass-hero fmx-glu-hero">
-        <span aria-hidden="true"><ContentIcon name="i-vercukor" size={56} /></span>
-        <div>
+    <Sheet onClose={onClose} labelledBy={titleId} className={`fo-sheet fe-glu lvl-${band.level}`}>
+      {(close) => (
+        <>
           {/* A SÁV SZAVA áll ott, ahol máshol a nagy szám — szándékosan. */}
-          <strong>{band.label}</strong>
-          <small id={titleId}>Vércukor-válasz · várható hatás</small>
-        </div>
-      </div>
+          <FoSheetHead icon="t-glucose" title={W.levelCap[band.level]} titleId={titleId} sub={G.sub} onClose={close} />
+          <GlyBand level={band.level} />
+          <Txt className="fe-gl1"><b>{G.headline[band.level]}</b></Txt>
+          <ResponseCurve level={band.level} />
+          <Kv items={band.facts.map(f => [f.label, f.value] as [string, string])} />
 
-      <p className="fmx-glu-headline">{HEADLINE[band.level]}</p>
+          {band.sugarEstimated && <Note className="fe-warn">{G.estimated}</Note>}
 
-      <svg
-        className={`fmx-glu-curve${reduced ? '' : ' is-draw'}`}
-        viewBox="0 0 240 122"
-        aria-hidden="true"
-      >
-        <line x1="8" y1="78" x2="232" y2="78" strokeDasharray="3 5" className="fmx-glu-base" />
-        <text x="8" y="72" className="fmx-glu-axis">alapszint</text>
-        <path d={`${curve.path} L232 108 8 108Z`} className="fmx-glu-fill" />
-        <path d={curve.path} className="fmx-glu-line" />
-        <circle cx={curve.peak[0]} cy={curve.peak[1]} r="3.4" className="fmx-glu-dot" />
-        <text x={curve.peak[0] + 10} y={Math.max(14, curve.peak[1] - 2)} className="fmx-glu-note">
-          {curve.note}
-        </text>
-        {band.level === 'high' && <text x="150" y="119" className="fmx-glu-note">visszaesés</text>}
-        {AXIS.map(([x, label]) => (
-          <g key={label}>
-            <line x1={x === 8 ? 9 : x} y1="76" x2={x === 8 ? 9 : x} y2="81" className="fmx-glu-tick" />
-            <text x={x} y="92" className="fmx-glu-axis">{label}</text>
-          </g>
-        ))}
-      </svg>
+          <Lab>{G.feel}</Lab>
+          <Tip icon="t-bolt" title={G.energy}>{band.expect.energy}</Tip>
+          <Tip icon="t-clock" title={G.back}>{band.expect.back}</Tip>
+          <Tip icon="t-plate" title={G.hunger}>{band.expect.hunger}</Tip>
+          <Note>{G.meaning}</Note>
 
-      <div className="fmx-glu-facts">
-        {band.facts.map(fact => (
-          <span key={fact.label}><small>{fact.label}</small><b>{fact.value}</b></span>
-        ))}
-      </div>
+          <Lab>{G.now}</Lab>
+          <Tip icon="t-sprout" title={band.tip.title}>{band.tip.body}</Tip>
 
-      {band.sugarEstimated && (
-        <p className="fmx-glu-estimated">
-          A cukor mennyiségét nem tudjuk — a szénhidrát 30%-át vettük finomítottnak. Ez becslés,
-          nem mért adat; a sáv ezért is sáv, nem szám.
-        </p>
+          {/* „Legközelebb így lesz laposabb" (owner, 2026-09-26): a tipp a MOST-ra szól, ez a következő ilyen tányérra.
+              Az AI-tippek elsőbbséget kapnak: ők a tányér SAJÁT tételeit nevezik meg. Üres AI-lista = nincs mit simítani
+              → a rész elmarad. A kiszámolt cseréknél őszintén kimondjuk, melyik sávba vinnék együtt. */}
+          {ai && (
+            <section className="fe-next" aria-label={G.next}>
+              <Lab>{G.next}</Lab>
+              {ai.map((tip, k) => <Tip key={tip.title} icon="t-swap" title={G.step(k + 1, tip.title)}>{tip.body}</Tip>)}
+              <Note>{G.fromPlate}</Note>
+            </section>
+          )}
+          {computed && (
+            <section className="fe-next" aria-label={G.next}>
+              <Lab>{G.next}</Lab>
+              {computed.steps.map((step, k) => <Tip key={step.title} icon="t-swap" title={G.step(k + 1, step.title)}>{step.body}</Tip>)}
+              <Note className="fe-result">
+                <b>{computed.result === band.level ? G.resultSame(W.level[band.level]) : G.resultOther(W.level[computed.result])}</b>
+              </Note>
+            </section>
+          )}
+
+          <Note>{G.note}</Note>
+          <Acts><Lk onClick={close}>{G.close}</Lk></Acts>
+        </>
       )}
-
-      <div className="fmx-glu-expect">
-        <div>
-          <span aria-hidden="true"><ContentIcon name="i-lang" size={26} /></span>
-          <span><small>Energia</small><b>{band.expect.energy}</b></span>
-        </div>
-        <div>
-          <span aria-hidden="true"><ContentIcon name="i-idozito" size={26} /></span>
-          <span><small>Alapszint</small><b>{band.expect.back}</b></span>
-        </div>
-        <div>
-          <span aria-hidden="true"><ContentIcon name="i-tanyer" size={26} /></span>
-          <span><small>Éhség</small><b>{band.expect.hunger}</b></span>
-        </div>
-      </div>
-
-      <p className="fmx-glu-meaning">
-        Minél laposabb a domb, annál egyenletesebb az energiád — a magas, hegyes csúcs gyors
-        visszaesést és korai éhséget hoz.
-      </p>
-
-      <div className="fmx-glu-tip">
-        <span aria-hidden="true"><ContentIcon name="i-noveny" size={30} /></span>
-        <span><strong>{band.tip.title}</strong><p>{band.tip.body}</p></span>
-      </div>
-
-      {/* „Legközelebb így lesz laposabb" (owner, 2026-09-26): a tipp a MOST-ra szól, ez a
-          következő ilyen tányérra. Két csere, és őszintén: melyik sávba vinnék együtt — ha a
-          sáv nem vált, azt is kimondjuk, nem ígérünk többet. */}
-      {/* Az AI-tippek elsőbbséget kapnak: ők a tányér SAJÁT tételeit nevezik meg („a mézből elég
-          a fele"). Üres AI-lista = a coach szerint nincs mit simítani → a rész elmarad. */}
-      {band.level !== 'low' && aiTips && aiTips.length > 0 && (
-        <section className="fmx-glu-improve" aria-label="Legközelebb így lesz laposabb">
-          <small>Legközelebb így lesz laposabb</small>
-          <ol>
-            {aiTips.map(tip => (
-              <li key={tip.title}><b>{tip.title}</b><p>{tip.body}</p></li>
-            ))}
-          </ol>
-          <p className="fmx-glu-improve-src">A coach javaslata a tányérod tételeiből.</p>
-        </section>
-      )}
-      {aiTips == null && band.improve && (
-        <section className="fmx-glu-improve" aria-label="Legközelebb így lesz laposabb">
-          <small>Legközelebb így lesz laposabb</small>
-          <ol>
-            {band.improve.steps.map(step => (
-              <li key={step.title}><b>{step.title}</b><p>{step.body}</p></li>
-            ))}
-          </ol>
-          <p className={`fmx-glu-improve-result lvl-${band.improve.result}`}>
-            {band.improve.result === band.level
-              ? `A kettővel együtt laposabb lesz a domb, de még a ${band.label} sávban marad.`
-              : `A kettővel együtt: ${LEVEL_WORD[band.improve.result]} vércukor-válasz.`}
-          </p>
-        </section>
-      )}
-
-      <p className="fmx-glass-note">
-        Becslés az étkezés összetételéből, nem mérés és nem orvosi előrejelzés. Sávot mutatunk,
-        számot nem: egy vegyes tányér pontos vércukor-csúcsát senki nem tudja kiszámolni.
-      </p>
-      <button type="button" className="fmx-glass-close" onClick={onClose}>Bezárom</button>
-    </GlassBox>
+    </Sheet>
   )
 }

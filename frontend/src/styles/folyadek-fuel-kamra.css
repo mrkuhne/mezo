@@ -1,2 +1,85 @@
 /* ── Folyadék · Fuel · kamra (mezo-n4wf5.5, slice F5) ── area G · Konyha hub + Kamra (item, import / add / catalogue / filter sheets). Rules of this area only, class prefix `.fp-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── second-level pieces built locally (reported to the controller as kit gaps) ── */
+/* `gHero`: label → graphic → verdict → sub. The kit Hero draws its children after the text, so the graphic is moved up by order. */
+.fp-ghero { display: flex; flex-direction: column; }
+.fp-ghero > .fo-hero-lbl { order: -2; }
+.fp-ghero > .fo-hero-g { order: -1; margin: 12px 0 14px; }
+/* `nh`: the big numeral with its unit on a line of its own, above the verdict sentence (`.fx-n`) */
+.fo-hero-verdict > .fp-n { display: block; white-space: nowrap; margin: 4px 0 12px; }
+.fo-hero-verdict > .fp-n > small { display: block; white-space: normal; margin: 6px 0 0; line-height: 1.3; }
+.fo-hero.has-art .fo-hero-verdict > .fp-n { min-height: 74px; }
+.fp-item > .fo-hero.has-art > .fo-hero-lbl { min-height: 33px; }
+.fp-n > .fp-dn { display: block; font-size: 24px; line-height: 1.15; white-space: normal; letter-spacing: 0; }
+/* a note in a state tone (`.fx-warn`, `.fx-bad`) */
+.fo-note.fp-warn { color: var(--fo-warn); font-weight: 600; }
+.fo-note.fp-bad { color: var(--fo-bad); }
+
+/* ── Konyha hub ── */
+.fp-pot { display: block; }
+.fp-goals { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.fp-goals > span { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: color-mix(in srgb, var(--dom) 7%, #fff); font-size: 12px; font-weight: 600; color: var(--fo-sub); white-space: nowrap; }
+.fp-pair > button { background: color-mix(in srgb, var(--dom) 5%, #fff); }
+.fp-pair > button > small { margin: 0; font-family: var(--ff-body); font-size: 11.5px; font-weight: 500; color: var(--fo-sub); line-height: 1.3; }
+.fp-bubs { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 0 50px; pointer-events: none; }
+.fp-shelfsplit { margin-top: 12px; }
+
+/* ── Kamra ── */
+.fp-kinds { margin-top: 10px; }
+.fo-sheet .fp-kinds { margin: 10px 0 10px; }
+.fp-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.fp-cats > button { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 10px 6px 12px; border: 0; border-radius: 999px; cursor: pointer; background: color-mix(in srgb, var(--dom) 10%, #fff); font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; color: var(--fo-ink); }
+.fp-cats > button::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.fp-cats > button > b { font-size: 15px; line-height: 1; color: var(--fo-sub); }
+.fp-cats > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+/* the shelf tiles: long names wrap, a long dose wraps at „ + " in a smaller numeral */
+.fp-shelf .fo-stat > .fo-stat-k { padding-right: 40px; min-height: 34px; white-space: normal; overflow: visible; overflow-wrap: anywhere; hyphens: auto; }
+.fp-shelf .fo-stat > .fo-stat-n > em { display: block; font-style: normal; font-size: 19px; line-height: 1.2; letter-spacing: -.4px; }
+.fp-swaps { display: grid; gap: 10px; }
+.fp-swap { border: 1.5px dashed color-mix(in srgb, var(--dom) 40%, transparent); border-radius: 18px; padding: 12px; }
+.fp-swap > div:first-child { display: flex; align-items: center; gap: 10px; }
+.fp-swap > div:first-child > span:not(.fo-bub) { flex: 1; min-width: 0; }
+.fp-swap strong { display: block; font-size: 15px; font-weight: 650; line-height: 1.3; }
+.fp-swap small { font-size: 12px; color: var(--fo-sub); }
+.fp-swap > div:first-child > b { font-family: var(--ff-display); font-size: 16px; font-weight: 800; white-space: nowrap; }
+.fp-swap > p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--fo-sub); }
+
+/* ── Kamra item ── */
+.fp-comp { margin-top: 14px; }
+.fp-mac .fo-vials { gap: 8px; }
+.fp-shared { display: block; }
+
+/* ── sheets (add · import · catalogue · filter) ── */
+.fp-form > .fo-lab, .fp-form .fp-grp { display: block; }
+.fp-two { align-items: end; gap: 0 12px; }
+.fp-two > div { min-width: 0; }
+.fp-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 8px; }
+.fp-4 > div { min-width: 0; }
+.fp-4 .fo-in { padding: 10px 8px; font-size: 14px; min-width: 0; width: 100%; }
+.fp-4 .fo-lab { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-seg { margin: 10px 0; }
+.fp-drop { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 76px; margin-top: 8px; padding: 12px; border-radius: 18px; cursor: pointer; text-align: left;
+  border: 1.5px dashed color-mix(in srgb, var(--dom) 45%, transparent); background: color-mix(in srgb, var(--dom) 5%, #fff); color: var(--fo-sub); }
+.fp-drop.has { border-style: solid; }
+.fp-drop > span:not(.fo-bub) { display: flex; flex-direction: column; min-width: 0; }
+.fp-drop strong { font-family: var(--ff-display); font-size: 16px; font-weight: 700; color: var(--fo-ink); }
+.fp-drop small { font-size: 12px; line-height: 1.3; color: var(--fo-sub); overflow-wrap: anywhere; }
+.fp-drop > input, .fp-addphoto > input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.fp-drop:focus-within, .fp-addphoto:focus-within { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fp-addphoto { position: relative; display: inline-flex; align-items: center; min-height: 44px; }
+.fp-busy { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 0 20px; text-align: center; font-size: 14px; font-weight: 600; color: var(--fo-sub); }
+.fp-busy > strong { font-family: var(--ff-display); font-size: 18px; color: var(--fo-ink); }
+.fp-busy > small { font-size: 12px; }
+.fp-lnm { margin: 10px 0 6px; }
+.fp-hit > .g > small { line-height: 1.4; }
+
+@media (max-width: 360px) {
+  .fp-pot .fo-fill { width: 84px !important; }
+  .fp-shelf .fo-stat > .fo-stat-n > em { font-size: 15px; letter-spacing: -.3px; }
+  .fp-n > .fp-dn { font-size: 17px; }
+  .fp-4 { grid-template-columns: 1fr 1fr; }
+  .fp-swap > div:first-child { flex-wrap: wrap; }
+  .fp-swap > div:first-child > b { flex: 1 1 100%; padding-left: 50px; }
+  .fp-mac .fo-vials { gap: 5px; }
+}

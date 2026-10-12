@@ -1,2 +1,127 @@
 /* ── Folyadék · Fuel · tanulas (mezo-n4wf5.5, slice F5) ── area D · Tanulás (learning page) + the energy, weekly-learning and water sheets. Rules of this area only, class prefix `.ft-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the hero with its graphic ABOVE the verdict (fuel.js `gHero`: label · graphic · verdict · sub · actions) ── the kit
+   `Hero` renders children after the sub; this area's hero orders them. `::after` is the closing liquid strip of a hero
+   without actions — it must stay last. */
+.ft-hero { display: flex; flex-direction: column; }
+.ft-hero > * { order: 2; }
+.ft-hero > .fo-hero-lbl { order: 0; }
+.ft-hero > .ft-hg { order: 1; }
+.ft-hero > .fo-hero-acts { order: 3; }
+.ft-hero::after { order: 4; }
+
+/* the two conditions of a first learned week, as levels (`.fu-need`) */
+.ft-need { display: grid; gap: 10px; margin: 12px 0 14px; }
+.ft-need > span > small { display: block; margin-bottom: 4px; font-size: 12px; color: var(--fo-sub); }
+
+/* the drop on „Heti összegző" (`.fu-dot`); hollow when the week held */
+.ft-dot { display: inline-block; width: 8px; height: 10px; margin-left: 7px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: var(--dom);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dom) 22%, transparent); vertical-align: 1px; }
+.ft-dot.hold { background: none; box-shadow: inset 0 0 0 2px var(--dom); }
+
+/* ── charts (`.fh-chart`) ── */
+.ft-chart { display: block; width: 100%; height: auto; margin-top: 12px; overflow: visible; }
+.ft-chart text { font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; fill: var(--fo-sub); }
+.ft-chart text.big { font-family: var(--ff-display); font-size: 15px; font-weight: 800; fill: var(--fo-ink); }
+.ft-chart .grid { stroke: var(--fo-hair); stroke-width: 1; }
+.ft-chart .gap { fill: rgba(255, 255, 255, .5); stroke: var(--fo-faint); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.ft-chart .band { fill: color-mix(in srgb, var(--dom) 13%, transparent); }
+.ft-chart .formula { fill: none; stroke: var(--fo-faint); stroke-width: 1.4; stroke-dasharray: 4 4; opacity: .8; }
+.ft-chart .applied, .ft-chart .tr { fill: none; stroke: var(--dom); stroke-width: 3.2; stroke-linejoin: round; stroke-linecap: round;
+  filter: drop-shadow(0 5px 5px color-mix(in srgb, var(--dom) 40%, transparent)); }
+.ft-chart .raw { fill: var(--fo-faint); opacity: .6; }
+.ft-chart .dot.sel { fill: #fff; stroke: var(--dom); stroke-width: 3; opacity: 1; }
+.ft-chart .dot.hold { fill: #fff; stroke: var(--dom); stroke-width: 1.8; opacity: 1; }
+.ft-band { margin: 12px 0 10px; }
+.ft-how .okc { fill: color-mix(in srgb, var(--dom) 42%, #fff); }
+.ft-how .bad { fill: color-mix(in srgb, var(--fo-warn) 70%, #fff); }
+.ft-how .wband { fill: color-mix(in srgb, var(--fx-water) 38%, transparent); }
+.ft-how .tr { stroke-width: 2.2; }
+
+/* the week-by-week chart and its tap targets (one invisible button per calendar week over the plot) */
+.ft-chart-wrap { position: relative; }
+.ft-hits { position: absolute; top: 0; bottom: 0; display: flex; }
+.ft-hits > button { flex: 1; min-width: 0; min-height: 44px; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer; }
+.ft-hits > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: -2px; }
+.ft-wkd > .fo-lab { margin-top: 12px; }
+.ft-wkd > .fo-note { margin-top: 6px; }
+
+/* ── rows of the page ── the numbered step badge (`.fx-dd`), the dash of a day that takes no mark (`.fx-dash`) */
+.ft-dd { display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 40px; border-radius: 13px; background: var(--fo-page);
+  font-family: var(--ff-display); font-size: 14px; font-weight: 700; color: var(--fo-ink); }
+.ft-dash { padding: 0 16px; color: var(--fo-faint); }
+.ft-state { margin-top: 0; }
+
+/* ── sheets ── the tinted result line (`.fx-tot`) */
+.ft-tot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 14px; border-radius: 16px;
+  background: color-mix(in srgb, var(--dom) 10%, #fff); }
+.ft-tot > span { min-width: 0; font-size: 15px; font-weight: 700; color: var(--fo-ink); }
+.ft-tot > span > small { display: block; font-size: 12.5px; font-weight: 500; color: var(--fo-sub); }
+.ft-tot > b { font-family: var(--ff-display); font-size: 26px; font-weight: 800; letter-spacing: -.8px; white-space: nowrap; color: var(--fo-ink); }
+.ft-tot > b > small { margin-left: 4px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); }
+.ft-tot + .fo-txt { margin-top: 10px; }
+
+/* a step of the simple calculation (`.fu-gr`): bubble · label + sub · value, and the running level under them */
+.ft-gr { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 10px; padding: 7px 0; }
+.ft-gr > span:not(.fo-bub) { flex: 1; min-width: 0; }
+.ft-gr > span > b { display: block; font-size: 13px; font-weight: 650; line-height: 1.25; color: var(--fo-ink); }
+.ft-gr > span > small { display: block; margin-top: 1px; font-size: 11.5px; line-height: 1.3; color: var(--fo-sub); }
+.ft-gr > em { font-style: normal; font-family: var(--ff-display); font-size: 16px; font-weight: 800; color: var(--fo-ink); }
+.ft-gr > .fo-level { flex: 0 0 100%; }
+.ft-why { margin-top: 12px; font-size: 13px; }
+
+/* how sure: the level and its three words (`.fu-eqb` + `.fu-gb3`) */
+.ft-meter { margin: 8px 0 12px; }
+.ft-gb3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 8px 0 12px; }
+.ft-gb3 > span { text-align: center; font-size: 11.5px; font-weight: 600; color: var(--fo-faint); }
+.ft-gb3 > span.on { color: var(--fo-ink); font-weight: 700; }
+
+/* the days a filter left out, as plain tags under their hint (`.fu-chips`) */
+.ft-chips { margin: 2px 0 8px; }
+.ft-chips > span { background: color-mix(in srgb, var(--dom) 6%, #fff); box-shadow: none; }
+.ft-steps { margin-top: 10px; }
+.ft-steps + .fo-txt { margin-top: 12px; }
+
+/* the weekly sheet */
+.ft-msg { margin-top: 12px; font-weight: 650; color: var(--dom); }
+.ft-wday > .fo-btn { flex: 0 0 auto; }
+
+/* the energy sheet: the sum under the vessel (`.fx-sum`), a section, the small equation (`.fu-eq3`) */
+.ft-sum { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin: 6px 0 12px; }
+.ft-sum > span { font-family: var(--ff-display); font-size: 28px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--fo-ink); }
+.ft-sum > b { font-family: var(--ff-display); font-size: 20px; font-weight: 800; color: var(--dom); }
+.ft-seg.on > .fo-lab { color: var(--dom); }
+.ft-eq3 { display: flex; align-items: stretch; gap: 8px; margin: 6px 0 8px; }
+.ft-eq3 > span { flex: 1; min-width: 0; padding: 10px; border-radius: 18px; background: color-mix(in srgb, var(--dom) 6%, #fff); }
+.ft-eq3 > span.res { background: linear-gradient(135deg, var(--liq1), var(--liq2)); color: #fff; }
+.ft-eq3 > span > b { display: block; font-family: var(--ff-display); font-size: 18px; font-weight: 800; letter-spacing: -.4px; color: var(--fo-ink); }
+.ft-eq3 > span > small { display: block; margin-top: 2px; font-size: 10.5px; line-height: 1.25; color: var(--fo-sub); overflow-wrap: break-word; }
+.ft-eq3 > span.res > b { color: #fff; }
+.ft-eq3 > span.res > small { color: rgba(255, 255, 255, .9); }
+.ft-eq3 > i { align-self: center; font-style: normal; font-weight: 700; color: var(--fo-faint); }
+.ft-info.pending > .fx-kv > div { background: none; box-shadow: inset 0 0 0 1.5px var(--fo-hair); }
+
+/* the water sheet (`.fu-wat`, `.fu-wch`, `.fu-wman`) */
+.ft-wat { display: flex; align-items: center; gap: 18px; margin: 8px 0 10px; }
+.ft-wat > div { flex: 1; min-width: 0; }
+.ft-wat > div > p { margin: 6px 0 12px; font-size: 13px; line-height: 1.4; color: var(--fo-sub); }
+.ft-wbig { display: block; font-family: var(--ff-display); font-size: 52px; font-weight: 800; letter-spacing: -1.6px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--fo-ink); }
+.ft-wbig > small { margin-left: 6px; font-family: var(--ff-body); font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); }
+.ft-wch { justify-content: center; margin: 4px 0 12px; }
+.ft-wman { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.ft-wman > .fo-in { flex: 1; min-width: 0; }
+.ft-wman > span { font-size: 13px; color: var(--fo-sub); white-space: nowrap; }
+
+@media (max-width: 360px) {
+  .ft-wat { gap: 12px; }
+  .ft-eq3 > span { padding: 8px 7px; }
+  .ft-eq3 > span > b { font-size: 15px; }
+  .ft-sum > span { font-size: 24px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* the base line of the week-by-week chart draws once (pathLength = 1) */
+  .ft-weeks.is-draw .applied { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ft-draw .9s cubic-bezier(.2, .7, .2, 1) .1s forwards; }
+  @keyframes ft-draw { to { stroke-dashoffset: 0; } }
+}

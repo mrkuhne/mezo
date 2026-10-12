@@ -48,7 +48,7 @@ test('no cached template: shows the recommended preview + a Testreszabás CTA', 
   expect(screen.getByRole('tab', { name: 'Pihenőnap' })).toHaveAttribute('aria-selected', 'true')
   expect(await screen.findByRole('button', { name: /Testreszabás/ })).toBeInTheDocument()
   // read-only preview: no editable slot-name inputs yet
-  expect(screen.queryByLabelText('Slot neve')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Ablak neve')).not.toBeInTheDocument()
 })
 
 test('Testreszabás forks the recommendation into editable rows; an off-Σ pct shows the sum_pct error and disables Mentés', async () => {
@@ -56,13 +56,13 @@ test('Testreszabás forks the recommendation into editable rows; an off-Σ pct s
   renderPage(qc)
   await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
 
-  const nameInputs = await screen.findAllByLabelText('Slot neve')
+  const nameInputs = await screen.findAllByLabelText('Ablak neve')
   expect(nameInputs.length).toBeGreaterThanOrEqual(2)
 
   // freshly forked rows are normalized to Σ=100 → Mentés starts enabled
   expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
 
-  const pctInputs = screen.getAllByLabelText('Budget %') as HTMLInputElement[]
+  const pctInputs = screen.getAllByLabelText('Rész %') as HTMLInputElement[]
   await userEvent.clear(pctInputs[0])
   await userEvent.type(pctInputs[0], '5')
 
@@ -77,7 +77,7 @@ test('an emptied label shows the label_length error and disables Mentés', async
   renderPage(qc)
   await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
 
-  const nameInputs = await screen.findAllByLabelText('Slot neve')
+  const nameInputs = await screen.findAllByLabelText('Ablak neve')
   expect(nameInputs[0]).toHaveAttribute('maxLength', '40')
   await userEvent.clear(nameInputs[0])
 
@@ -97,7 +97,7 @@ test('Budget % commits a clamped integer: "12.5" truncates to 12, "0" clamps to 
   await act(() => result.current.putTemplate(SAMPLE)) // Reggeli 40% / Ebéd 60%
 
   renderPage(qc)
-  const pctInputs = await screen.findAllByLabelText('Budget %')
+  const pctInputs = await screen.findAllByLabelText('Rész %')
 
   await userEvent.clear(pctInputs[0])
   await userEvent.type(pctInputs[0], '12.5')
@@ -117,7 +117,7 @@ test('Eltolás perc clamps its committed value to ±720', async () => {
 
   const anchorSelects = screen.getAllByLabelText('Horgony')
   await userEvent.selectOptions(anchorSelects[0], 'wake')
-  const offsetInput = await screen.findByLabelText('Eltolás perc')
+  const offsetInput = await screen.findByLabelText('Eltolás (perc)')
 
   await userEvent.clear(offsetInput)
   await userEvent.type(offsetInput, '900')
@@ -132,7 +132,7 @@ test('Eltolás perc clamps its committed value to ±720', async () => {
 // clobber a saved template that lands late (the `!forked` late-arrival sync never re-fires once a
 // fork has already set `forked=true`). Disabling Testreszabás while the GET is pending closes it
 // at the source.
-test('real mode: Testreszabás is disabled while the slot-templates GET is pending', async () => {
+test('real mode: Testreszabás cannot be started while the slot-templates GET is pending', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   server.use(
     http.get(`${API_BASE}/api/fuel/slot-templates`, async () => {
@@ -143,8 +143,11 @@ test('real mode: Testreszabás is disabled while the slot-templates GET is pendi
   const qc = newQc()
   renderPage(qc)
 
-  expect(await screen.findByRole('button', { name: /Testreszabás/ })).toBeDisabled()
-  await waitFor(() => expect(screen.getByRole('button', { name: /Testreszabás/ })).toBeEnabled())
+  // Folyadék (prototype `ablakok.tolt`): while it loads only the hero stands — there is no Testreszabás to press.
+  expect(screen.getByRole('status')).toHaveTextContent('Beállítások betöltése…')
+  expect(screen.getByText('Amíg töltünk, a Testreszabás nem indítható.')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Testreszabás/ })).toBeNull()
+  expect(await screen.findByRole('button', { name: /Testreszabás/ })).toBeEnabled()
 })
 
 // mezo-4ghd fix 5: switching the day-type tab used to unconditionally reset `rows`/`forked`,
@@ -154,14 +157,14 @@ test('a fork + edit on one day type survives switching away and back', async () 
   renderPage(qc)
   await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
 
-  const nameInputs = await screen.findAllByLabelText('Slot neve')
+  const nameInputs = await screen.findAllByLabelText('Ablak neve')
   await userEvent.clear(nameInputs[0])
   await userEvent.type(nameInputs[0], 'Egyedi Reggeli')
 
   await userEvent.click(screen.getByRole('tab', { name: 'Reggeli edzés' }))
   // training_am has no saved/forked template yet — the read-only recommended preview, not the
   // (unrelated) editor.
-  expect(screen.queryByLabelText('Slot neve')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Ablak neve')).not.toBeInTheDocument()
 
   await userEvent.click(screen.getByRole('tab', { name: 'Pihenőnap' }))
   expect(await screen.findByDisplayValue('Egyedi Reggeli')).toBeInTheDocument()
@@ -181,13 +184,13 @@ test('reset-then-revisit: deleting a saved template also clears its stashed draf
   await act(() => result.current.act.putTemplate(SAMPLE))
 
   renderPage(qc)
-  expect(await screen.findAllByLabelText('Slot neve')).toHaveLength(2)
+  expect(await screen.findAllByLabelText('Ablak neve')).toHaveLength(2)
 
   // Switch away and back ONCE while the saved template is still loaded — this is what stashes a
   // draft for 'rest' (a loaded template starts `forked=true`).
   await userEvent.click(screen.getByRole('tab', { name: 'Reggeli edzés' }))
   await userEvent.click(screen.getByRole('tab', { name: 'Pihenőnap' }))
-  expect(await screen.findAllByLabelText('Slot neve')).toHaveLength(2)
+  expect(await screen.findAllByLabelText('Ablak neve')).toHaveLength(2)
 
   await userEvent.click(screen.getByRole('button', { name: 'Ajánlott visszaállítása' }))
   await waitFor(() => expect(result.current.read.templates).toEqual([]))
@@ -197,7 +200,7 @@ test('reset-then-revisit: deleting a saved template also clears its stashed draf
   await userEvent.click(screen.getByRole('tab', { name: 'Reggeli edzés' }))
   await userEvent.click(screen.getByRole('tab', { name: 'Pihenőnap' }))
 
-  expect(screen.queryByLabelText('Slot neve')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Ablak neve')).not.toBeInTheDocument()
   expect(await screen.findByRole('button', { name: /Testreszabás/ })).toBeInTheDocument()
 })
 
@@ -210,7 +213,7 @@ test('Budget % input settles to the committed integer on blur, even though it la
   renderPage(qc)
   await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
 
-  const pctInputs = await screen.findAllByLabelText('Budget %')
+  const pctInputs = await screen.findAllByLabelText('Rész %')
   await userEvent.clear(pctInputs[0])
   await userEvent.type(pctInputs[0], '12.5')
   expect(pctInputs[0]).toHaveValue('12.5') // lags while typing — unchanged, no keystroke-reset
@@ -243,13 +246,13 @@ test('a wake-anchored row resolving well before wake shows out_of_span and disab
   renderPage(qc)
   await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
 
-  await screen.findAllByLabelText('Slot neve')
+  await screen.findAllByLabelText('Ablak neve')
   expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
 
   const anchorSelects = screen.getAllByLabelText('Horgony')
   await userEvent.selectOptions(anchorSelects[0], 'wake')
 
-  const offsetInput = await screen.findByLabelText('Eltolás perc')
+  const offsetInput = await screen.findByLabelText('Eltolás (perc)')
   await userEvent.clear(offsetInput)
   await userEvent.type(offsetInput, '-300')
 
@@ -266,7 +269,7 @@ test('an existing template loads straight into the editor with Ajánlott vissza�
   await act(() => result.current.act.putTemplate(SAMPLE))
 
   renderPage(qc)
-  expect(await screen.findAllByLabelText('Slot neve')).toHaveLength(2)
+  expect(await screen.findAllByLabelText('Ablak neve')).toHaveLength(2)
   const resetBtn = screen.getByRole('button', { name: 'Ajánlott visszaállítása' })
 
   await userEvent.click(resetBtn)
@@ -304,7 +307,7 @@ test('real mode cold mount: a delayed GET resolving to a saved template lands in
   // Cold frame: the GET is still pending — the recommended (read-only) view, never a broken
   // empty editor with a too_few error.
   expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-  expect(screen.queryByLabelText('Slot neve')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Ablak neve')).not.toBeInTheDocument()
 
   // Once the delayed GET resolves, the saved template's OWN rows render — not a stale empty draft.
   expect(await screen.findByDisplayValue('Reggeli')).toBeInTheDocument()
@@ -319,7 +322,7 @@ test('mock mode: Mezo értékelése shows the canned verdict card', async () => 
   const qc = newQc()
   renderPage(qc)
   await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
-  await userEvent.click(screen.getByRole('button', { name: 'Mezo értékelése' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Kérd Mezo véleményét' }))
 
   expect(await screen.findByText(/A felosztás illik a célodhoz/, {}, { timeout: 3000 })).toBeInTheDocument()
 })
@@ -332,9 +335,9 @@ test('real mode: a 503 from the evaluate endpoint shows the honest-degrade note 
   const qc = newQc()
   renderPage(qc)
   await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
-  await userEvent.click(screen.getByRole('button', { name: 'Mezo értékelése' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Kérd Mezo véleményét' }))
 
-  expect(await screen.findByText(/Az AI-értékelés most nem elérhető/, {}, { timeout: 3000 })).toBeInTheDocument()
+  expect(await screen.findByText(/Mezo véleménye most nem elérhető\. A számok ellenőrzése így is működik\./, {}, { timeout: 3000 })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
 })
 
@@ -342,29 +345,110 @@ test('mock mode: editing a row after a successful evaluate clears the verdict ca
   const qc = newQc()
   renderPage(qc)
   await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
-  await userEvent.click(screen.getByRole('button', { name: 'Mezo értékelése' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Kérd Mezo véleményét' }))
   expect(await screen.findByText(/A felosztás illik a célodhoz/, {}, { timeout: 3000 })).toBeInTheDocument()
 
-  const nameInputs = screen.getAllByLabelText('Slot neve')
+  const nameInputs = screen.getAllByLabelText('Ablak neve')
   await userEvent.type(nameInputs[0], '!')
 
   expect(screen.queryByText(/A felosztás illik a célodhoz/)).not.toBeInTheDocument()
 })
 
-// Fidelity audit (mezo-d20.11): the page had NO entrance choreography. Its FACE stays the
-// pre-Mozaik `.pghead-np` editor one on purpose — the prototype does not cover the meal-window
-// editor, so re-facing it belongs to the F7.3 design round, not to a 1:1 audit.
-test('the editor rises inside an EntranceGroup with the Mozaik sage shell (F7.3)', async () => {
+// Folyadék (mezo-n4wf5.5, prototype `ablakok()`): the skeleton — back pill (no title bar here), hero with the tide
+// and the day-type tabs, numbered white sections; no glass, no Mozaik shell, no old `.fsl-` markup.
+test('the recommended face: hero with the tide, the windows as steps with kcal and share', async () => {
   const qc = newQc()
   const { container } = renderPage(qc)
-  await screen.findByText('Étkezési ablakok')
-  expect(container.querySelector('.mz-page.mz-p-sage')).not.toBeNull()
-  const play = container.querySelector('.mz-play')
-  expect(play).not.toBeNull()
-  expect(play?.querySelector('.rise .mz-eyebrow')).not.toBeNull()
-  const all = [...container.querySelectorAll('.rise')]
-  expect(all.length).toBeGreaterThan(2)
-  expect(all.every(el => play?.contains(el))).toBe(true)
+  await screen.findByRole('button', { name: /Testreszabás/ })
+  expect(container.querySelector('.fo-page.fb-page')).not.toBeNull()
+  expect(container.querySelector('.mz-page, .glass, [class^="fsl-"]')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Fuel')
+  const hero = container.querySelector('.fb-hero')!
+  expect(hero).toHaveTextContent('Ajánlott felosztás · Σ 100%')
+  expect(hero).toHaveTextContent(/Pihenőnap: (három|négy|öt|hat) ablak osztja el a napot\./)
+  expect(hero).toHaveTextContent('Edzés nélküli napra számolva. Az edény szintje az ablak kalória-része.')
+  expect(hero.querySelector('.fb-tide')).not.toBeNull()
+  expect(hero.querySelector('[role="tablist"]')).not.toBeNull()
+  expect([...container.querySelectorAll('h2.fo-sec')].map((h) => h.textContent)).toEqual(['1Ablakok'])
+  const steps = [...container.querySelectorAll('.fb-rec .fo-step')]
+  expect(steps.length).toBe(hero.querySelectorAll('.fb-tide-win').length)
+  expect(steps[0]).toHaveTextContent(/^\d\d:\d\dReggeli[\d ]+ kcal\d+%$/)
+  // the shares add up to 100
+  const shares = steps.map((el) => Number(el.querySelector('.fb-kv small')!.textContent!.replace('%', '')))
+  expect(shares.reduce((a, b) => a + b, 0)).toBe(100)
+  expect(screen.queryByRole('button', { name: /Mentés/ })).toBeNull()
+})
+
+test('a sample day explains itself: the other training type is worked out from a sample day', async () => {
+  renderPage(newQc())
+  await userEvent.click(await screen.findByRole('tab', { name: 'Esti edzés' }))
+  expect(screen.getByText(/számolva \((edzés 18:00-kor|.+ · \d\d:\d\d)\)\. Az edény szintje az ablak kalória-része\./)).toBeInTheDocument()
+})
+
+test('the editor face: three numbered sections, the new words, the sum pill and the levels', async () => {
+  const qc = newQc()
+  const { container } = renderPage(qc)
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+  const n = screen.getAllByLabelText('Ablak neve').length
+  expect([...container.querySelectorAll('h2.fo-sec')].map((h) => h.textContent)).toEqual([`1Ablakok · ${n}`, '2Így áll össze', '3Mezo véleménye'])
+  const hero = container.querySelector('.fb-hero')!
+  expect(hero).toHaveTextContent('Testreszabás · Σ 100%')
+  expect(hero).toHaveTextContent('A részek összege 100%: menthető.')
+  expect(hero).not.toHaveClass('warn')
+  expect(screen.getAllByRole('group', { name: 'Típus' })).toHaveLength(n)
+  expect(screen.getAllByRole('group', { name: 'Szerep' })).toHaveLength(n)
+  expect(screen.getAllByRole('button', { name: 'Uzsonna' }).length).toBe(n)
+  expect(screen.getAllByRole('option', { name: 'Edzés kezdete körül' }).length).toBe(n)
+  expect(screen.getByText('A részek összege')).toBeInTheDocument()
+  expect(container.querySelector('.fb-sum b')).toHaveTextContent('100%')
+  expect(container.querySelectorAll('.fb-wv .fo-level')).toHaveLength(n)
+  expect(container.querySelector('.fb-wv')).toHaveTextContent(/^\d\d:\d\d · Reggeli[\d ]+ kcal · \d+ g fehérje$/)
+  expect(container.textContent).not.toMatch(/slot|budget|Σ BUDGET|Snack/i)
+  // a new window starts as „Uzsonna"
+  await userEvent.click(screen.getByRole('button', { name: '+ Új ablak' }))
+  expect(screen.getAllByLabelText('Ablak neve')).toHaveLength(n + 1)
+  expect((screen.getAllByLabelText('Ablak neve')[n] as HTMLInputElement).value).toBe('Uzsonna')
+  expect(screen.getAllByRole('button', { name: 'Uzsonna törlése' })).toHaveLength(2)
+})
+
+test('an off sum turns the hero amber and says it cannot be saved; asking Mezo is switched off', async () => {
+  const { container } = renderPage(newQc())
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+  const pct = screen.getAllByLabelText('Rész %')[0]
+  await userEvent.clear(pct)
+  await userEvent.type(pct, '5')
+  const hero = container.querySelector('.fb-hero')!
+  expect(hero).toHaveClass('warn')
+  expect(hero).toHaveTextContent(/A részek összege \d+%: így nem menthető\./)
+  expect(screen.getByRole('alert')).toHaveTextContent(/^A részek összege \d+%: 100% kell\.$/)
+  expect(container.querySelector('.fb-sum b')).toHaveClass('off')
+  expect(screen.getByRole('button', { name: 'Kérd Mezo véleményét' })).toBeDisabled()
+})
+
+// The verdict's summary and suggestions are SERVER text (the backend writes them in the account language): rendered
+// exactly as they arrive, whatever the app language; only the frame around them is the catalog's.
+test('real mode: the verdict text is rendered as the server sent it', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.post(`${API_BASE}/api/fuel/slot-templates/evaluate`, () => HttpResponse.json({
+    verdict: 'adjust', summary: 'Dinner is a third of the day.', suggestions: [{ slotLabel: 'Vacsora', text: 'move 5% over to lunch.' }],
+  })))
+  const { container } = renderPage(newQc())
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Kérd Mezo véleményét' }))
+  expect(await screen.findByText('Dinner is a third of the day.', {}, { timeout: 3000 })).toBeInTheDocument()
+  const card = container.querySelector('.fb-vd')!
+  expect(card).toHaveTextContent('Mezo · olvasat')
+  expect(card).toHaveTextContent('érdemes igazítani')
+  expect(card).toHaveTextContent('Vacsora: move 5% over to lunch.')
+  expect(card.querySelector('.fo-st.warn')).not.toBeNull()
+})
+
+test('Mégse goes back to Fuel settings', async () => {
+  renderPage(newQc())
+  await userEvent.click(await screen.findByRole('button', { name: /Testreszabás/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Mégse' }))
+  // (the unsaved-changes guard needs a data router; a plain MemoryRouter navigates at once)
+  expect(await screen.findByTestId('location')).toHaveTextContent('/settings/fuel')
 })
 
 test('real mode: Mentés PUTs the flattened wire body (fixed anchor)', async () => {

@@ -1,39 +1,25 @@
 // ============================================================
-// Mezo · FuelStackItemGlass — egy kiegészítő részletező ÜVEGKÁRTYÁJA (Fuel Titanium S2,
-// mezo-g2vl; manifeszt D1).
+// Mezo · FuelStackItemGlass — one supplement's detail box on the Kiegészítők hub (Folyadék F5, mezo-n4wf5.5;
+// S2 manifest D1). Prototype: docs/design_2.0/prototypes/vilagos/fuel.js sheet `item`.
 //
-// Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
-// `stackItemGlass` (:314) + a fuel-pages.css `.sx-item*` / `dialog.glass` blokkjai. Owner-döntés:
-// „tapping a supplement opens a glass card with its details" — valódi paddinggal, színezett,
-// szekcionált blokkokkal. Anatómia: üveg-hero (az adag a nagy szám) → chipek (sáv · eredet ·
-// mai állapot) → egyérintéses pipa → termékadatok → „Miért így" → kamra-kapcsolat → határvonal.
+// A light sheet: head (name · dose · daily) → three facts (slot + time · where the placement came from · today's state)
+// → the one-tap tick → „Ebből a termékből" (or the honest „Termékadatok" face) → „Miért így" → the pantry link (or
+// „Nincs a kamrádban") → the boundary line → Bezárom. The component keeps its name and props.
 //
-// A kártya a Fuel `GlassBox`-a (portál a telefon-keretbe, Escape + hátlap zár).
-//
-// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `openItem()`): a doboz maga az EGYETLEN
-// üveg (zsálya). Benne semmi sem üveg (bible §3.4 + U1 5. szabály): a chipek lapos cellák, a
-// Bevettem egy megvilágított lapos gomb, a termékadatok 2×2-es lapos cellarács, a „Miért így"
-// Mezo saját hangja (serif dőlt), a kamra-kapcsolat megvilágított lapos sor, az őszinte-null
-// blokkok szaggatottak. Ikonok: Titanium 3D (Icon3D).
-//
-// Őszinte-null: ha a termékről nem tudjuk, mennyi van egy egységben, NEM találunk ki darabszámot
-// — megmondjuk, mit nem tudunk, és felajánljuk a beállítót. Az elhelyezés indoka a motorból jön
-// (`placementReason`); ha nincs, nem írunk helyette kitalált miértet.
+// Honest null: when the product's facts are missing we say so and offer setup — no invented count. The placement reason
+// is the engine's STORED sentence (never translated); without one nothing is made up. The box has no stock level and no
+// „lasts until": the pantry only knows the stock and its unit.
 // ============================================================
 import { useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStack } from '@/data/hooks'
-import { Icon3D } from '@/shared/ui/clay'
+import { useM } from '@/shared/i18n'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Acts, Btn, FoSheetHead, Lab, Lk, Note, Row, Tags, Txt } from '@/shared/ui/folyadek'
+import { Kv } from '@/features/fuel/components/folyadek'
+import { fmtAmount } from '@/features/fuel/logic/doseAdvice'
 import type { BandRow } from '@/features/fuel/logic/stackBands'
-import type { StackPlacementSource } from '@/data/types'
-import { GlassBox } from '@/features/fuel/components/GlassBox'
-
-const SOURCE_LABEL: Record<StackPlacementSource, string> = {
-  rule: 'okos elhelyezés',
-  llm: 'okos elhelyezés',
-  user: 'saját döntés',
-  fallback: 'alapértelmezett hely',
-}
+import type { ReactNode } from 'react'
 
 export function FuelStackItemGlass({ row, onClose, onToggle }: {
   row: BandRow
@@ -42,113 +28,64 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
 }) {
   const titleId = useId()
   const navigate = useNavigate()
+  const M = useM().fuelKieg
   const { stash } = useStack()
   const item = stash.find(candidate => candidate.id === row.itemId)
   const taken = row.taken
 
-
   const stock = item && item.stock != null
-    ? `${item.stock}${item.stockUnit ? ` ${item.stockUnit}` : ''}`
+    ? `${fmtAmount(item.stock)}${item.stockUnit ? ` ${M.common.stockUnit(item.stockUnit)}` : ''}`
     : null
+  const facts: Array<[ReactNode, ReactNode]> = [[M.item.dailyDose, row.dose ?? '—']]
+  if (item?.form) facts.push([M.item.form, M.common.form(item.form, 1)])
+  if (stock) facts.push([M.item.inStock, stock])
+  if (row.entry.dailyTotalHint) facts.push([M.item.dailyTotal, row.entry.dailyTotalHint])
 
   return (
-    <GlassBox onClose={onClose} className="fsx-glass" labelledBy={titleId}>
-      <div className="fsx-glass-hero">
-        <span aria-hidden="true"><Icon3D name="t-supps" size={56} /></span>
-        <div>
-          <strong>{row.dose ?? '—'}</strong>
-          <small id={titleId}>{row.name} · naponta</small>
-        </div>
-      </div>
+    <Sheet onClose={onClose} className="fo-sheet fk-sheet" labelledBy={titleId}>
+      {(close) => (
+        <>
+          <FoSheetHead icon="t-supps" title={row.name} titleId={titleId} sub={M.item.sub(row.dose ?? '—')} />
+          <Tags className="fk-tags" items={[
+            M.protocol.slotTime(row.zoneLabel, row.time),
+            row.entry.pinned ? M.item.place.manual : M.item.place[row.entry.placementSource],
+            taken ? M.item.taken(row.takenAtHHmm) : M.item.notTaken,
+          ]} />
+          <Acts><Btn sm onClick={onToggle}>{taken ? M.item.undo : M.common.markTaken}</Btn></Acts>
 
-      <div className="fsx-glass-chips">
-        <span>{row.zoneLabel} · {row.time}</span>
-        <span>{row.entry.pinned ? 'kézi elhelyezés' : SOURCE_LABEL[row.entry.placementSource]}</span>
-        <span className={taken ? 'is-on' : undefined}>
-          {taken
-            ? `bevéve${row.takenAtHHmm ? ` ${row.takenAtHHmm}` : ''}`
-            : 'ma még nincs bevéve'}
-        </span>
-      </div>
+          {row.dose || stock ? (
+            <>
+              <Lab>{M.item.fromProduct}</Lab>
+              <div className="fk-kv"><Kv items={facts} /></div>
+            </>
+          ) : (
+            <>
+              <Lab>{M.item.productDetails}</Lab>
+              <Txt>{M.item.detailsMissing}</Txt>
+              <Row icon="t-gear" title={M.item.setItUp} onClick={() => { onClose(); navigate('/fuel/stack/manage/add') }} />
+            </>
+          )}
 
-      <button type="button" className={`fsx-glass-tick${taken ? ' is-done' : ''}`} onClick={onToggle}>
-        <span aria-hidden="true"><Icon3D name={taken ? 't-moon' : 't-protocol'} size={26} /></span>
-        <span>{taken ? 'Mégsem vettem be' : 'Bevettem'}</span>
-        <b aria-hidden="true">{taken ? '↺' : '✓'}</b>
-      </button>
+          <Lab>{M.item.why}</Lab>
+          <Txt>
+            {row.entry.reason
+              ?? (row.entry.pinned ? M.item.placedByHand(row.zoneLabel) : M.item.noReason)}
+          </Txt>
 
-      {row.dose || stock ? (
-        <div className="fsx-glass-block is-dose">
-          <div className="fsx-glass-block-head">
-            <span aria-hidden="true"><Icon3D name="t-stack" size={22} /></span>
-            <strong>Ebből a termékből</strong>
-          </div>
-          <dl className="fsx-glass-rows">
-            <div><dt>Napi adag</dt><dd>{row.dose ?? '—'}</dd></div>
-            {item?.form && <div><dt>Kiszerelés</dt><dd>{item.form}</dd></div>}
-            {stock && <div><dt>Készleten</dt><dd>{stock}</dd></div>}
-            {row.entry.dailyTotalHint && (
-              <div><dt>Napi összmennyiség</dt><dd>{row.entry.dailyTotalHint}</dd></div>
-            )}
-          </dl>
-        </div>
-      ) : (
-        <div className="fsx-glass-block is-quiet">
-          <div className="fsx-glass-block-head">
-            <span aria-hidden="true"><Icon3D name="t-stack" size={22} /></span>
-            <strong>Termékadatok</strong>
-          </div>
-          <p>
-            Nincs megadva, mennyi van egy egységben — a beállítóban pótolhatod, és megmondom, hány
-            kell belőle.
-          </p>
-          <button type="button" className="fsx-glass-link"
-            onClick={() => { onClose(); navigate('/fuel/stack/manage/add') }}>
-            <span aria-hidden="true"><Icon3D name="t-gear" size={26} /></span>
-            <span>Beállítom</span>
-            <b aria-hidden="true">›</b>
-          </button>
-        </div>
+          {item ? (
+            <Row icon="t-stack" title={item.name} sub={stock ? M.item.inPantryStock(stock) : M.item.inPantry}
+              onClick={() => { onClose(); navigate(`/fuel/kamra/${item.id}`) }} />
+          ) : (
+            <>
+              <Lab>{M.item.notInPantry}</Lab>
+              <Txt>{M.item.notInPantryText}</Txt>
+            </>
+          )}
+
+          <Note>{M.common.note}</Note>
+          <Acts><Lk onClick={close}>{M.common.close}</Lk></Acts>
+        </>
       )}
-
-      <div className="fsx-glass-block is-why">
-        <div className="fsx-glass-block-head">
-          <span aria-hidden="true"><Icon3D name="t-bolt" size={22} /></span>
-          <strong>Miért így</strong>
-        </div>
-        <p>
-          {row.entry.reason
-            ?? (row.entry.pinned
-              ? `Ide raktad kézzel — ${row.zoneLabel}.`
-              : 'Az elhelyezéshez nem tartozik indok.')}
-        </p>
-      </div>
-
-      {item ? (
-        <button type="button" className="fsx-glass-link is-shelf"
-          onClick={() => { onClose(); navigate(`/fuel/kamra/${item.id}`) }}>
-          <span aria-hidden="true"><Icon3D name="t-stack" size={30} /></span>
-          <span>
-            <strong>{item.name}</strong>
-            <small>{stock ? `${stock} a kamrádban` : 'a kamrádban'}</small>
-          </span>
-          <b aria-hidden="true">›</b>
-        </button>
-      ) : (
-        <div className="fsx-glass-block is-quiet">
-          <div className="fsx-glass-block-head">
-            <span aria-hidden="true"><Icon3D name="t-stack" size={22} /></span>
-            <strong>Nincs a kamrádban</strong>
-          </div>
-          <p>
-            A protokollodban ott van, a polcodon nem. Ha felveszed a Konyhában, innen is elérhető
-            lesz.
-          </p>
-        </div>
-      )}
-
-      <p className="fsx-note">Tájékoztatás, nem orvosi tanács.</p>
-      <button type="button" className="fsx-glass-close" onClick={onClose}>Bezárom</button>
-    </GlassBox>
+    </Sheet>
   )
 }

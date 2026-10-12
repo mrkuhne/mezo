@@ -8,6 +8,7 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, test, vi } from 'vitest'
+import { CEREMONY_MS } from '@/shared/ui/folyadek'
 import { FuelMealCeremony } from './FuelMealCeremony'
 
 function setup(props: Partial<React.ComponentProps<typeof FuelMealCeremony>> = {}) {
@@ -32,29 +33,28 @@ function setup(props: Partial<React.ComponentProps<typeof FuelMealCeremony>> = {
 describe('FuelMealCeremony', () => {
   test('csökkentett mozgás: az első render MÁR a végállapot — számok, csillagok, verdikt', () => {
     const { container } = setup()
-    // a fejléc a képernyőolvasó bejelentése: hány csillag
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('5 csillag az ötből')
+    // a címsor a képernyő bejelentése; a csillagszám a színpad felirata
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('A napod része lett')
+    expect(screen.getByText('5 csillag az ötből')).toBeInTheDocument()
     expect(screen.getByText('Hibátlan választás.')).toBeInTheDocument()
-    expect(screen.getByText('Túrós zabkása · áfonyával')).toBeInTheDocument()
-    expect(screen.getByText('07:15')).toBeInTheDocument()
-    // a három számláló a VÉGSŐ értéken áll (nem 0-n), mert nincs menet
-    expect(container.querySelector('[data-fcx-count="kcal"]')).toHaveTextContent('689')
-    expect(container.querySelector('[data-fcx-count="p"]')).toHaveTextContent('49')
-    expect(container.querySelector('[data-fcx-count="c"]')).toHaveTextContent('74')
-    expect(container.querySelector('[data-fcx-count="f"]')).toHaveTextContent('21')
+    expect(screen.getByText('Túrós zabkása · áfonyával · 07:15')).toBeInTheDocument()
+    // a négy számláló a VÉGSŐ értéken áll (nem 0-n), mert nincs menet
+    const counts = [...container.querySelectorAll('[data-cer-count]')].map((el) => el.textContent)
+    expect(counts).toEqual(['689', '49', '74', '21'])
     expect(screen.getByText('g zsír')).toBeInTheDocument()
     // öt hely, ebből öt ég
-    expect(container.querySelectorAll('[data-fcx-star]')).toHaveLength(5)
-    expect(container.querySelectorAll('[data-fcx-star].is-lit')).toHaveLength(5)
-    // a pontszám magyar tizedesvesszővel, a /10 skálán
-    expect(container.querySelector('.fcx-score')).toHaveTextContent('8,3')
+    expect(container.querySelectorAll('[data-cer-star]')).toHaveLength(5)
+    expect(container.querySelectorAll('[data-cer-star].is-lit')).toHaveLength(5)
+    // a pontszám magyar tizedesvesszővel a kehelyben, a /10 skálán
+    expect(container.querySelector('.fg-cup text')).toHaveTextContent('8,3')
+    expect(screen.getByRole('img', { name: 'Mezo értékelése: 8,3 a tízes skálán' })).toBeInTheDocument()
   })
 
   test('gyengébb pontszám: kevesebb csillag ég, és a verdikt is ehhez igazodik', () => {
     const { container } = setup({ scoreOutOfTen: 5.2 })
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('3 csillag az ötből')
+    expect(screen.getByText('3 csillag az ötből')).toBeInTheDocument()
     expect(screen.getByText('Rendben van.')).toBeInTheDocument()
-    expect(container.querySelectorAll('[data-fcx-star].is-lit')).toHaveLength(3)
+    expect(container.querySelectorAll('[data-cer-star].is-lit')).toHaveLength(3)
   })
 
   test('a kiút egy koppintás, és a Részletek csak akkor van ott, ha van hova vinnie', async () => {
@@ -75,92 +75,64 @@ describe('FuelMealCeremony', () => {
     expect(onDetails).toHaveBeenCalledOnce()
   })
 
-  test('a pont-gyűrű a §5 meleg kő: #FFE9A8 → #E0AC2F → #A9770F', () => {
+  test('EGY szám, EGY kerekítés: a menet a csillagokig fut, a kehely szintje a pontszám maga', () => {
     const { container } = setup()
-    const stops = [...container.querySelectorAll('.fcx-ring stop')].map((el) => el.getAttribute('stop-color'))
-    expect(stops).toEqual(['#FFE9A8', '#E0AC2F', '#A9770F'])
+    const stage = container.querySelector('[data-cer-stage]') as HTMLElement
+    // 8,3 → 5 csillag: a menet vége 1 (5/5), a kehely 83%-ig telik (--p × --k)
+    expect(Number(stage.style.getPropertyValue('--p'))).toBe(1)
+    expect(Number(stage.style.getPropertyValue('--k'))).toBeCloseTo(0.83)
   })
 
-  test('a lap a nap fölé csúszik: a háttérre koppintás is a naphoz visz vissza', async () => {
+  test('a címsor „Bezárás" gombja is a naphoz visz vissza', async () => {
     const user = userEvent.setup()
-    const { container, onClose } = setup()
-    expect(container.querySelector('.fcx-screen .fcx-sheet')).not.toBeNull()
-    await user.click(container.querySelector('.fcx-scrim') as HTMLElement)
+    const { onClose } = setup()
+    await user.click(screen.getByRole('button', { name: 'Bezárás' }))
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  test('a menet rövid: a lap felcsúszik, a számok és a csillagok a végértéken landolnak', () => {
+  test('a menet a kit EGY menete: előbb nullák, a végén a számok és a csillagok a végértéken landolnak', () => {
     const frames: FrameRequestCallback[] = []
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { frames.push(cb); return frames.length })
-    vi.spyOn(performance, 'now').mockReturnValue(0)
     const { container } = setup({ reducedMotion: false })
-    const root = container.querySelector('.fcx-screen') as HTMLElement
-    expect(root.style.getPropertyValue('--rise')).toBe('1')
-    expect(root).not.toHaveClass('is-told')
+    const root = container.querySelector('.fo-cer') as HTMLElement
+    const stage = container.querySelector('[data-cer-stage]') as HTMLElement
+    const lit = () => container.querySelectorAll('[data-cer-star].is-lit').length
+    expect(root).not.toHaveClass('told')
+    expect(stage.style.getPropertyValue('--p')).toBe('0')
+    expect(lit()).toBe(0)
+    expect(container.querySelector('[data-cer-count]')).toHaveTextContent('0')
     // mezo-7tj3j: az első frame horgonyoz (started = az első rAF-időbélyeg), utána mér.
     frames.shift()?.(0)
-    frames.shift()?.(1200)
-    expect(root).toHaveClass('is-b1')
-    expect(root).not.toHaveClass('is-b2')
-    act(() => { frames.shift()?.(1500) })
-    expect(root).toHaveClass('is-told')
-    expect(container.querySelector('[data-fcx-count="kcal"]')).toHaveTextContent('689')
-    expect(container.querySelector('[data-fcx-count="f"]')).toHaveTextContent('21')
-    expect(container.querySelector('[data-fcx-score]')).toHaveTextContent('8,3')
-    expect(container.querySelectorAll('[data-fcx-star].is-lit')).toHaveLength(5)
-    vi.restoreAllMocks()
-  })
-
-  // U10 (tulajdonos, 2026-09-26): a csillagok akkor indultak, amikor a fiók még emelkedett.
-  // Előbb a lap landol, csak utána gyullad a gyűrű, a pont, a csillagok és a számlálók.
-  test('ELŐBB a lap, AZTÁN a gyújtás: amíg a lap emelkedik, egy csillag sem ég, minden szám nulla', () => {
-    const frames: FrameRequestCallback[] = []
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { frames.push(cb); return frames.length })
-    vi.spyOn(performance, 'now').mockReturnValue(0)
-    const { container } = setup({ reducedMotion: false })
-    const root = container.querySelector('.fcx-screen') as HTMLElement
-    const sheet = container.querySelector('.fcx-sheet') as HTMLElement
-    const lit = () => container.querySelectorAll('[data-fcx-star].is-lit').length
-
-    // mezo-7tj3j: az első frame horgonyoz (0 ms), a többi ahhoz mér.
-    frames.shift()?.(0)
-    // a lap félúton, majd majdnem fent: még emelkedik, és semmi sem gyulladt
-    for (const ms of [100, 300, 490]) {
-      frames.shift()?.(ms)
-      expect(Number(root.style.getPropertyValue('--rise'))).toBeGreaterThan(0)
-      expect(sheet.style.getPropertyValue('--p')).toBe('0')
-      expect(lit()).toBe(0)
-      expect(container.querySelector('[data-fcx-score]')).toHaveTextContent('0,0')
-      expect(container.querySelector('[data-fcx-count="kcal"]')).toHaveTextContent('0')
-    }
-    // a lap landolt: a gyújtás CSAK most indul
-    frames.shift()?.(500)
-    expect(root.style.getPropertyValue('--rise')).toBe('0')
-    expect(lit()).toBe(0)
-    // a gyújtás közepén már égnek csillagok, a lap a helyén marad
-    frames.shift()?.(900)
-    expect(root.style.getPropertyValue('--rise')).toBe('0')
-    expect(Number(sheet.style.getPropertyValue('--p'))).toBeGreaterThan(0)
+    frames.shift()?.(CEREMONY_MS.stars / 2)
+    expect(Number(stage.style.getPropertyValue('--p'))).toBeGreaterThan(0)
     expect(lit()).toBeGreaterThan(0)
+    expect(root).not.toHaveClass('b1')
+    frames.shift()?.(CEREMONY_MS.b1)
+    expect(root).toHaveClass('b1')
+    expect(lit()).toBe(5)
+    act(() => { frames.shift()?.(CEREMONY_MS.total) })
+    expect(root).toHaveClass('told')
+    const counts = [...container.querySelectorAll('[data-cer-count]')].map((el) => el.textContent)
+    expect(counts).toEqual(['689', '49', '74', '21'])
     vi.restoreAllMocks()
   })
 
-  test('csökkentett mozgás: nincs csúszás — a lap az első rendertől a helyén áll', () => {
+  test('csökkentett mozgás: nincs menet — a végállapot az első rendertől áll', () => {
     const raf = vi.spyOn(window, 'requestAnimationFrame')
     const { container } = setup()
-    expect((container.querySelector('.fcx-screen') as HTMLElement).style.getPropertyValue('--rise')).toBe('0')
+    expect(container.querySelector('.fo-cer')).toHaveClass('told', 'inst')
     expect(raf).not.toHaveBeenCalled()
     vi.restoreAllMocks()
   })
 
-  test('üvegben: a lap egy arany üveglap, a számlálók 3D ikonokat viselnek', () => {
+  test('folyadékban: nincs üveglap és gyűrű — a csillagok és a kehely a jelkészletből, a régi bőr nélkül', () => {
     const { container } = setup()
-    expect(container.querySelector('.fcx-sheet')).toHaveClass('glass')
-    const icons = [...container.querySelectorAll('.fcx-counters use')].map((u) => u.getAttribute('href'))
-    expect(icons).toEqual(['#t-plate', '#t-protein', '#t-carb', '#t-fat'])
-    expect(container.querySelector('.fcx-medal use')).toHaveAttribute('href', '#t-score')
-    expect(container.querySelectorAll('.fcx-stars .fcx-star-on use')).toHaveLength(5)
+    expect(container.querySelector('.glass, [class*="fcx-"], [class*="uv-"]')).toBeNull()
+    expect(container.querySelector('circle')).toBeNull()
+    expect(container.querySelectorAll('.fg-cst .on use')).toHaveLength(5)
+    expect(container.querySelector('.fg-cst .on use')).toHaveAttribute('href', '#t-star')
     expect(screen.getByText('Mezo értékelése')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: /Ez került a napodba/ })).toBeInTheDocument()
   })
 
   test('a ceremónia BIRTOKOLJA a képernyőt: modális, saját címkével', () => {

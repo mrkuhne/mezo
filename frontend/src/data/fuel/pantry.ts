@@ -25,7 +25,7 @@ export const pantryCategoryMeta: Record<string, PantryCategoryMeta> = {
   veggie: { label: 'Zöldség', color: '#34D399' },
   fruit: { label: 'Gyümölcs', color: '#F472B6' },
   dairy: { label: 'Tejtermék', color: '#60A5FA' },
-  supplement: { label: 'Supplement', color: 'var(--sage)' },
+  supplement: { label: 'Kiegészítő', color: 'var(--sage)' },
   'supplement-protein': { label: 'Whey/Protein', color: 'var(--sage)' },
   'supplement-stim': { label: 'Stimuláns', color: '#F472B6' },
   // === Catalog category enum (imported catalog, mezo-zza) ===

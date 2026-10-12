@@ -1,38 +1,37 @@
 // ============================================================
-// Mezo · MealSkipSheet — „Miért marad ki?" for a skipped meal window (Kihagyás S3,
-// mezo-q4xt2.3; prototype elo/fuel.html `mealWhy()`). The sheet anatomy is the training
-// sheet's (`SkipReasonSheet`): header, chip grid, the Egyéb voice field, the shared
-// „MEDDIG TARTHAT?" row, a calm note, „Most nem mondom" / „Kész". Presentational: the page
-// owns the skip row and every write (a chip tap saves the reason at once).
+// Mezo · MealSkipSheet — „Miért marad ki?" for a skipped meal window (Kihagyás S3, mezo-q4xt2.3;
+// Folyadék F5, mezo-n4wf5.5 — prototype vilagos/fuel.js `mealwhy`). The anatomy is the training sheet's
+// (`SkipReasonSheet`): head, the reason grid, the Egyéb voice field, the shared „Meddig tarthat?" row, a
+// calm hint, „Kész" / „Most nem mondom". Presentational: the page owns the skip row and every write (a
+// reason tap saves at once).
 // A skip is never a miss — no word here grades the user.
 // ============================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { SheetHead } from '@/shared/ui/SheetHead'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { useM } from '@/shared/i18n'
+import { Acts, Btn, Bub, FoSheetHead, Lab, Lk } from '@/shared/ui/folyadek'
+import type { Icon3DName } from '@/shared/ui/clay'
 import { useToast } from '@/shared/ui/ToastProvider'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
-import { cn } from '@/shared/lib/cn'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 import type { PlannedSkip, SkipReason } from '@/features/train/logic/plannedSkips'
 import type { RecoveryEstimate } from '@/features/train/logic/recovery'
 import { KIMELO } from '@/features/train/logic/skipCopy'
 import { RecoveryDurationRow } from '@/features/train/components/RecoveryDurationRow'
 import { RECOVERY_CLOSE_MS } from '@/features/train/components/SkipReasonSheet'
+import { Tip } from '@/features/fuel/components/folyadek'
 import { MEAL_REASONS, mealSkipLabel } from '@/features/fuel/logic/mealSkips'
 
 const TEXT_MAX = 500
-const CARE: Partial<Record<SkipReason, string>> = { ILLNESS: 'Jobbulást!', STOMACH: 'Jobbulást!', TRAVEL: 'Jó utat!' }
-const KM_ON_REST = ' · amíg tart, a Fuel nem kér számon semmit, az edzés és a sport pedig magától kimarad.'
 
 export interface MealSkipSheetProps {
   open: boolean
   /** The live skip row — the caller re-renders it after each `onReason`. */
   skip: PlannedSkip | undefined
-  /** The slot's label (e.g. „Uzsonna") — the eyebrow shows it upper-cased. */
+  /** The slot's label (e.g. „Uzsonna") — the head's sub line names it. */
   slotLabel: string
   onClose(): void
-  /** A chip was tapped — save the reason right away (the card behind updates live). */
+  /** A reason was tapped — save it right away (the card behind updates live). */
   onReason(reason: SkipReason, text?: string | null): void
   /** „Kész" — save the Egyéb text (null when empty or not OTHER); the sheet then closes. */
   onDone(text?: string | null): void
@@ -50,6 +49,8 @@ export function MealSkipSheet(props: MealSkipSheetProps) {
 function MealSkipSheetBody({
   skip, slotLabel, onClose, onReason, onDone, canOpenRecovery, openRecovery,
 }: MealSkipSheetProps & { skip: PlannedSkip }) {
+  const M = useM()
+  const K = M.fuelMai.skipSheet
   const toast = useToast()
   const [km, setKm] = useState<{ estimate: RecoveryEstimate; saved: boolean } | null>(null)
   const [text, setText] = useState(skip.reasonText ?? '')
@@ -91,42 +92,39 @@ function MealSkipSheetBody({
     )
   }
 
-  const note: { icon: Icon3DName; bold?: string; rest: string } = !reason
-    ? { icon: 't-info', rest: 'Ha megmondod, miért, a coach érteni fogja a mintát. Nem kötelező.' }
+  const care = cur === 'ILLNESS' || cur === 'STOMACH' || cur === 'TRAVEL' ? K.care[cur] : K.care.other
+  const note: { icon: Icon3DName; title: string; body?: string } = !reason
+    ? { icon: 't-info', title: K.optional, body: K.optionalBody }
     : serious
-      ? {
-          icon: 't-heart', bold: CARE[cur] ?? 'Kíméld magad.',
-          rest: canOpenRecovery ? ' Ha több napig tarthat, válaszd ki, meddig. A kímélő mód a Fuelt is átállítja.' : '',
-        }
-      : { icon: 't-info', bold: 'Nem számít mulasztásnak.', rest: ' A mai kereted nem változik, és a többi étkezésed sem lesz nagyobb.' }
+      ? { icon: 't-heart', title: care, body: canOpenRecovery ? K.careBody : undefined }
+      : { icon: 't-info', title: K.notMiss, body: K.notMissBody }
 
   return (
-    <Sheet glass onClose={onClose} labelledBy="meal-skip-title" className="trm-whysheet">
+    <Sheet onClose={onClose} labelledBy="meal-skip-title" className="fo-sheet fa-why">
       {(close) => {
         closeRef.current = close
         return (
-          <div className="uvl-body">
-            <SheetHead icon="t-skip" eyebrow={`KIHAGYVA · ${slotLabel.toLocaleUpperCase('hu')}`} title="Miért marad ki?"
-              titleId="meal-skip-title" sub="Nem kötelező. Segít, hogy a coach értse a mintát." onClose={close} />
+          <>
+            <FoSheetHead icon="t-skip" title={K.title} titleId="meal-skip-title" sub={K.sub(slotLabel)} />
 
-            <div className="trm-whyg" role="group" aria-label="A kihagyás oka">
+            <div className="fa-whyg" role="group" aria-label={K.group}>
               {MEAL_REASONS.map((r) => (
-                <button key={r.value} type="button" className={cn('trm-whyc', cur === r.value && 'on')} aria-pressed={cur === r.value}
+                <button key={r.value} type="button" className={cur === r.value ? 'on' : undefined} aria-pressed={cur === r.value}
                   onClick={() => onReason(r.value, r.value === 'OTHER' ? text.trim() || null : undefined)}>
-                  <Icon3D name={r.icon as Icon3DName} size={30} />
+                  <Bub icon={r.icon as Icon3DName} size={40} />
                   <span>{r.label}</span>
                 </button>
               ))}
             </div>
 
             {cur === 'OTHER' && (
-              <div className="uvl-field">
-                <span className="uvl-flabel" id="meal-skip-text">Mi történt? · saját szavakkal</span>
-                <VoiceField domain="fuel" className="trm-inpmic" onTranscript={(t) => setText((d) => appendDictation(d, t, TEXT_MAX))}>
-                  <textarea aria-labelledby="meal-skip-text" value={text} maxLength={TEXT_MAX} placeholder="pl. elhúzódott a megbeszélés"
+              <>
+                <Lab id="meal-skip-text">{K.otherLabel}</Lab>
+                <VoiceField domain="fuel" className="fa-inpmic" onTranscript={(t) => setText((d) => appendDictation(d, t, TEXT_MAX))}>
+                  <textarea className="fo-in" aria-labelledby="meal-skip-text" value={text} maxLength={TEXT_MAX} placeholder={K.otherPlaceholder}
                     onChange={(e) => setText(e.target.value)} />
                 </VoiceField>
-              </div>
+              </>
             )}
 
             {serious && (canOpenRecovery || km) && openRecovery && (
@@ -134,36 +132,34 @@ function MealSkipSheetBody({
             )}
 
             {km ? (
-              <div className="trm-whynote is-km" role="status">
-                <Icon3D name="t-kimelo" size={22} />
-                <span><b>{KIMELO.onLead}</b>{KM_ON_REST}</span>
+              <div className="fa-whynote is-km" role="status">
+                <Tip icon="t-kimelo" title={K.gentleOn}>{K.gentleOnBody}</Tip>
               </div>
             ) : (
-              <div className="trm-whynote">
-                <Icon3D name={note.icon} size={22} />
-                <span>{note.bold && <b>{note.bold}</b>}{note.rest}</span>
+              <div className="fa-whynote">
+                <Tip icon={note.icon} title={note.title}>{note.body}</Tip>
               </div>
             )}
 
-            <div className="uvl-foot">
-              <button type="button" className="uvl-ghost"
+            <Acts>
+              <Btn sm grow disabled={!chosen}
+                onClick={() => {
+                  const t = otherText()
+                  onDone(t)
+                  toast.show({ kind: 'success', text: K.doneToast(mealSkipLabel({ ...skip, reasonText: cur === 'OTHER' ? t : skip.reasonText })) })
+                  close()
+                }}>
+                {K.done}
+              </Btn>
+              <Lk
                 onClick={() => {
                   // Keep a typed Egyéb text silently, just no toast.
                   const t = otherText()
                   if (cur === 'OTHER' && t !== (skip.reasonText?.trim() || null)) onReason('OTHER', t)
                   close()
-                }}>Most nem mondom</button>
-              <button type="button" className="uvl-cta" disabled={!chosen}
-                onClick={() => {
-                  const t = otherText()
-                  onDone(t)
-                  toast.show({ kind: 'success', text: `Megjegyeztem · ${mealSkipLabel({ ...skip, reasonText: cur === 'OTHER' ? t : skip.reasonText })}` })
-                  close()
-                }}>
-                <Icon3D name="t-tick" size={20} />Kész
-              </button>
-            </div>
-          </div>
+                }}>{K.notNow}</Lk>
+            </Acts>
+          </>
         )
       }}
     </Sheet>

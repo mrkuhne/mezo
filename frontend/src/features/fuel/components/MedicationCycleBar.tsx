@@ -1,48 +1,61 @@
 // ============================================================
-// Mezo · MedicationCycleBar (Gyógyszer — the 7-cell cycle strip) — Mozaik re-face
-// (mezo-d20.4.7). Ports the prototype's `.cyc` strip (fuel-body.html #page-gyogyszer,
-// ×1.18) via the `.fmd-cyc` CSS recipe (prototype.css) instead of inline color-mix.
+// Mezo · MedicationCycleBar (Gyógyszer — the cycle as a row of capsules) — Folyadék F5 (mezo-n4wf5.5).
+// Prototype: docs/design_2.0/prototypes/vilagos/fuel.js `cyc(now, off)` + `.fu-cyc` → `.fk-cyc`.
 //
-// Guardrail fix: the peak phase used to ride `var(--error)` — an actual-red token in
-// dark mode. It now uses `--mz-no-ink`, the shared terracotta the rest of the app
-// already reserves for "high but never alarming" (NOVA 4, the low-Mozgás skin) —
-// the medication peak (appetite-suppression window) is information, not a warning.
+// One capsule per cycle day; the three heights are the three PHASES (peak / stable / trough), never a measured or
+// estimated level. The current day is ringed and fully coloured. `off` = the empty vessels (no medication, or no dose yet).
+// The phase word comes from `phaseKey` (an enum → translated); an unknown key falls back to the stored label.
 //
-// Presentational only — takes the derived MedicationCycle.week (built by the hook /
-// backend, current cell flagged) and renders it. Semantic <ul>/<li> so the view's
-// tests (and screen readers) can address the strip + the current cell (aria-current).
-//
-// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `.cycle`): flat cells inside the sky glass
-// medication card — peak warm coral, stable sky, trough lavender, today lit sky with a glow.
-// Styled in the `uveg fuel stack` block of prototype.css; markup unchanged.
+// Presentational only. Still a semantic list (`<ul>` / `<li aria-current>`): the page's tests and screen readers
+// address the strip and its current cell.
 // ============================================================
 import { cn } from '@/shared/lib/cn'
-import type { MedicationCycleCell } from '@/data/types'
+import { useM } from '@/shared/i18n'
+import type { MedicationCycleCell, MedicationCycleConfig } from '@/data/types'
 
-const PHASE_CLASS: Record<string, string> = { peak: 'peak', stable: 'stable', trough: 'trough' }
-const PHASE_GLYPH: Record<string, string> = { peak: 'P', stable: 'S', trough: 'T' }
+/** The liquid height of each phase, in % (prototype `PHN`). */
+const PHASE_HEIGHT: Record<string, number> = { peak: 96, stable: 62, trough: 30 }
 
-function Cell({ cell }: { cell: MedicationCycleCell }) {
-  const phaseClass = PHASE_CLASS[cell.phaseKey]
-  const glyph = PHASE_GLYPH[cell.phaseKey] ?? '·'
-  return (
-    <li
-      aria-current={cell.current ? 'true' : undefined}
-      aria-label={`${cell.day}. nap · ${cell.label}`}
-      className={cn(phaseClass, cell.current && 'cur')}
-    >
-      <span className="fmd-cyc-glyph">{glyph}</span>
-      <span className="fmd-cyc-day">{cell.day}</span>
-    </li>
-  )
+/** The cells of a cycle CONFIG (no current day): the form's preview and the „no dose yet" face. */
+export function cycleCells(config: MedicationCycleConfig): MedicationCycleCell[] {
+  return Array.from({ length: Math.max(0, config.cycleLengthDays) }, (_, i) => {
+    const day = i + 1
+    const phase = config.phases.find(p => day >= p.fromDay && day <= p.toDay)
+    return { day, phaseKey: phase?.key ?? '', label: phase?.label ?? '', current: false }
+  })
 }
 
-export function MedicationCycleBar({ week }: { week: MedicationCycleCell[] }) {
+/** The phase's word: the enum's translation, else what is stored. */
+export function usePhaseWord(): (phaseKey: string, stored?: string) => string {
+  const M = useM().fuelKieg.med
+  return (phaseKey, stored) => (M.phase as Record<string, string>)[phaseKey] ?? stored ?? phaseKey
+}
+
+export function MedicationCycleBar({ week, off, dim }: {
+  week: MedicationCycleCell[]
+  /** empty vessels: nothing is poured yet */
+  off?: boolean
+  /** the quiet face (a preview, an empty state) */
+  dim?: boolean
+}) {
+  const M = useM().fuelKieg.med
+  const word = usePhaseWord()
+  const now = off ? undefined : week.find(cell => cell.current)
   return (
-    <ul role="list" aria-label="Kinetikus ciklus" className="fmd-cyc">
-      {week.map((cell) => (
-        <Cell key={cell.day} cell={cell} />
-      ))}
+    <ul role="list" className={cn('fk-cyc', dim && 'fk-off')}
+      aria-label={now ? M.cycAriaNow(now.day, week.length, word(now.phaseKey, now.label)) : M.cycAria}>
+      {week.map(cell => {
+        const current = !off && cell.current
+        return (
+          <li key={cell.day} aria-current={current ? 'true' : undefined}
+            aria-label={M.cellAria(cell.day, word(cell.phaseKey, cell.label))}
+            className={cn(PHASE_HEIGHT[cell.phaseKey] != null && cell.phaseKey, current && 'now')}>
+            <span className="t" aria-hidden="true"><i style={{ height: `${off ? 0 : PHASE_HEIGHT[cell.phaseKey] ?? 50}%` }} /></span>
+            <b>{word(cell.phaseKey, cell.label)}</b>
+            <small>{M.dayNum(cell.day)}</small>
+          </li>
+        )
+      })}
     </ul>
   )
 }

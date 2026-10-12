@@ -129,7 +129,7 @@ test('E9: a piszkozat megpiszkálása után `edited` megy el, nem `accepted`', a
   await userEvent.type(await screen.findByLabelText('Mit ettél?'), 'csirkés wrap')
   await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   await screen.findByText('Csirkés wrap')
-  await userEvent.click(screen.getByRole('button', { name: 'Csirkés wrap növelés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Csirkés wrap növelése' }))
   await save()
   await vi.waitFor(() => expect(reportDraftOutcome)
     .toHaveBeenCalledWith('mock-ai-draft', 'meal_draft', 'edited'))

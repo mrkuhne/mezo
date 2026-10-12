@@ -1,17 +1,19 @@
-import { type CSSProperties, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { CONFIDENCE_WORD } from '@/features/fuel/sheets/learnedBaseFormat'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped } from '@/shared/lib/format'
+import { Acts, FoSheetHead, Lab, Lk, Note, Row, Txt } from '@/shared/ui/folyadek'
+import { Kv, SplitBar } from '@/features/fuel/components/folyadek'
+import { CONFIDENCE_WORD, dec, round10 } from '@/features/fuel/sheets/learnedBaseFormat'
+import { Eq3, rich } from '@/features/fuel/sheets/tanulasPieces'
 
 // Shared, presentational explanation of a composed daily-energy number (base + movement ± deficit).
-// Opened from the Fuel "Mai cél" chips and the Profile Alap-TDEE card; both build the `EnergyBreakdown`
-// prop from their own data (no data hooks here). Design: docs/superpowers/specs/2026-07-27-energy-breakdown-explanation-design.md.
-// Üveg (mezo-me75u.2, uveg-fuel-tobbi `SH.energy`): a sheet-en belül nincs üveg — az egyenlet egy
-// lapos cella, a három szakasz a saját hue-jában árnyalt blokk (a kiemelt fényes kerettel), a
-// csempék lapos cellák a Titanium 3D ikonokkal. Emoji nincs.
-// U10 (mezo-me75u.10): maga a lap is a közös lebegő zsálya üveglap (`<Sheet glass>`).
+// Opened from the Fuel Mai equation sheet („Részletesen, honnan jön a keret") and the Én settings' Alap-TDEE row; both build
+// the `EnergyBreakdown` prop from their own data (no data hooks here). Design: docs/superpowers/specs/2026-07-27-energy-breakdown-explanation-design.md.
+// Folyadék (mezo-n4wf5.5): build target docs/design_2.0/prototypes/vilagos/fuel.js sheet `energy` — one vessel holding the
+// parts (`SplitBar`) with the sum under it, then the three sections, each a label, a small equation of tiles (the result on
+// the liquid) and its sentence. The section named by `initial` carries the domain colour on its label.
 
 export type EnergySection = 'base' | 'movement' | 'deficit'
 export interface EnergyBlock {
@@ -56,67 +58,21 @@ export interface EnergyBreakdown {
   target: number
 }
 
-const BLOCK_ICON: Record<EnergyBlock['kind'], Icon3DName> = { gym: 't-dumbbell', sport: 't-volley', run: 't-run' }
-const PART_TILE: Record<EnergyPart['key'], { icon: Icon3DName; sub: string }> = {
-  planned: { icon: 't-calendar', sub: 'edzésterv' },
-  extra: { icon: 't-steps', sub: 'rögzítve, terven kívül' },
-}
-const SEG_COLOR = { sage: 'var(--dv-sage)', amber: 'var(--dv-amber)', coral: 'var(--dv-coral)' } as const
 const FORMULA_LABEL = { KATCH: 'Katch-McArdle', MSJ: 'Mifflin-St Jeor' } as const
 
-// The app renders plain rounded kcal (no thousands grouping — see the screenshots / BiometricCard).
-const nf = (n: number) => String(Math.round(n))
-// Confidence line SD, rounded to the nearest 10 kcal (mezo-zz91i) — the uncertainty is not that precise.
-const round10 = (n: number) => Math.round(n / 10) * 10
-const signed = (n: number) => (n < 0 ? `−${nf(Math.abs(n))}` : `+${nf(n)}`)
-// HU decimal comma for the small multiplier / rate values (2 fraction digits).
-const dec = (n: number) => n.toLocaleString('hu-HU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+/** Signed, grouped kcal with a real minus sign. */
+const signed = (n: number) => (Math.round(n) < 0 ? `−${fmtGrouped(Math.abs(n))}` : `+${fmtGrouped(n)}`)
 
-// One roomy tile: optional 3D icon + name, uppercase sub-label, display value + faint unit.
-function Tile({ icon, name, sub, value, unit, result, pending }: {
-  icon?: Icon3DName
-  name?: string
-  sub: string
-  value: string
-  unit?: string
-  result?: boolean
-  /** Still-scheduled, not-yet-logged preview (mezo-tb3s2) — faint, no fill. */
-  pending?: boolean
-}) {
-  return (
-    <div className={`flp-etile${result ? ' is-result' : ''}${pending ? ' is-pending' : ''}`}>
-      {icon && <Icon3D name={icon} size={36} />}
-      <div className="flp-etile-val">
-        {value}
-        {unit && <span className="u">{unit}</span>}
-      </div>
-      {name && <span className="flp-etile-nm">{name}</span>}
-      <div className="flp-etile-sub">{sub}</div>
-    </div>
-  )
+function Seg({ on, children }: { on: boolean; children: ReactNode }) {
+  return <div className={`ft-seg${on ? ' on' : ''}`}>{children}</div>
 }
 
-function Seg({ tone, on, children }: { tone: keyof typeof SEG_COLOR; on: boolean; children: ReactNode }) {
-  return (
-    <div className={`flp-eblk${on ? ' is-hl' : ''}`} style={{ '--c': SEG_COLOR[tone] } as CSSProperties}>
-      {children}
-    </div>
-  )
-}
-
-// „Hogy tanultam?” (mezo-3n2so, elo/fuel.html `learnedFoot()`): the learned Alap block ends in ONE
-// summary line — the learned base's word + σ̂ — and „Részletek ›” to the learning page, where the
-// six-section explainer now lives (with the week-by-week chart and the day switches). Rendered only
-// on the learned path, so the formula path (and the Én hub's TDEE) never needs a router.
-function LearnedSummaryLink({ line, onClose }: { line: string; onClose: () => void }) {
+// „Hogy tanultam?” (mezo-3n2so): the learned Alap section ends in ONE row — the learned base's word + σ̂ — to the learning
+// page, where the six steps live (with the week-by-week chart and the day switches). Rendered only on the learned path, so
+// the formula path (and the Én hub's TDEE) never needs a router.
+function LearnedRow({ title, sub, onClose }: { title: string; sub: string; onClose: () => void }) {
   const navigate = useNavigate()
-  return (
-    <button type="button" className="flp-how-btn" onClick={() => { onClose(); navigate('/fuel/tanulas') }}>
-      <Icon3D name="t-lens" size={30} />
-      <span className="lbl">{line}<small>Hogy tanultam? — hétről hétre, és a napjaid</small></span>
-      <span className="more">Részletek ›</span>
-    </button>
-  )
+  return <Row className="ft-learned" icon="t-lens" title={title} sub={sub} onClick={() => { onClose(); navigate('/fuel/tanulas') }} />
 }
 
 export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
@@ -124,170 +80,116 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
   initial: EnergySection
   onClose: () => void
 }) {
+  const M = useM()
+  const E = M.fuelTanulas.energy
   const { base, movement, deficit, target } = breakdown
-  const hl = (s: EnergySection) => s === initial
+  const kc = fmtGrouped
+  const learned = base.source === 'learned'
+  const word = base.confidence ? CONFIDENCE_WORD[base.confidence] : null
+  const sd = base.sdKcal != null ? String(round10(base.sdKcal)) : null
+  const learnedTitle = word && sd ? E.learnedRowFull(word, sd) : word ? E.learnedRowWord(word) : sd ? E.learnedRowSd(sd) : E.learnedRow
+  const blocks = movement.blocks ?? []
+  const done = blocks.filter(b => b.done)
+  const pending = blocks.filter(b => !b.done)
 
   return (
-    <Sheet glass onClose={onClose} labelledBy="energy-breakdown-title" className="uvl-fuel">
+    <Sheet onClose={onClose} labelledBy="energy-breakdown-title" className="fo-sheet ft-energy">
       {(close) => (
         <>
-          <div className="flp-eh">
-            <Icon3D name="t-ring" size={48} />
-            <div className="col" style={{ flex: 1, minWidth: 0 }}>
-              <span className="uv-eyebrow">Napi cél</span>
-              <h2 id="energy-breakdown-title">
-                Honnan jön a {nf(target)} kcal?
-              </h2>
-            </div>
-            <button className="flp-x" onClick={close} aria-label="Bezárás">
-              <Icon name="x" size={12} />
-            </button>
-          </div>
-          <p className="flp-elead">
-            {movement.isWeeklyAvg
-              ? <>A napi cél nem statikus — az alapanyagcserédből, a heti betáblázott mozgásból{deficit ? ' és a célod deficitjéből' : ''} áll össze.</>
-              : 'A napi cél nem statikus — az alapigényedből, a ma logolt mozgásodból és a célodból áll össze.'}
-          </p>
+          <FoSheetHead
+            icon="t-ring" titleId="energy-breakdown-title" onClose={close}
+            title={E.title(kc(target))}
+            sub={movement.isWeeklyAvg ? (deficit ? E.leadWeeklyDeficit : E.leadWeekly) : E.lead}
+          />
 
-          {/* Equation bar — at-a-glance summary */}
-          <div className="flp-eq">
-            <div className="t base"><div className="v">{nf(base.kcal)}</div><div className="k">Alap</div></div>
-            <div className="op">+</div>
-            <div className="t move"><div className="v">{nf(movement.kcal)}</div><div className="k">Mozgás</div></div>
-            {deficit && (
-              <>
-                <div className="op">−</div>
-                <div className="t def"><div className="v">{nf(Math.abs(deficit.kcal))}</div><div className="k">Deficit</div></div>
-              </>
-            )}
-            <div className="op">=</div>
-            <div className="t res"><div className="v">{nf(target)}</div><div className="k">Mai cél</div></div>
+          {/* The whole number at a glance: one vessel of its parts, and the sum that closes on the target. */}
+          <div role="img" aria-label={E.splitAria(kc(base.kcal), kc(movement.kcal), kc(target))}>
+            <SplitBar height={30} parts={[
+              { label: E.base, pct: Math.max(0, base.kcal), color: 'var(--dom)', value: kc(base.kcal) },
+              { label: E.movement, pct: Math.max(0, movement.kcal), color: 'var(--fx-water)', value: `+${kc(movement.kcal)}` },
+              ...(deficit ? [{ label: E.deficit, pct: Math.abs(deficit.kcal), color: 'var(--fo-faint)', value: `−${kc(Math.abs(deficit.kcal))}` }] : []),
+            ]} />
+          </div>
+          <div className="ft-sum">
+            <span>{kc(base.kcal)} + {kc(movement.kcal)}{deficit && <> − {kc(Math.abs(deficit.kcal))}</>}</span>
+            <b>= {kc(target)}</b>
           </div>
 
           {/* BASE */}
-          <Seg tone="sage" on={hl('base')}>
-            <div className="flp-esh">
-              <span className="flp-estit">{base.source === 'learned' ? 'Alap · tanult' : 'Alaphő · NEAT'}</span>
-              <span className="flp-esamt">{nf(base.kcal)}</span>
-            </div>
-            {base.source === 'learned' ? (
+          <Seg on={initial === 'base'}>
+            {learned ? (
               <>
-                <div className="flp-etiles">
-                  {base.formulaKcal != null && (
-                    <>
-                      <Tile icon="t-hike" name="Képlet szerint" sub="BMR × NEAT" value={nf(base.formulaKcal)} unit="kcal" />
-                      <div className="op">→</div>
-                    </>
-                  )}
-                  <Tile result sub="Tanult alap" value={nf(base.kcal)} unit="kcal" />
-                </div>
-                <p className="flp-ewhy">
-                  Ennyit égetsz <b>edzés nélkül</b> — az app a <b>súlytrendedből és a felírt evésedből</b> tanulta meg.
-                  {base.formulaKcal != null && <> A képlet {nf(base.formulaKcal)} kcal-t mondana.</>}
-                </p>
-                <LearnedSummaryLink
-                  onClose={onClose}
-                  line={['Tanult alap', base.confidence && CONFIDENCE_WORD[base.confidence], base.sdKcal != null && `±${nf(round10(base.sdKcal))} kcal`]
-                    .filter(Boolean)
-                    .join(' · ')}
+                <Lab>{E.secLearned(kc(base.kcal))}</Lab>
+                <Eq3
+                  terms={base.formulaKcal != null ? [[kc(base.formulaKcal), E.byFormula]] : []} arrow="→"
+                  result={[kc(base.kcal), E.learnedBase]}
                 />
+                <Txt>{rich(base.formulaKcal != null ? E.learnedTextFormula(kc(base.formulaKcal)) : E.learnedText)}</Txt>
+                <LearnedRow onClose={onClose} title={learnedTitle} sub={E.learnedRowSub} />
               </>
             ) : (
               <>
-                <div className="flp-etiles">
-                  <Tile icon="t-flame" name="Alapanyagcsere" sub={FORMULA_LABEL[base.formula]} value={nf(base.bmr)} unit="kcal" />
-                  <div className="op">×</div>
-                  <Tile icon="t-hike" name="NEAT-szorzó" sub={base.neatLabel || 'életmód'} value={dec(base.neat)} unit="×" />
-                  <div className="op">=</div>
-                  <Tile result sub="Alaphő" value={nf(base.kcal)} unit="kcal" />
-                </div>
-                <span className="flp-einfo">Képlet alapján</span>
-                <p className="flp-ewhy">
-                  Az <b>alapanyagcseréd</b> ({FORMULA_LABEL[base.formula]}) szorozva az <b>életmód-szorzóddal</b>. Ennyit égetsz el egy átlagos napon <b>edzés nélkül</b>.
-                </p>
+                <Lab>{E.secFormula(kc(base.kcal))}</Lab>
+                <Eq3
+                  terms={[[kc(base.bmr), E.resting(FORMULA_LABEL[base.formula])], [dec(base.neat, 2), E.lifestyle(base.neatLabel || E.lifestyleDefault)]]} op="×"
+                  result={[kc(base.kcal), E.base]}
+                />
+                <Txt>{rich(E.formulaText(FORMULA_LABEL[base.formula]))}</Txt>
               </>
             )}
           </Seg>
 
           {/* MOVEMENT */}
-          <Seg tone="amber" on={hl('movement')}>
-            <div className="flp-esh">
-              <span className="flp-estit">{movement.parts ? 'Mozgás · ma logolva' : movement.label ?? 'Betáblázott mozgás'}</span>
-              <span className="flp-esamt">{signed(movement.kcal)}</span>
-            </div>
-            <div className="flp-etiles">
-              {movement.parts ? (
-                <>
-                  {movement.parts.map((p, i) => (
-                    <div key={p.key} style={{ display: 'contents' }}>
-                      {i > 0 && <div className="op">+</div>}
-                      <Tile icon={PART_TILE[p.key].icon} name={p.label} sub={PART_TILE[p.key].sub} value={nf(p.kcal)} unit="kcal" />
-                    </div>
-                  ))}
-                  <div className="op">=</div>
-                  <Tile result sub="Mai mozgás" value={signed(movement.kcal)} unit="kcal" />
-                </>
-              ) : (
-                <Tile icon="t-calendar" name="Heti átlag" sub="betáblázott ÷ 7" value={signed(movement.kcal)} unit="kcal" />
-              )}
-            </div>
-            {movement.parts && movement.blocks && movement.blocks.some(b => b.done) && (
+          <Seg on={initial === 'movement'}>
+            {movement.parts ? (
               <>
+                <Lab>{E.secMovementToday(signed(movement.kcal))}</Lab>
+                <Eq3 terms={movement.parts.map(p => [kc(p.kcal), p.label])} op="+" result={[signed(movement.kcal), E.todayMovement]} />
+              </>
+            ) : (
+              <>
+                <Lab>{E.secMovementWeekly(movement.label ?? E.scheduled, signed(movement.kcal))}</Lab>
+                <Eq3 terms={[]} result={[signed(movement.kcal), E.weeklyAvg]} />
+              </>
+            )}
+            {movement.parts && done.length > 0 && (
+              <div className="ft-info">
                 {/* Informational only — the day's sessions are NOT summands of the served total. */}
-                <span className="flp-einfo">A mai edzéseid becsült többlete, tájékoztatásul</span>
-                <div className="flp-etiles is-info">
-                  {movement.blocks.filter(b => b.done).map((b, i) => (
-                    <Tile key={i} icon={BLOCK_ICON[b.kind]} name={b.label} sub={`${b.min} perc`} value={nf(b.kcal)} unit="kcal" />
-                  ))}
-                </div>
-              </>
+                <Lab>{E.doneBlocks}</Lab>
+                <Kv items={done.map(b => [E.block(b.label, b.min), E.kcal(kc(b.kcal))])} />
+              </div>
             )}
-            {movement.parts && (movement.pending ?? 0) > 0 && (movement.blocks ?? []).some(b => !b.done) && (
-              <>
+            {movement.parts && (movement.pending ?? 0) > 0 && pending.length > 0 && (
+              <div className="ft-info pending">
                 {/* Not yet logged — previewed separately, still not a summand of `kcal` (mezo-tb3s2).
-                    Gated on a not-done tile too: the FE's done rule can mark a block done the backend
+                    Gated on a not-done block too: the FE's done rule can mark a block done the backend
                     still counts as pending (e.g. a non-meso gym workout) — never a header over nothing. */}
-                <span className="flp-einfo">Még jön, ha megcsinálod · a keretben még nincs benne</span>
-                <div className="flp-etiles is-info">
-                  {(movement.blocks ?? []).filter(b => !b.done).map((b, i) => (
-                    <Tile key={i} icon={BLOCK_ICON[b.kind]} name={b.label} sub={`tervezett · ${b.min} perc`} value={`+${nf(b.kcal)}`} unit="kcal" pending />
-                  ))}
-                </div>
-              </>
+                <Lab>{E.pendingBlocks}</Lab>
+                <Kv items={pending.map(b => [E.blockPlanned(b.label, b.min), E.kcal(`+${kc(b.kcal)}`)])} />
+              </div>
             )}
-            <p className="flp-ewhy">
-              {movement.parts
-                ? <>A keret <b>akkor nő, amikor rögzíted</b> az edzést — a tervezett, még meg nem csinált edzés csak halványan látszik. A becslés a nyugalmi energiád feletti többletet számolja; ha rendszeresen túl- vagy alábecsül, a heti tanulás kiigazítja az alapodat.</>
-                : <>A <b>heti</b> edzésterved napi átlaga — a nyugalmi energiád feletti többlet, a saját alapanyagcseréd alapján.</>}
-            </p>
+            <Note>{movement.parts ? E.movementNote : E.movementNoteWeekly}</Note>
           </Seg>
 
           {/* DEFICIT — a derivation (goal rate → prescribed daily gap), NOT an exact equation:
               the engine's projected rate tracks the real weight trend, so rate×kcalPerKg need not
               reconcile with the daily balance. Hence "→", and 7700 stays a rough guide in the prose. */}
           {deficit && (
-            <Seg tone="coral" on={hl('deficit')}>
-              <div className="flp-esh">
-                <span className="flp-estit">Deficit · {deficit.goalLabel}</span>
-                <span className="flp-esamt">{signed(deficit.kcal)}</span>
-              </div>
-              <div className="flp-etiles">
-                <Tile icon="t-ring" name="Cél ütem" sub={deficit.goalLabel} value={dec(Math.abs(deficit.rateKgPerWk))} unit="kg/hét" />
-                <div className="op">→</div>
-                <Tile result sub="Napi deficit" value={signed(deficit.kcal)} unit="kcal" />
-              </div>
-              <p className="flp-ewhy">
+            <Seg on={initial === 'deficit'}>
+              <Lab>{E.secDeficit(deficit.goalLabel, signed(deficit.kcal))}</Lab>
+              <Eq3
+                terms={[[dec(Math.abs(deficit.rateKgPerWk), 2), E.pace]]} arrow="→"
+                result={[signed(deficit.kcal), E.dailyDeficit]}
+              />
+              <Note>
                 {deficit.rationale
                   ? deficit.rationale
-                  : (
-                    <>
-                      A <b>{deficit.goalLabel}</b> célod ~<b>{dec(Math.abs(deficit.rateKgPerWk))} kg/hét</b> üteméhez a motor napi ~{nf(Math.abs(deficit.kcal))} kcal deficitet szab (≈7700 kcal / 1 kg zsír, a valós súlytrendedhez igazítva). Ennyivel eszel a fenntartó alatt.
-                    </>
-                  )}
-              </p>
+                  : E.deficitNote(deficit.goalLabel, dec(Math.abs(deficit.rateKgPerWk), 2), kc(Math.abs(deficit.kcal)), kc(7700))}
+              </Note>
             </Seg>
           )}
-          <div style={{ height: 10 }} />
+
+          <Acts><Lk onClick={close}>{M.fuelTanulas.close}</Lk></Acts>
         </>
       )}
     </Sheet>

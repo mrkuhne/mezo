@@ -1,7 +1,8 @@
 // ============================================================
-// Mezo · FuelMacroRings tests (Fuel Titanium S1a, mezo-33k6 — manifest row A2).
-// The owner-approved macro identity is the contract here: hús/gabona/avokádó/növény/víz,
-// each icon ABOVE its own ring, each ring in its own color, honest-null on an unknown target.
+// Mezo · FuelMacroRings tests (Fuel Titanium S1a, mezo-33k6 — manifest row A2; Folyadék F5,
+// mezo-n4wf5.5: the rings became five VIALS). The owner-approved macro identity is the contract
+// here: meat / grain / avocado / leaf / water, each vial in its own colour, filled to its share of
+// the day's target, honest-null on an unknown target.
 // ============================================================
 import { render, screen } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
@@ -17,53 +18,70 @@ const RINGS: RingVM[] = [
   { key: 'water', label: 'víz', pct: 46, value: '1,9 l', target: '4 l', color: '#6fb6d8' },
 ]
 
-// A2 (mezo-33k6): az owner által rögzített makró-identitás — hús/gabona/avokádó/növény/víz
-// ikon a gyűrű FÖLÖTT, és minden gyűrű a saját színét viseli.
-test('öt gyűrű, mindegyik a saját ikonjával a gyűrű fölött', () => {
+// A2: the owner's macro identity — one glyph per vial, standing in its tube, each vial in its own colour.
+test('öt kémcső, mindegyik a saját ikonjával és színével', () => {
   const { container } = render(<FuelMacroRings rings={RINGS} />)
-  const cells = container.querySelectorAll('.fmx-cell')
-  expect(cells).toHaveLength(5)
-  expect(Array.from(cells).map(c => c.querySelector('use')?.getAttribute('href'))).toEqual([
-    // Üveg (mezo-me75u.1): the same identity in the Titanium 3D set (CLAY_TO_3D).
+  const vials = container.querySelectorAll('.fo-vial')
+  expect(vials).toHaveLength(5)
+  expect(Array.from(vials).map(c => c.querySelector('.fo-tube use')?.getAttribute('href'))).toEqual([
     '#t-meat', '#t-carb', '#t-avocado', '#t-fiber', '#t-water',
   ])
-  // az ikon a gyűrű ELŐTT áll a DOM-ban — a vizuális „fölötte" ennek a CSS-párja
-  for (const cell of cells) {
-    expect(cell.firstElementChild!.className).toContain('fmx-ico')
-  }
+  expect((vials[0] as HTMLElement).style.getPropertyValue('--c')).toBe('var(--fx-protein)')
+  expect((vials[4] as HTMLElement).style.getPropertyValue('--c')).toBe('var(--fx-water)')
+  // a number is a level: no ring anywhere
+  expect(container.querySelector('circle')).toBeNull()
 })
 
-test('minden gyűrű a saját színét és töltöttségét kapja', () => {
+test('minden kémcső a cél arányáig telik, a szám a mennyiség, alatta a cél', () => {
   const { container } = render(<FuelMacroRings rings={RINGS} />)
-  const first = container.querySelector('.fmx-ring') as HTMLElement
-  expect(first.style.getPropertyValue('--macro-color')).toBe('#e0796a')
-  expect(first.style.getPropertyValue('--ring-progress')).toBe('95')
+  const first = container.querySelector('.fo-vial') as HTMLElement
+  expect((first.querySelector('.fo-tube .l') as HTMLElement).style.getPropertyValue('--p')).toBe('95%')
+  expect(first.querySelector('b')).toHaveTextContent('148')
+  expect(first.querySelector('small')).toHaveTextContent('fehérje/ 155 g')
+  // the litre keeps its decimal, the unit stands with the target
+  const water = container.querySelectorAll('.fo-vial')[4]
+  expect(water.querySelector('b')).toHaveTextContent('1,9')
+  expect(water.querySelector('small')).toHaveTextContent('víz/ 4 l')
 })
 
-// Őszinte-null: cél nélkül nincs százalék és nincs kitalált nulla.
-test('ismeretlen célnál a gyűrű üres marad, nem nullát mutat', () => {
+// Honest-null: without a target there is no level and no fabricated zero.
+test('ismeretlen célnál a kémcső száraz marad, nem nullát mutat', () => {
   const { container } = render(
     <FuelMacroRings rings={[{ ...RINGS[0], pct: 0, value: '—', target: '—' }]} />,
   )
-  expect(screen.getByText('—')).toBeInTheDocument()
-  expect(container.querySelector('.fmx-ring')!.className).toContain('is-empty')
+  expect(container.querySelector('.fo-vial b')).toHaveTextContent('—')
+  expect((container.querySelector('.fo-tube .l') as HTMLElement).style.getPropertyValue('--p')).toBe('0%')
 })
 
-test('a gyűrű képernyőolvasónak egy mondatban mondja el az értéket', () => {
-  render(<FuelMacroRings rings={RINGS} />)
-  expect(screen.getByLabelText('fehérje: 148 g / 155 g')).toBeInTheDocument()
+test('a sor csoportként nevezi meg magát, és a szénhidrát szűk kijelzőre rövid nevet is hord', () => {
+  const { container } = render(<FuelMacroRings rings={RINGS} />)
+  expect(screen.getByRole('group', { name: 'Makrók, rost és víz' })).toBeInTheDocument()
+  expect(container.querySelector('.fa-w')).toHaveTextContent('szénhidrát')
+  expect(container.querySelector('.fa-s')).toHaveTextContent('Szénh.')
 })
 
-// A víz-gyűrű a hub EGYETLEN víz-logoló ajtaja (a retiráló KeretHero-tól örökölve) — ha a
-// szülő átad `onWater`-t, a cella igazi gomb lesz; nélküle a sor teljesen passzív marad.
-test('onWater nélkül egyetlen gyűrű sem gomb', () => {
+// Kímélő mód / sérülés: the protein vial carries the „fő cél" mark.
+test('a fő cél jelét csak a kijelölt kémcső viseli', () => {
+  const { container, rerender } = render(<FuelMacroRings rings={RINGS} />)
+  expect(container.querySelector('.fa-mac.lead')).toBeNull()
+  expect(screen.queryByText('fő cél')).toBeNull()
+  rerender(<FuelMacroRings rings={RINGS} leadKey="p" />)
+  expect(container.querySelector('.fa-mac.lead')).not.toBeNull()
+  expect(container.querySelectorAll('.fo-vial')[0].querySelector('.fo-tube em')).toHaveTextContent('fő cél')
+  expect(container.querySelectorAll('.fo-tube em')).toHaveLength(1)
+})
+
+// The water vial is the hub's ONLY water-logging door — with `onWater` it is a real button;
+// without it the row is fully passive.
+test('onWater nélkül egyetlen kémcső sem gomb', () => {
   const { container } = render(<FuelMacroRings rings={RINGS} />)
   expect(container.querySelectorAll('button')).toHaveLength(0)
 })
 
-test('onWater-rel a víz gyűrűje gomb, és koppintásra hív', async () => {
+test('onWater-rel a víz kémcsöve gomb, és koppintásra hív', async () => {
   const onWater = vi.fn()
   render(<FuelMacroRings rings={RINGS} onWater={onWater} />)
-  await userEvent.click(screen.getByRole('button', { name: /^Víz logolása/ }))
+  expect(screen.getAllByRole('button')).toHaveLength(1)
+  await userEvent.click(screen.getByRole('button', { name: 'Víz logolása · 1,9 l / 4 l' }))
   expect(onWater).toHaveBeenCalledTimes(1)
 })

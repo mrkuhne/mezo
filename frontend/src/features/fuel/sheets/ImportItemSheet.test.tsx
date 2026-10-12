@@ -53,7 +53,7 @@ test('a sheet alapból Fotó módban nyílik (mezo-ymt4)', () => {
   expect(screen.getByRole('button', { name: 'Fotó' })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByRole('button', { name: 'Link' })).toHaveAttribute('aria-pressed', 'false')
   expect(screen.queryByRole('button', { name: 'Keresés (OFF)' })).not.toBeInTheDocument()
-  expect(screen.getByLabelText('Címke fotó')).toBeInTheDocument()
+  expect(screen.getByLabelText('Címkefotó')).toBeInTheDocument()
 })
 
 // ---- Link mode (URL scrape wizard, mezo-8vum) ---------------------------------------------
@@ -70,7 +70,7 @@ test('toggling to Link mode shows the URL input and the Beolvasás CTA', () => {
   expect(screen.getByRole('button', { name: /Beolvasás/ })).toBeInTheDocument()
 })
 
-test('Beolvasás scrapes the URL and previews the mock draft with a myprotein.hu source badge', async () => {
+test('Beolvasás scrapes the URL and previews the mock draft with its basis and capture mode', async () => {
   vi.useFakeTimers()
   render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
 
@@ -83,7 +83,8 @@ test('Beolvasás scrapes the URL and previews the mock draft with a myprotein.hu
 
   // Canned MOCK_SCRAPE_DRAFT lands as the editable draft; source badge shows the derived vendor.
   expect(screen.getByLabelText('Tétel neve')).toHaveValue('Impact Whey Protein · vanília')
-  expect(screen.getByText('myprotein.hu')).toBeInTheDocument()
+  // the draft's head names the basis and HOW it arrives (a named shop = katalógus)
+  expect(screen.getByText('Polcra kerül · 100 g-ra · katalógus')).toBeInTheDocument()
 })
 
 test('a link-scrape draft visszaigazolása is mutatja a négy tápértéket', async () => {
@@ -96,13 +97,14 @@ test('a link-scrape draft visszaigazolása is mutatja a négy tápértéket', as
   await act(async () => { vi.advanceTimersByTime(700) })
   vi.useRealTimers()
 
-  expect(await screen.findByText('Telített')).toBeInTheDocument()
-  expect(screen.getByText('Cukor')).toBeInTheDocument()
-  expect(screen.getByText('Rost')).toBeInTheDocument()
-  expect(screen.getByText('Só')).toBeInTheDocument()
+  // the shared `Nutri` strip (fuelKozos.facts): four quiet cells
+  expect(await screen.findByText('tel. zsír')).toBeInTheDocument()
+  expect(screen.getByText('cukor')).toBeInTheDocument()
+  expect(screen.getByText('rost')).toBeInTheDocument()
+  expect(screen.getByText('só')).toBeInTheDocument()
 })
 
-test('a needsReview draft renders the AI-uncertainty warning line', async () => {
+test('a needsReview draft renders the uncertainty warning line („Mezo", never „az AI")', async () => {
   hoisted.scrape = () => Promise.resolve({ ...MOCK_SCRAPE_DRAFT, needsReview: true })
   render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
 
@@ -110,7 +112,7 @@ test('a needsReview draft renders the AI-uncertainty warning line', async () => 
   fireEvent.change(screen.getByPlaceholderText(/https/), { target: { value: MYPROTEIN_URL } })
   fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
 
-  expect(await screen.findByText(/Az AI nem teljesen biztos a számokban/)).toBeInTheDocument()
+  expect(await screen.findByText(/Mezo nem teljesen biztos a számokban/)).toBeInTheDocument()
 })
 
 test('a scrape rejection shows the fetch-error copy and returns to the input phase', async () => {
@@ -147,7 +149,7 @@ test('photo mode: selecting a label photo enables Beolvasás and lands on the sh
   expect(screen.getByRole('button', { name: /Beolvasás/ })).toBeDisabled()
 
   const file = new File(['x'], 'label.jpg', { type: 'image/jpeg' })
-  fireEvent.change(screen.getByLabelText('Címke fotó'), { target: { files: [file] } })
+  fireEvent.change(screen.getByLabelText('Címkefotó'), { target: { files: [file] } })
   fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
 
   await act(async () => { vi.advanceTimersByTime(700) }) // mock photoExtract demo delay
@@ -160,16 +162,17 @@ test('a fotó-draft visszaigazolása is mutatja a négy tápértéket', async ()
   render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
 
   fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
-  fireEvent.change(screen.getByLabelText('Címke fotó'),
+  fireEvent.change(screen.getByLabelText('Címkefotó'),
     { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
   fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
   await act(async () => { vi.advanceTimersByTime(700) })
   vi.useRealTimers()
 
-  expect(await screen.findByText('Telített')).toBeInTheDocument()
-  expect(screen.getByText('Cukor')).toBeInTheDocument()
-  expect(screen.getByText('Rost')).toBeInTheDocument()
-  expect(screen.getByText('Só')).toBeInTheDocument()
+  // the shared `Nutri` strip (fuelKozos.facts): four quiet cells
+  expect(await screen.findByText('tel. zsír')).toBeInTheDocument()
+  expect(screen.getByText('cukor')).toBeInTheDocument()
+  expect(screen.getByText('rost')).toBeInTheDocument()
+  expect(screen.getByText('só')).toBeInTheDocument()
 })
 
 test('photo mode: empty-name draft disables Polcra until a name is typed (mezo-a74c)', async () => {
@@ -178,7 +181,7 @@ test('photo mode: empty-name draft disables Polcra until a name is typed (mezo-a
 
   render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
   fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
-  fireEvent.change(screen.getByLabelText('Címke fotó'),
+  fireEvent.change(screen.getByLabelText('Címkefotó'),
     { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
   fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
   await act(async () => { await vi.runAllTimersAsync() })
@@ -196,12 +199,12 @@ test('photo mode: re-extract chip shows when the name is unreadable (mezo-a74c)'
 
   render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
   fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
-  fireEvent.change(screen.getByLabelText('Címke fotó'),
+  fireEvent.change(screen.getByLabelText('Címkefotó'),
     { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
   fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
   await act(async () => { await vi.runAllTimersAsync() })
 
-  expect(screen.getByText('+ előlap fotó (név/márka)')).toBeInTheDocument()
+  expect(screen.getByText('+ előlap fotó (név, márka)')).toBeInTheDocument()
   vi.useRealTimers()
 })
 
@@ -212,7 +215,7 @@ test('photo mode: re-extract chip rejects an oversized front photo without re-ex
 
   render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
   fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
-  fireEvent.change(screen.getByLabelText('Címke fotó'),
+  fireEvent.change(screen.getByLabelText('Címkefotó'),
     { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
   fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
   await act(async () => { await vi.runAllTimersAsync() })
@@ -237,7 +240,7 @@ test('photo mode: origin derives from the draft, surviving a mode switch mid-ext
 
   render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
   fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
-  fireEvent.change(screen.getByLabelText('Címke fotó'),
+  fireEvent.change(screen.getByLabelText('Címkefotó'),
     { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
   fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
 
@@ -261,7 +264,7 @@ test('photo mode: confirm passes the origin marker to importItem', async () => {
 
   render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
   fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
-  fireEvent.change(screen.getByLabelText('Címke fotó'),
+  fireEvent.change(screen.getByLabelText('Címkefotó'),
     { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
   fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
   await act(async () => { await vi.runAllTimersAsync() })

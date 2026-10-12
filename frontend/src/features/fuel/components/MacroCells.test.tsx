@@ -8,9 +8,9 @@ test('renders the four macro values with their labels', () => {
   expect(screen.getByText('12')).toBeInTheDocument()
   expect(screen.getByText('22')).toBeInTheDocument()
   expect(screen.getByText('kcal')).toBeInTheDocument()
-  expect(screen.getByText('Prot')).toBeInTheDocument()
-  expect(screen.getByText('Carb')).toBeInTheDocument()
-  expect(screen.getByText('Fat')).toBeInTheDocument()
+  expect(screen.getByText('feh.')).toBeInTheDocument()
+  expect(screen.getByText('szénh.')).toBeInTheDocument()
+  expect(screen.getByText('zsír')).toBeInTheDocument()
 })
 
 test('renders the per-basis rail label when given', () => {

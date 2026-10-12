@@ -9,6 +9,7 @@ import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
 import { useRecipes } from '@/data/hooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { FrameProvider, useFrame } from '@/shared/ui/folyadek'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -17,16 +18,24 @@ function LocationProbe() {
   const loc = useLocation()
   return <div data-testid="location">{loc.pathname}</div>
 }
+/** The page's name lives in the title bar (the frame): the probe prints what the page handed to it. */
+function TitleProbe() {
+  const f = useFrame()
+  return <div data-testid="frame-title"><small>{f.eyebrow}</small><h1>{f.title}</h1></div>
+}
 const newQc = () => new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
 function renderNew(qc: QueryClient) {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={['/fuel/recipes', '/fuel/recipes/new']} initialIndex={1}>
-        <Routes>
-          <Route path="/fuel/recipes/new" element={<RecipeEditorPage />} />
-          <Route path="/fuel/recipes" element={<LocationProbe />} />
-        </Routes>
+        <FrameProvider>
+          <TitleProbe />
+          <Routes>
+            <Route path="/fuel/recipes/new" element={<RecipeEditorPage />} />
+            <Route path="/fuel/recipes" element={<LocationProbe />} />
+          </Routes>
+        </FrameProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -53,19 +62,40 @@ async function closePicker() {
   await waitForElementToBeRemoved(() => screen.queryByText('Válassz hozzávalót'), { timeout: 2000 })
 }
 
-// Üveg U2 (mezo-me75u.2): the Fuel sub-head over ONE sage glass form card; the eyebrow
-// ("Fuel · Receptek") + the heading keeps the current title content (the typed name, or the
-// "Új recept" placeholder).
-test('Üveg shell: sub-head + eyebrow over a glass form card, the heading keeps the title', async () => {
+// Folyadék (mezo-n4wf5.5): the kit page — the title bar carries „Fuel · Receptek" + the current title (the typed
+// name, or „Új recept"); the page opens with the pot hero, three numbered sections and the floating foot.
+test('Folyadék shell: the frame title follows the name; hero, three sections, the foot', async () => {
   const qc = newQc()
   const { container } = renderNew(qc)
-  expect(container.querySelector('.mz-page')).toBeNull()
-  expect(container.querySelector('.fmx-page.fkx-reditor .fmx-subhead')).toBeInTheDocument()
-  expect(container.querySelector('.fkx-fcard.glass')).toBeInTheDocument()
+  expect(container.querySelector('.mz-page, .fmx-subhead, .glass, .fkx-fcard')).toBeNull()
+  expect(container.querySelector('.fo-page.fc-page.has-foot > .fo-hero .fx-pot')).toBeInTheDocument()
+  expect(container.querySelector('.fo-page > .fo-foot')).toBeInTheDocument()
   expect(screen.getByText('Fuel · Receptek')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Új recept' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Új recept' })).toBeInTheDocument()
+  for (const name of [/^1\s*Alapok$/, /^2\s*Hozzávalók · 0$/, /^3\s*Címkék$/]) {
+    expect(screen.getByRole('heading', { name })).toBeInTheDocument()
+  }
+  // the editor starts empty: the empty pot, its sentence, no basis switch yet
+  expect(screen.getByText('A fazék még üres.')).toBeInTheDocument()
+  expect(screen.queryByRole('group', { name: 'Makró-bázis' })).toBeNull()
   await userEvent.type(screen.getByPlaceholderText(/Tonhalsaláta/), 'Teszt recept')
-  expect(screen.getByRole('heading', { name: 'Teszt recept' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Teszt recept' })).toBeInTheDocument()
+})
+
+// The star is its own toggle beside the four meals (never a fifth meal), and a tag is added with Enter and removed by a tap.
+test('the star toggles on its own; a tag is added with Enter and removed by a tap', async () => {
+  renderNew(newQc())
+  const meals = screen.getByRole('group', { name: 'Étkezés' })
+  expect([...meals.querySelectorAll('button')].map(b => b.textContent)).toEqual(['Reggeli', 'Ebéd', 'Vacsora', 'Uzsonna'])
+  const star = screen.getByRole('button', { name: 'Csillag' })
+  expect(star).toHaveAttribute('aria-pressed', 'false')
+  await userEvent.click(star)
+  expect(star).toHaveAttribute('aria-pressed', 'true')
+  expect(star).toHaveTextContent('Csillagos')
+  expect(screen.getByRole('button', { name: 'Reggeli' })).toHaveAttribute('aria-pressed', 'true')
+  await userEvent.type(screen.getByLabelText('Új címke'), 'gyors{enter}')
+  await userEvent.click(screen.getByRole('button', { name: 'gyors címke törlése' }))
+  expect(screen.queryByRole('button', { name: 'gyors címke törlése' })).toBeNull()
 })
 
 test('create mode: Mentés is disabled until a name + an ingredient are present', async () => {
@@ -154,16 +184,18 @@ test('real mode: a picked pantry ingredient resolves to its name + macros, not t
   expect(screen.getAllByText('110').length).toBeGreaterThan(0)
 })
 
-test('a picked row renders its MacroCells contribution in the editor', async () => {
+test('a picked row renders its macro contribution in the editor', async () => {
   const qc = newQc()
   renderNew(qc)
   await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
   const adds = await screen.findAllByRole('button', { name: /hozzáadása/ })
   await userEvent.click(adds[0])
   await closePicker()
-  // exactly one ingredient line, showing MacroCells (Prot label)
-  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(1)
-  expect(screen.getAllByText('Prot').length).toBeGreaterThan(0)
+  // exactly one ingredient line, showing its three macro cells („feh." label) — and the basis switch appears
+  expect(screen.getAllByRole('button', { name: /eltávolítása$/ })).toHaveLength(1)
+  expect(screen.getAllByText('feh.').length).toBeGreaterThan(0)
+  expect(screen.getByRole('heading', { name: /Hozzávalók · 1/ })).toBeInTheDocument()
+  expect(screen.getByRole('group', { name: 'Makró-bázis' })).toBeInTheDocument()
 })
 
 // --- mezo-3vu4: supplements as ingredients + multi-add picker ---
@@ -188,7 +220,7 @@ test('the picker stays open after a pick so several ingredients can be added in 
   // add a second, different item, then confirm the editor holds two lines
   const more = screen.getAllByRole('button', { name: /hozzáadása/ })
   await userEvent.click(more[0])
-  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(2)
+  expect(screen.getAllByRole('button', { name: /eltávolítása$/ })).toHaveLength(2)
 })
 
 test('an already-added item is shown as added and cannot be added twice', async () => {
@@ -284,7 +316,7 @@ test('edit mode: the SZEREP control is seeded from the edited recipe', async () 
 
 test('the SZEREP helper text frames the role as a different rubric, not a bonus', async () => {
   renderNew(newQc())
-  expect(screen.getByText('SZEREP')).toBeInTheDocument()
+  expect(screen.getByText('Szerep')).toBeInTheDocument()
   expect(screen.getByText(/milyen mérce szerint pontozzuk/)).toBeInTheDocument()
 })
 

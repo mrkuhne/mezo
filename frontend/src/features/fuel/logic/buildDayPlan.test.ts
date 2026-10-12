@@ -437,6 +437,20 @@ test('any logged snack on a 3-meal day (no snack window) is never dropped', () =
   expect(doneSnacks).toHaveLength(1)
   expect(doneSnacks[0]).toMatchObject({ mealId: 's1', mealName: 'Tízórai', time: '15:00', kcal: 180 })
 })
+// Behaviour change 1 (owner 2026-10-12, mezo-n4wf5.5): a meal logged outside every window is titled
+// „Ablakon kívül · HH:mm" — never after the day part or a same-kind window it does not sit on.
+test('a window-less extra log is titled „Ablakon kívül · HH:mm", whatever its slot kind', () => {
+  const s = meal({ id: 's1', slot: 'snack', title: 'Tízórai', loggedAt: '2026-07-02T15:00:00', kcal: 180, p: 9, c: 22, f: 6 })
+  const b1 = meal({ id: 'b1', slot: 'breakfast', loggedAt: '2026-07-02T07:10:00' })
+  const b2 = meal({ id: 'b2', slot: 'breakfast', loggedAt: '2026-07-02T09:40:00' })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 3, meals: [s, b1, b2] }))
+  expect(plan.slots.find(x => x.mealId === 's1')!.label).toBe('Ablakon kívül · 15:00')
+  const surplus = plan.slots.find(x => x.slotKey === 'breakfast' && x.windowFrom == null)!
+  expect(surplus.label).toBe(`Ablakon kívül · ${surplus.time}`)
+  // the window that DID get its meal keeps its own name, and the meal's name is untouched
+  expect(plan.slots.find(x => x.slotKey === 'breakfast' && x.windowFrom != null)!.label).toBe('Reggeli')
+  expect(plan.slots.find(x => x.mealId === 's1')!.mealName).toBe('Tízórai')
+})
 test('done meal/snack slots carry the FULL logged-meal totals — nothing logged is dropped', () => {
   const meals = [
     meal({ id: 'b', slot: 'breakfast', loggedAt: '2026-07-02T08:00:00', kcal: 500, p: 40, c: 50, f: 15 }),

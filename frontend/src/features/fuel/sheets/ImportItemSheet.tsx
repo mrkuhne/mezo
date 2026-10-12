@@ -4,35 +4,41 @@
 //   Link          — the P8 URL-scrape: paste a product URL → scrapeItem extracts a draft
 //                   (name/macros/category/price + source/confidence provenance) → preview → confirm.
 //   Fotó          — the mezo-d8tr photo-extract: one label photo (+ optional front-of-pack photo)
-//                   → photoExtract reads a draft off the label → the shared Link-mode preview →
+//                   → photoExtract reads a draft off the label → the shared preview →
 //                   confirm carries an `origin: 'photo'` provenance marker (no URL).
 // All modes end in usePantryActions().importItem and close; Link/Fotó saves pass the draft's
 // provenance (source/sourceUrl/confidence/price) through saveDraft.
-// Üveg (mezo-me75u.2, uveg-fuel-tobbi.html `SH.import`): one gold glass sheet; the Fotó/Link
-// switch is a flat segmented pill (the active arm filled gold), the photo drops are dashed
-// (free space to fill, bible §3 rank 4), the fields, the searching card and the draft preview
-// are flat cells, Mégse/Vissza flat and the go button a gold-lit flat pill (never glass in glass).
+// Folyadék (F5, mezo-n4wf5.5; prototype `fuel.js` `sheetsC.import` — args link · keres · vazlat · bizonytalan · nincs ·
+// hiba): the light sheet + `FoSheetHead`; the Fotó / Link switch is the kit `Seg`; a photo is picked on a dashed drop
+// row (solid once it holds a file); the draft is the name + category fields, four tinted cells (kcal · feh. · szénh. ·
+// zsír) and the four stored facts (`Nutri`); „Mezo" reads the label (never „az AI").
+// Errors are held as KEYS and worded at render, so they follow a language switch (N1.3).
 // ============================================================
 import { useState, type ChangeEvent } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { Icon3D } from '@/shared/ui/clay'
-import { SourceBadge } from '@/features/fuel/components/SourceBadge'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped, fmtNum } from '@/shared/lib/format'
+import { Acts, Btn, Bub, Empty, Input, Lab, Lk, Note, Seg, Select, Txt } from '@/shared/ui/folyadek'
+import { MACRO_COLOR, Nutri } from '@/features/fuel/components/folyadek'
 import { KamraSheetHead, KAMRA_SHEET_CLASS } from '@/features/fuel/sheets/KamraSheetHead'
-import { NutrientCells } from '@/features/fuel/components/NutrientCells'
-import { usePantry, usePantryActions } from '@/data/hooks'
-import { factsOf } from '@/data/fuel/recipeMacros'
+import { pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
+import { pantryProvenance } from '@/features/fuel/logic/pantryProvenance'
+import { usePantryActions } from '@/data/hooks'
 import type { PantryScrapeDraft } from '@/data/types'
 
 type Phase = 'input' | 'searching' | 'preview'
 
-/** One number of the draft's macro row — the macro band hue on the value (prototype `.stat`). */
-function DraftStat({ label, val, color }: { label: string; val: string; color: string }) {
+type ErrKey = 'errLink' | 'errPhoto' | 'errTooBig' | 'errSave'
+
+/** A photo slot: a dashed row that opens the camera / the file picker; solid, with the file's name, once it holds one. */
+function Drop({ title, hint, file, onPick }: { title: string; hint: string; file: File | null; onPick: (e: ChangeEvent<HTMLInputElement>) => void }) {
+  const M = useM()
   return (
-    <span className="fkk-stat" style={{ '--c': color } as React.CSSProperties}>
-      <b>{val}</b>
-      <small>{label}</small>
-    </span>
+    <label className={file ? 'fp-drop has' : 'fp-drop'}>
+      <Bub icon="t-camera" size={40} />
+      <span><strong>{title}</strong><small>{file ? M.fuelKamra.import.picked(file.name) : hint}</small></span>
+      <input type="file" accept="image/*" capture="environment" aria-label={title} onChange={onPick} />
+    </label>
   )
 }
 type Mode = 'link' | 'photo'
@@ -45,7 +51,8 @@ const CONTRACT_CATEGORIES = [
 ] as const
 
 export function ImportItemSheet({ onClose }: { onClose: () => void }) {
-  const { categoryMeta } = usePantry()
+  const M = useM()
+  const T = M.fuelKamra.import
   const { importItem, scrapeItem, photoExtract } = usePantryActions()
   const [mode, setMode] = useState<Mode>('photo')
   const [phase, setPhase] = useState<Phase>('input')
@@ -55,7 +62,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
   const [draft, setDraft] = useState<PantryScrapeDraft | null>(null)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('other')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<ErrKey | null>(null)
   const [saving, setSaving] = useState(false)
 
   // Switching mode always returns to the input step (each mode has its own input field).
@@ -76,7 +83,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
       setCategory(found?.category ?? 'other')
       setPhase('preview')
     } catch {
-      setError('Az oldal beolvasása nem sikerült — ellenőrizd a linket, vagy próbáld később.')
+      setError('errLink')
       setPhase('input')
     }
   }
@@ -95,7 +102,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
       setCategory(found?.category ?? 'other')
       setPhase('preview')
     } catch {
-      setError('A fotó beolvasása nem sikerült — próbáld élesebb képpel, vagy vidd fel kézzel.')
+      setError('errPhoto')
       setPhase('input')
     }
   }
@@ -103,7 +110,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
   const pickPhoto = (setter: (f: File | null) => void) => (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null
     if (f && f.size > MAX_PHOTO_BYTES) {
-      setError('A kép túl nagy (JPEG/PNG/WebP, max 5 MB).')
+      setError('errTooBig')
       return
     }
     setError(null)
@@ -129,229 +136,138 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
       })
       close()
     } catch {
-      setError('A mentés nem sikerült — próbáld újra.')
+      setError('errSave')
       setPhase('input')
       setSaving(false)
     }
   }
 
+  const errorLine = error && <Note className="fp-bad" role="alert">{T[error]}</Note>
+  const g = (v: number | null | undefined) => (v == null ? '—' : `${fmtNum(v)} g`)
+
   return (
     <Sheet onClose={onClose} labelledBy="import-item-title" className={KAMRA_SHEET_CLASS}>
       {(close) => (
-        <>
-          <KamraSheetHead icon="t-camera" eyebrow="Import · Fotó & Link" title="Új tétel a Kamrába"
-            titleId="import-item-title" onClose={close} />
+        <div className="fp-form">
+          <KamraSheetHead icon="t-camera" eyebrow={T.sub} title={T.title} titleId="import-item-title" />
 
-          <p className="fkk-sh-lead">
-            Fotózd le a termék címkéjét, vagy illeszd be egy termékoldal linkjét — a nevet, makrókat
-            és tápértékeket az AI olvassa ki.
-          </p>
+          <Txt>{T.lead}</Txt>
 
-          <div className="fkk-seg">
-            <button type="button" aria-pressed={mode === 'photo'} onClick={() => switchMode('photo')}>
-              Fotó
-            </button>
-            <button type="button" aria-pressed={mode === 'link'} onClick={() => switchMode('link')}>
-              Link
-            </button>
-          </div>
+          <Seg className="fp-seg" value={mode} onChange={switchMode}
+            items={[{ key: 'photo', label: T.photo }, { key: 'link', label: T.link }]} />
 
           {phase === 'input' && mode === 'link' && (
             <>
-              <label className="fkk-field">
-                <span className="uv-eyebrow">Termékoldal linkje</span>
-                <input
-                  className="fkk-inp"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') void scan() }}
-                  inputMode="url"
-                  placeholder="https://…"
-                  aria-label="Termékoldal linkje"
-                />
-              </label>
-
-              {error && <p className="fkk-sh-error">{error}</p>}
-
-              <p className="fkk-sh-hint">
-                Illeszd be egy termékoldal linkjét (pl. myprotein.hu, gymbeam.hu) — az AI kiolvassa
-                a nevet, makrókat és tápértékeket.
-              </p>
-
-              <div className="fkk-sh-acts">
-                <button type="button" className="fkk-btn is-flat" onClick={close}>Mégse</button>
-                <button
-                  type="button"
-                  className="fkk-btn is-go"
-                  onClick={() => void scan()}
-                  disabled={!url.trim().startsWith('http')}
-                >
-                  <Icon3D name="t-score" size={22} /> Beolvasás
-                </button>
-              </div>
+              <Lab htmlFor="import-item-url">{T.url}</Lab>
+              <Input
+                id="import-item-url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void scan() }}
+                inputMode="url"
+                placeholder="https://…"
+              />
+              {errorLine}
+              <Note>{T.linkNote}</Note>
+              <Acts>
+                <Btn sm onClick={() => void scan()} disabled={!url.trim().startsWith('http')}>{T.read}</Btn>
+                <Lk onClick={close}>{M.kit.cancel}</Lk>
+              </Acts>
             </>
           )}
 
           {phase === 'input' && mode === 'photo' && (
             <>
-              <div className="fkk-drop uv-empty">
-                <label>
-                  <span className="fkk-drop-art" aria-hidden="true"><Icon3D name="t-camera" size={40} /></span>
-                  <strong>Címke fotó</strong>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    aria-label="Címke fotó"
-                    onChange={pickPhoto(setPhotoFile)}
-                  />
-                </label>
-                {photoFile && <span className="fkk-drop-file">✓ {photoFile.name}</span>}
-              </div>
-              <div className="fkk-drop uv-empty">
-                <label>
-                  <small>Előlap fotó (opcionális — ha a név nem látszik a címkén)</small>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    aria-label="Előlap fotó"
-                    onChange={pickPhoto(setPhotoFile2)}
-                  />
-                </label>
-                {photoFile2 && <span className="fkk-drop-file">✓ {photoFile2.name}</span>}
-              </div>
-
-              {error && <p className="fkk-sh-error">{error}</p>}
-
-              <p className="fkk-sh-hint">
-                Fotózd le a termék tápérték-táblázatát — az AI kiolvassa a makrókat /100 g bázison.
-                A fotó nem kerül tárolásra.
-              </p>
-
-              <div className="fkk-sh-acts">
-                <button type="button" className="fkk-btn is-flat" onClick={close}>Mégse</button>
-                <button
-                  type="button"
-                  className="fkk-btn is-go"
-                  onClick={() => void extractPhotos()}
-                  disabled={!photoFile}
-                >
-                  <Icon3D name="t-score" size={22} /> Beolvasás
-                </button>
-              </div>
+              <Drop title={T.labelPhoto} hint={T.labelPhotoHint} file={photoFile} onPick={pickPhoto(setPhotoFile)} />
+              <Drop title={T.frontPhoto} hint={T.frontPhotoHint} file={photoFile2} onPick={pickPhoto(setPhotoFile2)} />
+              {errorLine}
+              <Note>{T.photoNote}</Note>
+              <Acts>
+                <Btn sm onClick={() => void extractPhotos()} disabled={!photoFile}>{T.read}</Btn>
+                <Lk onClick={close}>{M.kit.cancel}</Lk>
+              </Acts>
             </>
           )}
 
           {phase === 'searching' && (
-            <div className="fkk-searching uv-flat">
-              <span aria-hidden="true"><Icon3D name={mode === 'photo' ? 't-camera' : 't-link'} size={44} /></span>
-              <strong>
-                Keresés <SourceBadge source={mode === 'photo' ? 'photo' : (draft?.source ?? 'web')} size="lg" />
-              </strong>
-              <i className="np-twinkle" aria-hidden="true" />
+            <div className="fp-busy" role="status">
+              <Bub icon={mode === 'photo' ? 't-camera' : 't-link'} size={48} />
+              <strong>{T.reading}</strong>
+              <small>{M.fuelKamra.capture[mode === 'photo' ? 'photo' : 'link']}</small>
             </div>
           )}
 
           {phase === 'preview' && (mode === 'link' || mode === 'photo') && (
             <>
               {draft == null && (
-                <div className="fkk-draft is-none uv-empty">
-                  <span>
-                    {mode === 'photo'
-                      ? 'Nem találtam használható adatot a fotón — próbáld élesebb képpel, adj hozzá előlap fotót (név/márka), vagy vidd fel kézzel.'
-                      : 'Ezen az oldalon nem találtam tápértéket — vidd fel kézzel a Kamrában.'}
-                  </span>
-                </div>
+                <Empty icon={mode === 'photo' ? 't-camera' : 't-link'}>
+                  {mode === 'photo' ? T.nonePhoto : T.noneLink}
+                </Empty>
               )}
 
               {draft != null && (
-                <div className="fkk-draft uv-flat">
-                  <div className="fkk-draft-top">
-                    <span className="uv-eyebrow">Polcra kerül · /{draft.per}{draft.unit}</span>
-                    <SourceBadge source={draft.source} />
-                  </div>
-                  <label className="fkk-field">
-                    <span className="uv-eyebrow">Név</span>
-                    <input
-                      className="fkk-inp"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      aria-label="Tétel neve"
-                    />
-                  </label>
-                  <label className="fkk-field">
-                    <span className="uv-eyebrow">Kategória</span>
-                    <select
-                      className="fkk-inp"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      aria-label="Kategória"
-                    >
-                      {CONTRACT_CATEGORIES.map(c => (
-                        <option key={c} value={c}>{categoryMeta[c]?.label ?? c}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <div className="fkk-stats">
-                    <DraftStat label={`kcal / ${draft.per}${draft.unit}`} val={String(draft.kcal ?? '—')} color="var(--dv-amber)" />
-                    <DraftStat label="P" val={(draft.proteinG ?? '—') + 'g'} color="var(--macro-protein)" />
-                    <DraftStat label="C" val={(draft.carbsG ?? '—') + 'g'} color="var(--macro-carbs)" />
-                    <DraftStat label="F" val={(draft.fatG ?? '—') + 'g'} color="var(--macro-fat)" />
-                  </div>
-                  <div className="fkk-draft-nutri">
-                    <NutrientCells nutrients={factsOf(draft)} />
-                  </div>
-                  {draft.needsReview && (
-                    <p className="fkk-sh-warn">
-                      Az AI nem teljesen biztos a számokban — ellenőrizd őket mentés előtt.
-                    </p>
-                  )}
+                <>
+                  <Lab className="fp-grp">{T.goes(draft.per, draft.unit, pantryProvenance({ source: draft.source }).kindLabel)}</Lab>
+                  <Lab htmlFor="import-item-name">{M.fuelKamra.add.name}</Lab>
+                  <Input id="import-item-name" value={name} onChange={(e) => setName(e.target.value)} aria-label={T.itemName} />
+                  <Lab htmlFor="import-item-category">{M.fuelKamra.add.category}</Lab>
+                  <Select id="import-item-category" value={category} onChange={(e) => setCategory(e.target.value)}>
+                    {CONTRACT_CATEGORIES.map(c => <option key={c} value={c}>{pantryCategoryLabel(c)}</option>)}
+                  </Select>
+                  <span className="fx-lnm fp-lnm">
+                    <span style={{ ['--c' as string]: 'var(--dom)' }}><b>{draft.kcal == null ? '—' : fmtGrouped(draft.kcal)}</b><small>kcal</small></span>
+                    <span style={{ ['--c' as string]: MACRO_COLOR.protein }}><b>{g(draft.proteinG)}</b><small>{M.fuelKozos.macroShort.protein}</small></span>
+                    <span style={{ ['--c' as string]: MACRO_COLOR.carbs }}><b>{g(draft.carbsG)}</b><small>{M.fuelKozos.macroShort.carbs}</small></span>
+                    <span style={{ ['--c' as string]: MACRO_COLOR.fat }}><b>{g(draft.fatG)}</b><small>{M.fuelKozos.macroShort.fat}</small></span>
+                  </span>
+                  <Nutri fiber={draft.fiberG ?? null} sugar={draft.sugarG ?? null} salt={draft.saltG ?? null} satFat={draft.saturatedFatG ?? null} />
+                  {draft.needsReview && <Note className="fp-warn">{T.unsure}</Note>}
                   {mode === 'photo' && !photoFile2 && (!name.trim() || draft.needsReview) && (
-                    <label className="fkk-sh-addphoto">
-                      <Icon name="camera" size={11} /> + előlap fotó (név/márka)
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        aria-label="Előlap fotó hozzáadása"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          const f = e.target.files?.[0] ?? null
-                          if (!f) return
-                          // Same 5 MB pre-check as the input phase (mezo-iqf9) — an oversized
-                          // front photo must not fire a doomed server round-trip.
-                          if (f.size > MAX_PHOTO_BYTES) {
-                            setError('A kép túl nagy (JPEG/PNG/WebP, max 5 MB).')
-                            return
-                          }
-                          setError(null)
-                          setPhotoFile2(f)
-                          void extractPhotos(f) // re-extract with BOTH images
-                        }}
-                      />
-                    </label>
+                    <Acts>
+                      <label className="fo-lk fp-addphoto">
+                        {T.addFront}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          aria-label={T.addFrontAria}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0] ?? null
+                            if (!f) return
+                            // Same 5 MB pre-check as the input phase (mezo-iqf9) — an oversized
+                            // front photo must not fire a doomed server round-trip.
+                            if (f.size > MAX_PHOTO_BYTES) {
+                              setError('errTooBig')
+                              return
+                            }
+                            setError(null)
+                            setPhotoFile2(f)
+                            void extractPhotos(f) // re-extract with BOTH images
+                          }}
+                        />
+                      </label>
+                    </Acts>
                   )}
-                  {error && <p className="fkk-sh-error">{error}</p>}
-                </div>
+                  {errorLine}
+                </>
               )}
 
-              <div className="fkk-sh-acts">
-                <button type="button" className="fkk-btn is-flat" onClick={() => setPhase('input')}>Vissza</button>
-                <button
-                  type="button"
-                  className="fkk-btn is-go"
+              <Acts>
+                <Btn sm ghost onClick={() => setPhase('input')}>{T.back}</Btn>
+                <Btn
+                  sm
                   onClick={() => void saveDraft(close)}
                   // Name guard (mezo-a74c): a photo draft can arrive with an unreadable → empty
                   // name; the contract requires name minLength 1, so block the save until typed.
                   disabled={draft == null || saving || !name.trim()}
                 >
-                  <Icon name="check" size={14} /> {saving ? 'Mentés…' : 'Polcra'}
-                </button>
-              </div>
+                  {saving ? T.saving : T.toShelf}
+                </Btn>
+              </Acts>
+              {draft != null && !name.trim() && <Note>{T.needsName}</Note>}
             </>
           )}
-        </>
+        </div>
       )}
     </Sheet>
   )

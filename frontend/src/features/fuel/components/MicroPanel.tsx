@@ -1,23 +1,21 @@
 // ============================================================
-// Mezo · MicroPanel (rost & mikro dimenzió csempe-grafikája)
-// Mozaik 2.0 (mezo-jcpt.1): the generic ProgressBar rows became the prototype's
-// `.tgrow` cél-sávok, so the rost/mikro tile draws the same graphic language as the
-// makró tile above it — name · sáv · érték, coloured by the nutrient's status.
+// Mezo · MicroPanel (rost & mikro dimenzió tényei a `dim` lapon)
+// Folyadék F5 (mezo-n4wf5.5): each nutrient is a two-storey row (`ItemRow`) — name · value on top, its level under it in
+// the status colour (ok / quiet / warn; never the error colour). The name and the value are SERVER text.
 // ============================================================
-import type { MicroDimension } from '@/data/types'
-import { STATUS_COLOR } from '@/data/nova'
+import type { MicroDimension, MicroStatus } from '@/data/types'
+import { Level } from '@/shared/ui/folyadek'
+import { ItemRow } from '@/features/fuel/components/folyadek'
+
+const STATUS: Record<MicroStatus, string> = { good: 'var(--fo-ok)', ok: 'var(--fx-water)', low: 'var(--fo-warn)' }
 
 export function MicroPanel({ dim }: { dim: MicroDimension }) {
   return (
-    <div className="col mt-md">
+    <div className="fe-rows">
       {dim.micros.map((m, i) => (
-        <div key={i} className="sb-tgrow">
-          <span className="nm" style={{ color: STATUS_COLOR[m.status] }}>{m.name}</span>
-          <div className="sb-gbar">
-            <i style={{ width: `${Math.min(100, m.pct)}%`, background: STATUS_COLOR[m.status] }} />
-          </div>
-          <span className="vl">{m.value}</span>
-        </div>
+        <ItemRow key={i} title={m.name} value={m.value}>
+          <Level pct={Math.min(100, m.pct)} color={STATUS[m.status]} height={8} />
+        </ItemRow>
       ))}
     </div>
   )

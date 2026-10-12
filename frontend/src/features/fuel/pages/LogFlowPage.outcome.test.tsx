@@ -39,7 +39,7 @@ test('accept-clean: saving the AI draft untouched reports "accepted" for its dra
 
 test('accept-after-edit: touching an AI-landed line before saving reports "edited"', async () => {
   await landAiDraft()
-  await userEvent.click(screen.getByRole('button', { name: 'Csirkés wrap növelés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Csirkés wrap növelése' }))
   await userEvent.click(screen.getByRole('button', { name: /Logolás · \+10 XP/ }))
   await vi.waitFor(() => expect(reportDraftOutcome).toHaveBeenCalledWith('mock-ai-draft', 'meal_draft', 'edited'))
   expect(reportDraftOutcome).toHaveBeenCalledTimes(1)

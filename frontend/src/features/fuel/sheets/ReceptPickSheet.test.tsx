@@ -72,5 +72,5 @@ test('a starred recipe row carries the ★ mark', () => {
 
 test('opening the sheet does NOT focus the search box — no surprise mobile keyboard', () => {
   renderSheet()
-  expect(screen.getByRole('textbox', { name: 'Keresés a receptek között' })).not.toHaveFocus()
+  expect(screen.getByRole('searchbox', { name: 'Keresés a receptek között' })).not.toHaveFocus()
 })

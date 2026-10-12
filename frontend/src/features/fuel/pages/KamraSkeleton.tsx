@@ -1,31 +1,20 @@
-// Layout-aware loading skeleton for FuelKamraPage (mezo-f2z). Mirrors the real Kamra shape so
-// the swap to real content does not reflow. Üveg (mezo-me75u.2): the shape is the re-dressed
-// page's — sub-head (round back + eyebrow/title + the three header chips) → search → type chips →
-// the two-column tile grid. The placeholders are FLAT cells (`uv-flat`): a loading state is not a
-// shelf object yet, so it never wears the glass. Built from the Skeleton primitives.
-import { Skeleton } from '@/shared/ui/Skeleton'
+// A Kamra betöltő arca (mezo-f2z; Folyadék F5, mezo-n4wf5.5 — prototípus `kamra.tolt`): a polc hőse négy üres
+// üveggel, a számok helyén „—". Nem csontváz-csíkok: a lap alakja a hős, így a tartalom érkezése nem ugrik.
+// A gyökér `role="status"` — erre vár a valódi módú teszt és a képernyőolvasó.
+import { useM } from '@/shared/i18n'
+import { Hero, HeroGraphic, Page, Vials, useFrameTitle, type VialItem } from '@/shared/ui/folyadek'
+import { KAMRA_KINDS, KAMRA_KIND_ICON } from '@/features/fuel/logic/kamraItems'
 
 export default function KamraSkeleton() {
+  const M = useM()
+  const K = M.fuelKamra
+  useFrameTitle({ title: K.kamra.title, eyebrow: K.kamra.eyebrowLoading })
+  const jars: VialItem[] = KAMRA_KINDS.map(k => ({ label: K.kindCap[k], icon: KAMRA_KIND_ICON[k], pct: 0, value: '—', note: K.kamra.jarNote }))
   return (
-    <div role="status" aria-label="Betöltés…" className="fmx-page fkx-kamra fkk-skel">
-      <div className="fmx-subhead">
-        <Skeleton variant="circle" width={44} height={44} />
-        <span className="fkk-skel-title"><Skeleton width={54} height={9} /><Skeleton width={96} height={18} /></span>
-      </div>
-      <div className="fkk-skel-bar uv-flat"><Skeleton width="46%" height={11} /></div>
-      <div className="fkk-skel-chips">
-        {Array.from({ length: 4 }, (_, i) => <span key={i} className="uv-flat" />)}
-      </div>
-      <div className="fkx-tile-grid">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="fkk-skel-tile uv-flat">
-            <Skeleton variant="circle" width={42} height={42} />
-            <Skeleton width="78%" height={12} />
-            <Skeleton width="52%" height={10} />
-            <Skeleton width="36%" height={9} />
-          </div>
-        ))}
-      </div>
-    </div>
+    <Page className="fp-kamra">
+      <Hero role="status" aria-label={K.kamra.loadingVerdict} label={K.kamra.loadingLabel} verdict={K.kamra.loadingVerdict} sub={K.kamra.loadingSub}>
+        <HeroGraphic><Vials items={jars} height={84} /></HeroGraphic>
+      </Hero>
+    </Page>
   )
 }

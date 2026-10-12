@@ -1,2 +1,95 @@
 /* ── Folyadék · Fuel · beallitas (mezo-n4wf5.5, slice F5) ── area I · Fuel beállítások + ablakok. Rules of this area only, class prefix `.fb-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── page pieces ── */
+.fb-alert { margin: 12px 14px 0; padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, var(--fo-bad) 10%, #fff); color: var(--fo-bad); font-size: 13.5px; font-weight: 650; line-height: 1.4; }
+.fb-warn { color: var(--fo-warn); font-weight: 600; }
+.fb-bad { color: var(--fo-bad); }
+
+/* ── the hero: label → the day as a tide → the verdict (prototype `gHero`: the graphic stands ABOVE the verdict), the day-type tabs last ── */
+.fb-hero { display: flex; flex-direction: column; }
+.fb-hero > .fo-hero-lbl { order: 0; }
+.fb-hero > .fb-hg { order: 1; }
+.fb-hero > .fo-hero-verdict { order: 2; }
+.fb-hero > .fo-hero-sub { order: 3; }
+.fb-hero > .fb-hd { order: 4; margin-top: 12px; }
+.fb-hero > .fo-hero-acts { order: 8; }
+.fb-hero[data-closed="true"]::after { order: 9; }
+.fb-hd > .fo-seg { margin-bottom: 0; }
+.fb-days > button { font-size: 12.5px; padding-left: 4px; padding-right: 4px; white-space: nowrap; }
+
+/* the tide (fuel.js `tide`, `.fh-chart`, `.fu-tide`): the meal windows as vessels on the 06–24 line */
+.fb-tide { display: block; width: 100%; height: auto; overflow: visible; margin: 12px 0 10px; }
+.fb-tide text { font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; fill: var(--fo-sub); }
+.fb-tide text.val { fill: var(--fo-ink); font-weight: 650; }
+.fb-tide text.nm { fill: var(--fo-ink); font-weight: 600; }
+.fb-tide text.w { fill: var(--fo-warn); font-weight: 700; }
+
+/* ── fields side by side (fuel.js `.fx-two`, `.fc-ws`, `.fc-3`) ── */
+.fb-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; align-items: end; }
+.fb-two > div { min-width: 0; }
+.fb-two.fb-ws { align-items: start; }
+.fb-two > div > .fo-lab:first-child, .fb-3 > div > .fo-lab:first-child, .fb-anch > div > .fo-lab:first-child { margin-top: 0; }
+.fb-ws .fo-stp { min-height: 46px; gap: 8px; }
+.fb-ws .fo-stp > b { font-family: var(--ff-display); font-size: 17px; font-weight: 700; min-width: 22px; text-align: center; white-space: nowrap; }
+.fb-ws .fo-stp > b > small { margin-left: 8px; font-family: var(--ff-body); font-size: 12px; font-weight: 400; color: var(--fo-sub); }
+.fb-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 8px; margin-top: 14px; }
+.fb-3 > div { min-width: 0; }
+.fb-3 .fo-in { padding: 10px 8px; font-size: 16px; min-width: 0; width: 100%; }
+.fb-3 .fo-lab { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* the macro preview: three vials (fuel.js `.fu-mac`) */
+.fb-mac .fo-vials { gap: 8px; }
+.fb-mac .fo-vial small { font-size: 11px; }
+
+/* ── the windows editor ── */
+/* a recommended window's kcal and share at the end of its step (fuel.js `.fx-kv`) */
+.fb-kv { flex: 0 0 auto; font-size: 12.5px; color: var(--fo-sub); text-align: right; white-space: nowrap; }
+.fb-kv > b { font-family: var(--ff-display); font-size: 16px; font-weight: 700; color: var(--fo-ink); }
+.fb-kv > small { display: block; font-size: 11.5px; }
+/* one editable window (fuel.js `.fx-win`, `.fx-wh`, `.fx-add`, `.fc-anch`) */
+.fb-win { padding: 14px 0; border-top: 1px solid var(--fo-hair); }
+.fb-win:first-child { border-top: 0; padding-top: 0; }
+.fb-wh { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.fb-wh > .fo-in { flex: 1; min-width: 0; }
+.fb-rm { position: relative; flex: 0 0 auto; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 12px; background: var(--fo-page); display: grid; place-items: center; cursor: pointer;
+  font-family: var(--ff-body); font-size: 19px; font-weight: 600; line-height: 1; color: var(--fo-ink); }
+.fb-rm::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.fb-rm:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fb-roles { margin-top: 8px; }
+.fb-anch { display: grid; grid-template-columns: 1.25fr 1fr .8fr; gap: 0 8px; align-items: end; margin-top: 14px; }
+.fb-anch > div { min-width: 0; }
+.fb-anch .fo-in { padding: 10px 8px; font-size: 16px; width: 100%; min-width: 0; }
+.fb-anch .fo-lab { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fb-anch .fo-stp { gap: 4px; min-height: 46px; }
+.fb-anch .fo-stp > button { width: 28px; height: 36px; border-radius: 11px; }
+.fb-anch .fo-stp > input { width: 46px; min-width: 0; padding: 7px 2px; border: 0; background: none; text-align: center; font-family: var(--ff-display); font-size: 14px; font-weight: 700; color: var(--fo-ink); }
+.fb-anch .fo-stp > input:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 1px; border-radius: 8px; }
+/* how it adds up (fuel.js `.fc-sum`, `.fx-wv`, `.fc-wt`) */
+.fb-sum { display: flex; align-items: center; justify-content: space-between; margin: 0 0 4px; font-size: 13px; color: var(--fo-sub); }
+.fb-sum > b { padding: 2px 12px; border-radius: 999px; font-family: var(--ff-display); font-size: 17px; font-weight: 800; color: var(--fo-ok); background: color-mix(in srgb, var(--fo-ok) 12%, #fff); }
+.fb-sum > b.off { color: var(--fo-bad); background: color-mix(in srgb, var(--fo-bad) 12%, #fff); }
+.fb-wv { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; row-gap: 4px; margin: 10px 0 0; font-size: 13px; color: var(--fo-sub); }
+.fb-wv > .fo-level { flex: 1 1 100%; }
+.fb-wv b { font-family: var(--ff-display); font-size: 15px; color: var(--fo-ink); }
+.fb-wv > .fb-wt { flex: 1 1 100%; color: var(--fo-ink); font-weight: 600; overflow-wrap: anywhere; }
+.fb-wv > span:last-child { white-space: nowrap; }
+/* Mezo's view (fuel.js `.fc-busy`, `.fc-vd`) */
+.fb-busy { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--fo-sub); }
+.fb-vd { padding: 12px; margin-bottom: 12px; border-radius: 18px; background: color-mix(in srgb, var(--dom) 6%, #fff); }
+.fb-vd > div { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.fb-vd > div > span:not(.fo-bub):not(.fo-st) { flex: 1; font-size: 12px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; color: var(--fo-sub); }
+.fb-vd > p { margin: 6px 0 0; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+
+@media (max-width: 360px) {
+  .fb-two.fb-ws { grid-template-columns: 1fr; gap: 10px; }
+  .fb-anch { grid-template-columns: 1fr 1fr; row-gap: 10px; }
+  .fb-anch > div:first-child { grid-column: 1 / -1; }
+  .fb-days > button { font-size: 11.5px; }
+  .fb-tide text { font-size: 11.5px; }
+  .fb-mac .fo-vials { gap: 5px; }
+  .fb-mac .fo-vial b { font-size: 16px; }
+  .fb-mac .fo-vial small { font-size: 10px; }
+}
+/* the preview vials keep the prototype's 74 px vessel inside their column */
+.fb-mac .fo-tube { width: min(74px, 100%); }

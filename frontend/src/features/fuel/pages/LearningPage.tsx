@@ -1,129 +1,161 @@
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useExpenditureHistory, useExpenditureWeeklyCard } from '@/data/fuel/expenditureHooks'
-import { huInt } from '@/shared/lib/huNum'
-import { addDays } from '@/shared/lib/dates'
-import { ContentIcon } from '@/shared/ui/clay'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { useQueryClient } from '@tanstack/react-query'
+import { EXPENDITURE_HISTORY_KEY, useExpenditureHistory, useExpenditureWeeklyCard, useIntakeDays } from '@/data/fuel/expenditureHooks'
+import { useWeight } from '@/data/hooks'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped } from '@/shared/lib/format'
+import { addDays, localDateString, mondayOf } from '@/shared/lib/dates'
+import { Btn, Card, FrameBack, Hero, Level, Page, Section, useFrameTitle } from '@/shared/ui/folyadek'
 import { LearningHistoryChart } from '@/features/fuel/components/LearningHistoryChart'
 import { LearningDaysList, type LearningMode } from '@/features/fuel/components/LearningDaysList'
 import { WeeklyLearningDot } from '@/features/fuel/components/WeeklyLearningDot'
 import { LearnedBaseExplainer } from '@/features/fuel/sheets/LearnedBaseExplainer'
 import { WeeklyLearningSheet } from '@/features/fuel/sheets/WeeklyLearningSheet'
-import { CONFIDENCE_WORD, huWeekRange, learningModeOf, nf, round10 } from '@/features/fuel/sheets/learnedBaseFormat'
-import { FrameBack } from '@/shared/ui/folyadek'
+import { CONFIDENCE_WORD, learningModeOf, round10 } from '@/features/fuel/sheets/learnedBaseFormat'
+import { BandG } from '@/features/fuel/sheets/tanulasPieces'
 
 // ============================================================
 // Mezo · LearningPage — „Hogy tanultam?” at /fuel/tanulas (mezo-3n2so, learned expenditure part 2,
-// spec §5.3). Build target: docs/design_2.0/prototypes/elo/fuel.html `tanulas()` — three states:
-//   Tanul          the learned base (frameless sage halo hero) with its σ̂ and the formula aside;
-//                  with a weekly summary the status row is ONE full-width button (dot + „· heti
-//                  összegző ›”, owner round 2) that opens the „Heti tanulás” sheet
-//   Még nincs adat no reviewed week yet: one honest dashed line, no chart, no six sections
+// spec §5.3). Folyadék (mezo-n4wf5.5): build target docs/design_2.0/prototypes/vilagos/fuel.js
+// `tanulas()` — the hero is the learned base in its ± band, the verdict under it:
+//   Tanul          the base with its σ̂ and the formula as a tick; with a weekly summary the hero's
+//                  button opens the „Heti tanulás” sheet (a drop marks it; hollow when the week held)
+//   Még nincs adat no reviewed week yet: the two conditions as levels, no chart, no six steps
 //   Kikapcsolva    the frame comes from the formula; it says what it quietly learned meanwhile
-// Then „Hétről hétre” (the chart, one glass card), „Az utolsó 14 nap” (the day switches, one glass
-// card — always, even with no data) and „A legutóbbi hét részletei” (the six-section explainer,
-// unchanged). Opened from the energy sheet's „Részletek ›”, the weekly sheet and the bell.
+//   loading / error the empty level with the sentence; the error offers „Újrapróbálom"
+// Then the numbered sections: „Hétről hétre” (the chart), „Az utolsó 14 nap” (the day switches —
+// always, even with no data) and „A legutóbbi hét részletei” (the six steps, each behind a row).
+// Opened from the energy sheet's row, the weekly sheet and the bell.
 // ============================================================
+
+/** What the first learned week needs (spec §4) — the two levels of the empty hero. */
+const NEED_LOGGED_DAYS = 10
+const NEED_WEIGH_INS = 2
 
 export function LearningPage() {
   const navigate = useNavigate()
+  const qc = useQueryClient()
+  const M = useM()
+  const T = M.fuelTanulas.page
   const { data: history, isPending, isError } = useExpenditureHistory()
   const { card } = useExpenditureWeeklyCard()
   const [weeklyOpen, setWeeklyOpen] = useState(false)
+  useFrameTitle({ title: T.title, eyebrow: T.eyebrow })
   // Back to wherever it was opened from (energy sheet, weekly sheet, bell); a deep link has no
   // in-app history (react-router's `idx` is 0), so it falls back to Fuel Mai.
+  const back = <FrameBack className="fo-backpill" history fallback="/fuel">‹</FrameBack>
 
   const weeks = history?.weeks ?? []
   const last = weeks.length > 0 ? weeks[weeks.length - 1] : null
   const on = history?.learningEnabled !== false
   const mode: LearningMode = learningModeOf(history)
-  const certainty = last ? `Tanult alap · ${CONFIDENCE_WORD[last.confidence]} · ±${round10(last.posteriorSdKcal)} kcal` : ''
-  const hold = card?.status === 'holding'
 
-  let i = 0
-  const rise = () => ({ '--i': ++i } as CSSProperties)
+  if (!history) {
+    const failed = !isPending && isError
+    return (
+      <Page className="ft-page">
+        {back}
+        <Hero
+          className="ft-hero" label={T.heroLabel}
+          verdict={failed ? T.error : T.loading}
+          role={failed ? 'alert' : 'status'}
+          actions={failed ? <Btn sm onClick={() => qc.invalidateQueries({ queryKey: EXPENDITURE_HISTORY_KEY })}>{T.retry}</Btn> : undefined}
+        >
+          <div className="ft-need ft-hg"><span><Level pct={0} height={18} /></span></div>
+        </Hero>
+      </Page>
+    )
+  }
+
+  const sd = last ? round10(last.posteriorSdKcal) : 0
+  const hold = card?.status === 'holding'
+  let n = 0
 
   return (
-    <div className="fmx-page fln-page">
-      <EntranceGroup>
-        <div className="fmx-subhead rise">
-          <FrameBack className="glass is-round" history fallback="/fuel" label="Vissza">‹</FrameBack>
-          <span>
-            <small>Fuel · energiaigény</small>
-            <h1 className="fkx-title">Hogy tanultam?</h1>
-          </span>
-        </div>
-
-        {!history ? (
-          <p className="fln-state rise">{isPending ? 'Betöltöm, hogyan tanultam…' : isError ? 'Most nem sikerült betölteni, hogyan tanultam.' : null}</p>
-        ) : !last ? (
-          <div className="fln-empty uv-empty rise" style={rise()}>
-            <ContentIcon name="t-lens" size={40} />
-            <p><b>Még nem tanultam</b> — ehhez legalább 10 felírt nap kell az utolsó 4 hétből és heti 2 mérlegelés.</p>
+    <Page className="ft-page">
+      {back}
+      {!last ? (
+        <Hero
+          className="ft-hero" label={T.heroLabel} verdict={T.emptyVerdict} sub={T.emptySub}
+          actions={<Btn sm onClick={() => navigate('/fuel/log/uj')}>{T.logMeal}</Btn>}
+        >
+          <EmptyNeed />
+        </Hero>
+      ) : on ? (
+        <Hero
+          className="ft-hero"
+          label={T.heroLabelSure(CONFIDENCE_WORD[last.confidence], String(sd))}
+          verdict={T.verdict(fmtGrouped(last.appliedBaseKcal))}
+          sub={(last.status === 'holding' ? T.formulaSaysHeld : T.formulaSays)(fmtGrouped(last.formulaBaseKcal))}
+          actions={card ? (
+            <Btn onClick={() => setWeeklyOpen(true)} aria-label={hold ? `${T.weekly} · ${T.weeklyHeld}` : `${T.weekly} · ${T.weeklyNew}`}>
+              {T.weekly}<WeeklyLearningDot hold={hold} />
+            </Btn>
+          ) : undefined}
+        >
+          <div className="ft-hg">
+            <BandG
+              value={last.appliedBaseKcal} sd={sd} valueLabel={M.fuelTanulas.chart.kcal(fmtGrouped(last.appliedBaseKcal))}
+              tick={last.formulaBaseKcal} tickLabel={T.bandFormula(fmtGrouped(last.formulaBaseKcal))}
+              label={T.bandAria(fmtGrouped(last.appliedBaseKcal), String(sd), fmtGrouped(last.formulaBaseKcal))}
+            />
           </div>
-        ) : on ? (
-          <section className="fln-hero uv-halo rise" style={{ '--c': 'var(--dv-sage)', '--c2': 'var(--dv-lav)', ...rise() } as CSSProperties}>
-            <span className="uv-eyebrow">Tanult alap</span>
-            <div className="fln-num">{nf(last.appliedBaseKcal)}<small>kcal</small></div>
-            {card ? (
-              <button type="button" className="fln-line fln-tap" aria-label={`${certainty} — heti összegző megnyitása`} onClick={() => setWeeklyOpen(true)}>
-                {certainty}
-                <WeeklyLearningDot hold={hold} />
-                <span className="fln-more">· heti összegző ›</span>
-              </button>
-            ) : (
-              <p className="fln-line">{certainty}</p>
-            )}
-            <p className="fln-sub">A képlet {huInt(last.formulaBaseKcal)} kcal-t mondana.</p>
-          </section>
-        ) : (
-          <section className="fln-hero uv-halo rise" style={{ '--c': 'var(--dv-amber)', '--c2': 'var(--dv-sage)', ...rise() } as CSSProperties}>
-            <span className="uv-eyebrow">Most nem használom</span>
-            <p className="fln-off">A keret a képletből jön · <b>{huInt(last.formulaBaseKcal)} kcal</b></p>
-            <p className="fln-muted">Közben csendben tovább tanultam: {huInt(last.posteriorBaseKcal)} ± {round10(last.posteriorSdKcal)} kcal</p>
-            <button type="button" className="fln-flat" onClick={() => navigate('/settings/fuel')}>Bekapcsolás a Fuel beállításokban</button>
-          </section>
-        )}
+        </Hero>
+      ) : (
+        <Hero
+          className="ft-hero" label={T.offLabel}
+          verdict={T.offVerdict(fmtGrouped(last.formulaBaseKcal))}
+          sub={T.offSub(fmtGrouped(last.posteriorBaseKcal), String(sd))}
+          actions={<Btn onClick={() => navigate('/settings/fuel')}>{T.turnOn}</Btn>}
+        >
+          <div className="ft-hg">
+            <BandG
+              value={last.posteriorBaseKcal} sd={sd} valueLabel={M.fuelTanulas.chart.kcal(fmtGrouped(last.posteriorBaseKcal))}
+              tick={last.formulaBaseKcal} tickLabel={T.bandFormula(fmtGrouped(last.formulaBaseKcal))}
+              label={T.bandAria(fmtGrouped(last.posteriorBaseKcal), String(sd), fmtGrouped(last.formulaBaseKcal))}
+            />
+          </div>
+        </Hero>
+      )}
 
-        {last && (
-          <>
-            <div className="fmx-section fmx-section-row fln-sec rise" style={rise()}>
-              <h2>Hétről hétre</h2>
-              <small>{weeksSpan(weeks)} hét</small>
-            </div>
-            <div className="fln-card glass rise" style={{ '--c': 'var(--dv-sage)', ...rise() } as CSSProperties}>
-              <LearningHistoryChart weeks={weeks} />
-            </div>
-          </>
-        )}
+      {last && (
+        <>
+          <Section n={++n} title={T.secWeeks(weeksSpan(weeks))} />
+          <Card className="ft-weeks-card"><LearningHistoryChart weeks={weeks} /></Card>
+        </>
+      )}
 
-        {(history || !isPending) && (
-          <>
-            <div className="fmx-section fmx-section-row fln-sec rise" style={rise()}>
-              <h2>Az utolsó 14 nap</h2>
-              <small>A mai nem számít</small>
-            </div>
-            <div className="fln-card fln-days glass rise" style={{ '--c': 'var(--dv-lav)', ...rise() } as CSSProperties}>
-              <LearningDaysList mode={mode} />
-            </div>
-          </>
-        )}
+      <Section n={++n} title={T.secDays} />
+      <Card className="ft-days"><LearningDaysList mode={mode} /></Card>
 
-        {last && (
-          <>
-            <div className="fmx-section fmx-section-row fln-sec rise" style={rise()}>
-              <h2>A legutóbbi hét részletei</h2>
-              <small>{huWeekRange(last.weekStart, addDays(last.weekStart, 6))}</small>
-            </div>
-            <div className="fln-explainer rise" style={rise()}>
-              <LearnedBaseExplainer />
-            </div>
-          </>
-        )}
-      </EntranceGroup>
+      {last && (
+        <>
+          <Section n={++n} title={T.secDetails} />
+          <Card className="ft-details"><LearnedBaseExplainer /></Card>
+        </>
+      )}
 
       {weeklyOpen && card && <WeeklyLearningSheet card={card} onClose={() => setWeeklyOpen(false)} />}
+    </Page>
+  )
+}
+
+/** The empty hero's graphic: how far the two conditions of a first learned week stand (prototype: „SZÁMOLHATÓ" —
+ *  `useIntakeDays` over the last 28 days + this week's weigh-ins from the weight log; both existing reads). */
+function EmptyNeed() {
+  const T = useM().fuelTanulas.page
+  const [today] = useState(() => localDateString())
+  const { days } = useIntakeDays(addDays(today, -28), addDays(today, -1))
+  const { weightLog } = useWeight()
+  const logged = days.filter(d => d.status !== 'unlogged').length
+  const monday = mondayOf(today)
+  const weighIns = new Set(weightLog.map(w => w.date.slice(0, 10)).filter(d => d >= monday && d <= today)).size
+  const pct = (have: number, need: number) => Math.min(100, (have / need) * 100)
+  return (
+    <div className="ft-need ft-hg">
+      <span><small>{T.needDays}</small><Level pct={pct(logged, NEED_LOGGED_DAYS)} height={18} value={T.needValue(logged, NEED_LOGGED_DAYS)} /></span>
+      <span><small>{T.needWeighIns}</small><Level pct={pct(weighIns, NEED_WEIGH_INS)} height={18} value={T.needValue(weighIns, NEED_WEIGH_INS)} /></span>
     </div>
   )
 }

@@ -1,20 +1,12 @@
 // ============================================================
-// Mezo · ContextPanel (időzítés & kontextus + a generikus sor-dimenziók grafikája)
-// Mozaik 2.0 (mezo-jcpt.1): the label/value rows became the prototype's `.hlch`
-// tény-chipek — the same chip row the Heti elemzés card wears, so a dimension's facts
-// read as objects on the tile instead of a table inside it.
+// Mezo · ContextPanel (időzítés & kontextus + a generikus sor-dimenziók tényei)
+// Folyadék F5 (mezo-n4wf5.5): the label–value rows are the Fuel-shared `Kv` tiles (prototype `kv(rows)` on the `dim` sheet).
+// Both halves are SERVER text, stored with the meal in the language it was scored in: rendered as they arrive, never
+// translated and never matched on the client.
 // ============================================================
 import type { ContextDimension, RowsDimension } from '@/data/types'
+import { Kv } from '@/features/fuel/components/folyadek'
 
 export function ContextPanel({ dim }: { dim: ContextDimension | RowsDimension }) {
-  return (
-    <div className="sb-fchips">
-      {dim.context.map((c, i) => (
-        <span key={i} className="sb-fchip">
-          <em>{c.label}</em>
-          <span>{c.value}</span>
-        </span>
-      ))}
-    </div>
-  )
+  return <Kv items={dim.context.map(c => [c.label, c.value] as [string, string])} />
 }

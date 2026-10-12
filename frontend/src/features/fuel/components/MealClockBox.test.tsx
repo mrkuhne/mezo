@@ -79,7 +79,7 @@ describe('MealClockBox', () => {
   // edzés súlyzója, aria-hidden dekoráció.
   it('the dial carries the moon glyph and, on a training day, the dumbbell glyph', () => {
     render(<MealClockBox tile={tile()} row={null} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
-    // GlassBox portals to document.body — query there, not `container` (mezo-6g52f).
+    // The sheet portals to document.body — query there, not `container` (mezo-6g52f).
     expect(document.body.querySelector('use[href="#t-moon"]')).not.toBeNull()
     expect(document.body.querySelector('use[href="#t-dumbbell"]')).not.toBeNull()
   })
@@ -94,7 +94,7 @@ describe('MealClockBox', () => {
     render(<MealClockBox tile={tile()} row={null} day={pastDay} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
     expect(screen.getByText('AJÁNLOTT')).toBeInTheDocument()
     expect(screen.getByText('még pótolható')).toBeInTheDocument()
-    // GlassBox portals to document.body — query there, not `container` (mezo-6g52f).
+    // The sheet portals to document.body — query there, not `container` (mezo-6g52f).
     expect(document.body.querySelector('.nowhand')).toBeNull()
     expect(document.body.textContent).not.toMatch(/most nyitva|nyílik \d/)
   })
@@ -102,11 +102,55 @@ describe('MealClockBox', () => {
   it('late high meal (bed 23:00, logged 22:15): ghost curve and the dashed-line sentence', () => {
     const lateRow = row({ time: '22:15', carbsG: 80, sugarG: 80, fiberG: 0, proteinG: 0, fatG: 0 })
     render(<MealClockBox tile={tile({ state: 'done' })} row={lateRow} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
-    expect(document.body.querySelector('.fmx-glu-ghost')).not.toBeNull()
+    expect(document.body.querySelector('.fe-ogl .fx-gmini .late')).not.toBeNull()
+    expect(document.body.querySelector('.fe-ogl')).toHaveTextContent('Magas · késő este')
     expect(document.body.textContent).toMatch(/Késő este ugyanez általában magasabbra és tovább emelkedik \(szaggatott vonal\)\./)
   })
   it('non-late meal: no ghost curve', () => {
     render(<MealClockBox tile={tile({ label: 'Reggeli', state: 'done', windowFrom: '07:20', windowTo: '09:20' })} row={row()} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
-    expect(document.body.querySelector('.fmx-glu-ghost')).toBeNull()
+    expect(document.body.querySelector('.fe-ogl .fx-gmini')).not.toBeNull()
+    expect(document.body.querySelector('.fe-ogl .fx-gmini .late')).toBeNull()
+  })
+  // ── Folyadék F5 (mezo-n4wf5.5) ──
+  it('is a light sheet named after the window, with the status in the head', () => {
+    render(<MealClockBox tile={tile({ key: 'b' })} row={null} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    const box = screen.getByRole('dialog')
+    expect(box.className).toContain('fo-sheet')
+    expect(box.className).not.toMatch(/glass|fmx-/)
+    expect(box.querySelector('[class*="fmx-"]')).toBeNull()
+    expect(box).toHaveAccessibleName('Tízórai')
+    expect(screen.getByText('2. étkezés 5 közül · most nyitva')).toBeInTheDocument()
+    expect(screen.getByText('MOST')).toBeInTheDocument()
+    expect(screen.getByText('még 38 p')).toBeInTheDocument()
+    // the plan row carries the window's own budget at its end
+    expect(screen.getByText('2. étkezés 5 közül. A terv szerint erre kb. 311 kcal jut a napi keretből.')).toBeInTheDocument()
+    expect(box.querySelector('.fe-tv > em')).toHaveTextContent('311 kcal')
+  })
+  it('prints the label it is given — a window-less meal keeps its „Ablakon kívül · HH:mm" name', () => {
+    render(<MealClockBox tile={tile({ label: 'Ablakon kívül · 10:05', state: 'done', windowFrom: null, windowTo: null, windowReasons: [] })}
+      row={row({ time: '10:05' })} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('Ablakon kívül · 10:05')
+    expect(screen.getByText('logolva')).toBeInTheDocument()
+    expect(screen.getByText('nem tartozott ablakhoz')).toBeInTheDocument()
+    expect(document.body.querySelector('.fe-lg')).toHaveTextContent('Ablakon kívül · 10:05')
+    // no window → no hit pill, no „suggested window" line
+    expect(document.body.querySelector('.fe-ob .fo-st')).toBeNull()
+    expect(document.body.querySelector('.fe-ob p')).toBeNull()
+  })
+  it('a log outside the window is amber, never the error colour', () => {
+    render(<MealClockBox tile={tile({ label: 'Reggeli', state: 'done', windowFrom: '07:20', windowTo: '08:00' })} row={row()} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    expect(document.body.querySelector('.fe-ob .fo-st')).toHaveClass('warn')
+    expect(document.body.querySelector('.fe-ob .fo-st')).toHaveTextContent('+46 p később')
+    expect(document.body.querySelector('.fe-dd24 .logdot')).toHaveClass('out')
+  })
+  it('the link to the blood sugar sheet is drawn only when the caller can open it', async () => {
+    const onOpenGlycemic = vi.fn()
+    const done = tile({ label: 'Reggeli', state: 'done', windowFrom: '07:20', windowTo: '09:20' })
+    const { unmount } = render(<MealClockBox tile={done} row={row()} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'A vércukor-válasz részletei' })).toBeNull()
+    unmount()
+    render(<MealClockBox tile={done} row={row()} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} onOpenGlycemic={onOpenGlycemic} />)
+    screen.getByRole('button', { name: 'A vércukor-válasz részletei' }).click()
+    expect(onOpenGlycemic).toHaveBeenCalledTimes(1)
   })
 })

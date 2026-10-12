@@ -31,22 +31,22 @@ const WEEKS: ExpenditureWeek[] = [
   wk('2026-08-24', { appliedBaseKcal: 2480, posteriorBaseKcal: 2470, posteriorSdKcal: 148, stepKcal: 60, usableDays: 4 }),
 ]
 
-const detail = () => document.querySelector('.fln-wkd') as HTMLElement
+const detail = () => document.querySelector('.ft-wkd') as HTMLElement
 
 describe('LearningHistoryChart', () => {
   it('places the weeks on a continuous weekly axis — a missing week is a gap with a „nincs adat” label', () => {
     render(<LearningHistoryChart weeks={WEEKS} reducedMotion />)
     const svg = screen.getByRole('img', { name: /A keret alapja hétről hétre, 4 hét/ })
     // one tap target per CALENDAR week, the gap included
-    expect(document.querySelectorAll('.fln-hit')).toHaveLength(4)
+    expect(document.querySelectorAll('.ft-hits > button')).toHaveLength(4)
     expect(within(svg as unknown as HTMLElement).getByText('nincs adat')).toBeInTheDocument()
     // the gap breaks both lines and the band: two runs each (weeks 1–2, then week 4)
-    expect(svg.querySelectorAll('.fln-applied')).toHaveLength(2)
-    expect(svg.querySelectorAll('.fln-formula')).toHaveLength(2)
-    expect(svg.querySelectorAll('.fln-band')).toHaveLength(2)
+    expect(svg.querySelectorAll('.applied')).toHaveLength(2)
+    expect(svg.querySelectorAll('.formula')).toHaveLength(2)
+    expect(svg.querySelectorAll('.band')).toHaveLength(2)
     // one marker per row; the holding week is hollow
-    expect(svg.querySelectorAll('.fln-dot')).toHaveLength(3)
-    expect(svg.querySelectorAll('.fln-dot.is-hold')).toHaveLength(1)
+    expect(svg.querySelectorAll('.dot')).toHaveLength(3)
+    expect(svg.querySelectorAll('.dot.is-hold')).toHaveLength(1)
   })
 
   it('selects the latest week by default and shows its numbers with σ̂ next to the learned value', () => {
@@ -75,16 +75,16 @@ describe('LearningHistoryChart', () => {
     await userEvent.click(screen.getByRole('button', { name: 'aug. 17–23.' }))
     const d = detail()
     expect(within(d).getByText('aug. 17–23.')).toBeInTheDocument()
-    expect(within(d).getByText(/Erről a hétről nincs sorom — kevés volt a felírás és a mérlegelés, ezért nem tippelek számot\./)).toBeInTheDocument()
+    expect(within(d).getByText(/Erről a hétről nincs sorom: kevés volt a felírás és a mérlegelés, ezért nem tippelek számot\./)).toBeInTheDocument()
     expect(d.textContent).not.toMatch(/kcal/)
-    expect(d.querySelectorAll('.fln-kv-cell')).toHaveLength(0)
+    expect(d.querySelectorAll('.fx-kv > div')).toHaveLength(0)
   })
 
   it('draws the lines once unless reduced motion is on', () => {
     const { unmount } = render(<LearningHistoryChart weeks={WEEKS} reducedMotion={false} />)
-    expect(document.querySelector('.fln-chart')!.classList.contains('is-draw')).toBe(true)
+    expect(document.querySelector('.ft-weeks')!.classList.contains('is-draw')).toBe(true)
     unmount()
     render(<LearningHistoryChart weeks={WEEKS} reducedMotion />)
-    expect(document.querySelector('.fln-chart')!.classList.contains('is-draw')).toBe(false)
+    expect(document.querySelector('.ft-weeks')!.classList.contains('is-draw')).toBe(false)
   })
 })

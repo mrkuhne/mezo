@@ -1,2 +1,137 @@
 /* ── Folyadék · Fuel · mai (mezo-n4wf5.5, slice F5) ── area A · Mai (FuelMaiPage, hero, macros, meal blocks, gentle-mode faces, skip + doctor sheets). Rules of this area only, class prefix `.fa-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the day pager (shared/ui/DayNavigator) ── fuel.js `.fx-dn` */
+.fa-dn { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 14px 0; }
+.fa-dn-step { position: relative; flex: 0 0 auto; width: 40px; height: 40px; padding: 0 0 3px; border: 0; border-radius: 13px; display: grid; place-items: center; cursor: pointer;
+  font-family: var(--ff-body); font-size: 22px; line-height: 1; color: var(--fo-ink); background: rgba(255, 255, 255, .85); box-shadow: 0 4px 10px -6px rgba(15, 30, 51, .3), inset 0 0 0 1px rgba(15, 30, 51, .05); }
+.fa-dn-step::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.fa-dn-step:disabled { opacity: .35; cursor: default; }
+.fa-dn-step:focus-visible, .fa-dn-mid .dp-trigger:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fa-dn-mid { flex: 1; min-width: 0; text-align: center; }
+.fa-dn-mid > small { display: block; font-size: 11.5px; font-weight: 650; letter-spacing: .4px; text-transform: uppercase; color: var(--fo-sub); }
+/* the date is the calendar's trigger (shared/ui/DatePicker): here it wears the pager's title */
+.fa-dn-mid .dp-wrap { display: block; }
+.fa-dn-mid .dp-trigger { position: relative; display: inline-block; max-width: 100%; padding: 0; font-family: var(--ff-display); font-size: 16px; font-weight: 700; line-height: 1.2; color: var(--fo-ink); }
+:lang(hu) .fa-dn-mid .dp-trigger::first-letter { text-transform: lowercase; }
+.fa-dn-mid .dp-trigger::after { content: ''; position: absolute; left: -8px; right: -8px; top: 50%; height: 44px; transform: translateY(-50%); }
+
+/* ── the hero: the day's bowl (FuelEnergyHero, and the plain faces of FuelMaiPage) ── fuel.js `bowlHero` (`.fu-bh`)
+   The kit hero draws label → verdict → sub → children; here the graphic stands between the label and the verdict. */
+.fo-hero.fa-hero { display: flex; flex-direction: column; }
+.fa-hero > .fo-hero-lbl { order: -2; }
+.fa-hero > .fx-bg { order: -1; margin: 16px 0 12px; }
+.fa-hero > .fo-hero-verdict { margin-top: 0; }
+.fa-hero.est .fx-bg-n > b { color: var(--fo-sub); }
+.fa-skl { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin-top: 12px; padding: 6px 12px 6px 6px; border: 0; border-radius: 999px; cursor: pointer; text-align: left;
+  font-family: var(--ff-body); font-size: 12.5px; line-height: 1.3; color: var(--fo-sub); background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
+.fa-skl > span:last-child { flex: 1; min-width: 0; }
+.fa-skl b { color: var(--fo-ink); }
+.fa-skl:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+/* the weekly-learning drop (area D's `WeeklyLearningDot`, `.ft-dot`) on the „Miből jön össze?" link stands on the liquid: white (fuel.js `.fu-dot`) */
+.fa-eql > .ft-dot { background: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .35); }
+.fa-eql > .ft-dot.hold { background: none; box-shadow: inset 0 0 0 2px #fff; }
+
+/* ── the equation sheet ── fuel.js `eq`: `.fu-eqb`, `.fu-eqc`, `.fx-tot`, `.fu-pend` */
+.fa-eqb { margin: 8px 0 12px; }
+.fa-eqc { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11.5px; font-weight: 600; color: var(--fo-sub); }
+.fa-pend { display: block; margin-top: 2px; font-style: normal; font-weight: 650; color: var(--dom); }
+.fa-tot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 14px; border-radius: 16px; background: color-mix(in srgb, var(--dom) 10%, #fff); }
+.fa-tot > span > strong { display: block; font-size: 15px; font-weight: 700; color: var(--fo-ink); }
+.fa-tot > span > small { display: block; font-size: 12.5px; font-weight: 500; color: var(--fo-sub); }
+.fa-tot > b { font-family: var(--ff-display); font-size: 26px; font-weight: 800; letter-spacing: -.8px; white-space: nowrap; color: var(--fo-ink); }
+.fa-tot > b > small { margin-left: 4px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); }
+
+/* ── the five macro vials (FuelMacroRings) ── fuel.js `.fu-mac` */
+.fa-mac > .fo-vials { gap: 8px; }
+.fa-mac > .fo-vials > .fo-vial > small { font-size: 11px; }
+.fa-mac > .fo-vials > .fo-vial > b { white-space: nowrap; }
+.fa-mac > .fo-vials > .fo-vial > .fo-tube > em { font-family: var(--ff-body); font-size: 9px; font-weight: 800; letter-spacing: 0; text-transform: uppercase; white-space: nowrap; }
+.fa-mac.lead > .fo-vials > .fo-vial:first-child > .fo-tube { box-shadow: inset 0 0 0 2.5px var(--fx-protein), 0 12px 16px -12px var(--fx-protein); }
+.fa-s { display: none; }
+.fa-kmn.fo-card { padding: 10px 16px; }
+
+/* ── the day's meal blocks (FuelMealBlocks) ── fuel.js `.fm-blk`, `.fm-bh`, `.fm-clock`, `.fm-meal`, `.fm-mn`, `.fm-mb`, `.fm-chips`, `.fm-when`, `.fm-la`, `.fm-log`, `.fm-ska` */
+.fa-blk.fo-card { padding: 14px 16px; }
+.fa-blk.open { background: rgba(255, 255, 255, .55); box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .10); }
+.fa-bhd { display: flex; align-items: center; gap: 10px; }
+.fa-bhd > .g { flex: 1; min-width: 0; }
+.fa-bhd > .g > strong { display: block; font-family: var(--ff-display); font-size: 18px; font-weight: 700; letter-spacing: -.4px; overflow-wrap: break-word; color: var(--fo-ink); }
+.fa-clock { position: relative; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; box-shadow: 0 8px 12px -8px rgba(10, 42, 60, .45); }
+.fa-clock::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.fa-clock > .fx-dial { box-shadow: none; }
+.fa-clock.live { box-shadow: 0 0 0 3px color-mix(in srgb, var(--liq1) 45%, transparent), 0 8px 12px -8px rgba(10, 42, 60, .45); }
+.fa-clock:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fa-meal { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--fo-hair); }
+.fa-meal > .fx-tip { padding: 0; }
+.fa-mn { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; font-family: var(--ff-body); color: var(--fo-ink); }
+.fa-mn::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.fa-mn > strong { display: block; font-size: 15.5px; font-weight: 650; line-height: 1.3; overflow-wrap: break-word; }
+.fa-mn:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fa-mb { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.fa-chips { display: flex; align-items: center; gap: 6px; }
+.fa-when { margin-top: 10px; font-size: 13.5px; line-height: 1.4; color: var(--fo-sub); }
+.fa-when > b { color: var(--fo-ink); }
+.fa-when > .now { color: var(--dom); font-weight: 700; }
+.fa-la.fo-acts { flex-wrap: nowrap; margin-top: 12px; }
+.fa-log.fo-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 18px; text-align: left; white-space: normal; }
+.fa-log > span { font-weight: 700; }
+.fa-log > small { font-size: 11px; font-weight: 500; opacity: .9; }
+.fa-log.ghost > small { color: var(--fo-sub); opacity: 1; }
+.fa-ska.fo-acts { gap: 8px 14px; margin-top: 10px; }
+
+/* ── the day's mark in the learning (DayLearningMark) ── fuel.js `.fu-mark` */
+.fa-mark { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fa-mark > .g { flex: 1; min-width: 190px; }
+.fa-mark > .g > b { display: block; font-size: 14.5px; font-weight: 650; line-height: 1.3; color: var(--fo-ink); }
+.fa-mark > .g > small { display: block; margin: 2px 0 4px; font-size: 12.5px; line-height: 1.4; color: var(--fo-sub); }
+.fa-mark > .g > .fo-lk { font-size: 13px; }
+
+/* ── the guidance face (FuelGuidanceCard) ── fuel.js `.fu-gl`, `.fu-chips` */
+.fa-gl { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; border: 0; background: none; cursor: pointer; font-family: var(--ff-body); color: var(--fo-ink); }
+.fa-gl > small { font-size: 11px; font-weight: 700; white-space: nowrap; }
+.fa-gl > small > i { display: block; font-style: normal; font-weight: 500; color: var(--fo-sub); }
+.fa-gl:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fa-gh .fo-hero-sub b { color: var(--fo-ink); white-space: nowrap; }
+.fa-easy.fo-chips > span { padding: 5px 11px; background: color-mix(in srgb, var(--dom) 6%, #fff); box-shadow: none; }
+/* fuel.js `.fu-chips`: plain pills, without the kit chip's leading drop */
+.fa-easy.fo-chips > span::before { content: none; }
+
+/* ── „Miért marad ki?" (MealSkipSheet) ── fuel.js `.fu-why` */
+.fa-whyg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 4px 0 6px; }
+.fa-whyg > button { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 12px 4px; border: 0; border-radius: 22px; cursor: pointer;
+  font-family: var(--ff-body); font-size: 12px; font-weight: 600; line-height: 1.2; text-align: center; color: var(--fo-ink); background: color-mix(in srgb, var(--dom) 5%, #fff); }
+.fa-whyg > button.on { box-shadow: inset 0 0 0 2.5px var(--liq2); }
+.fa-whyg > button > span:last-child { min-width: 0; max-width: 100%; overflow-wrap: break-word; }
+.fa-whyg > button:focus-visible, .fa-why .trm-kmdc > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fa-inpmic textarea.fo-in { min-height: 84px; }
+.fa-whynote { margin-top: 8px; }
+/* „Meddig tarthat?" is the Edzés domain's shared row (RecoveryDurationRow): the mounting sheet dresses it — the same pills
+   as on the training sheet (folyadek-edzes-mai.css `.em-why .trm-kmdur`). */
+.fa-why .trm-kmdur-eb { display: block; margin: 14px 0 6px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; letter-spacing: 0; text-transform: lowercase; color: var(--fo-sub); }
+.fa-why .trm-kmdur-eb::first-letter { text-transform: uppercase; }
+.fa-why .trm-kmdc { display: flex; flex-wrap: wrap; gap: 8px; }
+.fa-why .trm-kmdc > button { display: inline-flex; align-items: center; min-height: 44px; padding: 7px 14px; border: 0; border-radius: 999px; font-family: var(--ff-body); font-size: 13px; font-weight: 600; line-height: normal;
+  color: var(--fo-ink); background: var(--fo-page); box-shadow: none; cursor: pointer; opacity: 1; }
+.fa-why .trm-kmdc > button.on { color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: none; }
+.fa-why .trm-kmdc > button:disabled { cursor: default; }
+.fa-why .trm-kmdc > button:disabled:not(.on) { opacity: .55; }
+
+/* ── „Mikor fordulj orvoshoz?" (DoctorSheet) ── fuel.js `.fu-li` */
+.fa-docl { margin: 0; padding: 0; list-style: none; }
+.fa-docl > li { display: flex; gap: 10px; padding: 7px 0; font-size: 14px; line-height: 1.4; color: var(--fo-ink); }
+.fa-docl > li > i { flex: 0 0 auto; width: 8px; height: 10px; margin-top: 5px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: var(--fo-bad); }
+
+@media (max-width: 360px) {
+  .fa-w { display: none; }
+  .fa-s { display: inline; }
+  .fa-mac > .fo-vials { gap: 5px; }
+  .fa-mac > .fo-vials > .fo-vial > b { font-size: 16px; }
+  .fa-mac > .fo-vials > .fo-vial > small { font-size: 10px; }
+  .fa-bhd { gap: 7px; }
+  .fa-bhd > .fo-bub { --s: 36px !important; }
+  .fa-bhd > .g > strong { font-size: 16px; }
+  .fa-la.fo-acts { flex-wrap: wrap; }
+  /* the amber guidance hero stacks: the glass over the text (fuel.js `.fh-hero.warn .fh-hrow`) */
+  .fa-gh > .fo-hero-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+}

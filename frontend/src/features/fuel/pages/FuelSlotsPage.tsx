@@ -1,38 +1,39 @@
+// ============================================================
+// Mezo · FuelSlotsPage (mezo-7102 — Task 8) — "/settings/fuel/slots": full-page editor for the per-day-type
+// meal-window templates. A day-type switcher (Pihenőnap / Reggeli edzés / Esti edzés, `useStickyTab`) selects which
+// of the three canonical day types is being viewed:
+//
+//  - no saved template → a read-only RECOMMENDED preview (today's engine output for a reference day of that type:
+//    today's real blocks when today IS that type, else a synthetic canonical block) + a "Testreszabás" button that
+//    forks the recommendation into an editable draft (seeded budgetPct from the recommended kcal share, Σ normalized
+//    to 100, drift absorbed by the largest window).
+//  - a saved template exists (or a fork is in progress) → editable rows in local state, a live `compileTemplate` +
+//    `splitBudgetPct` preview, the Tier-1 deterministic `validateSlotPlan` guardrails (errors block Mentés, warnings
+//    are advisory), Mezo's on-demand view, and "Ajánlott visszaállítása" to delete the saved template.
+//
+// Folyadék (mezo-n4wf5.5, prototype vilagos/fuel.js `ablakok()`): the title lives in the frame; the hero is the day as
+// a tide (`FuelWindowTide`: one vessel per window, its level the kcal share) with the day-type tabs under the verdict.
+// Recommended: 1 · Ablakok (steps with kcal and share). Editor: 1 · Ablakok · N (name, type, role, anchor, time /
+// offset, share), 2 · Így áll össze (the sum and each window's kcal + protein, then the checks), 3 · Mezo véleménye.
+// Wording per the plan: „Slot" → „Ablak", „Budget %" → „Rész %", „Mezo értékelése" → „Kérd Mezo véleményét".
+// Behaviour is unchanged (hooks, drafts per day type, save / reset / evaluate, back target, the unsaved-changes guard).
+// Design: docs/superpowers/specs/2026-08-05-fuel-meal-slot-templates-design.md §1.
+// ============================================================
 import { useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
 import { flushSync } from 'react-dom'
 import { UnsavedChangesGuard } from '@/features/settings/components/UnsavedChangesGuard'
-// ============================================================
-// Mezo · FuelSlotsPage (mezo-7102 — Task 8) — "/fuel/slots" full-page editor
-// for per-day-type meal-slot templates. Sibling of the `fuel` group (mirrors
-// RecipeEditorPage: back row + pghead-np sage header, 110px bottom padding,
-// portaled `.recipe-save-bar`). A sage-accented day-type switcher
-// (Pihenőnap / Reggeli edzés / Esti edzés, `useStickyTab`) selects which of
-// the three canonical day types is being viewed:
-//
-//  - no saved template → a read-only RECOMMENDED preview (today's engine
-//    output for a reference day of that type: today's real blocks when today
-//    IS that type, else a synthetic canonical block) + a "Testreszabás" CTA
-//    that forks the recommendation into an editable draft (seeded budgetPct
-//    from the recommended kcal share, Σ normalized to 100, drift absorbed by
-//    the largest slot — the codebase's dinner-absorbs idiom, generalized).
-//  - a saved template exists (or a fork is in progress) → editable rows in
-//    local state, a live `compileTemplate` + `splitBudgetPct` preview, the
-//    Tier-1 deterministic `validateSlotPlan` guardrails (errors block Mentés,
-//    warnings are advisory), and "Ajánlott visszaállítása" to delete the
-//    saved template and drop back to the recommendation.
-//
-// Design: docs/superpowers/specs/2026-08-05-fuel-meal-slot-templates-design.md §1.
-// ============================================================
-import { useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useId, useState, type InputHTMLAttributes } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFuelSettings, useFuelTimeline, useSlotTemplateActions, useSlotTemplateEvaluation, useSlotTemplates } from '@/data/hooks'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
-import { Icon } from '@/shared/ui/Icon'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import type { Icon3DName } from '@/shared/ui/clay'
+import {
+  Acts, Btn, Bub, Card, Empty, FrameBack, Hero, Input, Lab, Level, Lk, Note, Page, Pill, Pills, Section, Seg, Select, St, Step, Stepper,
+  useFrameTitle,
+} from '@/shared/ui/folyadek'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped, fmtNum } from '@/shared/lib/format'
+import { FuelWindowTide, evenWindows } from '@/features/fuel/components/FuelWindowTide'
 import { compileTemplate, resolveAnchorTimes } from '@/features/fuel/logic/compileTemplate'
 import { validateSlotPlan } from '@/features/fuel/logic/validateSlotPlan'
 import { placeWindows, splitBudget, splitBudgetPct } from '@/features/fuel/logic/buildDayPlan'
@@ -42,11 +43,7 @@ import { toHHmm } from '@/data/fuel/fuelConfig'
 import type { SlotPlanVerdict } from '@/data/fuel/slotTemplateApi'
 import type { MealSlot, SlotAnchor, SlotTemplateDayType, SlotTemplateRow } from '@/data/types'
 
-const DAY_TYPES: { id: SlotTemplateDayType; label: string }[] = [
-  { id: 'rest', label: 'Pihenőnap' },
-  { id: 'training_am', label: 'Reggeli edzés' },
-  { id: 'training_pm', label: 'Esti edzés' },
-]
+const DAY_TYPES: SlotTemplateDayType[] = ['rest', 'training_am', 'training_pm']
 
 // Reference-day synthesis (spec §1): today's real blocks when today matches the selected day
 // type, otherwise a canonical single block so the preview/editor still has something to anchor
@@ -57,32 +54,15 @@ const SYNTHETIC_BLOCKS: Record<SlotTemplateDayType, PlannerBlock[]> = {
   training_pm: [{ kind: 'gym', time: '18:00', durationMin: 60, label: 'Gym' }],
 }
 
-const SLOT_KIND_OPTIONS: { id: MealSlot; label: string }[] = [
-  { id: 'breakfast', label: 'Reggeli' },
-  { id: 'lunch', label: 'Ebéd' },
-  { id: 'dinner', label: 'Vacsora' },
-  { id: 'snack', label: 'Snack' },
-]
+const SLOT_KINDS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack']
 
-// Üveg (mezo-me75u.2, prototypes/uveg-fuel-tobbi.html `ablakok()`): every slot wears its own hue and
-// 3D slot icon — the same slot → hue pairing as the approved prototype.
-const SLOT_FACE: Record<MealSlot, { icon: Icon3DName; color: string }> = {
-  breakfast: { icon: 't-sun', color: 'var(--dv-amber)' },
-  lunch: { icon: 't-bowl', color: 'var(--dv-sage)' },
-  snack: { icon: 't-snack', color: 'var(--dv-lav)' },
-  dinner: { icon: 't-moon', color: 'var(--dv-sky)' },
-}
+// Every window kind has its own glyph (prototype `WKIND`).
+const SLOT_ICON: Record<MealSlot, Icon3DName> = { breakfast: 't-sun', lunch: 't-bowl', snack: 't-snack', dinner: 't-moon' }
 
-const ANCHOR_OPTIONS: { id: SlotAnchor['type']; label: string }[] = [
-  { id: 'fixed', label: 'Fix időpont' },
-  { id: 'wake', label: 'Ébredés után' },
-  { id: 'training_start', label: 'Edzés előtt‑után (kezdet)' },
-  { id: 'training_end', label: 'Edzés vége után' },
-  { id: 'bed', label: 'Lefekvés előtt' },
-]
+const ANCHOR_TYPES: SlotAnchor['type'][] = ['fixed', 'wake', 'training_start', 'training_end', 'bed']
 
-const NEW_ROW: SlotTemplateRow = {
-  label: 'Snack',
+// A new window's shape; its NAME is read from the catalog when it is added (never a translated module constant).
+const NEW_ROW: Omit<SlotTemplateRow, 'label'> = {
   slotKind: 'snack',
   role: 'standard',
   anchor: { type: 'fixed', time: '16:00' },
@@ -99,19 +79,6 @@ const NEW_ROW: SlotTemplateRow = {
 const normalizeBudgetPct = (n: number) => Math.max(1, Math.min(100, Math.trunc(n)))
 const clampOffsetMin = (n: number) => Math.max(-720, Math.min(720, n))
 
-function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void; children: string }) {
-  return (
-    <button
-      role="tab"
-      aria-selected={on}
-      onClick={onClick}
-      className={on ? 'fsl-seg-btn is-on' : 'fsl-seg-btn'}
-    >
-      {children}
-    </button>
-  )
-}
-
 // Typeable numeric field (AmountField idiom, RecipeEditorPage.tsx:68-93): keeps a local string so
 // mid-typing states ("-", ".", "12.5") hold, coercing to a number on every change, and re-syncs
 // only on an EXTERNAL value change (the ± buttons) via the render-time prev-prop pattern — no
@@ -123,17 +90,15 @@ function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void
 // second, unconditional settle point: on blur, the text always snaps to `String(value)`, so the
 // keystroke-reset-free typing experience is unchanged but the field never lingers out of sync
 // with what was actually committed once the user moves on.
-function NumberField({
-  value, onChange, label, width = 42, allowNegative = false, normalize,
-}: {
-  value: number; onChange: (n: number) => void; label: string; width?: number; allowNegative?: boolean
+function useNumberText({ value, onChange, allowNegative = false, normalize }: {
+  value: number; onChange: (n: number) => void; allowNegative?: boolean
   /** mezo-4ghd fixes 2/3: optional per-field commit coercion (e.g. integer + range clamp) applied
    *  to the VALUE handed to `onChange` — never to the raw typed text, so decimal entry still reads
    *  naturally while it's being typed (see the module comment by the callers). Skipped on a bare/
    *  empty transient (`''`, `'.'`, `'-'`, `'-.'`) so clearing-then-typing keeps behaving like every
-   *  other NumberField — only a text the user has actually committed to gets coerced. */
+   *  other number field — only a text the user has actually committed to gets coerced. */
   normalize?: (n: number) => number
-}) {
+}): InputHTMLAttributes<HTMLInputElement> {
   const [text, setText] = useState(() => String(value))
   const [prev, setPrev] = useState(value)
   const pattern = allowNegative ? /^-?\d*\.?\d*$/ : /^\d*\.?\d*$/
@@ -152,40 +117,61 @@ function NumberField({
     const committed = Number.isFinite(n) ? n : 0
     onChange(normalize && !isBare ? normalize(committed) : committed)
   }
+  return {
+    inputMode: 'decimal',
+    value: text,
+    onChange: (e) => commit(e.target.value),
+    onBlur: () => { if (text !== String(value)) setText(String(value)) },
+  }
+}
+
+/** The share field of a window: a typeable whole percent (1–100). */
+function ShareField({ id, value, onChange }: { id: string; value: number; onChange: (n: number) => void }) {
+  return <Input id={id} {...useNumberText({ value, onChange, normalize: normalizeBudgetPct })} />
+}
+
+/** The offset of a window from its anchor: − / + in quarter hours, and typeable (signed, clamped to ±720). */
+function OffsetStepper({ name, value, onChange }: { name: string; value: number; onChange: (n: number) => void }) {
+  const input = useNumberText({ value, onChange, allowNegative: true, normalize: clampOffsetMin })
   return (
-    <input
-      inputMode="decimal"
-      value={text}
-      onChange={e => commit(e.target.value)}
-      onBlur={() => { if (text !== String(value)) setText(String(value)) }}
-      aria-label={label}
-      className="fsl-num"
-      style={{ width }}
-    />
+    <Stepper name={name} input={input}
+      onDec={() => onChange(clampOffsetMin(value - 15))}
+      onInc={() => onChange(clampOffsetMin(value + 15))} />
   )
 }
 
-// Recommended-plan rows normalized to a Σ=100 budgetPct seed for the "Testreszabás" fork — the
-// slot's kcal share of the recommended plan, rounded, drift absorbed by the largest slot (the
-// same dinner-absorbs principle `splitBudget`/`splitBudgetPct` use elsewhere).
-function seedRowsFromRecommendation(windows: ReturnType<typeof placeWindows>, budgets: Macro4[]): SlotTemplateRow[] {
-  if (!windows.length) return []
+/** The recommended plan's kcal shares as whole percents that sum to 100 — the slot's kcal share, rounded, drift absorbed
+ *  by the largest slot (the same dinner-absorbs principle `splitBudget`/`splitBudgetPct` use elsewhere). */
+function recommendedShares(budgets: Macro4[]): number[] {
+  if (!budgets.length) return []
   const totalKcal = budgets.reduce((s, b) => s + b.kcal, 0) || 1
   const rounded = budgets.map(b => Math.round((b.kcal / totalKcal) * 100))
   const drift = 100 - rounded.reduce((s, p) => s + p, 0)
   const bigIdx = budgets.reduce((bi, b, i) => (b.kcal > budgets[bi].kcal ? i : bi), 0)
   rounded[bigIdx] += drift
+  return rounded
+}
+
+// Recommended-plan rows normalized to a Σ=100 budgetPct seed for the "Testreszabás" fork.
+function seedRowsFromRecommendation(windows: ReturnType<typeof placeWindows>, budgets: Macro4[]): SlotTemplateRow[] {
+  if (!windows.length) return []
+  const shares = recommendedShares(budgets)
   return windows.map((w, i) => ({
     label: w.label,
     slotKind: w.slotKey,
     role: 'standard',
     anchor: { type: 'fixed', time: toHHmm(w.time) },
-    budgetPct: rounded[i],
+    budgetPct: shares[i],
   }))
 }
 
 export function FuelSlotsPage() {
   const navigate = useNavigate()
+  const M = useM()
+  const T = M.fuelBeallitas
+  const W = T.windows
+  const ids = useId()
+  useFrameTitle({ title: T.frame.windowsTitle, eyebrow: T.frame.eyebrow })
   const { state: originState } = useSettingsOrigin()
   const [saved, setSaved] = useState(false)
   const [writeError, setWriteError] = useState(false)
@@ -268,7 +254,8 @@ export function FuelSlotsPage() {
   const updateRow = (i: number, patch: Partial<SlotTemplateRow>) =>
     setRows(prev => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
   const removeRow = (i: number) => setRows(prev => prev.filter((_, idx) => idx !== i))
-  const addRow = () => setRows(prev => [...prev, { ...NEW_ROW }])
+  // the new window starts with the app language's word for a snack; from then on the name is the user's own
+  const addRow = () => setRows(prev => [...prev, { ...NEW_ROW, label: W.editor.newName }])
   const setAnchorType = (i: number, type: SlotAnchor['type']) =>
     updateRow(i, { anchor: type === 'fixed' ? { type: 'fixed', time: '12:00' } : { type, offsetMin: 0 } })
 
@@ -331,265 +318,227 @@ export function FuelSlotsPage() {
       .catch(() => { setVerdict(null); setEvalDegraded(true); setRowsAtEval(snapshot) })
   }
 
-  if (settingsError || templatesError) return <MozaikPage tone="sage"><UnsavedChangesGuard dirty={!saved && ((forked && JSON.stringify(rows) !== JSON.stringify(existing?.slots ?? [])) || Object.entries(drafts).some(([key, draft]) => draft?.forked && JSON.stringify(draft.rows) !== JSON.stringify(templates.find(t => t.dayType === key)?.slots ?? [])))} /><PageHead onBack={() => navigate('/settings/fuel', { state: originState })} label="‹ Fuel" /><PageBody><p role="alert">Nem sikerült betölteni az étkezési ablakok beállításait. A mentett rendet addig nem lehet felülírni.</p><button className="cta-primary" onClick={() => { retrySettings(); retryTemplates() }}>Újrapróbálás</button></PageBody></MozaikPage>
+  const dirty = !saved && ((forked && JSON.stringify(rows) !== JSON.stringify(existing?.slots ?? [])) || Object.entries(drafts).some(([key, draft]) => draft?.forked && JSON.stringify(draft.rows) !== JSON.stringify(templates.find(t => t.dayType === key)?.slots ?? [])))
+  const goFuel = () => navigate('/settings/fuel', { state: originState })
+  const back = <FrameBack className="fo-backpill" onBack={goFuel}>{T.frame.backToFuel}</FrameBack>
+
+  if (settingsError || templatesError) {
+    return (
+      <Page nonav className="fb-page">
+        <UnsavedChangesGuard dirty={dirty} />
+        {back}
+        <Card>
+          <Empty icon="t-info" actions={<Btn sm onClick={() => { retrySettings(); retryTemplates() }}>{T.retry}</Btn>}>
+            <span role="alert">{W.loadError}</span>
+          </Empty>
+        </Card>
+      </Page>
+    )
+  }
+
+  // Betöltés közben csak a hős áll: a Testreszabás nem indítható, amíg a mentett rend meg nem jött (mezo-4ghd fix 4 —
+  // egy korai fork felülírná a később megérkező mentett felosztást).
+  if (settingsPending || templatesPending) {
+    return (
+      <Page nonav className="fb-page">
+        <UnsavedChangesGuard dirty={dirty} />
+        {back}
+        <Hero className="fb-hero" label={W.loadingLabel} verdict={<span role="status">{T.loading}</span>} sub={W.loadingSub}>
+          <div className="fb-hg"><FuelWindowTide windows={evenWindows(4)} bare /></div>
+        </Hero>
+      </Page>
+    )
+  }
+
+  const days = (
+    <Seg tabs className="fb-days" aria-label={W.dayTypes} value={dayType} onChange={setDayType}
+      items={DAY_TYPES.map((key) => ({ key, label: W.dayTab[key] }))} />
+  )
+  const sumText = fmtNum(sumPct, 2)
+  const sumOff = Math.abs(sumPct - 100) > 1
+
+  if (!editing) {
+    const shares = recommendedShares(recommendedBudgets)
+    const block = refBlocks[0]
+    const why = !block
+      ? W.recommended.whyRest
+      : dayType === todayType
+        // a blokk neve a felhasználó saját (tárolt) edzésneve: nem fordítjuk
+        ? W.recommended.whyToday(block.label, block.time)
+        : W.recommended.whySample(block.time)
+    return (
+      <Page nonav className="fb-page">
+        <UnsavedChangesGuard dirty={dirty} />
+        {back}
+        <Hero
+          className="fb-hero"
+          label={W.recommended.label}
+          verdict={W.recommended.verdict(W.dayType[dayType], recommendedWindows.length)}
+          sub={why}
+          actions={<Btn onClick={fork} disabled={templatesPending}>{W.recommended.customise}</Btn>}
+        >
+          <div className="fb-hg">
+            <FuelWindowTide windows={recommendedWindows.map((w, i) => ({ time: w.time, label: w.label, kcal: recommendedBudgets[i]?.kcal ?? 0 }))} />
+          </div>
+          <div className="fb-hd">{days}</div>
+        </Hero>
+
+        <Section n={1} title={W.recommended.section} />
+        <Card className="fb-rec">
+          {recommendedWindows.map((w, i) => (
+            <Step key={i} time={toHHmm(w.time)} icon={SLOT_ICON[w.slotKey]} title={w.label}
+              right={<span className="fb-kv"><b>{fmtGrouped(recommendedBudgets[i]?.kcal ?? 0)}</b> kcal<small>{shares[i] ?? 0}%</small></span>} />
+          ))}
+          <Note>{W.recommended.note}</Note>
+        </Card>
+      </Page>
+    )
+  }
+
+  const E = W.editor
+  const blocked = errors.length > 0
+  const verdictText = sumOff
+    ? E.verdictSumOff(sumText)
+    : blocked
+      ? E.verdictBlocked
+      : existing ? E.verdictOwn[dayType] : E.verdictReady(sumText)
 
   return (
-    <MozaikPage tone="sage" className="fsl-page">
-        <UnsavedChangesGuard dirty={!saved && ((forked && JSON.stringify(rows) !== JSON.stringify(existing?.slots ?? [])) || Object.entries(drafts).some(([key, draft]) => draft?.forked && JSON.stringify(draft.rows) !== JSON.stringify(templates.find(t => t.dayType === key)?.slots ?? [])))} />
-        {writeError && <p role="alert">Nem sikerült menteni. A módosításaid megmaradtak.</p>}
-        <PageHead onBack={() => navigate('/settings/fuel', { state: originState })} label="‹ Fuel" />
-        {/* F7.3 (mezo-d20.8.3.1): the editor joins the Mozaik generation — sage shell +
-            eyebrow/title block; the validation display below follows fuel-mely.html. */}
-        {(settingsPending || templatesPending) && <p role="status">Beállítások betöltése…</p>}
-        <fieldset disabled={settingsPending || templatesPending} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-        <EntranceGroup>
-        <PageBody>
-        <div className="rise" style={{ '--d': '0ms', padding: '2px 2px 12px' } as React.CSSProperties}>
-          <span className="mz-eyebrow">Fuel · Beállítások</span>
-          <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 600, lineHeight: 1.15, margin: '4px 0 0', color: 'var(--text-primary)' }}>Étkezési ablakok</h1>
-        </div>
-
-        {/* Day-type switcher */}
-        <div role="tablist" aria-label="Naptípusok" className="fsl-seg rise" style={{ '--d': '40ms' } as React.CSSProperties}>
-          {DAY_TYPES.map(dt => (
-            <SegButton key={dt.id} on={dayType === dt.id} onClick={() => setDayType(dt.id)}>{dt.label}</SegButton>
-          ))}
-        </div>
-
-        {!editing ? (
-          <>
-            <div className="fsl-list rise" style={{ '--d': '80ms' } as React.CSSProperties}>
-              {recommendedWindows.map((w, i) => (
-                <div key={i} className="fsl-slotrow glass"
-                  style={{ '--c': SLOT_FACE[w.slotKey].color, '--i': i } as React.CSSProperties}>
-                  <span className="fsl-slot-time">{toHHmm(w.time)}</span>
-                  <Icon3D name={SLOT_FACE[w.slotKey].icon} size={34} />
-                  <span className="fsl-slot-label">{w.label}</span>
-                  <b className="fsl-slot-kcal uv-tint">{recommendedBudgets[i]?.kcal ?? 0} <small>kcal</small></b>
-                </div>
-              ))}
-            </div>
-            {/* mezo-4ghd fix 4: disabled while the slot-templates GET is still pending in real mode
-                (`useDualQuery`'s cold-load window — `templates=[]`/`existing=null` regardless of
-                whether a template is actually saved). Forking here would seed `rows` from the
-                recommendation and set `forked=true`; if the GET then resolves to a saved template,
-                the late-arrival sync below (`!forked && existing != null`) can never fire again for
-                this day type — Mentés would silently overwrite the real template with the fork.
-                Mock mode resolves `isPending` synchronously (`useDualQuery`'s `initialData`), so the
-                button is never disabled there. */}
-            <button className="cta-primary fsl-cta glass rise" onClick={fork} disabled={templatesPending}
-              style={{ '--d': '120ms', '--c': 'var(--dv-amber)' } as React.CSSProperties}>
-              <Icon3D name="t-gear" size={26} /> Testreszabás
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="fsl-list rise" style={{ '--d': '80ms' } as React.CSSProperties}>
-              {rows.map((row, i) => (
-                <div key={i} className="fsl-edit glass"
-                  style={{ '--c': SLOT_FACE[row.slotKind].color, '--i': i } as React.CSSProperties}>
-                  <div className="fsl-edit-head">
-                    <Icon3D name={SLOT_FACE[row.slotKind].icon} size={30} />
-                    <input
-                      className="fsl-inp"
-                      value={row.label}
-                      onChange={e => updateRow(i, { label: e.target.value })}
-                      aria-label="Slot neve"
-                      placeholder="Slot neve"
-                      maxLength={40}
-                    />
-                    <button className="fsl-remove uv-flat" onClick={() => removeRow(i)} aria-label={`${row.label} törlése`}>
-                      <Icon name="trash" size={13} />
-                    </button>
-                  </div>
-
-                  <div className="fsl-chips">
-                    {SLOT_KIND_OPTIONS.map(o => (
-                      <button key={o.id} onClick={() => updateRow(i, { slotKind: o.id })} className={'fsl-chip' + (row.slotKind === o.id ? ' is-on' : '')}>
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="fsl-chips">
-                    {ROLE_OPTIONS.map(o => (
-                      <button key={o.id} onClick={() => updateRow(i, { role: o.id })} className={'fsl-chip' + (row.role === o.id ? ' is-on' : '')}>
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="fsl-anchor">
-                    <select
-                      className="fsl-inp"
-                      aria-label="Horgony"
-                      value={row.anchor.type}
-                      onChange={e => setAnchorType(i, e.target.value as SlotAnchor['type'])}
-                    >
-                      {ANCHOR_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-                    </select>
-
-                    {(() => {
-                      const anchor = row.anchor // hoisted into a local const so the discriminant
-                        // narrowing below survives into the nested onClick/onChange closures —
-                        // TS drops property-chain (`row.anchor.type`) narrowing across a function
-                        // boundary, but keeps it for a plain never-reassigned local binding.
-                      return anchor.type === 'fixed' ? (
-                        <input
-                          type="time"
-                          aria-label="Fix időpont"
-                          value={anchor.time}
-                          className="fsl-inp fsl-time"
-                          onChange={e => { if (e.target.value) updateRow(i, { anchor: { type: 'fixed', time: e.target.value } }) }}
-                        />
-                      ) : (
-                        <div className="fsl-stepper">
-                          <button
-                            onClick={() => updateRow(i, { anchor: { type: anchor.type, offsetMin: clampOffsetMin(anchor.offsetMin - 15) } })}
-                            aria-label="Csökkentés"
-                          >−</button>
-                          <NumberField
-                            value={anchor.offsetMin}
-                            onChange={n => updateRow(i, { anchor: { type: anchor.type, offsetMin: n } })}
-                            label="Eltolás perc"
-                            allowNegative
-                            width={46}
-                            normalize={clampOffsetMin}
-                          />
-                          <button
-                            onClick={() => updateRow(i, { anchor: { type: anchor.type, offsetMin: clampOffsetMin(anchor.offsetMin + 15) } })}
-                            aria-label="Növelés"
-                          >+</button>
-                        </div>
-                      )
-                    })()}
-
-                    <div className="fsl-pct">
-                      <NumberField value={row.budgetPct} onChange={n => updateRow(i, { budgetPct: n })} label="Budget %" width={40} normalize={normalizeBudgetPct} />
-                      <span>%</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={addRow}
-              className="fsl-add uv-empty"
-              style={{ '--c': 'var(--dv-amber)' } as React.CSSProperties}
-            >
-              <Icon name="plus" size={14} /> Új slot
-            </button>
-
-            <div className="fsl-sum">
-              <span className="uv-eyebrow">Σ BUDGET</span>
-              <span className={Math.abs(sumPct - 100) > 1 ? 'fsl-pillsum is-off' : 'fsl-pillsum'}>{sumPct}%</span>
-            </div>
-
-            <div className="fsl-compiled">
-              {compiled.map((w, i) => (
-                <div key={i} className="fsl-compiled-row uv-flat">
-                  <span>
-                    {toHHmm(w.time)} · {w.label} · {compiledBudgets[i]?.kcal ?? 0} kcal · P{compiledBudgets[i]?.p ?? 0}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* mezo-4ghd fix 6a: `${code}-${i}` keys — `code` alone collides when e.g. `label_length`,
-                `gap`, or `pre_workout_big` fire more than once for the same plan. */}
-            {/* Tier-1 errors in a coral wash card — a FORBIDDEN state, the one place the
-                colour is legitimate; warnings in amber and they never block (fuel-mely.html). */}
-            {errors.map((e, i) => (
-              <p key={`${e.code}-${i}`} role="alert" className="fsl-note is-error">{e.text}</p>
-            ))}
-            {warnings.map((w, i) => (
-              <p key={`${w.code}-${i}`} className="fsl-note is-warn">{w.text}</p>
-            ))}
-
-            {/* "Mezo értékelése" (mezo-7102 Task 12) — an AI olvasat on the current draft,
-                normal page flow near the save area (NOT the portaled bar, same reasoning as the
-                reset button just below). Disabled while a Tier-1 error blocks Mentés anyway, or
-                while a call is already in flight. Never blocks saving — Mentés stays governed by
-                `errors` alone. */}
-            <button
-              className="fsl-eval uv-flat"
-              aria-label="Mezo értékelése"
-              onClick={runEvaluate}
-              disabled={errors.length > 0 || evalPending}
-              style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}
-            >
-              <Icon3D name="t-score" size={24} /> Mezo értékelése
-            </button>
-
-            {evalPending && (
-              <p className="fsl-eval-pending np-twinkle">
-                <Icon3D name="t-score" size={18} /> Mezo értékeli a felosztást…
-              </p>
-            )}
-
-            {!evalPending && verdict && (
-              <div className="fsl-verdict glass" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
-                <div className="fsl-verdict-head">
-                  <Icon3D name="t-score" size={26} />
-                  <Eyebrow brand>Mezo · olvasat</Eyebrow>
-                  <span className={verdict.verdict === 'adjust' ? 'fsl-verdict-chip is-adjust' : 'fsl-verdict-chip'}>
-                    {verdict.verdict === 'ok' ? 'rendben' : 'érdemes igazítani'}
-                  </span>
-                </div>
-                <p className="fsl-verdict-summary uv-voice">{verdict.summary}</p>
-                {verdict.suggestions.length > 0 && (
-                  <div className="fsl-verdict-tips">
-                    {verdict.suggestions.map((s, i) => (
-                      <p key={i}>
-                        {s.slotLabel && <b>{s.slotLabel}: </b>}{s.text}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {!evalPending && evalDegraded && (
-              <p className="fsl-eval-degraded">
-                Az AI-értékelés most nem elérhető — a determinisztikus ellenőrzés él.
-              </p>
-            )}
-
-            {/* Normal page flow, NOT the portaled save bar (fix round 1): a saved template's
-                bar would otherwise stack THREE rows (reset + Mégse/Mentés) against the page's
-                fixed 110px bottom padding and overflow into the content. The spec doesn't
-                mandate this button live in the bar — it reads fine as the last editor action. */}
-            {existing && (
-              <button
-                className="cta-ghost fsl-reset"
-                aria-label="Ajánlott visszaállítása"
-                onClick={resetToRecommended}
-              >
-                Ajánlott visszaállítása
-              </button>
-            )}
-          </>
-        )}
-        <div style={{ height: 96 }} />
-        </PageBody>
-        </EntranceGroup>
-        </fieldset>
-
-      {/* Save bar — portaled into the phone screen (RecipeEditorPage.tsx:354-365 idiom) so it pins
-          to the device viewport just above the tab bar. Only shown once there is something
-          editable (a fork in progress, or an existing saved template) — the pure recommended
-          preview has its own primary action (Testreszabás). */}
-      {editing && createPortal(
-        <div className="recipe-save-bar fsl-savebar">
-          <button className="cta-ghost fsl-cancel" onClick={() => navigate('/settings/fuel', { state: originState })}>Mégse</button>
-          <button className="cta-primary fsl-save glass" disabled={errors.length > 0 || pending || settingsPending || templatesPending} onClick={save}
-            style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties}>
-            <Icon name="check" size={15} /> Mentés
-          </button>
-        </div>,
-        document.querySelector('.phone-screen') ?? document.body,
+    <Page
+      nonav
+      className="fb-page"
+      foot={(
+        <>
+          <Btn ghost className="fb-cancel" onClick={goFuel}>{T.cancel}</Btn>
+          <Btn grow className="fb-save" disabled={blocked || pending || settingsPending || templatesPending} onClick={save}>{T.save}</Btn>
+        </>
       )}
-    </MozaikPage>
+    >
+      <UnsavedChangesGuard dirty={dirty} />
+      {back}
+      {writeError && <p className="fb-alert" role="alert">{W.saveError}</p>}
+
+      <Hero
+        className="fb-hero"
+        warn={sumOff}
+        label={(existing ? E.labelOwn : E.labelCustomising)(sumText)}
+        verdict={verdictText}
+        sub={existing || blocked ? E.sub : `${E.subChange} ${E.sub}`}
+      >
+        <div className="fb-hg">
+          <FuelWindowTide windows={compiled.map((w, i) => ({ time: w.time, label: w.label, kcal: compiledBudgets[i]?.kcal ?? 0 }))} />
+        </div>
+        <div className="fb-hd">{days}</div>
+      </Hero>
+
+      <Section n={1} title={E.section(rows.length)} />
+      <Card className="fb-wins">
+        {rows.map((row, i) => {
+          const anchor = row.anchor // a local const keeps the discriminant narrowing inside the closures below
+          return (
+            <div key={i} className="fb-win">
+              <div className="fb-wh">
+                <Bub icon={SLOT_ICON[row.slotKind]} size={40} />
+                <Input
+                  value={row.label}
+                  onChange={e => updateRow(i, { label: e.target.value })}
+                  aria-label={E.name}
+                  placeholder={E.name}
+                  maxLength={40}
+                />
+                <button type="button" className="fb-rm" onClick={() => removeRow(i)}
+                  aria-label={row.label.trim() ? E.remove(row.label) : E.removeUnnamed}>×</button>
+              </div>
+
+              <Pills role="group" aria-label={E.type}>
+                {SLOT_KINDS.map(kind => (
+                  <Pill key={kind} on={row.slotKind === kind} onClick={() => updateRow(i, { slotKind: kind })}>{W.kind[kind]}</Pill>
+                ))}
+              </Pills>
+              <Pills className="fb-roles" role="group" aria-label={E.role}>
+                {ROLE_OPTIONS.map(o => (
+                  <Pill key={o.id} on={row.role === o.id} onClick={() => updateRow(i, { role: o.id })}>{o.label}</Pill>
+                ))}
+              </Pills>
+
+              <div className="fb-anch">
+                <div>
+                  <Lab htmlFor={`${ids}a${i}`}>{E.anchor}</Lab>
+                  <Select id={`${ids}a${i}`} value={anchor.type} onChange={e => setAnchorType(i, e.target.value as SlotAnchor['type'])}>
+                    {ANCHOR_TYPES.map(type => <option key={type} value={type}>{E.anchorType[type]}</option>)}
+                  </Select>
+                </div>
+                <div>
+                  {anchor.type === 'fixed' ? (
+                    <>
+                      <Lab htmlFor={`${ids}t${i}`}>{E.time}</Lab>
+                      <Input id={`${ids}t${i}`} type="time" value={anchor.time}
+                        onChange={e => { if (e.target.value) updateRow(i, { anchor: { type: 'fixed', time: e.target.value } }) }} />
+                    </>
+                  ) : (
+                    <>
+                      <Lab>{E.offset}</Lab>
+                      <OffsetStepper name={E.offset} value={anchor.offsetMin}
+                        onChange={n => updateRow(i, { anchor: { type: anchor.type, offsetMin: n } })} />
+                    </>
+                  )}
+                </div>
+                <div>
+                  <Lab htmlFor={`${ids}p${i}`}>{E.share}</Lab>
+                  <ShareField id={`${ids}p${i}`} value={row.budgetPct} onChange={n => updateRow(i, { budgetPct: n })} />
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        <Acts><Btn sm ghost onClick={addRow}>{E.add}</Btn></Acts>
+      </Card>
+
+      <Section n={2} title={W.sum.section} />
+      <Card className="fb-adds">
+        <p className="fb-sum"><span>{W.sum.label}</span><b className={sumOff ? 'off' : undefined}>{W.sum.pct(sumText)}</b></p>
+        {compiled.map((w, i) => (
+          <div key={i} className="fb-wv">
+            <span className="fb-wt">{W.sum.row(toHHmm(w.time), w.label.trim() || '—')}</span>
+            <Level pct={(w.budgetPct ?? 0) * 2.4} height={10} />
+            <span><b>{fmtGrouped(compiledBudgets[i]?.kcal ?? 0)}</b> kcal · {W.sum.protein(fmtGrouped(compiledBudgets[i]?.p ?? 0))}</span>
+          </div>
+        ))}
+        {/* mezo-4ghd fix 6a: `${code}-${i}` keys — `code` alone collides when e.g. `label_length`,
+            `gap`, or `pre_workout_big` fire more than once for the same plan. */}
+        {/* Tier-1 errors block saving; warnings are advisory and never block. */}
+        {errors.map((e, i) => (
+          <Note key={`${e.code}-${i}`} role="alert" className="fb-bad">{e.text}</Note>
+        ))}
+        {warnings.map((w, i) => (
+          <Note key={`${w.code}-${i}`} className="fb-warn">{w.text}</Note>
+        ))}
+      </Card>
+
+      {/* Mezo's view (mezo-7102 Task 12) — an on-demand reading of the current draft. Disabled while a Tier-1 error
+          blocks Mentés anyway, or while a call is already in flight. Never blocks saving. The summary and the
+          suggestions are SERVER text: rendered as they arrive. */}
+      <Section n={3} title={W.mezo.section} />
+      <Card className="fb-mezo">
+        {evalPending && <p className="fb-busy" role="status"><Bub icon="t-score" size={28} />{W.mezo.pending}</p>}
+        {!evalPending && verdict && (
+          <div className="fb-vd">
+            <div>
+              <Bub icon="t-score" size={34} />
+              <span>{W.mezo.reading}</span>
+              <St tone={verdict.verdict === 'adjust' ? 'warn' : 'ok'}>{verdict.verdict === 'ok' ? W.mezo.ok : W.mezo.adjust}</St>
+            </div>
+            <p className="fb-vd-summary">{verdict.summary}</p>
+            {verdict.suggestions.map((s, i) => (
+              <p key={i}>{s.slotLabel && <b>{s.slotLabel}: </b>}{s.text}</p>
+            ))}
+          </div>
+        )}
+        {!evalPending && evalDegraded && <Note className="fb-warn">{W.mezo.degraded}</Note>}
+        <Acts><Btn sm ghost onClick={runEvaluate} disabled={blocked || evalPending}>{W.mezo.ask}</Btn></Acts>
+        <Note>{W.mezo.note}</Note>
+        {existing && <Acts><Lk onClick={resetToRecommended}>{W.mezo.reset}</Lk></Acts>}
+      </Card>
+    </Page>
   )
 }

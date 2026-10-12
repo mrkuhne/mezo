@@ -20,6 +20,11 @@
 // felület köteles megjeleníteni.
 // ============================================================
 import type { StackZoneKey } from '@/data/types'
+import { m } from '@/shared/i18n'
+import { fmtGrouped, fmtNum } from '@/shared/lib/format'
+
+/** An amount as the screen prints it: whole numbers grouped („4 000"), fractions with the language's decimal mark. */
+export const fmtAmount = (v: number): string => (Number.isInteger(v) ? fmtGrouped(v) : fmtNum(v, 2))
 
 export interface SupplementReferenceRow {
   /** Névtöredék-illesztés a termék vagy hatóanyag nevére (kisbetűs, HU-lokalizált bemenetre). */
@@ -34,43 +39,26 @@ export interface SupplementReferenceRow {
   caution: string | null
 }
 
+/** The fixed half of a reference row; its words (`name`, `unit`, `zoneLabel`, `reason`, `caution`) live in the catalog
+ *  (`fuelKieg.ref`) and are read when the row is READ (getters), so the table follows a language switch. */
+const row = (
+  key: keyof ReturnType<typeof m>['fuelKieg']['ref'], match: RegExp, daily: [number, number], zone: StackZoneKey,
+): SupplementReferenceRow => ({
+  match, daily, zone,
+  get name() { return m().fuelKieg.ref[key].name },
+  get unit() { return m().fuelKieg.ref[key].unit },
+  get zoneLabel() { return m().fuelKieg.ref[key].zoneLabel },
+  get reason() { return m().fuelKieg.ref[key].reason },
+  get caution() { return (m().fuelKieg.ref[key] as { caution?: string }).caution ?? null },
+})
+
 export const SUPPLEMENT_REFERENCE: SupplementReferenceRow[] = [
-  {
-    match: /d3|d-vitamin/, name: 'D3-vitamin', unit: 'NE', daily: [2000, 4000],
-    zone: 'lunch', zoneLabel: 'Ebéddel',
-    reason: 'Zsírban oldódó — zsíros étkezéssel 3–4× jobb a felszívódás.',
-    caution: 'Tartósan magas adag előtt érdemes vérszintet méretni; K2-vel együtt szokás szedni.',
-  },
-  {
-    match: /k2|mk-7/, name: 'K2-vitamin', unit: 'µg', daily: [100, 200],
-    zone: 'lunch', zoneLabel: 'Ebéddel',
-    reason: 'Zsírban oldódó — a D3-mal együtt, zsíros étkezéshez.',
-    caution: 'Véralvadásgátló mellett csak orvosi egyeztetéssel.',
-  },
-  {
-    match: /magn/, name: 'Magnézium', unit: 'mg', daily: [200, 400],
-    zone: 'evening', zoneLabel: 'Vacsorával',
-    reason: 'Este — GABA-moduláció és mélyalvás-támogatás, lefekvés előtt ~2 órával.',
-    caution: 'Egyszerre sok magnézium emésztést zavarhat; ilyenkor oszd két részre.',
-  },
-  {
-    match: /kreatin|creatine/, name: 'Kreatin', unit: 'g', daily: [3, 5],
-    zone: 'wake', zoneLabel: 'Ébredés után',
-    reason: 'Étkezéstől független — a napi konzisztencia számít, nem az időpont.',
-    caution: null,
-  },
-  {
-    match: /cink|zinc/, name: 'Cink', unit: 'mg', daily: [10, 15],
-    zone: 'evening', zoneLabel: 'Vacsorával',
-    reason: 'Vacsorához — távol a reggeli koffeintől és a többi ásványi anyagtól.',
-    caution: 'Éhgyomorra gyakran émelygést okoz; hosszú távon nagy adag rézhiányt okozhat.',
-  },
-  {
-    match: /omega|halolaj|krill/, name: 'Omega-3', unit: 'mg', daily: [1000, 2000],
-    zone: 'lunch', zoneLabel: 'Ebéddel',
-    reason: 'Zsírban oldódó — zsíros étkezéssel szívódik fel jól.',
-    caution: null,
-  },
+  row('d3', /d3|d-vitamin/, [2000, 4000], 'lunch'),
+  row('k2', /k2|mk-7/, [100, 200], 'lunch'),
+  row('magnesium', /magn/, [200, 400], 'evening'),
+  row('creatine', /kreatin|creatine/, [3, 5], 'wake'),
+  row('zinc', /cink|zinc/, [10, 15], 'evening'),
+  row('omega', /omega|halolaj|krill/, [1000, 2000], 'lunch'),
 ]
 
 export interface DoseAdvice {
@@ -111,7 +99,7 @@ export interface DoseAdviceInput {
  */
 export function doseAdvice(input: DoseAdviceInput): DoseAdvice | null {
   const { name, perUnit, unitForm = 'kapszula', container = null, dailyOverride = null } = input
-  const needle = String(name ?? '').toLocaleLowerCase('hu-HU')
+  const needle = String(name ?? '').toLowerCase()
   if (!needle.trim()) return null
   const reference = SUPPLEMENT_REFERENCE.find(row => row.match.test(needle))
   // 1. őszinte-null: ismeretlen hatóanyagra nem találunk ki adagot.

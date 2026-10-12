@@ -42,7 +42,7 @@ const result = (date: string, status: IntakeDayStatus['status'], before: number,
   recomputed,
 })
 
-const row = (label: string) => screen.getByText(label).closest('.fln-day') as HTMLElement
+const row = (label: string) => screen.getByText(label).closest('.fo-row') as HTMLElement
 const toggle = (label: string) => within(row(label)).getByRole('switch')
 
 let toasts: string[] = []
@@ -61,19 +61,24 @@ describe('LearningDaysList', () => {
     render(<LearningDaysList mode="learning" />)
     const today = localDateString()
     expect(hooks.range).toEqual([addDays(today, -14), addDays(today, -1)])
-    const dates = [...document.querySelectorAll('.fln-day strong')].map(e => e.textContent)
+    const dates = [...document.querySelectorAll('.fo-row strong')].map(e => e.textContent)
     expect(dates).toEqual(['P, szept. 25.', 'Sze, szept. 23.', 'K, szept. 22.', 'H, szept. 21.', 'Szo, szept. 19.'])
   })
 
-  it('writes each status as its chip and gives unlogged days no toggle', () => {
+  it('writes each status beside the kcal and gives unlogged days a dash instead of a toggle', () => {
     render(<LearningDaysList mode="learning" />)
-    expect(within(row('H, szept. 21.')).getByText('számít')).toBeInTheDocument()
-    expect(within(row('Sze, szept. 23.')).getByText('hiányosnak tűnt')).toBeInTheDocument()
-    expect(within(row('Szo, szept. 19.')).getByText('te jelölted hiányosnak')).toBeInTheDocument()
-    expect(within(row('K, szept. 22.')).getByText('te jelölted teljesnek')).toBeInTheDocument()
+    expect(within(row('H, szept. 21.')).getByText('2 820 kcal · számít')).toBeInTheDocument()
+    expect(within(row('Sze, szept. 23.')).getByText('1 180 kcal · hiányosnak tűnt')).toBeInTheDocument()
+    expect(within(row('Szo, szept. 19.')).getByText('2 150 kcal · te jelölted hiányosnak')).toBeInTheDocument()
+    expect(within(row('K, szept. 22.')).getByText('1 610 kcal · te jelölted teljesnek')).toBeInTheDocument()
     expect(within(row('P, szept. 25.')).getByText('nincs felírva')).toBeInTheDocument()
     expect(within(row('P, szept. 25.')).queryByRole('switch')).toBeNull()
-    expect(within(row('H, szept. 21.')).getByText('2 820 kcal')).toBeInTheDocument()
+    expect(row('P, szept. 25.').querySelector('.ft-dash')).not.toBeNull()
+    expect(toggle('H, szept. 21.')).toHaveAccessibleName('H, szept. 21. számít')
+    // the bubble says the same: tick = counts, shield = left out, calendar = nothing logged
+    expect(row('H, szept. 21.').querySelector('use')?.getAttribute('href')).toMatch(/t-tick/)
+    expect(row('Sze, szept. 23.').querySelector('use')?.getAttribute('href')).toMatch(/t-shield/)
+    expect(row('P, szept. 25.').querySelector('use')?.getAttribute('href')).toMatch(/t-calendar/)
     // „számít” is checked for usable and confirmed_complete only
     expect(toggle('H, szept. 21.')).toHaveAttribute('aria-checked', 'true')
     expect(toggle('K, szept. 22.')).toHaveAttribute('aria-checked', 'true')

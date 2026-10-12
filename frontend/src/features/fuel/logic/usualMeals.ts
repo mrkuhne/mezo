@@ -47,7 +47,7 @@ function slotForTime(nowHHmm: string): MealSlot {
 }
 
 /** Összevonási kulcs: kisbetűs, összehúzott szóközű név — „Zabkása  gyümölccsel" == a másik. */
-const normTitle = (title: string) => title.trim().replace(/\s+/g, ' ').toLocaleLowerCase('hu-HU')
+const normTitle = (title: string) => title.trim().replace(/\s+/g, ' ').toLowerCase()
 
 /** A wire legálisan hozhat érték nélküli kcal-t (lásd keretHero.ts `meal?.kcal ?? … ?? null`). */
 const kcalOf = (m: FuelMeal): number | null => (typeof m.kcal === 'number' && Number.isFinite(m.kcal) ? m.kcal : null)

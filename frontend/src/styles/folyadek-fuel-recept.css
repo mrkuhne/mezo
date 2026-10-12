@@ -1,2 +1,120 @@
 /* ── Folyadék · Fuel · recept (mezo-n4wf5.5, slice F5) ── area H · Receptek, recept, szerkesztő, Műhely (+ ingredient picker, logs). Rules of this area only, class prefix `.fc-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* `gHero` (label → graphic → verdict → sub → the rest): the kit Hero draws its children after the text, so the graphic is moved up by order */
+.fc-ghero { display: flex; flex-direction: column; }
+.fc-ghero > .fo-hero-lbl { order: -2; }
+.fc-ghero > .fc-top, .fc-ghero > .fc-potc, .fc-ghero > .fx-ng, .fc-ghero > .fc-name { order: -1; }
+
+/* the card that holds editable lines / recipe rows: tighter vertical padding (fuel.js `.fu-lns0`) */
+.fo-card.fc-lns { padding: 6px 16px; }
+.fo-card.fc-lns > .fo-acts, .fo-card.fc-lns > .fo-note { margin-bottom: 8px; }
+
+/* ── Receptek ── the hero's „most eaten" levels (fuel.js `.fu-top`) and the pot standing alone (`.fu-potc`) */
+.fc-top { display: grid; gap: 10px; margin: 12px 0 16px; }
+.fc-top > button { display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.fc-top > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 3px; border-radius: 8px; }
+.fc-top > button > span { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; font-size: 13px; }
+.fc-top > button > span > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+.fc-top > button > span > em { font-style: normal; font-family: var(--ff-display); font-weight: 800; }
+.fc-top > .fc-sk { display: block; opacity: .5; }
+.fc-potc { display: flex; justify-content: center; margin: 14px 0 10px; }
+/* a recipe row's second line: the three macro levels, then the status pills */
+.fc-m3 { flex: 1 1 100%; min-width: 0; display: block; }
+.fc-sts { display: flex; flex-wrap: wrap; gap: 5px; }
+
+/* ── recept ── */
+.fc-basis { margin-top: 12px; }
+.fo-row.fc-off { opacity: .62; }
+.fc-fit { margin: 2px 0 6px; }
+
+/* the logs sheet (fuel.js `.fc-log`) */
+.fc-log { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
+.fc-log:first-of-type { border-top: 0; }
+.fc-log > .fc-log-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.fc-log > .fc-log-top > .g { flex: 1; min-width: 0; }
+.fc-log > .fc-log-top > .g > strong { display: block; font-size: 15px; font-weight: 650; color: var(--fo-ink); }
+.fc-log > .fc-log-top > .g > small { font-size: 12px; color: var(--fo-sub); }
+.fc-log > .fc-log-top > .v { font-family: var(--ff-display); font-size: 20px; font-weight: 800; color: var(--fo-ink); }
+.fc-log > p { margin: 0 0 8px; font-size: 13px; color: var(--fo-sub); }
+
+/* ── szerkesztő ── the meal pills with the star beside them (`.fc-pk2`), a stepper with its unit, the two-cell row, the tag field */
+.fc-pk2 { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fc-pk2 > .fo-pills { display: contents; }
+.fc-pk2 > .fo-pill.fc-star { display: inline-flex; align-items: center; gap: 6px; padding-left: 4px; }
+.fo-stp.fc-stp > b { display: inline-flex; align-items: baseline; justify-content: center; gap: 8px; min-width: 62px; }
+.fo-stp.fc-stp > b > small { font-family: var(--ff-body); font-size: 12px; font-weight: 500; color: var(--fo-sub); }
+.fo-two.fc-ws { align-items: start; margin-top: 12px; }
+.fo-note + .fo-two.fc-ws { margin-top: 4px; }
+.fo-two.fc-ws > div { min-width: 0; }
+.fo-in.fc-tag { width: 108px; flex: 0 0 auto; padding: 7px 12px; border-radius: 999px; font-size: 13px; }
+
+/* ── Műhely ── */
+.fo-in.fc-name { margin: 10px 0 12px; font-family: var(--ff-display); font-weight: 700; font-size: 17px; }
+.fo-note.fc-warn { color: var(--fo-warn); font-weight: 600; }
+.fc-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.fc-steps > li { display: flex; gap: 10px; font-size: 14px; line-height: 1.45; color: var(--fo-ink); }
+.fc-steps > li > b { flex: 0 0 auto; font-family: var(--ff-display); font-weight: 800; color: var(--dom); }
+/* a line a turn has just changed: the tint is the final frame, the wash only moves without reduced motion */
+.fc-wl.diff { border-radius: 14px; box-shadow: inset 3px 0 0 var(--fo-warn); padding-left: 8px; }
+
+/* the dock (fuel.js `dock`): goals, the next round's pantry items, busy, error, last reply, the composer */
+.fc-dock > .fc-goals { margin-top: 12px; }
+.fc-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.fc-cats > button { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 10px 6px 12px; border: 0; border-radius: 999px; cursor: pointer;
+  background: color-mix(in srgb, var(--dom) 10%, #fff); font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; color: var(--fo-ink); }
+.fc-cats > button::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.fc-cats > button > b { font-size: 15px; line-height: 1; color: var(--fo-sub); }
+.fc-busy { display: flex; align-items: center; gap: 10px; margin: 12px 0 0; font-size: 14px; font-weight: 600; color: var(--fo-sub); }
+.fc-err { margin-top: 12px; padding: 12px; border-radius: 16px; background: color-mix(in srgb, var(--fo-warn) 12%, #fff); }
+.fc-err > b { display: block; font-size: 13.5px; line-height: 1.4; font-weight: 650; color: var(--fo-ink); }
+.fc-err > .fo-acts { margin-top: 8px; }
+.fc-last { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; padding: 8px 10px; border: 0; border-radius: 16px; background: var(--fo-page); text-align: left; cursor: pointer; font-family: var(--ff-body); color: var(--fo-sub); }
+.fo-hero .fc-last { background: #fff; }
+.fc-last > .tx { flex: 1; min-width: 0; font-size: 13px; line-height: 1.4; color: var(--fo-sub); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fc-last > .chev { flex: 0 0 auto; }
+/* the composer (fuel.js `.fx-cmp`): page-grey in a card, white in the hero */
+.fc-cmp { display: flex; gap: 8px; align-items: flex-end; margin-top: 12px; padding: 10px; border-radius: 16px; background: var(--fo-page); }
+.fo-hero .fc-cmp { background: #fff; box-shadow: inset 0 0 0 1px var(--fo-hair); }
+.fc-cmp > textarea { flex: 1; min-width: 0; min-height: 58px; padding: 4px; border: 0; background: none; outline: none; resize: none; font-family: var(--ff-body); font-size: 16px; line-height: 1.4; color: var(--fo-ink); }
+.fc-cmp > textarea::placeholder { color: var(--fo-faint); }
+.fc-cmp:focus-within { box-shadow: inset 0 0 0 2px var(--dom); }
+.fc-cmp > button { position: relative; flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 13px; display: grid; place-items: center; background: #fff; cursor: pointer; box-shadow: none; }
+.fo-hero .fc-cmp > button { background: var(--fo-page); }
+.fc-cmp > button::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.fc-cmp > button.go, .fo-hero .fc-cmp > button.go { background: var(--dom); }
+.fc-cmp > button:disabled { opacity: .45; cursor: default; }
+.fc-cmp > button:focus-visible, .fc-last:focus-visible, .fc-cats > button:focus-visible, .fc-add:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+/* the conversation sheet (fuel.js `.fc-bub`) */
+.fc-bub { max-width: 88%; margin: 8px 0; padding: 10px 12px; border-radius: 16px; background: var(--fo-page); }
+.fc-bub.me { margin-left: auto; background: color-mix(in srgb, var(--dom) 10%, #fff); }
+.fc-bub > small { display: block; margin-bottom: 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .4px; color: var(--fo-sub); }
+.fc-bub > p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--fo-ink); white-space: pre-wrap; }
+
+/* ── the ingredient picker (fuel.js `SH.ingpick`) ── kcal per basis + the add button at the row's end (`.fu-pk2`, `.fx-add`) */
+.fc-pick > .fo-srch { margin-bottom: 8px; }
+.fc-pk { display: inline-flex; align-items: center; gap: 10px; }
+.fc-pk > span { text-align: right; line-height: 1.1; }
+.fo-row .v .fc-pk > span > small { display: block; margin: 0; font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; }
+.fc-add { position: relative; flex: 0 0 auto; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 12px; display: grid; place-items: center; background: var(--fo-page); cursor: pointer; font-family: var(--ff-body); font-size: 19px; font-weight: 600; line-height: 1; color: var(--fo-ink); }
+.fc-add::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.fc-add.on { background: var(--dom); color: #fff; cursor: default; }
+.fc-add > svg { width: 16px; height: 16px; }
+
+@media (max-width: 350px) {
+  .fo-two.fc-ws { grid-template-columns: 1fr; gap: 10px; }
+  .fc-ghero > .fx-ng > .nn > .fx-m3 { flex-direction: column; gap: 5px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fc-wl.diff { animation: fc-wash 2.6s ease-out both; }
+  @keyframes fc-wash {
+    0% { background: color-mix(in srgb, var(--fo-warn) 22%, #fff); }
+    100% { background: transparent; }
+  }
+}
+/* the stored fit label: a plain quiet chip (fuel.js `.fu-chips span`), without the kit's drop */
+.fo-chips.fc-fit > span { padding: 5px 11px; background: color-mix(in srgb, var(--dom) 6%, #fff); }
+.fo-chips.fc-fit > span::before { content: none; }
+.fo-hero .fc-goals > .fo-pill:not(.on) { background: #fff; }

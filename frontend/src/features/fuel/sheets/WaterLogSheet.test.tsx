@@ -5,11 +5,41 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
+import { onToast } from '@/shared/lib/toastBus'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 
 test('shows the day-so-far tally, liter-formatted with an HU decimal comma', () => {
   render(<WaterLogSheet currentMl={1200} targetMl={2500} onLog={() => {}} onClose={() => {}} />)
-  expect(screen.getByText(/1,2 \/ 2,5 l/)).toBeInTheDocument()
+  expect(screen.getByText('ma eddig 1,2 / 2,5 l')).toBeInTheDocument()
+  // the light sheet with its head; the glass says today's level
+  expect(screen.getByRole('dialog', { name: 'Mennyit ittál?' })).toHaveClass('fo-sheet')
+  expect(screen.getByText('Egy korty szünet.')).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: 'Ma eddig 1,2 / 2,5 liter' })).toBeInTheDocument()
+  expect(document.querySelector('.capture-sheet, .glass, .capture-hero')).toBeNull()
+})
+
+test('the glass shows, dashed, where the chosen amount would take the level', async () => {
+  render(<WaterLogSheet currentMl={1200} targetMl={2500} onLog={() => {}} onClose={() => {}} />)
+  const glass = screen.getByRole('img', { name: 'Ma eddig 1,2 / 2,5 liter' })
+  expect(glass.querySelector('path.next')).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: '400 ml' }))
+  expect(glass.querySelector('path.next')).not.toBeNull()
+})
+
+test('„Visszavonom az utolsót" is drawn only when the opener can undo, calls its undo and keeps the sheet open', async () => {
+  const onUndo = vi.fn()
+  const onClose = vi.fn()
+  const toasts: unknown[] = []
+  const off = onToast(t => toasts.push(t))
+  const { unmount } = render(<WaterLogSheet currentMl={500} targetMl={2500} onLog={() => {}} onClose={onClose} onUndo={onUndo} canUndo={false} />)
+  expect(screen.queryByRole('button', { name: 'Visszavonom az utolsót' })).toBeNull()
+  unmount()
+  render(<WaterLogSheet currentMl={500} targetMl={2500} onLog={() => {}} onClose={onClose} onUndo={onUndo} canUndo />)
+  await userEvent.click(screen.getByRole('button', { name: 'Visszavonom az utolsót' }))
+  off()
+  expect(onUndo).toHaveBeenCalledTimes(1)
+  expect(onClose).not.toHaveBeenCalled()
+  expect(toasts).toContainEqual({ kind: 'success', text: 'Visszavontam az utolsót' })
 })
 
 test('Mentés is inert with nothing selected', () => {
@@ -63,12 +93,12 @@ test('an empty manual value with no chip selected keeps Mentés inert', () => {
   expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled()
 })
 
-test('the liquid graphic announces the selected amount and follows manual corrections', async () => {
+test('the big number announces the selected amount and follows manual corrections', async () => {
   render(<WaterLogSheet currentMl={1200} targetMl={2500} onLog={() => {}} onClose={() => {}} />)
   const amount = screen.getByRole('status', { name: 'Rögzítendő vízmennyiség' })
-  expect(amount).toHaveTextContent('—')
+  expect(amount).toHaveTextContent('0ml')
   await userEvent.click(screen.getByRole('button', { name: '400 ml' }))
-  expect(amount).toHaveTextContent('400 ml')
+  expect(amount).toHaveTextContent('400ml')
   await userEvent.type(screen.getByLabelText(/kézzel/i), '330')
-  expect(amount).toHaveTextContent('330 ml')
+  expect(amount).toHaveTextContent('330ml')
 })

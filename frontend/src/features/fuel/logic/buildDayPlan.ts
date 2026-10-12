@@ -596,16 +596,17 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
 
   // 3b. Surplus logged meals — anything of a slotKey beyond that slot's window count (a 2nd snack on
   //     a 4-meal day, ANY snack on a 3-meal day, a duplicate main) is NEVER dropped: it lands as an
-  //     extra done slot at its own loggedAt time, labelled from a same-slot window or the meal title.
-  const labelByKey: Partial<Record<SlotKey, string>> = {}
-  for (const w of windows) if (!(w.slotKey in labelByKey)) labelByKey[w.slotKey] = w.label
+  //     extra done slot at its own loggedAt time. Its title is „Ablakon kívül · HH:mm" (owner decision
+  //     2026-10-12, mezo-n4wf5.5): it sits on no window, so it is named after none — not after a same-kind
+  //     window, not after the day part. The meal's own name travels in `mealName`.
   const extraSlots: FuelSlot[] = []
   for (const k of Object.keys(loggedByKey) as SlotKey[]) {
     for (const m of surplusByKey[k]) {
+      const at = hhmmFromLoggedAt(m.loggedAt, nowHHmm)
       extraSlots.push({
-        time: hhmmFromLoggedAt(m.loggedAt, nowHHmm),
+        time: at,
         kind: k === 'snack' ? 'snack' : 'meal',
-        label: labelByKey[k] ?? mealDisplayName(m) ?? m.title,
+        label: msg().fuelMai.betweenMeals(at),
         slotKey: k,
         state: 'done',
         mealId: m.id,
