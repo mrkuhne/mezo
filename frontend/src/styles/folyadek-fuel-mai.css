@@ -118,7 +118,7 @@
   /* F5 (red main, bible F4.1): „Gyomorrontás" in a three-column reason tile fitted on macOS and broke on the
      Linux runner, whose fonts run wider — a 320 px fit needs ~15–20 px of real slack, pinned in fuel-meal-skip.spec. */
   .fa-whyg { gap: 6px; }
-  .fa-whyg > button { padding: 12px 2px; font-size: 11px; letter-spacing: -0.2px; }
+  .fa-whyg > button { padding: 12px 2px; font-size: 10.5px; letter-spacing: -0.2px; }
   .fa-w { display: none; }
   .fa-s { display: inline; }
   .fa-mac > .fo-vials { gap: 5px; }
