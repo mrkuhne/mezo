@@ -229,22 +229,25 @@ const OBS=[
   {k:'anna',h:'Anna és az alvásod',lbl:'megfigyelés',st:'Gyűlik',hits:4,miss:0,minN:7,a:['t-people',['Anna a','hála-naplódban']],b:['t-sleep',['+40 perc','alvás másnap']],x:'Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol. Négy nap adata, ez még kevés. Figyeljem tovább?',ev:['4 hála-bejegyzés','4 éjszaka','+1 nap eltolás'],acts:['Igen, figyeld','Nem stimmel','Mesélj erről']},
   {k:'keso',h:'Késői vacsora és az alvás',lbl:'figyelem',st:'Figyelem',hits:5,miss:1,minN:6,a:['t-bowl',['vacsora','21:00 után']],b:['t-sleep',['−1,2 pont','alvásminőség']],x:'Amikor 21:00 után eszel, az alvásod minősége átlag <b>1,2 ponttal</b> alacsonyabb.',ev:['6 késői vacsora','6 éjszaka'],acts:['Így van','Kivétel volt']}];
 const OS={done:{},ev:{}};
-function obsLinked(o,all){const n=o.minN,x0=78,x1=242,g=4,w=(x1-x0-g*(n-1))/n;
+/* On the page: the heading, the drawing and ONE action line — the whole block is the target. The sentence, the
+   answers and the evidence open in a bottom sheet (thumb-reach, the page stays behind it; text of any length scrolls there). */
+function obsGraph(o){const n=o.minN,x0=78,x1=242,g=4,w=(x1-x0-g*(n-1))/n;
   const ves=(cx,[ic,l])=>`<circle class="lk-v" cx="${cx}" cy="40" r="31"/><path class="ng-hi" d="M${cx-20} 34C${cx-17} 25 ${cx-11} 19 ${cx-3} 16"/><svg class="ic" x="${cx-16}" y="24" width="32" height="32" viewBox="0 0 64 64"><use href="#${ic}"/></svg>
     ${l.map((t,i)=>`<text class="${i?'ng-s':'ng-t'}" x="${cx}" y="${104+i*17}" text-anchor="middle">${t}</text>`).join('')}`;
-  return `<article class="lk"><p class="lk-h"><b>${o.h}</b><i class="nb-st ${o.st==='Gyűlik'?'':'w'}">${o.st}</i></p>
-    <svg class="lk-g" viewBox="0 0 320 132" role="img" aria-label="${o.a[1].join(' ')} és ${o.b[1].join(' ')}: ${o.hits} nap egybevág, ${o.miss} ellene szól, ${n-o.hits-o.miss} még hiányzik">
+  return `<svg class="lk-g" viewBox="0 0 320 132" role="img" aria-label="${o.a[1].join(' ')} és ${o.b[1].join(' ')}: ${o.hits} nap egybevág, ${o.miss} ellene szól, ${n-o.hits-o.miss} még hiányzik">
       <path class="lk-p" d="M70 40H250"/>${Array.from({length:n},(_,i)=>`<rect class="lk-s ${i<o.hits?'p':i<o.hits+o.miss?'m':''}" x="${(x0+i*(w+g)).toFixed(1)}" y="33" width="${w.toFixed(1)}" height="14" rx="7"/>`).join('')}
-      ${ves(40,o.a)}${ves(280,o.b)}<text class="lk-n" x="160" y="70" text-anchor="middle">${o.hits} nap egybevág</text><text class="lk-n2" x="160" y="87" text-anchor="middle">${[o.miss?`${o.miss} ellene szól`:'',n-o.hits-o.miss?`${n-o.hits-o.miss} még hiányzik`:''].filter(Boolean).join(' · ')}</text></svg>
-    <div class="ng-who">${badge('mezo',{s:28})}<b>Mezo</b><small>${o.lbl}</small></div><p class="nb-t">${o.x}</p>
+      ${ves(40,o.a)}${ves(280,o.b)}<text class="lk-n" x="160" y="70" text-anchor="middle">${o.hits} nap egybevág</text><text class="lk-n2" x="160" y="87" text-anchor="middle">${[o.miss?`${o.miss} ellene szól`:'',n-o.hits-o.miss?`${n-o.hits-o.miss} még hiányzik`:''].filter(Boolean).join(' · ')}</text></svg>`}
+const obsLinked=(o,all)=>`<article class="lk"><button class="lk-tap" data-nb="osh:${o.k}" aria-label="${o.h}: megnézem és válaszolok"><span class="lk-h"><b>${o.h}</b><i class="nb-st ${o.st==='Gyűlik'?'':'w'}">${o.st}</i></span>
+    ${obsGraph(o)}<span class="lk-go ${OS.done[o.k]?'ok':''}">${OS.done[o.k]?`${TICK_}Megjegyeztem a válaszod · megnézem ›`:'Megnézem és válaszolok ›'}</span></button>
+    ${all?'<div class="nb-a" style="margin-top:0;justify-content:center"><button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes észrevétel ›</button></div>':''}</article>`;
+const obsSheet=o=>`<h2 class="ng-sh">${o.h}<small>${o.st}</small></h2>${obsGraph(o)}
+    <div class="ng-who">${badge('mezo',{s:28})}<b>Mezo</b><small>${o.lbl}</small></div><p class="ng-pr">${o.x}</p>
     ${OS.ev[o.k]?`<p class="nb-l">Miből látom</p><div class="ng-chips">${o.ev.map(e=>`<span>${e}</span>`).join('')}</div>`:''}
-    <div class="nb-a">${OS.done[o.k]?`<span class="nb-ok">${TICK_}Megjegyeztem a válaszod.</span><button class="fh-lk" data-toast="Mezo · Chat — előtöltve">Beszéljünk róla</button>`
-      :o.acts.map((a,i)=>`<button class="btn sm ${i?'ghost':''}" data-nb="obs:${o.k}">${a}</button>`).join('')+(all?'':`<button class="fh-lk" data-nb="ev:${o.k}">${OS.ev[o.k]?'Elrejtem':'Miből látod?'}</button>`)}</div>
-    ${all?'<div class="nb-a" style="margin-top:0"><button class="fh-lk" data-go="uzenetek.eszrevetelek">Részletek és az összes észrevétel ›</button></div>':o.st==='Gyűlik'?'<div class="nb-a" style="margin-top:0"><button class="fh-lk" data-toast="Mezo · Laborfüzet — ez a minta">Laborfüzet ›</button></div>':''}
-  </article>`}
+    <div class="nb-a">${OS.done[o.k]?`<span class="nb-ok">${TICK_}Megjegyeztem a válaszod.</span>`:o.acts.map((a,i)=>`<button class="btn sm ${i?'ghost':''}" data-nb="obs:${o.k}">${a}</button>`).join('')}</div>
+    <div class="nb-a" style="margin-top:4px"><button class="fh-lk" data-nb="ev:${o.k}">${OS.ev[o.k]?'Elrejtem, miből látod':'Miből látod?'}</button>${o.st==='Gyűlik'?'<button class="fh-lk" data-toast="Mezo · Laborfüzet — ez a minta">Laborfüzet ›</button>':''}<button class="fh-lk" data-toast="Mezo · Chat — előtöltve">Beszéljünk róla ›</button></div>`;
 function obsBody(){const left=OBS.filter(o=>!OS.done[o.k]).length;
   return `<div class="pg-lead"><small>Észrevételek · ma</small><h2>${left?`${left===2?'Két':'Egy'} észrevétel vár a válaszodra.`:'Mindkettőre válaszoltál. Köszönöm.'}</h2>
-    <p>Ma még 2 észrevétel fér a keretbe · 22:00 után csendben maradok. A két edény közti cső annyira telt meg, ahány nap bizonyíték összegyűlt.</p></div>
+    <p>Ma még 2 észrevétel fér a keretbe · 22:00 után csendben maradok.</p></div>
   ${OBS.map((o,i)=>`<section class="bd ${i%2?'':'w'}">${obsLinked(o)}</section>`).join('')}
   <div class="mt-acts"><button class="btn" data-toast="Mezo · Chat">Beszéljük meg</button></div>`}
 /* Életjelek: the rack. The six tubes are the approved ones, taken as they are; the remark hangs on its tube. */
@@ -265,7 +268,8 @@ function uzenetek(tab){tab=tab||'uzenetek';
     ${tab==='eletjelek'?vitalsBody():`<div data-rr="${tab==='uzenetek'?'nb':'ob'}">${RR[tab==='uzenetek'?'nb':'ob']()}</div>`}`)}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!b)return;const a=b.dataset.nb,[k,x]=a.split(':');
   if(a==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok')}else if(a==='fb')BS.fb=!BS.fb;else if(a==='jar')BS.jar=!BS.jar;else if(k==='exp')BS.exp[x]=!BS.exp[x];
-  else if(k==='obs'){OS.done[x]=true;F.toast('Megjegyeztem a válaszod')}else if(k==='ev')OS.ev[x]=!OS.ev[x];
+  else if(k==='obs'){OS.done[x]=true;F.closeSheet();F.toast('Megjegyeztem a válaszod')}else if(k==='ev'){OS.ev[x]=!OS.ev[x];F.openSheet(obsSheet(OBS.find(o=>o.k===x)))}
+  else if(k==='osh'){F.openSheet(obsSheet(OBS.find(o=>o.k===x)));return}
   document.querySelectorAll('[data-rr]').forEach(r=>{r.innerHTML=RR[r.dataset.rr]()})});
 
 /* ═══ MAI · the day's arc (06–22), filled up to now; behind it what you logged, ahead what is left.
@@ -600,7 +604,11 @@ ${P} .rk-tag{position:relative;margin:0 20px 0 26px;padding:16px 18px 16px 44px;
 ${P} .rk-hole{position:absolute;left:14px;top:calc(50% - 8px);width:16px;height:16px;border-radius:50%;background:#EAF2F8;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--warn) 55%,#fff)}
 
 /* Beszélgetés · Észrevételek: communicating vessels */
-${P} .lk{padding:18px 22px 0}
+${P} .lk{padding:10px 22px 0}
+${P} .lk-tap{display:block;width:100%;text-align:left}
+${P} .lk-go{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin-top:4px;font-size:14px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
+${P} .lk-go.ok{color:#0E7A55}${P} .lk-go svg{width:16px;height:16px;fill:none;stroke:var(--ok);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+${P} .sheet .lk-g{margin-top:6px}${P} .sheet .ng-sh small{padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--dom) 10%,#fff);color:var(--dom);font-weight:700}
 ${P} .lk-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px 0}${P} .lk-h b{font:800 19px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .lk-g{display:block;width:100%;max-width:380px;margin:12px auto 0;overflow:visible}
 ${P} .lk-g text{font-family:var(--ff,inherit)}

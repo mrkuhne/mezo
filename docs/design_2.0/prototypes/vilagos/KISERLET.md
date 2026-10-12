@@ -36,6 +36,10 @@ plans or "which direction wins" decisions until he asks.
   opens the rest on a tap (the jar on Mai). On a hub, a unit that has its own page appears in its short form.
 - **No explanatory sub-lines** (owner, 2026-10-12, on Mai): a section heading stands alone; under a number only its
   name (Kalória, Fehérje…); under an action only its name and its "… ›" line. Grey helper sentences go.
+- **On the page: the drawing and one action. The words open in a bottom sheet** (owner, 2026-10-12, on the
+  observation). A unit whose text can be any length shows heading + drawing + one "… ›" line; sentence, answers and
+  evidence live in the sheet. Bottom sheet for a short look-and-answer; a page for something you stay in; a centred
+  dialog only for a confirmation that blocks.
 - **No repeats:** two pages never open with the same sentence; one action has one entry point per page.
 - **One thing moves per screen** (the pipe's flow on A napom, the next vessel on Rutin). Levels and drops stand still.
 - **A drawing explains itself in words, not with a legend** ("4 nap egybevág · 3 még hiányzik", "erő 82%").
