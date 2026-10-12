@@ -16,7 +16,7 @@
 const F=window.F,nap=window.FREG&&FREG.nap;if(!nap)return;
 const {I,page,badge}=F;
 const P='.phone.foly[data-s="elo"][data-d="nap"]';
-const O={mai:nap.routes.mai,napom:nap.routes.napom,nap:nap.routes.nap,uzenetek:nap.routes.uzenetek,rutin:nap.routes.rutin};
+const O={kuldetesek:nap.routes.kuldetesek,mai:nap.routes.mai,napom:nap.routes.napom,nap:nap.routes.nap,uzenetek:nap.routes.uzenetek,rutin:nap.routes.rutin};
 const DROP='M32 6C41 19 50 28 50 39A18 18 0 0 1 14 39C14 28 23 19 32 6Z';
 const MOON='M46 41A21 21 0 1 1 25 11A17 17 0 0 0 46 41Z';
 const DUMB='M8 24A4 4 0 0 1 12 20H16A4 4 0 0 1 20 24V28H44V24A4 4 0 0 1 48 20H52A4 4 0 0 1 56 24V40A4 4 0 0 1 52 44H48A4 4 0 0 1 44 40V36H20V40A4 4 0 0 1 16 44H12A4 4 0 0 1 8 40Z';
@@ -310,6 +310,34 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   <div class="mt-acts"><button class="btn sm" data-go="gyors">+ Új bejegyzés</button><button class="btn sm ghost" data-sheet="naplopick">Napló</button><button class="fh-lk" data-sheet="tobb">Több</button></div>
   <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b><small>Kímélő mód: betegség, sérülés vagy utazás idejére</small></span></button></section>`)}
 
+/* ═══ NAPI KÜLDETÉSEK · three flasks on offer; what a finished one holds is poured into the day's XP collector ═══ */
+const QS=[
+  {ic:'t-dumbbell',s:'Edzés',p:6,t:'A mai tervezett edzés a naptárban van — csináld végig',why:'A megjelenés a legerősebb identitás-szavazat: aki ma edz, az edző ember.',xp:25,cta:'Edzés',foot:'folyamatban · az edzésből záródik magától'},
+  {ic:'t-weight',s:'Súlymérés',p:100,t:'Reggeli súlymérés — logold be',xp:15,done:true},
+  {ic:'t-journal',s:'Olvasás',p:6,t:'Olvass ma legalább 10 percet',xp:20,foot:'folyamatban · a logjaidból záródik magától'}];
+const FLASK=['M44 12H60V37A30 30 0 1 1 44 37Z','M44 12H60V34L88 86Q91 94 83 94H21Q13 94 16 86L44 34Z','M42 12H62V26Q76 31 76 45V85Q76 94 67 94H37Q28 94 28 85V45Q28 31 42 26Z'];
+function flask(q,i){const id=uid(),d=FLASK[i%3],y=q.done?30:94-56*q.p/100,g=q.done?'ok':'dom';
+  return `<svg class="ng qf" viewBox="0 0 104 104" aria-hidden="true"><defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs>
+    <g class="ng-ves"><path class="ng-glass" d="${d}"/>${liq(id,y,g)}<path class="ng-line" d="${d}"/></g><path class="ng-rim" d="M40 12H64"/><path class="ng-hi" d="M34 58C34 68 38 78 46 84"/>
+    ${q.done?'<rect class="qf-cork" x="43" y="2" width="18" height="13" rx="3"/>':''}
+    <svg class="ic" x="37" y="${i%3===1?56:50}" width="30" height="30" viewBox="0 0 64 64" style="${q.done?'--ic:#fff;--ic2:rgba(255,255,255,.5)':''}"><use href="#${q.ic}"/></svg></svg>`}
+function kuldetesek(arg){if(arg)return O.kuldetesek(arg);const tot=QS.reduce((a,q)=>a+q.xp,0),got=QS.filter(q=>q.done).reduce((a,q)=>a+q.xp,0),dn=QS.filter(q=>q.done).length,cid=uid();
+  const C='M30 8H330V46C330 74 300 84 180 84C60 84 30 74 30 46Z';
+  return page('nap',{title:'Napi küldetések',sub:'Nap · ajánlatok mára',back:'mai'},`${DEFS}
+  <section class="bd"><div class="pg-lead"><small>Mai ajánlatok · +${tot} XP</small><h2>${dn} kész a ${QS.length} ajánlatból.</h2><p>A többi magától telik, ahogy a napod halad. Ami elkészült, annak a tartalma a gyűjtőbe kerül.</p></div>
+  <svg class="ng" viewBox="0 0 360 132" role="img" aria-label="A mai XP gyűjtője: ${got} a ${tot}-ból" style="margin-top:10px"><defs><clipPath id="${cid}"><path d="${C}"/></clipPath></defs>
+    <g class="ng-ves"><path class="ng-glass" d="${C}"/><g clip-path="url(#${cid})"><path class="ng-wv" fill="url(#ng-g-ok)" d="M-48 ${84-76*got/tot}${' q12 -5 24 0 t24 0'.repeat(9)} V120 H-48Z"/></g><path class="ng-line" d="${C}"/></g>
+    <path class="ng-rim" d="M24 8H336"/>${QS.map((q,i)=>`<path class="ng-mark" d="M${30+300*(i+1)/QS.length} 12V20" />`).slice(0,-1).join('')}
+    <text class="ar-big" style="font-size:34px" x="180" y="50" text-anchor="middle">+${got}<tspan class="ng-u" dx="5">XP</tspan></text>
+    <text class="ng-s" x="180" y="108" text-anchor="middle">jóváírva ma · a ${tot}-ból</text>${drip(180,0)}</svg></section>
+  ${QS.map((q,i)=>`<section class="bd ${i%2?'':'w'} qs"><div class="qs-r">${flask(q,i)}<div class="qs-b">
+      <p class="nb-h"><b>${q.s}</b><i class="nb-st ${q.done?'ok':''}">${q.done?'kész':`+${q.xp} XP`}</i></p>
+      <p class="qs-t">${q.t}</p>${q.why?`<p class="qs-w">${q.why}</p>`:''}
+      <p class="qs-f">${q.done?`kész · +${q.xp} XP jóváírva`:q.foot}</p>
+      ${q.done?'':`<div class="nb-a">${q.cta?`<button class="btn sm" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="fh-lk" data-toast="Csere: új ajánlat érkezik a helyére · ma már nincs több">Csere · 1 maradt</button></div>`}
+    </div></div></section>`).join('')}
+  <p class="ng-foot" style="margin-top:22px">A küldetés ajánlat: ha kimarad, csendben lejár, bukás nincs. A Csere naponta egyszer ingyenes.</p>`)}
+
 /* ═══ RUTIN · the chain as a string of vessels that winds down the page — three per row, any number of rows.
        The vessel's level is the habit's 28-day strength; the pipe behind it is full up to where you have got today. ═══ */
 const RUT={
@@ -343,7 +371,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!
   const r=document.getElementById('rt-root');if(r)r.innerHTML=rutinBody()});
 
 /* ── routes: on this page the top tabs open the drawn versions; the approved ones stay reachable ── */
-nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>a?O.mai(a):mai2();nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
+nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>a?O.mai(a):mai2();nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
 nap.routes.napom=a=>a?O.napom(a):today();nap.routes.nap=day;nap.routes.napomg=today;nap.routes.napomt=today;
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
 
@@ -567,6 +595,16 @@ ${P} .lk-n{font-size:11.5px;font-weight:700;fill:var(--sub)}
 ${P} .lk .nb-leg{justify-content:center}${P} .lk .ng-who{margin-top:14px}${P} .lk .nb-t{margin-top:6px}
 ${P} .lk-sep{display:block;height:1px;margin:26px 22px 4px;border-top:1.5px dashed color-mix(in srgb,var(--liq2) 28%,#fff)}
 
+/* Napi küldetések: flasks */
+${P} .qs-r{display:flex;align-items:flex-start;gap:14px;padding:22px 22px 0 14px}
+${P} .qs svg.qf{flex:none;width:96px;height:96px;margin:0}
+${P} .qf-cork{fill:#C9A26B;stroke:rgba(10,42,60,.25);stroke-width:1.5}
+${P} .qs-b{flex:1;min-width:0}
+${P} .nb-st.ok{color:#0E7A55;background:color-mix(in srgb,var(--ok) 16%,#fff)}
+${P} .qs-t{margin-top:6px;font:700 16px/1.25 var(--disp,inherit);letter-spacing:-.01em;color:var(--ink)}
+${P} .qs-w{margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--sub)}
+${P} .qs-f{margin-top:8px;font-size:12px;font-weight:600;color:var(--sub)}
+
 /* Rutin */
 ${P} .rt-lead{padding:14px 22px 0}
 ${P} .rt-lead small{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
@@ -623,6 +661,7 @@ ${P} .rt-edit>svg.ic{width:34px;height:34px;flex:none}${P} .rt-edit span{flex:1}
 `);
 window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Nincs nagy edény, nincs kártya, nincs lista. Minden oldal saját rajzot kapott, azt, ami a tartalmából következik:</p>
 <ul><li><a href="#w-nap-mai"><b>Mai</b></a> — a nap íve: reggeltől estig, a mostani időpontig feltöltve. Alatta a négy kémcső (változatlan), a három következő teendő három edényként, és a nap befőttesüvege, rétegenként a bejegyzésekkel.</li>
+<li><a href="#w-nap-kuldetesek"><b>Napi küldetések</b></a> (a Mai aloldala) — három lombik: ami elkészül, annak a tartalma a nap XP-gyűjtőjébe kerül.</li>
 <li><a href="#w-nap-napom"><b>A napom</b></a> — a cső: a nap folyadéka hat edényen fut át. Lezárt napok: <a href="#w-nap-nap.2026-09-23">szerda</a>, <a href="#w-nap-nap.2026-09-22">kedd</a>; kevés adat: <a href="#w-nap-nap.2026-09-21">hétfő</a>.</li>
 <li><a href="#w-nap-uzenetek"><b>Beszélgetés</b></a> — vízmélység: a legfrissebb üzenet a felszínen, a régiek lejjebb. <a href="#w-nap-uzenetek.eletjelek">Életjelek</a>: kémcsőállvány, a megjegyzés címkeként lóg a kémcsövén. <a href="#w-nap-uzenetek.eszrevetelek">Észrevételek</a>: közlekedőedény, a cső a bizonyíték napjaival telik.</li>
 <li><a href="#w-nap-rutin"><b>Rutin</b></a> — lánc: az edényeket láncszemek kötik össze, soronként kanyarodik, akárhány szokásra. Másik láncok: <a href="#w-nap-rutin.este">este</a>, <a href="#w-nap-rutin.napkozben">napközben</a>.</li></ul>
