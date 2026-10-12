@@ -1885,6 +1885,8 @@ function render(){
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
   $('#dseg').hidden=/^k[123]$/.test(V);
+  /* F5: the top tabs scroll sideways; the active one is always brought into view (English tab names are longer at 320 px) */
+  {const tb=$('#phone .fh-tabs'),on=tb&&tb.querySelector('.on');if(on){const o=on.offsetLeft+on.offsetWidth-tb.clientWidth+12;tb.scrollLeft=on.offsetLeft<tb.scrollLeft?Math.max(0,on.offsetLeft-12):o>0?o:0}}
   
   history.replaceState(null,'',`#${V==='jelenlegi'?'j':V==='tiszta'?'t':V==='feher'?'f':V==='elo'?'e':/^k/.test(V)?V.slice(1):V==='foly'?'w':'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
   $('#phone .scroll')?.scrollTo(0,0);
