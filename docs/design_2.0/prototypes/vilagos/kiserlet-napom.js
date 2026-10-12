@@ -548,7 +548,7 @@ ${P} .bd .mx-h b{display:flex;align-items:center;gap:10px}
 ${P} .bd .mx-h b::before{content:"";flex:none;width:12px;height:16px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(160deg,var(--liq1),var(--liq2))}
 /* Mai · the top, options */
 ${P} .hv-sw{display:flex;align-items:center;gap:4px;margin:10px 14px 0;padding:4px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.1)}
-${P} .hv-sw{flex-wrap:wrap;border-radius:22px}${P} .hv-sw small{flex:1 1 100%;padding:4px 12px 2px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sub)}
+${P} .hv-sw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-radius:22px}${P} .hv-sw button{text-align:center;padding:0 2px}${P} .hv-sw small{grid-column:1/-1;padding:4px 12px 2px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sub)}
 ${P} .hv-sw button{flex:1;min-height:40px;border-radius:999px;font-size:13px;font-weight:700;color:var(--sub)}
 ${P} .hv-sw button.on{background:linear-gradient(160deg,var(--liq1),var(--liq2));color:#fff}
 ${P} .bd[data-rr="top"]:has(.hv-a){padding-bottom:0}
