@@ -294,7 +294,7 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
     {key:'training',t:'ma',title:'Pull Day',sub:'a mai edzés még hátravan',go:'Megnézem',v:{p:0,g:'warn'},attr:'data-dom="edzes"'},
     {key:'nutrition',t:'19:30',title:'Vacsora',sub:'722 kcal van még · 18 g fehérje hiányzik',go:'Logolom',v:{p:74,prot:89,g:'dom'},attr:'data-dom="fuel"'}];
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
-    [I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
+    [I('t-checkin'),'Check-in','','data-go="checkin"'],[I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}
   <section class="bd">${maiTop()}</section>
   <section class="bd w">${KH('Most következik')}
@@ -312,22 +312,27 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
 /* ═══ CHECK-IN · the day's four snapshots side by side: one column per moment, one row per feeling, so you can see
        how each of the five core answers moved through the day. A finished column opens its full snapshot in a sheet
        (the extra questions of that moment and the note live there); the one that is due carries the action. ═══ */
-const CI_ROWS=[['energy','Energia','t-bolt'],['mood','Hangulat','t-mood'],['stress','Stressz','t-checkin'],['body','Test','t-person'],['mental','Fej','t-gem']];
-const CI_X={rested:'Kipihentség',soreness:'Izomláz',pain:'Fájdalom',motivation:'Motiváció',hunger:'Éhség'};
-const CI=[{n:'Reggel',t:'06:30',st:'done',q:10,a:{energy:7,mood:8,stress:3,body:6,mental:7,rested:6,soreness:5,pain:'Térd · 4/10',motivation:8,hunger:5},note:'Nyugodt ébredés · pihenve'},
-  {n:'Délelőtt',t:'10:00',st:'done',q:8,a:{energy:8,mood:7,stress:4,body:7,mental:8},note:'Most csak ennyi · az alap megvan'},
-  {n:'Délután',t:'14:00',st:'now',q:9},{n:'Este',t:'20:00',st:'later',q:12}];
+const CI_ROWS=[['energy','Energia','t-bolt'],['mood','Hangulat','t-mood'],['stress','Stressz','t-checkin'],['body','Test','t-person'],['mental','Fej','t-gem'],
+  ['rested','Pihent','t-rested'],['soreness','Izomláz','t-soreness'],['pain','Fájdalom','t-pain'],['motivation','Kedv','t-motivation'],['hunger','Éhség','t-hunger'],['craving','Sóvárgás','t-craving'],['digestion','Emésztés','t-digestion'],['connection','Kapcsolat','t-people'],['day','A nap','t-day']];
+const CORE=['energy','mood','stress','body','mental'];
+/* ask = what this moment asks (the five core questions, its own ones, and the day's adaptive question) */
+const CI=[{n:'Reggel',t:'06:30',st:'done',ask:[...CORE,'rested','soreness','pain','motivation','hunger'],a:{energy:7,mood:8,stress:3,body:6,mental:7,rested:6,soreness:5,pain:4,motivation:8,hunger:5},x:{pain:'Térd'},note:'Nyugodt ébredés · pihenve'},
+  {n:'Délelőtt',t:'10:00',st:'done',ask:[...CORE,'motivation','hunger','craving'],a:{energy:9,mood:7,stress:4,body:7,mental:8},note:'Most csak ennyi · az alap megvan'},
+  {n:'Délután',t:'14:00',st:'now',ask:[...CORE,'hunger','craving','digestion','motivation']},{n:'Este',t:'20:00',st:'later',ask:[...CORE,'soreness','pain','craving','digestion','connection','day','motivation']}];
+/* how far a feeling moved between its first and last answer today; the largest move is the row to look at */
+const ciMove=k=>{const v=CI.map(c=>c.a&&c.a[k]).filter(x=>x!=null);return v.length>1?v[v.length-1]-v[0]:0};
+const ciHot=()=>{const m=Math.max(...CI_ROWS.map(([k])=>Math.abs(ciMove(k))));return m>1?CI_ROWS.filter(([k])=>Math.abs(ciMove(k))===m).map(r=>r[0]):[]};
 const ciSheet=i=>{const c=CI[i];return `<h2 class="ng-sh">${c.n}<small>${c.t} · ${Object.keys(c.a).length} válasz</small></h2>
-  <div class="ci-all">${[...CI_ROWS.map(r=>[r[0],r[1]]),...Object.entries(CI_X)].filter(([k])=>k in c.a).map(([k,l])=>{const v=c.a[k],num=typeof v==='number';return `<span><i class="ci-v" style="--p:${num?v*10:40}%"><b>${num?v:'!'}</b></i><em>${l}${num?'':`<small>${v}</small>`}</em></span>`}).join('')}</div>
+  <div class="ci-all">${CI_ROWS.filter(([k])=>k in c.a).map(([k,l])=>`<span><i class="ci-v ${k==='pain'?'wn':''}" style="--p:${c.a[k]*10}%"><b>${c.a[k]}</b></i><em>${l}${c.x&&c.x[k]?`<small>${c.x[k]}</small>`:''}</em></span>`).join('')}</div>
   ${c.note?`<p class="ng-pr">${c.note}</p>`:''}<div class="nb-a"><button class="btn sm ghost" data-n="ckslot:${c.t}">Újra kitöltöm</button></div>`};
-function checkin2(){const cur=CI.find(c=>c.st==='now'),done=CI.filter(c=>c.st==='done').length;
+function checkin2(){const cur=CI.find(c=>c.st==='now'),done=CI.filter(c=>c.st==='done').length,hot=ciHot(),H=k=>hot.includes(k)?'hot':'',G=i=>i===5?'<span class="ci-g"></span>':'';
   return page('nap',{title:'Check-in',sub:`Nap · ${done} / 4 pillanatkép`,back:'mai'},`${DEFS}
   <section class="bd"><div class="pg-lead"><small>A nap négy pillanata · ${done} / 4</small><h2>A délutáni most esedékes.</h2></div></section>
   <section class="bd w"><div class="ci">
-    <div class="ci-l"><span class="ci-h"></span>${CI_ROWS.map(([,l,ic])=>`<span class="ci-r">${I(ic)}<b>${l}</b></span>`).join('')}<span class="ci-f"></span></div>
+    <div class="ci-l"><span class="ci-h"></span>${CI_ROWS.map(([k,l,ic],i)=>`${i===5?'<span class="ci-g"><b>Időpont szerint</b></span>':''}<span class="ci-r ${H(k)}">${I(ic)}<b>${l}</b>${H(k)?`<em>${ciMove(k)>0?'+':'−'}${Math.abs(ciMove(k))}</em>`:''}</span>`).join('')}<span class="ci-f"></span></div>
     ${CI.map((c,i)=>`<button class="ci-c ${c.st}" ${c.st==='done'?`data-nb="cis:${i}"`:c.st==='now'?'data-n="ck:open"':`data-n="ckslot:${c.t}"`} aria-label="${c.n} ${c.t}">
       <span class="ci-h"><b>${c.t}</b><small>${c.n}</small></span>
-      ${CI_ROWS.map(([k])=>{const v=c.a&&c.a[k];return `<span class="ci-r"><i class="ci-v ${v==null?'e':''}" style="--p:${v?v*10:0}%"><b>${v??''}</b></i></span>`}).join('')}
+      ${CI_ROWS.map(([k],r)=>{const v=c.a&&c.a[k],asked=c.ask.includes(k);return `${G(r)}<span class="ci-r ${H(k)}">${asked?`<i class="ci-v ${v==null?'e':''} ${k==='pain'&&v?'wn':''}" style="--p:${v?v*10:0}%"><b>${v??''}</b></i>`:'<i class="ci-no"></i>'}</span>`}).join('')}
       <span class="ci-f fh-lk">${c.st==='done'?'kész ›':c.st==='now'?'most ›':'előre ›'}</span></button>`).join('')}
   </div></section>`,{foot:`<div class="rt-foot"><span class="rt-fn"><small>Most jön · ${cur.t}</small><b>${cur.n}i check-in</b></span><button class="btn" data-n="ck:open">Kitöltöm</button></div>`})}
 
@@ -639,17 +644,25 @@ ${P} .lk-sep{display:block;height:1px;margin:26px 22px 4px;border-top:1.5px dash
 /* Check-in: the four snapshots */
 ${P} .ci{display:grid;grid-template-columns:86px repeat(4,1fr);margin:22px 10px 0}
 ${P} .ci-l,${P} .ci-c{display:flex;flex-direction:column;align-items:center;min-width:0;padding:0}
-${P} .ci-l{align-items:flex-start;padding-left:4px}
+${P} .ci-l{align-items:flex-start}
 ${P} .ci-h{display:flex;flex-direction:column;align-items:center;justify-content:center;height:58px}
 ${P} .ci-h b{font:800 15px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}${P} .ci-h small{font-size:12px;color:var(--sub)}
-${P} .ci-r{display:flex;align-items:center;gap:5px;height:60px}
+${P} .ci-r{display:flex;align-items:center;gap:5px;height:56px;width:100%;justify-content:center}
+${P} .ci-l .ci-r{justify-content:flex-start;padding-left:4px;border-radius:14px 0 0 14px}
+${P} .ci-g{display:flex;align-items:flex-end;height:38px;width:100%;padding:0 0 6px 4px;white-space:nowrap}${P} .ci-g b{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
+${P} .ci-no{width:6px;height:6px;border-radius:50%;background:rgba(10,42,60,.14)}
+/* the feeling that moved the most today */
+${P} .ci-r.hot{background:color-mix(in srgb,var(--warn) 16%,#fff)}
+${P} .ci-c:last-child .ci-r.hot{border-radius:0 14px 14px 0}
+${P} .ci-l .ci-r.hot{flex-wrap:wrap;align-content:center;row-gap:0}${P} .ci-l .ci-r.hot em{flex:1 1 100%;padding-left:25px;font:800 12.5px var(--disp,inherit);font-style:normal;color:#8A5F06;line-height:1}
+${P} .ci-v.wn{background:linear-gradient(to top,color-mix(in srgb,var(--warn) 40%,#fff) 0 var(--p),color-mix(in srgb,var(--warn) 80%,#fff) var(--p) calc(var(--p) + 2px),#fff calc(var(--p) + 2px))}
 ${P} .ci-l .ci-r svg.ic{width:20px;height:20px;flex:none}${P} .ci-l .ci-r b{font-size:12.5px;font-weight:700;color:var(--ink)}
 ${P} .ci-f{display:flex;align-items:center;justify-content:center;min-height:48px;font-size:13px;font-weight:700;white-space:nowrap}
 ${P} .ci-c{border-radius:26px}
 ${P} .ci-c.now{background:color-mix(in srgb,var(--dom) 9%,#fff);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--dom) 45%,#fff)}
 ${P} .ci-c.now .ci-h b{color:var(--dom)}
 ${P} .ci-c.later .ci-h b,${P} .ci-c.later .ci-h small{color:var(--faint)}${P} .ci-c.later .ci-f{color:var(--sub)}
-${P} .ci-v{position:relative;display:grid;place-items:center;width:40px;height:48px;border-radius:20px;font-style:normal;
+${P} .ci-v{position:relative;display:grid;place-items:center;width:40px;height:44px;border-radius:20px;font-style:normal;
   background:linear-gradient(to top,color-mix(in srgb,var(--liq1) 42%,#fff) 0 var(--p),color-mix(in srgb,var(--liq1) 80%,#fff) var(--p) calc(var(--p) + 2px),#fff calc(var(--p) + 2px));box-shadow:inset 0 0 0 2px rgba(10,42,60,.16)}
 ${P} .ci-v b{font:800 16px var(--disp,inherit);color:var(--ink)}
 ${P} .ci-v.e{background:none;box-shadow:none;border:2px dashed rgba(10,42,60,.2)}
