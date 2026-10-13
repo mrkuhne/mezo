@@ -651,10 +651,11 @@ ${P} .ci-r{display:flex;align-items:center;gap:5px;height:56px;width:100%;justif
 ${P} .ci-l .ci-r{justify-content:flex-start;padding-left:4px;border-radius:14px 0 0 14px}
 ${P} .ci-g{display:flex;align-items:flex-end;height:38px;width:100%;padding:0 0 6px 4px;white-space:nowrap}${P} .ci-g b{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
 ${P} .ci-no{width:6px;height:6px;border-radius:50%;background:rgba(10,42,60,.14)}
-/* the feeling that moved the most today */
-${P} .ci-r.hot{background:color-mix(in srgb,var(--warn) 16%,#fff)}
-${P} .ci-c:last-child .ci-r.hot{border-radius:0 14px 14px 0}
-${P} .ci-l .ci-r.hot{flex-wrap:wrap;align-content:center;row-gap:0}${P} .ci-l .ci-r.hot em{flex:1 1 100%;padding-left:25px;font:800 12.5px var(--disp,inherit);font-style:normal;color:#8A5F06;line-height:1}
+/* the feeling that moved the most today: no coloured band — its vessels carry the strong liquid, its name the change */
+${P} .ci-r.hot .ci-v:not(.e){background:linear-gradient(to top,var(--liq2) 0,var(--liq1) var(--p),#fff var(--p));box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--dom) 55%,#fff),0 6px 10px -6px var(--liq2)}
+${P} .ci-r.hot .ci-v:not(.e) b{color:#fff;text-shadow:0 1px 2px rgba(10,60,140,.35)}
+${P} .ci-l .ci-r.hot b{color:var(--dom)}
+${P} .ci-l .ci-r.hot{flex-wrap:wrap;align-content:center;row-gap:1px}${P} .ci-l .ci-r.hot em{flex:1 1 100%;padding-left:25px;font:800 12.5px var(--disp,inherit);font-style:normal;color:var(--dom);line-height:1}
 ${P} .ci-v.wn{background:linear-gradient(to top,color-mix(in srgb,var(--warn) 40%,#fff) 0 var(--p),color-mix(in srgb,var(--warn) 80%,#fff) var(--p) calc(var(--p) + 2px),#fff calc(var(--p) + 2px))}
 ${P} .ci-l .ci-r svg.ic{width:20px;height:20px;flex:none}${P} .ci-l .ci-r b{font-size:12.5px;font-weight:700;color:var(--ink)}
 ${P} .ci-f{display:flex;align-items:center;justify-content:center;min-height:48px;font-size:13px;font-weight:700;white-space:nowrap}
