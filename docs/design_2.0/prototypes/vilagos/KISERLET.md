@@ -56,7 +56,8 @@ plans or "which direction wins" decisions until he asks.
 | Nap · Mai | the day as a flat line (06–22) filled to now, the number beside the sentence (the arc, a liquid layer and a plain level were shown and not picked) · next three vessels · tubes · observation (sheet) · the day's jar · seven icon links | shown; special faces (üres, hiba, kímélő, este) not drawn |
 | Nap · Mai · Napi küldetések | three flasks; a finished one pours into the day's XP collector | shown 2026-10-12, waiting for feedback |
 | Nap · Mai · Check-in | the four snapshots side by side: a column per moment, a row per core feeling; a finished column opens its snapshot in a sheet; the due one sits in the bottom action bar | shown 2026-10-13, waiting for feedback |
-| Nap · Mai · Gyors logolás, Életjelek (detail) | — | to do |
+| Nap · Mai · Gyors logolás | nine drops above the open mouth of the day's jar (the jar of Mai napló); Mezo as the spoken way in | shown 2026-10-13, waiting for feedback |
+| Nap · Mai · Életjelek (detail) | — | to do |
 | Nap · A napom (today, closed day, sparse day) | the pipe through six vessels | liked |
 | Nap · Beszélgetés · Üzenetek | depth: newest at the surface | shown |
 | Nap · Beszélgetés · Életjelek | rack of six tubes, the remark as a tag on its tube | shown |
@@ -71,4 +72,6 @@ plans or "which direction wins" decisions until he asks.
 - A class named `top` (and other short kit names) is already styled by the kit — prefix everything.
 - The week strip navigates to `nap.<date>`; a tab left on a removed route falls back to Mai. Keep aliases.
 - Fragments cut out of the approved page (`cutOut`) depend on exact markup strings in `nap.js`.
+- A Folyadék-jel icon on liquid needs all three: `--ic:#fff; --ic2:rgba(255,255,255,.3); --icf:transparent`. Without
+  `--icf` the glyph's body fills near-white and closed shapes (ball, scale, clipboard, notebook) become blobs.
 - In the drawings text is SVG text: break lines by hand, and check 320 px.
