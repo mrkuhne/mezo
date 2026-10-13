@@ -332,7 +332,7 @@ function checkin2(){const cur=CI.find(c=>c.st==='now'),done=CI.filter(c=>c.st===
     <div class="ci-l"><span class="ci-h"></span>${CI_ROWS.map(([k,l,ic],i)=>`${i===5?'<span class="ci-g"><b>Időpont szerint</b></span>':''}<span class="ci-r ${H(k)}">${I(ic)}<b>${l}</b>${H(k)?`<em>${ciMove(k)>0?'+':'−'}${Math.abs(ciMove(k))}</em>`:''}</span>`).join('')}<span class="ci-f"></span></div>
     ${CI.map((c,i)=>`<button class="ci-c ${c.st}" ${c.st==='done'?`data-nb="cis:${i}"`:c.st==='now'?'data-n="ck:open"':`data-n="ckslot:${c.t}"`} aria-label="${c.n} ${c.t}">
       <span class="ci-h"><b>${c.t}</b><small>${c.n}</small></span>
-      ${CI_ROWS.map(([k],r)=>{const v=c.a&&c.a[k],asked=c.ask.includes(k);return `${G(r)}<span class="ci-r ${H(k)}">${asked?`<i class="ci-v ${v==null?'e':''} ${k==='pain'&&v?'wn':''}" style="--p:${v?v*10:0}%"><b>${v??''}</b></i>`:'<i class="ci-no"></i>'}</span>`}).join('')}
+      ${CI_ROWS.map(([k],r)=>{const v=c.a&&c.a[k],asked=c.ask.includes(k);return `${G(r)}<span class="ci-r ${H(k)}">${asked?`<i class="ci-v ${v==null?'e':''} ${k==='pain'&&v?'wn':''} ${v!=null&&v<6?'lo':''}" style="--p:${v?v*10:0}%"><b>${v??''}</b></i>`:'<i class="ci-no"></i>'}</span>`}).join('')}
       <span class="ci-f fh-lk">${c.st==='done'?'kész ›':c.st==='now'?'most ›':'előre ›'}</span></button>`).join('')}
   </div></section>`,{foot:`<div class="rt-foot"><span class="rt-fn"><small>Most jön · ${cur.t}</small><b>${cur.n}i check-in</b></span><button class="btn" data-n="ck:open">Kitöltöm</button></div>`})}
 
@@ -654,6 +654,8 @@ ${P} .ci-no{width:6px;height:6px;border-radius:50%;background:rgba(10,42,60,.14)
 /* the feeling that moved the most today: no coloured band — its vessels carry the strong liquid, its name the change */
 ${P} .ci-r.hot .ci-v:not(.e){background:linear-gradient(to top,var(--liq2) 0,var(--liq1) var(--p),#fff var(--p));box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--dom) 55%,#fff),0 6px 10px -6px var(--liq2)}
 ${P} .ci-r.hot .ci-v:not(.e) b{color:#fff;text-shadow:0 1px 2px rgba(10,60,140,.35)}
+/* a low value leaves the number above the liquid: it stays dark there */
+${P} .ci-r.hot .ci-v.lo b{color:var(--ink);text-shadow:none}
 ${P} .ci-l .ci-r.hot b{color:var(--dom)}
 ${P} .ci-l .ci-r.hot{flex-wrap:wrap;align-content:center;row-gap:1px}${P} .ci-l .ci-r.hot em{flex:1 1 100%;padding-left:25px;font:800 12.5px var(--disp,inherit);font-style:normal;color:var(--dom);line-height:1}
 ${P} .ci-v.wn{background:linear-gradient(to top,color-mix(in srgb,var(--warn) 40%,#fff) 0 var(--p),color-mix(in srgb,var(--warn) 80%,#fff) var(--p) calc(var(--p) + 2px),#fff calc(var(--p) + 2px))}
