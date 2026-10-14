@@ -89,13 +89,18 @@ function station(s,side,y){const L=side==='L',cx=L?72:288,tx=L?146:20,an='start'
     <text class="ng-t" x="${tx}" y="${y+30}" text-anchor="${an}">${s.title}${s.tag?`<tspan class="ng-k ${s.sk}" dx="7">${s.tag}</tspan>`:''}</text>
     <text class="ng-v" x="${tx}" y="${y+62}" text-anchor="${an}">${s.val}${s.unit?`<tspan class="ng-u" dx="4">${s.unit}</tspan>`:''}</text>
     ${s.sub.map((t,i)=>`<text class="ng-s" x="${tx}" y="${y+83+i*17}" text-anchor="${an}">${t}</text>`).join('')}
-    ${s.go?`<text class="ng-go" x="${tx}" y="${y+86+s.sub.length*17}" text-anchor="${an}">${s.go} ›</text>`:''}</g>`}
+    ${s.go?`<g class="ng-pl"><rect x="${tx}" y="${y+76+s.sub.length*17}" width="112" height="32" rx="16"/><text x="${tx+56}" y="${y+97+s.sub.length*17}" text-anchor="middle">${s.go}</text></g>`:''}</g>`}
 const badgeN=(x,y,n,t,an='start')=>`<g class="ng-b"><path transform="translate(${x-32*.66} ${y-34*.66}) scale(.66)" d="${DROP}"/><text x="${x}" y="${y+7.5}" text-anchor="middle">${n}</text></g>
   <text class="ng-h" x="${an==='start'?x+20:x-20}" y="${y+6}" text-anchor="${an}">${t}</text>`;
 /* stations from y0, alternating sides; returns [svg, yEnd] — the S-bends between two stations are the dividers */
 function stations(ST,y0,pitch=140){const cx=i=>i%2?288:72;
   const bends=ST.slice(0,-1).map((_,i)=>{const a=cx(i),b=cx(i+1),y=y0+pitch*i+104,g=pitch-104;return `M${a} ${y}C${a} ${y+g*.78} ${b} ${y+g*.22} ${b} ${y+g}`}).join('');
   return [pipe(bends)+ST.map((s,i)=>station(s,i%2?'R':'L',y0+pitch*i)).join(''),y0+pitch*(ST.length-1)+104]}
+const wl=y=>`<path class="ng-wl" d="M18 ${y} q12 -6 24 0${' t24 0'.repeat(12)}"/>`;
+const hd=(x,y,t)=>`<path class="ng-j" transform="translate(${x-32*.42} ${y-34*.42}) scale(.42)" d="${DROP}"/><text class="ng-h2" x="${x+22}" y="${y+7}">${t}</text>`;
+const pill=(x,y,w,t,pri)=>`<g class="ng-pl ${pri?'pri':''}"><rect x="${x}" y="${y}" width="${w}" height="38" rx="19"/><text x="${x+w/2}" y="${y+24}" text-anchor="middle">${t}</text></g>`;
+/* the wave line between the lead and the first section, with the pipe passing through */
+const gap=h=>svg(h,wl(16)+pipe(`M72 0V${h}`));
 const lead=(inner,cls='')=>`<div class="ng-lead ${cls}">${inner}</div>`;
 /* a lighter full-width layer behind part of a drawing: groups a logical unit without a card (wave edge where it starts/ends) */
 const band=(y0,y1,top=true,bot=true)=>{const w=' q12.5 -6 25 0 t25 0'.repeat(8),wb=' q-12.5 6 -25 0 t-25 0'.repeat(8);
@@ -108,28 +113,27 @@ function frame(arg,cut){const base=O.nap(arg);const a=base.search(cut),b=base.in
 /* ═══ A NAPOM · today (live) ═══ */
 function today(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)return O.nap('2026-09-24');
   const ST=[
-    {key:'nutrition',title:'Tápanyag',tag:'úton',sk:'q',val:'2 060',unit:'kcal',sub:['a 2 782-ből','fehérje 148 / 166 g'],v:{p:74,prot:89,g:'dom'}},
-    {key:'quality',title:'Minőség',tag:'úton',sk:'q',val:'74',unit:'%',sub:['feldolgozatlan 68%','mikro 80%'],v:{p:74,a:68,b:80,g:'dom'}},
+    {key:'nutrition',title:'Tápanyag',tag:'úton',sk:'q',val:'2 060',unit:'kcal',sub:[],v:{p:74,prot:89,g:'dom'}},
+    {key:'quality',title:'Minőség',tag:'úton',sk:'q',val:'74',unit:'%',sub:[],v:{p:74,a:68,b:80,g:'dom'}},
     {key:'training',title:'Edzés',tag:'nyitva',sk:'warn',val:'0/1',sub:[],v:{p:0,g:'warn'}},
-    {key:'sleep',title:'Alvás',tag:'kész',sk:'ok',val:'7ó 16p',sub:['minőség 7/10'],v:{p:86,g:'ok'}},
-    {key:'logging',title:'Logolás',tag:'úton',sk:'q',val:'2/4',sub:['check-in'],v:{n:2,g:'dom'}},
+    {key:'sleep',title:'Alvás',tag:'kész',sk:'ok',val:'7ó 16p',sub:[],v:{p:86,g:'ok'}},
+    {key:'logging',title:'Logolás',tag:'úton',sk:'q',val:'2/4',sub:[],v:{n:2,g:'dom'}},
     {key:'rhythm',title:'Ritmus',tag:'kész',sk:'ok',val:'74',sub:[],v:{p:74,g:'ok'}}];
-  const [stSvg,yEnd]=stations(ST,262),U=yEnd+96,UU=`M96 ${U}V${U+104}C96 ${U+170} 264 ${U+170} 264 ${U+104}V${U}H212V${U+100}C212 ${U+124} 148 ${U+124} 148 ${U+100}V${U}Z`;
-  return fr[0]+topPipe('2026-09-24')+lead(`<small>Csütörtök · szept 24 · élő · 14:20</small>
-      <h2>Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.</h2>
-      <p class="ng-cnt"><b>2/6</b> terület kész</p>`)
-  +`<svg class="ng" viewBox="0 0 360 ${U+200}" role="img" aria-label="A mai napod rajza: most érdemes, a hat terület, te és az app">
+  const [stSvg,yEnd]=stations(ST,286),U=yEnd+110,UU=`M96 ${U}V${U+104}C96 ${U+170} 264 ${U+170} 264 ${U+104}V${U}H212V${U+100}C212 ${U+124} 148 ${U+124} 148 ${U+100}V${U}Z`;
+  return fr[0]+topPipe('2026-09-24')+lead(`<h2>Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.</h2>
+      <p class="ng-cnt"><b>2/6</b> terület kész</p>`)+gap(34)
+  +`<svg class="ng" viewBox="0 0 360 ${U+186}" role="img" aria-label="A mai napod rajza: most érdemes, a hat terület, te és az app">
   <defs><clipPath id="ng-c-u"><path d="${UU}"/></clipPath><clipPath id="ng-c-ul"><rect x="0" y="0" width="180" height="${U+200}"/></clipPath><clipPath id="ng-c-ur"><rect x="180" y="0" width="180" height="${U+200}"/></clipPath></defs>
-  ${band(212,yEnd+20)}${pipe(`M72 0V26M72 50V62M72 196V218M72 242V262M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}M180 ${yEnd+62}C180 ${yEnd+80} 122 ${yEnd+66} 122 ${yEnd+82}M180 ${yEnd+62}C180 ${yEnd+80} 238 ${yEnd+66} 238 ${yEnd+82}`)}
-  ${badgeN(72,38,1,'Most érdemes · délután')}
+  ${wl(232)+wl(yEnd+30)}${pipe(`M72 0V26M72 50V62M72 196V250M72 274V286M288 ${yEnd}C288 ${yEnd+34} 180 ${yEnd+20} 180 ${yEnd+54}M180 ${yEnd+78}C180 ${yEnd+94} 122 ${yEnd+80} 122 ${yEnd+96}M180 ${yEnd+78}C180 ${yEnd+94} 238 ${yEnd+80} 238 ${yEnd+96}`)}
+  ${hd(72,38,'Most érdemes')}
   <g class="ng-next" data-toast="Edzés megnyitása" role="button" tabindex="0" aria-label="Még hátravan a mai edzés. Edzés megnyitása">
     <rect class="ng-hit" x="10" y="70" width="340" height="142"/><path class="ng-nd" transform="translate(-11.2 46.4) scale(2.6)" d="${DROP}"/>
     <path class="ng-hi" d="M43 142C45 128 52 116 60 106"/>
     <g transform="translate(41.6 117.4) scale(.95)"><path class="ng-ng" d="${DUMB}"/><path class="ng-ng" d="M3 28V36M61 28V36"/></g>
     <text class="ng-nt" x="140" y="112">Még hátravan</text><text class="ng-nt" x="140" y="136">a mai edzés</text>
-    <text class="ng-go" x="140" y="166">Edzés megnyitása ›</text></g>
-  ${badgeN(72,230,2,'Ma eddig · 6 terület')}${stSvg}
-  ${badgeN(180,yEnd+50,3,'A napod · te és az app')}${drip(122,yEnd+92)}${drip(238,yEnd+92,.8)}
+    ${pill(140,150,164,'Edzés megnyitása',1)}</g>
+  ${hd(72,262,'Ma eddig')}${stSvg}
+  ${hd(180,yEnd+66,'Te és az app')}${drip(122,yEnd+106)}${drip(238,yEnd+106,.8)}
   <g class="ng-ves"><path class="ng-glass" d="${UU}"/>
     <g clip-path="url(#ng-c-u)"><g clip-path="url(#ng-c-ul)"><path class="ng-wv" fill="url(#ng-g-dom)" d="M48 ${U+55}${' q12 -5 24 0 t24 0'.repeat(4)} V${U+200} H48Z"/></g>
       <g clip-path="url(#ng-c-ur)"><path class="ng-wv" fill="url(#ng-g-ok)" d="M132 ${U+46}${' q12 -5 24 0 t24 0'.repeat(4)} V${U+200} H132Z"/></g></g>
@@ -137,12 +141,12 @@ function today(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)r
   <path class="ng-mark" d="M152 ${U+55}H208M152 ${U+46}H208"/>
   <g>
     <text class="ng-un" x="122" y="${U+96}" text-anchor="middle">64</text><text class="ng-uu" x="122" y="${U+112}" text-anchor="middle">/ 100</text>
-    <text class="ng-t" x="108" y="${U+176}" text-anchor="middle">az app szerint</text><text class="ng-s" x="108" y="${U+193}" text-anchor="middle">közepes nap</text></g>
+    <text class="ng-t" x="108" y="${U+176}" text-anchor="middle">az app szerint</text></g>
   <g>
     <text class="ng-un" x="238" y="${U+96}" text-anchor="middle">7</text><text class="ng-uu" x="238" y="${U+112}" text-anchor="middle">/ 10</text>
-    <text class="ng-t" x="252" y="${U+176}" text-anchor="middle">szerinted</text><text class="ng-s" x="252" y="${U+193}" text-anchor="middle">jó nap</text></g>
+    <text class="ng-t" x="252" y="${U+176}" text-anchor="middle">szerinted</text></g>
   </svg>
-  <p class="ng-say">Az app szerint közepes nap, szerinted jó volt.</p>`+fr[1]}
+  <p class="ng-say">Az app szerint közepes nap, szerinted jó volt.</p><div class="ng-tail"></div>`+fr[1]}
 
 /* ═══ A NAPOM · a closed day (the overnight evaluation) ═══ */
 const NDY={score:87,base:89,corr:-2,label:'A hét legjobb napja',
@@ -158,32 +162,28 @@ const DIM=[['nutrition','Tápanyag'],['quality','Minőség'],['training','Edzés
 const DAYN={'2026-09-21':['Hétfő','szept 21'],'2026-09-22':['Kedd','szept 22'],'2026-09-23':['Szerda','szept 23']};
 const dimV=(k,sc)=>{const g=sc>=80?'ok':'dom';return k==='nutrition'?{p:sc,prot:98,g}:k==='quality'?{p:sc,a:71,b:100,g}:k==='logging'?{n:2,g}:{p:sc,g}};
 function closed(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return O.nap(iso);const v=NDY,[dn,dd]=DAYN[iso];
-  const ST=DIM.map(([k,l])=>({key:k,title:l,tag:`súly ${v.weight[k]}%`,sk:'w',val:v.dims[k][0],sub:v.dims[k][1].split(' · ').slice(0,1),go:'Részletek',v:dimV(k,v.dims[k][0]),tap:true}));
-  const [stSvg,yEnd]=stations(ST,198),C=yEnd+92,last=iso==='2026-09-23';
+  const ST=DIM.map(([k,l])=>({key:k,title:l,tag:`súly ${v.weight[k]}%`,sk:'w',val:v.dims[k][0],sub:[],go:'Részletek',v:dimV(k,v.dims[k][0]),tap:true}));
+  const [stSvg,yEnd]=stations(ST,226),C=yEnd+108,last=iso==='2026-09-23';
   /* the three highlights: small drops on the pipe */
-  const hl=v.hl.map(([e,t],i)=>{const y=20+i*38;return `<g class="ng-hl"><path transform="translate(${72-32*.5} ${y-34*.5}) scale(.5)" d="${DROP}"/><text class="ng-t" x="96" y="${y+1}">${t}</text><text class="ng-s f" x="96" y="${y+16}">${e}</text></g>`}).join('');
-  return fr[0]+topPipe(iso)+lead(`<small>${dn} · ${dd} · lezárva, hajnali 3:04</small>
-      <h2>${v.label}.</h2>
-      <p class="ng-cnt"><b>${v.score}</b> a 100-ból · hat területből</p>
-      <p class="ng-adj">alap ${v.base} · a Mezo szerint −${Math.abs(v.corr)}</p>`)
-  +svg(70,band(8,71,true,false)+pipe('M72 0V24M72 48V70')+badgeN(72,36,1,'Mezo a napodról'))
-  +`<svg class="ng" viewBox="0 0 360 ${C+118}" role="img" aria-label="A nap rajza: a nap kiemelései, miből jött össze a pontszám, a nap körülményei">
-  ${band(-1,154,false,true)}${band(yEnd+24,C+118)}${pipe(`M72 0V164M72 188V198M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}${last?`M180 ${yEnd+62}V${C+118}`:''}`)}
-  ${hl}<text class="ng-go" x="96" y="132" data-ngm="1" role="button" tabindex="0">Mezo értékelése ›</text><rect class="ng-hit" data-ngm="1" x="60" y="110" width="280" height="44"/>${badgeN(72,176,2,'Miből jött össze')}${stSvg}
-  ${badgeN(180,yEnd+50,3,'A nap körülményei')}
-  ${v.ctx.map(([a,b],i)=>{const x=i%2?272:88,y=C+6+(i>1?56:0);return `<g class="ng-ctx"><circle cx="${x}" cy="${y}" r="5"/><text class="ng-s" x="${x}" y="${y+21}" text-anchor="middle">${a}</text><text class="ng-t" x="${x}" y="${y+38}" text-anchor="middle">${b}</text></g>`}).join('')}
+  const hl=v.hl.map(([e,t],i)=>{const y=22+i*36;return `<g class="ng-hl"><path transform="translate(${72-32*.5} ${y-34*.5}) scale(.5)" d="${DROP}"/><text class="ng-t" x="96" y="${y+6}">${t}</text></g>`}).join('');
+  return fr[0]+topPipe(iso)+lead(`<h2>${v.label}.</h2>
+      <p class="ng-cnt"><b>${v.score}</b> a 100-ból</p>`)
+  +svg(76,wl(16)+pipe('M72 0V40M72 64V76')+hd(72,52,'Mezo a napodról'))
+  +`<svg class="ng" viewBox="0 0 360 ${C+(last?96:84)}" role="img" aria-label="A nap rajza: a nap kiemelései, miből jött össze a pontszám, a nap körülményei">
+  ${wl(172)+wl(yEnd+30)}${pipe(`M72 0V190M72 214V226M288 ${yEnd}C288 ${yEnd+34} 180 ${yEnd+20} 180 ${yEnd+54}${last?`M180 ${yEnd+78}V${C+96}`:''}`)}
+  ${hl}<g data-ngm="1" role="button" tabindex="0" aria-label="Mezo értékelése">${pill(96,112,180,'Mezo értékelése',1)}<rect class="ng-hit" x="90" y="106" width="192" height="50"/></g>${hd(72,202,'Miből jött össze')}${stSvg}
+  ${hd(180,yEnd+66,'Körülmények')}
+  ${v.ctx.map(([a,b],i)=>{const x=i%2?272:88,y=C+6+(i>1?56:0);return `<g class="ng-ctx"><circle cx="${x}" cy="${y}" r="5"/><text class="ng-n" x="${x}" y="${y+21}" text-anchor="middle">${a}</text><text class="ng-t" x="${x}" y="${y+38}" text-anchor="middle">${b}</text></g>`}).join('')}
   </svg>
-  ${last?`<button class="ng-on" data-go="nap.2026-09-24">${svg(64,pipe('M180 0V8')+`<path class="ng-nd" transform="translate(${180-32*1.1} -2) scale(1.1)" d="${DROP}"/><path class="ng-ng" style="stroke-width:3" d="M172 42H188M182 36L188 42L182 48"/>`)}<b>Tovább a mai napra</b><small>csütörtök · élő nap</small></button>`:''}`+fr[1]}
+  <div class="ng-end">${last?`<button class="ng-pill wide" data-go="nap.2026-09-24">Tovább a mai napra ›</button>`:''}</div>`+fr[1]}
 /* a day with too little data: the same six vessels, five of them empty */
 function sparse(iso){const fr=frame(iso,/<section class="fh-card fh-hero/);if(!fr)return O.nap(iso);const [dn,dd]=DAYN[iso];
-  const ST=DIM.map(([k,l])=>k==='sleep'?{key:k,title:l,sk:'q',val:'70',sub:['7ó 02p · minőség 6/10'],v:{p:70,g:'dom'}}
-    :{key:k,title:l,sk:'q',val:'–',sub:['nincs adat'],none:true,v:k==='logging'?{n:0,g:'dom'}:{p:0,g:'dom',none:true}});
-  const [stSvg,yEnd]=stations(ST,64);
-  return fr[0]+topPipe(iso)+lead(`<small>${dn} · ${dd} · lezárva, hajnali 3:02</small>
-      <h2>Erre a napra kevés az adat.</h2>
-      <p>Csak egy alvás van róla, ezért nincs pontszám.</p>
-      <p><button class="fh-lk" data-go="nap.2026-09-24">Vissza a mai napra ›</button></p>`)
-  +`<svg class="ng" viewBox="0 0 360 ${yEnd+16}" role="img" aria-label="Amit erről a napról tudunk: a hat területből egy alvás">${pipe('M72 0V24M72 48V64')}${badgeN(72,36,1,'Amit erről a napról tudunk')}${stSvg}</svg>`+fr[1]}
+  const ST=DIM.map(([k,l])=>k==='sleep'?{key:k,title:l,sk:'q',val:'7ó 02p',sub:[],v:{p:70,g:'dom'}}
+    :{key:k,title:l,sk:'q',val:'–',sub:[],none:true,v:k==='logging'?{n:0,g:'dom'}:{p:0,g:'dom',none:true}});
+  const [stSvg,yEnd]=stations(ST,74);
+  return fr[0]+topPipe(iso)+lead(`<h2>Erre a napra kevés az adat, ezért nincs pontszám.</h2>
+      <p><button class="ng-pill" data-go="nap.2026-09-24">Vissza a mai napra</button></p>`)
+  +gap(30)+`<svg class="ng" viewBox="0 0 360 ${yEnd+16}" role="img" aria-label="Amit erről a napról tudunk: a hat területből egy alvás">${pipe('M72 0V26M72 50V74')}${hd(72,38,'Amit tudunk róla')}${stSvg}</svg><div class="ng-tail"></div>`+fr[1]}
 const day=a=>{const [iso,ph]=(a||'').split('.');return ph||iso==='hiba'||iso==='tolt'?O.nap(a):!iso||iso==='2026-09-24'?today():iso==='2026-09-21'?sparse(iso):DAYN[iso]?closed(iso):O.nap(a)};
 /* a closed day: Mezo's evaluation in a sheet */
 document.addEventListener('click',e=>{if(!e.target.closest('[data-ngm]'))return;const v=NDY;
@@ -751,6 +751,18 @@ ${P} .pl-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
 ${P} .ng-lead .ng-adj{font-size:13px;font-weight:700;color:var(--sub)}
 ${P} .sheet .ng-adj2{margin-top:10px;font-size:13.5px;line-height:1.45;color:var(--sub)}${P} .sheet .ng-adj2 b{color:var(--ink)}
 ${P} text.ng-go[data-ngm]{cursor:pointer}
+/* A napom in the Mai system (2026-10-14): one ground, wave lines, plain headings, real buttons */
+${P} .ng-wl{fill:none;stroke:#B9CFDD;stroke-width:2}
+${P} .ng-j{fill:url(#ng-g-dom)}
+${P} .ng-h2{font:800 19px var(--disp,inherit);letter-spacing:-.03em;fill:var(--ink)}
+${P} .ng-pl rect{fill:color-mix(in srgb,var(--dom) 9%,#fff);stroke:color-mix(in srgb,var(--dom) 28%,#fff);stroke-width:1.5}
+${P} .ng-pl text{font-size:13.5px;font-weight:700;fill:color-mix(in srgb,var(--dom) 85%,var(--ink))}
+${P} .ng-pl.pri rect{fill:url(#ng-g-dom);stroke:none}${P} .ng-pl.pri text{fill:#fff;font-size:14px}
+${P} [data-ngm],${P} [data-ngs]{cursor:pointer}
+${P} .ng-n{font-size:13.5px;fill:var(--ink)}
+${P} .ng-pill{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:6px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2)}
+${P} .ng-pill.wide{display:flex;width:100%;min-height:52px;font-size:15px;color:var(--ink);background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.14),0 6px 14px -10px rgba(10,42,60,.4)}
+${P} .ng-end{padding:8px 22px 120px}${P} .ng-tail{height:110px}
 ${P} .jr-air{padding:0;height:34px}
 /* Rutin */
 ${P} .fh-n:has(.rt-perf){display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px}

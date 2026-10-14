@@ -61,7 +61,7 @@ plans or "which direction wins" decisions until he asks.
 | Nap · Mai · Check-in | the four snapshots side by side: a column per moment, a row per core feeling; a finished column opens its snapshot in a sheet; the due one sits in the bottom action bar | shown 2026-10-13, waiting for feedback |
 | Nap · Mai · Gyors logolás | — the approved page stays. A drawn version (nine drops above the day's jar) was shown 2026-10-13 and NOT picked; do not redraw it. | kept as approved |
 | Nap · Mai · Életjelek (detail) | the six tubes in two rows on two shelves, each with its own action; the low one in the bottom action bar | shown 2026-10-13, waiting for feedback |
-| Nap · A napom (today, closed day, sparse day) | the pipe through six vessels | liked |
+| Nap · A napom (today, closed day, sparse day) | the pipe through six vessels; in the Mai system since 2026-10-14: one ground, wave lines, plain headings (no numbered drops), no sub-lines under the numbers, pill buttons ("Részletek" outlined, the page's action filled), "Tovább a mai napra" as the closing full-width button | shown 2026-10-14 in the Mai system, waiting for feedback |
 | Nap · Beszélgetés · Üzenetek | depth: newest at the surface | shown |
 | Nap · Beszélgetés · Életjelek | rack of six tubes, the remark as a tag on its tube | shown |
 | Nap · Beszélgetés · Észrevételek | communicating vessels, pipe of evidence days | shown |
