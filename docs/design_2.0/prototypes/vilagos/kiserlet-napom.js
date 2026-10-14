@@ -334,7 +334,9 @@ function vitalsBody(){const v=cutOut(O.uzenetek('eletjelek'),'<div class="np-vh 
 const LOG=[['13:40','Napló','Ebéd után nyugodtabb vagyok, mint reggel.','↗','data-toast="Én · Napló"','en'],['13:00','Ebéd','Csirke · édesburgonya · spenót','760 kcal','data-dom="fuel"','fuel'],['11:20','Aktivitás','Olvastam fél órát','+15 XP','data-toast="Én · Fejlődés"','en'],['10:00','Délelőtti check-in','Most csak ennyi · az alap megvan','kész','data-go="checkin"','nap'],['09:15','Reggeli','Túrós zabkása áfonyával','420 kcal','data-dom="fuel"','fuel'],['07:10','Reggeli check-in','Nyugodt ébredés, pihenve','kész','data-go="checkin"','nap']];
 const RR={moc:()=>OBS.map(o=>`<div class="cr-c obs">${obsLinked(o)}</div>`).join(''),jar:()=>(BS.jar?LOG:LOG.slice(0,3)).map(([t,ti,sub,r,attr,k])=>`<button class="jr-l k-${k}" ${attr}><time>${t}</time><span><b>${ti}</b><small>${sub}</small></span><em>${r==='↗'?'':r} ›</em></button>`).join('')+`<button class="jr-more" data-nb="jar">${BS.jar?'Csak a legutóbbi három':`Még ${LOG.length-3} korábbi bejegyzés`} ›</button>`,nb:()=>streamBody(),ob:()=>obsBody(),mo:()=>obsLinked(OBS[0],true)};
 function uzenetek(tab){tab=tab||'uzenetek';
-  const TABS=[['uzenetek','Üzenetek'],['eletjelek','Életjelek'],['eszrevetelek','Észrevételek']];if(!TABS.some(t=>t[0]===tab))return O.uzenetek(tab);
+  /* the Életjelek tab left Beszélgetés (owner, 2026-10-14: "I never look at them there") — the six tubes live on Mai now */
+  if(tab==='eletjelek')return mai2();
+  const TABS=[['uzenetek','Üzenetek'],['eszrevetelek','Észrevételek']];if(!TABS.some(t=>t[0]===tab))return O.uzenetek(tab);
   return page('nap',{title:'Beszélgetés',sub:'Mezo · ma · 4 üzenet',tab:'uzenetek'},`${DEFS}<div class="np-pre"><div class="fh-seg">${TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" data-go="uzenetek${k==='uzenetek'?'':'.'+k}">${l}${k==='eletjelek'&&k!==tab?'<i class="np-dot"></i>':''}</button>`).join('')}</div></div>
     ${tab==='eletjelek'?vitalsBody():`<div data-rr="${tab==='uzenetek'?'nb':'ob'}">${RR[tab==='uzenetek'?'nb':'ob']()}</div>`}`)}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!b)return;const a=b.dataset.nb,[k,x]=a.split(':');
@@ -368,12 +370,13 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
     {key:'icd',t:'ma',title:'Szándék',go:'Megadom',v:{ic:'t-compass'},attr:'data-sheet="intention"'},
     {key:'icd',t:'21:00',title:'Napzárás',go:'Indítom',v:{ic:'t-moon'},attr:'data-go="napzaras.1"'},
     {key:'icd',t:'este',title:'Esti rutin',go:'Megnézem',v:{ic:'t-chain'},attr:'data-go="rutin"'}];
-  const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
+  const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
     [I('t-checkin'),'Check-in','','data-go="checkin"'],[I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
   /* Mai, round 6 (owner, 2026-10-14, after looking at Strava): one ground for the whole page, sections divided by a wave
      LINE only; cards only inside carousels (Észrevétel, Továbbiak) — the top is NOT a card (owner, same day); no napló. */
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}<div class="mx">
   <section class="mx-s">${maiHero()}</section>
+  <section class="mx-s ln">${KH('Életjelek')}${ejRow()}</section>
   <section class="mx-s ln">${KH('Most következik')}
   <div class="mx-next cr0">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="mx-btn ${x.now?'pri':''}">${x.go}</span></button>`).join('')}</div>${dots(NX.length-2)}</section>
   <section class="mx-s ln">${KH('Mai szintek')}${lv}</section>
@@ -416,6 +419,9 @@ function checkin2(){const cur=CI.find(c=>c.st==='now'),done=CI.filter(c=>c.st===
        tube that you can raise yourself carries its own action. The one that asks for attention sits in the bottom bar. ═══ */
 const EJ=[['Étel','t-bowl',72,'Logolom',{toast:'Fuel · Logolás'}],['Víz','t-water',52,'+250 ml',{toast:'+250 ml víz — rögzítve'}],['Alvás','t-sleep',81,'Rögzítem',{sheet:'sleep'}],
   ['Mozgás','t-dumbbell',34,'Edzés',{toast:'Edzés · Mai'}],['Kapcsolat','t-people',64,'Check-in','checkin'],['Rend','t-chain',58,'',{toast:'Rend · magától töltődik a rutinból'}]];
+/* Mai · the six vital signs under the vessel whose number is their average; a tube takes you where you fill it */
+const EJGO={Étel:{dom:'fuel'},Víz:{toast:'+250 ml víz — rögzítve'},Alvás:{sheet:'sleep'},Mozgás:{dom:'edzes'},Kapcsolat:'checkin',Rend:{go:'rutin'}};
+const ejRow=()=>`<div class="ej6">${F.vials(EJ.map(([l,ic,p])=>({l,ic,p,v:p,c:p<40?'#C8962E':undefined,mark:p<40?'figyelj':'',on:EJGO[l]})),{h:150})}</div>`;
 function eletjel2(){const avg=Math.round(EJ.reduce((a,e)=>a+e[2],0)/EJ.length),low=EJ.filter(e=>e[2]<40);
   const row=a=>`<div class="np-pad rk ej">${F.vials(a.map(([l,ic,p,act,on])=>({l,ic,p,v:p,c:p<40?'var(--warn)':'var(--dom)',mark:p<40?'figyelj':'',s:act?act+' ›':'',on})),{h:132})}<i class="rk-shelf"></i></div>`;
   return page('nap',{title:'Életjelek',sub:'Nap · a hat jel',back:'mai'},`${DEFS}
@@ -855,6 +861,7 @@ ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+${P} .ej6 .k2-vials{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px;margin:4px 6px 0}${P} .ej6 .k2-vial{min-width:0}${P} .ej6 .k2-vial small{font-size:12px;letter-spacing:-.035em;white-space:nowrap}${P} .ej6 .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff}
 ${P} .n9-none{display:flex;align-items:center;gap:14px}${P} .n9-none svg.ng{flex:none;width:84px;height:84px;margin:0}${P} .n9-none .ng-pipe,${P} .n9-none .ng-flow{display:none}
 ${P} .n9-none .n9-btn{margin-top:10px;min-height:44px;padding:0 20px;font-size:14px}
 /* Mai · Most következik as a card-less carousel: about three in view, the rest a swipe away */
