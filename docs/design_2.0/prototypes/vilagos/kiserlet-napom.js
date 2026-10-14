@@ -74,6 +74,9 @@ const V={
     ${xs.map((x,i)=>i<o.n?`<path class="ng-glass" d="${tube(x)}"/>${liq(ids[i],40,o.g)}<path class="ng-line" d="${tube(x)}"/><path class="ng-hi" d="M${x-3.5} 46V66"/>`
       :`<path class="ng-glass" d="${tube(x)}"/><path class="ng-open q" d="${tube(x)}"/>`).join('')}
     <path class="ng-rim" d="M4 90H100"/>${pipe('M52 90V104')}`},
+  /* an empty glass drop with the coloured icon inside: a thing later in the day that has no drawing of its own */
+  icd:o=>`${pipe('M52 0V6')}<path class="ng-glass" transform="translate(-4 -6) scale(1.75)" d="${DROP}"/><path class="ng-line" transform="translate(-4 -6) scale(1.75)" style="stroke-width:1.15" d="${DROP}"/>
+    <svg class="ic" x="33" y="43" width="38" height="38" viewBox="0 0 64 64"><use href="#${o.ic}"/></svg>${pipe('M52 93V104')}`,
   /* a full drop with a white glyph: the thing to do now */
   drop:o=>`${pipe('M52 0V6')}<path class="ng-nd" transform="translate(-4 -6) scale(1.75)" d="${DROP}"/><path class="ng-hi" d="M30 60C32 50 37 42 43 35"/>
     <svg class="ic" x="35" y="45" width="34" height="34" viewBox="0 0 64 64" style="--ic:#fff;--ic2:rgba(255,255,255,.3);--icf:transparent"><use href="#${o.ic}"/></svg>${pipe('M52 93V104')}`,
@@ -154,7 +157,8 @@ function arc(mode,verdict){const A=ARC[mode];
 /* ═══ A NAPOM · the intention of the day (owner, 2026-10-14: in place of "Most érdemes") ═══ */
 const INT={today:{creed:'Nyugodt tempó: egyszerre egy dolog.',foci:['Délután edzés, telefon nélkül','Vacsora 8 előtt']},
   closed:{creed:'Ma figyelek a fehérjére.',foci:['Minden étkezésben legyen fehérje','Mindkét edzés'],refl:['Sikerült','ok']}};
-const intent=mode=>{const it=INT[mode];return `<div class="n9-int"><p class="n9-cr">„${it.creed}”</p>${it.foci.map(f=>`<p class="n9-fo"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg>${f}</p>`).join('')}
+const intent=mode=>{if(mode==='none')return `<div class="n9-int"><div class="n9-none"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:'t-compass'})}</svg><div><p class="n9-cr">Még nincs szándékod mára.</p><button class="n9-btn" data-sheet="intention">Megadom</button></div></div></div>`;
+  const it=INT[mode];return `<div class="n9-int"><p class="n9-cr">„${it.creed}”</p>${it.foci.map(f=>`<p class="n9-fo"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg>${f}</p>`).join('')}
   ${it.refl?`<p class="n9-rf ${it.refl[1]}">Este: ${it.refl[0].toLowerCase()}</p>`:`<button class="n8-b" data-sheet="intention">Szerkesztem</button>`}</div>`};
 /* the U-shaped vessel ("the magnet"): the app's score and yours side by side — moved to the bottom (owner, 2026-10-14) */
 function nU(app,you,youP){const U=6,UU=`M96 ${U}V${U+104}C96 ${U+170} 264 ${U+170} 264 ${U+104}V${U}H212V${U+100}C212 ${U+124} 148 ${U+124} 148 ${U+100}V${U}Z`,c=uid(),l=uid(),r=uid(),
@@ -171,11 +175,11 @@ function nU(app,you,youP){const U=6,UU=`M96 ${U}V${U+104}C96 ${U+170} 264 ${U+17
 const cards=(ST,attr)=>ST.map(s=>`<article class="n8-c ${s.none?'none':''}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[s.key](s.v)}</svg>
   <div><div class="n8-t"><b>${s.title}</b><em>${s.val}</em></div>${s.pre?`<p>${s.pre}</p>`:''}${s.none?'':`<button class="n8-b" ${attr}="${s.key}">Részletek</button>`}</div></article>`).join('');
 const nWrap=(fr,inner)=>fr[0]+`<div class="mx n7">${inner}</div>`+fr[1];
-function today3(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)return O.nap('2026-09-24');
+function today3(noInt){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)return O.nap('2026-09-24');
   const VV={nutrition:{p:74,prot:89,g:'dom'},quality:{p:74,a:68,b:80,g:'dom'},training:{p:0,g:'warn'},sleep:{p:86,g:'ok'},logging:{n:2,g:'dom'},rhythm:{p:74,g:'ok'}};
   const ST=DIM.map(([k,l])=>({key:k,title:l,val:TD[k][0],pre:TD[k][1],v:VV[k]}));
   return nWrap(fr,`<section class="mx-s">${arc('today','Délelőtt csúcsra értél, most jön a délutáni check-in.')}</section>
-  <section class="mx-s ln">${KH('A nap szándéka')}${intent('today')}</section>
+  <section class="mx-s ln">${KH('A nap szándéka')}${intent(noInt?'none':'today')}</section>
   <section class="mx-s ln">${KH('Hat terület')}${cards(ST,'data-ngt')}</section>
   <section class="mx-s ln">${KH('Te és az app')}${nU(64,'7/10',70)}</section>
   <div class="ng-tail"></div>`)}
@@ -353,15 +357,17 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!
 const maiHero=()=>`<div class="tk-lebego">`+F.tank({pct:56,h:330,num:60,cap:'a 100-ból · hat életjel átlaga',verdict:'Most a délutáni check‑in jön, utána a Pull&nbsp;Day.',marks:[75,50,25]})+'</div>'; /* no button in the vessel: the check-in starts from Most következik (owner, 2026-10-14) */
 const dots=n=>`<div class="cr-dots" aria-hidden="true">${Array.from({length:n},(_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`;
 /* the dot under a carousel follows the first card in view */
-document.addEventListener('scroll',e=>{const c=e.target;if(!(c instanceof Element)||!c.classList.contains('cr'))return;const d=c.nextElementSibling;if(!d||!d.classList.contains('cr-dots'))return;
+document.addEventListener('scroll',e=>{const c=e.target;if(!(c instanceof Element)||!(c.classList.contains('cr')||c.classList.contains('cr0')))return;const d=c.nextElementSibling;if(!d||!d.classList.contains('cr-dots'))return;
   const max=c.scrollWidth-c.clientWidth,n=d.children.length,i=max>0?Math.round(c.scrollLeft/max*(n-1)):0;
   [...d.children].forEach((x,j)=>x.classList.toggle('on',j===Math.min(n-1,i)))},true);
 const KH=(t,sub='',link='')=>`<div class="mx-h"><b>${t}</b>${link||(sub?`<span>${sub}</span>`:'')}</div>`;
 function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" style="--i:1">','<div class="k2-h rise" style="--i:2">');
   const NX=[
-    {key:'drop',t:'14:00',title:'Délutáni check-in',sub:'9 koppintás, kb. fél perc',go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"',now:true},
+    {key:'drop',t:'14:00',title:'Délutáni check‑in',sub:'9 koppintás, kb. fél perc',go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"',now:true},
     {key:'training',t:'ma',title:'Pull Day',sub:'a mai edzés még hátravan',go:'Megnézem',v:{p:0,g:'warn'},attr:'data-dom="edzes"'},
-    {key:'nutrition',t:'19:30',title:'Vacsora',sub:'722 kcal van még · 18 g fehérje hiányzik',go:'Logolom',v:{p:74,prot:89,g:'dom'},attr:'data-dom="fuel"'}];
+    {key:'icd',t:'ma',title:'Szándék',go:'Megadom',v:{ic:'t-compass'},attr:'data-sheet="intention"'},
+    {key:'icd',t:'21:00',title:'Napzárás',go:'Indítom',v:{ic:'t-moon'},attr:'data-go="napzaras.1"'},
+    {key:'icd',t:'este',title:'Esti rutin',go:'Megnézem',v:{ic:'t-chain'},attr:'data-go="rutin"'}];
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
     [I('t-checkin'),'Check-in','','data-go="checkin"'],[I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
   /* Mai, round 6 (owner, 2026-10-14, after looking at Strava): one ground for the whole page, sections divided by a wave
@@ -369,7 +375,7 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}<div class="mx">
   <section class="mx-s">${maiHero()}</section>
   <section class="mx-s ln">${KH('Most következik')}
-  <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="mx-btn ${x.now?'pri':''}">${x.go}</span></button>`).join('')}</div></section>
+  <div class="mx-next cr0">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="mx-btn ${x.now?'pri':''}">${x.go}</span></button>`).join('')}</div>${dots(NX.length-2)}</section>
   <section class="mx-s ln">${KH('Mai szintek')}${lv}</section>
   <section class="mx-s ln">${KH('Észrevétel','',`<button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes ›</button>`)}
   <div class="cr" data-rr="moc">${RR.moc()}</div>${dots(OBS.length)}</section>
@@ -475,7 +481,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!
 
 /* ── routes: on this page the top tabs open the drawn versions; the approved ones stay reachable ── */
 nap.routes['eletjel-lista']=O.eletjel;nap.routes.eletjel=eletjel2;nap.routes['checkin-lista']=O.checkin;nap.routes.checkin=checkin2;nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>a?O.mai(a):mai2();nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
-nap.routes.napom=a=>a?O.napom(a):today3();nap.routes.nap=day;nap.routes.napomg=today3;nap.routes.napomt=today3;
+nap.routes.napom=a=>a==='nincs'?today3(true):a?O.napom(a):today3();nap.routes.nap=day;nap.routes.napomg=today3;nap.routes.napomt=today3;
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
 
 F.css(`/* kiserlet-napom */
@@ -849,6 +855,12 @@ ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+${P} .n9-none{display:flex;align-items:center;gap:14px}${P} .n9-none svg.ng{flex:none;width:84px;height:84px;margin:0}${P} .n9-none .ng-pipe,${P} .n9-none .ng-flow{display:none}
+${P} .n9-none .n9-btn{margin-top:10px;min-height:44px;padding:0 20px;font-size:14px}
+/* Mai · Most következik as a card-less carousel: about three in view, the rest a swipe away */
+${P} .mx-next.cr0{display:flex;gap:4px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 12px;padding:0 0 14px;scrollbar-width:none}
+${P} .mx-next.cr0::-webkit-scrollbar{display:none}
+${P} .mx-next.cr0{padding-left:8px}${P} .mx-next.cr0>button{flex:0 0 max(28%,112px);scroll-snap-align:start}${P} .mx-next.cr0 .mx-btn{padding:0 12px}
 ${P} .n10-sc{display:flex;align-items:baseline;gap:8px;margin:10px 22px 0}
 ${P} .n10-sc b{font:800 76px/1 var(--disp,inherit);letter-spacing:-.05em;background:linear-gradient(160deg,var(--liq1),var(--liq2));-webkit-background-clip:text;background-clip:text;color:transparent}
 ${P} .n10-sc span{font-size:15px;font-weight:700;color:var(--ink)}
