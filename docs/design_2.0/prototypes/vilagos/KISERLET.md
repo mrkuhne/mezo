@@ -40,6 +40,9 @@ plans or "which direction wins" decisions until he asks.
   observation). A unit whose text can be any length shows heading + drawing + one "… ›" line; sentence, answers and
   evidence live in the sheet. Bottom sheet for a short look-and-answer; a page for something you stay in; a centred
   dialog only for a confirmation that blocks.
+- **Round 6 (owner, 2026-10-14, after Strava), tried on Mai first:** one ground for the whole page, sections divided by a
+  wave LINE only (no alternating layer colours); single things may be cards again; several parallel things = a card
+  carousel (Észrevétel, Továbbiak). The layer rule above holds for the other pages until he says so.
 - **No repeats:** two pages never open with the same sentence; one action has one entry point per page.
 - **One thing moves per screen** (the pipe's flow on A napom, the next vessel on Rutin). Levels and drops stand still.
 - **A drawing explains itself in words, not with a legend** ("4 nap egybevág · 3 még hiányzik", "erő 82%").

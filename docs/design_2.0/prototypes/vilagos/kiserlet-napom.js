@@ -235,10 +235,11 @@ const OS={done:{},ev:{}};
    answers and the evidence open in a bottom sheet (thumb-reach, the page stays behind it; text of any length scrolls there). */
 function obsGraph(o){const n=o.minN,x0=78,x1=242,g=4,w=(x1-x0-g*(n-1))/n;
   const ves=(cx,[ic,l])=>`<circle class="lk-v" cx="${cx}" cy="40" r="31"/><path class="ng-hi" d="M${cx-20} 34C${cx-17} 25 ${cx-11} 19 ${cx-3} 16"/><svg class="ic" x="${cx-16}" y="24" width="32" height="32" viewBox="0 0 64 64"><use href="#${ic}"/></svg>
-    ${l.map((t,i)=>`<text class="${i?'ng-s':'ng-t'}" x="${cx}" y="${104+i*17}" text-anchor="middle">${t}</text>`).join('')}`;
-  return `<svg class="lk-g" viewBox="0 0 320 132" role="img" aria-label="${o.a[1].join(' ')} és ${o.b[1].join(' ')}: ${o.hits} nap egybevág, ${o.miss} ellene szól, ${n-o.hits-o.miss} még hiányzik">
+`;
+  return `<svg class="lk-g" viewBox="0 0 320 80" role="img" aria-label="${o.a[1].join(' ')} és ${o.b[1].join(' ')}: ${o.hits} nap egybevág, ${o.miss} ellene szól, ${n-o.hits-o.miss} még hiányzik">
       <path class="lk-p" d="M70 40H250"/>${Array.from({length:n},(_,i)=>`<rect class="lk-s ${i<o.hits?'p':i<o.hits+o.miss?'m':''}" x="${(x0+i*(w+g)).toFixed(1)}" y="33" width="${w.toFixed(1)}" height="14" rx="7"/>`).join('')}
-      ${ves(40,o.a)}${ves(280,o.b)}<text class="lk-n" x="160" y="70" text-anchor="middle">${o.hits} nap egybevág</text><text class="lk-n2" x="160" y="87" text-anchor="middle">${[o.miss?`${o.miss} ellene szól`:'',n-o.hits-o.miss?`${n-o.hits-o.miss} még hiányzik`:''].filter(Boolean).join(' · ')}</text></svg>`}
+      ${ves(40,o.a)}${ves(280,o.b)}</svg>
+      <span class="lk-lab"><span><b>${o.a[1][0]}</b>${o.a[1][1]}</span><span class="lk-mid"><b>${o.hits} nap egybevág</b>${[o.miss?`${o.miss} ellene szól`:'',n-o.hits-o.miss?`${n-o.hits-o.miss} még hiányzik`:''].filter(Boolean).join(' · ')}</span><span><b>${o.b[1][0]}</b>${o.b[1][1]}</span></span>`}
 const obsLinked=(o,all)=>`<article class="lk"><button class="lk-tap" data-nb="osh:${o.k}" aria-label="${o.h}: megnézem és válaszolok"><span class="lk-h"><b>${o.h}</b><i class="nb-st ${o.st==='Gyűlik'?'':'w'}">${o.st}</i></span>
     ${obsGraph(o)}<span class="lk-go ${OS.done[o.k]?'ok':''}">${OS.done[o.k]?`${TICK_}Megjegyeztem a válaszod · megnézem ›`:'Megnézem és válaszolok ›'}</span></button>
     ${all?'<div class="nb-a" style="margin-top:0;justify-content:center"><button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes észrevétel ›</button></div>':''}</article>`;
@@ -261,7 +262,7 @@ function vitalsBody(){const v=cutOut(O.uzenetek('eletjelek'),'<div class="np-vh 
     <p class="nb-t"><b>Ma még alig mozdultál.</b> Egy 10 perces séta ebéd után elég, hogy a szint megmozduljon. Nem kell edzés.</p>
     <div class="nb-a"><button class="btn sm ghost" data-toast="Edzés · Mai">Megnézem</button></div></div>`}
 const LOG=[['13:40','Napló','Ebéd után nyugodtabb vagyok, mint reggel.','↗','data-toast="Én · Napló"','en'],['13:00','Ebéd','Csirke · édesburgonya · spenót','760 kcal','data-dom="fuel"','fuel'],['11:20','Aktivitás','Olvastam fél órát','+15 XP','data-toast="Én · Fejlődés"','en'],['10:00','Délelőtti check-in','Most csak ennyi · az alap megvan','kész','data-go="checkin"','nap'],['09:15','Reggeli','Túrós zabkása áfonyával','420 kcal','data-dom="fuel"','fuel'],['07:10','Reggeli check-in','Nyugodt ébredés, pihenve','kész','data-go="checkin"','nap']];
-const RR={jar:()=>(BS.jar?LOG:LOG.slice(0,3)).map(([t,ti,sub,r,attr,k])=>`<button class="jr-l k-${k}" ${attr}><time>${t}</time><span><b>${ti}</b><small>${sub}</small></span><em>${r==='↗'?'':r} ›</em></button>`).join('')+`<button class="jr-more" data-nb="jar">${BS.jar?'Csak a legutóbbi három':`Még ${LOG.length-3} korábbi bejegyzés`} ›</button>`,nb:()=>streamBody(),ob:()=>obsBody(),mo:()=>obsLinked(OBS[0],true)};
+const RR={moc:()=>OBS.map(o=>`<div class="cr-c obs">${obsLinked(o)}</div>`).join(''),jar:()=>(BS.jar?LOG:LOG.slice(0,3)).map(([t,ti,sub,r,attr,k])=>`<button class="jr-l k-${k}" ${attr}><time>${t}</time><span><b>${ti}</b><small>${sub}</small></span><em>${r==='↗'?'':r} ›</em></button>`).join('')+`<button class="jr-more" data-nb="jar">${BS.jar?'Csak a legutóbbi három':`Még ${LOG.length-3} korábbi bejegyzés`} ›</button>`,nb:()=>streamBody(),ob:()=>obsBody(),mo:()=>obsLinked(OBS[0],true)};
 function uzenetek(tab){tab=tab||'uzenetek';
   const TABS=[['uzenetek','Üzenetek'],['eletjelek','Életjelek'],['eszrevetelek','Észrevételek']];if(!TABS.some(t=>t[0]===tab))return O.uzenetek(tab);
   return page('nap',{title:'Beszélgetés',sub:'Mezo · ma · 4 üzenet',tab:'uzenetek'},`${DEFS}<div class="np-pre"><div class="fh-seg">${TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" data-go="uzenetek${k==='uzenetek'?'':'.'+k}">${l}${k==='eletjelek'&&k!==tab?'<i class="np-dot"></i>':''}</button>`).join('')}</div></div>
@@ -295,19 +296,18 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
     {key:'nutrition',t:'19:30',title:'Vacsora',sub:'722 kcal van még · 18 g fehérje hiányzik',go:'Logolom',v:{p:74,prot:89,g:'dom'},attr:'data-dom="fuel"'}];
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
     [I('t-checkin'),'Check-in','','data-go="checkin"'],[I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
-  return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}
-  <section class="bd">${maiTop()}</section>
-  <section class="bd w">${KH('Most következik')}
-  <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="fh-lk">${x.go} ›</span></button>`).join('')}</div>
-  </section><section class="bd">${KH('Mai szintek')}${lv}</section>
-  <section class="bd w">${KH('Észrevétel')}
-  <div data-rr="mo">${RR.mo()}</div></section>
-  <section class="bd">${KH('Mai napló')}
-  <div class="jr"><div class="jr-in"><p class="jr-air" aria-hidden="true"></p>
-    <div data-rr="jar">${RR.jar()}</div></div></div>
-  </section><section class="bd w last">${KH('Továbbiak')}
-  <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>
-  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b></span></button></section>`).replace('<div class="toast"','<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a><div class="toast"')}
+  /* Mai, round 6 (owner, 2026-10-14, after looking at Strava): one ground for the whole page, sections divided by a wave
+     LINE only; single things may be cards again — the top is a card, Észrevétel and Továbbiak are card carousels; no napló. */
+  return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}<div class="mx">
+  <section class="mx-s"><div class="mx-card">${maiTop()}</div></section>
+  <section class="mx-s ln">${KH('Most következik')}
+  <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="fh-lk">${x.go} ›</span></button>`).join('')}</div></section>
+  <section class="mx-s ln">${KH('Mai szintek')}${lv}</section>
+  <section class="mx-s ln">${KH('Észrevétel','',`<button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes ›</button>`)}
+  <div class="cr" data-rr="moc">${RR.moc()}</div></section>
+  <section class="mx-s ln">${KH('Továbbiak')}
+  <div class="cr sm">${MORE.map(([ic,t,sub,attr])=>`<button class="cr-c" ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>
+  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b></span></button></section></div>`).replace('<div class="toast"','<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a><div class="toast"')}
 
 /* ═══ CHECK-IN · the day's four snapshots side by side: one column per moment, one row per feeling, so you can see
        how each of the five core answers moved through the day. A finished column opens its full snapshot in a sheet
@@ -568,6 +568,21 @@ ${P} .ng-lead.w{background:rgba(255,255,255,.72)}
 ${P} .rt-lead{padding-bottom:18px}
 ${P} .bd .mx-h b{display:flex;align-items:center;gap:10px}
 ${P} .bd .mx-h b::before{content:"";flex:none;width:12px;height:16px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(160deg,var(--liq1),var(--liq2))}
+/* Mai · one ground, wave-line dividers, cards and card carousels */
+${P} .mx{background:#F4F8FB;margin-top:-1px;padding-bottom:20px}
+${P} .scroll:has(.mx){background:#F4F8FB}
+${P} .mx-s{position:relative;padding:4px 0 22px}
+${P} .mx-s.ln::before{content:"";position:absolute;left:18px;right:18px;top:-6px;height:12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 12'%3E%3Cpath d='M0 6 Q12 0 24 6 T48 6' fill='none' stroke='%23B9CFDD' stroke-width='2'/%3E%3C/svg%3E") repeat-x 0 0/48px 12px}
+${P} .mx .mx-h{margin-top:14px}
+${P} .mx .mx-h b::before{display:none}
+${P} .mx-card{margin:12px 14px 0;padding:2px 0 14px;border-radius:24px;background:#fff;box-shadow:0 10px 26px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .mx-card .pg-lead{padding-top:16px}${P} .mx-card svg.ng{width:calc(100% - 20px);margin:10px 10px 0}
+${P} .cr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:4px 18px 16px;scrollbar-width:none}
+${P} .cr::-webkit-scrollbar{display:none}
+${P} .cr-c{flex:0 0 84%;scroll-snap-align:start;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .cr-c.obs .lk{padding:14px 16px 6px}
+${P} .cr.sm .cr-c{flex:0 0 34%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:128px;padding:14px 8px;text-align:center}
+${P} .cr.sm .cr-c b{font-size:13px;font-weight:700;line-height:1.2;color:var(--ink)}
 /* Mai · the top: the day line */
 ${P} .hv-n{font:800 64px/1 var(--disp,inherit);letter-spacing:-.05em;color:var(--ink)}
 ${P} .hv-c{display:grid;grid-template-columns:1fr auto;column-gap:14px;align-items:end}${P} .hv-c small{grid-column:1/-1}${P} .hv-c h2{margin-bottom:2px}
@@ -650,7 +665,9 @@ ${P} .lk-g text{font-family:var(--ff,inherit)}
 ${P} .lk-p{fill:none;stroke:rgba(10,42,60,.14);stroke-width:22;stroke-linecap:round}
 ${P} .lk-s{fill:#fff;stroke:rgba(10,42,60,.16);stroke-width:1.5}${P} .lk-s.p{fill:url(#ng-g-seg);stroke:none}${P} .lk-s.m{fill:#fff;stroke:var(--warn);stroke-width:1.8;stroke-dasharray:3 3}
 ${P} .lk-v{fill:#fff;stroke:rgba(10,42,60,.2);stroke-width:2;filter:drop-shadow(0 8px 8px rgba(24,119,242,.18))}
-${P} .lk-n{font-size:13.5px;font-weight:700;fill:var(--ink)}${P} .lk-n2{font-size:13px;fill:var(--sub)}
+${P} .lk-lab{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:6px;margin-top:6px;text-align:center}
+${P} .lk-lab>span{display:flex;flex-direction:column;font-size:12.5px;line-height:1.3;color:var(--sub)}${P} .lk-lab b{font-size:13.5px;font-weight:700;color:var(--ink)}
+${P} .lk-lab .lk-mid b{font-size:13px}
 ${P} .lk .nb-leg{justify-content:center}${P} .lk .ng-who{margin-top:14px}${P} .lk .nb-t{margin-top:6px}
 ${P} .lk-sep{display:block;height:1px;margin:26px 22px 4px;border-top:1.5px dashed color-mix(in srgb,var(--liq2) 28%,#fff)}
 
