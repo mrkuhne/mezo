@@ -65,6 +65,7 @@ plans or "which direction wins" decisions until he asks.
 | Nap · Beszélgetés · Üzenetek | depth: newest at the surface | shown |
 | Nap · Beszélgetés · Életjelek | rack of six tubes, the remark as a tag on its tube | shown |
 | Nap · Beszélgetés · Észrevételek | communicating vessels, pipe of evidence days | shown |
+| Nap · A napom · area drawer (Részletek) | one skeleton for all six (the area's vessel big + number + status/weight chip, then its own drawing, Mezo's text, one action): Tápanyag = calorie level + three macro tubes with target chips · Minőség = two levels with target marks · Edzés = the day's sessions · Alvás = the night on a 21:00–09:00 strip + bed/wake/quality + sleep time vs goal · Logolás = four check-in drops · Ritmus = the week's day vials. Today, closed day and sparse day variants. | shown 2026-10-14, waiting for feedback |
 | Nap · Rutin | chain links, three vessels per row | shown |
 | Nap · Rutin · szerkesztés, lánc, szokások, új rutin | — | to do |
 | Nap · Napzárás (6 steps) | — | to do |

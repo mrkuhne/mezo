@@ -168,21 +168,60 @@ function sparse3(iso){const fr=frame(iso,/<section class="fh-card fh-hero/);if(!
   return nWrap(fr,`<section class="mx-s"><h2 class="n7-h">Erre a napra kevés az adat, ezért nincs pontszám.</h2></section>
   <section class="mx-s ln">${KH('Amit tudunk róla')}${cards(ST,'data-ngq')}</section>
   <section class="mx-s ln mx-end"><button class="mx-km" data-go="nap.2026-09-24"><span>Vissza a mai napra</span></button></section>`)}
-/* today's (and the sparse day's) area opens its details in the drawer */
-document.addEventListener('click',e=>{const g=e.target.closest('[data-ngt],[data-ngq]');if(!g)return;const k=g.dataset.ngt||g.dataset.ngq,l=DIM.find(d=>d[0]===k)[1];
-  const t=g.dataset.ngq?['7ó 02p','Egy alvás van erről a napról, 7 óra 2 perc, minőség 6/10. A többi területről nincs adat, ezért a napnak nincs pontszáma.',['alvás · 7ó 02p','minőség · 6 / 10']]:TD[k];
-  F.openSheet(`<h2 class="ng-sh">${l} · ${t[0]}<small>${g.dataset.ngq?'hétfő':'ma eddig'}</small></h2><div class="ng-chips">${t[2].map(c=>`<span>${c}</span>`).join('')}</div>
-    <div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b><small>erről a területről</small></div><p class="ng-pr">${t[1]}</p><div class="fh-acts"><button class="btn" data-close style="flex:1">Rendben</button></div>`)});
+/* ═══ A NAPOM · the area drawer (owner, 2026-10-14: "make every Részletek page properly, they are super basic").
+       Same skeleton for all six — the area's own vessel big with its number, then the drawing its content asks for,
+       then Mezo's text, then one action — but the middle is each area's own: calorie level + macro tubes, two quality
+       levels, the day's sessions, the night on a clock strip, the check-in drops, the week's rhythm. ═══ */
+const DD={
+ today:{
+  nutrition:{top:['2 060','kcal'],st:['úton','q'],bars:[['Eddig',2060,2782,'2 060 / 2 782 kcal']],tubes:[['Fehérje',148,166,'g','#E0716B'],['Szénhidrát',212,310,'g','#E8A33D'],['Zsír',61,85,'g','#3FA277']],act:['Logolok','data-dom="fuel"']},
+  quality:{top:['74','%'],st:['úton','q'],bars:[['Feldolgozatlan étel',68,100,'68%',70],['Mikrotápanyag',80,100,'80%',100]]},
+  training:{top:['0/1'],st:['nyitva','warn'],ses:[['Pull Day','17:30','open']],act:['Megnyitom','data-dom="edzes"']},
+  sleep:{top:['7ó 16p'],st:['kész','ok'],night:['23:10','06:26'],bars:[['Alvásidő',436,450,'7ó 16p / 7ó 30p']],q:7},
+  logging:{top:['2/4'],st:['úton','q'],ci:[['Reggel','07:10','done'],['Délelőtt','10:00','done'],['Délután','14:00','now'],['Este','21:00','']],act:['Kitöltöm a check-int','data-go="checkin"']},
+  rhythm:{top:['74'],st:['kész','ok'],week:[[ 'H',1],['K',1],['Sze',1],['Cs',1],['P',null],['Szo',null],['V',null]]}},
+ closed:{
+  nutrition:{bars:[['Egész nap',2962,2932,'2 962 / 2 932 kcal']],tubes:[['Fehérje',162,166,'g','#E0716B'],['Szénhidrát',379,350,'g','#E8A33D'],['Zsír',80,85,'g','#3FA277']]},
+  quality:{bars:[['Feldolgozatlan étel',71,100,'71%',70],['Mikrotápanyag',100,100,'100%',100]]},
+  training:{ses:[['Push Day','07:00','done'],['Röplabda','19:00','done']]},
+  sleep:{night:['00:40','06:40'],bars:[['Alvásidő',360,450,'6ó / 7ó 30p']],q:7},
+  logging:{ci:[['Reggel','07:30','done'],['Délelőtt','','miss'],['Délután','15:10','done'],['Este','','miss']]},
+  rhythm:{week:[['Cs',1],['P',1],['Szo',1],['V',1],['H',1],['K',1],['Sze',1]]}},
+ sparse:{sleep:{top:['7ó 02p'],night:['23:30','06:32'],bars:[['Alvásidő',422,450,'7ó 02p / 7ó 30p']],q:6}}};
+const fmt=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+const dvBar=([l,v,max,txt,mark])=>{const top=Math.max(v,max)*1.06,m=mark!=null?mark:max;
+  return `<div class="dv-h"><div class="dv-hl"><span>${l}</span><b>${txt}</b></div><div class="dv-ht"><i style="width:${cl(v/top*100,3,100)}%"></i><u style="left:${m/top*100}%"></u></div></div>`};
+const dvTubes=a=>`<div class="dv-tbs">${a.map(([l,v,t,u,c])=>`<div class="dv-tb" style="--c:${c}"><span class="dv-tt"><i style="height:${cl(v/Math.max(v,t)/1.08*100,4,100)}%"></i><u style="bottom:${t/Math.max(v,t)/1.08*100}%"><em>${t}</em></u></span><b>${v} ${u}</b><small>${l}</small></div>`).join('')}</div>`;
+const dvSes=a=>a.map(([n,t,st])=>`<div class="dv-ses"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.training(st==='done'?{p:100,g:'ok'}:{p:0,g:'warn'})}</svg><div><b>${n}</b><span>${t}</span></div><i class="${st==='done'?'ok':'warn'}">${st==='done'?'kész':'hátravan'}</i></div>`).join('');
+const mins=t=>{let [h,m]=t.split(':').map(Number);if(h<21)h+=24;return (h-21)*60+m};
+const dvNight=([a,b],q)=>`<div class="dv-n"><div class="dv-nt"><i style="left:${mins(a)/720*100}%;width:${(mins(b)-mins(a))/720*100}%"></i></div>
+  <div class="dv-nl"><span>21:00</span><span>03:00</span><span>09:00</span></div><div class="dv-nv"><div><small>Lefekvés</small><b>${a}</b></div><div><small>Ébredés</small><b>${b}</b></div><div><small>Minőség</small><b>${q} / 10</b></div></div></div>`;
+const dvCi=a=>`<div class="dv-ci">${a.map(([n,t,st])=>`<div class="${st}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg><b>${st==='miss'?'–':t}</b><small>${n}</small></div>`).join('')}</div>`;
+const dvWeek=a=>`<div class="dv-wk">${a.map(([d,on])=>`<div class="${on?'on':on===null?'fut':''}"><span><i></i></span><small>${d}</small></div>`).join('')}</div>`;
+function drawer(k,mode){const l=DIM.find(x=>x[0]===k)[1],T=DD.today[k],C=DD[mode]&&DD[mode][k]||{},d={...T,...C},cl_=mode==='closed';
+  const top=cl_?[NDY.dims[k][0],'']:d.top,st=cl_?null:mode==='sparse'?null:d.st;
+  const ves=cl_?dimV(k,NDY.dims[k][0]):mode==='sparse'?{p:70,g:'dom'}:{nutrition:{p:74,prot:89,g:'dom'},quality:{p:74,a:68,b:80,g:'dom'},training:{p:0,g:'warn'},sleep:{p:86,g:'ok'},logging:{n:2,g:'dom'},rhythm:{p:74,g:'ok'}}[k];
+  const text=cl_?NDY.notes[k]:mode==='sparse'?'Egy alvás van erről a napról. A többi területről nincs adat, ezért a napnak nincs pontszáma.':TD[k][1];
+  const S=(h,x)=>`<section class="dv-s">${h?`<h3>${h}</h3>`:''}${x}</section>`;
+  let mid='';
+  if(k==='nutrition')mid=S('Kalória',dvBar(d.bars[0]))+S('Makrók',dvTubes(d.tubes));
+  if(k==='quality')mid=S('Mi volt a tányéron',d.bars.map(dvBar).join(''));
+  if(k==='training')mid=S(cl_?'A nap edzései':'A mai edzés',dvSes(d.ses));
+  if(k==='sleep')mid=S('Az éjszaka',dvNight(d.night,d.q))+S('',dvBar(d.bars[0]));
+  if(k==='logging')mid=S('Check-in',dvCi(d.ci));
+  if(k==='rhythm')mid=S(cl_?'Az utolsó hét nap':'Ezen a héten',dvWeek(d.week));
+  const act=!cl_&&mode!=='sparse'&&d.act?`<button class="dv-btn pri" ${d.act[1]} data-close>${d.act[0]}</button>`:`<button class="dv-btn" data-close>Rendben</button>`;
+  return `<div class="dv"><div class="dv-top"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[k](ves)}</svg>
+    <div><small>${l}</small><b>${top[0]}${top[1]?`<u>${top[1]}</u>`:''}</b>${st?`<i class="${st[1]}">${st[0]}</i>`:cl_?`<i class="w">a napi pontszám ${NDY.weight[k]}%-a</i>`:''}</div></div>
+    ${mid}<section class="dv-s"><div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b></div><p class="ng-pr">${text}</p></section>${act}</div>`}
+document.addEventListener('click',e=>{const g=e.target.closest('[data-ngt],[data-ngq],[data-ngs]');if(!g)return;
+  F.openSheet(drawer(g.dataset.ngt||g.dataset.ngq||g.dataset.ngs,g.dataset.ngs?'closed':g.dataset.ngq?'sparse':'today'))});
 const day=a=>{const [iso,ph]=(a||'').split('.');return ph||iso==='hiba'||iso==='tolt'?O.nap(a):!iso||iso==='2026-09-24'?today3():iso==='2026-09-21'?sparse3(iso):DAYN[iso]?closed3(iso):O.nap(a)};
 /* a closed day: Mezo's evaluation in a sheet */
 document.addEventListener('click',e=>{if(!e.target.closest('[data-ngm]'))return;const v=NDY;
   F.openSheet(`<h2 class="ng-sh">Mezo a napodról</h2><p class="ng-adj2"><b>alap ${v.base} · a Mezo szerint −${Math.abs(v.corr)}.</b> ${v.adj}</p>${v.prose.map(p=>`<p class="ng-pr">${p}</p>`).join('')}
     <div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('t-thumb-down')}</button></div>
     <div class="nb-a"><button class="fh-lk" data-toast="Beszélgetés a napról (Mezo chat)">Beszélgess a napról ›</button></div>`)});
-/* a closed day's vessel opens its details */
-document.addEventListener('click',e=>{const g=e.target.closest('[data-ngs]');if(!g)return;const k=g.dataset.ngs,v=NDY,l=DIM.find(d=>d[0]===k)[1];
-  F.openSheet(`<h2 class="ng-sh">${l} · ${v.dims[k][0]}<small>súly ${v.weight[k]}%</small></h2><div class="ng-chips">${v.chips[k].map(c=>`<span>${c}</span>`).join('')}</div>
-    <div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b><small>erről a területről</small></div><p class="ng-pr">${v.notes[k]}</p><div class="fh-acts"><button class="btn" data-close style="flex:1">Rendben</button></div>`)});
 
 /* ═══ BESZÉLGETÉS · the day's stream: every message is a drop on it, at its time ═══ */
 const TC={szunya:'#8F7FD0',mocor:'#3F8FDB',falat:'#3FA277',mezo:'#6F7F95'},TG={szunya:'t-sleep',mocor:'t-dumbbell',falat:'t-bowl',mezo:'t-orb'},TN={szunya:'Alvás',mocor:'Mozgás',falat:'Étkezés',mezo:'Mezo'};
@@ -771,6 +810,49 @@ ${P} .n7-hl b{font:800 18px/1.25 var(--disp,inherit);letter-spacing:-.02em;color
 ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px 22px 0}
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
+/* the area drawer */
+${P} .dv{padding-bottom:4px}
+${P} .dv-top{display:flex;align-items:center;gap:14px}
+${P} .dv-top svg.ng{flex:none;width:96px;height:96px;margin:0}${P} .dv .ng-pipe,${P} .dv .ng-flow,${P} .dv .ng-drip{display:none}
+${P} .dv-top small{display:block;font-size:15px;font-weight:700;color:var(--ink)}
+${P} .dv-top b{display:block;font:800 40px/1.05 var(--disp,inherit);letter-spacing:-.04em;color:var(--ink)}${P} .dv-top b u{text-decoration:none;margin-left:5px;font:700 15px var(--ff,inherit);letter-spacing:0}
+${P} .dv-top i{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;font-style:normal;font-size:12px;font-weight:700;color:var(--dom);background:color-mix(in srgb,var(--dom) 10%,#fff)}
+${P} .dv-top i.ok{color:#2E8A5F;background:#E3F4EA}${P} .dv-top i.warn{color:#A86A0C;background:#FBEFD9}${P} .dv-top i.w{color:var(--ink);background:rgba(10,42,60,.06)}
+${P} .dv-s{position:relative;margin-top:18px;padding-top:18px}
+${P} .dv-s::before{content:"";position:absolute;left:0;right:0;top:-6px;height:12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 12'%3E%3Cpath d='M0 6 Q12 0 24 6 T48 6' fill='none' stroke='%23B9CFDD' stroke-width='2'/%3E%3C/svg%3E") repeat-x 0 0/48px 12px}
+${P} .dv-s h3{margin:0 0 12px;font:800 17px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
+${P} .dv-h+.dv-h{margin-top:14px}
+${P} .dv-hl{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--ink)}${P} .dv-hl b{font-weight:700;white-space:nowrap}
+${P} .dv-ht{position:relative;height:14px;margin-top:7px;border-radius:999px;background:rgba(10,42,60,.07)}
+${P} .dv-ht i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,var(--liq1),var(--liq2))}
+${P} .dv-ht u{position:absolute;top:-4px;bottom:-4px;width:2.5px;margin-left:-1px;border-radius:2px;background:var(--ink)}
+${P} .dv-tbs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+${P} .dv-tb{display:flex;flex-direction:column;align-items:center;text-align:center}
+${P} .dv-tt{position:relative;width:54px;height:120px;border-radius:27px;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12);overflow:visible}
+${P} .dv-tt i{position:absolute;left:0;right:0;bottom:0;border-radius:0 0 27px 27px;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 70%,#fff),var(--c))}
+${P} .dv-tt u{position:absolute;left:-6px;right:-6px;height:0;border-top:2px solid var(--ink)}
+${P} .dv-tt u em{position:absolute;left:50%;top:-11px;translate:-50% 0;padding:1px 7px;border-radius:999px;font-style:normal;font-size:12px;font-weight:700;color:var(--ink);background:#fff;box-shadow:0 1px 3px rgba(10,42,60,.2);white-space:nowrap}
+${P} .dv-tb b{margin-top:10px;font:800 17px var(--disp,inherit);color:var(--ink)}${P} .dv-tb small{font-size:13px;color:var(--ink)}
+${P} .dv-ses{display:flex;align-items:center;gap:12px}${P} .dv-ses+.dv-ses{margin-top:10px}
+${P} .dv-ses svg.ng{flex:none;width:56px;height:56px;margin:0}${P} .dv-ses div{flex:1;min-width:0}
+${P} .dv-ses b{display:block;font-size:16px;font-weight:700;color:var(--ink)}${P} .dv-ses span{font-size:13px;color:var(--ink)}
+${P} .dv-ses i{padding:3px 10px;border-radius:999px;font-style:normal;font-size:12px;font-weight:700}${P} .dv-ses i.ok{color:#2E8A5F;background:#E3F4EA}${P} .dv-ses i.warn{color:#A86A0C;background:#FBEFD9}
+${P} .dv-nt{position:relative;height:30px;border-radius:999px;background:linear-gradient(90deg,#E9EEF8,#D9DEF3 45%,#E9EEF8)}
+${P} .dv-nt i{position:absolute;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#8F7FD0,#5E6FD8)}
+${P} .dv-nl{display:flex;justify-content:space-between;margin-top:5px;font:500 12px var(--mono,ui-monospace,monospace);color:var(--ink)}
+${P} .dv-nv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}${P} .dv-nv small{display:block;font-size:13px;color:var(--ink)}${P} .dv-nv b{font:800 18px var(--disp,inherit);color:var(--ink)}
+${P} .dv-ci{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+${P} .dv-ci svg{width:40px;height:40px}${P} .dv-ci path{fill:url(#ng-g-dom)}
+${P} .dv-ci .now path{fill:#fff;stroke:var(--dom);stroke-width:4}${P} .dv-ci div:not(.done):not(.now) path{fill:#fff;stroke:rgba(10,42,60,.25);stroke-width:3;stroke-dasharray:6 5}
+${P} .dv-ci b{display:block;margin-top:4px;font:800 16px var(--disp,inherit);color:var(--ink)}${P} .dv-ci small{font-size:13px;color:var(--ink)}${P} .dv-ci .now b{color:var(--dom)}
+${P} .dv-wk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+${P} .dv-wk span{display:block;position:relative;height:58px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12);overflow:hidden}
+${P} .dv-wk .on i{position:absolute;left:0;right:0;bottom:0;height:78%;background:linear-gradient(180deg,#5FC79A,#3FA277)}
+${P} .dv-wk .fut span{box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.07);background:transparent}
+${P} .dv-wk small{display:block;margin-top:5px;font-size:12.5px;font-weight:700;color:var(--ink)}${P} .dv-wk .fut small{color:#7D90A0}
+${P} .dv .ng-who{margin:0}${P} .dv .ng-pr{margin-top:10px}
+${P} .dv-btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;margin-top:22px;border-radius:999px;font-size:15px;font-weight:700;color:var(--ink);background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.14)}
+${P} .dv-btn.pri{color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2)}
 ${P} .n8-c{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:start;margin:0 14px 12px;padding:16px 16px 16px 12px;border-radius:22px;background:#fff;box-shadow:0 10px 24px -18px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .n8-c svg.ng{width:64px;height:64px;margin:4px 0 0}${P} .n8-c .ng-pipe,${P} .n8-c .ng-flow,${P} .n8-c .ng-drip{display:none}
 ${P} .n8-t{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
