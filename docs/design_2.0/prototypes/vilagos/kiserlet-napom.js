@@ -1004,8 +1004,11 @@ ${P} .rt-b.rt::after{left:calc(50% + 29px)}
 ${P} .rt-b.done.rt::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 18'%3E%3Cellipse cx='10' cy='9' rx='8.5' ry='5.6' fill='none' stroke='%231A8FE0' stroke-width='3.2'/%3E%3Crect x='17' y='7.2' width='16' height='3.6' rx='1.8' fill='%2319B9C6'/%3E%3Crect x='-13' y='7.2' width='16' height='3.6' rx='1.8' fill='%2319B9C6'/%3E%3C/svg%3E")}
 /* at a row's end: one long link — out to the right, down, back under the labels, and into the next row's first vessel */
 ${P} .rt-b{height:112px}${P} .rt-b.wrap{height:132px}
-${P} .rt-b.wrap::after{left:calc(50% + 24px);right:-8px;top:26px;height:98px;border:4px solid #B5C7D3;border-left:0;border-radius:0 26px 26px 0}
-${P} .rt-b.wrap::before{content:"";position:absolute;z-index:0;pointer-events:none;left:calc(-150% - 2px);right:14px;top:120px;height:16px;border:4px solid #B5C7D3;border-right:0;border-bottom:0;border-radius:14px 0 0 0}
+${P} .rt-b.wrap::after,${P} .rt-b.wrap::before{box-sizing:border-box}
+/* the wrap is one line in two boxes that meet exactly (owner, 2026-10-14: "the lines don't meet"): out of the
+   vessel's side at its middle (y 30), round the corner, back left at y 116, and down into the next row's first vessel */
+${P} .rt-b.wrap::after{left:calc(50% + 28px);right:-8px;top:28px;height:90px;border:4px solid #B5C7D3;border-left:0;border-radius:0 26px 26px 0}
+${P} .rt-b.wrap::before{content:"";position:absolute;z-index:0;pointer-events:none;left:calc(-150% - 2px);right:calc(50% - 31px);top:114px;height:22px;border:4px solid #B5C7D3;border-right:0;border-bottom:0;border-radius:16px 0 0 0}
 ${P} .rt-b.done.wrap::after,${P} .rt-b.done.wrap::before{border-color:#1A8FE0}
 ${P} .rt-v{position:relative;z-index:1;display:grid;place-items:center;width:60px;height:60px;flex:none;border-radius:50%;
   background:linear-gradient(to top,color-mix(in srgb,var(--liq1) 38%,#fff) 0 var(--p),color-mix(in srgb,var(--liq1) 75%,#fff) var(--p) calc(var(--p) + 2px),#fff calc(var(--p) + 2px));
