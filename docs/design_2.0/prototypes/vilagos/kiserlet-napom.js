@@ -189,15 +189,18 @@ function closed3(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)retur
   <section class="mx-s ln">${KH('Mezo értékelése')}<div class="n10-ev"><div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b><small>hajnali 3:04</small></div>
     ${v.prose.map(x=>`<p class="ng-pr">${x}</p>`).join('')}
     <div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('t-thumb-down')}</button></div>
-    <button class="n8-b" data-toast="Beszélgetés a napról (Mezo chat)">Beszélgess a napról</button></div></section>
+    <div class="n10-acts"><button class="n8-b" data-toast="Beszélgetés a napról (Mezo chat)">Beszélgess a napról</button><button class="n8-b" data-ngx="1">Te és az app, körülmények</button></div></div></section>
   <section class="mx-s ln">${KH('A nap kiemelései')}
     <div class="cr">${v.hl.map(([e,t])=>`<div class="cr-c n7-hl"><i class="nb-st">${e}</i><b>${t}</b></div>`).join('')}</div>${dots(v.hl.length)}</section>
   <section class="mx-s ln">${KH('Hat terület')}${cards(ST,'data-ngs')}</section>
   <section class="mx-s ln">${KH('A nap check-injei')}${arc('closed','').replace('<h2 class="n7-h"></h2>','')}</section>
   <section class="mx-s ln">${KH('A nap szándéka')}${intent('closed')}</section>
-  <section class="mx-s ln">${KH('Te és az app')}${nU(v.score,'8/10',80)}</section>
-  <section class="mx-s ln">${KH('Körülmények')}<div class="n7-ctx">${v.ctx.map(([a,b])=>`<div><span>${a[0].toUpperCase()+a.slice(1)}</span><b>${b}</b></div>`).join('')}</div></section>
   ${last?`<section class="mx-s ln mx-end"><button class="mx-km" data-go="nap.2026-09-24"><span>Tovább a mai napra</span></button></section>`:'<div class="ng-tail"></div>'}`)}
+/* the closed day's "you and the app" + circumstances live in a drawer (owner, 2026-10-14: the page was ~4 screens) */
+document.addEventListener('click',e=>{if(!e.target.closest('[data-ngx]'))return;const v=NDY;
+  F.openSheet(`<div class="dv"><section class="dv-s" style="margin-top:4px"><h3>Te és az app</h3>${nU(v.score,'8/10',80)}</section>
+    <section class="dv-s"><h3>Körülmények</h3><div class="n7-ctx" style="margin:0">${v.ctx.map(([a,b])=>`<div><span>${a[0].toUpperCase()+a.slice(1)}</span><b>${b}</b></div>`).join('')}</div></section>
+    <button class="dv-btn" data-close>Rendben</button></div>`)});
 function sparse3(iso){const fr=frame(iso,/<section class="fh-card fh-hero/);if(!fr)return O.nap(iso);
   const ST=DIM.map(([k,l])=>k==='sleep'?{key:k,title:l,val:'7ó 02p',pre:'Egy alvás van erről a napról, minőség 6/10.',v:{p:70,g:'dom'}}:{key:k,title:l,val:'–',none:true,v:k==='logging'?{n:0,g:'dom'}:{p:0,g:'dom',none:true}});
   return nWrap(fr,`<section class="mx-s"><h2 class="n7-h">Erre a napra kevés az adat, ezért nincs pontszám.</h2></section>
@@ -853,7 +856,7 @@ ${P} .n10-lv{position:relative;height:16px;margin:14px 22px 0;border-radius:999p
 ${P} .n10-lv i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,var(--liq1),var(--liq2))}
 ${P} .n10-lv u{position:absolute;top:-5px;bottom:-5px;width:2.5px;margin-left:-1px;border-radius:2px;background:var(--ink)}
 ${P} .n10-adj{margin:12px 22px 0;font-size:14px;line-height:1.5;color:var(--ink)}
-${P} .n10-ev{margin:0 22px}${P} .n10-ev .ng-pr{font-size:15px;line-height:1.6;margin:10px 0 0}${P} .n10-ev .ng-pr+.ng-pr{margin-top:14px}${P} .n10-ev .ng-fb{color:var(--ink);font-size:13.5px}${P} .n10-ev .n8-b{margin-top:14px}
+${P} .n10-ev{margin:0 22px}${P} .n10-acts{display:flex;flex-wrap:wrap;gap:8px}${P} .n10-ev .ng-pr{font-size:15px;line-height:1.6;margin:10px 0 0}${P} .n10-ev .ng-pr+.ng-pr{margin-top:14px}${P} .n10-ev .ng-fb{color:var(--ink);font-size:13.5px}${P} .n10-ev .n8-b{margin-top:14px}
 ${P} .n9-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 10px 0}
 ${P} .n9-c{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;min-width:0}
 ${P} .n9-c svg{width:68px;height:68px;margin-bottom:6px;overflow:visible}
