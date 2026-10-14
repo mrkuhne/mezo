@@ -56,7 +56,7 @@ plans or "which direction wins" decisions until he asks.
 
 | Page | Graphic | State |
 |---|---|---|
-| Nap · Mai | the old hero vessel WITHOUT its card (liquid free-standing, rounded bottom; owner's pick 2026-10-14 — the arc, the flat day line, a plain level and full-width liquid were tried) (no button in the vessel — the check-in starts from Most következik, owner 2026-10-14) · next three vessels with real pill buttons · tubes · observation carousel · icon carousel; one ground with wave-line dividers | shown; special faces (üres, hiba, kímélő, este) not drawn |
+| Nap · Mai | the old hero vessel WITHOUT its card (liquid free-standing, rounded bottom; owner's pick 2026-10-14 — the arc, the flat day line, a plain level and full-width liquid were tried) (no button in the vessel — the check-in starts from Most következik, owner 2026-10-14) · next three vessels with real pill buttons · tubes · observation carousel · icon carousel; one ground with wave-line dividers | **DONE (owner, 2026-10-14) — the reference page for the next ones** |
 | Nap · Mai · Napi küldetések | three flasks; a finished one pours into the day's XP collector | shown 2026-10-12, waiting for feedback |
 | Nap · Mai · Check-in | the four snapshots side by side: a column per moment, a row per core feeling; a finished column opens its snapshot in a sheet; the due one sits in the bottom action bar | shown 2026-10-13, waiting for feedback |
 | Nap · Mai · Gyors logolás | — the approved page stays. A drawn version (nine drops above the day's jar) was shown 2026-10-13 and NOT picked; do not redraw it. | kept as approved |
@@ -78,3 +78,33 @@ plans or "which direction wins" decisions until he asks.
 - A Folyadék-jel icon on liquid needs all three: `--ic:#fff; --ic2:rgba(255,255,255,.3); --icf:transparent`. Without
   `--icf` the glyph's body fills near-white and closed shapes (ball, scale, clipboard, notebook) become blobs.
 - In the drawings text is SVG text: break lines by hand, and check 320 px.
+
+## Hand-off (2026-10-14) — how the next session continues
+
+**Mai is done** and is the model for every other page. What it looks like now (route `#w-nap-mai`, `mai2()`):
+- One ground for the whole page (`.mx`), sections divided by a wave LINE only (`.mx-s.ln`). No alternating layers.
+- Top: the old hero vessel WITHOUT its card (`maiHero()` = `F.tank` in `.tk-lebego`): the sentence on the ground, the
+  liquid free with a rounded bottom, big number + "a 100-ból…" caption + scale. No label above the sentence, no button
+  in the vessel.
+- "Most következik": three vessels with real pill buttons (`.mx-btn`, the current one filled).
+- "Mai szintek": the four tubes, number + name only, target marks on white chips.
+- "Észrevétel": a card carousel (`.cr`), one observation per card (drawing + one pill button; details in a sheet),
+  dots under it. "Összes ›" in the heading.
+- "Továbbiak": a carousel of icon cards (8 items incl. Check-in), dots = stops.
+- A closing section with a full-width outlined "Nem vagyok jól ma" button, then room for the floating "+".
+- Cards ONLY inside carousels. No grey explanatory sub-lines. Buttons look like buttons.
+
+**Next:** bring the other Nap pages to the same level, one page per round, with the owner looking at each:
+A napom (today, closed day, sparse day) → Beszélgetés (Üzenetek, Életjelek, Észrevételek) → Rutin → Check-in →
+Életjelek (detail) → Napi küldetések; then the pages not drawn yet (Mai special faces, Rutin editing, Napzárás).
+For each: switch to the Mai system (one ground + wave lines instead of `.bd`/`band()` layers; cards only in
+carousels; pill buttons; no sub-lines), then run the UX floor checks, then show it and wait.
+
+**Working loop (keep it):** edit `vilagos/kiserlet-napom.js` only → `node -e "new Function(...)"` syntax check →
+Playwright screenshots at 390 and 320 (scratchpad scripts; `frontend/node_modules/@playwright/test/index.mjs`;
+local server `python3 -m http.server 8757 --bind 127.0.0.1` in `docs/design_2.0/prototypes/`) → audit (text ≥12 px,
+targets ≥44 px, no overflow, no missing icons) → look at the screenshots → commit + push the branch
+`claude/mai-napom-custom-graphics-eedeb2` → republish the artifact (a publish subagent reads the file and publishes
+the scratchpad shell copy `a-napom-rajzolva.html` + all `vilagos/*.js`; rebuild that copy from `klinikai-iranyok.html`
+with the extra `<script src="vilagos/kiserlet-napom.js">` and the default hash `#w-nap-mai` if the scratchpad is gone).
+Report to the owner in Hungarian, short, then wait.
