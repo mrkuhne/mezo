@@ -598,6 +598,8 @@ ${P} .tk-lebego{container-type:inline-size}
 ${P} .mx-next .mx-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;margin-top:8px;padding:0 16px;border-radius:999px;font-size:13.5px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink));background:color-mix(in srgb,var(--dom) 9%,#fff);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dom) 28%,#fff)}
 ${P} .mx-next .mx-btn.pri{color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2)}
 ${P} .mx-next button{padding-bottom:4px}
+/* the three buttons stand on one line even when a title wraps */
+${P} .mx-next .mx-btn{margin-top:auto}${P} .mx-next b{margin-bottom:8px}
 ${P} .cr-dots{display:flex;justify-content:center;gap:6px;margin-top:-4px}
 ${P} .cr-dots i{width:7px;height:7px;border-radius:999px;background:rgba(10,42,60,.18);transition:width .2s}
 ${P} .cr-dots i.on{width:20px;background:var(--dom)}
