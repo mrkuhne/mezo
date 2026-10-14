@@ -284,7 +284,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!
 /* The top of Mai: the old hero vessel without its card (owner's pick, 2026-10-14) — the liquid stands free with a
    rounded bottom, the sentence on the page ground above it. Tried and not picked: the arc, the flat day line, a plain
    level, full-width liquid. The level is a stage for the number (bible F2.10), not proportional to it. */
-const maiHero=()=>`<div class="tk-lebego">`+F.tank({pct:64,h:372,num:60,cap:'a 100-ból · hat életjel átlaga',lbl:'Mai állapot',verdict:'Most a délutáni check‑in jön, utána a Pull&nbsp;Day.',marks:[75,50,25],cta:'Délutáni check-in',ctaAct:{toast:'__ck'}}).replace('data-toast="__ck"','data-n="ck:open"')+'</div>';
+const maiHero=()=>`<div class="tk-lebego">`+F.tank({pct:56,h:330,num:60,cap:'a 100-ból · hat életjel átlaga',lbl:'Mai állapot',verdict:'Most a délutáni check‑in jön, utána a Pull&nbsp;Day.',marks:[75,50,25]})+'</div>'; /* no button in the vessel: the check-in starts from Most következik (owner, 2026-10-14) */
 const dots=n=>`<div class="cr-dots" aria-hidden="true">${Array.from({length:n},(_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`;
 /* the dot under a carousel follows the first card in view */
 document.addEventListener('scroll',e=>{const c=e.target;if(!(c instanceof Element)||!c.classList.contains('cr'))return;const d=c.nextElementSibling;if(!d||!d.classList.contains('cr-dots'))return;
@@ -591,9 +591,11 @@ ${P} .cr.sm .cr-c b{font-size:13px;font-weight:700;line-height:1.2;color:var(--i
 ${P} .tk-lebego .k2-tank{background:none;box-shadow:none}
 ${P} .tk-lebego .k2-tank .k2-liq{box-shadow:0 26px 40px -30px var(--liq2)}
 ${P} .tk-lebego .k2-air small{font-size:12px}
+/* without the button row the number sits low in the liquid (the kit leaves 86 px for the button) */
+${P} .tk-lebego .k2-liq .n{bottom:26px}${P} .tk-lebego .k2-bub{display:none}${P} .tk-lebego .k2-liq .marks{bottom:30px}
 /* on a narrow phone the sentence takes three lines: give the air more room so the wave never touches it */
 ${P} .tk-lebego{container-type:inline-size}
-@container (max-width:340px){${P} .tk-lebego .k2-tank{height:410px!important}${P} .tk-lebego .k2-liq .marks span:last-child{visibility:hidden}}${P} .tk-lebego .marks span{font-size:12px!important}
+@container (max-width:340px){${P} .tk-lebego .k2-tank{height:372px!important}${P} .tk-lebego .k2-liq .marks span:last-child{visibility:hidden}}${P} .tk-lebego .marks span{font-size:12px!important}
 /* Mai · real buttons, carousel dots, the closing section */
 ${P} .mx-next .mx-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;margin-top:8px;padding:0 16px;border-radius:999px;font-size:13.5px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink));background:color-mix(in srgb,var(--dom) 9%,#fff);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dom) 28%,#fff)}
 ${P} .mx-next .mx-btn.pri{color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2)}
