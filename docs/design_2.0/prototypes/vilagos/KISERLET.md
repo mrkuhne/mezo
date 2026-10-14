@@ -56,7 +56,7 @@ plans or "which direction wins" decisions until he asks.
 
 | Page | Graphic | State |
 |---|---|---|
-| Nap · Mai | the day as a flat line (06–22) filled to now, the number beside the sentence (the arc, a liquid layer and a plain level were shown and not picked) · next three vessels · tubes · observation (sheet) · the day's jar · seven icon links | shown; special faces (üres, hiba, kímélő, este) not drawn |
+| Nap · Mai | the old hero vessel WITHOUT its card (liquid free-standing, rounded bottom; owner's pick 2026-10-14 — the arc, the flat day line, a plain level and full-width liquid were tried) · next two vessels (the check-in is the vessel's button) · tubes · observation carousel · icon carousel; one ground with wave-line dividers | shown; special faces (üres, hiba, kímélő, este) not drawn |
 | Nap · Mai · Napi küldetések | three flasks; a finished one pours into the day's XP collector | shown 2026-10-12, waiting for feedback |
 | Nap · Mai · Check-in | the four snapshots side by side: a column per moment, a row per core feeling; a finished column opens its snapshot in a sheet; the due one sits in the bottom action bar | shown 2026-10-13, waiting for feedback |
 | Nap · Mai · Gyors logolás | — the approved page stays. A drawn version (nine drops above the day's jar) was shown 2026-10-13 and NOT picked; do not redraw it. | kept as approved |
