@@ -297,9 +297,9 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
     [I('t-checkin'),'Check-in','','data-go="checkin"'],[I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
   /* Mai, round 6 (owner, 2026-10-14, after looking at Strava): one ground for the whole page, sections divided by a wave
-     LINE only; single things may be cards again — the top is a card, Észrevétel and Továbbiak are card carousels; no napló. */
+     LINE only; cards only inside carousels (Észrevétel, Továbbiak) — the top is NOT a card (owner, same day); no napló. */
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}<div class="mx">
-  <section class="mx-s"><div class="mx-card">${maiTop()}</div></section>
+  <section class="mx-s">${maiTop()}</section>
   <section class="mx-s ln">${KH('Most következik')}
   <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="fh-lk">${x.go} ›</span></button>`).join('')}</div></section>
   <section class="mx-s ln">${KH('Mai szintek')}${lv}</section>
