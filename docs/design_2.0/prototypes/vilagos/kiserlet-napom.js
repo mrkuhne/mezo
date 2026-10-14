@@ -379,7 +379,6 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   <section class="mx-s ln">${KH('Életjelek')}${ejRow()}</section>
   <section class="mx-s ln">${KH('Most következik')}
   <div class="mx-next cr0">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="mx-btn ${x.now?'pri':''}">${x.go}</span></button>`).join('')}</div>${dots(NX.length-2)}</section>
-  <section class="mx-s ln">${KH('Mai szintek')}${lv}</section>
   <section class="mx-s ln">${KH('Észrevétel','',`<button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes ›</button>`)}
   <div class="cr" data-rr="moc">${RR.moc()}</div>${dots(OBS.length)}</section>
   <section class="mx-s ln">${KH('Továbbiak')}
@@ -421,7 +420,10 @@ const EJ=[['Étel','t-bowl',72,'Logolom',{toast:'Fuel · Logolás'}],['Víz','t-
   ['Mozgás','t-dumbbell',34,'Edzés',{toast:'Edzés · Mai'}],['Kapcsolat','t-people',64,'Check-in','checkin'],['Rend','t-chain',58,'',{toast:'Rend · magától töltődik a rutinból'}]];
 /* Mai · the six vital signs under the vessel whose number is their average; a tube takes you where you fill it */
 const EJGO={Étel:{dom:'fuel'},Víz:{toast:'+250 ml víz — rögzítve'},Alvás:{sheet:'sleep'},Mozgás:{dom:'edzes'},Kapcsolat:'checkin',Rend:{go:'rutin'}};
-const ejRow=()=>`<div class="ej6">${F.vials(EJ.map(([l,ic,p])=>({l,ic,p,v:p,c:p<40?'#C8962E':undefined,mark:p<40?'figyelj':'',on:EJGO[l]})),{h:150})}</div>`;
+/* each sign its own colour (owner, 2026-10-14, when Mai szintek left): food = Fuel green, movement = Edzés coral,
+   sleep = night violet; a low one keeps its colour and gets the "figyelj" chip */
+const EJC={Étel:'#3FA277',Víz:'#29A9D9',Alvás:'#8F7FD0',Mozgás:'#E5845A',Kapcsolat:'#D8739E',Rend:'#2BA59A'};
+const ejRow=()=>`<div class="ej6">${F.vials(EJ.map(([l,ic,p])=>({l,ic,p,v:p,c:EJC[l],mark:p<40?'figyelj':'',on:EJGO[l]})),{h:150})}</div>`;
 function eletjel2(){const avg=Math.round(EJ.reduce((a,e)=>a+e[2],0)/EJ.length),low=EJ.filter(e=>e[2]<40);
   const row=a=>`<div class="np-pad rk ej">${F.vials(a.map(([l,ic,p,act,on])=>({l,ic,p,v:p,c:p<40?'var(--warn)':'var(--dom)',mark:p<40?'figyelj':'',s:act?act+' ›':'',on})),{h:132})}<i class="rk-shelf"></i></div>`;
   return page('nap',{title:'Életjelek',sub:'Nap · a hat jel',back:'mai'},`${DEFS}
