@@ -288,7 +288,7 @@ const maiHero=()=>`<div class="tk-lebego">`+F.tank({pct:64,h:372,num:60,cap:'a 1
 const dots=n=>`<div class="cr-dots" aria-hidden="true">${Array.from({length:n},(_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`;
 /* the dot under a carousel follows the first card in view */
 document.addEventListener('scroll',e=>{const c=e.target;if(!(c instanceof Element)||!c.classList.contains('cr'))return;const d=c.nextElementSibling;if(!d||!d.classList.contains('cr-dots'))return;
-  const k=c.querySelector('.cr-c'),step=k?k.getBoundingClientRect().width+12:1,max=c.scrollWidth-c.clientWidth,n=d.children.length,i=c.scrollLeft>=max-4?n-1:Math.round(c.scrollLeft/step);
+  const max=c.scrollWidth-c.clientWidth,n=d.children.length,i=max>0?Math.round(c.scrollLeft/max*(n-1)):0;
   [...d.children].forEach((x,j)=>x.classList.toggle('on',j===Math.min(n-1,i)))},true);
 const KH=(t,sub='',link='')=>`<div class="mx-h"><b>${t}</b>${link||(sub?`<span>${sub}</span>`:'')}</div>`;
 function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" style="--i:1">','<div class="k2-h rise" style="--i:2">');
