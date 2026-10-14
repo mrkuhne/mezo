@@ -275,15 +275,17 @@ const MSG=[
     built:['Push Day · tegnap','Chest Row 105,8 · márc 4','késő szénhidrát ↔ alvás'],from:[['t-sleep','7,4 óra alvás, 2 ébredés'],['t-checkin','Reggeli check-in: energia 7/10']],why:true},
   {k:'szunya',t:'21:48',kind:'esti visszanézés',sz:40,x:22,old:true,text:'Szép nap volt: 3 szokás, 2 check-in és egy erős edzés.'},
   {k:'mocor',t:'14:10',kind:'délutáni jelzés',sz:34,x:38,old:true,text:'Alacsony az energiád — egy rövid séta többet ad, mint a harmadik kávé.'}];
-const msgSheet=i=>{const m=MSG[i];return `<h2 class="ng-sh">${TN[m.k]}<small>${m.old?'tegnap ':''}${m.t} · ${m.kind}</small></h2><p class="ng-pr">${m.text}</p>
-  ${m.built?`<p class="nb-l">Amire épült</p><div class="ng-chips">${m.built.map(b=>`<span>${b}</span>`).join('')}</div>`:''}
-  ${m.from?`<p class="nb-l">Miből gondolom</p><div class="nb-f">${m.from.map(([ic,t])=>`<span>${I(ic)}${t}</span>`).join('')}</div>`:''}
-  ${m.adv?`<div class="nb-a">${BS.adv?`<span class="nb-ok">${TICK_}Beállítva: az ebédnél szólok a fehérjéről.</span>`:`<button class="btn sm" data-nb="adv:${i}">Szólj az ebédnél</button>`}</div>`:''}
-  <div class="nb-a"><span>Segített?</span><button class="btn sm ghost" data-toast="Köszönöm — ezt megjegyzem">Segített</button><button class="btn sm ghost" ${m.why?`data-nb="fb:${i}"`:'data-toast="Köszönöm, finomítok"'}>Nem talált</button></div>
-  ${m.why&&BS.fb?`<div class="ng-chips tap">${['pontatlan','túl sok','rossz időzítés','nem rólam szól'].map(r=>`<button data-toast="Köszönöm, finomítok">${r}</button>`).join('')}</div>`:''}`};
-/* ═══ BESZÉLGETÉS · Üzenetek, round 12 (owner, 2026-10-14): out of the water layers into the A napom system — the
-       sentence and the chat button on top, the team's live topic, then Ma / Tegnap with one card per message
-       (who, when, what kind, a two-line preview, Elolvasom). ═══ */
+/* the message drawer (owner, 2026-10-14: "very basic"): who and when big, the message in reading size, then what it
+   was built on and why Mezo thinks so as their own small blocks, the message's one action, and the feedback */
+const msgSheet=i=>{const m=MSG[i];
+  return `<div class="dv mg"><div class="mg-top">${node(m.k)}<div><small>${TN[m.k]} · ${m.old?'tegnap ':''}${m.t}</small><b>${m.kind[0].toUpperCase()+m.kind.slice(1)}</b></div></div>
+  <div class="mg-tx">${m.text.split('<br><br>').map(x=>`<p>${x}</p>`).join('')}</div>
+  ${m.built?`<section class="dv-s"><h3>Amire épült</h3><div class="mg-ch">${m.built.map(x=>`<span>${x}</span>`).join('')}</div></section>`:''}
+  ${m.from?`<section class="dv-s"><h3>Miből gondolom</h3>${m.from.map(([ic,t])=>`<div class="mg-fr"><span>${I(ic)}</span>${t}</div>`).join('')}</section>`:''}
+  ${m.adv?(BS.adv?`<p class="mg-ok">${TICK_}Beállítva: az ebédnél szólok a fehérjéről.</p>`:`<button class="dv-btn pri" data-nb="adv:${i}">Szólj az ebédnél</button>`):''}
+  <section class="dv-s mg-fb"><div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm — ezt megjegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button ${m.why?`data-nb="fb:${i}"`:'data-toast="Köszönöm, finomítok"'} aria-label="Nem talált">${I('t-thumb-down')}</button></div>
+  ${m.why&&BS.fb?`<p class="mg-q">Mi nem talált?</p><div class="ng-chips tap">${['pontatlan','túl sok','rossz időzítés','nem rólam szól'].map(r=>`<button data-toast="Köszönöm, finomítok">${r}</button>`).join('')}</div>`:''}</section>
+  ${m.adv&&!BS.adv?'':`<button class="dv-btn" data-close>Rendben</button>`}</div>`};
 function streamBody(){
   const card=(m,i)=>`<article class="bz-c ${m.old?'':'new'}">${node(m.k)}<div><div class="bz-h"><b>${TN[m.k]}</b><time>${m.t}</time></div>
     <i class="bz-k">${m.kind}</i><p>${m.text.replace(/<br>/g,' ')}</p><button class="n8-b" data-nb="msg:${i}">Elolvasom</button></div></article>`;
@@ -310,7 +312,7 @@ function obsGraph(o){const n=o.minN,x0=78,x1=242,g=4,w=(x1-x0-g*(n-1))/n;
       ${ves(40,o.a)}${ves(280,o.b)}</svg>
       <span class="lk-lab"><span><b>${o.a[1][0]}</b>${o.a[1][1]}</span><span class="lk-mid"><b>${o.hits} / ${n} nap</b>egybevág${o.miss?` · ${o.miss} ellene`:''}</span><span><b>${o.b[1][0]}</b>${o.b[1][1]}</span></span>`}
 const obsLinked=(o,all)=>`<article class="lk"><button class="lk-tap" data-nb="osh:${o.k}" aria-label="${o.h}: megnézem és válaszolok"><span class="lk-h"><b>${o.h}</b><i class="nb-st ${o.st==='Gyűlik'?'':'w'}">${o.st}</i></span>
-    ${obsGraph(o)}<span class="lk-go ${OS.done[o.k]?'ok':''}">${OS.done[o.k]?`${TICK_}Megjegyeztem a válaszod · megnézem ›`:'Megnézem és válaszolok ›'}</span></button>
+    <span class="lk-x">${o.x.split('. ')[0].replace(/\.$/,'')}.</span>${obsGraph(o)}<span class="lk-go ${OS.done[o.k]?'ok':''}">${OS.done[o.k]?`${TICK_}Megjegyeztem a válaszod · megnézem ›`:'Megnézem és válaszolok ›'}</span></button>
     ${all?'<div class="nb-a" style="margin-top:0;justify-content:center"><button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes észrevétel ›</button></div>':''}</article>`;
 const obsSheet=o=>`<h2 class="ng-sh">${o.h}<small>${o.st}</small></h2>${obsGraph(o)}
     <div class="ng-who">${badge('mezo',{s:28})}<b>Mezo</b><small>${o.lbl}</small></div><p class="ng-pr">${o.x}</p>
@@ -882,6 +884,16 @@ ${P} .bz-k{display:inline-block;margin-top:6px;padding:2px 9px;border-radius:999
 ${P} .bz-c p{margin:8px 0 0;font-size:14px;line-height:1.45;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 ${P} .bz-c .n8-b{margin-top:10px}${P} .bz-c .nb-node,${P} .bz-live .nb-node{position:relative;left:auto;top:auto;width:44px;height:44px}
 ${P} .cr-c.obs.bz-full{margin:0 14px 14px}
+${P} .lk-x{display:none}${P} .bz-full .lk-x{display:block;margin:10px 0 4px;font-size:14.5px;line-height:1.5;color:var(--ink)}${P} .cr-c.obs.bz-full .lk-h b{min-height:0}
+/* message drawer */
+${P} .mg-top{display:flex;align-items:center;gap:14px}${P} .mg-top .nb-node{position:relative;left:auto;top:auto;flex:none;width:56px;height:56px}${P} .mg-top .nb-node svg.ic{width:24px;height:24px}
+${P} .mg-top small{display:block;font:500 13px var(--mono,ui-monospace,monospace);color:var(--ink)}${P} .mg-top b{display:block;margin-top:2px;font:800 24px/1.15 var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
+${P} .mg-tx{margin-top:18px}${P} .mg-tx p{margin:0;font-size:16px;line-height:1.6;color:var(--ink)}${P} .mg-tx p+p{margin-top:12px}
+${P} .mg-ch{display:flex;flex-wrap:wrap;gap:8px}${P} .mg-ch span{padding:7px 12px;border-radius:12px;font-size:13.5px;font-weight:600;color:var(--ink);background:color-mix(in srgb,var(--dom) 7%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dom) 18%,#fff)}
+${P} .mg-fr{display:flex;align-items:center;gap:12px;font-size:14.5px;color:var(--ink)}${P} .mg-fr+.mg-fr{margin-top:10px}
+${P} .mg-fr span{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.1)}${P} .mg-fr svg.ic{width:22px;height:22px}
+${P} .mg-ok{display:flex;align-items:center;gap:8px;margin:22px 0 0;font-size:14px;font-weight:700;color:#2E8A5F}${P} .mg-ok svg{width:18px;height:18px;fill:none;stroke:#2E8A5F;stroke-width:2.4}
+${P} .mg .ng-fb{margin:0;color:var(--ink);font-size:14px}${P} .mg-q{margin:14px 0 0;font-size:14px;font-weight:700;color:var(--ink)}
 ${P} .ej6 .k2-vials{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px;margin:4px 6px 0}${P} .ej6 .k2-vial{min-width:0}${P} .ej6 .k2-vial small{font-size:12px;letter-spacing:-.035em;white-space:nowrap}${P} .ej6 .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff}
 ${P} .n9-none{display:flex;align-items:center;gap:14px}${P} .n9-none svg.ng{flex:none;width:84px;height:84px;margin:0}${P} .n9-none .ng-pipe,${P} .n9-none .ng-flow{display:none}
 ${P} .n9-none .n9-btn{margin-top:10px;min-height:44px;padding:0 20px;font-size:14px}
