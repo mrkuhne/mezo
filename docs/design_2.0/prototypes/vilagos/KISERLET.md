@@ -16,7 +16,7 @@ plans or "which direction wins" decisions until he asks.
 1. **No cards, no lists.** A unit is separated by its own graphic, not by a box or a row.
 2. **No hero vessel.** The page opens with plain words (eyebrow, verdict, the one number, the one button).
 3. **Every page gets its own graphic, the one its content asks for.** Do not carry one device across pages
-   (the pipe is right for A napom and was wrong everywhere else). Ask "what is this page about?" first.
+   (the pipe was tried on A napom and everywhere else and dropped on 2026-10-14 — no app feeling). Ask "what is this page about?" first.
 4. **The four "Mai szintek" tubes are liked** — tubes in a row stay as they are wherever they appear.
 5. **Grouping without cards = layers.** Each logical unit is one full-width layer (`.bd` / `.bd w`, or
    `band()` inside a drawing); layers alternate between the ground and a lighter one with a wave edge.
@@ -61,7 +61,7 @@ plans or "which direction wins" decisions until he asks.
 | Nap · Mai · Check-in | the four snapshots side by side: a column per moment, a row per core feeling; a finished column opens its snapshot in a sheet; the due one sits in the bottom action bar | shown 2026-10-13, waiting for feedback |
 | Nap · Mai · Gyors logolás | — the approved page stays. A drawn version (nine drops above the day's jar) was shown 2026-10-13 and NOT picked; do not redraw it. | kept as approved |
 | Nap · Mai · Életjelek (detail) | the six tubes in two rows on two shelves, each with its own action; the low one in the bottom action bar | shown 2026-10-13, waiting for feedback |
-| Nap · A napom (today, closed day, sparse day) | the pipe through six vessels; in the Mai system since 2026-10-14: one ground, wave lines, plain headings (no numbered drops), no sub-lines under the numbers, pill buttons ("Részletek" outlined, the page's action filled), "Tovább a mai napra" as the closing full-width button | shown 2026-10-14 in the Mai system, waiting for feedback |
+| Nap · A napom (today, closed day, sparse day) | Mai's blocks (round 7, owner 2026-10-14: the pipe read "too much drawing, no app feeling"; the drawn vessels stay): the free-standing vessel with the score on top · Most érdemes (one vessel + pill) · Hat terület = the six drawn vessels in a 3×2 grid (closed day: tap opens details) · Mezo a napodról = highlight carousel, "Értékelés ›" opens the sheet · Te és az app = two tubes + the sentence · Körülmények · closing full-width button. Sparse day: the sentence, the grid, "Vissza a mai napra". | shown 2026-10-14, waiting for feedback |
 | Nap · Beszélgetés · Üzenetek | depth: newest at the surface | shown |
 | Nap · Beszélgetés · Életjelek | rack of six tubes, the remark as a tag on its tube | shown |
 | Nap · Beszélgetés · Észrevételek | communicating vessels, pipe of evidence days | shown |

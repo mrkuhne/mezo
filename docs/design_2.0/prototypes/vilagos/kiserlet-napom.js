@@ -110,44 +110,6 @@ const topPipe=iso=>{const x=Math.round(25.7+51.43*WEEKX[iso]);return svg(40,pipe
 /* the approved page up to (not including) its hero: title bar, tabs, week strip */
 function frame(arg,cut){const base=O.nap(arg);const a=base.search(cut),b=base.indexOf('</div><nav class="fh-nav"');return a<0||b<0?null:[base.slice(0,a)+DEFS,base.slice(b)]}
 
-/* ═══ A NAPOM · today (live) ═══ */
-function today(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)return O.nap('2026-09-24');
-  const ST=[
-    {key:'nutrition',title:'Tápanyag',tag:'úton',sk:'q',val:'2 060',unit:'kcal',sub:[],v:{p:74,prot:89,g:'dom'}},
-    {key:'quality',title:'Minőség',tag:'úton',sk:'q',val:'74',unit:'%',sub:[],v:{p:74,a:68,b:80,g:'dom'}},
-    {key:'training',title:'Edzés',tag:'nyitva',sk:'warn',val:'0/1',sub:[],v:{p:0,g:'warn'}},
-    {key:'sleep',title:'Alvás',tag:'kész',sk:'ok',val:'7ó 16p',sub:[],v:{p:86,g:'ok'}},
-    {key:'logging',title:'Logolás',tag:'úton',sk:'q',val:'2/4',sub:[],v:{n:2,g:'dom'}},
-    {key:'rhythm',title:'Ritmus',tag:'kész',sk:'ok',val:'74',sub:[],v:{p:74,g:'ok'}}];
-  const [stSvg,yEnd]=stations(ST,286),U=yEnd+110,UU=`M96 ${U}V${U+104}C96 ${U+170} 264 ${U+170} 264 ${U+104}V${U}H212V${U+100}C212 ${U+124} 148 ${U+124} 148 ${U+100}V${U}Z`;
-  return fr[0]+topPipe('2026-09-24')+lead(`<h2>Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.</h2>
-      <p class="ng-cnt"><b>2/6</b> terület kész</p>`)+gap(34)
-  +`<svg class="ng" viewBox="0 0 360 ${U+186}" role="img" aria-label="A mai napod rajza: most érdemes, a hat terület, te és az app">
-  <defs><clipPath id="ng-c-u"><path d="${UU}"/></clipPath><clipPath id="ng-c-ul"><rect x="0" y="0" width="180" height="${U+200}"/></clipPath><clipPath id="ng-c-ur"><rect x="180" y="0" width="180" height="${U+200}"/></clipPath></defs>
-  ${wl(232)+wl(yEnd+30)}${pipe(`M72 0V26M72 50V62M72 196V250M72 274V286M288 ${yEnd}C288 ${yEnd+34} 180 ${yEnd+20} 180 ${yEnd+54}M180 ${yEnd+78}C180 ${yEnd+94} 122 ${yEnd+80} 122 ${yEnd+96}M180 ${yEnd+78}C180 ${yEnd+94} 238 ${yEnd+80} 238 ${yEnd+96}`)}
-  ${hd(72,38,'Most érdemes')}
-  <g class="ng-next" data-toast="Edzés megnyitása" role="button" tabindex="0" aria-label="Még hátravan a mai edzés. Edzés megnyitása">
-    <rect class="ng-hit" x="10" y="70" width="340" height="142"/><path class="ng-nd" transform="translate(-11.2 46.4) scale(2.6)" d="${DROP}"/>
-    <path class="ng-hi" d="M43 142C45 128 52 116 60 106"/>
-    <g transform="translate(41.6 117.4) scale(.95)"><path class="ng-ng" d="${DUMB}"/><path class="ng-ng" d="M3 28V36M61 28V36"/></g>
-    <text class="ng-nt" x="140" y="112">Még hátravan</text><text class="ng-nt" x="140" y="136">a mai edzés</text>
-    ${pill(140,150,164,'Edzés megnyitása',1)}</g>
-  ${hd(72,262,'Ma eddig')}${stSvg}
-  ${hd(180,yEnd+66,'Te és az app')}${drip(122,yEnd+106)}${drip(238,yEnd+106,.8)}
-  <g class="ng-ves"><path class="ng-glass" d="${UU}"/>
-    <g clip-path="url(#ng-c-u)"><g clip-path="url(#ng-c-ul)"><path class="ng-wv" fill="url(#ng-g-dom)" d="M48 ${U+55}${' q12 -5 24 0 t24 0'.repeat(4)} V${U+200} H48Z"/></g>
-      <g clip-path="url(#ng-c-ur)"><path class="ng-wv" fill="url(#ng-g-ok)" d="M132 ${U+46}${' q12 -5 24 0 t24 0'.repeat(4)} V${U+200} H132Z"/></g></g>
-    <path class="ng-line" d="${UU}"/><path class="ng-hi" d="M104 ${U+70}V${U+112}"/><path class="ng-hi" d="M220 ${U+62}V${U+112}"/></g>
-  <path class="ng-mark" d="M152 ${U+55}H208M152 ${U+46}H208"/>
-  <g>
-    <text class="ng-un" x="122" y="${U+96}" text-anchor="middle">64</text><text class="ng-uu" x="122" y="${U+112}" text-anchor="middle">/ 100</text>
-    <text class="ng-t" x="108" y="${U+176}" text-anchor="middle">az app szerint</text></g>
-  <g>
-    <text class="ng-un" x="238" y="${U+96}" text-anchor="middle">7</text><text class="ng-uu" x="238" y="${U+112}" text-anchor="middle">/ 10</text>
-    <text class="ng-t" x="252" y="${U+176}" text-anchor="middle">szerinted</text></g>
-  </svg>
-  <p class="ng-say">Az app szerint közepes nap, szerinted jó volt.</p><div class="ng-tail"></div>`+fr[1]}
-
 /* ═══ A NAPOM · a closed day (the overnight evaluation) ═══ */
 const NDY={score:87,base:89,corr:-2,label:'A hét legjobb napja',
   dims:{nutrition:[100,'2 962 / 2 782 kcal · fehérje 162 / 166 g'],quality:[79,'nova 71% · mikro 100%'],training:[100,'2/2 edzés'],sleep:[79,'6 óra · minőség Q7'],logging:[85,'check-in 2/4 · étkezések időben'],rhythm:[64,'7/7 nap a héten']},
@@ -161,30 +123,42 @@ const NDY={score:87,base:89,corr:-2,label:'A hét legjobb napja',
 const DIM=[['nutrition','Tápanyag'],['quality','Minőség'],['training','Edzés'],['sleep','Alvás'],['logging','Logolás'],['rhythm','Ritmus']];
 const DAYN={'2026-09-21':['Hétfő','szept 21'],'2026-09-22':['Kedd','szept 22'],'2026-09-23':['Szerda','szept 23']};
 const dimV=(k,sc)=>{const g=sc>=80?'ok':'dom';return k==='nutrition'?{p:sc,prot:98,g}:k==='quality'?{p:sc,a:71,b:100,g}:k==='logging'?{n:2,g}:{p:sc,g}};
-function closed(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return O.nap(iso);const v=NDY,[dn,dd]=DAYN[iso];
-  const ST=DIM.map(([k,l])=>({key:k,title:l,tag:`súly ${v.weight[k]}%`,sk:'w',val:v.dims[k][0],sub:[],go:'Részletek',v:dimV(k,v.dims[k][0]),tap:true}));
-  const [stSvg,yEnd]=stations(ST,226),C=yEnd+108,last=iso==='2026-09-23';
-  /* the three highlights: small drops on the pipe */
-  const hl=v.hl.map(([e,t],i)=>{const y=22+i*36;return `<g class="ng-hl"><path transform="translate(${72-32*.5} ${y-34*.5}) scale(.5)" d="${DROP}"/><text class="ng-t" x="96" y="${y+6}">${t}</text></g>`}).join('');
-  return fr[0]+topPipe(iso)+lead(`<h2>${v.label}.</h2>
-      <p class="ng-cnt"><b>${v.score}</b> a 100-ból</p>`)
-  +svg(76,wl(16)+pipe('M72 0V40M72 64V76')+hd(72,52,'Mezo a napodról'))
-  +`<svg class="ng" viewBox="0 0 360 ${C+(last?96:84)}" role="img" aria-label="A nap rajza: a nap kiemelései, miből jött össze a pontszám, a nap körülményei">
-  ${wl(172)+wl(yEnd+30)}${pipe(`M72 0V190M72 214V226M288 ${yEnd}C288 ${yEnd+34} 180 ${yEnd+20} 180 ${yEnd+54}${last?`M180 ${yEnd+78}V${C+96}`:''}`)}
-  ${hl}<g data-ngm="1" role="button" tabindex="0" aria-label="Mezo értékelése">${pill(96,112,180,'Mezo értékelése',1)}<rect class="ng-hit" x="90" y="106" width="192" height="50"/></g>${hd(72,202,'Miből jött össze')}${stSvg}
-  ${hd(180,yEnd+66,'Körülmények')}
-  ${v.ctx.map(([a,b],i)=>{const x=i%2?272:88,y=C+6+(i>1?56:0);return `<g class="ng-ctx"><circle cx="${x}" cy="${y}" r="5"/><text class="ng-n" x="${x}" y="${y+21}" text-anchor="middle">${a}</text><text class="ng-t" x="${x}" y="${y+38}" text-anchor="middle">${b}</text></g>`}).join('')}
-  </svg>
-  <div class="ng-end">${last?`<button class="ng-pill wide" data-go="nap.2026-09-24">Tovább a mai napra ›</button>`:''}</div>`+fr[1]}
-/* a day with too little data: the same six vessels, five of them empty */
-function sparse(iso){const fr=frame(iso,/<section class="fh-card fh-hero/);if(!fr)return O.nap(iso);const [dn,dd]=DAYN[iso];
-  const ST=DIM.map(([k,l])=>k==='sleep'?{key:k,title:l,sk:'q',val:'7ó 02p',sub:[],v:{p:70,g:'dom'}}
-    :{key:k,title:l,sk:'q',val:'–',sub:[],none:true,v:k==='logging'?{n:0,g:'dom'}:{p:0,g:'dom',none:true}});
-  const [stSvg,yEnd]=stations(ST,74);
-  return fr[0]+topPipe(iso)+lead(`<h2>Erre a napra kevés az adat, ezért nincs pontszám.</h2>
-      <p><button class="ng-pill" data-go="nap.2026-09-24">Vissza a mai napra</button></p>`)
-  +gap(30)+`<svg class="ng" viewBox="0 0 360 ${yEnd+16}" role="img" aria-label="Amit erről a napról tudunk: a hat területből egy alvás">${pipe('M72 0V26M72 50V74')}${hd(72,38,'Amit tudunk róla')}${stSvg}</svg><div class="ng-tail"></div>`+fr[1]}
-const day=a=>{const [iso,ph]=(a||'').split('.');return ph||iso==='hiba'||iso==='tolt'?O.nap(a):!iso||iso==='2026-09-24'?today():iso==='2026-09-21'?sparse(iso):DAYN[iso]?closed(iso):O.nap(a)};
+/* ═══ A NAPOM, round 7 (owner, 2026-10-14): the pipe went ("too much drawing, no app feeling"); the page is built
+       from Mai's blocks — the free-standing vessel on top, sections on one ground with wave lines, the six drawn
+       vessels in a 3×2 grid, Mezo's highlights in a card carousel, a closing button. ═══ */
+const six=(ST,tap)=>`<div class="n6">${ST.map(s=>`<${tap?`button data-ngs="${s.key}" aria-label="${s.title}: részletek"`:'div'} class="n6-c ${s.none?'none':''}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[s.key](s.v)}</svg><em>${s.val}${s.unit?`<small>${s.unit}</small>`:''}</em><b>${s.title}${tap?' <i>›</i>':''}</b></${tap?'button':'div'}>`).join('')}</div>`;
+const nTank=(pct,num,verdict)=>`<div class="tk-lebego">`+F.tank({pct,h:330,num,cap:'a 100-ból',verdict,marks:[75,50,25]})+'</div>';
+const nWrap=(fr,inner)=>fr[0]+`<div class="mx n7">${inner}</div>`+fr[1];
+function today3(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)return O.nap('2026-09-24');
+  const ST=[
+    {key:'nutrition',title:'Tápanyag',val:'2 060',unit:'kcal',v:{p:74,prot:89,g:'dom'}},
+    {key:'quality',title:'Minőség',val:'74',unit:'%',v:{p:74,a:68,b:80,g:'dom'}},
+    {key:'training',title:'Edzés',val:'0/1',v:{p:0,g:'warn'}},
+    {key:'sleep',title:'Alvás',val:'7ó 16p',v:{p:86,g:'ok'}},
+    {key:'logging',title:'Logolás',val:'2/4',v:{n:2,g:'dom'}},
+    {key:'rhythm',title:'Ritmus',val:'74',v:{p:74,g:'ok'}}];
+  return nWrap(fr,`<section class="mx-s">${nTank(64,64,'Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.')}</section>
+  <section class="mx-s ln">${KH('Most érdemes')}
+    <div class="n7-next"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.training({p:0,g:'warn'})}</svg><div><b>Még hátravan a mai edzés</b><button class="mx-btn pri" data-dom="edzes">Megnyitom</button></div></div></section>
+  <section class="mx-s ln">${KH('Hat terület')}${six(ST)}</section>
+  <section class="mx-s ln">${KH('Te és az app')}
+    <div class="n7-te">${F.vials([{l:'Az app szerint',ic:'t-orb',c:'#3F8FDB',p:64,v:'64'},{l:'Szerinted',ic:'t-person',c:'#3FA277',p:70,v:'7/10'}])}
+    <p class="n7-say">Az app szerint közepes nap, szerinted jó volt.</p></div></section>
+  <div class="ng-tail"></div>`)}
+function closed3(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return O.nap(iso);const v=NDY,last=iso==='2026-09-23';
+  const ST=DIM.map(([k,l])=>({key:k,title:l,val:v.dims[k][0],v:dimV(k,v.dims[k][0])}));
+  return nWrap(fr,`<section class="mx-s">${nTank(v.score,v.score,v.label+'.')}</section>
+  <section class="mx-s ln">${KH('Mezo a napodról','',`<button class="fh-lk" data-ngm="1">Értékelés ›</button>`)}
+    <div class="cr">${v.hl.map(([e,t])=>`<div class="cr-c n7-hl"><i class="nb-st">${e}</i><b>${t}</b></div>`).join('')}</div>${dots(v.hl.length)}</section>
+  <section class="mx-s ln">${KH('Hat terület')}${six(ST,true)}</section>
+  <section class="mx-s ln">${KH('Körülmények')}<div class="n7-ctx">${v.ctx.map(([a,b])=>`<div><span>${a[0].toUpperCase()+a.slice(1)}</span><b>${b}</b></div>`).join('')}</div></section>
+  ${last?`<section class="mx-s ln mx-end"><button class="mx-km" data-go="nap.2026-09-24"><span>Tovább a mai napra</span></button></section>`:'<div class="ng-tail"></div>'}`)}
+function sparse3(iso){const fr=frame(iso,/<section class="fh-card fh-hero/);if(!fr)return O.nap(iso);
+  const ST=DIM.map(([k,l])=>k==='sleep'?{key:k,title:l,val:'7ó 02p',v:{p:70,g:'dom'}}:{key:k,title:l,val:'–',none:true,v:k==='logging'?{n:0,g:'dom'}:{p:0,g:'dom',none:true}});
+  return nWrap(fr,`<section class="mx-s"><h2 class="n7-h">Erre a napra kevés az adat, ezért nincs pontszám.</h2></section>
+  <section class="mx-s ln">${KH('Amit tudunk róla')}${six(ST)}</section>
+  <section class="mx-s ln mx-end"><button class="mx-km" data-go="nap.2026-09-24"><span>Vissza a mai napra</span></button></section>`)}
+const day=a=>{const [iso,ph]=(a||'').split('.');return ph||iso==='hiba'||iso==='tolt'?O.nap(a):!iso||iso==='2026-09-24'?today3():iso==='2026-09-21'?sparse3(iso):DAYN[iso]?closed3(iso):O.nap(a)};
 /* a closed day: Mezo's evaluation in a sheet */
 document.addEventListener('click',e=>{if(!e.target.closest('[data-ngm]'))return;const v=NDY;
   F.openSheet(`<h2 class="ng-sh">Mezo a napodról</h2><p class="ng-adj2"><b>alap ${v.base} · a Mezo szerint −${Math.abs(v.corr)}.</b> ${v.adj}</p>${v.prose.map(p=>`<p class="ng-pr">${p}</p>`).join('')}
@@ -409,7 +383,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!
 
 /* ── routes: on this page the top tabs open the drawn versions; the approved ones stay reachable ── */
 nap.routes['eletjel-lista']=O.eletjel;nap.routes.eletjel=eletjel2;nap.routes['checkin-lista']=O.checkin;nap.routes.checkin=checkin2;nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>a?O.mai(a):mai2();nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
-nap.routes.napom=a=>a?O.napom(a):today();nap.routes.nap=day;nap.routes.napomg=today;nap.routes.napomt=today;
+nap.routes.napom=a=>a?O.napom(a):today3();nap.routes.nap=day;nap.routes.napomg=today3;nap.routes.napomt=today3;
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
 
 F.css(`/* kiserlet-napom */
@@ -762,7 +736,26 @@ ${P} [data-ngm],${P} [data-ngs]{cursor:pointer}
 ${P} .ng-n{font-size:13.5px;fill:var(--ink)}
 ${P} .ng-pill{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:6px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2)}
 ${P} .ng-pill.wide{display:flex;width:100%;min-height:52px;font-size:15px;color:var(--ink);background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.14),0 6px 14px -10px rgba(10,42,60,.4)}
-${P} .ng-end{padding:8px 22px 120px}${P} .ng-tail{height:110px}
+${P} .ng-end{padding:8px 22px 120px}
+/* A napom round 7: Mai's blocks */
+${P} .n6{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 6px;margin:6px 12px 0}
+${P} .n6-c{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;min-height:44px;padding:0 2px;text-align:center}
+${P} .n6-c svg.ng,${P} .n7-next svg.ng{width:84px;height:84px;margin:0}
+${P} .n6 .ng-pipe,${P} .n6 .ng-flow,${P} .n6 .ng-drip,${P} .n7-next .ng-pipe,${P} .n7-next .ng-flow,${P} .n7-next .ng-drip{display:none}
+${P} .n6-c em{margin-top:4px;font:800 20px var(--disp,inherit);font-style:normal;letter-spacing:-.03em;color:var(--ink);white-space:nowrap}
+${P} .n6-c em small{margin-left:3px;font:700 12px var(--sans,inherit);letter-spacing:0;color:var(--ink)}
+${P} .n6-c b{font-size:13px;font-weight:700;color:var(--ink)}${P} .n6-c b i{font-style:normal;color:var(--dom)}
+${P} .n6-c.none em{color:#8FA3B3}
+${P} .n7-next{display:flex;align-items:center;gap:14px;margin:4px 22px 0}
+${P} .n7-next b{display:block;font-size:16px;font-weight:700;line-height:1.25;color:var(--ink)}
+${P} .n7-next .mx-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:10px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2)}
+${P} .n7-te{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:16px;margin:6px 22px 0}${P} .n7-te .k2-vials{margin:0}${P} .n7-te .n7-say{margin:0}
+${P} .n7-say{margin:14px 22px 0;font:800 18px/1.25 var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
+${P} .n7-hl{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:18px 18px 20px}
+${P} .n7-hl b{font:800 18px/1.25 var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
+${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px 22px 0}
+${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
+${P} .n7-h{margin:22px 22px 4px;font:800 24px/1.15 var(--disp,inherit);letter-spacing:-.03em;color:var(--ink);text-wrap:balance}${P} .ng-tail{height:110px}
 ${P} .jr-air{padding:0;height:34px}
 /* Rutin */
 ${P} .fh-n:has(.rt-perf){display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px}
