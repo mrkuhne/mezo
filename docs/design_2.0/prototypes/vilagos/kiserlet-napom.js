@@ -181,11 +181,20 @@ function today3(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)
   <div class="ng-tail"></div>`)}
 function closed3(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return O.nap(iso);const v=NDY,last=iso==='2026-09-23';
   const ST=DIM.map(([k,l])=>({key:k,title:l,val:v.dims[k][0],pre:v.notes[k],v:dimV(k,v.dims[k][0])}));
-  return nWrap(fr,`<section class="mx-s">${arc('closed',v.label+'. Délutánra jobb kedvvel zártad.')}</section>
-  <section class="mx-s ln">${KH('A nap szándéka')}${intent('closed')}</section>
-  <section class="mx-s ln">${KH('Mezo a napodról','',`<button class="fh-lk" data-ngm="1">Értékelés ›</button>`)}
+  /* round 11 (owner, 2026-10-14): a closed day opens with the main score and Mezo's overnight evaluation, in full */
+  return nWrap(fr,`<section class="mx-s n10-top"><h2 class="n7-h">${v.label}.</h2>
+    <div class="n10-sc"><b>${v.score}</b><span>a 100-ból</span></div>
+    <div class="n10-lv" aria-label="Alap ${v.base}, a Mezo szerint ${v.corr}"><i style="width:${v.score}%"></i><u style="left:${v.base}%"></u></div>
+    <p class="n10-adj"><b>alap ${v.base}, a Mezo szerint −${Math.abs(v.corr)}.</b> ${v.adj}</p></section>
+  <section class="mx-s ln">${KH('Mezo értékelése')}<div class="n10-ev"><div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b><small>hajnali 3:04</small></div>
+    ${v.prose.map(x=>`<p class="ng-pr">${x}</p>`).join('')}
+    <div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('t-thumb-down')}</button></div>
+    <button class="n8-b" data-toast="Beszélgetés a napról (Mezo chat)">Beszélgess a napról</button></div></section>
+  <section class="mx-s ln">${KH('A nap kiemelései')}
     <div class="cr">${v.hl.map(([e,t])=>`<div class="cr-c n7-hl"><i class="nb-st">${e}</i><b>${t}</b></div>`).join('')}</div>${dots(v.hl.length)}</section>
   <section class="mx-s ln">${KH('Hat terület')}${cards(ST,'data-ngs')}</section>
+  <section class="mx-s ln">${KH('A nap check-injei')}${arc('closed','').replace('<h2 class="n7-h"></h2>','')}</section>
+  <section class="mx-s ln">${KH('A nap szándéka')}${intent('closed')}</section>
   <section class="mx-s ln">${KH('Te és az app')}${nU(v.score,'8/10',80)}</section>
   <section class="mx-s ln">${KH('Körülmények')}<div class="n7-ctx">${v.ctx.map(([a,b])=>`<div><span>${a[0].toUpperCase()+a.slice(1)}</span><b>${b}</b></div>`).join('')}</div></section>
   ${last?`<section class="mx-s ln mx-end"><button class="mx-km" data-go="nap.2026-09-24"><span>Tovább a mai napra</span></button></section>`:'<div class="ng-tail"></div>'}`)}
@@ -837,6 +846,14 @@ ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+${P} .n10-sc{display:flex;align-items:baseline;gap:8px;margin:10px 22px 0}
+${P} .n10-sc b{font:800 76px/1 var(--disp,inherit);letter-spacing:-.05em;background:linear-gradient(160deg,var(--liq1),var(--liq2));-webkit-background-clip:text;background-clip:text;color:transparent}
+${P} .n10-sc span{font-size:15px;font-weight:700;color:var(--ink)}
+${P} .n10-lv{position:relative;height:16px;margin:14px 22px 0;border-radius:999px;background:rgba(10,42,60,.07)}
+${P} .n10-lv i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,var(--liq1),var(--liq2))}
+${P} .n10-lv u{position:absolute;top:-5px;bottom:-5px;width:2.5px;margin-left:-1px;border-radius:2px;background:var(--ink)}
+${P} .n10-adj{margin:12px 22px 0;font-size:14px;line-height:1.5;color:var(--ink)}
+${P} .n10-ev{margin:0 22px}${P} .n10-ev .ng-pr{font-size:15px;line-height:1.6;margin:10px 0 0}${P} .n10-ev .ng-pr+.ng-pr{margin-top:14px}${P} .n10-ev .ng-fb{color:var(--ink);font-size:13.5px}${P} .n10-ev .n8-b{margin-top:14px}
 ${P} .n9-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 10px 0}
 ${P} .n9-c{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;min-width:0}
 ${P} .n9-c svg{width:68px;height:68px;margin-bottom:6px;overflow:visible}
