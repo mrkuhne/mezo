@@ -288,7 +288,8 @@ const maiHero=()=>`<div class="tk-lebego">`+F.tank({pct:64,h:372,num:60,cap:'a 1
 const KH=(t,sub='',link='')=>`<div class="mx-h"><b>${t}</b>${link||(sub?`<span>${sub}</span>`:'')}</div>`;
 function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" style="--i:1">','<div class="k2-h rise" style="--i:2">');
   const NX=[
-    {key:'training',t:'ma',now:true,title:'Pull Day',sub:'a mai edzés még hátravan',go:'Megnézem',v:{p:0,g:'warn'},attr:'data-dom="edzes"'},
+    {key:'drop',t:'14:00',title:'Délutáni check-in',sub:'9 koppintás, kb. fél perc',go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"',now:true},
+    {key:'training',t:'ma',title:'Pull Day',sub:'a mai edzés még hátravan',go:'Megnézem',v:{p:0,g:'warn'},attr:'data-dom="edzes"'},
     {key:'nutrition',t:'19:30',title:'Vacsora',sub:'722 kcal van még · 18 g fehérje hiányzik',go:'Logolom',v:{p:74,prot:89,g:'dom'},attr:'data-dom="fuel"'}];
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
     [I('t-checkin'),'Check-in','','data-go="checkin"'],[I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
