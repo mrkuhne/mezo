@@ -134,6 +134,30 @@ const TD={nutrition:['2 060 kcal','722 kcal van még a keretből, fehérjéből 
   rhythm:['74','A heti ritmusod egyenletes, eddig minden nap mozogtál.',['ritmus · 4 / 4 nap']]};
 /* the hero: the app's score and yours in one U-shaped vessel; the level difference is the story */
 function nHero(verdict,app,you,youP){return `<h2 class="n7-h">${verdict}</h2>`}
+/* ═══ A NAPOM hero, round 9 (owner, 2026-10-14): "a nap íve" — how you felt through the day, from the check-ins.
+       Energy is the liquid, mood the line above it; each check-in is a drop on the time axis (done full, due outlined,
+       missed dashed). Live: drawn up to now, the rest of the day left open. ═══ */
+const ARC={today:{now:'14:20',ci:[['07:10',6,7,'done'],['10:00',7,8,'done'],['14:00',null,null,'now'],['21:00',null,null,'']]},
+  closed:{ci:[['07:30',5,6,'done'],['10:30',null,null,'miss'],['15:10',6,8,'done'],['21:00',null,null,'miss']]}};
+const hx=t=>{const [h,m]=t.split(':').map(Number);return 22+((h+m/60)-6)/18*316},vy=v=>176-v*13.5;
+const curve=P=>P.map(([x,y],i)=>i?`C${(P[i-1][0]+x)/2} ${P[i-1][1]} ${(P[i-1][0]+x)/2} ${y} ${x} ${y}`:`M${x} ${y}`).join('');
+function arc(mode,verdict){const A=ARC[mode],pts=A.ci.filter(c=>c[1]!=null),E=pts.map(c=>[hx(c[0]),vy(c[1])]),M=pts.map(c=>[hx(c[0]),vy(c[2])]);
+  const lastX=E[E.length-1][0],end=mode==='today'?hx(A.now):lastX,g=uid();
+  const Ex=[...E,[end,E[E.length-1][1]]],Mx=[...M,[end,M[M.length-1][1]]];
+  const area=curve(Ex)+`V190H${E[0][0]}Z`,last=Ex[Ex.length-1],lastM=Mx[Mx.length-1];
+  return `<h2 class="n7-h">${verdict}</h2><svg class="ng n9-arc" viewBox="0 0 360 236" role="img" aria-label="A nap íve: energia és hangulat a check-inek alapján">
+  <defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--liq1)" stop-opacity=".95"/><stop offset="1" stop-color="var(--liq2)" stop-opacity=".55"/></linearGradient></defs>
+  ${[6,12,18,24].map(h=>`<path class="n9-grid" d="M${hx(h+':00')} 30V190"/><text class="n9-ax" x="${hx(h+':00')}" y="230" text-anchor="${h===6?'start':h===24?'end':'middle'}">${String(h%24).padStart(2,'0')}:00</text>`).join('')}
+  <path d="${area}" fill="url(#${g})"/><path class="n9-m" d="${curve(Mx)}"/>
+  ${mode==='today'?`<path class="n9-now" d="M${end} 26V190"/><text class="n9-nt" x="${end+6}" y="36">most</text>`:''}
+  ${E.map(([x,y])=>`<circle class="n9-pe" cx="${x}" cy="${y}" r="5"/>`).join('')}${M.map(([x,y])=>`<circle class="n9-pm" cx="${x}" cy="${y}" r="5"/>`).join('')}
+  <text class="n9-lb e" x="${Math.min(last[0]+8,300)}" y="${last[1]+22}">energia ${pts[pts.length-1][1]}</text><text class="n9-lb m" x="${Math.min(lastM[0]+8,296)}" y="${lastM[1]-10}">hangulat ${pts[pts.length-1][2]}</text>
+  ${A.ci.map(([t,,,st])=>`<path class="n9-d ${st}" transform="translate(${hx(t)-32*.3} ${197-34*.3}) scale(.3)" d="${DROP}"/>`).join('')}</svg>`}
+/* ═══ A NAPOM · the intention of the day (owner, 2026-10-14: in place of "Most érdemes") ═══ */
+const INT={today:{creed:'Nyugodt tempó: egyszerre egy dolog.',foci:['Délután edzés, telefon nélkül','Vacsora 8 előtt']},
+  closed:{creed:'Ma figyelek a fehérjére.',foci:['Minden étkezésben legyen fehérje','Mindkét edzés'],refl:['Sikerült','ok']}};
+const intent=mode=>{const it=INT[mode];return `<div class="n9-int"><p class="n9-cr">„${it.creed}”</p>${it.foci.map(f=>`<p class="n9-fo"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg>${f}</p>`).join('')}
+  ${it.refl?`<p class="n9-rf ${it.refl[1]}">Este: ${it.refl[0].toLowerCase()}</p>`:`<button class="n8-b" data-sheet="intention">Szerkesztem</button>`}</div>`};
 /* the U-shaped vessel ("the magnet"): the app's score and yours side by side — moved to the bottom (owner, 2026-10-14) */
 function nU(app,you,youP){const U=6,UU=`M96 ${U}V${U+104}C96 ${U+170} 264 ${U+170} 264 ${U+104}V${U}H212V${U+100}C212 ${U+124} 148 ${U+124} 148 ${U+100}V${U}Z`,c=uid(),l=uid(),r=uid(),
   ya=U+110-100*app/100,yb=U+110-100*youP/100;
@@ -152,13 +176,15 @@ const nWrap=(fr,inner)=>fr[0]+`<div class="mx n7">${inner}</div>`+fr[1];
 function today3(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)return O.nap('2026-09-24');
   const VV={nutrition:{p:74,prot:89,g:'dom'},quality:{p:74,a:68,b:80,g:'dom'},training:{p:0,g:'warn'},sleep:{p:86,g:'ok'},logging:{n:2,g:'dom'},rhythm:{p:74,g:'ok'}};
   const ST=DIM.map(([k,l])=>({key:k,title:l,val:TD[k][0],pre:TD[k][1],v:VV[k]}));
-  return nWrap(fr,`<section class="mx-s">${nHero('Az app szerint közepes nap, szerinted jó.',64,'7/10',70)}</section>
+  return nWrap(fr,`<section class="mx-s">${arc('today','Délelőtt csúcsra értél, most jön a délutáni check-in.')}</section>
+  <section class="mx-s ln">${KH('A nap szándéka')}${intent('today')}</section>
   <section class="mx-s ln">${KH('Hat terület')}${cards(ST,'data-ngt')}</section>
   <section class="mx-s ln">${KH('Te és az app')}${nU(64,'7/10',70)}</section>
   <div class="ng-tail"></div>`)}
 function closed3(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return O.nap(iso);const v=NDY,last=iso==='2026-09-23';
   const ST=DIM.map(([k,l])=>({key:k,title:l,val:v.dims[k][0],pre:v.notes[k],v:dimV(k,v.dims[k][0])}));
-  return nWrap(fr,`<section class="mx-s">${nHero(v.label+'.',v.score,'8/10',80)}</section>
+  return nWrap(fr,`<section class="mx-s">${arc('closed',v.label+'. Délutánra jobb kedvvel zártad.')}</section>
+  <section class="mx-s ln">${KH('A nap szándéka')}${intent('closed')}</section>
   <section class="mx-s ln">${KH('Mezo a napodról','',`<button class="fh-lk" data-ngm="1">Értékelés ›</button>`)}
     <div class="cr">${v.hl.map(([e,t])=>`<div class="cr-c n7-hl"><i class="nb-st">${e}</i><b>${t}</b></div>`).join('')}</div>${dots(v.hl.length)}</section>
   <section class="mx-s ln">${KH('Hat terület')}${cards(ST,'data-ngs')}</section>
@@ -812,6 +838,18 @@ ${P} .n7-hl b{font:800 18px/1.25 var(--disp,inherit);letter-spacing:-.02em;color
 ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px 22px 0}
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
+${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+${P} .n9-grid{stroke:rgba(10,42,60,.08);stroke-width:1}${P} .n9-ax{font:500 13px var(--mono,ui-monospace,monospace);fill:var(--ink)}
+${P} .n9-m{fill:none;stroke:#3FA277;stroke-width:3;stroke-linecap:round}
+${P} .n9-pe{fill:#fff;stroke:var(--liq2);stroke-width:3}${P} .n9-pm{fill:#fff;stroke:#3FA277;stroke-width:3}
+${P} .n9-lb{font-size:14px;font-weight:700}${P} .n9-lb.e{fill:color-mix(in srgb,var(--dom) 85%,var(--ink))}${P} .n9-lb.m{fill:#2E8A5F}
+${P} .n9-now{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:4 4}${P} .n9-nt{font-size:13px;font-weight:700;fill:var(--ink)}
+${P} .n9-d{fill:url(#ng-g-dom)}${P} .n9-d.now{fill:#fff;stroke:var(--dom);stroke-width:5}${P} .n9-d.miss,${P} .n9-d:not(.done):not(.now){fill:#fff;stroke:rgba(10,42,60,.3);stroke-width:4;stroke-dasharray:7 6}
+${P} .n9-int{margin:2px 22px 0}
+${P} .n9-cr{margin:0;font:800 21px/1.25 var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
+${P} .n9-fo{display:flex;align-items:center;gap:10px;margin:12px 0 0;font-size:15px;color:var(--ink)}${P} .n9-fo svg{flex:none;width:16px;height:16px}${P} .n9-fo path{fill:url(#ng-g-dom)}
+${P} .n9-rf{display:inline-block;margin:14px 0 0;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700}${P} .n9-rf.ok{color:#2E8A5F;background:#E3F4EA}
+${P} .n9-int .n8-b{margin-top:14px}
 /* the area drawer */
 ${P} .dv{padding-bottom:4px}
 ${P} .dv-top{display:flex;align-items:center;gap:14px}
