@@ -501,7 +501,7 @@ ${P} .nb-m.log .nb-b{flex:1;min-width:0}${P} .nb-m.log .nb-t{font-size:12.5px;li
 ${P} .nb-m.log em{font-style:normal;font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;padding-top:2px}
 ${P} .ng-lead.first{padding-top:16px}${P} .ng-lead.first::before{top:10px;border-radius:4px 4px 0 0}
 ${P} .ng-lead .btn{margin-top:4px}
-${P} .bd .k2-vial small i{display:none}
+${P} .bd .k2-vial small i,${P} .mx-s .k2-vial small i{display:none}
 ${P} text.ng-go[data-go]{cursor:pointer}
 ${P} .mt-more{display:grid;grid-template-columns:repeat(4,1fr);row-gap:18px;margin:0 14px}
 ${P} .mt-more button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 3px;text-align:center;min-width:0}
