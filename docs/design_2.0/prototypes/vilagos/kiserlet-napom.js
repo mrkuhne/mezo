@@ -141,18 +141,16 @@ const ARC={today:{now:'14:20',ci:[['07:10',6,7,'done'],['10:00',7,8,'done'],['14
   closed:{ci:[['07:30',5,6,'done'],['10:30',null,null,'miss'],['15:10',6,8,'done'],['21:00',null,null,'miss']]}};
 const hx=t=>{const [h,m]=t.split(':').map(Number);return 22+((h+m/60)-6)/18*316},vy=v=>176-v*13.5;
 const curve=P=>P.map(([x,y],i)=>i?`C${(P[i-1][0]+x)/2} ${P[i-1][1]} ${(P[i-1][0]+x)/2} ${y} ${x} ${y}`:`M${x} ${y}`).join('');
-function arc(mode,verdict){const A=ARC[mode],pts=A.ci.filter(c=>c[1]!=null),E=pts.map(c=>[hx(c[0]),vy(c[1])]),M=pts.map(c=>[hx(c[0]),vy(c[2])]);
-  const lastX=E[E.length-1][0],end=mode==='today'?hx(A.now):lastX,g=uid();
-  const Ex=[...E,[end,E[E.length-1][1]]],Mx=[...M,[end,M[M.length-1][1]]];
-  const area=curve(Ex)+`V190H${E[0][0]}Z`,last=Ex[Ex.length-1],lastM=Mx[Mx.length-1];
-  return `<h2 class="n7-h">${verdict}</h2><svg class="ng n9-arc" viewBox="0 0 360 236" role="img" aria-label="A nap íve: energia és hangulat a check-inek alapján">
-  <defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--liq1);stop-opacity:.95"/><stop offset="1" style="stop-color:var(--liq2);stop-opacity:.55"/></linearGradient></defs>
-  ${[6,12,18,24].map(h=>`<path class="n9-grid" d="M${hx(h+':00')} 30V190"/><text class="n9-ax" x="${hx(h+':00')}" y="230" text-anchor="${h===6?'start':h===24?'end':'middle'}">${String(h%24).padStart(2,'0')}:00</text>`).join('')}
-  <path d="${area}" fill="url(#${g})"/><path class="n9-m" d="${curve(Mx)}"/>
-  ${mode==='today'?`<path class="n9-now" d="M${end} 26V190"/><text class="n9-nt" x="${end+6}" y="36">most</text>`:''}
-  ${E.map(([x,y])=>`<circle class="n9-pe" cx="${x}" cy="${y}" r="5"/>`).join('')}${M.map(([x,y])=>`<circle class="n9-pm" cx="${x}" cy="${y}" r="5"/>`).join('')}
-  <text class="n9-lb e" x="${Math.min(last[0]+8,300)}" y="${last[1]+22}">energia ${pts[pts.length-1][1]}</text><text class="n9-lb m" x="${Math.min(lastM[0]+8,296)}" y="${lastM[1]-10}">hangulat ${pts[pts.length-1][2]}</text>
-  ${A.ci.map(([t,,,st])=>`<path class="n9-d ${st}" transform="translate(${hx(t)-32*.3} ${197-34*.3}) scale(.3)" d="${DROP}"/>`).join('')}</svg>`}
+/* round 10 (owner, 2026-10-14: the arc chart was unreadable) — the day's four check-ins as four drops in a row:
+   each drop is filled to the energy you gave; under it the moment, then energy and mood in words.
+   The due one is an open drop with its button, the later or missed ones are dashed. */
+const CIN=['Reggel','Délelőtt','Délután','Este'];
+function arc(mode,verdict){const A=ARC[mode];
+  return `<h2 class="n7-h">${verdict}</h2><div class="n9-row">${A.ci.map(([t,e,m,st],i)=>{const c=uid(),y=60-52*(e||0)/10;
+    return `<div class="n9-c ${st}"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="${c}"><path d="${DROP}"/></clipPath></defs>
+      <path class="n9-g" d="${DROP}"/>${e!=null?`<g clip-path="url(#${c})"><path fill="url(#ng-g-dom)" d="M-8 ${y} q8 -3 16 0 t16 0 t16 0 t16 0 t16 0 V70 H-8Z"/></g>`:''}
+      <path class="n9-o" d="${DROP}"/></svg>
+      <b>${CIN[i]}</b>${e!=null?`<span class="e">energia ${e}</span><span class="ok">hangulat ${m}</span>`:st==='now'?`<button class="n9-btn" data-go="checkin">Kitöltöm</button>`:st==='miss'?`<span>kimaradt</span>`:`<span>${t}</span>`}</div>`}).join('')}</div>`}
 /* ═══ A NAPOM · the intention of the day (owner, 2026-10-14: in place of "Most érdemes") ═══ */
 const INT={today:{creed:'Nyugodt tempó: egyszerre egy dolog.',foci:['Délután edzés, telefon nélkül','Vacsora 8 előtt']},
   closed:{creed:'Ma figyelek a fehérjére.',foci:['Minden étkezésben legyen fehérje','Mindkét edzés'],refl:['Sikerült','ok']}};
@@ -839,6 +837,15 @@ ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+${P} .n9-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 10px 0}
+${P} .n9-c{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;min-width:0}
+${P} .n9-c svg{width:68px;height:68px;margin-bottom:6px;overflow:visible}
+${P} .n9-g{fill:#fff}${P} .n9-o{fill:none;stroke:rgba(10,42,60,.2);stroke-width:2}
+${P} .n9-c.now .n9-o{stroke:var(--dom);stroke-width:3}${P} .n9-c.miss .n9-o,${P} .n9-c:not(.done):not(.now) .n9-o{stroke-dasharray:5 5;stroke:rgba(10,42,60,.28)}
+${P} .n9-c text{font:800 22px var(--disp,inherit);fill:#fff}
+${P} .n9-c b{font-size:14px;font-weight:700;color:var(--ink)}
+${P} .n9-c span{font-size:13px;color:var(--ink);white-space:nowrap}${P} .n9-c span.ok{color:#2E8A5F;font-weight:700}${P} .n9-c span.e{color:color-mix(in srgb,var(--dom) 85%,var(--ink));font-weight:700}
+${P} .n9-btn{display:inline-flex;align-items:center;min-height:40px;margin-top:4px;padding:0 14px;border-radius:999px;font-size:13.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2);position:relative}${P} .n9-btn::after{content:"";position:absolute;inset:-2px}
 ${P} .n9-grid{stroke:rgba(10,42,60,.08);stroke-width:1}${P} .n9-ax{font:500 13px var(--mono,ui-monospace,monospace);fill:var(--ink)}
 ${P} .n9-m{fill:none;stroke:#3FA277;stroke-width:3;stroke-linecap:round}
 ${P} .n9-pe{fill:#fff;stroke:var(--liq2);stroke-width:3}${P} .n9-pm{fill:#fff;stroke:#3FA277;stroke-width:3}
