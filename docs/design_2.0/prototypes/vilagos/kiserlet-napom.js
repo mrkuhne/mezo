@@ -133,9 +133,11 @@ const TD={nutrition:['2 060 kcal','722 kcal van még a keretből, fehérjéből 
   logging:['2/4','A reggeli és a délelőtti check-in megvan, a délutáni most esedékes.',['check-in · 2 / 4','étkezések · időben']],
   rhythm:['74','A heti ritmusod egyenletes, eddig minden nap mozogtál.',['ritmus · 4 / 4 nap']]};
 /* the hero: the app's score and yours in one U-shaped vessel; the level difference is the story */
-function nHero(verdict,app,you,youP){const U=6,UU=`M96 ${U}V${U+104}C96 ${U+170} 264 ${U+170} 264 ${U+104}V${U}H212V${U+100}C212 ${U+124} 148 ${U+124} 148 ${U+100}V${U}Z`,c=uid(),l=uid(),r=uid(),
+function nHero(verdict,app,you,youP){return `<h2 class="n7-h">${verdict}</h2>`}
+/* the U-shaped vessel ("the magnet"): the app's score and yours side by side — moved to the bottom (owner, 2026-10-14) */
+function nU(app,you,youP){const U=6,UU=`M96 ${U}V${U+104}C96 ${U+170} 264 ${U+170} 264 ${U+104}V${U}H212V${U+100}C212 ${U+124} 148 ${U+124} 148 ${U+100}V${U}Z`,c=uid(),l=uid(),r=uid(),
   ya=U+110-100*app/100,yb=U+110-100*youP/100;
-  return `<h2 class="n7-h">${verdict}</h2><svg class="ng n8-u" viewBox="0 0 360 190" role="img" aria-label="Az app szerint ${app} a 100-ból, szerinted ${you}">
+  return `<svg class="ng n8-u" viewBox="0 0 360 190" role="img" aria-label="Az app szerint ${app} a 100-ból, szerinted ${you}">
   <defs><clipPath id="${c}"><path d="${UU}"/></clipPath><clipPath id="${l}"><rect x="0" y="0" width="180" height="214"/></clipPath><clipPath id="${r}"><rect x="180" y="0" width="180" height="214"/></clipPath></defs>
   <path class="ng-glass" d="${UU}"/><g clip-path="url(#${c})"><g clip-path="url(#${l})"><path class="ng-wv" fill="url(#ng-g-dom)" d="M48 ${ya}${' q12 -5 24 0 t24 0'.repeat(4)} V214 H48Z"/></g>
   <g clip-path="url(#${r})"><path class="ng-wv" fill="url(#ng-g-ok)" d="M132 ${yb}${' q12 -5 24 0 t24 0'.repeat(4)} V214 H132Z"/></g></g>
@@ -151,9 +153,8 @@ function today3(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)
   const VV={nutrition:{p:74,prot:89,g:'dom'},quality:{p:74,a:68,b:80,g:'dom'},training:{p:0,g:'warn'},sleep:{p:86,g:'ok'},logging:{n:2,g:'dom'},rhythm:{p:74,g:'ok'}};
   const ST=DIM.map(([k,l])=>({key:k,title:l,val:TD[k][0],pre:TD[k][1],v:VV[k]}));
   return nWrap(fr,`<section class="mx-s">${nHero('Az app szerint közepes nap, szerinted jó.',64,'7/10',70)}</section>
-  <section class="mx-s ln">${KH('Most érdemes')}
-    <div class="n7-next"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.training({p:0,g:'warn'})}</svg><div><b>Még hátravan a mai edzés</b><button class="mx-btn pri" data-dom="edzes">Megnyitom</button></div></div></section>
   <section class="mx-s ln">${KH('Hat terület')}${cards(ST,'data-ngt')}</section>
+  <section class="mx-s ln">${KH('Te és az app')}${nU(64,'7/10',70)}</section>
   <div class="ng-tail"></div>`)}
 function closed3(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return O.nap(iso);const v=NDY,last=iso==='2026-09-23';
   const ST=DIM.map(([k,l])=>({key:k,title:l,val:v.dims[k][0],pre:v.notes[k],v:dimV(k,v.dims[k][0])}));
@@ -161,6 +162,7 @@ function closed3(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)retur
   <section class="mx-s ln">${KH('Mezo a napodról','',`<button class="fh-lk" data-ngm="1">Értékelés ›</button>`)}
     <div class="cr">${v.hl.map(([e,t])=>`<div class="cr-c n7-hl"><i class="nb-st">${e}</i><b>${t}</b></div>`).join('')}</div>${dots(v.hl.length)}</section>
   <section class="mx-s ln">${KH('Hat terület')}${cards(ST,'data-ngs')}</section>
+  <section class="mx-s ln">${KH('Te és az app')}${nU(v.score,'8/10',80)}</section>
   <section class="mx-s ln">${KH('Körülmények')}<div class="n7-ctx">${v.ctx.map(([a,b])=>`<div><span>${a[0].toUpperCase()+a.slice(1)}</span><b>${b}</b></div>`).join('')}</div></section>
   ${last?`<section class="mx-s ln mx-end"><button class="mx-km" data-go="nap.2026-09-24"><span>Tovább a mai napra</span></button></section>`:'<div class="ng-tail"></div>'}`)}
 function sparse3(iso){const fr=frame(iso,/<section class="fh-card fh-hero/);if(!fr)return O.nap(iso);
@@ -818,8 +820,7 @@ ${P} .dv-top small{display:block;font-size:15px;font-weight:700;color:var(--ink)
 ${P} .dv-top b{display:block;font:800 40px/1.05 var(--disp,inherit);letter-spacing:-.04em;color:var(--ink)}${P} .dv-top b u{text-decoration:none;margin-left:5px;font:700 15px var(--ff,inherit);letter-spacing:0}
 ${P} .dv-top i{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;font-style:normal;font-size:12px;font-weight:700;color:var(--dom);background:color-mix(in srgb,var(--dom) 10%,#fff)}
 ${P} .dv-top i.ok{color:#2E8A5F;background:#E3F4EA}${P} .dv-top i.warn{color:#A86A0C;background:#FBEFD9}${P} .dv-top i.w{color:var(--ink);background:rgba(10,42,60,.06)}
-${P} .dv-s{position:relative;margin-top:18px;padding-top:18px}
-${P} .dv-s::before{content:"";position:absolute;left:0;right:0;top:-6px;height:12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 12'%3E%3Cpath d='M0 6 Q12 0 24 6 T48 6' fill='none' stroke='%23B9CFDD' stroke-width='2'/%3E%3C/svg%3E") repeat-x 0 0/48px 12px}
+${P} .dv-s{position:relative;margin-top:26px}
 ${P} .dv-s h3{margin:0 0 12px;font:800 17px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .dv-h+.dv-h{margin-top:14px}
 ${P} .dv-hl{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--ink)}${P} .dv-hl b{font-weight:700;white-space:nowrap}
