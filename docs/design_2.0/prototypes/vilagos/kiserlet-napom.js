@@ -308,7 +308,7 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   <section class="mx-s ln">${KH('Észrevétel','',`<button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes ›</button>`)}
   <div class="cr" data-rr="moc">${RR.moc()}</div>${dots(OBS.length)}</section>
   <section class="mx-s ln">${KH('Továbbiak')}
-  <div class="cr sm">${MORE.map(([ic,t,sub,attr])=>`<button class="cr-c" ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>${dots(MORE.length)}</section>
+  <div class="cr sm">${MORE.map(([ic,t,sub,attr])=>`<button class="cr-c" ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>${dots(MORE.length-2)/* about three cards are in view: one dot per stop */}</section>
   <section class="mx-s ln mx-end"><button class="mx-km" data-n="km:open">${I('t-kimelo')}<span>Nem vagyok jól ma</span></button></section></div>`).replace('<div class="toast"','<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a><div class="toast"')}
 
 /* ═══ CHECK-IN · the day's four snapshots side by side: one column per moment, one row per feeling, so you can see
