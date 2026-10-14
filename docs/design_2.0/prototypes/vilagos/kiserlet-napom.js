@@ -189,7 +189,7 @@ function closed3(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)retur
   <section class="mx-s ln">${KH('Mezo értékelése')}<div class="n10-ev"><div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b><small>hajnali 3:04</small></div>
     ${v.prose.map(x=>`<p class="ng-pr">${x}</p>`).join('')}
     <div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('t-thumb-down')}</button></div>
-    <div class="n10-acts"><button class="n8-b" data-toast="Beszélgetés a napról (Mezo chat)">Beszélgess a napról</button><button class="n8-b" data-ngx="1">Te és az app, körülmények</button></div></div></section>
+    <div class="n10-acts"><button class="n8-b" data-toast="Beszélgetés a napról (Mezo chat)">Beszéljünk a napról</button><button class="n8-b" data-ngx="1">Körülmények</button></div></div></section>
   <section class="mx-s ln">${KH('A nap kiemelései')}
     <div class="cr">${v.hl.map(([e,t])=>`<div class="cr-c n7-hl"><i class="nb-st">${e}</i><b>${t}</b></div>`).join('')}</div>${dots(v.hl.length)}</section>
   <section class="mx-s ln">${KH('Hat terület')}${cards(ST,'data-ngs')}</section>
@@ -856,7 +856,7 @@ ${P} .n10-lv{position:relative;height:16px;margin:14px 22px 0;border-radius:999p
 ${P} .n10-lv i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,var(--liq1),var(--liq2))}
 ${P} .n10-lv u{position:absolute;top:-5px;bottom:-5px;width:2.5px;margin-left:-1px;border-radius:2px;background:var(--ink)}
 ${P} .n10-adj{margin:12px 22px 0;font-size:14px;line-height:1.5;color:var(--ink)}
-${P} .n10-ev{margin:0 22px}${P} .n10-acts{display:flex;flex-wrap:wrap;gap:8px}${P} .n10-ev .ng-pr{font-size:15px;line-height:1.6;margin:10px 0 0}${P} .n10-ev .ng-pr+.ng-pr{margin-top:14px}${P} .n10-ev .ng-fb{color:var(--ink);font-size:13.5px}${P} .n10-ev .n8-b{margin-top:14px}
+${P} .n10-ev{margin:0 22px}${P} .n10-acts{display:flex;gap:8px;margin-top:14px}${P} .n10-acts .n8-b{margin:0;padding:0 12px;white-space:nowrap}${P} .n10-ev .ng-pr{font-size:15px;line-height:1.6;margin:10px 0 0}${P} .n10-ev .ng-pr+.ng-pr{margin-top:14px}${P} .n10-ev .ng-fb{color:var(--ink);font-size:13.5px}${P} .n10-ev .n8-b{margin-top:14px}
 ${P} .n9-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 10px 0}
 ${P} .n9-c{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;min-width:0}
 ${P} .n9-c svg{width:68px;height:68px;margin-bottom:6px;overflow:visible}
