@@ -856,7 +856,7 @@ ${P} .n10-lv{position:relative;height:16px;margin:14px 22px 0;border-radius:999p
 ${P} .n10-lv i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,var(--liq1),var(--liq2))}
 ${P} .n10-lv u{position:absolute;top:-5px;bottom:-5px;width:2.5px;margin-left:-1px;border-radius:2px;background:var(--ink)}
 ${P} .n10-adj{margin:12px 22px 0;font-size:14px;line-height:1.5;color:var(--ink)}
-${P} .n10-ev{margin:0 22px}${P} .n10-acts{display:flex;gap:8px;margin-top:14px}${P} .n10-acts .n8-b{margin:0;padding:0 12px;white-space:nowrap}${P} .n10-ev .ng-pr{font-size:15px;line-height:1.6;margin:10px 0 0}${P} .n10-ev .ng-pr+.ng-pr{margin-top:14px}${P} .n10-ev .ng-fb{color:var(--ink);font-size:13.5px}${P} .n10-ev .n8-b{margin-top:14px}
+${P} .n10-ev{margin:0 22px}${P} .n10-acts{display:flex;gap:8px}${P} .n10-acts .n8-b{margin:0;padding:0 12px;white-space:nowrap}${P} .n10-ev .ng-pr{font-size:15px;line-height:1.6;margin:10px 0 0}${P} .n10-ev .ng-pr+.ng-pr{margin-top:14px}${P} .n10-ev .ng-fb{color:var(--ink);font-size:13.5px}${P} .n10-ev .n8-b{margin-top:14px}
 ${P} .n9-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 10px 0}
 ${P} .n9-c{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;min-width:0}
 ${P} .n9-c svg{width:68px;height:68px;margin-bottom:6px;overflow:visible}
