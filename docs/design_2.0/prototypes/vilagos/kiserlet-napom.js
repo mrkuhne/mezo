@@ -239,7 +239,7 @@ function obsGraph(o){const n=o.minN,x0=78,x1=242,g=4,w=(x1-x0-g*(n-1))/n;
   return `<svg class="lk-g" viewBox="0 0 320 80" role="img" aria-label="${o.a[1].join(' ')} és ${o.b[1].join(' ')}: ${o.hits} nap egybevág, ${o.miss} ellene szól, ${n-o.hits-o.miss} még hiányzik">
       <path class="lk-p" d="M70 40H250"/>${Array.from({length:n},(_,i)=>`<rect class="lk-s ${i<o.hits?'p':i<o.hits+o.miss?'m':''}" x="${(x0+i*(w+g)).toFixed(1)}" y="33" width="${w.toFixed(1)}" height="14" rx="7"/>`).join('')}
       ${ves(40,o.a)}${ves(280,o.b)}</svg>
-      <span class="lk-lab"><span><b>${o.a[1][0]}</b>${o.a[1][1]}</span><span class="lk-mid"><b>${o.hits} nap egybevág</b>${[o.miss?`${o.miss} ellene szól`:'',n-o.hits-o.miss?`${n-o.hits-o.miss} még hiányzik`:''].filter(Boolean).join(' · ')}</span><span><b>${o.b[1][0]}</b>${o.b[1][1]}</span></span>`}
+      <span class="lk-lab"><span><b>${o.a[1][0]}</b>${o.a[1][1]}</span><span class="lk-mid"><b>${o.hits} / ${n} nap</b>egybevág${o.miss?` · ${o.miss} ellene`:''}</span><span><b>${o.b[1][0]}</b>${o.b[1][1]}</span></span>`}
 const obsLinked=(o,all)=>`<article class="lk"><button class="lk-tap" data-nb="osh:${o.k}" aria-label="${o.h}: megnézem és válaszolok"><span class="lk-h"><b>${o.h}</b><i class="nb-st ${o.st==='Gyűlik'?'':'w'}">${o.st}</i></span>
     ${obsGraph(o)}<span class="lk-go ${OS.done[o.k]?'ok':''}">${OS.done[o.k]?`${TICK_}Megjegyeztem a válaszod · megnézem ›`:'Megnézem és válaszolok ›'}</span></button>
     ${all?'<div class="nb-a" style="margin-top:0;justify-content:center"><button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes észrevétel ›</button></div>':''}</article>`;
@@ -285,6 +285,11 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!
    rounded bottom, the sentence on the page ground above it. Tried and not picked: the arc, the flat day line, a plain
    level, full-width liquid. The level is a stage for the number (bible F2.10), not proportional to it. */
 const maiHero=()=>`<div class="tk-lebego">`+F.tank({pct:64,h:372,num:60,cap:'a 100-ból · hat életjel átlaga',lbl:'Mai állapot',verdict:'Most a délutáni check‑in jön, utána a Pull&nbsp;Day.',marks:[75,50,25],cta:'Délutáni check-in',ctaAct:{toast:'__ck'}}).replace('data-toast="__ck"','data-n="ck:open"')+'</div>';
+const dots=n=>`<div class="cr-dots" aria-hidden="true">${Array.from({length:n},(_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`;
+/* the dot under a carousel follows the first card in view */
+document.addEventListener('scroll',e=>{const c=e.target;if(!(c instanceof Element)||!c.classList.contains('cr'))return;const d=c.nextElementSibling;if(!d||!d.classList.contains('cr-dots'))return;
+  const k=c.querySelector('.cr-c'),step=k?k.getBoundingClientRect().width+12:1,max=c.scrollWidth-c.clientWidth,n=d.children.length,i=c.scrollLeft>=max-4?n-1:Math.round(c.scrollLeft/step);
+  [...d.children].forEach((x,j)=>x.classList.toggle('on',j===Math.min(n-1,i)))},true);
 const KH=(t,sub='',link='')=>`<div class="mx-h"><b>${t}</b>${link||(sub?`<span>${sub}</span>`:'')}</div>`;
 function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" style="--i:1">','<div class="k2-h rise" style="--i:2">');
   const NX=[
@@ -298,13 +303,13 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}<div class="mx">
   <section class="mx-s">${maiHero()}</section>
   <section class="mx-s ln">${KH('Most következik')}
-  <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="fh-lk">${x.go} ›</span></button>`).join('')}</div></section>
+  <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="mx-btn ${x.now?'pri':''}">${x.go}</span></button>`).join('')}</div></section>
   <section class="mx-s ln">${KH('Mai szintek')}${lv}</section>
   <section class="mx-s ln">${KH('Észrevétel','',`<button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes ›</button>`)}
-  <div class="cr" data-rr="moc">${RR.moc()}</div></section>
+  <div class="cr" data-rr="moc">${RR.moc()}</div>${dots(OBS.length)}</section>
   <section class="mx-s ln">${KH('Továbbiak')}
-  <div class="cr sm">${MORE.map(([ic,t,sub,attr])=>`<button class="cr-c" ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>
-  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b></span></button></section></div>`).replace('<div class="toast"','<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a><div class="toast"')}
+  <div class="cr sm">${MORE.map(([ic,t,sub,attr])=>`<button class="cr-c" ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>${dots(MORE.length)}</section>
+  <section class="mx-s ln mx-end"><button class="mx-km" data-n="km:open">${I('t-kimelo')}<span>Nem vagyok jól ma</span></button></section></div>`).replace('<div class="toast"','<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a><div class="toast"')}
 
 /* ═══ CHECK-IN · the day's four snapshots side by side: one column per moment, one row per feeling, so you can see
        how each of the five core answers moved through the day. A finished column opens its full snapshot in a sheet
@@ -418,6 +423,8 @@ ${P} .k2-vial small{font-size:12.5px}${P} .k2-vial small i{font-size:12px}
 ${P} .np-week small{font-size:12px}
 ${P} .mt-acts .fh-lk{min-width:44px;justify-content:center}
 ${P} .k2-tube em{font-size:12px!important;font-family:var(--ff,inherit)!important;font-weight:700;top:8px!important}
+/* the target sits on a white chip so it reads on any liquid */
+${P} .mx-s .k2-tube em:not(:empty){left:50%!important;right:auto!important;translate:-50% 0;padding:1px 7px;border-radius:999px;white-space:nowrap;background:rgba(255,255,255,.92);color:var(--ink)!important;box-shadow:0 1px 3px rgba(10,42,60,.15)}
 ${P} .np-six .k2-vial small{font-size:12px;letter-spacing:-.35px}
 /* six tubes need ~56 px each for their label: on a narrow phone they stand in two rows of three */
 ${P} .rk{container-type:inline-size}
@@ -587,6 +594,17 @@ ${P} .tk-lebego .k2-air small{font-size:12px}
 /* on a narrow phone the sentence takes three lines: give the air more room so the wave never touches it */
 ${P} .tk-lebego{container-type:inline-size}
 @container (max-width:340px){${P} .tk-lebego .k2-tank{height:410px!important}${P} .tk-lebego .k2-liq .marks span:last-child{visibility:hidden}}${P} .tk-lebego .marks span{font-size:12px!important}
+/* Mai · real buttons, carousel dots, the closing section */
+${P} .mx-next .mx-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;margin-top:8px;padding:0 16px;border-radius:999px;font-size:13.5px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink));background:color-mix(in srgb,var(--dom) 9%,#fff);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dom) 28%,#fff)}
+${P} .mx-next .mx-btn.pri{color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2)}
+${P} .mx-next button{padding-bottom:4px}
+${P} .cr-dots{display:flex;justify-content:center;gap:6px;margin-top:-4px}
+${P} .cr-dots i{width:7px;height:7px;border-radius:999px;background:rgba(10,42,60,.18);transition:width .2s}
+${P} .cr-dots i.on{width:20px;background:var(--dom)}
+${P} .mx-end{padding:30px 22px 120px}
+${P} .mx-km{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;border-radius:999px;font-size:15px;font-weight:700;color:var(--ink);background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.14),0 6px 14px -10px rgba(10,42,60,.4)}
+${P} .mx-km svg.ic{width:24px;height:24px}
+${P} .mx{padding-bottom:0}
 /* Mai · the top: the day line */
 ${P} .hv-n{font:800 64px/1 var(--disp,inherit);letter-spacing:-.05em;color:var(--ink)}
 ${P} .hv-c{display:grid;grid-template-columns:1fr auto;column-gap:14px;align-items:end}${P} .hv-c small{grid-column:1/-1}${P} .hv-c h2{margin-bottom:2px}
@@ -660,7 +678,7 @@ ${P} .rk-hole{position:absolute;left:14px;top:calc(50% - 8px);width:16px;height:
 /* Beszélgetés · Észrevételek: communicating vessels */
 ${P} .lk{padding:10px 22px 0}
 ${P} .lk-tap{display:block;width:100%;text-align:left}
-${P} .lk-go{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin-top:4px;font-size:14px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
+${P} .lk-go{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin:8px auto 0;padding:0 18px;width:max-content;max-width:100%;border-radius:999px;font-size:14px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink));background:color-mix(in srgb,var(--dom) 9%,#fff);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dom) 28%,#fff)}
 ${P} .lk-go.ok{color:#0E7A55}${P} .lk-go svg{width:16px;height:16px;fill:none;stroke:var(--ok);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 ${P} .sheet .lk-g{margin-top:6px}${P} .sheet .ng-sh small{padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--dom) 10%,#fff);color:var(--dom);font-weight:700}
 ${P} .lk-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px 0}${P} .lk-h b{font:800 19px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
