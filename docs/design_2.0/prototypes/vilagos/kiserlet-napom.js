@@ -274,7 +274,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!
   if(k==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok');F.openSheet(msgSheet(+x))}else if(k==='fb'){BS.fb=!BS.fb;F.openSheet(msgSheet(+x))}else if(a==='jar')BS.jar=!BS.jar;else if(k==='exp')BS.exp[x]=!BS.exp[x];
   else if(k==='obs'){OS.done[x]=true;F.closeSheet();F.toast('Megjegyeztem a válaszod')}else if(k==='ev'){OS.ev[x]=!OS.ev[x];F.openSheet(obsSheet(OBS.find(o=>o.k===x)))}
   else if(k==='osh'){F.openSheet(obsSheet(OBS.find(o=>o.k===x)));return}
-  document.querySelectorAll('[data-rr]').forEach(r=>{r.innerHTML=RR[r.dataset.rr]()})});
+  document.querySelectorAll('[data-rr]').forEach(r=>{const x=r.scrollLeft;r.innerHTML=RR[r.dataset.rr]();r.scrollLeft=x})});
 
 /* ═══ MAI · the day as a flat line (06–22), filled up to now; behind it what you logged, ahead what is left.
        Then the four tubes the owner likes (as they are), the next three as three vessels in time order,
