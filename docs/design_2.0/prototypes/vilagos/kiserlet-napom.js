@@ -210,7 +210,7 @@ function drawer(k,mode){const l=DIM.find(x=>x[0]===k)[1],T=DD.today[k],C=DD[mode
   if(k==='sleep')mid=S('Az éjszaka',dvNight(d.night,d.q))+S('',dvBar(d.bars[0]));
   if(k==='logging')mid=S('Check-in',dvCi(d.ci));
   if(k==='rhythm')mid=S(cl_?'Az utolsó hét nap':'Ezen a héten',dvWeek(d.week));
-  const act=!cl_&&mode!=='sparse'&&d.act?`<button class="dv-btn pri" ${d.act[1]} data-close>${d.act[0]}</button>`:`<button class="dv-btn" data-close>Rendben</button>`;
+  const act=!cl_&&mode!=='sparse'&&d.act?`<button class="dv-btn pri" ${d.act[1]}>${d.act[0]}</button>`:`<button class="dv-btn" data-close>Rendben</button>`;
   return `<div class="dv"><div class="dv-top"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[k](ves)}</svg>
     <div><small>${l}</small><b>${top[0]}${top[1]?`<u>${top[1]}</u>`:''}</b>${st?`<i class="${st[1]}">${st[0]}</i>`:cl_?`<i class="w">a napi pontszám ${NDY.weight[k]}%-a</i>`:''}</div></div>
     ${mid}<section class="dv-s"><div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b></div><p class="ng-pr">${text}</p></section>${act}</div>`}
