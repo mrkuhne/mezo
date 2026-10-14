@@ -284,7 +284,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!
 /* The top of Mai: the old hero vessel without its card (owner's pick, 2026-10-14) — the liquid stands free with a
    rounded bottom, the sentence on the page ground above it. Tried and not picked: the arc, the flat day line, a plain
    level, full-width liquid. The level is a stage for the number (bible F2.10), not proportional to it. */
-const maiHero=()=>`<div class="tk-lebego">`+F.tank({pct:56,h:330,num:60,cap:'a 100-ból · hat életjel átlaga',lbl:'Mai állapot',verdict:'Most a délutáni check‑in jön, utána a Pull&nbsp;Day.',marks:[75,50,25]})+'</div>'; /* no button in the vessel: the check-in starts from Most következik (owner, 2026-10-14) */
+const maiHero=()=>`<div class="tk-lebego">`+F.tank({pct:56,h:330,num:60,cap:'a 100-ból · hat életjel átlaga',verdict:'Most a délutáni check‑in jön, utána a Pull&nbsp;Day.',marks:[75,50,25]})+'</div>'; /* no button in the vessel: the check-in starts from Most következik (owner, 2026-10-14) */
 const dots=n=>`<div class="cr-dots" aria-hidden="true">${Array.from({length:n},(_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`;
 /* the dot under a carousel follows the first card in view */
 document.addEventListener('scroll',e=>{const c=e.target;if(!(c instanceof Element)||!c.classList.contains('cr'))return;const d=c.nextElementSibling;if(!d||!d.classList.contains('cr-dots'))return;
