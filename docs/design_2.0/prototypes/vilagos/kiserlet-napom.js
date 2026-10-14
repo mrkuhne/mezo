@@ -665,6 +665,14 @@ ${P} .cr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scro
 ${P} .cr::-webkit-scrollbar{display:none}
 ${P} .cr-c{flex:0 0 84%;scroll-snap-align:start;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .cr-c.obs .lk{padding:14px 16px 6px}
+/* every observation card the same size (owner, 2026-10-14): the status chip on its own line above the title, the
+   title held to exactly two lines, the drawing in a fixed band, the button pinned to the bottom */
+${P} .cr-c.obs{display:flex}${P} .cr-c.obs .lk{display:flex;flex:1;flex-direction:column;padding:16px 16px 14px}
+${P} .cr-c.obs .lk-tap{display:flex;flex:1;flex-direction:column}
+${P} .cr-c.obs .lk-h{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+${P} .cr-c.obs .lk-h i{order:-1;margin:0}
+${P} .cr-c.obs .lk-h b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.3em;line-height:1.15}
+${P} .cr-c.obs .lk-go{margin-top:auto}${P} .cr-c.obs .lk-lab{margin-bottom:14px}
 ${P} .cr.sm .cr-c{flex:0 0 34%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:128px;padding:14px 8px;text-align:center}
 ${P} .cr.sm .cr-c b{font-size:13px;font-weight:700;line-height:1.2;color:var(--ink)}
 /* Mai · the old hero vessel without its card */
