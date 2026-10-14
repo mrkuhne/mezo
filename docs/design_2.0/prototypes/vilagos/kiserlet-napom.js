@@ -281,20 +281,19 @@ const msgSheet=i=>{const m=MSG[i];return `<h2 class="ng-sh">${TN[m.k]}<small>${m
   ${m.adv?`<div class="nb-a">${BS.adv?`<span class="nb-ok">${TICK_}Beállítva: az ebédnél szólok a fehérjéről.</span>`:`<button class="btn sm" data-nb="adv:${i}">Szólj az ebédnél</button>`}</div>`:''}
   <div class="nb-a"><span>Segített?</span><button class="btn sm ghost" data-toast="Köszönöm — ezt megjegyzem">Segített</button><button class="btn sm ghost" ${m.why?`data-nb="fb:${i}"`:'data-toast="Köszönöm, finomítok"'}>Nem talált</button></div>
   ${m.why&&BS.fb?`<div class="ng-chips tap">${['pontatlan','túl sok','rossz időzítés','nem rólam szól'].map(r=>`<button data-toast="Köszönöm, finomítok">${r}</button>`).join('')}</div>`:''}`};
+/* ═══ BESZÉLGETÉS · Üzenetek, round 12 (owner, 2026-10-14): out of the water layers into the A napom system — the
+       sentence and the chat button on top, the team's live topic, then Ma / Tegnap with one card per message
+       (who, when, what kind, a two-line preview, Elolvasom). ═══ */
 function streamBody(){
-  const bub=(k,sz,cls='')=>`<span class="pl-bub ${cls}" style="--c:${TC[k]};--s:${sz}px">${I(TG[k])}</span>`;
-  const row=(m,i)=>`<button class="pl-m ${m.old?'old':''}" style="--x:${m.x}px" data-nb="msg:${i}">${bub(m.k,m.sz,m.old?'old':'')}<span class="pl-b"><span class="nb-h"><b>${TN[m.k]}</b>${m.t} · ${m.kind}</span><span class="nb-t pl-2">${m.text.replace(/<br>/g,' ')}</span><span class="fh-lk">Elolvasom ›</span></span></button>`;
-  const o=(l,t,sz)=>`<i class="pl-o" style="left:${l}%;top:${t}px;--s:${sz}px"></i>`;
-  return `<div class="pl">
-  <div class="pl-air"><small>Mezo · ma · 4 üzenet</small><h2>Négy üzenet, kettő új.</h2>
-    <button class="pl-buoy" data-toast="Mezo · Chat"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg><span><b>Beszélgess Mezóval ›</b></span></button></div>
-  <div class="pl-water"><i class="pl-wave"></i>${o(86,40,10)}${o(92,150,6)}${o(80,300,8)}
-    <button class="pl-m duo" style="--x:6px" data-toast="Mezo · Élő beszélgetés"><span class="pl-two">${bub('szunya',36)}${bub('mocor',36)}</span><span class="pl-b"><span class="nb-h"><b>A csapat most erről beszél</b></span><span class="nb-t pl-2">belefér-e ma az esti röpi a rövid éjszaka után</span><span class="fh-lk">Belehallgatok ›</span></span></button>
-    ${MSG.map((m,i)=>m.old?'':row(m,i)).join('')}
-  </div>
-  <div class="pl-water deep"><i class="pl-wave"></i><p class="pl-day">tegnap</p>${o(88,60,9)}${o(78,150,6)}
-    ${MSG.map((m,i)=>m.old?row(m,i):'').join('')}
-  </div></div>`}
+  const card=(m,i)=>`<article class="bz-c ${m.old?'':'new'}">${node(m.k)}<div><div class="bz-h"><b>${TN[m.k]}</b><time>${m.t}</time></div>
+    <i class="bz-k">${m.kind}</i><p>${m.text.replace(/<br>/g,' ')}</p><button class="n8-b" data-nb="msg:${i}">Elolvasom</button></div></article>`;
+  return `<div class="mx">
+  <section class="mx-s"><h2 class="n7-h">Négy üzenet, kettő új.</h2><div class="bz-top"><button class="n9-btn" data-toast="Mezo · Chat">Beszélgess Mezóval</button></div></section>
+  <section class="mx-s ln">${KH('A csapat most erről beszél')}<div class="bz-live"><span class="bz-two">${node('szunya')}${node('mocor')}</span>
+    <div><p>Belefér-e ma az esti röpi a rövid éjszaka után?</p><button class="n8-b" data-toast="Mezo · Élő beszélgetés">Belehallgatok</button></div></div></section>
+  <section class="mx-s ln">${KH('Ma')}${MSG.map((m,i)=>m.old?'':card(m,i)).join('')}</section>
+  <section class="mx-s ln">${KH('Tegnap')}${MSG.map((m,i)=>m.old?card(m,i):'').join('')}</section>
+  <div class="ng-tail"></div></div>`}
 /* observations (Beszélgetés · Észrevételek and Mai): communicating vessels — cause and effect joined by a pipe
    that has one segment per evidence day: full = agrees, dashed = against, empty = still missing */
 const OBS=[
@@ -319,9 +318,10 @@ const obsSheet=o=>`<h2 class="ng-sh">${o.h}<small>${o.st}</small></h2>${obsGraph
     <div class="nb-a">${OS.done[o.k]?`<span class="nb-ok">${TICK_}Megjegyeztem a válaszod.</span>`:o.acts.map((a,i)=>`<button class="btn sm ${i?'ghost':''}" data-nb="obs:${o.k}">${a}</button>`).join('')}</div>
     <div class="nb-a" style="margin-top:4px"><button class="fh-lk" data-nb="ev:${o.k}">${OS.ev[o.k]?'Elrejtem, miből látod':'Miből látod?'}</button>${o.st==='Gyűlik'?'<button class="fh-lk" data-toast="Mezo · Laborfüzet — ez a minta">Laborfüzet ›</button>':''}<button class="fh-lk" data-toast="Mezo · Chat — előtöltve">Beszéljünk róla ›</button></div>`;
 function obsBody(){const left=OBS.filter(o=>!OS.done[o.k]).length;
-  return `<div class="pg-lead"><small>Észrevételek · ma</small><h2>${left?`${left===2?'Két':'Egy'} észrevétel vár a válaszodra.`:'Mindkettőre válaszoltál. Köszönöm.'}</h2></div>
-  ${OBS.map((o,i)=>`<section class="bd ${i%2?'':'w'}">${obsLinked(o)}</section>`).join('')}
-  <div class="mt-acts"><button class="btn" data-toast="Mezo · Chat">Beszéljük meg</button></div>`}
+  /* round 12: one ground, the sentence on top, each observation on the same fixed card as in Mai's carousel */
+  return `<div class="mx"><section class="mx-s"><h2 class="n7-h">${left?`${left===2?'Két':'Egy'} észrevétel vár a válaszodra.`:'Mindkettőre válaszoltál. Köszönöm.'}</h2></section>
+  <section class="mx-s ln">${KH('Ma')}${OBS.map(o=>`<div class="cr-c obs bz-full">${obsLinked(o)}</div>`).join('')}</section>
+  <section class="mx-s ln mx-end"><button class="mx-km" data-toast="Mezo · Chat"><span>Beszéljük meg</span></button></section></div>`}
 /* Életjelek: the rack. The six tubes are the approved ones, taken as they are; the remark hangs on its tube. */
 const cutOut=(html,a,b)=>{const i=html.indexOf(a),j=html.indexOf(b,i);return i<0||j<0?'':html.slice(i,j)};
 function vitalsBody(){const v=cutOut(O.uzenetek('eletjelek'),'<div class="np-vh np-six">','<div class="fh-acts">');
@@ -871,6 +871,17 @@ ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+/* Beszélgetés, round 12 */
+${P} .bz-top{margin:14px 22px 0}${P} .bz-top .n9-btn{min-height:48px;padding:0 22px;font-size:15px}
+${P} .bz-live{display:flex;align-items:center;gap:14px;margin:0 22px}${P} .bz-two{display:flex;flex:none}${P} .bz-two .nb-node+.nb-node{margin-left:-12px}
+${P} .bz-live p{margin:0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .bz-live .n8-b{margin-top:10px}
+${P} .bz-c{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;margin:0 14px 12px;padding:16px 16px 16px 14px;border-radius:22px;background:#fff;box-shadow:0 10px 24px -18px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .bz-c.new::after{content:"új";position:absolute;top:14px;right:14px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2))}
+${P} .bz-h{display:flex;align-items:baseline;gap:8px;padding-right:36px}${P} .bz-h b{font-size:16px;font-weight:700;color:var(--ink)}${P} .bz-h time{font:500 13px var(--mono,ui-monospace,monospace);color:var(--ink)}
+${P} .bz-k{display:inline-block;margin-top:6px;padding:2px 9px;border-radius:999px;font-style:normal;font-size:12px;font-weight:700;color:var(--ink);background:rgba(10,42,60,.06)}
+${P} .bz-c p{margin:8px 0 0;font-size:14px;line-height:1.45;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+${P} .bz-c .n8-b{margin-top:10px}${P} .bz-c .nb-node,${P} .bz-live .nb-node{position:relative;left:auto;top:auto;width:44px;height:44px}
+${P} .cr-c.obs.bz-full{margin:0 14px 14px}
 ${P} .ej6 .k2-vials{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px;margin:4px 6px 0}${P} .ej6 .k2-vial{min-width:0}${P} .ej6 .k2-vial small{font-size:12px;letter-spacing:-.035em;white-space:nowrap}${P} .ej6 .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff}
 ${P} .n9-none{display:flex;align-items:center;gap:14px}${P} .n9-none svg.ng{flex:none;width:84px;height:84px;margin:0}${P} .n9-none .ng-pipe,${P} .n9-none .ng-flow{display:none}
 ${P} .n9-none .n9-btn{margin-top:10px;min-height:44px;padding:0 20px;font-size:14px}
