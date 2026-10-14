@@ -146,7 +146,7 @@ function arc(mode,verdict){const A=ARC[mode],pts=A.ci.filter(c=>c[1]!=null),E=pt
   const Ex=[...E,[end,E[E.length-1][1]]],Mx=[...M,[end,M[M.length-1][1]]];
   const area=curve(Ex)+`V190H${E[0][0]}Z`,last=Ex[Ex.length-1],lastM=Mx[Mx.length-1];
   return `<h2 class="n7-h">${verdict}</h2><svg class="ng n9-arc" viewBox="0 0 360 236" role="img" aria-label="A nap íve: energia és hangulat a check-inek alapján">
-  <defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--liq1)" stop-opacity=".95"/><stop offset="1" stop-color="var(--liq2)" stop-opacity=".55"/></linearGradient></defs>
+  <defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--liq1);stop-opacity:.95"/><stop offset="1" style="stop-color:var(--liq2);stop-opacity:.55"/></linearGradient></defs>
   ${[6,12,18,24].map(h=>`<path class="n9-grid" d="M${hx(h+':00')} 30V190"/><text class="n9-ax" x="${hx(h+':00')}" y="230" text-anchor="${h===6?'start':h===24?'end':'middle'}">${String(h%24).padStart(2,'0')}:00</text>`).join('')}
   <path d="${area}" fill="url(#${g})"/><path class="n9-m" d="${curve(Mx)}"/>
   ${mode==='today'?`<path class="n9-now" d="M${end} 26V190"/><text class="n9-nt" x="${end+6}" y="36">most</text>`:''}
