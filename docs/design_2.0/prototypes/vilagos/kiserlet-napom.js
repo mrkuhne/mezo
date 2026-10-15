@@ -472,16 +472,16 @@ let face='reggel';
 const rAttr=(r,i,g)=>r[6]==='reflect'?'data-sheet="reflect"':r[6]==='intention'?'data-sheet="intention"':r[6]==='ritual'?'data-go="napzaras.1"':`data-rt="${g}:${i}"`;
 const rVerb=r=>r[6]==='reflect'?'Válaszolok':r[6]==='intention'?'Leírom':r[6]==='ritual'?'Napzárás indítása':'Megvan, pipálom';
 function chain(k,n,nx){const G=RUT[k],N=G.rows.length,dn=G.rows.filter(r=>r[4]).length;
-  return `<section class="bd ${n%2?'w':''}"><p class="fh-n"><b>${n}</b>${G.title} · ${dn}/${N}${G.stat?`<span class="rt-perf"><strong>${G.stat[0]}</strong>${G.stat[1]}</span>`:''}</p><div class="rt-chain">${G.rows.map((r,i)=>{const [nm,s,ic,str,d]=r,row=Math.floor(i/3),c=i%3,col=c+1,dir=i===N-1?'':c===2?'wrap':'rt';
+  /* round 13 (owner, 2026-10-15): one ground, a wave line above each routine, the title without a number */
+  return `<section class="mx-s ln"><div class="mx-h rt-h"><b>${G.title} · ${dn}/${N}</b>${G.stat?`<span class="rt-perf"><strong>${G.stat[0]}</strong>${G.stat[1]}</span>`:''}</div><div class="rt-chain">${G.rows.map((r,i)=>{const [nm,s,ic,str,d]=r,row=Math.floor(i/3),c=i%3,col=c+1,dir=i===N-1?'':c===2?'wrap':'rt';
     return `<button class="rt-b ${d?'done':''} ${i===nx?'now':''} ${dir} ${str==null?'ns':''}" style="grid-column:${col};grid-row:${row+1};--p:0%" ${rAttr(r,i,k)} aria-label="${nm}${d?' · kész':''}">
       <span class="rt-v">${I(ic)}${d?'<i class="rt-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg></i>':''}</span><b>${nm}</b>${i===nx?'<small><em>Most jön</em></small>':''}</button>`}).join('')}</div></section>`}
 function rutinBody(){const R=RUT[face],done=R.rows.filter(r=>r[4]).length,nx=R.rows.findIndex(r=>!r[4]),all=nx<0;
   const order=[face,...Object.keys(RUT).filter(k=>k!==face)];
-  return `<div class="rt-lead"><small>${R.title} · ${done}/${R.rows.length} kész</small><h2>${all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`}</h2>
-    <div class="rt-acts"><button class="fh-lk" data-toast="Tegnap — csak a kézi, kimaradt elemek pipálhatók">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></div>
+  return `<div class="mx"><section class="mx-s"><h2 class="n7-h">${all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`}</h2>
+    <div class="rt-acts rt-day"><button class="fh-lk" data-toast="Tegnap — csak a kézi, kimaradt elemek pipálhatók">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></section>
   ${order.map((k,i)=>chain(k,i+1,k===face?nx:-1)).join('')}
-  <section class="bd ${order.length%2?'':'w'} last">
-  <button class="rt-edit" data-go="rutin-epites">${I('t-chain')}<span><b>Rutinok szerkesztése</b></span><i>›</i></button></section>`}
+  <section class="mx-s ln mx-end rt-end"><button class="mx-km" data-go="rutin-epites">${I('t-chain')}<span>Rutinok szerkesztése</span></button></section></div>`}
 const rutinFoot=()=>{const R=RUT[face],nx=R.rows.findIndex(r=>!r[4]);return nx<0?`<span class="rt-fdone">Mind megvan mára. Szép munka.</span>`
   :`<span class="rt-fn"><small>Most jön</small><b>${R.rows[nx][0]}</b></span><button class="btn" ${rAttr(R.rows[nx],nx,face)}>${rVerb(R.rows[nx])}</button>`};
 function rutin(arg){if(arg&&RUT[arg])face=arg;return page('nap',{title:'Rutin',sub:'Nap · ma, szerda',tab:'rutin'},`<div id="rt-root">${rutinBody()}</div>`,{foot:`<div id="rt-foot" class="rt-foot">${rutinFoot()}</div>`})}
@@ -873,6 +873,10 @@ ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+/* Rutin, round 13 */
+${P} .rt-h{flex-wrap:wrap;row-gap:2px;justify-content:space-between}${P} .rt-h b{font-size:19px;white-space:nowrap}${P} .rt-h .rt-perf{margin-left:0;font-size:13px;color:var(--ink);white-space:nowrap}
+${P} .mx-s>.rt-chain{margin-top:10px}${P} .mx-s .rt-b:not(.wrap):nth-last-child(-n+3){height:100px}
+${P} .rt-day{margin:8px 22px 0}${P} .rt-end{padding-bottom:40px}
 /* Beszélgetés, round 12 */
 ${P} .bz-top{margin:14px 22px 0}${P} .bz-top .n9-btn{min-height:48px;padding:0 22px;font-size:15px}
 ${P} .bz-live{display:flex;align-items:center;gap:14px;margin:0 22px}${P} .bz-two{display:flex;flex:none}${P} .bz-two .nb-node+.nb-node{margin-left:-12px}
