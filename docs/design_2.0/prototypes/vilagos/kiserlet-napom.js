@@ -405,14 +405,14 @@ const ciSheet=i=>{const c=CI[i];return `<h2 class="ng-sh">${c.n}<small>${c.t} ·
   ${c.note?`<p class="ng-pr">${c.note}</p>`:''}<div class="nb-a"><button class="btn sm ghost" data-n="ckslot:${c.t}">Újra kitöltöm</button></div>`};
 function checkin2(){const cur=CI.find(c=>c.st==='now'),done=CI.filter(c=>c.st==='done').length,hot=ciHot(),H=k=>hot.includes(k)?'hot':'',G=i=>i===5?'<span class="ci-g"></span>':'';
   return page('nap',{title:'Check-in',sub:`Nap · ${done} / 4 pillanatkép`,back:'mai'},`${DEFS}
-  <section class="bd"><div class="pg-lead"><small>A nap négy pillanata · ${done} / 4</small><h2>A délutáni most esedékes.</h2></div></section>
-  <section class="bd w"><div class="ci">
-    <div class="ci-l"><span class="ci-h"></span>${CI_ROWS.map(([k,l,ic],i)=>`${i===5?'<span class="ci-g"><b>Időpont szerint</b></span>':''}<span class="ci-r ${H(k)}">${I(ic)}<b>${l}</b>${H(k)?`<em>${ciMove(k)>0?'+':'−'}${Math.abs(ciMove(k))}</em>`:''}</span>`).join('')}<span class="ci-f"></span></div>
+  <div class="mx ci2"><section class="mx-s"><h2 class="n7-h">A délutáni most esedékes.</h2></section>
+  <section class="mx-s ln"><div class="ci">
+    <div class="ci-l"><span class="ci-h"></span>${CI_ROWS.map(([k,l,ic],i)=>`${i===5?'<span class="ci-g"><b>Napszakhoz kötött</b></span>':''}<span class="ci-r ${H(k)}">${I(ic)}<b>${l}</b>${H(k)?`<em>${ciMove(k)>0?'+':'−'}${Math.abs(ciMove(k))}</em>`:''}</span>`).join('')}<span class="ci-f"></span></div>
     ${CI.map((c,i)=>`<button class="ci-c ${c.st}" ${c.st==='done'?`data-nb="cis:${i}"`:c.st==='now'?'data-n="ck:open"':`data-n="ckslot:${c.t}"`} aria-label="${c.n} ${c.t}">
       <span class="ci-h"><b>${c.t}</b><small>${c.n}</small></span>
       ${CI_ROWS.map(([k],r)=>{const v=c.a&&c.a[k],asked=c.ask.includes(k);return `${G(r)}<span class="ci-r ${H(k)}">${asked?`<i class="ci-v ${v==null?'e':''} ${k==='pain'&&v?'wn':''} ${v!=null&&v<6?'lo':''}" style="--p:${v?v*10:0}%"><b>${v??''}</b></i>`:'<i class="ci-no"></i>'}</span>`}).join('')}
       <span class="ci-f fh-lk">${c.st==='done'?'kész ›':c.st==='now'?'most ›':'előre ›'}</span></button>`).join('')}
-  </div></section>`,{foot:`<div class="rt-foot"><span class="rt-fn"><small>Most jön · ${cur.t}</small><b>${cur.n}i check-in</b></span><button class="btn" data-n="ck:open">Kitöltöm</button></div>`})}
+  </div></section><div class="ng-tail"></div></div>`,{foot:`<div class="rt-foot"><span class="rt-fn"><small>Most jön · ${cur.t}</small><b>${cur.n}i check-in</b></span><button class="btn" data-n="ck:open">Kitöltöm</button></div>`})}
 
 /* Gyors logolás: the drawn version (nine drops above the day's jar) was shown and NOT picked — the approved page stays. */
 
@@ -873,6 +873,12 @@ ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+/* Check-in, round 14 (2026-10-17): one ground; the group label is a wave line + a real heading inside the grid */
+${P} .ci2 .ci{margin-top:6px}
+${P} .ci2 .ci-l .ci-g{position:relative;height:64px;padding-bottom:8px;overflow:visible}
+${P} .ci2 .ci-l .ci-g::before{content:"";position:absolute;left:0;width:calc(390px - 36px);max-width:calc(100vw - 36px);top:12px;height:12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 12'%3E%3Cpath d='M0 6 Q12 0 24 6 T48 6' fill='none' stroke='%23B9CFDD' stroke-width='2'/%3E%3C/svg%3E") repeat-x 0 0/48px 12px}
+${P} .ci2 .ci-g b{font:800 17px var(--disp,inherit);letter-spacing:-.02em;text-transform:none;color:var(--ink)}
+${P} .ci2 .ci-c .ci-g{height:64px}
 /* Rutin, round 13 */
 ${P} .rt-h{flex-wrap:wrap;row-gap:2px;justify-content:space-between}${P} .rt-h b{font-size:19px;white-space:nowrap}${P} .rt-h .rt-perf{margin-left:0;font-size:13px;color:var(--ink);white-space:nowrap}
 ${P} .mx-s>.rt-chain{margin-top:10px}${P} .mx-s .rt-b:not(.wrap):nth-last-child(-n+3){height:100px}
