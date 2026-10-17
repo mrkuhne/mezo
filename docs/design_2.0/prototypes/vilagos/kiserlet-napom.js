@@ -344,7 +344,11 @@ function uzenetek(tab){tab=tab||'uzenetek';
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!b)return;const a=b.dataset.nb,[k,x]=a.split(':');
   if(k==='cis'){F.openSheet(ciSheet(+x));return}
   if(k==='msg'){F.openSheet(msgSheet(+x));return}
-  if(k==='qs'){const q=QS[+x];F.openSheet(`<h2 class="ng-sh">${q.s}<small>+${q.xp} XP</small></h2><p class="ng-pr"><b>${q.t}</b></p>${q.why?`<p class="ng-pr">${q.why}</p>`:''}<p class="ng-pr">${q.foot||''}</p><p class="ng-pr">A küldetés ajánlat: ha kimarad, csendben lejár, bukás nincs.</p><div class="nb-a">${q.cta?`<button class="btn sm" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="btn sm ghost" data-toast="Csere: új ajánlat érkezik a helyére · ma már nincs több">Csere · 1 maradt</button></div>`);return}
+  if(k==='qs'){const q=QS[+x];F.openSheet(`<div class="dv"><div class="dv-top">${flask(q,+x)}<div><small>${q.s}</small><b>+${q.xp}<u>XP</u></b><i>${q.foot?q.foot.split(' · ')[0]:'ajánlat'}</i></div></div>
+    <div class="mg-tx"><p><b>${q.t}</b></p>${q.why?`<p>${q.why}</p>`:''}</div>
+    ${q.foot?`<section class="dv-s"><h3>Hogyan záródik</h3><p class="ng-pr" style="margin:0">${q.foot.split(' · ')[1][0].toUpperCase()+q.foot.split(' · ')[1].slice(1)}.</p></section>`:''}
+    <section class="dv-s"><h3>Ha kimarad</h3><p class="ng-pr" style="margin:0">Csendben lejár, bukás nincs. Ma még egyszer cserélheted egy másik ajánlatra.</p></section>
+    ${q.cta?`<button class="dv-btn pri" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="dv-btn" data-toast="Csere: új ajánlat érkezik a helyére · ma már nincs több">Cserélem · 1 maradt</button></div>`);return}
   if(k==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok');F.openSheet(msgSheet(+x))}else if(k==='fb'){BS.fb=!BS.fb;F.openSheet(msgSheet(+x))}else if(a==='jar')BS.jar=!BS.jar;else if(k==='exp')BS.exp[x]=!BS.exp[x];
   else if(k==='obs'){OS.done[x]=true;F.closeSheet();F.toast('Megjegyeztem a válaszod')}else if(k==='ev'){OS.ev[x]=!OS.ev[x];F.openSheet(obsSheet(OBS.find(o=>o.k===x)))}
   else if(k==='osh'){F.openSheet(obsSheet(OBS.find(o=>o.k===x)));return}
@@ -447,17 +451,17 @@ function flask(q,i){const id=uid(),d=FLASK[i%3],y=q.done?30:94-56*q.p/100,g=q.do
 function kuldetesek(arg){if(arg)return O.kuldetesek(arg);const tot=QS.reduce((a,q)=>a+q.xp,0),got=QS.filter(q=>q.done).reduce((a,q)=>a+q.xp,0),dn=QS.filter(q=>q.done).length,cid=uid();
   const C='M30 8H330V46C330 74 300 84 180 84C60 84 30 74 30 46Z';
   return page('nap',{title:'Napi küldetések',sub:'Nap · ajánlatok mára',back:'mai'},`${DEFS}
-  <section class="bd"><div class="pg-lead"><small>Mai ajánlatok · +${tot} XP</small><h2>${dn} kész a ${QS.length} ajánlatból.</h2></div>
+  <div class="mx"><section class="mx-s"><h2 class="n7-h">${dn} kész a ${QS.length} ajánlatból.</h2>
   <svg class="ng" viewBox="0 0 360 132" role="img" aria-label="A mai XP gyűjtője: ${got} a ${tot}-ból" style="margin-top:10px"><defs><clipPath id="${cid}"><path d="${C}"/></clipPath></defs>
     <g class="ng-ves"><path class="ng-glass" d="${C}"/><g clip-path="url(#${cid})"><path class="ng-wv" fill="url(#ng-g-ok)" d="M-48 ${84-76*got/tot}${' q12 -5 24 0 t24 0'.repeat(9)} V120 H-48Z"/></g><path class="ng-line" d="${C}"/></g>
     <path class="ng-rim" d="M24 8H336"/>${QS.map((q,i)=>`<path class="ng-mark" d="M${30+300*(i+1)/QS.length} 12V20" />`).slice(0,-1).join('')}
     <text class="qs-xp" x="180" y="50" text-anchor="middle">+${got}<tspan class="ng-u" dx="5">XP</tspan></text>
-    <text class="ng-s" x="180" y="108" text-anchor="middle">jóváírva ma · a ${tot}-ból</text>${drip(180,0)}</svg></section>
-  ${QS.map((q,i)=>`<section class="bd ${i%2?'':'w'} qs"><div class="qs-r">${flask(q,i)}<div class="qs-b">
-      <p class="nb-h"><b>${q.s}</b><i class="nb-st ${q.done?'ok':''}">${q.done?'kész':`+${q.xp} XP`}</i></p>
-      <p class="qs-t">${q.t}</p>
-      <div class="nb-a" style="margin-top:4px">${q.done?`<span class="nb-ok">${TICK_}+${q.xp} XP jóváírva</span>`:`${q.cta?`<button class="btn sm" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="fh-lk" data-nb="qs:${i}">Részletek ›</button>`}</div>
-    </div></div></section>`).join('')}`)}
+    <text class="qs-of" x="180" y="108" text-anchor="middle">a ${tot}-ból</text>${drip(180,0)}</svg></section>
+  <section class="mx-s ln">${KH('Mai ajánlatok')}${QS.map((q,i)=>`<article class="n8-c qs2 ${q.done?'done':''}">${flask(q,i)}<div>
+      <div class="n8-t"><b>${q.s}</b><i class="nb-st ${q.done?'ok':''}">${q.done?'kész':`+${q.xp} XP`}</i></div>
+      <p>${q.t}</p>
+      ${q.done?`<span class="nb-ok qs-ok">${TICK_}+${q.xp} XP jóváírva</span>`:`<div class="qs-acts">${q.cta?`<button class="n9-btn" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="n8-b" data-nb="qs:${i}">Részletek</button></div>`}
+    </div></article>`).join('')}</section><div class="ng-tail"></div></div>`)}
 
 /* ═══ RUTIN · the chain as a string of vessels that winds down the page — three per row, any number of rows.
        The vessel's level is the habit's 28-day strength; the pipe behind it is full up to where you have got today. ═══ */
@@ -873,6 +877,12 @@ ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+/* Napi küldetések, round 15 (2026-10-17) */
+${P} .qs-of{font-size:15px;font-weight:700;fill:var(--ink)}
+${P} .qs2 svg.qf{width:64px;height:64px;margin:0}${P} .qs2 .n8-t i{flex:none}${P} .n8-c.qs2 p{-webkit-line-clamp:3}
+${P} .qs-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}${P} .qs-acts .n8-b{margin:0}${P} .qs-acts .n9-btn{margin:0;min-height:40px;padding:0 16px}
+${P} .qs-ok{display:inline-flex;margin-top:10px}
+${P} .dv-top svg.qf{flex:none;width:96px;height:96px;margin:0}${P} .dv .dv-btn+.dv-btn{margin-top:10px}
 /* Check-in, round 14 (2026-10-17): one ground; the group label is a wave line + a real heading inside the grid */
 ${P} .ci2 .ci{margin-top:6px}
 ${P} .ci2 .ci-l .ci-g{position:relative;height:64px;padding-bottom:8px;overflow:visible}
