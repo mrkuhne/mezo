@@ -62,16 +62,36 @@ function sess3(c){const h=c.html,items=[];let i=0;
     const chip=g(sm,/<span class="st ([^"]*)">([^<]*)<\/span>/,2),facts=sm.replace(/<span class="st[\s\S]*?<\/span>/,'').replace(/^[^·]*· /,'').trim();
     const btns=[...tail.matchAll(/<button[\s\S]*?<\/button>/g)].map(m=>m[0]).join(''),said=tail.replace(/<button[\s\S]*?<\/button>/g,'').replace(/<\/?div[^>]*>/g,'').replace(/<span class="fb[\s\S]*?<\/span>/g,'').trim();
     return `<article class="n8-c">${drop(ico(s))}<div><div class="n8-t"><b>${ti}</b><em>${t||chip}</em></div><p>${facts}</p>${said&&!/^<span>\s*<\/span>$/.test(said)?`<p class="ex-said">${said}</p>`:''}${btns?`<div class="qs-acts">${pills(btns)}</div>`:''}</div></article>`}).join('')}</div></section>`}
-function kcal3(c){const h=c.html,earned=+g(h,/fh-big">\+(\d+)/)||0,pend=+g(h,/\+(\d+) kcal<\/b> még jön/)||0,bar=g(h,/(<span class="vs-split"[\s\S]*?<\/span>)/);
-  const say=!earned?`<b>+${pend} kcal</b> kerül a keretedbe, ha megcsinálod.`:pend?`<b>+${earned} kcal</b> már bent van, <b>+${pend}</b> még jöhet.`:`<b>+${earned} kcal</b> került ma a keretedbe.`;
-  return `<section class="mx-s ln">${KH('A mai keretedhez','',`<button class="fh-lk" data-exd="kcal:${earned}:${pend}">Részletek ›</button>`)}<p class="ex-say">${say}</p><div class="ex-bar">${bar}</div></section>`}
+/* round 2 (owner, 2026-10-19: "kérek custom grafikát"): the energy is a flame-shaped vessel. Solid = already in the
+   budget, the pale part with the dashed line = what comes if you do it. Beside it the sources, each with its share.
+   The page only knows the two totals; the sources are the subset of the day's sessions (gym 460, röpi 190, extra
+   310 — the approved page's numbers) that adds up to each total. */
+const SRCK=[['t-dumbbell','Pull Day',460],['t-volley','Röplabda',190],['t-run','Reggeli mozgás',310]];
+const sub=(n,pool)=>{for(let m=0;m<1<<pool.length;m++){const pk=pool.filter((_,i)=>m>>i&1);if(pk.reduce((q,x)=>q+x[2],0)===n)return pk}return []};
+const FLAME='M52 4C58 22 86 38 86 74A34 34 0 0 1 18 74C18 56 28 46 34 36C37 50 44 56 50 58C45 40 46 20 52 4Z';
+const flame=(e,p)=>{const id='exf'+(++FL),tot=e+p||1,top=18,bot=108,h=bot-top,ye=bot-h*e/tot,yp=top+22;
+  const wv=y=>`M0 ${y}${' q8 -4 16 0 t16 0'.repeat(4)} V120 H0Z`;
+  return `<svg class="ng ex-fl" viewBox="0 0 104 112" aria-hidden="true"><defs><clipPath id="${id}"><path d="${FLAME}"/></clipPath>
+    <linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:#F6B44B"/><stop offset="1" style="stop-color:#E5845A"/></linearGradient></defs>
+    <path class="ng-glass" d="${FLAME}"/><g clip-path="url(#${id})">${p?`<path d="${wv(yp)}" style="fill:color-mix(in srgb,#F6B44B 38%,#fff)"/>`:''}${e?`<path d="${wv(ye)}" fill="url(#${id}g)"/>`:''}</g>
+    ${p?`<path d="M20 ${yp+1}H86" style="fill:none;stroke:#D08A2E;stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round" clip-path="url(#${id})"/>`:''}
+    <path class="ng-line" d="${FLAME}"/><path class="ng-hi" d="M30 66C29 76 33 86 40 92"/></svg>`};
+let FL=0;
+function kcal3(c){const h=c.html,earned=+g(h,/fh-big">\+(\d+)/)||0,pend=+g(h,/\+(\d+) kcal<\/b> még jön/)||0;
+  const done=sub(earned,SRCK),todo=sub(pend,SRCK.filter(x=>!done.includes(x)).slice(0,2));
+  const say=!earned?'kerül a keretedbe, ha megcsinálod':pend?`már bent van, +${pend} még jöhet`:'került ma a keretedbe';
+  return `<section class="mx-s ln">${KH('A mai keretedhez','',`<button class="fh-lk" data-exd="kcal:${earned}:${pend}">Részletek ›</button>`)}
+    <div class="ex-kc">${flame(earned,pend)}<div><p class="ex-kn"><b>+${earned||pend}</b> kcal</p><p class="ex-ks">${say}</p>
+    <ul class="ex-src">${[...done.map(x=>[x,1]),...todo.map(x=>[x,0])].map(([[ic,l,v],d])=>`<li class="${d?'on':''}">${I(ic)}<span>${l}</span><b>+${v}</b></li>`).join('')}</ul></div></div></section>`}
 const IMP=[];
 function imp3(c){const h=c.html;IMP.length=0;
-  for(const m of h.matchAll(/<div class="fh-mus vs-mt"><span class="mchp sm" style="--c:([^"]+)">[\s\S]*?<span class="l">([^<]*)<small>([^<]*)<\/small><\/span><span class="v">([^<]*)<\/span>/g)){
-    const [d,p]=(m[4].match(/(\d+) \/ (\d+)/)||[0,0,0]).slice(1).map(Number);IMP.push({c:m[1],l:m[2],w:m[3],d,p})}
+  for(const m of h.matchAll(/<div class="fh-mus vs-mt">(<span class="mchp sm" style="--c:([^"]+)">[\s\S]*?<\/svg><\/span>)<span class="l">([^<]*)<small>([^<]*)<\/small><\/span><span class="v">([^<]*)<\/span>/g)){
+    const [d,p]=(m[5].match(/(\d+) \/ (\d+)/)||[0,0,0]).slice(1).map(Number);IMP.push({chip:m[1].replace('mchp sm','mchp'),c:m[2],l:m[3],w:m[4],d,p})}
   const mx=Math.max(1,...IMP.map(r=>r.p));
   return `<section class="mx-s ln">${KH(c.head||'Hatás az izomzatodra','',`<button class="fh-lk" data-exd="izom">Részletek ›</button>`)}
-    <div class="ex-imp">${F.vials(IMP.map(r=>({l:r.l,s:r.w,v:r.p?`${r.d}/${r.p}`:r.w,p:r.p?Math.max(r.d,r.p)/mx*88:0,c:`color-mix(in srgb,${r.c} 74%,#0A2A3C)`,mark:'',on:{go:'terheles'}})),{h:118})}</div></section>`}
+    <div class="ex-imp">${chips(F.vials(IMP.map(r=>({l:r.l,s:r.w,v:r.p?`${r.d}/${r.p}`:r.w,p:r.p?Math.max(r.d,r.p)/mx*88:0,c:`color-mix(in srgb,${r.c} 74%,#0A2A3C)`,mark:'',on:{go:'terheles'}})),{h:118}))}</div></section>`}
+/* the muscle-group drawing above each tube's number (owner, round 2: "izomcsoport grafika ikont") */
+const chips=v=>{let i=0;return v.replace(/<span class="k2-tube"/g,m=>`<span class="ex-mc">${(IMP[i++]||{}).chip||''}</span>`+m)};
 const MORE=[['t-dumbbell','Egyedi edzés','data-sheet="custom"'],['t-volley','Sport naplózása','data-go="sportlog"'],['c-i-retegek','Mezociklus','data-go="run"'],['c-i-sport','Sportjaid','data-go="sport"']];
 const more3=()=>`<section class="mx-s ln">${KH('Vagy inkább')}<div class="cr sm">${MORE.map(([ic,t,a])=>`<button class="cr-c" ${a}><span class="mt-bub">${I(ic)}</span><b>${t}</b></button>`).join('')}</div>${dots(MORE.length-2)}</section>`;
 function mai3(a){const base=O.mai(a);
@@ -95,7 +115,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-exd]');if(
     ${dvMezo(`Ennyit ad a mai mozgásod a napi keretedhez: a Pull Day kb. 460 kcal, a röplabda kb. 190. Ami megvolt, az már bent van, a többi akkor kerül be, ha megcsinálod. Ugyanez a szám áll a Fuel keretében. Becslés, nem mérés.`)}
     <button class="dv-btn pri" data-dom="fuel">Megnézem a Fuelben</button></div>`)}
   if(k==='izom'){const top=IMP[0]||{l:'Hát',w:'erős'};F.openSheet(`<div class="dv">${dvTop('t-muscle','Hatás az izomzatodra',top.l,'',top.w)}
-    <div class="ex-imp dv-imp">${F.vials(IMP.map(r=>({l:r.l,s:r.w,v:`${r.d}/${r.p}`,p:r.p?Math.max(r.d,r.p)/Math.max(1,...IMP.map(q=>q.p))*88:0,c:`color-mix(in srgb,${r.c} 74%,#0A2A3C)`,mark:''})),{h:118})}</div>
+    <div class="ex-imp dv-imp">${chips(F.vials(IMP.map(r=>({l:r.l,s:r.w,v:`${r.d}/${r.p}`,p:r.p?Math.max(r.d,r.p)/Math.max(1,...IMP.map(q=>q.p))*88:0,c:`color-mix(in srgb,${r.c} 74%,#0A2A3C)`,mark:''})),{h:118}))}</div>
     ${dvMezo(`A cső annyira telt, amennyit a mai terv kér az izomtól; a szám a kész és a tervezett szett. Itt a mai gym terved látod, a sportod terhelését külön, becsléssel számoljuk. Becslés, nem mérés.`)}
     <button class="dv-btn pri" data-go="terheles">A heti terhelésem</button></div>`)}});
 
@@ -110,7 +130,7 @@ ${P} .ex-hero{padding-top:6px}
 ${P} .ex-eb{display:block;margin:6px 22px 0;font-size:13px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
 ${P} .ex-hero .n7-h{margin:4px 22px 0;text-wrap:balance}
 ${P} .ex-fig{display:flex;flex-direction:column;align-items:center;margin:14px 0 0}
-${P} .ex-fig .vs-body{display:block;width:140px}${P} .ex-fig .vs-body svg{width:100%;height:auto;display:block}
+${P} .ex-fig .vs-body{display:block;width:100px}${P} .ex-fig .vs-body svg{width:100%;height:auto;display:block}
 ${P} .ex-fig.off .vs-body{opacity:.45;filter:grayscale(.6)}
 ${P} .ex-fig small{margin-top:6px;font-size:13px;color:var(--ink)}
 ${P} .ex-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 22px 0}
@@ -125,7 +145,14 @@ ${P} .ex-mz p{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink)}${P} .e
 ${P} .ex-cards{display:grid;gap:12px;margin:0 18px}${P} .ex-cards .n8-c{margin:0}
 ${P} .ex-said{font-size:13.5px}
 ${P} .ex-say{margin:0 22px;font-size:16px;line-height:1.5;color:var(--ink)}${P} .ex-say b{font-weight:800}
-${P} .ex-bar{margin:12px 22px 0}${P} .ex-bar .vs-split{height:14px}
+${P} .ex-kc{display:flex;align-items:center;gap:16px;margin:0 22px}${P} .ex-kc>div{flex:1;min-width:0}
+${P} svg.ex-fl{flex:none;width:96px;height:104px;margin:0;filter:drop-shadow(0 12px 14px rgba(229,132,90,.22))}
+${P} .ex-kn{margin:0;font-size:15px;font-weight:700;color:var(--ink)}${P} .ex-kn b{font:800 30px/1 var(--disp,inherit);letter-spacing:-.6px}
+${P} .ex-ks{margin:4px 0 0;font-size:14px;line-height:1.4;color:var(--ink)}
+${P} .ex-src{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+${P} .ex-src li{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)}${P} .ex-src li span{flex:1;min-width:0}
+${P} .ex-src svg.ic{width:22px;height:22px;flex:none}${P} .ex-src li b{font-weight:800}${P} .ex-src li:not(.on) b{color:#B5772A}
+${P} .ex-mc{display:flex;justify-content:center;margin:0 0 8px}${P} .ex-mc .mchp{width:44px;height:44px}${P} .ex-mc .mchp svg{width:100%;height:100%}
 ${P} .ex-imp{margin:0 18px}${P} .ex-imp .k2-vials{gap:8px}${P} .ex-imp .k2-vial{min-width:0}${P} .ex-imp .k2-tube{width:58px!important;margin:0 auto}${P} .dv-imp{margin:8px 0 4px}
 ${P} .ex-keep{margin:0 18px}
 ${P} .ds small{font-size:12px}${P} .ds i{font-size:12px}
