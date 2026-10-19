@@ -1,7 +1,7 @@
-// Indító-képernyő, valódi böngészőben (Folyadék F1, mezo-n4wf5.1: „egy edény, öt csepp").
+// Indító-képernyő, valódi böngészőben (Folyadék F1, mezo-n4wf5.1; mezo-rn5q7: „cím, és kiesnek a cseppek").
 //
 // Amit a jsdom nem tud megnézni: a valódi geometria (a nyitány a telefon-képernyőt tölti ki,
-// 320 px-en sem lóg ki), az időzítés (a CSS-idővonal a 3 s-os átadáshoz igazodik), és az ÁTADÁS:
+// 320 px-en sem lóg ki), az időzítés (a CSS-idővonal az 1,6 s-os átadáshoz igazodik), és az ÁTADÁS:
 // a splash cseppjei pixelre ott állnak a végkockán, ahol az alsó sáv cseppjei utána.
 import { expect, test, type Page } from '@playwright/test'
 import { seedKalauzSeen } from './kalauzSeed'
@@ -28,7 +28,7 @@ async function seek(page: Page, t: number) {
   }, t)
 }
 
-test('a nyitány betölti a telefon-képernyőt: egy edény öt réteggel, öt csepp, majd átadja a Mai-t', async ({ page }) => {
+test('a nyitány betölti a telefon-képernyőt: szó-logó, öt csepp, majd átadja a Mai-t', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.clock.install({ time: new Date('2026-09-15T12:00:00+02:00') })
@@ -38,8 +38,7 @@ test('a nyitány betölti a telefon-képernyőt: egy edény öt réteggel, öt c
   await expect(splash).toBeVisible()
   await page.waitForLoadState('networkidle')
 
-  await expect(splash.locator('.fo-sp-ves')).toHaveCount(1)
-  await expect(splash.locator('.fo-sp-stk > i')).toHaveCount(5)
+  await expect(splash.locator('.fo-sp-ves')).toHaveCount(0)
   await expect(splash.locator('.fo-nav .fo-drop')).toHaveCount(5)
   await expect(splash.locator('canvas')).toHaveCount(0)
   await expect(splash.locator('.fo-sp-wm')).toHaveText('boop')
@@ -47,16 +46,16 @@ test('a nyitány betölti a telefon-képernyőt: egy edény öt réteggel, öt c
   expect(await splash.boundingBox()).toEqual({ x: 0, y: 0, width: 390, height: 844 })
   await expect(page.locator('.startup-content')).toHaveAttribute('inert', '')
 
-  // A kivezetés a 2,4 s-nál kezdődik és a 3 s-ig tart (a CSS-idővonal a számtáblából jön).
+  // A kivezetés az 1,15 s-nál kezdődik és az 1,6 s-ig tart (a CSS-idővonal a számtáblából jön).
   expect(await splash.evaluate((el) => {
     const s = getComputedStyle(el)
     return [s.animationName, s.animationDelay, s.animationDuration]
-  })).toEqual(['fo-sp-out', '2.4s', '0.6s'])
+  })).toEqual(['fo-sp-out', '1.15s', '0.45s'])
 
   // A csepp-sor nem kezelhető: se link, se fókuszpont.
   expect(await splash.locator('.fo-nav a, .fo-nav button, .fo-nav [tabindex]').count()).toBe(0)
 
-  await page.clock.fastForward(3000)
+  await page.clock.fastForward(1600)
   await expect(splash).toHaveCount(0)
   await expect(page).toHaveURL(/\/nap$/)
   await expect(page.locator('.startup-content')).not.toHaveAttribute('inert')
@@ -73,9 +72,9 @@ test('320 px-en semmi nem lóg ki a nyitányból (a leszálló cseppek végkock�
   await page.clock.pauseAt(new Date('2026-09-15T12:00:01+02:00'))
   await page.goto('/')
   await expect(page.getByRole('status', { name: 'Boop betöltése' })).toBeVisible()
-  await seek(page, 2300)
+  await seek(page, 1100)
   const boxes = await page.locator('.fo-sp').evaluate((root) =>
-    [...root.querySelectorAll('.fo-sp-ves, .fo-sp-wm, .fo-nav, .fo-drop')].map((e) => {
+    [...root.querySelectorAll('.fo-sp-wm, .fo-nav, .fo-drop')].map((e) => {
       const r = e.getBoundingClientRect()
       return { cls: e.className.toString(), left: r.left, right: r.right }
     }))
@@ -97,7 +96,7 @@ test('átadás: a splash cseppjei a végkockán ott állnak, ahol az alsó sáv 
   await expect(splash).toBeVisible()
   expect(await splash.evaluate((el) => el.getAnimations({ subtree: true }).length)).toBe(0)
   const before = await dropBoxes(page, '.fo-sp')
-  await page.clock.fastForward(3000)
+  await page.clock.fastForward(1600)
   await expect(splash).toHaveCount(0)
   const after = await dropBoxes(page, '.fo-nav')
   expect(before).toHaveLength(DOMAINS.length)
@@ -119,9 +118,9 @@ test('asztali szélességen a telefon-képernyőn belül marad, csökkentett moz
   expect(await splash.boundingBox()).toEqual(await phoneScreen.boundingBox())
   expect((await splash.boundingBox())!.width).toBe(416)
   // Csökkentett mozgás: a végkocka áll, de EGYETLEN animáció sem fut — a kivezetés sem.
-  await expect(splash.locator('.fo-sp-ves')).toHaveCount(1)
+  await expect(splash.locator('.fo-sp-wm')).toHaveText('boop')
   expect(await splash.evaluate((element) => element.getAnimations({ subtree: true }).length)).toBe(0)
-  await page.clock.fastForward(3000)
+  await page.clock.fastForward(1600)
   await expect(splash).toHaveCount(0)
   await expect(page).toHaveURL(/\/nap\/rutin$/)
 })
@@ -138,7 +137,7 @@ test('a nyitány az appba olvad át: halványulás közben a valódi alsó sáv 
   const splash = page.getByRole('status', { name: 'Boop betöltése' })
   await expect(splash).toBeVisible()
   await page.waitForLoadState('networkidle')
-  await seek(page, 2800)
+  await seek(page, 1400)
 
   const opacity = Number(await splash.evaluate((el) => getComputedStyle(el).opacity))
   expect(opacity).toBeGreaterThan(0)

@@ -196,6 +196,8 @@ Awaiting the owner's OK; nothing below is decided until he answers.
 - **Opening animation: B and C together** ("öt csepp nagyon menő, de az egy edény animációval együtt").
   Drawn as one story at `#w-nap-indito`: the vessel fills with the five layers, then the stack drains
   through the bottom and each layer lands as a drop in its place in the bottom bar. A/B/C are gone.
+  **Superseded 2026-10-19 (`mezo-rn5q7`):** too long — now only the wordmark, and the five drops fall
+  out of it into the bar (1.6 s). The vessel is gone from `#w-nap-indito` and the app.
 - **Mixed look: light** ("világosra hangolva"). `#w-<d>-atmenet` shows only that.
 - **The day orb stays a header button; Mezo üzenetei stays too** ("ne veszítsük el azt a funkciót").
   The hub header is now two lines: context line + five 38 px buttons (Minden oldal · Mezo üzenetei ·

@@ -12,15 +12,15 @@ const NAVC=['#1F6FEB','#F26A3D','#1E9E6A','#6D5BD0','#0E9AA7'];
 const W=(c,o=1,cls='')=>`<svg class="sp-w ${cls}" viewBox="0 0 800 20" preserveAspectRatio="none" aria-hidden="true"><path fill="${c}" opacity="${o}" d="M0 10 Q25 0 50 10 T100 10 T150 10 T200 10 T250 10 T300 10 T350 10 T400 10 T450 10 T500 10 T550 10 T600 10 T650 10 T700 10 T750 10 T800 10 V20 H0Z"/></svg>`;
 
 /* ═══ 1 · the opening animation ═══ */
-/* Owner's choice (2026-10-09): "öt csepp, de az egy edénnyel együtt". One vessel fills with the five areas' liquids,
-   then lets them go one by one: each layer leaves through the bottom as a drop and lands in its place in the bottom bar. */
-const splash=()=>`<div class="sp sp-d"><div class="sp-ves"><div class="sp-stk">${DOMS.map(([k,l,c,c2],i)=>`<i style="--i:${i};--c1:${c2};--c2:${c};--lv:${(i+1)*17+4}%;z-index:${9-i}">${W(c2)}</i>`).join('')}</div><em></em></div><b class="sp-wm">boop</b>
+/* Owner (2026-10-19, mezo-rn5q7): the vessel intro was too long — "csak a cím, és kiesnek a kis menü-buborékok".
+   The wordmark appears, the five drops fall out of it one by one and land in their places in the bottom bar. 1.6 s. */
+const splash=()=>`<div class="sp sp-d"><b class="sp-wm">boop</b>
   <nav class="fh-nav sp-bar" aria-hidden="true">${DOMS.map(([k,l],i)=>`<button tabindex="-1" class="${k==='nap'?'on':''}" style="--c:${NAVC[i]};--i:${i}"><span class="sp-dx"><span class="sp-dr">${F.csepp('ok',k==='nap'?86:[0,34,62,50,58][i],{s:k==='nap'?40:34,color:NAVC[i],alive:false})}</span></span><span class="sp-l">${l}</span></button>`).join('')}</nav></div>`;
 function indito(){window.FH_NOFAB=true;let app='';try{app=FREG.nap.routes.mai('')}finally{window.FH_NOFAB=false}
   return `${app}${splash()}<div class="sp-ctl" data-proto><button data-go="indito" aria-label="Újra lejátszás">↻ Újra</button></div>`}
 let spT=[];
 function runSplash(){spT.forEach(clearTimeout);spT=[];const sp=document.querySelector('#phone .sp');if(!sp)return;
-  spT.push(setTimeout(()=>sp.classList.add('out'),2400),setTimeout(()=>sp.classList.add('gone'),3000))}
+  spT.push(setTimeout(()=>sp.classList.add('out'),1150),setTimeout(()=>sp.classList.add('gone'),1600))}
 
 /* ═══ 2 · the frame around a page that still wears the old look ═══ */
 const HUB={nap:['Ma','mai'],edzes:['Edzés','mai'],fuel:['Fuel','mai'],mezo:['Mezo','fal'],en:['Én','en']};
@@ -79,33 +79,23 @@ F.css(`
 .sp-ctl{position:absolute;z-index:95;left:50%;top:12px;transform:translateX(-50%);display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:0 0 0 1.5px rgba(10,42,60,.18),0 10px 20px -12px rgba(10,42,60,.5);white-space:nowrap}
 .sp-ctl button{padding:6px 10px;border-radius:999px;font:700 11.5px/1 var(--ff);color:#4E6B7A}.sp-ctl button.on{color:#fff;background:#0A2A3C}
 .sp-dx,.sp-dr{display:block}.sp-dr{transform-origin:50% 100%}
-.sp-d{--dy:calc(-79cqh + 300px);--sw:calc((100cqw - 32px) / 5)}
-.sp-ves{position:absolute;z-index:40;left:50%;top:21%;width:150px;height:250px;margin-left:-75px;border-radius:75px;overflow:hidden;isolation:isolate;background:linear-gradient(180deg,#fff,#F4FAFC);box-shadow:inset 0 0 0 2px rgba(10,42,60,.07),inset 0 10px 22px -12px rgba(10,42,60,.14),0 34px 50px -30px rgba(24,119,242,.55)}
-.sp-stk{position:absolute;inset:0}
-.sp-stk>i{position:absolute;left:0;right:0;bottom:0;height:var(--lv);background:linear-gradient(180deg,var(--c1),var(--c2)) top/100% 46px no-repeat,var(--c2)}
-.sp-ves .sp-w{height:9px;width:400%}
-.sp-ves>em{position:absolute;z-index:12;left:22px;top:26px;width:16px;height:64px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
-.sp-d .sp-wm{top:57%;font-size:56px;letter-spacing:-2.8px}
+.sp-d{--dy:calc(-56cqh + 115px);--sw:calc((100cqw - 32px) / 5)}
+.sp-d .sp-wm{top:38%}
 @media (prefers-reduced-motion:no-preference){
- body:not(.still) .sp.out{opacity:0;transition:opacity .6s ease}
- body:not(.still) .sp-w{animation:spw 3.2s linear infinite}
- body:not(.still) .sp-ves{animation:spin .4s ease both}
- body:not(.still) .sp-d .sp-wm{animation:spin .45s ease both .15s}
- body:not(.still) .sp-stk>i{animation:sprise .42s cubic-bezier(.2,.8,.2,1) both calc(.12s + var(--i)*.13s)}
- body:not(.still) .sp-stk{animation:spdrain .9s linear both 1.08s}
- body:not(.still) .sp-dx{animation:spdx .56s cubic-bezier(.2,.6,.4,1) both calc(1.08s + var(--i)*.17s)}
- body:not(.still) .sp-dr{animation:spdrop .56s both calc(1.08s + var(--i)*.17s)}
- body:not(.still) .sp-bar .sp-l{animation:spin0 .3s ease both calc(1.6s + var(--i)*.17s)}
- body:not(.still) .sp-bar{animation:spbar .4s ease both 2s}
+ body:not(.still) .sp.out{opacity:0;transition:opacity .45s ease}
+ body:not(.still) .sp-d .sp-wm{animation:spwm .4s cubic-bezier(.2,.8,.2,1) both}
+ body:not(.still) .sp-dx{animation:spdx .48s cubic-bezier(.2,.6,.4,1) both calc(.28s + var(--i)*.07s)}
+ body:not(.still) .sp-dr{animation:spdrop .48s both calc(.28s + var(--i)*.07s)}
+ body:not(.still) .sp-bar .sp-l{animation:spin0 .25s ease both calc(.616s + var(--i)*.07s)}
+ body:not(.still) .sp-bar{animation:spbar .3s ease both .85s}
 }
 @keyframes spw{to{transform:translateX(-12.5%)}}
 @keyframes spin{from{opacity:0;transform:translateY(8px)}}
+@keyframes spwm{from{opacity:0;transform:translateY(10px) scale(.94)}}
 @keyframes spin0{from{opacity:0}}
 @keyframes spbar{from{background-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}}
-@keyframes sprise{from{transform:translateY(102%)}}
-@keyframes spdrain{to{transform:translateY(96%)}}
 @keyframes spdx{from{transform:translateX(calc((2 - var(--i)) * var(--sw)))}}
-@keyframes spdrop{0%{transform:translateY(var(--dy)) scale(.8,1.25);animation-timing-function:cubic-bezier(.55,0,.9,.55)}66%{transform:translateY(0) scale(1.22,.72);animation-timing-function:cubic-bezier(.2,.7,.3,1)}84%{transform:translateY(-6px) scale(.95,1.07);animation-timing-function:ease-in}100%{transform:none}}
+@keyframes spdrop{0%{transform:translateY(var(--dy)) scale(.2);opacity:0;animation-timing-function:ease-out}16%{transform:translateY(var(--dy)) scale(.8,1.2);opacity:1;animation-timing-function:cubic-bezier(.55,0,.9,.55)}70%{transform:translateY(0) scale(1.22,.72);animation-timing-function:cubic-bezier(.2,.7,.3,1)}86%{transform:translateY(-6px) scale(.95,1.07);animation-timing-function:ease-in}100%{transform:none}}
 /* átmenet */
 ${Q} .scroll:has(.at-if){display:flex;flex-direction:column;overflow:hidden;padding-bottom:0!important}
 .phone .at-if{position:static;flex:1;min-height:0;width:100%;height:auto;border:0;background:transparent}

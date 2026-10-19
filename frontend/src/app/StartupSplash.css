@@ -1,6 +1,6 @@
-/* Indító-képernyő — Folyadék F1 (mezo-n4wf5.1): „egy edény, öt csepp".
-   Forrás: docs/design_2.0/prototypes/vilagos/keret.js (`.sp*` + @keyframes sp*). Az alap (mozgás
-   nélküli) szabályok a VÉGKÉPET adják — tele edény, a cseppek a sávban —, ezt látja a csökkentett
+/* Indító-képernyő — Folyadék F1 (mezo-n4wf5.1), rövidítve 2026-10-19 (mezo-rn5q7): „cím, és
+   kiesnek a cseppek". Forrás: docs/design_2.0/prototypes/vilagos/keret.js (`.sp*` + @keyframes
+   sp*). Az alap (mozgás nélküli) szabályok a VÉGKÉPET adják — a szó-logó, a cseppek a sávban —, ezt látja a csökkentett
    mozgás is; a mozgás kizárólag a no-preference ágban él. Az időzítések a JS számtáblájából
    jönnek (startupChoreography.ts → a gyökér --sp-* property-jei), ide nem másolt számként. */
 
@@ -32,54 +32,34 @@
   position: absolute; inset: 0; z-index: 40; overflow: hidden; container-type: size;
   background: linear-gradient(180deg, #FBFDFE, #E6F0F6);
   touch-action: none; overscroll-behavior: none;
-  --dy: calc(-79cqh + 300px); --sw: calc((100cqw - 32px) / 5);
+  /* where a drop starts: just under the wordmark (its resting place is the bar at the bottom) */
+  --dy: calc(-56cqh + 115px); --sw: calc((100cqw - 32px) / 5);
 }
 .fo-sp-wm {
-  position: absolute; left: 0; right: 0; top: 57%; text-align: center;
-  font: 800 56px/1 var(--ff-display), system-ui, sans-serif; letter-spacing: -2.8px; color: var(--fo-ink);
+  position: absolute; left: 0; right: 0; top: 38%; text-align: center;
+  font: 800 68px/1 var(--ff-display), system-ui, sans-serif; letter-spacing: -3.4px; color: var(--fo-ink);
 }
-.fo-sp-w { position: absolute; left: 0; bottom: calc(100% - 1px); width: 400%; height: 9px; }
 .fo-sp-dx, .fo-sp-dr { display: block; }
 .fo-sp-dr { transform-origin: 50% 100%; }
-.fo-sp-ves {
-  position: absolute; z-index: 40; left: 50%; top: 21%; width: 150px; height: 250px; margin-left: -75px;
-  border-radius: 75px; overflow: hidden; isolation: isolate;
-  background: linear-gradient(180deg, #fff, #F4FAFC);
-  box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .07), inset 0 10px 22px -12px rgba(10, 42, 60, .14), 0 34px 50px -30px rgba(24, 119, 242, .55);
-}
-.fo-sp-stk { position: absolute; inset: 0; }
-.fo-sp-stk > i {
-  position: absolute; left: 0; right: 0; bottom: 0; height: var(--lv);
-  background: linear-gradient(180deg, var(--c1), var(--c2)) top/100% 46px no-repeat, var(--c2);
-}
-.fo-sp-ves > em {
-  position: absolute; z-index: 12; left: 22px; top: 26px; width: 16px; height: 64px; border-radius: 10px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0));
-}
 
 @media (prefers-reduced-motion: no-preference) {
   .fo-sp { animation: fo-sp-out calc(var(--sp-end) - var(--sp-fade)) ease both var(--sp-fade); }
-  .fo-sp-w { animation: fo-sp-w 3.2s linear infinite; }
-  .fo-sp-ves { animation: fo-sp-in .4s ease both; }
-  .fo-sp-wm { animation: fo-sp-in .45s ease both .15s; }
-  .fo-sp-stk > i { animation: fo-sp-rise .42s cubic-bezier(.2, .8, .2, 1) both calc(.12s + var(--i) * .13s); }
-  .fo-sp-stk { animation: fo-sp-drain .9s linear both var(--sp-drop-start); }
+  .fo-sp-wm { animation: fo-sp-wm .4s cubic-bezier(.2, .8, .2, 1) both; }
   .fo-sp-dx { animation: fo-sp-dx var(--sp-fall) cubic-bezier(.2, .6, .4, 1) both calc(var(--sp-drop-start) + var(--i) * var(--sp-stagger)); }
   .fo-sp-dr { animation: fo-sp-drop var(--sp-fall) both calc(var(--sp-drop-start) + var(--i) * var(--sp-stagger)); }
-  .fo-sp-bar .fo-sp-l { animation: fo-sp-in0 .3s ease both calc(var(--sp-drop-start) + .52s + var(--i) * var(--sp-stagger)); }
-  .fo-sp-bar { animation: fo-sp-bar .4s ease both 2s; }
+  .fo-sp-bar .fo-sp-l { animation: fo-sp-in0 .25s ease both calc(var(--sp-drop-start) + var(--sp-fall) * .7 + var(--i) * var(--sp-stagger)); }
+  .fo-sp-bar { animation: fo-sp-bar .3s ease both calc(var(--sp-fade) - .3s); }
 }
 @keyframes fo-sp-out { to { opacity: 0; } }
-@keyframes fo-sp-w { to { transform: translateX(-12.5%); } }
-@keyframes fo-sp-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes fo-sp-wm { from { opacity: 0; transform: translateY(10px) scale(.94); } }
 @keyframes fo-sp-in0 { from { opacity: 0; } }
 @keyframes fo-sp-bar { from { background-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; } }
-@keyframes fo-sp-rise { from { transform: translateY(102%); } }
-@keyframes fo-sp-drain { to { transform: translateY(96%); } }
 @keyframes fo-sp-dx { from { transform: translateX(calc((2 - var(--i)) * var(--sw))); } }
+/* a drop swells out of the wordmark, falls, squashes on the bar and settles */
 @keyframes fo-sp-drop {
-  0% { transform: translateY(var(--dy)) scale(.8, 1.25); animation-timing-function: cubic-bezier(.55, 0, .9, .55); }
-  66% { transform: translateY(0) scale(1.22, .72); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
-  84% { transform: translateY(-6px) scale(.95, 1.07); animation-timing-function: ease-in; }
+  0% { transform: translateY(var(--dy)) scale(.2); opacity: 0; animation-timing-function: ease-out; }
+  16% { transform: translateY(var(--dy)) scale(.8, 1.2); opacity: 1; animation-timing-function: cubic-bezier(.55, 0, .9, .55); }
+  70% { transform: translateY(0) scale(1.22, .72); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+  86% { transform: translateY(-6px) scale(.95, 1.07); animation-timing-function: ease-in; }
   100% { transform: none; }
 }
