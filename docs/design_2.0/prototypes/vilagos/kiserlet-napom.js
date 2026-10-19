@@ -15,7 +15,8 @@
 (function(){
 const F=window.F,nap=window.FREG&&FREG.nap;if(!nap)return;
 const {I,page,badge}=F;
-const P='.phone.foly[data-s="elo"][data-d="nap"]';
+/* shared with the Edzés experiment (kiserlet-edzes.js): the same system styles both domains */
+const P='.phone.foly[data-s="elo"]:is([data-d="nap"],[data-d="edzes"])';
 const O={eletjel:nap.routes.eletjel,checkin:nap.routes.checkin,kuldetesek:nap.routes.kuldetesek,mai:nap.routes.mai,napom:nap.routes.napom,nap:nap.routes.nap,uzenetek:nap.routes.uzenetek,rutin:nap.routes.rutin};
 const DROP='M32 6C41 19 50 28 50 39A18 18 0 0 1 14 39C14 28 23 19 32 6Z';
 const MOON='M46 41A21 21 0 1 1 25 11A17 17 0 0 0 46 41Z';
@@ -1305,6 +1306,7 @@ Object.keys(nap.routes).forEach(k=>{const f=nap.routes[k];if(typeof f==='functio
 F.css(`${P} .fh-trow.hub .fh-eb .fh-help{width:38px;height:38px;margin:0;font-size:17px;background:#fff;border:0;box-shadow:0 4px 12px -6px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .fh-trow.hub+.fh-tabs{margin-top:12px}
 ${P} .fh-trow.hub{flex-wrap:nowrap!important}${P} .fh-trow.hub .fh-eb{flex:none;order:0!important}${P} .fh-trow.hub .fh-btns{margin-left:auto}`);
+window.KXN={V,KH,dots,DEFS,hubHead,cl,uid};
 window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Nincs nagy edény, nincs kártya, nincs lista. Minden oldal saját rajzot kapott, azt, ami a tartalmából következik:</p>
 <ul><li><a href="#w-nap-mai"><b>Mai</b></a> — a nap vonala: reggeltől estig, a mostani időpontig feltöltve. Alatta a négy kémcső (változatlan), a három következő teendő három edényként, és a nap befőttesüvege, rétegenként a bejegyzésekkel.</li>
 <li><a href="#w-nap-eletjel"><b>Életjelek részletei</b></a> (a Mai aloldala) — a hat kémcső két polcon, mindegyik alatt a saját művelete.</li>

@@ -7,7 +7,7 @@
 <script>
 if(!location.hash)history.replaceState(null,'',location.pathname+location.search+'#w-nap-napomg');
 fetch('klinikai-iranyok.html').then(r=>r.text()).then(t=>{
-  const tag='<script src="vilagos/kiserlet-napom.js"><\/script>';
+  const tag='<script src="vilagos/kiserlet-napom.js"><\/script><script src="vilagos/kiserlet-edzes.js"><\/script>';
   document.open();document.write(t.replace('</body>',tag+'</body>'));document.close();
 });
 </script>
