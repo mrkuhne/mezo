@@ -413,6 +413,93 @@ function napzaras2(arg){const a=Math.min(6,Math.max(1,+arg||1)),prev=a>1?`napzar
   const main=a===1?['Kezdjük','napzaras.2']:a===6?['Esti rutin indítása','rutin']:['Tovább',`napzaras.${a+1}`];
   const foot=`<div class="rt-foot nz-foot"><button class="n8-b nz-sec" data-go="${prev}">${a>1?'Vissza':'Kilépés'}</button><button class="btn nz-pri" data-go="${main[1]}">${main[0]}</button></div>`;
   return page('nap',{title:'Napzárás',sub:'Nap · este',back:prev},`${DEFS}<div class="mx nz"><div class="nz-prog" aria-label="${a}. lépés a hatból">${NZN.map((_,i)=>`<i class="${i<a?'on':''} ${i===a-1?'cur':''}"></i>`).join('')}</div>${B[a]}<div class="ng-tail"></div></div>`,{foot,nonav:true,pad:'120px'})}
+/* ═══ RUTIN · szerkesztés (six pages), round 18 (2026-10-19): the approved content of rutin-epites, lanc, szokasok,
+       szokas, szerk and the new-habit wizard, in the system of the other pages — the sentence on top, one ground, straight
+       dividers, cards with a drawn icon and real buttons for the things you act on, tubes for strengths, the page's
+       action in the bottom bar where the page is about doing (szerkesztés, wizard). State is local to this file. ═══ */
+const REC=[['Ébredés időben','reggel · ébredés',92,'d','t-dawn'],['Reggeli napfény','ébredés után',78,'d','t-sun'],['50 fekvőtámasz','megvolt a reggeli napfény',48,'now','t-dumbbell'],['Reggeli videó','fekvőtámasz után',30,'','t-camera'],['Gombakávé','videó után',64,'','t-bowl']];
+const REH=[['Ébredés időben','magától megy',142,92,'beérett',''],['Koffein-cutoff','kezd magától menni',66,78,'~12 ismétlés','3 hét múlva'],['Reggeli napfény','kezd magától menni',51,74,'~20 ismétlés','kb. 4 hét'],['50 fekvőtámasz','épül',24,48,'~41 ismétlés','kb. 7 hét'],['Konyha zárva','épül',18,40,'~46 ismétlés','kb. 8 hét'],['Gombakávé','még tudatos',9,26,'',''],['Reggeli videó','még tudatos',4,null,'','']];
+const RES=['még tudatos','épül','kezd magától menni','magától megy'];
+const RST={lanc:false,ft:[1,1,1,0],fw:'fogg',eff:[1,0,1,2],seg:{}};
+const reGo=()=>F.go(location.hash.replace('#w-nap-',''));
+document.addEventListener('click',e=>{const b=e.target.closest('[data-re]');if(!b)return;const [k,x,y]=b.dataset.re.split(':');
+  if(k==='lanc')RST.lanc=!RST.lanc;else if(k==='ft')RST.ft[+x]=RST.ft[+x]?0:1;else if(k==='fw')RST.fw=x;else if(k==='eff')RST.eff[+x]=+y;else if(k==='seg')RST.seg[x]=+y;reGo()});
+const ec=(ic,t,txt,btns,right,cls='')=>`<article class="n8-c re-c ${cls}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic})}</svg><div><div class="n8-t"><b>${t}</b>${right?`<em>${right}</em>`:''}</div>${txt?`<p>${txt}</p>`:''}${btns?`<div class="qs-acts">${btns}</div>`:''}</div></article>`;
+const pb=(l,attr,pri)=>`<button class="${pri?'n9-btn':'n8-b'}" ${attr}>${l}</button>`;
+const reSeg=(id,opts)=>{const v=RST.seg[id]||0;return `<div class="re-seg">${opts.map((o,i)=>`<button class="${i===v?'on':''}" data-re="seg:${id}:${i}">${o}</button>`).join('')}</div>`};
+const reChips=(id,opts)=>{const v=RST.seg[id]||0;return `<div class="re-chips">${opts.map((o,i)=>`<button class="${i===v?'on':''}" data-re="seg:${id}:${i}">${o}</button>`).join('')}</div>`};
+const reIn=(l,v,ph='',area)=>`<label class="re-f"><span>${l}</span>${area?`<textarea rows="3" placeholder="${ph}">${v}</textarea>`:`<input value="${v}" placeholder="${ph}">`}</label>`;
+const reRec=(L,n,txt=true)=>`<div class="re-rec">${L.map((x,i)=>`<span class="${i<n?'on':''}">${x}</span>`).join('<i>›</i>')}</div>${txt?`<p class="re-sen">Miután <b>megvolt a reggeli napfény</b>, ${n>=2?'<b>50 fekvőtámaszt</b> csinálok':'<u></u>'}, és ünneplésül ${n>=3?'<b>ökölrázás</b>':'<u></u>'}.</p>`:''}`;
+const reTubes=(a,h=120)=>`<div class="re-tb">${F.vials(a,{h})}</div>`;
+const reEff=()=>{const f=['Idő','Fizikai','Fejmunka','Beleillik'],o=[['kevés','közép','sok'],['könnyű','közép','nehéz'],['könnyű','közép','nehéz'],['simán','kicsit','nehezen']];
+  const sum=RST.eff.reduce((q,b)=>q+b,0),lv=sum<=2?['Könnyű',5,34]:sum<=5?['Közepes',10,62]:['Nehéz',15,90];
+  return f.map((n,i)=>`<div class="re-eff"><span>${n}</span><div class="re-seg sm">${o[i].map((t,k)=>`<button class="${RST.eff[i]===k?'on':''}" data-re="eff:${i}:${k}">${t}</button>`).join('')}</div></div>`).join('')
+    +`<div class="dv-h re-lv"><div class="dv-hl"><span>${lv[0]}</span><b>+${lv[1]} XP / alkalom</b></div><div class="dv-ht"><i style="width:${lv[2]}%"></i></div></div>`};
+const reWrap=(o,inner,opts)=>page('nap',o,`${DEFS}<div class="mx re">${inner}<div class="ng-tail"></div></div>`,opts);
+const reS=(h,x,link)=>`<section class="mx-s ln">${KH(h,'',link||'')}${x}</section>`;
+/* 1 · Rutinok (hub) */
+function rutinEp2(){
+  return reWrap({title:'Rutinok',sub:'Rutin · szerkesztés',back:'rutin'},`<section class="mx-s"><h2 class="n7-h">Most jön: 50 fekvőtámasz a reggeli napfény után.</h2>
+    ${nzTiles([['t-dawn','9','tökéletes reggel'],['t-moon','12','tökéletes este'],['t-chain','7','aktív szokás']]).replace('nz-tiles','nz-tiles re-t3')}</section>
+  ${reS('Amid most van',ec('t-dawn','Reggeli lánc','2 / 5 kész · öt szokás, horgonyokkal összekötve.',pb('Megnyitom','data-go="lanc"'))
+    +ec('t-harvest','Szokásaid','7 aktív · 2 beérett.',pb('Megnyitom','data-go="szokasok"')))}
+  ${reS('Építs újat',ec('t-book','Új szokás','Lépésről lépésre, egy meglévő szokásra ültetve.',pb('Kezdjük','data-go="rutin-uj.fw"',1))
+    +ec('t-chain','Új lánc','Egy új napszakra vagy helyzetre.',pb('Létrehozom','data-sheet="chain"'))
+    +ec('t-spark','AI javaslat','Mondd el, mit szeretnél, Mezo ajánl szokást.',pb('Kérek javaslatot','data-sheet="ai"')))}
+  <section class="mx-s ln mx-end"><button class="mx-km" data-go="rutin"><span>Pipálás a Rutin fülön</span></button></section>`)}
+/* 2 · Reggeli lánc */
+function lanc2(){const ed=RST.lanc,dn=REC.filter(c=>c[3]==='d').length;
+  const tubes=reTubes(REC.map(([n,,p,st,ic],i)=>({l:['Ébredés','Napfény','Fekvő','Videó','Kávé'][i],ic,p,v:p+'%',c:st==='d'?'#3FA277':undefined,mark:st==='d'?'kész':st==='now'?'most':'',on:ed?{toast:n}:'szokas'})),110);
+  const rows=REC.map(([n,a,p,st,ic],i)=>`<article class="n8-c re-c ${st}">${`<span class="re-num">${i+1}</span>`}<div><div class="n8-t"><b>${n}</b><em>${p}%</em></div><p>${I('t-anchor')} ${a}</p>
+    ${ed?`<div class="qs-acts"><button class="n8-b" data-toast="Feljebb" aria-label="Feljebb">Feljebb</button><button class="n8-b" data-toast="Lejjebb" aria-label="Lejjebb">Lejjebb</button></div>`:`<div class="dv-ht re-bar"><i style="width:${p}%;${st==='d'?'background:#3FA277':''}"></i></div><div class="qs-acts"><button class="n8-b" data-go="szokas">Részletek</button></div>`}</div></article>`).join('');
+  return reWrap({title:'Reggeli lánc',sub:'Rutinok · aktív lánc',back:'rutin-epites'},`<section class="mx-s"><h2 class="n7-h">${ed?'Rendezd át, ahogy neked kézre áll.':`${dn} megvan az 5-ből. Most jön az 50 fekvőtámasz.`}</h2>${tubes}</section>
+  ${ed?reS('Név és napszak',`${reIn('A lánc neve','Reggeli lánc')}${reChips('napszak',['Reggel','Napközben','Este'])}`):''}
+  ${reS(ed?'Sorrend és horgonyok':'A lánc sorrendben',rows+(ed?`<p class="re-note">A <b>Gombakávé</b> horgonya „videó után”, de előrébb került: a sorrend és a horgony itt nem ugyanazt mondja.</p>`:''))}
+  ${reS(ed?'Bővítés és szünet':'Bővítés',ec('t-addex','Új szokás ebbe a láncba','A varázsló végigvezet.',pb('Kezdjük','data-go="rutin-uj.fw"'))+(ed?ec('t-hold','Lánc szüneteltetése','A szokások megmaradnak.',pb('Szüneteltetem','data-toast="Szüneteltetve"')):''))}`,
+  {foot:`<div class="rt-foot nz-foot"><button class="n8-b nz-sec" data-go="rutin-epites">Vissza</button><button class="btn nz-pri" data-re="lanc">${ed?'Kész':'Szerkesztés'}</button></div>`})}
+/* 3 · Szokásaid */
+function szokasok2(){const vis=REH.filter(h=>RST.ft[RES.indexOf(h[1])]);
+  const stg=`<div class="re-stg">${RES.map((st,i)=>`<button class="${RST.ft[i]?'on':''}" data-re="ft:${i}" aria-pressed="${!!RST.ft[i]}"><span class="t"><i style="height:${(i+1)*24}%"></i><b>${REH.filter(h=>h[1]===st).length}</b></span><small>${st}</small></button>`).join('')}</div>`;
+  return reWrap({title:'Szokásaid',sub:'Rutinok · formálódás szerint',back:'rutin-epites'},`<section class="mx-s"><h2 class="n7-h">Egy már magától megy, kettő úton van oda.</h2>${stg}</section>
+  ${reS(`Szokások · ${vis.length}`,vis.length?vis.map(h=>`<article class="n8-c re-c re-h"><span class="re-mini"><i style="height:${h[3]||4}%;${h[3]>=70?'background:linear-gradient(180deg,#5FC79A,#3FA277)':''}"></i></span><div><div class="n8-t"><b>${h[0]}</b><em>${h[3]!=null?h[3]+'%':'–'}</em></div><p>${h[1]}${h[4]?` · ${h[4]}`:''}${h[5]?`, ${h[5]}`:''}</p><div class="qs-acts"><button class="n8-b" data-go="szokas">Részletek</button><span class="re-cnt">${h[2]} ismétlés</span></div></div></article>`).join('')
+    :`<p class="re-note">Ebben a szakaszban most nincs szokásod.</p>`)}`,
+  {foot:`<div class="rt-foot nz-foot"><button class="n8-b nz-sec" data-go="rutin-epites">Vissza</button><button class="btn nz-pri" data-go="rutin-uj.fw">Új szokás</button></div>`})}
+/* 4 · egy szokás */
+function szokas2(){
+  const mat=`<div class="re-mat"><span class="t"><i style="height:48%"></i>${[25,50,75].map(b=>`<u style="bottom:${b}%"></u>`).join('')}<b>48%</b></span><ol>${RES.map((st,i)=>`<li class="${i<1?'done':i===1?'on':''}"><b>${st}</b>${i===1?'<small>itt tartasz</small>':''}</li>`).reverse().join('')}</ol></div>`;
+  const days=Array.from({length:29},(_,i)=>[9,14,20,23,27].includes(i)?'m':'p'),wk=[['H',80],['K',100],['Sze',80],['Cs',75],['P',60],['Szo',40],['V',50]];
+  return reWrap({title:'50 fekvőtámasz',sub:'Szokás · Reggeli lánc',back:'szokasok'},`<section class="mx-s"><h2 class="n7-h">Épül. Még kb. 41 ismétlés, úgy 7 hét.</h2>${mat}</section>
+  ${reS('A recepted',reRec(['Horgony','Pici tett','Ünneplés'],3),`<button class="fh-lk" data-go="szerk">Szerkesztem ›</button>`)}
+  ${reS('Mikor megy a legjobban',reTubes([['Napszak',82,'t-clock','#3F8FDB'],['Horgony',74,'t-anchor','#2BA59A'],['Ritmus',51,'t-calendar','#8F7FD0']].map(([l,p,ic,c])=>({l,p,ic,c,v:p+'%',on:{toast:l}})),110)+`<p class="re-note">Reggel 7 és 8 között, a napfény után, hétköznap megy a legjobban.</p>`)}
+  ${reS('Az első naptól · 29 nap',`<div class="re-grid">${days.map(d=>`<i class="${d}"></i>`).join('')}</div><p class="re-note">24 pipa, 5 kihagyás.</p>
+    <div class="re-wk">${wk.map(([l,v])=>`<div><span><i style="height:${v}%"></i></span><b>${v}%</b><small>${l}</small></div>`).join('')}</div><p class="re-note">A legerősebb napod a kedd: ötből ötször megvolt.</p>`)}`,
+  {foot:`<div class="rt-foot nz-foot"><button class="n8-b nz-sec" data-go="szokasok">Vissza</button><button class="btn nz-pri" data-go="szerk">Szerkesztés</button></div>`})}
+/* 5 · Szerkesztés */
+function szerk2(){
+  return reWrap({title:'Szerkesztés',sub:'Szokás · 50 fekvőtámasz',back:'szokas'},`<section class="mx-s"><h2 class="n7-h">50 fekvőtámasz</h2><div class="re-pad">${reRec(['Horgony','Pici tett','Ünneplés'],3)}</div></section>
+  ${reS('Keret és horgony',`${reSeg('keret',['Szokás-láncolás','Négy törvény'])}<p class="re-note">Váltásnál az ünneplés elveszik.</p>${ec('t-anchor','Reggeli napfény','74% erő · 28 nap',pb('Csere','data-sheet="anchor"'))}`)}
+  ${reS('A szokás',`${reIn('A tett','50 fekvőtámasz')}${reIn('Ünneplésül','ökölrázás')}${reIn('Miért','Hogy erősebb legyen a vállam, és ne fájjon a nyakam.','',1)}${reIn('Link, ha kell','','pl. a reggeli videó címe')}`)}
+  ${reS('Pipálás és lánc',`${reSeg('pipa',['Kézzel pipálom','Adatból'])}${(RST.seg.pipa||0)?reChips('metrika',['Aznapi edzés','Aznapi súlylogolás','Fehérjés reggeli','Ébredés a cél-ablakban','Napzárás megtörtént']):''}<p class="re-sub">Lánc</p>${reChips('lanc',['Reggeli lánc','Esti lánc','Egyik sem'])}`)}
+  ${reS('Mennyibe kerül?',reEff())}
+  ${reS('Szünet vagy törlés',ec('t-hold','Szüneteltetés','A haladás megmarad.',pb('Szüneteltetem','data-toast="Szüneteltetve"'))+ec('t-trash','Szokás törlése','Két koppintás kell hozzá.',pb('Törlöm','data-toast="Koppints újra a törléshez"')))}`,
+  {nonav:true,pad:'120px',foot:`<div class="rt-foot nz-foot"><button class="n8-b nz-sec" data-go="szokas">Mégse</button><button class="btn nz-pri" data-toast="Mentve">Mentés</button></div>`})}
+/* 6 · Új szokás (wizard) */
+const RWZ={fogg:['fw','anchor','act','celeb'],clear:['fw','cue','crave','act','reward'],free:['fw','act']};
+const RWQ={fw:'Milyen keretre építsük?',anchor:'Mihez horgonyzod?',cue:'Mi a jelzés?',crave:'Miért fogod akarni?',act:'Mi a tett?',celeb:'Hogyan ünnepled?',reward:'Mi teszi kielégítővé?'};
+const RWL={fogg:['Horgony','Pici tett','Ünneplés'],clear:['Jelzés','Vágy','Válasz','Jutalom'],free:['Tett']};
+function rutinUj2(stp){const fw=RST.fw,steps=RWZ[fw],i=Math.max(0,steps.indexOf(stp||'fw')),st=steps[i],last=i===steps.length-1,prev=i?`rutin-uj.${steps[i-1]}`:'rutin-epites';
+  let body='';
+  if(st==='fw')body=[['fogg','t-anchor','Szokás-láncolás','BJ Fogg · Tiny Habits'],['clear','t-gem','Négy törvény','James Clear · Atomic Habits'],['free','t-note','Keret nélkül','csak a tett']].map(([k,ic,t,src])=>`<button class="n8-c re-c re-pick ${fw===k?'on':''}" data-re="fw:${k}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic})}</svg><div><div class="n8-t"><b>${t}</b>${fw===k?'<em class="re-ok">kiválasztva</em>':''}</div><p>${src}</p>${RWL[k].length>1?`<div class="re-rec sm">${RWL[k].map(x=>`<span>${x}</span>`).join('<i>›</i>')}</div>`:''}</div></button>`).join('')
+    +`<p class="re-note">Kezdőknek a szokás-láncolás a legkönnyebb: egy meglévő szokásra ülteted az újat.</p>`;
+  if(st==='anchor')body=`<p class="re-sub">A szokásaidból és a Mezo-pillanatokból</p>${reChips('anc',['Ébredés időben','Reggeli napfény','Kávé után','Edzés vége'])}${reIn('Vagy saját szavakkal','Miután este leteszem a telefont.')}<p class="re-note">A jó horgony minden nap biztosan megtörténik, és pontosan tudod, mikor ért véget.</p>`;
+  if(st==='act')body=`${reIn('A tett','50 fekvőtámaszt csinálok')}<p class="re-note">Ez nagynak tűnik. Mi lenne, ha 5-tel kezdenéd? A pici tett ragad meg.</p><p class="re-sub">Melyik láncba?</p>${reChips('wlanc',['Reggeli lánc','Esti lánc'])}<p class="re-sub">Életterület</p>${reChips('elet',['Tudatosság','Szemlélet','Konyha','Pénzügyek','Produktivitás','Tanulás','Kapcsolatok','Regeneráció'])}<p class="re-sub">Mennyibe kerül?</p>${reEff()}<p class="re-sub">Hogyan pipálódik?</p>${reSeg('wpipa',['Kézzel pipálom','Adatból'])}`;
+  if(st==='celeb')body=`${reChips('celeb',['ökölrázás','„Igen!”','mosoly a tükörbe','mély levegő'])}${reIn('Vagy saját','Egy kis tánc a konyhában.')}<p class="re-note">Az ünneplés azonnal jöjjön, a tett után: ettől ragad meg az érzés.</p>`;
+  if(['cue','crave','reward'].includes(st))body=`${reIn(st==='cue'?'Jelzés':st==='crave'?'Miért akarod?':'Jutalom','Amikor felébredek, és még a kezemben van a telefon.','',1)}${st==='crave'?reIn('Ki leszel ettől? (ha akarod)','Aki minden reggel mozog.'):''}`;
+  const L=RWL[fw];
+  return page('nap',{title:'Új szokás',sub:`${i+1} / ${steps.length} lépés`,back:prev},`${DEFS}<div class="mx re nz"><div class="nz-prog">${steps.map((_,k)=>`<i class="${k<=i?'on':''} ${k===i?'cur':''}"></i>`).join('')}</div>
+  <section class="mx-s"><h2 class="n7-h">${RWQ[st]}</h2><div class="re-pad">${i?reRec(L,i,fw==='fogg'):`<p class="re-sen">A recept lépésről lépésre telik meg.</p>${reRec(L,0,false)}`}</div></section>
+  <section class="mx-s ln">${KH(st==='fw'?'Válassz keretet':'Töltsd ki')}<div class="re-body">${body}</div></section><div class="ng-tail"></div></div>`,
+  {nonav:true,pad:'120px',foot:`<div class="rt-foot nz-foot"><button class="n8-b nz-sec" data-go="${prev}">${i?'Vissza':'Mégse'}</button><button class="btn nz-pri" ${last?'data-toast="Mentve · vissza a Rutinra"':`data-go="rutin-uj.${steps[i+1]}"`}>${last?'Mentés':'Tovább'}</button></div>`})}
 /* ═══ MAI · the special faces (2026-10-19): empty day, load error, gentle mode (and its expired variant), evening.
        Same page, same order; what changes is the sentence and the vessel on top, the next things, and in gentle mode a
        "Hogy vagy?" block above everything. The gentle mode's state lives in nap.js, so it is read back from the approved
@@ -561,7 +648,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!
   const r=document.getElementById('rt-root');if(r)r.innerHTML=rutinBody();const f=document.getElementById('rt-foot');if(f)f.innerHTML=rutinFoot()});
 
 /* ── routes: on this page the top tabs open the drawn versions; the approved ones stay reachable ── */
-nap.routes['eletjel-lista']=O.eletjel;nap.routes.eletjel=eletjel2;nap.routes['checkin-lista']=O.checkin;nap.routes.checkin=checkin2;nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes['napzaras-lista']=nap.routes.napzaras;nap.routes.napzaras=napzaras2;nap.routes.mai=a=>!a||['ures','hiba','kimelo','kimelo-lejart'].includes(a)?mai2(a||null):O.mai(a);nap.routes.maieste=()=>mai2('este');nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
+nap.routes['eletjel-lista']=O.eletjel;nap.routes.eletjel=eletjel2;nap.routes['checkin-lista']=O.checkin;nap.routes.checkin=checkin2;nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes['napzaras-lista']=nap.routes.napzaras;['rutin-epites','lanc','szokasok','szokas','szerk','rutin-uj'].forEach(k=>nap.routes[k+'-lista']=nap.routes[k]);Object.assign(nap.routes,{'rutin-epites':rutinEp2,lanc:lanc2,szokasok:szokasok2,szokas:szokas2,szerk:szerk2,'rutin-uj':rutinUj2});nap.routes.napzaras=napzaras2;nap.routes.mai=a=>!a||['ures','hiba','kimelo','kimelo-lejart'].includes(a)?mai2(a||null):O.mai(a);nap.routes.maieste=()=>mai2('este');nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
 nap.routes.napom=a=>a==='nincs'?today3(true):a?O.napom(a):today3();nap.routes.nap=day;nap.routes.napomg=today3;nap.routes.napomt=today3;
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
 
@@ -945,6 +1032,38 @@ ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{d
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
 /* Napzárás, round 16 */
+/* Rutin szerkesztés, round 18 */
+${P} .re-t3{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;margin-top:16px!important}${P} .re .nz-tiles>div{padding:12px 10px;border-radius:20px;background:#fff;box-shadow:0 8px 20px -16px rgba(30,70,140,.4)}${P} .re .nz-tiles b{font-size:20px}
+${P} .re-c svg.ng{width:56px;height:56px;margin:0}${P} .re-c .ng-pipe,${P} .re-c .ng-flow{display:none}${P} .re-c{grid-template-columns:56px minmax(0,1fr)}
+${P} .re-c p svg.ic{width:16px;height:16px;vertical-align:-3px}
+${P} .re-num{display:grid;place-items:center;width:40px;height:40px;margin:6px auto 0;border-radius:50%;font:800 17px var(--disp,inherit);color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2))}
+${P} .re-c.d .re-num{background:#3FA277}${P} .re-c.now{box-shadow:0 0 0 2px var(--dom),0 10px 24px -18px rgba(10,42,60,.35)}
+${P} .re-bar{height:8px;margin-top:10px}${P} .re-bar i{background:linear-gradient(90deg,var(--liq1),var(--liq2))}
+${P} .re-tb .k2-vials{margin:16px 12px 0;gap:6px}${P} .re-tb .k2-vial small{font-size:12px;white-space:nowrap}
+${P} .re-note{margin:6px 22px 0;font-size:14px;line-height:1.5;color:var(--ink)}${P} .re-sub{margin:16px 22px 8px;font-size:14px;font-weight:700;color:var(--ink)}
+${P} .re-seg{display:flex;margin:0 22px;padding:4px;border-radius:999px;background:rgba(10,42,60,.06)}${P} .re-seg button{flex:1;display:flex;align-items:center;justify-content:center;padding:0 8px;text-align:center;min-height:40px;border-radius:999px;font-size:14px;font-weight:700;color:var(--ink)}${P} .re-seg button.on{color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 6px 12px -8px var(--liq2)}
+${P} .re-seg.sm{margin:0;flex:1}${P} .re-seg.sm button{min-height:40px;font-size:13px}
+${P} .re-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 22px}${P} .re-chips button{min-height:40px;padding:0 14px;border-radius:999px;font-size:13.5px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink));background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12)}${P} .re-chips button.on{color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:none}
+${P} .re-f{display:block;margin:0 22px 12px}${P} .re-f span{display:block;margin-bottom:6px;font-size:14px;font-weight:700;color:var(--ink)}
+${P} .re-f input,${P} .re-f textarea{width:100%;box-sizing:border-box;min-height:48px;padding:12px 14px;border:0;border-radius:16px;font:15px/1.45 var(--ff,inherit);color:var(--ink);background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12);resize:vertical}
+${P} .re-eff{display:flex;align-items:center;gap:10px;margin:0 22px 8px}${P} .re-eff>span{width:72px;flex:none;font-size:13.5px;font-weight:700;color:var(--ink)}${P} .re-lv{margin:14px 22px 0}
+${P} .re-rec{display:flex;flex-wrap:wrap;align-items:center;gap:6px}${P} .re-rec span{padding:8px 14px;border-radius:999px;font-size:14px;font-weight:700;color:var(--ink);background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12)}
+${P} .re-rec span.on{color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:none}${P} .re-rec i{font-style:normal;color:var(--dom);font-weight:800}
+${P} .re-rec.sm{margin-top:8px}${P} .re-rec.sm span{padding:4px 10px;font-size:12.5px}
+${P} .mx-s>.re-rec,${P} .re-pad{margin:12px 22px 0}${P} .re-sen{margin:12px 22px 0;font-size:16px;line-height:1.55;color:var(--ink)}${P} .re-pad .re-sen{margin:12px 0 0}${P} .re-sen u{display:inline-block;width:70px;height:2px;margin:0 4px;vertical-align:4px;background:rgba(10,42,60,.25)}
+${P} .re-stg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:16px 14px 0}${P} .re-stg button{display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.45}${P} .re-stg button.on{opacity:1}
+${P} .re-stg .t{position:relative;display:block;width:100%;height:96px;border-radius:24px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.1)}${P} .re-stg .t i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--liq1),var(--liq2))}
+${P} .re-stg .t b{position:absolute;left:0;right:0;top:8px;font:800 20px var(--disp,inherit);color:var(--ink);text-align:center}${P} .re-stg small{font-size:12px;line-height:1.2;text-align:center;color:var(--ink)}
+${P} .re-mini{position:relative;display:block;width:30px;height:56px;margin:4px auto 0;border-radius:15px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12)}${P} .re-mini i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--liq1),var(--liq2))}
+${P} .re-cnt{align-self:center;font-size:13px;font-weight:700;color:var(--ink)}
+${P} .re-mat{display:flex;align-items:center;gap:20px;margin:16px 22px 0}${P} .re-mat .t{position:relative;flex:none;width:72px;height:170px;border-radius:36px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12)}
+${P} .re-mat .t i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--liq1),var(--liq2))}${P} .re-mat .t u{position:absolute;left:0;right:0;border-top:1.5px dashed rgba(10,42,60,.25)}${P} .re-mat .t b{position:absolute;left:0;right:0;bottom:12px;font:800 18px var(--disp,inherit);color:#fff;text-align:center}
+${P} .re-mat ol{margin:0;padding:0;list-style:none;display:grid;gap:14px}${P} .re-mat li b{display:block;font-size:15px;font-weight:500;color:var(--ink)}${P} .re-mat li.on b{font-weight:800}${P} .re-mat li.on b{color:var(--ink)}${P} .re-mat li.done b{color:#2E8A5F}${P} .re-mat li small{font-size:13px;font-weight:700;color:var(--dom)}
+${P} .re-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin:4px 22px 0}${P} .re-grid i{aspect-ratio:1;border-radius:6px;background:linear-gradient(180deg,var(--liq1),var(--liq2))}${P} .re-grid i.m{background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.2)}
+${P} .re-wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:18px 22px 0;text-align:center}${P} .re-wk span{position:relative;display:block;height:64px;border-radius:12px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.1)}
+${P} .re-wk span i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#8F7FD0,#6F62C0)}${P} .re-wk b{display:block;margin-top:4px;font-size:12px;color:var(--ink)}${P} .re-wk small{font-size:12px;font-weight:700;color:var(--ink)}
+${P} .re-pick{width:calc(100% - 28px);text-align:left}${P} .re-pick.on{box-shadow:0 0 0 2px var(--dom),0 10px 24px -18px rgba(10,42,60,.35)}${P} .re-ok{font:700 12px var(--ff,inherit)!important;color:var(--dom)!important}
+${P} .re-body{padding-bottom:4px}
 ${P} .nz{min-height:100%;background:linear-gradient(180deg,#F6F8FC 0%,#EEF0FA 55%,#E9ECF8 100%)}
 ${P} .nz-hero{padding:8px 22px 22px}${P} .nz-art{display:flex;justify-content:center;margin:10px 0 18px;padding:18px 0;border-radius:28px;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0))}
 ${P} .nz-art.row{justify-content:center;align-items:center;gap:22px}
