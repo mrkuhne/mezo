@@ -43,6 +43,7 @@ plans or "which direction wins" decisions until he asks.
 - **Round 6 (owner, 2026-10-14, after Strava), tried on Mai first:** one ground for the whole page, sections divided by a
   wave LINE only (no alternating layer colours); cards ONLY inside a card carousel for several parallel things
   (Észrevétel, Továbbiak) — a single block is not a card (the top card was tried and dropped the same day). The layer rule above holds for the other pages until he says so.
+- **Dividers are straight lines** (owner, 2026-10-19): the wave line between sections was replaced by a plain thin straight line everywhere.
 - **No repeats:** two pages never open with the same sentence; one action has one entry point per page.
 - **One thing moves per screen** (the pipe's flow on A napom, the next vessel on Rutin). Levels and drops stand still.
 - **A drawing explains itself in words, not with a legend** ("4 nap egybevág · 3 még hiányzik", "erő 82%").

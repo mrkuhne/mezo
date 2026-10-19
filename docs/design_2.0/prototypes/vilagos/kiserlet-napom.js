@@ -662,7 +662,7 @@ ${P} .bd .mx-h b::before{content:"";flex:none;width:12px;height:16px;border-radi
 ${P} .mx{background:#F4F8FB;margin-top:-1px;padding-bottom:20px}
 ${P} .scroll:has(.mx){background:#F4F8FB}
 ${P} .mx-s{position:relative;padding:4px 0 22px}
-${P} .mx-s.ln::before{content:"";position:absolute;left:18px;right:18px;top:-6px;height:12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 12'%3E%3Cpath d='M0 6 Q12 0 24 6 T48 6' fill='none' stroke='%23B9CFDD' stroke-width='2'/%3E%3C/svg%3E") repeat-x 0 0/48px 12px}
+${P} .mx-s.ln::before{content:"";position:absolute;left:18px;right:18px;top:0;height:1.5px;border-radius:1px;background:#CBD9E4} /* a straight line, not a wave (owner, 2026-10-19) */
 ${P} .mx .mx-h{margin-top:14px}
 ${P} .mx .mx-h b::before{display:none}
 ${P} .mx-card{margin:12px 14px 0;padding:2px 0 14px;border-radius:24px;background:#fff;box-shadow:0 10px 26px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
@@ -886,7 +886,7 @@ ${P} .dv-top svg.qf{flex:none;width:96px;height:96px;margin:0}${P} .dv .dv-btn+.
 /* Check-in, round 14 (2026-10-17): one ground; the group label is a wave line + a real heading inside the grid */
 ${P} .ci2 .ci{margin-top:6px}
 ${P} .ci2 .ci-l .ci-g{position:relative;height:64px;padding-bottom:8px;overflow:visible}
-${P} .ci2 .ci-l .ci-g::before{content:"";position:absolute;left:0;width:calc(390px - 36px);max-width:calc(100vw - 36px);top:12px;height:12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 12'%3E%3Cpath d='M0 6 Q12 0 24 6 T48 6' fill='none' stroke='%23B9CFDD' stroke-width='2'/%3E%3C/svg%3E") repeat-x 0 0/48px 12px}
+${P} .ci2 .ci-l .ci-g::before{content:"";position:absolute;left:0;width:calc(390px - 36px);max-width:calc(100vw - 36px);top:18px;height:1.5px;border-radius:1px;background:#CBD9E4}
 ${P} .ci2 .ci-g b{font:800 17px var(--disp,inherit);letter-spacing:-.02em;text-transform:none;color:var(--ink)}
 ${P} .ci2 .ci-c .ci-g{height:64px}
 /* Rutin, round 13 */
