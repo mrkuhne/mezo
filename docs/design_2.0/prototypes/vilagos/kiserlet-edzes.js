@@ -41,8 +41,8 @@ function hero3(c,ready){const h=c.html,lbl=g(h,/<span class="lbl">([^<]*)<\/span
   const say=/^Folyamatban/.test(st)?'A Pull Day folyamatban.':/^Kész/.test(st)?'A Pull Day megvan.':/^Kímélő/.test(st)?'Ma pihensz, a Pull Day kimarad.'
     :/^Kihagyva/.test(st)?'A mai Pull Day kimarad.':ready==='ask'?'Ma Pull Day, de könnyebben javaslom.':ready==='done'?'Ma Pull Day, egy fokkal könnyebben.':`Ma Pull Day, ${time}-kor.`;
   return `<section class="mx-s ex-hero"><small class="ex-eb">${time} · Gym · ${sub}</small><h2 class="n7-h">${say}</h2>
-    <div class="ex-fig ${off?'off':''}">${body}<small>${cap}</small></div>
-    <div class="ex-facts">${facts.map(([b,s])=>`<span><b>${b}</b><small>${s}</small></span>`).join('')}</div>
+    <div class="ex-row"><div class="ex-fig ${off?'off':''}">${body}<small>${cap}</small></div>
+    <div class="ex-facts">${facts.map(([b,s])=>`<span><b>${b}</b><small>${s}</small></span>`).join('')}</div></div>
     ${extra?`<div class="ex-x">${pills(extra)}</div>`:''}<div class="ex-acts">${pills(acts)}</div></section>`}
 function ready3(c){const h=c.html;
   if(h.includes('Ma egy fokkal lejjebb')){const sub=g(h,/<p class="sub">([\s\S]*?)<\/p>/),ai=h.indexOf('<div class="fh-acts">');
@@ -139,8 +139,8 @@ function rest3(a){const base=O.mai(a),cs=cardsOf(base);if(!cs.length)return base
     const say=done?`A ${title.toLowerCase()} megvan.`:/Kihagyva|Kímélő/.test(sub)?`A mai ${title.toLowerCase()} kimarad.`:`Ma ${title.toLowerCase()}, ${time}-kor.`;
     const ex=hh.indexOf('<div class="vs-box"'),extra=ex>=0?hh.slice(ex,bal(hh,ex)):'';
     top=`<section class="mx-s ex-hero"><small class="ex-eb">${time} · ${tag} · ${sub.split(' · ')[0]}</small><h2 class="n7-h">${say}</h2>
-      <div class="ex-fig">${body('front',VOLLEY.map(([k,n])=>[k,done?n/3:0,n/3]))}<small>${done?'ezt dolgoztatta meg':'ennyit kér ma a röpi'}</small></div>
-      <p class="ex-fl1">${facts.join(' · ')}</p>
+      <div class="ex-row"><div class="ex-fig">${body('front',VOLLEY.map(([k,n])=>[k,done?n/3:0,n/3]))}<small>${done?'ezt dolgoztatta meg':'ennyit kér ma a röpi'}</small></div>
+      <div class="ex-facts">${facts.map(f=>{const m=f.match(/^(\d+) (.+)$/);return `<span class="${m?'':'tx'}"><b>${m?m[1]:f}</b><small>${m?m[2]:''}</small></span>`}).join('')}</div></div>
       ${extra?`<div class="ex-x">${pills(extra)}</div>`:''}<div class="ex-acts">${acts}</div></section>`}
   const rest=cs.slice(1).map(c=>{const h=c.html;return h.includes('fh-big')?kcal3(c):h.includes('fh-mus vs-mt')?imp3(c):h.includes('fh-row tap')||h.includes('fh-pair')?'':
     `<section class="mx-s ln">${c.head?KH(c.head):''}<div class="ex-keep">${pills(h)}</div></section>`}).join('');
@@ -172,8 +172,13 @@ ${P} .ex-hero .n7-h{margin:4px 22px 0;text-wrap:balance}
 ${P} .ex-fig{display:flex;flex-direction:column;align-items:center;margin:14px 0 0}
 ${P} .ex-fig .vs-body{display:block;width:100px}${P} .ex-fig .vs-body svg{width:100%;height:auto;display:block}
 ${P} .ex-fig.off .vs-body{opacity:.45;filter:grayscale(.6)}
-${P} .ex-fig small{margin-top:6px;font-size:13px;color:var(--ink)}
-${P} .ex-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 22px 0}
+${P} .ex-fig small{margin-top:6px;font-size:13px;color:var(--ink);text-align:center}
+/* round 3 (owner, 2026-10-19): the body on the left, the three facts stacked beside it, the buttons below */
+${P} .ex-row{display:flex;align-items:center;gap:14px;margin:14px 22px 0}
+${P} .ex-row .ex-fig{flex:0 0 46%;margin:0}${P} .ex-row .ex-fig .vs-body{width:100%;max-width:150px}
+${P} .ex-facts{flex:1;min-width:0;display:grid;gap:8px}
+${P} .ex-facts span.tx b{font:700 16px/1.25 var(--ff,inherit);letter-spacing:0}
+${P} .ex-facts span{flex-direction:row!important;align-items:baseline!important;gap:6px;flex-wrap:wrap}
 ${P} .ex-facts span{display:flex;flex-direction:column;align-items:flex-start;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.85);box-shadow:0 8px 20px -16px rgba(30,70,140,.4)}
 ${P} .ex-facts b{font:800 22px/1.1 var(--disp,inherit);letter-spacing:-.4px;color:var(--ink)}${P} .ex-facts small{font-size:13px;color:var(--ink)}
 ${P} .ex-x{margin:14px 22px 0}${P} .ex-x .vs-box{margin-top:0}
