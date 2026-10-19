@@ -18,7 +18,7 @@ const bal=(h,i,tag='div')=>{const re=new RegExp(`<${tag}[\\s>]|</${tag}>`,'g');r
   while((m=re.exec(h))){d+=m[0][1]==='/'?-1:1;if(!d)return re.lastIndex}return h.length};
 const g=(h,re,i=1)=>{const m=h.match(re);return m?m[i]:''};
 /* the approved buttons in the new look: filled stays filled, links and ghosts become outline pills */
-const pills=h=>h.replace(/class="btn sm ghost"/g,'class="n8-b"').replace(/class="btn sm"/g,'class="n9-btn"').replace(/class="btn"/g,'class="n9-btn"').replace(/class="fh-lk ?[^"]*"/g,'class="n8-b"');
+const pills=h=>h.replace(/class="btn sm ghost"/g,'class="n8-b"').replace(/class="btn sm"/g,'class="n9-btn"').replace(/class="btn ?"/g,'class="n9-btn"').replace(/class="fh-lk ?[^"]*"/g,'class="n8-b"');
 const ico=h=>g(h,/href="#([^"]+)"/)||'t-dumbbell';
 const drop=ic=>`<svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic})}</svg>`;
 
@@ -85,14 +85,15 @@ function kcal3(c){const h=c.html,earned=+g(h,/fh-big">\+(\d+)/)||0,pend=+g(h,/\+
     <ul class="ex-src">${[...done.map(x=>[x,1]),...todo.map(x=>[x,0])].map(([[ic,l,v],d])=>`<li class="${d?'on':''}">${I(ic)}<span>${l}</span><b>+${v}</b></li>`).join('')}</ul></div></div></section>`}
 const IMP=[];
 function imp3(c){const h=c.html;IMP.length=0;
-  for(const m of h.matchAll(/<div class="fh-mus vs-mt">(<span class="mchp sm" style="--c:([^"]+)">[\s\S]*?<\/svg><\/span>)<span class="l">([^<]*)<small>([^<]*)<\/small><\/span><span class="v">([^<]*)<\/span>/g)){
-    const [d,p]=(m[5].match(/(\d+) \/ (\d+)/)||[0,0,0]).slice(1).map(Number);IMP.push({chip:m[1].replace('mchp sm','mchp'),c:m[2],l:m[3],w:m[4],d,p})}
+  for(const m of h.matchAll(/<div class="fh-mus vs-mt">(<span class="mchp sm" style="--c:([^"]+)">[\s\S]*?<\/svg><\/span>)<span class="l">([^<]*)<small>([^<]*)<\/small><\/span><span class="v">([^<]*)<\/span><span class="vs-split"[^>]*><i style="width:([\d.]+)%"><\/i><u style="left:[\d.]+%;width:([\d.]+)%"/g)){
+    const [d,p]=(m[5].match(/(\d+) \/ (\d+)/)||[0,0,0]).slice(1).map(Number);IMP.push({chip:m[1].replace('mchp sm','mchp'),c:m[2],l:m[3],w:m[4],d,p,est:m[5]?null:(+m[6]+ +m[7])})}
   const mx=Math.max(1,...IMP.map(r=>r.p));
   return `<section class="mx-s ln">${KH(c.head||'Hatás az izomzatodra','',`<button class="fh-lk" data-exd="izom">Részletek ›</button>`)}
-    <div class="ex-imp">${chips(F.vials(IMP.map(r=>({l:r.l,s:r.w,v:r.p?`${r.d}/${r.p}`:r.w,p:r.p?Math.max(r.d,r.p)/mx*88:0,c:`color-mix(in srgb,${r.c} 74%,#0A2A3C)`,mark:'',on:{go:'terheles'}})),{h:118}))}</div></section>`}
+    <div class="ex-imp">${chips(F.vials(IMP.map(r=>({l:r.est!=null?r.w:r.l,s:r.est!=null?'':r.w,v:r.est!=null?r.l:r.p?`${r.d}/${r.p}`:r.w,p:r.est!=null?r.est*.88:r.p?Math.max(r.d,r.p)/mx*88:0,c:`color-mix(in srgb,${r.c} 74%,#0A2A3C)`,mark:'',on:{go:'terheles'}})),{h:118}))}</div></section>`}
 /* the muscle-group drawing above each tube's number (owner, round 2: "izomcsoport grafika ikont") */
 const chips=v=>{let i=0;return v.replace(/<span class="k2-tube"/g,m=>`<span class="ex-mc">${(IMP[i++]||{}).chip||''}</span>`+m)};
 const MORE=[['t-dumbbell','Egyedi edzés','data-sheet="custom"'],['t-volley','Sport naplózása','data-go="sportlog"'],['c-i-retegek','Mezociklus','data-go="run"'],['c-i-sport','Sportjaid','data-go="sport"']];
+/* MORE is the quick-start carousel on every Mai face */
 const more3=()=>`<section class="mx-s ln">${KH('Vagy inkább')}<div class="cr sm">${MORE.map(([ic,t,a])=>`<button class="cr-c" ${a}><span class="mt-bub">${I(ic)}</span><b>${t}</b></button>`).join('')}</div>${dots(MORE.length-2)}</section>`;
 function mai3(a){const base=O.mai(a);
   if(base.indexOf('<span class="lbl">Ma 07:30')<0||base.indexOf('vs-h2')<0)return base;/* rest day, other days, empty: next round */
@@ -105,7 +106,46 @@ function mai3(a){const base=O.mai(a);
       :`<section class="mx-s ln">${c.head?KH(c.head):''}<div class="ex-keep">${pills(h)}</div></section>`)});
   /* everything from the hero to the last card (the numbered headings between them included) is replaced */
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${parts.join('')}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
-ed.routes.mai=mai3;
+
+/* ═══ MAI · rest day (2026-10-19): the week's seven tubes are the picture (today with the moon, done days full, the days
+   ahead dashed); "+ Saját edzés" is an outline button — training is not today's job. Two variants: a custom workout in
+   progress (sentence + Folytassuk, the week stays), and a sport day, which starts like a gym day: the body with what
+   the sport works (owner: "legyen a test"), then the energy flame and the muscle tubes. ═══ */
+/* the BodyMap silhouette as a vessel, as in edzes.js (bodyLiq): the shapes and colours are the shell's globals */
+const bwv=(x,y,w,n=5,a=5)=>{const q=w/(2*n);let d=`M${x} ${y}`;for(let i=0;i<n;i++)d+=` q${q/2} ${-a} ${q} 0 q${q/2} ${a} ${q} 0`;return d};
+let BU=0;
+function body(v,ent){const by={};ent.forEach(([k,p=0,pl=0])=>(TOKEN_SHAPES[k]||[]).filter(([x])=>x===v).forEach(([,sh])=>{const o=by[sh]||(by[sh]={k,p:0,pl:0});o.p=Math.max(o.p,p);o.pl=Math.max(o.pl,pl)}));
+  const id='exb'+(++BU),bb=(sh)=>window.box?window.box(v,sh):BODY[v].b[sh];
+  const gg=Object.entries(by).map(([sh,o],i)=>{const [x,y,w,h]=bb(sh),c=muscleColor(o.k),Y=q=>y+h*(1-Math.max(0,Math.min(1,q))*.94);
+    return `<clipPath id="${id}${i}">${BODY[v].p[sh].map(d=>`<path d="${d}"/>`).join('')}</clipPath>
+      <g style="fill:color-mix(in srgb,${c} 16%,#fff);stroke:color-mix(in srgb,${c} 70%,#0A2A3C);stroke-width:3.5;stroke-linejoin:round"><use href="#bm-${v}-${sh}"/></g>
+      <g clip-path="url(#${id}${i})">${o.pl>0?`<path style="fill:color-mix(in srgb,${c} 82%,#fff)" d="${bwv(x-6,Y(o.pl),w+12,4,7)} V${y+h+8} H${x-6}Z"/>`:''}${o.p>0?`<path style="fill:color-mix(in srgb,${c} 74%,#0A2A3C)" d="${bwv(x-6,Y(o.p),w+12,4,7)} V${y+h+8} H${x-6}Z"/>`:''}</g>`}).join('');
+  return `<span class="vs-body"><svg viewBox="${BODY[v].vb}" aria-hidden="true"><g class="sil"><use href="#bm-sil-${v}"/></g>${gg}</svg></span>`}
+const VOLLEY=[['shoulder-front',3],['quad',2],['core',1]];
+const weekOf=h=>{const i=h.indexOf('<div class="k2-vials');return i<0?'':h.slice(i,bal(h,i)).replace(/height:96px/g,'height:132px')
+  .replace(/(<button class="k2-vial vs-t\s+hatch\s+" data-toast="Csütörtök)/,m=>m.replace('hatch','hatch ex-today'))};
+const weekCount=w=>{const all=(w.match(/class="k2-vial vs-t [^"]*"/g)||[]).filter(c=>!/hatch/.test(c)),done=all.filter(c=>!/ghost/.test(c)).length;return [done,all.length]};
+function rest3(a){const base=O.mai(a),cs=cardsOf(base);if(!cs.length)return base;
+  const hh=cs[0].html,lbl=g(hh,/<span class="lbl">([^<]*)<\/span>/),title=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/),sub=g(hh,/<p class="sub">([^<]*)<\/p>/);
+  const ai=hh.indexOf('<div class="fh-acts">'),acts=ai>=0?pills(hh.slice(ai+21,bal(hh,ai)-6)):'';
+  let top;
+  if(a==='pihen'){const w=weekOf(hh),[d,n]=weekCount(w);
+    top=`<section class="mx-s ex-hero"><small class="ex-eb">Pihenőnap · ${d} edzés megvolt a ${n}-ből</small><h2 class="n7-h">Ma pihensz. A heted eddig jól megy.</h2>
+      <div class="ex-wk">${w}</div><div class="ex-acts">${acts.replace('class="n9-btn"','class="n8-b"')}</div></section>`}
+  else if(a==='pihen-sajat'){const w=weekOf(O.mai('pihen'));O.mai(a);/* the week comes from the plain rest-day page; render this face again to restore its state */
+    top=`<section class="mx-s ex-hero"><small class="ex-eb">Pihenőnap · saját edzés</small><h2 class="n7-h">A ${title.toLowerCase()} folyamatban, ${g(sub,/(\d+ szett kész)/)}.</h2>
+      <div class="ex-acts">${acts}</div></section><section class="mx-s ln">${KH('A heted')}<div class="ex-wk">${w}</div></section>`}
+  else{const done=/Megvan/.test(sub),[,time,tag]=lbl.match(/(\d\d:\d\d) · (.+)$/)||[0,'',''],facts=sub.split(' · ').slice(1);
+    const say=done?`A ${title.toLowerCase()} megvan.`:/Kihagyva|Kímélő/.test(sub)?`A mai ${title.toLowerCase()} kimarad.`:`Ma ${title.toLowerCase()}, ${time}-kor.`;
+    const ex=hh.indexOf('<div class="vs-box"'),extra=ex>=0?hh.slice(ex,bal(hh,ex)):'';
+    top=`<section class="mx-s ex-hero"><small class="ex-eb">${time} · ${tag} · ${sub.split(' · ')[0]}</small><h2 class="n7-h">${say}</h2>
+      <div class="ex-fig">${body('front',VOLLEY.map(([k,n])=>[k,done?n/3:0,n/3]))}<small>${done?'ezt dolgoztatta meg':'ennyit kér ma a röpi'}</small></div>
+      <p class="ex-fl1">${facts.join(' · ')}</p>
+      ${extra?`<div class="ex-x">${pills(extra)}</div>`:''}<div class="ex-acts">${acts}</div></section>`}
+  const rest=cs.slice(1).map(c=>{const h=c.html;return h.includes('fh-big')?kcal3(c):h.includes('fh-mus vs-mt')?imp3(c):h.includes('fh-row tap')||h.includes('fh-pair')?'':
+    `<section class="mx-s ln">${c.head?KH(c.head):''}<div class="ex-keep">${pills(h)}</div></section>`}).join('');
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${rest}${more3()}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+ed.routes.mai=a=>['pihen','pihen-sajat','pihen-sport'].includes(a)?rest3(a):mai3(a);
 
 /* the drawers: the Nap skeleton (.dv) — the thing big, its number and chip, Mezo's text, one action */
 const dvTop=(ic,l,b,u,chip)=>`<div class="dv-top">${drop(ic)}<div><small>${l}</small><b>${b}${u?`<u>${u}</u>`:''}</b>${chip?`<i class="w">${chip}</i>`:''}</div></div>`;
@@ -115,8 +155,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-exd]');if(
     ${dvMezo(`Ennyit ad a mai mozgásod a napi keretedhez: a Pull Day kb. 460 kcal, a röplabda kb. 190. Ami megvolt, az már bent van, a többi akkor kerül be, ha megcsinálod. Ugyanez a szám áll a Fuel keretében. Becslés, nem mérés.`)}
     <button class="dv-btn pri" data-dom="fuel">Megnézem a Fuelben</button></div>`)}
   if(k==='izom'){const top=IMP[0]||{l:'Hát',w:'erős'};F.openSheet(`<div class="dv">${dvTop('t-muscle','Hatás az izomzatodra',top.l,'',top.w)}
-    <div class="ex-imp dv-imp">${chips(F.vials(IMP.map(r=>({l:r.l,s:r.w,v:`${r.d}/${r.p}`,p:r.p?Math.max(r.d,r.p)/Math.max(1,...IMP.map(q=>q.p))*88:0,c:`color-mix(in srgb,${r.c} 74%,#0A2A3C)`,mark:''})),{h:118}))}</div>
-    ${dvMezo(`A cső annyira telt, amennyit a mai terv kér az izomtól; a szám a kész és a tervezett szett. Itt a mai gym terved látod, a sportod terhelését külön, becsléssel számoljuk. Becslés, nem mérés.`)}
+    <div class="ex-imp dv-imp">${chips(F.vials(IMP.map(r=>({l:r.est!=null?r.w:r.l,s:r.est!=null?'':r.w,v:r.est!=null?r.l:`${r.d}/${r.p}`,p:r.est!=null?r.est*.88:r.p?Math.max(r.d,r.p)/Math.max(1,...IMP.map(q=>q.p))*88:0,c:`color-mix(in srgb,${r.c} 74%,#0A2A3C)`,mark:''})),{h:118}))}</div>
+    ${dvMezo(IMP.some(r=>r.est!=null)?`A cső a sport becsült terhelése izmonként: ennyit dolgoztat meg a mai röplabda. Nem mért adat, becslés.`:`A cső annyira telt, amennyit a mai terv kér az izomtól; a szám a kész és a tervezett szett. Itt a mai gym terved látod, a sportod terhelését külön, becsléssel számoljuk. Becslés, nem mérés.`)}
     <button class="dv-btn pri" data-go="terheles">A heti terhelésem</button></div>`)}});
 
 /* the tab pages' header, as on Nap: no big title, the "?" top left */
@@ -155,6 +195,10 @@ ${P} .ex-src svg.ic{width:22px;height:22px;flex:none}${P} .ex-src li b{font-weig
 ${P} .ex-mc{display:flex;justify-content:center;margin:0 0 8px}${P} .ex-mc .mchp{width:44px;height:44px}${P} .ex-mc .mchp svg{width:100%;height:100%}
 ${P} .ex-imp{margin:0 18px}${P} .ex-imp .k2-vials{gap:8px}${P} .ex-imp .k2-vial{min-width:0}${P} .ex-imp .k2-tube{width:58px!important;margin:0 auto}${P} .dv-imp{margin:8px 0 4px}
 ${P} .ex-keep{margin:0 18px}
+${P} .ex-fl1{margin:12px 22px 0;font-size:15px;font-weight:600;color:var(--ink);text-align:center}
+${P} .ex-wk{margin:16px 14px 0}${P} .ex-wk .k2-vials{gap:5px!important}${P} .ex-wk .k2-vial{min-width:0}${P} .ex-wk .k2-vial small,${P} .ex-wk .k2-vial b{font-size:12px!important}
+${P} .ex-wk .k2-tube em{font-size:12px!important}
+${P} .ex-wk .ex-today .k2-tube{box-shadow:0 0 0 3px color-mix(in srgb,var(--dom) 45%,#fff),0 10px 18px -10px var(--dom)}${P} .ex-wk .ex-today b,${P} .ex-wk .ex-today small{color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
 ${P} .ds small{font-size:12px}${P} .ds i{font-size:12px}
 ${P} .mx-h .fh-lk{white-space:nowrap;flex:none}${P} .mx-h{gap:10px}
 `);
