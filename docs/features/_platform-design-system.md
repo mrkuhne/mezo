@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg → Folyadék)
 type: feature-platform
 status: in-progress
-updated: 2026-10-12
+updated: 2026-10-19
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -318,8 +318,8 @@ F2–F7 convert the pages per domain, F8 the overlays, F9 the final sweep.
   "Új ikonok" sheet first), extend `Icon3DName`, run `node scripts/gen-folyadek-sprite.mjs`, commit the regenerated
   sprite; `titaniumSpriteSource.test.ts` pins sprite == glyph table.
 - **Opening animation.** `app/StartupSplash.tsx` / `.css`, timing constants in `app/startupChoreography.ts` (written to the
-  CSS as `--sp-*`): one vessel fills with five liquid layers, drains, and each layer lands as a drop in the real bottom
-  bar; 3000 ms; reduced motion paints the still final frame. The drops reuse `BottomBar`'s `navDropSpec` / `REST_FILL`
+  CSS as `--sp-*`): the „boop" wordmark appears and the five drops fall out of it, left → right, into the real bottom
+  bar; 1600 ms (shortened from the 3 s vessel intro on 2026-10-19, `mezo-rn5q7`); reduced motion paints the still final frame. The drops reuse `BottomBar`'s `navDropSpec` / `REST_FILL`
   so the hand-off is pixel-exact (asserted under reduced motion in `tests/layout/startup.spec.ts`).
   The stage is a transparent OVERLAY (final review, 2026-10-09): over the phone shell its own `PhoneFrame` keeps the
   geometry but paints no ground / bezel / sky (`.startup-content:has(.phone-screen) + .startup-stage …`), so the
@@ -1086,7 +1086,8 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
   variant's live WebGL scene, its readiness seam and the 5-second escape hatch are all gone with
   `TitanScene` (`mezo-ju4j6.10`): a static mark is on the first frame, so there is nothing to wait
   for. **Folyadék F1 (`mezo-n4wf5.1`, 2026-10-09) replaced the whole mark:** "one vessel, five drops" — a white capsule fills with five liquid layers (Nap, Edzés, Fuel, Mezo, Én, bottom → top), the stack drains through the bottom and each layer lands as a drop in its place in the bottom bar (left → right), then the splash fades. Pure CSS timeline in `StartupSplash.css` (`.fo-sp-*`); the base rules are the final frame, all motion sits in the no-preference branch (reduced motion just ends at 3 s). Timing numbers live once, in `startupChoreography.ts`, and reach the CSS as `--sp-*` custom properties on the root. The drops reuse the real bar's markup and recipe (`navDropSpec` from `BottomBar`) so they land pixel-exactly. Prototype: `docs/design_2.0/prototypes/vilagos/keret.js` (`splash()`).
-  Three seconds, then the app. The router mounts under an inert, `aria-hidden` wrapper, so
+  **Shortened 2026-10-19 (`mezo-rn5q7`, owner: too long):** the vessel is gone — only the wordmark, and the five drops swell out of it and fall into the bar; 1.6 s (fade from 1.15 s).
+  1.6 seconds, then the app. The router mounts under an inert, `aria-hidden` wrapper, so
   data can load without allowing early interaction; the timer removes the overlay independently of
   CSS completion. Internal navigation and background/foreground transitions never replay it; a
   reload does. The normal `/` entry still resolves to `/nap`; explicit deep links and
