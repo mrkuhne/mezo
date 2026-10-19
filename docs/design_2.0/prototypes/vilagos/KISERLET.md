@@ -85,32 +85,32 @@ plans or "which direction wins" decisions until he asks.
   `--icf` the glyph's body fills near-white and closed shapes (ball, scale, clipboard, notebook) become blobs.
 - In the drawings text is SVG text: break lines by hand, and check 320 px.
 
-## Hand-off (2026-10-14) — how the next session continues
+## Hand-off (2026-10-19) — the whole Nap domain is done; next: Edzés
 
-**Mai is done** and is the model for every other page. What it looks like now (route `#w-nap-mai`, `mai2()`):
-- One ground for the whole page (`.mx`), sections divided by a wave LINE only (`.mx-s.ln`). No alternating layers.
-- Top: the old hero vessel WITHOUT its card (`maiHero()` = `F.tank` in `.tk-lebego`): the sentence on the ground, the
-  liquid free with a rounded bottom, big number + "a 100-ból…" caption + scale. No label above the sentence, no button
-  in the vessel.
-- "Most következik": three vessels with real pill buttons (`.mx-btn`, the current one filled).
-- "Mai szintek": the four tubes, number + name only, target marks on white chips.
-- "Észrevétel": a card carousel (`.cr`), one observation per card (drawing + one pill button; details in a sheet),
-  dots under it. "Összes ›" in the heading.
-- "Továbbiak": a carousel of icon cards (8 items incl. Check-in), dots = stops.
-- A closing section with a full-width outlined "Nem vagyok jól ma" button, then room for the floating "+".
-- Cards ONLY inside carousels. No grey explanatory sub-lines. Buttons look like buttons.
+**Nap is complete** in the new system (owner liked it, 2026-10-19: "tetszik"). Every page is in the table above with what it
+became; originals stay reachable at `<route>-lista`. The system, as it stands now:
+- **Tab pages' header:** no big title, no date line; the "?" guide top left in the header button row (`hubHead()` wraps every
+  route's output). Sub-pages (back arrow) keep their title.
+- **One ground**, sections divided by a thin **straight line** (`.mx-s.ln`; the wave line was dropped 2026-10-19).
+- **The sentence on top** (`.n7-h`), then the page's own picture: Mai = the free-standing tank (avg of the six életjel) ·
+  A napom = the four check-in drops (`arc()`), closed day = big score + level bar + Mezo's full evaluation · Napzárás = the jar.
+- **Cards where things stand side by side to act on** (`.n8-c`: drawn icon/vessel in a glass drop `V.icd`, name + number,
+  a two-line preview, real pill buttons `.n8-b` / filled `.n9-btn`), **card carousels** for parallel things (`.cr`, fixed
+  card size), **card-less carousel** for Most következik (`.mx-next.cr0`).
+- **Drawers** (bottom sheets) use one skeleton (`.dv`: the thing big + number + chip, its own drawing, Mezo's text, one action);
+  no lines inside a drawer.
+- **Tubes** (`F.vials`, `.ej6`) for levels, each sign its own colour (`EJC`).
+- **Bottom action bar** (`.rt-foot`/`.nz-foot`: secondary "Vissza" + wide primary) on pages about doing.
+- **Toggles redraw in place** (`reGo()` = hashchange, no history push).
+- No grey helper lines, text ≥12 px at 320, targets ≥44 px (toggles 40 min), words left-aligned, page ≤~3 screens.
 
-**Next:** bring the other Nap pages to the same level, one page per round, with the owner looking at each:
-A napom (today, closed day, sparse day) → Beszélgetés (Üzenetek, Életjelek, Észrevételek) → Rutin → Check-in →
-Életjelek (detail) → Napi küldetések; then the pages not drawn yet (Mai special faces, Rutin editing, Napzárás).
-For each: switch to the Mai system (one ground + wave lines instead of `.bd`/`band()` layers; cards only in
-carousels; pill buttons; no sub-lines), then run the UX floor checks, then show it and wait.
+**Rejected on Nap (do not redo):** the pipe; Mai's tank reused on A napom; the U-vessel ("magnet") as hero; the arc chart;
+wave dividers; numbered drop headings; the drawn Gyors logolás; Életjelek detail page (tubes now on Mai; tap goes where you fill).
 
-**Working loop (keep it):** edit `vilagos/kiserlet-napom.js` only → `node -e "new Function(...)"` syntax check →
-Playwright screenshots at 390 and 320 (scratchpad scripts; `frontend/node_modules/@playwright/test/index.mjs`;
-local server `python3 -m http.server 8757 --bind 127.0.0.1` in `docs/design_2.0/prototypes/`) → audit (text ≥12 px,
-targets ≥44 px, no overflow, no missing icons) → look at the screenshots → commit + push the branch
-`claude/mai-napom-custom-graphics-eedeb2` → republish the artifact (a publish subagent reads the file and publishes
-the scratchpad shell copy `a-napom-rajzolva.html` + all `vilagos/*.js`; rebuild that copy from `klinikai-iranyok.html`
-with the extra `<script src="vilagos/kiserlet-napom.js">` and the default hash `#w-nap-mai` if the scratchpad is gone).
-Report to the owner in Hungarian, short, then wait.
+**Next: Edzés** (then Fuel, Mezo, Én). Same method per page: screenshot the approved page (`vilagos/edzes.js`, routes
+`#w-edzes-*`), say in Hungarian what changes, build it in a new experiment file or a new section (keep the Folyadék shell
+untouched; register overrides like the Nap ones, keep originals as `-lista`), check 390/320 + audit + click test, commit,
+push, republish via the publish subagent (reads the file, diffs against its saved copy, publishes the scratchpad shell copy
+`a-napom-rajzolva.html` + all `vilagos/*.js`; if the scratchpad was cleaned, rebuild the copy from `klinikai-iranyok.html`
+with the extra `<script src="vilagos/kiserlet-napom.js">` and default hash `#w-nap-mai`). Scripts `shot2.mjs` / `audit.mjs`
+live in the scratchpad and get cleaned by the system: recreate them when missing.
