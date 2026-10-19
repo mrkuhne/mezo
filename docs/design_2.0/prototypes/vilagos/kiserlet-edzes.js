@@ -211,7 +211,7 @@ ${P} .ex-rd .k2-vials{margin:6px 18px 0}
 ${P} .ex-mz{display:flex;gap:10px;align-items:flex-start;margin:16px 22px 0}${P} .ex-mz>.csepp,${P} .ex-mz>span{flex:none}
 ${P} .ex-mz p{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink)}${P} .ex-mz p+p{margin-top:6px}
 ${P} .ex-cards{display:grid;gap:12px;margin:0 18px}${P} .ex-cards .n8-c{margin:0}
-${P} .ex-said{font-size:13.5px}
+${P} .ex-said{font-size:13.5px}${P} .n8-c .st{font-size:12px!important}
 ${P} .ex-say{margin:0 22px;font-size:16px;line-height:1.5;color:var(--ink)}${P} .ex-say b{font-weight:800}
 ${P} .ex-kc{display:flex;align-items:center;gap:16px;margin:0 22px}${P} .ex-kc>div{flex:1;min-width:0}
 ${P} svg.ex-fl{flex:none;width:96px;height:104px;margin:0;filter:drop-shadow(0 12px 14px rgba(229,132,90,.22))}
