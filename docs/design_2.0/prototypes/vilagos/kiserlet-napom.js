@@ -369,27 +369,50 @@ document.addEventListener('scroll',e=>{const c=e.target;if(!(c instanceof Elemen
   const max=c.scrollWidth-c.clientWidth,n=d.children.length,i=max>0?Math.round(c.scrollLeft/max*(n-1)):0;
   [...d.children].forEach((x,j)=>x.classList.toggle('on',j===Math.min(n-1,i)))},true);
 const KH=(t,sub='',link='')=>`<div class="mx-h"><b>${t}</b>${link||(sub?`<span>${sub}</span>`:'')}</div>`;
-function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" style="--i:1">','<div class="k2-h rise" style="--i:2">');
-  const NX=[
-    {key:'drop',t:'14:00',title:'Délutáni check‑in',sub:'9 koppintás, kb. fél perc',go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"',now:true},
-    {key:'training',t:'ma',title:'Pull Day',sub:'a mai edzés még hátravan',go:'Megnézem',v:{p:0,g:'warn'},attr:'data-dom="edzes"'},
+/* ═══ MAI · the special faces (2026-10-19): empty day, load error, gentle mode (and its expired variant), evening.
+       Same page, same order; what changes is the sentence and the vessel on top, the next things, and in gentle mode a
+       "Hogy vagy?" block above everything. The gentle mode's state lives in nap.js, so it is read back from the approved
+       page's markup; its buttons are the approved ones (kmbetter, kmlater, kmask, kmdel). ═══ */
+const KMI={'Beteg vagyok':'t-ill','Gyomorrontás':'t-digestion','Sérülés / fájdalom':'t-pain','Úton vagyok':'t-travel'};
+function kmRead(base){if(base.indexOf('Kímélő mód ·')<0)return null;const g=(re,i=1)=>{const m=base.match(re);return m?m[i]:''};
+  const lbl=g(/Kímélő mód · ([^<"]+?)</),day=g(/kímélő mód · (\d+)\. nap/)||g(/(\d+)\. nap ·/);
+  return {lbl,ic:KMI[lbl]||'t-kimelo',day,est:g(/\d+\. nap · becslés: ([^<]+)</),later:base.includes('Holnap reggel újra rákérdezek'),ask:base.includes('Töröljem a kímélő módot?'),exp:base.includes('A becsült idő letelt')}}
+const kmBlock=k=>`<section class="mx-s km2"><div class="km2-r"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:k.ic})}</svg><div>
+  <small>Kímélő mód${k.later?'':` · ${k.lbl}`}</small><h2 class="n7-h">${k.later?`${k.day}. nap.`:'Hogy vagy?'}</h2>
+  <p>${k.later?'Holnap reggel újra rákérdezek, hogy vagy.':k.exp?'A becsült idő letelt.':`${k.day}. nap${k.est&&k.est!=='nincs'?` · becslés: ${k.est}`:''}`}</p></div></div>
+  ${k.ask?`<p class="km2-q"><b>Töröljem a kímélő módot?</b> A kihagyott edzések visszaállnak, mintha be se kapcsoltad volna.</p><div class="km2-a"><button class="n9-btn km2-del" data-n="kmdel">Törlöm</button><button class="n8-b" data-n="kmask:0">Mégse</button></div>`
+   :k.later?`<div class="km2-a"><button class="n8-b" data-n="kmbetter">Befejezem</button></div>`
+   :`<div class="km2-a"><button class="n9-btn" data-n="kmbetter">Jobban vagyok</button><button class="n8-b" data-n="kmlater">Még nem</button><button class="n8-b" data-n="kmask:1">Tévedés volt</button></div>`}</section>`;
+function mai2(face){const base=O.mai(face==='este'||face==null?'':face),km=kmRead(base),none=face==='ures',err=face==='hiba',eve=face==='este';
+  const ej=none?EJ.map(([l,ic,p,...r])=>[l,ic,l==='Alvás'||l==='Kapcsolat'||l==='Rend'?p:null,...r]):EJ;
+  const avg=Math.round(ej.reduce((a,e)=>a+(e[2]||0),0)/ej.length);
+  const verdict=none?'Még üres a napod. Az első beírással elindul.':km?'':eve?'Tegyük le a napot.':'Most a délutáni check‑in jön, utána a Pull&nbsp;Day.';
+  const hero=err?`<div class="er2"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:'t-info'})}</svg><div><h2 class="n7-h">Nem sikerült betölteni a mai napot.</h2><button class="n9-btn" data-n="retry">Újra</button></div></div>`
+    :`<div class="tk-lebego ${km?'km':''}">`+F.tank({pct:km?78:Math.max(avg,56),h:km?230:330,num:avg,cap:km?`a 100-ból · kímélő mód · ${km.day}. nap`:'a 100-ból · hat életjel átlaga',verdict,marks:[75,50,25],...(eve?{c1:'color-mix(in srgb,var(--dom) 72%,var(--ink))',c2:'color-mix(in srgb,var(--dom) 26%,var(--ink))'}:{})})+'</div>';
+  const NX=eve?[
+    {key:'drop',t:'21:00',title:'Napzárás',go:'Indítom',v:{ic:'t-moon'},attr:'data-go="napzaras.1"',now:true},
+    {key:'icd',t:'20:00',title:'Esti check‑in',go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"'},
+    {key:'icd',t:'este',title:'Esti rutin',go:'Megnézem',v:{ic:'t-chain'},attr:'data-go="rutin"'}]
+   :[{key:'drop',t:'14:00',title:'Délutáni check‑in',go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"',now:true},
+    km?{key:'training',t:'ma',title:'Pull Day',go:'Kimarad',v:{p:0,g:'warn'},attr:'data-toast="Kímélő mód: ez az edzés most kimarad, és nem számít mulasztásnak"'}
+      :{key:'training',t:'ma',title:'Pull Day',go:'Megnézem',v:{p:0,g:'warn'},attr:'data-dom="edzes"'},
     {key:'icd',t:'ma',title:'Szándék',go:'Megadom',v:{ic:'t-compass'},attr:'data-sheet="intention"'},
     {key:'icd',t:'21:00',title:'Napzárás',go:'Indítom',v:{ic:'t-moon'},attr:'data-go="napzaras.1"'},
     {key:'icd',t:'este',title:'Esti rutin',go:'Megnézem',v:{ic:'t-chain'},attr:'data-go="rutin"'}];
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
     [I('t-checkin'),'Check-in','','data-go="checkin"'],[I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
-  /* Mai, round 6 (owner, 2026-10-14, after looking at Strava): one ground for the whole page, sections divided by a wave
-     LINE only; cards only inside carousels (Észrevétel, Továbbiak) — the top is NOT a card (owner, same day); no napló. */
+  /* Mai, round 6 (owner, 2026-10-14, after looking at Strava): one ground for the whole page, sections divided by a
+     line only; cards only inside carousels (Észrevétel, Továbbiak) — the top is NOT a card (owner, same day); no napló. */
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}<div class="mx">
-  <section class="mx-s">${maiHero()}</section>
-  <section class="mx-s ln">${KH('Életjelek')}${ejRow()}</section>
+  ${km?kmBlock(km):''}<section class="mx-s ${km?'ln':''}">${hero}</section>
+  ${err?'':`<section class="mx-s ln">${KH('Életjelek')}${ejRow(ej,!!km)}</section>
   <section class="mx-s ln">${KH('Most következik')}
-  <div class="mx-next cr0">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="mx-btn ${x.now?'pri':''}">${x.go}</span></button>`).join('')}</div>${dots(NX.length-2)}</section>
+  <div class="mx-next cr0">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="mx-btn ${x.now?'pri':''}">${x.go}</span></button>`).join('')}</div>${dots(Math.max(1,NX.length-2))}</section>
   <section class="mx-s ln">${KH('Észrevétel','',`<button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes ›</button>`)}
-  <div class="cr" data-rr="moc">${RR.moc()}</div>${dots(OBS.length)}</section>
+  <div class="cr" data-rr="moc">${RR.moc()}</div>${dots(OBS.length)}</section>`}
   <section class="mx-s ln">${KH('Továbbiak')}
   <div class="cr sm">${MORE.map(([ic,t,sub,attr])=>`<button class="cr-c" ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>${dots(MORE.length-2)/* about three cards are in view: one dot per stop */}</section>
-  <section class="mx-s ln mx-end"><button class="mx-km" data-n="km:open">${I('t-kimelo')}<span>Nem vagyok jól ma</span></button></section></div>`).replace('<div class="toast"','<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a><div class="toast"')}
+  ${km?'<div class="ng-tail"></div>':`<section class="mx-s ln mx-end"><button class="mx-km" data-n="km:open">${I('t-kimelo')}<span>Nem vagyok jól ma</span></button></section>`}</div>`).replace('<div class="toast"','<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a><div class="toast"')}
 
 /* ═══ CHECK-IN · the day's four snapshots side by side: one column per moment, one row per feeling, so you can see
        how each of the five core answers moved through the day. A finished column opens its full snapshot in a sheet
@@ -429,7 +452,7 @@ const EJGO={Étel:{dom:'fuel'},Víz:{toast:'+250 ml víz — rögzítve'},Alvás
 /* each sign its own colour (owner, 2026-10-14, when Mai szintek left): food = Fuel green, movement = Edzés coral,
    sleep = night violet; a low one keeps its colour and gets the "figyelj" chip */
 const EJC={Étel:'#3FA277',Víz:'#29A9D9',Alvás:'#8F7FD0',Mozgás:'#E5845A',Kapcsolat:'#D8739E',Rend:'#2BA59A'};
-const ejRow=()=>`<div class="ej6">${F.vials(EJ.map(([l,ic,p])=>({l,ic,p,v:p,c:EJC[l],mark:p<40?'figyelj':'',on:EJGO[l]})),{h:150})}</div>`;
+const ejRow=(list=EJ,pause)=>`<div class="ej6">${F.vials(list.map(([l,ic,p])=>({l,ic,p,v:p==null?'–':p,c:EJC[l],mark:pause&&l==='Mozgás'?'szünet':p!=null&&p<40?'figyelj':'',on:EJGO[l]})),{h:150})}</div>`;
 function eletjel2(){const avg=Math.round(EJ.reduce((a,e)=>a+e[2],0)/EJ.length),low=EJ.filter(e=>e[2]<40);
   const row=a=>`<div class="np-pad rk ej">${F.vials(a.map(([l,ic,p,act,on])=>({l,ic,p,v:p,c:p<40?'var(--warn)':'var(--dom)',mark:p<40?'figyelj':'',s:act?act+' ›':'',on})),{h:132})}<i class="rk-shelf"></i></div>`;
   return page('nap',{title:'Életjelek',sub:'Nap · a hat jel',back:'mai'},`${DEFS}
@@ -494,7 +517,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!
   const r=document.getElementById('rt-root');if(r)r.innerHTML=rutinBody();const f=document.getElementById('rt-foot');if(f)f.innerHTML=rutinFoot()});
 
 /* ── routes: on this page the top tabs open the drawn versions; the approved ones stay reachable ── */
-nap.routes['eletjel-lista']=O.eletjel;nap.routes.eletjel=eletjel2;nap.routes['checkin-lista']=O.checkin;nap.routes.checkin=checkin2;nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>a?O.mai(a):mai2();nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
+nap.routes['eletjel-lista']=O.eletjel;nap.routes.eletjel=eletjel2;nap.routes['checkin-lista']=O.checkin;nap.routes.checkin=checkin2;nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>!a||['ures','hiba','kimelo','kimelo-lejart'].includes(a)?mai2(a||null):O.mai(a);nap.routes.maieste=()=>mai2('este');nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
 nap.routes.napom=a=>a==='nincs'?today3(true):a?O.napom(a):today3();nap.routes.nap=day;nap.routes.napomg=today3;nap.routes.napomt=today3;
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
 
@@ -877,6 +900,13 @@ ${P} .n7-ctx{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:6px
 ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{display:block;margin-top:2px;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
+/* Mai faces */
+${P} .km2-r,${P} .er2{display:flex;align-items:center;gap:14px;margin:18px 22px 0}${P} .km2-r svg.ng,${P} .er2 svg.ng{flex:none;width:76px;height:76px;margin:0}
+${P} .km2 .ng-pipe,${P} .km2 .ng-flow,${P} .er2 .ng-pipe,${P} .er2 .ng-flow{display:none}
+${P} .km2-r small{display:block;font-size:13px;font-weight:700;color:#A86A0C}${P} .km2-r .n7-h{margin:2px 0 0}${P} .km2-r p{margin:4px 0 0;font-size:14px;color:var(--ink)}
+${P} .km2-a{display:flex;flex-wrap:wrap;gap:8px;margin:14px 22px 0}${P} .km2-a .n8-b,${P} .km2-a .n9-btn{margin:0;min-height:44px}
+${P} .km2-q{margin:14px 22px 0;font-size:14px;line-height:1.5;color:var(--ink)}${P} .km2-del{background:#C2453B!important;box-shadow:none!important}
+@container (max-width:340px){${P} .tk-lebego.km .k2-tank{height:250px!important}}${P} .er2 .n7-h{margin:0}${P} .er2 .n9-btn{margin-top:12px;min-height:44px;padding:0 22px}
 /* Napi küldetések, round 15 (2026-10-17) */
 ${P} .qs-of{font-size:15px;font-weight:700;fill:var(--ink)}
 ${P} .qs2 svg.qf{width:64px;height:64px;margin:0}${P} .qs2 .n8-t i{flex:none}${P} .n8-c.qs2 p{-webkit-line-clamp:3}
