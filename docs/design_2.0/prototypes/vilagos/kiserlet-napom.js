@@ -421,7 +421,8 @@ const REC=[['Ébredés időben','reggel · ébredés',92,'d','t-dawn'],['Reggeli
 const REH=[['Ébredés időben','magától megy',142,92,'beérett',''],['Koffein-cutoff','kezd magától menni',66,78,'~12 ismétlés','3 hét múlva'],['Reggeli napfény','kezd magától menni',51,74,'~20 ismétlés','kb. 4 hét'],['50 fekvőtámasz','épül',24,48,'~41 ismétlés','kb. 7 hét'],['Konyha zárva','épül',18,40,'~46 ismétlés','kb. 8 hét'],['Gombakávé','még tudatos',9,26,'',''],['Reggeli videó','még tudatos',4,null,'','']];
 const RES=['még tudatos','épül','kezd magától menni','magától megy'];
 const RST={lanc:false,ft:[1,1,1,0],fw:'fogg',eff:[1,0,1,2],seg:{}};
-const reGo=()=>F.go(location.hash.replace('#w-nap-',''));
+/* redraw in place like nap.js soft(): no new history step, the scroll position kept */
+const reGo=()=>{const sc=document.querySelector('#phone .scroll'),y=sc?sc.scrollTop:0;window.dispatchEvent(new HashChangeEvent('hashchange'));const s2=document.querySelector('#phone .scroll');if(s2)s2.scrollTop=y;document.querySelectorAll('#phone .rise').forEach(e=>{e.style.animation='none'})};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-re]');if(!b)return;const [k,x,y]=b.dataset.re.split(':');
   if(k==='lanc')RST.lanc=!RST.lanc;else if(k==='ft')RST.ft[+x]=RST.ft[+x]?0:1;else if(k==='fw')RST.fw=x;else if(k==='eff')RST.eff[+x]=+y;else if(k==='seg')RST.seg[x]=+y;reGo()});
 const ec=(ic,t,txt,btns,right,cls='')=>`<article class="n8-c re-c ${cls}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic})}</svg><div><div class="n8-t"><b>${t}</b>${right?`<em>${right}</em>`:''}</div>${txt?`<p>${txt}</p>`:''}${btns?`<div class="qs-acts">${btns}</div>`:''}</div></article>`;
