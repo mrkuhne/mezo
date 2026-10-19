@@ -1063,6 +1063,16 @@ ${P} .rt-edit>svg.ic{width:34px;height:34px;flex:none}${P} .rt-edit span{flex:1}
 @keyframes ng-fl{to{stroke-dashoffset:-22}}
 @keyframes rt-now{50%{transform:scale(1.06)}}
 `);
+/* the tab pages' header (owner, 2026-10-19): the big title repeated the tab ("Ma" over the Mai tab) and the date
+   line said little — both go; the "?" guide moves to the top left where the date was. Sub-pages (with a back
+   button) keep their title. Done on the rendered string so the approved shell stays untouched. */
+const hubHead=h=>{if(typeof h!=='string'||h.indexOf('fh-trow hub')<0)return h;
+  const m=h.match(/<div class="fh-title"><h1>[^<]*(<button class="fh-help"[^>]*>\?<\/button>)<\/h1><\/div>/);if(!m)return h;
+  return h.replace(m[0],'').replace(/<small class="fh-eb">[\s\S]*?<\/small>/,'<span class="fh-eb">'+m[1]+'</span>')};
+Object.keys(nap.routes).forEach(k=>{const f=nap.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>hubHead(f(...a));g.__hub=1;nap.routes[k]=g}});
+F.css(`${P} .fh-trow.hub .fh-eb .fh-help{width:44px;height:44px;margin:0;font-size:18px;background:#fff;border:0;box-shadow:0 4px 12px -6px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .fh-trow.hub+.fh-tabs{margin-top:12px}
+${P} .fh-trow.hub{flex-wrap:nowrap!important}${P} .fh-trow.hub .fh-eb{flex:none;order:0!important}${P} .fh-trow.hub .fh-btns{margin-left:auto}`);
 window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Nincs nagy edény, nincs kártya, nincs lista. Minden oldal saját rajzot kapott, azt, ami a tartalmából következik:</p>
 <ul><li><a href="#w-nap-mai"><b>Mai</b></a> — a nap vonala: reggeltől estig, a mostani időpontig feltöltve. Alatta a négy kémcső (változatlan), a három következő teendő három edényként, és a nap befőttesüvege, rétegenként a bejegyzésekkel.</li>
 <li><a href="#w-nap-eletjel"><b>Életjelek részletei</b></a> (a Mai aloldala) — a hat kémcső két polcon, mindegyik alatt a saját művelete.</li>
