@@ -31,7 +31,7 @@ function cardsOf(h){const out=[];let i=0;
     head=pre>=0&&pre>(out.length?out[out.length-1].end:0)?g(h.slice(pre,i),/<\/b>([^<]*)<\/p>/):'';
     out.push({html:h.slice(i,e),head,start:i,end:e});i=e}
   return out}
-function hero3(c,ready){const h=c.html,lbl=g(h,/<span class="lbl">([^<]*)<\/span>/),sub=g(h,/<p class="sub">([\s\S]*?)<\/p>/).replace(/<[^>]+>/g,'');
+function hero3(c,ready,o={}){const h=c.html,lbl=g(h,/<span class="lbl">([^<]*)<\/span>/),sub=g(h,/<p class="sub">([\s\S]*?)<\/p>/).replace(/<[^>]+>/g,'');
   const time=g(lbl,/(\d\d:\d\d)/),fig=g(h,/<span class="vs-hb([^"]*)">([\s\S]*?)<small>([^<]*)<\/small><\/span>/,0);
   const body=g(fig,/(<span class="vs-body[\s\S]*<\/span>)<small>/),cap=g(fig,/<small>([^<]*)<\/small>/),off=/vs-hb [^"]*off/.test(fig);
   const facts=[...g(h,/<div class="vs-hf">([\s\S]*?)<\/div>/).matchAll(/<b>([^<]*)<\/b><small>([^<]*)<\/small>/g)].map(m=>[m[1],m[2]]);
@@ -40,7 +40,7 @@ function hero3(c,ready){const h=c.html,lbl=g(h,/<span class="lbl">([^<]*)<\/span
   const st=sub.split(' · ')[0];
   const say=/^Folyamatban/.test(st)?'A Pull Day folyamatban.':/^Kész/.test(st)?'A Pull Day megvan.':/^Kímélő/.test(st)?'Ma pihensz, a Pull Day kimarad.'
     :/^Kihagyva/.test(st)?'A mai Pull Day kimarad.':ready==='ask'?'Ma Pull Day, de könnyebben javaslom.':ready==='done'?'Ma Pull Day, egy fokkal könnyebben.':`Ma Pull Day, ${time}-kor.`;
-  return `<section class="mx-s ex-hero"><small class="ex-eb">${time} · Gym · ${sub}</small><h2 class="n7-h">${say}</h2>
+  return `<section class="mx-s ex-hero"><small class="ex-eb">${o.eb||`${time} · Gym · ${sub}`}</small><h2 class="n7-h">${o.say||say}</h2>
     <div class="ex-row"><div class="ex-fig ${off?'off':''}">${body}<small>${cap}</small></div>
     <div class="ex-facts">${facts.map(([b,s])=>`<span><b>${b}</b><small>${s}</small></span>`).join('')}</div></div>
     ${extra?`<div class="ex-x">${pills(extra)}</div>`:''}<div class="ex-acts">${pills(acts)}</div></section>`}
@@ -61,7 +61,7 @@ function sess3(c){const h=c.html,items=[];let i=0;
     const t=g(s,/<time>([^<]*)<\/time>/),ti=g(s,/<strong>([\s\S]*?)<\/strong>/),sm=g(s,/<small>([\s\S]*?)<\/small>/);
     const chip=g(sm,/<span class="st ([^"]*)">([^<]*)<\/span>/,2),facts=sm.replace(/<span class="st[\s\S]*?<\/span>/,'').replace(/^[^·]*· /,'').trim();
     const btns=[...tail.matchAll(/<button[\s\S]*?<\/button>/g)].map(m=>m[0]).join(''),said=tail.replace(/<button[\s\S]*?<\/button>/g,'').replace(/<\/?div[^>]*>/g,'').replace(/<span class="fb[\s\S]*?<\/span>/g,'').trim();
-    return `<article class="n8-c">${drop(ico(s))}<div><div class="n8-t"><b>${ti}</b><em>${t||chip}</em></div><p>${facts}</p>${said&&!/^<span>\s*<\/span>$/.test(said)?`<p class="ex-said">${said}</p>`:''}${btns?`<div class="qs-acts">${pills(btns)}</div>`:''}</div></article>`}).join('')}</div></section>`}
+    return `<article class="n8-c">${drop(ico(s))}<div><div class="n8-t"><b>${ti}</b><em>${t||chip}</em></div><p>${chip&&chip!=='Ma'?g(sm,/(<span class="st[^"]*">[^<]*<\/span>)/)+' ':''}${facts}</p>${said&&!/^<span>\s*<\/span>$/.test(said)?`<p class="ex-said">${said}</p>`:''}${btns?`<div class="qs-acts">${pills(btns)}</div>`:''}</div></article>`}).join('')}</div></section>`}
 /* round 2 (owner, 2026-10-19: "kérek custom grafikát"): the energy is a flame-shaped vessel. Solid = already in the
    budget, the pale part with the dashed line = what comes if you do it. Beside it the sources, each with its share.
    The page only knows the two totals; the sources are the subset of the day's sessions (gym 460, röpi 190, extra
@@ -122,8 +122,8 @@ function body(v,ent){const by={};ent.forEach(([k,p=0,pl=0])=>(TOKEN_SHAPES[k]||[
       <g clip-path="url(#${id}${i})">${o.pl>0?`<path style="fill:color-mix(in srgb,${c} 82%,#fff)" d="${bwv(x-6,Y(o.pl),w+12,4,7)} V${y+h+8} H${x-6}Z"/>`:''}${o.p>0?`<path style="fill:color-mix(in srgb,${c} 74%,#0A2A3C)" d="${bwv(x-6,Y(o.p),w+12,4,7)} V${y+h+8} H${x-6}Z"/>`:''}</g>`}).join('');
   return `<span class="vs-body"><svg viewBox="${BODY[v].vb}" aria-hidden="true"><g class="sil"><use href="#bm-sil-${v}"/></g>${gg}</svg></span>`}
 const VOLLEY=[['shoulder-front',3],['quad',2],['core',1]];
-const weekOf=h=>{const i=h.indexOf('<div class="k2-vials');return i<0?'':h.slice(i,bal(h,i)).replace(/height:96px/g,'height:132px')
-  .replace(/(<button class="k2-vial vs-t\s+hatch\s+" data-toast="Csütörtök)/,m=>m.replace('hatch','hatch ex-today'))};
+const weekOf=(h,day='Csütörtök')=>{const i=h.indexOf('<div class="k2-vials');return i<0?'':h.slice(i,bal(h,i)).replace(/height:96px/g,'height:132px')
+  .replace(new RegExp(`(<button class="k2-vial vs-t\\s+hatch\\s+" data-toast="${day})`),m=>m.replace('hatch','hatch ex-today'))};
 const weekCount=w=>{const all=(w.match(/class="k2-vial vs-t [^"]*"/g)||[]).filter(c=>!/hatch/.test(c)),done=all.filter(c=>!/ghost/.test(c)).length;return [done,all.length]};
 function rest3(a){const base=O.mai(a),cs=cardsOf(base);if(!cs.length)return base;
   const hh=cs[0].html,lbl=g(hh,/<span class="lbl">([^<]*)<\/span>/),title=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/),sub=g(hh,/<p class="sub">([^<]*)<\/p>/);
@@ -135,17 +135,40 @@ function rest3(a){const base=O.mai(a),cs=cardsOf(base);if(!cs.length)return base
   else if(a==='pihen-sajat'){const w=weekOf(O.mai('pihen'));O.mai(a);/* the week comes from the plain rest-day page; render this face again to restore its state */
     top=`<section class="mx-s ex-hero"><small class="ex-eb">Pihenőnap · saját edzés</small><h2 class="n7-h">A ${title.toLowerCase()} folyamatban, ${g(sub,/(\d+ szett kész)/)}.</h2>
       <div class="ex-acts">${acts}</div></section><section class="mx-s ln">${KH('A heted')}<div class="ex-wk">${w}</div></section>`}
-  else{const done=/Megvan/.test(sub),[,time,tag]=lbl.match(/(\d\d:\d\d) · (.+)$/)||[0,'',''],facts=sub.split(' · ').slice(1);
-    const say=done?`A ${title.toLowerCase()} megvan.`:/Kihagyva|Kímélő/.test(sub)?`A mai ${title.toLowerCase()} kimarad.`:`Ma ${title.toLowerCase()}, ${time}-kor.`;
-    const ex=hh.indexOf('<div class="vs-box"'),extra=ex>=0?hh.slice(ex,bal(hh,ex)):'';
-    top=`<section class="mx-s ex-hero"><small class="ex-eb">${time} · ${tag} · ${sub.split(' · ')[0]}</small><h2 class="n7-h">${say}</h2>
-      <div class="ex-row"><div class="ex-fig">${body('front',VOLLEY.map(([k,n])=>[k,done?n/3:0,n/3]))}<small>${done?'ezt dolgoztatta meg':'ennyit kér ma a röpi'}</small></div>
-      <div class="ex-facts">${facts.map(f=>{const m=f.match(/^(\d+) (.+)$/);return `<span class="${m?'':'tx'}"><b>${m?m[1]:f}</b><small>${m?m[2]:''}</small></span>`}).join('')}</div></div>
-      ${extra?`<div class="ex-x">${pills(extra)}</div>`:''}<div class="ex-acts">${acts}</div></section>`}
+  else top=sportHero(hh,'Ma',acts);
   const rest=cs.slice(1).map(c=>{const h=c.html;return h.includes('fh-big')?kcal3(c):h.includes('fh-mus vs-mt')?imp3(c):h.includes('fh-row tap')||h.includes('fh-pair')?'':
     `<section class="mx-s ln">${c.head?KH(c.head):''}<div class="ex-keep">${pills(h)}</div></section>`}).join('');
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${rest}${more3()}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
-ed.routes.mai=a=>['pihen','pihen-sajat','pihen-sport'].includes(a)?rest3(a):mai3(a);
+/* a sport as the day's main thing: the body with what it works, its facts stacked beside it, the buttons below */
+function sportHero(hh,on,acts){const lbl=g(hh,/<span class="lbl">([^<]*)<\/span>/),title=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/),sub=g(hh,/<p class="sub">([^<]*)<\/p>/);
+  {const done=/Megvan/.test(sub),[,time,tag]=lbl.match(/(\d\d:\d\d) · (.+)$/)||[0,'',''],one=/egyszeri esemény/.test(sub),facts=sub.split(' · ').slice(1).filter(f=>f!=='egyszeri esemény'),st=sub.split(' · ')[0],t=title.toLowerCase();
+    const say=on==='Ma'?(done?`A ${t} megvan.`:/Kihagyva|Kímélő/.test(sub)?`A mai ${t} kimarad.`:`Ma ${t}, ${time}-kor.`)
+      :done?`${on} ${t} volt, megvan.`:/Elmaradt/.test(st)?`${on} ${t} elmaradt.`:`${on} ${t} jön, ${time}-kor.`;
+    const ex=hh.indexOf('<div class="vs-box"'),extra=ex>=0?hh.slice(ex,bal(hh,ex)):'';
+    return `<section class="mx-s ex-hero"><small class="ex-eb">${on==='Ma'?'':lbl.split(' · ')[0]+' · '}${time} · ${tag} · ${st}${one?' · egyszeri':''}</small><h2 class="n7-h">${say}</h2>
+      <div class="ex-row"><div class="ex-fig">${body('front',VOLLEY.map(([k,n])=>[k,done?n/3:0,n/3]))}<small>${done?'ezt dolgoztatta meg':on==='Ma'?'ennyit kér ma a röpi':'ennyit kér aznap a röpi'}</small></div>
+      <div class="ex-facts">${facts.map(f=>{const m=f.match(/^(\d+) (.+)$/);return `<span class="${m?'':'tx'}"><b>${m?m[1]:f}</b><small>${m?m[2]:''}</small></span>`}).join('')}</div></div>
+      ${extra?`<div class="ex-x">${pills(extra)}</div>`:''}${acts?`<div class="ex-acts">${acts}</div>`:''}</section>`}}
+/* ═══ MAI · the other days of the week (2026-10-19): the same page as today — the sentence says what was or will be
+   on that day, the gym day's body with its facts, the day's other sessions as cards, the quick starts. The "you can
+   still give a reason for the last 7 days" grey note goes: the missed card has its own "Kihagytam" button. A day with
+   nothing planned shows the week's tubes with that day ringed. ═══ */
+const ON={Hétfő:'Hétfőn',Kedd:'Kedden',Szerda:'Szerdán',Csütörtök:'Csütörtökön',Péntek:'Pénteken',Szombat:'Szombaton',Vasárnap:'Vasárnap'};
+const DAYS3=['het','kedd','sze','pen','szo','vas'];
+function day3(a){let wk='';if(/nincs tervezett edzés/.test(O.mai(a)))wk=O.mai('pihen');/* the week's tubes come from the rest-day page */
+  const base=O.mai(a),cs=cardsOf(base);if(!cs.length)return base;
+  const hh=cs[0].html,lbl=g(hh,/<span class="lbl">([^<]*)<\/span>/),dn=lbl.split(' · ')[0],on=ON[dn]||dn,title=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/).replace(' · ',' '),sub=g(hh,/<p class="sub">([^<]*)<\/p>/);
+  const ai=hh.indexOf('<div class="fh-acts">'),acts=ai>=0?pills(hh.slice(ai+21,bal(hh,ai)-6)):'';
+  let top;
+  if(hh.includes('vs-h2')){const time=g(lbl,/(\d\d:\d\d)/),st=sub.split(' · ')[0];
+    top=hero3(cs[0],'',{eb:`${dn} · ${time} · Gym · ${st}`,say:/Megvan/.test(st)?`${on} ${title} volt, megvan.`:/Elmaradt/.test(st)?`${on} ${title} elmaradt.`:`${on} ${title} jön, ${time}-kor.`})}
+  else if(/nincs tervezett edzés/.test(hh)){const w=weekOf(wk||'',g(lbl,/^(\S+)/));O.mai(a);
+    top=`<section class="mx-s ex-hero"><small class="ex-eb">${lbl}</small><h2 class="n7-h">${on} pihenőnap, nincs tervezett edzés.</h2><div class="ex-wk">${w}</div></section>`}
+  else top=sportHero(hh,on,acts);
+  const rest=cs.slice(1).map(c=>{const h=c.html;return h.includes('fh-step')?sess3(c):h.includes('fh-big')?kcal3(c):h.includes('fh-mus vs-mt')?imp3(c)
+    :h.includes('fh-row tap')||h.includes('fh-pair')||h.includes('utólag is megadhatod')?'':`<section class="mx-s ln">${c.head?KH(c.head):''}<div class="ex-keep">${pills(h)}</div></section>`}).join('');
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${rest}${more3()}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+ed.routes.mai=a=>['pihen','pihen-sajat','pihen-sport'].includes(a)?rest3(a):DAYS3.includes(a)?day3(a):mai3(a);
 
 /* the drawers: the Nap skeleton (.dv) — the thing big, its number and chip, Mezo's text, one action */
 const dvTop=(ic,l,b,u,chip)=>`<div class="dv-top">${drop(ic)}<div><small>${l}</small><b>${b}${u?`<u>${u}</u>`:''}</b>${chip?`<i class="w">${chip}</i>`:''}</div></div>`;
@@ -207,5 +230,5 @@ ${P} .ex-wk .ex-today .k2-tube{box-shadow:0 0 0 3px color-mix(in srgb,var(--dom)
 ${P} .ds small{font-size:12px}${P} .ds i{font-size:12px}
 ${P} .mx-h .fh-lk{white-space:nowrap;flex:none}${P} .mx-h{gap:10px}
 `);
-window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p>`+(window.FNOTES_FOLY||'');
 })();
