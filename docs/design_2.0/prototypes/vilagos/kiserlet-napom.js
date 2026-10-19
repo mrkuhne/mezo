@@ -380,34 +380,39 @@ function jarSvg(p,t,lid){const id=uid(),J='M30 26H90V30Q100 34 100 46V118Q100 13
   ${t?`<text class="nz-jt" x="60" y="${Math.min(118,Math.max(y+30,70))}" text-anchor="middle">${t}</text>`:''}</svg>`}
 const NZN=['Indulás','A napod íve','A szavaid','Nyitott hurkok','A mai termés','Lezárva'];
 const nzTiles=a=>`<div class="nz-tiles">${a.map(([ic,v,l])=>`<div><span class="nz-ti">${I(ic)}</span><b>${v}</b><small>${l}</small></div>`).join('')}</div>`;
-function napzaras2(arg){const a=Math.min(6,Math.max(1,+arg||1));
+/* round 17 (owner, 2026-10-19: "no back button, the UI is lame and basic"): every step can go back (header arrow and the
+   bottom bar), the step opens with a large picture on a soft evening ground, the step name above the heading, a
+   timeline instead of loose icons, soft white tiles for the numbers, a quoted message at the end. */
+function napzaras2(arg){const a=Math.min(6,Math.max(1,+arg||1)),prev=a>1?`napzaras.${a-1}`:'mai';
   const S=(h,x)=>`<section class="mx-s ln">${h?KH(h):''}${x}</section>`;
-  const top=(jar,h,sub)=>`<section class="mx-s"><div class="nz-top">${jar}<div><h2 class="n7-h">${h}</h2>${sub?`<p>${sub}</p>`:''}</div></div></section>`;
+  const hero=(art,h,sub)=>`<section class="nz-hero"><div class="nz-art">${art}</div><small>${a}. lépés · ${NZN[a-1]}</small><h2>${h}</h2>${sub?`<p>${sub}</p>`:''}</section>`;
   const SRC=[['Edzés',80,'#E5845A'],['Küldetések',40,'#8F7FD0'],['Rutin',25,'#2BA59A'],['Sport',25,'#29A9D9'],['Napló',15,'#D8739E']];
+  const layered=()=>{const id=uid(),J='M30 26H90V30Q100 34 100 46V118Q100 132 86 132H34Q20 132 20 118V46Q20 34 30 30Z',tot=SRC.reduce((q,x)=>q+x[1],0);let y=132;
+    const L=SRC.map(([l,v,c])=>{const h=102*v/tot;y-=h;return [l,v,c,y,h]});
+    return [`<svg class="ng nz-jar" viewBox="0 0 120 140" aria-hidden="true"><defs><clipPath id="${id}"><path d="${J}"/></clipPath></defs><path class="ng-glass" d="${J}"/><g clip-path="url(#${id})">${L.map(([,,c,y0,h])=>`<rect x="0" y="${y0}" width="120" height="${h+.5}" fill="${c}"/>`).join('')}</g><path class="ng-line" d="${J}"/><path class="ng-hi" d="M30 56V104" style="stroke:#fff"/><path class="ng-rim" d="M26 26H94"/></svg>`,
+      `<ol class="nz-leg">${L.reverse().map(([l,v,c])=>`<li style="--c:${c}"><i></i><b>+${v}</b>${l}</li>`).join('')}</ol>`]};
   const B={
-    1:top(jarSvg(72,'72'),'A nap véget ért.','Zárjuk le együtt. Kb. 3 perc.')
-      +S('Ez jön',`<div class="nz-steps">${NZN.slice(1).map((n,i)=>`<div><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:['t-trend','t-journal','t-ring','t-harvest','t-sleep'][i]})}</svg><b>${i+2}.</b><small>${n}</small></div>`).join('')}</div>`),
-    2:`<section class="mx-s">${arc('nz','Így telt a mai nap.')}</section>`
+    1:hero(jarSvg(72,'72'),'A nap véget ért.','Zárjuk le együtt. Kb. 3 perc.')
+      +S('Ez jön',`<ol class="nz-tl">${NZN.slice(1).map((n,i)=>`<li><span>${I(['t-trend','t-journal','t-ring','t-harvest','t-sleep'][i])}</span><div><b>${n}</b><small>${['hogyan telt a mai nap','ami megmaradna belőle','amit még le lehet zárni','amit ma összegyűjtöttél','és jöhet az este'][i]}</small></div></li>`).join('')}</ol>`),
+    2:`<section class="nz-hero"><small>2. lépés · A napod íve</small>${arc('nz','Így telt a mai nap.')}</section>`
       +S('A nap számai',nzTiles([['t-dumbbell','kész','Push Day'],['t-bowl','112 g','fehérje, 3 étkezés'],['t-sleep','7,4 óra','alvás'],['t-checkin','3 / 4','check-in']])),
-    3:top(jarSvg(70,'7'),'Milyen volt a napod valójában?','Az esti check-inben 7/10-re értékelted.')
+    3:hero(jarSvg(70,'7'),'Milyen volt a napod valójában?','Az esti check-inben 7/10-re értékelted.')
       +S('A szavaid',`<textarea class="nz-ta" rows="4" placeholder="Írd le, ahogy volt. Senki más nem olvassa.">Ma nyugodtabb voltam, mint tegnap, a délutáni séta sokat segített.</textarea>`)
-      +S('Amiért hálás vagy',['A reggeli kávé a teraszon.','Anyával beszéltem telefonon.',''].map((v,i)=>`<label class="nz-in"><span>${i+1}.</span><input value="${v}" placeholder="${i+1}. dolog, amiért hálás vagy"></label>`).join('')),
-    4:top(jarSvg(86,''),'Zárd le, ami még nyitva.','Aztán elengedheted.')
+      +S('Amiért hálás vagy',['A reggeli kávé a teraszon.','Anyával beszéltem telefonon.',''].map((v,i)=>`<label class="nz-in"><span>${i+1}.</span><input value="${v}" placeholder="${i+1}. dolog, amiért hálás vagy"></label>`).join('')
+        +`<div class="nz-skip"><button class="n8-b" data-go="napzaras.4">Ma nem írok</button></div>`),
+    4:hero(jarSvg(86,''),'Zárd le, ami még nyitva.','Aztán elengedheted.')
       +S('Három apróság',`<article class="n8-c nz-c"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:'t-checkin'})}</svg><div><div class="n8-t"><b>Esti check-in</b><em>20:00</em></div><p>3 / 4 check-in kész.</p><div class="qs-acts"><button class="n9-btn" data-n="ck:open">Kitöltöm</button></div></div></article>
         <article class="n8-c nz-c"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:'t-ring'})}</svg><div><div class="n8-t"><b>Szándékkal élted a napot?</b></div><p>„Nyugodt tempó: egyszerre egy dolog.”</p><div class="qs-acts">${['Igen','Részben','Nem'].map(x=>`<button class="n8-b" data-toast="Rögzítve: ${x.toLowerCase()}">${x}</button>`).join('')}</div></div></article>
         <article class="n8-c nz-c"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:'t-journal'})}</svg><div><div class="n8-t"><b>Történt még valami ma?</b></div><p>Egy apró lépés is számít.</p><div class="qs-acts"><button class="n8-b" data-sheet="activity">Beírom</button></div></div></article>`),
-    5:`<section class="mx-s"><h2 class="n7-h">Ma +185 XP gyűlt össze.</h2><div class="nz-str">${(()=>{const id=uid();let y=132;const tot=SRC.reduce((q,x)=>q+x[1],0);
-        const L=SRC.map(([l,v,c])=>{const h=102*v/tot;y-=h;return [l,v,c,y,h]});
-        return `<svg class="ng nz-jar" viewBox="0 0 120 140" aria-hidden="true"><defs><clipPath id="${id}"><path d="M30 26H90V30Q100 34 100 46V118Q100 132 86 132H34Q20 132 20 118V46Q20 34 30 30Z"/></clipPath></defs><path class="ng-glass" d="M30 26H90V30Q100 34 100 46V118Q100 132 86 132H34Q20 132 20 118V46Q20 34 30 30Z"/><g clip-path="url(#${id})">${L.map(([,,c,y0,h])=>`<rect x="0" y="${y0}" width="120" height="${h+.5}" fill="${c}"/>`).join('')}</g><path class="ng-line" d="M30 26H90V30Q100 34 100 46V118Q100 132 86 132H34Q20 132 20 118V46Q20 34 30 30Z"/><path class="ng-rim" d="M26 26H94"/></svg>
-          <ol>${L.reverse().map(([l,v,c])=>`<li style="--c:${c}"><i></i><b>+${v}</b>${l}</li>`).join('')}</ol>`})()}</div></section>`
+    5:(()=>{const [jar,leg]=layered();return `<section class="nz-hero"><div class="nz-art row">${jar}${leg}</div><small>5. lépés · A mai termés</small><h2>Ma +185 XP gyűlt össze.</h2><p>Öt forrásból, rétegenként.</p></section>`})()
       +S('Hol tartasz',`<div class="dv-h nz-lv"><div class="dv-hl"><span>Tudatosság · 4. szint</span><b>68%</b></div><div class="dv-ht"><i style="width:68%"></i></div></div>`
         +nzTiles([['t-coin','+12','érme ma'],['t-flame','12 nap','sorozat él'],['t-sprout','86 nap','életben']])),
-    6:top(jarSvg(100,'7/7',true),'A nap le van zárva.','Elengedheted. Az edény tele van, a fedél rajta.')
-      +S('Mezo üzeni',`<div class="n10-ev"><div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b></div><div class="mg-tx"><p>Ma nem a súlyok voltak nehezek, hanem a délután, és mégis megcsináltad. Aludj rá egyet.</p></div></div>`)
-      +S('Most jön',`<div class="nz-steps two"><div><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:'t-sleep'})}</svg><b>21:45</b><small>Lecsendesítés</small></div><div><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:'t-moon'})}</svg><b>22:30</b><small>Villanyoltás</small></div></div>`)};
+    6:hero(jarSvg(100,'7/7',true),'A nap le van zárva.','Elengedheted. Az edény tele van, a fedél rajta.')
+      +S('Mezo üzeni',`<blockquote class="nz-q"><p>Ma nem a súlyok voltak nehezek, hanem a délután, és mégis megcsináltad. Aludj rá egyet.</p><footer>${badge('mezo',{s:28})}<b>Mezo</b></footer></blockquote>`)
+      +S('Most jön',`<ol class="nz-tl">${[['t-sleep','21:45','Lecsendesítés','képernyők le'],['t-moon','22:30','Villanyoltás','jó éjszakát']].map(([ic,t,n,x])=>`<li><span>${I(ic)}</span><div><b>${t} · ${n}</b><small>${x}</small></div></li>`).join('')}</ol>`)};
   const main=a===1?['Kezdjük','napzaras.2']:a===6?['Esti rutin indítása','rutin']:['Tovább',`napzaras.${a+1}`];
-  const foot=`<div class="rt-foot nz-foot"><button class="fh-lk" data-go="mai">Kilépés</button>${a===3?`<button class="n8-b" data-go="napzaras.4">Ma nem írok</button>`:''}<button class="btn" data-go="${main[1]}">${main[0]}</button></div>`;
-  return page('nap',{title:'Napzárás',sub:`${a} / 6 · ${NZN[a-1]}`,back:'mai'},`${DEFS}<div class="mx nz"><div class="nz-prog" aria-label="${a}. lépés a hatból">${NZN.map((_,i)=>`<i class="${i<a?'on':''}"></i>`).join('')}</div>${B[a]}<div class="ng-tail"></div></div>`,{foot,nonav:true,pad:'120px'})}
+  const foot=`<div class="rt-foot nz-foot"><button class="n8-b nz-sec" data-go="${prev}">${a>1?'Vissza':'Kilépés'}</button><button class="btn nz-pri" data-go="${main[1]}">${main[0]}</button></div>`;
+  return page('nap',{title:'Napzárás',sub:'Nap · este',back:prev},`${DEFS}<div class="mx nz"><div class="nz-prog" aria-label="${a}. lépés a hatból">${NZN.map((_,i)=>`<i class="${i<a?'on':''} ${i===a-1?'cur':''}"></i>`).join('')}</div>${B[a]}<div class="ng-tail"></div></div>`,{foot,nonav:true,pad:'120px'})}
 /* ═══ MAI · the special faces (2026-10-19): empty day, load error, gentle mode (and its expired variant), evening.
        Same page, same order; what changes is the sentence and the vessel on top, the next things, and in gentle mode a
        "Hogy vagy?" block above everything. The gentle mode's state lives in nap.js, so it is read back from the approved
@@ -940,6 +945,26 @@ ${P} .n7-ctx span{display:block;font-size:13px;color:var(--ink)}${P} .n7-ctx b{d
 ${P} .n8-u{display:block;width:100%;margin:10px 0 0}
 ${P} .n9-arc{display:block;width:100%;margin:8px 0 0}
 /* Napzárás, round 16 */
+${P} .nz{min-height:100%;background:linear-gradient(180deg,#F6F8FC 0%,#EEF0FA 55%,#E9ECF8 100%)}
+${P} .nz-hero{padding:8px 22px 22px}${P} .nz-art{display:flex;justify-content:center;margin:10px 0 18px;padding:18px 0;border-radius:28px;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0))}
+${P} .nz-art.row{justify-content:center;align-items:center;gap:22px}
+${P} .nz-art svg.nz-jar{width:132px;height:154px;filter:drop-shadow(0 16px 18px rgba(30,70,140,.18))}
+${P} .nz-hero>small{display:block;font-size:13px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
+${P} .nz-hero h2{margin:4px 0 0;font:800 26px/1.15 var(--disp,inherit);letter-spacing:-.03em;color:var(--ink);text-wrap:balance}
+${P} .nz-hero>p{margin:8px 0 0;font-size:15.5px;line-height:1.5;color:var(--ink)}
+${P} .nz-hero .n7-h{margin:4px 0 0;font-size:26px}${P} .nz-hero .n9-row{margin:20px -12px 0}
+${P} .nz-tl{list-style:none;margin:0 22px;padding:0;position:relative}
+${P} .nz-tl::before{content:"";position:absolute;left:21px;top:22px;bottom:22px;width:2px;border-radius:2px;background:linear-gradient(var(--liq1),var(--liq2));opacity:.35}
+${P} .nz-tl li{position:relative;display:flex;align-items:center;gap:14px;min-height:56px}
+${P} .nz-tl li>span{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 6px 14px -8px rgba(30,70,140,.35),inset 0 0 0 1.5px rgba(10,42,60,.08)}${P} .nz-tl svg.ic{width:22px;height:22px}
+${P} .nz-tl b{display:block;font-size:15.5px;font-weight:700;color:var(--ink)}${P} .nz-tl small{font-size:13.5px;color:var(--ink)}
+${P} .nz .nz-tiles>div{padding:14px;border-radius:20px;background:rgba(255,255,255,.85);box-shadow:0 8px 20px -16px rgba(30,70,140,.4)}
+${P} .nz-q{margin:0 22px;padding:18px 18px 14px;border-radius:22px;background:#fff;box-shadow:0 10px 24px -18px rgba(30,70,140,.45)}${P} .nz-q p{margin:0;font:600 17px/1.5 var(--disp,inherit);color:var(--ink)}
+${P} .nz-q footer{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;color:var(--ink)}
+${P} .nz-leg{margin:0;padding:0;list-style:none;display:grid;gap:9px}${P} .nz-leg li{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)}${P} .nz-leg li i{width:12px;height:12px;border-radius:4px;background:var(--c)}${P} .nz-leg li b{min-width:34px;font:800 15px var(--disp,inherit)}
+${P} .nz-skip{margin:6px 22px 0}${P} .nz-lv+.nz-tiles{gap:8px}${P} .nz-lv+.nz-tiles>div{padding:12px 10px}${P} .nz-lv+.nz-tiles b{font-size:18px;white-space:nowrap}
+${P} .nz-foot{display:flex;gap:10px}${P} .nz-foot .nz-sec{margin:0;min-height:48px;padding:0 20px}${P} .nz-foot .nz-pri{flex:1;min-height:48px}
+${P} .nz-prog i.cur{box-shadow:0 0 0 3px color-mix(in srgb,var(--dom) 18%,transparent)}
 ${P} .nz-prog{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:14px 22px 0}${P} .nz-prog i{height:6px;border-radius:999px;background:rgba(10,42,60,.1)}${P} .nz-prog i.on{background:linear-gradient(90deg,var(--liq1),var(--liq2))}
 ${P} .nz-top{display:flex;align-items:center;gap:16px;margin:10px 22px 0}${P} .nz-top .n7-h{margin:0}${P} .nz-top p{margin:6px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}
 ${P} svg.nz-jar{flex:none;width:96px;height:112px;margin:0}${P} .nz-lid{fill:#2E8A5F}${P} .nz-jt{font:800 26px var(--disp,inherit);fill:#fff}
