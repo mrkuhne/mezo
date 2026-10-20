@@ -182,6 +182,23 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-exd]');if(
     ${dvMezo(IMP.some(r=>r.est!=null)?`A cső a sport becsült terhelése izmonként: ennyit dolgoztat meg a mai röplabda. Nem mért adat, becslés.`:`A cső annyira telt, amennyit a mai terv kér az izomtól; a szám a kész és a tervezett szett. Itt a mai gym terved látod, a sportod terhelését külön, becsléssel számoljuk. Becslés, nem mérés.`)}
     <button class="dv-btn pri" data-go="terheles">A heti terhelésem</button></div>`)}});
 
+/* ═══ "Miért marad ki?" (2026-10-20): the drawer skeleton of Nap — the session big in its drop with "Kihagyva", the
+   question, the eight reasons as a 2×4 grid of soft tiles, then (only when it matters) how long and Mezo's one line
+   about what the reason means; "Kész" wide at the bottom. The grey "Nem kötelező…" lines go. The approved sheet keeps
+   all its state (ST.sk, kímélő mód, the weekly pass); this rebuilds its markup and keeps every data-ve. ═══ */
+const O_why=ed.sheets&&ed.sheets.why;
+const SKI=t=>/Röp/.test(t)?'t-volley':/Pull|Push|Legs|Day|Felső|felső/.test(t)?'t-dumbbell':'t-run';
+const blk=(h,cls)=>{const i=h.indexOf(`<div class="${cls}`);return i<0?['',-1,-1]:[h.slice(i,bal(h,i)),i,bal(h,i)]};
+if(O_why)ed.sheets.why=(...a)=>{const h=O_why(...a),lbl=g(h,/<div class="vs-sh"><span>([^<]*)<\/span>/),name=lbl.replace(/^Kihagyva · /,'');
+  const [opts,,oe]=blk(h,'vs-opts'),[bx,bi,be]=blk(h,'vs-box'),[ac,ai]=blk(h,'fh-acts');
+  const mid=h.slice(oe,bi>=0?bi:ai).trim();
+  const bt=g(bx,/<b>([^<]*)<\/b>/),bp=g(bx,/<\/b>([\s\S]*)<\/div><\/div>$/).replace(/<\/?p>/g,' ').trim(),bic=g(bx,/href="#([^"]+)"/);
+  const note=bx&&bt!=='Nem kötelező'?`<div class="ex-mz ex-why-n">${badge('mezo',{s:30})}<p><b>${bt}</b> ${bp}</p></div>`:'';
+  const btns=ac.replace(/^<div class="fh-acts">|<\/div>$/g,'').replace(/class="btn[^"]*"/,'class="dv-btn pri"').replace(/class="fh-lk[^"]*"/,'class="n8-b"');
+  return `<div class="dv ex-why"><div class="dv-top">${drop(SKI(name))}<div><small>Kihagyva</small><b>${name}</b></div><button class="ex-x0" data-close aria-label="Bezárás">×</button></div>
+    <h2 class="n7-h ex-why-q">Miért marad ki?</h2>${opts.replace('class="vs-opts"','class="vs-opts ex-opts"')}${mid?`<div class="ex-why-m">${mid}</div>`:''}${note}
+    <div class="ex-why-a">${btns}</div></div>`};
+
 /* the tab pages' header, as on Nap: no big title, the "?" top left */
 /* Edzés marks its guide button "new" (class="fh-help new"), which the Nap matcher does not expect: drop the mark first */
 const head=h=>typeof h==='string'?hubHead(h.replace('class="fh-help new"','class="fh-help"')):h;
@@ -223,6 +240,17 @@ ${P} .ex-src svg.ic{width:22px;height:22px;flex:none}${P} .ex-src li b{font-weig
 ${P} .ex-mc{display:flex;justify-content:center;margin:0 0 8px}${P} .ex-mc .mchp{width:44px;height:44px}${P} .ex-mc .mchp svg{width:100%;height:100%}
 ${P} .ex-imp{margin:0 18px}${P} .ex-imp .k2-vials{gap:8px}${P} .ex-imp .k2-vial{min-width:0}${P} .ex-imp .k2-tube{width:58px!important;margin:0 auto}${P} .dv-imp{margin:8px 0 4px}
 ${P} .ex-keep{margin:0 18px}
+/* why drawer (sheets sit outside the phone scope's page, so these use the sheet's own class too) */
+.ex-why .dv-top{position:relative}.ex-why .ex-x0{position:absolute;right:0;top:0;width:44px;height:44px;display:grid;place-items:center;padding:0;line-height:1;border-radius:50%;background:rgba(10,42,60,.06);font-size:20px;color:var(--ink)}
+.ex-why .ex-why-q{margin:14px 0 0!important;padding:0!important;font-size:24px}
+.ex-why .ex-opts{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.ex-why .ex-opts button{min-height:56px;padding:8px 10px;border-radius:18px;background:#fff!important;box-shadow:0 8px 18px -14px rgba(30,70,140,.45),inset 0 0 0 1px rgba(10,42,60,.07);font-size:14px;font-weight:650;color:var(--ink);text-align:left}
+.ex-why .ex-opts button.on{background:color-mix(in srgb,var(--dom) 10%,#fff)!important;box-shadow:inset 0 0 0 2px var(--dom)}
+.ex-why .ex-why-m{margin-top:14px}.ex-why .ex-why-m .fh-lab{display:block;margin:6px 0 8px;font-size:14px;font-weight:700;color:var(--ink)}
+.ex-why .ex-why-m .fh-pill{min-height:40px;font-size:14px}
+.ex-why .ex-why-n{margin:16px 0 0}.ex-why .ex-why-n p{font-size:14.5px}
+.ex-why .ex-why-a{display:flex;flex-direction:column;gap:8px;margin-top:18px}.ex-why .ex-why-a .dv-btn{width:100%;margin:0}.ex-why .ex-why-a .n8-b{align-self:center;margin:0;min-height:44px}
+.ex-why .ex-why-a .dv-btn[disabled]{opacity:.45}
 ${P} .ex-fl1{margin:12px 22px 0;font-size:15px;font-weight:600;color:var(--ink);text-align:center}
 ${P} .ex-wk{margin:16px 14px 0}${P} .ex-wk .k2-vials{gap:5px!important}${P} .ex-wk .k2-vial{min-width:0}${P} .ex-wk .k2-vial small,${P} .ex-wk .k2-vial b{font-size:12px!important}
 ${P} .ex-wk .k2-tube em{font-size:12px!important}
