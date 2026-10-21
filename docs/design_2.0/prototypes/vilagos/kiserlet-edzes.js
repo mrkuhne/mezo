@@ -290,12 +290,20 @@ const GRP={};
 function parts(arg){const sh=ed.sheets.grp(arg),g0=GRP[arg]||{d:0,p:1};let left=g0.d;
   return [...sh.matchAll(/<strong>([^<]*)<\/strong><small>(\d+) szett/g)].map(m=>{const l=m[1].trim(),pl=+m[2],mu=MUSCLES.find(x=>x.label===l),d=Math.min(pl,left);left-=d;
     return {l,short:(l.match(/\(([^)]*)\)/)||[0,l])[1],k:mu?mu.key:arg,p:pl,d}})}
+/* every part of the group, the planned ones from the sheet, the rest "nincs a tervben" (round 3, owner: "hogy néz ki
+   ha van biceps és triceps is"); the arm splits into Bicepsz and Tricepsz rows */
+const FAM={biceps:'Bicepsz',triceps:'Tricepsz'};
+function allParts(arg){const ps=parts(arg),reg=(MUSCLES.find(m=>m.key===(ps[0]||{}).k)||MUSCLES.find(m=>m.key===arg)||{}).region;
+  return MUSCLES.filter(m=>m.region===reg).map(m=>{const x=ps.find(q=>q.k===m.key)||{l:m.label,k:m.key,p:0,d:0};
+    return {...x,fam:FAM[m.key.split('-')[0]]||'',short:m.key==='biceps-brachialis'?'brachialis':(m.label.match(/\(([^)]*)\)/)||[0,m.label])[1].replace(' fej','')}})}
 const lagging=(ps,g0)=>g0.d/g0.p<.4?[]:ps.filter(x=>x.p&&!x.d);/* only a part with nothing done, while its group is well under way */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-exg]');if(!b)return;const arg=b.dataset.exg,g0=GRP[arg];if(!g0)return;
-  const ps=parts(arg),lag=lagging(ps,g0),mx=Math.max(1,...ps.map(x=>x.p));
+  const ps=allParts(arg),lag=lagging(ps,g0),mx=Math.max(1,...ps.map(x=>x.p));
   const views=['front','back'].filter(v=>ps.some(x=>(TOKEN_SHAPES[x.k]||[]).some(([w])=>w===v)));
   const fig=views.map(v=>body(v,ps.map(x=>[x.k,x.d/Math.max(1,x.p),1]))).join('');
-  const tb=F.vials(ps.map(x=>({l:x.short,v:`${x.d}/${x.p}`,p:x.p/mx*88*(x.d?Math.max(.25,x.d/x.p):.06)||4,c:`color-mix(in srgb,${g0.c} 74%,#0A2A3C)`,s:lag.includes(x)?'lemaradt':'',mark:''})),{h:110});
+  const fams=[...new Set(ps.map(x=>x.fam))];
+  const vi=list=>F.vials(list.map(x=>({l:x.short,v:x.p?`${x.d}/${x.p}`:'–',p:x.p?x.p/mx*88*(x.d?Math.max(.25,x.d/x.p):.06):0,c:`color-mix(in srgb,${g0.c} 74%,#0A2A3C)`,s:lag.includes(x)?'<u class="lag">lemaradt</u>':x.p?'':'nincs a tervben',mark:''})),{h:fams.length>1?84:110});
+  const tb=fams.length>1?fams.map(f=>`<div class="ex-fam"><b>${f}</b>${vi(ps.filter(x=>x.fam===f))}</div>`).join(''):vi(ps);
   const say=lag.length?`${andL(lag.map(x=>x.l.toLowerCase().replace(/^(\S+) \((.*)\)$/,'$2 $1').replace('első váll','elülső váll')))} a héten még alig kapott munkát. Ha teheted, a következő edzésen kezdd azzal.`
     :`A ${g0.l.toLowerCase()} minden része nagyjából egyformán halad a héten.`;
   const say1=say.charAt(0).toUpperCase()+say.slice(1);
@@ -350,7 +358,7 @@ ${P} .ex-f3{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))
 ${P} .ex-g5 .k2-vials{gap:4px!important}${P} .ex-g5 .ex-mc .mchp{width:38px;height:38px}${P} .ex-g5 .k2-tube{width:46px!important}${P} .ex-g5 .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff;font-size:12px!important}
 ${P} .ex-gc .mchp{width:72px;height:72px;flex:none}${P} .ex-grp .dv-top{align-items:center;gap:14px}
 ${P} .ex-gfig{display:flex;justify-content:center;gap:12px;margin:10px 0 4px}${P} .ex-gfig .vs-body{width:38%;max-width:132px}${P} .ex-gfig .vs-body svg{width:100%;height:auto;display:block}
-${P} .ex-gp{margin:6px 0 0}${P} .ex-gp .k2-vial small i{display:block;font-style:normal;font-weight:700;color:#A86A0C}${P} .ex-gp .k2-tube{width:52px!important;margin:0 auto}${P} .ex-gp .k2-tube em:not(:empty),${P} .ex-g5 .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff;font-size:12px!important;white-space:nowrap}
+${P} .ex-gp{margin:6px 0 0}${P} .ex-fam{margin-top:10px}${P} .ex-fam>b{display:block;margin:0 0 6px;font-size:14px;font-weight:750;color:var(--ink)}${P} .ex-gp .k2-vial small i{white-space:nowrap}${P} .ex-gp .k2-vial small i{display:block;font-style:normal;font-weight:600;color:var(--ink)}${P} .ex-gp .k2-vial small u.lag{text-decoration:none;font-weight:700;color:#A86A0C}${P} .ex-gp .k2-tube{width:52px!important;margin:0 auto}${P} .ex-gp .k2-tube em:not(:empty),${P} .ex-g5 .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff;font-size:12px!important;white-space:nowrap}
 ${P} .ex-dates{margin:6px 22px 0;font-size:13.5px;color:var(--ink)}
 ${P} .ex-6 .k2-vial small{white-space:nowrap}${P} .ex-wk .k2-vial b u{font-size:12px!important}
 ${P} .ex-dcr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:4px 18px 16px;scrollbar-width:none}
