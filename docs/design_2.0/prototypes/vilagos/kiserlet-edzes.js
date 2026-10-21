@@ -266,7 +266,9 @@ function terheles3(a){if(a)return O.terheles(a);
   const top=`<section class="mx-s ex-hero"><small class="ex-eb">${eb}</small><h2 class="n7-h">${say}</h2>
     <div class="ex-duo">${duo}</div><div class="ex-facts ex-f3"><span><b>${done}</b><small>szett kész</small></span><span><b>${plan}</b><small>a heti terv</small></span><span><b>${wait.length}</b><small>csoport vár</small></span></div>
     <div class="ex-acts"><button class="n8-b" data-go="terkep">A tested térképe</button><button class="n8-b" data-sheet="info" data-arg="szam">Hogyan számolunk?</button></div></section>`;
-  const grp=`<section class="mx-s ln">${KH('Izomcsoportok ezen a héten','',info('sav'))}<div class="ex-imp ex-g5">${tubes(G.map(x=>({...x,v:`${x.d}/${x.p}`,p_:x.w*.9,mark:x.warn,on:{sheet:'grp',arg:x.arg}})),112)}</div></section>`;
+  G.forEach(x=>GRP[x.arg]=x);
+  const grp=`<section class="mx-s ln">${KH('Izomcsoportok ezen a héten','',info('sav'))}<div class="ex-imp ex-g5">${tubes(G.map(x=>({...x,v:`${x.d}/${x.p}`,p_:x.w*.9,mark:x.warn||(lagging(parts(x.arg),x).length?'figyelj':''),on:{toast:x.l}})),112)
+    .replace(/<button class="k2-vial"[^>]*?data-toast="([^"]*)"/g,(m,l)=>m.replace(`data-toast="${l}"`,`data-exg="${(G.find(x=>x.l===l)||{}).arg}"`))}</div></section>`;
   /* sport */
   const sh=find('fh-big').html,min=g(sh,/fh-big">(\d+)/),works=g(sh,/Ezeket is dolgoztatja: ([^<]*)\./);
   const S=[...sh.matchAll(/(<span class="mchp sm" style="--c:([^"]+)">[\s\S]*?<\/svg><\/span>)<span class="g"><strong>([^<]*)<\/strong><\/span><span class="vs-dr"[^>]*aria-label="(\d) \/ 3"/g)].map(m=>({chip:m[1].replace('mchp sm','mchp'),c:m[2],l:m[3],n:+m[4]}));
@@ -279,6 +281,27 @@ function terheles3(a){if(a)return O.terheles(a);
   const end=cs.length?cs[cs.length-1].end:bal(base,ti,'section');
   return base.slice(0,ti)+`${DEFS}<div class="mx ex">${top}${grp}${sport}${moves}<div class="ng-tail"></div></div>`+base.slice(end)}
 ed.routes.terheles=terheles3;
+/* round 2 (owner, 2026-10-21: "bontsuk le részekre"): a group's parts in the drawer. The approved group sheet lists the
+   parts and their planned weekly sets; the page knows only the group's done sets, so the prototype fills the parts in
+   the order the sheet lists them (the first part's sets are done first). A part well behind the group is "lemaradt",
+   and the group tube carries "figyelj" when one of its parts is. Where the drawing shares one shape (the three biceps
+   heads), the body shows them together. */
+const GRP={};
+function parts(arg){const sh=ed.sheets.grp(arg),g0=GRP[arg]||{d:0,p:1};let left=g0.d;
+  return [...sh.matchAll(/<strong>([^<]*)<\/strong><small>(\d+) szett/g)].map(m=>{const l=m[1].trim(),pl=+m[2],mu=MUSCLES.find(x=>x.label===l),d=Math.min(pl,left);left-=d;
+    return {l,short:(l.match(/\(([^)]*)\)/)||[0,l])[1],k:mu?mu.key:arg,p:pl,d}})}
+const lagging=(ps,g0)=>g0.d/g0.p<.4?[]:ps.filter(x=>x.p&&!x.d);/* only a part with nothing done, while its group is well under way */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-exg]');if(!b)return;const arg=b.dataset.exg,g0=GRP[arg];if(!g0)return;
+  const ps=parts(arg),lag=lagging(ps,g0),mx=Math.max(1,...ps.map(x=>x.p));
+  const views=['front','back'].filter(v=>ps.some(x=>(TOKEN_SHAPES[x.k]||[]).some(([w])=>w===v)));
+  const fig=views.map(v=>body(v,ps.map(x=>[x.k,x.d/Math.max(1,x.p),1]))).join('');
+  const tb=F.vials(ps.map(x=>({l:x.short,v:`${x.d}/${x.p}`,p:x.p/mx*88*(x.d?Math.max(.25,x.d/x.p):.06)||4,c:`color-mix(in srgb,${g0.c} 74%,#0A2A3C)`,s:lag.includes(x)?'lemaradt':'',mark:''})),{h:110});
+  const say=lag.length?`${andL(lag.map(x=>x.l.toLowerCase().replace(/^(\S+) \((.*)\)$/,'$2 $1').replace('első váll','elülső váll')))} a héten még alig kapott munkát. Ha teheted, a következő edzésen kezdd azzal.`
+    :`A ${g0.l.toLowerCase()} minden része nagyjából egyformán halad a héten.`;
+  const say1=say.charAt(0).toUpperCase()+say.slice(1);
+  F.openSheet(`<div class="dv ex-grp"><div class="dv-top"><span class="ex-gc">${g0.chip}</span><div><small>${g0.l} · ezen a héten</small><b>${g0.d}<u> / ${g0.p} szett</u></b>${g0.warn?`<i class="w">${g0.warn}</i>`:''}</div></div>
+    <div class="ex-gfig">${fig}</div><div class="ex-imp ex-gp">${tb}</div>${dvMezo(say1)}
+    <button class="dv-btn pri" data-sheet="grp" data-arg="${arg}">Gyakorlatok és tervezett szettek</button></div>`)});
 
 /* the tab pages' header, as on Nap: no big title, the "?" top left */
 /* Edzés marks its guide button "new" (class="fh-help new"), which the Nap matcher does not expect: drop the mark first */
@@ -325,6 +348,9 @@ ${P} .ex-empty .ng-pipe,${P} .ex-empty .ng-flow,${P} .ex-empty .ng-drip{display:
 ${P} .ex-duo{display:flex;justify-content:center;margin:14px 22px 0}${P} .ex-duo .vs-duo{display:flex;gap:10px;justify-content:center;width:100%}${P} .ex-duo .vs-body{width:42%;max-width:150px}${P} .ex-duo .vs-body svg{width:100%;height:auto;display:block}
 ${P} .ex-f3{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));margin:16px 22px 0}${P} .ex-f3 span{flex-direction:column!important;align-items:flex-start!important;gap:0}
 ${P} .ex-g5 .k2-vials{gap:4px!important}${P} .ex-g5 .ex-mc .mchp{width:38px;height:38px}${P} .ex-g5 .k2-tube{width:46px!important}${P} .ex-g5 .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff;font-size:12px!important}
+${P} .ex-gc .mchp{width:72px;height:72px;flex:none}${P} .ex-grp .dv-top{align-items:center;gap:14px}
+${P} .ex-gfig{display:flex;justify-content:center;gap:12px;margin:10px 0 4px}${P} .ex-gfig .vs-body{width:38%;max-width:132px}${P} .ex-gfig .vs-body svg{width:100%;height:auto;display:block}
+${P} .ex-gp{margin:6px 0 0}${P} .ex-gp .k2-vial small i{display:block;font-style:normal;font-weight:700;color:#A86A0C}${P} .ex-gp .k2-tube{width:52px!important;margin:0 auto}${P} .ex-gp .k2-tube em:not(:empty),${P} .ex-g5 .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff;font-size:12px!important;white-space:nowrap}
 ${P} .ex-dates{margin:6px 22px 0;font-size:13.5px;color:var(--ink)}
 ${P} .ex-6 .k2-vial small{white-space:nowrap}${P} .ex-wk .k2-vial b u{font-size:12px!important}
 ${P} .ex-dcr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:4px 18px 16px;scrollbar-width:none}
