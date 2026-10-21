@@ -206,16 +206,22 @@ if(O_why)ed.sheets.why=(...a)=>{const h=O_why(...a),lbl=g(h,/<div class="vs-sh">
    Terv (first workout ahead, no plan, not running, loading) stay the approved page for now. ═══ */
 const DAYID={Hétfő:'het',Kedd:'kedd',Szerda:'sze',Csütörtök:'csu',Péntek:'pen',Szombat:'szo',Vasárnap:'vas'};
 const bodyOf=h=>{const i=h.indexOf('<span class="vs-body');return i<0?'':h.slice(i,bal(h,i,'span'))};
-function terv3(a){if(a)return O.terv(a);
+/* Terv · the empty faces (no plan yet / no plan running): the sentence, the empty plan as a drawn drop, the way on */
+function tervEmpty(a){const base=O.terv(a),cs=cardsOf(base);if(!cs.length)return base;const hh=cs[0].html;
+  const v=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/)||g(hh,/<div class="vs-ev">[\s\S]*?<p>([^—<]*)/).trim()+'.',sub=g(hh,/<p class="sub">([^<]*)<\/p>/),ic=g(g(hh,/<div class="vs-ev">([\s\S]*?)<\/div>/),/href="#([^"]+)"/)||'c-i-retegek';
+  const ai=hh.indexOf('<div class="fh-acts">'),acts=ai>=0?pills(hh.slice(ai+21,bal(hh,ai)-6)):'';
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex"><section class="mx-s ex-hero"><small class="ex-eb">Terv</small><h2 class="n7-h">${v}</h2>
+    <div class="ex-empty">${drop(ic)}<p>${sub}</p></div><div class="ex-acts">${acts.replace('>Edzéstervek<','>Edzéstervek megnyitása<')}</div></section>${more3()}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+function terv3(a){if(a==='ures'||a==='nincs')return tervEmpty(a);if(a&&a!=='elso')return O.terv(a);const first=a==='elso';
   const bodies={};['het','kedd','sze','pen'].forEach(d=>bodies[d]=bodyOf(O.mai(d)));O.mai();
-  const izh=O.het(),base=O.terv(a),cs=cardsOf(base);if(!cs.length||base.indexOf('vs-dcs')<0)return base;
+  const izh=O.het(first?'elso':undefined),base=O.terv(a),cs=cardsOf(base);if(!cs.length||base.indexOf('vs-dcs')<0)return base;
   const hh=cs[0].html,lbl=g(hh,/<span class="lbl">([^<]*)<\/span>/),sub=g(hh,/<p class="sub">([^<]*)<\/p>/);
   const vi=hh.indexOf('<div class="k2-vials'),tubes=vi>=0?hh.slice(vi,bal(hh,vi)).replace(/height:104px/g,'height:150px'):'';
   const dates=[...hh.matchAll(/<div class="vs-ft"><span>([^<]*)<\/span><span>[^<]*<\/span><span>([^<]*)<\/span>/g)][0]||[];
   const wk=g(hh,/A (\d+) hétből a (\d+)\./,2),of=g(hh,/A (\d+) hétből/),rest=g(sub,/— (.*)$/);
   const ai=hh.indexOf('<div class="fh-acts">'),acts=ai>=0?pills(hh.slice(ai+21,bal(hh,ai)-6)).replace('class="n9-btn"','class="n8-b"'):'';
-  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${lbl.replace(' · ',` · ${wk}. hét a ${of}-ból · `)}</small><h2 class="n7-h">A ${wk}. héten jársz, ${rest.replace(/\.$/,'')}.</h2>
-    <p class="ex-dates">${dates[1]||''} – ${dates[2]||''} · heti szettszám</p><div class="ex-wk ex-6">${tubes}</div><div class="ex-acts">${acts}</div></section>`;
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${lbl.replace(' · ',` · ${wk}. hét a ${of}-ból · `)}</small><h2 class="n7-h">${first?'Az első edzésed előtt állsz. Így épül fel a 6 hét.':`A ${wk}. héten jársz, ${rest.replace(/\.$/,'')}.`}</h2>
+    <p class="ex-dates">${dates[1]||''} – ${dates[2]||''} · ${first?'a terv íve, a szettszámok az első edzés után jönnek':'heti szettszám'}</p><div class="ex-wk ex-6">${tubes}</div><div class="ex-acts">${acts}</div></section>`;
   /* the week's days */
   const di=base.indexOf('<div class="vs-dcs'),dh=base.slice(di,bal(base,di));
   const days=[...dh.matchAll(/<(button|div) class="vs-dc ([^"]*)"([^>]*)>([\s\S]*?)<\/\1>(?=<button|<div class="vs-dc|$)/g)].map(m=>{const inner=m[4],cls=m[2],dn=g(inner,/<small>([^<]*)<\/small>/),nm=g(inner,/<strong>([^<]*)<\/strong>/);
@@ -229,15 +235,15 @@ function terv3(a){if(a)return O.terv(a);
   /* the muscles: three with most room, from the muscle page */
   const rows=[...izh.matchAll(/<div class="fh-row tap " data-go="(izom\.[^"]+)">(<span class="mchp sm" style="--c:([^"]+)">[\s\S]*?<\/svg><\/span>)<span class="g"><strong>([^<]*)<span class="st [^"]*">([^<]*)<\/span><\/strong><small>([^<]*)<span[\s\S]*?<i style="width:([\d.]+)%"><\/i><u class="" style="left:([\d.]+)%"[\s\S]*?<span class="v">(\d+)/g)].slice(0,3);
   const chg=g(izh,/<strong>A következő heti váltás[^<]*<\/strong><small>([^<]*)<\/small>/).split(' · ').filter(x=>/\+/.test(x)&&!/^\+\d/.test(x)).join(' · ');
-  const mus=`<section class="mx-s ln">${KH('Az izmaid','',`<button class="fh-lk" data-go="het">Részletek ›</button>`)}
-    <p class="ex-say">Ezekben van a legtöbb hely ezen a héten.${chg?` Hétfőtől: <b>${chg}</b>.`:''}</p>
-    <div class="ex-imp">${F.vials(rows.map(r=>({l:(m=>m?`még ${m[1]} szett fér bele`:'szinten tartod')(r[6].match(/Még (\d+) szett/)),v:`${r[4].trim()}`,s:'',p:+r[7]*.88,c:`color-mix(in srgb,${r[3]} 74%,#0A2A3C)`,mark:'',on:{go:r[1]}})),{h:118}).replace(/<span class="k2-tube"/g,(()=>{let i=0;return m=>`<span class="ex-mc">${(rows[i++]||[])[2].replace('mchp sm','mchp')}</span>`+m})())}</div></section>`;
+  const mus=`<section class="mx-s ln">${KH('Az izmaid','',`<button class="fh-lk" data-go="${first?'het.elso':'het'}">Részletek ›</button>`)}
+    <p class="ex-say">${rows.length?`Ezekben van a legtöbb hely ezen a héten.${chg?` Hétfőtől: <b>${chg}</b>.`:''}`:'Az első edzésed után itt látod, melyik izmodban mennyi hely van még.'}</p>
+    ${rows.length?'':'<!--'}<div class="ex-imp">${F.vials(rows.map(r=>({l:(m=>m?`még ${m[1]} szett fér bele`:'szinten tartod')(r[6].match(/Még (\d+) szett/)),v:`${r[4].trim()}`,s:'',p:+r[7]*.88,c:`color-mix(in srgb,${r[3]} 74%,#0A2A3C)`,mark:'',on:{go:r[1]}})),{h:118}).replace(/<span class="k2-tube"/g,(()=>{let i=0;return m=>`<span class="ex-mc">${((rows[i++]||[])[2]||'').replace('mchp sm','mchp')}</span>`+m})())}</div>${rows.length?'':'-->'}</section>`;
   const plans=`<section class="mx-s ln">${KH('Terveid')}<div class="ex-pl">${[['c-i-retegek','Edzéstervek','amiből indíthatsz','data-go="konyvtar"'],['t-flag','Terv lezárása','ha a 6 hét megvan','data-sheet="close"']].map(([ic,t,x,at])=>`<button class="ex-plc" ${at}><span class="mt-bub">${I(ic)}</span><b>${t}</b><small>${x}</small></button>`).join('')}</div></section>`;
   const end=base.indexOf('</div><nav class="fh-nav"')>=0?base.lastIndexOf('</section>',base.indexOf('<nav class="fh-nav"'))+10:cs[cs.length-1].end;
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${week}${mus}${plans}<div class="ng-tail"></div></div>`+base.slice(end)}
 ed.routes.terv=terv3;
 /* today's day card scrolled into view after each render of Terv */
-const O_after=ed.after;ed.after=(r,a)=>{O_after&&O_after(r,a);if(r==='terv'&&!a)requestAnimationFrame(()=>{const c=document.querySelector('#phone .ex-dcr'),n=c&&c.querySelector('.now');if(c&&n)c.scrollLeft=n.offsetLeft-18})};
+const O_after=ed.after;ed.after=(r,a)=>{O_after&&O_after(r,a);if(r==='terv'&&(!a||a==='elso'))requestAnimationFrame(()=>{const c=document.querySelector('#phone .ex-dcr'),n=c&&c.querySelector('.now');if(c&&n)c.scrollLeft=n.offsetLeft-18})};
 
 /* the tab pages' header, as on Nap: no big title, the "?" top left */
 /* Edzés marks its guide button "new" (class="fh-help new"), which the Nap matcher does not expect: drop the mark first */
@@ -280,6 +286,7 @@ ${P} .ex-src svg.ic{width:22px;height:22px;flex:none}${P} .ex-src li b{font-weig
 ${P} .ex-mc{display:flex;justify-content:center;margin:0 0 8px}${P} .ex-mc .mchp{width:44px;height:44px}${P} .ex-mc .mchp svg{width:100%;height:100%}
 ${P} .ex-imp{margin:0 18px}${P} .ex-imp .k2-vials{gap:8px}${P} .ex-imp .k2-vial{min-width:0}${P} .ex-imp .k2-tube{width:58px!important;margin:0 auto}${P} .dv-imp{margin:8px 0 4px}
 ${P} .ex-keep{margin:0 18px}
+${P} .ex-empty .ng-pipe,${P} .ex-empty .ng-flow,${P} .ex-empty .ng-drip{display:none}${P} .ex-empty{display:flex;align-items:center;gap:14px;margin:16px 22px 0}${P} .ex-empty svg.ng{flex:none;width:96px;height:96px;margin:0}${P} .ex-empty p{margin:0;font-size:15.5px;line-height:1.5;color:var(--ink)}
 ${P} .ex-dates{margin:6px 22px 0;font-size:13.5px;color:var(--ink)}
 ${P} .ex-6 .k2-vial small{white-space:nowrap}${P} .ex-wk .k2-vial b u{font-size:12px!important}
 ${P} .ex-dcr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:4px 18px 16px;scrollbar-width:none}
@@ -310,5 +317,5 @@ ${P} .ex-wk .ex-today .k2-tube{box-shadow:0 0 0 3px color-mix(in srgb,var(--dom)
 ${P} .ds small{font-size:12px}${P} .ds i{font-size:12px}
 ${P} .mx-h .fh-lk{white-space:nowrap;flex:none}${P} .mx-h{gap:10px}
 `);
-window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Arcai: <a href="#w-edzes-terv.elso">első edzés előtt</a> · <a href="#w-edzes-terv.ures">még nincs terv</a> · <a href="#w-edzes-terv.nincs">nem fut terv</a>. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p>`+(window.FNOTES_FOLY||'');
 })();
