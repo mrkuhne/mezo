@@ -10,8 +10,8 @@
 const F=window.F,ed=window.FREG&&FREG.edzes,X=window.KXN;if(!ed||!X)return;
 const {I,badge}=F,{V,KH,dots,DEFS,hubHead}=X;
 const P='.phone.foly[data-s="elo"][data-d="edzes"]';
-const O={mai:ed.routes.mai};
-ed.routes['mai-lista']=O.mai;
+const O={mai:ed.routes.mai,terv:ed.routes.terv,het:ed.routes.het};
+ed.routes['mai-lista']=O.mai;ed.routes['terv-lista']=O.terv;
 
 /* the end of the balanced <div> / <section> that starts at i */
 const bal=(h,i,tag='div')=>{const re=new RegExp(`<${tag}[\\s>]|</${tag}>`,'g');re.lastIndex=i;let d=0,m;
@@ -199,6 +199,46 @@ if(O_why)ed.sheets.why=(...a)=>{const h=O_why(...a),lbl=g(h,/<div class="vs-sh">
     <h2 class="n7-h ex-why-q">Miért marad ki?</h2>${opts.replace('class="vs-opts"','class="vs-opts ex-opts"')}${mid?`<div class="ex-why-m">${mid}</div>`:''}${note}
     <div class="ex-why-a">${btns}</div></div>`};
 
+/* ═══ TERV (2026-10-21): the six weeks' tubes are the page's picture (sentence on top, dates in one short line, "A terv
+   oldala" as an outline button); the week's days are a carousel of equal cards (owner: "legyen lapozható"), each with
+   its day, name, state and the small body of that day, today's card scrolled into view; the muscles are three tubes
+   (where there is most room) with a link to the muscle page; the plans are two cards side by side. The other faces of
+   Terv (first workout ahead, no plan, not running, loading) stay the approved page for now. ═══ */
+const DAYID={Hétfő:'het',Kedd:'kedd',Szerda:'sze',Csütörtök:'csu',Péntek:'pen',Szombat:'szo',Vasárnap:'vas'};
+const bodyOf=h=>{const i=h.indexOf('<span class="vs-body');return i<0?'':h.slice(i,bal(h,i,'span'))};
+function terv3(a){if(a)return O.terv(a);
+  const bodies={};['het','kedd','sze','pen'].forEach(d=>bodies[d]=bodyOf(O.mai(d)));O.mai();
+  const izh=O.het(),base=O.terv(a),cs=cardsOf(base);if(!cs.length||base.indexOf('vs-dcs')<0)return base;
+  const hh=cs[0].html,lbl=g(hh,/<span class="lbl">([^<]*)<\/span>/),sub=g(hh,/<p class="sub">([^<]*)<\/p>/);
+  const vi=hh.indexOf('<div class="k2-vials'),tubes=vi>=0?hh.slice(vi,bal(hh,vi)).replace(/height:104px/g,'height:150px'):'';
+  const dates=[...hh.matchAll(/<div class="vs-ft"><span>([^<]*)<\/span><span>[^<]*<\/span><span>([^<]*)<\/span>/g)][0]||[];
+  const wk=g(hh,/A (\d+) hétből a (\d+)\./,2),of=g(hh,/A (\d+) hétből/),rest=g(sub,/— (.*)$/);
+  const ai=hh.indexOf('<div class="fh-acts">'),acts=ai>=0?pills(hh.slice(ai+21,bal(hh,ai)-6)).replace('class="n9-btn"','class="n8-b"'):'';
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${lbl.replace(' · ',` · ${wk}. hét a ${of}-ból · `)}</small><h2 class="n7-h">A ${wk}. héten jársz, ${rest.replace(/\.$/,'')}.</h2>
+    <p class="ex-dates">${dates[1]||''} – ${dates[2]||''} · heti szettszám</p><div class="ex-wk ex-6">${tubes}</div><div class="ex-acts">${acts}</div></section>`;
+  /* the week's days */
+  const di=base.indexOf('<div class="vs-dcs'),dh=base.slice(di,bal(base,di));
+  const days=[...dh.matchAll(/<(button|div) class="vs-dc ([^"]*)"([^>]*)>([\s\S]*?)<\/\1>(?=<button|<div class="vs-dc|$)/g)].map(m=>{const inner=m[4],cls=m[2],dn=g(inner,/<small>([^<]*)<\/small>/),nm=g(inner,/<strong>([^<]*)<\/strong>/);
+    const st=g(inner,/(<span class="st [^"]*">[^<]*<\/span>)/),facts=g(inner,/<em>([^<]*)<\/em>/),go=g(m[3],/data-go="([^"]*)"/),id=DAYID[dn];
+    const f3=[...inner.matchAll(/<i><b>([^<]*)<\/b><small>([^<]*)<\/small><\/i>/g)].map(x=>`${x[1]} ${x[2]}`).join(' · ');
+    const pic=id==='csu'?bodyOf(inner):bodies[id]?bodies[id]:/röp/i.test(nm)?body('front',VOLLEY.map(([k,n])=>[k,0,n/3])):`<svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic:'t-moon'})}</svg>`;
+    return `<button class="ex-dc ${/now/.test(cls)?'now':''} ${/quiet/.test(cls)?'quiet':''}" ${go?`data-go="${go}"`:'data-toast="'+dn+' · '+nm+'"'}><small>${dn}</small><b>${nm.charAt(0).toUpperCase()+nm.slice(1)}</b>
+      <span class="ex-dcp">${pic}</span><em>${facts||f3||'&nbsp;'}</em>${st||'<span class="st q">&nbsp;</span>'}</button>`}).join('');
+  const nDays=(dh.match(/class="vs-dc /g)||[]).length;
+  const week=`<section class="mx-s ln">${KH(cs.length?(g(base,/<b>1<\/b>([^<]*)<\/p>/)||'A heted'):'A heted')}<div class="ex-dcr">${days}</div>${dots(Math.max(1,nDays-2))}</section>`;
+  /* the muscles: three with most room, from the muscle page */
+  const rows=[...izh.matchAll(/<div class="fh-row tap " data-go="(izom\.[^"]+)">(<span class="mchp sm" style="--c:([^"]+)">[\s\S]*?<\/svg><\/span>)<span class="g"><strong>([^<]*)<span class="st [^"]*">([^<]*)<\/span><\/strong><small>([^<]*)<span[\s\S]*?<i style="width:([\d.]+)%"><\/i><u class="" style="left:([\d.]+)%"[\s\S]*?<span class="v">(\d+)/g)].slice(0,3);
+  const chg=g(izh,/<strong>A következő heti váltás[^<]*<\/strong><small>([^<]*)<\/small>/).split(' · ').filter(x=>/\+/.test(x)&&!/^\+\d/.test(x)).join(' · ');
+  const mus=`<section class="mx-s ln">${KH('Az izmaid','',`<button class="fh-lk" data-go="het">Részletek ›</button>`)}
+    <p class="ex-say">Ezekben van a legtöbb hely ezen a héten.${chg?` Hétfőtől: <b>${chg}</b>.`:''}</p>
+    <div class="ex-imp">${F.vials(rows.map(r=>({l:(m=>m?`még ${m[1]} szett fér bele`:'szinten tartod')(r[6].match(/Még (\d+) szett/)),v:`${r[4].trim()}`,s:'',p:+r[7]*.88,c:`color-mix(in srgb,${r[3]} 74%,#0A2A3C)`,mark:'',on:{go:r[1]}})),{h:118}).replace(/<span class="k2-tube"/g,(()=>{let i=0;return m=>`<span class="ex-mc">${(rows[i++]||[])[2].replace('mchp sm','mchp')}</span>`+m})())}</div></section>`;
+  const plans=`<section class="mx-s ln">${KH('Terveid')}<div class="ex-pl">${[['c-i-retegek','Edzéstervek','amiből indíthatsz','data-go="konyvtar"'],['t-flag','Terv lezárása','ha a 6 hét megvan','data-sheet="close"']].map(([ic,t,x,at])=>`<button class="ex-plc" ${at}><span class="mt-bub">${I(ic)}</span><b>${t}</b><small>${x}</small></button>`).join('')}</div></section>`;
+  const end=base.indexOf('</div><nav class="fh-nav"')>=0?base.lastIndexOf('</section>',base.indexOf('<nav class="fh-nav"'))+10:cs[cs.length-1].end;
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${week}${mus}${plans}<div class="ng-tail"></div></div>`+base.slice(end)}
+ed.routes.terv=terv3;
+/* today's day card scrolled into view after each render of Terv */
+const O_after=ed.after;ed.after=(r,a)=>{O_after&&O_after(r,a);if(r==='terv'&&!a)requestAnimationFrame(()=>{const c=document.querySelector('#phone .ex-dcr'),n=c&&c.querySelector('.now');if(c&&n)c.scrollLeft=n.offsetLeft-18})};
+
 /* the tab pages' header, as on Nap: no big title, the "?" top left */
 /* Edzés marks its guide button "new" (class="fh-help new"), which the Nap matcher does not expect: drop the mark first */
 const head=h=>typeof h==='string'?hubHead(h.replace('class="fh-help new"','class="fh-help"')):h;
@@ -240,6 +280,18 @@ ${P} .ex-src svg.ic{width:22px;height:22px;flex:none}${P} .ex-src li b{font-weig
 ${P} .ex-mc{display:flex;justify-content:center;margin:0 0 8px}${P} .ex-mc .mchp{width:44px;height:44px}${P} .ex-mc .mchp svg{width:100%;height:100%}
 ${P} .ex-imp{margin:0 18px}${P} .ex-imp .k2-vials{gap:8px}${P} .ex-imp .k2-vial{min-width:0}${P} .ex-imp .k2-tube{width:58px!important;margin:0 auto}${P} .dv-imp{margin:8px 0 4px}
 ${P} .ex-keep{margin:0 18px}
+${P} .ex-dates{margin:6px 22px 0;font-size:13.5px;color:var(--ink)}
+${P} .ex-6 .k2-vial small{white-space:nowrap}${P} .ex-wk .k2-vial b u{font-size:12px!important}
+${P} .ex-dcr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:4px 18px 16px;scrollbar-width:none}
+${P} .ex-dc{flex:0 0 142px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px;border-radius:24px;background:#fff;text-align:left;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .ex-dc.now{box-shadow:inset 0 0 0 2px var(--dom),0 12px 24px -16px var(--dom)}
+${P} .ex-dc.quiet{background:rgba(255,255,255,.7)}
+${P} .ex-dc>small{font-size:12px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}${P} .ex-dc>b{font:800 17px/1.2 var(--disp,inherit);color:var(--ink)}
+${P} .ex-dcp{display:flex;justify-content:center;align-items:center;width:100%;height:118px;margin:6px 0}${P} .ex-dcp .vs-body{width:64px}${P} .ex-dcp .vs-body svg{width:100%;height:auto;display:block}${P} .ex-dcp svg.ng{width:84px;height:84px;margin:0}
+${P} .ex-dc>em{font-style:normal;font-size:12.5px;line-height:1.35;color:var(--ink);min-height:34px}${P} .ex-dc .st{margin-top:6px;font-size:12px!important}
+${P} .ex-pl{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 18px}
+${P} .ex-plc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px;border-radius:24px;background:#fff;text-align:left;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .ex-plc b{margin-top:6px;font-size:15px;font-weight:750;color:var(--ink)}${P} .ex-plc small{font-size:13px;color:var(--ink)}
 /* why drawer (sheets sit outside the phone scope's page, so these use the sheet's own class too) */
 .ex-why .dv-top{position:relative}.ex-why .ex-x0{position:absolute;right:0;top:0;width:44px;height:44px;display:grid;place-items:center;padding:0;line-height:1;border-radius:50%;background:rgba(10,42,60,.06);font-size:20px;color:var(--ink)}
 .ex-why .ex-why-q{margin:14px 0 0!important;padding:0!important;font-size:24px}
@@ -258,5 +310,5 @@ ${P} .ex-wk .ex-today .k2-tube{box-shadow:0 0 0 3px color-mix(in srgb,var(--dom)
 ${P} .ds small{font-size:12px}${P} .ds i{font-size:12px}
 ${P} .mx-h .fh-lk{white-space:nowrap;flex:none}${P} .mx-h{gap:10px}
 `);
-window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p>`+(window.FNOTES_FOLY||'');
 })();
