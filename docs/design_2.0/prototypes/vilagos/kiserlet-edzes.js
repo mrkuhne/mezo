@@ -10,7 +10,8 @@
 const F=window.F,ed=window.FREG&&FREG.edzes,X=window.KXN;if(!ed||!X)return;
 const {I,badge}=F,{V,KH,dots,DEFS,hubHead}=X;
 const P='.phone.foly[data-s="elo"][data-d="edzes"]';
-const O={mai:ed.routes.mai,terv:ed.routes.terv,het:ed.routes.het,terheles:ed.routes.terheles};
+const O={mai:ed.routes.mai,terv:ed.routes.terv,het:ed.routes.het,terheles:ed.routes.terheles,terkep:ed.routes.terkep};
+ed.routes['terkep-lista']=O.terkep;
 ed.routes['mai-lista']=O.mai;ed.routes['terv-lista']=O.terv;ed.routes['terheles-lista']=O.terheles;
 
 /* the end of the balanced <div> / <section> that starts at i */
@@ -318,6 +319,43 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-exg]');if(
     <div class="ex-gfig">${fig}</div><div class="ex-imp ex-gp">${tb}</div>${dvMezo(say1)}
     <button class="dv-btn pri" data-sheet="grp" data-arg="${arg}">Gyakorlatok és tervezett szettek</button></div>`)});
 
+/* ═══ IZOMTÉRKÉP (2026-10-21): the two bodies are the page, larger, with no card; tapping a muscle on the body opens the
+   group's parts drawer (owner: "legyen mindkettő") and so do five big group buttons under the bodies (small muscles
+   are hard to hit on the drawing). The waiting group is a card, sport one line with Mezo, the 21 muscles one card.
+   "Miből rajzoljuk?" moves behind the title's "?". ═══ */
+const artL=w=>(/^[aáeéiíoóöőuúüű]/i.test(w)?'az ':'a ')+w;
+const regionOf3=k=>(MUSCLES.find(m=>m.key===k)||{}).region;
+const grpByRegion=r=>Object.keys(GRP).find(a=>regionOf3(a)===r);
+function terkep3(a){if(a&&a!=='terv')return O.terkep(a);
+  if(!Object.keys(GRP).length)terheles3();/* the group numbers live on the Terhelés page */
+  const base=O.terkep(a).replace('data-toast="Kalauz ehhez az oldalhoz"','data-sheet="info" data-arg="terkep"'),cs=cardsOf(base);if(!cs.length)return base;
+  const hh=cs[0].html,lbl=g(hh,/<span class="lbl">([^<]*)<\/span>/),v=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/);
+  const si=hh.indexOf('<div class="fh-seg"'),seg=si>=0?hh.slice(si,bal(hh,si)):'',di=hh.indexOf('<span class="vs-duo'),duo=di>=0?hh.slice(di,bal(hh,di,'span')):'';
+  const L=[...hh.matchAll(/<span><i style="background:([^"]+)"><\/i>([^<]*)<b>([^<]*)<\/b>([^<]*)<\/span>/g)].map(m=>{const l=m[2].trim(),arg=Object.keys(GRP).find(k=>GRP[k].l===l);return {c:m[1],l,n:m[3],st:m[4].trim(),arg}});
+  const plan=a==='terv',waitL=L.filter(x=>/vár/.test(x.st)).map(x=>artL(x.l.toLowerCase()));
+  const say=plan?v:waitL.length?`${andL(waitL).replace(/^a/,'A')} még munkára vár, a többi jó úton van.`:v;
+  const chips=`<div class="ex-gb">${L.map(x=>`<button ${x.arg?`data-exg="${x.arg}"`:''}><span>${(GRP[x.arg]||{}).chip||''}</span><b>${x.l} ${x.n}</b>${x.st?`<small>${x.st}</small>`:''}</button>`).join('')}</div>`;
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${lbl}</small><h2 class="n7-h">${say}</h2><div class="ex-seg">${seg}</div>
+    <div class="ex-map">${duo}<div class="ex-sides"><span>elölről</span><span>hátulról</span></div></div><p class="ex-tip">Bökj egy izomra, és megmutatom a részeit.</p>${chips}</section>`;
+  const rest=cs.slice(1).map(c=>{const h=c.html;
+    if(/szett vár a héten/.test(h)){const items=[...h.matchAll(/(<span class="mchp sm" style="--c:[^"]+">[\s\S]*?<\/svg><\/span>)<span class="g"><strong>([^<]*)<\/strong><small>([^<]*)<\/small>/g)];
+      return `<section class="mx-s ln">${KH(c.head||'Még munkára vár')}<div class="ex-cards">${items.map(m=>{const arg=Object.keys(GRP).find(k=>GRP[k].l===m[2].trim());
+        return `<article class="n8-c ex-wc"><span class="ex-wcc">${m[1].replace('mchp sm','mchp')}</span><div><div class="n8-t"><b>${m[2]}</b></div><p>${m[3]}</p>${arg?`<div class="qs-acts"><button class="n8-b" data-exg="${arg}">Megnézem</button></div>`:''}</div></article>`}).join('')}</div></section>`}
+    if(/A sport ezeket is/.test(h)){const t=g(h,/<strong>([^<]*)<\/strong>/);
+      return `<section class="mx-s ln">${KH(c.head||'A sport is dolgozott','',`<button class="fh-lk" data-sheet="info" data-arg="sport">Részletek ›</button>`)}<div class="ex-mz">${badge('mezo',{s:30})}<p>${t}</p></div></section>`}
+    if(/data-go="jelek"/.test(h)){const ic=g(h,/href="#([^"]+)"/)||'t-muscle';
+      return `<section class="mx-s ln">${KH(c.head||'Mélyebben')}<div class="ex-cards"><article class="n8-c">${drop(ic)}<div><div class="n8-t"><b>Minden izomjel</b></div><p>A 21 izom, saját jellel, régiónként.</p><div class="qs-acts"><button class="n8-b" data-go="jelek">Megnyitom</button></div></div></article></div></section>`}
+    return `<section class="mx-s ln">${c.head?KH(c.head):''}<div class="ex-keep">${pills(h)}</div></section>`}).join('');
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${rest}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+ed.routes.terkep=terkep3;
+/* a tap on the drawing: the muscle shape under the finger (the liquid lies over it, so look through) → its group */
+document.addEventListener('click',e=>{const m=e.target.closest('#phone .ex-map');if(!m)return;
+  /* the drawing does not take pointer events: pick the muscle shape whose box holds the tap, the smallest one wins */
+  const u=[...m.querySelectorAll('use')].filter(el=>/#bm-(front|back)-/.test(el.getAttribute('href')||'')).map(el=>[el,el.getBoundingClientRect()])
+    .filter(([,r])=>e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom).sort((x,y)=>x[1].width*x[1].height-y[1].width*y[1].height).map(x=>x[0])[0];if(!u)return;
+  const [,v,sh]=u.getAttribute('href').match(/#bm-(front|back)-(.+)$/),k=Object.keys(TOKEN_SHAPES).find(x=>TOKEN_SHAPES[x].some(([w,q])=>w===v&&q===sh)),arg=k&&grpByRegion(regionOf3(k));
+  if(arg){const b=document.createElement('button');b.dataset.exg=arg;b.style.display='none';m.appendChild(b);b.click();b.remove()}else F.toast(k?`${muscleLabel(k)} · ezen a héten nincs terv rá`:'Ezen a héten nincs terv rá')});
+
 /* the tab pages' header, as on Nap: no big title, the "?" top left */
 /* Edzés marks its guide button "new" (class="fh-help new"), which the Nap matcher does not expect: drop the mark first */
 const head=h=>typeof h==='string'?hubHead(h.replace('class="fh-help new"','class="fh-help"')):h;
@@ -366,6 +404,14 @@ ${P} .ex-g5 .k2-vials{gap:4px!important}${P} .ex-g5 .ex-mc .mchp{width:38px;heig
 ${P} .ex-gc .mchp{width:72px;height:72px;flex:none}${P} .ex-grp .dv-top{align-items:center;gap:14px}
 ${P} .ex-gfig{display:flex;justify-content:center;gap:12px;margin:10px 0 4px}${P} .ex-gfig .vs-body{width:38%;max-width:132px}${P} .ex-gfig .vs-body svg{width:100%;height:auto;display:block}
 ${P} .ex-gp{margin:6px 0 0}${P} .ex-fam{margin-top:10px}${P} .ex-fam>b{display:block;margin:0 0 6px;font-size:14px;font-weight:750;color:var(--ink)}${P} .ex-gp .k2-vial small i{white-space:nowrap}${P} .ex-gp .k2-vial small i{display:block;font-style:normal;font-weight:600;color:var(--ink)}${P} .ex-gp .k2-vial small u.lag{text-decoration:none;font-weight:700;color:#A86A0C}${P} .ex-gp .k2-tube{width:52px!important;margin:0 auto}${P} .ex-gp .k2-tube em:not(:empty),${P} .ex-g5 .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff;font-size:12px!important;white-space:nowrap}
+${P} .ex-seg{margin:14px 22px 0}${P} .ex-seg .fh-seg{margin:0}${P} .ex-seg .fh-seg button{min-height:44px}
+${P} .ex-map{margin:14px 10px 0;cursor:pointer}${P} .ex-map .vs-duo{display:flex;justify-content:center;gap:8px}${P} .ex-map .vs-body{width:47%;max-width:180px}${P} .ex-map .vs-body svg{width:100%;height:auto;display:block}
+${P} .ex-sides{display:flex;justify-content:space-around;margin-top:4px;font-size:13px;color:var(--ink)}
+${P} .ex-tip{margin:10px 22px 0;font-size:14px;color:var(--ink);text-align:center}
+${P} .ex-gb{display:flex;gap:8px;overflow-x:auto;padding:14px 18px 6px;scrollbar-width:none}
+${P} .ex-gb button{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:84px;padding:10px 10px 8px;border-radius:20px;background:#fff;box-shadow:0 8px 18px -14px rgba(30,70,140,.45),inset 0 0 0 1px rgba(10,42,60,.07)}
+${P} .ex-gb .mchp{width:40px;height:40px}${P} .ex-gb b{font-size:14px;font-weight:750;color:var(--ink);white-space:nowrap}${P} .ex-gb small{font-size:12px;color:var(--ink)}
+${P} .ex-wcc{flex:none;display:grid;place-items:center;width:72px}${P} .ex-wcc .mchp{width:60px;height:60px}
 ${P} .ex-dates{margin:6px 22px 0;font-size:13.5px;color:var(--ink)}
 ${P} .ex-6 .k2-vial small{white-space:nowrap}${P} .ex-wk .k2-vial b u{font-size:12px!important}
 ${P} .ex-dcr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:4px 18px 16px;scrollbar-width:none}
@@ -396,5 +442,5 @@ ${P} .ex-wk .ex-today .k2-tube{box-shadow:0 0 0 3px color-mix(in srgb,var(--dom)
 ${P} .ds small{font-size:12px}${P} .ds i{font-size:12px}
 ${P} .mx-h .fh-lk{white-space:nowrap;flex:none}${P} .mx-h{gap:10px}
 `);
-window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Arcai: <a href="#w-edzes-terv.elso">első edzés előtt</a> · <a href="#w-edzes-terv.ures">még nincs terv</a> · <a href="#w-edzes-terv.nincs">nem fut terv</a>. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p><p><a href="#w-edzes-terheles"><b>Terhelés</b></a> — a test elölről és hátulról a kép, alatta a három szám; az izomcsoportok öt csőben, a sport három becsült csőben, a mozgás lapozva. Arcai: <a href="#w-edzes-terheles.elotte">még előtted</a> · <a href="#w-edzes-terheles.megvan">letudva</a> · <a href="#w-edzes-terheles.ures">nincs terv</a>. Összevetésnek: <a href="#w-edzes-terheles-lista">a mostani Terhelés</a>.</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Arcai: <a href="#w-edzes-terv.elso">első edzés előtt</a> · <a href="#w-edzes-terv.ures">még nincs terv</a> · <a href="#w-edzes-terv.nincs">nem fut terv</a>. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p><p><a href="#w-edzes-terheles"><b>Terhelés</b></a> — a test elölről és hátulról a kép, alatta a három szám; az izomcsoportok öt csőben, a sport három becsült csőben, a mozgás lapozva. <a href="#w-edzes-terkep">Izomtérkép</a> (a test is bökhető) · <a href="#w-edzes-terkep.terv">a heti terv</a>. Arcai: <a href="#w-edzes-terheles.elotte">még előtted</a> · <a href="#w-edzes-terheles.megvan">letudva</a> · <a href="#w-edzes-terheles.ures">nincs terv</a>. Összevetésnek: <a href="#w-edzes-terheles-lista">a mostani Terhelés</a>.</p>`+(window.FNOTES_FOLY||'');
 })();
