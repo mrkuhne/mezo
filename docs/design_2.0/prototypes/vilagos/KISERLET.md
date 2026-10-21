@@ -114,3 +114,7 @@ push, republish via the publish subagent (reads the file, diffs against its save
 `a-napom-rajzolva.html` + all `vilagos/*.js`; if the scratchpad was cleaned, rebuild the copy from `klinikai-iranyok.html`
 with the extra `<script src="vilagos/kiserlet-napom.js">` and default hash `#w-nap-mai`). Scripts `shot2.mjs` / `audit.mjs`
 live in the scratchpad and get cleaned by the system: recreate them when missing.
+
+**The published prototype opens on the page being worked on** (owner, 2026-10-21): every round, set the default hash in
+`kiserlet-napom-grafika.html` and in the scratchpad shell copy `a-napom-rajzolva.html` to the route of that round
+(e.g. `#w-edzes-terkep`), so the owner never has to navigate there by hand.
