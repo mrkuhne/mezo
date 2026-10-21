@@ -250,7 +250,14 @@ const O_after=ed.after;ed.after=(r,a)=>{O_after&&O_after(r,a);if(r==='terv'&&(!a
    the muscle groups are five tubes with their drawings (tap = the approved group sheet); sport is a sentence and three
    estimated tubes; "Mozgás és terv" is a carousel. The three "how is it counted" links move behind "Részletek". ═══ */
 const andL=a=>a.length<=1?a[0]||'':`${a.slice(0,-1).join(', ')} és ${a[a.length-1]}`;
-function terheles3(a){if(a)return O.terheles(a);
+/* Terhelés faces (2026-10-21): the week still ahead and the week done use the same page with their own sentence;
+   no plan yet is the empty face of Terv (sentence, drawn drop, the way on) */
+function terhelesEmpty(a){const base=O.terheles(a),cs=cardsOf(base);if(!cs.length)return base;const hh=cs[0].html;
+  const v=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/),sub=g(hh,/<p class="sub">([^<]*)<\/p>/),ic=g(g(hh,/<span class="fh-art">([\s\S]*?)<\/span>/),/href="#([^"]+)"/)||'t-dumbbell';
+  const ai=hh.indexOf('<div class="fh-acts">'),acts=ai>=0?pills(hh.slice(ai+21,bal(hh,ai)-6)):'';
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex"><section class="mx-s ex-hero"><small class="ex-eb">Terhelés</small><h2 class="n7-h">${v}</h2>
+    <div class="ex-empty">${drop(ic)}<p>${sub}</p></div><div class="ex-acts">${acts}</div></section>${more3()}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+function terheles3(a){if(a==='ures')return terhelesEmpty(a);if(a&&a!=='elotte'&&a!=='megvan')return O.terheles(a);
   const base=O.terheles(a),ti=base.indexOf('<section class="k2-tank');if(ti<0)return base;
   const tank=base.slice(ti,bal(base,ti,'section')),eb=g(tank,/<small>([^<]*)<\/small>/),done=+g(tank,/<b[^>]*>(\d+)<\/b>/),plan=+g(tank,/a (\d+)-ből/);
   const cs=cardsOf(base),find=k=>cs.find(c=>c.html.includes(k))||{html:''};
@@ -261,10 +268,10 @@ function terheles3(a){if(a)return O.terheles(a);
   const G=[...gh.matchAll(/data-sheet="grp" data-arg="([^"]+)">(<span class="mchp sm" style="--c:([^"]+)">[\s\S]*?<\/svg><\/span>)<span class="g"><strong>([^<]*)(<b[^>]*>· ([^<]*)<\/b>)?<\/strong><small>([^<]*)<span[\s\S]*?<i style="width:([\d.]+)%"><\/i>[\s\S]*?<span class="v">(\d+) \/ (\d+)/g)]
     .map(m=>({arg:m[1],chip:m[2].replace('mchp sm','mchp'),c:m[3],l:m[4].trim(),warn:m[6]||'',sub:m[7],w:+m[8],d:+m[9],p:+m[10]}));
   const art=w=>(/^[aáeéiíoóöőuúüű]/i.test(w)?'az ':'a ')+w,wait=G.filter(x=>!x.d).map(x=>art(x.l.toLowerCase()));
-  const say=`Ezen a héten ${done} szett kész a ${plan}-ből${wait.length?`, ${andL(wait)} még munkára vár`:''}.`;
+  const say=!done?'A hét még előtted van, eddig egy szett sem ment le.':done>=plan?`A hét munkáját letudtad, ${done} szett kész. Innen már a pihenés dolgozik.`:`Ezen a héten ${done} szett kész a ${plan}-ből${wait.length?`, ${andL(wait)} még munkára vár`:''}.`;
   const tubes=(list,h)=>{let i=0;return F.vials(list.map(x=>({l:x.l,v:x.v,s:x.s||'',p:x.p_,c:`color-mix(in srgb,${x.c} 74%,#0A2A3C)`,mark:x.mark||'',on:x.on})),{h}).replace(/<span class="k2-tube"/g,m=>`<span class="ex-mc">${(list[i++]||{}).chip||''}</span>`+m)};
   const top=`<section class="mx-s ex-hero"><small class="ex-eb">${eb}</small><h2 class="n7-h">${say}</h2>
-    <div class="ex-duo">${duo}</div><div class="ex-facts ex-f3"><span><b>${done}</b><small>szett kész</small></span><span><b>${plan}</b><small>a heti terv</small></span><span><b>${wait.length}</b><small>csoport vár</small></span></div>
+    <div class="ex-duo">${duo}</div><div class="ex-facts ex-f3"><span><b>${done}</b><small>szett kész</small></span><span><b>${plan}</b><small>a heti terv</small></span><span><b>${wait.length}</b><small>${wait.length===G.length&&!done?'csoport mind vár':'csoport vár'}</small></span></div>
     <div class="ex-acts"><button class="n8-b" data-go="terkep">A tested térképe</button><button class="n8-b" data-sheet="info" data-arg="szam">Hogyan számolunk?</button></div></section>`;
   G.forEach(x=>GRP[x.arg]=x);
   const grp=`<section class="mx-s ln">${KH('Izomcsoportok ezen a héten','',info('sav'))}<div class="ex-imp ex-g5">${tubes(G.map(x=>({...x,v:`${x.d}/${x.p}`,p_:x.w*.9,mark:x.warn||(lagging(parts(x.arg),x).length?'figyelj':''),on:{toast:x.l}})),112)
@@ -389,5 +396,5 @@ ${P} .ex-wk .ex-today .k2-tube{box-shadow:0 0 0 3px color-mix(in srgb,var(--dom)
 ${P} .ds small{font-size:12px}${P} .ds i{font-size:12px}
 ${P} .mx-h .fh-lk{white-space:nowrap;flex:none}${P} .mx-h{gap:10px}
 `);
-window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Arcai: <a href="#w-edzes-terv.elso">első edzés előtt</a> · <a href="#w-edzes-terv.ures">még nincs terv</a> · <a href="#w-edzes-terv.nincs">nem fut terv</a>. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p><p><a href="#w-edzes-terheles"><b>Terhelés</b></a> — a test elölről és hátulról a kép, alatta a három szám; az izomcsoportok öt csőben, a sport három becsült csőben, a mozgás lapozva. Összevetésnek: <a href="#w-edzes-terheles-lista">a mostani Terhelés</a>.</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Arcai: <a href="#w-edzes-terv.elso">első edzés előtt</a> · <a href="#w-edzes-terv.ures">még nincs terv</a> · <a href="#w-edzes-terv.nincs">nem fut terv</a>. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p><p><a href="#w-edzes-terheles"><b>Terhelés</b></a> — a test elölről és hátulról a kép, alatta a három szám; az izomcsoportok öt csőben, a sport három becsült csőben, a mozgás lapozva. Arcai: <a href="#w-edzes-terheles.elotte">még előtted</a> · <a href="#w-edzes-terheles.megvan">letudva</a> · <a href="#w-edzes-terheles.ures">nincs terv</a>. Összevetésnek: <a href="#w-edzes-terheles-lista">a mostani Terhelés</a>.</p>`+(window.FNOTES_FOLY||'');
 })();
