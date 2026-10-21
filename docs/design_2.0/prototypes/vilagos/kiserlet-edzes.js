@@ -250,6 +250,21 @@ const O_after=ed.after;ed.after=(r,a)=>{O_after&&O_after(r,a);if(r==='terv'&&(!a
    front and back, large, filled with the week's work (owner chose: bodies on top, the three numbers in a row below);
    the muscle groups are five tubes with their drawings (tap = the approved group sheet); sport is a sentence and three
    estimated tubes; "Mozgás és terv" is a carousel. The three "how is it counted" links move behind "Részletek". ═══ */
+/* ═══ the week's sport (owner, 2026-10-21: "nagyon basic és unalmas"): the five sessions on a week line — a full drop
+   when done, a glass drop when ahead, a red one when missed — then the body the week's sport works (from the approved
+   SPL table: Röpi = váll, láb, core; futás = láb, lábhajlító, vádli) and Mezo's line on how it counts. Numbers are the
+   approved page's (Minden mozgásod: 90 perc naplózva, 610 kcal; 333 perc a heti rendben). ═══ */
+const SW=[['Kedd','t-volley','Röpi',90,'done'],['Szerda','t-run','Sprint',15,'miss'],['Csütörtök','t-volley','Röpi',90,'today'],['Péntek','t-run','Piramis',18,'plan'],['Szombat','t-volley','Meccs',120,'plan']];
+const SWST={done:['Megvolt','ok'],miss:['Elmaradt','bad'],today:['Ma','now'],plan:['Jön','q']};
+const SPLW={'shoulder-front':3,'shoulder-side':2,quad:3,ham:3,calf:2,core:1};
+const sportWeek=head=>{const done=SW.filter(x=>x[4]==='done').reduce((q,x)=>q+x[3],0),all=SW.reduce((q,x)=>q+x[3],0);
+  return `<section class="mx-s ln">${KH(head,'',`<button class="fh-lk" data-go="mozgas">Részletek ›</button>`)}
+    <p class="ex-say"><b>${done} perc</b> megvolt a heti ${all}-ból, a röpi <b>610 kcal</b>-t hozott.</p>
+    <div class="ex-sw">${SW.map(([d,ic,n,m,st])=>`<button class="${st}" data-go="mai.${({Kedd:'kedd',Szerda:'sze',Csütörtök:'csu',Péntek:'pen',Szombat:'szo'})[d]}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${st==='done'?V.drop({ic}):V.icd({ic})}</svg>
+      <small>${d.slice(0,d==='Csütörtök'?3:d==='Szerda'?3:d==='Szombat'?3:1)}</small><b>${n}</b><em>${m} p</em><i class="${SWST[st][1]}">${SWST[st][0]}</i></button>`).join('')}</div>
+    <div class="ex-swb">${body('front',Object.entries(SPLW).map(([k,n])=>[k,0,n/3]))}<ul>
+      <li>${I('t-volley')}<span><b>Röpi</b> váll, láb, core</span></li><li>${I('t-run')}<span><b>Futás</b> láb, lábhajlító, vádli</span></li></ul></div>
+    <div class="ex-mz">${badge('mezo',{s:30})}<p>A sport nem számít bele a szettekbe, de a pihenésednél figyelembe veszem.</p></div></section>`};
 const andL=a=>a.length<=1?a[0]||'':`${a.slice(0,-1).join(', ')} és ${a[a.length-1]}`;
 /* Terhelés faces (2026-10-21): the week still ahead and the week done use the same page with their own sentence;
    no plan yet is the empty face of Terv (sentence, drawn drop, the way on) */
@@ -280,8 +295,7 @@ function terheles3(a){if(a==='ures')return terhelesEmpty(a);if(a&&a!=='elotte'&&
   /* sport */
   const sh=find('fh-big').html,min=g(sh,/fh-big">(\d+)/),works=g(sh,/Ezeket is dolgoztatja: ([^<]*)\./);
   const S=[...sh.matchAll(/(<span class="mchp sm" style="--c:([^"]+)">[\s\S]*?<\/svg><\/span>)<span class="g"><strong>([^<]*)<\/strong><\/span><span class="vs-dr"[^>]*aria-label="(\d) \/ 3"/g)].map(m=>({chip:m[1].replace('mchp sm','mchp'),c:m[2],l:m[3],n:+m[4]}));
-  const sport=sh?`<section class="mx-s ln">${KH('Sport a héten','',info('sport'))}<p class="ex-say"><b>${min} perc</b> sport és futás a heti rendben. Ez is dolgoztatja: ${andL(works.split(', ').map(x=>x.toLowerCase()))}.</p>
-    <div class="ex-imp">${tubes(S.map(x=>({...x,v:x.l,l:['enyhe','közepes','erős'][x.n-1]||'',p_:x.n/3*88,on:{toast:`${x.l} · becsült terhelés a sportból`}})),104)}</div></section>`:'';
+  const sport=sh?sportWeek('Sport a héten'):'';
   /* moves and plan */
   const mh=find('data-go="mozgas"').html,medal=g(mh,/<strong>(\d+ medál[^<]*)<\/strong>/);
   const MV=[['t-flame','Minden mozgásod','data-go="mozgas"'],['c-i-retegek','Mezociklus','data-go="run"'],['t-record',medal||'Medálok','data-go="medals"'],['t-dumbbell','Saját edzés','data-sheet="custom"']];
@@ -336,13 +350,12 @@ function terkep3(a){if(a&&a!=='terv')return O.terkep(a);
   const say=plan?v:waitL.length?`${andL(waitL).replace(/^a/,'A')} még munkára vár, a többi jó úton van.`:v;
   const chips=`<div class="ex-gb">${L.map(x=>`<button ${x.arg?`data-exg="${x.arg}"`:''}><span>${(GRP[x.arg]||{}).chip||''}</span><b>${x.l} ${x.n}</b>${x.st?`<small>${x.st}</small>`:''}</button>`).join('')}</div>`;
   const top=`<section class="mx-s ex-hero"><small class="ex-eb">${lbl}</small><h2 class="n7-h">${say}</h2><div class="ex-seg">${seg}</div>
-    <div class="ex-map">${duo}<div class="ex-sides"><span>elölről</span><span>hátulról</span></div></div><p class="ex-tip">Bökj egy izomra, és megmutatom a részeit.</p>${chips}</section>`;
+    <div class="ex-map">${duo}<div class="ex-sides"><span>elölről</span><span>hátulról</span></div></div><p class="ex-tip">Bökj egy izomra, és megmutatom a részeit.</p>${chips}${dots(Math.max(1,L.length-3))}</section>`;
   const rest=cs.slice(1).map(c=>{const h=c.html;
     if(/szett vár a héten/.test(h)){const items=[...h.matchAll(/(<span class="mchp sm" style="--c:[^"]+">[\s\S]*?<\/svg><\/span>)<span class="g"><strong>([^<]*)<\/strong><small>([^<]*)<\/small>/g)];
       return `<section class="mx-s ln">${KH(c.head||'Még munkára vár')}<div class="ex-cards">${items.map(m=>{const arg=Object.keys(GRP).find(k=>GRP[k].l===m[2].trim());
         return `<article class="n8-c ex-wc"><span class="ex-wcc">${m[1].replace('mchp sm','mchp')}</span><div><div class="n8-t"><b>${m[2]}</b></div><p>${m[3]}</p>${arg?`<div class="qs-acts"><button class="n8-b" data-exg="${arg}">Megnézem</button></div>`:''}</div></article>`}).join('')}</div></section>`}
-    if(/A sport ezeket is/.test(h)){const t=g(h,/<strong>([^<]*)<\/strong>/);
-      return `<section class="mx-s ln">${KH(c.head||'A sport is dolgozott','',`<button class="fh-lk" data-sheet="info" data-arg="sport">Részletek ›</button>`)}<div class="ex-mz">${badge('mezo',{s:30})}<p>${t}</p></div></section>`}
+    if(/A sport ezeket is/.test(h))return sportWeek(c.head||'A sport is dolgozott');
     if(/data-go="jelek"/.test(h)){const ic=g(h,/href="#([^"]+)"/)||'t-muscle';
       return `<section class="mx-s ln">${KH(c.head||'Mélyebben')}<div class="ex-cards"><article class="n8-c">${drop(ic)}<div><div class="n8-t"><b>Minden izomjel</b></div><p>A 21 izom, saját jellel, régiónként.</p><div class="qs-acts"><button class="n8-b" data-go="jelek">Megnyitom</button></div></div></article></div></section>`}
     return `<section class="mx-s ln">${c.head?KH(c.head):''}<div class="ex-keep">${pills(h)}</div></section>`}).join('');
@@ -412,6 +425,15 @@ ${P} .ex-gb{display:flex;gap:8px;overflow-x:auto;padding:14px 18px 6px;scrollbar
 ${P} .ex-gb button{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:84px;padding:10px 10px 8px;border-radius:20px;background:#fff;box-shadow:0 8px 18px -14px rgba(30,70,140,.45),inset 0 0 0 1px rgba(10,42,60,.07)}
 ${P} .ex-gb .mchp{width:40px;height:40px}${P} .ex-gb b{font-size:14px;font-weight:750;color:var(--ink);white-space:nowrap}${P} .ex-gb small{font-size:12px;color:var(--ink)}
 ${P} .ex-wcc{flex:none;display:grid;place-items:center;width:72px}${P} .ex-wcc .mchp{width:60px;height:60px}
+${P} .ex-sw{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:14px 12px 0}
+${P} .ex-sw::before{content:"";position:absolute;left:10%;right:10%;top:30px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--liq1),var(--liq2));opacity:.3}
+${P} .ex-sw>button{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;padding:0;text-align:center}
+${P} .ex-sw svg.ng{width:58px;height:58px;margin:0 0 4px}${P} .ex-sw .ng-pipe,${P} .ex-sw .ng-flow{display:none}
+${P} .ex-sw .ng-nd{fill:var(--dom)!important;filter:drop-shadow(0 4px 5px color-mix(in srgb,var(--dom) 35%,transparent))!important}${P} .ex-sw .miss .ng-line{stroke:#C2453B;stroke-dasharray:3 3}${P} .ex-sw .today svg.ng{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--dom) 45%,transparent))}
+${P} .ex-sw small{font-size:12px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}${P} .ex-sw b{font-size:13px;font-weight:750;color:var(--ink)}${P} .ex-sw em{font-style:normal;font-size:12px;color:var(--ink)}
+${P} .ex-sw i{font-style:normal;font-size:12px;font-weight:700}${P} .ex-sw i.ok{color:#2E8B57}${P} .ex-sw i.bad{color:#C2453B}${P} .ex-sw i.now{color:#1F6FEB}${P} .ex-sw i.q{color:var(--ink)}
+${P} .ex-swb{display:flex;align-items:center;gap:14px;margin:18px 22px 0}${P} .ex-swb .vs-body{flex:none;width:92px}${P} .ex-swb .vs-body svg{width:100%;height:auto;display:block}
+${P} .ex-swb ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}${P} .ex-swb li{display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.35;color:var(--ink)}${P} .ex-swb li svg.ic{flex:none;width:28px;height:28px}${P} .ex-swb li b{display:block;font-weight:750}
 ${P} .ex-dates{margin:6px 22px 0;font-size:13.5px;color:var(--ink)}
 ${P} .ex-6 .k2-vial small{white-space:nowrap}${P} .ex-wk .k2-vial b u{font-size:12px!important}
 ${P} .ex-dcr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:4px 18px 16px;scrollbar-width:none}
