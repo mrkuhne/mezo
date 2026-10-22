@@ -10,7 +10,8 @@
 const F=window.F,ed=window.FREG&&FREG.edzes,X=window.KXN;if(!ed||!X)return;
 const {I,badge}=F,{V,KH,dots,DEFS,hubHead}=X;
 const P='.phone.foly[data-s="elo"][data-d="edzes"]';
-const O={mai:ed.routes.mai,terv:ed.routes.terv,het:ed.routes.het,terheles:ed.routes.terheles,terkep:ed.routes.terkep};
+const O={mai:ed.routes.mai,terv:ed.routes.terv,het:ed.routes.het,terheles:ed.routes.terheles,terkep:ed.routes.terkep,exercises:ed.routes.exercises};
+ed.routes['exercises-lista']=O.exercises;
 ed.routes['terkep-lista']=O.terkep;
 ed.routes['mai-lista']=O.mai;ed.routes['terv-lista']=O.terv;ed.routes['terheles-lista']=O.terheles;
 
@@ -369,6 +370,43 @@ document.addEventListener('click',e=>{const m=e.target.closest('#phone .ex-map')
   const [,v,sh]=u.getAttribute('href').match(/#bm-(front|back)-(.+)$/),k=Object.keys(TOKEN_SHAPES).find(x=>TOKEN_SHAPES[x].some(([w,q])=>w===v&&q===sh)),arg=k&&grpByRegion(regionOf3(k));
   if(arg){const b=document.createElement('button');b.dataset.exg=arg;b.style.display='none';m.appendChild(b);b.click();b.remove()}else F.toast(k?`${muscleLabel(k)} · ezen a héten nincs terv rá`:'Ezen a héten nincs terv rá')});
 
+/* ═══ GYAKORLATOK (2026-10-22): the kettlebell tank goes; the page's picture is the latest records as a carousel of
+   medal cards; search and the group pills sit on the ground; the list is grouped by muscle group (owner: "legyen
+   csoportonként"), each row with the exact muscle part, the best estimated max and where it is heading instead of the
+   old bar (which only compared exercises with each other). Data: the approved exercise rows and medal list, read from
+   the approved pages. ═══ */
+const EXQ={q:'',f:''},REPK={chest:'chest-mid',back:'back-wide',shoulder:'shoulder-side',arm:'biceps-long',leg:'quad',core:'core'};
+const MON={jan:1,febr:2,márc:3,ápr:4,máj:5,jún:6,júl:7,aug:8,szept:9,okt:10,nov:11,dec:12};
+let EXR=[],EXM=[];
+const exTrend=x=>{if(!x.kg)return['még nincs naplózva','none'];const last=EXM.find(m=>m.n===x.n);if(!last)return['tartja a szintet','flat'];
+  const mo=MON[last.d.split(' ')[0]]||0;return mo>=9?[`${last.c==='CÉL'?'cél teljesítve':'új rekord'} · ${last.d.split(',')[0]}`,'new']:mo>=8?['emelkedik','up']:['tartja a szintet','flat']};
+const exList=()=>{const q=EXQ.q.toLowerCase(),L=EXR.filter(x=>(!EXQ.f||x.r===EXQ.f)&&(!q||(x.n+' '+x.ml).toLowerCase().includes(q)));
+  if(!L.length)return `<p class="ex-say">Nincs ilyen gyakorlat a tárban.</p>`;
+  return REGIONS.filter(r=>L.some(x=>x.r===r.key)).map(r=>{const xs=L.filter(x=>x.r===r.key);
+    return `<div class="ex-xg"><div class="ex-xgh">${mchp(REPK[r.key])}<b>${r.label}</b><small>${xs.length} gyakorlat</small></div>${xs.map(x=>{const [t,c]=exTrend(x);
+      return `<button class="ex-xr ${x.kg?'':'off'}" data-go="${x.go}"><span class="g"><b>${x.n}</b><small>${x.ml}</small><i class="${c}">${t}</i></span>${x.kg?`<span class="v">${x.kg}<u> kg</u></span>`:''}<svg class="ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>`}).join('')}</div>`}).join('')};
+function exercises3(a){if(a)return O.exercises(a);
+  const base=O.exercises(a),cs=cardsOf(base);if(!cs.length)return base;
+  EXR=base.split('<div class="fh-row tap " data-go="').slice(1).filter(r=>/^exercise/.test(r)).map(r=>{const ml=g(r,/<small>([^·<]*)/).trim(),mu=MUSCLES.find(x=>x.label===ml)||{};
+    return {go:g(r,/^([^"]*)"/),n:g(r,/<strong>([^<]*)<\/strong>/),ml,r:mu.region||'',kg:g(r,/<span class="v">([^<]*) kg<\/span>/)}});
+  const mh=ed.routes.medals();EXM=[...mh.matchAll(/<strong>([^<]*?) <span class="st [^"]*">(REKORD|CÉL)<\/span><\/strong><small>([^<]*?)(?:<br>[^<]*)?<\/small><\/span><span class="v">([^<]*)<\/span>/g)].map(m=>({n:m[1].trim(),t:m[3].trim(),v:m[4],c:m[2]}));
+  /* the medal page groups by date: walk it again to give every medal its date label */
+  {let d='';const re=/<span class="fh-lab">([^<]*)<\/span>|<strong>([^<]*?) <span class="st [^"]*">(?:REKORD|CÉL)<\/span>/g;let i=0,m;while((m=re.exec(mh))){if(m[1])d=m[1].trim();else if(EXM[i])EXM[i++].d=d}}
+  EXM.forEach(m=>{if(!m.d)m.d=''});
+  const hh=cs[0].html,v=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/),nGy=+g(v,/(\d+) gyakorlat/),nRec=+g(v,/(\d+) rekord/),nMed=g(hh,/>(\d+) medál</);
+  const recent=EXM.filter(m=>m.c==='REKORD').slice(0,5);
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">A mozdulataid</small><h2 class="n7-h">${nGy} gyakorlatod van, ${nRec}&#8209;ben már rekordod is.</h2>
+    <div class="ex-mr">${recent.map(m=>{const x=EXR.find(q=>q.n===m.n)||{};return `<button class="ex-mc2" data-go="${x.go||'medals'}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.drop({ic:'t-record'})}</svg><small>${m.d.split(',')[0]}</small><b>${m.n}</b><em>${m.t}</em><span>${m.v}</span></button>`}).join('')}</div>${dots(Math.max(1,recent.length-1))}
+    <div class="ex-acts"><button class="n9-btn" data-go="medals">Minden medál (${nMed||EXM.length})</button><button class="n8-b" data-sheet="cat" data-arg="uj">Új gyakorlat</button></div></section>`;
+  const search=`<section class="mx-s ln">${KH('Keresés')}<div class="ex-srch"><input class="fh-in" id="ex-gyq" type="search" value="${EXQ.q}" placeholder="Keresés névre vagy izomra…" aria-label="Keresés a gyakorlatok között" autocomplete="off">
+    <div class="fh-pills" role="group" aria-label="Izomcsoport-szűrő">${[['','Mind'],...REGIONS.filter(r=>EXR.some(x=>x.r===r.key)).map(r=>[r.key,r.label])].map(([k,l])=>`<button class="fh-pill ${EXQ.f===k?'on':''}" data-exf="${k}">${l}</button>`).join('')}</div></div></section>`;
+  const list=`<section class="mx-s ln">${KH('A gyakorlataid')}<div id="ex-gyl">${exList()}</div></section>`;
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${search}${list}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+ed.routes.exercises=exercises3;
+document.addEventListener('input',e=>{if(e.target.id!=='ex-gyq')return;EXQ.q=e.target.value;const l=document.getElementById('ex-gyl');if(l)l.innerHTML=exList()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-exf]');if(!b)return;EXQ.f=b.dataset.exf;
+  b.parentNode.querySelectorAll('[data-exf]').forEach(x=>x.classList.toggle('on',x===b));const l=document.getElementById('ex-gyl');if(l)l.innerHTML=exList()});
+
 /* the tab pages' header, as on Nap: no big title, the "?" top left */
 /* Edzés marks its guide button "new" (class="fh-help new"), which the Nap matcher does not expect: drop the mark first */
 const head=h=>typeof h==='string'?hubHead(h.replace('class="fh-help new"','class="fh-help"')):h;
@@ -434,6 +472,18 @@ ${P} .ex-sw small{font-size:12px;font-weight:700;color:color-mix(in srgb,var(--d
 ${P} .ex-sw i{font-style:normal;font-size:12px;font-weight:700}${P} .ex-sw i.ok{color:#2E8B57}${P} .ex-sw i.bad{color:#C2453B}${P} .ex-sw i.now{color:#1F6FEB}${P} .ex-sw i.q{color:var(--ink)}
 ${P} .ex-swb{display:flex;align-items:center;gap:14px;margin:18px 22px 0}${P} .ex-swb .vs-body{flex:none;width:92px}${P} .ex-swb .vs-body svg{width:100%;height:auto;display:block}
 ${P} .ex-swb ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}${P} .ex-swb li{display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.35;color:var(--ink)}${P} .ex-swb li svg.ic{flex:none;width:28px;height:28px}${P} .ex-swb li b{display:block;font-weight:750}
+${P} .ex-mr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:16px 18px 10px;scrollbar-width:none}
+${P} .ex-mc2{flex:0 0 150px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px;border-radius:24px;background:#fff;text-align:left;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .ex-mc2 svg.ng{width:54px;height:54px;margin:0 0 6px}${P} .ex-mc2 .ng-pipe,${P} .ex-mc2 .ng-flow{display:none}${P} .ex-mc2 .ng-nd{fill:var(--dom)!important}
+${P} .ex-mc2 small{font-size:12px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}${P} .ex-mc2 b{font-size:15px;font-weight:750;line-height:1.25;color:var(--ink)}${P} .ex-mc2 em{font-style:normal;font-size:13px;color:var(--ink)}${P} .ex-mc2 span{margin-top:6px;font:800 17px/1.1 var(--disp,inherit);color:var(--ink)}
+${P} .ex-srch{margin:0 18px}${P} .ex-srch .fh-pills{margin-top:12px;flex-wrap:wrap}${P} .ex-srch .fh-pill{min-height:40px}
+${P} .ex-xg{margin:0 18px 18px;padding:6px 16px 4px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .ex-xgh{display:flex;align-items:center;gap:10px;padding:10px 0}${P} .ex-xgh .mchp{width:40px;height:40px;flex:none}${P} .ex-xgh b{font:800 17px/1.2 var(--disp,inherit);color:var(--ink)}${P} .ex-xgh small{margin-left:auto;font-size:13px;color:var(--ink)}
+${P} .ex-xr{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:10px 0;text-align:left;border-top:1px solid rgba(10,42,60,.07)}
+${P} .ex-xr .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}${P} .ex-xr .g b{font-size:15px;font-weight:750;color:var(--ink)}${P} .ex-xr .g small{font-size:13px;color:var(--ink)}
+${P} .ex-xr .g i{font-style:normal;font-size:12.5px;font-weight:700}${P} .ex-xr i.new{color:#C76A12}${P} .ex-xr i.up{color:#2E8B57}${P} .ex-xr i.flat{color:#4A6070}${P} .ex-xr i.none{color:#4A6070;font-weight:500}
+${P} .ex-xr .v{font:800 17px/1 var(--disp,inherit);color:var(--ink);white-space:nowrap}${P} .ex-xr .v u{text-decoration:none;font-size:13px;font-weight:600}
+${P} .ex-xr svg.ch{flex:none;width:18px;height:18px;fill:none;stroke:#8AA0B0;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}${P} .ex-xr.off .g b{color:#4A6070}
 ${P} .ex-dates{margin:6px 22px 0;font-size:13.5px;color:var(--ink)}
 ${P} .ex-6 .k2-vial small{white-space:nowrap}${P} .ex-wk .k2-vial b u{font-size:12px!important}
 ${P} .ex-dcr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:4px 18px 16px;scrollbar-width:none}
@@ -464,5 +514,5 @@ ${P} .ex-wk .ex-today .k2-tube{box-shadow:0 0 0 3px color-mix(in srgb,var(--dom)
 ${P} .ds small{font-size:12px}${P} .ds i{font-size:12px}
 ${P} .mx-h .fh-lk{white-space:nowrap;flex:none}${P} .mx-h{gap:10px}
 `);
-window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Arcai: <a href="#w-edzes-terv.elso">első edzés előtt</a> · <a href="#w-edzes-terv.ures">még nincs terv</a> · <a href="#w-edzes-terv.nincs">nem fut terv</a>. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p><p><a href="#w-edzes-terheles"><b>Terhelés</b></a> — a test elölről és hátulról a kép, alatta a három szám; az izomcsoportok öt csőben, a sport három becsült csőben, a mozgás lapozva. <a href="#w-edzes-terkep">Izomtérkép</a> (a test is bökhető) · <a href="#w-edzes-terkep.terv">a heti terv</a>. Arcai: <a href="#w-edzes-terheles.elotte">még előtted</a> · <a href="#w-edzes-terheles.megvan">letudva</a> · <a href="#w-edzes-terheles.ures">nincs terv</a>. Összevetésnek: <a href="#w-edzes-terheles-lista">a mostani Terhelés</a>.</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Arcai: <a href="#w-edzes-terv.elso">első edzés előtt</a> · <a href="#w-edzes-terv.ures">még nincs terv</a> · <a href="#w-edzes-terv.nincs">nem fut terv</a>. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p><p><a href="#w-edzes-terheles"><b>Terhelés</b></a> — a test elölről és hátulról a kép, alatta a három szám; az izomcsoportok öt csőben, a sport három becsült csőben, a mozgás lapozva. <a href="#w-edzes-exercises"><b>Gyakorlatok</b></a> — a legutóbbi rekordok a kép, a lista izomcsoportonként (<a href="#w-edzes-exercises-lista">a mostani</a>). <a href="#w-edzes-terkep">Izomtérkép</a> (a test is bökhető) · <a href="#w-edzes-terkep.terv">a heti terv</a>. Arcai: <a href="#w-edzes-terheles.elotte">még előtted</a> · <a href="#w-edzes-terheles.megvan">letudva</a> · <a href="#w-edzes-terheles.ures">nincs terv</a>. Összevetésnek: <a href="#w-edzes-terheles-lista">a mostani Terhelés</a>.</p>`+(window.FNOTES_FOLY||'');
 })();

@@ -5,7 +5,7 @@
      This page is the Folyadék shell (klinikai-iranyok.html) plus that one extra file, so the approved
      prototype and its Artifact stay untouched. Serve over HTTP; opens at #w-nap-napomg. -->
 <script>
-if(!location.hash)history.replaceState(null,'',location.pathname+location.search+'#w-edzes-terkep');
+if(!location.hash)history.replaceState(null,'',location.pathname+location.search+'#w-edzes-exercises');
 fetch('klinikai-iranyok.html').then(r=>r.text()).then(t=>{
   const tag='<script src="vilagos/kiserlet-napom.js"><\/script><script src="vilagos/kiserlet-edzes.js"><\/script>';
   document.open();document.write(t.replace('</body>',tag+'</body>'));document.close();
