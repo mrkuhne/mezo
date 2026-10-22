@@ -392,10 +392,18 @@ const exSer=(x,tr)=>{if(SER[x.n])return SER[x.n];const v=parseFloat(String(x.kg)
 const spark=(ser,c)=>{const mn=Math.min(...ser),mx=Math.max(...ser),w=120,h=34,pt=ser.map((v,i)=>[i/(ser.length-1)*w,h-3-(mx>mn?(v-mn)/(mx-mn):.5)*(h-8)]);
   const d=pt.map((q,i)=>`${i?'L':'M'}${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(''),l=pt[pt.length-1];
   return `<svg class="ex-sp" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}L${w} ${h}L0 ${h}Z" style="fill:${c};opacity:.18"/><path d="${d}" style="fill:none;stroke:${c};stroke-width:2;stroke-linejoin:round;stroke-linecap:round" vector-effect="non-scaling-stroke"/><circle cx="${l[0]}" cy="${l[1]}" r="3" style="fill:${c}"/></svg>`};
+/* round 3 (owner: "ez a grafikon így semmit nem mond"): no curve in the list — the last set with its date, and a badge
+   that says the change in numbers. Prototype content: the last logged set per exercise (useTrain().exerciseRecords). */
+const LAST={'Fekvenyomás':['80 kg × 8','szept 21.','+5,3 kg nyár óta'],'Döntött törzsű evezés':['77,5 kg × 7','szept 17.','+13,3 kg márc óta'],
+  'Húzódzkodás (súlyozott)':['10 kg × 8','szept 17.','+5 kg júl óta'],'Guggolás':['120 kg × 6','szept 23.','+9 kg nyár óta'],'Román felhúzás':['100 kg × 10','szept 23.','+6,7 kg nyár óta'],
+  'Lábtolás':['180 kg × 12','szept 16.','4 hete nem változott'],'Vállból nyomás':['45 kg × 8','szept 21.','3 hete nem változott'],'Vállemelés':['30 kg × 15','szept 17.','+5 kg aug óta'],
+  'Tricepsz letolás':['30 kg × 12','szept 21.','+2,5 kg aug óta'],'Kalapácsbicepsz':['16 kg × 10','szept 17.','+2 kg nyár óta']};
+const exBadge=x=>{const [t,c]=exTrend(x);if(c==='new')return [t.split(' · ')[0],c];const l=LAST[x.n];return l?[l[2],/^\+/.test(l[2])?'up':'flat']:[t,c]};
 const exCard=x=>{const k=exKey(x),[t,c]=exTrend(x),col=`color-mix(in srgb,${muscleColor(k)} 74%,#0A2A3C)`;
   if(!x.kg)return `<button class="ex-xc off" data-go="${x.go}">${mchp(k)}<span class="g"><b>${x.n}</b><small>${x.ml}</small><i class="none">Még nincs alkalmad</i></span><svg class="ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>`;
-  return `<button class="ex-xc" data-go="${x.go}">${mchp(k)}<span class="g"><b>${x.n}</b><small>${x.ml}</small><i class="${c}">${t}</i></span><span class="v">${x.kg}<u> kg</u></span>
-    <span class="ex-xf">${spark(exSer(x,c),col)}</span></button>`};
+  const [bt,bc]=exBadge(x),l=LAST[x.n];
+  return `<button class="ex-xc" data-go="${x.go}">${mchp(k)}<span class="g"><b>${x.n}</b><small>${x.ml}</small></span><span class="v">${x.kg}<u> kg</u><small>becsült max</small></span>
+    <span class="ex-xf">${l?`<span class="ex-last">Legutóbb <b>${l[0]}</b> · ${l[1]}</span>`:''}<i class="${bc}">${bt}</i></span></button>`};
 const exList=()=>{const q=EXQ.q.trim().toLowerCase();
   const L=q?EXR.filter(x=>(x.n+' '+x.ml).toLowerCase().includes(q)):EXR.filter(x=>x.r===EXQ.f);
   if(!L.length)return `<p class="ex-say">${q?'Nincs ilyen gyakorlat a tárban.':'Ebben a csoportban még nincs gyakorlatod.'}</p>`;
@@ -574,7 +582,7 @@ ${P} .ex-xl{display:grid;gap:10px;margin:12px 18px 0}${P} .ex-xgl{margin:8px 4px
 ${P} .ex-xc{display:grid;grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"c g v" "f f f";align-items:center;column-gap:12px;row-gap:6px;width:100%;padding:14px 16px;border-radius:22px;background:#fff;text-align:left;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .ex-xc .mchp{grid-area:c;align-self:start;width:44px;height:44px}${P} .ex-xc .g{grid-area:g;min-width:0;display:flex;flex-direction:column}${P} .ex-xc .g b{font-size:15.5px;font-weight:750;line-height:1.25;color:var(--ink)}${P} .ex-xc .g small{font-size:13px;color:var(--ink)}
 ${P} .ex-xc .v{grid-area:v;font:800 20px/1 var(--disp,inherit);color:var(--ink);white-space:nowrap}${P} .ex-xc .v u{text-decoration:none;font-size:13px;font-weight:600}
-${P} .ex-xf{grid-area:f;display:flex;padding-top:2px}${P} .ex-xc .g i{align-self:flex-start;margin-top:6px}${P} .ex-sp{flex:1;min-width:0;width:100%;height:30px}
+${P} .ex-xf{grid-area:f;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;border-top:1px solid rgba(10,42,60,.07)}${P} .ex-xc .g i{align-self:flex-start;margin-top:6px}${P} .ex-last{font-size:13.5px;color:var(--ink)}${P} .ex-last b{font-weight:750}${P} .ex-xc .v small{display:block;margin-top:4px;font-family:var(--body,system-ui);font-size:12px;font-weight:600;line-height:1;text-align:right}${P} .ex-sp{flex:1;min-width:0;width:100%;height:30px}
 ${P} .ex-xf i,${P} .ex-xc .g i{flex:none;font-style:normal;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
 ${P} .ex-xc i.new{background:#FFF0E0;color:#A65511}${P} .ex-xc i.up{background:#E4F4EA;color:#23704A}${P} .ex-xc i.flat{background:#EEF2F5;color:#3F5566}
 ${P} .ex-xc.off{grid-template-columns:44px minmax(0,1fr) 18px;grid-template-areas:"c g ch";box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.14);background:rgba(255,255,255,.6)}${P} .ex-xc.off .g i{align-self:flex-start;margin-top:6px;background:#EEF2F5;color:#3F5566}
