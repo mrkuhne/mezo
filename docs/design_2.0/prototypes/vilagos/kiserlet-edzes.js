@@ -380,32 +380,113 @@ const MON={jan:1,febr:2,márc:3,ápr:4,máj:5,jún:6,júl:7,aug:8,szept:9,okt:10
 let EXR=[],EXM=[];
 const exTrend=x=>{if(!x.kg)return['még nincs naplózva','none'];const last=EXM.find(m=>m.n===x.n);if(!last)return['tartja a szintet','flat'];
   const mo=MON[last.d.split(' ')[0]]||0;return mo>=9?[`${last.c==='CÉL'?'cél teljesítve':'új rekord'} · ${last.d.split(',')[0]}`,'new']:mo>=8?['emelkedik','up']:['tartja a szintet','flat']};
-const exList=()=>{const q=EXQ.q.toLowerCase(),L=EXR.filter(x=>(!EXQ.f||x.r===EXQ.f)&&(!q||(x.n+' '+x.ml).toLowerCase().includes(q)));
-  if(!L.length)return `<p class="ex-say">Nincs ilyen gyakorlat a tárban.</p>`;
-  return REGIONS.filter(r=>L.some(x=>x.r===r.key)).map(r=>{const xs=L.filter(x=>x.r===r.key);
-    return `<div class="ex-xg"><div class="ex-xgh">${mchp(REPK[r.key])}<b>${r.label}</b><small>${xs.length} gyakorlat</small></div>${xs.map(x=>{const [t,c]=exTrend(x);
-      return `<button class="ex-xr ${x.kg?'':'off'}" data-go="${x.go}"><span class="g"><b>${x.n}</b><small>${x.ml}</small><i class="${c}">${t}</i></span>${x.kg?`<span class="v">${x.kg}<u> kg</u></span>`:''}<svg class="ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>`}).join('')}</div>`}).join('')};
-function exercises3(a){if(a)return O.exercises(a);
-  const base=O.exercises(a),cs=cardsOf(base);if(!cs.length)return base;
-  EXR=base.split('<div class="fh-row tap " data-go="').slice(1).filter(r=>/^exercise/.test(r)).map(r=>{const ml=g(r,/<small>([^·<]*)/).trim(),mu=MUSCLES.find(x=>x.label===ml)||{};
+/* round 2 (owner, 2026-10-22: "ömlesztett, rendezetlen, fapados"): one group at a time, chosen on a row of group
+   wheels (default: the group trained last, Láb); a search reaches all groups. Every exercise is the same card in the
+   same order: the muscle part's drawing, the name and part, the best estimated max large, a small curve of where it is
+   heading and one badge. The exercise page, the medal page and the new-exercise drawer follow the same system. */
+EXQ.f='leg';
+const exKey=x=>(MUSCLES.find(m=>m.label===x.ml)||{}).key||REPK[x.r]||'core';
+const SER={'Döntött törzsű evezés':[80,83,86,84,89,92,94,96.7,98.2,93.3],'Fekvenyomás':[88,90,93,95,96,98.2,99,101.3]};
+const exSer=(x,tr)=>{if(SER[x.n])return SER[x.n];const v=parseFloat(String(x.kg).replace(/\s/g,'').replace(',','.'))||0;
+  return Array.from({length:8},(_,i)=>tr==='flat'?v*(.97+.03*Math.sin(i*1.3)):v*(.86+.14*i/7))};
+const spark=(ser,c)=>{const mn=Math.min(...ser),mx=Math.max(...ser),w=120,h=34,pt=ser.map((v,i)=>[i/(ser.length-1)*w,h-3-(mx>mn?(v-mn)/(mx-mn):.5)*(h-8)]);
+  const d=pt.map((q,i)=>`${i?'L':'M'}${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(''),l=pt[pt.length-1];
+  return `<svg class="ex-sp" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}L${w} ${h}L0 ${h}Z" style="fill:${c};opacity:.18"/><path d="${d}" style="fill:none;stroke:${c};stroke-width:2;stroke-linejoin:round;stroke-linecap:round" vector-effect="non-scaling-stroke"/><circle cx="${l[0]}" cy="${l[1]}" r="3" style="fill:${c}"/></svg>`};
+const exCard=x=>{const k=exKey(x),[t,c]=exTrend(x),col=`color-mix(in srgb,${muscleColor(k)} 74%,#0A2A3C)`;
+  if(!x.kg)return `<button class="ex-xc off" data-go="${x.go}">${mchp(k)}<span class="g"><b>${x.n}</b><small>${x.ml}</small><i class="none">Még nincs alkalmad</i></span><svg class="ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>`;
+  return `<button class="ex-xc" data-go="${x.go}">${mchp(k)}<span class="g"><b>${x.n}</b><small>${x.ml}</small><i class="${c}">${t}</i></span><span class="v">${x.kg}<u> kg</u></span>
+    <span class="ex-xf">${spark(exSer(x,c),col)}</span></button>`};
+const exList=()=>{const q=EXQ.q.trim().toLowerCase();
+  const L=q?EXR.filter(x=>(x.n+' '+x.ml).toLowerCase().includes(q)):EXR.filter(x=>x.r===EXQ.f);
+  if(!L.length)return `<p class="ex-say">${q?'Nincs ilyen gyakorlat a tárban.':'Ebben a csoportban még nincs gyakorlatod.'}</p>`;
+  if(!q)return L.map(exCard).join('');
+  return REGIONS.filter(r=>L.some(x=>x.r===r.key)).map(r=>`<p class="ex-xgl">${r.label}</p>${L.filter(x=>x.r===r.key).map(exCard).join('')}`).join('')};
+const exWheels=()=>REGIONS.filter(r=>EXR.some(x=>x.r===r.key)).map(r=>`<button class="ex-wh ${!EXQ.q&&EXQ.f===r.key?'on':''}" data-exf="${r.key}">${mchp(REPK[r.key])}<b>${r.label}</b><small>${EXR.filter(x=>x.r===r.key).length}</small></button>`).join('');
+function exLoad(){if(EXR.length)return;const b=O.exercises();EXR=b.split('<div class="fh-row tap " data-go="').slice(1).filter(r=>/^exercise/.test(r)).map(r=>{const ml=g(r,/<small>([^·<]*)/).trim(),mu=MUSCLES.find(x=>x.label===ml)||{};
     return {go:g(r,/^([^"]*)"/),n:g(r,/<strong>([^<]*)<\/strong>/),ml,r:mu.region||'',kg:g(r,/<span class="v">([^<]*) kg<\/span>/)}});
-  const mh=ed.routes.medals();EXM=[...mh.matchAll(/<strong>([^<]*?) <span class="st [^"]*">(REKORD|CÉL)<\/span><\/strong><small>([^<]*?)(?:<br>[^<]*)?<\/small><\/span><span class="v">([^<]*)<\/span>/g)].map(m=>({n:m[1].trim(),t:m[3].trim(),v:m[4],c:m[2]}));
-  /* the medal page groups by date: walk it again to give every medal its date label */
-  {let d='';const re=/<span class="fh-lab">([^<]*)<\/span>|<strong>([^<]*?) <span class="st [^"]*">(?:REKORD|CÉL)<\/span>/g;let i=0,m;while((m=re.exec(mh))){if(m[1])d=m[1].trim();else if(EXM[i])EXM[i++].d=d}}
-  EXM.forEach(m=>{if(!m.d)m.d=''});
+  const mh=ed.routes.medals('__raw');EXM=[];let d='';const re=/<span class="fh-lab">([^<]*)<\/span>|<strong>([^<]*?) <span class="st [^"]*">(REKORD|CÉL)<\/span><\/strong><small>([^<]*?)(?:<br>Előző: ([^·<]*)· ([^<]*?) óta állt)?<\/small><\/span><span class="v">([^<]*)<\/span>/g;let m;
+  while((m=re.exec(mh))){if(m[1])d=m[1].trim();else EXM.push({d,n:m[2].trim(),c:m[3],t:m[4].trim(),prev:(m[5]||'').trim(),since:(m[6]||'').trim(),v:m[7]})}}
+function exercises3(a){if(a)return O.exercises(a);
+  const base=O.exercises(a),cs=cardsOf(base);if(!cs.length)return base;exLoad();
   const hh=cs[0].html,v=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/),nGy=+g(v,/(\d+) gyakorlat/),nRec=+g(v,/(\d+) rekord/),nMed=g(hh,/>(\d+) medál</);
   const recent=EXM.filter(m=>m.c==='REKORD').slice(0,5);
   const top=`<section class="mx-s ex-hero"><small class="ex-eb">A mozdulataid</small><h2 class="n7-h">${nGy} gyakorlatod van, ${nRec}&#8209;ben már rekordod is.</h2>
-    <div class="ex-mr">${recent.map(m=>{const x=EXR.find(q=>q.n===m.n)||{};return `<button class="ex-mc2" data-go="${x.go||'medals'}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.drop({ic:'t-record'})}</svg><small>${m.d.split(',')[0]}</small><b>${m.n}</b><em>${m.t}</em><span>${m.v}</span></button>`}).join('')}</div>${dots(Math.max(1,recent.length-1))}
-    <div class="ex-acts"><button class="n9-btn" data-go="medals">Minden medál (${nMed||EXM.length})</button><button class="n8-b" data-sheet="cat" data-arg="uj">Új gyakorlat</button></div></section>`;
-  const search=`<section class="mx-s ln">${KH('Keresés')}<div class="ex-srch"><input class="fh-in" id="ex-gyq" type="search" value="${EXQ.q}" placeholder="Keresés névre vagy izomra…" aria-label="Keresés a gyakorlatok között" autocomplete="off">
-    <div class="fh-pills" role="group" aria-label="Izomcsoport-szűrő">${[['','Mind'],...REGIONS.filter(r=>EXR.some(x=>x.r===r.key)).map(r=>[r.key,r.label])].map(([k,l])=>`<button class="fh-pill ${EXQ.f===k?'on':''}" data-exf="${k}">${l}</button>`).join('')}</div></div></section>`;
-  const list=`<section class="mx-s ln">${KH('A gyakorlataid')}<div id="ex-gyl">${exList()}</div></section>`;
-  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${search}${list}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+    <label class="ex-sb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="ex-gyq" type="search" value="${EXQ.q.replace(/"/g,'&quot;')}" placeholder="Keresés névre vagy izomra" aria-label="Keresés a gyakorlatok között" autocomplete="off"></label>
+    <div class="ex-whs" role="group" aria-label="Izomcsoport">${exWheels()}</div><div id="ex-gyl" class="ex-xl">${exList()}</div>
+    <div class="ex-acts"><button class="n8-b" data-sheet="cat" data-arg="uj">Új gyakorlat</button></div></section>`;
+  const rec=`<section class="mx-s ln">${KH('Friss rekordok','',`<button class="fh-lk" data-go="medals">Mind a ${nMed||EXM.length} ›</button>`)}<div class="ex-mr">${recent.map(m=>{const x=EXR.find(q=>q.n===m.n)||{};return medCard(m,x.go||'medals',true)}).join('')}</div>${dots(Math.max(1,recent.length-1))}</section>`;
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${rec}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
 ed.routes.exercises=exercises3;
-document.addEventListener('input',e=>{if(e.target.id!=='ex-gyq')return;EXQ.q=e.target.value;const l=document.getElementById('ex-gyl');if(l)l.innerHTML=exList()});
-document.addEventListener('click',e=>{const b=e.target.closest('[data-exf]');if(!b)return;EXQ.f=b.dataset.exf;
-  b.parentNode.querySelectorAll('[data-exf]').forEach(x=>x.classList.toggle('on',x===b));const l=document.getElementById('ex-gyl');if(l)l.innerHTML=exList()});
+const exRedraw=()=>{const l=document.getElementById('ex-gyl');if(l)l.innerHTML=exList();const w=document.querySelector('#phone .ex-whs');if(w)w.innerHTML=exWheels()};
+document.addEventListener('input',e=>{if(e.target.id!=='ex-gyq')return;EXQ.q=e.target.value;exRedraw()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-exf]');if(!b)return;EXQ.f=b.dataset.exf;EXQ.q='';const i=document.getElementById('ex-gyq');if(i)i.value='';exRedraw()});
+
+/* a medal as a card: the drop, the date, the exercise or the kind, and old → new */
+const medStep=m=>{if(!m.prev)return m.c==='CÉL'?'cél teljesítve':'';if(/rep$/.test(m.prev)){const n=g(m.v,/× (\d+)/);return `${m.prev.replace(' rep','')} → ${n} ismétlés`}return `${m.prev} → ${m.v.replace(/ × \d+$/,'')}`};
+const medCard=(m,go,withName)=>`<button class="ex-mc2 ${m.c==='CÉL'?'goal':''}" data-go="${go}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.drop({ic:m.c==='CÉL'?'t-flag':'t-record'})}</svg>
+  <small>${m.d.split(',')[0]}</small><b>${withName?m.n:m.t}</b>${withName?`<em>${m.t}</em>`:''}<span>${m.v}</span>${medStep(m)?`<i>${medStep(m)}</i>`:''}</button>`;
+
+/* ═══ EGY GYAKORLAT (round 2): the sentence (the next goal), the max large with its curve and no card, the three
+   records as tiles, the medals as a carousel, where it is used as two cards, editing and video as two buttons ═══ */
+O.exercise=ed.routes.exercise;ed.routes['exercise-lista']=O.exercise;
+const rowsOf=h=>h.split(/<div class="fh-row [^"]*"/).slice(1).map(r=>({title:g(r,/<strong>([^<]*)/).trim(),sub:g(r,/<small>([\s\S]*?)<\/small>/),v:g(r,/<span class="v">([^<]*)<\/span>/),
+  go:g(r,/^[^>]*data-go="([^"]*)"/),sheet:g(r,/^[^>]*data-sheet="([^"]*)"/),arg:g(r,/^[^>]*data-arg="([^"]*)"/),ic:g(r,/href="#([^"]+)"/)}));
+function exercise3(a){if(a&&!['kozos','egy','uj'].includes(a))return O.exercise(a);exLoad();
+  const base=O.exercise(a),cs=cardsOf(base);if(!cs.length)return base;
+  const name=g(base,/<h1[^>]*>([^<]*)/).trim(),hh=cs[0].html,lbl=g(hh,/<span class="lbl">([^<]*)<\/span>/),v=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/),sub=g(hh,/<p class="sub">([^<]*)<\/p>/);
+  const big=g(hh,/<p class="fh-big"[^>]*>([^<]*)<small>/),ci=hh.indexOf('<div class="vs-hg'),chart=ci>=0?hh.slice(ci,bal(hh,ci)):'',note=g(hh,/<p class="fh-note">([^<]*)<\/p>/);
+  const [lead,...facts]=sub.split(' · '),mk=(MUSCLES.find(m=>lbl.startsWith(m.label))||{}).key||'back-mid';
+  const hero=`<section class="mx-s ex-hero"><small class="ex-eb">${lbl}</small><h2 class="n7-h">${v}</h2><p class="ex-dates">${lead}</p>
+    ${a==='uj'?`<div class="ex-empty">${mchp(mk)}<p>${sub}</p></div>`:`<div class="ex-kg">${mchp(mk)}${big?`<b>${big}<u> kg most</u></b>`:''}</div>${chart?`<div class="ex-chart">${chart}</div>`:note?`<p class="ex-say">${note}</p>`:''}
+    ${facts.length?`<p class="ex-dates">${facts.join(' · ')}</p>`:''}`}</section>`;
+  const sec=cs.slice(1).map(c=>{const R=rowsOf(c.html),lk=g(c.html,/<button class="fh-lk"([^>]*)>([^<]*)<\/button>/,0);
+    if(/Rekord/.test(c.head))return `<section class="mx-s ln">${KH('Rekordjaid','',lk.replace(/>[^<]*</,'>Mi számít? <'))}<div class="ex-rt">${R.map(r=>`<div><small>${r.title.replace('Becsült 1RM','Becsült max')}</small><b>${r.v.replace(/ × rep$/,'').replace(' × ','<br>× ')}</b></div>`).join('')}</div></section>`;
+    if(/Medál/.test(c.head)){const ms=EXM.filter(m=>m.n===name);return `<section class="mx-s ln">${KH('Medáljaid')}${ms.length?`<div class="ex-mr">${ms.map(m=>medCard(m,'medals',false)).join('')}</div>${ms.length>2?dots(ms.length-1):''}`:`<p class="ex-say">Ezen a gyakorlaton még nincs medálod. Az első megdöntött rekord ide kerül.</p>`}</section>`}
+    if(/Hol/.test(c.head)||/Sablon|tervedben|egyetlen tervedben/.test(c.html))return `<section class="mx-s ln">${KH('Hol szerepel')}${R.length?`<div class="ex-pl">${R.map(r=>`<button class="ex-plc" ${r.go?`data-go="${r.go}"`:''}><span class="mt-bub">${I(r.ic||'t-stack')}</span><b>${r.title}</b><small>${r.sub}</small></button>`).join('')}</div>`:`<p class="ex-say">${g(c.html,/<p class="fh-note"[^>]*>([^<]*)/)}</p>`}</section>`;
+    if(/kezel/.test(c.head)||/data-sheet="cat"/.test(c.html))return `<section class="mx-s ln ex-mg"><div class="ex-acts">${R.map(r=>`<button class="n8-b" data-sheet="${r.sheet}"${r.arg?` data-arg="${r.arg}"`:''}>${r.title}</button>`).join('')}</div></section>`;
+    return `<section class="mx-s ln">${c.head?KH(c.head):''}<div class="ex-keep">${pills(c.html)}</div></section>`}).join('');
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${hero}${sec}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+ed.routes.exercise=exercise3;
+
+/* ═══ MEDÁLOK (round 2): the medals as drops on a shelf (this month's full and bright), then month by month as cards,
+   each with old → new instead of the long "Előző: … óta állt" line ═══ */
+O.medals=ed.routes.medals;ed.routes['medals-lista']=O.medals;
+const MHU={jan:'Január',febr:'Február',márc:'Március',ápr:'Április',máj:'Május',jún:'Június',júl:'Július',aug:'Augusztus',szept:'Szeptember',okt:'Október',nov:'November',dec:'December'};
+function medals3(a){if(a==='__raw')return O.medals();if(a)return O.medals(a);exLoad();
+  const base=O.medals(a),cs=cardsOf(base);if(!cs.length)return base;const v=g(cs[0].html,/<p class="verdict"[^>]*>([^<]*)<\/p>/);
+  const mon=EXM[0]?EXM[0].d.split(' ')[0]:'',nNew=EXM.filter(m=>m.d.startsWith(mon)).length;
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">Medálok</small><h2 class="n7-h">${v}</h2>
+    <div class="ex-shelf">${EXM.map((m,i)=>`<i class="${i<nNew?'new':''}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${i<nNew?V.drop({ic:m.c==='CÉL'?'t-flag':'t-record'}):V.icd({ic:'t-record'})}</svg></i>`).join('')}</div>
+    <p class="ex-dates"><b>${nNew}</b> ebben a hónapban · <b>${EXM.length-nNew}</b> korábbról</p></section>`;
+  const months=[...new Set(EXM.map(m=>m.d.split(' ')[0]))];
+  const list=months.map(mo=>{const ms=EXM.filter(m=>m.d.split(' ')[0]===mo);return `<section class="mx-s ln">${KH(MHU[mo]||mo,'',`<span class="ex-cnt">${ms.length} medál</span>`)}<div class="ex-ml">${ms.map(m=>{const x=EXR.find(q=>q.n===m.n)||{};
+    return `<button class="ex-mrow ${m.c==='CÉL'?'goal':''}" data-go="${x.go||'exercises'}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.drop({ic:m.c==='CÉL'?'t-flag':'t-record'})}</svg>
+      <span class="g"><small>${m.d.split(',')[0]} · ${m.t}</small><b>${m.n}</b>${medStep(m)?`<i>${medStep(m)}</i>`:''}</span><span class="v">${m.v}</span></button>`}).join('')}</div></section>`}).join('');
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${list}<p class="ex-say ex-foot">A medálok visszamenőleg, a korábbi szetteidből is épültek, nem mindet élőben szerezted.</p><div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+ed.routes.medals=medals3;
+
+/* ═══ ÚJ GYAKORLAT (round 2): the drawer skeleton; the muscle is picked on the body (a tap selects the muscle, its
+   group's parts follow as pills), the type is a three-way switch; the approved fields and steppers stay ═══ */
+const CAT={k:null};const O_cat=ed.sheets&&ed.sheets.cat;
+const catPick=()=>{const k=CAT.k,r=k&&regionOf3(k),ms=r?MUSCLES.filter(m=>m.region===r):[];
+  const bod=v=>body(v,MUSCLES.map(m=>[m.key,m.key===k?1:0,m.key===k?1:ms.includes(m)?.4:.1]));
+  return `<div class="ex-cbody">${bod('front')}${bod('back')}</div><p class="ex-ctip">${k?`<b>${muscleLabel(k)}</b>`:'Bökj a testen arra az izomra, amit a gyakorlat dolgoztat.'}</p>
+    ${r?`<div class="ex-cpp">${ms.map(m=>`<button class="${m.key===k?'on':''}" data-exc="${m.key}">${m.label.replace(/^.*\((.*)\)$/,'$1')}</button>`).join('')}</div>`:''}`};
+if(O_cat)ed.sheets.cat=(...a)=>{const edt=a[0]==='szerk',h=O_cat(...a);CAT.k=edt?'back-mid':null;
+  const ins=[...h.matchAll(/<input class="fh-in"[^>]*>/g)].map(m=>m[0]),stp=(()=>{let o='',i=0;while((i=h.indexOf('<div class="vs-sjl"',i))>=0){const e=bal(h,i);o+=h.slice(i,e);i=e}return o})();
+  const ai=h.lastIndexOf('<div class="fh-acts">'),acts=h.slice(h.indexOf('<div class="fh-acts">'));
+  const btns=acts.replace(/<\/?div[^>]*>/g,'').replace(/class="btn[^"]*"/,'class="dv-btn pri"').replace(/class="fh-lk[^"]*"/g,'class="n8-b"');
+  return `<div class="dv ex-why ex-cat"><div class="dv-top">${drop('t-muscle')}<div><small>Gyakorlat</small><b>${edt?'Szerkesztés':'Új gyakorlat'}</b></div><button class="ex-x0" data-close aria-label="Bezárás">×</button></div>
+    <p class="ex-cl">Név</p>${ins[0]||''}<p class="ex-cl">Melyik izom?</p><div class="ex-cpick">${catPick()}</div>
+    <p class="ex-cl">Típus</p><div class="ex-cseg">${['összetett','izolált','plyo'].map((t,i)=>`<button class="${i?'':'on'}" data-exty>${t}</button>`).join('')}</div>
+    <div class="ex-cst">${stp}</div><p class="ex-cl">Videó link</p>${ins[1]||''}<div class="ex-why-a">${btns}</div></div>`};
+const catRedraw=()=>{const c=document.querySelector('.ex-cpick');if(c)c.innerHTML=catPick()};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-exty]');if(t){t.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===t));return}
+  const p=e.target.closest('[data-exc]');if(p){CAT.k=p.dataset.exc;catRedraw();return}
+  const m=e.target.closest('.ex-cbody');if(!m)return;
+  const u=[...m.querySelectorAll('use')].filter(el=>/#bm-(front|back)-/.test(el.getAttribute('href')||'')).map(el=>[el,el.getBoundingClientRect()])
+    .filter(([,r])=>e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom).sort((x,y)=>x[1].width*x[1].height-y[1].width*y[1].height).map(x=>x[0])[0];if(!u)return;
+  const [,v,sh]=u.getAttribute('href').match(/#bm-(front|back)-(.+)$/),k=Object.keys(TOKEN_SHAPES).find(x=>TOKEN_SHAPES[x].some(([w,q])=>w===v&&q===sh));if(k){CAT.k=k;catRedraw()}});
 
 /* the tab pages' header, as on Nap: no big title, the "?" top left */
 /* Edzés marks its guide button "new" (class="fh-help new"), which the Nap matcher does not expect: drop the mark first */
@@ -484,6 +565,33 @@ ${P} .ex-xr .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}${P
 ${P} .ex-xr .g i{font-style:normal;font-size:12.5px;font-weight:700}${P} .ex-xr i.new{color:#C76A12}${P} .ex-xr i.up{color:#2E8B57}${P} .ex-xr i.flat{color:#4A6070}${P} .ex-xr i.none{color:#4A6070;font-weight:500}
 ${P} .ex-xr .v{font:800 17px/1 var(--disp,inherit);color:var(--ink);white-space:nowrap}${P} .ex-xr .v u{text-decoration:none;font-size:13px;font-weight:600}
 ${P} .ex-xr svg.ch{flex:none;width:18px;height:18px;fill:none;stroke:#8AA0B0;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}${P} .ex-xr.off .g b{color:#4A6070}
+${P} .ex-sb{display:flex;align-items:center;gap:10px;margin:16px 18px 0;padding:0 16px;min-height:50px;border-radius:999px;background:#fff;box-shadow:0 8px 18px -14px rgba(30,70,140,.45),inset 0 0 0 1px rgba(10,42,60,.08)}
+${P} .ex-sb svg{flex:none;width:20px;height:20px;fill:none;stroke:#4A6070;stroke-width:2;stroke-linecap:round}${P} .ex-sb input{flex:1;min-width:0;border:0;background:transparent;font:500 16px/1.2 inherit;color:var(--ink);outline:none}
+${P} .ex-whs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:16px 14px 6px}
+${P} .ex-wh{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:0;background:none}${P} .ex-wh .mchp{width:min(52px,100%);height:auto;aspect-ratio:1;transition:transform .2s}
+${P} .ex-wh b{font-size:13px;font-weight:700;color:var(--ink)}${P} .ex-wh small{font-size:12px;color:var(--ink)}${P} .ex-wh.on .mchp{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--dom);transform:scale(1.06)}${P} .ex-wh.on b{color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
+${P} .ex-xl{display:grid;gap:10px;margin:12px 18px 0}${P} .ex-xgl{margin:8px 4px 0;font-size:13px;font-weight:750;color:var(--ink)}
+${P} .ex-xc{display:grid;grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"c g v" "f f f";align-items:center;column-gap:12px;row-gap:6px;width:100%;padding:14px 16px;border-radius:22px;background:#fff;text-align:left;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .ex-xc .mchp{grid-area:c;align-self:start;width:44px;height:44px}${P} .ex-xc .g{grid-area:g;min-width:0;display:flex;flex-direction:column}${P} .ex-xc .g b{font-size:15.5px;font-weight:750;line-height:1.25;color:var(--ink)}${P} .ex-xc .g small{font-size:13px;color:var(--ink)}
+${P} .ex-xc .v{grid-area:v;font:800 20px/1 var(--disp,inherit);color:var(--ink);white-space:nowrap}${P} .ex-xc .v u{text-decoration:none;font-size:13px;font-weight:600}
+${P} .ex-xf{grid-area:f;display:flex;padding-top:2px}${P} .ex-xc .g i{align-self:flex-start;margin-top:6px}${P} .ex-sp{flex:1;min-width:0;width:100%;height:30px}
+${P} .ex-xf i,${P} .ex-xc .g i{flex:none;font-style:normal;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+${P} .ex-xc i.new{background:#FFF0E0;color:#A65511}${P} .ex-xc i.up{background:#E4F4EA;color:#23704A}${P} .ex-xc i.flat{background:#EEF2F5;color:#3F5566}
+${P} .ex-xc.off{grid-template-columns:44px minmax(0,1fr) 18px;grid-template-areas:"c g ch";box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.14);background:rgba(255,255,255,.6)}${P} .ex-xc.off .g i{align-self:flex-start;margin-top:6px;background:#EEF2F5;color:#3F5566}
+${P} .ex-xc svg.ch{grid-area:ch;width:18px;height:18px;fill:none;stroke:#8AA0B0;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+${P} .ex-mc2 i{margin-top:4px;font-style:normal;font-size:12.5px;font-weight:700;color:#23704A}${P} .ex-mc2.goal .ng-nd{fill:#3E9E6A!important}
+${P} .ex-kg{display:flex;align-items:center;gap:12px;margin:14px 22px 0}${P} .ex-kg .mchp{width:52px;height:52px}${P} .ex-kg b{font:800 44px/1 var(--disp,inherit);color:var(--ink)}${P} .ex-kg b u{text-decoration:none;font-size:15px;font-weight:600}
+${P} .ex-chart{margin:8px 12px 0}${P} .ex-chart text{font-size:13.5px}${P} .ex-chart .vs-hg{margin:0}
+${P} .ex-rt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 18px}${P} .ex-rt>div{display:flex;flex-direction:column;gap:2px;padding:12px 10px;border-radius:20px;background:#fff;box-shadow:0 8px 18px -14px rgba(30,70,140,.45),inset 0 0 0 1px rgba(10,42,60,.07)}
+${P} .ex-rt b{font:800 17px/1.15 var(--disp,inherit);color:var(--ink)}${P} .ex-rt small{font-size:12.5px;font-weight:650;color:var(--ink)}${P} .ex-rt em{font-style:normal;font-size:12px;color:var(--ink)}
+${P} .ex-mg .ex-acts{margin-top:0}
+${P} .ex-shelf{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px 4px;margin:16px 16px 0}${P} .ex-shelf i{display:grid;place-items:center}${P} .ex-shelf svg.ng{width:100%;max-width:46px;height:auto;margin:0}
+${P} .ex-shelf .ng-pipe,${P} .ex-shelf .ng-flow,${P} .ex-mrow .ng-pipe,${P} .ex-mrow .ng-flow{display:none}${P} .ex-shelf .ng-nd,${P} .ex-mrow .ng-nd{fill:var(--dom)!important}${P} .ex-shelf i:not(.new){opacity:.75}
+${P} .ex-cnt{font-size:13px;color:var(--ink)}${P} .ex-ml{display:grid;gap:10px;margin:0 18px}
+${P} .ex-mrow{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:22px;background:#fff;text-align:left;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .ex-mrow svg.ng{flex:none;width:46px;height:46px;margin:0}${P} .ex-mrow.goal .ng-nd{fill:#3E9E6A!important}${P} .ex-mrow .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+${P} .ex-mrow .g small{font-size:12px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}${P} .ex-mrow .g b{font-size:15px;font-weight:750;color:var(--ink)}${P} .ex-mrow .g i{font-style:normal;font-size:12.5px;font-weight:700;color:#23704A}
+${P} .ex-mrow .v{font:800 15px/1.1 var(--disp,inherit);color:var(--ink);text-align:right;max-width:92px}${P} .ex-foot{margin-top:18px}
 ${P} .ex-dates{margin:6px 22px 0;font-size:13.5px;color:var(--ink)}
 ${P} .ex-6 .k2-vial small{white-space:nowrap}${P} .ex-wk .k2-vial b u{font-size:12px!important}
 ${P} .ex-dcr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 18px;padding:4px 18px 16px;scrollbar-width:none}
@@ -498,6 +606,13 @@ ${P} .ex-plc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;p
 ${P} .ex-plc b{margin-top:6px;font-size:15px;font-weight:750;color:var(--ink)}${P} .ex-plc small{font-size:13px;color:var(--ink)}
 /* why drawer (sheets sit outside the phone scope's page, so these use the sheet's own class too) */
 .ex-why .dv-top{position:relative}.ex-why .ex-x0{position:absolute;right:0;top:0;width:44px;height:44px;display:grid;place-items:center;padding:0;line-height:1;border-radius:50%;background:rgba(10,42,60,.06);font-size:20px;color:var(--ink)}
+.ex-cat .dv-top b{font-size:24px!important;line-height:1.15!important}.ex-cat .ex-cl{margin:18px 0 8px;font-size:14px;font-weight:750;color:var(--ink)}.ex-cat .fh-in{width:100%}
+.ex-cbody{display:flex;justify-content:center;gap:10px;cursor:pointer}.ex-cbody .vs-body{width:40%;max-width:130px}.ex-cbody .vs-body svg{width:100%;height:auto;display:block}
+.ex-ctip{margin:8px 0 0;text-align:center;font-size:14px;color:var(--ink)}.ex-ctip b{font-weight:750}
+.ex-cpp{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:10px}.ex-cpp button,.ex-cseg button{min-height:40px;padding:0 14px;border-radius:999px;background:#EEF2F5;font-size:14px;font-weight:650;color:var(--ink)}
+.ex-cpp button.on,.ex-cseg button.on{background:var(--dom,#F07A2C);color:#fff}
+.ex-cseg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px;border-radius:999px;background:#EEF2F5}.ex-cseg button{background:transparent}
+.ex-cst{margin-top:14px}
 .ex-why .ex-why-q{margin:14px 0 0!important;padding:0!important;font-size:24px}
 .ex-why .ex-opts{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
 .ex-why .ex-opts button{min-height:56px;padding:8px 10px;border-radius:18px;background:#fff!important;box-shadow:0 8px 18px -14px rgba(30,70,140,.45),inset 0 0 0 1px rgba(10,42,60,.07);font-size:14px;font-weight:650;color:var(--ink);text-align:left}
@@ -514,5 +629,5 @@ ${P} .ex-wk .ex-today .k2-tube{box-shadow:0 0 0 3px color-mix(in srgb,var(--dom)
 ${P} .ds small{font-size:12px}${P} .ds i{font-size:12px}
 ${P} .mx-h .fh-lk{white-space:nowrap;flex:none}${P} .mx-h{gap:10px}
 `);
-window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Arcai: <a href="#w-edzes-terv.elso">első edzés előtt</a> · <a href="#w-edzes-terv.ures">még nincs terv</a> · <a href="#w-edzes-terv.nincs">nem fut terv</a>. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p><p><a href="#w-edzes-terheles"><b>Terhelés</b></a> — a test elölről és hátulról a kép, alatta a három szám; az izomcsoportok öt csőben, a sport három becsült csőben, a mozgás lapozva. <a href="#w-edzes-exercises"><b>Gyakorlatok</b></a> — a legutóbbi rekordok a kép, a lista izomcsoportonként (<a href="#w-edzes-exercises-lista">a mostani</a>). <a href="#w-edzes-terkep">Izomtérkép</a> (a test is bökhető) · <a href="#w-edzes-terkep.terv">a heti terv</a>. Arcai: <a href="#w-edzes-terheles.elotte">még előtted</a> · <a href="#w-edzes-terheles.megvan">letudva</a> · <a href="#w-edzes-terheles.ures">nincs terv</a>. Összevetésnek: <a href="#w-edzes-terheles-lista">a mostani Terhelés</a>.</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Edzés a Nap rendszerében</h2><p><a href="#w-edzes-mai"><b>Mai</b></a> — a mondat felül (benne a reggeli javaslat), a test a mai izmokkal, a reggeli három cső Mezo soraival, a többi alkalom kártyán, a keret egy mondatban, az izmok csövekben, a gyors indítások lapozva. A hét többi napja: a felső napsávban bármelyik napra bökve. Pihenőnap: <a href="#w-edzes-mai.pihen">sima</a> · <a href="#w-edzes-mai.pihen-sajat">saját edzés folyamatban</a> · <a href="#w-edzes-mai.pihen-sport">sportnap</a>. Összevetésnek: <a href="#w-edzes-mai-lista">a mostani Mai</a>.</p><p><a href="#w-edzes-terv"><b>Terv</b></a> — a hat hét csövei a kép, a hét napjai lapozható kártyákon, az izmok három csőben, a tervek két kártyán. Arcai: <a href="#w-edzes-terv.elso">első edzés előtt</a> · <a href="#w-edzes-terv.ures">még nincs terv</a> · <a href="#w-edzes-terv.nincs">nem fut terv</a>. Összevetésnek: <a href="#w-edzes-terv-lista">a mostani Terv</a>.</p><p><a href="#w-edzes-terheles"><b>Terhelés</b></a> — a test elölről és hátulról a kép, alatta a három szám; az izomcsoportok öt csőben, a sport három becsült csőben, a mozgás lapozva. <a href="#w-edzes-exercises"><b>Gyakorlatok</b></a> — csoportonként, kerékkel váltva; <a href="#w-edzes-exercise">egy gyakorlat</a> · <a href="#w-edzes-exercise.uj">még nincs alkalma</a> · <a href="#w-edzes-medals">medálok</a>. Összevetésnek: <a href="#w-edzes-exercises-lista">lista</a> · <a href="#w-edzes-exercise-lista">gyakorlat</a> · <a href="#w-edzes-medals-lista">medálok</a>. <a href="#w-edzes-terkep">Izomtérkép</a> (a test is bökhető) · <a href="#w-edzes-terkep.terv">a heti terv</a>. Arcai: <a href="#w-edzes-terheles.elotte">még előtted</a> · <a href="#w-edzes-terheles.megvan">letudva</a> · <a href="#w-edzes-terheles.ures">nincs terv</a>. Összevetésnek: <a href="#w-edzes-terheles-lista">a mostani Terhelés</a>.</p>`+(window.FNOTES_FOLY||'');
 })();
