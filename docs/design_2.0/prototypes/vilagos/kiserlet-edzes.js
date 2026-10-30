@@ -542,30 +542,63 @@ document.addEventListener('click',e=>{if(!e.target.closest('[data-ve^="btick"]')
    drawing, name, "last week → today", the mission line, three round tools; the approved set table stays; the bottom bar
    is "Gyakorlat hozzáadása" + "Edzés befejezése"; the legend and the notes move behind the title's "?". ═══ */
 const SHORTN=n=>({'Húzódzkodás (súlyozott)':'Húzódzk.','Döntött törzsű evezés':'Evezés','Rear Delt Fly':'Rear Delt','Kalapácsbicepsz':'Kalapács','Vállemelés':'Vállemelés'})[n]||n.split(' ')[0];
+/* round 2 (owner, 2026-10-30): ticking is live — a tick marks the set done at once and moves to the next; the rest
+   timer starts after every set but the last (150 s compound, 90 s isolation, +30 / Kész), and "hogy ment?" comes only
+   after the LAST set of an exercise, then the next unfinished exercise comes up — as in the live app
+   (ActiveWorkoutPage handleLogSet). The head is only the drawing and the name; last week moved into Rekordok (its sheet
+   already shows "A múltkori alkalom"), the mission is a fourth round tool. State is local: SM[name] = sets. */
+const SM={},RESTS={'Húzódzkodás (súlyozott)':150,'Döntött törzsű evezés':150};let RST2=null,FB=null;
+const smDone=n=>(SM[n]||[]).filter(x=>x.st==='d').length;
+const reDraw=()=>{const sc=document.querySelector('#phone .scroll'),y=sc?sc.scrollTop:0;window.dispatchEvent(new HashChangeEvent('hashchange'));const s2=document.querySelector('#phone .scroll');if(s2)s2.scrollTop=y;document.querySelectorAll('#phone .rise').forEach(e=>{e.style.animation='none'})};
+const goFocus=i=>{const ph=document.querySelector('#phone');if(!ph)return;const b=document.createElement('button');b.dataset.ve='focus:'+i;b.style.display='none';ph.querySelector('.scroll').appendChild(b);b.click();b.remove()};
+function seedSets(name,sets){if(SM[name])return;SM[name]=sets.split('<span class="n').slice(1).map(r=>{const v=[...r.matchAll(/class="v [du]">([^<]*)<\/span>/g)].map(m=>m[1]),iv=[...r.matchAll(/<input class="vin"[^>]*value="([^"]*)"/g)].map(m=>m[1]);
+  return /^ f"/.test(r)?{st:'d',kg:v[0],r:v[1],rir:v[2],vd:/rekord/.test(r)?'record':'tick'}:{st:'u',kg:(iv[0]||v[0]),r:(iv[1]||v[1]),rir:(iv[2]||v[2])}})}
+const setTable=(name,fi,c)=>{const L=SM[name]||[],cur=L.findIndex(x=>x.st!=='d');
+  return `<div class="ex-st" style="--c:${c}"><span class="h">#</span><span class="h">kg</span><span class="h">ism</span><span class="h">RIR</span><span></span>${L.map((x,j)=>x.st==='d'
+    ?`<span class="n d">${j+1}</span><span class="v d">${x.kg}</span><span class="v d">${x.r}</span><span class="v d">${x.rir}</span><button class="ok ${x.vd}" data-sheet="set" data-arg="${fi}.${j}" aria-label="${j+1}. szett kész · szerkesztés">${I(x.vd==='record'?'t-record':'t-tick')}</button>`
+    :j===cur?`<span class="n c">${j+1}</span><input class="vin" inputmode="decimal" value="${x.kg}" aria-label="Súly, kg"><input class="vin" inputmode="numeric" value="${x.r}" aria-label="Ismétlés"><input class="vin" inputmode="numeric" value="${x.rir}" aria-label="RIR"><button class="tk" data-exs="tick" aria-label="Szett kész">${I('t-tick')}</button>`
+    :`<span class="n">${j+1}</span><span class="v u">${x.kg}</span><span class="v u">${x.r}</span><span class="v u">${x.rir}</span><span></span>`).join('')}</div>`};
+const mmss2=t=>`${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
 function session3(a){if(a&&a!=='uj')return O.session(a);
   const base=O.session(a),pi=base.indexOf('<div class="vs-pv'),cs=cardsOf(base);if(pi<0||!cs.length)return base;
   const pv=base.slice(pi,bal(base,pi)),hh=cs[0].html,chips={};
   [...base.matchAll(/(<span class="mchp[^"]*" style="--c:[^"]+">[\s\S]*?<\/svg><\/span>)(?:<span class="g"><strong>([^<]*)<\/strong>|<div[^>]*><span class="lbl">[^<]*<\/span><p class="verdict"[^>]*>([^<]*)<\/p>)/g)].forEach(m=>{chips[(m[2]||m[3]||'').trim()]=m[1].replace(/mchp sm|mchp /,'mchp ')});
-  const T=[...pv.matchAll(/<button class="([^"]*)" data-ve="(focus:\d+)" style="--c:([^;]+);[^"]*" aria-label="([^"]*) · (\d+) \/ (\d+) szett">/g)].map(m=>({on:/\bon\b/.test(m[1]),ve:m[2],c:m[3],n:m[4],d:+m[5],t:+m[6]}));
-  let ti=0;const tubes=F.vials(T.map(x=>({l:SHORTN(x.n),v:`${x.d}/${x.t}`,s:'',p:x.d/x.t*90,c:x.c,mark:'',on:{toast:x.ve}})),{h:84})
-    .replace(/<button class="k2-vial([^"]*)"([^>]*?)data-toast="(focus:\d+)"/g,(m,c,mid,ve)=>`<button class="k2-vial${c}${(T.find(x=>x.ve===ve)||{}).on?' ex-cur':''}"${mid}data-ve="${ve}"`)
+  const name=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/),chip=g(hh,/(<span class="mchp[\s\S]*?<\/svg><\/span>)/);
+  const si=hh.indexOf('<div class="vs-sets"'),sets=si>=0?hh.slice(si,bal(hh,si)):'',col=g(sets,/--c:([^"]+)"/);seedSets(name,sets);
+  const T=[...pv.matchAll(/<button class="([^"]*)" data-ve="focus:(\d+)" style="--c:([^;]+);[^"]*" aria-label="([^"]*) · (\d+) \/ (\d+) szett">/g)].map(m=>({on:/\bon\b/.test(m[1]),i:+m[2],c:m[3],n:m[4],d:SM[m[4]]?smDone(m[4]):+m[5],t:SM[m[4]]?SM[m[4]].length:+m[6]}));
+  const fi=(T.find(x=>x.n===name)||{i:0}).i,done=T.reduce((q,x)=>q+x.d,0),tot=T.reduce((q,x)=>q+x.t,0);
+  let ti=0;const tubes=F.vials(T.map(x=>({l:SHORTN(x.n),v:`${x.d}/${x.t}`,s:'',p:x.d/x.t*90,c:x.c,mark:x.d===x.t?'✓':'',on:{toast:'focus:'+x.i}})),{h:84})
+    .replace(/<button class="k2-vial([^"]*)"([^>]*?)data-toast="focus:(\d+)"/g,(m,c,mid,i)=>`<button class="k2-vial${c}${+i===fi?' ex-cur':''}"${mid}data-ve="focus:${i}"`)
     .replace(/<span class="k2-tube"([^>]*)>/g,m=>{const x=T[ti++]||{};return `<span class="ex-mc">${chips[x.n]||''}</span>${m}${Array.from({length:Math.max(0,(x.t||1)-1)},(_,k)=>`<i class="ex-notch" style="bottom:${(k+1)/(x.t||1)*100}%"></i>`).join('')}`});
-  const lbl=g(hh,/<span class="lbl">([^<]*)<\/span>/),name=g(hh,/<p class="verdict"[^>]*>([^<]*)<\/p>/),chip=g(hh,/(<span class="mchp[\s\S]*?<\/svg><\/span>)/).replace(/mchp /,'mchp ');
-  const pos=g(lbl,/(\d+)\. gyakorlat \/ (\d+)/),of=g(lbl,/gyakorlat \/ (\d+)/),mus=lbl.split(' · ').pop();
-  const tools=[...hh.matchAll(/<button data-sheet="(recs|tech|menu)" data-arg="([^"]*)"[^>]*>/g)].map(m=>`<button class="ex-tl" data-sheet="${m[1]}" data-arg="${m[2]}">${I({recs:'t-record',tech:'t-book',menu:'t-gear'}[m[1]])}<small>${{recs:'Rekordok',tech:'Technika',menu:'Műveletek'}[m[1]]}</small></button>`).join('');
-  const tgi=hh.indexOf('<div class="vs-tg"'),tg=tgi>=0?hh.slice(tgi,bal(hh,tgi)):'';
-  const last=g(tg,/Múlt hét<\/small><b>([^<]*)/),goal=g(tg,/Mai cél<\/small><b>([^<]*)/),chg=g(tg,/<i>([^<]*)<\/i>/),state=g(tg,/Állapot<\/small><b>([^<]*)/);
-  const qi=hh.indexOf('<button class="vs-ql"'),ql=qi>=0?hh.slice(qi,bal(hh,qi,'button')):'';
-  const si=hh.indexOf('<div class="vs-sets"'),sets=si>=0?hh.slice(si,bal(hh,si)):'';
-  const extra=(()=>{let o='',i=0;while((i=hh.indexOf('<div class="vs-ex',i))>=0){const e=bal(hh,i);o+=hh.slice(i,e);i=e}return o})();
+  const tools=[...hh.matchAll(/<button data-sheet="(recs|tech|menu)" data-arg="([^"]*)"[^>]*>/g)].map(m=>[m[1],m[2]]);
+  const q=g(hh,/<button class="vs-ql" data-sheet="qb" data-arg="(\d+)"/);
+  const TL={recs:['t-record','Rekordok'],tech:['t-book','Technika'],qb:['t-flag','Küldetés'],menu:['t-gear','Műveletek']};
+  const tl=[...tools.filter(t=>t[0]!=='menu'),...(q!==''?[['qb',q]]:[]),...tools.filter(t=>t[0]==='menu')].map(([k,ar])=>`<button class="ex-tl" data-sheet="${k}" data-arg="${ar}">${I(TL[k][0])}<small>${TL[k][1]}</small></button>`).join('');
+  const state=g(hh,/Állapot<\/small><b>([^<]*)/),allDone=T.every(x=>x.d===x.t);
   const cur=`<section class="mx-s ex-hero ex-ses"><div class="ex-wk ex-br ex-tt">${tubes}</div>
-    <div class="ex-now">${chip}<div><small>${pos?`${pos}. gyakorlat ${/^[15]/.test(of)?'az':'a'} ${of}-ből · `:''}${mus}</small><b>${name}</b></div></div>
-    ${state?`<p class="ex-dates">${state}</p>`:last?`<p class="ex-cmp">Múlt hét <b>${last.split(' · ')[0]}</b> → ma <b>${goal}</b>${chg?` <i>${chg}</i>`:''}</p>`:''}
-    ${ql?`<div class="ex-qlw">${ql}</div>`:''}<div class="ex-tls">${tools}</div>${extra}<div class="ex-sets">${sets}</div></section>`;
-  const fixHelp=h=>h.replace(/data-toast="Kalauz ehhez az oldalhoz"/,'data-toast="A harmadik mező után jön a pipa, a pihenő magától indul. A kész sor végén: zöld pipa = célsávban, érem = rekord, nyíl fel = cél fölött, nyíl le = cél alatt."');
-  const foot=`<div class="fh-foot nonav ex-sf"><button class="n8-b" data-ve="pick:add" aria-label="Gyakorlat hozzáadása">+ Gyakorlat</button><button class="n9-btn" data-sheet="fin" style="flex:1">Edzés befejezése</button></div>`;
+    <div class="ex-now">${chip}<b>${name}</b></div>${state?`<p class="ex-dates">${state}</p>`:''}
+    <div class="ex-tls" style="grid-template-columns:repeat(${tl.split('ex-tl').length-1},1fr)">${tl}</div><div class="ex-sets">${setTable(name,fi,col)}</div>
+    ${allDone?`<p class="ex-say ex-alld">Minden szett megvan. Zárd le az edzést.</p>`:''}</section>`;
+  const fixHelp=h=>h.replace(/<span>\d+ \/ \d+ szett kész/,`<span>${done} / ${tot} szett kész`).replace(/data-toast="Kalauz ehhez az oldalhoz"/,'data-toast="A pipa után a szett kész, és indul a pihenő. A gyakorlat utolsó szettje után megkérdezem, hogy ment. Egy csőre bökve másik gyakorlatra válthatsz."');
+  const foot=RST2?`<div class="fh-foot nonav ex-sf ex-rf"><span class="ex-rv"><i id="ex-rl" style="height:${RST2.left/RST2.tot*100}%"></i></span><span class="g"><b id="ex-rt">${mmss2(RST2.left)}</b><small>pihenő · ${SHORTN(RST2.n)}</small></span><button class="n8-b" data-exs="plus">+30 mp</button><button class="n9-btn" data-exs="rstop">Kész</button></div>`
+    :`<div class="fh-foot nonav ex-sf"><button class="n8-b" data-ve="pick:add" aria-label="Gyakorlat hozzáadása">+ Gyakorlat</button><button class="${allDone?'n9-btn ok':'n9-btn'}" data-sheet="fin" style="flex:1">Edzés befejezése</button></div>`;
   const end=cs[cs.length-1].end,out=fixHelp(base.slice(0,pi))+`${DEFS}<div class="mx ex">${cur}<div class="ng-tail" style="height:110px"></div></div>`+base.slice(end);
   const ti2=out.indexOf('<div class="toast"');return ti2>=0?out.slice(0,ti2)+foot+out.slice(ti2):out}
+function restStart(n){clearInterval(RST2&&RST2.t);const tot=RESTS[n]||90;RST2={n,left:tot,tot};RST2.t=setInterval(()=>{if(!RST2)return;RST2.left--;
+  const t=document.getElementById('ex-rt'),l=document.getElementById('ex-rl');if(t)t.textContent=mmss2(Math.max(0,RST2.left));if(l)l.style.height=Math.max(0,RST2.left/RST2.tot*100)+'%';
+  if(RST2.left<=0||!document.getElementById('ex-rt')&&!/w-edzes-session/.test(location.hash)){restStop();F.toast&&F.toast('Pihenő vége, jöhet a következő szett')}},1000)}
+function restStop(){if(RST2)clearInterval(RST2.t);RST2=null;if(/w-edzes-session/.test(location.hash))reDraw()}
+const fbSheet=n=>`<div class="dv ex-why ex-fb"><div class="dv-top">${drop('t-tick')}<div><small>Gyakorlat kész</small><b>${n}</b></div><button class="ex-x0" data-close aria-label="Bezárás">×</button></div>
+  <h2 class="n7-h ex-why-q">Hogy ment?</h2>${[['Pumpa · érzed?',['Semmi','Enyhe','Jó','Brutális'],2],['Ízületi fájdalom',['Nincs','Enyhe','Erős'],0],['Akarunk még?',['Kevés volt','Pont jó','Sok volt'],1]].map(([qq,o,d])=>`<p class="ex-cl">${qq}</p><div class="ex-cseg" style="grid-template-columns:repeat(${o.length},1fr)">${o.map((x,i)=>`<button class="${i===d?'on':''}" data-exty>${x}</button>`).join('')}</div>`).join('')}
+  <div class="ex-why-a"><button class="dv-btn pri" data-exfb="save">Mentés · tovább</button><button class="n8-b" data-exfb="skip">Hagyjuk</button></div></div>`;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-exs],[data-exfb]');if(!b)return;
+  if(b.dataset.exfb){const n=FB;FB=null;F.closeSheet();F.toast&&F.toast(b.dataset.exfb==='save'?'Mentve':'Rendben');const ph=document.querySelector('#phone');
+    const names=[...ph.querySelectorAll('.ex-tt .k2-vial')].map(v=>({i:+v.dataset.ve.split(':')[1],l:v.querySelector('b')?.textContent||''}));const nx=names.find(x=>{const [d,t]=x.l.split('/').map(Number);return d<t});if(nx)goFocus(nx.i);else reDraw();return}
+  const k=b.dataset.exs;if(k==='plus'){if(RST2){RST2.left+=30;RST2.tot+=30}return}if(k==='rstop'){restStop();return}
+  if(k==='tick'){const ph=document.querySelector('#phone'),n=ph.querySelector('.ex-now b').textContent,L=SM[n];if(!L)return;const j=L.findIndex(x=>x.st!=='d');if(j<0)return;
+    const iv=[...ph.querySelectorAll('.ex-st .vin')].map(x=>x.value);L[j]={st:'d',kg:iv[0],r:iv[1],rir:iv[2],vd:'tick'};
+    for(let q=j+1;q<L.length;q++)if(L[q].st!=='d')L[q]={...L[q],kg:iv[0]};
+    if(j===L.length-1){restStop();FB=n;reDraw();F.openSheet(fbSheet(n))}else{restStart(n);reDraw()}}});
 ed.routes.session=session3;
 
 /* the tab pages' header, as on Nap: no big title, the "?" top left */
@@ -688,6 +721,16 @@ ${P} .ex-qt.on{background:var(--dom);color:#fff;box-shadow:none}
 ${P} .ex-tt{margin:6px 8px 0}${P} .ex-tt .ex-mc .mchp{width:32px;height:32px}${P} .ex-tt .k2-tube{width:40px!important}${P} .ex-tt .k2-vial{opacity:.8}
 ${P} .ex-tt .k2-vial.ex-cur{opacity:1}${P} .ex-tt .k2-vial.ex-cur .k2-tube{box-shadow:0 0 0 2.5px var(--dom)}${P} .ex-tt .k2-vial.ex-cur small{color:color-mix(in srgb,var(--dom) 85%,var(--ink))!important;font-weight:750}
 ${P} .ex-now{display:flex;align-items:center;gap:12px;margin:18px 22px 0}${P} .ex-now .mchp{width:56px;height:56px;flex:none}${P} .ex-now small{font-size:13px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}${P} .ex-now b{display:block;font:800 23px/1.15 var(--disp,inherit);color:var(--ink)}
+${P} .ex-st{display:grid;grid-template-columns:30px repeat(3,minmax(0,1fr)) 48px;gap:8px 6px;align-items:center;padding:14px 12px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .ex-st .h{font-size:12.5px;font-weight:700;color:var(--ink);text-align:center}${P} .ex-st .n{display:grid;place-items:center;width:30px;height:48px;border-radius:12px;font-size:13px;font-weight:750;color:var(--ink);box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.14)}
+${P} .ex-st .n.d{background:var(--c);color:#fff;box-shadow:none}${P} .ex-st .n.c{box-shadow:inset 0 0 0 2px var(--c)}
+${P} .ex-st .v,${P} .ex-st .vin{display:grid;place-items:center;min-width:0;height:48px;border-radius:14px;font:800 18px/1 var(--disp,inherit);text-align:center;color:var(--ink)}
+${P} .ex-st .v.d{background:color-mix(in srgb,var(--c) 14%,#fff)}${P} .ex-st .v.u{background:#F1F4F7;color:#7A8C99}${P} .ex-st .vin{width:100%;border:0;background:#fff;box-shadow:inset 0 0 0 2px var(--dom);outline:none}
+${P} .ex-st .ok,${P} .ex-st .tk{display:grid;place-items:center;width:48px;height:48px;padding:0;border-radius:50%}${P} .ex-st .ok{background:#E4F4EA}${P} .ex-st .ok.record{background:#FFF0E0}${P} .ex-st .ok svg.ic{width:26px;height:26px}
+${P} .ex-st .tk{background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 16px -8px var(--dom)}${P} .ex-st .tk svg.ic{width:26px;height:26px;--ic:#fff;--ic2:rgba(255,255,255,.35);--icf:transparent}
+${P} .ex-rf{align-items:center}${P} .ex-rv{position:relative;flex:none;width:22px;height:44px;border-radius:999px;background:#EEF2F5;overflow:hidden}${P} .ex-rv i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--liq1),var(--liq2));transition:height 1s linear}
+${P} .ex-rf .g{flex:1;min-width:0;display:flex;flex-direction:column}${P} .ex-rf .g b{font:800 22px/1 var(--disp,inherit);color:var(--ink)}${P} .ex-rf .g small{font-size:12.5px;color:var(--ink)}
+${P} .ex-sf .n9-btn.ok{background:linear-gradient(135deg,#4CB27A,#2E8B57)}${P} .ex-alld{margin-top:14px;text-align:center;font-weight:650}
 ${P} .ex-cmp{margin:12px 22px 0;font-size:15px;color:var(--ink)}${P} .ex-cmp b{font-weight:800}${P} .ex-cmp i{font-style:normal;font-weight:750;color:#23704A}
 ${P} .ex-qlw{margin:10px 18px 0}${P} .ex-qlw .vs-ql{min-height:48px;width:100%}
 ${P} .ex-tls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 18px 0}${P} .ex-tl{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:64px;padding:8px 4px;border-radius:18px;background:#fff;box-shadow:0 8px 18px -14px rgba(30,70,140,.45),inset 0 0 0 1px rgba(10,42,60,.07)}
@@ -708,7 +751,7 @@ ${P} .ex-plc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;p
 ${P} .ex-plc b{margin-top:6px;font-size:15px;font-weight:750;color:var(--ink)}${P} .ex-plc small{font-size:13px;color:var(--ink)}
 /* why drawer (sheets sit outside the phone scope's page, so these use the sheet's own class too) */
 .ex-why .dv-top{position:relative}.ex-why .ex-x0{position:absolute;right:0;top:0;width:44px;height:44px;display:grid;place-items:center;padding:0;line-height:1;border-radius:50%;background:rgba(10,42,60,.06);font-size:20px;color:var(--ink)}
-.ex-cat .dv-top b{font-size:24px!important;line-height:1.15!important}.ex-cat .ex-cl{margin:18px 0 8px;font-size:14px;font-weight:750;color:var(--ink)}.ex-cat .fh-in{width:100%}
+.ex-fb .ex-cl{margin:16px 0 8px;font-size:14px;font-weight:750;color:var(--ink)}.ex-fb .ex-cseg button{padding:0 6px}.ex-fb .dv-top b{font-size:22px!important;line-height:1.15!important}.ex-cat .dv-top b{font-size:24px!important;line-height:1.15!important}.ex-cat .ex-cl{margin:18px 0 8px;font-size:14px;font-weight:750;color:var(--ink)}.ex-cat .fh-in{width:100%}
 .ex-cbody{display:flex;justify-content:center;gap:10px;cursor:pointer}.ex-cbody .vs-body{width:40%;max-width:130px}.ex-cbody .vs-body svg{width:100%;height:auto;display:block}
 .ex-ctip{margin:8px 0 0;text-align:center;font-size:14px;color:var(--ink)}.ex-ctip b{font-weight:750}
 .ex-cpp{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:10px}.ex-cpp button,.ex-cseg button{min-height:40px;padding:0 14px;border-radius:999px;background:#EEF2F5;font-size:14px;font-weight:650;color:var(--ink)}
