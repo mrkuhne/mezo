@@ -557,7 +557,7 @@ function session3(a){if(a&&a!=='uj')return O.session(a);
   const last=g(tg,/Múlt hét<\/small><b>([^<]*)/),goal=g(tg,/Mai cél<\/small><b>([^<]*)/),chg=g(tg,/<i>([^<]*)<\/i>/),state=g(tg,/Állapot<\/small><b>([^<]*)/);
   const qi=hh.indexOf('<button class="vs-ql"'),ql=qi>=0?hh.slice(qi,bal(hh,qi,'button')):'';
   const si=hh.indexOf('<div class="vs-sets"'),sets=si>=0?hh.slice(si,bal(hh,si)):'';
-  const extra=[...hh.matchAll(/<div class="vs-ex[^"]*">[\s\S]*?<\/div>/g)].map(m=>m[0]).join('');
+  const extra=(()=>{let o='',i=0;while((i=hh.indexOf('<div class="vs-ex',i))>=0){const e=bal(hh,i);o+=hh.slice(i,e);i=e}return o})();
   const cur=`<section class="mx-s ex-hero ex-ses"><div class="ex-wk ex-br ex-tt">${tubes}</div>
     <div class="ex-now">${chip}<div><small>${pos?`${pos}. gyakorlat ${/^[15]/.test(of)?'az':'a'} ${of}-ből · `:''}${mus}</small><b>${name}</b></div></div>
     ${state?`<p class="ex-dates">${state}</p>`:last?`<p class="ex-cmp">Múlt hét <b>${last.split(' · ')[0]}</b> → ma <b>${goal}</b>${chg?` <i>${chg}</i>`:''}</p>`:''}
