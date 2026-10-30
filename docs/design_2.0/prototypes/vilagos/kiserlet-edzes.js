@@ -586,7 +586,8 @@ function session3(a){if(a&&a!=='uj')return O.session(a);
   const ti2=out.indexOf('<div class="toast"');return ti2>=0?out.slice(0,ti2)+foot+out.slice(ti2):out}
 /* the finish drawer counts what was ticked here */
 const O_fin=ed.sheets&&ed.sheets.fin;if(O_fin)ed.sheets.fin=(...x)=>{const h=O_fin(...x),m=(document.querySelector('#phone .fh-title small span')?.textContent||'').match(/(\d+) \/ (\d+)/);if(!m)return h;const d=+m[1],t=+m[2];
-  return h.replace(/Van még \d+ bepipálatlan/,`Van még ${t-d} bepipálatlan`).replace(/Befejezem így · \d+ elvégzett · \d+ kihagyott/,`Befejezem így · ${d} elvégzett · ${t-d} kihagyott`)};
+  let hh2=h;Object.keys(SM).forEach(n=>{const left=SM[n].length-smDone(n),re=new RegExp(n.replace(/[()]/g,'\\$&')+'(</strong>[\\s\\S]*?)\\d+ szett maradna');hh2=hh2.replace(re,(m,mid)=>left?`${n}${mid}${left} szett maradna`:`${n}${mid}kész, minden szett megvan`)});
+  return hh2.replace(/Van még \d+ bepipálatlan/,`Van még ${t-d} bepipálatlan`).replace(/Befejezem így · \d+ elvégzett · \d+ kihagyott/,`Befejezem így · ${d} elvégzett · ${t-d} kihagyott`)};
 function restStart(n){clearInterval(RST2&&RST2.t);const tot=RESTS[n]||90;RST2={n,left:tot,tot};RST2.t=setInterval(()=>{if(!RST2)return;RST2.left--;
   const t=document.getElementById('ex-rt'),l=document.getElementById('ex-rl');if(t)t.textContent=mmss2(Math.max(0,RST2.left));if(l)l.style.height=Math.max(0,RST2.left/RST2.tot*100)+'%';
   if(RST2.left<=0||!document.getElementById('ex-rt')&&!/w-edzes-session/.test(location.hash)){restStop();F.toast&&F.toast('Pihenő vége, jöhet a következő szett')}},1000)}
