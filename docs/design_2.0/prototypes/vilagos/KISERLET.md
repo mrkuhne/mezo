@@ -118,3 +118,29 @@ live in the scratchpad and get cleaned by the system: recreate them when missing
 **The published prototype opens on the page being worked on** (owner, 2026-10-21): every round, set the default hash in
 `kiserlet-napom-grafika.html` and in the scratchpad shell copy `a-napom-rajzolva.html` to the route of that round
 (e.g. `#w-edzes-terkep`), so the owner never has to navigate there by hand.
+
+## Hand-off (2026-10-30) — Edzés: four tabs done; next: the workout journey
+
+All in `vilagos/kiserlet-edzes.js` (overrides on `FREG.edzes.routes`, originals kept at `<route>-lista`):
+
+- **Mai** + "Miért marad ki?" drawer (earlier rounds).
+- **Terv** — six-week tubes as the picture, the week's days as a carousel (today first), muscle tubes, plan cards; faces `.elso`, `.ures`, `.nincs`.
+- **Terhelés** — front/back body hero with three facts; group tubes open a **parts drawer** (every part of the group, arm split
+  into Bicepsz/Tricepsz rows, "lemaradt" / "nincs a tervben"); `sportWeek()` (the week's sessions as drops, the body sport
+  works, Mezo's line); faces `.elotte`, `.megvan`, `.ures`.
+- **Izomtérkép** — larger bodies, tap a muscle (bounding-box hit test) or one of five group buttons → the parts drawer.
+- **Gyakorlatok** — search pill + five group wheels (one group at a time, default Láb; search spans all); one card shape per
+  exercise: drawing, name, part, max, "Legutóbb … · date", a badge with the change in numbers (owner rejected the list
+  sparkline: "semmit nem mond"). **Exercise page** (sentence = next goal, kg + approved curve, record tiles, medal carousel
+  old → new, where-used cards, edit/video buttons), **Medálok** (drop shelf, month sections, old → new), **new/edit
+  exercise drawer** (muscle picked on the body, parts as pills, type switch).
+
+Rules learnt in these rounds: a carousel always gets its dots; a picture must say something (no decorative curves); one
+object
+= one card shape in the same order everywhere; the published artifact opens on the page being worked on (set the default
+hash in `kiserlet-napom-grafika.html` and the scratchpad shell copy every round); republish with the artifact `url` passed
+explicitly (a path-only publish once created a duplicate after a date change).
+
+**Next:** the workout journey — eligazítás (`#w-edzes-indulas`), edzés közben (`#w-edzes-session`), összegzés
+(`#w-edzes-review`); then sport/futás pages. Same method: screenshot, say in Hungarian what changes, wait for the OK, build,
+verify 390/320 + audit + click test, commit, push, republish.
