@@ -728,12 +728,12 @@ function futasInner(a){const base=O.futas(a),cs=cardsOf(base);if(cs.length<2)ret
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${a==='naplo'?futasNaplo(cs):futasTervek(cs)}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
 function futasNaplo(cs){const c=cs[2];if(!c)return '';const iv=IVL();
   const L=rowsR(c.html).map(r=>({n:r.title,date:r.sub.split(' · ')[0],rpe:g(r.sub,/RPE (\d+)/),k:g(r.sub,/(\d+) kör/),q:g(r.sub,/vs-q">([^<]*)/),hr:+g(r.v,/(\d+)/)}));
-  const prev=+g(O.futas('tervek'),/-ről (\d+) mp-re/)||0,O2=[...L].reverse(),lo=36,hi=62,W=340,H=170,x=i=>30+i*(W-60)/(O2.length-1),y=v=>150-(v-lo)/(hi-lo)*130;
+  const prev=+g(O.futas('tervek'),/-ről (\d+) mp-re/)||0,O2=[...L].reverse(),lo=36,hi=62,W=340,H=170,x=i=>O2.length<2?W/2:30+i*(W-60)/(O2.length-1),y=v=>150-(v-lo)/(hi-lo)*130;
   const pts=O2.map((l,i)=>[x(i),y(l.hr)]),line=pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
   const svg=`<svg class="ex-hr" viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs><linearGradient id="exhr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#19C7C0" stop-opacity=".8"/><stop offset="1" stop-color="#1877F2" stop-opacity=".22"/></linearGradient></defs>
     <path d="${line} L${pts[pts.length-1][0]} 160 L${pts[0][0]} 160Z" fill="url(#exhr)"/><path d="${line}" fill="none" stroke="#1877F2" stroke-width="3" stroke-linejoin="round"/>
-    ${prev?`<path d="M8 ${y(prev).toFixed(1)}H${W-8}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="6 6" opacity=".6"/>`:''}
-    ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1].toFixed(1)}" r="6" fill="#fff" stroke="#1877F2" stroke-width="3"/><text x="${p[0]}" y="${(p[1]-14).toFixed(1)}" text-anchor="middle" font-size="16" font-weight="800" fill="var(--ink)">${O2[i].hr}</text>`).join('')}</svg>`;
+    ${prev?`<path d="M8 ${y(prev).toFixed(1)}H${W-8}" style="stroke:var(--ink)" stroke-width="2" stroke-dasharray="6 6" opacity=".6"/>`:''}
+    ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1].toFixed(1)}" r="6" fill="#fff" stroke="#1877F2" stroke-width="3"/><text x="${p[0]}" y="${(p[1]-14).toFixed(1)}" text-anchor="middle" font-size="16" font-weight="800" style="fill:var(--ink)">${O2[i].hr}</text>`).join('')}</svg>`;
   const dl=O2[O2.length-1].hr-O2[0].hr;
   const cards=L.map(l=>`<article class="ex-run"><div class="t">${I('t-sprint')}<div><b>${l.n}</b><small>${l.date} · RPE ${l.rpe} · ${l.k} kör</small></div><span class="ex-rpe"><b>${l.hr}</b><small>mp</small></span></div>${(/Pira/.test(l.n)?iv[1]:iv[0])||''}${l.q?`<p class="ex-q">„${l.q}”</p>`:''}</article>`).join('');
   return `<section class="mx-s ln">${KH('Pulzus-megnyugvás')}<p class="ex-big"><b>${dl<=0?'−':'+'}${Math.abs(dl)} mp</b> az első futás óta</p>
