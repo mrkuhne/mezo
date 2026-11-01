@@ -16,7 +16,7 @@
 const F=window.F,nap=window.FREG&&FREG.nap;if(!nap)return;
 const {I,page,badge}=F;
 /* shared with the Edzés experiment (kiserlet-edzes.js): the same system styles both domains */
-const P='.phone.foly[data-s="elo"]:is([data-d="nap"],[data-d="edzes"])';
+const P='.phone.foly[data-s="elo"]:is([data-d="nap"],[data-d="edzes"],[data-d="fuel"])';
 const O={eletjel:nap.routes.eletjel,checkin:nap.routes.checkin,kuldetesek:nap.routes.kuldetesek,mai:nap.routes.mai,napom:nap.routes.napom,nap:nap.routes.nap,uzenetek:nap.routes.uzenetek,rutin:nap.routes.rutin};
 const DROP='M32 6C41 19 50 28 50 39A18 18 0 0 1 14 39C14 28 23 19 32 6Z';
 const MOON='M46 41A21 21 0 1 1 25 11A17 17 0 0 0 46 41Z';

@@ -9,7 +9,7 @@
 (function(){
 const F=window.F,ed=window.FREG&&FREG.edzes,X=window.KXN;if(!ed||!X)return;
 const {I,badge}=F,{V,KH,dots,DEFS,hubHead}=X;
-const P='.phone.foly[data-s="elo"][data-d="edzes"]';
+const P='.phone.foly[data-s="elo"]:is([data-d="edzes"],[data-d="fuel"])',PE='.phone.foly[data-s="elo"][data-d="edzes"]';
 const O={mai:ed.routes.mai,terv:ed.routes.terv,het:ed.routes.het,terheles:ed.routes.terheles,terkep:ed.routes.terkep,exercises:ed.routes.exercises,indulas:ed.routes.indulas,session:ed.routes.session,review:ed.routes.review,cer:ed.routes.cer,sport:ed.routes.sport,futas:ed.routes.futas,sportlog:ed.routes.sportlog,mozgas:ed.routes.mozgas};
 ed.routes['mozgas-lista']=O.mozgas;
 ed.routes['sportlog-lista']=O.sportlog;
@@ -788,6 +788,7 @@ function mozgas3(a){if(a==='tolt'||a==='ures')return O.mozgas(a);const base=O.mo
     <div class="ex-mz">${badge('mezo',{s:30})}<p>Ez becslés, nem mérés. Ha egy sport-alkalomnál hiányzik a kalória, inkább az egész összeget elrejtem, mint hogy kevesebbet mutassak.</p></div></section>`;
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${grp}${ev}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
 ed.routes.mozgas=mozgas3;
+window.KXE={cardsOf,bal,g,heroParts,drop,pills,segOf};
 /* the Edzés carousels (.ex-mr, .ex-dcr) are not .cr, so the Nap dot-follower skipped them: same rule for them */
 document.addEventListener('scroll',e=>{const c=e.target;if(!(c instanceof Element)||!(c.classList.contains('ex-mr')||c.classList.contains('ex-dcr')))return;const d=c.nextElementSibling;if(!d||!d.classList.contains('cr-dots'))return;
   const max=c.scrollWidth-c.clientWidth,n=d.children.length,i=max>0?Math.round(c.scrollLeft/max*(n-1)):0;[...d.children].forEach((x,j)=>x.classList.toggle('on',j===Math.min(n-1,i)))},true);
@@ -858,8 +859,8 @@ ${P} .ex-pc{cursor:pointer;text-align:left}${P} .ex-pc .t small{font-weight:700;
 @media (max-width:360px){${P} .ex-seg .fh-seg button{font-size:12px!important;letter-spacing:-.03em!important}}
 ${P} .ex-mrow .g i.q{font-style:normal;font-size:13px;font-weight:600;color:var(--ink)}
 
-${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto}
-@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:12.5px}}
+${PE} .fh-tabs{gap:2px;justify-content:space-between}${PE} .fh-tabs button{padding:8px 10px;flex:0 0 auto}
+@media (max-width:360px){${PE} .fh-tabs button{padding:7px 6px;font-size:12.5px}}
 ${P} .mx.ex{padding-top:4px}
 ${P} .ex-hero{padding-top:6px}
 ${P} .ex-eb{display:block;margin:6px 22px 0;font-size:13px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
