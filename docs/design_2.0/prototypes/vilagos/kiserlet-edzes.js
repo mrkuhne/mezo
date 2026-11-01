@@ -728,7 +728,8 @@ function futas3(a){if(/^(naplo|tervek)$/.test(a||''))return futasInner(a);if(a&&
    tiles; the form: sentence on top, the RPE as one big tube you tap or drag, steppers kept, ordinal choices as filling capsules,
    calories as Mezo's line. Same handlers (spmode, chip, kcal sheet, kcalclr, sportsave). ═══ */
 const RPEW=v=>v<=2?'nagyon könnyű':v<=4?'könnyű':v<=6?'közepes':v<=8?'kemény':v===9?'nagyon kemény':'maximális';
-const rpeTube=v=>`<div class="ex-rt" data-exrpe role="slider" tabindex="0" aria-label="Megélt terhelés" aria-valuemin="1" aria-valuemax="10" aria-valuenow="${v}">
+const RPEV={};
+const rpeTube=v=>`<div class="ex-rpt" data-exrpe role="slider" tabindex="0" aria-label="Megélt terhelés" aria-valuemin="1" aria-valuemax="10" aria-valuenow="${v}">
   <span class="tb"><i style="height:${v*10}%"></i>${Array.from({length:9},(_,k)=>`<u style="bottom:${(k+1)*10}%"></u>`).join('')}</span>
   <span class="nm"><b>${v}</b><small>/ 10</small><em>${RPEW(v)}</em></span></div>`;
 const ORD=['Vállterhelés','Terep','Milyen kemény volt?'];
@@ -749,18 +750,18 @@ function sportlog3(a){const base=O.sportlog(a),cs=cardsOf(base);if(!cs.length)re
     return `<div class="vs-blk"><span class="fh-lab">${l}</span><div class="ex-caps">${bs.map(([,on,t],i)=>`<button class="ex-cap ${on.trim()}" data-ve="chip" aria-pressed="${/on/.test(on)}"><span class="t"><i style="height:${(i+1)/bs.length*100}%"></i></span><span>${t}</span></button>`).join('')}</div></div>`});
   const own=kc&&g(kc.html,/Saját értéket adtál meg \((\d+) kcal\)/);
   const top=`<section class="mx-s ex-hero ex-slh"><div class="ex-slt"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V.icd({ic})}</svg><h2 class="n7-h">${name}, hogy ment?</h2></div>${seg?`<div class="ex-seg">${seg}</div>`:''}</section>`;
-  const body=`<section class="mx-s ln">${KH('Mennyire volt kemény')}${rpeTube(rv)}</section>
+  const body=`<section class="mx-s ln">${KH('Mennyire volt kemény')}${rpeTube(RPEV[a]||rv)}</section>
     <section class="mx-s ln">${KH('Az adatok')}<div class="ex-form">${f}</div></section>
     <section class="mx-s ln">${KH('Kalória')}<div class="ex-mz">${badge('mezo',{s:30})}<p>${own?`Saját értéket adtál meg: <b>${own} kcal</b>. Ezt mentem, nem a becslést.`:'A kalóriát a súlyodból és a mozgásból becsülöm. Ha tudod a pontosat, add meg.'}</p></div>
       <div class="ex-acts">${own?`<button class="n8-b" data-ve="kcalclr">Töröld a saját értéket</button>`:`<button class="n8-b" data-sheet="kcal">Saját érték</button>`}</div></section>
     ${err?`<section class="mx-s ln">${KH('Nem sikerült menteni')}<div class="ex-mz ex-bad">${badge('mezo',{s:30})}<p>Nem sikerült elmenteni a mozgást. Nézd meg a kapcsolatot, és próbáld újra.</p></div><div class="ex-acts"><button class="n9-btn" data-ve="sportsave">Újra</button></div></section>`:''}`;
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${body}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
 ed.routes.sportlog=sportlog3;
-{const setR=(el,v)=>{v=Math.max(1,Math.min(10,v));el.setAttribute('aria-valuenow',v);el.querySelector('.tb i').style.height=v*10+'%';el.querySelector('.nm b').textContent=v;el.querySelector('.nm em').textContent=RPEW(v)};
+{const setR=(el,v)=>{v=Math.max(1,Math.min(10,v));RPEV[(location.hash.match(/sportlog\.([^&]*)/)||[])[1]||'']=v;el.setAttribute('aria-valuenow',v);el.querySelector('.tb i').style.height=v*10+'%';el.querySelector('.nm b').textContent=v;el.querySelector('.nm em').textContent=RPEW(v)};
  const fromY=(el,y)=>{const r=el.querySelector('.tb').getBoundingClientRect();return Math.ceil((r.bottom-y)/r.height*10)};let drag=null;
- document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.closest('[data-exrpe]');if(!el||!e.target.closest('.tb'))return;drag=el;setR(el,fromY(el,e.clientY));e.preventDefault()});
+ document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.closest('[data-exrpe]');if(!el||!e.target.closest('.tb'))return;drag=el;try{e.target.setPointerCapture(e.pointerId)}catch(_){}setR(el,fromY(el,e.clientY));e.preventDefault()});
  document.addEventListener('pointermove',e=>{if(drag)setR(drag,fromY(drag,e.clientY))});
- document.addEventListener('pointerup',()=>{drag=null});
+ document.addEventListener('pointerup',()=>{drag=null});document.addEventListener('pointercancel',()=>{drag=null});
  document.addEventListener('keydown',e=>{const el=e.target.closest&&e.target.closest('[data-exrpe]');if(!el)return;const v=+el.getAttribute('aria-valuenow');
    if(e.key==='ArrowUp'||e.key==='ArrowRight'){setR(el,v+1);e.preventDefault()}else if(e.key==='ArrowDown'||e.key==='ArrowLeft'){setR(el,v-1);e.preventDefault()}})}
 const IVL=()=>{const h=O.futas('het');return [...h.matchAll(/(<span class="vs-ivl"[\s\S]*?<\/span>)<div/g)].map(m=>m[1])};
@@ -801,9 +802,9 @@ ${P} .ex-spg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px
 ${P} .ex-spt svg.ng{width:56px;height:56px;margin:0 0 2px}${P} .ex-spt b{font-size:13.5px;font-weight:750;line-height:1.2;color:var(--ink)}${P} .ex-spt small{font-size:12px;color:var(--ink);opacity:.75}
 ${P} .ex-tdy{flex:none;width:auto}
 ${P} .ex-slt{display:flex;align-items:center;gap:12px;margin:0 22px}${P} .ex-slt svg.ng{width:64px;height:64px;margin:0;flex:none}${P} .ex-slt .ex-eb{margin:0}${P} .ex-slt .n7-h{margin:0!important}${P} .ex-slh .ex-seg{margin-top:14px}
-${P} .ex-rt{display:flex;align-items:center;gap:22px;margin:4px 22px 0;outline:0}${P} .ex-rt .tb{position:relative;width:84px;height:210px;border-radius:42px;background:#fff;overflow:hidden;cursor:pointer;touch-action:none;box-shadow:inset 0 0 0 2px rgba(10,42,60,.1),0 12px 26px -18px rgba(10,42,60,.5)}
-${P} .ex-rt .tb i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--liq1),var(--liq2));transition:height .15s}${P} .ex-rt .tb u{position:absolute;right:0;width:16px;height:2px;background:rgba(10,42,60,.18)}
-${P} .ex-rt:focus-visible .tb{box-shadow:0 0 0 3px var(--dom)}${P} .ex-rt .nm{display:flex;flex-direction:column}${P} .ex-rt .nm b{font:800 56px/1 var(--disp,inherit);color:var(--ink)}${P} .ex-rt .nm small{font-size:14px;font-weight:700;color:var(--ink);opacity:.7}${P} .ex-rt .nm em{margin-top:8px;font-style:normal;font-size:16px;font-weight:750;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
+${P} .ex-rpt{display:flex;align-items:center;gap:22px;margin:4px 22px 0;outline:0}${P} .ex-rpt .tb{position:relative;width:84px;height:210px;border-radius:42px;background:#fff;overflow:hidden;cursor:pointer;touch-action:none;box-shadow:inset 0 0 0 2px rgba(10,42,60,.1),0 12px 26px -18px rgba(10,42,60,.5)}
+${P} .ex-rpt .tb i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--liq1),var(--liq2));transition:height .15s}${P} .ex-rpt .tb u{position:absolute;right:0;width:16px;height:2px;background:rgba(10,42,60,.18)}
+${P} .ex-rpt:focus-visible .tb{box-shadow:0 0 0 3px var(--dom)}${P} .ex-rpt .nm{display:flex;flex-direction:column}${P} .ex-rpt .nm b{font:800 56px/1 var(--disp,inherit);color:var(--ink)}${P} .ex-rpt .nm small{font-size:14px;font-weight:700;color:var(--ink);opacity:.7}${P} .ex-rpt .nm em{margin-top:8px;font-style:normal;font-size:16px;font-weight:750;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
 ${P} .ex-form{margin:0 18px;padding:6px 16px 14px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}${P} .ex-form .vs-stp b{font:800 22px/1 var(--disp,inherit)}${P} .ex-form .vs-blk{margin-top:12px}
 ${P} .ex-caps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}${P} .ex-cap{display:flex;align-items:center;gap:8px;min-height:48px;padding:6px 10px;border-radius:16px;background:var(--page);font-size:13.5px;font-weight:700;color:var(--ink)}
 ${P} .ex-cap .t{position:relative;flex:none;width:14px;height:30px;border-radius:7px;background:#fff;overflow:hidden;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.15)}${P} .ex-cap .t i{position:absolute;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--dom) 45%,#fff)}
