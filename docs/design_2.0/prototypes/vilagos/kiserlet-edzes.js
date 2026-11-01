@@ -574,9 +574,9 @@ function session3(a){if(a&&a!=='uj')return O.session(a);
   const q=g(hh,/<button class="vs-ql" data-sheet="qb" data-arg="(\d+)"/);
   const TL={recs:['t-record','Rekordok'],tech:['t-book','Technika'],qb:['t-flag','Küldetés'],menu:['t-gear','Műveletek']};
   const tl=[...tools.filter(t=>t[0]!=='menu'),...(q!==''?[['qb',q]]:[]),...tools.filter(t=>t[0]==='menu')].map(([k,ar])=>`<button class="ex-tl" data-sheet="${k}" data-arg="${ar}">${I(TL[k][0])}<small>${TL[k][1]}</small></button>`).join('');
-  const state=g(hh,/Állapot<\/small><b>([^<]*)/),allDone=T.every(x=>x.d===x.t);
+  const state=g(hh,/Állapot<\/small><b>([^<]*)/)||(/Első alkalom/.test(hh)?'Első alkalom: a súlyt te adod meg, innentől jön a javaslat.':''),xl=[...hh.matchAll(/<p class="vs-xl">[\s\S]*?<\/p>/g)].map(m=>m[0]).join(''),allDone=T.every(x=>x.d===x.t);
   const cur=`<section class="mx-s ex-hero ex-ses"><div class="ex-wk ex-br ex-tt">${tubes}</div>
-    <div class="ex-now">${chip}<b>${name}</b></div>${state?`<p class="ex-dates">${state}</p>`:''}
+    <div class="ex-now">${chip}<b>${name}</b></div>${state?`<p class="ex-dates">${state}</p>`:''}${xl?`<div class="ex-xls">${xl}</div>`:''}
     <div class="ex-tls" style="grid-template-columns:repeat(${tl.split('ex-tl').length-1},1fr)">${tl}</div><div class="ex-sets">${setTable(name,fi,col)}</div>
     ${allDone?`<p class="ex-say ex-alld">Minden szett megvan. Zárd le az edzést.</p>`:''}</section>`;
   const fixHelp=h=>h.replace(/<span>\d+ \/ \d+ szett kész/,`<span>${done} / ${tot} szett kész`).replace(/data-toast="Kalauz ehhez az oldalhoz"/,'data-toast="A pipa után a szett kész, és indul a pihenő. A gyakorlat utolsó szettje után megkérdezem, hogy ment. Egy csőre bökve másik gyakorlatra válthatsz."');
@@ -734,7 +734,7 @@ ${P} .ex-st .ok,${P} .ex-st .tk{display:grid;place-items:center;width:48px;heigh
 ${P} .ex-st .tk{background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 16px -8px var(--dom)}${P} .ex-st .tk svg.ic{width:26px;height:26px;--ic:#fff;--ic2:rgba(255,255,255,.35);--icf:transparent}
 ${P} .ex-rf{align-items:center}${P} .ex-rv{position:relative;flex:none;width:22px;height:44px;border-radius:999px;background:#EEF2F5;overflow:hidden}${P} .ex-rv i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--liq1),var(--liq2));transition:height 1s linear}
 ${P} .ex-rf .g{flex:1;min-width:0;display:flex;flex-direction:column}${P} .ex-rf .g b{font:800 22px/1 var(--disp,inherit);color:var(--ink)}${P} .ex-rf .g small{font-size:12.5px;color:var(--ink)}
-${P} .ex-sf .n9-btn.ok{background:linear-gradient(135deg,#4CB27A,#2E8B57)}${P} .ex-alld{margin-top:14px;text-align:center;font-weight:650}
+${P} .ex-sf .n9-btn.ok{background:linear-gradient(135deg,#4CB27A,#2E8B57)}${P} .ex-xls{margin:8px 22px 0}${P} .ex-xls .vs-xl{font-size:13.5px!important}${P} .ex-alld{margin-top:14px;text-align:center;font-weight:650}
 ${P} .ex-cmp{margin:12px 22px 0;font-size:15px;color:var(--ink)}${P} .ex-cmp b{font-weight:800}${P} .ex-cmp i{font-style:normal;font-weight:750;color:#23704A}
 ${P} .ex-qlw{margin:10px 18px 0}${P} .ex-qlw .vs-ql{min-height:48px;width:100%}
 ${P} .ex-tls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 18px 0}${P} .ex-tl{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:64px;padding:8px 4px;border-radius:18px;background:#fff;box-shadow:0 8px 18px -14px rgba(30,70,140,.45),inset 0 0 0 1px rgba(10,42,60,.07)}
