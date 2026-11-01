@@ -33,8 +33,8 @@ function mai3(a){if(a&&a!=='kihagyva'&&a!=='kimelo')return O.mai(a);
     const open=/fm-blk[^"]*open/.test(h.slice(0,80)),t=g(rest,/<small>(\d{1,2}:\d{2})/)||win;
     return {name,win,cup,open,rest,ic:ico(head),t:hm(t)}}).sort((x,y)=>x.t-y.t);
   const nx=blocks.find(b=>b.open);
-  const body=r=>pills(r.replace(/<span class="fm-chips">([\s\S]*?)<\/span><\/div>/,(m,ch)=>`</div><div class="fx-q">${ch.replace(/<button class="fm-chip[^"]*" data-sheet="glu"([^>]*)><svg[\s\S]*?<\/svg>([^<]*)<\/button>/,'<button class="fx-ql" data-sheet="glu"$1>$2 vércukor-hatás</button>')
-      .replace(/<button class="fm-chip sc"([^>]*)>[\s\S]*?<\/span>([^<]*)<\/button>/,'<button class="fx-ql"$1>$2 pont</button>')}</div>`))
+  const body=r=>pills(r.replace(/<span class="fm-chips">([\s\S]*?)<\/span><\/div>/,(m,ch)=>`<div class="fx-q">${ch.replace(/<button class="fm-chip([^"]*)" data-sheet="glu"([^>]*)><svg[\s\S]*?<\/svg>([^<]*)<\/button>/,'<button class="fx-ql g$1" data-sheet="glu"$2><b>$3</b><small>vércukor</small></button>')
+      .replace(/<button class="fm-chip sc"([^>]*)>[\s\S]*?<\/span>([^<]*)<\/button>/,'<button class="fx-ql"$1><b>$2</b><small>pont</small></button>')}</div></div>`))
     .replace(/<p class="fm-when">/,'<p class="fx-when">');
   const meals=blocks.map(b=>`<article class="fx-ml ${b.open?'open':''} ${b===nx?'now':''}"><div class="fx-mh">${drop(b.ic)}<span class="g"><b>${b.name}</b><small>${b.win}${b===nx?' · ez jön':''}</small></span>${b.cup}</div>${body(b.rest)}</article>`).join('');
   const mealS=blocks.length?`<section class="mx-s ln">${KH('A mai étkezéseid')}<div class="ex-ml">${meals}</div></section>`:'';
@@ -72,8 +72,8 @@ ${P} .fx-mh{display:flex;align-items:center;gap:10px}${P} .fx-mh svg.ng{width:46
 ${P} .fx-mh .g b{font:800 17px/1.2 var(--disp,inherit);color:var(--ink)}${P} .fx-mh .g small{font-size:13px;color:var(--ink);opacity:.8}${P} .fx-ml.now .fx-mh .g small{opacity:1;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
 ${P} .fx-mh .fu-cup{flex:none}${P} .fx-mh .ng-pipe,${P} .fx-mh .ng-flow{display:none}${P} .fx-mac .k2-vial small i{display:block!important;font-style:normal}${P} .fx-mac .fu-s{display:none}
 ${P} .fx-ml .fm-meal{margin:0;padding:10px 0 0;border-top:1px solid rgba(10,42,60,.08)}${P} .fx-ml .fm-mn{display:block;text-align:left}${P} .fx-ml .fm-mn strong{display:block;font-size:15.5px;font-weight:750;color:var(--ink)}${P} .fx-ml .fm-mn small{font-size:13px;color:var(--ink)}
-${P} .fx-ml .fm-mb{display:block;margin-top:8px}
-${P} .fx-q{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}${P} .fx-ql{min-height:40px;padding:0 14px;border-radius:999px;background:var(--page);font-size:13.5px;font-weight:700;color:var(--ink)}
+${P} .fx-ml .fm-mb{display:flex;align-items:center;gap:12px;margin-top:8px}${P} .fx-ml .fm-cells{flex:none}${P} .fx-q{max-width:120px;margin-left:auto}
+${P} .fx-q{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}${P} .fx-ql{display:flex;flex-direction:column;align-items:flex-start;min-height:44px;padding:8px 12px;border-radius:16px;background:var(--page);text-align:left}${P} .fx-ql b{font:800 15px/1.15 var(--disp,inherit);color:var(--ink)}${P} .fx-ql small{font-size:12px;font-weight:600;color:var(--ink);opacity:.75}${P} .fx-ql.g b{color:#23704A}${P} .fx-ql.g.mid b{color:#B4741F}
 ${P} .fx-when{margin:0;font-size:14px;color:var(--ink)}${P} .fx-ml .fh-acts{display:flex;gap:10px;margin:0;flex-wrap:wrap}
 ${P} .fx-lg .ex-spt{padding:14px 6px}${P} .fx-st{margin-top:4px}${P} .fx-st .st{font-size:12px!important}
 `);

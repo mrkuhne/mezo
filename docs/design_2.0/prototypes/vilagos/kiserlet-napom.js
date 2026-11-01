@@ -815,8 +815,8 @@ ${P} .rt-lead{padding-bottom:18px}
 ${P} .bd .mx-h b{display:flex;align-items:center;gap:10px}
 ${P} .bd .mx-h b::before{content:"";flex:none;width:12px;height:16px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(160deg,var(--liq1),var(--liq2))}
 /* Mai · one ground, wave-line dividers, cards and card carousels */
-${P} .mx{background:#F4F8FB;margin-top:-1px;padding-bottom:20px}
-${P} .scroll:has(.mx){background:#F4F8FB}
+/* owner 2026-11-01: keep each domain's own tinted ground (no flat grey-white page) */
+${P} .mx{background:transparent;margin-top:-1px;padding-bottom:20px}
 ${P} .mx-s{position:relative;padding:4px 0 22px}
 ${P} .mx-s.ln::before{content:"";position:absolute;left:18px;right:18px;top:0;height:1.5px;border-radius:1px;background:#CBD9E4} /* a straight line, not a wave (owner, 2026-10-19) */
 ${P} .mx .mx-h{margin-top:14px}
