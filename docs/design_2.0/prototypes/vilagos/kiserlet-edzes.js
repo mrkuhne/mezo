@@ -673,6 +673,11 @@ function sport3(a){if(a&&a!=='terv')return O.sport(a);
   const before=base.slice(0,cs[0].start),after=base.slice(cs[cs.length-1].end);
   return before+`${DEFS}<div class="mx ex">${top}${rhythm}${evs}<div class="ng-tail"></div></div>`+after}
 ed.routes.sport=sport3;
+/* Sport is a top tab (owner, 2026-11-01): Mai · Terv · Sport · Terhelés · Gyakorlatok; its pages swap the back header for the tabbed one */
+ed.tabs=[['Mai','mai'],['Terv','terv'],['Sport','sport'],['Terhelés','terheles'],['Gyakorlatok','exercises']];
+{const tabHead=h=>{const t=g(h,/<h1[^>]*>([^<]*)/)||'Sport';const hd=g(F.page('edzes',{title:t,sub:'Edzés',tab:'sport'},''),/(<header class="fh-top">[\s\S]*?<\/header>)/);
+  return hd?h.replace(/<header class="fh-top sub">[\s\S]*?<\/header>/,hd):h};
+ ed.routes.sport=a=>tabHead(sport3(a))}
 function futas3(a){if(a&&a!=='het')return O.futas(a);
   const base=O.futas(a),cs=cardsOf(base);if(cs.length<2)return base;const H=heroParts(cs[0].html);
   const wk=g(H.v,/(\d+)\. hetében/),of=g(H.v,/(\d+) hetes/),dn=g(H.sub,/(\d+) \/ (\d+) edzés/),dt=g(H.sub,/\d+ \/ (\d+) edzés/),blk=H.sub.split(' · ')[0];
@@ -694,6 +699,8 @@ const head=h=>typeof h==='string'?hubHead(h.replace('class="fh-help new"','class
 Object.keys(ed.routes).forEach(k=>{const f=ed.routes[k];if(typeof f==='function'&&!f.__hub){const w=(...a)=>head(f(...a));w.__hub=1;ed.routes[k]=w}});
 
 F.css(`/* kiserlet-edzes */
+${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto}
+@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:12.5px}}
 ${P} .mx.ex{padding-top:4px}
 ${P} .ex-hero{padding-top:6px}
 ${P} .ex-eb{display:block;margin:6px 22px 0;font-size:13px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
