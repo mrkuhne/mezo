@@ -2678,6 +2678,24 @@ ul.md-list { list-style: disc; }
 ol.md-list { list-style: decimal; }
 .md-list li { padding-left: 2px; }
 .md-list li::marker { color: var(--text-tertiary); }
+/* Pipe tables: scroll sideways inside the bubble rather than widening the page at 320px. */
+.md-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.md-table { border-collapse: collapse; font-size: 13px; line-height: 1.4; min-width: 100%; }
+.md-table th, .md-table td {
+  padding: 6px 8px; text-align: left; vertical-align: top;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.md-table th {
+  font-weight: 700; font-size: 12px; color: var(--text-secondary);
+  white-space: nowrap;
+}
+.md-table td { font-variant-numeric: tabular-nums; }
+/* Values stay on one line (the wrap scrolls instead); only the label column may wrap. */
+.md-table td:not(:first-child) { white-space: nowrap; }
+.md-table td:first-child { min-width: 96px; }
+.md-table tbody tr:last-child td { border-bottom: 0; }
+.md-table th:first-child, .md-table td:first-child { padding-left: 0; }
+.md-table th:last-child, .md-table td:last-child { padding-right: 0; }
 .md-code {
   font-family: var(--ff-mono); font-size: 12.5px;
   background: var(--surface-2); border: 1px solid var(--border-subtle);

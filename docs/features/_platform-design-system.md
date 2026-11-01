@@ -618,6 +618,9 @@ Three additions the companion chat needed, all reusable beyond it:
   model-written markdown (`@/shared/lib/markdown`, §6): 10px between blocks, `white-space:
   pre-line` paragraphs (the model uses single newlines for line breaks inside one thought),
   an 18px list indent with `--text-tertiary` markers, and a mono `--surface-2` code chip.
+  **`.md-table-wrap` / `.md-table`** (`mezo-fsj5y`): GFM pipe tables — hairline row rules,
+  a 12px `--text-secondary` header, tabular numerals, value cells kept on one line and the
+  wrapper scrolling sideways so a wide table never widens the page at 320px.
   Scoped under `.md-prose` so the primitives cannot leak into curated app copy.
 - **`.chat-composer` + `.chat-page`/`.chat-thread`** — `position: sticky; bottom:
   var(--screen-bottom-pad)`. The app has ONE scroller (`.screen-content`), so an input that must
@@ -1020,7 +1023,7 @@ function Example({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 Key shapes: cards are plain `<div className="card">` (radius from `.card` or a `.rad-12/-16/-20/-24` utility; accent strip/tint via inline `color-mix` — see §5's on-brand-screen idiom). `Sheet` children may be a render-prop `(close) => ReactNode` so in-sheet buttons dismiss with the same slide-down. `Icon` takes `name: IconName`, `size=24`, `color='currentColor'`, `strokeWidth=1.5`. For theme: `const { theme, toggle } = useTheme()` from `@/app/ThemeProvider`.
 
-For XSS-safe **inline** copy with `**bold**` markers, use `SafeMarkdown` from `@/shared/lib/safeMarkdown` — never `dangerouslySetInnerHTML`. For **model-written prose** (LLM answers, which arrive as real markdown) use `<Markdown>` from `@/shared/lib/markdown` instead: it renders blocks (paragraphs, `-`/`1.` lists, `##` headings) plus inline bold/italic/`code`, scoped by the `.md-prose` wrapper. One parser backs both — `SafeMarkdown` is its `boldOnly` mode, so curated app copy keeps its exact old behavior (`_underscore_` italics are deliberately unsupported: this app's copy is full of snake_case identifiers).
+For XSS-safe **inline** copy with `**bold**` markers, use `SafeMarkdown` from `@/shared/lib/safeMarkdown` — never `dangerouslySetInnerHTML`. For **model-written prose** (LLM answers, which arrive as real markdown) use `<Markdown>` from `@/shared/lib/markdown` instead: it renders blocks (paragraphs, `-`/`1.` lists, `##` headings, `| pipe |` tables with `:--:` alignment — `mezo-fsj5y`) plus inline bold/italic/`code`, scoped by the `.md-prose` wrapper. One parser backs both — `SafeMarkdown` is its `boldOnly` mode, so curated app copy keeps its exact old behavior (`_underscore_` italics are deliberately unsupported: this app's copy is full of snake_case identifiers).
 
 ---
 

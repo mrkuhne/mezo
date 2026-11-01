@@ -6,7 +6,9 @@ import { Fragment, type ReactNode } from 'react'
  * `##` headings, blank-line paragraphs — and rendering it as one raw string is what put the
  * literal `**` marks and the wall-of-text into the chat bubble.
  *
- * Deliberately NOT a full markdown parser: no links, images, tables, or HTML. Everything that
+ * Deliberately NOT a full markdown parser: no links, images, or HTML. GFM pipe tables ARE
+ * recognized — the model reaches for them for kcal/macro breakdowns, and raw `|---|` rows
+ * read as noise in the bubble. Everything that
  * is not one of the recognized markers is rendered as escaped text (React text nodes), so a
  * model answer can never inject markup.
  *
@@ -49,9 +51,36 @@ const HEADING = /^(#{1,4})\s+(.*)$/
 const BULLET = /^\s*[-*•]\s+(.*)$/
 const NUMBERED = /^\s*\d+[.)]\s+(.*)$/
 
+// A table row starts with a pipe; the row under the header is the `|---|:--:|` separator.
+const TABLE_ROW = /^\s*\|.*$/
+const TABLE_SEPARATOR = /^\s*\|?(\s*:?-+:?\s*\|)+\s*:?-*:?\s*$/
+
+export type Align = 'left' | 'right' | 'center' | undefined
+
 export interface Block {
-  kind: 'p' | 'ul' | 'ol' | 'h'
+  kind: 'p' | 'ul' | 'ol' | 'h' | 'table'
   lines: string[]
+  /** `table` only: the header cells, then one array per body row. */
+  rows?: string[][]
+  /** `table` only: per-column alignment from the separator row. */
+  align?: Align[]
+}
+
+/** Splits `| a | b |` into trimmed cells (outer pipes optional). */
+function splitRow(line: string): string[] {
+  let row = line.trim()
+  if (row.startsWith('|')) row = row.slice(1)
+  if (row.endsWith('|')) row = row.slice(0, -1)
+  return row.split('|').map((cell) => cell.trim())
+}
+
+function alignOf(cell: string): Align {
+  const left = cell.startsWith(':')
+  const right = cell.endsWith(':')
+  if (left && right) return 'center'
+  if (right) return 'right'
+  if (left) return 'left'
+  return undefined
 }
 
 /** Groups the lines into paragraph / list / heading blocks. Exported for tests. */
@@ -66,7 +95,25 @@ export function parseBlocks(text: string): Block[] {
     open = kind
   }
 
-  for (const line of text.replace(/\r\n/g, '\n').split('\n')) {
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (TABLE_ROW.test(line) && i + 1 < lines.length && TABLE_SEPARATOR.test(lines[i + 1])) {
+      const header = splitRow(line)
+      const align = splitRow(lines[i + 1]).map(alignOf)
+      const rows = [header]
+      i += 2
+      while (i < lines.length && TABLE_ROW.test(lines[i])) {
+        const cells = splitRow(lines[i])
+        // Pad / trim to the header width so a ragged model row cannot shift columns.
+        rows.push(header.map((_, c) => cells[c] ?? ''))
+        i++
+      }
+      i--
+      blocks.push({ kind: 'table', lines: [], rows, align })
+      open = null
+      continue
+    }
     if (!line.trim()) {
       open = null
       continue
@@ -102,6 +149,24 @@ export function Markdown({ text }: { text: string }): ReactNode {
       {parseBlocks(text).map((block, i) => {
         if (block.kind === 'h') {
           return <p key={i} className="md-h">{renderInline(block.lines[0])}</p>
+        }
+        if (block.kind === 'table') {
+          const [header, ...body] = block.rows ?? []
+          const style = (c: number) => (block.align?.[c] ? { textAlign: block.align[c] } : undefined)
+          return (
+            <div key={i} className="md-table-wrap">
+              <table className="md-table">
+                <thead>
+                  <tr>{header.map((cell, c) => <th key={c} style={style(c)}>{renderInline(cell)}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {body.map((row, r) => (
+                    <tr key={r}>{row.map((cell, c) => <td key={c} style={style(c)}>{renderInline(cell)}</td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         }
         if (block.kind === 'p') {
           return <p key={i} className="md-p">{renderInline(block.lines.join('\n'))}</p>
