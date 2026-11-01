@@ -24,8 +24,8 @@ function mai3(a){if(a&&a!=='kihagyva'&&a!=='kimelo')return O.mai(a);
   const top=`<section class="mx-s ex-hero"><small class="ex-eb">${lbl}</small><h2 class="n7-h">${verdict}</h2><div class="fx-bowl">${bowl}</div><div class="ex-acts fx-wide">${acts}</div></section>`;
   /* macros: the tube's top is the goal; scale the fill so the goal sits at 85% and draw it as a dashed waterline */
   const mac=cs.find(c=>/fu-mac/.test(c.html));
-  const tubes=mac?mac.html.replace(/^<section[^>]*>/,'').replace(/<\/section>$/,'').replace(/--p:([\d.]+)%/g,(m,p)=>`--p:${Math.min(98,+p*.85)}%`).replace(/<span class="k2-tube"([^>]*)><em><\/em>/g,'<span class="k2-tube"$1><em></em><i class="fx-wl" aria-hidden="true"></i>'):'';
-  const macS=mac?`<section class="mx-s ln">${KH('Mai makrók')}<div class="ex-imp fx-mac">${tubes}</div><p class="ex-dates fx-leg"><i class="fx-wl s"></i>a napi cél</p></section>`:'';
+  const tubes=mac?mac.html.replace(/^<section[^>]*>/,'').replace(/<\/section>$/,'').replace(/--p:([\d.]+)%/g,(m,p)=>`--p:${Math.min(98,+p*.85)}%`).replace(/<i>\/ ([^<]*)<\/i>/g,'<i>$1</i>').replace('<span class="fu-w">Szénhidrát</span>','<span class="fx-w">Szén&shy;hidrát</span>').replace(/<span class="k2-tube"([^>]*)><em><\/em>/g,'<span class="k2-tube"$1><em></em><i class="fx-wl" aria-hidden="true"></i>'):'';
+  const macS=mac?`<section class="mx-s ln">${KH('Mai makrók')}<div class="ex-imp fx-mac">${tubes}</div><p class="ex-dates fx-leg"><i class="fx-wl s"></i>a napi cél, a fehér címkén a számmal</p></section>`:'';
   /* meals */
   const blocks=cs.filter(c=>/fm-blk/.test(c.html)).map(c=>{const h=c.html,bh=h.indexOf('<div class="fm-bh"'),be=bal(h,bh);
     const head=h.slice(bh,be),rest=h.slice(be).replace(/<\/section>$/,''),name=g(head,/<strong>([^<]*)/),win=g(head,/<small>([^<]*)/);
@@ -33,8 +33,15 @@ function mai3(a){if(a&&a!=='kihagyva'&&a!=='kimelo')return O.mai(a);
     const open=/fm-blk[^"]*open/.test(h.slice(0,80)),t=g(rest,/<small>(\d{1,2}:\d{2})/)||win;
     return {name,win,cup,open,rest,ic:ico(head),t:hm(t)}}).sort((x,y)=>x.t-y.t);
   const nx=blocks.find(b=>b.open);
-  const body=r=>pills(r.replace(/<span class="fm-chips">([\s\S]*?)<\/span><\/div>/,(m,ch)=>`<div class="fx-q">${ch.replace(/<button class="fm-chip([^"]*)" data-sheet="glu"([^>]*)><svg[\s\S]*?<\/svg>([^<]*)<\/button>/,'<button class="fx-ql g$1" data-sheet="glu"$2><b>$3</b><small>vércukor</small></button>')
-      .replace(/<button class="fm-chip sc"([^>]*)>[\s\S]*?<\/span>([^<]*)<\/button>/,'<button class="fx-ql"$1><b>$2</b><small>pont</small></button>')}</div></div>`))
+  /* a logged meal: the four macros as full-word chips (a small filling capsule, the amount, the name in the macro's colour),
+     then two verdict tiles: the blood-sugar curve and Mezo's score as a filling drop (owner: no "feh." abbreviations, no bare "8,4 pont") */
+  const MN={'feh.':['fehérje','t-meat'],'szénh.':['szénhidrát','t-carb'],'zsír':['zsír','t-avocado'],'rost':['rost','t-fiber']};
+  const chipsOf=h=>`<div class="fx-mg">${[...h.matchAll(/<span class="fl-mini" style="--c:([^"]+)"><span class="t"><i style="height:([\d.]+)%"><\/i><\/span><b>([^<]*)<\/b><small>([^<]*)<\/small><\/span>/g)]
+    .map(([,c,hh,v,l])=>{const [n,ic]=MN[l]||[l,'t-plate'];return `<span class="fx-mc" style="--c:${c}"><span class="t"><i style="height:${hh}%"></i></span>${I(ic)}<span class="tx"><b>${v}</b><small>${n}</small></span></span>`}).join('')}</div>`;
+  const cellsOut=r=>{const i=r.indexOf('<span class="fm-cells"');if(i<0)return r;const e=bal(r,i,'span');return r.slice(0,i)+chipsOf(r.slice(i,e))+r.slice(e)};
+  const body=r=>pills(cellsOut(r)
+      .replace(/<span class="fm-chips">([\s\S]*?)<\/span><\/div>/,(m,ch)=>`<div class="fx-q">${ch.replace(/<button class="fm-chip([^"]*)" data-sheet="glu"([^>]*)>(<svg[\s\S]*?<\/svg>)([^<]*)<\/button>/,'<button class="fx-t g$1" data-sheet="glu"$2><span class="ic">$3</span><span class="tx"><b>$4</b><small>vércukor-hatás</small></span></button>')
+      .replace(/<button class="fm-chip sc"([^>]*)>[\s\S]*?<\/span>([^<]*)<\/button>/,(mm,at,v)=>`<button class="fx-t"${at}><span class="ic">${F.csepp('ok',Math.round(parseFloat(v.replace(',','.'))*10),{s:34,color:'var(--dom)',alive:false})}</span><span class="tx"><b>${v.trim()}</b><small>Mezo értékelése</small></span></button>`)}</div></div>`))
     .replace(/<p class="fm-when">/,'<p class="fx-when">');
   const meals=blocks.map(b=>`<article class="fx-ml ${b.open?'open':''} ${b===nx?'now':''}"><div class="fx-mh">${drop(b.ic)}<span class="g"><b>${b.name}</b><small>${b.win}${b===nx?' · ez jön':''}</small></span>${b.cup}</div>${body(b.rest)}</article>`).join('');
   const mealS=blocks.length?`<section class="mx-s ln">${KH('A mai étkezéseid')}<div class="ex-ml">${meals}</div></section>`:'';
@@ -70,10 +77,19 @@ ${P} .fx-ml{display:flex;flex-direction:column;gap:10px;padding:16px;border-radi
 ${P} .fx-ml.open{background:rgba(255,255,255,.72)}${P} .fx-ml.now{box-shadow:inset 0 0 0 2px var(--dom),0 12px 24px -16px var(--dom)}
 ${P} .fx-mh{display:flex;align-items:center;gap:10px}${P} .fx-mh svg.ng{width:46px;height:46px;margin:0;flex:none}${P} .fx-mh .g{flex:1;min-width:0;display:flex;flex-direction:column}
 ${P} .fx-mh .g b{font:800 17px/1.2 var(--disp,inherit);color:var(--ink)}${P} .fx-mh .g small{font-size:13px;color:var(--ink);opacity:.8}${P} .fx-ml.now .fx-mh .g small{opacity:1;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
-${P} .fx-mh .fu-cup{flex:none}${P} .fx-mh .ng-pipe,${P} .fx-mh .ng-flow{display:none}${P} .fx-mac .k2-vial small i{display:block!important;font-style:normal}${P} .fx-mac .fu-s{display:none}
+${P} .fx-mh .fu-cup{flex:none}${P} .fx-mh .ng-pipe,${P} .fx-mh .ng-flow{display:none}${P} .fx-mac .k2-vial small{font-size:13px!important;font-weight:750;color:color-mix(in srgb,var(--c) 70%,#0A2A3C)!important}${P} .fx-mac .k2-vial small i{display:block!important;width:fit-content;margin:4px auto 0;padding:2px 8px;border-radius:999px;background:#fff;font-style:normal;font-size:12px!important;font-weight:700;color:var(--ink)!important;box-shadow:0 0 0 1px rgba(10,42,60,.08)}${P} .fx-mac .k2-vial b{font-size:22px}${P} .fx-mac .fu-s{display:none!important}${P} .fx-mac .fx-w{display:block;hyphens:manual}${P} .fx-mac .k2-vial small i{white-space:nowrap}@media (max-width:360px){${P} .fx-mac .k2-vial small i{padding:2px 6px}}
 ${P} .fx-ml .fm-meal{margin:0;padding:10px 0 0;border-top:1px solid rgba(10,42,60,.08)}${P} .fx-ml .fm-mn{display:block;text-align:left}${P} .fx-ml .fm-mn strong{display:block;font-size:15.5px;font-weight:750;color:var(--ink)}${P} .fx-ml .fm-mn small{font-size:13px;color:var(--ink)}
-${P} .fx-ml .fm-mb{display:flex;align-items:center;gap:12px;margin-top:8px}${P} .fx-ml .fm-cells{flex:none}${P} .fx-q{max-width:120px;margin-left:auto}
-${P} .fx-q{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}${P} .fx-ql{display:flex;flex-direction:column;align-items:flex-start;min-height:44px;padding:8px 12px;border-radius:16px;background:var(--page);text-align:left}${P} .fx-ql b{font:800 15px/1.15 var(--disp,inherit);color:var(--ink)}${P} .fx-ql small{font-size:12px;font-weight:600;color:var(--ink);opacity:.75}${P} .fx-ql.g b{color:#23704A}${P} .fx-ql.g.mid b{color:#B4741F}
+${P} .fx-ml .fm-mb{display:block;margin-top:10px}
+${P} .fx-mg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+${P} .fx-mc{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 10px;border-radius:16px;background:color-mix(in srgb,var(--c) 12%,#fff)}
+${P} .fx-mc .t{position:relative;flex:none;width:10px;height:28px;border-radius:5px;background:#fff;overflow:hidden;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 40%,transparent)}${P} .fx-mc .t i{position:absolute;left:0;right:0;bottom:0;background:var(--c)}
+${P} .fx-mc>svg.ic{flex:none;width:22px;height:22px;color:color-mix(in srgb,var(--c) 70%,#0A2A3C)}${P} .fx-mc .tx{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+${P} .fx-mc .tx b{font:800 15px/1.1 var(--disp,inherit);color:var(--ink)}${P} .fx-mc .tx small{font-size:12.5px;font-weight:700;color:color-mix(in srgb,var(--c) 65%,#0A2A3C)}
+${P} .fx-q{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+${P} .fx-t{display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 12px;border-radius:18px;background:#fff;text-align:left;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.08)}
+${P} .fx-t .ic{flex:none;display:grid;place-items:center;width:36px;height:36px}${P} .fx-t .ic>svg{width:30px;height:30px}${P} .fx-t .tx{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+${P} .fx-t .tx b{font:800 15px/1.1 var(--disp,inherit);color:var(--ink)}@media (max-width:360px){${P} .fx-mc>svg.ic{display:none}${P} .fx-t{padding:8px;gap:6px}${P} .fx-t .ic{width:30px}}${P} .fx-t .tx small{font-size:12px;font-weight:650;color:var(--ink);opacity:.75}
+${P} .fx-t.g b,${P} .fx-t.g .ic{color:#23704A}${P} .fx-t.g.mid b,${P} .fx-t.g.mid .ic{color:#B4741F}${P} .fx-t.g.hi b,${P} .fx-t.g.hi .ic{color:#C2483B}
 ${P} .fx-when{margin:0;font-size:14px;color:var(--ink)}${P} .fx-ml .fh-acts{display:flex;gap:10px;margin:0;flex-wrap:wrap}
 ${P} .fx-lg .ex-spt{padding:14px 6px}${P} .fx-st{margin-top:4px}${P} .fx-st .st{font-size:12px!important}
 `);
