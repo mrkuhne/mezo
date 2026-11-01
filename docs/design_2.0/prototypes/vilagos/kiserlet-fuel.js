@@ -8,7 +8,7 @@
 const F=window.F,fu=window.FREG&&FREG.fuel,X=window.KXN,E=window.KXE;if(!fu||!X||!E)return;
 const {I,badge}=F,{KH,DEFS,hubHead}=X,{cardsOf,bal,g,drop,pills}=E;
 const P='.phone.foly[data-s="elo"][data-d="fuel"]';
-const O={mai:fu.routes.mai,stack:fu.routes.stack};
+const O={mai:fu.routes.mai,stack:fu.routes.stack,trendek:fu.routes.trendek};fu.routes['trendek-lista']=O.trendek;
 fu.routes['mai-lista']=O.mai;fu.routes['stack-lista']=O.stack;
 const ico=h=>g(h,/href="#([^"]+)"/)||'t-plate';
 
@@ -91,11 +91,40 @@ function stack3(a){const base=O.stack(a),cs=cardsOf(base);const hero=cs.find(c=>
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${bands}${prS}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
 fu.routes.stack=stack3;
 
+/* ═══ TRENDEK (2026-11-01): the week switcher stays; the sentence on top, the seven day tubes as the picture without
+   the grey legend and helper text (a tap opens the day); the four stat tiles straight on the ground; the communicating
+   vessels, the long-run curves (one under the other — owner) and the goal steps kept, their grey notes as Mezo's line;
+   patterns as drop rows. ═══ */
+const inner=h=>h.replace(/^<section[^>]*>/,'').replace(/<\/section>$/,'');
+const cut=(h,start)=>{const i=h.indexOf(start);return i<0?h:h.slice(0,i)+h.slice(bal(h,i,start.match(/^<(\w+)/)[1]))};
+const mz=t=>`<div class="ex-mz">${badge('mezo',{s:30})}<p>${t}</p></div>`;
+function trendek3(a){const base=O.trendek(a),cs=cardsOf(base);const hero=cs.find(c=>/fu-wk/.test(c.html));if(!hero)return base;
+  const H=hero.html,wi=H.indexOf('<div class="fu-wk"'),wk=wi>=0?H.slice(wi,bal(H,wi)):'',ai=H.indexOf('<div class="fh-acts">'),acts=ai>=0?pills(H.slice(ai+21,bal(H,ai)-6)):'';
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${g(H,/<span class="lbl">([^<]*)/).replace(' · ebből áll a heti kép','')}</small><h2 class="n7-h">${g(H,/<p class="verdict"[^>]*>([^<]*)/)}</h2>
+    <div class="fx-wk">${wk}</div><div class="ex-acts fx-wide">${acts.replace('class="n9-btn"','class="n9-btn"')}</div></section>`;
+  const head=c=>g(base.slice(base.lastIndexOf('<p class="fh-n',c.start),c.start),/<\/b>([^<]*)<\/p>/);
+  const sec=(c,body)=>`<section class="mx-s ln">${KH(head(c))}${body}</section>`;
+  const out=cs.filter(c=>c!==hero).map(c=>{const h=c.html,note=g(h,/<p class="fh-note">([\s\S]*?)<\/p>/);
+    if(/fh-grid/.test(h))return sec(c,`<div class="fx-stats">${inner(h)}</div>`);
+    if(/fu-lk/.test(h))return sec(c,`<div class="fx-lk">${cut(inner(h),'<p class="fh-note">')}</div>${mz('Amit hétközben nem eszel meg, hétvégén átfolyik. Most 46 százalékponttal a hétvége javára.')}`);
+    if(/Súlytrend/.test(h))return sec(c,`<div class="fx-long">${cut(cut(inner(h),'<div class="fh-h">'),'<p class="fh-note">')}</div>${mz('Fent a súly, lent az evés. Ahol nem volt mérés, ott nincs pont. Ez együttjárás, nem ok.')}`);
+    if(/fh-row/.test(h)){const rows=[...h.matchAll(/<button class="fh-row" ([^>]*)>[\s\S]*?href="#([^"]+)"[\s\S]*?<strong>([^<]*)<\/strong><small>([^<]*)<\/small><\/span>(<span class="st [^"]*">[^<]*<\/span>)?/g)]
+        .map(([,at,ic,t,sm,st])=>`<button class="ex-mrow" ${at}>${drop(ic)}<span class="g"><b>${t}</b><i class="q">${sm}</i>${st?`<span class="fx-st">${st}</span>`:''}</span><span class="v">›</span></button>`).join('');
+      return sec(c,`<div class="ex-ml">${rows}</div>${note?`<p class="ex-dates">${note}</p>`:''}`)}
+    return sec(c,`<div class="fx-goal">${cut(inner(h),'<p class="fh-note">')}</div>${note?mz(note.replace('Ami még hátravan, az utolsó oszlop a cél vízvonaláig.','Ami még hátravan: az utolsó oszlop a cél vonaláig.')):''}`)}).join('');
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${out}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+fu.routes.trendek=trendek3;
+
 /* the tab pages' header, as on Nap and Edzés: no big title, the "?" top left */
 const head=h=>typeof h==='string'?hubHead(h):h;
 Object.keys(fu.routes).forEach(k=>{const f=fu.routes[k];if(typeof f==='function'&&!f.__hub){const w=(...a)=>head(f(...a));w.__hub=1;fu.routes[k]=w}});
 
 F.css(`/* kiserlet-fuel */
+${P} .fx-wk{margin:14px 14px 0}${P} .fx-wk .fu-wk{margin:0}${P} .fx-wk .fu-wd small{font-size:12px!important}${P} .fx-wk .fu-wd em{font-size:13px!important}
+${P} .fx-stats{margin:0 18px}${P} .fx-stats .fh-grid{margin:0}
+${P} .fx-lk,${P} .fx-long,${P} .fx-goal{margin:0 18px;padding:14px 12px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .fx-long .fu-lg{font-size:12.5px}${P} .fx-long .fh-lab{font-size:13px;font-weight:700;color:var(--ink)}
+
 ${P} .fx-caps{margin:16px 22px 0}${P} .fx-caps .fu-caps{margin:0}${P} .fx-caps .fu-caps i{width:24px;height:58px}${P} .fx-caps .fu-caps small{font-size:13px;font-weight:700;color:var(--ink)}@media (max-width:360px){${P} .fx-caps .fu-caps i{width:18px;height:50px}${P} .fx-caps .fu-caps .r{gap:4px}}
 ${P} .fx-sl{display:grid;gap:10px;margin:0 18px}${P} .fx-sr{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:22px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .fx-cp{flex:none;display:grid;place-items:center;width:44px;height:52px;background:none!important;border:0!important;box-shadow:none!important}${P} .fx-cp svg{display:none}
@@ -133,5 +162,5 @@ ${P} .fx-when{margin:0;font-size:14px;color:var(--ink)}${P} .fx-ml .fh-acts{disp
 ${P} .fx-lg .ex-spt{padding:14px 6px}${P} .fx-st{margin-top:4px}${P} .fx-st .st{font-size:12px!important}
 `);
 
-window.FNOTES_FOLY=`<h2>Kísérlet · Fuel</h2><p><a href="#w-fuel-mai"><b>Mai</b></a> — felül a mondat és a tál, a makrók csövei a napi cél szaggatott vonalával, az étkezések időrendben egyforma kártyán (az ablakon kívüli a helyén, a következő kiemelve), a logolás módjai csempéken. Arcok: <a href="#w-fuel-mai.kihagyva">kihagyott étkezés</a> · <a href="#w-fuel-mai.kimelo">kímélő mód</a> (nincs kalóriacél, a pohár víz a kép, értékelés nélkül). Összevetésnek: <a href="#w-fuel-mai-lista">a mostani Mai</a>.</p><p><a href="#w-fuel-stack"><b>Kiegészítők</b></a> — a következő adag a mondatban, a nap kapszulái a kép, a kész napszak összecsukva (<a href="#w-fuel-stack-lista">régi</a>).</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Fuel</h2><p><a href="#w-fuel-mai"><b>Mai</b></a> — felül a mondat és a tál, a makrók csövei a napi cél szaggatott vonalával, az étkezések időrendben egyforma kártyán (az ablakon kívüli a helyén, a következő kiemelve), a logolás módjai csempéken. Arcok: <a href="#w-fuel-mai.kihagyva">kihagyott étkezés</a> · <a href="#w-fuel-mai.kimelo">kímélő mód</a> (nincs kalóriacél, a pohár víz a kép, értékelés nélkül). Összevetésnek: <a href="#w-fuel-mai-lista">a mostani Mai</a>.</p><p><a href="#w-fuel-stack"><b>Kiegészítők</b></a> — a következő adag a mondatban, a nap kapszulái a kép, a kész napszak összecsukva (<a href="#w-fuel-stack-lista">régi</a>).</p><p><a href="#w-fuel-trendek"><b>Trendek</b></a> — a mondat felül, a hét csövei a kép, a csempék és a görbék maradtak, a szürke magyarázatok helyett Mezo (<a href="#w-fuel-trendek-lista">régi</a>).</p>`+(window.FNOTES_FOLY||'');
 })();
