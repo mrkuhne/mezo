@@ -58,6 +58,19 @@ vi.mock('@/data/train/skipHooks', async (importOriginal) => {
     },
   }
 })
+// An honestly-empty day has no intake status either: the learning seed is anchored to the
+// last reviewed Monday, so without this the viewed day lands on a seeded (logged) day on some
+// weekdays and its learning-mark section shows up (mezo-s9oc9).
+vi.mock('@/data/fuel/expenditureHooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/fuel/expenditureHooks')>()
+  return {
+    ...actual,
+    useIntakeDays: (from: string, to: string) => {
+      const real = actual.useIntakeDays(from, to)
+      return { ...real, days: real.days.filter((d) => !hoisted.emptyDates.includes(d.date)) }
+    },
+  }
+})
 const ZERO = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()

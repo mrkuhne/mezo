@@ -3,13 +3,15 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { GoalSettingsPage } from '@/features/me/pages/GoalSettingsPage'
+import { addDays, localDateString } from '@/shared/lib/dates'
 
 const mocks = vi.hoisted(() => ({ useGoal: vi.fn(), useGoalOverview: vi.fn(), save: vi.fn(), settings: vi.fn() }))
 vi.mock('@/data/hooks', () => ({ useGoal: mocks.useGoal, useGoalOverview: mocks.useGoalOverview, useGoalSettings: mocks.settings }))
 vi.mock('@/features/me/sheets/EditGoalSheet', () => ({ EditGoalSheet: () => <div role="dialog">Cél kezelése</div> }))
 
 const goal = { id: 'g1', title: 'Utolsó Cut', kind: 'cut', status: 'active', startWeight: 84.2, currentWeight: 82.4, targetWeight: 78, rateTarget: { value: .7, unit: '%/hét', direction: 'down' }, mesocycles: [], identityFrame: '' }
-const goalResponse = { id: 'g1', title: 'Utolsó Cut', trajectory: 'cut', guards: ['strength', 'muscle'], status: 'active', startDate: '2026-08-24', targetDate: '2026-10-24', startWeightKg: 84.2, targetWeightKg: 78, rateTargetPctPerWeek: .7 }
+// The target date rides today: a fixed one expires and the editor then (rightly) blocks saving (mezo-s9oc9).
+const goalResponse = { id: 'g1', title: 'Utolsó Cut', trajectory: 'cut', guards: ['strength', 'muscle'], status: 'active', startDate: '2026-08-24', targetDate: addDays(localDateString(), 35), startWeightKg: 84.2, targetWeightKg: 78, rateTargetPctPerWeek: .7 }
 const overview = { courseStatus: 'on_track', title: 'Utolsó Cut', trajectory: 'cut', currentWeek: 3, totalWeeks: 8, currentWeightKg: 82.4, targetWeightKg: 78, targetRateKgPerWeek: -0.74, projectedTargetDate: '2026-10-24', guards: { status: { strength: { active: true }, muscle: { active: true } }, healthyCount: 3, totalCount: 4 } }
 const renderPage = () => render(<MemoryRouter><GoalSettingsPage /></MemoryRouter>)
 
