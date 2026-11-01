@@ -75,4 +75,36 @@ describe('Markdown blocks', () => {
     const { container } = render(<Markdown text="" />)
     expect(container.textContent).toBe('')
   })
+
+  test('renders a | pipe | table with header, body and column alignment', () => {
+    const text = [
+      'Becslés:',
+      '',
+      '| Edzés | Alkalom | Extra kcal |',
+      '|---|---:|:---:|',
+      '| Konditerem | 5 | 1,750–2,500 kcal |',
+      '| **Összesen** | | 3,950 kcal |',
+      '',
+      'Utána szöveg.',
+    ].join('\n')
+    const { container } = render(<Markdown text={text} />)
+    const table = container.querySelector('table')
+    expect(table).not.toBeNull()
+    expect(container.textContent).not.toContain('|')
+    const heads = [...container.querySelectorAll('thead th')].map((th) => th.textContent)
+    expect(heads).toEqual(['Edzés', 'Alkalom', 'Extra kcal'])
+    const rows = container.querySelectorAll('tbody tr')
+    expect(rows).toHaveLength(2)
+    expect(rows[1].querySelectorAll('td')).toHaveLength(3)
+    expect(rows[1].querySelector('strong')?.textContent).toBe('Összesen')
+    expect(rows[0].querySelectorAll('td')[1].style.textAlign).toBe('right')
+    expect(rows[0].querySelectorAll('td')[2].style.textAlign).toBe('center')
+    expect(container.querySelectorAll('p')).toHaveLength(2)
+  })
+
+  test('keeps a lone pipe line without a separator row as a paragraph', () => {
+    const { container } = render(<Markdown text={'| ez nem táblázat |'} />)
+    expect(container.querySelector('table')).toBeNull()
+    expect(container.textContent).toBe('| ez nem táblázat |')
+  })
 })
