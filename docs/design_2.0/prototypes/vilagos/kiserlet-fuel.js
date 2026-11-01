@@ -8,8 +8,8 @@
 const F=window.F,fu=window.FREG&&FREG.fuel,X=window.KXN,E=window.KXE;if(!fu||!X||!E)return;
 const {I,badge}=F,{KH,DEFS,hubHead}=X,{cardsOf,bal,g,drop,pills}=E;
 const P='.phone.foly[data-s="elo"][data-d="fuel"]';
-const O={mai:fu.routes.mai};
-fu.routes['mai-lista']=O.mai;
+const O={mai:fu.routes.mai,stack:fu.routes.stack};
+fu.routes['mai-lista']=O.mai;fu.routes['stack-lista']=O.stack;
 const ico=h=>g(h,/href="#([^"]+)"/)||'t-plate';
 
 /* ═══ MAI (2026-11-01): the sentence on top, the bowl as the picture, one wide log button; the five macro tubes with the
@@ -72,11 +72,41 @@ function mai3(a){if(a&&a!=='kihagyva'&&a!=='kimelo')return O.mai(a);
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${tipS}${kim?'':macS}${mealS}${logS}${wkS}${prS}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
 fu.routes.mai=mai3;
 
+/* ═══ KIEGÉSZÍTŐK (2026-11-01): the sentence names the next dose, the day's capsules by band as the picture, one wide
+   "Bevettem"; each band without numbers, every item a row with a small capsule that fills when taken (the same data-ftk
+   toggle); a band that is all done folds into one line (owner: "csukódjon össze"), tap opens it; protocol rows as drops. ═══ */
+function stack3(a){const base=O.stack(a),cs=cardsOf(base);const hero=cs.find(c=>/fu-caps/.test(c.html));if(!hero)return base;
+  const H=hero.html,ci=H.indexOf('<div class="fu-caps"'),capsP=ci>=0?H.slice(ci,bal(H,ci)):'',ai=H.indexOf('<div class="fh-acts">'),acts=ai>=0?pills(H.slice(ai+21,bal(H,ai)-6)):'';
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${g(H,/<span class="lbl">([^<]*)/)}</small><h2 class="n7-h">${g(H,/<p class="verdict"[^>]*>([^<]*)/)}</h2><p class="ex-dates">${g(H,/<p class="sub">([^<]*)/)}</p>
+    <div class="fx-caps">${capsP}</div><div class="ex-acts fx-wide">${acts}</div></section>`;
+  const bands=cs.filter(c=>/data-ftk/.test(c.html)).map(c=>{const hd=g(base.slice(base.lastIndexOf('<p class="fh-n',c.start),c.start),/<\/b>([^<]*)<\/p>/),[nm,dn,of]=[g(hd,/^([^·]*)/).trim(),+g(hd,/(\d+) \/ \d+/),+g(hd,/\d+ \/ (\d+)/)];
+    const rows=c.html.split('<div class="fh-row">').slice(1).map(r=>{const on=/fx-tk on/.test(r),tb=g(r,/(<button class="fx-tk[^"]*"[^>]*>)/),gb=g(r,/(<button class="g fx-g"[^>]*>)/);
+      return `<div class="fx-sr">${tb.replace('class="fx-tk','class="fx-tk fx-cp')}<i></i></button>${gb.replace('class="g fx-g"','class="fx-sg"')}<b>${g(r,/<strong>([^<]*)/)}</b><small>${g(r,/<small>([^<]*)/)}</small></button><span class="fx-chv">›</span></div>`}).join('');
+    const box=`<div class="fx-sl">${rows}</div>`;
+    return dn===of&&of?`<section class="mx-s ln"><details class="fx-band"><summary>${KH(nm,'')}<span class="fx-bs"><span class="fx-mini">${'<i></i>'.repeat(of)}</span>${of===1?'megvan':`mind a ${of} megvan`}<em>›</em></span></summary>${box}</details></section>`
+      :`<section class="mx-s ln">${KH(`${nm} · ${dn} / ${of}`)}${box}</section>`}).join('');
+  const pc=cs.find(c=>/data-go="protokoll"/.test(c.html)),ph=pc?pc.html:'';
+  const rows=[...ph.matchAll(/<button class="fh-row" ([^>]*)>[\s\S]*?href="#([^"]+)"[\s\S]*?<strong>([^<]*)<\/strong><small>([^<]*)<\/small>/g)].map(([,at,ic,t,sm])=>`<button class="ex-mrow" ${at}>${drop(ic)}<span class="g"><b>${t}</b><i class="q">${sm}</i></span><span class="v">›</span></button>`).join('');
+  const prS=pc?`<section class="mx-s ln">${KH('Protokoll és beállítás')}<div class="ex-ml">${rows}</div><div class="ex-mz">${badge('falat',{s:30})}<p>${g(ph,/<p class="fh-note">([^<]*)/)}</p></div></section>`:'';
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${bands}${prS}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+fu.routes.stack=stack3;
+
 /* the tab pages' header, as on Nap and Edzés: no big title, the "?" top left */
 const head=h=>typeof h==='string'?hubHead(h):h;
 Object.keys(fu.routes).forEach(k=>{const f=fu.routes[k];if(typeof f==='function'&&!f.__hub){const w=(...a)=>head(f(...a));w.__hub=1;fu.routes[k]=w}});
 
 F.css(`/* kiserlet-fuel */
+${P} .fx-caps{margin:16px 22px 0}${P} .fx-caps .fu-caps{margin:0}${P} .fx-caps .fu-caps i{width:24px;height:58px}${P} .fx-caps .fu-caps small{font-size:13px;font-weight:700;color:var(--ink)}@media (max-width:360px){${P} .fx-caps .fu-caps i{width:18px;height:50px}${P} .fx-caps .fu-caps .r{gap:4px}}
+${P} .fx-sl{display:grid;gap:10px;margin:0 18px}${P} .fx-sr{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:22px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .fx-cp{flex:none;display:grid;place-items:center;width:44px;height:52px;background:none!important;border:0!important;box-shadow:none!important}${P} .fx-cp svg{display:none}
+${P} .fx-cp i{display:block;width:22px;height:44px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--dom) 45%,#fff)}${P} .fx-cp.on i{background:linear-gradient(180deg,var(--liq1),var(--liq2));box-shadow:none}
+${P} .fx-sg{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-height:44px;justify-content:center}${P} .fx-sg b{font-size:15.5px;font-weight:750;color:var(--ink)}${P} .fx-sg small{font-size:13px;color:var(--ink);opacity:.8}
+${P} .fx-chv{font-size:22px;color:var(--ink);opacity:.45}
+${P} .fx-band summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-right:22px}${P} .fx-band summary::-webkit-details-marker{display:none}
+${P} .fx-band summary .mx-h{flex:none}${P} .fx-bs{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink))}${P} .fx-bs em{font-style:normal;font-size:20px;transition:transform .2s}${P} .fx-band[open] .fx-bs em{transform:rotate(90deg)}
+${P} .fx-mini{display:flex;gap:3px}${P} .fx-mini i{width:9px;height:20px;border-radius:999px;background:linear-gradient(180deg,var(--liq1),var(--liq2))}
+${P} .fx-band[open] .fx-sl{margin-top:4px}
+
 ${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 12px;flex:0 0 auto}@media (max-width:360px){${P} .fh-tabs button{padding:7px 8px;font-size:13px}}
 ${P} .fx-bowl{margin:14px 22px 0}${P} .fx-bowl .fm-g{display:flex;align-items:center;justify-content:space-between;gap:8px}
 ${P} .fx-wide .n9-btn{flex:1}${P} .fx-amb{color:#B4741F!important}${P} .fx-glass{display:flex;justify-content:center;margin:14px 0 0}${P} .fx-glass .fu-gl{transform:scale(1.35);transform-origin:top center;margin-bottom:40px}${P} .fx-glass .fu-gl small{font-size:13px!important;font-weight:750}${P} .fx-tip{background:#fff}${P} .fx-fl{margin-top:14px;font-weight:700}${P} .fx-bowl .fm-n small,${P} .fx-bowl .fu-bowl small{font-size:12.5px!important}${P} .fx-mh .fu-cup small,${P} .fx-mh .fu-cup b+small{font-size:12px!important}${P} .fx-ml .fl-mini small{font-size:12px!important}
@@ -103,5 +133,5 @@ ${P} .fx-when{margin:0;font-size:14px;color:var(--ink)}${P} .fx-ml .fh-acts{disp
 ${P} .fx-lg .ex-spt{padding:14px 6px}${P} .fx-st{margin-top:4px}${P} .fx-st .st{font-size:12px!important}
 `);
 
-window.FNOTES_FOLY=`<h2>Kísérlet · Fuel</h2><p><a href="#w-fuel-mai"><b>Mai</b></a> — felül a mondat és a tál, a makrók csövei a napi cél szaggatott vonalával, az étkezések időrendben egyforma kártyán (az ablakon kívüli a helyén, a következő kiemelve), a logolás módjai csempéken. Arcok: <a href="#w-fuel-mai.kihagyva">kihagyott étkezés</a> · <a href="#w-fuel-mai.kimelo">kímélő mód</a> (nincs kalóriacél, a pohár víz a kép, értékelés nélkül). Összevetésnek: <a href="#w-fuel-mai-lista">a mostani Mai</a>.</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Fuel</h2><p><a href="#w-fuel-mai"><b>Mai</b></a> — felül a mondat és a tál, a makrók csövei a napi cél szaggatott vonalával, az étkezések időrendben egyforma kártyán (az ablakon kívüli a helyén, a következő kiemelve), a logolás módjai csempéken. Arcok: <a href="#w-fuel-mai.kihagyva">kihagyott étkezés</a> · <a href="#w-fuel-mai.kimelo">kímélő mód</a> (nincs kalóriacél, a pohár víz a kép, értékelés nélkül). Összevetésnek: <a href="#w-fuel-mai-lista">a mostani Mai</a>.</p><p><a href="#w-fuel-stack"><b>Kiegészítők</b></a> — a következő adag a mondatban, a nap kapszulái a kép, a kész napszak összecsukva (<a href="#w-fuel-stack-lista">régi</a>).</p>`+(window.FNOTES_FOLY||'');
 })();
