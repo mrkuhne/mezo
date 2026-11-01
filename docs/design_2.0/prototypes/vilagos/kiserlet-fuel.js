@@ -25,7 +25,7 @@ function mai3(a){if(a&&a!=='kihagyva'&&a!=='kimelo')return O.mai(a);
   /* macros: the tube's top is the goal; scale the fill so the goal sits at 85% and draw it as a dashed waterline */
   const mac=cs.find(c=>/fu-mac/.test(c.html));
   const tubes=mac?mac.html.replace(/^<section[^>]*>/,'').replace(/<\/section>$/,'').replace(/--p:([\d.]+)%/g,(m,p)=>`--p:${Math.min(98,+p*.85)}%`).replace(/<i>\/ ([^<]*)<\/i>/g,'<i>$1</i>').replace('<span class="fu-w">Szénhidrát</span>','<span class="fx-w">Szén&shy;hidrát</span>').replace(/<span class="k2-tube"([^>]*)><em><\/em>/g,'<span class="k2-tube"$1><em></em><i class="fx-wl" aria-hidden="true"></i>'):'';
-  const macS=mac?`<section class="mx-s ln">${KH('Mai makrók')}<div class="ex-imp fx-mac">${tubes}</div><p class="ex-dates fx-leg"><i class="fx-wl s"></i>a napi cél</p></section>`:'';
+  const macS=mac?`<section class="mx-s ln">${KH('Mai makrók')}<div class="ex-imp fx-mac">${tubes}</div></section>`:'';
   /* meals */
   const blocks=cs.filter(c=>/fm-blk/.test(c.html)).map(c=>{const h=c.html,bh=h.indexOf('<div class="fm-bh"'),be=bal(h,bh);
     const head=h.slice(bh,be),rest=h.slice(be).replace(/<\/section>$/,''),name=g(head,/<strong>([^<]*)/),win=g(head,/<small>([^<]*)/);
