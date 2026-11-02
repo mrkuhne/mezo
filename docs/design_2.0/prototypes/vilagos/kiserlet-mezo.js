@@ -535,13 +535,17 @@ function emlek11(a){if(a)return O.emlek(a);
 O.emlek=mz.routes.emlek;mz.routes['emlek-lista']=O.emlek;mz.routes.emlek=emlek11;
 
 const ND={'21':['Vasárnap · szeptember 21.','Meccs, korai vacsora, és a legjobb éjszakád a héten.','Délelőtt csend, délután bemelegítés, este pedig meccs. A vacsora ezúttal <b>18:40-kor</b> lezárult, és bejött: az éjszakád <b>7,4-es</b> lett, a hét legjobbja. A kísérlet is találatot írt: a 4. szettben stabil maradt az ugrásod.',[[74,'t-moon','7,4','alvás'],[62,'t-bowl','18:40','vacsora'],[100,'t-volley','találat','meccs']]],
+  '15':['Hétfő · szeptember 15.','Fáradt hétfő a hétvégi késés után.','A hétvégén kétszer is éjfél után feküdtél, és ezt a hétfő megérezte: a reggeli bejelentkezésed <b>5-ös</b> volt, délután pedig elmaradt a séta. Az Alvás szerint ez a hétfői ugrás, nem a munka.',[[52,'t-moon','6,1','alvás'],[40,'t-heart','fáradt','bejelentkezés']]],
+  '16':['Kedd · szeptember 16.','Nyugodt kedd, rendben lezárt este.','Edzés nem volt, a nap egyenletesen ment. A vacsora <b>19:20-kor</b> lezárult, és 23 előtt ágyba kerültél: a hét első rendes éjszakája lett belőle.',[[70,'t-moon','7,1','alvás'],[60,'t-bowl','19:20','vacsora']]],
+  '18':['Csütörtök · szeptember 18.','Meccsnap, és megvolt a szénhidrát.','<b>17 óráig bekerült a 80 g szénhidrát</b>, és a meccs végjátékában is maradt láb: a 4. szettben alig esett az ugrásod. A kísérlet első találat-napja.',[[82,'t-volley','találat','meccs'],[80,'t-bowl','80 g','szénhidrát']]],
+  '19':['Péntek · szeptember 19.','Nehéz péntek, rövid éjszaka után.','A meccs utáni éjszaka rövid lett, <b>5,6 óra</b>. Délután feszült voltál a munka miatt, és a bejelentkezésed is lejjebb ment. Este korán lefeküdtél, ez segített a szombatnak.',[[40,'t-moon','5,6','alvás'],[38,'t-heart','feszült','bejelentkezés']]],
   '20':['Szombat · szeptember 20.','Lassú reggel, hosszú séta.','Nem történt semmi nagy, és pont ez volt a jó benne. Két forrásból is nyugodt napnak látszik; a Közérzet szerint az ilyen szombatok tartják egyben a heted.',[[62,'t-steps','6,2 km','séta'],[82,'t-heart','nyugodt','bejelentkezés']]]};
-function nap11(id){const d=ND[id]||ND['21'];
+function nap11(id){const d=ND[id];if(!d)return O.nap(id);
   return page('mezo',{title:d[0],sub:'Napi emlék',back:'emlekek'},`<div class="mx">
   <section class="mx-s ex-hero">${eb7('mezo','Mezo · a nap krónikája')}<h2 class="n7-h">${d[1]}</h2>
     <p class="w5-cap">Amiből a nap története íródott</p><div class="w4-tb">${F.vials(d[3].map(([p,ic,v,l])=>({l,ic,p,v,on:{toast:l+': '+v}})),{h:110})}</div></section>
   <section class="mx-s ln">${KH('A nap története')}${cm7('mezo','a naplóidból',d[2])}</section>
-  <section class="mx-s ln">${KH('Kapcsolódik')}<div class="w4-rl">${id==='20'?'':row7('t-flask','Ehhez a naphoz tartozó ügy','meccs előtti szénhidrát · találat-nap','data-go="poszt.kiserlet"')}${row7('t-history','Mikor volt még ilyen napom?','hasonló emlékek visszakeresése','data-go="emlekek"')}</div></section></div>`)}
+  <section class="mx-s ln">${KH('Kapcsolódik')}<div class="w4-rl">${!['18','21'].includes(id)?'':row7('t-flask','Ehhez a naphoz tartozó ügy','meccs előtti szénhidrát · találat-nap','data-go="poszt.kiserlet"')}${row7('t-history','Mikor volt még ilyen napom?','hasonló emlékek visszakeresése','data-go="emlekek"')}</div></section></div>`)}
 O.nap=mz.routes.nap;mz.routes['nap-lista']=O.nap;mz.routes.nap=nap11;
 
 const MST=['Miért most','Mi történt','Miből íródott','Hogy olvastad?'];
