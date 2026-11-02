@@ -518,6 +518,103 @@ function elet10(a){if(a)return O.eletesemenyek(a);
   <section class="mx-s ln">${KH('Időrendben',L.length+' esemény')}<div class="w4-rl">${L.map(([dim,t,sm,d])=>`<div class="ex-mrow w4-r w5-le${dim?' dim':''}">${E.drop(dim?'t-calendar':'t-journal')}<span class="g"><b>${t}</b><i class="q">${sm.replace(' — ',', ')}</i></span><i class="w3-st n">${d}</i></div>`).join('')}</div>
     ${mzLine('Új életesemény javaslatként érkezik a Rólad oldalra, ott döntesz róla.')}</section></div>`)}
 O.eletesemenyek=mz.routes.eletesemenyek;mz.routes['eletesemenyek-lista']=O.eletesemenyek;mz.routes.eletesemenyek=elet10;
+/* ═══ EMLÉKEK ALOLDALAI (2026-11-02, owner: "jöhet az Emlékek egy körben"). A memory and a day: the night's sentence, the
+   day's own levels as the picture, the story on Mezo's card. The memoir: the four steps as capsules, the step changes IN
+   PLACE (owner rule: no re-render), the answer stays. The archive and a chapter: the weeks as tubes (how many real data
+   points each chapter was written from), chapters as cards, the chapter's answer in place. The memory: its four layers
+   as stacked bands, the four views switched in place. Own state (E11). ═══ */
+const E11={step:0,memo:'',ch:{},mem:'retegek'};
+function emlek11(a){if(a)return O.emlek(a);
+  return page('mezo',{title:'2026. augusztus 12.',sub:'Napi emlék · kedd',back:'emlekek'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','Mezo éjszakai összefoglalója · kedd')}<h2 class="n7-h">Ez volt a hét legnyugodtabb éjszakája.</h2>
+    <div class="w7-pic">${pair(['alvás','7:40',88,TC4('szunya')],['a célod','7:30',82,'color-mix(in srgb,var(--dom) 40%,#fff)'],'a cél fölött','Az éjszaka a cél vonala fölé telt')}</div>
+    <span class="w3-tg w8-tg"><span>erős pull-nap</span><span>korai lefekvés</span><span>7 óra 40 perc alvás</span></span></section>
+  <section class="mx-s ln">${KH('A nap története')}${cm7('mezo','a rögzített napodból','Erős pull-nap volt: a Chest Supported Row 3×8-ra ment, és délután is maradt energia. A napló szerint a munka is jól haladt, és egyszer sem kellett kávé 14 óra után.<br><br>Este korán feküdtél, 7 óra 40 perc lett belőle, a reggeli pulzus is lejjebb ment. Ez volt a hét legnyugodtabb éjszakája.')}</section>
+  <section class="mx-s ln">${KH('Lapozz')}<div class="w11-pg"><button class="n8-b" data-toast="2026-08-11">‹ Augusztus 11.</button><button class="n8-b" data-toast="2026-08-13">Augusztus 13. ›</button></div>
+    <div class="w4-rl w7-rows">${row7('t-album','Minden emlék','az összes nap','data-go="emlekek"')}</div></section></div>`)}
+O.emlek=mz.routes.emlek;mz.routes['emlek-lista']=O.emlek;mz.routes.emlek=emlek11;
+
+const ND={'21':['Vasárnap · szeptember 21.','Meccs, korai vacsora, és a legjobb éjszakád a héten.','Délelőtt csend, délután bemelegítés, este pedig meccs. A vacsora ezúttal <b>18:40-kor</b> lezárult, és bejött: az éjszakád <b>7,4-es</b> lett, a hét legjobbja. A kísérlet is találatot írt: a 4. szettben stabil maradt az ugrásod.',[[74,'t-moon','7,4','alvás'],[62,'t-bowl','18:40','vacsora'],[100,'t-volley','találat','meccs']]],
+  '20':['Szombat · szeptember 20.','Lassú reggel, hosszú séta.','Nem történt semmi nagy, és pont ez volt a jó benne. Két forrásból is nyugodt napnak látszik; a Közérzet szerint az ilyen szombatok tartják egyben a heted.',[[62,'t-steps','6,2 km','séta'],[82,'t-heart','nyugodt','bejelentkezés']]]};
+function nap11(id){const d=ND[id]||ND['21'];
+  return page('mezo',{title:d[0],sub:'Napi emlék',back:'emlekek'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','Mezo · a nap krónikája')}<h2 class="n7-h">${d[1]}</h2>
+    <p class="w5-cap">Amiből a nap története íródott</p><div class="w4-tb">${F.vials(d[3].map(([p,ic,v,l])=>({l,ic,p,v,on:{toast:l+': '+v}})),{h:110})}</div></section>
+  <section class="mx-s ln">${KH('A nap története')}${cm7('mezo','a naplóidból',d[2])}</section>
+  <section class="mx-s ln">${KH('Kapcsolódik')}<div class="w4-rl">${id==='20'?'':row7('t-flask','Ehhez a naphoz tartozó ügy','meccs előtti szénhidrát · találat-nap','data-go="poszt.kiserlet"')}${row7('t-history','Mikor volt még ilyen napom?','hasonló emlékek visszakeresése','data-go="emlekek"')}</div></section></div>`)}
+O.nap=mz.routes.nap;mz.routes['nap-lista']=O.nap;mz.routes.nap=nap11;
+
+const MST=['Miért most','Mi történt','Miből íródott','Hogy olvastad?'];
+const MH=['Ez a hét nem a nagy elhatározásokról szólt.','Kedden még elúszott az este, vasárnapra megfordult.','Négy naplódból állt össze a fejezet.','Hogy olvastad?'];
+const memoAns=()=>E11.memo?`<p class="w3-ok">${TICK}${E11.memo==='up'?'Jó volt így olvasni, jegyzem.':'Nem ilyen volt: ebből tanulok a legtöbbet.'}</p><button class="fh-lk" data-w11="memo:">Visszavonom</button>`
+  :`<div class="w3-ab"><button class="n9-btn" data-w11="memo:up">Talált</button><button class="n8-b" data-w11="memo:down">Nem ilyen volt</button></div>`;
+const mHead=()=>{const s=E11.step;return `${eb7('mezo',`Mezo meséli · ${s+1} / 4`)}<h2 class="n7-h">${MH[s]}</h2>
+  <div class="w11-st">${MST.map((t,i)=>`<button class="w7-d${i<s?' on':''}${i===s?' now':''}" data-w11="step:${i}" aria-current="${i===s}"><i></i><b>${i+1}.</b><small>${t}</small></button>`).join('')}</div>
+  <div class="ex-acts w3-wide">${s<3?`<button class="n9-btn" data-w11="step:${s+1}">${s?'Tovább':'Mesélj'}</button><button class="n8-b" data-w11="step:${s+1}">Kihagyom</button>`:'<button class="n9-btn" data-w11="step:0">Elölről</button>'}</div>${s?`<div class="w3-lk w5-lk"><button class="fh-lk" data-w11="step:${s-1}">‹ Vissza</button></div>`:''}`};
+function memoar11(a){if(a)return O.memoar(a);const s=E11.step;
+  const bodies=[cm7('mezo','vasárnap este · a hét lezárult','Ez a hét nem a nagy elhatározásokról szólt. Vasárnap este leültem, és összeraktam a napi emlékeidből. Négy rövid lépésben mesélem, mindegyiket átugorhatod.'),
+    cm7('mezo','a heted','Kedden még úgy nézett ki, megint elúszik minden este. Aztán csütörtökön <b>17 óráig megvolt a szénhidrát</b>, és a meccs végjátékában is maradt láb. Szombaton lassú reggel, hosszú séta.<br><br>Vasárnap pedig az történt, amire az Alvás hetek óta várt: <b>korai vacsora, 23 előtti lefekvés</b>, és a hét legjobb éjszakája. Ha a jövő hét is így megy, a vacsora-ügyben ki tudjuk mondani az első biztos mondatot.'),
+    `<div class="w4-rl">${[['t-moon','Alvás-napló','vasárnap 7,4, a hét legjobbja'],['t-bowl','Étkezés-napló','csütörtök · 80 g szénhidrát 17:00-ig'],['t-volley','Meccsnapok','csütörtök és vasárnap · találat'],['t-chat','Esti jegyzeteid','szombat · „nem történt semmi nagy, pont ez volt a jó”']].map(x=>info7(...x)).join('')}</div>`,
+    `<div class="w11-ma" data-w11a="1">${memoAns()}</div>${mzLine('A következő fejezet ehhez a hanghoz igazodik.')}<div class="w4-rl w7-rows">${info7('t-calendar','Évforduló · 1 hónap','Egy hónapja kezdtük tudatosan korábbra tolni a vacsorát. Azóta 18 este sikerült.')}${row7('t-scroll','Archívum','a korábbi fejezetek · 6','data-go="archivum"')}${row7('t-flask','Ehhez a héthez tartozó ügy','meccs előtti szénhidrát · találat-nap','data-go="poszt.kiserlet"')}</div>`];
+  return page('mezo',{title:'Apró fordulatok',sub:'Heti fejezet · szept. 15–21.',back:'emlekek'},`<div class="mx">
+  <section class="mx-s ex-hero" id="w11-mh">${mHead()}</section>
+  ${bodies.map((b,i)=>`<section class="mx-s ln w11-sb" data-w11s="${i}"${i===s?'':' hidden'}>${KH(MST[i])}${b}</section>`).join('')}</div>`)}
+O.memoar=mz.routes.memoar;mz.routes['memoar-lista']=O.memoar;mz.routes.memoar=memoar11;
+
+const CH11=[['május 2026',[[20,'máj. 11–17.','Egy hét, amikor a tested megtanult várni','Hétfőn még úgy indultál, mintha minden nap csúcsnap lenne. Szerdára a tested szólt.',6],[19,'máj. 4–10.','Amikor az alvás előre szólt','Kedd éjjel 5,7 óra, és szerdán már a bemelegítésnél látszott, hogy ez nem az a nap.',5]]],['április 2026',[[18,'ápr. 27. – máj. 3.','Az első közös korrekció','Ezen a héten először mondtad, hogy nem értesz egyet, és igazad lett.',4],[17,'ápr. 20–26.','Lassabban, de tovább','A futások rövidültek, a hét mégis a legerősebb lett.',5],[16,'ápr. 13–19.','A hét, amikor visszajött az étvágy','Három hét után először maradt el a délutáni nassolás.',3]]],['március 2026',[[15,'márc. 30. – ápr. 5.','Az első fejezet','Még alig ismertük egymást. Ezen a héten kezdtük.',2]]]];
+const CHA=CH11.flatMap(c=>c[1]);
+const chTubes=cur=>`<div class="w4-tb">${F.vials([...CHA].reverse().map(c=>({l:c[0]+'. hét',p:c[4]/6*100,v:c[4],mark:c[0]===cur?'ez':'',on:'fejezet.'+c[0]})),{h:90})}</div>`;
+const chCard=c=>`<article class="w3-c"><button class="w3-tap" data-go="fejezet.${c[0]}" aria-label="${c[2]}"><span class="w3-hd">${E.drop('t-scroll')}<span class="g"><b>${c[0]}. hét</b><small>${c[1]}</small></span><i class="w3-st n">${c[4]} adatpontból</i></span><span class="w3-h">${c[2]}</span><span class="w3-x">${c[3]}</span><span class="w3-f"><span class="n8-b">Elolvasom</span></span></button></article>`;
+function arch11(a){if(a)return O.archivum(a);
+  return page('mezo',{title:'Minden fejezet',sub:'Memoár · archívum',back:'memoar'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','3 hónap közös történet')}<h2 class="n7-h">6 fejezet készült eddig, hetente egy.</h2>
+    <p class="w5-cap">Hány valódi adatpontból íródott egy-egy fejezet</p>${chTubes(0)}
+    ${mzLine('A legfrissebb: „Egy hét, amikor a tested megtanult várni”. Minél több a pont, annál többet tudtam a hétről.')}
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-go="fejezet.20">A legutóbbi fejezet</button></div></section>
+  ${CH11.map(([m,rows])=>`<section class="mx-s ln">${KH(m[0].toUpperCase()+m.slice(1),rows.length+' fejezet')}<div class="w3-l">${rows.map(chCard).join('')}</div></section>`).join('')}</div>`)}
+O.archivum=mz.routes.archivum;mz.routes['archivum-lista']=O.archivum;mz.routes.archivum=arch11;
+
+const chAns=n=>{const v=E11.ch[n];return v?`<p class="w3-ok">${TICK}${v==='up'?'Köszönöm, jegyzem.':'Értem. Mi nem stimmelt? Írd meg, ebből tanulok.'}</p><button class="fh-lk" data-w11="ch:${n}:">Visszavonom</button>`
+  :`<div class="w3-ab"><button class="n9-btn" data-w11="ch:${n}:up">Talált</button><button class="n8-b" data-w11="ch:${n}:down">Nem ilyen volt</button><button class="n8-b" data-sheet="reply">Elmesélem</button></div>`};
+function fej11(id){const k=CHA.findIndex(c=>String(c[0])===String(id||20));if(k<0)return O.fejezet(id);const c=CHA[k],prev=CHA[k+1],next=CHA[k-1],big=c[0]===20;
+  const prose=big?'Hétfőn még úgy indultál, mintha minden nap csúcsnap lenne. Szerdára a tested szólt: a guggolás nem ment, az alvás rövid volt, és a reggeli pulzus is feljebb kúszott.<br><br>Csütörtökön pihenőt tartottál, pedig a terv mást mondott. Pénteken jött a hét legjobb edzése: a Chest Row 102,5 × 9 új csúcs lett.<br><br>Ez volt az első hét, amikor a várás nem kimaradás volt, hanem döntés.'
+    :`${c[3]} A hét elején még minden a terv szerint ment, aztán egy rövid éjszaka mindent átrendezett.<br><br>Ami ebből megmaradt: a tested előbb szól, mint a mérleg vagy a napló. Érdemes rá hallgatni.`;
+  const src=big?[['t-up','Chest Row 102,5 × 9','pénteki csúcs'],['t-heart','Reggeli pulzus','pihenten mérve'],['t-moon','Alvás 7,8 óra','szombat']]:[['t-moon','5,7 óra alvás','kedd éjjel'],['t-dumbbell','A guggolás kimaradt','szerda'],['t-journal','Napló','szerda']];
+  return page('mezo',{title:c[2],sub:`Heti memoár · ${c[0]}. hét · ${c[1]}`,back:'archivum'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo',`Mezo meséli · ${c[0]}. hét`)}<h2 class="n7-h">${c[3]}</h2>
+    <p class="w5-cap">A hat fejezet: ez a megjelölt</p>${chTubes(c[0])}</section>
+  <section class="mx-s ln">${KH('A fejezet')}${cm7('mezo',c[1],prose)}</section>
+  <section class="mx-s ln">${KH('Miből íródott',src.length+' adatpont')}<div class="w4-rl">${src.map(x=>info7(...x)).join('')}</div></section>
+  <section class="mx-s ln">${KH('Hogy olvastad?')}<div class="w11-ma" data-w11c="${c[0]}">${chAns(c[0])}</div></section>
+  <section class="mx-s ln">${KH('Lapozz')}<div class="w4-rl">${prev?row7('t-scroll',`‹ ${prev[0]}. hét`,prev[2],`data-go="fejezet.${prev[0]}"`):''}${next?row7('t-scroll',`${next[0]}. hét ›`,next[2],`data-go="fejezet.${next[0]}"`):''}</div></section></div>`)}
+O.fejezet=mz.routes.fejezet;mz.routes['fejezet-lista']=O.fejezet;mz.routes.fejezet=fej11;
+
+const LAY=[['t-brain','Tartós tudás','amit biztosan tudok rólad','15 tény','data-go="tudastar"'],['t-pattern','Minták, amikről te döntesz','3 megerősített, 2 függő','6 minta','data-go="rolad"'],['t-journal','Napi emlékek','112 beszélgetés-részlet, július 1-től','38 nap','data-w11="mem:naplo"'],['t-signal','Minden, amit rögzítesz','a nyers adat','47 / 60 nap','']];
+const FLOW=['megerősítés után','hetente mintakeresés','minden nap 02:20-kor napi összefoglaló'];
+function mem11(a){if(a)return O.memoria(a);const on=/3 hasonló nap a memóriából/.test(O.emlekek(''));
+  const lay=`<div class="w4-rl">${[...LAY].reverse().map((l,i)=>`${i?`<p class="w11-fl">↑ ${FLOW[3-i]}</p>`:''}${l[4]?`<button class="ex-mrow w4-r" ${l[4]}>`:'<div class="ex-mrow w4-r">'}${E.drop(l[0])}<span class="g"><b>${l[1]}</b><i class="q">${l[2]}</i></span><i class="w3-st n">${l[3]}</i>${l[4]?'<em>›</em></button>':'</div>'}`).join('')}${row7('t-lens','Miért nem lát még mintát a motor?','a minták oldalán','data-go="mintak"')}</div>`;
+  const nap=`<p class="w5-cap">Augusztus 2026 · 38 nap</p><div class="w3-l">${[['augusztus 12., kedd','Erős pull-nap volt: a Chest Supported Row 3×8-ra ment, és délután is maradt energia.',1],['augusztus 11., hétfő','Pihenőnap, sok séta. Ebédnél kimaradt a fehérje, este pótoltad.',1],['augusztus 10., vasárnap','Röpi este, három szett, a harmadikban elfogyott a lendület.',0]].map(([d,x,k])=>`<article class="w3-c"><button class="w3-tap" data-go="emlek"><span class="w3-hd">${E.drop('t-album')}<span class="g"><b>${d}</b></span><i class="w3-st ${k?'ok':'n'}">${k?'kereshető':'még nem kereshető'}</i></span><span class="w3-x">${x}</span></button></article>`).join('')}</div>`;
+  const ker=`<button class="w6-s" data-m="srch">${I('t-lens')}<span class="${on?'on':''}">${on?'rossz alvás edzés után':'Milyen napot keresel?'}</span><b>${on?'Törlés':'Keresés'}</b></button>
+    ${on?`<div class="w3-l w6-hits">${SIM3.map(([d,ago,x,p])=>`<button class="w5-f w6-h" data-go="emlek"><span class="g"><b>${d} · ${ago}</b><small>${x}</small><span class="w4-lv"><span class="t"><i style="width:${p}%;--c:var(--dom)"></i></span><b>${p}%</b></span></span></button>`).join('')}</div>${mzLine('A szám azt mutatja, mennyire hasonlít az a nap a keresésedre.')}`:''}`;
+  const bars=[40,62,35,80,55,48,90,30,66,72,44,58,38,84];
+  const aud=`<p class="w7-sum">0,042 dollár</p><p class="w5-cap">Ennyibe került az emlékezet az elmúlt 30 napban, 214 hívás</p>
+    <div class="w11-au">${bars.map(h=>`<span><i style="height:${h}%"></i><i class="o" style="height:${Math.round(h*.35)}%"></i></span>`).join('')}</div><p class="w8-lg"><span><i class="f"></i>amit a csapat elolvasott</span><span><i class="h"></i>amit írt</span></p>
+    <div class="w4-rl w7-rows">${row7('t-brain','Tudástár','a tények és az eredetük','data-go="tudastar"')}</div>`;
+  const V={retegek:['Rétegek',lay],naplo:['Napló',nap],kereso:['Kereső',ker],audit:['Költség',aud]};
+  return page('mezo',{title:'Memória',sub:'Rétegek, eredet és költségek',back:'gepterem'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','Az emlékezeted')}<h2 class="n7-h">60 napból 47 mért nap van az emlékezetben.</h2>
+    <p class="w5-cap">Felül a tartós tudás, alul a nyers adat</p>
+    <div class="w10-st8">${LAY.map((l,i)=>`<span style="background:color-mix(in srgb,var(--dom) ${36-i*8}%,#fff)"><b>${l[1]}</b><small>${l[3]}</small></span>`).join('')}</div>
+    ${mzLine('Lentről fölfelé tisztul: a nyers adatból napló, a naplóból minta, a mintából tartós tudás lesz.')}</section>
+  <section class="mx-s ln"><div class="w9-sw w11-sw" role="group">${Object.entries(V).map(([k,[l]])=>`<button class="${E11.mem===k?'on':''}" data-w11="mem:${k}" aria-pressed="${E11.mem===k}">${l}</button>`).join('')}</div></section>
+  ${Object.entries(V).map(([k,[l,b]])=>`<section class="mx-s ln w9-v" data-w11v="${k}"${E11.mem===k?'':' hidden'}>${KH(l)}${b}</section>`).join('')}</div>`)}
+O.memoria=mz.routes.memoria;mz.routes['memoria-lista']=O.memoria;mz.routes.memoria=mem11;
+
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-w11]');if(!b)return;e.preventDefault();const [k,v,x]=b.dataset.w11.split(':'),ph=document.querySelector('#phone');if(!ph)return;
+  if(k==='step'){E11.step=Math.max(0,Math.min(3,+v));const h=ph.querySelector('#w11-mh');if(h)h.innerHTML=mHead();ph.querySelectorAll('[data-w11s]').forEach(s=>s.hidden=+s.dataset.w11s!==E11.step);return}
+  if(k==='memo'){E11.memo=v;const a=ph.querySelector('[data-w11a]');if(a)a.innerHTML=memoAns();if(v)F.toast(v==='up'?'Köszönjük, feljegyeztük.':'Ebből tanulunk a legtöbbet.');return}
+  if(k==='ch'){E11.ch[v]=x;const a=ph.querySelector(`[data-w11c="${v}"]`);if(a)a.innerHTML=chAns(+v);return}
+  if(k==='mem'){E11.mem=v;ph.querySelectorAll('[data-w11v]').forEach(s=>s.hidden=s.dataset.w11v!==v);ph.querySelectorAll('.w11-sw button').forEach(c=>{const on=c.dataset.w11==='mem:'+v;c.classList.toggle('on',on);c.setAttribute('aria-pressed',on)});ph.querySelector('.w11-sw')?.scrollIntoView({block:'start',behavior:'smooth'})}},true);
 
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-w10]');if(!b)return;e.preventDefault();const [k,v,x]=b.dataset.w10.split(':'),ph=document.querySelector('#phone');if(!ph)return;
   if(k==='fb'){R10.fb[v]=x||undefined;const c=ph.querySelector(`[data-w10c="${v}"]`);if(c)c.outerHTML=clCard(+v);F.toast(x==='yes'?'„Talál” — köszönjük, feljegyeztük.':x==='no'?'Nyugdíjazva — a csapat nem viszi tovább.':'Visszavonva');return}
@@ -750,6 +847,13 @@ ${P} .w10-ct .n8-b.on{background:var(--dom);color:#fff;box-shadow:none}${P} .w10
 ${P} .w10-cp{flex-wrap:wrap}${P} .w10-cp i{flex:0 0 calc((100% - 28px)/8)}${P} .w10-cp i.hf{background:linear-gradient(0deg,var(--liq2) 50%,rgba(10,42,60,.06) 50%);box-shadow:none}${P} .w10-cp i.x{background:none;outline:2px dashed rgba(10,42,60,.35);outline-offset:-2px;box-shadow:none}
 ${P} .w10-st8{display:grid;gap:4px;margin:8px 14px 0}${P} .w10-st8 span{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;}
 ${P} .w10-st8 b{font-size:14.5px;color:var(--ink)}${P} .w10-st8 small{flex:none;font-size:13px;font-weight:650;color:var(--ink)}${P} .w10-st8 .dim{opacity:.6}
+${P} .w11-pg{display:flex;gap:8px;margin:0 14px}${P} .w11-pg .n8-b{flex:1;margin:0}
+${P} .w11-st{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 14px 0}${P} .w11-st .w7-d i{max-width:none;height:30px}${P} .w11-st .w7-d small{white-space:normal}
+${P} .w11-ma{margin:0 22px 12px}${P} .w11-fl{margin:2px 0 2px 64px;font-size:13px;font-weight:650;color:var(--ink);opacity:.8}
+${P} .w11-sw{margin:0 14px}${P} .w11-sw button{font-size:13.5px}${P} .w11-sb .w7-cm{margin:0 14px}${P} .w11-sb>.w4-rl{margin:0}
+${P} .w11-au{display:flex;align-items:flex-end;gap:4px;height:90px;margin:14px 22px 0}${P} .w11-au span{position:relative;flex:1;height:100%;display:flex;align-items:flex-end}
+${P} .w11-au i{position:absolute;left:0;right:0;bottom:0;border-radius:6px 6px 2px 2px;background:color-mix(in srgb,var(--dom) 45%,#fff)}${P} .w11-au i.o{background:var(--dom)}
+${P} [data-w11v][hidden],${P} [data-w11s][hidden]{display:none!important}
 ${P} .w7-dc{margin:10px 4px 0;font-size:13.5px;font-weight:650;line-height:1.4;color:var(--ink)}${P} .w7-d small .w3-tk{color:#1F7A4D}${P} .w7-d small{min-height:16px;font-size:12.5px;font-weight:650;color:var(--ink);opacity:.8;text-align:center;line-height:1.2}
 @media (max-width:360px){${P} .w7-nr{gap:3px}${P} .w7-n b{font-size:12px}}
 @media (max-width:360px){${P} .w3-h{font-size:17px}${P} .w3-hd{gap:10px}${P} .w3-st{padding:4px 8px;font-size:12px}${P} .w3-tap{padding:14px}}
