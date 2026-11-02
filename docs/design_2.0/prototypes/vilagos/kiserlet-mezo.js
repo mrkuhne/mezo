@@ -12,9 +12,9 @@
    taps). */
 (function(){
 const F=window.F,mz=window.FREG&&FREG.mezo,X=window.KXN,E=window.KXE;if(!mz||!X||!E)return;
-const {I,badge,page}=F,{KH,hubHead}=X,{bal,pills}=E;
+const {I,badge,page}=F,{KH,hubHead}=X,{bal,pills,g}=E;
 const P='.phone.foly[data-s="elo"][data-d="mezo"]';
-const O={mai:mz.routes.mai,fal:mz.routes.fal,csapat:mz.routes.csapat};mz.routes['mai-lista']=O.mai;mz.routes['csapat-lista']=O.csapat;
+const O={mai:mz.routes.mai,fal:mz.routes.fal,csapat:mz.routes.csapat};mz.routes['mai-lista']=O.mai;mz.routes['csapat-lista']=O.csapat;O.rolad=mz.routes.rolad;O.terv=mz.routes['rolad-terv'];mz.routes['rolad-lista']=O.rolad;
 
 const TN={szunya:'Alvás',mocor:'Mozgás',falat:'Étkezés',deru:'Közérzet',mezo:'Mezo',szk:'Szkeptikus'};
 const TICK='<svg class="w3-tk" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg>';
@@ -137,6 +137,47 @@ function csapat3(a){if(a)return O.csapat(a);const best=[...TEAMK].sort((x,y)=>y[
   <section class="mx-s ln">${KH('A közös munka')}<div class="w4-rl">${row('t-council','Konzílium','A heti ülés jegyzőkönyve · 2 dolog került be rólad','konzilium')}${row('t-gear','Gépterem · Összes funkció','A motorháztető és a régi eszköztár','gepterem')}</div></section></div>`)}
 mz.routes.csapat=csapat3;
 
+/* ═══ RÓLAD (2026-11-02): the team's surest sentence about him stays the heart of the page (no purple box). The nine
+   topics as tubes on two shelves (5 + 4) with whole words (the "Fiz/Tápl/Önv" abbreviations went), a tube opens its topic;
+   Talál wide, Pontosítom beside, Miből látom as the line. The decisions in a carousel with dots (owner's pick), each on one
+   card shape, the approved buttons and state machine kept (data-m → the approved handlers, which redraw this page). Then
+   the Tudástár as four tiles, the facts as cards + a wide "Mind a N tény", life events and Tovább as drop rows; the long
+   grey "A te kezedben" became Mezo's line. ═══ */
+const DIMW={physical:'Test',training:'Edzés',nutrition:'Étkezés',recovery:'Alvás',mind:'Lélek',discipline:'Fegyelem',life:'Emberek',selfaudit:'Önvizsgálat',chapter:'Munkaciklus'};
+const FACTS4=[['szunya','Hétvégén átlag 40 perccel később fekszel le','21× visszaigazolva','beszélgetésből'],['falat','Koffein 14:00 után már nem','23× visszaigazolva','beszélgetésből'],['mocor','Röplabda: kedd + csütörtök + szombat','18× visszaigazolva','beszélgetésből'],['mezo','Szereted érteni a javaslatok indoklását','tőled','kézzel vetted fel · aug. 20.']];
+const quarter=t=>t.replace(/(\d{4})\. III\. n\.év/,'$1 nyara').replace(/(\d{4})\. IV\. n\.év/,'$1 ősze').replace(/(\d{4})\. IV\. negyedév/,'$1 ősze');
+function rolad3(a){if(a)return O.rolad(a);
+  const base=O.rolad(''),full=O.terv(),dimsBtn=[...base.matchAll(/<button class="gv " style="--c:([^"]+)" data-go="dimenzio\.(\w+)" aria-label="([^"·]+)· (\d+)% érettség">/g)].map(m=>({c:m[1],k:m[2],p:+m[4]}));
+  const shelf=ds=>`<div class="w5-sh">${F.vials(ds.map(d=>({l:DIMW[d.k]||d.k,p:d.p,v:d.p,c:d.c,on:'dimenzio.'+d.k})),{h:96})}<i class="w5-shf"></i></div>`;
+  const talal=/Megerősítetted — a benyomás erősödik/.test(base);
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb w5-by">${badge('szunya',{s:26})}Az Alvás benyomása · a legbiztosabb</small><h2 class="n7-h w5-q">„Hétvégén rendszeresen később fekszel le, és a hétfői edzésed ezt meg is érzi.”</h2>
+    ${mzLine('Ez javítható benyomás, nem címke. Ha nem így van, pontosítsd.')}
+    <p class="w5-cap">A kép rólad kilenc témakörben: ennyire érett</p>${shelf(dimsBtn.slice(0,5))}${shelf(dimsBtn.slice(5))}
+    <div class="ex-acts w3-wide">${talal?`<p class="w3-ok">${TICK}Megerősítetted, a benyomás erősödik</p>`:'<button class="n9-btn" data-m="rq">Talál</button>'}<button class="n8-b" data-sheet="reply">Pontosítom</button></div>
+    <div class="w3-lk w5-lk"><button class="fh-lk" data-sheet="mibol" data-arg="Hétvégén rendszeresen később fekszel le">Miből látom? ›</button></div></section>`;
+  /* the decisions: every inbox card of the full list, restyled, in one carousel */
+  const cards=[];let i=0;while((i=full.indexOf('<section class="fh-card',i))>=0){const e=bal(full,i,'section'),h=full.slice(i,e);i=e;if(h.indexOf('<span class="mz-by">')<0||h.indexOf('fh-hero')>=0)continue;cards.push(h)}
+  const open=cards.filter(h=>/data-m="rdec:/.test(h)).length;
+  const dec=cards.map(h=>{const inner=h.replace(/^<section[^>]*>/,'').replace(/<\/section>$/,'').replace(/class="btn sm"/g,'class="n9-btn"').replace(/class="mz-chip"/g,'class="n8-b"').replace(/(\d{4})\. IV\. negyedév/,'$1 ősze');
+    return `<div class="cr-c w5-d${/mz-dim/.test(h.slice(0,80))?' dim':''}">${inner}</div>`}).join('');
+  const decS=`<section class="mx-s ln">${KH('Döntésre vár',open?`${open} jelölt`:'mind eldöntve')}<div class="cr w5-cr">${dec}</div>${X.dots(cards.length)}</section>`;
+  const tile=(ic,n,k,sub,on)=>`<button class="w5-t" ${on}>${E.drop(ic)}<b>${n}</b><span>${k}</span><small>${sub}</small></button>`;
+  const tud=`<section class="mx-s ln">${KH('Amit a csapat megjegyzett')}<div class="w5-tg">${tile('t-person','90','Tények rólad','83 bekapcsolva · 7 elhallgattatva','data-go="tenyek"')}${tile('t-people','70','Emberek','18 ember · 3 elhallgattatva','data-go="kind.6"')}${tile('t-pattern','30','Észrevételek','26 még igaz · 1 felülírva','data-go="mintak"')}${tile('t-cowave','12','Hatások','7 ember · 4 esemény','data-toast="Hatások — a Tudástár hub lapja"')}</div></section>`;
+  const nf=g(base,/A tények rólad · (\d+) aktív/)||'15';
+  const facts=`<section class="mx-s ln">${KH('A tények rólad',nf+' aktív')}<div class="w3-l">${FACTS4.map(([k,t,c,src])=>`<article class="w5-f">${badge(k,{s:40})}<span class="g"><b>${t}</b><small>${TN[k]} · ${src}</small><i class="w3-st n">${c}</i></span></article>`).join('')}</div>
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-go="tenyek">Mind a ${nf} tény</button></div></section>`;
+  const lifes=[...base.matchAll(/<div class="mz-life"><u class="([^"]*)"><\/u><span class="g"><strong>([^<]*)<\/strong><small>([^<]*)<\/small><\/span><em>([^<]*)<\/em><\/div>/g)];
+  const row=(ic,t,sub,attr,r='›')=>`<button class="ex-mrow w4-r" ${attr}>${E.drop(ic)}<span class="g"><b>${t}</b><i class="q">${sub}</i></span><em>${r}</em></button>`;
+  const life=`<section class="mx-s ln">${KH('Életesemények','',`<button class="fh-lk" data-go="eletesemenyek">Mind ›</button>`)}<div class="w4-rl">${lifes.map(([,dim,t,sm,d])=>`<div class="ex-mrow w4-r w5-le${dim?' dim':''}">${E.drop(dim?'t-calendar':'t-journal')}<span class="g"><b>${t}</b><i class="q">${sm.replace(' — ',', ')}</i></span><i class="w3-st n">${quarter(d)}</i></div>`).join('')}</div></section>`;
+  const more=`<section class="mx-s ln">${KH('Tovább')}<div class="w4-rl">${row('t-person','A csapat képe rólad','9 témakör, mindegyik pontosítható','data-go="dimenziok"')}${row('t-chat','Így beszélj velem','a saját kommunikációs kéréseid','data-toast="Így beszélj velem — a beállításokban (Én)"')}${row('t-graph','Kapcsolatok','a tudásod térképe','data-go="kategoriak"')}${row('t-brain','Tudástár','tények, kategóriák és a működése','data-go="tudastar"')}</div>
+    ${mzLine('Minden, ami itt áll, a forrásával együtt él. Bármit elhallgattathatsz vagy pontosíthatsz, és a csapat csak azt használja, amit jóváhagytál.')}</section>`;
+  return page('mezo',{title:'Rólad',sub:'Mezo · a közös kép rólad',tab:'rolad'},`<div class="mx">${top}${decS}${tud}${facts}${life}${more}</div>`)}
+mz.routes.rolad=rolad3;
+/* a decision redraws the page (the approved handler, a capture listener on document); read the carousel position on
+   window first, then put it back on the card that was answered */
+window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.w5-cr [data-m]');if(!b)return;const x=b.closest('.w5-cr').scrollLeft;
+  setTimeout(()=>{const c=document.querySelector('#phone .w5-cr');if(c){c.style.scrollBehavior='auto';c.scrollLeft=x;c.style.scrollBehavior=''}},30)},true);
+
 /* the tab pages' header as on the converted domains: no big title, the "?" top left (sub-pages keep their title) */
 Object.keys(mz.routes).forEach(k=>{const f=mz.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>hubHead(f(...a));g.__hub=1;mz.routes[k]=g}});
 
@@ -229,8 +270,24 @@ ${P} .w4-lv b{flex:none;min-width:44px;text-align:right;font:800 18px var(--disp
 ${P} .w4-a{display:flex;justify-content:flex-end;margin-top:12px}${P} .w4-a .n8-b{margin:0;min-height:44px}
 ${P} .w4-rl{display:grid;gap:10px;margin:0 14px}${P} .w4-r{width:100%;text-align:left}${P} .w4-r em{margin-left:auto;font-style:normal;font-size:18px;font-weight:700;color:var(--dom)}
 @media (max-width:360px){${P} .w4-tb{margin:16px 4px 0}${P} .w4-tb .k2-vial small{font-size:12px;letter-spacing:-.04em}}
+${P} .w5-by{display:flex;align-items:center;gap:8px}${P} .w5-q{font-size:25px!important;line-height:1.2}${P} .w5-cap{margin:22px 22px 4px;font-size:14px;font-weight:700;color:var(--ink)}
+${P} .w5-sh{position:relative;margin:8px 14px 0;padding-bottom:6px}${P} .w5-sh .k2-vials{gap:6px}${P} .w5-sh .k2-vial{min-width:0}${P} .w5-sh .k2-vial small{color:var(--ink);font-weight:650;font-size:12.5px;white-space:nowrap;letter-spacing:-.03em}
+${P} .w5-shf{position:absolute;left:0;right:0;bottom:0;height:6px;border-radius:4px;background:rgba(10,42,60,.1)}${P} .w5-sh+.w5-sh .k2-vials{grid-template-columns:repeat(4,minmax(0,1fr))!important;padding:0 6%}
+${P} .w5-lk{margin:6px 22px 0}
+${P} .w5-cr{align-items:flex-start}${P} .w5-d{padding:16px}${P} .w5-d.dim{opacity:.8}
+${P} .w5-d .mz-lab{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--ink)}${P} .w5-d .mz-lab span{color:var(--ink)!important;opacity:.85;text-align:left!important;font-weight:650}${P} .w5-d .mz-by{display:flex;align-items:center;gap:8px;font-size:14px;opacity:1!important}
+${P} .w5-d .mz-q{font:800 18px/1.3 var(--disp,inherit);color:var(--ink);margin:12px 0 0}${P} .w5-d .mz-srcq{font-size:14px;color:var(--ink);background:rgba(10,42,60,.05)}${P} .w5-d .mz-sub{font-size:14px;line-height:1.45;color:var(--ink);opacity:.85}${P} .w5-d .mz-sub b{opacity:1}
+${P} .w5-d .mz-v{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}${P} .w5-d .mz-v .n9-btn{flex:1 0 100%;margin:0;min-height:46px}${P} .w5-d .mz-v .n8-b{margin:0;min-height:44px}
+${P} .w5-d .mz-warn{font-size:14px;color:#8A5513}${P} .w5-d .fh-row .g strong{font-size:15px}${P} .w5-d .fh-row .g small{color:var(--ink);opacity:.8}${P} .w5-d .mz-done{font-size:14px;color:#1F7A4D}
+${P} .w5-d .mz-ed .fh-acts{display:flex;gap:10px;align-items:center;margin-top:10px}
+${P} .w5-tg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 14px}
+${P} .w5-t{display:flex;flex-direction:column;align-items:flex-start;padding:14px;border-radius:22px;background:#fff;text-align:left;box-shadow:0 10px 24px -18px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}${P} .w5-t svg.ng{width:46px;height:46px;margin:0 0 4px -4px}
+${P} .w5-t b{font:800 30px/1 var(--disp,inherit);color:var(--ink)}${P} .w5-t span{margin-top:4px;font-size:15px;font-weight:750;color:var(--ink)}${P} .w5-t small{margin-top:2px;font-size:13px;line-height:1.35;color:var(--ink);opacity:.8}
+${P} .w5-f{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;background:#fff;box-shadow:0 10px 24px -18px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}${P} .w5-f .g{flex:1;min-width:0;display:flex;flex-direction:column}${P} .w5-f .g b{font-size:15px;line-height:1.3;color:var(--ink)}${P} .w5-f .g small{margin-top:3px;font-size:13px;color:var(--ink);opacity:.75}
+${P} .w5-f .w3-st{align-self:flex-start;margin-top:8px}${P} .w5-t .ng-pipe,${P} .w5-t .ng-flow,${P} .w5-le .ng-pipe,${P} .w5-le .ng-flow{display:none}${P} .mx-h span{color:var(--ink);opacity:.8;font-weight:650}${P} .w5-le .w3-st{margin-left:auto}${P} .w5-le.dim svg.ng{opacity:.6}
+@media (max-width:360px){${P} .w5-q{font-size:22px!important}${P} .w5-sh{margin:8px 10px 0}${P} .w5-sh+.w5-sh .k2-vials{padding:0;gap:8px}${P} .w5-sh .k2-vial small{font-size:12px;letter-spacing:-.05em}}
 @media (max-width:360px){${P} .w3-h{font-size:17px}${P} .w3-hd{gap:10px}${P} .w3-st{padding:4px 8px;font-size:12px}${P} .w3-tap{padding:14px}}
 `);
 
-window.FNOTES_FOLY=(window.FNOTES_FOLY||'')+`<h2>Kísérlet · Mezo</h2><p><a href="#w-mezo-mai"><b>Üzenőfal</b></a> — felül a mondat, a csapat öt cseppje (csak kép) és a Megnézem; a Rád vár marad; Ma és a tegnap esti kiadás egyforma bejegyzés-kártyákon (ki, mikor, fajta, állapot, kiemelt mondat, két sor, a bejegyzés kis képe, Elolvasom); a teljes szöveg, a vita, a Miből látszik és a válasz a felcsúszó fiókban. A régebbi napok egy gomb mögött: <a href="#w-mezo-mai.korabbi">Korábbi napok</a>. Összevetésnek: <a href="#w-mezo-mai-lista">a mostani Üzenőfal</a>.</p><p><a href="#w-mezo-csapat"><b>A csapat</b></a> — a mondat a legjobban ismerő tagról, öt cső (mennyire érett a képük rólad), Mezo mondata a leggyengébbről és a Bejelentkezem gomb; minden tag (a Szkeptikus is) egyforma kártyán; Konzílium és Gépterem csepp-sorként. Összevetésnek: <a href="#w-mezo-csapat-lista">a mostani A csapat</a>.</p>`;
+window.FNOTES_FOLY=(window.FNOTES_FOLY||'')+`<h2>Kísérlet · Mezo</h2><p><a href="#w-mezo-mai"><b>Üzenőfal</b></a> — felül a mondat, a csapat öt cseppje (csak kép) és a Megnézem; a Rád vár marad; Ma és a tegnap esti kiadás egyforma bejegyzés-kártyákon (ki, mikor, fajta, állapot, kiemelt mondat, két sor, a bejegyzés kis képe, Elolvasom); a teljes szöveg, a vita, a Miből látszik és a válasz a felcsúszó fiókban. A régebbi napok egy gomb mögött: <a href="#w-mezo-mai.korabbi">Korábbi napok</a>. Összevetésnek: <a href="#w-mezo-mai-lista">a mostani Üzenőfal</a>.</p><p><a href="#w-mezo-csapat"><b>A csapat</b></a> — a mondat a legjobban ismerő tagról, öt cső (mennyire érett a képük rólad), Mezo mondata a leggyengébbről és a Bejelentkezem gomb; minden tag (a Szkeptikus is) egyforma kártyán; Konzílium és Gépterem csepp-sorként. Összevetésnek: <a href="#w-mezo-csapat-lista">a mostani A csapat</a>.</p><p><a href="#w-mezo-rolad"><b>Rólad</b></a> — a legbiztosabb mondat a szív, a kilenc témakör csövei két polcon teljes szavakkal, a döntések lapozóban pöttyökkel, a Tudástár négy csempén, a tények kártyákon, az életesemények és a Tovább csepp-sorként. Összevetésnek: <a href="#w-mezo-rolad-lista">a mostani Rólad</a>.</p>`;
 })();
