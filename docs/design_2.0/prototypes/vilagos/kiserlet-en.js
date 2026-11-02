@@ -160,9 +160,32 @@ function celok12(a){if(a)return O.celok(a);const base=O.celok('');
   <div class="ng-tail"></div></div>`)}
 en.routes.celok=celok12;
 
+/* ═══ NAPLÓ (2026-11-02, owner: this week's entries on top): the sentence and this week's entries as the hero, each on
+   one card shape (when · what kind, the entry itself), one wide "+ Új bejegyzés"; the decision waiting for a look-back as
+   its own card with the five-step rating (a tap answers in place, data-w12); the gratitude streak as a row with the
+   week's capsules. ═══ */
+O.naplo=en.routes.naplo;en.routes['naplo-lista']=O.naplo;
+const JN=[['ma','napló','Ma reggel nagyon nyugodt voltam a meeting előtt, a légzőgyakorlat tényleg segít.'],['tegnap','hála','Hálás vagyok Petrának, hogy végighallgatott a munkás dologgal.'],
+  ['szeptember 22.','napló','Túl sokat vállaltam a héten. Jövő héten egy estét szabadon hagyok.'],['szeptember 21.','döntés','Heti négy edzés: meglátjuk, belefér-e.']];
+const JI={'napló':'t-note','hála':'t-heart','döntés':'t-compass'};
+const decAsk=`<p class="w12-dq">Mennyire vált be?</p><div class="w12-rate">${[1,2,3,4,5].map(n=>`<button data-w12="dec:${n}" aria-label="${n} az 5-ből"><b>${n}</b>${n===1?'<small>nem</small>':n===5?'<small>bevált</small>':''}</button>`).join('')}</div>`;
+const decDone=n=>`<p class="w12-dq">Visszanézted: <b>${n} az 5-ből</b>.</p><div class="ex-acts w12-in"><button class="n8-b" data-sheet="decision">Mi lett belőle?</button></div>`;
+function naplo12(a){if(a)return O.naplo(a);
+  const ent=JN.map(([t,k,x],i)=>`<button class="w12-j${i?'':' now'}" data-sheet="journal"><span class="w12-jh">${drop(JI[k])}<b>${t}</b><span class="w12-dir fl">${k}</span></span><p>${x}</p></button>`).join('');
+  return page('en',{title:'Napló',sub:'Én · 12 bejegyzés',tab:'naplo'},`<div class="mx">
+  <section class="mx-s ex-hero"><small class="ex-eb">Szeptember · ezen a héten</small><h2 class="n7-h">Négy bejegyzés a héten, egy döntés vár rád.</h2>
+    <div class="w12-jl">${ent}</div>
+    <div class="ex-acts w12-wide"><button class="n9-btn" data-sheet="journal">+ Új bejegyzés</button><button class="n8-b" data-toast="Augusztus betöltése">Korábbi hónapok</button></div></section>
+  <section class="mx-s ln">${KH('Visszanézésre vár')}<div class="w12-cw"><div class="w12-ob"><div class="w12-gh">${drop('t-compass')}<span class="w12-gt"><b>Egy döntésed vár</b><small>szeptember 21-én hoztad</small></span></div>
+    <p class="w12-qt">„Szeptembertől heti négy edzésre váltok háromról.”</p><div id="w12-dec">${decAsk}</div></div></div>
+    ${mzLine('Ha visszanézed, megtanulom, milyen döntések válnak be neked.')}</section>
+  <section class="mx-s ln">${KH('Hálanapló')}<div class="w12-rl"><button class="ex-mrow w12-r" data-toast="Hála · új sor a lapon">${drop('t-heart')}<span class="g"><b>Hálanapló</b><i class="q">12 bejegyzés · 5 napja egymás után, él a sorozat</i>${week(['hit','hit','hit','hit','hit','nd','nd'])}</span><em>›</em></button></div></section>
+  <div class="ng-tail"></div></div>`)}
+en.routes.naplo=naplo12;
+
 /* buoy taps: swap Mezo's line in place, mark the buoy (no re-render) */
 document.addEventListener('click',e=>{const el=e.target.closest('[data-w12]');if(!el)return;e.preventDefault();e.stopPropagation();
-  const [k,v]=el.dataset.w12.split(':');if(k!=='stn')return;const ph=el.closest('.phone'),box=ph&&ph.querySelector('#w12-stn p');if(!box)return;
+  const [k,v]=el.dataset.w12.split(':');if(k==='dec'){const d=el.closest('.phone')?.querySelector('#w12-dec');if(d)d.innerHTML=decDone(v);return}if(k!=='stn')return;const ph=el.closest('.phone'),box=ph&&ph.querySelector('#w12-stn p');if(!box)return;
   const on=el.classList.contains('on');ph.querySelectorAll('[data-w12^="stn:"]').forEach(x=>x.classList.remove('on'));
   if(on){box.innerHTML=ST0;return}el.classList.add('on');const s=ST[+v];box.innerHTML=`<b>${s[0]} · ${s[1]}</b><br>${s[2]}`},true);
 
@@ -235,6 +258,16 @@ ${P} .w12-n b{font-family:var(--disp);font-size:15.5px;color:var(--ink)}${P} .w1
 ${P} .w12-wch svg text[style]{font-size:17px!important}${P} .w12-cw svg:not(.en-tide) .gl{font-size:17px}
 ${P} .w12-gtb .en-tubes{margin-top:0}${P} .w12-gtb .en-tubes small,${P} .w12-dm .en-tubes small{font-size:13px;line-height:1.2;color:var(--ink)}${P} .w12-gtb .en-tubes em,${P} .w12-dm .en-tubes em{font-size:14px}
 ${P} .w12-dm .en-tubes{margin-top:0}${P} .w12-gtb .en-tubes small{overflow-wrap:normal;word-break:normal;hyphens:manual}${P} .w12-r .n8-b{flex:none;min-height:42px}
+${P} .w12-jl{display:grid;gap:10px;margin:16px 18px 0}
+${P} .w12-j{display:grid;gap:8px;width:100%;padding:14px 16px;border-radius:22px;background:#fff;text-align:left;border:0;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .w12-j.now{box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 2px color-mix(in srgb,var(--dom) 55%,#fff)}
+${P} .w12-jh{display:flex;align-items:center;gap:10px}${P} .w12-jh>svg.ng{width:36px;height:36px;flex:none;margin:0}${P} .w12-jh b{flex:1;font-family:var(--disp);font-size:15.5px;color:var(--ink)}
+${P} .w12-j p{margin:0;font-size:15px;line-height:1.45;color:var(--ink)}
+${P} .w12-qt{margin:12px 0 0;font:600 16px/1.4 var(--disp);color:var(--ink)}${P} .w12-dq{margin:12px 0 0;font-size:15px;color:var(--ink)}
+${P} .w12-rate{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+${P} .w12-rate button{display:grid;place-items:center;align-content:center;gap:1px;min-height:52px;border-radius:16px;border:0;background:color-mix(in srgb,var(--dom) 10%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dom) 30%,#fff)}
+${P} .w12-rate b{font:800 18px var(--disp);color:var(--ink)}${P} .w12-rate small{font-size:12px;color:var(--ink)}
+${P} .w12-r .g .w12-wk{margin-top:4px}
 ${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
 ${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto;min-height:40px}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
