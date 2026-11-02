@@ -14,7 +14,7 @@
 const F=window.F,mz=window.FREG&&FREG.mezo,X=window.KXN,E=window.KXE;if(!mz||!X||!E)return;
 const {I,badge,page}=F,{KH,hubHead}=X,{bal,pills,g}=E;
 const P='.phone.foly[data-s="elo"][data-d="mezo"]';
-const O={mai:mz.routes.mai,fal:mz.routes.fal,csapat:mz.routes.csapat};mz.routes['mai-lista']=O.mai;mz.routes['csapat-lista']=O.csapat;O.rolad=mz.routes.rolad;O.terv=mz.routes['rolad-terv'];mz.routes['rolad-lista']=O.rolad;O.emlekek=mz.routes.emlekek;mz.routes['emlekek-lista']=O.emlekek;
+const O={mai:mz.routes.mai,fal:mz.routes.fal,csapat:mz.routes.csapat};mz.routes['mai-lista']=O.mai;mz.routes['csapat-lista']=O.csapat;O.rolad=mz.routes.rolad;O.terv=mz.routes['rolad-terv'];mz.routes['rolad-lista']=O.rolad;O.emlekek=mz.routes.emlekek;mz.routes['emlekek-lista']=O.emlekek;O.poszt=mz.routes.poszt;mz.routes['poszt-lista']=O.poszt;
 
 const TN={szunya:'Alvás',mocor:'Mozgás',falat:'Étkezés',deru:'Közérzet',mezo:'Mezo',szk:'Szkeptikus'};
 const TICK='<svg class="w3-tk" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg>';
@@ -203,6 +203,29 @@ function emlekek3(a){if(a)return O.emlekek(a);const on=/3 hasonló nap a memóri
   const more=`<section class="mx-s ln">${KH('Tovább')}<div class="w4-rl">${row('t-calendar','Heti értékelés','az Én · Hét oldalán','data-toast="Heti értékelés — az Én területen"')}${row('t-layers','Memória','rétegek és audit','data-go="memoria"')}</div></section>`;
   return page('mezo',{title:'Emlékek',sub:'Mezo · a te történeted',tab:'emlekek'},`<div class="mx">${top}${mem}${srch}${more}</div>`)}
 mz.routes.emlekek=emlekek3;
+
+/* ═══ AZ ÜGY OLDALA · vacsora (2026-11-02): no orange box; the title stays (sub-page), the eyebrow, the sentence and the
+   same picture as the wall card (the two vessels), so he recognises it; the same answer block as the drawer (shared state
+   with the wall card); what Alvás sees in full; the thread as cards (Mezo's decision marked); the fourteen evenings at
+   the bottom in "Miből látszik" (owner's pick), grouped by kind so they read without a legend, then the evidence rows. ═══ */
+const VD=[['8.',7.9,1],['9.',5.4,0],['10.',8.0,1],['11.',6.1,1,1],['12.',5.9,0],['13.',7.8,1],['14.',7.7,1],['15.',7.3,0,1],['16.',8.1,1],['17.',5.6,0],['18.',6.3,1,1],['19.',7.8,1],['20.',5.8,0],['21.',7.8,1]];
+const nights=(g,l)=>{const ds=VD.filter(d=>d[2]===g);return `<div class="w7-ng"><p class="w7-nl">${l} · ${ds.length} este</p><div class="w7-nr">${ds.map(([d,v,,x])=>`<span class="w7-n${x?' x':''}"><span class="t"><i style="height:${Math.round((v-4)/5*100)}%;--c:${g?'var(--dom)':'#E7B25A'}"></i></span><b>${v.toFixed(1).replace('.',',')}</b><small>${d}</small></span>`).join('')}</div></div>`};
+const CMT=[['falat','étrend','Nálam is a <b>23 óra utáni vacsora</b> a vízválasztó: azokon a napokon átlag <b>380 kcal</b> csúszik este 9 utánra. Két hét még, és szét tudom szedni, hogy a mennyiség vagy az időpont számít-e. A tippem: <b>az időpont</b>.'],
+  ['szk','visszakérdez','Mielőtt megszeretjük ezt a történetet: a hétvége önmagában is magyarázhatja. Akkor eszel későn <b>és</b> akkor alszol rosszabbul, a kettő között nem kell ok-okozatnak lennie. Javaslom, válasszuk szét a hétköznapot a hétvégétől. Ha hétköznap is kirajzolódik, meggyőztetek.'],
+  ['mezo','a csapat döntése','A Szkeptikus javaslatát elfogadom: mostantól a hétvégét <b>külön követjük</b>, és addig ez <b>nem kerül</b> a rólad szóló képbe. Ha a hétköznapi napokon is kirajzolódik, jövő vasárnap újra elővesszük, és szavazunk róla.',1]];
+function poszt3(a){if(a&&a!=='vacsora')return O.poszt(a);const p=byId('vacsora');
+  const row=(ic,t,sub,go)=>`<button class="ex-mrow w4-r" data-go="${go}">${E.drop(ic)}<span class="g"><b>${t}</b><i class="q">${sub}</i></span><em>›</em></button>`;
+  return page('mezo',{title:'Mi tolja későbbre az estédet?',sub:'Közös ügy · alvás × étkezés',back:'mai'},`<div class="mx">
+  <section class="mx-s ex-hero"><small class="ex-eb w5-by">${badge('szunya',{s:26})}Alvás · rád vár · tegnap 20:30</small><h2 class="n7-h">${p.h}</h2>
+    <div class="w7-pic">${p.pic()}</div>
+    <div class="w7-ans" data-w7a="vacsora">${ansOf(p)}</div></section>
+  <section class="mx-s ln">${KH('Amit az Alvás lát')}<article class="w7-cm">${badge('szunya',{s:40})}<div><b>Alvás <small>bevonta az Étkezést és a Szkeptikust</small></b><p>${p.x}</p></div></article></section>
+  <section class="mx-s ln">${KH('Beszélgetés','3 hozzászólás')}<div class="w3-l">${CMT.map(([k,role,t,dec])=>`<article class="w7-cm${dec?' dec':''}">${badge(k,{s:40})}<div><b>${TN[k]} <small>${role}</small></b><p>${t}</p></div></article>`).join('')}</div>
+    <button class="w6-s w7-rp" data-sheet="reply">${I('t-chat')}<span>Te hogy látod? Válaszolj…</span><b>Írok</b></button></section>
+  <section class="mx-s ln">${KH('Miből látszik?')}<p class="w7-sum">11 este mellette szól, 3 ellene.</p>${nights(0,'Késői vacsora után')}${nights(1,'Korai vacsora után')}
+    ${mzLine('A szám az alvásod aznap éjjel. A szaggatott este ellene szól: ott a vacsora ideje és az alvás nem együtt mozgott.')}
+    <div class="w4-rl w7-rows">${row('t-clock','14 közös nap','ahol vacsoraidő és alvásminőség is rögzült','minta.vacsora')}${row('t-info','A napok egyenként','vacsoraidő és alvás, estéről estére','bizonyitek')}</div></section></div>`)}
+mz.routes.poszt=poszt3;
 /* a decision redraws the page (the approved handler, a capture listener on document); read the carousel position on
    window first, then put it back on the card that was answered */
 window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.w5-cr [data-m]');if(!b)return;const x=b.closest('.w5-cr').scrollLeft;
@@ -211,21 +234,22 @@ window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('
 /* the tab pages' header as on the converted domains: no big title, the "?" top left (sub-pages keep their title) */
 Object.keys(mz.routes).forEach(k=>{const f=mz.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>hubHead(f(...a));g.__hub=1;mz.routes[k]=g}});
 
+const ansOf=p=>{const r=RS[p.id];
+  const btns=p.dec?[['yes','Igen, igaz rám'],['no','Nem igaz rám']]:[['up','Ez talál'],['down','Nem így érzem']];
+  return p.done?`<p class="w3-ok">${TICK}${p.done} · bekerült a rólad szóló képbe</p>`
+    :r?`<p class="w3-ok">${TICK}Megjegyeztem: ${RL[r]}.</p><button class="fh-lk" data-w3="undo:${p.id}">Visszavonom</button>`
+    :`<div class="w3-ab">${btns.map(([k,l],i)=>`<button class="${i?'n8-b':'n9-btn'}" data-w3="r:${p.id}:${k}">${l}</button>`).join('')}<button class="n8-b" data-w3="tell:${p.id}">Elmesélem</button></div>
+      ${RE[p.id]?`<textarea class="fh-in w3-in" rows="3" placeholder="Mi az, amit csak te tudhatsz erről?" aria-label="A te részed"></textarea><button class="n9-btn w3-send" data-w3="send:${p.id}">Elküldöm</button>`:''}`};
 /* the drawer: who and when big, the headline, the whole text, the picture, the evidence and links, the thread, then the
    answer — quick buttons, or a few words in the field */
 function sheet(id){const p=id==='gyors'?PILL:byId(id);if(!p)return '';const r=RS[p.id];
   const links=[p.ev?(p.ev.sheet?`<button class="fh-lk" data-sheet="${p.ev.sheet}">${p.ev.l} ›</button>`:`<button class="fh-lk" data-go="${p.ev.go}">${p.ev.l} ›</button>`):'',...(p.links||[]).map(([l,go])=>`<button class="fh-lk" data-go="${go}">${l} ›</button>`)].join('');
   const thr=p.thr?`<section class="dv-s"><h3>${p.thr.n} hozzászólás</h3><p class="w3-ts">${minis(p.thr.ids)}${p.thr.sum}</p>${p.thr.c.map(([k,t])=>`<div class="w3-cm">${badge(k,{s:34})}<div><b>${TN[k]}</b><p>${t}</p></div></div>`).join('')}<button class="fh-lk" data-go="${p.thr.all}">Mind a ${p.thr.n} hozzászólás ›</button></section>`:'';
-  const btns=p.dec?[['yes','Igen, igaz rám'],['no','Nem igaz rám']]:[['up','Ez talál'],['down','Nem így érzem']];
-  const ans=p.done?`<p class="w3-ok">${TICK}${p.done} · bekerült a rólad szóló képbe</p>`
-    :r?`<p class="w3-ok">${TICK}Megjegyeztem: ${RL[r]}.</p><button class="fh-lk" data-w3="undo:${p.id}">Visszavonom</button>`
-    :`<div class="w3-ab">${btns.map(([k,l],i)=>`<button class="${i?'n8-b':'n9-btn'}" data-w3="r:${p.id}:${k}">${l}</button>`).join('')}<button class="n8-b" data-w3="tell:${p.id}">Elmesélem</button></div>
-      ${RE[p.id]?`<textarea class="fh-in w3-in" rows="3" placeholder="Mi az, amit csak te tudhatsz erről?" aria-label="A te részed"></textarea><button class="n9-btn w3-send" data-w3="send:${p.id}">Elküldöm</button>`:''}`;
   return `<div class="dv w3-sh" data-w3s="${p.id}"><div class="w3-shd">${badge(p.who,{s:56})}<div><small>${TN[p.who]} · ${p.t}</small><b>${p.kind[0].toUpperCase()+p.kind.slice(1)}</b></div></div>
   <h2 class="w3-shh">${p.h}</h2><div class="mg-tx"><p>${p.x}</p></div>
   ${p.pic?`<div class="w3-pic big">${p.pic()}</div>`:''}${tagsOf(p)}${links?`<div class="w3-lk">${links}</div>`:''}
   ${p.own?`<button class="dv-btn pri w3-own" data-toast="${p.own[1]}">${p.own[0]}</button>`:''}
-  ${thr}<section class="dv-s"><h3>${p.dec?'Igaz ez rád?':'Mit szólsz hozzá?'}</h3>${ans}</section>
+  ${thr}<section class="dv-s"><h3>${p.dec?'Igaz ez rád?':'Mit szólsz hozzá?'}</h3>${ansOf(p)}</section>
   <button class="fh-lk w3-more" data-sheet="menu">A bejegyzés menüje ›</button></div>`}
 mz.sheets.w3=sheet;
 
@@ -235,14 +259,15 @@ function refresh(id){const ph=document.querySelector('#phone');if(!ph)return;
   const t=ph.querySelector('#w3-top');if(t)t.outerHTML=topOf();const rv=ph.querySelector('#w3-rv');if(rv)rv.outerHTML=radVar();
   const o=ph.querySelector('.w3-old');if(o){const l=olderLeft();o.classList.toggle('w',!!l);o.querySelector('small').textContent=l?`${l} bejegyzésre még nem reagáltál`:'mindenre reagáltál'}
   if(F.ARG==='korabbi'){const h=ph.querySelector('.mx .n7-h'),l=olderLeft();if(h)h.textContent=l?`${l} bejegyzésre még nem reagáltál.`:'Itt mindenre reagáltál.'}
+  const ca=ph.querySelector(`[data-w7a="${id}"]`);if(ca&&p)ca.innerHTML=ansOf(p);
   const s=ph.querySelector(`#sheet [data-w3s="${id}"]`);if(s)s.outerHTML=sheet(id)}
 const TT={up:'„Ez talál” — köszönjük, feljegyeztük.',down:'„Nem így érzem” — ebből tanulunk a legtöbbet.',yes:'Bekerült. Bármikor visszavonhatod a Rólad oldalon.',no:'Rendben, nem építünk rá.',reply:'Elküldve — a csapat újraértékeli vele a képet.'};
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-w3]');if(!b)return;e.preventDefault();const [k,id,v]=b.dataset.w3.split(':');
   if(k==='pill'){if(WS.pill)return;WS.pill=true;const ph=document.querySelector('#phone'),l=ph&&ph.querySelector('[data-w3d="ma"]');if(l)l.insertAdjacentHTML('afterbegin',cardOf(PILL));b.classList.remove('on');ph&&ph.querySelector('.scroll')?.scrollTo({top:0,behavior:'smooth'});return}
   if(k==='r'){RS[id]=v;RE[id]=false;refresh(id);F.toast(TT[v]);return}
   if(k==='undo'){delete RS[id];refresh(id);F.toast('Visszavonva');return}
-  if(k==='tell'){RE[id]=!RE[id];refresh(id);const ta=document.querySelector('#sheet .w3-in');if(ta)ta.focus();return}
-  if(k==='send'){const ta=document.querySelector('#sheet .w3-in');if(ta&&!ta.value.trim()){F.toast('Írj pár szót — ebből tanul a csapat.');return}RS[id]='reply';RE[id]=false;refresh(id);F.toast(TT.reply)}},true);
+  if(k==='tell'){RE[id]=!RE[id];refresh(id);const ta=document.querySelector('#sheet.on .w3-in')||document.querySelector('#phone [data-w7a] .w3-in');if(ta)ta.focus();return}
+  if(k==='send'){const ta=b.parentElement.querySelector('.w3-in');if(ta&&!ta.value.trim()){F.toast('Írj pár szót — ebből tanul a csapat.');return}RS[id]='reply';RE[id]=false;refresh(id);F.toast(TT.reply)}},true);
 
 F.css(`
 ${P} .w3-team{margin:14px 14px 0}${P} .w3-team .gfm{pointer-events:none}${P} .w3-tm{flex:1;min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--ink)}
@@ -326,8 +351,19 @@ ${P} .w6-s svg.ic{width:26px;height:26px;flex:none}${P} .w6-s span{flex:1;font-s
 ${P} .w6-ex{display:flex;flex-wrap:wrap;gap:8px;margin:12px 14px 0}${P} .w6-ex .n8-b{margin:0;min-height:44px}${P} .w6-hits{margin-top:12px}${P} .w6-h{width:100%;text-align:left}${P} .w6-h .w4-lv{margin-top:10px}
 ${P} .w6-hits+.ex-mz{margin-top:14px}
 @media (max-width:360px){${P} .w6-wk{gap:4px;margin:8px 8px 0}${P} .w6-d small{font-size:12px;letter-spacing:-.03em}}
+${P} .w7-pic{margin:16px 22px 0}${P} .w7-ans{margin:18px 22px 0}${P} .w7-ans .w3-ab .n9-btn{flex:1 0 100%}
+${P} .w7-cm{display:flex;gap:12px;margin:0 14px;padding:14px;border-radius:22px;background:#fff;box-shadow:0 10px 24px -18px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}${P} .w3-l .w7-cm{margin:0}
+${P} .w7-cm>div{flex:1;min-width:0}${P} .w7-cm b{font-size:15px;color:var(--ink)}${P} .w7-cm b small{margin-left:4px;font-size:13px;font-weight:600;opacity:.75}${P} .w7-cm p{margin:4px 0 0;font-size:15px;line-height:1.55;color:var(--ink)}
+${P} .w7-cm.dec{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--dom) 45%,#fff),0 10px 24px -18px rgba(10,42,60,.35)}
+${P} .w7-rp{margin-top:14px}${P} .w7-sum{margin:0 22px 6px;font:800 18px var(--disp,inherit);color:var(--ink)}
+${P} .w7-ng{margin:12px 14px 0}${P} .w7-nl{margin:0 4px 8px;font-size:14px;font-weight:700;color:var(--ink)}${P} .w7-nr{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:5px}
+${P} .w7-n{display:flex;flex-direction:column;align-items:center;gap:3px}${P} .w7-n .t{position:relative;width:100%;max-width:34px;height:56px;border-radius:12px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12)}
+${P} .w7-n .t i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c))}${P} .w7-n.x .t{outline:2px dashed rgba(10,42,60,.45);outline-offset:-2px}
+${P} .w7-n b{font-size:13px;font-weight:800;color:var(--ink)}${P} .w7-n small{font-size:12px;font-weight:600;color:var(--ink);opacity:.8}
+${P} .w7-rows{margin-top:14px}
+@media (max-width:360px){${P} .w7-nr{gap:3px}${P} .w7-n b{font-size:12px}}
 @media (max-width:360px){${P} .w3-h{font-size:17px}${P} .w3-hd{gap:10px}${P} .w3-st{padding:4px 8px;font-size:12px}${P} .w3-tap{padding:14px}}
 `);
 
-window.FNOTES_FOLY=(window.FNOTES_FOLY||'')+`<h2>Kísérlet · Mezo</h2><p><a href="#w-mezo-mai"><b>Üzenőfal</b></a> — felül a mondat, a csapat öt cseppje (csak kép) és a Megnézem; a Rád vár marad; Ma és a tegnap esti kiadás egyforma bejegyzés-kártyákon (ki, mikor, fajta, állapot, kiemelt mondat, két sor, a bejegyzés kis képe, Elolvasom); a teljes szöveg, a vita, a Miből látszik és a válasz a felcsúszó fiókban. A régebbi napok egy gomb mögött: <a href="#w-mezo-mai.korabbi">Korábbi napok</a>. Összevetésnek: <a href="#w-mezo-mai-lista">a mostani Üzenőfal</a>.</p><p><a href="#w-mezo-csapat"><b>A csapat</b></a> — a mondat a legjobban ismerő tagról, öt cső (mennyire érett a képük rólad), Mezo mondata a leggyengébbről és a Bejelentkezem gomb; minden tag (a Szkeptikus is) egyforma kártyán; Konzílium és Gépterem csepp-sorként. Összevetésnek: <a href="#w-mezo-csapat-lista">a mostani A csapat</a>.</p><p><a href="#w-mezo-rolad"><b>Rólad</b></a> — a legbiztosabb mondat a szív, a kilenc témakör csövei két polcon teljes szavakkal, a döntések lapozóban pöttyökkel, a Tudástár négy csempén, a tények kártyákon, az életesemények és a Tovább csepp-sorként. Összevetésnek: <a href="#w-mezo-rolad-lista">a mostani Rólad</a>.</p><p><a href="#w-mezo-emlekek"><b>Emlékek</b></a> — a heted története, a hét napja kapszulaként annyira telve, amilyen a nap volt (egy szóval alatta), a napi emlékek egyforma kártyán, a hasonló napok keresése igazi mezővel és példákkal, a találatok kártyán hasonlósági csíkkal. Összevetésnek: <a href="#w-mezo-emlekek-lista">a mostani Emlékek</a>.</p>`;
+window.FNOTES_FOLY=(window.FNOTES_FOLY||'')+`<h2>Kísérlet · Mezo</h2><p><a href="#w-mezo-mai"><b>Üzenőfal</b></a> — felül a mondat, a csapat öt cseppje (csak kép) és a Megnézem; a Rád vár marad; Ma és a tegnap esti kiadás egyforma bejegyzés-kártyákon (ki, mikor, fajta, állapot, kiemelt mondat, két sor, a bejegyzés kis képe, Elolvasom); a teljes szöveg, a vita, a Miből látszik és a válasz a felcsúszó fiókban. A régebbi napok egy gomb mögött: <a href="#w-mezo-mai.korabbi">Korábbi napok</a>. Összevetésnek: <a href="#w-mezo-mai-lista">a mostani Üzenőfal</a>.</p><p><a href="#w-mezo-csapat"><b>A csapat</b></a> — a mondat a legjobban ismerő tagról, öt cső (mennyire érett a képük rólad), Mezo mondata a leggyengébbről és a Bejelentkezem gomb; minden tag (a Szkeptikus is) egyforma kártyán; Konzílium és Gépterem csepp-sorként. Összevetésnek: <a href="#w-mezo-csapat-lista">a mostani A csapat</a>.</p><p><a href="#w-mezo-rolad"><b>Rólad</b></a> — a legbiztosabb mondat a szív, a kilenc témakör csövei két polcon teljes szavakkal, a döntések lapozóban pöttyökkel, a Tudástár négy csempén, a tények kártyákon, az életesemények és a Tovább csepp-sorként. Összevetésnek: <a href="#w-mezo-rolad-lista">a mostani Rólad</a>.</p><p><a href="#w-mezo-emlekek"><b>Emlékek</b></a> — a heted története, a hét napja kapszulaként annyira telve, amilyen a nap volt (egy szóval alatta), a napi emlékek egyforma kártyán, a hasonló napok keresése igazi mezővel és példákkal, a találatok kártyán hasonlósági csíkkal. Összevetésnek: <a href="#w-mezo-emlekek-lista">a mostani Emlékek</a>.</p><p><a href="#w-mezo-poszt.vacsora"><b>Az ügy oldala</b></a> — ugyanaz a kép és válasz, mint a fal kártyáján, a teljes szöveg, a beszélgetés kártyákon (Mezo döntése kiemelve), lent a 14 este fajtánként csoportosítva. Összevetésnek: <a href="#w-mezo-poszt-lista.vacsora">a mostani ügy-oldal</a>.</p>`;
 })();
