@@ -14,7 +14,7 @@
 const F=window.F,mz=window.FREG&&FREG.mezo,X=window.KXN,E=window.KXE;if(!mz||!X||!E)return;
 const {I,badge,page}=F,{KH,hubHead}=X,{bal,pills}=E;
 const P='.phone.foly[data-s="elo"][data-d="mezo"]';
-const O={mai:mz.routes.mai,fal:mz.routes.fal};mz.routes['mai-lista']=O.mai;
+const O={mai:mz.routes.mai,fal:mz.routes.fal,csapat:mz.routes.csapat};mz.routes['mai-lista']=O.mai;mz.routes['csapat-lista']=O.csapat;
 
 const TN={szunya:'Alvás',mocor:'Mozgás',falat:'Étkezés',deru:'Közérzet',mezo:'Mezo',szk:'Szkeptikus'};
 const TICK='<svg class="w3-tk" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg>';
@@ -112,6 +112,31 @@ function wall(a){
   <section class="mx-s ln">${mzLine('Ennyi történt tegnap este óta. A folyamatban lévő ügyeket közben tovább figyeljük.')}
     <button class="w3-old${left?' w':''}" data-go="mai.korabbi"><span class="g"><b>Korábbi napok</b><small>${left?`${left} bejegyzésre még nem reagáltál`:'mindenre reagáltál'}</small></span><em>›</em></button></section></div>`))}
 mz.routes.mai=wall;mz.routes.fal=wall;
+/* ═══ A CSAPAT (2026-11-02): what the page is about — who watches him and how well each one knows him. The sentence
+   names the best-known field; the picture is five tubes (level = how mature that member's picture of him is, tap = the
+   member's page); Mezo's line names the weakest and the one button feeds it (owner: the check-in). Every member — the
+   Skeptic too — on one card shape: badge, name · field, a status chip, what they watch now, a level bar, one real button. ═══ */
+const TEAMK=[['szunya','pihenés','Most figyeli: a késői vacsorák és az éjszakád.',72,'1 kérdés vár rád','t-sleep'],['mocor','terhelés','Most figyeli: a terhelésed. Egy sejtésen dolgozik.',60,'','t-dumbbell'],
+  ['falat','étrend','Most figyeli: a vacsoraidőd. Egy kísérlete fut.',80,'kísérlet fut','t-bowl'],['deru','hangulat','Kevés az adata: ma kért tőled egy bejelentkezést.',30,'kevés adat','t-heart'],
+  ['mezo','a csapat','A vasárnapi konzíliumon 2 dolog került a közös képbe.',66,'','t-orb']];
+const TC4=k=>(F.TEAM[k]||F.TEAM.mezo)[2];
+const memCard=([k,area,txt,p,chip])=>`<article class="w4-m"><div class="w4-h">${badge(k,{s:44})}<span class="g"><b>${TN[k]}</b><small>${area}</small></span>${chip?`<i class="w3-st ${chip==='kevés adat'||chip.includes('vár')?'w':'n'}">${chip}</i>`:''}</div>
+  <p class="w4-x">${txt}</p><div class="w4-lv"><span class="t"><i style="width:${p}%;--c:${TC4(k)}"></i></span><b>${p}%</b></div><p class="w4-lb">ennyire érett a képe rólad</p>
+  <div class="w4-a"><button class="n8-b" data-go="szoba.${k}">Az oldala</button></div></article>`;
+const skCard=`<article class="w4-m"><div class="w4-h">${badge('szk',{s:44})}<span class="g"><b>Szkeptikus</b><small>a csapat kételkedője</small></span><i class="w3-st n">nem posztol</i></div>
+  <p class="w4-x">A beszélgetésekben kérdez vissza, mielőtt bármi bekerülne rólad. Legutóbb a vacsora-ügyben szólt közbe.</p>
+  <div class="w4-a"><button class="n8-b" data-go="poszt.vacsora">Ahol legutóbb szólt</button></div></article>`;
+function csapat3(a){if(a)return O.csapat(a);const best=[...TEAMK].sort((x,y)=>y[3]-x[3])[0],low=[...TEAMK].sort((x,y)=>x[3]-y[3])[0];
+  const row=(ic,t,sub,go)=>`<button class="ex-mrow w4-r" data-go="${go}">${E.drop(ic)}<span class="g"><b>${t}</b><i class="q">${sub}</i></span><em>›</em></button>`;
+  return page('mezo',{title:'A csapat',sub:'Mezo · ők figyelnek rád',tab:'csapat'},`<div class="mx">
+  <section class="mx-s ex-hero"><small class="ex-eb">Öten figyelnek rád</small><h2 class="n7-h">Az ${TN[best[0]]} ismer a legjobban.</h2>
+    <div class="w4-tb">${F.vials(TEAMK.map(([k,,,p,,ic])=>({l:TN[k],ic,p,v:p,c:TC4(k),mark:k===low[0]?'kevés':'',on:'szoba.'+k})),{h:132})}</div>
+    ${mzLine(`A ${TN[low[0]]} tud rólad a legkevesebbet. Egy esti bejelentkezés sokat segítene neki.`)}
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-toast="Bejelentkezés — 1 perces közérzet-kör">Bejelentkezem · 1 perc</button></div></section>
+  <section class="mx-s ln">${KH('A csapat tagjai')}<div class="w3-l">${TEAMK.map(memCard).join('')}${skCard}</div></section>
+  <section class="mx-s ln">${KH('A közös munka')}<div class="w4-rl">${row('t-council','Konzílium','A heti ülés jegyzőkönyve · 2 dolog került be rólad','konzilium')}${row('t-gear','Gépterem · Összes funkció','A motorháztető és a régi eszköztár','gepterem')}</div></section></div>`)}
+mz.routes.csapat=csapat3;
+
 /* the tab pages' header as on the converted domains: no big title, the "?" top left (sub-pages keep their title) */
 Object.keys(mz.routes).forEach(k=>{const f=mz.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>hubHead(f(...a));g.__hub=1;mz.routes[k]=g}});
 
@@ -194,8 +219,18 @@ ${P} .w3-ab{display:flex;flex-wrap:wrap;gap:8px}${P} .w3-ab .n9-btn,${P} .w3-ab 
 ${P} .w3-in{width:100%;margin-top:12px}${P} .w3-send{margin-top:10px;min-height:44px;padding:0 22px}
 ${P} .w3-ok{display:flex;align-items:center;gap:8px;margin:0;font-size:15px;font-weight:700;color:#1F7A4D}${P} .w3-ok .w3-tk{width:18px;height:18px}
 ${P} .w3-own{margin-top:18px}${P} .w3-more{margin-top:14px}
+${P} .w4-tb{margin:16px 10px 0}${P} .w4-tb .k2-vials{gap:6px}${P} .w4-tb .k2-vial{min-width:0}${P} .w4-tb+.ex-mz{margin-top:20px}${P} .w4-tb .k2-vial small{color:var(--ink);font-weight:650;font-size:12.5px;white-space:nowrap;letter-spacing:-.02em}${P} .w4-tb .k2-tube em:not(:empty){color:#A86A0C!important;background:#fff}
+${P} .w4-m{padding:16px;border-radius:24px;background:#fff;box-shadow:0 12px 28px -20px rgba(10,42,60,.4),0 0 0 1px rgba(10,42,60,.05)}
+${P} .w4-h{display:flex;align-items:center;gap:12px}${P} .w4-h .g{flex:1;min-width:0;display:flex;flex-direction:column}${P} .w4-h .g b{font:800 17px var(--disp,inherit);color:var(--ink)}${P} .w4-h .g small{font-size:13px;color:var(--ink);opacity:.75}
+${P} .w3-st.n{color:var(--ink);background:rgba(10,42,60,.06)}
+${P} .w4-x{margin:12px 0 0;font-size:14.5px;line-height:1.45;color:var(--ink)}
+${P} .w4-lv{display:flex;align-items:center;gap:10px;margin-top:12px}${P} .w4-lv .t{flex:1;height:14px;border-radius:999px;background:rgba(10,42,60,.07);overflow:hidden}${P} .w4-lv .t i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c))}
+${P} .w4-lv b{flex:none;min-width:44px;text-align:right;font:800 18px var(--disp,inherit);color:var(--ink)}${P} .w4-lb{margin:4px 0 0;font-size:13px;font-weight:600;color:var(--ink);opacity:.75}
+${P} .w4-a{display:flex;justify-content:flex-end;margin-top:12px}${P} .w4-a .n8-b{margin:0;min-height:44px}
+${P} .w4-rl{display:grid;gap:10px;margin:0 14px}${P} .w4-r{width:100%;text-align:left}${P} .w4-r em{margin-left:auto;font-style:normal;font-size:18px;font-weight:700;color:var(--dom)}
+@media (max-width:360px){${P} .w4-tb{margin:16px 4px 0}${P} .w4-tb .k2-vial small{font-size:12px;letter-spacing:-.04em}}
 @media (max-width:360px){${P} .w3-h{font-size:17px}${P} .w3-hd{gap:10px}${P} .w3-st{padding:4px 8px;font-size:12px}${P} .w3-tap{padding:14px}}
 `);
 
-window.FNOTES_FOLY=(window.FNOTES_FOLY||'')+`<h2>Kísérlet · Mezo</h2><p><a href="#w-mezo-mai"><b>Üzenőfal</b></a> — felül a mondat, a csapat öt cseppje (csak kép) és a Megnézem; a Rád vár marad; Ma és a tegnap esti kiadás egyforma bejegyzés-kártyákon (ki, mikor, fajta, állapot, kiemelt mondat, két sor, a bejegyzés kis képe, Elolvasom); a teljes szöveg, a vita, a Miből látszik és a válasz a felcsúszó fiókban. A régebbi napok egy gomb mögött: <a href="#w-mezo-mai.korabbi">Korábbi napok</a>. Összevetésnek: <a href="#w-mezo-mai-lista">a mostani Üzenőfal</a>.</p>`;
+window.FNOTES_FOLY=(window.FNOTES_FOLY||'')+`<h2>Kísérlet · Mezo</h2><p><a href="#w-mezo-mai"><b>Üzenőfal</b></a> — felül a mondat, a csapat öt cseppje (csak kép) és a Megnézem; a Rád vár marad; Ma és a tegnap esti kiadás egyforma bejegyzés-kártyákon (ki, mikor, fajta, állapot, kiemelt mondat, két sor, a bejegyzés kis képe, Elolvasom); a teljes szöveg, a vita, a Miből látszik és a válasz a felcsúszó fiókban. A régebbi napok egy gomb mögött: <a href="#w-mezo-mai.korabbi">Korábbi napok</a>. Összevetésnek: <a href="#w-mezo-mai-lista">a mostani Üzenőfal</a>.</p><p><a href="#w-mezo-csapat"><b>A csapat</b></a> — a mondat a legjobban ismerő tagról, öt cső (mennyire érett a képük rólad), Mezo mondata a leggyengébbről és a Bejelentkezem gomb; minden tag (a Szkeptikus is) egyforma kártyán; Konzílium és Gépterem csepp-sorként. Összevetésnek: <a href="#w-mezo-csapat-lista">a mostani A csapat</a>.</p>`;
 })();
