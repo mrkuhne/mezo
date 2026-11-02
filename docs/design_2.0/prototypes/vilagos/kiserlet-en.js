@@ -7,7 +7,7 @@
    in-place state runs on data-w12 instead. */
 (function(){
 const F=window.F,en=window.FREG&&FREG.en,X=window.KXN,E=window.KXE;if(!en||!X||!E)return;
-const {I,badge,page}=F,{KH,hubHead}=X,{bal,drop}=E;
+const {I,badge,page}=F,{KH,hubHead}=X,{bal,drop,g}=E;
 const P='.phone.foly[data-s="elo"][data-d="en"]';
 const O={mai:en.routes.mai};en.routes['mai-lista']=O.mai;
 const mzLine=t=>`<div class="ex-mz w12-mz">${badge('mezo',{s:30})}<p>${t}</p></div>`;
@@ -62,6 +62,81 @@ function mai12(a){if(a)return O.mai(a);
   <div class="ng-tail"></div></div>`)}
 en.routes.mai=mai12;en.routes.en=mai12;
 
+/* ═══ TEST (2026-11-02, owner: the weight on top): the Súly / Alvás switch stays; each view opens with its sentence, the
+   big number and its own picture (the weight surface with the period switch / the eight sleep weeks), one wide log button.
+   The approved cards follow under plain headings, their grey notes as Mezo's lines, no abbreviations ("óra", full months).
+   The period / week / window switches are approved data-ev hooks: en.js updates its state, then this page redraws itself
+   in the same scroll position (see the listener below). ═══ */
+O.test=en.routes.test;en.routes['test-lista']=O.test;
+const MON={'jan.':'január','febr.':'február','márc.':'március','ápr.':'április','jún.':'június','júl.':'július','aug.':'augusztus','szept.':'szeptember','okt.':'október','nov.':'november','dec.':'december'};
+const hu=h=>h.replace(/\b(jan|febr|márc|ápr|jún|júl|aug|szept|okt|nov|dec)\. /g,(m,k)=>MON[k+'.']+' ').replace(/(\d) ó(?=[\s<·])/g,'$1 óra').replace(/(\d) ó cél/g,'$1 óra a cél')
+  .replace(/>09\/(\d\d)</g,'>szeptember $1.<').replace(/· min (\d)/g,'· legkisebb $1').replace(/kg \/ hét/g,'kg hetente');
+const sects=(base,from)=>{const out=[];let i=base.indexOf('<p class="fh-n',from);
+  while(i>=0){const hd=base.slice(i,base.indexOf('</p>',i)).replace(/^[\s\S]*<\/b>/,''),ci=base.indexOf('<section',i),ce=bal(base,ci,'section');
+    out.push({hd,html:base.slice(ci,ce)});i=base.indexOf('<p class="fh-n',ce)}return out};
+const tidy=h=>hu(h).replace(/ rise"/g,'"').replace(/<p class="fh-note"[^>]*>([\s\S]*?)<\/p>/g,(m,t)=>mzLine(t));
+const sec12=(hd,body)=>`<section class="mx-s ln">${KH(hd)}<div class="w12-cw">${body}</div></section>`;
+const lastCard=base=>{const i=base.lastIndexOf('<section class="fh-card'),e=bal(base,i,'section');return base.slice(i,e)};
+const legend=a=>`<div class="w12-leg">${a.map(([c,t])=>`<span><i class="${c}"></i>${t}</span>`).join('')}</div>`;
+function suly12(base){
+  const hi=base.indexOf('<section class="fh-card fh-hero'),H=base.slice(hi,bal(base,hi,'section'));
+  const cutIn=(h,m,t='div')=>{const i=h.indexOf(m);return i<0?'':h.slice(i,bal(h,i,t))};
+  const seg=cutIn(H,'<div class="en-hseg"'),chart=cutIn(H,'<div class="en-chart"');
+  const ss=sects(base,bal(base,hi,'section')),tap=ss[0]?cutIn(ss[0].html,'<svg class="en-tap"','svg'):'';
+  const obs=ss[1]?ss[1].html:'',hist=ss[2]?ss[2].html:'';
+  return `<section class="mx-s ex-hero"><small class="ex-eb">A súlyod · 7 napos átlag</small><h2 class="n7-h">Egyenletesen apad: fél kilogramm hetente.</h2>
+    <p class="w12-sc"><b>78,4</b><span>kilogramm<br>ma mérve 78,2 · induláskor 81,4 · a cél 73</span></p>
+    <div class="w12-seg">${seg}</div><div class="w12-ch w12-wch">${hu(chart)}${legend([['ln','súly, 7 napos átlag'],['raw','napi mérés'],['pl','a terv'],['tol','tűréssáv'],['pr','vetítés a célig']])}</div>
+    <div class="ex-acts w12-wide"><button class="n9-btn" data-sheet="weight">+ Súly</button><button class="n8-b" data-go="sulycel">Súlycél</button></div></section>
+  <section class="mx-s ln">${KH('A tempó')}<div class="w12-tp">${tap}<p><b>−0,5 kg</b><span>hetente, 4 hete ez a tempó</span></p></div>
+    <div class="w12-st"><span><b>78,4 kg</b><small>most</small></span><span><b>−0,4 kg</b><small>az utolsó 7 napban</small></span><span><b>11 hét</b><small>a célig</small></span></div>
+    ${mzLine('Pont a terv szerint csordogál. A célból 33% megvan, 5,4 kilogramm van hátra.')}<div class="w12-lw">${lvl(33,'33%')}</div></section>
+  <section class="mx-s ln">${KH('Megfigyelés')}<div class="w12-cw"><div class="w12-ob"><div class="w12-gh">${drop('t-eye')}<b>Zsír megy, az erő marad</b></div>
+    <p>Négy hét alatt <b>2,0 kilogrammot</b> esett a trend, miközben a fő emeléseid súlya <b>1,2%-kal</b> nőtt. Ez inkább zsírvesztés, mint izom. A Védőkorlátok ugyanezt mondják.</p>
+    <div class="ex-acts w12-in"><button class="n8-b" data-go="sulyresz.guards">Védőkorlátok ›</button></div></div></div></section>
+  ${hist?sec12('Heti előzmény',hist12(hist)):''}`}
+/* one week = one row: the dates and the change on top, the week's small surface and its line under them; open = its days */
+function hist12(h){h=tidy(h);const rows=[];let i=h.indexOf('<button class="fh-row" data-ev="wk:');
+  while(i>=0){const e=bal(h,i,'button'),r=h.slice(i,e),di=h.indexOf('<div class="en-days"',e),nx=h.indexOf('<button class="fh-row" data-ev="wk:',e);
+    const days=di===e?h.slice(di,bal(h,di)):'';
+    const ev=g(r,/data-ev="([^"]+)"/),sp=(k=>r.slice(k,bal(r,k,'svg')))(r.indexOf('<svg class="en-ls"')),t=g(r,/<strong>([^<]*)/),sm=g(r,/<small>([^<]*)/),v=g(r,/<span class="v">([^<]*)/),open=/en-car open/.test(r);
+    const [avg,n,,dir]=sm.split(' · ');
+    rows.push(`<div class="w12-hw${open?' on':''}"><button class="w12-hr" data-ev="${ev}" aria-expanded="${open}"><span class="h"><b>${t.replace(/–(\d+)$/,'–$1.')}</b><em>${v} kg</em><i>›</i></span>
+      <span class="s">${sp}<small>${avg.replace(/^([\d,]+) kg átlag$/,'átlag $1 kg')} · ${n.replace('bejegyzés','mérés')} · ${dir.replace(/^[↓→↑] /,'')}</small></span></button>${days}</div>`);
+    i=nx}
+  const more=g(h,/(<button class="fh-lk" data-toast="Régebbi hetek[^>]*>[^<]*<\/button>)/).replace('class="fh-lk"','class="n8-b"');
+  return `<div class="w12-hl">${rows.join('')}</div><div class="ex-acts w12-in">${more}</div>`}
+function alvas12(base){
+  const hi=base.indexOf('<section class="fh-card fh-hero'),H=base.slice(hi,bal(base,hi,'section'));
+  const ti=H.indexOf('<div class="en-tubes w8"'),w8=ti<0?'':H.slice(ti,bal(H,ti)).replace('<small>aug. 3.</small>','<small>8 hete</small>');
+  const ss=sects(base,bal(base,hi,'section'));
+  return `<section class="mx-s ex-hero"><small class="ex-eb">Az alvásod · heti átlag</small><h2 class="n7-h">Közel a 7,5 órás célhoz, egyenletes héttel.</h2>
+    <p class="w12-sc"><b>7,1</b><span>óra<br>tegnap 7,1 óra · 23:20-tól 6:30-ig</span></p>
+    <div class="w12-ch w12-w8">${w8}${legend([['bd','heti átlag'],['rg','a legrövidebb és a leghosszabb éjszaka'],['pl','a cél: 7,5 óra']])}</div>
+    <div class="ex-acts w12-wide"><button class="n9-btn" data-sheet="sleep">+ Alvás</button><button class="n8-b" data-go="ejszaka.idle">Éjszakai mód</button></div></section>
+  ${ss.map(x=>/en-nl/.test(x.html)?sec12('Az utolsó 7 éjszaka',nights12(x.html)):sec12(x.hd.replace('Tegnap éjjel · az árapály','Tegnap éjjel').replace('Napló · utolsó 7 éjszaka','Az utolsó 7 éjszaka').replace('Alvás-cél','Az alvás célja'),
+    tidy(x.html).replace(/>„a rendszeresség a király” · ±15 perc /,'>A rendszeresség a király: plusz-mínusz 15 perc. ').replace('cél ≥ 85%','a cél legalább 85%').replace('14 nap · ±15 perc','14 nap, plusz-mínusz 15 perc')
+      .replace('00:42 → 09:03 · ébredés 1× éjjel','00:42-től 9:03-ig, egyszer ébredtél fel').replace(/<small>\/ 10 minőség<\/small>/,'<small>a 10-ből, minőség</small>')
+      .replace('Átlagos összetétel · 14 éjszakából','Átlagos összetétel, 14 éjszakából').replace('8 ó · REM perc ↑','8 óra · REM-percek ↑')
+      .replace('Eszközök éjszakai ébredéshez: 20 perces szabály, légzés, 4K-séta.','Ha éjjel felébredsz: a 20 perces szabály, légzés, 4K-séta.'))).join('')}`}
+/* the last seven nights: one row each — the date and the hours on top, bed and wake time under it, the quality as a level */
+function nights12(h){const st=[...h.matchAll(/<div class="fh-step ?"><time>09\/(\d\d)<\/time><span class="g"><strong><span[^>]*>([\d,]+) ó<\/span> · ([\d:]+) → ([\d:]+)<\/strong>(?:<small>([^<]*)<\/small>)?<\/span><span class="en-lvw sm"><b>(\d+)\/10<\/b>/g)];
+  const night=st.map(([,d,hh,a,b,note,q])=>{const w=parseFloat(hh.replace(',','.'))<7||+q<=5;return `<div class="w12-n${w?' w':''}"><b>szeptember ${d}. · ${hh} óra</b>${lvl(q*10,'')}<small>${a}-tól ${b.replace(/^0/,'')}-ig · minőség ${q} a 10-ből${note?' · '+note:''}</small></div>`}).join('');
+  return `<div class="w12-nl">${night}</div>${mzLine('A jobb oldali csík az éjszaka minősége. Narancs az, ami 7 óra alatt maradt, vagy 5 pont alatti.')}<div class="w12-rl" style="margin:12px 0 0">${'<button class="ex-mrow w12-r" data-go="ejszaka.idle">'+drop('t-moon')+'<span class="g"><b>Éjszakai mód</b><i class="q">Ha éjjel felébredsz: a 20 perces szabály, légzés, 4K-séta.</i></span><em>›</em></button>'}</div>`}
+function test12(a){const base=O.test(a),v=a==='alvas'?'alvas':'suly';
+  const sw=(i=>i<0?'':base.slice(i,bal(base,i)))(base.indexOf('<div class="en-sw'));
+  const body=v==='alvas'?alvas12(base):suly12(base);
+  const td=lastCard(base).replace(' rise"','"'),tdRow=`<div class="w12-rl">${'<button class="ex-mrow w12-r" data-toast="Beállítások · testadatok">'+drop('t-person')+'<span class="g"><b>Testadatok</b><i class="q">34 év · 180 cm · 78,4 kg · 15% testzsír</i></span><em>›</em></button>'}</div>`;
+  const page0=base.slice(0,base.indexOf('<div class="en-sw'));const end=base.indexOf(td.replace('"','"'))>=0?0:0;
+  const tail=base.slice(bal(base,base.lastIndexOf('<section class="fh-card'),'section'));
+  return page0+`<div class="mx w12-t">${sw.replace(' rise"','"').replace('class="en-sw','class="en-sw w12-sw')}${body}<section class="mx-s ln">${tdRow}</section><div class="ng-tail"></div></div>`+tail}
+en.routes.test=test12;en.routes.suly=()=>test12('');en.routes.alvas=()=>test12('alvas');
+
+/* approved data-ev switches on a converted page: en.js updates its state and draws the approved page; redraw ours on top */
+document.addEventListener('click',e=>{const el=e.target.closest('[data-ev]');const ph=el&&el.closest('.phone');if(!ph||!ph.querySelector('.w12-t'))return;
+  setTimeout(()=>{const f=en.routes[F.R];if(typeof f!=='function')return;const sc=ph.querySelector('.scroll'),y=sc?sc.scrollTop:0;ph.innerHTML=f(F.ARG);
+    ph.querySelectorAll('.rise').forEach(x=>x.classList.remove('rise'));const s2=ph.querySelector('.scroll');if(s2)s2.scrollTop=y},0)},true);
+
 /* buoy taps: swap Mezo's line in place, mark the buoy (no re-render) */
 document.addEventListener('click',e=>{const el=e.target.closest('[data-w12]');if(!el)return;e.preventDefault();e.stopPropagation();
   const [k,v]=el.dataset.w12.split(':');if(k!=='stn')return;const ph=el.closest('.phone'),box=ph&&ph.querySelector('#w12-stn p');if(!box)return;
@@ -105,5 +180,34 @@ ${P} .w12-gs{display:flex;align-items:center;gap:12px;flex-wrap:wrap}${P} .w12-g
 ${P} .w12-wk{display:inline-flex;gap:4px}${P} .w12-wk i{width:12px;height:22px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.16)}
 ${P} .w12-wk i.hit{background:var(--dom);box-shadow:none}${P} .w12-wk i.part{background:linear-gradient(0deg,var(--dom) 50%,#fff 50%);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dom) 60%,#fff)}
 ${P} .w12-wk i.nd{background:transparent;box-shadow:none;border:1.5px dashed rgba(10,42,60,.25)}
+${P} .w12-sw{margin:14px 18px 0}${P} .w12-sw .fh-seg button{min-height:44px;font-size:15px}${P} .w12-cw .fl-level span{font-size:13px}
+${P} .w12-seg{margin:14px 18px 0}${P} .w12-seg .fh-seg button{min-height:42px;font-size:14px}
+${P} .w12-wch,${P} .w12-w8{margin-top:12px}${P} .w12-wch svg .gl{font-size:15px;font-weight:600;fill:var(--sub)}
+${P} .w12-w8 .en-tubes{margin-top:0}${P} .w12-w8 .en-tubes small{font-size:13px;color:var(--ink);white-space:nowrap}${P} .w12-w8 .en-tubes em{font-size:13.5px}
+${P} .w12-leg i.raw{width:7px;height:7px;border-radius:50%;background:var(--sub)}${P} .w12-leg i.tol{height:9px;background:color-mix(in srgb,var(--dom) 16%,#fff)}
+${P} .w12-leg i.pr{background:none;border-top:2px dotted var(--dom);height:0;border-radius:0}${P} .w12-leg i.rg{height:9px;background:color-mix(in srgb,var(--dom) 25%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dom) 50%,#fff)}
+${P} .w12-tp{display:flex;align-items:center;gap:16px;margin:4px 22px 0}${P} .w12-tp svg{width:104px;flex:none}
+${P} .w12-tp p{margin:0;display:grid;gap:2px}${P} .w12-tp p b{font:800 34px/1 var(--disp);letter-spacing:-.03em;color:var(--ink)}${P} .w12-tp p span{font-size:14.5px;color:var(--ink)}
+${P} .w12-st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 18px 0}
+${P} .w12-st span{display:grid;gap:3px;padding:12px 10px;border-radius:20px;background:#fff;text-align:center;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .w12-st b{font:800 18px/1.1 var(--disp);color:var(--ink);white-space:nowrap}${P} .w12-st small{font-size:12.5px;line-height:1.25;color:var(--ink)}
+${P} .w12-lw{margin:12px 22px 0}${P} .w12-lw .t{height:14px}${P} .w12-lw b{font:800 16px var(--disp)}
+${P} .w12-cw{margin:4px 18px 0}${P} .w12-cw>.fh-card{margin:0;padding:18px 16px;border-radius:24px}
+${P} .w12-cw .ex-mz{margin:14px 0 4px}${P} .w12-cw .fh-row strong{font-size:15.5px}${P} .w12-cw .fh-row small,${P} .w12-cw .fh-step small{font-size:13.5px;color:var(--ink)}
+${P} .w12-cw .en-leg{font-size:13px;color:var(--ink)}${P} .w12-cw svg .gl{font-size:14px;font-weight:600;fill:var(--sub)}${P} .w12-cw .fh-lab{font-size:13px;color:var(--ink)}
+${P} .w12-cw .en-chips span{font-size:13px}${P} .w12-cw .en-tubes small{font-size:13px;color:var(--ink)}${P} .w12-cw .en-tubes em{font-size:13px}
+${P} .w12-cw .fh-step time{font-size:13px;color:var(--ink);white-space:normal;line-height:1.2}${P} .w12-cw .en-days span,${P} .w12-cw .en-days em{font-size:13.5px}
+${P} .w12-cw .fh-seg button{min-height:42px;font-size:14px}${P} .w12-cw .en-lvw b{font-size:14px}
+${P} .w12-hl{display:grid;gap:10px}${P} .w12-hw{border-radius:22px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05);overflow:hidden}
+${P} .w12-hr{display:grid;gap:6px;width:100%;padding:14px 16px;background:none;border:0;text-align:left}
+${P} .w12-hr .h{display:flex;align-items:baseline;gap:10px}${P} .w12-hr .h b{flex:1;font-family:var(--disp);font-size:16px;color:var(--ink)}${P} .w12-hr .h em{font:800 16px var(--disp);font-style:normal;color:var(--ink);white-space:nowrap}
+${P} .w12-hr .h i{font-style:normal;font-size:20px;color:var(--sub);transition:transform .2s}${P} .w12-hw.on .w12-hr .h i{transform:rotate(90deg)}
+${P} .w12-hr .s{display:flex;align-items:center;gap:12px}${P} .w12-hr .s svg{width:64px;height:26px;flex:none}${P} .w12-hr .s small{font-size:13.5px;line-height:1.35;color:var(--ink)}
+${P} .w12-hw .en-days{margin:0 12px 12px}
+${P} .w12-nl{display:grid;gap:8px}${P} .w12-n{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;padding:12px 14px;border-radius:20px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .w12-n b{font-family:var(--disp);font-size:15.5px;color:var(--ink)}${P} .w12-n .w12-lv{grid-row:span 2;width:72px;margin:0}${P} .w12-n .w12-lv b:empty{display:none}${P} .w12-n small{font-size:13.5px;color:var(--ink)}${P} .w12-n.w b{color:#A86A0C}${P} .w12-n.w .w12-lv .t i{background:var(--warn)}
+${P} .w12-wch svg text[style]{font-size:17px!important}${P} .w12-cw svg:not(.en-tide) .gl{font-size:17px}
+${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
 @container (max-width:340px){${P} .w12-sc b{font-size:44px}${P} .w12-days .en-tubes{gap:5px}}`);
 })();
