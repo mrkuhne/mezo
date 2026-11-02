@@ -35,9 +35,9 @@ function mai12(a){if(a)return O.mai(a);
   chart=chart.replace(/data-ev="stn:(\d)"/g,'data-w12="stn:$1"').replace(/<text class="gl"[^>]*>aug\. 19\.<\/text>/,'')
     .replace('>júl. 8.<','>július 8.<').replace('>szept. 24.<','>szeptember 24.<');
   const si=base.indexOf('<div class="en-slband"'),band=si<0?'':base.slice(si,bal(base,si));
-  const vials=F.vials([{l:'Súly, kilogramm',ic:'t-weight',p:80,v:'−0,4',s:'kilogramm hetente · átlag 78,6',mark:'−0,5',on:'test'},
-     {l:'Alvás, óra',ic:'t-sleep',c:'var(--warn)',p:90,v:'7,3',s:'a cél alatt',mark:'7,5 óra',on:'test.alvas'},
-     {l:'Edzés a 4-ből',ic:'t-dumbbell',c:'var(--info)',p:75,v:'3',s:'mint a múlt héten',mark:'4',on:{dom:'edzes'}},
+  const vials=F.vials([{l:'Súly',ic:'t-weight',p:80,v:'−0,4 kg',s:'kilogramm hetente · átlag 78,6',mark:'−0,5',on:'test'},
+     {l:'Alvás',ic:'t-sleep',c:'var(--warn)',p:90,v:'7,3 óra',s:'a cél alatt',mark:'7,5 óra',on:'test.alvas'},
+     {l:'Edzés',ic:'t-dumbbell',c:'var(--info)',p:75,v:'3 / 4',s:'mint a múlt héten',mark:'4',on:{dom:'edzes'}},
      {l:'Fehérje',ic:'t-meat',c:'var(--protein)',p:96,v:'212 g',s:'öt napon célon',mark:'200',on:{dom:'fuel'}}],{h:128});
   const leg=[['ln','súly, heti átlag'],['bd','alvás, heti átlag: 6,4–7,3 óra'],['st','állomás: koppints rá'],['pl','cél: 73,0 kilogramm']].map(([c,t])=>`<span><i class="${c}"></i>${t}</span>`).join('');
   return page('en',{title:'Én',sub:'Daniel · szept. 21–27.',tab:'mai'},`<div class="mx">
@@ -76,7 +76,7 @@ ${P} .w12-sc span{font-size:14.5px;line-height:1.35;color:var(--ink)}
 ${P} .w12-days{margin:4px 22px 0}${P} .w12-days .en-tubes{--h:104px!important;gap:8px}${P} .w12-days .en-tubes em{font-size:14px}${P} .w12-days .en-tubes small{font-size:13px;font-weight:600;color:var(--ink)}
 ${P} .w12-days .en-tubes .c{min-height:44px}
 ${P} .w12-wide .n9-btn{flex:1}
-${P} .w12-vi{margin:4px 18px 0}${P} .w12-vi .k2-vials small,${P} .w12-vi .k2-vials .s{font-size:12.5px!important}
+${P} .w12-vi{margin:4px 18px 0}${P} .w12-vi .k2-vials b{white-space:nowrap;font-size:17px}${P} .w12-vi .k2-vials small,${P} .w12-vi .k2-vials .s{font-size:12.5px!important}
 ${P} .w12-lk{margin-left:auto;min-height:40px;padding:0 4px;font-size:14.5px;font-weight:700;color:color-mix(in srgb,var(--dom) 80%,var(--ink));background:none;border:0}
 ${P} .mx-h:has(.w12-lk){display:flex;align-items:center}
 ${P} .w12-ln{margin:2px 22px 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-ln b{font-family:var(--disp);font-size:16px}
