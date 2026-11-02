@@ -30,7 +30,7 @@ function pics(){if(PIC)return PIC;const h=O.mai('');
   return PIC={tal,days,team}}
 /* own small pictures where the approved wall had only words */
 const caps=(n,k,cap,warn)=>`<span class="w3-cp${warn?' w':''}"><span class="r">${Array.from({length:n},(_,i)=>`<i class="${i<k?'on':''}"></i>`).join('')}</span><span class="c">${cap}</span></span>`;
-const pair=(a,b,mid='mint',cap='')=>`<span class="w3-pr">${[a,b].map(([l,v,p,c])=>`<span class="v"><span class="t"><i style="height:${p}%;--c:${c}"></i><b>${v}</b></span><small>${l}</small></span>`).join(`<span class="m">${mid}</span>`)}</span>${cap?`<span class="w3-prc">${cap}</span>`:''}`;
+const pair=(a,b,mid='mint',cap='')=>`<span class="w3-pr">${[a,b].map(([l,v,p,c])=>`<span class="v"><span class="t"><i style="height:${p}%;--c:${c}"></i><b${p<35?' class="lo"':''}>${v}</b></span><small>${l}</small></span>`).join(`<span class="m">${mid}</span>`)}</span>${cap?`<span class="w3-prc">${cap}</span>`:''}`;
 
 /* the posts — content of the approved wall (csepp/mezo.js fal), emojis out (Folyadék: never emojis) */
 const POSTS=[
@@ -73,7 +73,7 @@ const RS={},RE={},WS={pill:false};
 const byId=id=>POSTS.find(p=>p.id===id);
 const answered=p=>!!RS[p.id]||!!p.done;
 const open=()=>POSTS.filter(p=>p.wait&&!RS[p.id]);
-const olderLeft=()=>POSTS.filter(p=>!FRONT.includes(p.day)&&!answered(p)).length;
+const olderLeft=()=>POSTS.filter(p=>p.day!=='-'&&!FRONT.includes(p.day)&&!answered(p)).length;
 const RL={up:'Ez talál',down:'Nem így érzem',yes:'Igaz rám',no:'Nem igaz rám',reply:'Elmesélted'};
 
 function chipOf(p){if(p.done)return `<i class="w3-st ok">${TICK}${p.done}</i>`;if(RS[p.id])return `<i class="w3-st ok">${TICK}Megvan</i>`;return p.flag?`<i class="w3-st w">${p.flag}</i>`:''}
@@ -89,10 +89,10 @@ const cardOf=p=>`<article class="w3-c${answered(p)?' ok':''}" data-w3c="${p.id}"
 function radVar(){const rows=[
   `<button class="w3-rw" data-go="elo"><i class="w3-live"></i><span class="g"><b>Élőben · a csapat beszél</b><small>Étkezés: „Megvan, 1 140 kcal, rendeződött”</small></span><em>1 új ›</em></button>`,
   ...open().map(p=>`<button class="w3-rw" data-sheet="w3" data-arg="${p.id}">${badge(p.who,{s:40})}<span class="g"><b>${p.h}</b><small>${TN[p.who]} · ${p.kind}</small></span><i class="w3-st w">${p.flag}</i></button>`),
-  `<button class="w3-rw" data-go="poszt.dontes">${badge('falat',{s:40})}<span class="g"><b>Korábbi vacsora, nyugodtabb este?</b><small>Étkezés · döntés kell · 18 nap, elég adat van</small></span><i class="w3-st w">Döntés</i></button>`];
+  ...(RS.dontes?[]:[`<button class="w3-rw" data-go="poszt.dontes">${badge('falat',{s:40})}<span class="g"><b>Korábbi vacsora, nyugodtabb este?</b><small>Étkezés · döntés kell · 18 nap, elég adat van</small></span><i class="w3-st w">Döntés</i></button>`])];
   return `<section class="mx-s ln" id="w3-rv">${KH('Rád vár')}<div class="w3-rl">${rows.join('')}</div></section>`}
 const NUM=['Egy','Két','Három','Négy','Öt'];
-function topOf(){const n=open().length+1,first=open()[0];
+function topOf(){const n=open().length+(RS.dontes?0:1),first=open()[0];
   return `<section class="mx-s ex-hero" id="w3-top"><small class="ex-eb">A te kis csapatod · ma</small><h2 class="n7-h">${n?`${NUM[n-1]||n} beszélgetésben várnak rád.`:'Mindenre válaszoltál.'}</h2>
   <div class="w3-team">${pics().team}</div>
   <div class="ex-acts w3-wide"><button class="n9-btn" ${first?`data-sheet="w3" data-arg="${first.id}"`:'data-go="poszt.dontes"'}>Megnézem</button></div></section>`}
@@ -225,7 +225,70 @@ function poszt3(a){if(a&&a!=='vacsora')return O.poszt(a);const p=byId('vacsora')
   <section class="mx-s ln">${KH('Miből látszik?')}<p class="w7-sum">11 este mellette szól, 3 ellene.</p>${nights(0,'Késői vacsora után')}${nights(1,'Korai vacsora után')}
     ${mzLine('A szám az alvásod aznap éjjel. A szaggatott este ellene szól: ott a vacsora ideje és az alvás nem együtt mozgott.')}
     <div class="w4-rl w7-rows">${row('t-clock','14 közös nap','ahol vacsoraidő és alvásminőség is rögzült','minta.vacsora')}${row('t-info','A napok egyenként','vacsoraidő és alvás, estéről estére','bizonyitek')}</div></section></div>`)}
-mz.routes.poszt=poszt3;
+/* ═══ THE OTHER FOUR CASE PAGES (2026-11-02, owner: "jöhet a négy ügy-oldal"): the vacsora page's order on each — the
+   eyebrow with who and what kind, the sentence, the case's own picture, the answer (shared with its wall card where it has
+   one); what the field sees on a card; the thread as cards; the evidence last, as tubes grouped by kind so they read
+   without a legend. No orange box, no emojis, no grey notes (they became Mezo's lines). ═══ */
+const tubes=(l,items,c)=>`<div class="w7-ng"><p class="w7-nl">${l}</p><div class="w7-nr">${items.map(([d,t,p,x])=>`<span class="w7-n${x?' x':''}"><span class="t"><i style="height:${Math.max(p,0)}%;--c:${c}"></i></span><b>${t}</b><small>${d}</small></span>`).join('')}</div></div>`;
+const cm7=(k,role,t,dec)=>`<article class="w7-cm${dec?' dec':''}">${badge(k,{s:40})}<div><b>${TN[k]} <small>${role}</small></b><p>${t}</p></div></article>`;
+const rp7=`<button class="w6-s w7-rp" data-sheet="reply">${I('t-chat')}<span>Te hogy látod? Válaszolj…</span><b>Írok</b></button>`;
+const row7=(ic,t,sub,attr)=>`<button class="ex-mrow w4-r" ${attr}>${E.drop(ic)}<span class="g"><b>${t}</b><i class="q">${sub}</i></span><em>›</em></button>`;
+const info7=(ic,t,sub,chip='')=>`<div class="ex-mrow w4-r w5-le">${E.drop(ic)}<span class="g"><b>${t}</b><i class="q">${sub.replace(/<\/?b>/g,'')}</i>${chip}</span></div>`;
+const eb7=(k,t)=>`<small class="ex-eb w5-by">${badge(k,{s:26})}${t}</small>`;
+const AN7=id=>`<div class="w7-ans" data-w7a="${id}">${ansOf(byId(id))}</div>`;
+/* the decision has no wall card of its own (it waits in Rád vár), so it gets a post object for the shared answer state */
+POSTS.push({id:'dontes',day:'-',who:'falat',t:'',kind:'döntés kell',flag:'Döntés',dec:1,h:'Korábbi vacsora, nyugodtabb este?',x:''});
+const DD=[['4.',0,1],['5.',320,0],['6.',60,1],['7.',0,1],['8.',280,0],['9.',120,1],['10.',0,1],['11.',410,0],['12.',80,1],['13.',0,0,1],['14.',0,1],['15.',350,0],['16.',0,1],['17.',260,1,1],['18.',240,0],['19.',40,1],['20.',380,0],['21.',0,1]];
+const KM=[['aug. 24.',88,0],['aug. 31.',90,0],['szept. 3.',87,0],['szept. 7.',91,0],['szept. 10.',89,0],['szept. 18.',95,1],['szept. 21.',97,1]];
+const KDAYS=[['Cs','',1],['P','',1],['Szo','',2],['V','',1],['H','ma',3],['K','',0],['Sze','',0]];
+const kday=()=>`<div class="w7-dy">${KDAYS.map(([d,w,s])=>{const on=s===1||(s===3&&WS.adag);return `<span class="w7-d${on?' on':''}${s===2?' off':''}${s===3&&!WS.adag?' now':''}"><i></i><b>${d}</b><small>${s===1||(s===3&&WS.adag)?TICK:w}</small></span>`}).join('')}</div><p class="w7-dc">Teli kapszula: a nap rendben lezajlott. A szombat nem volt meccsnap, a szaggatott a mai este.</p>`;
+const kAns=()=>WS.adag?`<p class="w3-ok">${TICK}Megjelölve: ma 17 óráig bekerült a szénhidrát.</p><button class="fh-lk" data-w3="adag">Visszavonom</button>`
+  :`<div class="w3-ab"><button class="n9-btn" data-w3="adag">Ma esti adag: megvolt</button><button class="n8-b" data-sheet="reply">Elmesélem</button></div>`;
+const CASES={
+ kiserlet:()=>page('mezo',{title:'Meccs előtti szénhidrát',sub:'Közös kísérlet · Étkezés × Mozgás',back:'mai'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('falat','Étkezés × Mozgás · kísérlet · 4 / 7 nap')}<h2 class="n7-h">Stabilabb az ugrásod, ha meccs előtt szénhidrátot kapsz?</h2>
+    <div class="w7-pic">${pair(['szénhidrát nélkül','89%',45,'#E7B25A'],['80 g szénhidráttal','96%',80,'var(--dom)'],'helyett','Ennyi marad meg az ugrásodból a 4. szettre')}</div>
+    <div class="w7-ans" data-w7k="1">${kAns()}</div></section>
+  <section class="mx-s ln">${KH('A terv')}<article class="w7-cm">${badge('falat',{s:40})}<div><b>Étkezés <small>a kísérlet gazdája</small></b><p>Meccsnapokon <b>17 óráig 80 g szénhidrát</b>, aztán megnézzük, mit mond a 4. szett. Két meccsnapon már próbáltuk, és mindkétszer stabilabb volt a végjáték.</p></div></article>
+    <div class="w7-kd" data-w7d="1">${kday()}</div></section>
+  <section class="mx-s ln">${KH('Eddigi meccsnapok','2 találat a 2-ből')}<div class="w3-l">
+    ${info7('t-up','4. szett: az ugrásmagasság kitartott','Szept. 18., csütörtök. 80 g szénhidrát 16:40-ig. A meccs utáni jelentkezésed: „végig volt erőm”.',`<i class="w3-st ok w7-hit">${TICK}Találat</i>`)}${info7('t-up','Végjátékban is stabil láb','Szept. 21., vasárnap. 75 g szénhidrát 17:00-ig. A Mozgás a szettenkénti bontást is átnézte.',`<i class="w3-st ok w7-hit">${TICK}Találat</i>`)}</div></section>
+  <section class="mx-s ln">${KH('Beszélgetés','1 hozzászólás')}<div class="w3-l">${cm7('mocor','mozgás','A szettenkénti bontásban is látszik: a 4. szett ugrásai a 2. szetthez képest csak <b>4%-ot</b> estek, a próba előtt ez <b>11%</b> volt. Még két meccsnap, és kimondhatjuk. Addig ne változtass semmi máson, mert összekeveri a képet.')}</div>${rp7}</section>
+  <section class="mx-s ln">${KH('Miből látszik?')}<p class="w7-sum">Mindkét próba-meccsen többet tartottál meg.</p>
+    ${tubes('Szénhidrát nélkül · 5 meccs',KM.filter(m=>!m[2]).map(([d,v])=>[d.replace(/^\D+/,''),v+'%',(v-80)*5]),'#E7B25A')}${tubes('80 g szénhidráttal · 2 meccs',KM.filter(m=>m[2]).map(([d,v])=>[d.replace(/^\D+/,''),v+'%',(v-80)*5]),'var(--dom)')}
+    ${mzLine('A szám azt mutatja, mennyi maradt meg az ugrásodból a 4. szettre a 2. szetthez képest. Hét meccs, augusztus 24-től szeptember 21-ig.')}
+    <div class="w4-rl w7-rows">${row7('t-flask','A kísérlet oldala','4 nap a 7-ből · a teljes napló','data-go="kiserlet-oldal.szenhidrat"')}</div></section></div>`),
+ sejtes:()=>page('mezo',{title:'Az egyhangú hetek viszik el az energiádat?',sub:'Még csak sejtés · mozgás',back:'mai'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mocor','Mozgás · sejtés · még kevés adat')}<h2 class="n7-h">Ha három napig ugyanaz megy, a negyediken laposabb vagy.</h2>
+    <div class="w7-pic">${pair(['vegyes terhelés után','6,4',68,'var(--dom)'],['3 egyforma nap után','5,2',46,'#E7B25A'],'1,2 ponttal kevesebb','A reggeli energiád átlaga · 5 közös nap')}</div>
+    ${AN7('sejtes')}</section>
+  <section class="mx-s ln">${KH('Amit a Mozgás lát')}${cm7('mocor','5 közös nap a 8-ból','Ötször láttam eddig: három egyforma terhelésű nap után a reggeli energiád <b>átlag 1,2 ponttal</b> alacsonyabb. Ez még nem bizonyíték: nyolc közös nap kell, hogy kimondjam, és a Szkeptikus is figyel.')}</section>
+  <section class="mx-s ln">${KH('Mi kellene még?')}<div class="w4-rl">${info7('t-bolt','Egy változatosabb hét','Ha jövő héten vegyes a terhelés, és az energiád nem esik, az ellene szól. Azt is megköszönöm.')}${info7('t-heart','3 további reggeli bejelentkezés','A Közérzet gyűjti. Az energiapontod nélkül nincs mihez mérni.')}</div></section>
+  <section class="mx-s ln">${KH('Beszélgetés','1 hozzászólás')}<div class="w3-l">${cm7('szk','visszakérdez','Öt eset kevés, és a hét vége felé amúgy is fáradtabb az ember. Kérlek, a nyolcból legalább kettő legyen <b>hét eleji</b> egyforma blokk, különben a naptár magyarázza, nem a terhelés.')}</div>${rp7}</section>
+  <section class="mx-s ln">${KH('Miből látszik?')}<p class="w7-sum">5 közös nap a 8-ból.</p><div class="w7-pic">${caps(8,5,'Nyolc kell, hogy kimondja. Az üres kapszulák még hiányoznak.',1)}</div>
+    <div class="w4-rl w7-rows">${row7('t-clock','Az 5 eddigi eset','terhelés és reggeli energia, napról napra','data-go="minta.egyhangu"')}</div></section></div>`),
+ dontes:()=>page('mezo',{title:'Korábbi vacsora, nyugodtabb este?',sub:'Döntésre vár · étkezés',back:'mai'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('falat','Étkezés · a te döntésed kell · 18 nap')}<h2 class="n7-h">A 19 óra előtti vacsoráid után nyugodtabbak az estéid.</h2>
+    <div class="w7-pic">${pair(['késői vacsora után','280',67,'#E7B25A'],['19 előtti vacsora után','50',12,'var(--dom)'],'helyett','A késő esti nassolás átlaga, kalóriában')}</div>
+    ${mzLine('Ha igent mondasz, ez bekerül a rólad szóló képbe. Bármikor visszavonhatod a Rólad oldalon.')}
+    ${AN7('dontes')}</section>
+  <section class="mx-s ln">${KH('Amit az Étkezés lát')}${cm7('falat','18 nap','18 napot tudtam összevetni: a korai vacsorás estéken kevesebb a késő esti nassolás, és <b>korábbi a lefekvés</b> is. A számok szerint ez már nem véletlen, de a te megerősítésed nélkül nem kerül a rólad szóló képbe.')}</section>
+  <section class="mx-s ln">${KH('Ha bekerül, mire használjuk?')}<div class="w4-rl">${info7('t-clock','Az esti javaslatok időzítése','Az Étkezés 18 óra körül szól majd, nem fél tízkor.')}${row7('t-moon','A késői vacsora ügye','ez a minta annak egyik építőköve lesz','data-go="poszt.vacsora"')}</div></section>
+  <section class="mx-s ln">${KH('Miből látszik?')}<p class="w7-sum">16 este mellette szól, 2 ellene.</p>
+    ${tubes('19 előtti vacsora után · 11 este',DD.filter(d=>d[2]).map(([d,v,,x])=>[d,String(v),Math.round(v/4.2),x]),'var(--dom)')}${tubes('Késői vacsora után · 7 este',DD.filter(d=>!d[2]).map(([d,v,,x])=>[d,String(v),Math.round(v/4.2),x]),'#E7B25A')}
+    ${mzLine('A szám a késő esti nassolás kalóriában, szeptember 4-től 21-ig. A szaggatott este ellene szól.')}</section></div>`),
+ elorejelzes:()=>page('mezo',{title:'Könnyebb az edzés, ha jól aludtál?',sub:'Lezárt előrejelzés · mozgás',back:'mai'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mocor','Mozgás · lezárt előrejelzés · vasárnap')}<h2 class="n7-h">Ez most nem jött be, és ez is számít.</h2>
+    <div class="w7-pic">${pair(['ezt vártam','7 alatt',62,'color-mix(in srgb,var(--dom) 45%,#fff)'],['ez történt','7,5–8',78,'#E7B25A'],'helyett','Mennyire érezted nehéznek az edzést egy jó éjszaka után · tízes skálán')}</div>
+    ${AN7('elore')}</section>
+  <section class="mx-s ln">${KH('Ezt vártam, és ez történt')}<div class="w3-l">
+    ${info7('t-target','Ezt vártam','A jó éjszaka utáni edzés <b>könnyebbnek</b> érződik majd: 7 alatti nehézség.')}
+    ${info7('t-up','Ez történt','Ugyanolyannak érezted: <b>7,5 és 8</b> között, a jó éjszakák után is.')}
+    ${cm7('mocor','amit ebből tanult','Ebből azt tanultam, hogy nálad az alvás <b>nem az érzeten</b> látszik meg, hanem máshol. Az Alvással most azt nézzük, a súlyoknál jelentkezik-e. A becsléseimet ezért óvatosabbra vettem ennél a jelnél.')}</div></section>
+  <section class="mx-s ln">${KH('Beszélgetés','1 hozzászólás')}<div class="w3-l">${cm7('szunya','alvás','Örülök, hogy kimondtad. Nálam közben az látszik, hogy a jó éjszakák utáni napokon <b>korábban</b> kezded az edzést. Lehet, hogy ott a hatás, nem az érzetben. Felveszem gyűlő ügynek.')}</div>${rp7}</section>
+  <section class="mx-s ln">${KH('Miből látszik?')}${mzLine('A tévedéseinket is megőrizzük: ettől hihető, amit kimondunk.')}
+    <div class="w4-rl w7-rows">${row7('t-info','Az előrejelzés adatai','a várt sáv és a mért edzések','data-go="elore.alvas-edzes"')}</div></section></div>`)};
+mz.routes.poszt=a=>CASES[a]?CASES[a]():poszt3(a);
 /* a decision redraws the page (the approved handler, a capture listener on document); read the carousel position on
    window first, then put it back on the card that was answered */
 window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.w5-cr [data-m]');if(!b)return;const x=b.closest('.w5-cr').scrollLeft;
@@ -263,6 +326,7 @@ function refresh(id){const ph=document.querySelector('#phone');if(!ph)return;
   const s=ph.querySelector(`#sheet [data-w3s="${id}"]`);if(s)s.outerHTML=sheet(id)}
 const TT={up:'„Ez talál” — köszönjük, feljegyeztük.',down:'„Nem így érzem” — ebből tanulunk a legtöbbet.',yes:'Bekerült. Bármikor visszavonhatod a Rólad oldalon.',no:'Rendben, nem építünk rá.',reply:'Elküldve — a csapat újraértékeli vele a képet.'};
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-w3]');if(!b)return;e.preventDefault();const [k,id,v]=b.dataset.w3.split(':');
+  if(k==='adag'){WS.adag=!WS.adag;const ph=document.querySelector('#phone'),a=ph&&ph.querySelector('[data-w7k]'),d=ph&&ph.querySelector('[data-w7d]');if(a)a.innerHTML=kAns();if(d)d.innerHTML=kday();F.toast(WS.adag?'Ma esti adag megjelölve':'Visszavonva');return}
   if(k==='pill'){if(WS.pill)return;WS.pill=true;const ph=document.querySelector('#phone'),l=ph&&ph.querySelector('[data-w3d="ma"]');if(l)l.insertAdjacentHTML('afterbegin',cardOf(PILL));b.classList.remove('on');ph&&ph.querySelector('.scroll')?.scrollTo({top:0,behavior:'smooth'});return}
   if(k==='r'){RS[id]=v;RE[id]=false;refresh(id);F.toast(TT[v]);return}
   if(k==='undo'){delete RS[id];refresh(id);F.toast('Visszavonva');return}
@@ -361,6 +425,11 @@ ${P} .w7-n{display:flex;flex-direction:column;align-items:center;gap:3px}${P} .w
 ${P} .w7-n .t i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c))}${P} .w7-n.x .t{outline:2px dashed rgba(10,42,60,.45);outline-offset:-2px}
 ${P} .w7-n b{font-size:13px;font-weight:800;color:var(--ink)}${P} .w7-n small{font-size:12px;font-weight:600;color:var(--ink);opacity:.8}
 ${P} .w7-rows{margin-top:14px}
+${P} .w7-hit{align-self:flex-start;margin-top:8px}${P} .w3-pr .t b.lo{color:var(--ink);text-shadow:none}${P} .w7-pic+.w3-mz{margin-top:16px}${P} .w7-cm>.fh-drop,${P} .w7-cm>.ex-dr{flex:none}
+${P} .w7-kd{margin:14px 14px 0}${P} .w7-dy{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+${P} .w7-d{display:flex;flex-direction:column;align-items:center;gap:4px}${P} .w7-d i{width:100%;max-width:38px;height:34px;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12)}
+${P} .w7-d.on i{background:linear-gradient(180deg,var(--liq1),var(--liq2));box-shadow:none}${P} .w7-d.off i{background:rgba(10,42,60,.06);box-shadow:none}${P} .w7-d.now i{outline:2px dashed color-mix(in srgb,var(--dom) 70%,var(--ink));outline-offset:-2px}
+${P} .w7-d b{font-size:13px;font-weight:800;color:var(--ink)}${P} .w7-dc{margin:10px 4px 0;font-size:13.5px;font-weight:650;line-height:1.4;color:var(--ink)}${P} .w7-d small .w3-tk{color:#1F7A4D}${P} .w7-d small{min-height:16px;font-size:12.5px;font-weight:650;color:var(--ink);opacity:.8;text-align:center;line-height:1.2}
 @media (max-width:360px){${P} .w7-nr{gap:3px}${P} .w7-n b{font-size:12px}}
 @media (max-width:360px){${P} .w3-h{font-size:17px}${P} .w3-hd{gap:10px}${P} .w3-st{padding:4px 8px;font-size:12px}${P} .w3-tap{padding:14px}}
 `);
