@@ -9,7 +9,7 @@
 (function(){
 const F=window.F,ed=window.FREG&&FREG.edzes,X=window.KXN;if(!ed||!X)return;
 const {I,badge}=F,{V,KH,dots,DEFS,hubHead}=X;
-const P='.phone.foly[data-s="elo"]:is([data-d="edzes"],[data-d="fuel"],[data-d="mezo"])',PE='.phone.foly[data-s="elo"][data-d="edzes"]';
+const P='.phone.foly[data-s="elo"]:is([data-d="edzes"],[data-d="fuel"],[data-d="mezo"],[data-d="en"])',PE='.phone.foly[data-s="elo"][data-d="edzes"]';
 const O={mai:ed.routes.mai,terv:ed.routes.terv,het:ed.routes.het,terheles:ed.routes.terheles,terkep:ed.routes.terkep,exercises:ed.routes.exercises,indulas:ed.routes.indulas,session:ed.routes.session,review:ed.routes.review,cer:ed.routes.cer,sport:ed.routes.sport,futas:ed.routes.futas,sportlog:ed.routes.sportlog,mozgas:ed.routes.mozgas};
 ed.routes['mozgas-lista']=O.mozgas;
 ed.routes['sportlog-lista']=O.sportlog;
