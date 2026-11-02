@@ -242,7 +242,7 @@ function kamraList3(){const base=O.kamra(),cs=cardsOf(base);const hero=cs.find(c
   const srch=fc?(i=>i<0?'':fc.html.slice(i,bal(fc.html,i)))(fc.html.indexOf('<div class="fx-srch"')):'';
   const rows=sc?[...sc.html.matchAll(/<button class="fh-stat" style="--c:var\(--(\w+)\)[^"]*" (data-go="[^"]+")>[\s\S]*?href="#([^"]+)"[\s\S]*?<span class="k">([^<]*)<\/span><div class="n">([^<]*)<small>([^<]*)<\/small><\/div>[\s\S]*?<span class="s ">([^<]*)<\/span>/g)]
     .map(([,c,at,ic,n,v,u,sm])=>{const p=sm.split(' · '),food=c==='protein',sub=`${p[1]} · ${p[0]}`;
-      return `<button class="ex-mrow fx-kr ${food?'':'s'}" ${at}>${drop(ic)}<span class="g"><b>${n}</b><i class="q">${sub}</i></span><span class="fx-ikv"><b>${v}</b><small>${food?'kcal / 100 g':'adag'}</small></span></button>`}).join(''):'';
+      return `<button class="ex-mrow fx-kr ${food?'':'s'}" ${at}>${drop(ic)}<span class="g"><b>${n}</b><i class="q">${sub}</i></span><span class="fx-ikv"><b>${v}</b><small>${food?'kcal<br>100 g-ban':'adag'}</small></span></button>`}).join(''):'';
   const xr=xc?[...xc.html.matchAll(/<button class="fh-row" ([^>]*)>[\s\S]*?href="#([^"]+)"[\s\S]*?<strong>([^<]*)<\/strong><small>([^<]*)<\/small>/g)].map(([,at,ic,t,sm])=>`<button class="ex-mrow" ${at}>${drop(ic)}<span class="g"><b>${t}</b><i class="q">${sm}</i></span><span class="v">›</span></button>`).join(''):'';
   const out=`${listTop(hero.html,actsOf(hero.html))}${fc?`<section class="mx-s ln">${KH('Keresés')}<div class="fx-pk2">${srch}${pickOf(fc.html)}</div></section>`:''}
     <section class="mx-s ln">${KH('A polcon')}<div class="ex-ml fx-roomy">${rows}</div></section>${xr?`<section class="mx-s ln">${KH('Okosabb csere')}<div class="ex-ml">${xr}</div></section>`:''}`;
@@ -326,7 +326,7 @@ ${P} .fx-kr .fx-ikv small,${P} .fx-rh .fx-ikv small{white-space:nowrap}${P} .fx-
 @media (max-width:360px){${P} .fx-m3 .fx-mc{padding:6px}${P} .fx-m3 .fx-mc .t{display:none}${P} .fx-rh svg.ng{width:38px;height:38px}}
 ${P} .fx-roomy{gap:16px}${P} .fx-roomy .fx-kr{min-height:84px;padding:18px 18px 18px 14px;gap:14px}${P} .fx-roomy .fx-kr svg.ng{width:54px;height:54px}
 ${P} .fx-roomy .fx-kr .g b,${P} .fx-roomy .fx-rh .g b{font-size:16.5px;line-height:1.3}${P} .fx-roomy .fx-kr .g .q,${P} .fx-roomy .fx-rh .g .q{display:block;margin-top:4px;font-size:14px;line-height:1.35}
-${P} .fx-roomy .fx-ikv{min-width:0}${P} .fx-roomy .fx-ikv b{font-size:20px}${P} .fx-roomy .fx-ikv small{font-size:12.5px;margin-top:2px}
+${P} .fx-roomy .fx-ikv{min-width:0}${P} .fx-roomy .fx-kr .fx-ikv small{text-align:right;line-height:1.25}${P} .fx-roomy .fx-ikv b{font-size:20px}${P} .fx-roomy .fx-ikv small{font-size:12.5px;margin-top:2px}
 ${P} .fx-roomy .fx-rr{gap:16px;padding:18px 18px 18px 14px;border-radius:24px}${P} .fx-roomy .fx-rh{gap:14px}${P} .fx-roomy .fx-rh svg.ng{width:54px;height:54px}
 ${P} .fx-roomy .fx-m3{gap:8px}${P} .fx-roomy .fx-m3 .fx-mc{padding:10px;border-radius:16px;gap:8px}${P} .fx-roomy .fx-m3 .fx-mc .t{height:30px;width:10px}${P} .fx-roomy .fx-m3 .fx-mc .tx b{font-size:15.5px}${P} .fx-roomy .fx-m3 .fx-mc .tx small{font-size:12.5px;margin-top:2px}
 @media (max-width:360px){${P} .fx-roomy .fx-kr svg.ng,${P} .fx-roomy .fx-rh svg.ng{width:42px;height:42px}${P} .fx-roomy .fx-kr,${P} .fx-roomy .fx-rr{padding:16px 14px 16px 10px;gap:10px}${P} .fx-roomy .fx-m3{gap:6px}${P} .fx-roomy .fx-m3 .fx-mc{padding:8px}}
