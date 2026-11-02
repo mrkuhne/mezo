@@ -22,12 +22,12 @@ const lvl=(p,cap)=>`<span class="w12-lv"><span class="t"><i style="width:${p}%">
 const ST=[['Tempó átállítva','július 8.','Heti 0,4 kilogrammra lassítottad a tempót, azóta egyenletes.'],['Új mélypont · 80 kilogramm alatt','augusztus 19.','Először mértél 80 kilogramm alatti heti átlagot.'],
   ['Új képesség: Páncélzat','szeptember 2.','10 hét töretlenül: a sérülésállóság nő.'],['Új mélypont','szeptember 24.','78,4 kilogramm: a 12 hét legalacsonyabb átlaga.']];
 const ST0='Koppints egy bójára a felszínen, és elmondom, mi történt ott.';
-const GO=[{t:'Súlycél',ic:'t-weight',p:33,dir:'halad',sub:'78,4 → 73 kilogramm · heti fél kilogramm · körülbelül 11 hét',go:'sulycel'},
-  {t:'Side hustle',ic:'t-record',p:64,dir:'emelkedik',ar:'↗',ma:'ma 2 a 3-ból',d:['hit','hit','part','hit','miss','hit','hit'],go:'cel'},
-  {t:'Kockahas',ic:'t-sprout',p:71,dir:'tartja',ar:'→',ma:'ma 3 az 5-ből',d:['hit','part','hit','hit','part','miss','hit'],go:'cel'},
-  {t:'Az utolsó barátnő',ic:'t-people',p:52,dir:'emelkedik',ar:'↗',ma:'ma 1 a 2-ből',d:['hit','nd','hit','part','hit','hit','nd'],go:'cel'}];
+const GO=[{t:'Súlycél',ar0:'Egészség',ic:'t-weight',p:33,dir:'halad',sub:'78,4 → 73 kilogramm · heti fél kilogramm · körülbelül 11 hét',go:'sulycel'},
+  {t:'Side hustle',ar0:'Teljesítmény és Elmélyülés',ic:'t-record',p:64,dir:'emelkedik',ar:'↗',ma:'ma 2 a 3-ból',d:['hit','hit','part','hit','miss','hit','hit'],go:'cel'},
+  {t:'Kockahas',ar0:'Egészség és Teljesítmény',ic:'t-sprout',p:71,dir:'tartja',ar:'→',ma:'ma 3 az 5-ből',d:['hit','part','hit','hit','part','miss','hit'],go:'cel'},
+  {t:'Az utolsó barátnő',ar0:'Kapcsolatok és Érzelem',ic:'t-people',p:52,dir:'emelkedik',ar:'↗',ma:'ma 1 a 2-ből',d:['hit','nd','hit','part','hit','hit','nd'],go:'cel'}];
 const week=d=>`<span class="w12-wk" role="img" aria-label="A hét napjai">${d.map(x=>`<i class="${x}"></i>`).join('')}</span>`;
-const goal=o=>`<button class="w12-g" data-go="${o.go}"><span class="w12-gh">${drop(o.ic)}<b>${o.t}</b><span class="w12-dir${o.ar==='→'?' fl':''}">${o.ar?`<span aria-hidden="true">${o.ar}</span>`:''}${o.dir}</span></span>
+const goal=o=>`<button class="w12-g" data-go="${o.go}"><span class="w12-gh">${drop(o.ic)}<span class="w12-gt"><b>${o.t}</b><span class="w12-ga"><span class="w12-dir${o.ar==='→'?' fl':''}">${o.ar?`<span aria-hidden="true">${o.ar}</span>`:''}${o.dir}</span><small>${o.ar0}</small></span></span></span>
   ${lvl(o.p,o.p+'%')}<span class="w12-gs">${o.d?`${week(o.d)}<small>${o.ma}</small>`:`<small>${o.sub}</small>`}</span></button>`;
 function mai12(a){if(a)return O.mai(a);
   const base=O.mai(''),ti=base.indexOf('<div class="en-tubes week"'),tubes=ti<0?'':base.slice(ti,bal(base,ti));
@@ -136,6 +136,30 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-ev^="peri
   setTimeout(()=>{const f=en.routes[F.R];if(typeof f!=='function')return;const sc=ph.querySelector('.scroll'),y=sc?sc.scrollTop:0;ph.innerHTML=f(F.ARG);
     ph.querySelectorAll('.rise').forEach(x=>x.classList.remove('rise'));const s2=ph.querySelector('.scroll');if(s2)s2.scrollTop=y},0)},true);
 
+/* ═══ CÉLOK (2026-11-02, owner: the same goal cards as on Hol tartok): the sentence on top with the four goal tubes as the
+   picture (the light top layer is this week's part), one wide "+ Új cél"; the active goals on the shared card, the capsule
+   legend as Mezo's line; the six life areas as tubes; parked and closed goals as rows; the signals row. ═══ */
+O.celok=en.routes.celok;en.routes['celok-lista']=O.celok;
+function celok12(a){if(a)return O.celok(a);const base=O.celok('');
+  const cutT=m=>{const i=base.indexOf(m);return i<0?'':base.slice(i,bal(base,i))};
+  const gt=cutT('<div class="en-tubes wide"'),dims=cutT('<div class="en-tubes dims"');
+  return page('en',{title:'Célok',sub:'Én · 4 aktív · 1 parkol',tab:'celok'},`<div class="mx">
+  <section class="mx-s ex-hero"><small class="ex-eb">Ezen a héten</small><h2 class="n7-h">Két cél emelkedik, egy tartja magát.</h2>
+    <div class="w12-ch w12-gtb">${gt}</div>
+    ${mzLine('Minden cél egy edény. A világos felső réteg az, amit ez a hét tett hozzá.')}
+    <div class="ex-acts w12-wide"><button class="n9-btn" data-go="celuj.1">+ Új cél</button></div></section>
+  <section class="mx-s ln">${KH('Aktív célok','4')}<div class="w12-gl">${GO.map(goal).join('')}</div>
+    ${mzLine('A kis kapszula egy nap: tele, ha teljesült; félig, ha részben; üres, ha kimaradt; szaggatott, ha nincs adat.')}</section>
+  <section class="mx-s ln">${KH('Életterületek')}<div class="w12-ch w12-dm">${dims}</div>
+    ${mzLine('Hat életterület, hat szint: annyira telik, ahány aktív célod épít rá.')}</section>
+  <section class="mx-s ln">${KH('Parkol és lezárt')}<div class="w12-rl">
+    <div class="ex-mrow w12-r">${drop('t-book')}<span class="g"><b>Spanyol B2</b><i class="q">parkol · Elmélyülés</i></span><button class="n8-b" data-toast="Újra aktív">Vissza</button></div>
+    <div class="ex-mrow w12-r">${drop('t-sprout')}<span class="g"><b>Félmaraton</b><i class="q">elkészült · Egészség</i></span><span class="w12-dir">kész</span></div></div></section>
+  <section class="mx-s ln">${KH('A célok mögött')}<div class="w12-rl">${row('t-signal','Jelek: mit figyel a rendszer','28 forrás · 19 él · 9 alszik','jelek')}</div>
+    ${mzLine('Ami nincs naplózva, az nem nulla: az üres.')}</section>
+  <div class="ng-tail"></div></div>`)}
+en.routes.celok=celok12;
+
 /* buoy taps: swap Mezo's line in place, mark the buoy (no re-render) */
 document.addEventListener('click',e=>{const el=e.target.closest('[data-w12]');if(!el)return;e.preventDefault();e.stopPropagation();
   const [k,v]=el.dataset.w12.split(':');if(k!=='stn')return;const ph=el.closest('.phone'),box=ph&&ph.querySelector('#w12-stn p');if(!box)return;
@@ -174,7 +198,7 @@ ${P} .w12-lv b{font-size:13px;font-weight:700;color:var(--ink);white-space:nowra
 ${P} .w12-gl{display:grid;gap:12px;margin:4px 18px 0}
 ${P} .w12-g{display:grid;gap:10px;width:100%;padding:16px 16px 14px;border-radius:24px;background:#fff;text-align:left;border:0;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-gh{display:flex;align-items:center;gap:12px}${P} .w12-gh>svg.ng{width:44px;height:44px;flex:none;margin:0}
-${P} .w12-gh b{flex:1;min-width:0;font-family:var(--disp);font-size:17px;line-height:1.2;color:var(--ink)}
+${P} .w12-gt{flex:1;min-width:0;display:grid;gap:2px}${P} .w12-ga{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin-top:2px}${P} .w12-gt small{font-size:13px;color:var(--ink);opacity:.8}${P} .w12-gh b{min-width:0;font-family:var(--disp);font-size:17px;line-height:1.2;color:var(--ink)}
 ${P} .w12-dir{display:inline-flex;align-items:center;gap:4px;flex:none;padding:5px 10px;border-radius:999px;font-size:13px;font-weight:700;color:#1E7A55;background:#E3F4EC}
 ${P} .w12-dir.fl{color:var(--ink);background:#EEF2F5}
 ${P} .w12-g .w12-lv{margin:0}${P} .w12-g .w12-lv .t{height:14px}${P} .w12-g .w12-lv b{font-size:15px;font-family:var(--disp)}
@@ -209,8 +233,10 @@ ${P} .w12-hw .en-days{margin:0 12px 12px}
 ${P} .w12-nl{display:grid;gap:8px}${P} .w12-n{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;padding:12px 14px;border-radius:20px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-n b{font-family:var(--disp);font-size:15.5px;color:var(--ink)}${P} .w12-n .w12-lv{grid-row:span 2;width:72px;margin:0}${P} .w12-n .w12-lv b:empty{display:none}${P} .w12-n small{font-size:13.5px;color:var(--ink)}${P} .w12-n.w b{color:#A86A0C}${P} .w12-n.w .w12-lv .t i{background:var(--warn)}
 ${P} .w12-wch svg text[style]{font-size:17px!important}${P} .w12-cw svg:not(.en-tide) .gl{font-size:17px}
+${P} .w12-gtb .en-tubes{margin-top:0}${P} .w12-gtb .en-tubes small,${P} .w12-dm .en-tubes small{font-size:13px;line-height:1.2;color:var(--ink)}${P} .w12-gtb .en-tubes em,${P} .w12-dm .en-tubes em{font-size:14px}
+${P} .w12-dm .en-tubes{margin-top:0}${P} .w12-gtb .en-tubes small{overflow-wrap:normal;word-break:normal;hyphens:manual}${P} .w12-r .n8-b{flex:none;min-height:42px}
 ${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
-${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
+${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto;min-height:40px}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
 @container (max-width:340px){${P} .w12-sc b{font-size:44px}${P} .w12-days .en-tubes{gap:5px}}`);
 })();
