@@ -48,7 +48,7 @@ function mai12(a){if(a)return O.mai(a);
     <div class="ex-acts w12-wide"><button class="n9-btn" data-go="het">A heti elemzés</button></div></section>
   <section class="mx-s ln">${KH('Ami a héten mozdult')}<div class="w12-vi">${vials}</div>
     ${mzLine('Az edény teteje a heti célod. Színt az kap, ami figyelmet kér: az alvás a 7,5 órás cél alatt maradt.')}</section>
-  <section class="mx-s ln">${KH('Életvonal','',`<button class="w12-lk" data-go="test">Test ›</button>`)}
+  <section class="mx-s ln">${KH('Életvonal','',`<button class="w12-lk" data-go="test">Súly ›</button>`)}
     <p class="w12-ln"><b>−3,8 kilogramm</b> 12 hét alatt. A 7 napos átlag most 78,4 kilogramm, a felszín a cél vonala felé apad.</p>
     <div class="w12-ch">${chart}${band}<div class="w12-leg">${leg}</div></div>
     <div class="ex-mz w12-mz" id="w12-stn">${badge('mezo',{s:30})}<p>${ST0}</p></div>
@@ -128,7 +128,7 @@ function test12(a){const base=O.test(a),v=a==='alvas'?'alvas':'suly';
   const tdRow=`<div class="w12-rl">${'<button class="ex-mrow w12-r" data-toast="Beállítások · testadatok">'+drop('t-person')+'<span class="g"><b>Testadatok</b><i class="q">34 év · 180 cm · 78,4 kg · 15% testzsír</i></span><em>›</em></button>'}</div>`;
   const page0=base.slice(0,base.indexOf('<div class="en-sw'));
   const tail=base.slice(bal(base,base.lastIndexOf('<section class="fh-card'),'section'));
-  return page0+`<div class="mx w12-t">${sw.replace(' rise"','"').replace('class="en-sw','class="en-sw w12-sw')}${body}<section class="mx-s ln">${tdRow}</section><div class="ng-tail"></div></div>`+tail}
+  return page0+`<div class="mx w12-t">${body}<section class="mx-s ln">${tdRow}</section><div class="ng-tail"></div></div>`+tail}
 en.routes.test=test12;en.routes.suly=()=>test12('');en.routes.alvas=()=>test12('alvas');
 
 /* approved data-ev switches on a converted page: en.js updates its state and draws the approved page; redraw ours on top */
@@ -142,7 +142,10 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-w12]');if
   const on=el.classList.contains('on');ph.querySelectorAll('[data-w12^="stn:"]').forEach(x=>x.classList.remove('on'));
   if(on){box.innerHTML=ST0;return}el.classList.add('on');const s=ST[+v];box.innerHTML=`<b>${s[0]} · ${s[1]}</b><br>${s[2]}`},true);
 
-Object.keys(en.routes).forEach(k=>{const f=en.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>hubHead(f(...a));g.__hub=1;en.routes[k]=g}});
+/* owner 2026-11-02: no Test layer — Súly and Alvás are tabs of their own (Hol tartok · Súly · Alvás · Célok · Napló) */
+const tabs5=h=>typeof h!=='string'?h:h.replace(/<button class="(on)?" data-go="test">Test<\/button>/,(m,on)=>{const sl=on&&(F.R==='alvas'||F.ARG==='alvas');
+  return `<button class="${on&&!sl?'on':''}" data-go="test">Súly</button><button class="${sl?'on':''}" data-go="test.alvas">Alvás</button>`});
+Object.keys(en.routes).forEach(k=>{const f=en.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>tabs5(hubHead(f(...a)));g.__hub=1;en.routes[k]=g}});
 
 F.css(`${P} .w12-mz p{margin:0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-mz p b{font-family:var(--disp);font-size:15.5px}
 ${P} .w12-sc{display:flex;align-items:center;gap:12px;margin:12px 22px 0}${P} .w12-sc b{font:800 52px/1 var(--disp);letter-spacing:-.04em;color:var(--ink)}
@@ -208,5 +211,6 @@ ${P} .w12-n b{font-family:var(--disp);font-size:15.5px;color:var(--ink)}${P} .w1
 ${P} .w12-wch svg text[style]{font-size:17px!important}${P} .w12-cw svg:not(.en-tide) .gl{font-size:17px}
 ${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
+${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
 @container (max-width:340px){${P} .w12-sc b{font-size:44px}${P} .w12-days .en-tubes{gap:5px}}`);
 })();
