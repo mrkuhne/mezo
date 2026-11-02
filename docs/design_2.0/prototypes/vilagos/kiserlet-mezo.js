@@ -421,6 +421,110 @@ function gep9(){const row=(ic,t,sub,attr)=>row7(ic,t,sub,attr);
   <section class="mx-s ln">${KH('A régi eszköztár')}<div class="w4-rl">${row('t-grid','Összes funkció','a régi teljes menü, minden eszköz egy helyen','data-go="osszes"')}</div>
     ${mzLine('Minden szakértő-hívást lépésenként mentünk: megfigyelés, javaslat, Szkeptikus, döntés, a rólad szóló leírás. Semmi nem tűnik el.')}</section></div>`)}
 O.gepterem=mz.routes.gepterem;mz.routes['gepterem-lista']=O.gepterem;mz.routes.gepterem=gep9;
+/* ═══ RÓLAD ALOLDALAI (2026-11-02, owner: "jöhet a Rólad egy körben"). The nine topics: the shelves as the picture, one
+   card shape per topic (who watches it, the sentence, a level). One topic: its sentence, how it matured, the overview on
+   its owner's card, the claims as cards with a certainty level and the approved answers — kept in place. The facts: the
+   fifteen as capsules, filter chips that filter in place, every fact on one card with its switch, the folds opening in
+   place. The Tudástár, the categories (two shelves) and the life events (layers, newest on top) in the same frame; every
+   grey note became Mezo's line. Own state (R10) — nothing re-renders on a tap. ═══ */
+const DIM10=[['physical','deru','Test',58,'A testzsírszázalék lassan csökken, miközben a testsúly stagnál: ez rekompozícióra utal.'],['training','mocor','Edzés',64,'A tartalék-becsléseid pontosak: a mondott tartalék jellemzően 1-en belül megjósolja a következő szettet.'],
+ ['nutrition','falat','Étkezés',47,'Hétköznap a fehérje stabilan a cél körül van, hétvégén rendszeresen alatta marad.'],['recovery','szunya','Alvás',71,'A hétvégi lefekvés két órával kitolódik, és ez hétfőn is meglátszik.'],['mind','deru','Lélek',39,'A hála-bejegyzéseid után jellemzően nyugodtabb napot írsz le.'],
+ ['discipline','mocor','Fegyelem',66,'A kihagyott naplózást jellemzően másnap reggelre pótolod.'],['life','mezo','Emberek',31,'Az új munkahely első hete óta később fekszel le.'],['selfaudit','szk','Önvizsgálat',34,'A javasolt tényeimből az elmúlt 4 hétben 9-ből 6 maradt meg, 3 kiesett: ez az én találati arányom, nem a te tulajdonságod.'],
+ ['chapter','mezo','Munkaciklus',21,'Sűrű munkahetek után jellemzően egyszerre csúszik a naplózás és a lefekvés.']];
+const DWHO={selfaudit:'a Szkeptikus vizsgálja',chapter:'a csapat közösen tölti'};
+const R10={fb:{},off:{},fold:{wait:true},back:{},cat:'m'};
+const dshelf=ds=>`<div class="w5-sh">${F.vials(ds.map(([k,o,t,m])=>({l:t,p:m,v:m+'%',c:TC4(o),on:'dimenzio.'+k})),{h:96})}<i class="w5-shf"></i></div>`;
+function dims10(a){if(a)return O.dimenziok(a);const top=[...DIM10].sort((x,y)=>y[3]-x[3])[0],low=[...DIM10].sort((x,y)=>x[3]-y[3])[0];
+  return page('mezo',{title:'A csapat képe rólad',sub:'Rólad · 9 témakör, mindegyik pontosítható',back:'rolad'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','A közös kép rólad · 9 témakör')}<h2 class="n7-h">A legtöbbet erről tudjuk: ${top[2].toLowerCase()}.</h2>
+    ${mzLine(`A legkevesebbet erről: ${low[2].toLowerCase()}, ${low[3]}%. Ott a te szavad számít a legtöbbet.`)}
+    <p class="w5-cap">Ennyire érett a kép rólad témakörönként</p>${dshelf(DIM10.slice(0,5))}${dshelf(DIM10.slice(5))}
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-go="dimenzio.${top[0]}">${top[2]}</button></div></section>
+  <section class="mx-s ln">${KH('A kilenc témakör')}<div class="w4-rl">${DIM10.map(([k,o,t,m,c])=>`<button class="ex-mrow w4-r w9-r" data-go="dimenzio.${k}">${badge(o,{s:40})}<span class="g"><b>${t}</b><i class="q">${c}</i><span class="w4-lv"><span class="t"><i style="width:${m}%;--c:${TC4(o)}"></i></span><b>${m}%</b></span><i class="w10-by">${DWHO[k]||TN[o]+' figyeli'}</i></span><em>›</em></button>`).join('')}</div></section></div>`)}
+O.dimenziok=mz.routes.dimenziok;mz.routes['dimenziok-lista']=O.dimenziok;mz.routes.dimenziok=dims10;
+
+const CL10=[['Biztos',90,'A testzsírszázalék lassan csökken, miközben a testsúly stagnál: ez rekompozícióra utal.'],['Figyeljük',34,'A gyógyszerciklus hetei egyelőre nem mutatnak kimutatható hatást a súlytrenden.'],['Valószínű',64,'A reggeli mérések szórása alacsony: a mérési fegyelmed stabil alapot ad a trendnek.']];
+const clCard=(i)=>{const [cf,p,t]=CL10[i],fb=R10.fb[i];return `<article class="w3-c w10-cl${fb==='no'?' dim':''}" data-w10c="${i}"><div class="w10-cb"><i class="w3-st ${fb==='no'?'n':cf==='Biztos'?'ok':'n'}">${fb==='no'?'nyugdíjazva':cf}</i><p>${t}</p>
+  ${fb==='no'?'':`<span class="w4-lv"><span class="t"><i style="width:${p}%;--c:var(--dom)"></i></span><b>${p}%</b></span><p class="w4-lb">ennyire biztos benne a csapat</p>`}
+  ${fb==='no'?`<p class="w3-ok n">Nyugdíjazva: a csapat nem viszi tovább.</p><button class="fh-lk" data-w10="fb:${i}:">Visszavonom</button>`:fb==='yes'?`<p class="w3-ok">${TICK}Köszönöm, jegyzem.</p><button class="fh-lk" data-w10="fb:${i}:">Visszavonom</button>`
+   :`<div class="w3-ab"><button class="n9-btn" data-w10="fb:${i}:yes">Talál</button><button class="n8-b" data-w10="fb:${i}:no">Nem igaz</button><button class="n8-b" data-sheet="reply">Pontosítom</button></div><div class="w3-lk"><button class="fh-lk" data-sheet="mibol" data-arg="${t}">Miből látom? ›</button></div>`}</div></article>`};
+function dim10(k){const d=DIM10.find(x=>x[0]===k);if(!d)return O.dimenzio(k);const [,o,t,m,c]=d,col=TC4(o);
+  const wk=Array.from({length:8},(_,i)=>{const v=Math.max(4,m-(7-i)*3);return [i===7?'most':i===0?'7 hete':'',v+'%',v]});
+  return page('mezo',{title:t,sub:`Témakör · ${DWHO[k]||TN[o]+' figyeli'}`,back:'dimenziok'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7(o,`${t} · ${m}% érett · ${DWHO[k]||TN[o]+' figyeli'}`)}<h2 class="n7-h">${c}</h2>
+    <p class="w5-cap">Így érett ez a témakör hétről hétre</p>${tubes('',wk,col).replace('<p class="w7-nl"></p>','')}
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-go="chat">Beszélgetek erről Mezóval</button></div></section>
+  <section class="mx-s ln">${KH('Összkép')}${cm7(o,DWHO[k]||'figyeli','A testösszetételed lassan, de biztosan javul: a testzsír-trend nagyjából három hónap alatt csökken, miközben a testsúlyod gyakorlatilag helyben áll. Ez arra utal, hogy a hipertrófia-blokkok tényleg izmot építenek, nem csak számokat mozgatnak.')}</section>
+  <section class="mx-s ln">${KH('Állítások','3')}<div class="w3-l">${CL10.map((_,i)=>clCard(i)).join('')}</div>
+    ${mzLine('Az állítások bizonyítékból születnek, sosem fordítva. Amit tévesnek mondasz, azt a csapat nem vitatja tovább.')}</section></div>`)}
+O.dimenzio=mz.routes.dimenzio;mz.routes['dimenzio-lista']=O.dimenzio;mz.routes.dimenzio=dim10;
+
+const CAT10={e:['edzés','t-dumbbell'],t:['étkezés','t-bowl'],g:['egészség','t-heart'],l:['élet','t-sun']};
+const F10=[['f0','e','Pull Day-en a Chest Supported Row a fő összetett gyakorlat.',12,'beszélgetésből','in'],['f1','t','A késői étkezés és az alvásminőség együtt mozog.',8,'mintából','in'],['f2','g','A reggeli mérés 7:00 és 7:30 között történik.',6,'beszélgetésből','in'],['f3','l','Röplabda: kedd, csütörtök és szombat.',5,'kézzel','in'],
+ ['w1','t','Hétvégén később kezdődik az első étkezés.',2,'beszélgetésből','wait'],['w2','e','A vállnyomásnál a bal oldal érzékenyebb.',1,'beszélgetésből','wait'],['o1','t','A kifli.hu az elsődleges élelmiszer-forrás.',3,'beszélgetésből','off']];
+const M10=[['g1','t','Az edzés előtti étkezés 2-3 órával előtte esik neked a legjobban.','Edzés előtt 2-3 órával eszel a legszívesebben.'],['g2','e','A röplabda után másnap fáradtabbnak érzed a lábad.','Hosszú röplabda után a következő napon gyakran nehezebb a lábad.']];
+const fOn=f=>R10.off[f[0]]!=null?!R10.off[f[0]]:f[5]!=='off';
+const fCard=f=>{const [id,c,t,n,src,s]=f,on=fOn(f),[cl,ic]=CAT10[c];return `<article class="w5-f w10-f${on?'':' dim'}" data-w10f="${id}" data-cat="${c}"${R10.cat!=='m'&&R10.cat!==c?' hidden':''}>${E.drop(ic)}<span class="g"><b>${t}</b><small>${cl} · ${n}× visszaigazolva · ${src}</small>
+  <span class="w4-lv"><span class="t"><i style="width:${Math.min(100,Math.round(n/12*100))}%;--c:${on?'var(--dom)':'#9AA7B0'}"></i></span></span><i class="w10-st">${on?(s==='wait'?'Bekapcsolva, de most kimarad':'Most benne van a beszélgetésekben'):'Kikapcsolva: a társ nem látja'}</i></span>
+  <button class="w10-sw${on?' on':''}" data-w10="sw:${id}" role="switch" aria-checked="${on}" aria-label="${t}"><i></i></button></article>`};
+const foldRow=(k,l,body)=>`<div class="w10-fd" data-w10d="${k}"><button class="ex-mrow w4-r" data-w10="fd:${k}" aria-expanded="${!!R10.fold[k]}">${E.drop(k==='s9'?'t-layers':k==='off'?'t-mute':'t-clock')}<span class="g"><b>${l}</b></span><em>${R10.fold[k]?'bezár':'megnyit'}</em></button>${R10.fold[k]?`<div class="w3-l w10-fb">${body}</div>`:''}</div>`;
+const mCard=m=>{const [id,c,t,into]=m,bk=R10.back[id],[cl,ic]=CAT10[c];return `<article class="w5-f${bk?'':' dim'}">${E.drop(bk?ic:'t-layers')}<span class="g"><b>${t}</b><small>${cl} · beszélgetésből</small><i class="w10-st">${bk?'Újra külön: mindkettőt használom':`Összevontam ezzel: „${into}”, szept. 29.`}</i>
+  <span class="w3-ab"><button class="n8-b" data-w10="bk:${id}">${bk?'Mégis maradjon összevonva':'Visszakapcsolom'}</button></span></span></article>`};
+const folds10=()=>foldRow('wait','Bekapcsolva, de most kimarad · '+F10.filter(f=>f[5]==='wait').length,F10.filter(f=>f[5]==='wait').map(fCard).join('')+mzLine('Ha megerősödnek, vagy egy erősebb tény kiesik, bekerülnek a beszélgetésekbe.'))
+  +foldRow('off','Kikapcsolva · '+F10.filter(f=>f[5]==='off').length,F10.filter(f=>f[5]==='off').map(fCard).join('')+mzLine('Megőrzöm őket, de a társ nem használja.'))
+  +foldRow('s9','Összevontam · '+M10.length,M10.map(mCard).join('')+mzLine('Ezek ugyanazt mondták, mint egy másik tény, ezért a másikba olvasztottam őket. A szövegük nem változott, semmi nem veszett el.'));
+function tenyek10(a){if(a)return O.tenyek(a);const nIn=F10.filter(f=>f[5]==='in').length;
+  return page('mezo',{title:'Tények',sub:'Tudástár',back:'tudastar'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','Amit a csapat megjegyzett')}<h2 class="n7-h">15 tény rólad, 10 megy a beszélgetésekbe.</h2>
+    <div class="w7-pic"><span class="w3-cp"><span class="r w10-cp">${Array.from({length:15},(_,i)=>`<i class="${i<10?'on':i<14?'hf':'x'}"></i>`).join('')}</span></span></div>
+    <p class="w8-lg"><span><i class="f"></i>megy a beszélgetésekbe · 10</span><span><i class="h"></i>vár · 4</span><span><i class="e"></i>kikapcsolva · 1</span></p>
+    ${mzLine('Minden tényt te kapcsolsz be vagy ki. 12 kapcsolat köti össze őket.')}
+    <div class="w3-lk w5-lk"><button class="fh-lk" data-go="hogyan">Hogyan működik? ›</button></div></section>
+  <section class="mx-s ln">${KH('Keresés és rendrakás')}<button class="w6-s" data-toast="Keresés a tények között">${I('t-lens')}<span>Keresés, például alvás, kávé, váll</span><b>Keresés</b></button>
+    <div class="w6-ex w10-ct">${[['m','Mind'],['e','Edzés'],['t','Étkezés'],['g','Egészség'],['l','Élet']].map(([k,l])=>`<button class="n8-b${R10.cat===k?' on':''}" data-w10="cat:${k}" aria-pressed="${R10.cat===k}">${l}</button>`).join('')}</div>
+    <div class="w4-rl w7-rows">${row7('t-layers','Hétfői rendrakás','2 ismétlést összevontam, 1 javaslat vár rád a Rólad oldalon','data-go="rolad"')}</div></section>
+  <section class="mx-s ln">${KH('Most ezeket kapja meg a társ','10')}<div class="w3-l w10-in">${F10.filter(f=>f[5]==='in').map(fCard).join('')}</div>
+    ${mzLine(`Minden beszélgetés elején ezek a mondatok mennek elé: a 10 legerősebb bekapcsolt tény, plusz a frissen megerősített minták. Itt ${nIn}-et mutatok.`)}</section>
+  <section class="mx-s ln">${KH('A többi tény')}<div class="w4-rl w10-fds">${folds10()}</div></section></div>`)}
+O.tenyek=mz.routes.tenyek;mz.routes['tenyek-lista']=O.tenyek;mz.routes.tenyek=tenyek10;
+
+function tud10(a){if(a)return O.tudastar(a);const nI=+g(O.tudastar(''),/(\d+) javaslat vár rád/)||0;
+  return page('mezo',{title:'Tudástár',sub:'Rólad',back:'rolad'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','Amit a csapat megjegyzett')}<h2 class="n7-h">15 tényt tudunk rólad, 10 megy a beszélgetésekbe.</h2>
+    <div class="w4-tb">${F.vials([['A beszélgetésben',10,'var(--dom)'],['Vár',4,'#E7B25A'],['Kikapcsolva',1,'#9AA7B0']].map(([l,n,c])=>({l,p:Math.round(n/15*100),v:n,c,on:'tenyek'})),{h:110})}</div>
+    ${mzLine('12 kapcsolat köti össze őket. Csak a 10 legerősebb bekapcsolt tény fér be egy beszélgetésbe, a többi vár.')}
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-go="tenyek">Tények</button><button class="n8-b" data-go="hogyan">Hogyan működik?</button></div></section>
+  <section class="mx-s ln">${KH('Rád vár')}<div class="w4-rl">${nI?row7('t-bell',`${nI} javaslat vár rád a Rólad oldalon`,'ott döntesz róluk: igen, pontosítom, most ne, nem igaz','data-go="rolad"'):info7('t-tick','Nincs döntésre váró javaslat','Ha a csapat újat hoz, a Rólad oldalon kérdez meg.')}</div></section>
+  <section class="mx-s ln">${KH('A tudás')}<div class="w4-rl">${row7('t-note','Tények · 15','10 a beszélgetésekben, 4 vár, 1 kikapcsolva','data-go="tenyek"')}${row7('t-graph','Kapcsolatok · 7 kategória','például: a késői evés rontja az alvást · 12 kapcsolat','data-go="kategoriak"')}</div></section></div>`)}
+O.tudastar=mz.routes.tudastar;mz.routes['tudastar-lista']=O.tudastar;mz.routes.tudastar=tud10;
+
+const K10=[['Minták','t-pattern',3,'A késői evés rontja az alvást'],['Preferenciák','t-checkin',4,'Reggel edz a legszívesebben'],['Célok','t-flag',2,'Nyári alapozás'],['Életesemények','t-sun',1,'Új munkahely első hete'],['Szezonok','t-calendar',1,'Nyári alapozás'],['Belátások','t-bulb',0,'még nincs'],['Emberek','t-people',2,'Anna']];
+const kshelf=ks=>`<div class="w5-sh">${F.vials(ks.map(([l,ic,n,,i])=>({l,ic,p:n/4*100,v:n,mark:n?'':'üres',on:n?'kind.'+i:{toast:l+' — még nincs'}})),{h:96})}<i class="w5-shf"></i></div>`;
+function kat10(a){if(a)return O.kategoriak(a);const K=K10.map((k,i)=>[...k,i]);
+  return page('mezo',{title:'Kapcsolatok',sub:'Tudástár · a tudásod térképe',back:'tudastar'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','A tudásod térképe')}<h2 class="n7-h">7 kategória, 12 kapcsolat.</h2>
+    ${mzLine('A legtöbb a preferenciáid között van, belátás még nincs.')}
+    <p class="w5-cap">Hány elem van egy-egy kategóriában</p>${kshelf(K.slice(0,4))}${kshelf(K.slice(4))}</section>
+  <section class="mx-s ln">${KH('Kategóriák')}<div class="w4-rl">${K.map(([l,ic,n,ex,i])=>n?`<button class="ex-mrow w4-r" data-go="kind.${i}">${E.drop(ic)}<span class="g"><b>${l}</b><i class="q">${ex}</i></span><i class="w3-st n">${n}</i><em>›</em></button>`:`<div class="ex-mrow w4-r w10-off">${E.drop(ic)}<span class="g"><b>${l}</b><i class="q">${ex}</i></span><i class="w3-st n">0</i></div>`).join('')}</div></section></div>`)}
+O.kategoriak=mz.routes.kategoriak;mz.routes['kategoriak-lista']=O.kategoriak;mz.routes.kategoriak=kat10;
+
+function elet10(a){if(a)return O.eletesemenyek(a);
+  const L=[...O.rolad('').matchAll(/<div class="mz-life"><u class="([^"]*)"><\/u><span class="g"><strong>([^<]*)<\/strong><small>([^<]*)<\/small><\/span><em>([^<]*)<\/em><\/div>/g)].map(m=>[m[1],m[2],m[3],quarter(m[4])]);
+  return page('mezo',{title:'Életesemények',sub:'Rólad',back:'rolad'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','A nagy fordulatok')}<h2 class="n7-h">Ezekhez igazodik a csapat.</h2>
+    ${mzLine('A mércék és a javaslatok ezekhez képest értelmeződnek: egy új munkahely első hetén mást várunk tőled.')}
+    <p class="w5-cap">Felül a legfrissebb, lent ami már leülepedett</p>
+    <div class="w10-st8">${L.map(([dim,t,,d],i)=>`<span class="${dim?'dim':''}" style="--o:${1-i*.14}"><b>${t}</b><small>${d}</small></span>`).join('')}</div></section>
+  <section class="mx-s ln">${KH('Időrendben',L.length+' esemény')}<div class="w4-rl">${L.map(([dim,t,sm,d])=>`<div class="ex-mrow w4-r w5-le${dim?' dim':''}">${E.drop(dim?'t-calendar':'t-journal')}<span class="g"><b>${t}</b><i class="q">${sm.replace(' — ',', ')}</i></span><i class="w3-st n">${d}</i></div>`).join('')}</div>
+    ${mzLine('Új életesemény javaslatként érkezik a Rólad oldalra, ott döntesz róla.')}</section></div>`)}
+O.eletesemenyek=mz.routes.eletesemenyek;mz.routes['eletesemenyek-lista']=O.eletesemenyek;mz.routes.eletesemenyek=elet10;
+
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-w10]');if(!b)return;e.preventDefault();const [k,v,x]=b.dataset.w10.split(':'),ph=document.querySelector('#phone');if(!ph)return;
+  if(k==='fb'){R10.fb[v]=x||undefined;const c=ph.querySelector(`[data-w10c="${v}"]`);if(c)c.outerHTML=clCard(+v);F.toast(x==='yes'?'„Talál” — köszönjük, feljegyeztük.':x==='no'?'Nyugdíjazva — a csapat nem viszi tovább.':'Visszavonva');return}
+  if(k==='sw'){const f=F10.find(q=>q[0]===v);R10.off[v]=fOn(f);const c=ph.querySelector(`[data-w10f="${v}"]`);if(c)c.outerHTML=fCard(f);F.toast(fOn(f)?'Bekapcsolva':'Kikapcsolva — a társ nem látja');return}
+  if(k==='cat'){R10.cat=v;ph.querySelectorAll('[data-w10f]').forEach(c=>c.hidden=v!=='m'&&c.dataset.cat!==v);ph.querySelectorAll('.w10-ct button').forEach(c=>{const on=c.dataset.w10==='cat:'+v;c.classList.toggle('on',on);c.setAttribute('aria-pressed',on)});return}
+  if(k==='fd'){R10.fold[v]=!R10.fold[v];const w=ph.querySelector('.w10-fds');if(w)w.innerHTML=folds10();return}
+  if(k==='bk'){R10.back[v]=!R10.back[v];const w=ph.querySelector('.w10-fds');if(w)w.innerHTML=folds10();F.toast(R10.back[v]?'Visszakapcsolva — újra külön':'Összevonva');return}},true);
 /* the approved timer types the Közérzet's message into #live after a few seconds; keep it emoji-free too */
 new MutationObserver(()=>{const l=document.querySelector('#phone #live');if(!l||!l.closest(P))return;const h=NOEMO(l.innerHTML);if(h!==l.innerHTML)l.innerHTML=h}).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-w8="este"]');if(!b)return;document.querySelector('#phone #w8-este')?.scrollIntoView({behavior:'smooth',block:'start'})});
@@ -637,6 +741,15 @@ ${P} .w9-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 14px}${P} .w9-nav .n8-
 ${P} .w9-sw{display:flex;gap:4px;margin:14px 14px 0;padding:4px;border-radius:999px;background:rgba(10,42,60,.06)}${P} .w9-sw button{flex:1;min-height:44px;border-radius:999px;font-size:14.5px;font-weight:750;color:var(--ink)}${P} .w9-sw button.on{background:#fff;box-shadow:0 4px 12px -6px rgba(10,42,60,.35)}
 ${P} .w9-tb{display:none;gap:10px;padding:0 12px 14px}${P} .w9-th.on .w9-tb{display:grid}${P} .w9-tb .w7-cm{margin:0;box-shadow:0 0 0 1px rgba(10,42,60,.07)}
 ${P} .w9-q{margin:0 22px 12px;font-size:15px;font-style:italic;line-height:1.5;color:var(--ink)}
+${P} .w10-by{margin-top:4px;font-style:normal;font-size:13px;font-weight:650;color:var(--ink);opacity:.8}
+${P} .w10-cb{padding:16px}${P} .w10-cb>p{margin:10px 0 8px;font:700 16px/1.45 var(--disp,inherit);color:var(--ink)}${P} .w10-cl.dim{opacity:.7}${P} .w10-cb .w3-ab,${P} .w10-cb .w3-ok{margin-top:12px}
+${P} .w5-f>svg.ng,${P} .w7-cm>svg.ng{width:46px;height:46px;flex:none;margin:0}${P} .w10-f{align-items:flex-start}${P} .w10-f.dim{opacity:.65}${P} .w10-f .w4-lv{margin-top:8px}${P} .w10-st{margin-top:6px;font-style:normal;font-size:13px;font-weight:650;color:var(--ink)}
+${P} .w10-sw{flex:none;position:relative;width:56px;height:44px;margin:-6px -4px 0 0}${P} .w10-sw::before{content:'';position:absolute;inset:7px 3px;border-radius:999px;background:rgba(10,42,60,.15);transition:background .2s}
+${P} .w10-sw i{position:absolute;top:10px;left:6px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(10,42,60,.25);transition:left .2s}${P} .w10-sw.on::before{background:var(--dom)}${P} .w10-sw.on i{left:26px}
+${P} .w10-ct .n8-b.on{background:var(--dom);color:#fff;box-shadow:none}${P} .w10-fb{margin:10px 0 4px}${P} .w10-fb .w5-f{margin:0}${P} .w10-off{opacity:.6}
+${P} .w10-cp{flex-wrap:wrap}${P} .w10-cp i{flex:0 0 calc((100% - 28px)/8)}${P} .w10-cp i.hf{background:linear-gradient(0deg,var(--liq2) 50%,rgba(10,42,60,.06) 50%);box-shadow:none}${P} .w10-cp i.x{background:none;outline:2px dashed rgba(10,42,60,.35);outline-offset:-2px;box-shadow:none}
+${P} .w10-st8{display:grid;gap:4px;margin:8px 14px 0}${P} .w10-st8 span{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--dom) calc(var(--o)*30%),#fff)}
+${P} .w10-st8 b{font-size:14.5px;color:var(--ink)}${P} .w10-st8 small{flex:none;font-size:13px;font-weight:650;color:var(--ink)}${P} .w10-st8 .dim{opacity:.6}
 ${P} .w7-dc{margin:10px 4px 0;font-size:13.5px;font-weight:650;line-height:1.4;color:var(--ink)}${P} .w7-d small .w3-tk{color:#1F7A4D}${P} .w7-d small{min-height:16px;font-size:12.5px;font-weight:650;color:var(--ink);opacity:.8;text-align:center;line-height:1.2}
 @media (max-width:360px){${P} .w7-nr{gap:3px}${P} .w7-n b{font-size:12px}}
 @media (max-width:360px){${P} .w3-h{font-size:17px}${P} .w3-hd{gap:10px}${P} .w3-st{padding:4px 8px;font-size:12px}${P} .w3-tap{padding:14px}}
