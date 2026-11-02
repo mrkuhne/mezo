@@ -514,7 +514,7 @@ function elet10(a){if(a)return O.eletesemenyek(a);
   <section class="mx-s ex-hero">${eb7('mezo','A nagy fordulatok')}<h2 class="n7-h">Ezekhez igazodik a csapat.</h2>
     ${mzLine('A mércék és a javaslatok ezekhez képest értelmeződnek: egy új munkahely első hetén mást várunk tőled.')}
     <p class="w5-cap">Felül a legfrissebb, lent ami már leülepedett</p>
-    <div class="w10-st8">${L.map(([dim,t,,d],i)=>`<span class="${dim?'dim':''}" style="background:color-mix(in srgb,var(--dom) ${Math.round(30-i*5)}%,#fff)"><b>${t}</b><small>${d}</small></span>`).join('')}</div></section>
+    <div class="w10-st8">${L.map(([dim,t,,d],i)=>`<span class="${dim?'dim':''}" style="background:color-mix(in srgb,var(--dom) ${Math.max(6,30-i*5)}%,#fff)"><b>${t}</b><small>${d}</small></span>`).join('')}</div></section>
   <section class="mx-s ln">${KH('Időrendben',L.length+' esemény')}<div class="w4-rl">${L.map(([dim,t,sm,d])=>`<div class="ex-mrow w4-r w5-le${dim?' dim':''}">${E.drop(dim?'t-calendar':'t-journal')}<span class="g"><b>${t}</b><i class="q">${sm.replace(' — ',', ')}</i></span><i class="w3-st n">${d}</i></div>`).join('')}</div>
     ${mzLine('Új életesemény javaslatként érkezik a Rólad oldalra, ott döntesz róla.')}</section></div>`)}
 O.eletesemenyek=mz.routes.eletesemenyek;mz.routes['eletesemenyek-lista']=O.eletesemenyek;mz.routes.eletesemenyek=elet10;
