@@ -8,7 +8,7 @@
 const F=window.F,fu=window.FREG&&FREG.fuel,X=window.KXN,E=window.KXE;if(!fu||!X||!E)return;
 const {I,badge}=F,{KH,DEFS,hubHead}=X,{cardsOf,bal,g,drop,pills}=E;
 const P='.phone.foly[data-s="elo"][data-d="fuel"]';
-const O={mai:fu.routes.mai,stack:fu.routes.stack,trendek:fu.routes.trendek};fu.routes['trendek-lista']=O.trendek;
+const O={mai:fu.routes.mai,stack:fu.routes.stack,trendek:fu.routes.trendek,konyha:fu.routes.konyha};fu.routes['trendek-lista']=O.trendek;fu.routes['konyha-lista']=O.konyha;
 fu.routes['mai-lista']=O.mai;fu.routes['stack-lista']=O.stack;
 const ico=h=>g(h,/href="#([^"]+)"/)||'t-plate';
 
@@ -115,6 +115,32 @@ function trendek3(a){const base=O.trendek(a),cs=cardsOf(base);const hero=cs.find
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${out}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
 fu.routes.trendek=trendek3;
 
+/* ═══ KONYHA (2026-11-02): the sentence on top, the empty pot as the picture, the five goals as one row of drop tiles,
+   the grey line as Mezo's, one wide button; quick add as two tiles without helper text; the recipes as tubes (the most
+   eaten fullest, owner: tubes over a carousel); the pantry as a shelf of jars (food green, filled by protein per 100 g;
+   supplements blue), Mezo naming the richest one. ═══ */
+function konyha3(a){const base=O.konyha(a),cs=cardsOf(base);const hero=cs.find(c=>/fu-pot/.test(c.html));if(!hero)return base;
+  const H=hero.html,pi=H.indexOf('<span class="fu-pot"'),pot=pi>=0?H.slice(pi,bal(H,pi,'span')):'',ai=H.indexOf('<div class="fh-acts">'),acts=ai>=0?pills(H.slice(ai+21,bal(H,ai)-6)):'';
+  const tile=(at,ic,l)=>`<button class="ex-spt" ${at}>${drop(ic)}<b>${l}</b></button>`;
+  const goals=[...H.matchAll(/<button class="fh-pill[^"]*" data-go="([^"]+)">[\s\S]*?href="#([^"]+)"[\s\S]*?<\/span>([^<]*)<\/button>/g)].map(([,go,ic,l])=>tile(`data-go="${go}"`,ic,l.replace('Lefekvés','Lefek&shy;vés'))).join('');
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${g(H,/<span class="lbl">([^<]*)/)}</small><h2 class="n7-h">${g(H,/<p class="verdict"[^>]*>([^<]*)/)}</h2>
+    <div class="fx-pot">${pot}</div><div class="ex-spg fx-gl">${goals}</div>${mz(g(H,/<p class="sub">([^<]*)/))}<div class="ex-acts fx-wide">${acts}</div></section>`;
+  const qc=cs.find(c=>/fu-pair/.test(c.html)),qh=qc?qc.html:'';
+  const quick=[...qh.matchAll(/<button (data-[^>]*)>[\s\S]*?href="#([^"]+)"[\s\S]*?<\/svg>(?:<\/span>)*([^<]*)<small>/g)].map(([,at,ic,l])=>tile(at,ic,l)).join('');
+  const qS=`<section class="mx-s ln">${KH('Gyors felvétel')}<div class="ex-spg fx-q2">${quick}</div></section>`;
+  const R=fu.routes.receptek(),ti=R.indexOf('<div class="fu-top"'),tubes=ti>=0?R.slice(ti,bal(R,ti)):'';
+  const rc=cs.find(c=>/data-go="receptek"/.test(c.html)),rt=rc?g(rc.html,/<strong>([^<]*)<\/strong>/):'';
+  const rS=`<section class="mx-s ln">${KH('Receptek')}<div class="fx-rec">${tubes}<button class="ex-mrow fx-all" data-go="receptek"><span class="g"><b>Mind a ${rt}</b></span><span class="v">›</span></button></div></section>`;
+  const K=fu.routes.kamra();
+  const jars=[...K.matchAll(/<button class="fh-stat" style="--c:var\(--(\w+)\)(?:;--p:([\d.]+)%)?" data-go="(kamra\.\w+)">[\s\S]*?<span class="k">([^<]*)<\/span>/g)]
+    .map(([,c,p,go,n])=>({food:c==='protein',p:p?+p:78,go,n:n.split(' · ')[0].split('-')[0]}));
+  const best=jars.filter(j=>j.food).sort((x,y)=>y.p-x.p)[0],nf=jars.filter(j=>j.food).length;
+  const shelf=`<div class="fx-shelf">${jars.map(j=>`<button class="fx-jar ${j.food?'':'s'}" data-go="${j.go}"><span class="j"><i style="height:${Math.max(12,Math.min(92,j.p))}%"></i></span><small>${j.n.replace(/(Csirke|Zab|Mandula|Lazac)(?=\S)/,'$1&shy;')}</small></button>`).join('')}</div>`;
+  const kS=`<section class="mx-s ln">${KH('Kamra')}<div class="fx-kam">${shelf}<p class="fx-kl"><span><i></i>${nf} étel</span><span class="s"><i></i>${jars.length-nf} kiegészítő</span></p><button class="ex-mrow fx-all" data-go="kamra"><span class="g"><b>A teljes polc · ${jars.length} tétel</b></span><span class="v">›</span></button></div>
+    ${best?mz(`Az ételek üvegében a fehérje szintje áll, 100 grammonként. A ${best.n.toLowerCase()} áll a legmagasabban, abból főzünk a legtöbb fehérjét.`):''}</section>`;
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${qS}${rS}${kS}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+fu.routes.konyha=konyha3;
+
 /* the tab pages' header, as on Nap and Edzés: no big title, the "?" top left */
 const head=h=>typeof h==='string'?hubHead(h):h;
 Object.keys(fu.routes).forEach(k=>{const f=fu.routes[k];if(typeof f==='function'&&!f.__hub){const w=(...a)=>head(f(...a));w.__hub=1;fu.routes[k]=w}});
@@ -160,7 +186,23 @@ ${P} .fx-t .tx b{font:800 15px/1.1 var(--disp,inherit);color:var(--ink)}@media (
 ${P} .fx-t.g b,${P} .fx-t.g .ic{color:#23704A}${P} .fx-t.g.mid b,${P} .fx-t.g.mid .ic{color:#B4741F}${P} .fx-t.g.hi b,${P} .fx-t.g.hi .ic{color:#C2483B}
 ${P} .fx-when{margin:0;font-size:14px;color:var(--ink)}${P} .fx-ml .fh-acts{display:flex;gap:10px;margin:0;flex-wrap:wrap}
 ${P} .fx-lg .ex-spt{padding:14px 6px}${P} .fx-st{margin-top:4px}${P} .fx-st .st{font-size:12px!important}
+${P} .fx-pot{display:flex;justify-content:center;margin:10px 0 0}${P} .fx-pot .fu-pot svg{width:150px!important}
+${P} .fx-gl{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:14px 14px 0}${P} .fx-gl .ex-spt{padding:10px 2px;border-radius:18px}${P} .fx-gl .ex-spt svg.ng{width:40px;height:40px}${P} .fx-gl .ex-spt b{font-size:12px;hyphens:manual}
+${P} .ex-hero .ex-mz{margin-top:14px}${P} .fx-q2{grid-template-columns:repeat(2,minmax(0,1fr))}${P} .fx-q2 .ex-spt{padding:14px 8px}${P} .fx-q2 .ex-spt b{font-size:14.5px}
+${P} .fx-rec,${P} .fx-kam{margin:0 18px;padding:16px 14px 6px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .fx-rec .fu-top{margin:0 0 6px;gap:12px}${P} .fx-rec .fu-top span{font-size:14px;color:var(--ink)}${P} .fx-rec .fu-top em{font-size:15px;color:color-mix(in srgb,var(--dom) 80%,var(--ink))}${P} .fx-rec .fl-level{--h:18px!important}
+${P} .fx-all{background:none!important;box-shadow:none!important;border-top:1px solid rgba(10,42,60,.08);border-radius:0!important;padding:12px 2px!important;margin-top:6px}${P} .fx-all .v{font-size:22px;opacity:.5}${P} .fx-all .g b{font-size:14.5px;color:color-mix(in srgb,var(--dom) 80%,var(--ink))}
+${P} .fx-shelf{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 6px;padding-bottom:12px;background:linear-gradient(transparent calc(50% - 4px),transparent calc(50% - 4px))}
+${P} .fx-jar{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;position:relative;padding-bottom:8px}
+${P} .fx-jar::after{content:"";position:absolute;left:-3px;right:-3px;top:62px;height:6px;border-radius:3px;background:rgba(10,42,60,.12)}
+${P} .fx-jar .j{position:relative;width:40px;height:56px;border-radius:9px 9px 13px 13px;background:#fff;overflow:hidden;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--dom) 45%,#fff)}
+${P} .fx-jar .j::before{content:"";position:absolute;left:4px;right:4px;top:0;height:7px;border-radius:0 0 4px 4px;background:color-mix(in srgb,var(--dom) 55%,#fff);z-index:1}
+${P} .fx-jar .j i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--liq1),var(--liq2))}
+${P} .fx-jar.s .j{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--water) 45%,#fff)}${P} .fx-jar.s .j::before{background:color-mix(in srgb,var(--water) 55%,#fff)}${P} .fx-jar.s .j i{background:linear-gradient(180deg,color-mix(in srgb,var(--water) 60%,#fff),var(--water))}
+${P} .fx-jar small{margin-top:6px;max-width:100%;font-size:12.5px;font-weight:700;line-height:1.2;color:var(--ink);text-align:center;hyphens:manual}
+${P} .fx-kl{display:flex;gap:16px;margin:0 0 4px;font-size:13.5px;font-weight:700;color:var(--ink)}${P} .fx-kl i{display:inline-block;width:10px;height:14px;margin-right:6px;border-radius:3px;vertical-align:-2px;background:var(--dom)}${P} .fx-kl .s i{background:var(--water)}
+${P} .fx-kam+.ex-mz{margin-top:12px}
 `);
 
-window.FNOTES_FOLY=`<h2>Kísérlet · Fuel</h2><p><a href="#w-fuel-mai"><b>Mai</b></a> — felül a mondat és a tál, a makrók csövei a napi cél szaggatott vonalával, az étkezések időrendben egyforma kártyán (az ablakon kívüli a helyén, a következő kiemelve), a logolás módjai csempéken. Arcok: <a href="#w-fuel-mai.kihagyva">kihagyott étkezés</a> · <a href="#w-fuel-mai.kimelo">kímélő mód</a> (nincs kalóriacél, a pohár víz a kép, értékelés nélkül). Összevetésnek: <a href="#w-fuel-mai-lista">a mostani Mai</a>.</p><p><a href="#w-fuel-stack"><b>Kiegészítők</b></a> — a következő adag a mondatban, a nap kapszulái a kép, a kész napszak összecsukva (<a href="#w-fuel-stack-lista">régi</a>).</p><p><a href="#w-fuel-trendek"><b>Trendek</b></a> — a mondat felül, a hét csövei a kép, a csempék és a görbék maradtak, a szürke magyarázatok helyett Mezo (<a href="#w-fuel-trendek-lista">régi</a>).</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Fuel</h2><p><a href="#w-fuel-mai"><b>Mai</b></a> — felül a mondat és a tál, a makrók csövei a napi cél szaggatott vonalával, az étkezések időrendben egyforma kártyán (az ablakon kívüli a helyén, a következő kiemelve), a logolás módjai csempéken. Arcok: <a href="#w-fuel-mai.kihagyva">kihagyott étkezés</a> · <a href="#w-fuel-mai.kimelo">kímélő mód</a> (nincs kalóriacél, a pohár víz a kép, értékelés nélkül). Összevetésnek: <a href="#w-fuel-mai-lista">a mostani Mai</a>.</p><p><a href="#w-fuel-stack"><b>Kiegészítők</b></a> — a következő adag a mondatban, a nap kapszulái a kép, a kész napszak összecsukva (<a href="#w-fuel-stack-lista">régi</a>).</p><p><a href="#w-fuel-trendek"><b>Trendek</b></a> — a mondat felül, a hét csövei a kép, a csempék és a görbék maradtak, a szürke magyarázatok helyett Mezo (<a href="#w-fuel-trendek-lista">régi</a>).</p><p><a href="#w-fuel-konyha"><b>Konyha</b></a> — a mondat és az üres fazék felül, a célok egy sorban, a receptek csövekként (a legtöbbször evett a legtelibb), a kamra egy polc üvegekkel (<a href="#w-fuel-konyha-lista">régi</a>).</p>`+(window.FNOTES_FOLY||'');
 })();
