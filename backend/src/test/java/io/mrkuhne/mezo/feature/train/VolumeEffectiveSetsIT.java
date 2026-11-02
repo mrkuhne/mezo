@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Task A5 (mezo-hi9m): getToday's volume rollover + phase-index fix (DA1) + effective
@@ -37,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * exactly as set up, so the test exercises ONLY the distribution + phase-index math (Task A5),
  * not the rollover recompute itself (already covered by {@code VolumeProgressionServiceIT}).
  */
+@TestPropertySource(properties = "mezo.feature.closing-block.enabled=true") // off in prod since mezo-11a8p
 class VolumeEffectiveSetsIT extends AbstractIntegrationTest {
 
     @Autowired WorkoutService workoutService;

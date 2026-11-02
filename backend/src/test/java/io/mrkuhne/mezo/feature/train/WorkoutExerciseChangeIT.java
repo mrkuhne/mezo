@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
  * a swapped-out exercise keeps the sets it already has.
  */
 @Transactional
+@TestPropertySource(properties = "mezo.feature.closing-block.enabled=true") // off in prod since mezo-11a8p
 class WorkoutExerciseChangeIT extends AbstractIntegrationTest {
 
     @Autowired private WorkoutService workoutService;
@@ -73,7 +75,7 @@ class WorkoutExerciseChangeIT extends AbstractIntegrationTest {
             .kind("working").build());
     }
 
-    /** The fixed closing block (on in tests) ends every day — adds must land before it. */
+    /** The fixed closing block (pinned on for this class) ends every day — adds must land before it. */
     private static String[] withClosing(String... names) {
         String[] out = java.util.Arrays.copyOf(names, names.length + 2);
         out[names.length] = "Dead Hang";

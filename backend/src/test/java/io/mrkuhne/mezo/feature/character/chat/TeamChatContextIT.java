@@ -136,8 +136,12 @@ class TeamChatContextIT extends AbstractIntegrationTest {
         String resolvedDate = resolved.getOpenedAt().atZone(properties.zone()).toLocalDate().format(dateFmt);
         String expiredDate = at.minus(5, ChronoUnit.DAYS).atZone(properties.zone()).toLocalDate().format(dateFmt);
         String appliedDate = applied.getOpenedAt().atZone(properties.zone()).toLocalDate().format(dateFmt);
+        // Local close time, not a literal 14:00: "10 days ago, noon + 2h" lands on 15:00 when a
+        // DST switch falls inside the window (mezo-11a8p, red main after the 2026-10-25 change).
+        String resolvedTime = resolved.getClosedAt().atZone(properties.zone()).toLocalTime()
+                .format(DateTimeFormatter.ofPattern("HH:mm"));
         assertThat(block.pastEpisodes()).containsExactly(
-                resolvedDate + " → RESOLVED at 14:00",
+                resolvedDate + " → RESOLVED at " + resolvedTime,
                 expiredDate + " → EXPIRED",
                 appliedDate + " → still open");
 
