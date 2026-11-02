@@ -183,6 +183,49 @@ function naplo12(a){if(a)return O.naplo(a);
   <div class="ng-tail"></div></div>`)}
 en.routes.naplo=naplo12;
 
+/* ═══ A HETED + HETI ELEMZÉS (2026-11-02): the closed week. A heted: the sentence, 78 with last week's 74 as the jar's
+   dashed line, "Mezo elemzése" wide, the week arrows as plain buttons; the nine areas as nine filling tiles in full words
+   (only sleep, under its goal, gets colour); the four views as rows, the discoveries' layers kept; the score's makeup as
+   Mezo's line. Heti elemzés: the verdict with the seven day tubes as the picture, Mezo's analysis on its own card with
+   what it was built on and the two answers. ("fut" = the running week stays the approved page.) ═══ */
+O.het=en.routes.het;en.routes['het-lista']=O.het;O.elemzes=en.routes.elemzes;en.routes['elemzes-lista']=O.elemzes;
+const NINE=[['3 004','kalória','napi átlag',97],['212 g','fehérje','napi átlag',100],['7 óra 19','alvás','a 7,5 órás cél alatt',88,1],['75%','bejelent&shy;kezés','a napokból',75],['7,0','energia','a 10-ből',70],['6,8','hangulat','a 10-ből',68],
+  ['78,6 kg','súly','heti átlag',null],['−0,4 kg','súlytrend','hetente',80],['585','pont','a héten',null]];
+const nine12=()=>`<div class="w12-nine">${NINE.map(([v,l,s2,p,att])=>`<div class="${att?'att':''}${p==null?' nd':''}" style="--p:${p==null?0:p}%"><b>${v}</b><span>${l}</span><small>${s2}</small></div>`).join('')}</div>`;
+function het12(a){if(a)return O.het(a);const base=O.het('');
+  const ji=base.indexOf('<span class="en-jar'),jar=ji<0?'':base.slice(ji,bal(base,ji,'span'));
+  const si=base.indexOf('<div class="en-strata"'),str=si<0?'':base.slice(si,bal(base,si)),li=si<0?-1:base.indexOf('<div class="en-leg"',si),sl=li<0?'':base.slice(li,bal(base,li));
+  return page('en',{title:'A heted',sub:'Szept. 21–27. · lezárt hét',back:'mai'},`<div class="mx">
+  <section class="mx-s ex-hero"><small class="ex-eb">Szeptember 21–27. · lezárt hét</small><h2 class="n7-h">Az egyensúly hete.</h2>
+    <div class="w12-hj">${jar}<p class="w12-hp"><b>+4 pont</b><span>a múlt héthez képest. A szaggatott vonal a múlt hét: 74.</span></p></div>
+    <div class="ex-acts w12-wide"><button class="n9-btn" data-go="elemzes">Mezo elemzése</button></div>
+    <div class="ex-acts w12-nav"><button class="n8-b" data-toast="Előző hét">‹ Előző</button><button class="n8-b" data-toast="Következő hét">Következő ›</button></div></section>
+  <section class="mx-s ln">${KH('A hét kilenc területe')}${nine12()}
+    ${mzLine('Minden csempe annyira telt meg, amennyire a célodhoz állsz. Színt csak az alvás kapott: a 7,5 órás célod alatt maradt. Minden más rendben.')}</section>
+  <section class="mx-s ln">${KH('A hét négy nézete')}<div class="w12-rl">
+    ${row('t-score','Mezo heti elemzése','hétfő 6:15 · erős hét volt: a fehérjecélt öt napon tartottad','elemzes')}
+    ${row('t-gem','A hét tanulságai','ehhez a héthez nincs javaslat','tanulsagok')}
+    ${row('t-sun','A hét napjai','4 nap a 7-ből naplózva · nézd meg egyenként','napok')}
+    ${row('t-lens','Heti felfedezések','34 új nyom a memóriában','felfedezesek',`<span class="w12-str">${str}${sl}</span>`)}</div>
+    ${mzLine('A pontszám a hat mért területből áll össze: tápanyag, minőség, edzés, alvás, naplózás és ritmus.')}</section>
+  <div class="ng-tail"></div></div>`)}
+function elemzes12(a){if(a)return O.elemzes(a);const base=O.elemzes('');
+  const ti=base.indexOf('<div class="en-tubes week"'),tubes=ti<0?'':base.slice(ti,bal(base,ti));
+  const chip=[['t-pattern','Minta'],['t-book','Tudás'],['t-pin','Életesemény'],['t-scroll','Emlék']].map(([ic,l])=>`<span class="w12-pc">${drop(ic)}${l}</span>`).join('');
+  return page('en',{title:'Heti elemzés',sub:'A heted · hétfő 06:15',back:'het'},`<div class="mx">
+  <section class="mx-s ex-hero"><small class="ex-eb">Mezo olvasata · hétfő 6:15</small><h2 class="n7-h">Erős hét volt: a fehérjecélt öt napon tartottad.</h2>
+    <p class="w12-sc"><b>78</b><span>pont a 100-ból<br>hét nap, hét edény</span></p>
+    <div class="w12-days">${tubes}</div>
+    ${mzLine('Koppints egy napra, és megnyílik A napom oldala.')}
+    <div class="ex-acts w12-wide"><button class="n9-btn" data-toast="Beszélgetés a hétről (Mezo)">Beszélgess a hétről</button><button class="n8-b" data-toast="Elemzés frissítve">Frissítsd</button></div></section>
+  <section class="mx-s ln">${KH('Mezo heti elemzése')}<div class="w12-cw"><div class="w12-ob"><div class="w12-gh">${badge('mezo',{s:40})}<span class="w12-gt"><b>Mezo</b><small>hétfő 6:15</small></span></div>
+    <p>Erős hét volt: a fehérjecélt öt napon tartottad, és az alvásod a hét második felében stabilizálódott. A csütörtöki kimaradt nap után szombaton visszajöttél. Ez a hét mintája.</p>
+    <p class="w12-dq">Amire épült</p><div class="w12-pcs">${chip}</div>
+    <div class="ex-acts w12-in"><button class="n8-b" data-toast="Köszönöm">Hasznos</button><button class="n8-b" data-toast="Rendben">Nem talált</button></div></div></div></section>
+  <section class="mx-s ln">${KH('Tovább')}<div class="w12-rl">${row('t-gem','A hét tanulságai','még nincs javaslat','tanulsagok')}</div></section>
+  <div class="ng-tail"></div></div>`)}
+en.routes.het=het12;en.routes.elemzes=elemzes12;
+
 /* buoy taps: swap Mezo's line in place, mark the buoy (no re-render) */
 document.addEventListener('click',e=>{const el=e.target.closest('[data-w12]');if(!el)return;e.preventDefault();e.stopPropagation();
   const [k,v]=el.dataset.w12.split(':');if(k==='dec'){const d=el.closest('.phone')?.querySelector('#w12-dec');if(d)d.innerHTML=decDone(v);return}if(k!=='stn')return;const ph=el.closest('.phone'),box=ph&&ph.querySelector('#w12-stn p');if(!box)return;
@@ -268,6 +311,17 @@ ${P} .w12-rate{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-t
 ${P} .w12-rate button{display:grid;place-items:center;align-content:center;gap:1px;min-height:52px;border-radius:16px;border:0;background:color-mix(in srgb,var(--dom) 10%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dom) 30%,#fff)}
 ${P} .w12-rate b{font:800 18px var(--disp);color:var(--ink)}${P} .w12-rate small{font-size:12px;color:var(--ink)}
 ${P} .w12-r .g .w12-wk{margin-top:4px}
+${P} .w12-hj{display:flex;align-items:center;gap:14px;margin:12px 22px 0}${P} .w12-hj .w12-sc{margin:0}${P} .w12-hj .en-jar{flex:none}${P} .w12-hj .en-jar small{font-size:13px}
+${P} .w12-hp{margin:0;display:grid;gap:4px}${P} .w12-hp b{font:800 26px/1 var(--disp);color:var(--ink)}${P} .w12-hp span{font-size:14.5px;line-height:1.4;color:var(--ink)}
+${P} .w12-nav{margin-top:8px}${P} .w12-nav .n8-b{flex:1}
+${P} .w12-nine{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 18px 0}
+${P} .w12-nine>div{position:relative;display:grid;gap:1px;padding:12px 10px 10px;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .w12-nine>div::before{content:'';position:absolute;left:0;right:0;bottom:0;height:var(--p);background:color-mix(in srgb,var(--dom) 16%,#fff)}
+${P} .w12-nine>div.att::before{background:color-mix(in srgb,var(--warn) 28%,#fff)}${P} .w12-nine>div.nd{background:#fff}
+${P} .w12-nine>div>*{position:relative}${P} .w12-nine b{font:800 17px/1.15 var(--disp);color:var(--ink);white-space:nowrap}${P} .w12-nine span{font-size:13.5px;font-weight:700;color:var(--ink)}${P} .w12-nine small{font-size:12px;line-height:1.25;color:var(--ink)}
+${P} .w12-str{display:block;margin-top:6px}${P} .w12-str .en-leg{font-size:12.5px;color:var(--ink);margin-top:6px}
+${P} .w12-pcs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}${P} .w12-pc{display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 4px;border-radius:999px;background:color-mix(in srgb,var(--dom) 8%,#fff);font-size:13.5px;font-weight:600;color:var(--ink)}${P} .w12-pc svg.ng{width:30px;height:30px;margin:0}
+@container (max-width:340px){}
 ${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
 ${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto;min-height:40px}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
