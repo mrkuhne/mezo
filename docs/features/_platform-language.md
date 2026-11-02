@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-10-12
+updated: 2026-11-02
 tags: [platform, frontend, backend, auth, ai]
 key_files:
   - frontend/src/shared/i18n
