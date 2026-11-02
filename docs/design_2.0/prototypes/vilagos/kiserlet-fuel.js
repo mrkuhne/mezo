@@ -8,7 +8,7 @@
 const F=window.F,fu=window.FREG&&FREG.fuel,X=window.KXN,E=window.KXE;if(!fu||!X||!E)return;
 const {I,badge}=F,{KH,DEFS,hubHead}=X,{cardsOf,bal,g,drop,pills}=E;
 const P='.phone.foly[data-s="elo"][data-d="fuel"]';
-const O={mai:fu.routes.mai,stack:fu.routes.stack,trendek:fu.routes.trendek,konyha:fu.routes.konyha,recept:fu.routes.recept};fu.routes['recept-lista']=O.recept;fu.routes['trendek-lista']=O.trendek;fu.routes['konyha-lista']=O.konyha;
+const O={mai:fu.routes.mai,stack:fu.routes.stack,trendek:fu.routes.trendek,konyha:fu.routes.konyha,recept:fu.routes.recept,kamra:fu.routes.kamra};fu.routes['kamra-lista']=O.kamra;fu.routes['recept-lista']=O.recept;fu.routes['trendek-lista']=O.trendek;fu.routes['konyha-lista']=O.konyha;
 fu.routes['mai-lista']=O.mai;fu.routes['stack-lista']=O.stack;
 const ico=h=>g(h,/href="#([^"]+)"/)||'t-plate';
 
@@ -190,6 +190,40 @@ function recept3(a){const base=O.recept(a),cs=cardsOf(base);const hero=cs.find(c
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${macS}${ingS}${qS}${nS}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
 fu.routes.recept=recept3;
 
+/* ═══ KAMRA-TÉTEL (2026-11-02): the sentence on top; the picture is the shelf's jar, big — for a food it fills in layers
+   with what 100 g holds (protein at the bottom, then fat and carbohydrate, water on top; owner: layers over the bar), the
+   kcal and each layer's grams beside it; a supplement's jar is blue with its dose. One wide button; the macros as the
+   recipe's tubes; quality as tiles; the source as drop rows with Mezo pricing a gram of protein; the recipes it is in as
+   tubes; edit / delete at the bottom. ═══ */
+function kamraItem3(a){const base=O.kamra(a),cs=cardsOf(base);const hero=cs.find(c=>/fh-hero/.test(c.html.slice(0,60)));if(!hero)return base;
+  const H=hero.html,big=g(H,/<span class="fh-big[^"]*">([^<]*)/),unit=g(H,/<span class="fh-big[^"]*">[^<]*<small>([^<]*)/),verdict=g(H,/<\/span>([^<]*)<\/p>/);
+  const layers=[...H.matchAll(/<span style="--c:([^"]+)"><i><\/i>([^<]*)<b>([\d,]+) g<\/b><\/span>/g)].map(([,c,n,v])=>({c,n,v,x:parseFloat(v.replace(',','.'))}));
+  const food=layers.length>0,ai=H.indexOf('<div class="fh-acts">'),actH=ai>=0?H.slice(ai+21,bal(H,ai)-6):'';
+  const main=g(actH,/(<button class="btn "[^>]*>[^<]*<\/button>)/),rest=actH.replace(main,'');
+  const order=['Fehérje','Zsír','Szénhidrát','Víz és egyéb'],lay=order.map(n=>layers.find(l=>l.n===n)).filter(l=>l&&l.x>0);
+  const sum=lay.reduce((x,l)=>x+Math.max(l.x,4),0);
+  const jar=food?`<span class="fx-bj"><span class="j">${lay.map(l=>`<i style="height:${Math.max(l.x,4)/sum*86}%;background:${l.c}"></i>`).join('')}</span></span>`
+    :`<span class="fx-bj s"><span class="j"><i style="height:78%"></i></span></span>`;
+  const side=`<span class="fx-bs2"><span class="fx-kc"><b>${big}</b><small>${unit}</small></span>${food?`<span class="fx-ly">${lay.slice().reverse().map(l=>`<span><i style="background:${l.c}"></i>${l.n.replace(' és egyéb','')}<b>${l.v} g</b></span>`).join('')}</span>`:''}</span>`;
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${g(H,/<span class="fx-la">([^<]*)/)}</small><h2 class="n7-h">${verdict}</h2>
+    <div class="fx-jr">${jar}${side}</div><div class="ex-acts fx-wide">${pills(main)}</div></section>`;
+  const head=c=>g(base.slice(base.lastIndexOf('<p class="fh-n',c.start),c.start),/<\/b>([^<]*)<\/p>/);
+  const rowsOf=h=>[...h.matchAll(/<(button|div) class="fh-row"([^>]*)>[\s\S]*?href="#([^"]+)"[\s\S]*?<strong>([^<]*)<\/strong>(?:<small>([^<]*)<\/small>)?<\/span>(?:<span class="v">([^<]*)(?:<small>([^<]*)<\/small>)?<\/span>|<span class="st[^"]*">([^<]*)<\/span>)?/g)]
+    .map(([,tag,at,ic,t,sm,v,u,st])=>({tag,at,ic,t,sm:sm||'',v:v?(v+(u?' '+u:'')).trim():st||''}));
+  const drow=r=>`<${r.tag==='button'?'button':'div'} class="ex-mrow"${r.at}>${drop(r.ic)}<span class="g"><b>${r.t}</b>${r.sm?`<i class="q">${r.sm}</i>`:''}</span>${r.v?`<span class="fx-ikv"><b>${r.v}</b></span>`:r.tag==='button'?'<span class="v">›</span>':''}</${r.tag==='button'?'button':'div'}>`;
+  const secs=cs.filter(c=>c!==hero).map(c=>{const h=c.html,t=head(c);
+    if(/k2-vials/.test(h)){const i=h.indexOf('<div class="k2-vials"');return `<section class="mx-s ln">${KH('Makrók · 100 grammban')}<div class="ex-imp fx-mac fx-rm">${h.slice(i,bal(h,i))}</div></section>`}
+    if(/^Minőség/.test(t))return `<section class="mx-s ln">${KH('Minőség · 100 grammban')}<div class="fx-qual"><div class="fx-qg" style="margin-top:0">${rowsOf(h).map(r=>`<span class="fx-qt"><small>${r.t}</small><b>${r.v}</b></span>`).join('')}</div></div></section>`;
+    if(/^Receptekben/.test(t)){const rs=rowsOf(h),mx=24;
+      return `<section class="mx-s ln">${KH('Receptekben')}<div class="fx-rec"><div class="fu-top">${rs.map(r=>{const n=+(r.sm.match(/(\d+)×/)||[0,0])[1];return `<button${r.at}><span><b>${r.t}</b><em>${n}×</em></span><div class="fl-level" style="--c:var(--dom);--h:18px"><i style="width:${n/mx*100}%"></i></div></button>`}).join('')}</div></div></section>`}
+    if(/^Forrás/.test(t)){const rs=rowsOf(h),pr=rs.find(r=>r.t==='Ár'),pg=layers.find(l=>l.n==='Fehérje');
+      const ft=pr&&pg&&pg.x?Math.round(parseInt(pr.v.replace(/\s/g,''))/10/pg.x):0;
+      return `<section class="mx-s ln">${KH('Forrás')}<div class="ex-ml">${rs.filter(r=>r.t!=='A polcodon').map(drow).join('')}</div>${ft?mz(`Ebben 1 gramm fehérje kb. ${ft} forintba kerül.`):''}</section>`}
+    return `<section class="mx-s ln">${KH(t)}<div class="ex-ml">${rowsOf(h).map(drow).join('')}</div></section>`}).join('');
+  const bot=`<section class="mx-s ln"><div class="ex-acts">${pills(rest)}</div></section>`;
+  return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${secs}${bot}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
+fu.routes.kamra=a=>a&&a!=='ures'?kamraItem3(a):O.kamra(a);
+
 /* the tab pages' header, as on Nap and Edzés: no big title, the "?" top left */
 const head=h=>typeof h==='string'?hubHead(h):h;
 Object.keys(fu.routes).forEach(k=>{const f=fu.routes[k];if(typeof f==='function'&&!f.__hub){const w=(...a)=>head(f(...a));w.__hub=1;fu.routes[k]=w}});
@@ -262,7 +296,14 @@ ${P} .fx-sct{width:100%;box-shadow:none;background:color-mix(in srgb,var(--dom) 
 ${P} .fx-qg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}${P} .fx-qt{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--dom) 7%,#fff)}
 ${P} .fx-qt small{font-size:12.5px;font-weight:700;color:color-mix(in srgb,var(--dom) 60%,var(--ink))}${P} .fx-qt b{font:800 17px/1.15 var(--disp,inherit);color:var(--ink)}${P} .fx-qt.na b{font-size:14px;font-weight:700;opacity:.75}
 ${P} .fx-qt:last-child:nth-child(odd){grid-column:1/-1}${P} .fx-ikv{min-width:70px}${P} .fx-ir em{white-space:nowrap}@media (max-width:360px){${P} .fx-ing svg.ng{width:34px;height:34px}${P} .fx-ing{gap:8px;padding-left:10px;padding-right:12px}${P} .fx-ikv{min-width:58px}${P} .fx-qt small{hyphens:manual}}${P} .fx-qual+.ex-mz{margin-top:12px}${P} .fx-born{margin:10px 22px 0}${P} .fx-rm .k2-vial b{font-size:20px}
+${P} .fx-jr{display:flex;align-items:center;justify-content:center;gap:22px;margin:14px 18px 0}
+${P} .fx-bj{flex:none;display:flex;flex-direction:column;align-items:center}${P} .fx-bj .j{position:relative;display:flex;flex-direction:column-reverse;width:104px;height:150px;padding-top:18px;border-radius:18px 18px 26px 26px;background:#fff;overflow:hidden;box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--dom) 45%,#fff),0 14px 26px -18px rgba(10,42,60,.5)}
+${P} .fx-bj .j::before{content:"";position:absolute;left:10px;right:10px;top:0;height:14px;border-radius:0 0 7px 7px;background:color-mix(in srgb,var(--dom) 55%,#fff)}
+${P} .fx-bj .j i{display:block;flex:none;border-top:1.5px solid rgba(255,255,255,.7)}${P} .fx-bj .j i:first-child{border-top:0}
+${P} .fx-bj.s .j{flex-direction:column;justify-content:flex-end;box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--water) 45%,#fff),0 14px 26px -18px rgba(10,42,60,.5)}${P} .fx-bj.s .j::before{background:color-mix(in srgb,var(--water) 55%,#fff)}${P} .fx-bj.s .j i{background:linear-gradient(180deg,color-mix(in srgb,var(--water) 60%,#fff),var(--water))}
+${P} .fx-bs2{display:flex;flex-direction:column;gap:10px;min-width:0}${P} .fx-ly{display:flex;flex-direction:column;gap:5px}${P} .fx-ly span{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;color:var(--ink)}${P} .fx-ly i{flex:none;width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(10,42,60,.12)}${P} .fx-ly b{margin-left:auto;padding-left:8px;font-weight:800}
+@media (max-width:360px){${P} .fx-jr{gap:14px}${P} .fx-bj .j{width:88px;height:130px}${P} .fx-jr .fx-kc b{font-size:36px}}
 `);
 
-window.FNOTES_FOLY=`<h2>Kísérlet · Fuel</h2><p><a href="#w-fuel-mai"><b>Mai</b></a> — felül a mondat és a tál, a makrók csövei a napi cél szaggatott vonalával, az étkezések időrendben egyforma kártyán (az ablakon kívüli a helyén, a következő kiemelve), a logolás módjai csempéken. Arcok: <a href="#w-fuel-mai.kihagyva">kihagyott étkezés</a> · <a href="#w-fuel-mai.kimelo">kímélő mód</a> (nincs kalóriacél, a pohár víz a kép, értékelés nélkül). Összevetésnek: <a href="#w-fuel-mai-lista">a mostani Mai</a>.</p><p><a href="#w-fuel-stack"><b>Kiegészítők</b></a> — a következő adag a mondatban, a nap kapszulái a kép, a kész napszak összecsukva (<a href="#w-fuel-stack-lista">régi</a>).</p><p><a href="#w-fuel-trendek"><b>Trendek</b></a> — a mondat felül, a hét csövei a kép, a csempék és a görbék maradtak, a szürke magyarázatok helyett Mezo (<a href="#w-fuel-trendek-lista">régi</a>).</p><p><a href="#w-fuel-konyha"><b>Konyha</b></a> — a mondat és az üres fazék felül, a célok egy sorban, a receptek csövekként (a legtöbbször evett a legtelibb), a kamra egy polc üvegekkel (<a href="#w-fuel-konyha-lista">régi</a>).</p><p><a href="#w-fuel-recept.r3"><b>Recept</b></a> — a mondat és a fazék a kalóriával felül, a makrók csövei, a hozzávalók színes forrás-címkével, a minőség csempéken Mezo pontszámával, minden receptnek saját Mezo-mondata. Másik arcok: <a href="#w-fuel-recept.r3.egesz">egész recept</a> · <a href="#w-fuel-recept.r1">egyadagos</a> · <a href="#w-fuel-recept.r6">még nincs pontszám</a> (<a href="#w-fuel-recept-lista.r3">régi</a>).</p>`+(window.FNOTES_FOLY||'');
+window.FNOTES_FOLY=`<h2>Kísérlet · Fuel</h2><p><a href="#w-fuel-mai"><b>Mai</b></a> — felül a mondat és a tál, a makrók csövei a napi cél szaggatott vonalával, az étkezések időrendben egyforma kártyán (az ablakon kívüli a helyén, a következő kiemelve), a logolás módjai csempéken. Arcok: <a href="#w-fuel-mai.kihagyva">kihagyott étkezés</a> · <a href="#w-fuel-mai.kimelo">kímélő mód</a> (nincs kalóriacél, a pohár víz a kép, értékelés nélkül). Összevetésnek: <a href="#w-fuel-mai-lista">a mostani Mai</a>.</p><p><a href="#w-fuel-stack"><b>Kiegészítők</b></a> — a következő adag a mondatban, a nap kapszulái a kép, a kész napszak összecsukva (<a href="#w-fuel-stack-lista">régi</a>).</p><p><a href="#w-fuel-trendek"><b>Trendek</b></a> — a mondat felül, a hét csövei a kép, a csempék és a görbék maradtak, a szürke magyarázatok helyett Mezo (<a href="#w-fuel-trendek-lista">régi</a>).</p><p><a href="#w-fuel-konyha"><b>Konyha</b></a> — a mondat és az üres fazék felül, a célok egy sorban, a receptek csövekként (a legtöbbször evett a legtelibb), a kamra egy polc üvegekkel (<a href="#w-fuel-konyha-lista">régi</a>).</p><p><a href="#w-fuel-recept.r3"><b>Recept</b></a> — a mondat és a fazék a kalóriával felül, a makrók csövei, a hozzávalók színes forrás-címkével, a minőség csempéken Mezo pontszámával, minden receptnek saját Mezo-mondata. Másik arcok: <a href="#w-fuel-recept.r3.egesz">egész recept</a> · <a href="#w-fuel-recept.r1">egyadagos</a> · <a href="#w-fuel-recept.r6">még nincs pontszám</a> (<a href="#w-fuel-recept-lista.r3">régi</a><p><a href="#w-fuel-kamra.csirke"><b>Kamra-tétel</b></a> — a mondat felül, a kép a polc üvege nagyban: ételnél rétegekben telik azzal, ami 100 grammban van, kiegészítőnél kék az adaggal; minőség csempéken, a forrásnál Mezo kiszámolja a fehérje árát, a receptek csövekként. Másik arcok: <a href="#w-fuel-kamra.lazac">lazac</a> · <a href="#w-fuel-kamra.kreatin">kiegészítő</a> (<a href="#w-fuel-kamra-lista.csirke">régi</a>).</p>`+(window.FNOTES_FOLY||'');
 })();
