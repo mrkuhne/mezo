@@ -55,8 +55,8 @@ class CatalogMediaResolutionIT extends AbstractIntegrationTest {
 
         WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
-        // 1 created + the fix-zárás closing pair appended by the default-on closing block (mezo-z2ul)
-        assertThat(res.getExercises()).hasSize(3);
+        // 1 created — the fix-zárás closing block is off by default since mezo-11a8p
+        assertThat(res.getExercises()).hasSize(1);
         assertThat(res.getExercises().get(0).getVideoUrl()).isEqualTo(BENCH_VIDEO);
     }
 
@@ -72,8 +72,8 @@ class CatalogMediaResolutionIT extends AbstractIntegrationTest {
 
         WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
-        // 1 created + the fix-zárás closing pair appended by the default-on closing block (mezo-z2ul)
-        assertThat(res.getExercises()).hasSize(3);
+        // 1 created — the fix-zárás closing block is off by default since mezo-11a8p
+        assertThat(res.getExercises()).hasSize(1);
         assertThat(res.getExercises().get(0).getVideoUrl()).isNull();
     }
 

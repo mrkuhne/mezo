@@ -333,8 +333,10 @@ mezo:
       enabled: true
     # Fix zárás (closing block) — dead hang + back extension lazily ensured at the end of every
     # template gym day of the active meso on GET /workouts/today (idempotent; mezo.closing-block).
+    # OFF since 2026-11-02 (mezo-11a8p): the owner no longer wants the pair, and while on, a
+    # day-edit that removes them is undone on the next getToday.
     closing-block:
-      enabled: true
+      enabled: false
     # Meso end-of-run AI evaluation (mezo-meyc.3) — gates the MesoReviewGate marker bean that
     # MesocycleReportService.getReport reads for aiEvalEnabled; off -> the FE hides the AI section
     # instead of polling a pending that never resolves. The real generator (companion, S3 task 15)

@@ -92,8 +92,8 @@ class WorkoutContractIT extends ApiIntegrationTest {
 
         assertThat(today.getTemplateSessionId()).isEqualTo(template.getId());
         assertThat(today.getTitle()).isEqualTo("Pull Day");
-        // 1 created + the fix-zárás closing pair appended by the default-on closing block (mezo-z2ul)
-        assertThat(today.getExercises()).hasSize(3);
+        // 1 created — the fix-zárás closing block is off by default since mezo-11a8p
+        assertThat(today.getExercises()).hasSize(1);
     }
 
     @Test

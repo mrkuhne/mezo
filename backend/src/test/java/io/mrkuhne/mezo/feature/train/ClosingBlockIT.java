@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Fix zárás (mezo-z2ul): getToday lazily appends the configured closing exercises (dead hang +
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * catalog-linked, rest days untouched. Switch-off behavior lives in {@code ClosingBlockSwitchOffIT}
  * (a @ConditionalOnProperty bean's presence is fixed per context).
  */
+@TestPropertySource(properties = "mezo.feature.closing-block.enabled=true") // off in prod since mezo-11a8p
 class ClosingBlockIT extends AbstractIntegrationTest {
 
     @Autowired WorkoutService workoutService;
