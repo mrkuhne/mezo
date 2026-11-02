@@ -314,6 +314,113 @@ function elo8(a){if(a)return O.elo(a);const h=O.elo('');
   <section class="mx-s ln">${KH('Ma este')}<div class="w4-rl">${info7('t-journal','21:00-kor az esti kiadás','Összefoglalja a nap szálait a falon. A nyitva maradt ügyet holnap reggel az Alvás újra előveszi.')}</div>
     ${mzLine('Egy terület csak akkor szól, ha teendő van, és akkor, amikor rendeződött. Naponta legfeljebb két értesítés megy ki, a második csak súlyosabb ügyre.')}${rp7}</section></div>`)}
 mz.routes.elo=elo8;
+/* ═══ A CSAPAT ALOLDALAI (2026-11-02, owner: "jöhet a csapat-rész a hárommal"). A member's page: the member's own sentence,
+   the picture is how its picture of him matured week by week (eight tubes, the old "curve + grey caveat" folded into
+   it), the counts as tags, Amit rólad tud wide + Lezárt ügyei; what it works on now as rows with a status chip and a
+   level, what it knows as cards, its request as its own card. The council: the stance tubes as the picture, the
+   overview / conversation switch IN PLACE (owner rule), the threads open in place, Mezo's decision outlined, the honesty
+   note as Mezo's line. The engine room: the sources as tubes, the rows as drop rows, the note as Mezo's line. ═══ */
+const ROOMS9={
+  szunya:{quote:'Az éjszakáid a szakterületem. Amit itt látsz, azt mind a te naplódból tanultam.',stats:[['15','éjszaka / 60 nap'],['3','beépült tudás']],rows:[
+    ['Rád vár','warn','14 közös nap','moon','Rosszabbul alszol, ha későn vacsorázol?','Közös ügy az Étkezéssel — a te szemed hiányzik hozzá','poszt.vacsora',0],
+    ['Gyűlik','q','6 / 8 nap','clock','A hétfői mélypontot a lefekvés ingadozása okozza?','Kb. egy hét, és megszólal — addig csendben számol','',75],
+    ['Bekerült','q','szept. 20.','tick','Hétvégén 40 perccel később fekszel','Te erősítetted meg — a rólad szóló kép része','minta.hetvege',0]],
+    mat:[52,55,58,58,63,66,70,72],
+    tud:[['Hétvégén átlag 40 perccel később fekszel, és ezt a hétfőd érzi meg','te erősítetted meg','szept. 20.','Beépült'],['A jó éjszakáid 23:15 előtti lefekvéssel kezdődnek','12 éjszaka mintája','szept. 5.','Beépült'],['A 16 óra utáni kávé nyugtalanabb éjszakát hoz nálad','8 éjszaka + a te válaszod','aug. 30.','Beépült']],
+    arch:[['Nyugdíjazva','3 hétig nem erősödött','moon','A délutáni alvás rontja az éjszakát?','Nem gyűlt hozzá elég nap — ha újra felbukkan, előveszi'],['Elvetetted','a te döntésed','skip','Képernyő lefekvés előtt = rossz alvás?','Azt mondtad, nálad nem így van — a csapat elfogadta']],
+    ask:'Kérése: két hétből csak 6 éjszakát naplóztál — minden hiányzó éjszaka egy nappal tolja ki, mire biztosat mondhat.'},
+  mocor:{quote:'A terhelésed és az erőd — és az, hogy a napló ne maradjon el. Nem hajtalak, de észreveszem.',stats:[['15','edzésnap / 60 nap'],['1','sejtés']],rows:[
+    ['Sejtés','q','5 / 8 nap','bolt','Az egyhangú hetek viszik el az energiádat?','Még nem mondja ki — egy változatosabb hét kellene hozzá','poszt.sejtes',62],
+    ['Kísérlet','q','4 / 7 nap','flask','Séta ebéd után — nyugodtabb lesz a délután?','Közös próba az Étkezéssel, együtt nézik majd az eredményt','poszt.kiserlet',57],
+    ['Nem jött be','q','lezárva','down','Könnyebb az edzés, ha jól aludtál?','Nem igazolódott — ebből a jelből óvatosabban következtet','poszt.elorejelzes',0]],
+    mat:[40,44,47,50,52,55,58,60],
+    tud:[['Kihagyott nap után erősebben jössz vissza — az újrakezdés a te terepad','5 visszatérés mintája','szept. 12.','Beépült'],['A felsőtest-napok reggelén magasabb az energiád','9 edzésnap','szept. 2.','Beépült']],
+    arch:[['Nem jött be','lezárva vasárnap','down','Könnyebb az edzés, ha jól aludtál?','Az érzeten nem látszik — az Alvással a súlyoknál keressük tovább']],
+    ask:'Kérése: a szettek súlyát is írd fel — abból látja a valódi terhelést.'},
+  falat:{quote:'A tányérod, a célod és az edzésed üzemanyaga. Minden este három szólamban értékelek.',stats:[['28','kajanap / 60 nap'],['1','aktív kísérlet']],rows:[
+    ['Kísérlet','q','4 / 7 nap','flask','Meccs előtti szénhidrát — stabilabb az ugrásod?','Közös próba a Mozgással · ma este megint meccs','poszt.kiserlet',57],
+    ['Rád vár','warn','14 közös nap','moon','Rosszabbul alszol, ha későn vacsorázol?','Közös ügy az Alvással — onnan indult, az Étkezés a vacsora-oldalt nézi','poszt.vacsora',0],
+    ['Döntésre vár','warn','18 nap','sprout','Korábbi vacsora, nyugodtabb este?','Elég napja van hozzá — most a te döntésed kell','poszt.dontes',0]],
+    mat:[60,64,68,70,73,76,78,80],
+    tud:[['A fehérje-célod stabilan megvan — ez a te erősséged','21 nap átlaga','szept. 15.','Beépült'],['Hétvégén előfordul, hogy utólag naplózol','a te pontosításod','szept. 8.','Tőled'],['Edzésnapokon kisebb az esti sóvárgás','14 nap összevetése','aug. 28.','Beépült']],
+    arch:[['Nyugdíjazva','nem erősödött','sugar','A reggeli cukor dönti el a napod?','6 hét után sem állt össze — pihen']],
+    ask:'Napi műsora: a tányér · a cél · az edzés — minden este.'},
+  deru:{quote:'Én arra figyelek, hogy vagy. Ehhez a te szavad kell — egy-egy rövid esti bejelentkezés.',stats:[['8','bejelentkezés / 60 nap'],['0','nyitott ügy']],rows:[
+    ['Kérés','warn','1 perc','heart','Bejelentkezel ma este?','Hétvégére már látja, mi mozgatja az energiádat','',0]],
+    mat:[18,20,22,24,25,27,28,30],
+    tud:[['A jó napjaid reggeli mozgással kezdődnek','6 bejelentkezés + edzésnapló','szept. 10.','Beépült']],arch:[],
+    ask:'Kevés az adata: két hétből 4 este. Ma bejelentkezést kért tőled.'},
+  mezo:{quote:'Én fogom össze a csapatot. Csak az kerül a rólad szóló képbe, amiben egyetértünk.',stats:[['2','bekerült a héten'],['4','forduló']],rows:[
+    ['Konzílium','q','vasárnap','journal','Mi került be rólad a héten?','2 bekerült · 1 nyugdíjazva — a jegyzőkönyv olvasható','konzilium',0],
+    ['Krónika','q','készül','book','A heted története','Memoár-fejezet érkezik vasárnap estére','memoar',0],
+    ['Dev','q','ajtó','info','Gépterem · Összes funkció','Futások, adatforrások, memória — a motorháztető alatt','gepterem',0]],
+    mat:[50,53,55,58,60,62,64,66],
+    tud:[['Szereted látni, mi miből következik — az indoklás neked jár','a te kérésed','aug. 20.','Tőled'],['Új munkarendet próbálsz szeptembertől','életesemény · tőled','szept. 1.','Tőled']],
+    arch:[['Visszadobva','a Szkeptikus kérésére','skip','A hétvégi késés csak a röplabda miatt van?','Kevés volt mögötte a nap — várólistán']],
+    ask:'A közös kép gondnoka: minden tény, esemény és döntés nála kereshető vissza.'}
+};
+const RIC={moon:'t-moon',clock:'t-clock',tick:'t-tick',bolt:'t-bolt',flask:'t-flask',down:'t-down',sprout:'t-sprout',heart:'t-heart',journal:'t-journal',book:'t-book',info:'t-info'};
+const AREA9={szunya:'pihenés',mocor:'terhelés',falat:'étrend',deru:'hangulat',mezo:'a csapat'};
+const stw=s=>/Rád vár|Döntés|Kérés/.test(s)?'w':/Bekerült|Beépült/.test(s)?'ok':'n';
+function szoba9(id){const q=ROOMS9[id];if(!q)return O.szoba(id);const c=TC4(id),mt=q.mat,up=mt[7]-mt[4];
+  const wk=mt.map((v,i)=>[i===7?'most':i===0?'7 hete':'',v+'%',v]);
+  const work=q.rows.map(([s,k,meta,ic,t,sb,go,pct])=>`<button class="ex-mrow w4-r w9-r" ${go?`data-go="${go}"`:'data-toast="Saját oldala a megvalósításban nyílik meg"'}>${E.drop(RIC[ic]||'t-info')}<span class="g"><b>${t}</b><i class="q">${meta} · ${NOEMO(sb).replace(' — ',', ')}</i>${pct?`<span class="w4-lv"><span class="t"><i style="width:${pct}%;--c:${c}"></i></span><b>${pct}%</b></span>`:''}<i class="w3-st ${stw(s)}">${s}</i></span>${go?'<em>›</em>':''}</button>`).join('');
+  const knows=q.tud.slice(0,3).map(([t,s,d,k])=>info7(k==='Tőled'?'t-chat':'t-tick',t.replace(' — ',', '),`${s} · ${d}`,`<i class="w3-st ${k==='Tőled'?'n':'ok'} w7-hit">${k==='Tőled'?'tőled':'beépült'}</i>`)).join('');
+  return page('mezo',{title:TN[id],sub:`A csapat · ${AREA9[id]}`,back:'csapat'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7(id,`${TN[id]} · ${AREA9[id]}`)}<h2 class="n7-h w5-q">„${q.quote.replace(' — ',', ')}”</h2>
+    <p class="w5-cap">Így érett a képe rólad · 3 hét alatt +${up}%</p>${tubes('',wk.map(([l,t,v])=>[l,t,v]),c).replace('<p class="w7-nl"></p>','')}
+    <span class="w3-tg w8-tg">${[`${mt[7]}% érett`,...q.stats.map(([n,l])=>`${n} ${l.replace(' / ',' az elmúlt ').replace('60 nap','60 napból')}`)].map(t=>`<span>${t}</span>`).join('')}</span>
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-go="tud.${id}">Amit rólad tud</button>${q.arch.length?`<button class="n8-b" data-go="ugyek.${id}">Lezárt ügyei · ${q.arch.length}</button>`:''}</div></section>
+  <section class="mx-s ln">${KH('Most ezen dolgozik')}<div class="w4-rl">${work}</div></section>
+  <section class="mx-s ln">${KH('Amit rólad tud',q.tud.length+' dolog')}<div class="w4-rl">${knows}</div>
+    ${q.tud.length>3?`<div class="ex-acts w3-wide"><button class="n9-btn" data-go="tud.${id}">Mind a ${q.tud.length}</button></div>`:''}</section>
+  <section class="mx-s ln">${KH(id==='falat'?'A napi műsora':'Kérése hozzád')}${cm7(id,AREA9[id],(t=>t[0].toUpperCase()+t.slice(1))(q.ask.replace(/^(Kérése|Napi műsora): /,'').replace(/ — /g,', ')))}
+    ${id==='deru'?'<div class="ex-acts w3-wide"><button class="n9-btn" data-toast="Bejelentkezés — 1 perces közérzet-kör">Bejelentkezem · 1 perc</button></div>':''}</section></div>`)}
+O.szoba=mz.routes.szoba;mz.routes['szoba-lista']=O.szoba;mz.routes.szoba=szoba9;
+
+const KS={v:'ov',th:'t1'};
+const TH9=[{id:'t1',t:'Regeneráció',f:['szunya','deru','mocor'],sub:'2 állítás · 3 hozzászólás'},{id:'t2',t:'Táplálkozás',f:['falat','szk'],sub:'1 állítás · nem vitatták',it:[['Elvetve','A hétvégi fehérje-elmaradás három hete következetes mintázat.']]},
+  {id:'t3',t:'Test',f:['deru'],sub:'1 állítás · 1 elfogadva',it:[['Bekerült','A testzsír-trend és a stagnáló testsúly rekompozícióra utal.']]},{id:'t4',t:'Fegyelem',f:['mocor'],sub:'1 állítás · 1 elfogadva',it:[['Nyugdíjazva','A hétvégi naplózás rendszeresen elmarad.']]}];
+const thBody=t=>t.id==='t1'?cm7('szunya','felvetette','A hétvégi lefekvés két órával kitolódik, és ez hétfőn is meglátszik.')+cm7('deru','támogatja','A pulzusvariancia is ezt a két napot mutatja gyengébbnek.')+cm7('mocor','vitatja','Szerintem ez nem alvás, hanem hétvégi program, nem viselkedési minta.')+cm7('szk','meghagyta · biztos','Hat hét adat, konzisztens.')+cm7('mezo','bekerült · biztos','Bekerül a dossziéba: a Szkeptikus érvét fogadom el.',1)
+  :t.it.map(([s,x])=>`<article class="w5-f">${E.drop('t-note')}<span class="g"><b>${x}</b><i class="w3-st ${stw(s)}">${s}</i></span></article>`).join('');
+const thCard=t=>`<article class="w3-c w9-th${KS.th===t.id?' on':''}" data-w9t="${t.id}"><button class="w3-tap" data-w9="th:${t.id}" aria-expanded="${KS.th===t.id}"><span class="w3-hd">${minis(t.f)}<span class="g"><b>${t.t}</b><small>${t.sub}</small></span><span class="n8-b">${KS.th===t.id?'Bezárom':'Megnyitom'}</span></span></button><div class="w9-tb">${thBody(t)}</div></article>`;
+function konz9(a){if(a)return O.konzilium(a);
+  const ov=`<div class="w9-v" data-w9v="ov"${KS.v==='ov'?'':' hidden'}>
+    <section class="mx-s ln">${KH('Hogyan zajlott','4 forduló')}<div class="w3-rl">${[['Javaslat','5 felvetés','Ki mit hozott az asztalra: Alvás 2, Étkezés 1, Közérzet 1, Mozgás 1'],['Kereszt-vita','3 hozzászólás','Ahol egymás felvetéseit nézték: a Közérzet az Alvás mellé állt, a Mozgás vitatta'],['Szkeptikus','5 vizsgálat','A kételkedés köre: a fehérje-ügyet kevés napnak találta'],['Mezo dönt','3 elfogadva · 2 elvetve','Ami a képedbe került: a hétvégi lefekvés-minta és a rekompozíció']].map(([t,m,x],i)=>`<div class="w3-rw"><span class="w9-n">${i+1}.</span><span class="g"><b>${t} · ${m}</b><small>${x}</small></span></div>`).join('')}</div></section>
+    <section class="mx-s ln">${KH('A szálak','4')}<div class="w3-l">${TH9.map(thCard).join('')}</div></section></div>`;
+  const cv=`<div class="w9-v" data-w9v="cv"${KS.v==='cv'?'':' hidden'}>
+    <section class="mx-s ln">${KH('Javaslatok','3 felvetés')}<div class="w3-l">${cm7('szunya','alvás','A hétvégi lefekvés két órával kitolódik, és ez hétfőn is meglátszik.')}${cm7('deru','hangulat','A testzsír-trend és a stagnáló testsúly rekompozícióra utal.')}${cm7('falat','étrend','A hétvégi fehérje-elmaradás három hete következetes mintázat.')}</div></section>
+    <section class="mx-s ln">${KH('Kereszt-vita','3 hozzászólás')}<p class="w9-q">„A hétvégi lefekvés két órával kitolódik, és ez hétfőn is meglátszik.” · Alvás</p><div class="w3-l">${cm7('deru','támogatja','A pulzusvariancia is ezt a két napot mutatja gyengébbnek.')}${cm7('mocor','vitatja','Szerintem ez nem alvás, hanem hétvégi program, nem viselkedési minta.')}${cm7('deru','árnyalja','A kettő nem zárja ki egymást: a program tolja ki, a hatása viszont alvás.')}</div></section>
+    <section class="mx-s ln">${KH('A Szkeptikus','2 vizsgálat')}<div class="w3-l">${cm7('szk','meghagyta','Hat hét adat, konzisztens. A Mozgás ellenvetése nem cáfolja a mintát.')}${cm7('szk','kidobta','Három hét túl kevés, és két hétvége nyaralás volt.')}</div></section>
+    <section class="mx-s ln">${KH('Mezo dönt','1 bekerült · 1 elvetve')}<div class="w3-l">${cm7('mezo','bekerült · biztos','Bekerül a dossziéba: a Szkeptikus érvét fogadom el.',1)}${cm7('mezo','elvetve','Elvetem: a Szkeptikus kifogása megalapozott.',1)}</div></section></div>`;
+  return page('mezo',{title:'Az ülés jegyzőkönyve',sub:'A csapat · konzílium',back:'csapat'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','Konzílium · augusztus 30. · heti')}<h2 class="n7-h">2 állítás bekerült rólad, 1 nyugdíjba ment.</h2>
+    ${mzLine('Hetente átnézzük az adataidat, megvitatjuk egymás felvetéseit, a Szkeptikus kikérdez minket, és én döntök arról, mi kerül a rólad szóló képbe.')}
+    <p class="w5-cap">„A hétvégi lefekvés két órával kitolódik”: ki mennyire áll mellette</p>
+    <div class="w4-tb">${F.vials([['szunya',86,'felvetette'],['deru',78,'támogatja'],['mocor',22,'vitatja'],['szk',62,'meghagyta'],['mezo',96,'bekerült']].map(([k,p,s])=>({l:TN[k],s,p,v:p+'%',c:TC4(k),on:{toast:`${TN[k]}: ${s}`}})),{h:110})}</div>
+    <span class="w3-tg w8-tg"><span>2 bekerült</span><span>1 nyugdíjazva</span><span>a rólad szóló leírás átírva</span></span>
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-go="rolad">Mi változott rólad?</button></div></section>
+  <section class="mx-s ln"><div class="w9-nav"><button class="n8-b" data-toast="Korábbi tanácskozás">‹ Korábbi ülés</button><button class="n8-b" data-sheet="archive">Augusztus 30. · heti</button></div>
+    <div class="w9-sw" role="group">${[['ov','Áttekintés'],['cv','A beszélgetés']].map(([k,l])=>`<button class="${KS.v===k?'on':''}" data-w9="v:${k}" aria-pressed="${KS.v===k}">${l}</button>`).join('')}</div></section>
+  ${ov}${cv}
+  <section class="mx-s ln">${mzLine('Amit itt olvasol, az a valódi beszélgetés, ahogy lezajlott. Utólag nem színezzük ki: a csapat pontosan így mondta.')}</section></div>`)}
+O.konzilium=mz.routes.konzilium;mz.routes['konzilium-lista']=O.konzilium;mz.routes.konzilium=konz9;
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-w9]');if(!b)return;e.preventDefault();const [k,v]=b.dataset.w9.split(':'),ph=document.querySelector('#phone');if(!ph)return;
+  if(k==='v'){KS.v=v;ph.querySelectorAll('[data-w9v]').forEach(x=>x.hidden=x.dataset.w9v!==v);ph.querySelectorAll('.w9-sw button').forEach(x=>{const on=x.dataset.w9==='v:'+v;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});return}
+  if(k==='th'){KS.th=KS.th===v?'':v;TH9.forEach(t=>{const c=ph.querySelector(`[data-w9t="${t.id}"]`);if(c)c.outerHTML=thCard(t)})}},true);
+
+function gep9(){const row=(ic,t,sub,attr)=>row7(ic,t,sub,attr);
+  return page('mezo',{title:'Gépterem',sub:'A csapat · a motorháztető alatt',back:'csapat'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','A gépezet')}<h2 class="n7-h">Legutóbb augusztus 30-án futott: 3 megfigyelés, 2 szakértő hívva.</h2>
+    ${mzLine('Ez nem a fal része: ide akkor jössz, ha a gépezetre vagy kíváncsi. Minden, amit a csapat mond, innen ellenőrizhető.')}
+    <p class="w5-cap">A naplóid az elmúlt 60 napból</p>
+    <div class="w4-tb">${F.vials([['Edzés','t-dumbbell',53],['Alvás','t-moon',58],['Étkezés','t-bowl',56],['Bejelentkezés','t-heart',7]].map(([l,ic,n])=>({l,ic,p:Math.round(n/60*100),v:n+' nap',mark:n<20?'kevés':'',on:'adatforrasok'})),{h:110})}</div>
+    <span class="w3-tg w8-tg"><span>emlékezet: 47 nap a 60-ból</span><span>3 megfigyelés</span><span>2 szakértő hívva</span></span>
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-go="futasok">Futások</button></div></section>
+  <section class="mx-s ln">${KH('Mi fut a háttérben')}<div class="w4-rl">${[['t-history','Futások','e héten 7 futás · 11 megfigyelés','data-go="futasok"'],['t-link','Adatforrások','a teljes tervezett korpusz','data-go="adatforrasok"'],['t-journal','AI-napló','minden hívás tárolva','data-toast="AI-napló — admin felület"'],['t-radar','Detektorok','az aktív katalógus','data-go="detektorok"'],['t-layers','Memória','rétegek, eredet és költségek','data-go="memoria"'],['t-eye','Megfigyelők','a coaching javaslatainak háttere','data-go="megfigyelo"']].map(a=>row(...a)).join('')}</div></section>
+  <section class="mx-s ln">${KH('A régi eszköztár')}<div class="w4-rl">${row('t-grid','Összes funkció','a régi teljes menü, minden eszköz egy helyen','data-go="osszes"')}</div>
+    ${mzLine('Minden szakértő-hívást lépésenként mentünk: megfigyelés, javaslat, Szkeptikus, döntés, a rólad szóló leírás. Semmi nem tűnik el.')}</section></div>`)}
+O.gepterem=mz.routes.gepterem;mz.routes['gepterem-lista']=O.gepterem;mz.routes.gepterem=gep9;
 /* the approved timer types the Közérzet's message into #live after a few seconds; keep it emoji-free too */
 new MutationObserver(()=>{const l=document.querySelector('#phone #live');if(!l||!l.closest(P))return;const h=NOEMO(l.innerHTML);if(h!==l.innerHTML)l.innerHTML=h}).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-w8="este"]');if(!b)return;document.querySelector('#phone #w8-este')?.scrollIntoView({behavior:'smooth',block:'start'})});
@@ -524,6 +631,12 @@ ${P} .w8-d .g{gap:6px}${P} .w8-t{flex:none;display:flex;flex-direction:column;al
 ${P} .w8-t b{font-size:15px;font-weight:800;color:var(--ink)}${P} .w8-t small{font-size:12px;font-weight:650;color:var(--ink);opacity:.8}
 ${P} .w8-bl{margin:6px 22px 0}${P} .w8-dec .w3-ab .n9-btn{flex:1 0 100%}${P} .w8-ld{align-self:flex-start;margin-top:6px}
 ${P} .w8-calc{margin:12px 14px 0;padding:14px;border-radius:20px;background:#fff;box-shadow:0 0 0 1px rgba(10,42,60,.06)}${P} .w8-calc p{margin:0 0 6px;font-size:14px;line-height:1.5;color:var(--ink)}
+${P} .w9-r{align-items:flex-start}${P} .w9-r .w4-lv{margin-top:6px}${P} .w9-r .w3-st{align-self:flex-start;margin-top:8px}${P} .w9-sw button{text-align:center;justify-content:center}
+${P} .w7-n small{white-space:nowrap}${P} .w9-n{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:color-mix(in srgb,var(--dom) 14%,#fff);font:800 16px var(--disp,inherit);color:var(--ink)}
+${P} .w9-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 14px}${P} .w9-nav .n8-b{margin:0}
+${P} .w9-sw{display:flex;gap:4px;margin:14px 14px 0;padding:4px;border-radius:999px;background:rgba(10,42,60,.06)}${P} .w9-sw button{flex:1;min-height:44px;border-radius:999px;font-size:14.5px;font-weight:750;color:var(--ink)}${P} .w9-sw button.on{background:#fff;box-shadow:0 4px 12px -6px rgba(10,42,60,.35)}
+${P} .w9-tb{display:none;gap:10px;padding:0 12px 14px}${P} .w9-th.on .w9-tb{display:grid}${P} .w9-tb .w7-cm{margin:0;box-shadow:0 0 0 1px rgba(10,42,60,.07)}
+${P} .w9-q{margin:0 22px 12px;font-size:15px;font-style:italic;line-height:1.5;color:var(--ink)}
 ${P} .w7-dc{margin:10px 4px 0;font-size:13.5px;font-weight:650;line-height:1.4;color:var(--ink)}${P} .w7-d small .w3-tk{color:#1F7A4D}${P} .w7-d small{min-height:16px;font-size:12.5px;font-weight:650;color:var(--ink);opacity:.8;text-align:center;line-height:1.2}
 @media (max-width:360px){${P} .w7-nr{gap:3px}${P} .w7-n b{font-size:12px}}
 @media (max-width:360px){${P} .w3-h{font-size:17px}${P} .w3-hd{gap:10px}${P} .w3-st{padding:4px 8px;font-size:12px}${P} .w3-tap{padding:14px}}
