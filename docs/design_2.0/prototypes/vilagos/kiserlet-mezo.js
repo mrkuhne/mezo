@@ -14,7 +14,7 @@
 const F=window.F,mz=window.FREG&&FREG.mezo,X=window.KXN,E=window.KXE;if(!mz||!X||!E)return;
 const {I,badge,page}=F,{KH,hubHead}=X,{bal,pills,g}=E;
 const P='.phone.foly[data-s="elo"][data-d="mezo"]';
-const O={mai:mz.routes.mai,fal:mz.routes.fal,csapat:mz.routes.csapat};mz.routes['mai-lista']=O.mai;mz.routes['csapat-lista']=O.csapat;O.rolad=mz.routes.rolad;O.terv=mz.routes['rolad-terv'];mz.routes['rolad-lista']=O.rolad;
+const O={mai:mz.routes.mai,fal:mz.routes.fal,csapat:mz.routes.csapat};mz.routes['mai-lista']=O.mai;mz.routes['csapat-lista']=O.csapat;O.rolad=mz.routes.rolad;O.terv=mz.routes['rolad-terv'];mz.routes['rolad-lista']=O.rolad;O.emlekek=mz.routes.emlekek;mz.routes['emlekek-lista']=O.emlekek;
 
 const TN={szunya:'Alvás',mocor:'Mozgás',falat:'Étkezés',deru:'Közérzet',mezo:'Mezo',szk:'Szkeptikus'};
 const TICK='<svg class="w3-tk" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg>';
@@ -173,6 +173,36 @@ function rolad3(a){if(a)return O.rolad(a);
     ${mzLine('Minden, ami itt áll, a forrásával együtt él. Bármit elhallgattathatsz vagy pontosíthatsz, és a csapat csak azt használja, amit jóváhagytál.')}</section>`;
   return page('mezo',{title:'Rólad',sub:'Mezo · a közös kép rólad',tab:'rolad'},`<div class="mx">${top}${decS}${tud}${facts}${life}${more}</div>`)}
 mz.routes.rolad=rolad3;
+
+/* ═══ EMLÉKEK (2026-11-02): the week's story on top (no purple box), the sub as Mezo's line; the picture is the seven
+   days as capsules filled to how the day felt (owner's pick over "how many sources"), a word under each, the empty day
+   dashed, a day opens its memory; Olvasom wide + Archívum. The nightly memories on one card shape (icon drop, date chip,
+   title, two lines, Elolvasom); the similar-days search as a real field with example chips, its hits as cards with a
+   similarity level; Tovább as drop rows. ═══ */
+const WEEK=[['H',15,52,'fáradt'],['K',16,70,'nyugodt'],['Sze',17,null,'nincs emlék'],['Cs',18,82,'erős'],['P',19,40,'nehéz'],['Szo',20,72,'lassú, jó'],['V',21,92,'a legjobb']];
+const MEMS=[['t-moon','vasárnap, szept. 21.','Meccs, korai vacsora, és a legjobb éjszakád a héten','A kísérlet egyik találat-napja: 17 óráig bekerült a szénhidrát, a vacsora 20 óra előtt volt, és 8 órát aludtál.','nap.21'],
+  ['t-sun','szombat, szept. 20.','Lassú reggel, hosszú séta','Nem volt edzés, délelőtt két órát sétáltál, és délután is nyugodt maradtál.','nap.20'],
+  ['t-album','augusztus 12.','Erős pull-nap','A Chest Supported Row 3×8-ra ment, és délután is maradt energia. Este korán feküdtél, 7 óra 40 perc lett belőle, a reggeli pulzus is lejjebb ment.','emlek'],
+  ['t-album','augusztus 11.','Pihenőnap, sok séta','Ebédnél kimaradt a fehérje, este pótoltad. A napló szerint feszült voltál a munka miatt, de a lefekvés így is 23:00 előtt volt.','emlek'],
+  ['t-album','augusztus 10.','Röpi este, három szett','A harmadikban elfogyott a lendület. Utána későn vacsoráztál, az alvás felszínes lett.','emlek']];
+const SIM3=[['augusztus 9.','47 napja','Rossz alvás a késő esti edzés után; másnap nehezebben indult a nap.',88],['július 28.','59 napja','Rövid éjszaka röpi után, reggel fáradtság, délutánra rendbe jött.',79],['július 14.','73 napja','Hosszú edzés, késői vacsora, két ébredés.',71]];
+function emlekek3(a){if(a)return O.emlekek(a);const on=/3 hasonló nap a memóriából/.test(O.emlekek(''));
+  const week=`<div class="w6-wk">${WEEK.map(([d,n,p,w])=>`<button class="w6-d${p==null?' x':''}${n===21?' now':''}" ${p==null?'data-toast="Ezen a napon nem született emlék"':`data-go="nap.${n}"`} aria-label="${d} ${n}. · ${w}"><span class="t"><i style="height:${p||0}%;--c:${p!=null&&p<50?'#E7B25A':'var(--dom)'}"></i></span><b>${d} ${n}</b><small>${w}</small></button>`).join('')}</div>`;
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">A heted története · szept. 15–21.</small><h2 class="n7-h">Apró fordulatok.</h2>
+    ${mzLine('Nem egy nagy elhatározás: egy korábban lezárt este, egy meccs, és egy mondat, amit végre leírtál. Négy rövid lépésben mesélem el.')}
+    <p class="w5-cap">Milyen volt a heted</p>${week}
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-go="memoar">Olvasom</button><button class="n8-b" data-go="archivum">Archívum · 6 fejezet</button></div></section>`;
+  const mem=`<section class="mx-s ln">${KH('Napi emlékek','éjszakai összefoglalók')}<div class="w3-l">${MEMS.map(([ic,d,t,x,go])=>`<article class="w3-c"><button class="w3-tap" data-go="${go}" aria-label="${t} · elolvasom">
+    <span class="w3-hd">${E.drop(ic)}<span class="g"><b>${t}</b></span></span><span class="w3-x">${x}</span><span class="w3-f"><i class="w3-st n w6-dt">${d}</i><span class="n8-b">Elolvasom</span></span></button></article>`).join('')}</div></section>`;
+  const ex=['rossz alvás edzés után','fáradt hétfő','jó nap meccs után'];
+  const srch=`<section class="mx-s ln">${KH('Hasonló napok','mikor éreztem már így magam?')}
+    <button class="w6-s" data-m="srch">${I('t-lens')}<span class="${on?'on':''}">${on?'rossz alvás edzés után':'Milyen napot keresel?'}</span><b>${on?'Törlés':'Keresés'}</b></button>
+    ${on?`<div class="w3-l w6-hits">${SIM3.map(([d,ago,x,p])=>`<button class="w5-f w6-h" data-go="emlek"><span class="g"><b>${d} · ${ago}</b><small>${x}</small><span class="w4-lv"><span class="t"><i style="width:${p}%;--c:var(--dom)"></i></span><b>${p}%</b></span></span></button>`).join('')}</div>${mzLine('A szám azt mutatja, mennyire hasonlít az a nap a keresésedre.')}`
+      :`<div class="w6-ex">${ex.map(t=>`<button class="n8-b" data-m="srch">${t}</button>`).join('')}</div>`}</section>`;
+  const row=(ic,t,sub,attr)=>`<button class="ex-mrow w4-r" ${attr}>${E.drop(ic)}<span class="g"><b>${t}</b><i class="q">${sub}</i></span><em>›</em></button>`;
+  const more=`<section class="mx-s ln">${KH('Tovább')}<div class="w4-rl">${row('t-calendar','Heti értékelés','az Én · Hét oldalán','data-toast="Heti értékelés — az Én területen"')}${row('t-layers','Memória','rétegek és audit','data-go="memoria"')}</div></section>`;
+  return page('mezo',{title:'Emlékek',sub:'Mezo · a te történeted',tab:'emlekek'},`<div class="mx">${top}${mem}${srch}${more}</div>`)}
+mz.routes.emlekek=emlekek3;
 /* a decision redraws the page (the approved handler, a capture listener on document); read the carousel position on
    window first, then put it back on the card that was answered */
 window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.w5-cr [data-m]');if(!b)return;const x=b.closest('.w5-cr').scrollLeft;
@@ -286,8 +316,18 @@ ${P} .w5-t b{font:800 30px/1 var(--disp,inherit);color:var(--ink)}${P} .w5-t spa
 ${P} .w5-f{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;background:#fff;box-shadow:0 10px 24px -18px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}${P} .w5-f .g{flex:1;min-width:0;display:flex;flex-direction:column}${P} .w5-f .g b{font-size:15px;line-height:1.3;color:var(--ink)}${P} .w5-f .g small{margin-top:3px;font-size:13px;color:var(--ink);opacity:.75}
 ${P} .w5-f .w3-st{align-self:flex-start;margin-top:8px}${P} .w5-t .ng-pipe,${P} .w5-t .ng-flow,${P} .w5-le .ng-pipe,${P} .w5-le .ng-flow{display:none}${P} .mx-h span{color:var(--ink);opacity:.8;font-weight:650}${P} .w5-le .w3-st{margin-left:auto}${P} .w5-le.dim svg.ng{opacity:.6}
 @media (max-width:360px){${P} .w5-q{font-size:22px!important}${P} .w5-sh{margin:8px 10px 0}${P} .w5-sh+.w5-sh .k2-vials{padding:0;gap:8px}${P} .w5-sh .k2-vial small{font-size:12px;letter-spacing:-.05em}}
+${P} .w6-wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:8px 14px 0}
+${P} .w6-d{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:0}${P} .w6-d .t{position:relative;width:100%;max-width:44px;height:78px;border-radius:16px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.12)}
+${P} .w6-d .t i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c))}${P} .w6-d.x .t{background:transparent;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.25);outline:1.5px dashed rgba(10,42,60,.25);outline-offset:-1.5px}
+${P} .w6-d.now .t{box-shadow:inset 0 0 0 2px var(--dom)}${P} .w6-d b{font-size:13px;font-weight:800;color:var(--ink);white-space:nowrap}${P} .w6-d small{font-size:12px;line-height:1.2;font-weight:600;color:var(--ink);text-align:center;opacity:.85}
+${P} .w6-dt{margin-right:auto}${P} .w3-hd svg.ng{width:46px;height:46px;margin:-4px 0 -4px -4px;flex:none}${P} .w3-hd .ng-pipe,${P} .w3-hd .ng-flow{display:none}
+${P} .w6-s{display:flex;align-items:center;gap:10px;width:calc(100% - 28px);margin:0 14px;min-height:56px;padding:8px 10px 8px 16px;border-radius:999px;background:#fff;text-align:left;box-shadow:0 0 0 1.5px rgba(10,42,60,.1)}
+${P} .w6-s svg.ic{width:26px;height:26px;flex:none}${P} .w6-s span{flex:1;font-size:15px;color:var(--ink);opacity:.7}${P} .w6-s span.on{opacity:1;font-weight:650}${P} .w6-s b{flex:none;padding:10px 16px;border-radius:999px;background:color-mix(in srgb,var(--dom) 12%,#fff);font-size:14px;color:color-mix(in srgb,var(--dom) 80%,var(--ink))}
+${P} .w6-ex{display:flex;flex-wrap:wrap;gap:8px;margin:12px 14px 0}${P} .w6-ex .n8-b{margin:0;min-height:44px}${P} .w6-hits{margin-top:12px}${P} .w6-h{width:100%;text-align:left}${P} .w6-h .w4-lv{margin-top:10px}
+${P} .w6-hits+.ex-mz{margin-top:14px}
+@media (max-width:360px){${P} .w6-wk{gap:4px;margin:8px 8px 0}${P} .w6-d small{font-size:12px;letter-spacing:-.03em}}
 @media (max-width:360px){${P} .w3-h{font-size:17px}${P} .w3-hd{gap:10px}${P} .w3-st{padding:4px 8px;font-size:12px}${P} .w3-tap{padding:14px}}
 `);
 
-window.FNOTES_FOLY=(window.FNOTES_FOLY||'')+`<h2>Kísérlet · Mezo</h2><p><a href="#w-mezo-mai"><b>Üzenőfal</b></a> — felül a mondat, a csapat öt cseppje (csak kép) és a Megnézem; a Rád vár marad; Ma és a tegnap esti kiadás egyforma bejegyzés-kártyákon (ki, mikor, fajta, állapot, kiemelt mondat, két sor, a bejegyzés kis képe, Elolvasom); a teljes szöveg, a vita, a Miből látszik és a válasz a felcsúszó fiókban. A régebbi napok egy gomb mögött: <a href="#w-mezo-mai.korabbi">Korábbi napok</a>. Összevetésnek: <a href="#w-mezo-mai-lista">a mostani Üzenőfal</a>.</p><p><a href="#w-mezo-csapat"><b>A csapat</b></a> — a mondat a legjobban ismerő tagról, öt cső (mennyire érett a képük rólad), Mezo mondata a leggyengébbről és a Bejelentkezem gomb; minden tag (a Szkeptikus is) egyforma kártyán; Konzílium és Gépterem csepp-sorként. Összevetésnek: <a href="#w-mezo-csapat-lista">a mostani A csapat</a>.</p><p><a href="#w-mezo-rolad"><b>Rólad</b></a> — a legbiztosabb mondat a szív, a kilenc témakör csövei két polcon teljes szavakkal, a döntések lapozóban pöttyökkel, a Tudástár négy csempén, a tények kártyákon, az életesemények és a Tovább csepp-sorként. Összevetésnek: <a href="#w-mezo-rolad-lista">a mostani Rólad</a>.</p>`;
+window.FNOTES_FOLY=(window.FNOTES_FOLY||'')+`<h2>Kísérlet · Mezo</h2><p><a href="#w-mezo-mai"><b>Üzenőfal</b></a> — felül a mondat, a csapat öt cseppje (csak kép) és a Megnézem; a Rád vár marad; Ma és a tegnap esti kiadás egyforma bejegyzés-kártyákon (ki, mikor, fajta, állapot, kiemelt mondat, két sor, a bejegyzés kis képe, Elolvasom); a teljes szöveg, a vita, a Miből látszik és a válasz a felcsúszó fiókban. A régebbi napok egy gomb mögött: <a href="#w-mezo-mai.korabbi">Korábbi napok</a>. Összevetésnek: <a href="#w-mezo-mai-lista">a mostani Üzenőfal</a>.</p><p><a href="#w-mezo-csapat"><b>A csapat</b></a> — a mondat a legjobban ismerő tagról, öt cső (mennyire érett a képük rólad), Mezo mondata a leggyengébbről és a Bejelentkezem gomb; minden tag (a Szkeptikus is) egyforma kártyán; Konzílium és Gépterem csepp-sorként. Összevetésnek: <a href="#w-mezo-csapat-lista">a mostani A csapat</a>.</p><p><a href="#w-mezo-rolad"><b>Rólad</b></a> — a legbiztosabb mondat a szív, a kilenc témakör csövei két polcon teljes szavakkal, a döntések lapozóban pöttyökkel, a Tudástár négy csempén, a tények kártyákon, az életesemények és a Tovább csepp-sorként. Összevetésnek: <a href="#w-mezo-rolad-lista">a mostani Rólad</a>.</p><p><a href="#w-mezo-emlekek"><b>Emlékek</b></a> — a heted története, a hét napja kapszulaként annyira telve, amilyen a nap volt (egy szóval alatta), a napi emlékek egyforma kártyán, a hasonló napok keresése igazi mezővel és példákkal, a találatok kártyán hasonlósági csíkkal. Összevetésnek: <a href="#w-mezo-emlekek-lista">a mostani Emlékek</a>.</p>`;
 })();
