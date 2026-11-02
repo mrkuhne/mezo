@@ -76,7 +76,6 @@ const sects=(base,from)=>{const out=[];let i=base.indexOf('<p class="fh-n',from)
     out.push({hd,html:base.slice(ci,ce)});i=base.indexOf('<p class="fh-n',ce)}return out};
 const tidy=h=>hu(h).replace(/ rise"/g,'"').replace(/<p class="fh-note"[^>]*>([\s\S]*?)<\/p>/g,(m,t)=>mzLine(t));
 const sec12=(hd,body)=>`<section class="mx-s ln">${KH(hd)}<div class="w12-cw">${body}</div></section>`;
-const lastCard=base=>{const i=base.lastIndexOf('<section class="fh-card'),e=bal(base,i,'section');return base.slice(i,e)};
 const legend=a=>`<div class="w12-leg">${a.map(([c,t])=>`<span><i class="${c}"></i>${t}</span>`).join('')}</div>`;
 function suly12(base){
   const hi=base.indexOf('<section class="fh-card fh-hero'),H=base.slice(hi,bal(base,hi,'section'));
@@ -126,14 +125,14 @@ function nights12(h){const st=[...h.matchAll(/<div class="fh-step ?"><time>09\/(
 function test12(a){const base=O.test(a),v=a==='alvas'?'alvas':'suly';
   const sw=(i=>i<0?'':base.slice(i,bal(base,i)))(base.indexOf('<div class="en-sw'));
   const body=v==='alvas'?alvas12(base):suly12(base);
-  const td=lastCard(base).replace(' rise"','"'),tdRow=`<div class="w12-rl">${'<button class="ex-mrow w12-r" data-toast="Beállítások · testadatok">'+drop('t-person')+'<span class="g"><b>Testadatok</b><i class="q">34 év · 180 cm · 78,4 kg · 15% testzsír</i></span><em>›</em></button>'}</div>`;
-  const page0=base.slice(0,base.indexOf('<div class="en-sw'));const end=base.indexOf(td.replace('"','"'))>=0?0:0;
+  const tdRow=`<div class="w12-rl">${'<button class="ex-mrow w12-r" data-toast="Beállítások · testadatok">'+drop('t-person')+'<span class="g"><b>Testadatok</b><i class="q">34 év · 180 cm · 78,4 kg · 15% testzsír</i></span><em>›</em></button>'}</div>`;
+  const page0=base.slice(0,base.indexOf('<div class="en-sw'));
   const tail=base.slice(bal(base,base.lastIndexOf('<section class="fh-card'),'section'));
   return page0+`<div class="mx w12-t">${sw.replace(' rise"','"').replace('class="en-sw','class="en-sw w12-sw')}${body}<section class="mx-s ln">${tdRow}</section><div class="ng-tail"></div></div>`+tail}
 en.routes.test=test12;en.routes.suly=()=>test12('');en.routes.alvas=()=>test12('alvas');
 
 /* approved data-ev switches on a converted page: en.js updates its state and draws the approved page; redraw ours on top */
-document.addEventListener('click',e=>{const el=e.target.closest('[data-ev]');const ph=el&&el.closest('.phone');if(!ph||!ph.querySelector('.w12-t'))return;
+document.addEventListener('click',e=>{const el=e.target.closest('[data-ev^="period:"],[data-ev^="wk:"],[data-ev^="swin:"]');const ph=el&&el.closest('.phone');if(!ph||!ph.querySelector('.w12-t'))return;
   setTimeout(()=>{const f=en.routes[F.R];if(typeof f!=='function')return;const sc=ph.querySelector('.scroll'),y=sc?sc.scrollTop:0;ph.innerHTML=f(F.ARG);
     ph.querySelectorAll('.rise').forEach(x=>x.classList.remove('rise'));const s2=ph.querySelector('.scroll');if(s2)s2.scrollTop=y},0)},true);
 
