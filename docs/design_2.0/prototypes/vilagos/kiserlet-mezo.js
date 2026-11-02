@@ -514,7 +514,7 @@ function elet10(a){if(a)return O.eletesemenyek(a);
   <section class="mx-s ex-hero">${eb7('mezo','A nagy fordulatok')}<h2 class="n7-h">Ezekhez igazodik a csapat.</h2>
     ${mzLine('A mércék és a javaslatok ezekhez képest értelmeződnek: egy új munkahely első hetén mást várunk tőled.')}
     <p class="w5-cap">Felül a legfrissebb, lent ami már leülepedett</p>
-    <div class="w10-st8">${L.map(([dim,t,,d],i)=>`<span class="${dim?'dim':''}" style="--o:${1-i*.14}"><b>${t}</b><small>${d}</small></span>`).join('')}</div></section>
+    <div class="w10-st8">${L.map(([dim,t,,d],i)=>`<span class="${dim?'dim':''}" style="background:color-mix(in srgb,var(--dom) ${Math.round(30-i*5)}%,#fff)"><b>${t}</b><small>${d}</small></span>`).join('')}</div></section>
   <section class="mx-s ln">${KH('Időrendben',L.length+' esemény')}<div class="w4-rl">${L.map(([dim,t,sm,d])=>`<div class="ex-mrow w4-r w5-le${dim?' dim':''}">${E.drop(dim?'t-calendar':'t-journal')}<span class="g"><b>${t}</b><i class="q">${sm.replace(' — ',', ')}</i></span><i class="w3-st n">${d}</i></div>`).join('')}</div>
     ${mzLine('Új életesemény javaslatként érkezik a Rólad oldalra, ott döntesz róla.')}</section></div>`)}
 O.eletesemenyek=mz.routes.eletesemenyek;mz.routes['eletesemenyek-lista']=O.eletesemenyek;mz.routes.eletesemenyek=elet10;
@@ -743,12 +743,12 @@ ${P} .w9-tb{display:none;gap:10px;padding:0 12px 14px}${P} .w9-th.on .w9-tb{disp
 ${P} .w9-q{margin:0 22px 12px;font-size:15px;font-style:italic;line-height:1.5;color:var(--ink)}
 ${P} .w10-by{margin-top:4px;font-style:normal;font-size:13px;font-weight:650;color:var(--ink);opacity:.8}
 ${P} .w10-cb{padding:16px}${P} .w10-cb>p{margin:10px 0 8px;font:700 16px/1.45 var(--disp,inherit);color:var(--ink)}${P} .w10-cl.dim{opacity:.7}${P} .w10-cb .w3-ab,${P} .w10-cb .w3-ok{margin-top:12px}
-${P} .w5-f>svg.ng,${P} .w7-cm>svg.ng{width:46px;height:46px;flex:none;margin:0}${P} .w10-f{align-items:flex-start}${P} .w10-f.dim{opacity:.65}${P} .w10-f .w4-lv{margin-top:8px}${P} .w10-st{margin-top:6px;font-style:normal;font-size:13px;font-weight:650;color:var(--ink)}
+${P} .w5-f>svg.ng,${P} .w7-cm>svg.ng{width:46px;height:46px;flex:none;margin:0}${P} .w10-f[hidden],${P} .w9-v[hidden]{display:none!important}${P} .w10-f{align-items:flex-start}${P} .w10-f.dim{opacity:.65}${P} .w10-f .w4-lv{margin-top:8px}${P} .w10-st{margin-top:6px;font-style:normal;font-size:13px;font-weight:650;color:var(--ink)}
 ${P} .w10-sw{flex:none;position:relative;width:56px;height:44px;margin:-6px -4px 0 0}${P} .w10-sw::before{content:'';position:absolute;inset:7px 3px;border-radius:999px;background:rgba(10,42,60,.15);transition:background .2s}
 ${P} .w10-sw i{position:absolute;top:10px;left:6px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(10,42,60,.25);transition:left .2s}${P} .w10-sw.on::before{background:var(--dom)}${P} .w10-sw.on i{left:26px}
 ${P} .w10-ct .n8-b.on{background:var(--dom);color:#fff;box-shadow:none}${P} .w10-fb{margin:10px 0 4px}${P} .w10-fb .w5-f{margin:0}${P} .w10-off{opacity:.6}
 ${P} .w10-cp{flex-wrap:wrap}${P} .w10-cp i{flex:0 0 calc((100% - 28px)/8)}${P} .w10-cp i.hf{background:linear-gradient(0deg,var(--liq2) 50%,rgba(10,42,60,.06) 50%);box-shadow:none}${P} .w10-cp i.x{background:none;outline:2px dashed rgba(10,42,60,.35);outline-offset:-2px;box-shadow:none}
-${P} .w10-st8{display:grid;gap:4px;margin:8px 14px 0}${P} .w10-st8 span{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--dom) calc(var(--o)*30%),#fff)}
+${P} .w10-st8{display:grid;gap:4px;margin:8px 14px 0}${P} .w10-st8 span{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;}
 ${P} .w10-st8 b{font-size:14.5px;color:var(--ink)}${P} .w10-st8 small{flex:none;font-size:13px;font-weight:650;color:var(--ink)}${P} .w10-st8 .dim{opacity:.6}
 ${P} .w7-dc{margin:10px 4px 0;font-size:13.5px;font-weight:650;line-height:1.4;color:var(--ink)}${P} .w7-d small .w3-tk{color:#1F7A4D}${P} .w7-d small{min-height:16px;font-size:12.5px;font-weight:650;color:var(--ink);opacity:.8;text-align:center;line-height:1.2}
 @media (max-width:360px){${P} .w7-nr{gap:3px}${P} .w7-n b{font-size:12px}}
