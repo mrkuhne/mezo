@@ -133,7 +133,7 @@ function test12(a){const base=O.test(a),v=a==='alvas'?'alvas':'suly';
 en.routes.test=test12;en.routes.suly=()=>test12('');en.routes.alvas=()=>test12('alvas');
 
 /* approved data-ev switches on a converted page: en.js updates its state and draws the approved page; redraw ours on top */
-document.addEventListener('click',e=>{const el=e.target.closest('[data-ev^="period:"],[data-ev^="wk:"],[data-ev^="swin:"],[data-ev^="drawer:"],[data-ev^="celv:"],[data-ev="life"],[data-ev^="tit:"]');const ph=el&&el.closest('.phone');if(!ph||!ph.querySelector('.w12-t,.w12-g2'))return;
+document.addEventListener('click',e=>{const el=e.target.closest('[data-ev^="period:"],[data-ev^="wk:"],[data-ev^="swin:"],[data-ev^="drawer:"],[data-ev^="celv:"],[data-ev="life"],[data-ev^="tit:"],[data-ev^="pf:"]');const ph=el&&el.closest('.phone');if(!ph||!ph.querySelector('.w12-t,.w12-g2'))return;
   setTimeout(()=>{const f=en.routes[F.R];if(typeof f!=='function')return;const sc=ph.querySelector('.scroll'),y=sc?sc.scrollTop:0;ph.innerHTML=f(F.ARG);
     ph.querySelectorAll('.rise').forEach(x=>x.classList.remove('rise'));const s2=ph.querySelector('.scroll');if(s2)s2.scrollTop=y},0)},true);
 
@@ -253,7 +253,8 @@ function gen12(base,topOver){const hi=base.indexOf('<section class="fh-card fh-h
   if(topOver)top=topOver;
   const ss=sects(base,he);let last=he;for(let i=nH(base,he);i>=0;i=nH(base,last)){const ci=base.indexOf('<',base.indexOf('</p>',i)+4);last=bal(base,ci,(base.slice(ci).match(/^<(\w+)/)||[,'section'])[1])}
   const body=ss.map(x=>sec12(hu2(x.hd).replace(/ · \d+ hét$/,'').replace(/^(Ütem) · áramlás$/,'$1').replace(' · hét tál',''),rows12(lanes12(tidy(hu2(x.html)))))).join('');
-  return hu2(base.slice(0,hi))+`${''}<div class="mx w12-g2">${top}${body}<div class="ng-tail"></div></div>`+base.slice(last)}
+  const tail=base.slice(last).replace(/<section class="fh-card[^"]*en-foot[^"]*"[^>]*><p class="fh-note">([\s\S]*?)<\/p><\/section>/g,(m,t)=>`<div class="mx w12-g2 w12-ft">${mzLine(hu2(t))}</div>`);
+  return hu2(base.slice(0,hi))+`${''}<div class="mx w12-g2">${top}${body}<div class="ng-tail"></div></div>`+tail}
 /* a lane's labels never fit inside its bars at 320: the bars stay, their words go under them */
 const lanes12=h=>h.replace(/<div class="en-lane">([\s\S]*?)<\/div>/g,(m,it)=>{const t=[...it.matchAll(/>([^<]+)<\/i>/g)].map(x=>x[1]);
   return `<div class="en-lane">${it.replace(/>([^<]+)<\/i>/g,'></i>')}</div><p class="w12-lc">${t.join(' · ')}</p>`});
@@ -282,6 +283,11 @@ const inText=f=>h=>h.replace(/>([^<]+)</g,(m,t)=>'>'+f(t)+'<');
 const hu4=h=>inText(t=>t.replace(/LIFE skilled/g,'élet-képességed').replace(/\bLIFE\b/g,'Élet').replace(/Lv (\d+,\d+)/g,'szint $1').replace(/Lv (\d+)/g,'$1. szint').replace(/\bXP\b/g,'pont')
   .replace(/Skillek/g,'Képességek').replace(/(\d+) skill\b/g,'$1 képesség').replace(/skill/g,'képesség').replace(/(\d)[\s ]Ft\b/g,'$1 forint').replace(/^Ft$/,'forint').replace(/\b(\d+)k\b/g,'$1 ezer')
   .replace(/[Mm]eal prep/g,m=>m[0]==='M'?'Előre főzés':'előre főzés').replace(/^09\.(\d\d)/,'szeptember $1.').replace(/· 09\.(\d\d)/g,'· szeptember $1.'))(h);
+/* people (2026-11-03): arrows and shorthand as words */
+const hu5=inText(t=>t.replace(/^Bence ↘$/,'Bence').replace(/^hangulat-lejtő$/,'a hangulata lejt').replace(/^Petra · 3× e héten$/,'Petra, 3 alkalom').replace(/^a hangulatod · jó$/,'a hangulatod').replace(/Bence ↘/g,'Bence hangulata lejt').replace(/Petra ↗/g,'Petra hangulata emelkedik').replace(/(\d)× (e|ezen a) héten/g,'$1 alkalommal a héten').replace(/(\d)×$/,'$1 alkalom')
+  .replace(/^(júl|aug|szept)\.$/,(m,k)=>MON[k+'.']).replace(/júl → szept/,'júliustól szeptemberig').replace(/ébredés 1× éjjel/,'egyszer ébredtél fel').replace(/hangulat-lejtő/,'lejtő hangulat').replace(/vacsi/,'vacsora').replace(/^Log$/,'Naplózom').replace(/^Log most$/,'Naplózom most')
+  .replace(/· gráf · \d+$/,'').replace(/júl 14–21/,'július 14–21.'));
+for(const k of ['emberek','jeloltek','kor','emlitesek','ember','heti']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(hu5(hu3(f(a))))}
 for(const k of ['novekedes','skillek','tevekenysegek','kitunt']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(hu4(hu3(f(a))))}
 for(const k of ['tanulsagok','napok','felfedezesek','cel','celuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>gen12(hu3(f(a)))}
 for(const k of ['sulycel','sulyresz','sulyuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(f(a),k==='sulycel'&&!a?SC_TOP:null)}
@@ -405,6 +411,9 @@ ${P} .w12-sc span b{font:inherit;font-weight:700;letter-spacing:0}
 ${P} .w12-g2 .fh-row:has(> .en-lvw,> .en-wdots){display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center}${P} .w12-g2 .fh-row:has(> .en-lvw,> .en-wdots)>.g:first-child{grid-column:1/-1}
 ${P} .w12-g2 .fh-row>.en-lvw,${P} .w12-g2 .fh-row>.en-wdots{grid-column:1/-1;width:auto;justify-self:stretch}${P} .w12-g2 .fh-row>.v{grid-column:1/-1}
 ${P} .w12-g2 .fl-level span,${P} .w12-g2 .fl-level b,${P} .w12-g2 .en-bv small{font-size:12.5px}
+${P} .w12-g2 .fh-row:has(> .en-lsw){display:grid;grid-template-columns:auto 1fr auto;gap:6px 12px;align-items:center}${P} .w12-g2 .fh-row>.en-lsw{grid-column:2;grid-row:2;justify-self:start}${P} .w12-g2 .fh-row:has(> .en-lsw)>svg.chev{grid-column:3;grid-row:1/3}
+${P} .w12-g2 .en-dropd small{font-size:12.5px!important;color:var(--ink)}${P} .w12-g2 .en-chart svg text{font-size:16px!important}${P} .w12-g2 .k2-drop small{font-size:12.5px!important;text-transform:none;letter-spacing:0}
+${P} .w12-ft{margin-top:-90px}${P} .w12-g2 .fh-row>.en-pile{margin-left:6px;flex:none}
 ${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
 ${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto;min-height:40px}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
