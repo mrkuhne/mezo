@@ -96,7 +96,9 @@ function topOf(){const n=open().length+(RS.dontes?0:1),first=open()[0];
   return `<section class="mx-s ex-hero" id="w3-top"><small class="ex-eb">A te kis csapatod · ma</small><h2 class="n7-h">${n?`${NUM[n-1]||n} beszélgetésben várnak rád.`:'Mindenre válaszoltál.'}</h2>
   <div class="w3-team">${pics().team}</div>
   <div class="ex-acts w3-wide"><button class="n9-btn" ${first?`data-sheet="w3" data-arg="${first.id}"`:'data-go="poszt.dontes"'}>Megnézem</button></div></section>`}
-const daySec=(d,l,list)=>{const ps=list.filter(p=>p.day===d);return ps.length?`<section class="mx-s ln">${KH(l)}<div class="w3-l" data-w3d="${d}">${ps.map(cardOf).join('')}</div></section>`:''};
+/* a post still waiting in Rád vár is not repeated in its day block (review 2026-11-03); once answered it moves there */
+const daySec=(d,l,list)=>{const ps=list.filter(p=>p.day===d&&!open().includes(p));return ps.length?`<section class="mx-s ln">${KH(l)}<div class="w3-l" data-w3d="${d}">${ps.map(cardOf).join('')}</div></section>`:''};
+const frontDays=()=>{const list=WS.pill?[PILL,...POSTS]:POSTS;return DAYS.filter(([d])=>FRONT.includes(d)).map(([d,l])=>daySec(d,l,list)).join('')};
 const mzLine=t=>`<div class="ex-mz w3-mz">${badge('mezo',{s:30})}<p>${t}</p></div>`;
 function wall(a){
   if(a==='korabbi')return page('mezo',{title:'Korábbi napok',sub:'Mezo · üzenőfal',back:'mai'},`<div class="mx">
@@ -104,11 +106,11 @@ function wall(a){
     ${DAYS.filter(([d])=>!FRONT.includes(d)).map(([d,l])=>daySec(d,l,POSTS)).join('')}
     <section class="mx-s ln">${mzLine('Ennél régebbi bejegyzés nincs. A lezárt ügyek a Rólad és az Emlékek fülön élnek tovább.')}</section></div>`);
   if(a&&a!=='uj')return O.mai(a);
-  const list=WS.pill?[PILL,...POSTS]:POSTS,left=olderLeft();
+  const left=olderLeft();
   return hubHead(page('mezo',{title:'Üzenőfal',sub:'Mezo · hétfő · esti kiadás 21:00',tab:'mai'},`
   ${WS.pill?'':'<div class="mz-pill" id="mzpill" data-w3="pill" role="button">1 új bejegyzés ↑</div>'}<div class="mx">
   ${topOf()}${radVar()}
-  ${DAYS.filter(([d])=>FRONT.includes(d)).map(([d,l])=>daySec(d,l,list)).join('')}
+  <div id="w3-days" style="display:contents">${frontDays()}</div>
   <section class="mx-s ln">${mzLine('Ennyi történt tegnap este óta. A folyamatban lévő ügyeket közben tovább figyeljük.')}
     <button class="w3-old${left?' w':''}" data-go="mai.korabbi"><span class="g"><b>Korábbi napok</b><small>${left?`${left} bejegyzésre még nem reagáltál`:'mindenre reagáltál'}</small></span><em>›</em></button></section></div>`))}
 mz.routes.mai=wall;mz.routes.fal=wall;
@@ -362,7 +364,7 @@ const ROOMS9={
 const RIC={moon:'t-moon',clock:'t-clock',tick:'t-tick',bolt:'t-bolt',flask:'t-flask',down:'t-down',sprout:'t-sprout',heart:'t-heart',journal:'t-journal',book:'t-book',info:'t-info'};
 const AREA9={szunya:'pihenés',mocor:'terhelés',falat:'étrend',deru:'hangulat',mezo:'a csapat'};
 const stw=s=>/Rád vár|Döntés|Kérés/.test(s)?'w':/Bekerült|Beépült/.test(s)?'ok':'n';
-function szoba9(id){const q=ROOMS9[id];if(!q)return O.szoba(id);const c=TC4(id),mt=q.mat,up=mt[7]-mt[4];
+function szoba9(id){id=id||'szunya';const q=ROOMS9[id];if(!q)return O.szoba(id);const c=TC4(id),mt=q.mat,up=mt[7]-mt[4];
   const wk=mt.map((v,i)=>[i===7?'most':i===0?'7 hete':'',v+'%',v]);
   const work=q.rows.map(([s,k,meta,ic,t,sb,go,pct])=>`<button class="ex-mrow w4-r w9-r" ${go?`data-go="${go}"`:'data-toast="Saját oldala a megvalósításban nyílik meg"'}>${E.drop(RIC[ic]||'t-info')}<span class="g"><b>${t}</b><i class="q">${meta} · ${NOEMO(sb).replace(' — ',', ')}</i>${pct?`<span class="w4-lv"><span class="t"><i style="width:${pct}%;--c:${c}"></i></span><b>${pct}%</b></span>`:''}<i class="w3-st ${stw(s)}">${s}</i></span>${go?'<em>›</em>':''}</button>`).join('');
   const knows=q.tud.slice(0,3).map(([t,s,d,k])=>info7(k==='Tőled'?'t-chat':'t-tick',t.replace(' — ',', '),`${s} · ${d}`,`<i class="w3-st ${k==='Tőled'?'n':'ok'} w7-hit">${k==='Tőled'?'tőled':'beépült'}</i>`)).join('');
@@ -403,6 +405,7 @@ function konz9(a){if(a)return O.konzilium(a);
   <section class="mx-s ln"><div class="w9-nav"><button class="n8-b" data-toast="Korábbi tanácskozás">‹ Korábbi ülés</button><button class="n8-b" data-sheet="archive">Augusztus 30. · heti</button></div>
     <div class="w9-sw" role="group">${[['ov','Áttekintés'],['cv','A beszélgetés']].map(([k,l])=>`<button class="${KS.v===k?'on':''}" data-w9="v:${k}" aria-pressed="${KS.v===k}">${l}</button>`).join('')}</div></section>
   ${ov}${cv}
+  <section class="mx-s ln">${KH('A te részed')}${rp7}</section>
   <section class="mx-s ln">${mzLine('Amit itt olvasol, az a valódi beszélgetés, ahogy lezajlott. Utólag nem színezzük ki: a csapat pontosan így mondta.')}</section></div>`)}
 O.konzilium=mz.routes.konzilium;mz.routes['konzilium-lista']=O.konzilium;mz.routes.konzilium=konz9;
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-w9]');if(!b)return;e.preventDefault();const [k,v]=b.dataset.w9.split(':'),ph=document.querySelector('#phone');if(!ph)return;
@@ -762,6 +765,7 @@ mz.sheets.w3=sheet;
 /* in-place updates: the card, the top, Rád vár and the open drawer redraw; the page does not move */
 function refresh(id){const ph=document.querySelector('#phone');if(!ph)return;
   const c=ph.querySelector(`[data-w3c="${id}"]`),p=id==='gyors'?PILL:byId(id);if(c&&p)c.outerHTML=cardOf(p);
+  const dy=ph.querySelector('#w3-days');if(dy)dy.innerHTML=frontDays();
   const t=ph.querySelector('#w3-top');if(t)t.outerHTML=topOf();const rv=ph.querySelector('#w3-rv');if(rv)rv.outerHTML=radVar();
   const o=ph.querySelector('.w3-old');if(o){const l=olderLeft();o.classList.toggle('w',!!l);o.querySelector('small').textContent=l?`${l} bejegyzésre még nem reagáltál`:'mindenre reagáltál'}
   if(F.ARG==='korabbi'){const h=ph.querySelector('.mx .n7-h'),l=olderLeft();if(h)h.textContent=l?`${l} bejegyzésre még nem reagáltál.`:'Itt mindenre reagáltál.'}

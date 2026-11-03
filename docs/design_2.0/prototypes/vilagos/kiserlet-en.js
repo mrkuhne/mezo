@@ -41,7 +41,7 @@ function mai12(a){if(a)return O.mai(a);
      {l:'Fehérje',ic:'t-meat',c:'var(--protein)',p:96,v:'212 g',s:'öt napon célon',mark:'200',on:{dom:'fuel'}}],{h:128});
   const leg=[['ln','súly, heti átlag'],['bd','alvás, heti átlag: 6,4–7,3 óra'],['st','állomás: koppints rá'],['pl','cél: 73,0 kilogramm']].map(([c,t])=>`<span><i class="${c}"></i>${t}</span>`).join('');
   return page('en',{title:'Én',sub:'Daniel · szept. 21–27.',tab:'mai'},`<div class="mx">
-  <section class="mx-s ex-hero"><small class="ex-eb">Szeptember 21–27. · lezárt hét</small><h2 class="n7-h">Az egyensúly hete.</h2>
+  <section class="mx-s ex-hero"><small class="ex-eb">Szeptember 21–27. · a hét eddig</small><h2 class="n7-h">Az egyensúly hete.</h2>
     <p class="w12-sc"><b>78</b><span>pont a 100-ból<br>4-gyel több, mint a múlt héten</span></p>
     <div class="w12-days">${tubes}</div>
     ${mzLine('Jól ment: öt napon megvolt a fehérje, és stabil volt az alvásod. Nézd meg a két késői vacsorát: utánuk felszínesebben aludtál.')}
@@ -196,8 +196,8 @@ const nine12=()=>`<div class="w12-nine">${NINE.map(([v,l,s2,p,att])=>`<div class
 function het12(a){if(a)return O.het(a);const base=O.het('');
   const ji=base.indexOf('<span class="en-jar'),jar=ji<0?'':base.slice(ji,bal(base,ji,'span'));
   const si=base.indexOf('<div class="en-strata"'),str=si<0?'':base.slice(si,bal(base,si)),li=si<0?-1:base.indexOf('<div class="en-leg"',si),sl=li<0?'':base.slice(li,bal(base,li));
-  return page('en',{title:'A heted',sub:'Szept. 21–27. · lezárt hét',back:'mai'},`<div class="mx">
-  <section class="mx-s ex-hero"><small class="ex-eb">Szeptember 21–27. · lezárt hét</small><h2 class="n7-h">Az egyensúly hete.</h2>
+  return page('en',{title:'A heted',sub:'Szeptember 21–27. · a hét eddig',back:'mai'},`<div class="mx">
+  <section class="mx-s ex-hero"><small class="ex-eb">Szeptember 21–27. · a hét eddig</small><h2 class="n7-h">Az egyensúly hete.</h2>
     <div class="w12-hj">${jar}<p class="w12-hp"><b>+4 pont</b><span>a múlt héthez képest. A szaggatott vonal a múlt hét: 74.</span></p></div>
     <div class="ex-acts w12-wide"><button class="n9-btn" data-go="elemzes">Mezo elemzése</button></div>
     <div class="ex-acts w12-nav"><button class="n8-b" data-toast="Előző hét">‹ Előző</button><button class="n8-b" data-toast="Következő hét">Következő ›</button></div></section>
@@ -290,6 +290,18 @@ const hu5=inText(t=>t.replace(/^Bence ↘$/,'Bence').replace(/^hangulat-lejtő$/
 for(const k of ['emberek','jeloltek','kor','emlitesek','ember','heti','jelek','ertesitesek','beall','b-train','b-me','b-cel','b-mezo','b-nap','b-alt','b-ert','b-fiok','b-szemely']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(hu5(hu3(f(a))))}
 for(const k of ['novekedes','skillek','tevekenysegek','kitunt']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(hu5(hu4(hu3(f(a)))))}
 for(const k of ['tanulsagok','napok','felfedezesek','cel','celuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>gen12(hu3(f(a)))}
+/* review fix (2026-11-03): a day of A hét napjai opens that day's A napom page in the Nap domain (past days: the closed
+   day nap.<iso>, today: napom) instead of the toast; future days stay plain rows */
+{const NAPISO={'Hétfő':'nap-nap.2026-09-21','Kedd':'nap-nap.2026-09-22','Szerda':'nap-nap.2026-09-23','Csütörtök':'nap-napom'},f=en.routes.napok;
+  en.routes.napok=a=>f(a).replace(/data-toast="(Hétfő|Kedd|Szerda|Csütörtök): A napom oldala \(Nap\)"/g,(m,d)=>`data-w14="${NAPISO[d]}"`)}
+document.addEventListener('click',e=>{const el=e.target.closest('#phone [data-w14]');if(!el)return;e.preventDefault();e.stopPropagation();location.hash='#w-'+el.dataset.w14},true);
+/* review fix (2026-11-03): the title-bar bell and gear open the Én pages from the other four domains too (a hash jump,
+   so the browser back returns). Inside Én the approved en.js handler does it; this one stands aside there (same test as
+   en.js live()), so a tap navigates exactly once. */
+document.addEventListener('click',e=>{const b=e.target.closest('#phone .fh-top .fh-ib[aria-label]');if(!b||b.dataset.go)return;
+  const ph=document.getElementById('phone');if(F.D==='en'&&ph&&ph.dataset.v==='feher')return;
+  const to={'Értesítések':'ertesitesek','Beállítások':'beall'}[b.getAttribute('aria-label')];if(!to)return;
+  e.preventDefault();e.stopPropagation();location.hash='#w-en-'+to},true);
 for(const k of ['sulycel','sulyresz','sulyuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(f(a),k==='sulycel'&&!a?SC_TOP:null)}
 
 /* buoy taps: swap Mezo's line in place, mark the buoy (no re-render) */

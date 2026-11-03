@@ -11,6 +11,8 @@ const P='.phone.foly[data-s="elo"][data-d="fuel"]';
 const O={mai:fu.routes.mai,stack:fu.routes.stack,trendek:fu.routes.trendek,konyha:fu.routes.konyha,recept:fu.routes.recept,kamra:fu.routes.kamra,receptek:fu.routes.receptek,muhely:fu.routes.muhely,log:fu.routes.log};fu.routes['log-lista']=O.log;fu.routes['muhely-lista']=O.muhely;fu.routes['receptek-lista']=O.receptek;fu.routes['kamra-lista']=O.kamra;fu.routes['recept-lista']=O.recept;fu.routes['trendek-lista']=O.trendek;fu.routes['konyha-lista']=O.konyha;
 fu.routes['mai-lista']=O.mai;fu.routes['stack-lista']=O.stack;
 const ico=h=>g(h,/href="#([^"]+)"/)||'t-plate';
+/* the log page's six modes (owner 2026-11-02: no Keresés tile — Recept then Kamra, both open their drawer at once); Mai's "Logolj bármit" uses the same */
+const LOGMODES=[['foto','Fotó','t-camera'],['recept','Recept','t-book','receptpick'],['kamra','Kamra','t-stack','kamrapick'],['gyors','Gyors','t-quick'],['diktalas','Diktálás','t-mic'],['szokasos','Szokásosak','t-repeat']];
 
 /* ═══ MAI (2026-11-01): the sentence on top, the bowl as the picture, one wide log button; the five macro tubes with the
    day's goal as a dashed waterline; the meals in time order on one card shape (the "outside a window" meal in its place,
@@ -56,7 +58,9 @@ function mai3(a){if(a&&a!=='kihagyva'&&a!=='kimelo')return O.mai(a);
   const mealS=blocks.length?`<section class="mx-s ln">${KH('A mai étkezéseid')}<div class="ex-ml">${meals}</div></section>`:'';
   /* log anything */
   const lg=cs.find(c=>/fu-ip/.test(c.html)),lh=lg?lg.html:'';
-  const tiles=[...lh.matchAll(/<button class="fh-pill[^"]*" data-go="([^"]+)">[\s\S]*?href="#([^"]+)"[\s\S]*?<\/span>([^<]*)<\/button>/g)].map(([,go,ic,l])=>`<button class="ex-spt" data-go="${go}">${drop(ic)}<b>${l}</b></button>`).join('');
+  /* the log page's six modes with the log page's targets (review fix 2026-11-03: Keresés was removed there on 2026-11-02;
+     Recept and Kamra open their drawer at once, the others open the log page on that mode) */
+  const tiles=LOGMODES.map(([k,l,ic,sh])=>sh?`<button class="ex-spt" data-sheet="${sh}">${drop(ic)}<b>${l}</b></button>`:`<button class="ex-spt" data-go="log.${k}">${drop(ic)}<b>${l}</b></button>`).join('');
   const oraB=g(lh,/(<button class="fh-lk" data-sheet="ora"[^>]*>[^<]*<\/button>)/);
   const logS=lg?`<section class="mx-s ln">${KH('Logolj bármit')}<div class="ex-spg fx-lg">${tiles}</div>
     <div class="ex-mz">${badge('falat',{s:30})}<p>${g(lh,/<p class="fh-note">([^<]*)/)}</p></div>${oraB?`<div class="ex-acts">${pills(oraB)}</div>`:''}</section>`:'';
@@ -111,7 +115,7 @@ function trendek3(a){const base=O.trendek(a),cs=cardsOf(base);const hero=cs.find
     if(/fh-row/.test(h)){const rows=[...h.matchAll(/<button class="fh-row" ([^>]*)>[\s\S]*?href="#([^"]+)"[\s\S]*?<strong>([^<]*)<\/strong><small>([^<]*)<\/small><\/span>(<span class="st [^"]*">[^<]*<\/span>)?/g)]
         .map(([,at,ic,t,sm,st])=>`<button class="ex-mrow" ${at}>${drop(ic)}<span class="g"><b>${t}</b><i class="q">${sm}</i>${st?`<span class="fx-st">${st}</span>`:''}</span><span class="v">›</span></button>`).join('');
       return sec(c,`<div class="ex-ml">${rows}</div>${note?`<p class="ex-dates">${note}</p>`:''}`)}
-    return sec(c,`<div class="fx-goal">${cut(inner(h),'<p class="fh-note">')}</div>${note?mz(note.replace('Ami még hátravan, az utolsó oszlop a cél vízvonaláig.','Ami még hátravan: az utolsó oszlop a cél vonaláig.')):''}`)}).join('');
+    return sec(c,`<div class="fx-goal">${cut(inner(h),'<p class="fh-note">').replace(/<text x="[\d.]+" y="([\d.]+)" text-anchor="middle">cél /,'<text x="334" y="$1" text-anchor="end">cél ')}</div>${note?mz(note.replace('Ami még hátravan, az utolsó oszlop a cél vízvonaláig.','Ami még hátravan: az utolsó oszlop a cél vonaláig.')):''}`)}).join('');
   return base.slice(0,cs[0].start)+`${DEFS}<div class="mx ex">${top}${out}<div class="ng-tail"></div></div>`+base.slice(cs[cs.length-1].end)}
 fu.routes.trendek=trendek3;
 
@@ -326,7 +330,7 @@ function log3(a){a=a||'foto';if(a==='tetelek'||a==='ido')return logItems3(a);
     ${mz(`${ate.replace(/^ma/,'Ma')}${slot&&!/^ide kerül/.test(slot)?', '+slot:''}. Szöveg, hang és fotó egy piszkozatba kerül, elemzés után a felismert tételeket még átírhatod.`)}
     <div class="ex-acts fx-wide">${pills(g(H,/(<button class="btn "[^>]*>[^<]*<\/button>)/))}</div></section>`;
   /* owner 2026-11-02: no Keresés tile — Recept then Kamra, both open their drawer at once */
-  const MODES=[['foto','Fotó','t-camera'],['recept','Recept','t-book','receptpick'],['kamra','Kamra','t-stack','kamrapick'],['gyors','Gyors','t-quick'],['diktalas','Diktálás','t-mic'],['szokasos','Szokásosak','t-repeat']];
+  const MODES=LOGMODES;
   const tiles=MODES.map(([k,l,ic,sh])=>sh?`<button class="ex-spt" data-sheet="${sh}">${drop(ic)}<b>${l}</b></button>`:`<button class="ex-spt${k===cur?' on':''}" data-fxmode="${k}">${drop(ic)}<b>${l}</b></button>`).join('');
   const body=k=>{const h=O.log(k),i=h.indexOf('<div class="fx-mode">');return i<0?'':h.slice(i+21,bal(h,i)-6)};
   const panels=MODES.filter(m=>!m[3]).map(([k])=>`<div class="fx-pnl" data-fxpanel="${k}"${k===cur?'':' hidden'}>${panelOf(body(k))}</div>`).join('');
@@ -363,6 +367,20 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 /* the tab pages' header, as on Nap and Edzés: no big title, the "?" top left */
 const head=h=>typeof h==='string'?hubHead(h):h;
 Object.keys(fu.routes).forEach(k=>{const f=fu.routes[k];if(typeof f==='function'&&!f.__hub){const w=(...a)=>head(f(...a));w.__hub=1;fu.routes[k]=w}});
+
+/* review fixes (2026-11-03): words, not "kcal" (as Én says); the Mai page's yesterday is the day before everyone's
+   today (Thursday, szeptember 24.), not the approved data's "kedd, október 6.". Text nodes only, never attributes. */
+const inText=f=>h=>typeof h==='string'?h.replace(/>([^<]+)</g,(m,t)=>'>'+f(t)+'<'):h;
+const kcal=inText(t=>t.replace(/KCAL-T/g,'KALÓRIÁT').replace(/kcal-t\b/g,'kalóriát').replace(/kcal-lal\b/g,'kalóriával').replace(/kcal-os\b/g,'kalóriás')
+  .replace(/\bKCAL\b/g,'KALÓRIA').replace(/\bKcal\b/g,'Kalória').replace(/\bkcal\b/g,'kalória'));
+/* the approved Fuel data lives in an October week whose today is Wednesday, október 7.: a date with its weekday moves
+   back 13 days and takes the right weekday, so yesterday reads "szerda, szeptember 23." */
+const DN=['vasárnap','hétfő','kedd','szerda','csütörtök','péntek','szombat'];
+const shiftDay=inText(t=>t.replace(/(Vasárnap|Hétfő|Kedd|Szerda|Csütörtök|Péntek|Szombat|vasárnap|hétfő|kedd|szerda|csütörtök|péntek|szombat), (október|okt\.) (\d{1,2})\./g,(m,wd,mo,d)=>{
+  const x=new Date(2026,9,+d-13),n=DN[x.getDay()],nd=/^[A-ZÁÉÍÓÖŐÚÜŰ]/.test(wd)?n[0].toUpperCase()+n.slice(1):n;
+  return `${nd}, ${x.getMonth()===8?(mo==='okt.'?'szept.':'szeptember'):mo} ${x.getDate()}.`}));
+Object.keys(fu.routes).forEach(k=>{const f=fu.routes[k];if(typeof f!=='function'||/-lista$/.test(k)||f.__kx)return;
+  const w=k==='mai'?(...a)=>kcal(shiftDay(f(...a))):(...a)=>kcal(f(...a));w.__kx=1;w.__hub=f.__hub;fu.routes[k]=w});
 
 F.css(`/* kiserlet-fuel */
 ${P} .fx-wk{margin:14px 14px 0}${P} .fx-wk .fu-wk{margin:0}${P} .fx-wk .fu-wd small{font-size:12px!important}${P} .fx-wk .fu-wd em{font-size:13px!important}
@@ -464,7 +482,11 @@ ${P} .fx-wrn{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px
 ${P} .fx-lb .gg svg{width:150px!important}${P} .fx-lm{grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 18px 0}${P} .fx-lm .fx-mc{padding:8px 10px}
 ${P} .fx-mx{display:flex;flex-wrap:wrap;gap:6px 12px}${P} .fx-mx span{display:inline-flex;align-items:center;gap:5px;font-size:13.5px;color:var(--ink)}${P} .fx-mx i{width:9px;height:9px;border-radius:3px;background:var(--c)}${P} .fx-mx b{font-weight:800}
 ${P} .fx-tx{display:grid;gap:8px;margin:10px 18px 0}${P} .fx-tx .fx-lab{margin-top:0}${P} .fx-tx .fx-time{margin:0}
-@media (max-width:360px){${P} .fx-lm .fx-mc .t{display:none}${P} .fx-lm .fx-mc{padding:8px}}
+@media (max-width:360px){${P} .fx-lm .fx-mc .t{display:none}${P} .fx-lm .fx-mc{padding:8px}}/* review fixes (2026-11-03): no text under 12 px at 320 on Trendek, the meal and the score page (charts get room first, then the size) */
+${P} .fx-dn small{font-size:12px}${P} .fx-lk svg.fl-link text{font-size:11px}${P} .fx-long svg.fh-chart text{font-size:14.5px}
+${P} .fx-goal{margin:0 12px;padding:14px 6px}${P} .fx-goal svg.fh-chart text{font-size:15px}
+${P} .fh-hero .lbl{font-size:12px}${P} .fh-row .v small,${P} .fx-it .fu-shn,${P} .fh-row .st{font-size:12px}${P} .b .nm small{font-size:12px}${P} .c .fl-level span,${P} .c .fl-level b{font-size:12px}
+${P} .fx-ml .fm-mn{min-height:40px}${P} .fx-pk2 .fh-pills button{min-height:40px}
 `);
 
 window.FNOTES_FOLY=`<h2>Kísérlet · Fuel</h2><p><a href="#w-fuel-mai"><b>Mai</b></a> — felül a mondat és a tál, a makrók csövei a napi cél szaggatott vonalával, az étkezések időrendben egyforma kártyán (az ablakon kívüli a helyén, a következő kiemelve), a logolás módjai csempéken. Arcok: <a href="#w-fuel-mai.kihagyva">kihagyott étkezés</a> · <a href="#w-fuel-mai.kimelo">kímélő mód</a> (nincs kalóriacél, a pohár víz a kép, értékelés nélkül). Összevetésnek: <a href="#w-fuel-mai-lista">a mostani Mai</a>.</p><p><a href="#w-fuel-stack"><b>Kiegészítők</b></a> — a következő adag a mondatban, a nap kapszulái a kép, a kész napszak összecsukva (<a href="#w-fuel-stack-lista">régi</a>).</p><p><a href="#w-fuel-trendek"><b>Trendek</b></a> — a mondat felül, a hét csövei a kép, a csempék és a görbék maradtak, a szürke magyarázatok helyett Mezo (<a href="#w-fuel-trendek-lista">régi</a>).</p><p><a href="#w-fuel-konyha"><b>Konyha</b></a> — a mondat és az üres fazék felül, a célok egy sorban, a receptek és a kamra egy-egy belépő sor (<a href="#w-fuel-konyha-lista">régi</a>).</p><p><a href="#w-fuel-recept.r3"><b>Recept</b></a> — a mondat és a fazék a kalóriával felül, a makrók csövei, a hozzávalók színes forrás-címkével, a minőség csempéken Mezo pontszámával, minden receptnek saját Mezo-mondata. Másik arcok: <a href="#w-fuel-recept.r3.egesz">egész recept</a> · <a href="#w-fuel-recept.r1">egyadagos</a> · <a href="#w-fuel-recept.r6">még nincs pontszám</a> (<a href="#w-fuel-recept-lista.r3">régi</a>).</p><p><a href="#w-fuel-kamra.csirke"><b>Kamra-tétel</b></a> — a mondat felül, a kép a polc üvege nagyban: ételnél rétegekben telik azzal, ami 100 grammban van, kiegészítőnél kék az adaggal; minőség csempéken, a forrásnál Mezo kiszámolja a fehérje árát, a receptek csövekként. Másik arcok: <a href="#w-fuel-kamra.lazac">lazac</a> · <a href="#w-fuel-kamra.kreatin">kiegészítő</a> (<a href="#w-fuel-kamra-lista.csirke">régi</a>).</p><p><a href="#w-fuel-receptek"><b>Receptek</b></a> és <a href="#w-fuel-kamra"><b>Kamra</b></a> — a mondat és egy széles gomb felül, előnézet nélkül; egy sor egy recept a makróival, egy sor egy kamra-tétel (<a href="#w-fuel-receptek-lista">régi receptek</a> · <a href="#w-fuel-kamra-lista">régi kamra</a>).</p><p><a href="#w-fuel-muhely"><b>Receptműhely</b></a> — üres fazék a célokkal és a szövegmezővel; a <a href="#w-fuel-muhely.vazlat">vázlat</a> a fazékkal és a kalóriával, a hiányzó sorhoz élő „Javítsuk…” gomb visz (<a href="#w-fuel-muhely-lista">régi</a>).</p><p><a href="#w-fuel-log"><b>Logolás</b></a> — a mondat, a tál és a szövegmező felül; a hat mód csempéken (Fotó, Recept, Kamra, Gyors, Diktálás, Szokásosak), módváltáskor csak az alatta lévő rész cserélődik; a Recept és a Kamra azonnal felhozza a választó lapot. Tovább: <a href="#w-fuel-log.tetelek">tételek</a> · <a href="#w-fuel-log.hiba">nem ismertem fel</a> · <a href="#w-fuel-log.w0">ablakba</a> (<a href="#w-fuel-log-lista">régi</a>).</p>`+(window.FNOTES_FOLY||'');

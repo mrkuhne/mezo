@@ -639,7 +639,7 @@ function chain(k,n,nx){const G=RUT[k],N=G.rows.length,dn=G.rows.filter(r=>r[4]).
 function rutinBody(){const R=RUT[face],done=R.rows.filter(r=>r[4]).length,nx=R.rows.findIndex(r=>!r[4]),all=nx<0;
   const order=[face,...Object.keys(RUT).filter(k=>k!==face)];
   return `<div class="mx"><section class="mx-s"><h2 class="n7-h">${all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`}</h2>
-    <div class="rt-acts rt-day"><button class="fh-lk" data-toast="Tegnap — csak a kézi, kimaradt elemek pipálhatók">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></section>
+    <div class="rt-acts rt-day"><button class="fh-lk" data-n="rst:rutin:past" data-ngy="1">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></section>
   ${order.map((k,i)=>chain(k,i+1,k===face?nx:-1)).join('')}
   <section class="mx-s ln mx-end rt-end"><button class="mx-km" data-go="rutin-epites">${I('t-chain')}<span>Rutinok szerkesztése</span></button></section></div>`}
 const rutinFoot=()=>{const R=RUT[face],nx=R.rows.findIndex(r=>!r[4]);return nx<0?`<span class="rt-fdone">Mind megvan mára. Szép munka.</span>`
@@ -653,6 +653,18 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!
 nap.routes['eletjel-lista']=O.eletjel;nap.routes.eletjel=eletjel2;nap.routes['checkin-lista']=O.checkin;nap.routes.checkin=checkin2;nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes['napzaras-lista']=nap.routes.napzaras;['rutin-epites','lanc','szokasok','szokas','szerk','rutin-uj'].forEach(k=>nap.routes[k+'-lista']=nap.routes[k]);Object.assign(nap.routes,{'rutin-epites':rutinEp2,lanc:lanc2,szokasok:szokasok2,szokas:szokas2,szerk:szerk2,'rutin-uj':rutinUj2});nap.routes.napzaras=napzaras2;nap.routes.mai=a=>!a||['ures','hiba','kimelo','kimelo-lejart'].includes(a)?mai2(a||null):O.mai(a);nap.routes.maieste=()=>mai2('este');nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
 nap.routes.napom=a=>a==='nincs'?today3(true):a?O.napom(a):today3();nap.routes.nap=day;nap.routes.napomg=today3;nap.routes.napomt=today3;
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
+/* review fixes (2026-11-03): Rutin "‹ Tegnap" opens the approved past-day view. The approved handler (nap.js
+   data-n="rst:rutin:past", a document capture listener that stops the event) switches its own state; this window
+   listener sees the click first and moves, a tick later, to the page that shows it. "Vissza a mai napra"
+   (rst:rutin:full) comes back to the Rutin page. */
+nap.routes['rutin-tegnap']=()=>nap.routes['rutin-epites-lista']();
+let rtBack=false;
+window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-n="rst:rutin:past"],[data-n="rst:rutin:full"]');if(!b)return;
+  if(b.dataset.ngy){rtBack=true;setTimeout(()=>{location.hash='#w-nap-rutin-tegnap'});return}
+  if(location.hash!=='#w-nap-rutin-tegnap')return;setTimeout(()=>{if(rtBack){rtBack=false;history.back()}else location.replace('#w-nap-rutin')})},true);
+/* the Nap chat buttons only toasted "Mezo · Chat" although the Mezo chat page exists: they open it */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-toast]');if(!b||!b.closest('.phone[data-d="nap"]'))return;
+  if(!/^Mezo · Chat|^Beszélgetés a napról \(Mezo chat\)/.test(b.dataset.toast))return;e.preventDefault();e.stopPropagation();location.hash='#w-mezo-chat'},true);
 
 F.css(`/* kiserlet-napom */
 /* RULES (owner-approved UX round, 2026-10-12): nothing renders under 12 px on a 360 px phone — so text inside a
@@ -1302,10 +1314,21 @@ ${P} .rt-edit>svg.ic{width:34px;height:34px;flex:none}${P} .rt-edit span{flex:1}
 const hubHead=h=>{if(typeof h!=='string'||h.indexOf('fh-trow hub')<0)return h;
   const m=h.match(/<div class="fh-title"><h1>[^<]*(<button class="fh-help"[^>]*>\?<\/button>)<\/h1><\/div>/);if(!m)return h;
   return h.replace(m[0],'').replace(/<small class="fh-eb">[\s\S]*?<\/small>/,'<span class="fh-eb">'+m[1]+'</span>')};
-Object.keys(nap.routes).forEach(k=>{const f=nap.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>hubHead(f(...a));g.__hub=1;nap.routes[k]=g}});
-F.css(`${P} .fh-trow.hub .fh-eb .fh-help{width:38px;height:38px;margin:0;font-size:17px;background:#fff;border:0;box-shadow:0 4px 12px -6px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+/* review fixes (2026-11-03): no abbreviations — "kcal" reads "kalória" in the Nap page texts, as in Én (text only, attributes untouched) */
+const kcal=h=>typeof h!=='string'||h.indexOf('kcal')<0?h:h.replace(/>([^<]*)</g,(m,t)=>t.indexOf('kcal')<0?m:'>'+t.replace(/\bkcal-lal\b/g,'kalóriával').replace(/\bkcal-t\b/g,'kalóriát').replace(/\bkcal\b/g,'kalória')+'<');
+Object.keys(nap.routes).forEach(k=>{const f=nap.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>kcal(hubHead(f(...a)));g.__hub=1;nap.routes[k]=g}});
+F.css(`${P} .fh-trow.hub .fh-eb .fh-help{width:40px;height:40px;margin:0;font-size:17px;background:#fff;border:0;box-shadow:0 4px 12px -6px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .fh-trow.hub+.fh-tabs{margin-top:12px}
-${P} .fh-trow.hub{flex-wrap:nowrap!important}${P} .fh-trow.hub .fh-eb{flex:none;order:0!important}${P} .fh-trow.hub .fh-btns{margin-left:auto}`);
+${P} .fh-trow.hub{flex-wrap:nowrap!important}${P} .fh-trow.hub .fh-eb{flex:none;order:0!important}${P} .fh-trow.hub .fh-btns{margin-left:auto}
+/* review fixes (2026-11-03): every title-bar button and top tab is a 40 px target at any width (foly.js shrank the
+   hub buttons to 36 px under 360 px); the tab sizes are the Én ones (kiserlet-en.js). The page keeps clear of the + button. */
+${P} .fh-top .fh-trow .fh-ib{min-width:40px;min-height:40px}${P} .fh-trow.hub .fh-btns{gap:4px}
+${P} .fh-tabs button{min-height:40px;min-width:40px}
+${P}:has(>.fh-fab) .scroll{padding-bottom:182px}
+/* the "?" guide next to a sub-page title: a 40 px box, the 22 px circle drawn inside it, the line height unchanged */
+${P} .fh-title .fh-help{width:40px;height:40px;margin:-9px -9px -9px -1px;background:none;box-shadow:none;isolation:isolate}
+${P} .fh-title .fh-help::before{inset:9px;z-index:-1;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dom) 30%,#fff)}
+${P} .fh-title .fh-help.new::after{right:6px;top:6px}`);
 window.KXN={V,KH,dots,DEFS,hubHead,cl,uid};
 window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Nincs nagy edény, nincs kártya, nincs lista. Minden oldal saját rajzot kapott, azt, ami a tartalmából következik:</p>
 <ul><li><a href="#w-nap-mai"><b>Mai</b></a> — a nap vonala: reggeltől estig, a mostani időpontig feltöltve. Alatta a négy kémcső (változatlan), a három következő teendő három edényként, és a nap befőttesüvege, rétegenként a bejegyzésekkel.</li>
