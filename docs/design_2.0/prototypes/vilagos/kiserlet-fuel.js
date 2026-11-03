@@ -441,6 +441,39 @@ const thisWeek=html=>{if(!/data-sheet="day"/.test(html))return html;const t=docu
     .replace('Most 46 százalékponttal a hétvége javára.','Múlt héten 46 százalékponttal a hétvége javára.')};
 ['trendek','mai'].forEach(k=>{const f=fu.routes[k];const w=(...a)=>thisWeek(f(...a));w.__kx=1;w.__hub=f.__hub;fu.routes[k]=w});
 
+/* follow-up (2026-11-03, owner: "mehet a tanulás grafikon is"): the learning chart's 12 weekly tap strips are 19 px wide
+   on a 320 phone and answered with a passing toast. Now a tap SELECTS a week: a soft column marks it in the chart and a
+   readout row under the chart says its numbers, with 44 px ‹ › buttons to step week by week (opens on the last week).
+   The strips' texts also take the page's whole-week date shift (−14 days), so they agree with the chart's axis. */
+const wkShift=t=>t.replace(new RegExp(`${MON} (\\d{1,2})\\. hete`,'g'),(m,mo,d)=>{const x=new Date(2026,MS.indexOf(mo),+d-14);return `${MS[x.getMonth()]} ${x.getDate()}. hete`});
+const wkSplit=t=>{const m=t.match(/^(.*?\. hete): (.*)$/);return m?[m[1],m[2].split(' · ').join(' · ')]:['Kimaradt hét',t]};
+const tanulasSel=html=>{const t=document.createElement('template');t.innerHTML=html;
+  t.content.querySelectorAll('svg.fh-chart').forEach(sv=>{const rs=[...sv.querySelectorAll('rect[data-toast]')];if(rs.length<8)return;
+    const W=rs.map(r=>wkSplit(wkShift(r.getAttribute('data-toast').replace(/&nbsp;/g,' '))));
+    rs.forEach((r,i)=>{r.removeAttribute('data-toast');r.setAttribute('data-fxwk',i);r.setAttribute('aria-label',W[i][0])});
+    const r0=rs[rs.length-1],x=+r0.getAttribute('x'),w=+r0.getAttribute('width');
+    sv.insertAdjacentHTML('afterbegin',`<rect class="fx-wsel" x="${(x+w/2-11).toFixed(1)}" y="4" width="22" height="134" rx="11"></rect>`);
+    sv.dataset.fxwks=JSON.stringify(W);sv.dataset.fxw=rs.length-1;
+    const n=rs.length-1;sv.insertAdjacentHTML('afterend',`<div class="fx-wro"><button class="fx-wst" data-fxwst="-1" aria-label="Előző hét">‹</button><p aria-live="polite"><b>${W[n][0]}</b><span>${W[n][1]}</span></p><button class="fx-wst" data-fxwst="1" aria-label="Következő hét" disabled>›</button></div>`)});
+  return t.innerHTML};
+{const f=fu.routes.tanulas;if(f){const w=(...a)=>tanulasSel(f(...a));w.__kx=1;w.__hub=f.__hub;fu.routes.tanulas=w}}
+document.addEventListener('click',e=>{const el=e.target.closest&&e.target.closest('[data-fxwk],[data-fxwst]');if(!el)return;
+  const card=el.closest('.fh-card,section'),sv=card&&card.querySelector('svg[data-fxwks]');if(!sv)return;e.preventDefault();e.stopPropagation();
+  const W=JSON.parse(sv.dataset.fxwks),rs=[...sv.querySelectorAll('rect[data-fxwk]')];
+  let i=el.dataset.fxwk!=null?+el.dataset.fxwk:+sv.dataset.fxw+(+el.dataset.fxwst);i=Math.max(0,Math.min(W.length-1,i));sv.dataset.fxw=i;
+  const r=rs[i],m=sv.querySelector('.fx-wsel');m.setAttribute('x',(+r.getAttribute('x')+ +r.getAttribute('width')/2-11).toFixed(1));
+  const ro=card.querySelector('.fx-wro');ro.querySelector('b').textContent=W[i][0];ro.querySelector('span').textContent=W[i][1];
+  ro.querySelector('[data-fxwst="-1"]').disabled=i===0;ro.querySelector('[data-fxwst="1"]').disabled=i===W.length-1},true);
+F.css(`/* kiserlet-fuel · learning chart week picker */
+${P} .fh-chart .fx-wsel{fill:color-mix(in srgb,var(--dom) 14%,transparent);transition:x .2s}
+body.still ${P} .fh-chart .fx-wsel{transition:none}
+${P} .fx-wro{display:flex;align-items:center;gap:8px;margin-top:10px;padding:6px;border-radius:18px;background:var(--page)}
+${P} .fx-wro p{flex:1;min-width:0;margin:0;text-align:center;font-size:13px;line-height:1.35}
+${P} .fx-wro p b{display:block;font-family:var(--disp);font-size:14px;color:var(--ink)}
+${P} .fx-wro p span{color:var(--ink)}
+${P} .fx-wst{flex:0 0 44px;height:44px;border:0;border-radius:14px;background:#fff;font-size:22px;font-weight:700;color:var(--ink);box-shadow:0 4px 12px -6px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .fx-wst:disabled{opacity:.35}`);
+
 F.css(`/* kiserlet-fuel */
 ${P} .fx-wk{margin:14px 14px 0}${P} .fx-wk .fu-wk{margin:0}${P} .fx-wk .fu-wd small{font-size:12px!important}${P} .fx-wk .fu-wd em{font-size:13px!important}
 ${P} .fx-stats{margin:0 18px}${P} .fx-stats .fh-grid{margin:0}
