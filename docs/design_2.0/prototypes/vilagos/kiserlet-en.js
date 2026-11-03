@@ -237,7 +237,7 @@ const hu2=h=>hu(h).replace(/kg\/hét/g,'kg hetente').replace(/(\d)[\s  ]kcal/
   .replace(/W(\d+)–(\d+)/g,'$1–$2. hét').replace(/W(\d+)\/(\d+)/g,'$1. hét a $2-ból').replace(/W(\d+)-től/g,'a $1. héttől').replace(/\bW(\d+)\b/g,'$1. hét')
   .replace('P 163 · C 226 · F 66','fehérje 163 g · szénhidrát 226 g · zsír 66 g').replace(/≥ ?/g,'legalább ').replace(/\bkb\. /g,'körülbelül ')
   .replace('Identity frame · opcionális','Ki akarsz lenni? · nem kötelező').replace(/\bMAV\b/g,'Csúcsterhelés').replace(/>3\/4</g,'>3 a 4-ből<').replace(/kalória-ból/g,'kalóriából').replace(/kalória-lal/g,'kalóriával').replace(/^kcal$/,'kalória').replace(/(\d+)\. hét a (\d+)-ból/g,'a $2 hétből a $1.').replace('Fuel-adattal','étkezési adattal').replace('Fuel-nap','étkezési nap');
-function gen12(base){const hi=base.indexOf('<section class="fh-card fh-hero');if(hi<0)return base;const he=bal(base,hi,'section'),H=base.slice(hi,he);
+function gen12(base,topOver){const hi=base.indexOf('<section class="fh-card fh-hero');if(hi<0)return base;const he=bal(base,hi,'section'),H=base.slice(hi,he);
   const lbl=g(H,/<span class="lbl">([^<]*)/),ver=g(H,/<p class="verdict"[^>]*>([\s\S]*?)<\/p>/),sub=g(H,/<p class="sub">([\s\S]*?)<\/p>/);
   const big=H.match(/<div class="fh-big[^"]*">([^<]*)(?:<small>([^<]*)<\/small>)?<\/div>/);
   const ai=H.indexOf('<div class="fh-acts">'),acts=ai<0?'':H.slice(ai+21,bal(H,ai)-6);
@@ -247,9 +247,10 @@ function gen12(base){const hi=base.indexOf('<section class="fh-card fh-hero');if
   pic=pic.replace(/<span class="lbl">[^<]*<\/span>/,'').replace(/<p class="verdict"[^>]*>[\s\S]*?<\/p>/,'').replace(/<p class="sub">[\s\S]*?<\/p>/,'').replace(/<div style="flex:1;min-width:0"><\/div>/,'');
   const hr=pic.indexOf('<div class="fh-hrow">');let side='';if(hr>=0){side=pic.slice(hr,bal(pic,hr)).replace(/^<div class="fh-hrow">/,'').replace(/<\/div>$/,'');pic=pic.slice(0,hr)+pic.slice(bal(pic,hr))}
   const btns=[...acts.matchAll(/<button class="(btn[^"]*|fh-lk)"([^>]*)>([\s\S]*?)<\/button>/g)].map(([,c,at,t],i)=>`<button class="${i?'n8-b':'n9-btn'}"${at}>${t}</button>`).join('');
-  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${hu2(lbl)}</small><h2 class="n7-h">${hu2(ver)}</h2>
+  let top=`<section class="mx-s ex-hero"><small class="ex-eb">${hu2(lbl)}</small><h2 class="n7-h">${hu2(ver)}</h2>
     ${big?`<p class="w12-sc"><b>${hu2(big[1])}</b><span>${hu2(big[2]||'')}${sub?'<br>'+hu2(sub):''}</span></p>`:side?`<div class="w12-hs">${side}</div>${sub?`<p class="w12-ln">${hu2(sub)}</p>`:''}`:sub?`<p class="w12-ln">${hu2(sub)}</p>`:''}
     ${pic.trim()?`<div class="w12-ch w12-pic">${hu2(pic)}</div>`:''}${btns?`<div class="ex-acts w12-wide">${btns}</div>`:''}</section>`;
+  if(topOver)top=topOver;
   const ss=sects(base,he);let last=he;for(let i=nH(base,he);i>=0;i=nH(base,last))last=bal(base,base.indexOf('<section',i),'section');
   const body=ss.map(x=>sec12(hu2(x.hd).replace(/ · \d+ hét$/,'').replace(/^(Ütem) · áramlás$/,'$1').replace(' · hét tál',''),rows12(lanes12(tidy(hu2(x.html)))))).join('');
   return hu2(base.slice(0,hi))+`${''}<div class="mx w12-g2">${top}${body}<div class="ng-tail"></div></div>`+base.slice(last)}
@@ -259,7 +260,18 @@ const lanes12=h=>h.replace(/<div class="en-lane">([\s\S]*?)<\/div>/g,(m,it)=>{co
 /* the approved row with a value on the right becomes the shared row: icon drop, title, the line with the value in it */
 const rows12=h=>h.replace(/<button class="fh-row" ([^>]*)><span class="si"><svg[^>]*><use href="#([^"]+)"[^>]*>(?:<\/use>)?<\/svg><\/span><span class="g"><strong>([^<]*)<\/strong><small>([^<]*)<\/small><\/span>(?:<span class="v">([^<]*)<\/span>)?(<span class="st [^"]*">[^<]*<\/span>)?<svg[\s\S]*?<\/svg><\/button>/g,
   (m,at,ic,t,sm,v,st)=>`<button class="ex-mrow w12-r" ${at}>${drop(ic.replace(/^tc-/,'t-'))}<span class="g"><b>${t}</b><i class="q">${v?`<b class="w12-v">${v}</b> · `:''}${sm}</i>${st?`<span class="w12-stt">${st}</span>`:''}</span><em>›</em></button>`);
-for(const k of ['sulycel','sulyresz','sulyuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(f(a))}
+/* owner 2026-11-03 ("ez itt béna"): the small vessel floated in empty space next to a sentence that repeated its numbers.
+   Now: the big number, one line of what is left, the way from start to goal as one wide filling pipe with three stops,
+   the waiting proposal as Mezo's line, one wide button and two equal ones under it. */
+const SC_TOP=`<section class="mx-s ex-hero"><small class="ex-eb">Jó pályán · 33% megvan</small><h2 class="n7-h">Jó úton: a súlyod a terv szerint apad.</h2>
+  <p class="w12-sc"><b>78,4</b><span>kilogramm most<br>még 5,4 kilogramm a célig, várhatóan augusztus 14-re</span></p>
+  <div class="w12-ch w12-way" role="img" aria-label="Induláskor 81,4, most 78,4, cél 73,0 kilogramm: az út 33%-a megvan">
+    <div class="w12-wm" style="left:33%"><b>78,4</b> most</div><div class="w12-wp"><i style="width:33%"></i><s style="left:33%"></s></div>
+    <div class="w12-ws"><span><b>81,4</b>induláskor</span><span><b>73,0</b>a cél</span></div></div>
+  ${mzLine('Két hete lassabb az ütem a tervezettnél, ezért hoztam egy új javaslatot. Nézd át, mielőtt alkalmazzuk.')}
+  <div class="ex-acts w12-wide"><button class="n9-btn" data-go="sulyresz.javaslat">Javaslat megnézése</button></div>
+  <div class="ex-acts w12-nav"><button class="n8-b" data-sheet="gate">+ Új cél</button><button class="n8-b" data-go="test">A súlygörbe</button></div></section>`;
+for(const k of ['sulycel','sulyresz','sulyuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(f(a),k==='sulycel'&&!a?SC_TOP:null)}
 
 /* buoy taps: swap Mezo's line in place, mark the buoy (no re-render) */
 document.addEventListener('click',e=>{const el=e.target.closest('[data-w12]');if(!el)return;e.preventDefault();e.stopPropagation();
@@ -364,6 +376,12 @@ ${P} .w12-g2 .w12-cw .fh-row strong{font-size:15.5px}
 ${P} .w12-g2 :is(.en-leg,.en-cells small,.en-tubes small,.fh-facts small,.k2-vials small,.fh-row .st,.en-lane i){font-size:12.5px!important;color:var(--ink)}
 ${P} .w12-g2 .fh-facts b{font-size:17px}${P} .w12-g2 .en-cells b i{font-size:13px}${P} .w12-g2 .en-ruler{display:none}${P} .w12-g2 .en-lane i{white-space:normal;line-height:1.2;height:auto;min-height:24px;padding:3px 6px}
 ${P} .w12-g2 .en-drain .dl{font-size:17px}${P} .w12-g2 .en-drain .ds{font-size:15px}${P} .w12-g2 .en-lk svg text{font-size:12.5px}${P} .w12-g2 .fh-row:has(.en-ck){display:grid;grid-template-columns:36px 1fr;gap:6px 12px;align-items:start}${P} .w12-g2 .fh-row:has(.en-ck) .st{grid-column:2;justify-self:start}
+${P} .w12-way{margin-top:14px;padding:14px 16px 14px}${P} .w12-wm{position:relative;display:inline-block;transform:translateX(-50%);margin-bottom:8px;padding:4px 10px;border-radius:999px;background:var(--ink);color:#fff;font-size:13px;white-space:nowrap}${P} .w12-wm b{font:800 15px var(--disp)}
+${P} .w12-wp{position:relative;height:30px;border-radius:999px;background:linear-gradient(180deg,#fff,#EEF6F9);box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.10),inset 0 4px 8px -5px rgba(10,42,60,.18)}
+${P} .w12-wp i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--dom) 45%,#fff),var(--dom))}
+${P} .w12-wp s{position:absolute;top:-6px;bottom:-6px;width:4px;margin-left:-2px;border-radius:4px;background:var(--ink)}
+${P} .w12-ws{position:relative;display:flex;justify-content:space-between;margin-top:10px;min-height:40px}${P} .w12-ws span{display:grid;gap:1px;font-size:13px;color:var(--ink)}
+${P} .w12-ws span:last-child{text-align:right}${P} .w12-ws span[style]{position:absolute;transform:translateX(-50%);text-align:center}${P} .w12-ws b{font:800 17px var(--disp);color:var(--ink)}
 ${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
 ${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto;min-height:40px}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
