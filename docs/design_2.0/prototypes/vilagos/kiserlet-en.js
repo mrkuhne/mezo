@@ -69,11 +69,11 @@ en.routes.mai=mai12;en.routes.en=mai12;
    in the same scroll position (see the listener below). ═══ */
 O.test=en.routes.test;en.routes['test-lista']=O.test;
 const MON={'jan.':'január','febr.':'február','márc.':'március','ápr.':'április','jún.':'június','júl.':'július','aug.':'augusztus','szept.':'szeptember','okt.':'október','nov.':'november','dec.':'december'};
-const hu=h=>h.replace(/(^|[^\p{L}])(jan|febr|márc|ápr|jún|júl|aug|szept|okt|nov|dec)\. /gu,(m,p0,k)=>p0+MON[k+'.']+' ').replace(/(\d) ó(?=[\s<·])/g,'$1 óra').replace(/(\d) ó cél/g,'$1 óra a cél')
+const hu=h=>h.replace(/(^|[^\p{L}])Szept\. /gu,'$1Szeptember ').replace(/(^|[^\p{L}])(jan|febr|márc|ápr|jún|júl|aug|szept|okt|nov|dec)\. /gu,(m,p0,k)=>p0+MON[k+'.']+' ').replace(/(\d) ó(?=[\s<·])/g,'$1 óra').replace(/(\d) ó cél/g,'$1 óra a cél')
   .replace(/>09\/(\d\d)</g,'>szeptember $1.<').replace(/· min (\d)/g,'· legkisebb $1').replace(/kg \/ hét/g,'kg hetente');
 const nH=(h,f)=>{const m=h.slice(f).search(/<p class="fh-n[ "]/);return m<0?-1:f+m};
 const sects=(base,from)=>{const out=[];let i=nH(base,from);
-  while(i>=0){const hd=base.slice(i,base.indexOf('</p>',i)).replace(/^[\s\S]*<\/b>/,''),ci=base.indexOf('<section',i),ce=bal(base,ci,'section');
+  while(i>=0){const pe=base.indexOf('</p>',i),hd=base.slice(i,pe).replace(/^[\s\S]*<\/b>/,''),ci=base.indexOf('<',pe+4),tg=(base.slice(ci).match(/^<(\w+)/)||[,'section'])[1],ce=bal(base,ci,tg);
     out.push({hd,html:base.slice(ci,ce)});i=nH(base,ce)}return out};
 const tidy=h=>hu(h).replace(/ rise"/g,'"').replace(/<p class="fh-note"[^>]*>([\s\S]*?)<\/p>/g,(m,t)=>mzLine(t));
 const sec12=(hd,body)=>`<section class="mx-s ln">${KH(hd)}<div class="w12-cw">${body}</div></section>`;
@@ -133,7 +133,7 @@ function test12(a){const base=O.test(a),v=a==='alvas'?'alvas':'suly';
 en.routes.test=test12;en.routes.suly=()=>test12('');en.routes.alvas=()=>test12('alvas');
 
 /* approved data-ev switches on a converted page: en.js updates its state and draws the approved page; redraw ours on top */
-document.addEventListener('click',e=>{const el=e.target.closest('[data-ev^="period:"],[data-ev^="wk:"],[data-ev^="swin:"],[data-ev^="drawer:"],[data-ev^="celv:"]');const ph=el&&el.closest('.phone');if(!ph||!ph.querySelector('.w12-t,.w12-g2'))return;
+document.addEventListener('click',e=>{const el=e.target.closest('[data-ev^="period:"],[data-ev^="wk:"],[data-ev^="swin:"],[data-ev^="drawer:"],[data-ev^="celv:"],[data-ev="life"],[data-ev^="tit:"]');const ph=el&&el.closest('.phone');if(!ph||!ph.querySelector('.w12-t,.w12-g2'))return;
   setTimeout(()=>{const f=en.routes[F.R];if(typeof f!=='function')return;const sc=ph.querySelector('.scroll'),y=sc?sc.scrollTop:0;ph.innerHTML=f(F.ARG);
     ph.querySelectorAll('.rise').forEach(x=>x.classList.remove('rise'));const s2=ph.querySelector('.scroll');if(s2)s2.scrollTop=y},0)},true);
 
@@ -251,15 +251,15 @@ function gen12(base,topOver){const hi=base.indexOf('<section class="fh-card fh-h
     ${big?`<p class="w12-sc"><b>${hu2(big[1])}</b><span>${hu2(big[2]||'').replace(/^\/ (\d+)$/,'nap a $1-ből')}${sub?'<br>'+hu2(sub):''}</span></p>`:side?`<div class="w12-hs">${side}</div>${sub?`<p class="w12-ln">${hu2(sub)}</p>`:''}`:sub?`<p class="w12-ln">${hu2(sub)}</p>`:''}
     ${pic.trim()?`<div class="w12-ch w12-pic">${hu2(pic)}</div>`:''}${btns?`<div class="ex-acts w12-wide">${btns}</div>`:''}</section>`;
   if(topOver)top=topOver;
-  const ss=sects(base,he);let last=he;for(let i=nH(base,he);i>=0;i=nH(base,last))last=bal(base,base.indexOf('<section',i),'section');
+  const ss=sects(base,he);let last=he;for(let i=nH(base,he);i>=0;i=nH(base,last)){const ci=base.indexOf('<',base.indexOf('</p>',i)+4);last=bal(base,ci,(base.slice(ci).match(/^<(\w+)/)||[,'section'])[1])}
   const body=ss.map(x=>sec12(hu2(x.hd).replace(/ · \d+ hét$/,'').replace(/^(Ütem) · áramlás$/,'$1').replace(' · hét tál',''),rows12(lanes12(tidy(hu2(x.html)))))).join('');
   return hu2(base.slice(0,hi))+`${''}<div class="mx w12-g2">${top}${body}<div class="ng-tail"></div></div>`+base.slice(last)}
 /* a lane's labels never fit inside its bars at 320: the bars stay, their words go under them */
 const lanes12=h=>h.replace(/<div class="en-lane">([\s\S]*?)<\/div>/g,(m,it)=>{const t=[...it.matchAll(/>([^<]+)<\/i>/g)].map(x=>x[1]);
   return `<div class="en-lane">${it.replace(/>([^<]+)<\/i>/g,'></i>')}</div><p class="w12-lc">${t.join(' · ')}</p>`});
 /* the approved row with a value on the right becomes the shared row: icon drop, title, the line with the value in it */
-const rows12=h=>h.replace(/<button class="fh-row" ([^>]*)><span class="si"><svg[^>]*><use href="#([^"]+)"[^>]*>(?:<\/use>)?<\/svg><\/span><span class="g"><strong>([^<]*)<\/strong>(?:<small>([^<]*)<\/small>)?<\/span>(?:<span class="v">([^<]*)<\/span>)?(<span class="st [^"]*">[^<]*<\/span>)?<svg[\s\S]*?<\/svg><\/button>/g,
-  (m,at,ic,t,sm,v,st)=>`<button class="ex-mrow w12-r" ${at}>${drop(ic.replace(/^tc-/,'t-'))}<span class="g"><b>${t}</b><i class="q">${v?`<b class="w12-v">${v}</b>${sm?' · ':''}`:''}${sm||''}</i>${st?`<span class="w12-stt">${st}</span>`:''}</span><em>›</em></button>`);
+const rows12=h=>h.replace(/<(button|div) class="fh-row"((?: [^>]*)?)><span class="si"><svg[^>]*><use href="#([^"]+)"[^>]*>(?:<\/use>)?<\/svg><\/span><span class="g"><strong>([^<]*)<\/strong>(?:<small>([^<]*)<\/small>)?<\/span>(?:<span class="v">([^<]*)<\/span>)?(<span class="st [^"]*">[^<]*<\/span>)?(?:<svg class="ic chev"[^>]*>[\s\S]*?<\/svg>)?<\/\1>/g,
+  (m,tg,at,ic,t,sm,v,st)=>`<${tg} class="ex-mrow w12-r"${at}>${drop(ic.replace(/^tc-/,'t-'))}<span class="g"><b>${t}</b><i class="q">${v?`<b class="w12-v">${v}</b>${sm?' · ':''}`:''}${sm||''}</i>${st?`<span class="w12-stt">${st}</span>`:''}</span>${tg==='button'?'<em>›</em>':''}</${tg}>`);
 /* owner 2026-11-03 ("ez itt béna"): the small vessel floated in empty space next to a sentence that repeated its numbers.
    Now: the big number, one line of what is left, the way from start to goal as one wide filling pipe with three stops,
    the waiting proposal as Mezo's line, one wide button and two equal ones under it. */
@@ -277,6 +277,12 @@ const hu3=h=>h.replace(/<b>(H|K|Sze|Cs|P|Szo|V)<\/b>/g,(m,d)=>`<b>${DAYN[d]}</b>
   .replace(/(\d)× edzés/g,'$1 edzés').replace(/logolás/g,'naplózás').replace(/data-toast="(H|K|Sze|Cs|P|Szo|V):/g,(m,d)=>`data-toast="${DAYN[d]}:`).replace(/<small>\/ 100<\/small>/g,'<small>pont</small>').replace('Napról napra · hat kis edény','Napról napra')
   .replace(/<p class="fh-note" style="margin:0 0 10px">([^<]*)<\/p>/g,(m,t)=>t==='a legfrissebb elöl'?'':`<p class="w12-lc">${t}</p>`)
   .replace(/(<svg class="fh-chart en-surf"[^>]*aria-label="([^"]*)"[\s\S]*?<\/svg>)/,(m,svg,al)=>`${svg}<div class="w12-sl">${al.split(', ').map(x=>`<span>${x.replace(/^(\d+) /,'<b>$1</b> ')}</span>`).join('')}</div>`);
+/* growth (2026-11-03): game shorthand written out — XP → pont, Lv → szint, LIFE → Élet, skill → képesség, Ft → forint */
+const inText=f=>h=>h.replace(/>([^<]+)</g,(m,t)=>'>'+f(t)+'<');
+const hu4=h=>inText(t=>t.replace(/LIFE skilled/g,'élet-képességed').replace(/\bLIFE\b/g,'Élet').replace(/Lv (\d+,\d+)/g,'szint $1').replace(/Lv (\d+)/g,'$1. szint').replace(/\bXP\b/g,'pont')
+  .replace(/Skillek/g,'Képességek').replace(/(\d+) skill\b/g,'$1 képesség').replace(/skill/g,'képesség').replace(/(\d)[\s ]Ft\b/g,'$1 forint').replace(/^Ft$/,'forint').replace(/\b(\d+)k\b/g,'$1 ezer')
+  .replace(/[Mm]eal prep/g,m=>m[0]==='M'?'Előre főzés':'előre főzés').replace(/^09\.(\d\d)/,'szeptember $1.').replace(/· 09\.(\d\d)/g,'· szeptember $1.'))(h);
+for(const k of ['novekedes','skillek','tevekenysegek','kitunt']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(hu4(hu3(f(a))))}
 for(const k of ['tanulsagok','napok','felfedezesek','cel','celuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>gen12(hu3(f(a)))}
 for(const k of ['sulycel','sulyresz','sulyuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(f(a),k==='sulycel'&&!a?SC_TOP:null)}
 
@@ -395,6 +401,10 @@ ${P} .w12-g2 .en-dayr{display:grid!important;grid-template-columns:1fr auto;gap:
 ${P} .w12-g2 .en-dayr .dl b{font-size:16px}${P} .w12-g2 .en-dayr .dl small{font-size:13px;color:var(--ink)}${P} .w12-g2 .en-dayr .g{grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 ${P} .w12-g2 .en-dayr .en-q{grid-column:2;grid-row:1;font-size:16px}${P} .w12-g2 .en-dayr .en-q small{font-size:12.5px}${P} .w12-g2 .en-dayr .en-chips{margin:0}
 ${P} .w12-g2 .en-tag{font-size:12px;padding:4px 8px}${P} .w12-g2 .fh-msg small,${P} .w12-g2 .msg small{font-size:12.5px}
+${P} .w12-sc span b{font:inherit;font-weight:700;letter-spacing:0}
+${P} .w12-g2 .fh-row:has(> .en-lvw,> .en-wdots){display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center}${P} .w12-g2 .fh-row:has(> .en-lvw,> .en-wdots)>.g:first-child{grid-column:1/-1}
+${P} .w12-g2 .fh-row>.en-lvw,${P} .w12-g2 .fh-row>.en-wdots{grid-column:1/-1;width:auto;justify-self:stretch}${P} .w12-g2 .fh-row>.v{grid-column:1/-1}
+${P} .w12-g2 .fl-level span,${P} .w12-g2 .fl-level b,${P} .w12-g2 .en-bv small{font-size:12.5px}
 ${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
 ${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto;min-height:40px}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
