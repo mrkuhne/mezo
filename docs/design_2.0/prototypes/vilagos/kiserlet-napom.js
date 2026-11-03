@@ -1356,22 +1356,24 @@ const toastTags=t=>{if(!t||t.textContent.indexOf('<')<0||!t.closest(P))return;co
 const MFULL={jan:'január',febr:'február',márc:'március',ápr:'április',máj:'május',jún:'június',júl:'július',aug:'augusztus',szept:'szeptember',okt:'október',nov:'november',dec:'december'};
 const MKEY='jan|febr|márc|ápr|máj|jún|júl|aug|szept|okt|nov|dec';
 const capF=(w,like)=>/^[A-ZÁÉÍÓÖŐÚÜŰ]/.test(like)?w[0].toUpperCase()+w.slice(1):w;
+const nb=(src,rep)=>[new RegExp('(^|[^\\p{L}])'+src,'gu'),(m,pre,...g)=>pre+(typeof rep==='function'?rep(m.slice(pre.length),...g):rep.replace(/\$(\d)/g,(x,n)=>g[n-1]??''))];   /* a "not after a letter" match without lookbehind (Safari < 16.4 cannot parse one) */
 const AB=[
   [/(\d)ó (\d+)p(?![\p{L}])/gu,'$1 óra $2 perc'],[/(\d+(?:,\d+)?) ?ó(?![\p{L}])/gu,'$1 óra'],[/(\d+(?:[.,]\d+)?)h(?![\p{L}])/gu,(m,a)=>a.replace('.',',')+' óra'],
   [/(\d+) ?mp(?![\p{L}])/gu,'$1 másodperc'],[/(\d+) ?p(?![\p{L}′'])/gu,'$1 perc'],[/(\d+)′/g,'$1 perc'],
-  [/(?<![\p{L}])Kb\./gu,'Nagyjából'],[/(?<![\p{L}])kb\./gu,'nagyjából'],[/(?<![\p{L}])pl\./gu,'például'],[/(\d) db(?![\p{L}])/gu,'$1 darab'],
-  [/(?<![\p{L}])([Bb])ecsült max(?![\p{L}])/gu,'$1ecsült maximum'],[/(?<![\p{L}])max (\d)/gu,'legfeljebb $1'],
+  [...nb(String.raw`Kb\.`,'Nagyjából')],[...nb(String.raw`kb\.`,'nagyjából')],[...nb(String.raw`pl\.`,'például')],[/(\d) db(?![\p{L}])/gu,'$1 darab'],
+  [...nb(String.raw`([Bb])ecsült max(?![\p{L}])`,'$1ecsült maximum')],[...nb(String.raw`max (\d)`,'legfeljebb $1')],
   [/(\d) XP(?![\p{L}])/gu,'$1 pont'],[/szerzett XP/g,'szerzett pont'],[/^XP$/u,'Pont'],
-  [/RPE átlag/g,'átlagos érzett nehézség'],[/(?<![\p{L}])RPE(?![\p{L}])/gu,'érzett nehézség'],
-  [/RIR (\d)-re/g,'$1 tartalék ismétlésig'],[/RIR(-cél)? (\d)-en belül/g,(m,c,d)=>`tartalék${c||''} ${d} ismétlésen belül`],[/RIR (\d) \+/g,'$1 tartalék ismétlés +'],[/(?<![\p{L}])RIR(?![\p{L}])/gu,'tartalék'],
-  [/1RM-rekord/g,'Egyismétléses rekord'],[/Rep-rekord/g,'Ismétlés-rekord'],[/ vs /g,' kontra '],[/(?<![\p{L}])Hét (\d+)\/(\d+)/gu,'$1. hét / $2'],
-  [new RegExp(`(?<![\\p{L}])(${MKEY})\\.(?=[\\s,–]|$)`,'gu'),(m,k)=>MFULL[k]],[new RegExp(`(?<![\\p{L}])(Szept|Okt|Aug|Márc|Máj|Jún|Júl|Ápr|Jan|Febr|Nov|Dec)\\.(?=[\\s,–]|$)`,'gu'),(m,k)=>capF(MFULL[k.toLowerCase()],k)],
-  [new RegExp(`(?<![\\p{L}])(${MKEY}) (\\d)`,'gu'),(m,k,d)=>MFULL[k]+' '+d],[new RegExp(`^(${MKEY})$`,'u'),(m,k)=>MFULL[k]]];
+  [/RPE átlag/g,'átlagos érzett nehézség'],[...nb(String.raw`RPE(?![\p{L}])`,'érzett nehézség')],
+  [/RIR (\d)-re/g,'$1 tartalék ismétlésig'],[/RIR(-cél)? (\d)-en belül/g,(m,c,d)=>`tartalék${c||''} ${d} ismétlésen belül`],[/RIR (\d) \+/g,'$1 tartalék ismétlés +'],[...nb(String.raw`RIR(?![\p{L}])`,'tartalék')],
+  [/1RM-rekord/g,'Egyismétléses rekord'],[/Rep-rekord/g,'Ismétlés-rekord'],[/ vs /g,' kontra '],[...nb(String.raw`Hét (\d+)\/(\d+)`,'$1. hét / $2')],
+  [...nb(`(${MKEY})\\.(?=[\\s,–]|$)`,(m,k)=>MFULL[k])],[...nb(`(Szept|Okt|Aug|Márc|Máj|Jún|Júl|Ápr|Jan|Febr|Nov|Dec)\\.(?=[\\s,–]|$)`,(m,k)=>capF(MFULL[k.toLowerCase()],k))],
+  [...nb(`(${MKEY}) (\\d)`,(m,k,d)=>MFULL[k]+' '+d)],[new RegExp(`^(${MKEY})$`,'u'),(m,k)=>MFULL[k]]];
 const ABT=/[0-9]|kb\.|Kb\.|pl\.|max|XP|RPE|RIR|rekord| vs |\.|^(jan|febr|márc|ápr|máj|jún|júl|aug|szept|okt|nov|dec)$/;
 const abText=v=>{if(!ABT.test(v))return v;for(const [r,x] of AB)v=v.replace(r,x);return v};
 const EDZD={Hét:'H',Kedd:'K',Pén:'P',Vas:'V'};
 const RLD={'Fizikai':'Fizikai','Edzés':'Edzés','Táplálkozási':'Táp­lál­ko­zás','Alvás & regeneráció':'Alvás','Lelki':'Lelki','Fegyelem':'Fegye­lem','Élet & emberek':'Élet','A társ önvizsgálata':'Ön­vizs­gá­lat','Munka-stressz ciklus':'Stressz'};
-const abNode=root=>{if(!root||!root.closest(P))return;const edz=!!root.closest('[data-d="edzes"]'),w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
+const abNode=root=>{if(!root||!root.closest(P)||/-lista\b/.test(location.hash))return;   /* the -lista originals stay as they were */
+  const edz=!!root.closest('[data-d="edzes"]'),w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
   while((n=w.nextNode())){let v=n.nodeValue;if(!v.trim())continue;const el=n.parentElement;
     if(edz&&EDZD[v.trim()]&&!el.closest('.fh-facts'))v=v.replace(v.trim(),EDZD[v.trim()]);
     else if(edz&&/^(Hét|Pén|Vas) · /.test(v))v=v.replace(/^(Hét|Pén|Vas)/,m=>EDZD[m]);
