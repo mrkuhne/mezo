@@ -69,7 +69,7 @@ en.routes.mai=mai12;en.routes.en=mai12;
    in the same scroll position (see the listener below). ═══ */
 O.test=en.routes.test;en.routes['test-lista']=O.test;
 const MON={'jan.':'január','febr.':'február','márc.':'március','ápr.':'április','jún.':'június','júl.':'július','aug.':'augusztus','szept.':'szeptember','okt.':'október','nov.':'november','dec.':'december'};
-const hu=h=>h.replace(/\b(jan|febr|márc|ápr|jún|júl|aug|szept|okt|nov|dec)\. /g,(m,k)=>MON[k+'.']+' ').replace(/(\d) ó(?=[\s<·])/g,'$1 óra').replace(/(\d) ó cél/g,'$1 óra a cél')
+const hu=h=>h.replace(/(^|[^\p{L}])(jan|febr|márc|ápr|jún|júl|aug|szept|okt|nov|dec)\. /gu,(m,p0,k)=>p0+MON[k+'.']+' ').replace(/(\d) ó(?=[\s<·])/g,'$1 óra').replace(/(\d) ó cél/g,'$1 óra a cél')
   .replace(/>09\/(\d\d)</g,'>szeptember $1.<').replace(/· min (\d)/g,'· legkisebb $1').replace(/kg \/ hét/g,'kg hetente');
 const nH=(h,f)=>{const m=h.slice(f).search(/<p class="fh-n[ "]/);return m<0?-1:f+m};
 const sects=(base,from)=>{const out=[];let i=nH(base,from);
@@ -133,7 +133,7 @@ function test12(a){const base=O.test(a),v=a==='alvas'?'alvas':'suly';
 en.routes.test=test12;en.routes.suly=()=>test12('');en.routes.alvas=()=>test12('alvas');
 
 /* approved data-ev switches on a converted page: en.js updates its state and draws the approved page; redraw ours on top */
-document.addEventListener('click',e=>{const el=e.target.closest('[data-ev^="period:"],[data-ev^="wk:"],[data-ev^="swin:"],[data-ev^="drawer:"]');const ph=el&&el.closest('.phone');if(!ph||!ph.querySelector('.w12-t,.w12-g2'))return;
+document.addEventListener('click',e=>{const el=e.target.closest('[data-ev^="period:"],[data-ev^="wk:"],[data-ev^="swin:"],[data-ev^="drawer:"],[data-ev^="celv:"]');const ph=el&&el.closest('.phone');if(!ph||!ph.querySelector('.w12-t,.w12-g2'))return;
   setTimeout(()=>{const f=en.routes[F.R];if(typeof f!=='function')return;const sc=ph.querySelector('.scroll'),y=sc?sc.scrollTop:0;ph.innerHTML=f(F.ARG);
     ph.querySelectorAll('.rise').forEach(x=>x.classList.remove('rise'));const s2=ph.querySelector('.scroll');if(s2)s2.scrollTop=y},0)},true);
 
@@ -235,7 +235,7 @@ en.routes.het=het12;en.routes.elemzes=elemzes12;
    and units written out. ═══ */
 const hu2=h=>hu(h).replace(/kg\/hét/g,'kg hetente').replace(/(\d)[\s  ]kcal/g,'$1 kalória').replace(/<small>kcal<\/small>/g,'<small>kalória</small>').replace(/>kcal</g,'>kalória<')
   .replace(/W(\d+)–(\d+)/g,'$1–$2. hét').replace(/W(\d+)\/(\d+)/g,'$1. hét a $2-ból').replace(/W(\d+)-től/g,'a $1. héttől').replace(/\bW(\d+)\b/g,'$1. hét')
-  .replace('P 163 · C 226 · F 66','fehérje 163 g · szénhidrát 226 g · zsír 66 g').replace(/≥ ?/g,'legalább ').replace(/\bkb\. /g,'körülbelül ')
+  .replace('P 163 · C 226 · F 66','fehérje 163 g · szénhidrát 226 g · zsír 66 g').replace(/≥ ?/g,'legalább ').replace(/≤ ?/g,'legfeljebb ').replace(/skill: /g,'képesség: ').replace('Az AI csak','Mezo csak').replace('>Összegzés<','>Összeg&shy;zés<').replace(/>Összegzés →</,'>Összegzés →<').replace(/\bkb\. /g,'körülbelül ')
   .replace('Identity frame · opcionális','Ki akarsz lenni? · nem kötelező').replace(/\bMAV\b/g,'Csúcsterhelés').replace(/>3\/4</g,'>3 a 4-ből<').replace(/kalória-ból/g,'kalóriából').replace(/kalória-lal/g,'kalóriával').replace(/^kcal$/,'kalória').replace(/(\d+)\. hét a (\d+)-ból/g,'a $2 hétből a $1.').replace('Fuel-adattal','étkezési adattal').replace('Fuel-nap','étkezési nap');
 function gen12(base,topOver){const hi=base.indexOf('<section class="fh-card fh-hero');if(hi<0)return base;const he=bal(base,hi,'section'),H=base.slice(hi,he);
   const lbl=g(H,/<span class="lbl">([^<]*)/),ver=g(H,/<p class="verdict"[^>]*>([\s\S]*?)<\/p>/),sub=g(H,/<p class="sub">([\s\S]*?)<\/p>/);
@@ -277,7 +277,7 @@ const hu3=h=>h.replace(/<b>(H|K|Sze|Cs|P|Szo|V)<\/b>/g,(m,d)=>`<b>${DAYN[d]}</b>
   .replace(/(\d)× edzés/g,'$1 edzés').replace(/logolás/g,'naplózás').replace(/data-toast="(H|K|Sze|Cs|P|Szo|V):/g,(m,d)=>`data-toast="${DAYN[d]}:`).replace(/<small>\/ 100<\/small>/g,'<small>pont</small>').replace('Napról napra · hat kis edény','Napról napra')
   .replace(/<p class="fh-note" style="margin:0 0 10px">([^<]*)<\/p>/g,(m,t)=>t==='a legfrissebb elöl'?'':`<p class="w12-lc">${t}</p>`)
   .replace(/(<svg class="fh-chart en-surf"[^>]*aria-label="([^"]*)"[\s\S]*?<\/svg>)/,(m,svg,al)=>`${svg}<div class="w12-sl">${al.split(', ').map(x=>`<span>${x.replace(/^(\d+) /,'<b>$1</b> ')}</span>`).join('')}</div>`);
-for(const k of ['tanulsagok','napok','felfedezesek']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>gen12(hu3(f(a)))}
+for(const k of ['tanulsagok','napok','felfedezesek','cel','celuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>gen12(hu3(f(a)))}
 for(const k of ['sulycel','sulyresz','sulyuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(f(a),k==='sulycel'&&!a?SC_TOP:null)}
 
 /* buoy taps: swap Mezo's line in place, mark the buoy (no re-render) */
@@ -394,6 +394,7 @@ ${P} .w12-g2 .en-jar small{font-size:13px}${P} .w12-g2 .en-sixl span{font-size:1
 ${P} .w12-g2 .en-dayr{display:grid!important;grid-template-columns:1fr auto;gap:8px 12px;align-items:start}${P} .w12-g2 .en-dayr .dl{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 ${P} .w12-g2 .en-dayr .dl b{font-size:16px}${P} .w12-g2 .en-dayr .dl small{font-size:13px;color:var(--ink)}${P} .w12-g2 .en-dayr .g{grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 ${P} .w12-g2 .en-dayr .en-q{grid-column:2;grid-row:1;font-size:16px}${P} .w12-g2 .en-dayr .en-q small{font-size:12.5px}${P} .w12-g2 .en-dayr .en-chips{margin:0}
+${P} .w12-g2 .en-tag{font-size:12px;padding:4px 8px}${P} .w12-g2 .fh-msg small,${P} .w12-g2 .msg small{font-size:12.5px}
 ${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
 ${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto;min-height:40px}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
