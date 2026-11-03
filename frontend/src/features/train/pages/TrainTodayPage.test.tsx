@@ -137,6 +137,10 @@ test('today gym hero renders (the weekly list + load tiles + note now live on He
 // muscle by muscle (owner decision), with the three facts beside it and the region tags under it;
 // the page below is numbered sections, and nothing of the old skin is left.
 test('the gym hero draws the body with its facts and tags; the page is numbered sections without the old skin', () => {
+  // pinned: on some weekdays (e.g. Tuesday) a mock run folds into the day and adds a „Ma még" section
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-15T12:00:00')) // Wednesday
+  try {
   const { container } = renderView()
   const hero = container.querySelector('.fo-hero.em-hero') as HTMLElement
   expect(hero.querySelector('.em-h2 .ex-hb .ex-body')).not.toBeNull()
@@ -150,6 +154,9 @@ test('the gym hero draws the body with its facts and tags; the page is numbered 
   expect(container.querySelector('.em-nav .fo-pair')).not.toBeNull()
   expect(container.querySelectorAll('.em-nav .em-navrows .fo-row')).toHaveLength(2)
   expect(container.querySelector('.glass, .uv-well, .uv-empty, [class*="trm-"], .t-ico.uv-float')).toBeNull()
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 // prototype `mai('pihen')` / `restWeek()`: the rest day's hero shows the week — one tube per day,

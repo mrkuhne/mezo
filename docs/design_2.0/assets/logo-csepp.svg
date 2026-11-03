@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Folyadék app icon "Csepp" (owner OK 2026-11-03, mezo-n4wf5.14): the bottom-bar drop, half full of the Nap liquid. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#E4EFF6"/></linearGradient>
+    <linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#19C7C0"/><stop offset="1" stop-color="#1877F2"/></linearGradient>
+    <clipPath id="c"><path d="M256 66C300 130 396 214 396 304A140 140 0 0 1 116 304C116 214 212 130 256 66Z"/></clipPath>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <path d="M256 66C300 130 396 214 396 304A140 140 0 0 1 116 304C116 214 212 130 256 66Z" fill="#E8F1FE"/>
+  <g clip-path="url(#c)">
+    <path d="M-128 262 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 q16 -14 32 0 t32 0 V600 H-128Z" fill="#19C7C0" opacity=".45" transform="translate(-24 0)"/>
+    <path d="M-128 276 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 q16 -16 32 0 t32 0 V600 H-128Z" fill="url(#l)"/>
+    <circle cx="300" cy="372" r="13" fill="#fff" opacity=".55"/>
+    <circle cx="214" cy="400" r="8" fill="#fff" opacity=".45"/>
+    <circle cx="330" cy="330" r="6" fill="#fff" opacity=".5"/>
+  </g>
+  <path d="M256 66C300 130 396 214 396 304A140 140 0 0 1 116 304C116 214 212 130 256 66Z" fill="none" stroke="#1877F2" stroke-width="24" stroke-linejoin="round"/>
+  <path d="M176 288c4-34 22-62 44-84" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" opacity=".9"/>
+</svg>

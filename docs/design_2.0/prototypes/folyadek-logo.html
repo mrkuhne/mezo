@@ -1,0 +1,150 @@
+<meta charset="utf-8">
+<title>Folyadék app-ikon</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column of three option cards (big icon + real phone sizes), then a home-screen try-out. Light only, like the app (Folyadék bible §1). */
+:root{
+  --ground:#EEF5F9; --card:#fff; --ink:#0A2A3C; --sub:#4E6B7A; --faint:#8AA0AC; --line:rgba(15,30,51,.08);
+  --nap:#1877F2; --nap2:#19C7C0;
+  --disp:'Bricolage Grotesque',ui-rounded,system-ui,sans-serif;
+  --ff:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'Geist Mono',ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+body{background:linear-gradient(180deg,#fff, var(--ground) 340px);color:var(--ink);font-family:var(--ff);font-size:15px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px;display:flex;flex-direction:column;gap:28px}
+header{display:flex;flex-direction:column;gap:8px;max-width:62ch}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--nap)}
+h1{font:800 clamp(30px,6vw,44px)/1.05 var(--disp);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font:800 22px/1.1 var(--disp);margin:0;letter-spacing:-.01em}
+p{margin:0}
+.lead{color:var(--sub);font-size:16px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.opt{background:var(--card);border-radius:26px;padding:20px;display:flex;flex-direction:column;gap:16px;box-shadow:0 18px 40px -26px rgba(15,30,51,.35),inset 0 0 0 1px var(--line);min-width:0}
+.opt .top{display:flex;align-items:baseline;gap:10px}
+.opt .tag{font:500 12px/1 var(--mono);color:#fff;background:var(--nap);border-radius:8px;padding:5px 7px}
+.opt .why{color:var(--sub);font-size:14px}
+.big{align-self:center;width:min(200px,60vw);aspect-ratio:1;max-width:100%}
+.ios{border-radius:22.5%;overflow:hidden;box-shadow:0 14px 26px -14px rgba(15,30,51,.45),inset 0 0 0 1px rgba(15,30,51,.06);display:block}
+.ios svg,.round svg{display:block;width:100%;height:100%}
+.round{border-radius:50%;overflow:hidden;box-shadow:0 8px 16px -10px rgba(15,30,51,.45)}
+.sizes{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--line)}
+.sizes figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.sizes figcaption{font:400 11px/1 var(--mono);color:var(--faint)}
+.pick{margin-top:auto;font:600 14px var(--ff);color:var(--nap);background:color-mix(in srgb,var(--nap) 8%,#fff);border:1.5px solid color-mix(in srgb,var(--nap) 25%,#fff);border-radius:14px;padding:10px 12px;cursor:pointer}
+.pick[aria-pressed="true"]{background:var(--nap);color:#fff;border-color:var(--nap)}
+.pick:focus-visible,.seg button:focus-visible{outline:3px solid color-mix(in srgb,var(--nap) 45%,#fff);outline-offset:2px}
+
+.try{background:var(--card);border-radius:26px;padding:20px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;box-shadow:0 18px 40px -26px rgba(15,30,51,.35),inset 0 0 0 1px var(--line)}
+.try .txt{display:flex;flex-direction:column;gap:12px;min-width:0}
+.seg{display:inline-flex;gap:4px;background:var(--ground);border-radius:12px;padding:4px;flex-wrap:wrap}
+.seg button{font:500 13px var(--ff);border:0;background:transparent;color:var(--sub);padding:7px 11px;border-radius:9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 2px 6px -2px rgba(15,30,51,.25)}
+.phone{width:250px;max-width:100%;aspect-ratio:9/18.5;border-radius:38px;padding:44px 18px 18px;box-shadow:0 0 0 7px #1d2733,0 30px 60px -30px rgba(15,30,51,.6);display:grid;grid-template-columns:repeat(4,1fr);align-content:start;gap:16px 10px;transition:background .3s}
+.phone[data-wall="light"]{background:linear-gradient(160deg,#dfe9f2,#f6efe6 70%)}
+.phone[data-wall="dark"]{background:linear-gradient(160deg,#16202b,#2b2340 75%)}
+.app{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.app .ic{width:46px;height:46px}
+.app .ph{width:46px;height:46px;border-radius:22.5%;background:rgba(127,140,155,.28)}
+.app span{font:500 10px/1 var(--ff);white-space:nowrap}
+.phone[data-wall="light"] .app span{color:#22313d}
+.phone[data-wall="dark"] .app span{color:#f2f5f8}
+.q{border-left:3px solid var(--nap);padding-left:12px;color:var(--ink)}
+.q b{font-weight:600}
+@media (max-width:640px){.try{grid-template-columns:1fr;justify-items:center}.try .txt{justify-self:stretch}}
+@media (prefers-reduced-motion:no-preference){.ios .wv{animation:drift 7s ease-in-out infinite alternate}}
+@keyframes drift{to{transform:translateX(-64px)}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Folyadék · F8 · app-ikon</span>
+    <h1>Új ikon a telefonod kezdőképernyőjére</h1>
+    <p class="lead">Három változat, mind a Folyadék nyelvén: fehér alap, a Nap kék–türkiz folyadéka, sehol egy figura. Mindegyiket megnézheted akkora méretben is, amekkorán a telefonon látszik, és kerek vágással is (Android ilyen formára vágja).</p>
+  </header>
+
+  <section class="opts" id="opts"></section>
+
+  <section class="try">
+    <div class="txt">
+      <h2>Próbáld ki a kezdőképernyőn</h2>
+      <p class="why" style="color:var(--sub)">Válts a változatok és egy világos vagy sötét háttérkép között. A szürke négyzetek más appokat jelölnek.</p>
+      <div class="seg" id="segOpt" role="group" aria-label="Változat"></div>
+      <div class="seg" id="segWall" role="group" aria-label="Háttérkép">
+        <button aria-pressed="true" data-w="light">Világos háttér</button>
+        <button aria-pressed="false" data-w="dark">Sötét háttér</button>
+      </div>
+      <p class="q">A felirat az ikon alatt most is <b>„Boop”</b>. A név kérdését külön döntjük el; az ikon név nélkül is működik.</p>
+    </div>
+    <div class="phone" id="phone" data-wall="light"></div>
+  </section>
+</div>
+
+<script>
+/* The three marks, drawn on a 512 grid. Everything important stays inside the 205px circle
+   around the centre, so Android's round crop never cuts into it. */
+let n=0;
+const DROP='M256 66C300 130 396 214 396 304A140 140 0 0 1 116 304C116 214 212 130 256 66Z';
+function wave(y,amp,p=64){ // a wave reaching past both edges so it can drift; p = one full period
+  let d=`M-128 ${y}`;for(let x=-128;x<640;x+=p)d+=` q${p/4} ${-amp} ${p/2} 0 t${p/2} 0`;return d+` V600 H-128Z`}
+const BG=id=>`<linearGradient id="${id}bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#E4EFF6"/></linearGradient>`;
+const LIQ=(id,a='#19C7C0',b='#1877F2')=>`<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
+
+const MARKS={
+  csepp:()=>{const i='m'+(n++);return `<svg viewBox="0 0 512 512" role="img" aria-label="Csepp ikon"><defs>${BG(i)}${LIQ(i+'l')}<clipPath id="${i}c"><path d="${DROP}"/></clipPath></defs>
+    <rect width="512" height="512" fill="url(#${i}bg)"/>
+    <path d="${DROP}" fill="#E8F1FE"/>
+    <g clip-path="url(#${i}c)"><path class="wv" d="${wave(262,14)}" fill="#19C7C0" opacity=".45" style="animation-delay:-3s"/><path class="wv" d="${wave(276,16)}" fill="url(#${i}l)"/>
+      <circle cx="300" cy="372" r="13" fill="#fff" opacity=".55"/><circle cx="214" cy="400" r="8" fill="#fff" opacity=".45"/><circle cx="330" cy="330" r="6" fill="#fff" opacity=".5"/></g>
+    <path d="${DROP}" fill="none" stroke="#1877F2" stroke-width="24" stroke-linejoin="round"/>
+    <path d="M176 288c4-34 22-62 44-84" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" opacity=".9"/></svg>`},
+
+  szint:()=>{const i='m'+(n++);const D=[['#1877F2','#19C7C0',.70],['#F2683A','#F7B23B',.42],['#149E6E','#8FD14F',.62],['#6B4FE0','#E06BB5',.50],['#0E94B8','#46D3B3',.80]];
+    const w=56,g=12,x0=92,y0=140,h=232;
+    return `<svg viewBox="0 0 512 512" role="img" aria-label="Öt szint ikon"><defs>${BG(i)}${D.map((d,k)=>LIQ(i+'l'+k,d[1],d[0])+`<clipPath id="${i}c${k}"><rect x="${x0+k*(w+g)}" y="${y0}" width="${w}" height="${h}" rx="${w/2}"/></clipPath>`).join('')}</defs>
+    <rect width="512" height="512" fill="url(#${i}bg)"/>
+    ${D.map((d,k)=>{const x=x0+k*(w+g),ly=y0+h*(1-d[2]);return `<rect x="${x}" y="${y0}" width="${w}" height="${h}" rx="${w/2}" fill="color-mix(in srgb,${d[0]} 9%,#fff)"/>
+      <g clip-path="url(#${i}c${k})"><path class="wv" d="${wave(ly,6,32)}" fill="url(#${i}l${k})" style="animation-delay:${-k*1.3}s"/></g>
+      <rect x="${x}" y="${y0}" width="${w}" height="${h}" rx="${w/2}" fill="none" stroke="${d[0]}" stroke-width="9"/>`}).join('')}</svg>`},
+
+  vizvonal:()=>{const i='m'+(n++);const S='translate(256 275) scale(.62) translate(-256 -255)';
+    return `<svg viewBox="0 0 512 512" role="img" aria-label="Vízvonal ikon"><defs>${BG(i)}${LIQ(i+'l')}<clipPath id="${i}w"><path d="${wave(290,18)}"/></clipPath></defs>
+    <rect width="512" height="512" fill="url(#${i}bg)"/>
+    <path class="wv" d="${wave(276,16)}" fill="#19C7C0" opacity=".4" style="animation-delay:-3s"/>
+    <g transform="${S}"><path d="${DROP}" fill="#fff" stroke="#1877F2" stroke-width="34" stroke-linejoin="round"/></g>
+    <path d="${wave(290,18)}" fill="url(#${i}l)"/>
+    <g clip-path="url(#${i}w)"><g transform="${S}"><path d="${DROP}" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-width="34" stroke-linejoin="round"/></g></g>
+    <circle cx="350" cy="410" r="12" fill="#fff" opacity=".45"/><circle cx="150" cy="380" r="8" fill="#fff" opacity=".4"/></svg>`}
+};
+const OPTS=[
+  ['A','Csepp','csepp','A csepp, amit az alsó sávból már ismersz, félig tele a Nap folyadékával. A legegyszerűbb és legjobban felismerhető, kicsiben is.'],
+  ['B','Öt szint','szint','Az öt terület öt fiolája, mind más szinten áll: Nap, Edzés, Fuel, Mezo, Én. Elmondja, miről szól az app, de kicsiben zsúfoltabb.'],
+  ['C','Vízvonal','vizvonal','Az egész ikon egy edény, a csepp a víz felszínén úszik, félig elmerülve. A legtöbb „folyadék”, a legnagyobb kék felület.']
+];
+let cur='csepp';
+const ico=(k,cls='ios')=>`<span class="${cls}" style="width:100%;height:100%">${MARKS[k]()}</span>`;
+document.getElementById('opts').innerHTML=OPTS.map(([t,name,k,why])=>`<article class="opt">
+  <div class="top"><span class="tag">${t}</span><h2>${name}</h2></div>
+  <div class="big">${ico(k)}</div>
+  <p class="why">${why}</p>
+  <div class="sizes">
+    <figure><div style="width:60px;height:60px">${ico(k)}</div><figcaption>iPhone</figcaption></figure>
+    <figure><div style="width:40px;height:40px">${ico(k)}</div><figcaption>mappa</figcaption></figure>
+    <figure><div style="width:29px;height:29px">${ico(k)}</div><figcaption>beállítások</figcaption></figure>
+    <figure><div style="width:56px;height:56px">${ico(k,'round')}</div><figcaption>Android kerek</figcaption></figure>
+  </div>
+  <button class="pick" id="pick-${k}" data-k="${k}" aria-pressed="${k===cur}">Ezt nézem a telefonon</button>
+</article>`).join('');
+document.getElementById('segOpt').innerHTML=OPTS.map(([t,name,k])=>`<button data-k="${k}" aria-pressed="${k===cur}">${t} · ${name}</button>`).join('');
+const OTHER=['Naptár','Fotók','Kamera','Térkép','Zene','Időjárás','Üzenetek','Óra','Jegyzetek','Posta','Bank'];
+function phone(){const apps=OTHER.map(l=>`<div class="app"><div class="ph"></div><span>${l}</span></div>`);
+  apps.splice(5,0,`<div class="app"><div class="ic">${ico(cur)}</div><span>Boop</span></div>`);
+  document.getElementById('phone').innerHTML=apps.join('')}
+function setOpt(k){cur=k;document.querySelectorAll('[data-k]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));phone()}
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.k)setOpt(b.dataset.k);
+  if(b.dataset.w){document.getElementById('phone').dataset.wall=b.dataset.w;document.querySelectorAll('[data-w]').forEach(x=>x.setAttribute('aria-pressed',x===b))}});
+phone();
+</script>
