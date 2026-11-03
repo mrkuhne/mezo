@@ -134,7 +134,7 @@ function csapat3(a){if(a)return O.csapat(a);const best=[...TEAMK].sort((x,y)=>y[
     ${mzLine(`A ${TN[low[0]]} tud rólad a legkevesebbet. Egy esti bejelentkezés sokat segítene neki.`)}
     <div class="ex-acts w3-wide"><button class="n9-btn" data-toast="Bejelentkezés — 1 perces közérzet-kör">Bejelentkezem · 1 perc</button></div></section>
   <section class="mx-s ln">${KH('A csapat tagjai')}<div class="w3-l">${TEAMK.map(memCard).join('')}${skCard}</div></section>
-  <section class="mx-s ln">${KH('A közös munka')}<div class="w4-rl">${row('t-council','Konzílium','A heti ülés jegyzőkönyve · 2 dolog került be rólad','konzilium')}${row('t-gear','Gépterem · Összes funkció','A motorháztető és a régi eszköztár','gepterem')}</div></section></div>`)}
+  <section class="mx-s ln">${KH('A közös munka')}<div class="w4-rl">${row('t-council','Konzílium','A heti ülés jegyzőkönyve · 2 dolog került be rólad','konzilium')}${row('t-diagnose','Kérdezd meg a csapatot','Diagnózis · miért vagyok fáradt? · 2 korábbi riport','diagnozis')}${row('t-gear','Gépterem · Összes funkció','A motorháztető és a régi eszköztár','gepterem')}</div></section></div>`)}
 mz.routes.csapat=csapat3;
 
 /* ═══ RÓLAD (2026-11-02): the team's surest sentence about him stays the heart of the page (no purple box). The nine
@@ -693,6 +693,51 @@ window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('
   setTimeout(()=>{const c=document.querySelector('#phone .w5-cr');if(c){c.style.scrollBehavior='auto';c.scrollLeft=x;c.style.scrollBehavior=''}},30)},true);
 
 /* the tab pages' header as on the converted domains: no big title, the "?" top left (sub-pages keep their title) */
+/* ═══ DIAGNÓZIS (2026-11-03, owner: "sor + az oldal átalakítása"): reachable straight from the team page now (it sat behind
+   Gépterem → Összes funkció). The question on top with the day's three question capsules and one wide "Kérdezd meg most"
+   (a tap answers in place: the capsule empties, the button says it is reading); the other questions and the two coming ones
+   as rows; the earlier reports as rows. A report: the team's answer, the suspects as levels (the strength of their
+   evidence), the reckoning tiles, each suspect on one card with its evidence rows and its trial, "Próbáljuk ki" in place.
+   Mezo's own re-render draws the approved pages, so these run on data-w13. ═══ */
+O.diagnozis=mz.routes.diagnozis;mz.routes['diagnozis-lista']=O.diagnozis;O.diag=mz.routes.diag;mz.routes['diag-lista']=O.diag;
+const ASK13=[['Miért vagyok fáradt?','Az alvásod, az edzéseid és az evésed két hetéből keresem az okot.'],['Miért alszom rosszul?','Az esti szokásaid és az alvásnaplód összevetése.'],['Miért mozog a súlyom?','Valódi változás, vagy víz és só? Heti számvetéssel.']];
+const REP13=[['1','augusztus 30.','Miért vagyok fáradt?','A fáradtság mögött leginkább a rövid alvás áll.','Alváshiány'],['2','szeptember 7.','Miért mozog a súlyom?','A súlyod valóban csökken, a napi ugrálás víz.','Víz-visszatartás']];
+const DG13={1:{q:'Miért vagyok fáradt?',win:'augusztus 17–30. · az utolsó 14 nap adatából',v:'A fáradtság mögött leginkább a rövid alvás áll; a késői edzések csak rátesznek egy lapáttal.',
+   s:[{n:'Alváshiány',st:'erős',p:86,c:'Az utóbbi két hétben átlagosan egy órával kevesebbet aludtál, mint előtte.',ev:[['Alváshossz','6,1 óra','1,2 órával kevesebb','alvásnapló · 13 nap'],['Éjszakai ébredés','3,4','1,1-gyel több','alvásnapló · 13 nap']],pr:['7 nap','Feküdj le hét estén át 23 óra előtt, és figyeljük a reggeli energiádat.']},
+      {n:'Késői edzés',st:'mérsékelt',p:52,c:'A 19 óra utáni edzések utáni éjszakák 25 perccel rövidebbek.',ev:[['Esti edzés','4 alkalom','','edzésnapló · 14 nap'],['Alvás utána','5,7 óra','0,6 órával kevesebb','alvásnapló · 4 éjszaka']],pr:['14 nap','Két hétig tedd a nehéz edzésnapokat 18 óra elé.']}]},
+  2:{q:'Miért mozog a súlyom?',win:'augusztus 31. – szeptember 6. · heti számvetés',v:'A súlyod valóban csökken; a napi ugrálás a só és a víz, nem a zsír.',szam:[['−0,7 kg','valódi változás'],['82,4 kg','heti átlag'],['83,1 kg','előző hét'],['± 0,9 kg','víz okozta ingadozás']],
+   s:[{n:'Víz-visszatartás',st:'erős',p:86,c:'A sósabb napok után reggel 0,6–0,9 kilogrammal többet mutat a mérleg.',ev:[['Sóbevitel','5,8 g','1,4 g-mal több','étkezés · 7 nap'],['Reggeli súly','+0,8 kg','több','súlynapló · 3 reggel']],pr:['7 nap','Egy hétig tartsd a sót 4 g alatt, és nézzük a reggeli súlyt.']},
+      {n:'Kalóriahiány',st:'mérsékelt',p:52,c:'Átlagosan napi 420 kalóriával a szintentartó mennyiség alatt eszel.',ev:[['Napi átlag','2 180 kalória','420-szal kevesebb','étkezés · 7 nap']],pr:['7 nap','Maradj ennél, és figyeljük a heti átlagot.']}]}};
+const W13={busy:false,probe:{}};
+const askTop=()=>`${caps(3,W13.busy?2:3,W13.busy?'egy kérdés épp úton van · napi 3 kérdés':'napi 3 kérdés · a megnyitás mindig ingyen')}`;
+function diagnozis13(a){if(a)return O.diagnozis(a);
+  return page('mezo',{title:'Diagnózis',sub:'Kérdések a csapatnak · 2 riport',back:'csapat'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','Kérdezd meg a csapatot')}<h2 class="n7-h">${ASK13[0][0]}</h2><p class="ex-dates w13-l">${ASK13[0][1]}</p>
+    <div class="w13-cap" id="w13-cap">${askTop()}</div>
+    <div class="ex-acts w3-wide"><button class="n9-btn" data-w13="ask" id="w13-ask">${W13.busy?'A két hét adatait olvasom…':'Kérdezd meg most'}</button></div></section>
+  <section class="mx-s ln">${KH('Más kérdések')}<div class="w4-rl">${ASK13.slice(1).map(q=>`<button class="ex-mrow w4-r" data-toast="Kérdés feltéve — a riport készül">${E.drop('t-spark')}<span class="g"><b>${q[0]}</b><i class="q">${q[1]}</i></span><em>›</em></button>`).join('')}
+    ${info7('t-spark','Kell most könnyítő hét?','hamarosan')}${info7('t-spark','Havi Mezo-riport','hamarosan')}</div>
+    ${mzLine('Így megy: kérdés, aztán a gyanúsítottak bizonyítékkal, végül egy próba. Naponta három kérdés, a megnyitás mindig ingyen.')}</section>
+  <section class="mx-s ln">${KH('Korábbi riportok')}<div class="w4-rl">${REP13.map(r=>`<button class="ex-mrow w4-r" data-go="diag.${r[0]}">${E.drop('t-gem')}<span class="g"><b>${r[2]}</b><i class="q">${r[1]} · ${r[3]} A legerősebb gyanúsított: ${r[4]}.</i></span><em>›</em></button>`).join('')}</div></section></div>`)}
+const probeBtn=(id,i)=>W13.probe[id+':'+i]?(i===0?`<button class="n8-b" data-go="kiserletek">Aktív kísérlet lett: a Kísérletek oldalon követed ›</button>`:`<p class="ex-dates w13-ok">Elindítva: aktív kísérlet lett.</p>`):`<button class="n9-btn" data-w13="probe:${id}:${i}">Próbáljuk ki</button>`;
+function diag13(id){const d=DG13[id];if(!d)return O.diag(id);
+  return page('mezo',{title:d.q,sub:'Riport · '+d.win,back:'diagnozis'},`<div class="mx">
+  <section class="mx-s ex-hero">${eb7('mezo','A csapat válasza · '+d.win.split(' · ')[0])}<h2 class="n7-h">${d.v}</h2>
+    <div class="w4-tb w13-vi">${F.vials(d.s.map(s=>({l:s.n,ic:s.st==='erős'?'t-diagnose':'t-spark',p:s.p,v:s.st,c:s.st==='erős'?'#E7B25A':'var(--dom)'})).concat([{l:'A próba',ic:'t-flask',p:0,v:'vár'}]),{h:118})}</div>
+    ${mzLine('A szint a bizonyíték ereje. Mérsékelt a bizonyosság: azóta új adatod érkezett, a próba dönti el.')}</section>
+  ${d.szam?`<section class="mx-s ln">${KH('Számvetés')}<div class="w13-st">${d.szam.map(([v,l])=>`<span><b>${v}</b><small>${l}</small></span>`).join('')}</div></section>`:''}
+  <section class="mx-s ln">${KH('Gyanúsítottak, erősség szerint')}<div class="w13-sl">${d.s.map((s,i)=>`<article class="w13-c">
+    <small class="w13-e${s.st==='erős'?' w':''}">${i+1}. gyanúsított · ${s.st}</small><h3>${s.n}</h3><p>${s.c}</p>
+    <span class="w13-lv"><i style="width:${s.p}%;background:${s.st==='erős'?'#E7B25A':'var(--dom)'}"></i></span>
+    <div class="w13-ev">${s.ev.map(e=>`<div><span><b>${e[0]}</b><small>${e[3]}</small></span><em>${e[1]}${e[2]?`<small>${e[2]}</small>`:''}</em></div>`).join('')}</div>
+    <div class="w13-pr">${E.drop('t-flask')}<span><b>Próba · ${s.pr[0]}</b><small>${s.pr[1]}</small></span></div>
+    <div class="ex-acts w13-pa" id="w13-p-${id}-${i}">${probeBtn(id,i)}</div></article>`).join('')}</div></section></div>`)}
+mz.routes.diagnozis=diagnozis13;mz.routes.diag=diag13;
+document.addEventListener('click',e=>{const el=e.target.closest('[data-w13]');if(!el)return;e.preventDefault();e.stopPropagation();const ph=el.closest('.phone');if(!ph)return;
+  const [k,id,i]=el.dataset.w13.split(':');
+  if(k==='ask'){W13.busy=!W13.busy;const c=ph.querySelector('#w13-cap');if(c)c.innerHTML=askTop();el.textContent=W13.busy?'A két hét adatait olvasom…':'Kérdezd meg most';return}
+  if(k==='probe'){W13.probe[id+':'+i]=1;const b=ph.querySelector(`#w13-p-${id}-${i}`);if(b)b.innerHTML=probeBtn(id,+i)}},true);
+
 Object.keys(mz.routes).forEach(k=>{const f=mz.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>hubHead(f(...a));g.__hub=1;mz.routes[k]=g}});
 
 const ansOf=p=>{const r=RS[p.id];
@@ -731,7 +776,20 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(k==='tell'){RE[id]=!RE[id];refresh(id);const ta=document.querySelector('#sheet.on .w3-in')||document.querySelector('#phone [data-w7a] .w3-in');if(ta)ta.focus();return}
   if(k==='send'){const ta=b.parentElement.querySelector('.w3-in');if(ta&&!ta.value.trim()){F.toast('Írj pár szót — ebből tanul a csapat.');return}RS[id]='reply';RE[id]=false;refresh(id);F.toast(TT.reply)}},true);
 
-F.css(`
+F.css(`${P} .w13-vi{margin:14px 22px 0!important}${P} .w13-vi .k2-vials{gap:10px}${P} .w13-l{font-size:15px;line-height:1.45}${P} .w13-cap{margin:14px 22px 0}
+${P} .w13-st{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:4px 18px 0}${P} .w13-st span{display:grid;gap:3px;padding:14px 12px;border-radius:20px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .w13-st b{font:800 19px/1.1 var(--disp);color:var(--ink)}${P} .w13-st small{font-size:13px;color:var(--ink)}
+${P} .w13-sl{display:grid;gap:12px;margin:4px 18px 0}${P} .w13-c{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
+${P} .w13-e{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--ink);background:color-mix(in srgb,var(--dom) 12%,#fff)}${P} .w13-e.w{background:#FBEFD6;color:#8A5A08}
+${P} .w13-c h3{margin:8px 0 0;font:800 19px var(--disp);color:var(--ink)}${P} .w13-c>p{margin:6px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}
+${P} .w13-lv{display:block;height:12px;margin-top:12px;border-radius:999px;background:#EEF4F7;overflow:hidden}${P} .w13-lv i{display:block;height:100%;border-radius:999px}
+${P} .w13-ev{display:grid;margin-top:10px}${P} .w13-ev>div{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid rgba(10,42,60,.07)}
+${P} .w13-ev span{flex:1;display:grid;gap:2px;min-width:0}${P} .w13-ev b{font-size:15px;color:var(--ink)}${P} .w13-ev small{font-size:13px;color:var(--ink)}
+${P} .w13-ev em{font-style:normal;text-align:right;font:800 16px var(--disp);color:var(--ink);display:grid;gap:2px}${P} .w13-ev em small{font:600 12.5px var(--ff,inherit)}
+${P} .w13-pr{display:flex;gap:12px;align-items:center;margin-top:8px;padding:12px;border-radius:18px;background:color-mix(in srgb,var(--dom) 7%,#fff)}${P} .w13-pr>svg.ng{width:42px;height:42px;flex:none;margin:0}
+${P} .w13-pr span{display:grid;gap:2px}${P} .w13-pr b{font-size:15px;color:var(--ink)}${P} .w13-pr small{font-size:13.5px;line-height:1.35;color:var(--ink)}
+${P} .w13-pa{margin:12px 0 0}${P} .w13-pa .n9-btn{flex:1}${P} .w13-ok{margin:0;font-weight:700}
+
 ${P} .w3-team{margin:14px 14px 0}${P} .w3-team .gfm{pointer-events:none}${P} .w3-tm{flex:1;min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--ink)}
 ${P} .w3-tm small{font-size:12px!important;font-weight:600!important;color:var(--ink)!important;opacity:.8}
 ${P} .w3-wide{margin:16px 22px 0}${P} .w3-wide .n9-btn{flex:1}
