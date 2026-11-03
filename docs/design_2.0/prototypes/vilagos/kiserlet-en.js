@@ -71,9 +71,10 @@ O.test=en.routes.test;en.routes['test-lista']=O.test;
 const MON={'jan.':'január','febr.':'február','márc.':'március','ápr.':'április','jún.':'június','júl.':'július','aug.':'augusztus','szept.':'szeptember','okt.':'október','nov.':'november','dec.':'december'};
 const hu=h=>h.replace(/\b(jan|febr|márc|ápr|jún|júl|aug|szept|okt|nov|dec)\. /g,(m,k)=>MON[k+'.']+' ').replace(/(\d) ó(?=[\s<·])/g,'$1 óra').replace(/(\d) ó cél/g,'$1 óra a cél')
   .replace(/>09\/(\d\d)</g,'>szeptember $1.<').replace(/· min (\d)/g,'· legkisebb $1').replace(/kg \/ hét/g,'kg hetente');
-const sects=(base,from)=>{const out=[];let i=base.indexOf('<p class="fh-n',from);
+const nH=(h,f)=>{const m=h.slice(f).search(/<p class="fh-n[ "]/);return m<0?-1:f+m};
+const sects=(base,from)=>{const out=[];let i=nH(base,from);
   while(i>=0){const hd=base.slice(i,base.indexOf('</p>',i)).replace(/^[\s\S]*<\/b>/,''),ci=base.indexOf('<section',i),ce=bal(base,ci,'section');
-    out.push({hd,html:base.slice(ci,ce)});i=base.indexOf('<p class="fh-n',ce)}return out};
+    out.push({hd,html:base.slice(ci,ce)});i=nH(base,ce)}return out};
 const tidy=h=>hu(h).replace(/ rise"/g,'"').replace(/<p class="fh-note"[^>]*>([\s\S]*?)<\/p>/g,(m,t)=>mzLine(t));
 const sec12=(hd,body)=>`<section class="mx-s ln">${KH(hd)}<div class="w12-cw">${body}</div></section>`;
 const legend=a=>`<div class="w12-leg">${a.map(([c,t])=>`<span><i class="${c}"></i>${t}</span>`).join('')}</div>`;
@@ -226,6 +227,40 @@ function elemzes12(a){if(a)return O.elemzes(a);const base=O.elemzes('');
   <div class="ng-tail"></div></div>`)}
 en.routes.het=het12;en.routes.elemzes=elemzes12;
 
+/* ═══ SÚLYCÉL + its sub-pages (2026-11-03, owner: "a súlycél oldallal menjünk meg az aloldalaival"): one recipe for the
+   goal page, its five parts (étrendi keret, szakasz, tervkapcsolatok, védőkorlátok, javaslat) and the two-step new goal.
+   The approved hero becomes the sentence on top (eyebrow, verdict, the big number when there is one, the line under it),
+   its picture stays the picture (the draining vessel, the flow gauge, the tubes, the vials, the linked vessels), its first
+   button goes wide; the approved cards follow under plain headings, grey notes as Mezo's lines, training-plan shorthand
+   and units written out. ═══ */
+const hu2=h=>hu(h).replace(/kg\/hét/g,'kg hetente').replace(/(\d)[\s  ]kcal/g,'$1 kalória').replace(/<small>kcal<\/small>/g,'<small>kalória</small>').replace(/>kcal</g,'>kalória<')
+  .replace(/W(\d+)–(\d+)/g,'$1–$2. hét').replace(/W(\d+)\/(\d+)/g,'$1. hét a $2-ból').replace(/W(\d+)-től/g,'a $1. héttől').replace(/\bW(\d+)\b/g,'$1. hét')
+  .replace('P 163 · C 226 · F 66','fehérje 163 g · szénhidrát 226 g · zsír 66 g').replace(/≥ ?/g,'legalább ').replace(/\bkb\. /g,'körülbelül ')
+  .replace('Identity frame · opcionális','Ki akarsz lenni? · nem kötelező').replace(/\bMAV\b/g,'Csúcsterhelés').replace(/>3\/4</g,'>3 a 4-ből<').replace(/kalória-ból/g,'kalóriából').replace(/kalória-lal/g,'kalóriával').replace(/^kcal$/,'kalória').replace(/(\d+)\. hét a (\d+)-ból/g,'a $2 hétből a $1.').replace('Fuel-adattal','étkezési adattal').replace('Fuel-nap','étkezési nap');
+function gen12(base){const hi=base.indexOf('<section class="fh-card fh-hero');if(hi<0)return base;const he=bal(base,hi,'section'),H=base.slice(hi,he);
+  const lbl=g(H,/<span class="lbl">([^<]*)/),ver=g(H,/<p class="verdict"[^>]*>([\s\S]*?)<\/p>/),sub=g(H,/<p class="sub">([\s\S]*?)<\/p>/);
+  const big=H.match(/<div class="fh-big[^"]*">([^<]*)(?:<small>([^<]*)<\/small>)?<\/div>/);
+  const ai=H.indexOf('<div class="fh-acts">'),acts=ai<0?'':H.slice(ai+21,bal(H,ai)-6);
+  let pic=H.replace(/^<section[^>]*>/,'').replace(/<\/section>$/,'');
+  const drop0=(h,m,t)=>{const i=h.indexOf(m);return i<0?h:h.slice(0,i)+h.slice(bal(h,i,t))};
+  pic=drop0(pic,'<span class="fh-art"','span');pic=drop0(pic,'<div class="fh-acts">','div');pic=drop0(pic,'<div class="fh-big','div');
+  pic=pic.replace(/<span class="lbl">[^<]*<\/span>/,'').replace(/<p class="verdict"[^>]*>[\s\S]*?<\/p>/,'').replace(/<p class="sub">[\s\S]*?<\/p>/,'').replace(/<div style="flex:1;min-width:0"><\/div>/,'');
+  const hr=pic.indexOf('<div class="fh-hrow">');let side='';if(hr>=0){side=pic.slice(hr,bal(pic,hr)).replace(/^<div class="fh-hrow">/,'').replace(/<\/div>$/,'');pic=pic.slice(0,hr)+pic.slice(bal(pic,hr))}
+  const btns=[...acts.matchAll(/<button class="(btn[^"]*|fh-lk)"([^>]*)>([\s\S]*?)<\/button>/g)].map(([,c,at,t],i)=>`<button class="${i?'n8-b':'n9-btn'}"${at}>${t}</button>`).join('');
+  const top=`<section class="mx-s ex-hero"><small class="ex-eb">${hu2(lbl)}</small><h2 class="n7-h">${hu2(ver)}</h2>
+    ${big?`<p class="w12-sc"><b>${hu2(big[1])}</b><span>${hu2(big[2]||'')}${sub?'<br>'+hu2(sub):''}</span></p>`:side?`<div class="w12-hs">${side}</div>${sub?`<p class="w12-ln">${hu2(sub)}</p>`:''}`:sub?`<p class="w12-ln">${hu2(sub)}</p>`:''}
+    ${pic.trim()?`<div class="w12-ch w12-pic">${hu2(pic)}</div>`:''}${btns?`<div class="ex-acts w12-wide">${btns}</div>`:''}</section>`;
+  const ss=sects(base,he);let last=he;for(let i=nH(base,he);i>=0;i=nH(base,last))last=bal(base,base.indexOf('<section',i),'section');
+  const body=ss.map(x=>sec12(hu2(x.hd).replace(/ · \d+ hét$/,'').replace(/^(Ütem) · áramlás$/,'$1').replace(' · hét tál',''),rows12(lanes12(tidy(hu2(x.html)))))).join('');
+  return hu2(base.slice(0,hi))+`${''}<div class="mx w12-g2">${top}${body}<div class="ng-tail"></div></div>`+base.slice(last)}
+/* a lane's labels never fit inside its bars at 320: the bars stay, their words go under them */
+const lanes12=h=>h.replace(/<div class="en-lane">([\s\S]*?)<\/div>/g,(m,it)=>{const t=[...it.matchAll(/>([^<]+)<\/i>/g)].map(x=>x[1]);
+  return `<div class="en-lane">${it.replace(/>([^<]+)<\/i>/g,'></i>')}</div><p class="w12-lc">${t.join(' · ')}</p>`});
+/* the approved row with a value on the right becomes the shared row: icon drop, title, the line with the value in it */
+const rows12=h=>h.replace(/<button class="fh-row" ([^>]*)><span class="si"><svg[^>]*><use href="#([^"]+)"[^>]*>(?:<\/use>)?<\/svg><\/span><span class="g"><strong>([^<]*)<\/strong><small>([^<]*)<\/small><\/span>(?:<span class="v">([^<]*)<\/span>)?(<span class="st [^"]*">[^<]*<\/span>)?<svg[\s\S]*?<\/svg><\/button>/g,
+  (m,at,ic,t,sm,v,st)=>`<button class="ex-mrow w12-r" ${at}>${drop(ic.replace(/^tc-/,'t-'))}<span class="g"><b>${t}</b><i class="q">${v?`<b class="w12-v">${v}</b> · `:''}${sm}</i>${st?`<span class="w12-stt">${st}</span>`:''}</span><em>›</em></button>`);
+for(const k of ['sulycel','sulyresz','sulyuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(f(a))}
+
 /* buoy taps: swap Mezo's line in place, mark the buoy (no re-render) */
 document.addEventListener('click',e=>{const el=e.target.closest('[data-w12]');if(!el)return;e.preventDefault();e.stopPropagation();
   const [k,v]=el.dataset.w12.split(':');if(k==='dec'){const d=el.closest('.phone')?.querySelector('#w12-dec');if(d)d.innerHTML=decDone(v);return}if(k!=='stn')return;const ph=el.closest('.phone'),box=ph&&ph.querySelector('#w12-stn p');if(!box)return;
@@ -322,6 +357,13 @@ ${P} .w12-nine>div>*{position:relative}${P} .w12-nine b{font:800 17px/1.15 var(-
 ${P} .w12-str{display:block;margin-top:6px}${P} .w12-str .en-leg{font-size:12.5px;color:var(--ink);margin-top:6px}
 ${P} .w12-pcs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}${P} .w12-pc{display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 4px;border-radius:999px;background:color-mix(in srgb,var(--dom) 8%,#fff);font-size:13.5px;font-weight:600;color:var(--ink)}${P} .w12-pc svg.ng{width:30px;height:30px;margin:0}
 @container (max-width:340px){}
+${P} .w12-hs{display:flex;justify-content:center;margin:10px 22px 0}${P} .w12-hs>svg{flex:none}${P} .w12-lc{margin:4px 0 8px;font-size:13px;line-height:1.35;color:var(--ink)}${P} .w12-g2 .w12-cw .fh-card:has(.w12-r){background:none;box-shadow:none;padding:0;display:grid;gap:10px}${P} .w12-v{font-weight:800}${P} .w12-stt{display:block;margin-top:4px}${P} .w12-stt .st{font-size:12.5px}${P} .w12-hsb{margin:0;font-size:15px;line-height:1.45;color:var(--ink)}
+${P} .w12-pic{margin-top:14px}${P} .w12-pic .en-cells{gap:8px}${P} .w12-pic .en-cells b{font-size:18px}${P} .w12-pic .en-cells small,${P} .w12-pic .en-leg,${P} .w12-pic .en-tubes small{font-size:13px;color:var(--ink)}
+${P} .w12-pic .k2-vials small,${P} .w12-cw .k2-vials small{font-size:12.5px}${P} .w12-cw .en-cells small{font-size:12.5px;color:var(--ink)}${P} .w12-cw .en-flow .ax span{font-size:12.5px}
+${P} .w12-g2 .w12-cw .fh-row strong{font-size:15.5px}
+${P} .w12-g2 :is(.en-leg,.en-cells small,.en-tubes small,.fh-facts small,.k2-vials small,.fh-row .st,.en-lane i){font-size:12.5px!important;color:var(--ink)}
+${P} .w12-g2 .fh-facts b{font-size:17px}${P} .w12-g2 .en-cells b i{font-size:13px}${P} .w12-g2 .en-ruler{display:none}${P} .w12-g2 .en-lane i{white-space:normal;line-height:1.2;height:auto;min-height:24px;padding:3px 6px}
+${P} .w12-g2 .en-drain .dl{font-size:17px}${P} .w12-g2 .en-drain .ds{font-size:15px}${P} .w12-g2 .en-lk svg text{font-size:12.5px}${P} .w12-g2 .fh-row:has(.en-ck){display:grid;grid-template-columns:36px 1fr;gap:6px 12px;align-items:start}${P} .w12-g2 .fh-row:has(.en-ck) .st{grid-column:2;justify-self:start}
 ${P} .w12-ob{padding:16px;border-radius:24px;background:#fff;box-shadow:0 10px 24px -16px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .w12-ob p{margin:10px 0 0;font-size:15px;line-height:1.45;color:var(--ink)}${P} .w12-in{margin:12px 0 0}
 ${P} .fh-tabs{gap:2px;justify-content:space-between}${P} .fh-tabs button{padding:8px 10px;flex:0 0 auto;min-height:40px}@media (max-width:360px){${P} .fh-tabs button{padding:7px 6px;font-size:13px}}
