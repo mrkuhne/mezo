@@ -639,7 +639,7 @@ function chain(k,n,nx){const G=RUT[k],N=G.rows.length,dn=G.rows.filter(r=>r[4]).
 function rutinBody(){const R=RUT[face],done=R.rows.filter(r=>r[4]).length,nx=R.rows.findIndex(r=>!r[4]),all=nx<0;
   const order=[face,...Object.keys(RUT).filter(k=>k!==face)];
   return `<div class="mx"><section class="mx-s"><h2 class="n7-h">${all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`}</h2>
-    <div class="rt-acts rt-day"><button class="fh-lk" data-n="rst:rutin:past" data-ngy="1">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></section>
+    <div class="rt-acts rt-day"><button class="fh-lk" data-go="rutin-tegnap">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></section>
   ${order.map((k,i)=>chain(k,i+1,k===face?nx:-1)).join('')}
   <section class="mx-s ln mx-end rt-end"><button class="mx-km" data-go="rutin-epites">${I('t-chain')}<span>Rutinok szerkesztése</span></button></section></div>`}
 const rutinFoot=()=>{const R=RUT[face],nx=R.rows.findIndex(r=>!r[4]);return nx<0?`<span class="rt-fdone">Mind megvan mára. Szép munka.</span>`
@@ -653,15 +653,36 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!
 nap.routes['eletjel-lista']=O.eletjel;nap.routes.eletjel=eletjel2;nap.routes['checkin-lista']=O.checkin;nap.routes.checkin=checkin2;nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes['napzaras-lista']=nap.routes.napzaras;['rutin-epites','lanc','szokasok','szokas','szerk','rutin-uj'].forEach(k=>nap.routes[k+'-lista']=nap.routes[k]);Object.assign(nap.routes,{'rutin-epites':rutinEp2,lanc:lanc2,szokasok:szokasok2,szokas:szokas2,szerk:szerk2,'rutin-uj':rutinUj2});nap.routes.napzaras=napzaras2;nap.routes.mai=a=>!a||['ures','hiba','kimelo','kimelo-lejart'].includes(a)?mai2(a||null):O.mai(a);nap.routes.maieste=()=>mai2('este');nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
 nap.routes.napom=a=>a==='nincs'?today3(true):a?O.napom(a):today3();nap.routes.nap=day;nap.routes.napomg=today3;nap.routes.napomt=today3;
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
-/* review fixes (2026-11-03): Rutin "‹ Tegnap" opens the approved past-day view. The approved handler (nap.js
-   data-n="rst:rutin:past", a document capture listener that stops the event) switches its own state; this window
-   listener sees the click first and moves, a tick later, to the page that shows it. "Vissza a mai napra"
-   (rst:rutin:full) comes back to the Rutin page. */
-nap.routes['rutin-tegnap']=()=>nap.routes['rutin-epites-lista']();
-let rtBack=false;
-window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-n="rst:rutin:past"],[data-n="rst:rutin:full"]');if(!b)return;
-  if(b.dataset.ngy){rtBack=true;setTimeout(()=>{location.hash='#w-nap-rutin-tegnap'});return}
-  if(location.hash!=='#w-nap-rutin-tegnap')return;setTimeout(()=>{if(rtBack){rtBack=false;history.back()}else location.replace('#w-nap-rutin')})},true);
+/* review fixes (2026-11-03, round 2): Rutin "‹ Tegnap" opens yesterday in the new system — the approved past-day
+   content (nap.js rutinEpites past: "Tegnap · kedd · +45 XP", "Reggel 4 az 5-ből, este mind megvolt.", the Reggeli
+   videó missed, both chains, "Vissza a mai napra") drawn as the Rutin tab draws today: the chain-link vessels, the
+   missed link dashed. The route renders on its own (a direct link shows yesterday too); the approved view stays at
+   rutin-epites-lista. */
+const RTG=[['Reggeli lánc',[['Ébredés időben','t-dawn'],['Reggeli napfény','t-sun'],['50 fekvőtámasz','t-dumbbell'],['Reggeli videó','t-camera',1],['Gombakávé','t-bowl']]],
+  ['Esti lánc',[['Koffein-cutoff','t-clock'],['Konyha zárva','t-stack']]]];
+const TICK_RT='<i class="rt-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg></i>';
+function chainPast([title,rows]){const N=rows.length,dn=rows.filter(r=>!r[2]).length;
+  return `<section class="mx-s ln"><div class="mx-h rt-h"><b>${title} · ${dn}/${N}</b></div><div class="rt-chain rtg">${rows.map(([nm,ic,miss],i)=>{const row=Math.floor(i/3),c=i%3,dir=i===N-1?'':c===2?'wrap':'rt';
+    return `<div class="rt-b ${miss?'miss':'done'} ${dir}" style="grid-column:${c+1};grid-row:${row+1};--p:0%" role="img" aria-label="${nm} · ${miss?'kimaradt':'megvolt'}">
+      <span class="rt-v">${I(ic)}${miss?'':TICK_RT}</span><b>${nm}</b>${miss?'<small><em>kimaradt</em></small>':''}</div>`}).join('')}</div></section>`}
+function rutinTegnap(){
+  return reWrap({title:'Tegnap',sub:'Rutin · kedd, szeptember 22.',back:'rutin'},`<section class="mx-s"><h2 class="n7-h">Reggel 4 az 5-ből, este mind megvolt.</h2>
+    <p class="rtg-day">Tegnap · kedd · <b>+45 XP</b></p></section>
+  ${RTG.map(chainPast).join('')}
+  <section class="mx-s ln"><div class="ex-mz rtg-mz">${badge('mezo',{s:30})}<p>A <b>Reggeli videó</b> kimaradt, de a lánc másnap folytatódott, nem szakadt meg.</p></div></section>
+  <section class="mx-s ln mx-end rt-end"><button class="mx-km" data-rtg="back">${I('t-chain')}<span>Vissza a mai napra</span></button></section>`)}
+nap.routes['rutin-tegnap']=rutinTegnap;
+/* the Rutin "‹ Tegnap" button is a plain data-go; "Vissza a mai napra" does what the header back button does
+   (the shell steps back to Rutin, or follows its data-go="rutin" on a direct link) */
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-rtg]');if(!t)return;e.preventDefault();e.stopPropagation();
+  const bk=document.querySelector('#phone .fh-back');if(bk)bk.click();else location.replace('#w-nap-rutin')},true);
+F.css(`/* kiserlet-napom · rutin-tegnap (the shell keys F.css by its first 60 characters) */
+${P} .rtg-day{margin:8px 22px 0;font-size:14px;font-weight:600;color:var(--sub)}${P} .rtg-day b{color:var(--ink)}
+${P} .rt-b.miss .rt-v{box-sizing:border-box;background:#fff;box-shadow:none;border:2.5px dashed var(--warn)}
+${P} .rt-b.miss .rt-v>svg.ic{opacity:.55}${P} .rt-b.miss>small em{color:#8A5F06}
+${P} .mx-s .rtg .rt-b.miss{height:auto!important;min-height:100px;padding-bottom:6px}${P} .rtg .rt-b.miss>small{white-space:normal}
+${P} .rtg-mz{display:flex;gap:10px;align-items:flex-start;margin:16px 22px 0}${P} .rtg-mz>*:first-child{flex:none}
+${P} .rtg-mz p{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink)}`);
 /* the Nap chat buttons only toasted "Mezo · Chat" although the Mezo chat page exists: they open it */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-toast]');if(!b||!b.closest('.phone[data-d="nap"]'))return;
   if(!/^Mezo · Chat|^Beszélgetés a napról \(Mezo chat\)/.test(b.dataset.toast))return;e.preventDefault();e.stopPropagation();location.hash='#w-mezo-chat'},true);
@@ -1315,7 +1336,17 @@ const hubHead=h=>{if(typeof h!=='string'||h.indexOf('fh-trow hub')<0)return h;
   const m=h.match(/<div class="fh-title"><h1>[^<]*(<button class="fh-help"[^>]*>\?<\/button>)<\/h1><\/div>/);if(!m)return h;
   return h.replace(m[0],'').replace(/<small class="fh-eb">[\s\S]*?<\/small>/,'<span class="fh-eb">'+m[1]+'</span>')};
 /* review fixes (2026-11-03): no abbreviations — "kcal" reads "kalória" in the Nap page texts, as in Én (text only, attributes untouched) */
-const kcal=h=>typeof h!=='string'||h.indexOf('kcal')<0?h:h.replace(/>([^<]*)</g,(m,t)=>t.indexOf('kcal')<0?m:'>'+t.replace(/\bkcal-lal\b/g,'kalóriával').replace(/\bkcal-t\b/g,'kalóriát').replace(/\bkcal\b/g,'kalória')+'<');
+const KCW=t=>t.replace(/\bkcal-lal/g,'kalóriával').replace(/\bkcal-t\b/g,'kalóriát').replace(/\bkcal-ban/g,'kalóriában').replace(/\bkcal-ból/g,'kalóriából').replace(/\bkcal-os\b/g,'kalóriás').replace(/\bkcal\b/g,'kalória');
+const kcal=h=>typeof h!=='string'||h.indexOf('kcal')<0?h:h.replace(/>([^<]*)</g,(m,t)=>t.indexOf('kcal')<0?m:'>'+KCW(t)+'<');
+/* the toast and the drawer get their text after the page is drawn (the shell writes data-toast into #toast with
+   textContent, and a sheet's HTML into #sheet), so the page pass above never sees them: a MutationObserver rewrites
+   their text nodes, in all five domains, before the browser paints (observer callbacks run as a microtask). Only
+   text nodes change; the shell's own show/hide classes and timers are untouched. */
+const kcalNode=root=>{if(!root||root.textContent.indexOf('kcal')<0||!root.closest(P))return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
+  while((n=w.nextNode()))if(n.nodeValue.indexOf('kcal')>=0){const v=KCW(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}};
+/* a toast is plain text: markup that leaked into a data-toast (edzes.js Mozgás tubes: "180<u> perc</u>") is dropped */
+const toastTags=t=>{if(!t||t.textContent.indexOf('<')<0||!t.closest(P))return;const v=t.textContent.replace(/<\/?[a-z][^>]*>/gi,'');if(v!==t.textContent)t.textContent=v};
+new MutationObserver(()=>{const t=document.getElementById('toast');toastTags(t);kcalNode(t);kcalNode(document.getElementById('sheet'))}).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
 Object.keys(nap.routes).forEach(k=>{const f=nap.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>kcal(hubHead(f(...a)));g.__hub=1;nap.routes[k]=g}});
 F.css(`${P} .fh-trow.hub .fh-eb .fh-help{width:40px;height:40px;margin:0;font-size:17px;background:#fff;border:0;box-shadow:0 4px 12px -6px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .fh-trow.hub+.fh-tabs{margin-top:12px}

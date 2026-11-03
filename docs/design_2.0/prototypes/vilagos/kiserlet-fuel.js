@@ -373,14 +373,39 @@ Object.keys(fu.routes).forEach(k=>{const f=fu.routes[k];if(typeof f==='function'
 const inText=f=>h=>typeof h==='string'?h.replace(/>([^<]+)</g,(m,t)=>'>'+f(t)+'<'):h;
 const kcal=inText(t=>t.replace(/KCAL-T/g,'KALÓRIÁT').replace(/kcal-t\b/g,'kalóriát').replace(/kcal-lal\b/g,'kalóriával').replace(/kcal-os\b/g,'kalóriás')
   .replace(/\bKCAL\b/g,'KALÓRIA').replace(/\bKcal\b/g,'Kalória').replace(/\bkcal\b/g,'kalória'));
-/* the approved Fuel data lives in an October week whose today is Wednesday, október 7.: a date with its weekday moves
-   back 13 days and takes the right weekday, so yesterday reads "szerda, szeptember 23." */
+/* follow-up (2026-11-03): Fuel's dates agree with the rest of the app. The approved data's today is Wednesday,
+   október 7. 2026 (header "Szerda, október 7.", yesterday "kedd, október 6."); everyone else's is Thursday,
+   szeptember 24. So every dated day moves back ONE constant 13 days and takes its real 2026 weekday (yesterday reads
+   "szerda, szeptember 23.", the weekly dose moves from Monday to Tuesday). 13 days is not whole weeks, so things
+   anchored to a Monday–Sunday week stay Monday–Sunday instead: "Ez a hét" is the app's week, szeptember 21–27 (its
+   day drawers keep their weekday: Hétfő · szept. 21. … Vasárnap · szept. 27.), and the learning page's "legutóbbi
+   hét" (szept. 28 – okt. 4.), its days and its weekly labels move back two whole weeks (szept. 14–20.). Month
+   names keep the form they had (long "szeptember", chart-axis short "szept."). Text nodes only. */
 const DN=['vasárnap','hétfő','kedd','szerda','csütörtök','péntek','szombat'];
-const shiftDay=inText(t=>t.replace(/(Vasárnap|Hétfő|Kedd|Szerda|Csütörtök|Péntek|Szombat|vasárnap|hétfő|kedd|szerda|csütörtök|péntek|szombat), (október|okt\.) (\d{1,2})\./g,(m,wd,mo,d)=>{
-  const x=new Date(2026,9,+d-13),n=DN[x.getDay()],nd=/^[A-ZÁÉÍÓÖŐÚÜŰ]/.test(wd)?n[0].toUpperCase()+n.slice(1):n;
-  return `${nd}, ${x.getMonth()===8?(mo==='okt.'?'szept.':'szeptember'):mo} ${x.getDate()}.`}));
+const ML=['január','február','március','április','május','június','július','augusztus','szeptember','október','november','december'];
+const MS=['jan.','febr.','márc.','ápr.','máj.','jún.','júl.','aug.','szept.','okt.','nov.','dec.'];
+const WDS='Hétfő|Kedd|Szerda|Csütörtök|Péntek|Szombat|Vasárnap|hétfő|kedd|szerda|csütörtök|péntek|szombat|vasárnap';
+const MON='('+[...ML,...MS].map(x=>x.replace('.','\\.')).join('|')+')';
+const DRX=new RegExp(`(?:(${WDS})(, | · ))?${MON} (\\d{1,2})\\.(?![\\d–])`,'g');
+const cap=(s,like)=>/^[A-ZÁÉÍÓÖŐÚÜŰ]/.test(like)?s[0].toUpperCase()+s.slice(1):s;
+/* wd: shift of a day that names its weekday; bare: shift of a date without one (weekly labels use whole weeks) */
+const dates=({wd=-13,bare=-13}={})=>inText(t=>t
+  .replace(/október 1–7\./g,'szeptember 21–27.').replace(/szept\. 28 – okt\. 4\./g,'szept. 14–20.')
+  .replace(DRX,(m,w,sep,mo,d)=>{const short=MS.includes(mo),mi=short?MS.indexOf(mo):ML.indexOf(mo);
+    if(w&&sep===' · '&&mi===9&&+d<=7)return `${w} · szept. ${20+ +d}.`;   /* "Ez a hét" day drawers: the app's week */
+    const x=new Date(2026,mi,+d+(w?wd:bare)),mo2=(short?MS:ML)[x.getMonth()];
+    return (w?cap(DN[x.getDay()],w)+sep:'')+`${mo2} ${x.getDate()}.`})
+  .replace(/^okt\.$/,''));   /* the Trendek waterfall's month label: its seven weeks now end in September */
+const DT={tanulas:dates({bare:-14})};
+const medDay=inText(t=>t.replace(/heti · hétfő/,'heti · kedd').replace(/„Hétfő reggel/,'„Kedd reggel'));
+/* abbreviations → words (2026-11-03): the recipe filter's "Vacsi", the pantry's "Supp" / "Stim", the score's "Feldolg." */
+const words=inText(t=>t.replace(/^Vacsi$/,'Vacsora').replace(/^Supp$/,'Kiegészítő').replace(/^Stim$/,'Stimuláns').replace(/^Feldolg\.$/,'Feldolgo­zott'));
 Object.keys(fu.routes).forEach(k=>{const f=fu.routes[k];if(typeof f!=='function'||/-lista$/.test(k)||f.__kx)return;
-  const w=k==='mai'?(...a)=>kcal(shiftDay(f(...a))):(...a)=>kcal(f(...a));w.__kx=1;w.__hub=f.__hub;fu.routes[k]=w});
+  const dt=DT[k]||dates(),w=k==='gyogyszer'?(...a)=>medDay(words(kcal(dt(f(...a))))):(...a)=>words(kcal(dt(f(...a))));w.__kx=1;w.__hub=f.__hub;fu.routes[k]=w});
+/* the drawers carry the same dates: the last week's own drawer counts in whole weeks; the learning drawers' chart axis too */
+if(fu.sheets)Object.keys(fu.sheets).forEach(k=>{const f=fu.sheets[k];if(typeof f!=='function'||f.__kx)return;
+  const w=k==='weekly'?(...a)=>dates({wd:-14,bare:-14})(f(...a)):k==='hw'?(...a)=>dates({bare:String(a[0])==='1'?-14:-13})(f(...a)):k==='dose'?(...a)=>medDay(dates()(f(...a))):(...a)=>dates()(f(...a));
+  w.__kx=1;fu.sheets[k]=w});
 
 F.css(`/* kiserlet-fuel */
 ${P} .fx-wk{margin:14px 14px 0}${P} .fx-wk .fu-wk{margin:0}${P} .fx-wk .fu-wd small{font-size:12px!important}${P} .fx-wk .fu-wd em{font-size:13px!important}

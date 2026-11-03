@@ -266,9 +266,9 @@ const SWST={done:['Megvolt','ok'],miss:['Elmaradt','bad'],today:['Ma','now'],pla
 const SPLW={'shoulder-front':3,'shoulder-side':2,quad:3,ham:3,calf:2,core:1};
 const sportWeek=head=>{const done=SW.filter(x=>x[4]==='done').reduce((q,x)=>q+x[3],0),all=SW.reduce((q,x)=>q+x[3],0);
   return `<section class="mx-s ln">${KH(head,'',`<button class="fh-lk" data-go="mozgas">Részletek ›</button>`)}
-    <p class="ex-say"><b>${done} perc</b> megvolt a heti ${all}-ból, a röpi <b>610 kcal</b>-t hozott.</p>
+    <p class="ex-say"><b>${done} perc</b> megvolt a heti ${all}-ból, a röpi <b>610 kalóriát</b> hozott.</p>
     <div class="ex-sw">${SW.map(([d,ic,n,m,st])=>`<button class="${st}" data-go="mai.${({Kedd:'kedd',Szerda:'sze',Csütörtök:'csu',Péntek:'pen',Szombat:'szo'})[d]}"><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${st==='done'?V.drop({ic}):V.icd({ic})}</svg>
-      <small>${d.slice(0,d==='Csütörtök'?3:d==='Szerda'?3:d==='Szombat'?3:1)}</small><b>${n}</b><em>${m} p</em><i class="${SWST[st][1]}">${SWST[st][0]}</i></button>`).join('')}</div>
+      <small>${({Kedd:'K',Szerda:'Sze',Csütörtök:'Cs',Péntek:'P',Szombat:'Szo'})[d]||d[0]}</small><b>${n}</b><em>${m} p</em><i class="${SWST[st][1]}">${SWST[st][0]}</i></button>`).join('')}</div>
     <div class="ex-swb">${body('front',Object.entries(SPLW).map(([k,n])=>[k,0,n/3]))}<ul>
       <li>${I('t-volley')}<span><b>Röpi</b> váll, láb, core</span></li><li>${I('t-run')}<span><b>Futás</b> láb, lábhajlító, vádli</span></li></ul></div>
     <div class="ex-mz">${badge('mezo',{s:30})}<p>A sport nem számít bele a szettekbe, de a pihenésednél figyelembe veszem.</p></div></section>`};
@@ -519,7 +519,7 @@ function indulas3(a){if(a)return O.indulas(a);
     ic:g(r,/class="vs-qt">[\s\S]*?href="#([^"]+)"/),t:g(r,/<\/svg><\/span>([^<]*)<\/span> <b>/).trim(),goal:g(r,/<\/span> <b>([^<]*)<\/b>/),cert:g(r,/<br>([^·<]*)/).trim(),why:g(r,/data-toast="([^"]*)">Miért/)}));
   const RS=(R?R.html.split('<div class="fh-row  ">').slice(1):[]).map(r=>{const sm=g(r,/<small>([^<]*)/);return {chip:g(r,/(<span class="mchp sm"[\s\S]*?<\/svg><\/span>)/).replace('mchp sm','mchp'),c:g(r,/--c:([^"]+)"/),n:g(r,/<strong>([^<]*)/),
     sets:+g(sm,/^(\d+) szett/),goal:g(sm,/cél ([^·]*)/).trim(),chg:sm.split(' · ').slice(2).join(' · '),warn:g(r,/<span class="vs-warn">([^<]*)/),flag:/vs-rr"><span class="fb/.test(r)}});
-  const short=n=>({'Húzódzkodás (súlyozott)':'Húzódzk.','Döntött törzsű evezés':'Evezés','Rear Delt Fly':'Rear Delt','Kalapácsbicepsz':'Kalapács','Vállemelés':'Vállemelés'})[n]||n.split(' ')[0];
+  const short=n=>({'Húzódzkodás (súlyozott)':'Húzódz\u00ADkodás','Döntött törzsű evezés':'Evezés','Rear Delt Fly':'Rear Delt','Kalapácsbicepsz':'Kalapács','Vállemelés':'Váll\u00ADemelés'})[n]||n.split(' ')[0];
   let ti=0;const tubes=F.vials(RS.map(x=>({l:short(x.n),v:x.goal.replace(/ × /,'×'),s:x.chg.replace('könnyítve · ','').replace('tartjuk','tartjuk'),p:0,c:`color-mix(in srgb,${x.c} 74%,#0A2A3C)`,mark:x.flag?'⚑':'',on:{toast:`${x.n} · ${x.sets} szett · cél ${x.goal}${x.warn?' · '+x.warn:''}`}})),{h:120})
     .replace(/<span class="k2-tube"([^>]*)>/g,(m)=>{const x=RS[ti++]||{};return `<span class="ex-mc">${x.chip||''}</span>${m}${Array.from({length:Math.max(0,(x.sets||1)-1)},(_,k)=>`<i class="ex-notch" style="bottom:${(k+1)/(x.sets||1)*100}%"></i>`).join('')}`});
   const warns=RS.filter(x=>x.warn);
@@ -545,7 +545,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('[data-ve^="btick"]')
    brings that exercise up (owner: the "A mai sor" list goes, the tubes do the same); the current exercise without a card:
    drawing, name, "last week → today", the mission line, three round tools; the approved set table stays; the bottom bar
    is "Gyakorlat hozzáadása" + "Edzés befejezése"; the legend and the notes move behind the title's "?". ═══ */
-const SHORTN=n=>({'Húzódzkodás (súlyozott)':'Húzódzk.','Döntött törzsű evezés':'Evezés','Rear Delt Fly':'Rear Delt','Kalapácsbicepsz':'Kalapács','Vállemelés':'Vállemelés'})[n]||n.split(' ')[0];
+const SHORTN=n=>({'Húzódzkodás (súlyozott)':'Húzódz\u00ADkodás','Döntött törzsű evezés':'Evezés','Rear Delt Fly':'Rear Delt','Kalapácsbicepsz':'Kalapács','Vállemelés':'Váll\u00ADemelés'})[n]||n.split(' ')[0];
 /* round 2 (owner, 2026-10-30): ticking is live — a tick marks the set done at once and moves to the next; the rest
    timer starts after every set but the last (150 s compound, 90 s isolation, +30 / Kész), and "hogy ment?" comes only
    after the LAST set of an exercise, then the next unfinished exercise comes up — as in the live app
@@ -558,7 +558,7 @@ const goFocus=i=>{const ph=document.querySelector('#phone');if(!ph)return;const 
 function seedSets(name,sets){if(SM[name])return;SM[name]=sets.split('<span class="n').slice(1).map(r=>{const v=[...r.matchAll(/class="v [du]">([^<]*)<\/span>/g)].map(m=>m[1]),iv=[...r.matchAll(/<input class="vin"[^>]*value="([^"]*)"/g)].map(m=>m[1]);
   return /^ f"/.test(r)?{st:'d',kg:v[0],r:v[1],rir:v[2],vd:/rekord/.test(r)?'record':'tick'}:{st:'u',kg:(iv[0]||v[0]),r:(iv[1]||v[1]),rir:(iv[2]||v[2])}})}
 const setTable=(name,fi,c)=>{const L=SM[name]||[],cur=L.findIndex(x=>x.st!=='d');
-  return `<div class="ex-st" style="--c:${c}"><span class="h">#</span><span class="h">kg</span><span class="h">ism</span><span class="h">RIR</span><span></span>${L.map((x,j)=>x.st==='d'
+  return `<div class="ex-st" style="--c:${c}"><span class="h">#</span><span class="h">kg</span><span class="h">ismétlés</span><span class="h">tartalék</span><span></span>${L.map((x,j)=>x.st==='d'
     ?`<span class="n d">${j+1}</span><span class="v d">${x.kg}</span><span class="v d">${x.r}</span><span class="v d">${x.rir}</span><button class="ok ${x.vd}" data-sheet="set" data-arg="${fi}.${j}" aria-label="${j+1}. szett kész · szerkesztés">${I(x.vd==='record'?'t-record':'t-tick')}</button>`
     :j===cur?`<span class="n c">${j+1}</span><input class="vin" inputmode="decimal" value="${x.kg}" aria-label="Súly, kg"><input class="vin" inputmode="numeric" value="${x.r}" aria-label="Ismétlés"><input class="vin" inputmode="numeric" value="${x.rir}" aria-label="RIR"><button class="tk" data-exs="tick" aria-label="Szett kész">${I('t-tick')}</button>`
     :`<span class="n">${j+1}</span><span class="v u">${x.kg}</span><span class="v u">${x.r}</span><span class="v u">${x.rir}</span><span></span>`).join('')}</div>`};
@@ -626,7 +626,7 @@ function review3(a){if(a)return O.review(a);
   const top=`<section class="mx-s ex-hero">${prevLk}<small class="ex-eb">${g(hh,/<span class="lbl">([^<]*)/)}</small><h2 class="n7-h">${v}</h2><p class="ex-dates">${line}</p><div class="ex-wk ex-rv2">${tubes}</div></section>`;
   const parts=cs.slice(1).map(c=>{const R=rowsR(c.html),hd=c.head||'';
     if(/Mihez/.test(hd)){const trend=g(c.html,/<p class="fh-note">(A javulás[^<]*)/);return `<section class="mx-s ln">${KH('Múlt héthez képest','',`<span class="ex-cnt">${hd.split(' · ').slice(1).join(' · ')}</span>`)}
-      <div class="ex-rt">${R.map(r=>`<div><small>${r.title.replace('Ø RIR','Átlag RIR')}</small><b>${r.v.replace(/<small>([^<]*)<\/small>/,'<em class="up">$1</em>')}</b><em>${r.sub.replace(/ · .*$/,'')}</em></div>`).join('')}</div>${trend?`<div class="ex-mz">${badge('mezo',{s:30})}<p>${trend}</p></div>`:''}</section>`}
+      <div class="ex-rt">${R.map(r=>`<div><small>${r.title.replace('Ø RIR','Tartalék')}</small><b>${r.v.replace(/<small>([^<]*)<\/small>/,'<em class="up">$1</em>')}</b><em>${r.sub.replace(/ · .*$/,'')}</em></div>`).join('')}</div>${trend?`<div class="ex-mz">${badge('mezo',{s:30})}<p>${trend}</p></div>`:''}</section>`}
     if(/Medál/.test(hd))return `<section class="mx-s ln">${KH('Medálok','',`<span class="ex-cnt">${hd.split(' · ').slice(1).join(' · ')}</span>`)}<div class="ex-mr">${R.map(r=>{const [kind,prev]=r.sub.split(' · előző: ');return /célszett/.test(r.title)?recCard(r.title,'célszettek',r.sub,''):recCard(r.title,kind,r.v,prev)}).join('')}</div>${dots(Math.max(1,R.length-1))}</section>`;
     if(/Küldet/.test(hd))return `<section class="mx-s ln">${KH('Küldetések')}<div class="ex-pl">${R.map(r=>{const ok=/ok/.test(r.st);return `<article class="ex-plc ex-qd ${ok?'ok':''}"><span class="mt-bub">${I(ok?'t-tick':'t-flag')}</span><b>${r.title}</b><small>${ok?'megvan':'nem jött össze, nem baj'}</small></article>`}).join('')}</div></section>`;
     if(/Gyakorlaton/.test(hd))return `<section class="mx-s ln">${KH('Gyakorlatonként')}<div class="ex-xl">${R.map(r=>`<button class="ex-xr2" data-go="${r.go||'review.gyak'}">${r.chip.replace('mchp sm','mchp')}<span class="g"><b>${r.title}</b><small>${r.sub.replace(/ · .*$/,'')}${/jegyzet/.test(r.sub)?' · jegyzet':''}</small></span><span class="r">${/Rekord/.test(r.st)?'<i>rekord</i>':''}${r.caps}</span></button>`).join('')}</div></section>`;
@@ -830,7 +830,13 @@ const kcal=inText(t=>t.replace(/KCAL-T/g,'KALÓRIÁT').replace(/kcal-t\b/g,'kal�
   .replace(/\bKCAL\b/g,'KALÓRIA').replace(/\bKcal\b/g,'Kalória').replace(/\bkcal\b/g,'kalória'));
 /* the planned day's four-across exercise tiles: at 12 px "bemelegítő" is wider than its tile, so it may break */
 const shy=inText(t=>t.replace(/^bemelegítő$/,'bemele\u00ADgítő'));
-Object.keys(ed.routes).forEach(k=>{const f=ed.routes[k];if(typeof f!=='function'||/-lista$/.test(k)||f.__kx)return;const w=k==='nap'?(...a)=>shy(kcal(f(...a))):(...a)=>kcal(f(...a));w.__kx=1;w.__hub=f.__hub;ed.routes[k]=w});
+/* follow-up (2026-11-03): abbreviations → words. RIR is "tartalék" (ismétlés in reserve), "RIR 0-ig" is "tartalék
+   nélkül", a lone "Csü" day label is "Cs" (the house day initials H K Sze Cs P Szo V), "· Csü" after a plan is the
+   whole day, "8 ism." is "8 ismétlés" (and the volume unit "kg × ism") and the rep record "9 @ 72,5 → 10 ism." reads "72,5 kg: 9 → 10 ismétlés" */
+const words=inText(t=>t.replace(/RIR 0-ig/g,'tartalék nélkül').replace(/\bRIR (\d+)/g,'$1 ismétlés tartalék').replace(/^RIR$/,'tartalék')
+  .replace(/^Csü$/,'Cs').replace(/ · Csü$/,' · csütörtök').replace(/^(\d+) @ ([\d,]+) → (\d+) ism\.$/,'$2 kg: $1 → $3 ismétlés').replace(/(\d) ism\./g,'$1 ismétlés').replace(/^kg × ism$/,'kg × ismétlés')
+  .replace(/Kalapácsbicepsz:/g,'Kalapács\u00ADbicepsz:'));   /* the review's two-across goal cards: the long name may break (it pushed the page 7 px wide at 320) */
+Object.keys(ed.routes).forEach(k=>{const f=ed.routes[k];if(typeof f!=='function'||/-lista$/.test(k)||f.__kx)return;const w=k==='nap'?(...a)=>shy(words(kcal(f(...a)))):(...a)=>words(kcal(f(...a)));w.__kx=1;w.__hub=f.__hub;ed.routes[k]=w});
 
 F.css(`/* kiserlet-edzes */
 ${P} .ex-mv{margin:14px 18px 0}${P} .ex-mv .k2-vials{grid-template-columns:repeat(2,minmax(0,150px))!important;justify-content:center;gap:12px}${P} .ex-mv .k2-tube{width:64px;margin:0 auto}${P} .ex-g5 small i:has(.ex-spm){display:block!important;margin-top:2px}${P} .ex-mv .k2-vial small i{display:block;font-style:normal;font-size:12.5px;line-height:1.35}
