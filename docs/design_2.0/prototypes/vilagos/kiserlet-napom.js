@@ -1361,6 +1361,34 @@ ${P} .fh-title .fh-help{width:40px;height:40px;margin:-9px -9px -9px -1px;backgr
 ${P} .fh-title .fh-help::before{inset:9px;z-index:-1;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dom) 30%,#fff)}
 ${P} .fh-title .fh-help.new::after{right:6px;top:6px}`);
 window.KXN={V,KH,dots,DEFS,hubHead,cl,uid};
+F.css(`/* kiserlet-napom · narrow day columns (2026-11-03, owner: "mehet a keskeny oszlopok átrendezése is").
+   On a 320 px phone a row of 6–7 day/week tubes left each tap 32–39 px wide. On ≤360 px only (390 is untouched):
+   the gap between columns becomes each column's own side padding (the tubes look the same, the tap now reaches the
+   neighbour), and rows inside a card reach into the card's side padding where 7 × 40 px needs it. Rows of 8+ do not
+   fit 40 px on 320 at all, so they break into two even rows (8 weeks → 4 + 4, 9 areas → 5 + 4, 14 signals → 7 + 7). */
+@media (max-width:360px){
+${P} .scroll :is(.np-week.rise,.fu-wk,.ds.rise,.k2-vials.vs-ts,.vs-wd,.gr.tiny,.gr.days,.en-tubes.week,.en-tubes.ppl){column-gap:0!important}
+${P} .scroll :is(.np-week.rise,.fu-wk,.ds.rise)>*{padding-inline:3px!important;box-sizing:border-box}
+${P} .scroll :is(.k2-vials.vs-ts,.gr.days)>*{padding-inline:2.5px!important;box-sizing:border-box}
+${P} .scroll :is(.vs-wd,.gr.tiny)>*{padding-inline:2px!important;box-sizing:border-box}
+${P} .scroll .en-tubes:is(.week,.ppl)>*{padding-inline:4px!important;box-sizing:border-box}
+${P} .scroll .en-tubes.ppl>*{padding-inline:3px!important}
+${P} .scroll .np-week.rise{margin-inline:11px!important}
+${P} .scroll .ds.rise{padding-inline:11px!important}${P} .scroll .ds.rise>*{flex:1 1 0;min-width:0}
+${P} .scroll :is(.ex-swk,.fh-card,.vs-vs)>.k2-vials.vs-ts{margin-inline:-2.5px!important}
+${P} .scroll .fx-wk .fu-wk{margin-inline:-3px!important}
+${P} .scroll .en-tubes.week{margin-inline:-4px!important}
+${P} .scroll .en-tubes.ppl{margin-inline:-3px!important}
+${P} .scroll .fh-card>.vs-wd{margin-inline:-12px!important}
+${P} .scroll .vs-hg>.k2-vials.vs-ts:has(>:nth-child(7)){margin-inline:-14px!important}
+${P} .scroll .fh-card>:is(.gr.tiny,.gr.days):has(>:nth-child(7)){margin-inline:-14px!important}
+${P} .scroll .k2-vials.vs-ts:has(>:nth-child(8)){grid-template-columns:repeat(4,1fr)!important;row-gap:12px}
+${P} .scroll .gr.tiny:has(>:nth-child(9)){grid-template-columns:repeat(5,1fr)!important;row-gap:12px}
+${P} .scroll .gr.tiny:has(>:nth-child(10)){grid-template-columns:repeat(7,1fr)!important}
+${P} .scroll .k2-vials.vs-ts:has(>:nth-child(8)) .k2-tube,${P} .scroll .gr.tiny:has(>:nth-child(9)) .t{width:auto!important;max-width:36px;margin-inline:auto;align-self:center;display:block}
+${P} .scroll .gr.tiny:has(>:nth-child(9))>*>.t{width:36px!important}${P} .scroll .k2-vials.vs-ts:has(>:nth-child(8))>*>.k2-tube{width:36px!important}
+${P} .scroll .en-tubes.ppl>* small{white-space:nowrap}
+}`);
 window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Nincs nagy edény, nincs kártya, nincs lista. Minden oldal saját rajzot kapott, azt, ami a tartalmából következik:</p>
 <ul><li><a href="#w-nap-mai"><b>Mai</b></a> — a nap vonala: reggeltől estig, a mostani időpontig feltöltve. Alatta a négy kémcső (változatlan), a három következő teendő három edényként, és a nap befőttesüvege, rétegenként a bejegyzésekkel.</li>
 <li><a href="#w-nap-eletjel"><b>Életjelek részletei</b></a> (a Mai aloldala) — a hat kémcső két polcon, mindegyik alatt a saját művelete.</li>
