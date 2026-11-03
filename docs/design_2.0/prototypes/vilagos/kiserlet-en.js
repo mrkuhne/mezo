@@ -274,7 +274,7 @@ const SC_TOP=`<section class="mx-s ex-hero"><small class="ex-eb">Jó pályán ·
 /* the week's sub-pages (2026-11-03): the same recipe; day shorthand and units written out */
 const DAYN={H:'Hétfő',K:'Kedd',Sze:'Szerda',Cs:'Csütörtök',P:'Péntek',Szo:'Szombat',V:'Vasárnap'};
 const hu3=h=>h.replace(/<b>(H|K|Sze|Cs|P|Szo|V)<\/b>/g,(m,d)=>`<b>${DAYN[d]}</b>`).replace(/>(Sze|K) (\d+)</g,(m,d,n)=>`>${DAYN[d]}: ${n}<`).replace(/(\d)ó (\d+)p\b/g,'$1 óra $2 perc').replace(/>(\d)\/4</g,'>bejelentkezés $1 a 4-ből<')
-  .replace(/(\d)× edzés/g,'$1 edzés').replace(/logolás/g,'naplózás').replace(/<small>\/ 100<\/small>/g,'<small>pont</small>').replace('Napról napra · hat kis edény','Napról napra')
+  .replace(/(\d)× edzés/g,'$1 edzés').replace(/logolás/g,'naplózás').replace(/data-toast="(H|K|Sze|Cs|P|Szo|V):/g,(m,d)=>`data-toast="${DAYN[d]}:`).replace(/<small>\/ 100<\/small>/g,'<small>pont</small>').replace('Napról napra · hat kis edény','Napról napra')
   .replace(/<p class="fh-note" style="margin:0 0 10px">([^<]*)<\/p>/g,(m,t)=>t==='a legfrissebb elöl'?'':`<p class="w12-lc">${t}</p>`)
   .replace(/(<svg class="fh-chart en-surf"[^>]*aria-label="([^"]*)"[\s\S]*?<\/svg>)/,(m,svg,al)=>`${svg}<div class="w12-sl">${al.split(', ').map(x=>`<span>${x.replace(/^(\d+) /,'<b>$1</b> ')}</span>`).join('')}</div>`);
 for(const k of ['tanulsagok','napok','felfedezesek']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>gen12(hu3(f(a)))}
