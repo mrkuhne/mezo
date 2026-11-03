@@ -1346,7 +1346,50 @@ const kcalNode=root=>{if(!root||root.textContent.indexOf('kcal')<0||!root.closes
   while((n=w.nextNode()))if(n.nodeValue.indexOf('kcal')>=0){const v=KCW(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}};
 /* a toast is plain text: markup that leaked into a data-toast (edzes.js Mozgás tubes: "180<u> perc</u>") is dropped */
 const toastTags=t=>{if(!t||t.textContent.indexOf('<')<0||!t.closest(P))return;const v=t.textContent.replace(/<\/?[a-z][^>]*>/gi,'');if(v!==t.textContent)t.textContent=v};
-new MutationObserver(()=>{const t=document.getElementById('toast');toastTags(t);kcalNode(t);kcalNode(document.getElementById('sheet'))}).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+/* follow-up (2026-11-03, owner: "mehet a rövidítések kiírása is"): the abbreviations left after the review are written
+   out in every domain — durations ("7ó 16p", "5,0 ó", "15mp", "5′", "7.5h"), "kb." / "pl." / "db" / "max", XP → pont,
+   the coaching shorthands (RPE → érzett nehézség, RIR → tartalék), short month names (axis labels too), Edzés's odd
+   day labels (Hét / Kedd / Pén / Vas → H / K / P / V, the app's day letters), Én alvás "Sz" → Sze, and the Rólad
+   areas' clipped labels (full words; that row is two rows at every width so they fit). Kept on purpose: the day letters
+   H K Sze Cs P Szo V, the person/skill monograms, units (g, kg, cm, km), names (Push, Rear Delt Fly), REM, WHO.
+   Text nodes only, in the page, the toast and the drawer, by the same observer as the kcal pass. */
+const MFULL={jan:'január',febr:'február',márc:'március',ápr:'április',máj:'május',jún:'június',júl:'július',aug:'augusztus',szept:'szeptember',okt:'október',nov:'november',dec:'december'};
+const MKEY='jan|febr|márc|ápr|máj|jún|júl|aug|szept|okt|nov|dec';
+const capF=(w,like)=>/^[A-ZÁÉÍÓÖŐÚÜŰ]/.test(like)?w[0].toUpperCase()+w.slice(1):w;
+const AB=[
+  [/(\d)ó (\d+)p(?![\p{L}])/gu,'$1 óra $2 perc'],[/(\d+(?:,\d+)?) ?ó(?![\p{L}])/gu,'$1 óra'],[/(\d+(?:[.,]\d+)?)h(?![\p{L}])/gu,(m,a)=>a.replace('.',',')+' óra'],
+  [/(\d+) ?mp(?![\p{L}])/gu,'$1 másodperc'],[/(\d+) ?p(?![\p{L}′'])/gu,'$1 perc'],[/(\d+)′/g,'$1 perc'],
+  [/(?<![\p{L}])Kb\./gu,'Nagyjából'],[/(?<![\p{L}])kb\./gu,'nagyjából'],[/(?<![\p{L}])pl\./gu,'például'],[/(\d) db(?![\p{L}])/gu,'$1 darab'],
+  [/(?<![\p{L}])([Bb])ecsült max(?![\p{L}])/gu,'$1ecsült maximum'],[/(?<![\p{L}])max (\d)/gu,'legfeljebb $1'],
+  [/(\d) XP(?![\p{L}])/gu,'$1 pont'],[/szerzett XP/g,'szerzett pont'],[/^XP$/u,'Pont'],
+  [/RPE átlag/g,'átlagos érzett nehézség'],[/(?<![\p{L}])RPE(?![\p{L}])/gu,'érzett nehézség'],
+  [/RIR (\d)-re/g,'$1 tartalék ismétlésig'],[/RIR(-cél)? (\d)-en belül/g,(m,c,d)=>`tartalék${c||''} ${d} ismétlésen belül`],[/RIR (\d) \+/g,'$1 tartalék ismétlés +'],[/(?<![\p{L}])RIR(?![\p{L}])/gu,'tartalék'],
+  [/1RM-rekord/g,'Egyismétléses rekord'],[/Rep-rekord/g,'Ismétlés-rekord'],[/ vs /g,' kontra '],[/(?<![\p{L}])Hét (\d+)\/(\d+)/gu,'$1. hét / $2'],
+  [new RegExp(`(?<![\\p{L}])(${MKEY})\\.(?=[\\s,–]|$)`,'gu'),(m,k)=>MFULL[k]],[new RegExp(`(?<![\\p{L}])(Szept|Okt|Aug|Márc|Máj|Jún|Júl|Ápr|Jan|Febr|Nov|Dec)\\.(?=[\\s,–]|$)`,'gu'),(m,k)=>capF(MFULL[k.toLowerCase()],k)],
+  [new RegExp(`(?<![\\p{L}])(${MKEY}) (\\d)`,'gu'),(m,k,d)=>MFULL[k]+' '+d],[new RegExp(`^(${MKEY})$`,'u'),(m,k)=>MFULL[k]]];
+const ABT=/[0-9]|kb\.|Kb\.|pl\.|max|XP|RPE|RIR|rekord| vs |\.|^(jan|febr|márc|ápr|máj|jún|júl|aug|szept|okt|nov|dec)$/;
+const abText=v=>{if(!ABT.test(v))return v;for(const [r,x] of AB)v=v.replace(r,x);return v};
+const EDZD={Hét:'H',Kedd:'K',Pén:'P',Vas:'V'};
+const RLD={'Fizikai':'Fizikai','Edzés':'Edzés','Táplálkozási':'Táp­lál­ko­zás','Alvás & regeneráció':'Alvás','Lelki':'Lelki','Fegyelem':'Fegye­lem','Élet & emberek':'Élet','A társ önvizsgálata':'Ön­vizs­gá­lat','Munka-stressz ciklus':'Stressz'};
+const abNode=root=>{if(!root||!root.closest(P))return;const edz=!!root.closest('[data-d="edzes"]'),w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
+  while((n=w.nextNode())){let v=n.nodeValue;if(!v.trim())continue;const el=n.parentElement;
+    if(edz&&EDZD[v.trim()]&&!el.closest('.fh-facts'))v=v.replace(v.trim(),EDZD[v.trim()]);
+    else if(edz&&/^(Hét|Pén|Vas) · /.test(v))v=v.replace(/^(Hét|Pén|Vas)/,m=>EDZD[m]);
+    else if(v.trim()==='Sz'&&el.closest('.en-tubes'))v='Sze';
+    else if(el.matches('.gr.tiny .gv small')){const a=(el.closest('.gv').getAttribute('aria-label')||'').split(' · ')[0];if(RLD[a])v=RLD[a]}
+    else v=abText(v);
+    if(v!==n.nodeValue)n.nodeValue=v}};
+/* written-out month names are longer: on a chart axis a label that would run into its neighbour is hidden (the first
+   and the last label always stay), checked once the page is laid out */
+const axisFit=root=>{if(!root)return;root.querySelectorAll('svg').forEach(sv=>{const by={};sv.querySelectorAll('text').forEach(t=>{if(t.style.visibility==='hidden')t.style.visibility='';const y=t.getAttribute('y');(by[y]=by[y]||[]).push(t)});
+  Object.values(by).forEach(ts=>{if(ts.length<2)return;const R=ts.map(t=>[t,t.getBoundingClientRect()]).filter(([,r])=>r.width).sort((a,b)=>a[1].left-b[1].left);
+    let prev=R[0];for(let i=1;i<R.length;i++){const cur=R[i];if(prev[1].right+4>cur[1].left){if(i===R.length-1)prev[0].style.visibility='hidden';else{cur[0].style.visibility='hidden';continue}}prev=cur}})})};
+let axisQ=0;const axisLater=()=>{if(axisQ)return;axisQ=requestAnimationFrame(()=>{axisQ=0;axisFit(document.querySelector(P+' .scroll'));axisFit(document.getElementById('sheet'))})};
+F.css(`/* kiserlet-napom · Rólad areas in two rows with full words */
+${P} .scroll .gr.tiny:has(>:nth-child(9)):not(:has(>:nth-child(10))){align-items:start}
+${P} .scroll .gr.tiny:has(>:nth-child(9)):not(:has(>:nth-child(10))){grid-template-columns:repeat(5,1fr)!important;row-gap:12px}
+${P} .scroll .gr.tiny:has(>:nth-child(9)):not(:has(>:nth-child(10))) .gv small{font-size:12px;line-height:1.2;hyphens:manual;text-align:center}`);
+new MutationObserver(()=>{const t=document.getElementById('toast');toastTags(t);kcalNode(t);kcalNode(document.getElementById('sheet'));abNode(t);abNode(document.getElementById('sheet'));abNode(document.querySelector(P));axisLater()}).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
 Object.keys(nap.routes).forEach(k=>{const f=nap.routes[k];if(typeof f==='function'&&!f.__hub){const g=(...a)=>kcal(hubHead(f(...a)));g.__hub=1;nap.routes[k]=g}});
 F.css(`${P} .fh-trow.hub .fh-eb .fh-help{width:40px;height:40px;margin:0;font-size:17px;background:#fff;border:0;box-shadow:0 4px 12px -6px rgba(10,42,60,.35),0 0 0 1px rgba(10,42,60,.05)}
 ${P} .fh-trow.hub+.fh-tabs{margin-top:12px}
