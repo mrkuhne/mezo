@@ -286,8 +286,8 @@ const hu4=h=>inText(t=>t.replace(/LIFE skilled/g,'élet-képességed').replace(/
 /* people (2026-11-03): arrows and shorthand as words */
 const hu5=inText(t=>t.replace(/^Bence ↘$/,'Bence').replace(/^hangulat-lejtő$/,'a hangulata lejt').replace(/^Petra · 3× e héten$/,'Petra, 3 alkalom').replace(/^a hangulatod · jó$/,'a hangulatod').replace(/Bence ↘/g,'Bence hangulata lejt').replace(/Petra ↗/g,'Petra hangulata emelkedik').replace(/(\d)× (e|ezen a) héten/g,'$1 alkalommal a héten').replace(/(\d)×$/,'$1 alkalom')
   .replace(/^(júl|aug|szept)\.$/,(m,k)=>MON[k+'.']).replace(/júl → szept/,'júliustól szeptemberig').replace(/ébredés 1× éjjel/,'egyszer ébredtél fel').replace(/hangulat-lejtő/,'lejtő hangulat').replace(/vacsi/,'vacsora').replace(/^Log$/,'Naplózom').replace(/^Log most$/,'Naplózom most')
-  .replace(/· gráf · \d+$/,'').replace(/júl 14–21/,'július 14–21.'));
-for(const k of ['emberek','jeloltek','kor','emlitesek','ember','heti']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(hu5(hu3(f(a))))}
+  .replace(/· gráf · \d+$/,'').replace(/^\/ 28$/,'forrás a 28-ból').replace(/(\d) \/ 7 nap/g,'$1 nap a 7-ből').replace(/ · → /g,' · táplálja: ').replace(/^Check-in energia$/,'Bejelentkezés: energia').replace(/ · Activity/,' · mozgásmérő').replace(/ · Fuel( |$)/,' · étkezés$1').replace(/Fuel-napló/,'étkezési napló').replace(/júl 14–21/,'július 14–21.'));
+for(const k of ['emberek','jeloltek','kor','emlitesek','ember','heti','jelek']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(hu5(hu3(f(a))))}
 for(const k of ['novekedes','skillek','tevekenysegek','kitunt']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(hu4(hu3(f(a))))}
 for(const k of ['tanulsagok','napok','felfedezesek','cel','celuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>gen12(hu3(f(a)))}
 for(const k of ['sulycel','sulyresz','sulyuj']){const f=en.routes[k];en.routes[k+'-lista']=f;en.routes[k]=a=>a==='ures'?f(a):gen12(f(a),k==='sulycel'&&!a?SC_TOP:null)}
