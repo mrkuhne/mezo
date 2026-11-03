@@ -166,7 +166,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-10-12, done) ·
   [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-10-11, done) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-10-12, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-02, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
@@ -373,7 +373,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/me.md](features/me.md) (updated 2026-10-12, mixed) ·
   [docs/features/settings.md](features/settings.md) (updated 2026-10-12, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-10-12, mixed) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-10-12, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-02, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
