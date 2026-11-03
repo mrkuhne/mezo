@@ -407,6 +407,40 @@ if(fu.sheets)Object.keys(fu.sheets).forEach(k=>{const f=fu.sheets[k];if(typeof f
   const w=k==='weekly'?(...a)=>dates({wd:-14,bare:-14})(f(...a)):k==='hw'?(...a)=>dates({bare:String(a[0])==='1'?-14:-13})(f(...a)):k==='dose'?(...a)=>medDay(dates()(f(...a))):(...a)=>dates()(f(...a));
   w.__kx=1;fu.sheets[k]=w});
 
+/* follow-up (2026-11-03, owner): "Ez a hét" is drawn as of TODAY, Thursday szeptember 24. The approved week data has
+   Wednesday as today and Friday–Saturday already eaten, so: Hétfő–Szerda stay as they were (Szerda the light, partly
+   logged yesterday the Mai page's Tegnap row also shows), Csütörtök is today with what is eaten so far (opens Mai),
+   Péntek–Vasárnap are still ahead (empty dashed tube with their frame line; a tap says so). The texts follow: the
+   week's numbers count the three days behind you, and the weekday/weekend comparison is last week's. */
+const WK_NOW=3,WK_TODAY=1180,WK_FR=[2400,2400,2400,2400,2400,2200,2200],WK_D=['Csütörtök','Péntek','Szombat','Vasárnap'];
+const kc=n=>String(n).replace(/\B(?=(\d{3})+$)/g,'\u00a0');
+const thisWeek=html=>{if(!/data-sheet="day"/.test(html))return html;const t=document.createElement('template');t.innerHTML=html;
+  t.content.querySelectorAll('[data-sheet="day"]').forEach(el=>{const i=+el.dataset.arg;if(i<WK_NOW-1)return;
+    const ves=el.classList.contains('fu-wd');
+    if(i===WK_NOW-1){if(ves)el.classList.remove('on');else el.querySelector('.fx-dd')?.classList.remove('on');return}
+    el.removeAttribute('data-sheet');el.removeAttribute('data-arg');
+    if(i===WK_NOW){el.dataset.go='mai';
+      if(ves){el.className='fu-wd on';el.setAttribute('aria-label',`Ma, ${WK_D[0].toLowerCase()}: eddig ${WK_TODAY} / ${WK_FR[i]} kalória`);el.querySelector('em').textContent='ma';
+        el.querySelector('.fu-tb').insertAdjacentHTML('afterbegin',`<i style="height:${(WK_TODAY/2900*100).toFixed(1)}%"></i>`)}
+      else{el.querySelector('.fx-dd').classList.add('on');el.querySelector('strong').textContent=`${kc(WK_TODAY)} / ${kc(WK_FR[i])} kalória`;el.querySelector('small').textContent='ma, még tart · edzésnap';
+        el.querySelector('svg.chev')?.insertAdjacentHTML('beforebegin',`<span class="fu-rl"><div class="fl-level" style="--c:var(--dom);--h:10px"><i style="width:${Math.round(WK_TODAY/WK_FR[i]*100)}%"></i></div></span>`)}
+      return}
+    el.dataset.toast=`${WK_D[i-WK_NOW]} még előtted van.`;
+    if(ves){el.className='fu-wd gap';el.setAttribute('aria-label',`${WK_D[i-WK_NOW]}: még előtted van`);el.querySelector('em').innerHTML='&nbsp;';el.querySelectorAll('.fu-tb i,.fu-tb s').forEach(x=>x.remove());const sm=el.querySelector('small');if(sm)sm.innerHTML='&nbsp;'}
+    else{el.querySelector('strong').textContent='Még előtted van';el.querySelector('small').textContent=`a kereted ${kc(WK_FR[i])} kalória`;el.querySelector('.fu-rl')?.remove();el.querySelector('svg.chev')?.remove()}});
+  return t.innerHTML.replace(/ kcal"/g,' kalória"')
+    .replace('A hét négy napján a keret körül maradtál.','A hét eddigi három napjából kettőn a keret körül maradtál.')
+    .replace('Két nap még hátravan.','Ma a negyedik nap, három még hátravan.')
+    .replace(/>nincs naplózva</g,'>még előtted van<')
+    .replace('Koppints egy napra: a nap számai és étkezései lapon nyílnak.','Koppints egy elmúlt napra: a számai és az étkezései lapon nyílnak. A mai nap a Mai oldalra visz.')
+    .replace(/5 \/ 7 naplózott nap/,'3 nap mögötted · ma a negyedik')
+    .replace('Hétvégén 46%-kal többet ettél a keretedhez mérve, mint hétköznap.','Hétköznap eddig tartod a keretet. Múlt hétvégén 46%-kal többet ettél, mint hétköznap.')
+    .replace(/2(&nbsp;| | )069/,'1$1852').replace(/(Minőség[\s\S]*?)7,8/,'$17,9').replace('180 kalóriával kevesebb, mint múlt héten','a tegnapi, hiányos nap lehúzza').replace('0,7-del több, mint múlt héten','0,8-del több, mint múlt héten')
+    .replace(/(Naplózott nap[\s\S]*?)5(<[^>]*>)?\/(\s|&nbsp;)?(<[^>]*>)?\s*7/,(m,a,b,c,d)=>`${a}3${b||''}/${c||''}${d||''}3`).replace('2 nap kimaradt','eddig egy sem maradt ki')
+    .replace(/>Hétköznap és hétvége</,'>Hétköznap és hétvége · múlt hét<')
+    .replace('Most 46 százalékponttal a hétvége javára.','Múlt héten 46 százalékponttal a hétvége javára.')};
+['trendek','mai'].forEach(k=>{const f=fu.routes[k];const w=(...a)=>thisWeek(f(...a));w.__kx=1;w.__hub=f.__hub;fu.routes[k]=w});
+
 F.css(`/* kiserlet-fuel */
 ${P} .fx-wk{margin:14px 14px 0}${P} .fx-wk .fu-wk{margin:0}${P} .fx-wk .fu-wd small{font-size:12px!important}${P} .fx-wk .fu-wd em{font-size:13px!important}
 ${P} .fx-stats{margin:0 18px}${P} .fx-stats .fh-grid{margin:0}
