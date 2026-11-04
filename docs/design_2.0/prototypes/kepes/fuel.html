@@ -202,6 +202,53 @@ html,body{margin:0;background:#E6E8E3;font-family:var(--ff);color:var(--ink);-we
 .pic3 .i3{font-size:30px}
 .srow>.pic3{width:44px}
 .w320 .wk{padding:16px 0 12px}.w320 .wk .cols{gap:0}.w320 .wk .tube{height:100px;max-width:26px}.w320 .stats{gap:8px}.w320 .st b{font-size:19px}
+/* ── Mai v6: the hero scene, the numbers panel, the band cards (owner 2026-11-04: pages must not be card lists —
+   every page gets one big custom graphic, coloured panels, bleeding pictures, decorative shapes) ── */
+.hero{position:relative;margin:14px 16px 0;padding:18px 18px 18px;border-radius:30px;color:#fff;background:linear-gradient(135deg,#1A7F55 0%,#2FA36B 52%,#7CC447 120%);box-shadow:0 24px 44px -24px rgba(30,138,90,.7);display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:8px;overflow:visible;isolation:isolate}
+.hero .blob{position:absolute;border-radius:50%;pointer-events:none;z-index:-1}
+.hero .b1{width:180px;height:180px;left:-50px;bottom:-80px;background:radial-gradient(closest-side,rgba(255,255,255,.22),transparent)}
+.hero .b2{width:120px;height:120px;right:40px;top:-40px;background:radial-gradient(closest-side,rgba(255,255,255,.18),transparent)}
+.hero .ht small{display:block;font:700 12px var(--ff);text-transform:uppercase;letter-spacing:.04em;opacity:.85}
+.hero .ht h2{font:800 23px/1.12 var(--ff);margin:6px 0 10px;letter-spacing:-.02em}
+.chip.glass{background:rgba(255,255,255,.18);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}.chip.glass .li{color:#fff}
+.hero .hact{display:flex;align-items:center;gap:12px;margin-top:14px}
+.rb.light{background:#fff;color:var(--dark);box-shadow:0 10px 18px -10px rgba(0,0,0,.4)}
+.hero .why{color:#fff;font:700 13.5px var(--ff);text-decoration:none;padding:12px 0;opacity:.9}
+.hero .hp{position:relative;align-self:center;height:150px}
+.hero .hp img.ph{position:absolute;right:-20px;top:-30px;width:150px;height:150px;border-radius:50%;object-fit:cover;box-shadow:0 18px 30px -14px rgba(0,0,0,.45),0 0 0 6px rgba(255,255,255,.22)}
+.hero .hp .i3{position:absolute;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28))}
+.hero .hp .f1{font-size:38px;left:2px;top:100px;transform:rotate(-12deg)}
+.hero .hp .f2{font-size:34px;right:-6px;top:-2px;transform:rotate(10deg)}
+.numsx{position:relative;border-radius:28px;padding:16px 16px 14px;color:#fff;background:linear-gradient(160deg,#163A2B,#1E5A42);box-shadow:0 20px 40px -22px rgba(22,58,43,.7);overflow:hidden}
+.numsx::before{content:"";position:absolute;right:-60px;top:-70px;width:200px;height:200px;border-radius:50%;background:radial-gradient(closest-side,rgba(143,209,79,.28),transparent)}
+.numsx .top{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;position:relative}
+.numsx .gauge{width:118px}.numsx .gauge svg{width:118px;height:66px}
+.numsx .gauge path[stroke="#E8EAE5"]{stroke:rgba(255,255,255,.18)}
+.numsx .gauge .n{color:#fff;font-size:16px}.numsx .gauge .n span{color:rgba(255,255,255,.6)}
+.route{width:100%;height:auto;display:block;overflow:visible}
+.route .rt{font:600 12px var(--ff);fill:rgba(255,255,255,.65)}
+.mac2{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:14px;position:relative}
+.mac2 div{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 6px;font-size:12px}
+.mac2 div span{color:rgba(255,255,255,.72);font-weight:600}
+.mac2 div b{font:700 12px var(--ff);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mac2 div u{grid-column:1/-1;display:block;height:5px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;text-decoration:none;margin-top:4px}
+.mac2 div u i{display:block;height:100%;width:var(--p);background:var(--acc2);border-radius:3px}
+.band{position:relative;margin:0 -16px;padding:12px 0 2px;background:linear-gradient(180deg,var(--accsoft),transparent);overflow:hidden}
+.band .blob{position:absolute;border-radius:50%;pointer-events:none}
+.band .b3{width:160px;height:160px;right:-40px;top:-90px;background:radial-gradient(closest-side,rgba(143,209,79,.35),transparent)}
+.band .hrow{margin:0;padding:4px 16px 14px;position:relative}
+.bc{position:relative;width:252px;min-width:252px;height:152px;border-radius:26px;background:var(--bg);overflow:hidden;display:block}
+.bc .bt{position:absolute;left:16px;top:16px;right:104px;display:grid;gap:6px;align-content:start}
+.bc small{font:700 12px var(--ff);color:var(--ink2);text-transform:uppercase;letter-spacing:.03em}
+.bc strong{font:800 15px/1.2 var(--ff);letter-spacing:-.01em}
+.bc .chip{justify-self:start}
+.bc img{position:absolute;right:-22px;bottom:-22px;width:122px;height:122px;border-radius:50%;object-fit:cover;box-shadow:0 14px 24px -14px rgba(0,0,0,.4),0 0 0 5px rgba(255,255,255,.7)}
+.mezo.withfig{grid-template-columns:minmax(0,1fr) 120px;align-items:end;padding-bottom:0}
+.mezo.withfig .fig{width:120px;height:auto;display:block;margin:0 -10px -6px 0}
+.mezo.withfig>div{padding-bottom:16px}
+.w320 .hero{grid-template-columns:minmax(0,1fr) 96px;padding:16px 14px}.w320 .hero .hp img.ph{width:118px;height:118px;right:-14px;top:-24px}.w320 .hero .hp .f1{font-size:32px;left:-2px;top:82px}.w320 .hero .hp .f2{font-size:28px;right:-4px;top:-2px}.w320 .hero .ht h2{font-size:20px}
+.w320 .numsx .top{grid-template-columns:1fr;gap:6px}.w320 .numsx .gauge{margin:0 auto}.w320 .mac2{grid-template-columns:1fr}
+.w320 .bc{width:224px;min-width:224px}.w320 .mezo.withfig{grid-template-columns:minmax(0,1fr) 100px}.w320 .mezo.withfig .fig{width:100px}
 /* dark Mezo card */
 .mezo{position:relative;background:var(--dark);color:#fff;border-radius:28px;padding:18px 18px 16px;overflow:hidden;isolation:isolate;box-shadow:0 20px 40px -22px rgba(21,25,26,.6);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end}
 .mezo::before{content:"";position:absolute;inset:auto -30% -60% auto;width:70%;height:120%;background:radial-gradient(closest-side,rgba(143,209,79,.30),transparent);z-index:-1}
@@ -417,21 +464,53 @@ function dayList(){let h='';SLOTS.forEach((s,i)=>{let g='';const ms=Object.entri
   return h}
 const recCard=r=>`<div class="rc tap" role="button" tabindex="0" data-sheet="recept" data-arg="${r.id}"><span class="pic"><img src="${PH(r.ph+'.jpg')}" alt=""><span class="chip dark">${nb(r.kcal)} kalória</span><span class="fav">${Li('heart')}</span></span><span class="tx"><strong>${r.n}</strong><small>${r.cat} · ${r.min} perc</small></span></div>`;
 
+/* a flat figure of our own (no emoji faces): someone sitting with a bowl — the Mezo card's companion */
+const FIG=`<svg class="fig" viewBox="0 0 140 150" aria-hidden="true">
+  <ellipse cx="72" cy="140" rx="54" ry="7" fill="rgba(0,0,0,.25)"/>
+  <path d="M30 128c0-22 8-40 26-46l10-3 22 4c14 6 20 22 20 44z" fill="#2FA36B"/>
+  <path d="M52 84c-2-14 6-24 18-24s20 10 18 24c-1 8-7 14-18 14s-17-6-18-14z" fill="#F0C7A4"/>
+  <path d="M50 70c0-16 10-24 22-24 14 0 22 10 20 26-6-8-14-10-22-6-6 3-10 6-14 12-3-2-5-5-6-8z" fill="#2A211C"/>
+  <path d="M38 116c-10 4-16 12-16 20h30c0-10 8-16 16-18z" fill="#F0C7A4"/>
+  <path d="M96 118c6 2 10 8 10 18H78c0-8 4-14 10-16z" fill="#F0C7A4"/>
+  <path d="M46 112h52c0 12-10 22-26 22s-26-10-26-22z" fill="#fff"/>
+  <path d="M46 112h52" stroke="rgba(0,0,0,.08)" stroke-width="3"/>
+  <path d="M60 100c0 4 2 6 2 10M72 98c0 4 2 6 2 10M84 100c0 4 2 6 2 10" stroke="rgba(255,255,255,.55)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M20 134h104" stroke="rgba(0,0,0,.18)" stroke-width="3" stroke-linecap="round"/>
+</svg>`;
+function dayRoute(){const W=220,H=86,x=t=>12+(t-7)/14*(W-24),y=k=>H-14-k/3300*(H-26);
+  const eaten=[[7.33,689],[10.08,1045],[12.67,2060]],plan=[[16.5,2384],[19.5,3202]];
+  const pts=[[7,0],...eaten],d=pts.map(([t,k],i)=>`${i?'L':'M'}${x(t).toFixed(1)} ${y(k).toFixed(1)}`).join(''),last=eaten[eaten.length-1];
+  const dp=`M${x(last[0]).toFixed(1)} ${y(last[1]).toFixed(1)}`+plan.map(([t,k])=>`L${x(t).toFixed(1)} ${y(Math.min(k,3100)).toFixed(1)}`).join('');
+  return `<svg class="route" viewBox="0 0 ${W} ${H}" aria-label="A nap útja: mikor mennyit ettél">
+    <line x1="12" x2="${W-12}" y1="${y(3100)}" y2="${y(3100)}" stroke="rgba(255,255,255,.35)" stroke-dasharray="3 4"/><text x="${W-12}" y="${y(3100)-4}" text-anchor="end" class="rt">keret</text>
+    <path d="${d}" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${dp}" fill="none" stroke="var(--acc2)" stroke-width="2.5" stroke-dasharray="4 5" stroke-linecap="round"/>
+    ${eaten.map(([t,k])=>`<circle cx="${x(t)}" cy="${y(k)}" r="5" fill="#fff"/>`).join('')}${plan.map(([t,k])=>`<circle cx="${x(t)}" cy="${y(Math.min(k,3100))}" r="5" fill="#1E5A42" stroke="var(--acc2)" stroke-width="2"/>`).join('')}
+    <circle cx="${x(14.17)}" cy="${y(2060)}" r="3" fill="var(--acc2)"/><text x="${x(14.17)}" y="${H-2}" text-anchor="middle" class="rt">most</text>
+    <text x="12" y="${H-2}" class="rt">7:00</text><text x="${W-12}" y="${H-2}" text-anchor="end" class="rt">21:00</text></svg>`}
+const TINT=['#E4F2EA','#FBE9DA','#E3EEF8','#ECE6F6','#F3EEDD','#FBE3E6'];
+const bandCard=(r,i)=>`<div class="bc tap" role="button" tabindex="0" data-sheet="recept" data-arg="${r.id}" style="--bg:${TINT[i%TINT.length]}"><div class="bt"><small>${r.cat} · ${r.min} perc</small><strong>${r.n}</strong><span class="chip dark">${nb(r.kcal)} kalória</span></div><img src="${PH(r.ph+'-sq.jpg')}" alt=""></div>`;
+
 function mai(){const n=REC[0];
   return `<header class="hdr rise" style="--i:0">
     <div class="row"><div class="who"><span class="av">P</span>Csütörtök, szeptember 24.</div><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${Li('bell')}<i>3</i></button></div>
     <h1><em>1&nbsp;040 kalória</em> van még, két étkezésre.</h1>
     <div class="tabs" role="tablist"><button class="on" role="tab" aria-selected="true">Mai</button><button role="tab" data-go="stack">Kiegészítők</button><button role="tab" data-go="trendek">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
   </header>
-  <article class="next rise" style="--i:1"><div class="pic"><img src="${PH(n.ph+'.jpg')}" alt=""><div class="tt"><small>Következik · Uzsonna · 16:00</small><h2>${n.n}</h2></div></div>
-    <div class="bar"><div class="chips"><span class="chip dark">1&nbsp;040 hátra</span>${kcalChip(n.kcal)}<a class="chip tap" href="#" data-sheet="recept" data-arg="r6" style="text-decoration:none">Miért ezt?</a></div><button class="rb" data-sheet="log" data-arg="uzsonna" aria-label="Logolom">${Li('plus')}</button></div>
+  <article class="hero rise" style="--i:1">
+    <div class="blob b1"></div><div class="blob b2"></div>
+    <div class="ht"><small>Következik · Uzsonna · 16:00</small><h2>${n.n}</h2>
+      <div class="chips"><span class="chip glass">1&nbsp;040 hátra</span><span class="chip glass">${Li('flame')}${nb(n.kcal)} kalória</span></div>
+      <div class="hact"><button class="rb light" data-sheet="log" data-arg="uzsonna" aria-label="Logolom">${Li('plus')}</button><a href="#" class="why tap" data-sheet="recept" data-arg="r6">Miért ezt?</a></div></div>
+    <div class="hp"><img class="ph" src="${PH(n.ph+'-sq.jpg')}" alt="">${I3('blueberries','f1')}${I3('honey','f2')}</div>
   </article>
   <section class="sec rise" style="--i:2"><div class="sh"><h3>A nap számai</h3><a href="#" data-go="trendek">Hét</a></div>
-    <div class="card nums">${gauge(DAY.eaten,DAY.target)}<div class="mac">${macRow('Fehérje',DAY.p,'g','#4F86E8')}${macRow('Szénhidrát',DAY.c,'g','#E2A23A')}${macRow('Zsír',DAY.f,'g','#9A74D1')}${macRow('Rost',DAY.fib,'g','var(--acc)')}${macRow('Víz',DAY.water,'l','#43B7D9')}</div></div></section>
+    <div class="numsx"><div class="top"><div class="gauge">${gauge(DAY.eaten,DAY.target)}</div>${dayRoute()}</div>
+      <div class="mac2">${[['Fehérje',DAY.p,'g'],['Szénhidrát',DAY.c,'g'],['Zsír',DAY.f,'g'],['Rost',DAY.fib,'g'],['Víz',DAY.water,'l']].map(([l,v,u])=>`<div style="--p:${Math.min(100,Math.round(v[0]/v[1]*100))}%"><span>${l}</span><b>${dec(v[0])} / ${dec(v[1])} ${u}</b><u><i></i></u></div>`).join('')}</div></div></section>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>A napod</h3><a href="#" data-toast="Tegnap — következő kör">Tegnap</a></div>${dayList()}</section>
-  <section class="sec rise" style="--i:4"><div class="sh"><h3>Logolj</h3></div><div class="hrow">${MODES.map(([l,ic])=>`<div class="tile tap" role="button" tabindex="0" data-sheet="log" data-arg="${l}">${I3(ic)}<span>${l}</span></div>`).join('')}</div></section>
-  <section class="sec rise" style="--i:5"><div class="sh"><h3>Neked most</h3><a href="#" data-toast="Konyha — következő kör">Összes</a></div><div class="hrow">${REC.map(recCard).join('')}</div></section>
-  <section class="sec rise" style="--i:6"><div class="mezo"><div><small>Mezo</small><p>Túró az uzsonnára, lazac vacsorára: így a <em>220 g fehérje</em> kijön, és 300 kalória még marad.</p><button class="btn light" data-toast="Betervezve: túró 16:30, lazac 19:30">Betervezem</button></div>${I3('orb')}</div></section>
+  <section class="sec rise" style="--i:4"><div class="sh"><h3>Logolj</h3></div><div class="band"><div class="blob b3"></div><div class="hrow">${MODES.map(([l,ic])=>`<div class="tile tap" role="button" tabindex="0" data-sheet="log" data-arg="${l}">${I3(ic)}<span>${l}</span></div>`).join('')}</div></div></section>
+  <section class="sec rise" style="--i:5"><div class="sh"><h3>Neked most</h3><a href="#" data-toast="Konyha — következő kör">Összes</a></div><div class="hrow">${REC.map(bandCard).join('')}</div></section>
+  <section class="sec rise" style="--i:6"><div class="mezo withfig"><div><small>Mezo</small><p>Túró az uzsonnára, lazac vacsorára: így a <em>220 g fehérje</em> kijön, és 300 kalória még marad.</p><button class="btn light" data-toast="Betervezve: túró 16:30, lazac 19:30">Betervezem</button></div>${FIG}</div></section>
   <section class="sec rise" style="--i:7"><div class="card supp tap" role="button" tabindex="0" data-go="stack">${I3('pill')}<span><strong>Kiegészítők · 5 a 8-ból</strong><small>Következő: Origin PWO · 16:30</small></span><span class="caps">${'<i class="on"></i>'.repeat(5)}${'<i></i>'.repeat(3)}</span></div></section>`}
 
 /* the meal's own page */

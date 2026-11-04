@@ -19,7 +19,7 @@ none), cards of varied sizes, horizontal rows per section, pill chips. Fuel firs
 
 | Domain | Artifact | Published |
 |---|---|---|
-| Fuel | https://claude.ai/artifact/HrE6LXBqDzrApY5hGidTiZ (slug `8871bb45-61c8-4fd6-b816-0fb4ab036da2`) | 2026-11-04 · v5 (Trendek) |
+| Fuel | https://claude.ai/artifact/HrE6LXBqDzrApY5hGidTiZ (slug `8871bb45-61c8-4fd6-b816-0fb4ab036da2`) | 2026-11-04 · v6 (Mai élőbben) |
 
 Republish: `publish_files` with the artifact's slug + live `base_version`, files = `index.html` (from
 `fuel.html`), `ikon/*.png`, `foto/*.jpg` (patch mode keeps the rest).
@@ -28,6 +28,7 @@ Republish: `publish_files` with the artifact's slug + live `base_version`, files
 
 | Page | State | Notes |
 |---|---|---|
+| Fuel · Mai v6 | round 6, 2026-11-04 | owner: the pages had become card lists; the references live from ONE big custom graphic per page + coloured panels + bleeding pictures + shapes; drawn figures may appear elsewhere on the page; "take it seriously, this is the app". Mai now: a green gradient **hero scene** (next meal as a round photo bleeding over the panel, blueberries + honey 3D pieces floating, glass chips, white round +), a dark-green **numbers panel** with the arc and a drawn **day route** (eaten points white, planned dashed lime, frame line) + five macro bars, the day's window cards, the log tiles on a tinted **band** with a blob, **band cards** for recipes (tinted card, round photo bleeding out), the Mezo card with a **flat figure of our own** (SVG: person with a bowl — the Fluent 3D people are yellow emoji faces, rejected). |
 | Fuel · Mai | round 3 "stílus + ritkítás", 2026-11-04 | owner: still not the slick look of the references → diagnosis: amateur photos, density, 3D icons everywhere + rainbow colours, busy type. Now: one typeface (Plus Jakarta Sans), one accent, bright photos, soft 3D only large; Mai halved: big next-meal photo card, numbers card with arc + the five macro bars (owner 2026-11-04: he watches them; each its own soft colour as in round 2), one card per window with hairlines between rows (owner: one list ran together), tile row, recipe row, one dark Mezo card with one button, supplements row. |
 | Fuel · Mai | round 2, 2026-11-04 | dark header + next-meal card on the seam, segmented arc with one line "2 060 / 3 100" + five bars, windows as slots; a meal row = photo · name · kalória chip · pont chip (3D icons), nothing else (owner); log-mode tiles, recipe carousel, one dark Mezo card, supplements row, floating nav. Cards are divs: Safari sized a `<button>` card by its photo (owner saw the calorie pill slide off). |
 | Fuel · fejrész | owner 2026-11-04: **világos fejrész** (the dark header was too hard against the green; the food references all have light headers); dark stays on the floating nav and the one Mezo card; `--dark` is a deep green-charcoal `#1B2520`. | — |
