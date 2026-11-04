@@ -15,7 +15,7 @@
 <style>
 :root{
   --ground:#F3F4F0; --card:#fff; --ink:#15191A; --ink2:#59625E; --mute:#8B938F; --line:rgba(21,25,26,.07);
-  --dark:#171C19; --glass:rgba(255,255,255,.10); --glass2:rgba(255,255,255,.16);
+  --dark:#1B2520; --glass:rgba(255,255,255,.10); --glass2:rgba(255,255,255,.16);
   --acc:#1E8A5A; --acc2:#8FD14F; --accsoft:#E4F2EA; --warn:#D97A2B; --warnsoft:#FBEEE1;
   --ff:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
   --sh:0 10px 28px -18px rgba(21,25,26,.28);
@@ -227,6 +227,19 @@ html,body{margin:0;background:#E6E8E3;font-family:var(--ff);color:var(--ink);-we
 .modes .tile{width:auto;height:102px;box-shadow:none;background:var(--ground)}
 .toast{position:absolute;left:50%;bottom:94px;transform:translate(-50%,10px);background:var(--dark);color:#fff;padding:10px 14px;border-radius:14px;font:600 13px var(--ff);opacity:0;transition:.25s;z-index:10;max-width:80%;text-align:center;pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+/* light-header variant (owner question 2026-11-04: is the black too hard against the green?) — the lab pill toggles it */
+.lh .hdr{background:var(--ground);color:var(--ink);border-radius:0;padding-bottom:16px}
+.lh .hdr::before{display:none}
+.lh .hdr .who{color:var(--ink2)}
+.lh .ib{background:#fff;border-color:transparent;color:var(--ink);box-shadow:var(--sh)}
+.lh .hdr h1 em{color:var(--acc)}
+.lh .tabs button{background:#fff;border-color:transparent;color:var(--ink);box-shadow:var(--sh)}
+.lh .tabs button.on{background:var(--dark);color:#fff}
+.lh .next{margin-top:4px}
+.labpill{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 14px -8px rgba(0,0,0,.4)}
+.labpill button{height:26px;padding:0 10px;border-radius:999px;border:0;background:transparent;font:700 11.5px var(--ff);color:var(--ink2)}
+.labpill button.on{background:var(--dark);color:#fff}
+.phone.inner .labpill{display:none}
 /* motion */
 @media (prefers-reduced-motion:no-preference){body:not(.still) .rise{animation:rise .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*60ms)}}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}}
@@ -244,6 +257,7 @@ body.still *{transition:none!important;animation:none!important}
 <div class="lab">
 <div class="phone" id="phone">
   <div class="scroll" id="scroll"></div>
+  <div class="labpill" aria-label="Prototípus-kapcsoló: fejrész"><button class="on" data-hdr="dark">Sötét fejrész</button><button data-hdr="light">Világos fejrész</button></div>
   <nav class="nav" id="nav" aria-label="Területek"></nav>
   <div class="scrim" id="scrim" data-close></div>
   <section class="sheet" id="sheet" role="dialog" aria-modal="true"></section>
@@ -404,6 +418,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button]')){e.preventDefault();e.target.click()}});
 window.addEventListener('hashchange',render);
 if(innerWidth<=360)$('#phone').classList.add('w320');
+document.querySelectorAll('[data-hdr]').forEach(b=>b.onclick=()=>{const l=b.dataset.hdr==='light';$('#phone').classList.toggle('lh',l);document.querySelectorAll('[data-hdr]').forEach(x=>x.classList.toggle('on',x===b));try{localStorage.setItem('kepes-hdr',b.dataset.hdr)}catch(e){}});
+try{if(localStorage.getItem('kepes-hdr')==='light')document.querySelector('[data-hdr=light]').click()}catch(e){}
 $('#t320').onclick=()=>{$('#phone').classList.toggle('w320');$('#t320').classList.toggle('on')};
 $('#tstill').onclick=()=>{document.body.classList.toggle('still');$('#tstill').classList.toggle('on')};
 render();
