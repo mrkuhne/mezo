@@ -28,3 +28,18 @@ Mind CC0 (Unsplash-ről a Wikimedia Commonsra töltött képek): szabadon felhas
 | `deszka.jpg`, `deszka-sq.jpg` | https://commons.wikimedia.org/wiki/File:Onion_and_a_group_of_vegetables_on_a_cutting_board.jpg (CC0) |
 | `taj.jpg`, `taj-sq.jpg` | https://commons.wikimedia.org/wiki/File:Hiker_standing_on_a_log_at_the_Alouette_Lake_near_Maple_Ridge,_British_Colu (CC0) |
 | `kod.jpg`, `kod-sq.jpg` | https://commons.wikimedia.org/wiki/File:Foggy_glass_unsplash_1.jpg (CC0) |
+
+## Edzés (2026-11-04, a tulajdonos jóváhagyásával)
+
+Mind CC0 vagy közkincs (Wikimedia Commons). 960×720 és 480×480 vágás, ugyanazzal a meleg tónussal.
+
+| Fájl | Eredeti |
+|---|---|
+| `edz-sulyzotarto.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Strength_training_(Unsplash).jpg (CC0) |
+| `edz-huzodzkodas.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Scott_Webb_2015-06-18_(Unsplash_KblIFRq1jkg).jpg (CC0) |
+| `edz-korlat.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Dubai_workout_(Unsplash).jpg (CC0) |
+| `edz-kreta.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Chalk_bag_(Unsplash).jpg (CC0) |
+| `edz-sulyzo.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Pair_of_8kg_dumbbells_(Unsplash).jpg (CC0) |
+| `edz-futas.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Running_along_the_beach_(Unsplash).jpg (CC0) |
+| `edz-nyujtas.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Stretching_before_a_run_(Unsplash).jpg (CC0) |
+| `edz-ropi.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Beach_volleyball_ball.jpg (közkincs) |

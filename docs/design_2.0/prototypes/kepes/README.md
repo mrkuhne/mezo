@@ -55,6 +55,7 @@ alternative beside the current one". `b/index.html` — the app shell since Roun
 - v23 (owner 2026-11-04: "logolásnál a recept vagy kamra résznél nem látom ezeket a keresőket, szűrőket"): the logging pickers use the same kit — **A kamrádból** sheet: search bar (+ camera), photo category chips, filter pills (Legutóbb, Legtöbb fehérje, Alapanyag), photo rows with chips and a round + ; **Egy receptedből** sheet: search, the Fogások photo chips, the recipe filter pills, compact recipe cards with the rating badge and round +. All live and combinable (`SF` state, `sheetFilter()`), reset each time a sheet opens; the sort pill is left out inside sheets (`filterPills(...,sort=false)`); inside the white sheet the controls sit on paper.
 - **Skill `/lagy`** (owner 2026-11-04: "egy skill, ami minden tanulságot, UX UI irányt, elvet, szabályt magában hordoz"): `.claude/skills/lagy/SKILL.md` (session driver: resume, Round 0 shell split, the per-domain round, red flags) + `IRANY.md` (the canon §1–§16). One Artifact for the whole app (this one). Repo probe: `kepes/tools/probe.mjs <routes…>`. Tested on a paper scenario with a fresh agent: it kept every rule under a tempting brief; the gaps it reported became IRANY §16.
 - **Round 0** (2026-11-04, skill `/lagy`): `b/fuel.html` → `b/index.html` (app shell + Fuel), domain registry `DOM` + `domOf()`, bottom bar follows the active domain (registered ones live), `setupDomBar()`, `phead(…,{tabs})`, `b/edzes.js` loaded after the shell. Verified: probe clean on nine Fuel routes at 390/320; 44 of 61 screenshots pixel-identical to before, the rest differ only in the frosted compact bar / growth animation frame.
+- **Edzés · round 1** (2026-11-04, skill `/lagy`): `b/edzes.js` registers `DOM.edzes` — the four tabs Mai (`#edzes`), Terv (`#edzes-terv`), Terhelés (`#edzes-terheles`), Gyakorlatok (`#edzes-gyak`, search + region photo chips + filter pills, live) and Mai's states (`#edzes-mai-folyamatban|kesz|kihagyva|kimelo|pihen|ures`), the skip sheet `edzWhy`; new glyphs `ball`, `shoe`, `medal`; eight CC0 gym photos (`foto/edz-*`, owner OK) and 26 exercise stills from the app (`gyak/*`, 240 px). Side panel switches to Edzés notes inside the domain. Verified: probe clean on ten routes at 390/320, every control clicked (tabs without flash, sheet → kihagyva, filters combine, sort sheet, compact bar, nav both ways), dark mode. Inner flows (workout, plan pages, exercise page, sport) are toasts until rounds 2–4.
 - Nested pages with a crumb (`Fuel › Mai › A nap számai`): `#szamok`, `#meal-<id>`, `#irany` (the identity page:
   mark, colours, glyph family, motion rule). Frosted light bottom nav (B keeps dark for text only).
 
@@ -63,10 +64,9 @@ alternative beside the current one". `b/index.html` — the app shell since Roun
 | Domain | Artifact | Published |
 |---|---|---|
 | Fuel · Képes (A) | https://claude.ai/artifact/HrE6LXBqDzrApY5hGidTiZ (slug `8871bb45-61c8-4fd6-b816-0fb4ab036da2`) | 2026-11-04 · v6 (Mai élőbben) |
-| Fuel · Lágy (B) — **the chosen direction (owner 2026-11-04)** | https://claude.ai/artifact/EEf8oNUm6EDeFkaTkmhpKe (slug `6b2ef909-0e57-49b0-a848-3117c146dcb5`) | 2026-11-04 · v23 (logolás választói) |
+| Fuel · Lágy (B) — **the chosen direction (owner 2026-11-04)** | https://claude.ai/artifact/EEf8oNUm6EDeFkaTkmhpKe (slug `6b2ef909-0e57-49b0-a848-3117c146dcb5`) | 2026-11-04 · v24 (Edzés 1. kör: a négy fül) |
 
-Republish: `publish_files` with the artifact's slug + live `base_version`, files = `index.html` (from
-`fuel.html`), `ikon/*.png`, `foto/*.jpg` (patch mode keeps the rest).
+Republish: `publish_files` with the artifact's slug + live `base_version`, files = `index.html`, `edzes.js`, `gyak/*.jpg`, `foto/*.jpg` (patch mode keeps the rest).
 
 ## Pages
 
