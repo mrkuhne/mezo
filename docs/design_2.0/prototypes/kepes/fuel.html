@@ -141,7 +141,7 @@ html,body{margin:0;background:#E6E8E3;font-family:var(--ff);color:var(--ink);-we
 .caps8 i.nx{background:#fff;box-shadow:inset 0 0 0 2px var(--acc)}
 .caps8 b{margin-left:10px;font:800 17px var(--ff);font-variant-numeric:tabular-nums}
 .caps8 b span{color:var(--mute);font-weight:600;margin:0 2px}
-.srow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 16px}.srow>.tap{padding:4px 0;min-height:40px;display:flex;flex-direction:column;justify-content:center}
+.srow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 16px}.srow>.tap{padding:4px 0;min-height:40px;display:flex;flex-direction:column;justify-content:center}
 .srow+.srow{border-top:1px solid var(--line)}
 .srow strong{display:block;font:700 14.5px/1.25 var(--ff);letter-spacing:-.01em}
 .srow small{display:block;font-size:12.5px;color:var(--mute);font-weight:600;margin-top:2px}
@@ -153,6 +153,55 @@ html,body{margin:0;background:#E6E8E3;font-family:var(--ff);color:var(--ink);-we
 .tile.wide{width:112px;height:106px}
 .tile.wide span{text-align:center;line-height:1.2}
 .tile.wide small{display:block;font-size:12px;color:var(--mute);font-weight:600}
+/* Trendek */
+.wknav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 16px 0;padding:6px;border-radius:999px;background:var(--card);box-shadow:var(--sh)}
+.wknav div{text-align:center}.wknav small{display:block;font:600 12px var(--ff);color:var(--mute)}.wknav b{font:800 15px var(--ff);letter-spacing:-.01em}
+.ib2{width:44px;height:44px;border-radius:50%;border:0;background:var(--ground);display:grid;place-items:center;color:var(--ink);padding:0}
+.ib2 .li{font-size:20px}.ib2:disabled{opacity:.35}
+.wk{padding:16px 10px 12px}
+.wk .cols{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.wk .col{display:grid;justify-items:center;gap:5px;padding:2px 0;border-radius:14px}
+.wk .col em{font-style:normal;font:800 12px var(--ff);color:var(--ink2);height:14px}
+.wk .col.today em{color:var(--acc)}
+.wk .tube{position:relative;width:100%;max-width:30px;height:120px;border-radius:999px;background:var(--ground);overflow:hidden;display:block}
+.wk .tube i{position:absolute;left:0;right:0;bottom:0;background:var(--acc);border-radius:999px 999px 0 0}
+.wk .tube i.over{background:var(--warn)}
+.wk .tube u{position:absolute;left:0;right:0;height:0;border-top:2px dashed rgba(21,25,26,.45)}
+.wk .col.today .tube{box-shadow:inset 0 0 0 2px var(--acc)}
+.wk .col.fut .tube{background:none;box-shadow:inset 0 0 0 1.5px rgba(21,25,26,.14);border-radius:999px}
+.wk .col.fut .tube u{border-top-color:rgba(21,25,26,.22)}
+.wk .col b{font:800 13px var(--ff)}.wk .col.today b{color:var(--acc)}
+.wk .col small{font:600 12px var(--ff);color:var(--mute);margin-top:-4px}
+.wkfoot{display:flex;justify-content:center;margin-top:12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.st{padding:14px 14px 12px;display:grid;gap:4px}
+.st .i3{font-size:36px;margin-bottom:4px}
+.st b{font:800 22px/1 var(--ff);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.st b small{font:600 12px var(--ff);color:var(--mute);margin-left:4px;letter-spacing:0}
+.st span{font:600 12.5px var(--ff);color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bar2{display:grid;gap:6px;justify-items:center}
+.bar2 i{display:block;width:100%;height:14px;border-radius:7px;background:var(--ground);position:relative;overflow:hidden}
+.bar2 i::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p);background:var(--acc);border-radius:7px}
+.bar2 i.warn::after{background:var(--warn)}
+.bar2 b{font:800 20px var(--ff)}.bar2 span{font:600 12.5px var(--ff);color:var(--mute)}
+.ch{width:100%;height:auto;display:block;overflow:visible}
+.ch .t{font:600 12px var(--ff);fill:var(--mute)}
+.kbars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:64px;margin-top:4px}
+.kbars i{display:block;height:calc(28% + var(--p)*.7);border-radius:8px 8px 4px 4px;background:color-mix(in srgb,var(--acc) 35%,#fff);position:relative}
+.kbars i b{position:absolute;left:0;right:0;top:-16px;text-align:center;font:700 10.5px var(--ff);color:var(--mute);display:none}
+.kbars i:last-child{background:var(--acc)}
+.goal{display:flex;align-items:center;gap:8px;font:800 20px var(--ff);letter-spacing:-.02em;color:var(--ink2)}
+.goal .li{font-size:16px;color:var(--mute)}.goal b.acc{color:var(--acc)}
+.steps{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:84px;margin-top:12px}
+.steps i{display:grid;align-content:end;justify-items:center;height:84px}
+.steps i::after{content:"";display:block;width:100%;height:var(--h);border-radius:8px;background:var(--acc);order:2}
+.steps i b{font:700 12px var(--ff);color:var(--ink2);margin-bottom:4px;order:1}
+.steps i.up::after{background:var(--ground);box-shadow:inset 0 0 0 1.5px rgba(21,25,26,.14)}
+.pic3{width:44px;height:44px;border-radius:14px;background:var(--ground);display:grid;place-items:center}
+.pic3 .i3{font-size:30px}
+.srow>.pic3{width:44px}
+.w320 .wk{padding:16px 0 12px}.w320 .wk .cols{gap:0}.w320 .wk .tube{height:100px;max-width:26px}.w320 .stats{gap:8px}.w320 .st b{font-size:19px}
 /* dark Mezo card */
 .mezo{position:relative;background:var(--dark);color:#fff;border-radius:28px;padding:18px 18px 16px;overflow:hidden;isolation:isolate;box-shadow:0 20px 40px -22px rgba(21,25,26,.6);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end}
 .mezo::before{content:"";position:absolute;inset:auto -30% -60% auto;width:70%;height:120%;background:radial-gradient(closest-side,rgba(143,209,79,.30),transparent);z-index:-1}
@@ -372,12 +421,12 @@ function mai(){const n=REC[0];
   return `<header class="hdr rise" style="--i:0">
     <div class="row"><div class="who"><span class="av">P</span>Csütörtök, szeptember 24.</div><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${Li('bell')}<i>3</i></button></div>
     <h1><em>1&nbsp;040 kalória</em> van még, két étkezésre.</h1>
-    <div class="tabs" role="tablist"><button class="on" role="tab" aria-selected="true">Mai</button><button role="tab" data-go="stack">Kiegészítők</button><button role="tab" data-toast="Trendek — következő kör">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
+    <div class="tabs" role="tablist"><button class="on" role="tab" aria-selected="true">Mai</button><button role="tab" data-go="stack">Kiegészítők</button><button role="tab" data-go="trendek">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
   </header>
   <article class="next rise" style="--i:1"><div class="pic"><img src="${PH(n.ph+'.jpg')}" alt=""><div class="tt"><small>Következik · Uzsonna · 16:00</small><h2>${n.n}</h2></div></div>
     <div class="bar"><div class="chips"><span class="chip dark">1&nbsp;040 hátra</span>${kcalChip(n.kcal)}<a class="chip tap" href="#" data-sheet="recept" data-arg="r6" style="text-decoration:none">Miért ezt?</a></div><button class="rb" data-sheet="log" data-arg="uzsonna" aria-label="Logolom">${Li('plus')}</button></div>
   </article>
-  <section class="sec rise" style="--i:2"><div class="sh"><h3>A nap számai</h3><a href="#" data-toast="A nap minden száma — következő kör">Mind</a></div>
+  <section class="sec rise" style="--i:2"><div class="sh"><h3>A nap számai</h3><a href="#" data-go="trendek">Hét</a></div>
     <div class="card nums">${gauge(DAY.eaten,DAY.target)}<div class="mac">${macRow('Fehérje',DAY.p,'g','#4F86E8')}${macRow('Szénhidrát',DAY.c,'g','#E2A23A')}${macRow('Zsír',DAY.f,'g','#9A74D1')}${macRow('Rost',DAY.fib,'g','var(--acc)')}${macRow('Víz',DAY.water,'l','#43B7D9')}</div></div></section>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>A napod</h3><a href="#" data-toast="Tegnap — következő kör">Tegnap</a></div>${dayList()}</section>
   <section class="sec rise" style="--i:4"><div class="sh"><h3>Logolj</h3></div><div class="hrow">${MODES.map(([l,ic])=>`<div class="tile tap" role="button" tabindex="0" data-sheet="log" data-arg="${l}">${I3(ic)}<span>${l}</span></div>`).join('')}</div></section>
@@ -427,7 +476,7 @@ function stackPage(){const taken=ALLS.filter(x=>x[3]).length,nx=ALLS.find(x=>!x[
   return `<header class="hdr rise" style="--i:0">
     <div class="row"><div class="who"><span class="av">P</span>Csütörtök, szeptember 24.</div><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${Li('bell')}<i>3</i></button></div>
     <h1><em>${taken} adag</em> megvolt a ${ALLS.length}-ból. Következik: ${nx[0].split(' ·')[0]}.</h1>
-    <div class="tabs" role="tablist"><button role="tab" data-go="">Mai</button><button class="on" role="tab" aria-selected="true">Kiegészítők</button><button role="tab" data-toast="Trendek — következő kör">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
+    <div class="tabs" role="tablist"><button role="tab" data-go="">Mai</button><button class="on" role="tab" aria-selected="true">Kiegészítők</button><button role="tab" data-go="trendek">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
   </header>
   <article class="next nx2 rise" style="--i:1"><div class="well">${I3(nx[5])}</div>
     <div class="tx"><small>Következik · ${nx[2]}</small><h2>${nx[0]}</h2><div class="chips"><span class="chip dark">${nx[1]}</span><a class="chip tap" href="#" data-sheet="item" data-arg="${nx[0]}" style="text-decoration:none">Miért így?</a></div></div>
@@ -441,14 +490,60 @@ function stackPage(){const taken=ALLS.filter(x=>x[3]).length,nx=ALLS.find(x=>!x[
   <section class="sec rise" style="--i:4"><div class="sh"><h3>Protokoll és beállítás</h3></div><div class="hrow">
     ${[['Protokoll','book','8 elem'],['Új elem','gear','beállítás'],['Gyógyszer','pill','követés']].map(([l,ic,sm])=>`<div class="tile wide tap" role="button" tabindex="0" data-toast="${l} — következő kör">${I3(ic)}<span>${l}<small>${sm}</small></span></div>`).join('')}</div></section>
   <section class="sec rise" style="--i:5"><div class="mezo"><div><small>Mezo</small><p>Az <em>Omega-3</em> kimaradt az ebédnél. Vacsorával is beveheted, a hatás ugyanaz.</p><button class="btn light" data-toast="Átteve: Omega-3 · vacsora">Átteszem vacsorára</button></div>${I3('fish')}</div></section>`}
-function stackDone(taken){return `<header class="hdr rise" style="--i:0"><div class="row"><div class="who"><span class="av">P</span>Csütörtök, szeptember 24.</div><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${Li('bell')}<i>3</i></button></div><h1><em>Mind a ${taken}</em> megvolt mára.</h1><div class="tabs" role="tablist"><button role="tab" data-go="">Mai</button><button class="on" role="tab">Kiegészítők</button><button role="tab" data-toast="Trendek — következő kör">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div></header>
+function stackDone(taken){return `<header class="hdr rise" style="--i:0"><div class="row"><div class="who"><span class="av">P</span>Csütörtök, szeptember 24.</div><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${Li('bell')}<i>3</i></button></div><h1><em>Mind a ${taken}</em> megvolt mára.</h1><div class="tabs" role="tablist"><button role="tab" data-go="">Mai</button><button class="on" role="tab">Kiegészítők</button><button role="tab" data-go="trendek">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div></header>
   <section class="sec rise" style="--i:1"><div class="card caps8">${ALLS.map(()=>'<i class="on"></i>').join('')}<b>${taken}<span>/</span>${ALLS.length}</b></div></section>
   <section class="sec rise" style="--i:2">${STACK.map(b=>`<div class="card day"><div class="grp">${I3(b.ic)}${b.band}</div>${b.items.map(x=>`<div class="srow done"><button class="tk" data-take="${x[0]}" aria-label="Visszavonom">${Li('check')}</button><div class="tap" role="button" tabindex="0" data-sheet="item" data-arg="${x[0]}"><strong>${x[0]}</strong><small>${x[1]} · bevéve ${x[4]}</small></div>${Li('chev','chev')}</div>`).join('')}</div>`).join('')}</section>`}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-take]');if(!t)return;e.preventDefault();e.stopPropagation();const x=ALLS.find(i=>i[0]===t.dataset.take);if(!x)return;
   x[3]=x[3]?0:1;x[4]=x[3]?'14:10':'';toast(x[3]?`Bevéve · ${x[0]} · 14:10`:`Visszavonva · ${x[0]}`);render()},true);
 
+/* Trendek — the approved trendek page's content (fuel.js trendek, week as of today = csütörtök) in the new look */
+const WEEK=[['H',2115,2400,'7,8',0],['K',2260,2400,'7,7',1],['Sze',1180,2400,'8,3',0],['Cs',2060,3100,null,1],['P',null,2400,null,0],['Szo',null,2200,null,0],['V',null,2200,null,0]];
+const WDN=['Hétfő','Kedd','Szerda','Csütörtök','Péntek','Szombat','Vasárnap'],WDD=[21,22,23,24,25,26,27];
+const WT=[84.0,83.9,null,83.7,83.6,null,83.9,83.4,83.2,82.9,82.6,82.2,81.9,81.6,81.5,81.3,81.4,81.1,80.9,80.8,80.7];
+const WKC=[2860,2990,3050,2940,3120,3010,3055];
+const sm=(v,i)=>{const w=v.slice(Math.max(0,i-2),i+3).filter(x=>x!=null);return w.reduce((a,b)=>a+b,0)/w.length};
+function areaSvg(vals,{h=150,min,max,dots,target,labels=[]}){const W=320,P=8,top=10,bot=labels.length?26:8;const X=i=>P+i*(W-2*P)/(vals.length-1),Y=v=>top+(max-v)/(max-min)*(h-top-bot);
+  let d='';vals.forEach((v,i)=>{const x=X(i),y=Y(v);if(!i){d=`M${x} ${y}`;return}const px=X(i-1),py=Y(vals[i-1]),c=(x-px)/2;d+=`C${px+c} ${py} ${x-c} ${y} ${x} ${y}`});
+  const last=vals.length-1;
+  return `<svg class="ch" viewBox="0 0 ${W} ${h}" aria-hidden="true"><defs><linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--acc)" stop-opacity=".22"/><stop offset="1" stop-color="var(--acc)" stop-opacity="0"/></linearGradient></defs>
+    ${target!=null?`<line x1="${P}" x2="${W-P}" y1="${Y(target)}" y2="${Y(target)}" stroke="var(--ink)" stroke-opacity=".35" stroke-dasharray="3 4"/><text x="${W-P}" y="${Y(target)-5}" text-anchor="end" class="t">cél ${dec(target.toFixed(1))} kg</text>`:''}
+    <path d="${d}L${X(last)} ${h-bot}L${X(0)} ${h-bot}Z" fill="url(#ga)"/><path d="${d}" fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linecap="round"/>
+    ${(dots||[]).map((v,i)=>v==null?'':`<circle cx="${X(i)}" cy="${Y(v)}" r="2.4" fill="var(--ink2)" opacity=".55"/>`).join('')}
+    <circle cx="${X(last)}" cy="${Y(vals[last])}" r="5" fill="#fff" stroke="var(--acc)" stroke-width="2.5"/>
+    ${labels.map((l,i)=>`<text x="${i===0?P:i===labels.length-1?W-P:W/2}" y="${h-6}" text-anchor="${i===0?'start':i===labels.length-1?'end':'middle'}" class="t">${l}</text>`).join('')}</svg>`}
+function trendekPage(){const past=WEEK.filter(d=>d[3]);const avg=Math.round(past.reduce((a,d)=>a+d[1],0)/past.length);
+  const tr=WT.map((_,i)=>sm(WT,i));const mx=3300;
+  return `<header class="hdr rise" style="--i:0">
+    <div class="row"><div class="who"><span class="av">P</span>Csütörtök, szeptember 24.</div><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${Li('bell')}<i>3</i></button></div>
+    <h1>Hétköznap tartod a keretet. Múlt hétvégén <em>46%-kal többet</em> ettél.</h1>
+    <div class="tabs" role="tablist"><button role="tab" data-go="">Mai</button><button role="tab" data-go="stack">Kiegészítők</button><button class="on" role="tab" aria-selected="true">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
+  </header>
+  <div class="wknav rise" style="--i:1"><button class="ib2" data-toast="Múlt hét — következő kör" aria-label="Előző hét">${Li('back')}</button><div><small>Ez a hét</small><b>szeptember 21–27.</b></div><button class="ib2" disabled aria-label="Következő hét">${Li('chev')}</button></div>
+  <section class="sec rise" style="--i:2"><div class="sh"><h3>A hét napjai</h3><a href="#" data-go="">Ma</a></div>
+    <div class="card wk"><div class="cols">${WEEK.map((d,i)=>{const today=i===3,fut=d[1]==null;const h=fut?0:Math.min(100,d[1]/mx*100),fr=d[2]/mx*100,over=d[1]&&d[1]>d[2]+60;
+      return `<div class="col ${today?'today':''} ${fut?'fut':''} tap" role="button" tabindex="0" ${fut?`data-toast="${WDN[i]} még előtted van."`:`data-sheet="day" data-arg="${i}"`}><em>${today?'ma':d[3]||''}</em><span class="tube"><i style="height:${h}%" class="${over?'over':''}"></i><u style="bottom:${fr}%"></u></span><b>${d[0]}</b><small>${WDD[i]}</small></div>`}).join('')}</div>
+      <div class="wkfoot"><span class="chip acc">${Li('check')}3 nap mögötted · ma a negyedik</span></div></div></section>
+  <section class="sec rise" style="--i:3"><div class="sh"><h3>A hét számai</h3></div>
+    <div class="stats">${[['plate',nb(avg),'kalória','napi átlag'],['star','7,9','/ 10','minőség'],['scale','81,3','kg','heti súlyátlag'],['check','3 / 3','nap','naplózva']].map(([ic,n,u,l])=>`<div class="st card">${I3(ic)}<b>${n}<small>${u}</small></b><span>${l}</span></div>`).join('')}</div></section>
+  <section class="sec rise" style="--i:4"><div class="sh"><h3>Hétköznap és hétvége</h3><a href="#" data-toast="Múlt hét részletei — következő kör">Múlt hét</a></div>
+    <div class="card pad"><div class="two"><div class="bar2"><i style="--p:79%"></i><b>79%</b><span>hétköznap</span></div><div class="bar2"><i style="--p:100%" class="warn"></i><b>125%</b><span>hétvége</span></div></div>
+      <div class="mz" style="box-shadow:none;background:var(--ground);margin-top:14px">${I3('sparkles')}<span>Amit hétközben nem eszel meg, hétvégén átfolyik. Múlt héten 46 százalékponttal a hétvége javára.</span></div></div></section>
+  <section class="sec rise" style="--i:5"><div class="sh"><h3>Hosszabb táv · 7 hét</h3></div>
+    <div class="card pad"><div class="lab2" style="margin-top:0">${Li('down')}Súly</div>${areaSvg(tr,{h:150,min:77.6,max:84.4,dots:WT,target:78,labels:['augusztus 5.','augusztus 31.','szeptember 24.']})}
+      <div class="lab2">${Li('flame')}Heti átlag kalória</div><div class="kbars">${WKC.map(k=>`<i style="--p:${Math.round((k-2700)/500*100)}%"><b>${nb(k)}</b></i>`).join('')}</div></div></section>
+  <section class="sec rise" style="--i:6"><div class="sh"><h3>A cél felé</h3></div>
+    <div class="card pad"><div class="goal"><b>84,0</b><span>${Li('chev')}</span><b>81,3</b><span>${Li('chev')}</span><b class="acc">78,0 kg</b></div>
+      <div class="steps">${[-0.4,-0.3,-0.5,0.2,-0.6,-0.4,-0.7].map(v=>`<i class="${v>0?'up':''}" style="--h:${Math.round(Math.abs(v)*80)}%"><b>${v>0?'+':'−'}${dec(Math.abs(v))}</b></i>`).join('')}</div>
+      <div class="mz" style="box-shadow:none;background:var(--ground);margin-top:10px">${I3('sparkles')}<span>Egy oszlop egy hét lépése; a világos az a hét, amikor nőtt a súlyod. Még 3,3 kg a célig.</span></div></div></section>
+  <section class="sec rise" style="--i:7"><div class="sh"><h3>Mintázatok</h3><a href="#" data-toast="Mezo · mintázatok — a Mezo prototípusában">Mezo</a></div>
+    <div class="card">${[['bread','Késő szénhidrát → másnap reggel nehezebb edzés','20:00 után, 60 g felett','figyeljük',0],['coffee','Koffein 14:00 után → elalvás +24 perc','több hét adata','megerősítve',1]].map(([ic,t,sm,st,ok])=>`<div class="srow tap" role="button" tabindex="0" data-toast="A mintázat otthona a Mezo"><span class="pic3">${I3(ic)}</span><div><strong>${t}</strong><small>${sm}</small></div><span class="chip ${ok?'acc':''}">${st}</span></div>`).join('')}</div></section>
+  <section class="sec rise" style="--i:8"><div class="mezo"><div><small>Mezo</small><p>A hétvége viszi el a hetet. Szombatra <em>egy tervezett vacsorát</em> teszek be: így marad a lazaság, de nem folyik túl.</p><button class="btn light" data-toast="Szombat vacsora betervezve">Betervezem</button></div>${I3('chart')}</div></section>`}
+
 /* sheets */
 const SH={
+  day:i=>{i=+i||0;const d=WEEK[i];const today=i===3;return `<div class="grab"></div><div class="top3">${I3(today?'sun':'plate')}<div><b style="font-size:22px">${WDN[i]} · szeptember ${WDD[i]}.</b><p>${today?'ma, még tart':`${d[3]} pont · ${d[4]?'edzésnap':'pihenőnap'}`}</p></div></div>
+    <div class="facts" style="margin:14px 0 0">${[['fire',nb(d[1]),'kalória'],['check',nb(d[2]),'keret'],['star',today?'—':d[3],'Mezo pontja']].map(([ic,n,l])=>`<div class="f">${I3(ic)}<b>${n}</b><small>${l}</small></div>`).join('')}</div>
+    <div class="acts"><button class="btn dark" data-go="${today?'':''}" data-close>${today?'A mai nap':'Bezárom'}</button></div>`},
   item:n=>{const x=ALLS.find(i=>i[0]===n)||ALLS[0];const kezi=/kézzel/.test(x[6]);return `<div class="grab"></div><div class="top3">${I3(x[5])}<div><b style="font-size:22px">${x[0]}</b><p>${x[1]} · ${x[2]}${x[3]?' · bevéve '+x[4]:''}</p></div></div>
     <div class="mz" style="margin-top:14px">${I3(kezi?'pin':'bolt')}<span>${x[6]}${kezi?'':' Automatikusan időzítettem a napod és a többi elem szerint.'}</span></div>
     <div class="acts"><button class="btn dark" data-take="${x[0]}">${x[3]?'Visszavonom':'Bevettem'}</button><button class="btn" data-toast="Mozgatás másik zónába — következő kör">Másik zónába</button></div>`},
@@ -464,7 +559,7 @@ const SH={
 const NAV=[['Nap','sun'],['Edzés','dumbbell'],['Fuel','plate'],['Mezo','sparkles'],['Én','person']];
 $('#nav').innerHTML=NAV.map(([l,ic])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját prototípusában"`} aria-label="${l}">${l==='Én'?'<span class="av" style="width:30px;height:30px;font-size:12px">P</span>':I3(ic)}<span>${l}</span></button>`).join('');
 function render(){const h=location.hash.slice(1);const m=h.match(/^meal-(\w+)$/);
-  $('#phone').classList.toggle('inner',!!m);$('#scroll').innerHTML=m?mealPage(m[1]):h==='stack'?stackPage():mai();$('#scroll').scrollTop=0;closeSheet()}
+  $('#phone').classList.toggle('inner',!!m);$('#scroll').innerHTML=m?mealPage(m[1]):h==='stack'?stackPage():h==='trendek'?trendekPage():mai();$('#scroll').scrollTop=0;closeSheet()}
 let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)};
 const openSheet=h=>{$('#sheet').innerHTML=h;$('#sheet').scrollTop=0;$('#sheet').classList.add('on');$('#scrim').classList.add('on')};
 const closeSheet=()=>{$('#sheet').classList.remove('on');$('#scrim').classList.remove('on')};
