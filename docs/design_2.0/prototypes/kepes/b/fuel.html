@@ -522,6 +522,10 @@ body.still .stream{stroke-dashoffset:0}
 .kl .rc2{grid-template-columns:44px minmax(0,1fr) auto}
 .azrail button{width:40px !important}
 .body>.srow.first{margin-top:18px}
+/* ── tab switch: no replayed entrance, no growing rings, no blank photo frame ── */
+.phone.tabswap .rise{animation:none !important}
+.phone.tabswap .rg,.phone.tabswap .br u i{transition:none !important}
+.phead{background:#26302B}
 /* ── photo page head: the photo IS the top of the page (edge to edge, chrome on it, the paper rises over it) ── */
 .phead{position:relative;height:440px;margin:0;isolation:isolate;color:#fff;display:flex;flex-direction:column}
 .phead img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:saturate(.94) contrast(1) brightness(.94)}
@@ -1161,7 +1165,10 @@ const SHEETS={
 /* chrome + router */
 const NAV=[['Nap','sun','sun'],['Edzés','dumbbell','berry'],['Fuel','plate','deep'],['Mezo','spark','deep'],['Én','person','sage']];
 $('#nav').innerHTML=NAV.map(([l,ic,pal])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját oldalán"`} aria-label="${l}">${G(ic,l==='Fuel'?pal:'ink')}<span>${l}</span></button>`).join('');
-function render(){const h=location.hash.slice(1);const m=h.match(/^meal-(\w+)$/);const lg=h.match(/^log-(\w+)$/),ks=h.match(/^kesz-(\w+)$/),rc=h.match(/^recept-(\w+)$/),ki=h.match(/^kamra-(.+)$/),uj=h.match(/^ujelem-(\d)$/);const inner=!['','kieg','trendek','konyha'].includes(h);$('#phone').classList.toggle('modal',!!lg);
+let PREVH=null;const TABH=['','kieg','trendek','konyha'];
+/* keep the four tab photos decoded in memory so a tab switch never shows an empty frame */
+const TABPH=[];['smoothie','herbs','reggelfeny','lazac','viz','brunch'].forEach(n=>{const im=new Image();im.src=PH(n+'.jpg');if(im.decode)im.decode().catch(()=>{});TABPH.push(im)});
+function render(){const h=location.hash.slice(1);const swap=PREVH!==null&&PREVH!==h&&TABH.includes(PREVH)&&TABH.includes(h);PREVH=h;const ph=$('#phone');ph.classList.toggle('tabswap',swap);if(swap){clearTimeout(render.t);render.t=setTimeout(()=>ph.classList.remove('tabswap'),400)}const m=h.match(/^meal-(\w+)$/);const lg=h.match(/^log-(\w+)$/),ks=h.match(/^kesz-(\w+)$/),rc=h.match(/^recept-(\w+)$/),ki=h.match(/^kamra-(.+)$/),uj=h.match(/^ujelem-(\d)$/);const inner=!['','kieg','trendek','konyha'].includes(h);$('#phone').classList.toggle('modal',!!lg);
   $('#phone').classList.toggle('inner',inner);$('#scroll').innerHTML=m?mealPage(m[1]):lg?logPage(lg[1]):ks?keszPage(ks[1]):rc?recept(rc[1]):ki?kamraItem(decodeURIComponent(ki[1])):uj?ujelem(uj[1]):h==='protokoll'?protokoll():h==='gyogyszer'?gyogyszer(false):h==='gyogyszer-aktiv'?gyogyszer(true):h==='receptek'?receptek():h==='kamra'?kamra():h==='het'?het():h==='szamok'?szamok():h==='irany'?irany():h==='ios'?iosPage():h.startsWith('intro-')?intro(h.slice(6)):h==='kieg'?kieg():h==='trendek'?trendek():h==='konyha'?konyha():mai();$('#scroll').scrollTop=0;closeSheet();analClose();requestAnimationFrame(()=>requestAnimationFrame(()=>$$('#scroll .pre').forEach(x=>x.classList.remove('pre'))));if(lg)patchLog();if(ks){countUp();autoReturn()}setupBar(h,m,lg,ks,rc,ki);flyIn();$('#cbar').classList.remove('on')}
 let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)};
 const openSheet=h=>{const sh=$('#sheet');sh.innerHTML=h;sh.scrollTop=0;sh.classList.remove('full');sh.classList.add('on','medium');$('#scrim').classList.add('on')};
