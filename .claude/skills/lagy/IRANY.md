@@ -168,6 +168,7 @@ metallic 3D icons · many hues on one page · bare number tiles · grey helper l
   grep before naming; state used by `render()` must be declared before the first render; `.phone`
   uses `overflow: clip`; a sheet must not open another sheet; heredocs containing `rm`-like text can be
   blocked — write scripts with the file tool and run them.
+- **Tab-switch flash (owner caught it 2026-11-05):** `.tabswap` only pauses the `.rise` entrance; when the class comes off, the animation restarts from opacity 0 and the page flashes ~0.4 s after the switch. The router strips `.rise` from the new tab's content *before* dropping `.tabswap`. Never add a timed class that pauses an animation without removing the animation's trigger first. Check with an opacity sample during the switch (min must stay 1.00).
 - Commit, push (HTTPS with the gh credential helper), bd comment, publish — every round.
 
 ## 15. The report to the owner
