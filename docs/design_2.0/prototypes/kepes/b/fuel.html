@@ -221,16 +221,16 @@ body.still *{animation:none!important;transition:none!important}
 /* Rögzítve */
 .scene .act strong .of{font:700 13px var(--b);color:var(--mute);font-style:normal}
 @media (prefers-reduced-motion:no-preference){
-  body:not(.still) .pourbowl{animation:tip 1.1s cubic-bezier(.3,.7,.3,1) both}
+  body:not(.still) .pourbowl{animation:fadein .6s ease-out both}
   body:not(.still) .stream{stroke-dasharray:100;stroke-dashoffset:100;animation:pour .8s .5s ease-out both}
   body:not(.still) .newbead{animation:pop .6s 1.2s cubic-bezier(.2,1.4,.3,1) both}
   body:not(.still) .lvlbar{animation:grow 1s 1.3s cubic-bezier(.2,.8,.2,1) both}
 }
-@keyframes tip{from{transform:rotate(0)}to{transform:rotate(-34deg)}}
+@keyframes fadein{from{opacity:0}}
 @keyframes pour{to{stroke-dashoffset:0}}
 @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
 @keyframes grow{from{width:var(--w0)}}
-body.still .stream{stroke-dashoffset:0}body.still .pourbowl{transform:rotate(-34deg)}
+body.still .stream{stroke-dashoffset:0}
 /* inner pages */
 .steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 20px 0}
 .steps3 span i{display:block;height:6px;border-radius:3px;background:rgba(30,35,33,.10)}.steps3 span.done i,.steps3 span.on i{background:var(--sage)}
@@ -667,7 +667,7 @@ let LASTK=null;function ceremony(name,tot){location.hash='kesz-'+LASTK}
    Mezo's point, the lines. Reduced motion shows the final state at once. ── */
 function sceneDone(m){const W=340,H=236,cx=170,cy=206,R=124;const ang=t=>Math.PI-(t-7)/14*Math.PI;const P=t=>[cx+R*Math.cos(ang(t)),cy-R*Math.sin(ang(t))];
   const [bx,by]=P(m.t);const beads=Object.values(MEALS).filter(x=>x!==m).map(x=>P(x.t));const u='sd'+(++gid);const fill=Math.min(1,DAY.eaten/DAY.target),prev=Math.min(1,(DAY.eaten-m.kcal)/DAY.target);
-  const tx=bx-74,ty=Math.max(6,by-72);
+  const tx=bx-84,ty=Math.max(8,by-76);
   return `<svg class="art" viewBox="0 0 ${W} ${H}" aria-label="Az étkezés bekerült a napodba" style="height:auto"><defs>
     <linearGradient id="${u}a" x1="0" x2="1"><stop offset="0" stop-color="#FDE6A6"/><stop offset=".5" stop-color="#F4C860"/><stop offset="1" stop-color="#C9E4F6"/></linearGradient>
     <linearGradient id="${u}b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BFE3CD"/><stop offset="1" stop-color="#4F9F7A"/></linearGradient>
@@ -677,9 +677,10 @@ function sceneDone(m){const W=340,H=236,cx=170,cy=206,R=124;const ang=t=>Math.PI
   <path d="M${P(7)[0]} ${P(7)[1]}A${R} ${R} 0 0 1 ${P(21)[0]} ${P(21)[1]}" fill="none" stroke="rgba(30,35,33,.10)" stroke-width="6" stroke-linecap="round"/>
   <path d="M${P(7)[0]} ${P(7)[1]}A${R} ${R} 0 0 1 ${P(DAY.now)[0]} ${P(DAY.now)[1]}" fill="none" stroke="url(#${u}a)" stroke-width="6" stroke-linecap="round"/>
   ${beads.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="7" fill="#fff" stroke="#5FB08A" stroke-width="3"/>`).join('')}
-  <g class="pourbowl" style="transform-origin:${tx+40}px ${ty+30}px"><g transform="translate(${tx} ${ty})"><path d="M8 12h64c0 20-14 34-32 34S8 32 8 12z" fill="#fff" stroke="rgba(30,35,33,.08)"/><path d="M14 14h52c0 14-11 24-26 24S14 28 14 14z" fill="url(#${u}l)" opacity=".9"/><ellipse cx="40" cy="12" rx="34" ry="5" fill="#F7FBF8" stroke="rgba(30,35,33,.08)"/></g></g>
-  <path class="stream" d="M${tx+68} ${ty+18}Q${bx+4} ${(ty+by)/2+10} ${bx} ${by-9}" fill="none" stroke="url(#${u}l)" stroke-width="6" stroke-linecap="round" pathLength="100"/>
-  <circle class="newbead" cx="${bx}" cy="${by}" r="10" fill="#5FB08A" stroke="#fff" stroke-width="3" style="transform-origin:${bx}px ${by}px"/>
+  ${(()=>{const a=-34*Math.PI/180,ox=tx+40,oy=ty+30;const rot=(x,y)=>[ox+(x-40)*Math.cos(a)-(y-30)*Math.sin(a),oy+(x-40)*Math.sin(a)+(y-30)*Math.cos(a)];const [rx,ry]=rot(74,14);
+    return `<g class="pourbowl" transform="translate(${tx} ${ty}) rotate(-34 40 30)"><clipPath id="${u}k"><path d="M8 12h64c0 20-14 34-32 34S8 32 8 12z"/></clipPath><path d="M8 12h64c0 20-14 34-32 34S8 32 8 12z" fill="#fff" stroke="rgba(30,35,33,.10)" stroke-width="1.5"/><g clip-path="url(#${u}k)"><path d="M0 30L80 14V60H0z" fill="url(#${u}l)"/></g><ellipse cx="40" cy="12" rx="34" ry="5" fill="#F7FBF8" stroke="rgba(30,35,33,.10)"/></g>
+    <path class="stream" d="M${rx.toFixed(1)} ${ry.toFixed(1)}C${(rx+6).toFixed(1)} ${(ry+22).toFixed(1)} ${(bx+2).toFixed(1)} ${(by-30).toFixed(1)} ${bx.toFixed(1)} ${(by-9).toFixed(1)}" fill="none" stroke="url(#${u}l)" stroke-width="6" stroke-linecap="round" pathLength="100"/>`})()}
+  <circle class="newbead" cx="${bx}" cy="${by}" r="10" fill="#5FB08A" stroke="#fff" stroke-width="3" style="transform-box:fill-box;transform-origin:center"/>
   <g class="lvl"><rect x="${P(7)[0]-8}" y="${cy-6}" width="${P(21)[0]-P(7)[0]+16}" height="14" rx="7" fill="rgba(30,35,33,.08)"/><rect class="lvlbar" x="${P(7)[0]-8}" y="${cy-6}" width="${((P(21)[0]-P(7)[0]+16)*fill).toFixed(1)}" height="14" rx="7" fill="url(#${u}l)" style="--w0:${((P(21)[0]-P(7)[0]+16)*prev).toFixed(1)}px"/></g>
   <text x="${P(7)[0]-8}" y="${cy+26}" class="ax">${nb(DAY.eaten)} a ${nb(DAY.target)}-ból</text><text x="${P(21)[0]+8}" y="${cy+26}" text-anchor="end" class="ax">${Math.round(fill*100)}%</text>
   <style>.ax{font:700 12px Manrope,system-ui;fill:#8E968F}</style></svg>`}
