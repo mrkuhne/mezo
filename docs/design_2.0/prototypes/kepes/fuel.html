@@ -388,7 +388,7 @@ const SH={
 
 /* chrome + router */
 const NAV=[['Nap','sun'],['Edzés','dumbbell'],['Fuel','plate'],['Mezo','sparkles'],['Én','person']];
-$('#nav').innerHTML=NAV.map(([l,ic])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját prototípusában"`} aria-label="${l}">${I3(ic)}<span>${l}</span></button>`).join('');
+$('#nav').innerHTML=NAV.map(([l,ic])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját prototípusában"`} aria-label="${l}">${l==='Én'?'<span class="av" style="width:30px;height:30px;font-size:12px">P</span>':I3(ic)}<span>${l}</span></button>`).join('');
 function render(){const h=location.hash.slice(1);const m=h.match(/^meal-(\w+)$/);
   $('#phone').classList.toggle('inner',!!m);$('#scroll').innerHTML=m?mealPage(m[1]):mai();$('#scroll').scrollTop=0;closeSheet()}
 let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)};
