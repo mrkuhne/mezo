@@ -129,6 +129,30 @@ html,body{margin:0;background:#E6E8E3;font-family:var(--ff);color:var(--ink);-we
 .rc .tx{display:block;padding:11px 13px 13px}
 .rc strong{display:block;font:700 14px/1.25 var(--ff);min-height:35px;letter-spacing:-.01em}
 .rc small{display:block;font-size:12px;color:var(--mute);margin-top:4px;font-weight:600}
+/* Kiegészítők */
+.next.nx2{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 14px 14px 14px}
+.next.nx2 .well{width:96px;height:96px;border-radius:24px;background:var(--accsoft);display:grid;place-items:center}
+.next.nx2 .well .i3{font-size:64px}
+.next.nx2 .tx small{display:block;font:700 12px var(--ff);text-transform:uppercase;letter-spacing:.04em;color:var(--acc)}
+.next.nx2 .tx h2{font:800 20px/1.15 var(--ff);margin:3px 0 8px;letter-spacing:-.02em}
+.caps8{display:flex;align-items:center;gap:5px;padding:16px}
+.caps8 i{flex:1;height:22px;border-radius:7px;background:var(--ground)}
+.caps8 i.on{background:var(--acc)}
+.caps8 i.nx{background:#fff;box-shadow:inset 0 0 0 2px var(--acc)}
+.caps8 b{margin-left:10px;font:800 17px var(--ff);font-variant-numeric:tabular-nums}
+.caps8 b span{color:var(--mute);font-weight:600;margin:0 2px}
+.srow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 16px}.srow>.tap{padding:4px 0;min-height:40px;display:flex;flex-direction:column;justify-content:center}
+.srow+.srow{border-top:1px solid var(--line)}
+.srow strong{display:block;font:700 14.5px/1.25 var(--ff);letter-spacing:-.01em}
+.srow small{display:block;font-size:12.5px;color:var(--mute);font-weight:600;margin-top:2px}
+.srow.done strong{color:var(--ink2)}
+.srow .chev{color:var(--mute);font-size:18px}
+.tk{width:40px;height:40px;border-radius:50%;border:2px solid rgba(21,25,26,.18);background:#fff;display:grid;place-items:center;color:transparent;padding:0}
+.srow.done .tk{background:var(--acc);border-color:var(--acc);color:#fff}
+.tk .li{font-size:18px}
+.tile.wide{width:112px;height:106px}
+.tile.wide span{text-align:center;line-height:1.2}
+.tile.wide small{display:block;font-size:12px;color:var(--mute);font-weight:600}
 /* dark Mezo card */
 .mezo{position:relative;background:var(--dark);color:#fff;border-radius:28px;padding:18px 18px 16px;overflow:hidden;isolation:isolate;box-shadow:0 20px 40px -22px rgba(21,25,26,.6);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end}
 .mezo::before{content:"";position:absolute;inset:auto -30% -60% auto;width:70%;height:120%;background:radial-gradient(closest-side,rgba(143,209,79,.30),transparent);z-index:-1}
@@ -153,6 +177,7 @@ html,body{margin:0;background:#E6E8E3;font-family:var(--ff);color:var(--ink);-we
 .nav button:not(.on){background:rgba(255,255,255,.09)}
 .nav button .i3{font-size:30px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45))}
 .nav button.on{background:#fff;color:var(--dark);padding:0 16px 0 10px}
+.nav .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#8FD14F,#1E8A5A);display:grid;place-items:center;font:700 12px var(--ff);color:#fff;flex:0 0 auto}
 .nav button span{display:none}
 .nav button.on span{display:inline}
 /* ── the meal's own page ── */
@@ -227,7 +252,7 @@ html,body{margin:0;background:#E6E8E3;font-family:var(--ff);color:var(--ink);-we
 .modes .tile{width:auto;height:102px;box-shadow:none;background:var(--ground)}
 .toast{position:absolute;left:50%;bottom:94px;transform:translate(-50%,10px);background:var(--dark);color:#fff;padding:10px 14px;border-radius:14px;font:600 13px var(--ff);opacity:0;transition:.25s;z-index:10;max-width:80%;text-align:center;pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
-/* light-header variant (owner question 2026-11-04: is the black too hard against the green?) — the lab pill toggles it */
+/* light header (owner decision 2026-11-04: the dark header was too hard against the green; dark stays on the nav and the one Mezo card) */
 .lh .hdr{background:var(--ground);color:var(--ink);border-radius:0;padding-bottom:16px}
 .lh .hdr::before{display:none}
 .lh .hdr .who{color:var(--ink2)}
@@ -255,9 +280,8 @@ body.still *{transition:none!important;animation:none!important}
 </head>
 <body>
 <div class="lab">
-<div class="phone" id="phone">
+<div class="phone lh" id="phone">
   <div class="scroll" id="scroll"></div>
-  <div class="labpill" aria-label="Prototípus-kapcsoló: fejrész"><button class="on" data-hdr="dark">Sötét fejrész</button><button data-hdr="light">Világos fejrész</button></div>
   <nav class="nav" id="nav" aria-label="Területek"></nav>
   <div class="scrim" id="scrim" data-close></div>
   <section class="sheet" id="sheet" role="dialog" aria-modal="true"></section>
@@ -287,7 +311,7 @@ const L={flame:'<path d="M12 3c1 3 4 4.5 4 8.5A4 4 0 0 1 8 11c0-1 .3-1.8.8-2.5.2
   dots:'<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>',
   bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/>',
   heart:'<path d="M12 20s-7-4.4-8.6-8.6C2.3 8.3 4.4 5.5 7.4 5.5c1.9 0 3.3 1 4.6 2.7 1.3-1.7 2.7-2.7 4.6-2.7 3 0 5.1 2.8 4 5.9C19 15.6 12 20 12 20z"/>',
-  up:'<path d="M12 19V6M6 12l6-6 6 6"/>',down:'<path d="M12 5v13M6 12l6 6 6-6"/>',clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'};
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',up:'<path d="M12 19V6M6 12l6-6 6 6"/>',down:'<path d="M12 5v13M6 12l6 6 6-6"/>',clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'};
 const Li=(n,c='')=>`<svg class="li ${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${L[n]}</svg>`;
 const nb=n=>String(n).replace(/\B(?=(\d{3})+$)/g,' ');
 const dec=n=>String(n).replace('.',',');
@@ -348,7 +372,7 @@ function mai(){const n=REC[0];
   return `<header class="hdr rise" style="--i:0">
     <div class="row"><div class="who"><span class="av">P</span>Csütörtök, szeptember 24.</div><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${Li('bell')}<i>3</i></button></div>
     <h1><em>1&nbsp;040 kalória</em> van még, két étkezésre.</h1>
-    <div class="tabs" role="tablist"><button class="on" role="tab" aria-selected="true">Mai</button><button role="tab" data-toast="Kiegészítők — következő kör">Kiegészítők</button><button role="tab" data-toast="Trendek — következő kör">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
+    <div class="tabs" role="tablist"><button class="on" role="tab" aria-selected="true">Mai</button><button role="tab" data-go="stack">Kiegészítők</button><button role="tab" data-toast="Trendek — következő kör">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
   </header>
   <article class="next rise" style="--i:1"><div class="pic"><img src="${PH(n.ph+'.jpg')}" alt=""><div class="tt"><small>Következik · Uzsonna · 16:00</small><h2>${n.n}</h2></div></div>
     <div class="bar"><div class="chips"><span class="chip dark">1&nbsp;040 hátra</span>${kcalChip(n.kcal)}<a class="chip tap" href="#" data-sheet="recept" data-arg="r6" style="text-decoration:none">Miért ezt?</a></div><button class="rb" data-sheet="log" data-arg="uzsonna" aria-label="Logolom">${Li('plus')}</button></div>
@@ -359,7 +383,7 @@ function mai(){const n=REC[0];
   <section class="sec rise" style="--i:4"><div class="sh"><h3>Logolj</h3></div><div class="hrow">${MODES.map(([l,ic])=>`<div class="tile tap" role="button" tabindex="0" data-sheet="log" data-arg="${l}">${I3(ic)}<span>${l}</span></div>`).join('')}</div></section>
   <section class="sec rise" style="--i:5"><div class="sh"><h3>Neked most</h3><a href="#" data-toast="Konyha — következő kör">Összes</a></div><div class="hrow">${REC.map(recCard).join('')}</div></section>
   <section class="sec rise" style="--i:6"><div class="mezo"><div><small>Mezo</small><p>Túró az uzsonnára, lazac vacsorára: így a <em>220 g fehérje</em> kijön, és 300 kalória még marad.</p><button class="btn light" data-toast="Betervezve: túró 16:30, lazac 19:30">Betervezem</button></div>${I3('orb')}</div></section>
-  <section class="sec rise" style="--i:7"><div class="card supp tap" role="button" tabindex="0" data-toast="Kiegészítők — következő kör">${I3('pill')}<span><strong>Kiegészítők · 5 a 8-ból</strong><small>Következő: Origin PWO · 17:30</small></span><span class="caps">${'<i class="on"></i>'.repeat(5)}${'<i></i>'.repeat(3)}</span></div></section>`}
+  <section class="sec rise" style="--i:7"><div class="card supp tap" role="button" tabindex="0" data-go="stack">${I3('pill')}<span><strong>Kiegészítők · 5 a 8-ból</strong><small>Következő: Origin PWO · 16:30</small></span><span class="caps">${'<i class="on"></i>'.repeat(5)}${'<i></i>'.repeat(3)}</span></div></section>`}
 
 /* the meal's own page */
 function mealPage(k){const m=MEALS[k]||MEALS.reggeli;const slot=m.w<0?'Ablakon kívül':SLOTS[m.w].l;const G=GLUD[k]||GLUD.reggeli;
@@ -391,8 +415,43 @@ function mealPage(k){const m=MEALS[k]||MEALS.reggeli;const slot=m.w<0?'Ablakon k
   <section class="sec rise" style="--i:7"><div class="card" style="padding:4px 16px"><div class="ing">${I3(m.src[0])}<span>Bevitel<small>${m.src[1]} · ${m.time}</small></span><b></b></div></div></section>
   <div class="acts rise" style="--i:8"><button class="btn dark" data-toast="Logolva még egyszer — következő kör">Újra ezt</button><button class="btn" style="background:#fff" data-toast="Szerkesztés — következő kör">Szerkesztem</button></div>`}
 
+/* Kiegészítők — the approved stack page's content (fuel.js STACK + protokoll reasons) in the new look */
+const STACK=[
+  {band:'Reggel',ic:'sun',items:[['Kreatin-monohidrát','5 g','Ébredés',1,'07:02','pill','Reggel, üres gyomorra is jól szívódik; a napi összmennyiség a lényeg.'],['Kávé · espresso','80–100 mg','Ébredés',1,'07:05','coffee','Ébredés után 60–90 perccel a legjobb, a koffein-stop 14:00.'],['Tasty Dose gombakávé','8 g','Ébredés',1,'07:30','coffee','A reggeli kávé mellé, fókuszhoz. Ezt te tetted ide kézzel.'],['Impact Whey Protein','30–40 g','Reggeli',1,'08:10','milk','Pihenőnapon a reggelihez kerül.']]},
+  {band:'Dél',ic:'plate',items:[['D3 + K2','4000 IU + 100 µg','Ebéd',1,'12:45','pill','Zsíros étkezéssel szívódik fel a legjobban.'],['Omega-3','2 g EPA+DHA','Ebéd',0,'','fish','Az ebéd a nap legzsírosabb pontja.']]},
+  {band:'Délután',ic:'bolt',items:[['Origin PWO','20 g','Edzés előtt · 16:30',0,'','bolt','Edzés előtt 20–30 perccel; pihenőnapon kimarad.']]},
+  {band:'Este',ic:'moon',items:[['Magnézium-glicinát','300 mg','Este',0,'','pill','Este nyugtat, segíti az elalvást.']]}];
+const ALLS=STACK.flatMap(b=>b.items);
+function stackPage(){const taken=ALLS.filter(x=>x[3]).length,nx=ALLS.find(x=>!x[3]&&x[0]!=='Omega-3')||ALLS.find(x=>!x[3]);
+  if(!nx)return stackDone(taken);
+  return `<header class="hdr rise" style="--i:0">
+    <div class="row"><div class="who"><span class="av">P</span>Csütörtök, szeptember 24.</div><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${Li('bell')}<i>3</i></button></div>
+    <h1><em>${taken} adag</em> megvolt a ${ALLS.length}-ból. Következik: ${nx[0].split(' ·')[0]}.</h1>
+    <div class="tabs" role="tablist"><button role="tab" data-go="">Mai</button><button class="on" role="tab" aria-selected="true">Kiegészítők</button><button role="tab" data-toast="Trendek — következő kör">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
+  </header>
+  <article class="next nx2 rise" style="--i:1"><div class="well">${I3(nx[5])}</div>
+    <div class="tx"><small>Következik · ${nx[2]}</small><h2>${nx[0]}</h2><div class="chips"><span class="chip dark">${nx[1]}</span><a class="chip tap" href="#" data-sheet="item" data-arg="${nx[0]}" style="text-decoration:none">Miért így?</a></div></div>
+    <button class="rb" data-take="${nx[0]}" aria-label="Bevettem">${Li('check')}</button>
+  </article>
+  <section class="sec rise" style="--i:2"><div class="sh"><h3>A nap kapszulái</h3><a href="#" data-toast="A hét — következő kör">Hét</a></div>
+    <div class="card caps8">${ALLS.map(x=>`<i class="${x[3]?'on':x===nx?'nx':''}"></i>`).join('')}<b>${taken}<span>/</span>${ALLS.length}</b></div></section>
+  <section class="sec rise" style="--i:3"><div class="sh"><h3>A napod</h3></div>
+    ${STACK.map(b=>{const d=b.items.filter(x=>x[3]).length,now=b.items.includes(nx);return `<div class="card day ${now?'now':''}"><div class="grp ${now?'now':''}">${I3(b.ic)}${b.band}<b>${d}<span>/</span>${b.items.length}</b></div>
+      ${b.items.map(x=>`<div class="srow ${x[3]?'done':''}"><button class="tk" data-take="${x[0]}" aria-label="${x[3]?'Visszavonom':'Bevettem'}">${Li('check')}</button><div class="tap" role="button" tabindex="0" data-sheet="item" data-arg="${x[0]}"><strong>${x[0]}</strong><small>${x[1]} · ${x[2]}${x[3]?' · bevéve '+x[4]:''}</small></div>${Li('chev','chev')}</div>`).join('')}</div>`}).join('')}</section>
+  <section class="sec rise" style="--i:4"><div class="sh"><h3>Protokoll és beállítás</h3></div><div class="hrow">
+    ${[['Protokoll','book','8 elem'],['Új elem','gear','beállítás'],['Gyógyszer','pill','követés']].map(([l,ic,sm])=>`<div class="tile wide tap" role="button" tabindex="0" data-toast="${l} — következő kör">${I3(ic)}<span>${l}<small>${sm}</small></span></div>`).join('')}</div></section>
+  <section class="sec rise" style="--i:5"><div class="mezo"><div><small>Mezo</small><p>Az <em>Omega-3</em> kimaradt az ebédnél. Vacsorával is beveheted, a hatás ugyanaz.</p><button class="btn light" data-toast="Átteve: Omega-3 · vacsora">Átteszem vacsorára</button></div>${I3('fish')}</div></section>`}
+function stackDone(taken){return `<header class="hdr rise" style="--i:0"><div class="row"><div class="who"><span class="av">P</span>Csütörtök, szeptember 24.</div><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${Li('bell')}<i>3</i></button></div><h1><em>Mind a ${taken}</em> megvolt mára.</h1><div class="tabs" role="tablist"><button role="tab" data-go="">Mai</button><button class="on" role="tab">Kiegészítők</button><button role="tab" data-toast="Trendek — következő kör">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div></header>
+  <section class="sec rise" style="--i:1"><div class="card caps8">${ALLS.map(()=>'<i class="on"></i>').join('')}<b>${taken}<span>/</span>${ALLS.length}</b></div></section>
+  <section class="sec rise" style="--i:2">${STACK.map(b=>`<div class="card day"><div class="grp">${I3(b.ic)}${b.band}</div>${b.items.map(x=>`<div class="srow done"><button class="tk" data-take="${x[0]}" aria-label="Visszavonom">${Li('check')}</button><div class="tap" role="button" tabindex="0" data-sheet="item" data-arg="${x[0]}"><strong>${x[0]}</strong><small>${x[1]} · bevéve ${x[4]}</small></div>${Li('chev','chev')}</div>`).join('')}</div>`).join('')}</section>`}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-take]');if(!t)return;e.preventDefault();e.stopPropagation();const x=ALLS.find(i=>i[0]===t.dataset.take);if(!x)return;
+  x[3]=x[3]?0:1;x[4]=x[3]?'14:10':'';toast(x[3]?`Bevéve · ${x[0]} · 14:10`:`Visszavonva · ${x[0]}`);render()},true);
+
 /* sheets */
 const SH={
+  item:n=>{const x=ALLS.find(i=>i[0]===n)||ALLS[0];const kezi=/kézzel/.test(x[6]);return `<div class="grab"></div><div class="top3">${I3(x[5])}<div><b style="font-size:22px">${x[0]}</b><p>${x[1]} · ${x[2]}${x[3]?' · bevéve '+x[4]:''}</p></div></div>
+    <div class="mz" style="margin-top:14px">${I3(kezi?'pin':'bolt')}<span>${x[6]}${kezi?'':' Automatikusan időzítettem a napod és a többi elem szerint.'}</span></div>
+    <div class="acts"><button class="btn dark" data-take="${x[0]}">${x[3]?'Visszavonom':'Bevettem'}</button><button class="btn" data-toast="Mozgatás másik zónába — következő kör">Másik zónába</button></div>`},
   recept:id=>{const r=REC.find(x=>x.id===id)||REC[0];return `<div class="grab"></div><div class="hero"><img src="${PH(r.ph+'.jpg')}" alt=""><span class="chip dark">${nb(r.kcal)} kalória</span></div>
     <h2>${r.n}</h2><p class="sub">${r.cat} · ${r.min} perc · ${r.p} g fehérje egy adagban</p>
     <div class="mz">${I3('orb')}<span>${id==='r6'?'Azért ezt: két perc, 36 g fehérje, és a túró már a kamrádban van. Pont annyi, amennyi az uzsonna keretébe fér.':'Illik a hátralévő keretbe, és a fehérjét is hozza. A teljes recept a Konyhában lesz.'}</span></div>
@@ -405,7 +464,7 @@ const SH={
 const NAV=[['Nap','sun'],['Edzés','dumbbell'],['Fuel','plate'],['Mezo','sparkles'],['Én','person']];
 $('#nav').innerHTML=NAV.map(([l,ic])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját prototípusában"`} aria-label="${l}">${l==='Én'?'<span class="av" style="width:30px;height:30px;font-size:12px">P</span>':I3(ic)}<span>${l}</span></button>`).join('');
 function render(){const h=location.hash.slice(1);const m=h.match(/^meal-(\w+)$/);
-  $('#phone').classList.toggle('inner',!!m);$('#scroll').innerHTML=m?mealPage(m[1]):mai();$('#scroll').scrollTop=0;closeSheet()}
+  $('#phone').classList.toggle('inner',!!m);$('#scroll').innerHTML=m?mealPage(m[1]):h==='stack'?stackPage():mai();$('#scroll').scrollTop=0;closeSheet()}
 let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)};
 const openSheet=h=>{$('#sheet').innerHTML=h;$('#sheet').scrollTop=0;$('#sheet').classList.add('on');$('#scrim').classList.add('on')};
 const closeSheet=()=>{$('#sheet').classList.remove('on');$('#scrim').classList.remove('on')};
@@ -418,8 +477,6 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button]')){e.preventDefault();e.target.click()}});
 window.addEventListener('hashchange',render);
 if(innerWidth<=360)$('#phone').classList.add('w320');
-document.querySelectorAll('[data-hdr]').forEach(b=>b.onclick=()=>{const l=b.dataset.hdr==='light';$('#phone').classList.toggle('lh',l);document.querySelectorAll('[data-hdr]').forEach(x=>x.classList.toggle('on',x===b));try{localStorage.setItem('kepes-hdr',b.dataset.hdr)}catch(e){}});
-try{if(localStorage.getItem('kepes-hdr')==='light')document.querySelector('[data-hdr=light]').click()}catch(e){}
 $('#t320').onclick=()=>{$('#phone').classList.toggle('w320');$('#t320').classList.toggle('on')};
 $('#tstill').onclick=()=>{document.body.classList.toggle('still');$('#tstill').classList.toggle('on')};
 render();
