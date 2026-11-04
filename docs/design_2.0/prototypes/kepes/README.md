@@ -30,6 +30,7 @@ alternative beside the current one". `b/fuel.html` (self-contained; photos via `
   (own photos round, future slots ghosted, the next one marked) → log row → Mezo card with the own flat figure.
 - **Owner chose B** (2026-11-04: "tetszik a B, vigyük végig"). v2 adds the other three tabs, each with its own scene: Kiegészítők (the day's arc with capsule beads, filled/next/missed; check toggles re-render), Trendek (the weight road 84 → 78 with the walker at 81,3 and the flag; week tubes; stats; weekday/weekend; 7-week curve; patterns), Konyha (kitchen still life on a shelf with steam; suggestion with one action; goals; recipe cards with round photos; pantry rows; Receptműhely).
 - v3 (owner feedback 2026-11-04): the bowl redrawn clean and WITHOUT the calorie number (it is in "Ma eddig"); logging is its own page `#log-<window>-<mode>` reached in one tap from the scene pill, the mode row and the future slots (the six modes switch in place, picks enable "Rögzítem"); "Bevettem" patches the page in place (scene, headline, numbers, rows) instead of re-rendering — no flash; Kamra is a glyph-card carousel with an "Új tétel" card.
+- v4 (owner 2026-11-04: "the whole logging feature, combinable inputs, the time"): `#log-<window>` is the real composer's flow (fuel.md §2 S1c / mezo-yhhvg / mezo-78rn): one text field with the microphone beside it; Fotó / Kamra / Recept / Szokásosak all ADD to the same draft (Kamra sheet: category chips + search, multi-add, stays open; Recept and Szokásosak single-add); **Elemzés** only on the button, text or photo or both, 1.3 s "Elemzem…", lines land in Tételek tagged by real source (`kamra ✨` / `becslés`, a review note on an estimated amount); steppers scale kcal and macros; totals card; **Mikor ettél?** collapsed above the save bar (Most · 14:10 + the resolved window or „Ablakon kívül”; a time input, chips for Most and the windows already reachable; a future time blocks saving with a sentence); **Rögzítem** → one-second ceremony → back to Mai where the headline, the hero and the timeline recompute from the data.
 - Nested pages with a crumb (`Fuel › Mai › A nap számai`): `#szamok`, `#meal-<id>`, `#irany` (the identity page:
   mark, colours, glyph family, motion rule). Frosted light bottom nav (B keeps dark for text only).
 
@@ -38,7 +39,7 @@ alternative beside the current one". `b/fuel.html` (self-contained; photos via `
 | Domain | Artifact | Published |
 |---|---|---|
 | Fuel · Képes (A) | https://claude.ai/artifact/HrE6LXBqDzrApY5hGidTiZ (slug `8871bb45-61c8-4fd6-b816-0fb4ab036da2`) | 2026-11-04 · v6 (Mai élőbben) |
-| Fuel · Lágy (B) — **the chosen direction (owner 2026-11-04)** | https://claude.ai/artifact/EEf8oNUm6EDeFkaTkmhpKe (slug `6b2ef909-0e57-49b0-a848-3117c146dcb5`) | 2026-11-04 · v3 |
+| Fuel · Lágy (B) — **the chosen direction (owner 2026-11-04)** | https://claude.ai/artifact/EEf8oNUm6EDeFkaTkmhpKe (slug `6b2ef909-0e57-49b0-a848-3117c146dcb5`) | 2026-11-04 · v4 (logolás) |
 
 Republish: `publish_files` with the artifact's slug + live `base_version`, files = `index.html` (from
 `fuel.html`), `ikon/*.png`, `foto/*.jpg` (patch mode keeps the rest).
