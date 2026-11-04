@@ -38,6 +38,17 @@ page in a new, image-rich direction, starting with Fuel**.
    hero boxes, ≥ 12 px text and ≥ 40 px taps at 320 px (44 for primary), "kalória" never kcal, dates agree
    with today = csütörtök, szeptember 24.
 
+## Round 3 decisions (owner, 2026-11-04, after seeing rounds 1–2)
+
+- "Still not the slick UI of the references" — diagnosis agreed: (1) amateur photos, (2) too much per screen,
+  (3) 3D icons at every size + too many hues, (4) busy type and crowded header. Owner chose **stílus + ritkítás**.
+- **Icons:** the metallic Titanium 3D set is out; the owner's reference is **soft matte 3D** (his sample: bowl,
+  salad, protein tub, fries on white tiles). Prototype uses Microsoft Fluent Emoji 3D (MIT) as stand-ins, **only at
+  large sizes**; small icons are thin line icons (owner OK). A custom set in this style is the eventual build.
+- **Mai rows:** name · kalória · pont only (no time, no macros); the meal opens its **own page** with the score
+  breakdown, blood-sugar response and macros, everything with an icon. The arc shows one line "2 060 / 3 100".
+- **One accent colour, one typeface** (Plus Jakarta Sans), bright curated photos (CC0), half the elements on Mai.
+
 ## Goals / non-goals / anti-goals
 
 - **Goal:** a clickable Fuel prototype in the new look the owner can judge page by page (Mai first, then
