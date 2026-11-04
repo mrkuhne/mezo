@@ -29,6 +29,7 @@ alternative beside the current one". `b/fuel.html` (self-contained; photos via `
 - Mai = headline + lead (Mezo's voice) → scene with ONE primary action → three numbers → the day as a timeline
   (own photos round, future slots ghosted, the next one marked) → log row → Mezo card with the own flat figure.
 - **Owner chose B** (2026-11-04: "tetszik a B, vigyük végig"). v2 adds the other three tabs, each with its own scene: Kiegészítők (the day's arc with capsule beads, filled/next/missed; check toggles re-render), Trendek (the weight road 84 → 78 with the walker at 81,3 and the flag; week tubes; stats; weekday/weekend; 7-week curve; patterns), Konyha (kitchen still life on a shelf with steam; suggestion with one action; goals; recipe cards with round photos; pantry rows; Receptműhely).
+- v3 (owner feedback 2026-11-04): the bowl redrawn clean and WITHOUT the calorie number (it is in "Ma eddig"); logging is its own page `#log-<window>-<mode>` reached in one tap from the scene pill, the mode row and the future slots (the six modes switch in place, picks enable "Rögzítem"); "Bevettem" patches the page in place (scene, headline, numbers, rows) instead of re-rendering — no flash; Kamra is a glyph-card carousel with an "Új tétel" card.
 - Nested pages with a crumb (`Fuel › Mai › A nap számai`): `#szamok`, `#meal-<id>`, `#irany` (the identity page:
   mark, colours, glyph family, motion rule). Frosted light bottom nav (B keeps dark for text only).
 
@@ -37,7 +38,7 @@ alternative beside the current one". `b/fuel.html` (self-contained; photos via `
 | Domain | Artifact | Published |
 |---|---|---|
 | Fuel · Képes (A) | https://claude.ai/artifact/HrE6LXBqDzrApY5hGidTiZ (slug `8871bb45-61c8-4fd6-b816-0fb4ab036da2`) | 2026-11-04 · v6 (Mai élőbben) |
-| Fuel · Lágy (B) — **the chosen direction (owner 2026-11-04)** | https://claude.ai/artifact/EEf8oNUm6EDeFkaTkmhpKe (slug `6b2ef909-0e57-49b0-a848-3117c146dcb5`) | 2026-11-04 · v2 (four tabs) |
+| Fuel · Lágy (B) — **the chosen direction (owner 2026-11-04)** | https://claude.ai/artifact/EEf8oNUm6EDeFkaTkmhpKe (slug `6b2ef909-0e57-49b0-a848-3117c146dcb5`) | 2026-11-04 · v3 |
 
 Republish: `publish_files` with the artifact's slug + live `base_version`, files = `index.html` (from
 `fuel.html`), `ikon/*.png`, `foto/*.jpg` (patch mode keeps the rest).

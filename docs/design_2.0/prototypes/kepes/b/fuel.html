@@ -74,7 +74,7 @@ p.lead{margin:8px 20px 0;color:var(--ink2);font-size:14.5px;font-weight:600;max-
   body:not(.still) .steam path:nth-child(3){animation-delay:-2.8s}
   body:not(.still) .leaf{animation:sway 5s ease-in-out infinite;transform-origin:50% 100%}
   body:not(.still) .sunglow{animation:glow 3.6s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
-  body:not(.still) .fillmask rect{animation:rise 1.4s cubic-bezier(.2,.8,.2,1) both}
+  body:not(.still) .fillmask{animation:rise 1.4s cubic-bezier(.2,.8,.2,1) both}
   body:not(.still) .rise{animation:up .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*60ms)}
 }
 @keyframes steam{0%{transform:translateY(0);opacity:0}25%{opacity:.7}100%{transform:translateY(-16px);opacity:0}}
@@ -160,6 +160,19 @@ body.still *{animation:none!important;transition:none!important}
 .rcard strong{font:600 14px/1.2 var(--d);letter-spacing:-.01em;min-height:34px}
 .rcard small{font:600 12px var(--b);color:var(--mute);line-height:1.3}
 .w320 .wd .tube{height:88px}.w320 .rcard{width:160px}
+.kcard{width:132px;background:#fff;border-radius:24px;box-shadow:var(--sh);padding:14px 12px 12px;display:grid;gap:4px;justify-items:start}
+.kcard .kw{width:52px;height:52px;border-radius:16px;background:var(--paper);display:grid;place-items:center;margin-bottom:4px}.kcard .kw .g{font-size:34px}
+.kcard strong{font:600 13.5px/1.2 var(--d);letter-spacing:-.01em;min-height:32px}.kcard small{font:600 12px var(--b);color:var(--mute)}
+.kcard.add{background:var(--sage3);box-shadow:none}.kcard.add .kw{background:#fff}
+.lp-ph{display:grid;justify-items:center;text-align:center;gap:6px;padding:28px 20px;border-radius:26px;background:#fff;box-shadow:var(--sh)}
+.lp-ph .g{font-size:64px;margin-bottom:6px}.lp-ph b{font:600 17px var(--d)}.lp-ph small{font:600 13px var(--b);color:var(--mute);max-width:28ch}
+.lpane{display:none}.lpane.on{display:block}
+.rimg{width:36px;height:36px;border-radius:50%;object-fit:cover}
+.fld{display:grid;gap:6px}.fld span{font:700 12px var(--b);color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+.fld input{height:48px;border:0;border-radius:14px;background:var(--paper);padding:0 14px;font:600 14px var(--b);color:var(--ink);outline:none}
+.chipsrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.chipsrow .chip{border:0;height:34px}
+[data-pick].picked{box-shadow:inset 0 0 0 2px var(--sage);border-radius:14px}.row[data-pick].picked{background:var(--sage3);margin:0 -8px;padding-left:8px;padding-right:8px}
+.tk .g{transition:opacity .25s}.te{transition:opacity .25s}
 /* nav */
 .nav{position:absolute;left:14px;right:14px;bottom:14px;height:68px;border-radius:999px;background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);box-shadow:0 20px 40px -18px rgba(30,35,33,.35),0 0 0 1px rgba(30,35,33,.05);display:flex;align-items:center;justify-content:space-around;padding:6px;z-index:5}
 .nav button{height:56px;min-width:52px;border:0;background:none;display:grid;place-items:center;gap:2px;color:var(--mute);font:700 12px var(--b);padding:0 8px;border-radius:999px}
@@ -334,7 +347,7 @@ function scene(){const W=340,H=206,cx=170,cy=168,R=132;const ang=t=>Math.PI-(t-7
     <linearGradient id="${u}b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BFE3CD"/><stop offset="1" stop-color="#4F9F7A"/></linearGradient>
     <linearGradient id="${u}l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A8D5BA"/><stop offset="1" stop-color="#5FB08A"/></linearGradient>
     <radialGradient id="${u}g"><stop offset="0" stop-color="#F4C860" stop-opacity=".55"/><stop offset="1" stop-color="#F4C860" stop-opacity="0"/></radialGradient>
-    <clipPath id="${u}c"><path d="M110 118h120c0 34-24 56-60 56s-60-22-60-56z"/></clipPath>
+    <clipPath id="${u}c"><path d="M110 118h120c0 32-23 54-60 54s-60-22-60-54z"/></clipPath>
   </defs>
   <circle cx="${cx}" cy="${cy}" r="${R+22}" fill="#F2F7F3"/>
   <path d="M${P(7)[0]} ${P(7)[1]}A${R} ${R} 0 0 1 ${P(21)[0]} ${P(21)[1]}" fill="none" stroke="rgba(30,35,33,.10)" stroke-width="6" stroke-linecap="round"/>
@@ -343,15 +356,14 @@ function scene(){const W=340,H=206,cx=170,cy=168,R=132;const ang=t=>Math.PI-(t-7
   ${ahead.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${i?5:7}" fill="#fff" stroke="rgba(30,35,33,.2)" stroke-width="2" ${i?'':'stroke-dasharray="3 3"'}/>`).join('')}
   <circle class="sunglow" cx="${sx}" cy="${sy}" r="22" fill="url(#${u}g)"/><circle cx="${sx}" cy="${sy}" r="11" fill="#F4C860"/><circle cx="${sx-3}" cy="${sy-3}" r="3.5" fill="#fff" opacity=".8"/>
   <text x="${P(7)[0]-2}" y="${P(7)[1]+22}" class="ax">7:00</text><text x="${P(21)[0]+2}" y="${P(21)[1]+22}" text-anchor="end" class="ax">21:00</text>
-  <ellipse cx="170" cy="182" rx="56" ry="6" fill="rgba(30,35,33,.10)"/>
-  <path d="M106 118h128c0 36-26 60-64 60s-64-24-64-60z" fill="#fff"/>
-  <g class="fillmask" clip-path="url(#${u}c)"><rect x="100" y="${118+56*(1-fill)}" width="140" height="80" fill="url(#${u}l)"/><path d="M100 ${118+56*(1-fill)}q14-6 28 0t28 0 28 0 28 0 28 0v10H100z" fill="#fff" opacity=".35"/></g>
-  <ellipse cx="170" cy="118" rx="64" ry="9" fill="#fff"/><ellipse cx="170" cy="118" rx="56" ry="6" fill="url(#${u}b)" opacity=".35"/>
-  <circle cx="150" cy="114" r="5" fill="#7E4FA8"/><circle cx="166" cy="112" r="4.5" fill="#8E5BB5"/><circle cx="182" cy="115" r="5" fill="#6B3F96"/><circle cx="196" cy="112" r="3.5" fill="#B88ED8"/>
-  <path d="M212 110l26-30" stroke="#E9E2D3" stroke-width="7" stroke-linecap="round"/><ellipse cx="240" cy="78" rx="8" ry="10" transform="rotate(40 240 78)" fill="#F1ECE0"/>
-  <g class="steam" fill="none" stroke="rgba(95,176,138,.55)" stroke-width="3" stroke-linecap="round"><path d="M148 100c-4-6 4-10 0-16"/><path d="M168 96c-4-6 4-10 0-16"/><path d="M188 100c-4-6 4-10 0-16"/></g>
-  <path class="leaf" d="M118 96c-2-14 8-24 22-24-2 14-10 22-22 24z" fill="url(#${u}b)"/>
-  <text x="170" y="150" text-anchor="middle" class="big">${nb(DAY.eaten)}</text><text x="170" y="164" text-anchor="middle" class="sm">a ${nb(DAY.target)}-ból</text>
+  <ellipse cx="170" cy="178" rx="54" ry="6" fill="rgba(30,35,33,.10)"/>
+  <path d="M212 112l24-34" stroke="#E9E2D3" stroke-width="8" stroke-linecap="round"/><ellipse cx="238" cy="74" rx="8" ry="11" transform="rotate(35 238 74)" fill="#F1ECE0"/>
+  <path d="M108 118h124c0 34-24 58-62 58s-62-24-62-58z" fill="#FFFFFF" stroke="rgba(30,35,33,.06)"/>
+  <g clip-path="url(#${u}c)"><g class="fillmask"><rect x="100" y="${(118+54*(1-fill)).toFixed(1)}" width="140" height="80" fill="url(#${u}l)"/><path d="M100 ${(118+54*(1-fill)).toFixed(1)}c12-5 24-5 36 0s24 5 36 0 24-5 36 0 24 5 36 0v8H100z" fill="#fff" opacity=".4"/></g></g>
+  <ellipse cx="170" cy="118" rx="62" ry="8" fill="#F7FBF8" stroke="rgba(30,35,33,.08)"/>
+  <g class="fillmask"><circle cx="152" cy="${(124+54*(1-fill)-10).toFixed(1)}" r="5" fill="#7E4FA8"/><circle cx="168" cy="${(124+54*(1-fill)-12).toFixed(1)}" r="4.5" fill="#8E5BB5"/><circle cx="184" cy="${(124+54*(1-fill)-9).toFixed(1)}" r="5" fill="#6B3F96"/></g>
+  <g class="steam" fill="none" stroke="rgba(95,176,138,.5)" stroke-width="3" stroke-linecap="round"><path d="M150 104c-4-6 4-10 0-16"/><path d="M170 100c-4-6 4-10 0-16"/><path d="M190 104c-4-6 4-10 0-16"/></g>
+  <path class="leaf" d="M118 100c-2-14 8-24 22-24-2 14-10 22-22 24z" fill="url(#${u}b)"/>
   <style>.ax{font:700 12px Manrope,system-ui;fill:#8E968F}.big{font:600 22px Outfit,system-ui;fill:#1E2321;letter-spacing:-.02em}.sm{font:700 12px Manrope,system-ui;fill:#5A635E}</style>
   </svg>`}
 
@@ -365,14 +377,14 @@ function mai(){const n=AHEAD[0];
   <p class="lead rise" style="--i:1">A fehérjéből 72 gramm hiányzik, azt az uzsonna és a vacsora hozza.</p>
   ${seg('Mai')}
   <article class="scene rise" style="--i:2"><span class="now"><i></i>14:10 · a nap kétharmada</span>${scene()}
-    <div class="act"><img src="${PH(n.ph+'-sq.jpg')}" alt=""><div><small>Következik · ${n.win} · ${n.time}</small><strong>${n.name}</strong><span class="q">${nb(n.kcal)} kalória · 2 perc</span></div><button class="pill" data-sheet="log" data-arg="uzsonna">${G('plus','ink')}Logolom</button></div>
+    <div class="act"><img src="${PH(n.ph+'-sq.jpg')}" alt=""><div><small>Következik · ${n.win} · ${n.time}</small><strong>${n.name}</strong><span class="q">${nb(n.kcal)} kalória · 2 perc</span></div><button class="pill" data-go="log-uzsonna">${G('plus','ink')}Logolom</button></div>
   </article>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Ma eddig</h3><a href="#szamok">Részletek ${G('chev')}</a></div>
     <div class="nums">${[['flame','deep',nb(DAY.eaten),'kalória',DAY.eaten/DAY.target,'var(--sage)'],['meat','peach',DAY.p[0],'g fehérje',DAY.p[0]/DAY.p[1],'var(--peach)'],['drop','sky',dec(DAY.water[0]),'l víz',DAY.water[0]/DAY.water[1],'var(--sky)']].map(([ic,pal,n,l,p,c])=>`<div class="n3 tap" role="button" tabindex="0" data-go="szamok">${G(ic,pal)}<b>${n}</b><span>${l}</span><u style="--p:${Math.round(p*100)}%;--c:${c}"><i></i></u></div>`).join('')}</div></section>
   <section class="sec rise" style="--i:4"><div class="sh"><h3>A napod</h3><a href="#" data-toast="Tegnap — következik">Tegnap ${G('chev')}</a></div>
     <div class="card tl">${Object.entries(MEALS).map(([k,m])=>`<div class="te tap ${m.out?'out':''}" role="button" tabindex="0" data-go="meal-${k}"><time>${m.time}</time>${m.ph?`<img src="${PH(m.ph+'-sq.jpg')}" alt="">`:`<span class="gl">${G(m.gl,'sky')}</span>`}<div><strong>${m.name}</strong><small><span>${G('flame','deep')}${nb(m.kcal)}</span><span>${G('star','sun')}${dec(m.score)}</span>${m.out?'<span>ablakon kívül</span>':''}</small></div>${G('chev','ink','chev')}</div>`).join('')}
-      ${AHEAD.map(a=>`<div class="te ahead tap" role="button" tabindex="0" data-sheet="log" data-arg="${a.win.toLowerCase()}"><time>${a.time}</time><span class="gl ${a.now?'now':''}">${G(a.now?'plus':'moon',a.now?'deep':'sky')}</span><div><strong>${a.win} · ${a.name}</strong><small><span>${nb(a.kcal)} kalória keret</span></small></div>${G('chev','ink','chev')}</div>`).join('')}</div></section>
-  <section class="sec rise" style="--i:5"><div class="sh"><h3>Logolás</h3></div><div class="modes">${MODES.map(([l,ic],i)=>`<button data-sheet="log" data-arg="${l}" class="${i===0?'on':''}">${G(ic,i===0?'deep':'ink')}<span>${l}</span></button>`).join('')}</div></section>
+      ${AHEAD.map(a=>`<div class="te ahead tap" role="button" tabindex="0" data-go="log-${a.win.toLowerCase()}"><time>${a.time}</time><span class="gl ${a.now?'now':''}">${G(a.now?'plus':'moon',a.now?'deep':'sky')}</span><div><strong>${a.win} · ${a.name}</strong><small><span>${nb(a.kcal)} kalória keret</span></small></div>${G('chev','ink','chev')}</div>`).join('')}</div></section>
+  <section class="sec rise" style="--i:5"><div class="sh"><h3>Logolás</h3></div><div class="modes">${MODES.map(([l,ic],i)=>`<button data-go="log-uzsonna-${i}">${G(ic,'ink')}<span>${l}</span></button>`).join('')}</div></section>
   <section class="sec rise" style="--i:6"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>Túró az uzsonnára, lazac vacsorára: így a <em>220 g fehérje</em> kijön, és 300 kalória még marad.</p><button class="pill soft" data-toast="Betervezve: túró 16:30, lazac 19:30">Betervezem</button></div>${FIG}</div></section>`}
 
 function szamok(){const rows=[['Kalória','flame','deep',DAY.eaten,DAY.target,''],['Fehérje','meat','peach',DAY.p[0],DAY.p[1],'g'],['Szénhidrát','bread','sun',DAY.c[0],DAY.c[1],'g'],['Zsír','avocado','sage',DAY.f[0],DAY.f[1],'g'],['Rost','broccoli','sage',DAY.fib[0],DAY.fib[1],'g'],['Víz','drop','sky',DAY.water[0],DAY.water[1],'l']];
@@ -443,7 +455,12 @@ function kieg(){const taken=ALLS.filter(x=>x[3]).length,miss=ALLS.filter(x=>!x[3
     <div class="card tl">${ALLS.map(x=>{const on=x[3],next=x===nx,miss=!on&&x[5]<DAY.now;return `<div class="te ${on?'':'ahead'} ${miss?'out':''}"><time>${x[4]||x[2].match(/\d\d:\d\d/)?.[0]||(x[2]==='Este'?'21:00':'')}</time><button class="tk ${on?'on':''}" data-take="${x[0]}" aria-label="${on?'Visszavonom':'Bevettem'}">${G('check',on?'sage':'ink')}</button><div class="tap" role="button" tabindex="0" data-sheet="item" data-arg="${x[0]}"><strong>${x[0]}</strong><small><span>${x[1]}</span><span>${x[2]}${on?' · bevéve':miss?' · kimaradt':''}</span></small></div>${G('chev','ink','chev')}</div>`}).join('')}</div></section>
   <section class="sec rise" style="--i:5"><div class="sh"><h3>Beállítás</h3></div><div class="nums">${[['book','sage','Protokoll','8 elem'],['plus','deep','Új elem','beállítás'],['capsule','berry','Gyógyszer','követés']].map(([ic,pal,l,sm])=>`<div class="n3 tap" role="button" tabindex="0" data-toast="${l} — következik">${G(ic,pal)}<b style="font-size:15px">${l}</b><span>${sm}</span></div>`).join('')}</div></section>
   <section class="sec rise" style="--i:6"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>Az <em>Omega-3</em> kimaradt az ebédnél. Vacsorával is beveheted, a hatás ugyanaz.</p><button class="pill soft" data-toast="Átteve: Omega-3 · vacsora">Átteszem vacsorára</button></div>${FIG}</div></section>`}
-document.addEventListener('click',e=>{const t=e.target.closest('[data-take]');if(!t)return;e.preventDefault();e.stopPropagation();const x=ALLS.find(i=>i[0]===t.dataset.take);if(!x)return;x[3]=x[3]?0:1;x[4]=x[3]?'14:10':'';toast(x[3]?`Bevéve · ${x[0]} · 14:10`:`Visszavonva · ${x[0]}`);render()},true);
+function kiegPatch(){const taken=ALLS.filter(x=>x[3]).length,miss=ALLS.filter(x=>!x[3]&&x[5]<DAY.now),nx=ALLS.find(x=>!x[3]&&x[5]>=DAY.now)||ALLS.find(x=>!x[3]);
+  const sc=$('#scroll .scene');if(sc){sc.querySelector('.art').outerHTML=sceneK(nx);const act=sc.querySelector('.act');if(act)act.innerHTML=nx?`<span class="gl2">${G(nx[6],'berry')}</span><div><small>Következik · ${nx[2]}</small><strong>${nx[0]}</strong><span class="q">${nx[1]} · ${nx[7].split('.')[0]}.</span></div><button class="pill" data-take="${nx[0]}">${G('check','sage')}Bevettem</button>`:`<div><small>Mára kész</small><strong>Minden adag megvolt</strong></div>`}
+  const h=$('#scroll h1.head');if(h)h.innerHTML=`<em>${taken} adag</em> megvolt a ${ALLS.length}-ból.${nx?` A következő ${nx[2].toLowerCase().split(' ·')[0]}.`:' Mára kész.'}`;
+  const ns=document.querySelectorAll('#scroll .nums')[0];if(ns){const bs=ns.querySelectorAll('b');bs[0].textContent=taken;bs[1].textContent=ALLS.length-taken;bs[2].textContent=miss.length}
+  document.querySelectorAll('#scroll .te').forEach(row=>{const btn=row.querySelector('.tk');if(!btn)return;const x=ALLS.find(i=>i[0]===btn.dataset.take);if(!x)return;const on=!!x[3],ms=!on&&x[5]<DAY.now;btn.classList.toggle('on',on);btn.querySelector('.g').outerHTML=G('check',on?'sage':'ink');btn.setAttribute('aria-label',on?'Visszavonom':'Bevettem');row.classList.toggle('ahead',!on);row.classList.toggle('out',ms);const sm=row.querySelectorAll('small span')[1];if(sm)sm.textContent=x[2]+(on?' · bevéve':ms?' · kimaradt':'')})}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-take]');if(!t)return;e.preventDefault();e.stopPropagation();const x=ALLS.find(i=>i[0]===t.dataset.take);if(!x)return;x[3]=x[3]?0:1;x[4]=x[3]?'14:10':'';toast(x[3]?`Bevéve · ${x[0]} · 14:10`:`Visszavonva · ${x[0]}`);if(t.closest('#sheet'))closeSheet();kiegPatch()},true);
 
 /* ── Trendek ── */
 const WEEK=[['H',2115,2400,'7,8'],['K',2260,2400,'7,7'],['Sze',1180,2400,'8,3'],['Cs',2060,3100,null],['P',null,2400,null],['Szo',null,2200,null],['V',null,2200,null]];
@@ -516,9 +533,28 @@ function konyha(){const r=REC[0];
   <section class="sec rise" style="--i:4"><div class="sh"><h3>Receptek</h3><a href="#" data-toast="Minden recept — következik">Mind a 6 ${G('chev')}</a></div>
     <div class="hrow">${REC.map(x=>`<div class="rcard tap" role="button" tabindex="0" data-toast="Recept: ${x.n} — következik"><img src="${PH(x.ph+'-sq.jpg')}" alt=""><strong>${x.n}</strong><small>${x.cat} · ${x.min} perc · ${x.fit}</small><span class="chip soft">${G('flame','deep')}${nb(x.kcal)}</span></div>`).join('')}</div></section>
   <section class="sec rise" style="--i:5"><div class="sh"><h3>Kamra</h3><a href="#" data-toast="A teljes kamra — következik">Mind a 8 ${G('chev')}</a></div>
-    <div class="card pad">${KAM.map(([n,ic,pal,sm])=>`<div class="row tap" role="button" tabindex="0" data-toast="${n} — a tétel lapja következik">${G(ic,pal)}<div><b>${n}</b><small>${sm}</small></div>${G('chev','ink','chev')}</div>`).join('')}</div></section>
+    <div class="hrow">${KAM.map(([n,ic,pal,sm])=>`<div class="kcard tap" role="button" tabindex="0" data-toast="${n} — a tétel lapja következik"><span class="kw">${G(ic,pal)}</span><strong>${n}</strong><small>${sm.split(' · ')[0]}</small></div>`).join('')}<div class="kcard add tap" role="button" tabindex="0" data-toast="Új tétel a kamrába — következik"><span class="kw">${G('plus','deep')}</span><strong>Új tétel</strong><small>fotóról, linkről, kézzel</small></div></div></section>
   <section class="sec rise" style="--i:6"><div class="sh"><h3>Receptműhely</h3></div>
     <div class="mz" style="grid-template-columns:minmax(0,1fr) 108px"><div><small>${G('pot','deep')}Főzzünk valamit</small><p>Mondd el, mi van otthon, vagy mihez van kedved: én kirakom belőle a receptet a céljaidhoz mérve.</p><button class="pill" data-toast="Receptműhely — következik">${G('plus','sage')}Új recept</button></div>${FIG}</div></section>`}
+
+
+/* ── Logolás: its own page; the mode switches in place (no re-render) ── */
+const USUAL=[['Whey + banán + mandulavaj','cup','356'],['Túró · áfonya · méz','bowl','324'],['Tojásrántotta · spenóttal','plate','318'],['Kávé · tej nélkül','cup','5']];
+function logPage(win,mode){const W={uzsonna:'Uzsonna · 16–17:30',vacsora:'Vacsora · 19–21',reggeli:'Reggeli · 07–10',ebed:'Ebéd · 12–14:30'}[win]||'Uzsonna · 16–17:30';mode=+mode||0;
+  const panels=[
+    `<div class="lp-ph tap" role="button" tabindex="0" data-toast="A kamera itt nyílna">${G('camera','ink')}<b>Fotózd le a tányért</b><small>Kiolvasom, mi van rajta, és mennyi. Te csak javítasz, ha kell.</small></div>`,
+    `<div class="card pad">${REC.map(r=>`<div class="row tap" role="button" tabindex="0" data-pick="${r.n}"><img src="${PH(r.ph+'-sq.jpg')}" alt="" class="rimg"><div><b>${r.n}</b><small>${r.cat} · ${r.min} perc</small></div><span class="chip soft">${nb(r.kcal)}</span></div>`).join('')}</div>`,
+    `<div class="card pad">${KAM.map(([n,ic,pal,sm])=>`<div class="row tap" role="button" tabindex="0" data-pick="${n}">${G(ic,pal)}<div><b>${n}</b><small>${sm}</small></div>${G('plus','ink','chev')}</div>`).join('')}</div>`,
+    `<div class="card" style="padding:16px"><label class="fld"><span>Mit ettél?</span><input placeholder="például: 2 tojás, pirítós, fél avokádó"></label><div class="chipsrow">${['kb. 300 kalória','kb. 500 kalória','nagy adag','kicsi adag'].map(c=>`<button class="chip" data-pick="${c}">${c}</button>`).join('')}</div></div>`,
+    `<div class="lp-ph tap" role="button" tabindex="0" data-toast="A mikrofon itt indulna">${G('mic','ink')}<b>Mondd el, mit ettél</b><small>„Két tojás pirítóssal és egy kávé.” Ennyi elég, a többit kitöltöm.</small></div>`,
+    `<div class="card pad">${USUAL.map(([n,ic,k])=>`<div class="row tap" role="button" tabindex="0" data-pick="${n}">${G(ic,'sage')}<div><b>${n}</b><small>szokásos · ${k} kalória</small></div>${G('plus','ink','chev')}</div>`).join('')}</div>`];
+  return `<div class="bar rise" style="--i:0"><button class="fb" data-back aria-label="Vissza">${G('back','ink')}</button><span class="crumb">Fuel › Mai › <b>Logolás</b></span></div>
+  <h1 class="head rise" style="--i:1">Mit ettél?</h1><p class="lead rise" style="--i:1">${W} · 420 kalória keret. Válassz módot, a többi itt marad.</p>
+  <section class="sec rise" style="--i:2"><div class="modes" id="lmodes">${MODES.map(([l,ic],i)=>`<button data-mode="${i}" class="${i===mode?'on':''}">${G(ic,i===mode?'deep':'ink')}<span>${l}</span></button>`).join('')}</div></section>
+  <section class="sec rise" style="--i:3" id="lpanel">${panels.map((h,i)=>`<div class="lpane ${i===mode?'on':''}">${h}</div>`).join('')}</section>
+  <div class="acts rise" style="--i:4"><button class="pill" id="lsave" data-toast="Rögzítve az uzsonnához" disabled style="opacity:.45">Rögzítem</button></div>`}
+document.addEventListener('click',e=>{const m=e.target.closest('#lmodes [data-mode]');if(m){e.preventDefault();const i=+m.dataset.mode;document.querySelectorAll('#lmodes button').forEach((b,k)=>{b.classList.toggle('on',k===i);b.querySelector('.g').outerHTML=G(MODES[k][1],k===i?'deep':'ink')});document.querySelectorAll('#lpanel .lpane').forEach((p,k)=>p.classList.toggle('on',k===i));return}
+  const pk=e.target.closest('[data-pick]');if(pk){e.preventDefault();pk.classList.toggle('picked');const any=document.querySelector('[data-pick].picked');const b=$('#lsave');if(b){b.disabled=!any;b.style.opacity=any?1:.45}}},true);
 
 const SHEETS={
   item:n=>{const x=ALLS.find(i=>i[0]===n)||ALLS[0];return `<div class="grab"></div><div class="score" style="padding:6px 0 10px">${G(x[6],'berry')}<div><b style="font-size:22px">${x[0]}</b><p>${x[1]} · ${x[2]}${x[3]?' · bevéve '+x[4]:''}</p></div></div><p class="note">${G('spark','deep')}${x[7]}</p><div class="acts" style="margin:14px 0 0"><button class="pill" data-take="${x[0]}">${x[3]?'Visszavonom':'Bevettem'}</button><button class="pill soft" data-toast="Másik zónába — következik">Másik zónába</button></div>`},
@@ -529,8 +565,8 @@ const SHEETS={
 /* chrome + router */
 const NAV=[['Nap','sun','sun'],['Edzés','dumbbell','berry'],['Fuel','plate','deep'],['Mezo','spark','deep'],['Én','person','sage']];
 $('#nav').innerHTML=NAV.map(([l,ic,pal])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját oldalán"`} aria-label="${l}">${G(ic,l==='Fuel'?pal:'ink')}<span>${l}</span></button>`).join('');
-function render(){const h=location.hash.slice(1);const m=h.match(/^meal-(\w+)$/);const inner=!!m||h==='szamok'||h==='irany';
-  $('#phone').classList.toggle('inner',inner);$('#scroll').innerHTML=m?mealPage(m[1]):h==='szamok'?szamok():h==='irany'?irany():h==='kieg'?kieg():h==='trendek'?trendek():h==='konyha'?konyha():mai();$('#scroll').scrollTop=0;closeSheet()}
+function render(){const h=location.hash.slice(1);const m=h.match(/^meal-(\w+)$/);const lg=h.match(/^log-(\w+?)(?:-(\d))?$/);const inner=!!m||!!lg||h==='szamok'||h==='irany';
+  $('#phone').classList.toggle('inner',inner);$('#scroll').innerHTML=m?mealPage(m[1]):lg?logPage(lg[1],lg[2]):h==='szamok'?szamok():h==='irany'?irany():h==='kieg'?kieg():h==='trendek'?trendek():h==='konyha'?konyha():mai();$('#scroll').scrollTop=0;closeSheet()}
 let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)};
 const openSheet=h=>{$('#sheet').innerHTML=h;$('#sheet').scrollTop=0;$('#sheet').classList.add('on');$('#scrim').classList.add('on')};
 const closeSheet=()=>{$('#sheet').classList.remove('on');$('#scrim').classList.remove('on')};
