@@ -454,11 +454,10 @@ body.still .stream{stroke-dashoffset:0}
 .anal .dim{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.5),transparent 24%,transparent 52%,rgba(0,0,0,.78) 100%)}
 .anal .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
 .anal .shine{position:absolute;inset:-30% -60%;background:linear-gradient(112deg,transparent 42%,rgba(255,255,255,.08) 47%,rgba(255,255,255,.42) 50%,rgba(255,255,255,.08) 53%,transparent 58%);transform:translateX(-70%);pointer-events:none;opacity:0}
-.anal .scanline{position:absolute;left:10%;right:10%;height:2px;top:30%;background:linear-gradient(90deg,transparent,#A8D5BA 30%,#fff 50%,#A8D5BA 70%,transparent);box-shadow:0 0 22px 5px rgba(168,213,186,.45);opacity:0;pointer-events:none}
-.anal .plate{position:absolute;left:50%;top:41%;width:272px;height:272px;transform:translate(-50%,-50%);border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 80px rgba(0,0,0,.35) inset;pointer-events:none}
-.anal .plate svg{position:absolute;inset:-12px;width:calc(100% + 24px);height:calc(100% + 24px);transform:rotate(-90deg)}
-.anal .arc{transition:stroke-dasharray .8s cubic-bezier(.2,.8,.2,1)}
-.anal.done .arc{stroke-dasharray:302 302;stroke:#5FB08A}
+.anal .scanline{position:absolute;left:0;right:0;height:2px;top:30%;background:linear-gradient(90deg,transparent,#A8D5BA 30%,#fff 50%,#A8D5BA 70%,transparent);box-shadow:0 0 22px 5px rgba(168,213,186,.45);opacity:0;pointer-events:none}
+.anal .frame{position:absolute;left:22px;right:22px;top:22%;bottom:36%;pointer-events:none;opacity:.9;transition:opacity .4s}.anal.done .frame{opacity:0}
+.anal .frame i{position:absolute;width:26px;height:26px;border:2.5px solid rgba(255,255,255,.85);border-radius:3px}
+.anal .frame i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0;border-top-left-radius:12px}.anal .frame i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0;border-top-right-radius:12px}.anal .frame i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0;border-bottom-left-radius:12px}.anal .frame i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0;border-bottom-right-radius:12px}
 .anal .lbl{position:absolute;left:50%;top:13%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px 0 12px;border-radius:999px;background:var(--sage);color:#fff;font:700 13px var(--b);white-space:nowrap;box-shadow:0 10px 24px -10px rgba(0,0,0,.6)}
 .anal .lbl i{width:8px;height:8px;border-radius:50%;background:#fff}
 .anal.done .lbl{background:#fff;color:var(--deep)}.anal.done .lbl i{background:var(--sage)}
@@ -475,17 +474,16 @@ body.still .stream{stroke-dashoffset:0}
 .anal.done .bot{opacity:1;transform:none;pointer-events:auto}
 .anal .rb{width:56px;height:56px;flex:0 0 56px;border-radius:50%;border:0;background:rgba(255,255,255,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:grid;place-items:center;padding:0}.anal .rb .g{font-size:24px;filter:brightness(2.4) grayscale(1)}
 .anal .bot .pill{background:#fff;color:#1E2321;height:52px;padding:0 22px;font-size:15px}
-.w320 .anal .plate{width:214px;height:214px;top:36%}.w320 .anal .res{bottom:92px}.w320 .anal .mac b{font-size:14px}.w320 .anal .bot .pill{padding:0 16px;font-size:14px}
+.w320 .anal .res{bottom:92px}.w320 .anal .mac b{font-size:14px}.w320 .anal .bot .pill{padding:0 16px;font-size:14px}
 @keyframes flash{0%{opacity:.95}100%{opacity:0}}
 @keyframes shine{0%{transform:translateX(-70%);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateX(70%);opacity:0}}
-@keyframes scan{0%{top:26%;opacity:0}8%{opacity:1}92%{opacity:1}100%{top:58%;opacity:0}}
+@keyframes scan{0%{top:12%;opacity:0}8%{opacity:1}92%{opacity:1}100%{top:70%;opacity:0}}
 @keyframes spin{to{transform:rotate(270deg)}}
 @keyframes blink{50%{opacity:.35}}
 @media (prefers-reduced-motion:no-preference){
   body:not(.still) .anal.on .flash{animation:flash .55s ease-out both}
   body:not(.still) .anal.scan .shine{animation:shine 1.35s ease-in-out 2}
   body:not(.still) .anal.scan .scanline{animation:scan 1.35s ease-in-out 2 alternate}
-  body:not(.still) .anal.on:not(.done) .plate svg{animation:spin 1.5s linear infinite}
   body:not(.still) .anal.on:not(.done) .lbl i{animation:blink 1s ease-in-out infinite}
 }
 /* ── photo page head: the photo IS the top of the page (edge to edge, chrome on it, the paper rises over it) ── */
@@ -851,7 +849,7 @@ const PHOTO_RESULT={turo:{name:'Túró · áfonya · méz',ings:[['Túró · fé
   omlett:{name:'Tojásrántotta · spenóttal',ings:[['Tojás','plate','3 db',234,[19,1,17]],['Spenót','leaf','100 g',23,[3,2,0]],['Vaj','avocado','8 g',61,[0,0,7]]],cert:91}};
 function analStart(){const key=DRAFT.photo,R=PHOTO_RESULT[key]||PHOTO_RESULT.turo,A=$('#anal');const kcal=R.ings.reduce((a,i)=>a+i[3],0),m=[0,1,2].map(j=>R.ings.reduce((a,i)=>a+i[4][j],0));
   A.className='anal on';A.innerHTML=`<img class="bg" src="${PH(key+'.jpg')}" alt=""><div class="dim"></div><div class="shine"></div><div class="scanline"></div>
-  <div class="plate"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="trk" cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/><circle class="arc" cx="50" cy="50" r="48" fill="none" stroke="#A8D5BA" stroke-width="3" stroke-linecap="round" stroke-dasharray="92 210"/></svg></div>
+  <div class="frame"><i></i><i></i><i></i><i></i></div>
   <span class="lbl"><i></i><span id="alb">Felismerem…</span></span><button class="x" data-anal="close" aria-label="Bezárom">×</button>
   <div class="res"><h4>${R.name}</h4>${R.ings.map(i=>`<div class="rl2">${G(i[1],'sage')}<span>${i[0]}</span><small>${i[2]}</small><b>${i[3]}</b></div>`).join('')}
     <div class="mac">${[['kalória',nb(kcal)],['fehérje',m[0]+' g'],['szénhidrát',m[1]+' g'],['zsír',m[2]+' g']].map(([l,v])=>`<div><b>${v}</b><small>${l}</small></div>`).join('')}</div>
