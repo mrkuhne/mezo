@@ -716,7 +716,9 @@ body.still .stream{stroke-dashoffset:0}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const nb=n=>String(n).replace(/\B(?=(\d{3})+$)/g,' ');const dec=n=>String(n).replace('.',',');
 /* ── the glyph family: soft gradient shapes, no outlines; unique gradient ids per instance ── */
-let gid=0,FLY=null,AR=null;const SF={kcat:'',kf:'',kq:'',rcat:'',rf:'',rq:''};const ANAL={t:[]};
+let gid=0,FLY=null,AR=null;
+/* ── domain registry (Round 0): each domain file does DOM.<key>={tabs:[routes], render(h)→html, tabName(h)} ── */
+const DOM={};const domOf=h=>Object.keys(DOM).find(d=>h===d||h.startsWith(d+'-'));const isTab=h=>['','kieg','trendek','konyha'].includes(h)||Object.values(DOM).some(d=>d.tabs.includes(h));const SF={kcat:'',kf:'',kq:'',rcat:'',rf:'',rq:''};const ANAL={t:[]};
 const PAL={sage:['#BFE3CD','#4F9F7A'],deep:['#6FB893','#2E6B52'],peach:['#FBD6BC','#E39565'],berry:['#CDB4E3','#7E4FA8'],sky:['#C9E4F6','#6FAFDD'],sun:['#FDE6A6','#E9B44C'],ink:['#58625C','#1E2321'],cream:['#FFFFFF','#E9E2D3'],red:['#F6B5A9','#D9654F']};
 const SH={
   bowl:(u,h)=>`<ellipse cx="32" cy="55" rx="22" ry="4" fill="rgba(30,35,33,.10)"/><path d="M8 30h48c0 14-10 24-24 24S8 44 8 30z" fill="url(#${u})"/><ellipse cx="32" cy="30" rx="24" ry="5" fill="#fff" opacity=".9"/><ellipse cx="32" cy="30" rx="20" ry="3.4" fill="url(#${u})" opacity=".55"/><path d="M12 34c2 8 8 14 16 16" stroke="url(#${h})" stroke-width="3" stroke-linecap="round" fill="none"/>`,
@@ -786,10 +788,11 @@ const PH=p=>`foto/${p}`;
 /* ── the hero scene: the day's arc (07–21) with the sun at now, the meals as beads; a bowl that fills to today's intake ── */
 
 const heroTxt=({eb,title,sub,btn,attrs=''})=>`<div class="htxt rise" style="--i:1"><small>${eb}</small><strong>${title}</strong>${sub?`<span class="hs">${sub}</span>`:''}${btn?`<button class="pill" ${attrs}>${btn}</button>`:''}</div>`;
-const phead=(tab,{ph,round,pos,...t})=>`<header class="phead"><img class="bg" src="${PH(ph)}" alt=""${pos?` style="object-position:${pos}"`:''}><div class="fade"></div><div class="top rise" style="--i:0"><a class="logo" href="#irany">${MARK(34)}<b>mezo</b></a><button class="av" data-toast="Profil — az Én területen" aria-label="Profil">P</button></div>${seg(tab)}${round?`<img class="own" src="${PH(round)}" alt="">`:''}${heroTxt(t)}</header><div class="body">`;
+const phead=(tab,{ph,round,pos,tabs,...t})=>`<header class="phead"><img class="bg" src="${PH(ph)}" alt=""${pos?` style="object-position:${pos}"`:''}><div class="fade"></div><div class="top rise" style="--i:0"><a class="logo" href="#irany">${MARK(34)}<b>mezo</b></a><button class="av" data-toast="Profil — az Én területen" aria-label="Profil">P</button></div>${seg(tab,tabs)}${round?`<img class="own" src="${PH(round)}" alt="">`:''}${heroTxt(t)}</header><div class="body">`;
 const header=(tab)=>`<div class="top rise" style="--i:0"><a class="logo" href="#irany">${MARK(34)}<b>mezo</b></a><button class="av" data-toast="Profil — az Én területen" aria-label="Profil">P</button></div>
   <div class="ctx rise" style="--i:0">${G('plate','deep')}Fuel <i>›</i> ${tab}</div>`;
-const seg=(on)=>`<div class="seg rise" style="--i:1" role="tablist">${[['Mai',''],['Kiegészítők','kieg'],['Trendek','trendek'],['Konyha','konyha']].map(([l,r])=>`<button role="tab" class="${l===on?'on':''}" ${l===on?'':`data-go="${r}"`}>${l}</button>`).join('')}</div>`;
+const FUELTABS=[['Mai',''],['Kiegészítők','kieg'],['Trendek','trendek'],['Konyha','konyha']];
+const seg=(on,list=FUELTABS)=>`<div class="seg rise" style="--i:1" role="tablist">${list.map(([l,r])=>`<button role="tab" class="${l===on?'on':''}" ${l===on?'':`data-go="${r}"`}>${l}</button>`).join('')}</div>`;
 
 let DAYVIEW='ma';
 const YMEALS={y1:{t:7.5,time:'07:30',win:'Reggeli',name:'Tojásrántotta · spenóttal',kcal:318,score:7.6,m:[24,4,23],fib:3,glu:0,ph:'omlett',src:'fotóból',ings:[['Tojás','plate','3 db',234],['Spenót','leaf','100 g',23],['Vaj','avocado','8 g',61]],head:'Alacsony szénhidrátú reggel',lead:'Fehérje és zsír; a szénhidrát ebédre maradt.',cert:93,dims:[8.2,7.1,8.4,7.6,9,6.8,8,8.1],mz:'Jó indítás edzésnap előtt.'},
@@ -1256,11 +1259,15 @@ const SHEETS={
 
 /* chrome + router */
 const NAV=[['Nap','sun','sun'],['Edzés','dumbbell','berry'],['Fuel','plate','deep'],['Mezo','spark','deep'],['Én','person','sage']];
-$('#nav').innerHTML=NAV.map(([l,ic,pal])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját oldalán"`} aria-label="${l}">${G(ic,l==='Fuel'?pal:'ink')}<span>${l}</span></button>`).join('');
+const NAVKEY={'Nap':'nap','Edzés':'edzes','Fuel':'','Mezo':'mezo','Én':'en'};
+function renderNav(h){const cur=domOf(h)||'';$('#nav').innerHTML=NAV.map(([l,ic,pal])=>{const k=NAVKEY[l],on=k===cur,live=k===''||DOM[k];return `<button class="${on?'on':''}" ${on?'':live?`data-go="${k}"`:`data-toast="${l} — a saját oldalán"`} aria-label="${l}">${G(ic,on?pal:'ink')}<span>${l}</span></button>`}).join('')}
+renderNav(location.hash.slice(1));
+function setupDomBar(h,D){const hd=$('#scroll h1.head')||$('#scroll .htxt strong');const tab=D.tabs.includes(h);const t=tab?(D.tabName?.(h)||''):(hd?hd.textContent.replace(/\s+/g,' ').trim():'');$('#cbt').textContent=t.length>26?t.slice(0,26).trim()+'…':t;const bb=$('#cbb');bb.innerHTML=tab?MARK(26):G('back','ink');bb.onclick=()=>{if(tab)location.hash='irany';else history.length>1?history.back():(location.hash=D.tabs[0])};const ac=$('#cba');ac.textContent='';ac.onclick=null;ac.style.visibility='hidden'}
 let PREVH=null;const TABH=['','kieg','trendek','konyha'];
 /* keep the four tab photos decoded in memory so a tab switch never shows an empty frame */
 const TABPH=[];['smoothie','herbs','reggelfeny','lazac','viz','brunch'].forEach(n=>{const im=new Image();im.src=PH(n+'.jpg');if(im.decode)im.decode().catch(()=>{});TABPH.push(im)});
-function render(){const h=location.hash.slice(1);const swap=PREVH!==null&&PREVH!==h&&TABH.includes(PREVH)&&TABH.includes(h);PREVH=h;const ph=$('#phone');ph.classList.toggle('tabswap',swap);if(swap){clearTimeout(render.t);render.t=setTimeout(()=>ph.classList.remove('tabswap'),400)}const m=h.match(/^meal-(\w+)$/);const lg=h.match(/^log-(\w+)$/),ks=h.match(/^kesz-(\w+)$/),rc=h.match(/^recept-(\w+)$/),ki=h.match(/^kamra-(.+)$/),uj=h.match(/^ujelem-(\d)$/);const inner=!['','kieg','trendek','konyha'].includes(h);$('#phone').classList.toggle('modal',!!lg);
+function render(){const h=location.hash.slice(1);const swap=PREVH!==null&&PREVH!==h&&isTab(PREVH)&&isTab(h)&&domOf(PREVH)===domOf(h);PREVH=h;const ph=$('#phone');ph.classList.toggle('tabswap',swap);if(swap){clearTimeout(render.t);render.t=setTimeout(()=>ph.classList.remove('tabswap'),400)}renderNav(h);
+  const dm=domOf(h);if(dm){const D=DOM[dm];ph.classList.remove('modal');ph.classList.toggle('inner',!D.tabs.includes(h));$('#scroll').innerHTML=D.render(h);$('#scroll').scrollTop=0;closeSheet();analClose();requestAnimationFrame(()=>requestAnimationFrame(()=>$$('#scroll .pre').forEach(x=>x.classList.remove('pre'))));setupDomBar(h,D);if(D.after)D.after(h);$('#cbar').classList.remove('on');return}const m=h.match(/^meal-(\w+)$/);const lg=h.match(/^log-(\w+)$/),ks=h.match(/^kesz-(\w+)$/),rc=h.match(/^recept-(\w+)$/),ki=h.match(/^kamra-(.+)$/),uj=h.match(/^ujelem-(\d)$/);const inner=!['','kieg','trendek','konyha'].includes(h);$('#phone').classList.toggle('modal',!!lg);
   $('#phone').classList.toggle('inner',inner);$('#scroll').innerHTML=m?mealPage(m[1]):lg?logPage(lg[1]):ks?keszPage(ks[1]):rc?recept(rc[1]):ki?kamraItem(decodeURIComponent(ki[1])):uj?ujelem(uj[1]):h==='protokoll'?protokoll():h==='gyogyszer'?gyogyszer(false):h==='gyogyszer-aktiv'?gyogyszer(true):h==='receptek'?receptek():h==='kamra'?kamra():h==='het'?het():h==='szamok'?szamok():h==='irany'?irany():h==='ios'?iosPage():h.startsWith('intro-')?intro(h.slice(6)):h==='kieg'?kieg():h==='trendek'?trendek():h==='konyha'?konyha():mai();$('#scroll').scrollTop=0;closeSheet();analClose();requestAnimationFrame(()=>requestAnimationFrame(()=>$$('#scroll .pre').forEach(x=>x.classList.remove('pre'))));if(lg)patchLog();if(ks){countUp();autoReturn()}setupBar(h,m,lg,ks,rc,ki);flyIn();$('#cbar').classList.remove('on')}
 let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)};
 const openSheet=h=>{Object.keys(SF).forEach(k=>SF[k]='');const sh=$('#sheet');sh.innerHTML=h;sh.scrollTop=0;sh.classList.remove('full');sh.classList.add('on','medium');$('#scrim').classList.add('on')};
@@ -1352,5 +1359,7 @@ $('#tlg').onclick=()=>{const p=$('#phone');const n=p.classList.contains('xl')?''
 try{const t=localStorage.getItem('lagy-theme');if(t)$('#phone').dataset.theme=t}catch(e){}
 setupBar(location.hash.slice(1),null,null,null,null,null);
 </script>
+<script src="edzes.js"></script>
+<script>if(domOf(location.hash.slice(1)))render();else renderNav(location.hash.slice(1));</script>
 </body>
 </html>

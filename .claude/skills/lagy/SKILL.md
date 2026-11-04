@@ -8,7 +8,7 @@ description: Use when the user invokes /lagy, or asks to continue the "Lágy" di
 The owner chose direction **Lágy** on 2026-11-04 after months of searching, and built Fuel with us at app
 fidelity. This skill carries everything learned there so every other page lands in the same language
 without re-litigating it. **The canon is [`IRANY.md`](IRANY.md) in this folder — read it in full at the
-start of every session.** Fuel (`docs/design_2.0/prototypes/kepes/b/`) is the executable reference: when
+start of every session.** Fuel (`docs/design_2.0/prototypes/kepes/b/index.html`) is the executable reference: when
 in doubt, do what Fuel does.
 
 Driving issue: `mezo-pi0jf` (comments carry every round). The app does not change in this work — only the
@@ -28,13 +28,16 @@ prototype and its docs, on branch `claude/mai-napom-custom-graphics-eedeb2`, pus
 The whole app lives on **one** Artifact: https://claude.ai/artifact/EEf8oNUm6EDeFkaTkmhpKe (slug
 `6b2ef909-0e57-49b0-a848-3117c146dcb5`). The bottom bar's five domains all work there.
 
-- **Round 0 (once, before the first new domain):** split `b/fuel.html` into a shell + per-domain files
-  without changing a pixel of Fuel: `b/index.html` (tokens, shared CSS, shared builders, router, sheets
-  host, bottom bar), `b/fuel.js`, then `b/nap.js`, `b/edzes.js`, `b/mezo.js`, `b/en.js`. Hash prefix per
-  domain (`#fuel`, `#fuel-kieg`, `#nap`, `#nap-…`); default route = Nap (the app opens on today);
-  old Fuel hashes keep working. Re-run every Fuel probe after the split — identical results or it is not
-  done. Publish with all files (`index.html`, the `*.js`, `foto/*` already there).
-- **Order:** Nap → Edzés → Mezo → Én. One domain per round; Mezo may take two.
+- **Round 0 — done 2026-11-04.** `b/fuel.html` became `b/index.html`, the app shell: tokens, shared CSS,
+  shared builders, router, sheets host, bottom bar — and Fuel itself (its hashes stay bare: `''`, `kieg`,
+  `trendek`, `konyha`, …). Every other domain lives in its own file loaded after the shell
+  (`<script src="edzes.js">`, then `nap.js`, `mezo.js`, `en.js`) and registers
+  `DOM.<key>={tabs:[routes], render(h)→html, tabName(h), after(h)?}`; its routes are `<key>` and
+  `<key>-<page>` (e.g. `#edzes`, `#edzes-terv`, `#edzes-gyak-front-squat`). The router, the bottom bar
+  (registered domains live, others toast) and the compact bar (`setupDomBar`) pick it up; `phead(tab,{…,
+  tabs:[[label,route]…]})` takes the domain's tab list. Fuel moving to `#fuel…` and Nap becoming the
+  default route happen when Nap is built. Publish `index.html` + every `<domain>.js` (+ new `foto/*`).
+- **Order:** Edzés (owner, 2026-11-04) → Nap → Mezo → Én. One domain per round; Mezo may take two.
 
 ## The round (one domain)
 

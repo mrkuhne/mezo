@@ -1,6 +1,6 @@
 /* Lágy page probe (skill /lagy). Serve docs/design_2.0/prototypes first:
      python3 -m http.server 8757 --bind 127.0.0.1   (background, from docs/design_2.0/prototypes)
-   Usage: node docs/design_2.0/prototypes/kepes/tools/probe.mjs [--page b/fuel.html] <route> [route…]
+   Usage: node docs/design_2.0/prototypes/kepes/tools/probe.mjs [--page b/index.html] <route> [route…]
    e.g.   node …/probe.mjs '' kieg trendek konyha szamok meal-reggeli
    For every route at 390 and 320 wide: horizontal scroll, text under 12 px, taps under 40 px, broken
    images, page errors / HTTP errors; stitched screenshots go to $TMPDIR/lagy-probe/<w>-<route>-<n>.png.
@@ -10,7 +10,7 @@ const here=path.dirname(fileURLToPath(import.meta.url));
 const cands=[process.env.MEZO_PW,path.resolve(here,'../../../../../frontend/node_modules/@playwright/test/index.mjs'),'/Users/mrkuhne/Applications/Personal/Mezo/mezo/frontend/node_modules/@playwright/test/index.mjs'].filter(Boolean);
 const pw=cands.find(p=>fs.existsSync(p));if(!pw){console.error('Playwright not found; set MEZO_PW');process.exit(2)}
 const {chromium}=await import(pw);
-let args=process.argv.slice(2),page='b/fuel.html';const pi=args.indexOf('--page');if(pi>=0){page=args[pi+1];args.splice(pi,2)}
+let args=process.argv.slice(2),page='b/index.html';const pi=args.indexOf('--page');if(pi>=0){page=args[pi+1];args.splice(pi,2)}
 const routes=args.length?args:[''];const out=path.join(os.tmpdir(),'lagy-probe');fs.mkdirSync(out,{recursive:true});
 const b=await chromium.launch();let bad=0;const errs=[];
 for(const W of [390,320]){const p=await b.newPage({viewport:{width:1200,height:900}});
