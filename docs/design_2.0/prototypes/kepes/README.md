@@ -15,11 +15,28 @@ none), cards of varied sizes, horizontal rows per section, pill chips. Fuel firs
   `foto/CREDITS.md`. Never the owner's real photos. Note for the product: real logged photos will look amateur;
   the slick look comes from curated recipe photos, own photos stay small and well cropped.
 
+## Direction B — "Lágy" (2026-11-04, beside Képes, for comparison)
+
+Owner: "show what you can do — own graphics, own logo, own direction; soft, clean, professional; informative but not
+flooding; the eye led to the one thing to do; nested pages that are clear; elements may move by themselves; an
+alternative beside the current one". `b/fuel.html` (self-contained; photos via `b/foto -> ../foto`):
+- **Own mark + wordmark** (three soft humps of an m — bowl and drop — with the sun dot), Outfit display + Manrope body,
+  cream paper ground, one accent (sage) with deep green, peach/sky/sun as data colours.
+- **Own glyph family** (`G(name,palette)`: soft gradient shapes, no outlines, one highlight; ~30 glyphs incl. the five
+  domains) — no third-party icon set.
+- **Hero scene** (SVG): the day's arc 07–21 with the sun at now, the meals as beads, a bowl that fills to today's
+  intake (steam drifts, leaf sways, sun glows; `prefers-reduced-motion` / `still` stop everything).
+- Mai = headline + lead (Mezo's voice) → scene with ONE primary action → three numbers → the day as a timeline
+  (own photos round, future slots ghosted, the next one marked) → log row → Mezo card with the own flat figure.
+- Nested pages with a crumb (`Fuel › Mai › A nap számai`): `#szamok`, `#meal-<id>`, `#irany` (the identity page:
+  mark, colours, glyph family, motion rule). Frosted light bottom nav (B keeps dark for text only).
+
 ## Fixed Artifact per domain
 
 | Domain | Artifact | Published |
 |---|---|---|
-| Fuel | https://claude.ai/artifact/HrE6LXBqDzrApY5hGidTiZ (slug `8871bb45-61c8-4fd6-b816-0fb4ab036da2`) | 2026-11-04 · v6 (Mai élőbben) |
+| Fuel · Képes (A) | https://claude.ai/artifact/HrE6LXBqDzrApY5hGidTiZ (slug `8871bb45-61c8-4fd6-b816-0fb4ab036da2`) | 2026-11-04 · v6 (Mai élőbben) |
+| Fuel · Lágy (B) | https://claude.ai/artifact/EEf8oNUm6EDeFkaTkmhpKe (slug `6b2ef909-0e57-49b0-a848-3117c146dcb5`) | 2026-11-04 · v1 |
 
 Republish: `publish_files` with the artifact's slug + live `base_version`, files = `index.html` (from
 `fuel.html`), `ikon/*.png`, `foto/*.jpg` (patch mode keeps the rest).

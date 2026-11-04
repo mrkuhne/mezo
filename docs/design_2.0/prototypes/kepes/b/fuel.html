@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mezo · Lágy irány</title>
+<!-- "LÁGY" — direction B (owner, 2026-11-04: "show what you can do: own graphics, own logo, own direction; soft, clean,
+     professional; informative without flooding; the eye is led to the one thing to do; nested pages that are clear;
+     elements may move by themselves"). An alternative BESIDE the Képes direction, for comparison.
+     Everything drawn here is our own: the mark and wordmark, the glyph family (soft gradient shapes, no outlines),
+     the hero scene (the day's arc with the sun at "now", the bowl that fills to today's intake, drifting steam),
+     the figure. Photos: the owner's own meal photos stay small and round (stand-ins from ../foto, CC0).
+     Pages: Mai (#), the numbers (#szamok), the meal (#meal-<id>), the identity (#irany). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Manrope:wght@500;600;700;800&display=swap">
+<style>
+:root{
+  --paper:#F6F4EF; --card:#FFFFFF; --ink:#1E2321; --ink2:#5A635E; --mute:#8E968F; --line:rgba(30,35,33,.08);
+  --sage:#5FB08A; --sage2:#A8D5BA; --sage3:#E6F2EA; --deep:#2E6B52; --peach:#F0B48C; --peach2:#FBE6D6; --berry:#8E5BB5; --sky:#8CC3E8; --sun:#F4C860;
+  --d:'Outfit',system-ui,sans-serif; --b:'Manrope',system-ui,sans-serif;
+  --sh:0 14px 36px -24px rgba(30,35,33,.28);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#E9E7E1;font-family:var(--b);color:var(--ink);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.g{display:block;width:1em;height:1em;flex:0 0 auto;overflow:visible}
+/* lab */
+.lab{min-height:100vh;display:flex;gap:28px;align-items:flex-start;justify-content:center;padding:28px 16px}
+.phone{position:relative;width:390px;height:844px;background:var(--paper);border-radius:46px;overflow:hidden;box-shadow:0 30px 70px -30px rgba(0,0,0,.45),0 0 0 10px #15201B,0 0 0 12px #2E3A34;flex:0 0 auto}
+.phone.w320{width:320px;height:693px}
+.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding-bottom:116px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.phone.inner .scroll{padding-bottom:40px}.phone.inner .nav{display:none}
+.notes{width:300px;font-size:13px;line-height:1.5;color:#3C4640;padding-top:8px}
+.notes h2{font:600 20px/1.1 var(--d);margin:0 0 6px}
+.notes p{margin:0 0 10px}.notes small{display:block;color:#8E968F;margin-bottom:12px}
+.notes .tog{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.notes .tog button{font:600 12px var(--b);padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.notes .tog button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.notes ul{margin:0;padding-left:18px}
+@media (max-width:760px){.lab{flex-direction:column;align-items:center;padding:0}.phone{width:100%;max-width:430px;height:100vh;height:100dvh;border-radius:0;box-shadow:none}.notes{display:none}}
+/* ── top bar + headline ── */
+.top{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0}
+.logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);padding:3px 6px 3px 0;margin-left:-2px}
+.logo .mark{width:34px;height:34px}
+.logo b{font:600 19px var(--d);letter-spacing:-.03em}
+.av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--sage2),var(--sage));display:grid;place-items:center;font:600 13px var(--d);color:#fff;border:0;box-shadow:var(--sh)}
+.ctx{display:flex;align-items:center;gap:6px;padding:14px 20px 0;font:700 12px var(--b);color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.ctx .g{font-size:14px}
+.ctx i{font-style:normal;opacity:.5}
+h1.head{font:600 clamp(26px,7vw,30px)/1.12 var(--d);letter-spacing:-.025em;margin:6px 20px 0;max-width:19ch}
+h1.head em{font-style:normal;color:var(--deep)}
+p.lead{margin:8px 20px 0;color:var(--ink2);font-size:14.5px;font-weight:600;max-width:34ch}
+.seg{display:flex;gap:4px;margin:16px 20px 0;padding:4px;border-radius:999px;background:rgba(30,35,33,.06)}
+.seg button{flex:1;height:40px;border:0;border-radius:999px;background:transparent;font:700 12.5px var(--b);color:var(--ink2);padding:0 6px;white-space:nowrap}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 4px 12px -8px rgba(30,35,33,.35)}
+/* ── hero scene ── */
+.scene{position:relative;margin:18px 16px 0;border-radius:32px;background:linear-gradient(180deg,#FFFFFF 0%,#F2F7F3 100%);box-shadow:var(--sh);overflow:hidden}
+.scene svg.art{display:block;width:100%;height:auto}
+.scene .now{position:absolute;left:18px;top:16px;display:flex;align-items:center;gap:6px;font:700 12px var(--b);color:var(--ink2);background:rgba(255,255,255,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:6px 10px 6px 8px;border-radius:999px}
+.scene .now i{width:8px;height:8px;border-radius:50%;background:var(--sage);box-shadow:0 0 0 4px rgba(95,176,138,.2)}
+.scene .act{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:4px 16px 16px}
+.scene .act img{width:56px;height:56px;border-radius:50%;object-fit:cover;box-shadow:0 8px 16px -8px rgba(0,0,0,.35),0 0 0 3px #fff}
+.scene .act small{display:block;font:700 12px var(--b);color:var(--sage);text-transform:uppercase;letter-spacing:.05em}
+.scene .act strong{display:block;font:600 16.5px/1.2 var(--d);letter-spacing:-.015em;margin-top:2px}
+.scene .act span.q{display:block;font-size:12.5px;color:var(--mute);font-weight:600;margin-top:2px}
+.pill{height:46px;padding:0 18px;border-radius:999px;border:0;font:700 14px var(--b);display:inline-flex;align-items:center;gap:8px;justify-content:center;color:#fff;background:var(--ink);box-shadow:0 12px 20px -12px rgba(30,35,33,.6)}
+.pill.soft{background:var(--sage3);color:var(--deep);box-shadow:none}
+.pill .g{font-size:18px}
+/* motion in the scene */
+@media (prefers-reduced-motion:no-preference){
+  body:not(.still) .steam path{animation:steam 4.2s ease-in-out infinite}
+  body:not(.still) .steam path:nth-child(2){animation-delay:-1.4s}
+  body:not(.still) .steam path:nth-child(3){animation-delay:-2.8s}
+  body:not(.still) .leaf{animation:sway 5s ease-in-out infinite;transform-origin:50% 100%}
+  body:not(.still) .sunglow{animation:glow 3.6s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
+  body:not(.still) .fillmask rect{animation:rise 1.4s cubic-bezier(.2,.8,.2,1) both}
+  body:not(.still) .rise{animation:up .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*60ms)}
+}
+@keyframes steam{0%{transform:translateY(0);opacity:0}25%{opacity:.7}100%{transform:translateY(-16px);opacity:0}}
+@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes glow{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.18);opacity:.85}}
+@keyframes rise{from{transform:translateY(60px)}}
+@keyframes up{from{opacity:0;transform:translateY(10px)}}
+body.still *{animation:none!important;transition:none!important}
+/* ── sections ── */
+.sec{margin:26px 16px 0}
+.sh{display:flex;align-items:baseline;justify-content:space-between;margin:0 4px 12px}
+.sh h3{font:600 18px/1.1 var(--d);margin:0;letter-spacing:-.02em}
+.sh a{font:700 13px var(--b);color:var(--deep);text-decoration:none;padding:12px 0 12px 14px;margin:-12px 0;display:inline-flex;align-items:center;gap:4px}
+.sh a .g{font-size:14px}
+.card{background:var(--card);border-radius:26px;box-shadow:var(--sh)}
+/* three numbers */
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.n3{background:var(--card);border-radius:22px;box-shadow:var(--sh);padding:14px 12px 12px;display:grid;gap:6px;justify-items:start}
+.n3 .g{font-size:30px}
+.n3 b{font:600 20px/1 var(--d);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.n3 b small{font:700 12px var(--b);color:var(--mute);margin-left:3px}
+.n3 span{font:600 12px var(--b);color:var(--mute)}
+.n3 u{display:block;width:100%;height:5px;border-radius:3px;background:var(--paper);text-decoration:none;overflow:hidden}
+.n3 u i{display:block;height:100%;width:var(--p);background:var(--c);border-radius:3px}
+/* timeline */
+.tl{padding:6px 16px 10px}
+.te{display:grid;grid-template-columns:44px 56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;position:relative}
+.te+.te::before{content:"";position:absolute;left:21px;top:-18px;height:28px;border-left:2px dashed rgba(30,35,33,.14)}
+.te time{font:700 12.5px var(--b);color:var(--mute);font-variant-numeric:tabular-nums}
+.te img{width:56px;height:56px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 3px #fff,0 8px 16px -10px rgba(0,0,0,.35)}
+.te .gl{width:56px;height:56px;border-radius:50%;background:var(--sage3);display:grid;place-items:center}
+.te .gl .g{font-size:30px}
+.te strong{display:block;font:600 15px/1.2 var(--d);letter-spacing:-.015em}
+.te small{display:block;font:600 12.5px var(--b);color:var(--mute);margin-top:3px;display:flex;gap:10px;align-items:center}
+.te small .g{font-size:14px}
+.te .chev{color:var(--mute);width:18px;height:18px}
+.te.ahead time{color:var(--sage)}
+.te.ahead strong{color:var(--ink2);font-weight:500}
+.te.ahead .gl{background:#fff;box-shadow:inset 0 0 0 1.5px rgba(30,35,33,.12)}
+.te.ahead .gl.now{background:var(--sage3);box-shadow:inset 0 0 0 2px var(--sage)}
+.te.out time{color:var(--peach)}
+/* log row */
+.modes{display:flex;gap:6px;padding:8px;border-radius:999px;background:#fff;box-shadow:var(--sh);overflow-x:auto;scrollbar-width:none}
+.modes::-webkit-scrollbar{display:none}
+.modes button{flex:1 0 auto;min-width:52px;height:60px;border:0;border-radius:999px;background:transparent;display:grid;place-items:center;gap:2px;font:700 12px var(--b);color:var(--ink2);padding:0 8px}
+.modes button .g{font-size:26px}
+.modes button.on{background:var(--sage3);color:var(--deep)}
+/* Mezo card */
+.mz{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:10px;align-items:end;background:linear-gradient(135deg,#FFFFFF,var(--sage3));border-radius:28px;box-shadow:var(--sh);padding:18px 0 0 18px;overflow:hidden}
+.mz small{display:flex;align-items:center;gap:6px;font:700 12px var(--b);color:var(--deep);text-transform:uppercase;letter-spacing:.05em}
+.mz small .g{font-size:16px}
+.mz p{font:600 15.5px/1.4 var(--d);margin:8px 0 14px;letter-spacing:-.01em;color:var(--ink)}
+.mz p em{font-style:normal;color:var(--deep)}
+.mz .pill{margin-bottom:18px}
+.mz .fig{width:108px;height:auto;display:block;margin:0}
+/* nav */
+.nav{position:absolute;left:14px;right:14px;bottom:14px;height:68px;border-radius:999px;background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);box-shadow:0 20px 40px -18px rgba(30,35,33,.35),0 0 0 1px rgba(30,35,33,.05);display:flex;align-items:center;justify-content:space-around;padding:6px;z-index:5}
+.nav button{height:56px;min-width:52px;border:0;background:none;display:grid;place-items:center;gap:2px;color:var(--mute);font:700 12px var(--b);padding:0 8px;border-radius:999px}
+.nav button .g{font-size:26px;opacity:.75}
+.nav button.on{color:var(--deep)}
+.nav button.on .g{opacity:1}
+.nav button.on::after{content:"";width:5px;height:5px;border-radius:50%;background:var(--sage)}
+/* ── inner pages ── */
+.bar{display:flex;align-items:center;gap:10px;padding:14px 16px 0}
+.fb{width:44px;height:44px;border-radius:50%;background:#fff;border:0;display:grid;place-items:center;color:var(--ink);box-shadow:var(--sh);padding:0}
+.fb .g{font-size:18px}
+.crumb{font:700 12px var(--b);color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.crumb b{color:var(--ink)}
+.ph{position:relative;margin:14px 16px 0;height:230px;border-radius:30px;overflow:hidden;box-shadow:var(--sh)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph .cap{position:absolute;left:14px;bottom:14px;display:flex;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 11px;border-radius:999px;background:#fff;color:var(--ink);font:700 12.5px var(--b);white-space:nowrap;box-shadow:0 6px 14px -8px rgba(0,0,0,.3)}
+.chip .g{font-size:15px}
+.chip.ink{background:var(--ink);color:#fff}
+.chip.soft{background:var(--sage3);color:var(--deep);box-shadow:none}
+.chip.warm{background:var(--peach2);color:#9A5B2E;box-shadow:none}
+.row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .g{font-size:30px}
+.row b{display:block;font:600 14px var(--d)}
+.row small{display:block;font:600 12.5px var(--b);color:var(--mute);margin-top:2px;line-height:1.35}
+.row .v{font:600 15px var(--d);text-align:right;font-variant-numeric:tabular-nums}
+.row .v u{display:block;width:60px;height:5px;border-radius:3px;background:var(--paper);text-decoration:none;overflow:hidden;margin-top:5px}
+.row .v u i{display:block;height:100%;width:var(--p);background:var(--sage);border-radius:3px}
+.pad{padding:8px 16px}
+.score{display:flex;align-items:center;gap:14px;padding:16px}
+.score .g{font-size:56px}
+.score b{font:600 34px/1 var(--d);letter-spacing:-.03em}
+.score b small{font:700 13px var(--b);color:var(--mute);margin-left:4px}
+.score p{margin:5px 0 0;font:600 13.5px/1.35 var(--b);color:var(--ink2)}
+.band3{display:flex;gap:4px;margin:4px 0 2px}
+.band3 i{flex:1;height:8px;border-radius:4px;background:var(--paper)}
+.band3 i.on{background:var(--sage)}.band3 i.on.mid{background:var(--sun)}.band3 i.on.hi{background:var(--peach)}
+.acts{display:flex;gap:8px;margin:18px 16px 0}
+.acts .pill{flex:1}
+/* identity page */
+.id h2{font:600 22px/1.1 var(--d);letter-spacing:-.02em;margin:22px 20px 10px}
+.id p{margin:0 20px 12px;color:var(--ink2);font-weight:600}
+.sw{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:0 16px}
+.sw i{display:block;height:54px;border-radius:16px;box-shadow:var(--sh)}
+.gl8{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:0 16px}
+.gl8 div{background:#fff;border-radius:18px;box-shadow:var(--sh);display:grid;place-items:center;gap:4px;padding:10px 4px;font:700 12px var(--b);color:var(--mute)}
+.gl8 .g{font-size:34px}
+.logos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px}
+.logos div{border-radius:22px;padding:18px;display:grid;place-items:center;gap:10px;box-shadow:var(--sh)}
+.logos .mark{width:56px;height:56px}
+.logos b{font:600 22px var(--d);letter-spacing:-.03em}
+/* sheet + toast */
+.scrim{position:absolute;inset:0;background:rgba(20,30,25,.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:8}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;overflow-y:auto;background:var(--card);border-radius:30px 30px 0 0;transform:translateY(104%);transition:transform .32s cubic-bezier(.2,.8,.2,1);z-index:9;padding:10px 16px 22px;scrollbar-width:none}
+.sheet.on{transform:none}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:rgba(30,35,33,.14);margin:0 auto 12px}
+.sheet h2{font:600 22px/1.15 var(--d);margin:0 0 4px;letter-spacing:-.02em}
+.sheet .sub{color:var(--mute);font-size:13px;margin:0 0 12px;font-weight:600}
+.sheet .modes2{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sheet .modes2 button{height:96px;border:0;border-radius:22px;background:var(--paper);display:grid;place-items:center;align-content:center;gap:6px;font:700 12.5px var(--b);color:var(--ink)}
+.sheet .modes2 button .g{font-size:38px}
+.toast{position:absolute;left:50%;bottom:94px;transform:translate(-50%,10px);background:var(--ink);color:#fff;padding:10px 14px;border-radius:14px;font:700 13px var(--b);opacity:0;transition:.25s;z-index:10;max-width:80%;text-align:center;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+/* 320 */
+.w320 .nums{gap:6px}.w320 .n3{padding:12px 10px}.w320 .n3 b{font-size:18px}
+.w320 .te{grid-template-columns:40px 50px minmax(0,1fr) auto;gap:10px}.w320 .te img,.w320 .te .gl{width:50px;height:50px}
+.w320 .seg button{font-size:12px;padding:0 4px}.w320 .mz{grid-template-columns:minmax(0,1fr) 92px}.w320 .mz .fig{width:92px}
+.w320 .scene .act{grid-template-columns:auto minmax(0,1fr);}.w320 .scene .act .pill{grid-column:1/-1;justify-self:stretch}
+</style>
+</head>
+<body>
+<div class="lab">
+<div class="phone" id="phone">
+  <div class="scroll" id="scroll"></div>
+  <nav class="nav" id="nav" aria-label="Területek"></nav>
+  <div class="scrim" id="scrim" data-close></div>
+  <section class="sheet" id="sheet" role="dialog" aria-modal="true"></section>
+  <div class="toast" id="toast" role="status"></div>
+</div>
+<aside class="notes">
+  <h2>Lágy irány · Fuel</h2>
+  <small>Állapot: 2026-11-04 · a Képes irány mellé, összevetésnek</small>
+  <p>Minden rajz saját: a jel és a szó (logó), a puha jelcsalád, a nap-ív jelenet, a figura. Egy kiemelő szín (zsálya), krémfehér alap, két betű (Outfit a címeknek, Manrope a szövegnek). A fotóid kicsiben, kerekben.</p>
+  <div class="tog"><button id="t320">320 px</button><button id="tstill">mozgás nélkül</button></div>
+  <p><b>Mit lehet kattintani:</b></p>
+  <ul>
+    <li>a logó → <a href="#irany">az irány lapja</a> (jel, színek, jelcsalád)</li>
+    <li>a jelenet gombja → logolás · a sor egy étkezésre → <a href="#meal-reggeli">az étkezés oldala</a></li>
+    <li>„Ma eddig” → <a href="#szamok">a nap számai</a></li>
+  </ul>
+</aside>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const nb=n=>String(n).replace(/\B(?=(\d{3})+$)/g,' ');const dec=n=>String(n).replace('.',',');
+/* ── the glyph family: soft gradient shapes, no outlines; unique gradient ids per instance ── */
+let gid=0;
+const PAL={sage:['#BFE3CD','#4F9F7A'],deep:['#6FB893','#2E6B52'],peach:['#FBD6BC','#E39565'],berry:['#CDB4E3','#7E4FA8'],sky:['#C9E4F6','#6FAFDD'],sun:['#FDE6A6','#E9B44C'],ink:['#58625C','#1E2321'],cream:['#FFFFFF','#E9E2D3'],red:['#F6B5A9','#D9654F']};
+const SH={
+  bowl:(u,h)=>`<ellipse cx="32" cy="55" rx="22" ry="4" fill="rgba(30,35,33,.10)"/><path d="M8 30h48c0 14-10 24-24 24S8 44 8 30z" fill="url(#${u})"/><ellipse cx="32" cy="30" rx="24" ry="5" fill="#fff" opacity=".9"/><ellipse cx="32" cy="30" rx="20" ry="3.4" fill="url(#${u})" opacity=".55"/><path d="M12 34c2 8 8 14 16 16" stroke="url(#${h})" stroke-width="3" stroke-linecap="round" fill="none"/>`,
+  plate:(u,h)=>`<ellipse cx="32" cy="36" rx="26" ry="20" fill="url(#${u})"/><ellipse cx="32" cy="34" rx="18" ry="13" fill="#fff" opacity=".85"/><ellipse cx="32" cy="34" rx="12" ry="8" fill="url(#${u})" opacity=".35"/><path d="M12 30c2-6 8-10 14-12" stroke="url(#${h})" stroke-width="3" stroke-linecap="round" fill="none"/>`,
+  cup:(u,h)=>`<ellipse cx="30" cy="56" rx="18" ry="3.5" fill="rgba(30,35,33,.10)"/><path d="M12 22h34v18a14 14 0 0 1-14 14h-6A14 14 0 0 1 12 40z" fill="url(#${u})"/><path d="M46 28h5a7 7 0 0 1 0 14h-5" stroke="url(#${u})" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="29" cy="22" rx="17" ry="4" fill="#fff" opacity=".9"/><ellipse cx="29" cy="22" rx="13" ry="2.6" fill="#8A5A3C" opacity=".55"/>`,
+  capsule:(u,h)=>`<g transform="rotate(-40 32 32)"><rect x="18" y="12" width="28" height="40" rx="14" fill="#fff"/><path d="M18 32V26a14 14 0 0 1 28 0v6z" fill="url(#${u})"/><rect x="18" y="12" width="28" height="40" rx="14" fill="none" stroke="rgba(30,35,33,.06)"/><path d="M24 20c0-3 3-5 6-5" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/></g>`,
+  leaf:(u,h)=>`<path d="M14 48C14 24 30 12 52 12c0 22-12 38-36 38z" fill="url(#${u})"/><path d="M18 46c8-12 18-22 30-30" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".85"/>`,
+  drop:(u,h)=>`<path d="M32 8c10 13 20 22 20 33a20 20 0 0 1-40 0C12 30 22 21 32 8z" fill="url(#${u})"/><path d="M22 40c0 6 4 10 9 11" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85"/>`,
+  flame:(u,h)=>`<path d="M32 6c4 10 16 16 16 30a16 16 0 0 1-32 0c0-6 2-10 6-14 0 5 2 8 6 10-2-10 0-18 4-26z" fill="url(#${u})"/><path d="M32 30c3 4 7 7 7 13a7 7 0 0 1-14 0c0-4 2-6 4-8 0 2 1 3 3 4-1-3-1-6 0-9z" fill="#fff" opacity=".8"/>`,
+  sun:(u,h)=>`<circle cx="32" cy="32" r="13" fill="url(#${u})"/><g stroke="url(#${u})" stroke-width="4" stroke-linecap="round">${[0,45,90,135,180,225,270,315].map(a=>`<line x1="32" y1="8" x2="32" y2="13" transform="rotate(${a} 32 32)"/>`).join('')}</g><circle cx="27" cy="27" r="4" fill="#fff" opacity=".7"/>`,
+  moon:(u,h)=>`<path d="M38 8a24 24 0 1 0 18 38A20 20 0 0 1 38 8z" fill="url(#${u})"/><circle cx="26" cy="30" r="3" fill="#fff" opacity=".7"/>`,
+  pot:(u,h)=>`<ellipse cx="32" cy="56" rx="22" ry="3.5" fill="rgba(30,35,33,.10)"/><rect x="12" y="24" width="40" height="28" rx="8" fill="url(#${u})"/><rect x="6" y="20" width="52" height="8" rx="4" fill="#fff" opacity=".9"/><rect x="26" y="12" width="12" height="8" rx="4" fill="url(#${u})"/><path d="M18 32c0 8 4 14 10 16" stroke="url(#${h})" stroke-width="3" stroke-linecap="round" fill="none"/>`,
+  camera:(u,h)=>`<rect x="8" y="18" width="48" height="34" rx="10" fill="url(#${u})"/><rect x="22" y="12" width="20" height="8" rx="4" fill="url(#${u})"/><circle cx="32" cy="35" r="11" fill="#fff" opacity=".9"/><circle cx="32" cy="35" r="7" fill="url(#${u})"/><circle cx="29" cy="32" r="2" fill="#fff" opacity=".8"/>`,
+  mic:(u,h)=>`<rect x="22" y="8" width="20" height="32" rx="10" fill="url(#${u})"/><path d="M16 30a16 16 0 0 0 32 0M32 46v10M24 56h16" stroke="url(#${u})" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M27 14c0-2 2-3 4-3" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>`,
+  book:(u,h)=>`<rect x="12" y="10" width="36" height="44" rx="8" fill="url(#${u})"/><rect x="18" y="10" width="30" height="44" rx="6" fill="#fff" opacity=".9"/><rect x="18" y="10" width="30" height="44" rx="6" fill="url(#${u})" opacity=".25"/><path d="M26 24h14M26 32h14M26 40h8" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`,
+  jar:(u,h)=>`<rect x="14" y="18" width="36" height="38" rx="10" fill="url(#${u})"/><rect x="18" y="10" width="28" height="10" rx="4" fill="#fff" opacity=".9"/><rect x="18" y="30" width="28" height="14" rx="4" fill="#fff" opacity=".8"/><path d="M20 24c0 6 0 12 2 18" stroke="url(#${h})" stroke-width="3" stroke-linecap="round" fill="none"/>`,
+  repeat:(u,h)=>`<path d="M16 28a16 16 0 0 1 28-8l4 4M48 36a16 16 0 0 1-28 8l-4-4" stroke="url(#${u})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M48 14v10H38M16 50V40h10" stroke="url(#${u})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  star:(u,h)=>`<path d="M32 6l7.5 16 17 2-12.5 11.5 3.5 17L32 44l-15.5 8.5 3.5-17L7.5 24l17-2z" fill="url(#${u})"/><path d="M24 26l5-2" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>`,
+  chart:(u,h)=>`<rect x="10" y="34" width="12" height="22" rx="5" fill="url(#${u})" opacity=".55"/><rect x="26" y="22" width="12" height="34" rx="5" fill="url(#${u})" opacity=".8"/><rect x="42" y="10" width="12" height="46" rx="5" fill="url(#${u})"/>`,
+  bell:(u,h)=>`<path d="M18 40V28a14 14 0 0 1 28 0v12l4 6H14z" fill="url(#${u})"/><path d="M26 52a6 6 0 0 0 12 0" fill="url(#${u})"/><path d="M24 26c0-4 3-7 6-8" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>`,
+  person:(u,h)=>`<circle cx="32" cy="22" r="12" fill="url(#${u})"/><path d="M10 56c2-12 10-18 22-18s20 6 22 18z" fill="url(#${u})"/><circle cx="28" cy="18" r="3" fill="#fff" opacity=".7"/>`,
+  check:(u,h)=>`<circle cx="32" cy="32" r="24" fill="url(#${u})"/><path d="M20 33l8 8 16-18" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  plus:(u,h)=>`<path d="M32 14v36M14 32h36" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>`,
+  back:(u,h)=>`<path d="M38 12L18 32l20 20" stroke="currentColor" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  chev:(u,h)=>`<path d="M24 14l18 18-18 18" stroke="currentColor" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  dots:(u,h)=>`<circle cx="16" cy="32" r="4" fill="currentColor"/><circle cx="32" cy="32" r="4" fill="currentColor"/><circle cx="48" cy="32" r="4" fill="currentColor"/>`,
+  bolt:(u,h)=>`<path d="M36 6L14 36h16l-4 22 24-32H34z" fill="url(#${u})"/><path d="M30 14l-6 10" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>`,
+  dumbbell:(u,h)=>`<rect x="22" y="28" width="20" height="8" rx="4" fill="url(#${u})"/><rect x="10" y="18" width="12" height="28" rx="5" fill="url(#${u})"/><rect x="42" y="18" width="12" height="28" rx="5" fill="url(#${u})"/><path d="M14 24v6" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>`,
+  spark:(u,h)=>`<path d="M32 6c2 14 8 20 22 26-14 6-20 12-22 26-2-14-8-20-22-26 14-6 20-12 22-26z" fill="url(#${u})"/><path d="M50 40c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8z" fill="url(#${u})" opacity=".8"/>`,
+  fish:(u,h)=>`<path d="M8 32c8-12 20-18 34-16 6 2 10 6 14 16-4 10-8 14-14 16C28 50 16 44 8 32z" fill="url(#${u})"/><path d="M52 24l8-8v32l-8-8" fill="url(#${u})"/><circle cx="20" cy="28" r="3" fill="#fff"/><path d="M26 22c6-2 12-2 18 2" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".8"/>`,
+  meat:(u,h)=>`<path d="M14 36c0-14 10-24 24-24 12 0 18 8 16 18-2 12-14 22-26 20C18 48 14 44 14 36z" fill="url(#${u})"/><path d="M26 36c0-6 4-10 10-10" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none" opacity=".85"/>`,
+  bread:(u,h)=>`<path d="M10 30c0-10 8-16 22-16s22 6 22 16c0 4-2 6-4 7v15H14V37c-2-1-4-3-4-7z" fill="url(#${u})"/><path d="M18 26c2-4 6-6 10-6" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85"/>`,
+  avocado:(u,h)=>`<path d="M32 6c12 0 22 14 22 30a22 22 0 0 1-44 0C10 20 20 6 32 6z" fill="url(#${u})"/><path d="M32 16c8 0 15 10 15 20a15 15 0 0 1-30 0c0-10 7-20 15-20z" fill="#fff" opacity=".85"/><circle cx="32" cy="38" r="8" fill="#9A6A3F"/><circle cx="29" cy="35" r="2.5" fill="#fff" opacity=".7"/>`,
+  broccoli:(u,h)=>`<rect x="27" y="36" width="10" height="20" rx="4" fill="#CFE2C4"/><circle cx="20" cy="30" r="11" fill="url(#${u})"/><circle cx="44" cy="30" r="11" fill="url(#${u})"/><circle cx="32" cy="22" r="13" fill="url(#${u})"/><circle cx="26" cy="18" r="3" fill="#fff" opacity=".7"/>`,
+  clock:(u,h)=>`<circle cx="32" cy="32" r="24" fill="url(#${u})"/><circle cx="32" cy="32" r="18" fill="#fff" opacity=".9"/><path d="M32 20v12l8 5" stroke="url(#${u})" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  scale:(u,h)=>`<path d="M32 10v44M14 54h36" stroke="url(#${u})" stroke-width="5" stroke-linecap="round"/><path d="M12 24h40" stroke="url(#${u})" stroke-width="5" stroke-linecap="round"/><path d="M4 40a10 8 0 0 0 20 0zM40 40a10 8 0 0 0 20 0z" fill="url(#${u})"/><circle cx="32" cy="12" r="5" fill="url(#${u})"/>`,
+  shield:(u,h)=>`<path d="M32 6l22 8v16c0 14-9 24-22 28C19 54 10 44 10 30V14z" fill="url(#${u})"/><path d="M22 32l7 7 13-14" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  pin:(u,h)=>`<path d="M32 6c10 0 18 8 18 18 0 14-18 34-18 34S14 38 14 24c0-10 8-18 18-18z" fill="url(#${u})"/><circle cx="32" cy="24" r="7" fill="#fff" opacity=".9"/>`,
+  honey:(u,h)=>`<rect x="14" y="20" width="36" height="36" rx="12" fill="url(#${u})"/><rect x="20" y="10" width="24" height="12" rx="5" fill="#fff" opacity=".9"/><path d="M22 34c6 8 14 8 20 0" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none" opacity=".8"/>`,
+};
+function G(name,pal='sage',cls=''){const [a,b]=PAL[pal]||PAL.sage;const u='g'+(++gid),h=u+'h';
+  return `<svg class="g ${cls}" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient><linearGradient id="${h}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>${(SH[name]||SH.plate)(u,h)}</svg>`}
+/* the mark: three soft humps of an "m" and the dot of the "o" — a bowl and a drop in one shape */
+const MARK=(s=34)=>`<svg class="mark" viewBox="0 0 64 64" width="${s}" height="${s}" aria-label="Mezo"><defs><linearGradient id="mk${++gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A8D5BA"/><stop offset="1" stop-color="#2E6B52"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="18" fill="url(#mk${gid})"/><path d="M16 44V32a8 8 0 0 1 16 0v12M32 44V32a8 8 0 0 1 16 0v12" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="50" cy="20" r="4" fill="#FDE6A6"/></svg>`;
+/* a flat figure of our own: someone sitting with a bowl */
+const FIG=`<svg class="fig" viewBox="0 0 140 150" aria-hidden="true"><ellipse cx="72" cy="142" rx="50" ry="6" fill="rgba(30,35,33,.10)"/><path d="M30 128c0-22 8-40 26-46l10-3 22 4c14 6 20 22 20 44z" fill="#5FB08A"/><path d="M52 84c-2-14 6-24 18-24s20 10 18 24c-1 8-7 14-18 14s-17-6-18-14z" fill="#F0C7A4"/><path d="M50 70c0-16 10-24 22-24 14 0 22 10 20 26-6-8-14-10-22-6-6 3-10 6-14 12-3-2-5-5-6-8z" fill="#2A211C"/><path d="M38 116c-10 4-16 12-16 20h30c0-10 8-16 16-18z" fill="#F0C7A4"/><path d="M96 118c6 2 10 8 10 18H78c0-8 4-14 10-16z" fill="#F0C7A4"/><path d="M46 112h52c0 12-10 22-26 22s-26-10-26-22z" fill="#fff"/><path d="M60 100c0 4 2 6 2 10M72 98c0 4 2 6 2 10M84 100c0 4 2 6 2 10" stroke="rgba(95,176,138,.6)" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M20 136h104" stroke="rgba(30,35,33,.18)" stroke-width="3" stroke-linecap="round"/></svg>`;
+
+/* data (the real Fuel's records; today csütörtök, szeptember 24., 14:10) */
+const DAY={eaten:2060,target:3100,p:[148,220],c:[224,380],f:[58,95],fib:[18,30],water:[1.3,2.5],now:14.17};
+const MEALS={
+  reggeli:{t:7.33,time:'07:20',win:'Reggeli',name:'Túrós zabkása · áfonyával',kcal:689,score:8.4,m:[49,74,22],fib:7,glu:0,ph:'zab',src:'fotóból',
+    ings:[['Zabpehely · gluténmentes','bread','60 g',223],['Túró · félzsíros','bowl','250 g',325],['Áfonya · fagyasztott','leaf','100 g',57],['Akácméz','honey','25 g',84]],
+    head:'Fehérjében erős, tiszta tányér',lead:'A fehérje és a feldolgozottság viszi. Ezt nyugodtan ismételheted.',cert:98,dims:[8.6,7.6,8.3,8.4,9.1,8.2,8.7,8.5],mz:'Lassú szénhidrát reggelre, a túró kazeinje délig kitart. Holnap mehet bele egy marék dió a zsírok miatt.'},
+  tizorai:{t:10.08,time:'10:05',win:'Ablakon kívül',out:1,name:'Whey + banán + mandulavaj',kcal:356,score:7.2,m:[36,30,11],fib:3,glu:1,ph:null,gl:'cup',src:'gyors bevitel',
+    ings:[['Impact Whey · csoki','cup','30 g',120],['Banán','leaf','120 g',105],['Mandulavaj · 100%','avocado','20 g',131]],
+    head:'Gyors, célzott, de feldolgozott',lead:'A whey viszi a pontot, a feldolgozottság húzza le.',cert:91,dims:[8.1,6.4,8.8,7.0,5.2,6.1,7.4,8.6],mz:'Gyors fehérje edzés után. A banán szénhidrátja most jól jön.'},
+  ebed:{t:12.67,time:'12:40',win:'Ebéd',name:'Csirke + édesburgonya + spenót',kcal:1015,score:8.1,m:[63,120,25],fib:8,glu:1,ph:'csirke',src:'receptből',
+    ings:[['Csirkemell · friss','meat','300 g',330],['Édesburgonya','bread','400 g',344],['Spenót · friss','leaf','200 g',46],['Olívaolaj · extra szűz','avocado','33 ml',295]],
+    head:'Kiegyensúlyozott, edzés utánra ideális',lead:'Minden makró a helyén; a zsír is mértékkel.',cert:95,dims:[9.0,7.9,8.1,8.8,8.4,7.8,8.2,8.9],mz:'Edzés utáni ablakba pont jó: sok fehérje, elég szénhidrát a visszatöltéshez.'}};
+const AHEAD=[{t:16.5,time:'16:30',win:'Uzsonna',name:'Túró · áfonya · méz',kcal:324,ph:'turo',now:1},{t:19.5,time:'19:30',win:'Vacsora',name:'Lazac + barna rizs + brokkoli',kcal:818,ph:'lazac'}];
+const DIMS=[['Makró-egyensúly','scale',22,'A fehérje–szénhidrát–zsír arány közel van a célarányodhoz.'],['Mikrotápanyagok','leaf',10,'Jó B-vitamin és kálium, kevés D-vitamin és vas.'],['WHO-irányelvek','shield',14,'Hozzáadott cukor és só a határ alatt.'],['Zsírminőség','avocado',10,'Főleg telítetlen zsír.'],['Feldolgozottság','jar',18,'Minden hozzávaló alapanyag, semmi ultra-feldolgozott.'],['Növényi változatosság','broccoli',8,'Három különböző növény; a heti 30-as célhoz hozzátesz.'],['Energiasűrűség','flame',6,'Laktató, mérsékelt kalóriasűrűség.'],['Napi kontextus','clock',12,'Jó időben: az ablak közepén, edzés előtt.']];
+const GL=['Alacsony','Közepes','Magas'];
+const MODES=[['Fotó','camera'],['Recept','book'],['Kamra','jar'],['Gyors','bolt'],['Diktálás','mic'],['Szokásosak','repeat']];
+const PH=p=>`foto/${p}`;
+
+/* ── the hero scene: the day's arc (07–21) with the sun at now, the meals as beads; a bowl that fills to today's intake ── */
+function scene(){const W=340,H=206,cx=170,cy=168,R=132;const ang=t=>Math.PI-(t-7)/14*Math.PI;const P=t=>[cx+R*Math.cos(ang(t)),cy-R*Math.sin(ang(t))];
+  const [sx,sy]=P(DAY.now);const beads=Object.values(MEALS).map(m=>P(m.t));const ahead=AHEAD.map(a=>P(a.t));const fill=DAY.eaten/DAY.target;
+  const u='sc'+(++gid);
+  return `<svg class="art" viewBox="0 0 ${W} ${H}" aria-label="A napod íve: ${nb(DAY.eaten)} kalória a ${nb(DAY.target)}-ból, most 14:10">
+  <defs>
+    <linearGradient id="${u}a" x1="0" x2="1"><stop offset="0" stop-color="#FDE6A6"/><stop offset=".5" stop-color="#F4C860"/><stop offset="1" stop-color="#C9E4F6"/></linearGradient>
+    <linearGradient id="${u}b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BFE3CD"/><stop offset="1" stop-color="#4F9F7A"/></linearGradient>
+    <linearGradient id="${u}l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A8D5BA"/><stop offset="1" stop-color="#5FB08A"/></linearGradient>
+    <radialGradient id="${u}g"><stop offset="0" stop-color="#F4C860" stop-opacity=".55"/><stop offset="1" stop-color="#F4C860" stop-opacity="0"/></radialGradient>
+    <clipPath id="${u}c"><path d="M110 118h120c0 34-24 56-60 56s-60-22-60-56z"/></clipPath>
+  </defs>
+  <circle cx="${cx}" cy="${cy}" r="${R+22}" fill="#F2F7F3"/>
+  <path d="M${P(7)[0]} ${P(7)[1]}A${R} ${R} 0 0 1 ${P(21)[0]} ${P(21)[1]}" fill="none" stroke="rgba(30,35,33,.10)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M${P(7)[0]} ${P(7)[1]}A${R} ${R} 0 0 1 ${sx} ${sy}" fill="none" stroke="url(#${u}a)" stroke-width="6" stroke-linecap="round"/>
+  ${beads.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="7" fill="#fff" stroke="#5FB08A" stroke-width="3"/>`).join('')}
+  ${ahead.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${i?5:7}" fill="#fff" stroke="rgba(30,35,33,.2)" stroke-width="2" ${i?'':'stroke-dasharray="3 3"'}/>`).join('')}
+  <circle class="sunglow" cx="${sx}" cy="${sy}" r="22" fill="url(#${u}g)"/><circle cx="${sx}" cy="${sy}" r="11" fill="#F4C860"/><circle cx="${sx-3}" cy="${sy-3}" r="3.5" fill="#fff" opacity=".8"/>
+  <text x="${P(7)[0]-2}" y="${P(7)[1]+22}" class="ax">7:00</text><text x="${P(21)[0]+2}" y="${P(21)[1]+22}" text-anchor="end" class="ax">21:00</text>
+  <ellipse cx="170" cy="182" rx="56" ry="6" fill="rgba(30,35,33,.10)"/>
+  <path d="M106 118h128c0 36-26 60-64 60s-64-24-64-60z" fill="#fff"/>
+  <g class="fillmask" clip-path="url(#${u}c)"><rect x="100" y="${118+56*(1-fill)}" width="140" height="80" fill="url(#${u}l)"/><path d="M100 ${118+56*(1-fill)}q14-6 28 0t28 0 28 0 28 0 28 0v10H100z" fill="#fff" opacity=".35"/></g>
+  <ellipse cx="170" cy="118" rx="64" ry="9" fill="#fff"/><ellipse cx="170" cy="118" rx="56" ry="6" fill="url(#${u}b)" opacity=".35"/>
+  <circle cx="150" cy="114" r="5" fill="#7E4FA8"/><circle cx="166" cy="112" r="4.5" fill="#8E5BB5"/><circle cx="182" cy="115" r="5" fill="#6B3F96"/><circle cx="196" cy="112" r="3.5" fill="#B88ED8"/>
+  <path d="M212 110l26-30" stroke="#E9E2D3" stroke-width="7" stroke-linecap="round"/><ellipse cx="240" cy="78" rx="8" ry="10" transform="rotate(40 240 78)" fill="#F1ECE0"/>
+  <g class="steam" fill="none" stroke="rgba(95,176,138,.55)" stroke-width="3" stroke-linecap="round"><path d="M148 100c-4-6 4-10 0-16"/><path d="M168 96c-4-6 4-10 0-16"/><path d="M188 100c-4-6 4-10 0-16"/></g>
+  <path class="leaf" d="M118 96c-2-14 8-24 22-24-2 14-10 22-22 24z" fill="url(#${u}b)"/>
+  <text x="170" y="150" text-anchor="middle" class="big">${nb(DAY.eaten)}</text><text x="170" y="164" text-anchor="middle" class="sm">a ${nb(DAY.target)}-ból</text>
+  <style>.ax{font:700 12px Manrope,system-ui;fill:#8E968F}.big{font:600 22px Outfit,system-ui;fill:#1E2321;letter-spacing:-.02em}.sm{font:700 12px Manrope,system-ui;fill:#5A635E}</style>
+  </svg>`}
+
+const header=(tab)=>`<div class="top rise" style="--i:0"><a class="logo" href="#irany">${MARK(34)}<b>mezo</b></a><button class="av" data-toast="Profil — az Én területen" aria-label="Profil">P</button></div>
+  <div class="ctx rise" style="--i:0">${G('plate','deep')}Fuel <i>›</i> ${tab}</div>`;
+const seg=(on)=>`<div class="seg rise" style="--i:1" role="tablist">${[['Mai',''],['Kiegészítők','k'],['Trendek','t'],['Konyha','ko']].map(([l,r])=>`<button role="tab" class="${l===on?'on':''}" ${l===on?'':`data-toast="${l} — a Lágy irányban következik"`}>${l}</button>`).join('')}</div>`;
+
+function mai(){const n=AHEAD[0];
+  return `${header('Mai')}
+  <h1 class="head rise" style="--i:1">Jól állsz. <em>1&nbsp;040 kalória</em> van még, két étkezésre.</h1>
+  <p class="lead rise" style="--i:1">A fehérjéből 72 gramm hiányzik, azt az uzsonna és a vacsora hozza.</p>
+  ${seg('Mai')}
+  <article class="scene rise" style="--i:2"><span class="now"><i></i>14:10 · a nap kétharmada</span>${scene()}
+    <div class="act"><img src="${PH(n.ph+'-sq.jpg')}" alt=""><div><small>Következik · ${n.win} · ${n.time}</small><strong>${n.name}</strong><span class="q">${nb(n.kcal)} kalória · 2 perc</span></div><button class="pill" data-sheet="log" data-arg="uzsonna">${G('plus','ink')}Logolom</button></div>
+  </article>
+  <section class="sec rise" style="--i:3"><div class="sh"><h3>Ma eddig</h3><a href="#szamok">Részletek ${G('chev')}</a></div>
+    <div class="nums">${[['flame','deep',nb(DAY.eaten),'kalória',DAY.eaten/DAY.target,'var(--sage)'],['meat','peach',DAY.p[0],'g fehérje',DAY.p[0]/DAY.p[1],'var(--peach)'],['drop','sky',dec(DAY.water[0]),'l víz',DAY.water[0]/DAY.water[1],'var(--sky)']].map(([ic,pal,n,l,p,c])=>`<div class="n3 tap" role="button" tabindex="0" data-go="szamok">${G(ic,pal)}<b>${n}</b><span>${l}</span><u style="--p:${Math.round(p*100)}%;--c:${c}"><i></i></u></div>`).join('')}</div></section>
+  <section class="sec rise" style="--i:4"><div class="sh"><h3>A napod</h3><a href="#" data-toast="Tegnap — következik">Tegnap ${G('chev')}</a></div>
+    <div class="card tl">${Object.entries(MEALS).map(([k,m])=>`<div class="te tap ${m.out?'out':''}" role="button" tabindex="0" data-go="meal-${k}"><time>${m.time}</time>${m.ph?`<img src="${PH(m.ph+'-sq.jpg')}" alt="">`:`<span class="gl">${G(m.gl,'sky')}</span>`}<div><strong>${m.name}</strong><small><span>${G('flame','deep')}${nb(m.kcal)}</span><span>${G('star','sun')}${dec(m.score)}</span>${m.out?'<span>ablakon kívül</span>':''}</small></div>${G('chev','ink','chev')}</div>`).join('')}
+      ${AHEAD.map(a=>`<div class="te ahead tap" role="button" tabindex="0" data-sheet="log" data-arg="${a.win.toLowerCase()}"><time>${a.time}</time><span class="gl ${a.now?'now':''}">${G(a.now?'plus':'moon',a.now?'deep':'sky')}</span><div><strong>${a.win} · ${a.name}</strong><small><span>${nb(a.kcal)} kalória keret</span></small></div>${G('chev','ink','chev')}</div>`).join('')}</div></section>
+  <section class="sec rise" style="--i:5"><div class="sh"><h3>Logolás</h3></div><div class="modes">${MODES.map(([l,ic],i)=>`<button data-sheet="log" data-arg="${l}" class="${i===0?'on':''}">${G(ic,i===0?'deep':'ink')}<span>${l}</span></button>`).join('')}</div></section>
+  <section class="sec rise" style="--i:6"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>Túró az uzsonnára, lazac vacsorára: így a <em>220 g fehérje</em> kijön, és 300 kalória még marad.</p><button class="pill soft" data-toast="Betervezve: túró 16:30, lazac 19:30">Betervezem</button></div>${FIG}</div></section>`}
+
+function szamok(){const rows=[['Kalória','flame','deep',DAY.eaten,DAY.target,''],['Fehérje','meat','peach',DAY.p[0],DAY.p[1],'g'],['Szénhidrát','bread','sun',DAY.c[0],DAY.c[1],'g'],['Zsír','avocado','sage',DAY.f[0],DAY.f[1],'g'],['Rost','broccoli','sage',DAY.fib[0],DAY.fib[1],'g'],['Víz','drop','sky',DAY.water[0],DAY.water[1],'l']];
+  return `<div class="bar rise" style="--i:0"><button class="fb" data-back aria-label="Vissza">${G('back','ink')}</button><span class="crumb">Fuel › Mai › <b>A nap számai</b></span></div>
+  <h1 class="head rise" style="--i:1">Hol tartasz <em>ma</em>.</h1><p class="lead rise" style="--i:1">Minden sor a napi kerethez mérve. A fehérje marad el a legjobban.</p>
+  <section class="sec rise" style="--i:2"><div class="card pad">${rows.map(([l,ic,pal,a,b,u])=>`<div class="row">${G(ic,pal)}<div><b>${l}</b><small>${Math.round(a/b*100)}% a napi keretből</small></div><div class="v">${dec(a)} / ${dec(b)} ${u}<u style="--p:${Math.min(100,Math.round(a/b*100))}%"><i></i></u></div></div>`).join('')}</div></section>
+  <section class="sec rise" style="--i:3"><div class="sh"><h3>Ablakok</h3></div><div class="card pad">${[['Reggeli','07–10',689,640,'sun','sun'],['Ebéd','12–14:30',1015,900,'plate','deep'],['Uzsonna','16–17:30',0,420,'leaf','sage'],['Vacsora','19–21',0,840,'moon','sky']].map(([l,t,a,b,ic,pal])=>`<div class="row">${G(ic,pal)}<div><b>${l}</b><small>${t}</small></div><div class="v">${a?nb(a):'—'} / ${nb(b)}<u style="--p:${Math.min(100,Math.round(a/b*100))}%"><i></i></u></div></div>`).join('')}</div></section>`}
+
+function mealPage(k){const m=MEALS[k]||MEALS.reggeli;
+  return `<div class="bar rise" style="--i:0"><button class="fb" data-back aria-label="Vissza">${G('back','ink')}</button><span class="crumb">Fuel › Mai › <b>${m.win} · ${m.time}</b></span></div>
+  <h1 class="head rise" style="--i:1">${m.name}</h1><p class="lead rise" style="--i:1">${m.head}. ${m.lead}</p>
+  ${m.ph?`<div class="ph rise" style="--i:2"><img src="${PH(m.ph+'.jpg')}" alt=""><div class="cap"><span class="chip ink">${G('flame','sage')}${nb(m.kcal)} kalória</span><span class="chip">${G('star','sun')}${dec(m.score)}</span></div></div>`:`<div class="ph rise" style="--i:2;display:grid;place-items:center;background:var(--sage3)">${G(m.gl,'sky','')}<style>.ph>.g{font-size:120px}</style><div class="cap"><span class="chip ink">${G('flame','sage')}${nb(m.kcal)} kalória</span><span class="chip">${G('star','sun')}${dec(m.score)}</span></div></div>`}
+  <section class="sec rise" style="--i:3"><div class="sh"><h3>Mezo értékelése</h3></div><div class="card"><div class="score">${G('star','sun')}<div><b>${dec(m.score)}<small>/ 10 · ${m.cert}% biztos</small></b><p>${m.lead}</p></div></div>
+    <div class="pad" style="padding-top:0">${DIMS.map(([n,ic,w,t],i)=>`<div class="row">${G(ic,'sage')}<div><b>${n} · ${w}%</b><small>${t}</small></div><div class="v">${dec(m.dims[i])}<u style="--p:${m.dims[i]*10}%"><i></i></u></div></div>`).join('')}</div></div></section>
+  <section class="sec rise" style="--i:4"><div class="sh"><h3>Vércukor-válasz</h3></div><div class="card"><div class="score">${G('drop','sky')}<div><b style="font-size:24px">${GL[m.glu]}</b><p>${m.glu?'Gyors emelkedés, gyors visszatérés. Edzés után ez üzemanyag.':'Egyenletes energia nagyjából délig, éhség 3–4 óra múlva.'}</p></div></div><div class="pad" style="padding-top:0"><div class="band3">${[0,1,2].map(i=>`<i class="${i<=m.glu?'on':''} ${m.glu===1?'mid':m.glu===2?'hi':''}"></i>`).join('')}</div></div></div></section>
+  <section class="sec rise" style="--i:5"><div class="sh"><h3>Makrók</h3></div><div class="card pad">${[['Fehérje','meat','peach',m.m[0],220],['Szénhidrát','bread','sun',m.m[1],380],['Zsír','avocado','sage',m.m[2],95],['Rost','broccoli','sage',m.fib,30]].map(([l,ic,pal,v,d])=>`<div class="row">${G(ic,pal)}<div><b>${l}</b><small>a napi ${Math.round(v/d*100)}%-a</small></div><div class="v">${v} g<u style="--p:${Math.min(100,Math.round(v/d*100))}%"><i></i></u></div></div>`).join('')}</div></section>
+  <section class="sec rise" style="--i:6"><div class="sh"><h3>Hozzávalók</h3></div><div class="card pad">${m.ings.map(([n,ic,a,kc])=>`<div class="row">${G(ic,'sage')}<div><b>${n}</b><small>${a}</small></div><div class="v">${nb(kc)}</div></div>`).join('')}</div></section>
+  <section class="sec rise" style="--i:7"><div class="mz" style="grid-template-columns:1fr;padding:16px 18px"><div><small>${G('spark','deep')}Mezo</small><p style="margin-bottom:0">${m.mz}</p></div></div></section>
+  <div class="acts rise" style="--i:8"><button class="pill" data-toast="Logolva még egyszer — következik">Újra ezt</button><button class="pill soft" data-toast="Szerkesztés — következik">Szerkesztem</button></div>`}
+
+function irany(){const fam=[['plate','deep','Fuel'],['bowl','sage','tál'],['cup','peach','kávé'],['capsule','berry','kapszula'],['leaf','sage','növény'],['drop','sky','víz'],['flame','peach','kalória'],['sun','sun','reggel'],['moon','sky','este'],['pot','sage','konyha'],['camera','ink','fotó'],['mic','ink','diktálás'],['book','sage','recept'],['jar','peach','kamra'],['star','sun','pont'],['chart','deep','trend'],['spark','deep','Mezo'],['dumbbell','berry','Edzés'],['person','sage','Én'],['fish','sky','hal']];
+  return `<div class="bar rise" style="--i:0"><button class="fb" data-back aria-label="Vissza">${G('back','ink')}</button><span class="crumb">Mezo › <b>Lágy irány</b></span></div>
+  <div class="id">
+  <h1 class="head rise" style="--i:1">Egy irány, ami <em>vezet</em>, nem elárasz.</h1>
+  <p class="lead rise" style="--i:1">Krémfehér alap, egy zsálya kiemelő, puha árnyék. Oldalanként egy nagy saját kép, egy teendő, a többi egy koppintással beljebb.</p>
+  <h2 class="rise" style="--i:2">A jel</h2>
+  <div class="logos rise" style="--i:2"><div style="background:#fff">${MARK(56)}<b>mezo</b></div><div style="background:linear-gradient(135deg,#A8D5BA,#2E6B52)">${MARK(56).replace('<svg','<svg style="filter:drop-shadow(0 10px 16px rgba(0,0,0,.25))"')}<b style="color:#fff">mezo</b></div></div>
+  <p style="margin-top:12px">Három puha ív egy m-ben: tál és csepp egyszerre. A sárga pont a nap, ami a jelenetben is végigmegy.</p>
+  <h2 class="rise" style="--i:3">Színek</h2>
+  <div class="sw rise" style="--i:3">${['#F6F4EF','#5FB08A','#2E6B52','#F0B48C','#8CC3E8','#1E2321'].map(c=>`<i style="background:${c}"></i>`).join('')}</div>
+  <p style="margin-top:12px">Zsálya a Fuelé; a másik négy terület ugyanígy egy-egy színt kap, a többi közös.</p>
+  <h2 class="rise" style="--i:4">A jelcsalád</h2>
+  <div class="gl8 rise" style="--i:4">${fam.map(([ic,pal,l])=>`<div>${G(ic,pal)}<span>${l}</span></div>`).join('')}</div>
+  <p style="margin-top:12px">Vonal nélküli, puha formák egy fénnyel; ugyanaz a kéz rajzolta mindet, és bármilyen méretben él.</p>
+  <h2 class="rise" style="--i:5">Mozgás</h2>
+  <p>Csak ami jelent valamit: a gőz száll, a nap világít, a tál a mai mennyiségig telik. Mozgás nélküli módban minden áll.</p>
+  </div>`}
+
+const SHEETS={
+  log:a=>`<div class="grab"></div><h2>Mit ettél?</h2><p class="sub">${a==='uzsonna'?'Uzsonna · 16–17:30':a==='vacsora'?'Vacsora · 19–21':'Válassz módot'}</p>
+    <div class="modes2">${MODES.map(([l,ic])=>`<button data-toast="${l} — a logolás lapja következik">${G(ic,'sage')}<span>${l}</span></button>`).join('')}</div>
+    <div class="acts" style="margin:14px 0 0"><button class="pill soft" data-close>Mégse</button></div>`};
+
+/* chrome + router */
+const NAV=[['Nap','sun','sun'],['Edzés','dumbbell','berry'],['Fuel','plate','deep'],['Mezo','spark','deep'],['Én','person','sage']];
+$('#nav').innerHTML=NAV.map(([l,ic,pal])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját oldalán"`} aria-label="${l}">${G(ic,l==='Fuel'?pal:'ink')}<span>${l}</span></button>`).join('');
+function render(){const h=location.hash.slice(1);const m=h.match(/^meal-(\w+)$/);const inner=!!m||h==='szamok'||h==='irany';
+  $('#phone').classList.toggle('inner',inner);$('#scroll').innerHTML=m?mealPage(m[1]):h==='szamok'?szamok():h==='irany'?irany():mai();$('#scroll').scrollTop=0;closeSheet()}
+let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)};
+const openSheet=h=>{$('#sheet').innerHTML=h;$('#sheet').scrollTop=0;$('#sheet').classList.add('on');$('#scrim').classList.add('on')};
+const closeSheet=()=>{$('#sheet').classList.remove('on');$('#scrim').classList.remove('on')};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-sheet],[data-toast],[data-close],[data-back]');if(!t)return;if(t.tagName==='A'&&t.getAttribute('href')&&t.getAttribute('href')!=='#'&&!t.dataset.sheet&&!t.dataset.toast)return;e.preventDefault();
+  if(t.hasAttribute('data-close'))return closeSheet();
+  if(t.hasAttribute('data-back'))return history.length>1?history.back():(location.hash='');
+  if(t.dataset.go!=null)return location.hash=t.dataset.go;
+  if(t.dataset.sheet){const f=SHEETS[t.dataset.sheet];if(f)return openSheet(f(t.dataset.arg||''))}
+  if(t.dataset.toast)toast(t.dataset.toast)});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button]')){e.preventDefault();e.target.click()}});
+window.addEventListener('hashchange',render);
+if(innerWidth<=360)$('#phone').classList.add('w320');
+$('#t320').onclick=()=>{$('#phone').classList.toggle('w320');$('#t320').classList.toggle('on')};
+$('#tstill').onclick=()=>{document.body.classList.toggle('still');$('#tstill').classList.toggle('on')};
+render();
+</script>
+</body>
+</html>
