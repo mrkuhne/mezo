@@ -109,7 +109,7 @@ body.still *{animation:none!important;transition:none!important}
 .te .gl .g{font-size:30px}
 .te strong{display:block;font:600 15px/1.2 var(--d);letter-spacing:-.015em}
 .te small{display:block;font:600 12.5px var(--b);color:var(--mute);margin-top:3px;display:flex;gap:10px;align-items:center}
-.te small .g{font-size:14px}
+.te small .g{font-size:14px}.te small .chip{height:26px;padding:0 9px 0 7px;font-size:12px;gap:4px}.te small{gap:6px;margin-top:6px;flex-wrap:wrap}
 .te .chev{color:var(--mute);width:18px;height:18px}
 .te.ahead time{color:var(--sage)}
 .te.ahead strong{color:var(--ink2);font-weight:500}
@@ -512,8 +512,8 @@ body.still .stream{stroke-dashoffset:0}
 /* identity page */
 .id h2{font:600 22px/1.1 var(--d);letter-spacing:-.02em;margin:22px 20px 10px}
 .id p{margin:0 20px 12px;color:var(--ink2);font-weight:600}
-.sw{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:0 16px}
-.sw i{display:block;height:54px;border-radius:16px;box-shadow:var(--sh)}
+.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:0 16px}
+.swatches i{display:block;height:54px;border-radius:16px;box-shadow:var(--sh)}
 .gl8{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:0 16px}
 .gl8 div{background:#fff;border-radius:18px;box-shadow:var(--sh);display:grid;place-items:center;gap:4px;padding:10px 4px;font:700 12px var(--b);color:var(--mute)}
 .gl8 .g{font-size:34px}
@@ -654,7 +654,7 @@ function mai(){if(DAYVIEW==='tegnap')return maiTegnap();const n=AHEAD[0];const r
   <p class="lead rise" style="--i:1">${pm>0?`A fehérjéből ${pm} gramm hiányzik${AHEAD.length?`, azt ${AHEAD.map(a=>'a '+a.win.toLowerCase()).join(' és ')} hozza`:''}.`:'A fehérje megvan mára.'}</p>
   <section class="sec rise first" style="--i:2"><div class="sh"><h3>Ma eddig</h3><a href="#szamok">Részletek ${G('chev')}</a></div>${dayRing()}</section>
   <section class="sec rise" style="--i:4"><div class="sh"><h3>A napod</h3><a href="#" data-toast="Tegnap — következik">Tegnap ${G('chev')}</a></div>
-    <div class="card tl">${Object.entries(DAYVIEW==='tegnap'?YMEALS:MEALS).map(([k,m])=>`<div class="te sw ${m.out?'out':''}" data-swipe><div class="tec tap" role="button" tabindex="0" data-go="meal-${k}" data-peek="${k}"><time>${m.time}</time>${m.ph?`<img src="${PH(m.ph+'-sq.jpg')}" alt="" data-fly="${k}">`:`<span class="gl">${G(m.gl,'sky')}</span>`}<div><strong>${m.name}</strong><small><span>${G('flame','deep')}${nb(m.kcal)}</span><span>${G('star','sun')}${dec(m.score)}</span>${m.out?'<span>ablakon kívül</span>':''}</small></div>${G('chev','ink','chev')}</div><div class="acts2"><button data-toast="Szerkesztés — a logolás lapján">Szerkesztem</button><button class="del" data-delmeal="${k}">Törlöm</button></div></div>`).join('')}
+    <div class="card tl">${Object.entries(DAYVIEW==='tegnap'?YMEALS:MEALS).map(([k,m])=>`<div class="te sw ${m.out?'out':''}" data-swipe><div class="tec tap" role="button" tabindex="0" data-go="meal-${k}" data-peek="${k}"><time>${m.time}</time>${m.ph?`<img src="${PH(m.ph+'-sq.jpg')}" alt="" data-fly="${k}">`:`<span class="gl">${G(m.gl,'sky')}</span>`}<div><strong>${m.name}</strong><small><span class="chip soft">${G('flame','deep')}${nb(m.kcal)} kalória</span><span class="chip warm">${G('star','sun')}${dec(m.score)}</span></small></div>${G('chev','ink','chev')}</div><div class="acts2"><button data-toast="Szerkesztés — a logolás lapján">Szerkesztem</button><button class="del" data-delmeal="${k}">Törlöm</button></div></div>`).join('')}
       ${AHEAD.map(a=>`<div class="te ahead tap" role="button" tabindex="0" data-go="log-${a.win.toLowerCase()}"><time>${a.time}</time><span class="gl ${a.now?'now':''}">${G(a.now?'plus':'moon',a.now?'deep':'sky')}</span><div><strong>${a.win} · ${a.name}</strong><small><span>${nb(a.kcal)} kalória keret</span></small></div>${G('chev','ink','chev')}</div>`).join('')}</div></section>
   <section class="sec rise" style="--i:5"><div class="sh"><h3>Logolás</h3></div><div class="modes">${MODES.map(([l,ic],i)=>`<button data-go="log-${AHEAD[0]?AHEAD[0].win.toLowerCase():'vacsora'}">${G(ic,'ink')}<span>${l}</span></button>`).join('')}</div></section>
   <section class="sec rise" style="--i:6"><div class="sh"><h3>Estére ajánlom</h3><a href="#recept-r3">A recept ${G('chev')}</a></div><div class="pho edit tap" role="button" tabindex="0" data-go="recept-r3"><img src="${PH('lazac.jpg')}" alt=""><div class="scrim"></div><div class="txt"><small>Vacsora · 19:30 · 23 perc</small><strong>Lazac, barna rizs, brokkoli</strong><span style="font:600 13px var(--b);opacity:.9">Minden hozzávaló a kamrádban. 818 kalória, 49 g fehérje.</span><button class="pill" data-toast="Betervezve vacsorára">Betervezem</button></div></div></section>
@@ -695,7 +695,7 @@ function irany(){const fam=[['plate','deep','Fuel'],['bowl','sage','tál'],['cup
   <div class="logos rise" style="--i:2"><div style="background:#fff">${MARK(56)}<b>mezo</b></div><div style="background:linear-gradient(135deg,#A8D5BA,#2E6B52)">${MARK(56).replace('<svg','<svg style="filter:drop-shadow(0 10px 16px rgba(0,0,0,.25))"')}<b style="color:#fff">mezo</b></div></div>
   <p style="margin-top:12px">Három puha ív egy m-ben: tál és csepp egyszerre. A sárga pont a nap, ami a jelenetben is végigmegy.</p>
   <h2 class="rise" style="--i:3">Színek</h2>
-  <div class="sw rise" style="--i:3">${['#F6F4EF','#5FB08A','#2E6B52','#F0B48C','#8CC3E8','#1E2321'].map(c=>`<i style="background:${c}"></i>`).join('')}</div>
+  <div class="swatches rise" style="--i:3">${['#F6F4EF','#5FB08A','#2E6B52','#F0B48C','#8CC3E8','#1E2321'].map(c=>`<i style="background:${c}"></i>`).join('')}</div>
   <p style="margin-top:12px">Zsálya a Fuelé; a másik négy terület ugyanígy egy-egy színt kap, a többi közös.</p>
   <h2 class="rise" style="--i:4">A jelcsalád</h2>
   <div class="gl8 rise" style="--i:4">${fam.map(([ic,pal,l])=>`<div>${G(ic,pal)}<span>${l}</span></div>`).join('')}</div>
@@ -704,7 +704,7 @@ function irany(){const fam=[['plate','deep','Fuel'],['bowl','sage','tál'],['cup
   <p>Csak ami jelent valamit: a gőz száll, a nap világít, a tál a mai mennyiségig telik. A lapok húzhatók, a sorok húzásra műveletet mutatnak, hosszan nyomva előnézet nyílik. Mozgás nélküli módban minden áll.</p>
   <div class="nums" style="margin:0 16px"><div class="n3 tap" role="button" tabindex="0" data-theme-toggle>${G('moon','sky')}<b style="font-size:15px">Sötét mód</b><span>váltás</span></div><div class="n3 tap" role="button" tabindex="0" data-size-toggle>${G('book','ink')}<b style="font-size:15px">Betűméret</b><span>normál · nagy · extra</span></div><div class="n3 tap" role="button" tabindex="0" data-go="ios">${G('bell','sun')}<b style="font-size:15px">Appon kívül</b><span>csempék, értesítés</span></div></div>
   <h2 class="rise" style="--i:6">Fotók</h2>
-  <p>A saját grafikák mellett fotók adják a termék-érzést: felülről, természetes fényben, meleg semleges felületen. Egy lekerekítés, egy enyhe meleg szűrő, szöveg csak sötétedő átmenet fölött. A te fotóid külön: kicsiben, kerekben, érintetlenül. <a href="#intro-1" style="color:var(--deep);font-weight:700">A bevezető három képe →</a></p>
+  <p>A saját grafikák mellett fotók adják a termék-érzést: felülről, természetes fényben, meleg semleges felületen. Egy lekerekítés, egy enyhe meleg szűrő, szöveg csak sötétedő átmenet fölött. A te fotóid külön: kicsiben, kerekben, érintetlenül. <a href="#intro-1" style="color:var(--deep);font-weight:700;display:inline-block;padding:12px 0">A bevezető három képe →</a></p>
   </div>`}
 
 
@@ -1008,7 +1008,7 @@ function maiTegnap(){const ms=Object.values(YMEALS),tot=ms.reduce((a,m)=>a+m.kca
   <p class="lead rise" style="--i:1">Szerda, szeptember 23. A fehérje 87 gramm volt: a leves mellé hiányzott a hús.</p>
   <div class="acts rise" style="--i:1" style="margin-top:12px"><button class="pill soft" data-today>${G('back','sage')}Vissza a mához</button></div>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Szerda</h3><span class="crumb">8,3 pont</span></div>
-    <div class="card tl">${Object.entries(YMEALS).map(([k,m])=>`<div class="te sw" data-swipe><div class="tec tap" role="button" tabindex="0" data-go="meal-${k}" data-peek="${k}"><time>${m.time}</time><img src="${PH(m.ph+'-sq.jpg')}" alt="" data-fly="${k}"><div><strong>${m.name}</strong><small><span>${G('flame','deep')}${nb(m.kcal)}</span><span>${G('star','sun')}${dec(m.score)}</span></small></div>${G('chev','ink','chev')}</div><div class="acts2"><button data-toast="Szerkesztés — a logolás lapján">Szerkesztem</button><button class="del" data-delmeal="${k}">Törlöm</button></div></div>`).join('')}</div></section>
+    <div class="card tl">${Object.entries(YMEALS).map(([k,m])=>`<div class="te sw" data-swipe><div class="tec tap" role="button" tabindex="0" data-go="meal-${k}" data-peek="${k}"><time>${m.time}</time><img src="${PH(m.ph+'-sq.jpg')}" alt="" data-fly="${k}"><div><strong>${m.name}</strong><small><span class="chip soft">${G('flame','deep')}${nb(m.kcal)} kalória</span><span class="chip warm">${G('star','sun')}${dec(m.score)}</span></small></div>${G('chev','ink','chev')}</div><div class="acts2"><button data-toast="Szerkesztés — a logolás lapján">Szerkesztem</button><button class="del" data-delmeal="${k}">Törlöm</button></div></div>`).join('')}</div></section>
   <section class="sec rise" style="--i:4"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>Tegnap a fehérje maradt el. Ma ezért hozza az uzsonna és a vacsora a <em>220 grammot</em>.</p><button class="pill soft" data-today>A mai nap</button></div>${FIG}</div></section>`}
 function iosPage(){return `<div class="bar rise" style="--i:0"><button class="fb" data-back aria-label="Vissza">${G('back','ink')}</button><span class="crumb">Mezo › <b>Az appon kívül</b></span></div>
   <div class="ios">
