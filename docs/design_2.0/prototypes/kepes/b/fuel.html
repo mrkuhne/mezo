@@ -399,16 +399,28 @@ body.still .stream{stroke-dashoffset:0}
 .emptyph>*{position:relative;z-index:1}.emptyph b{font:600 17px var(--d)}.emptyph small{font:600 13px var(--b);opacity:.9;max-width:30ch}
 /* lock wallpaper */
 .ios .lock{position:relative;overflow:hidden;isolation:isolate}.ios .lock .wall{position:absolute;inset:0;z-index:-1;width:100%;height:100%;object-fit:cover;filter:brightness(.55) saturate(.8)}
-.hero2{height:226px;margin:16px 16px 0}
-.hero2 .scrim{background:linear-gradient(to top,rgba(20,26,22,.92) 0%,rgba(20,26,22,.66) 45%,rgba(20,26,22,.22) 80%,transparent 100%),linear-gradient(to right,rgba(20,26,22,.55) 0%,rgba(20,26,22,.2) 55%,transparent 80%)}
-.hero2 img{filter:saturate(.94) contrast(1) brightness(.96)}
-.hero2 .txt{bottom:16px}.hero2 .txt strong{text-shadow:0 2px 14px rgba(0,0,0,.45)}
-.hero2 .txt strong{font-size:23px}
-.hero2 .hs{font:600 13px var(--b);opacity:.9}
-.hero2 .own{position:absolute;right:16px;top:16px;width:64px;height:64px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 3px #fff,0 10px 20px -10px rgba(0,0,0,.5);filter:none}
+/* ── photo page head: the photo IS the top of the page (edge to edge, chrome on it, the paper rises over it) ── */
+.phead{position:relative;height:440px;margin:0;isolation:isolate;color:#fff;display:flex;flex-direction:column}
+.phead img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:saturate(.94) contrast(1) brightness(.94)}
+.phone[data-theme="dark"] .phead img.bg{filter:saturate(.9) brightness(.8)}
+.phead .fade{position:absolute;inset:0;z-index:-1;background:linear-gradient(to bottom,rgba(20,26,22,.5) 0%,rgba(20,26,22,.22) 18%,rgba(20,26,22,0) 34%,rgba(20,26,22,0) 46%,rgba(20,26,22,.5) 66%,rgba(20,26,22,.82) 100%),linear-gradient(to right,rgba(20,26,22,.35) 0%,rgba(20,26,22,0) 60%)}
+.phead .top{padding-top:18px}
+.phead .logo{color:#fff}.phead .logo .mark rect{fill:rgba(255,255,255,.18)}
+.phead .av{background:rgba(255,255,255,.18);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
+.phead .seg{margin-top:14px;background:rgba(255,255,255,.14);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.phead .seg button{color:rgba(255,255,255,.86)}.phead .seg button.on{background:#fff;color:#1E2321;box-shadow:none}
+.phead .htxt{margin:auto 20px 50px;display:grid;gap:7px;justify-items:start}
+.phead .htxt small{font:700 12px var(--b);text-transform:uppercase;letter-spacing:.06em;opacity:.88}
+.phead .htxt strong{font:600 clamp(26px,7.2vw,31px)/1.1 var(--d);letter-spacing:-.025em;text-shadow:0 2px 16px rgba(0,0,0,.45);max-width:16ch}
+.phead .htxt .hs{font:600 13.5px var(--b);opacity:.92;max-width:34ch;text-shadow:0 1px 8px rgba(0,0,0,.4)}
+.phead .htxt .pill{height:44px;padding:0 18px;background:#fff;color:#1E2321;box-shadow:0 12px 24px -12px rgba(0,0,0,.6);margin-top:6px}
+.phead .own{position:absolute;right:20px;top:112px;width:60px;height:60px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 3px #fff,0 10px 20px -10px rgba(0,0,0,.5)}
+.body{position:relative;margin-top:-32px;background:var(--paper);border-radius:34px 34px 0 0;padding-top:10px;box-shadow:0 -18px 40px -30px rgba(0,0,0,.45)}
+.body h1.head{margin-top:16px;font-size:clamp(23px,6.2vw,26px)}
+.body > .scene.second{margin-top:16px}
+.w320 .phead{height:400px}.w320 .phead .htxt{margin-bottom:46px}
 .scene.second{margin-top:12px}
 .scene.second .art{opacity:.98}
-.w320 .hero2{height:196px}.w320 .hero2 .txt strong{font-size:20px}
 /* nav */
 .nav{position:absolute;left:14px;right:14px;bottom:14px;height:68px;border-radius:999px;background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);box-shadow:0 20px 40px -18px rgba(30,35,33,.35),0 0 0 1px rgba(30,35,33,.05);display:flex;align-items:center;justify-content:space-around;padding:6px;z-index:5}
 .nav button{height:56px;min-width:52px;border:0;background:none;display:grid;place-items:center;gap:2px;color:var(--mute);font:700 12px var(--b);padding:0 8px;border-radius:999px}
@@ -605,7 +617,8 @@ function scene(){const W=340,H=206,cx=170,cy=168,R=132;const ang=t=>Math.PI-(t-7
   <style>.ax{font:700 12px Manrope,system-ui;fill:#8E968F}.big{font:600 22px Outfit,system-ui;fill:#1E2321;letter-spacing:-.02em}.sm{font:700 12px Manrope,system-ui;fill:#5A635E}</style>
   </svg>`}
 
-const photoHero=({ph,eb,title,sub,btn,attrs='',round})=>`<article class="pho hero2 rise" style="--i:2"><img src="${PH(ph)}" alt=""><div class="scrim"></div>${round?`<img class="own" src="${PH(round)}" alt="">`:''}<div class="txt"><small>${eb}</small><strong>${title}</strong>${sub?`<span class="hs">${sub}</span>`:''}<button class="pill" ${attrs}>${btn}</button></div></article>`;
+const heroTxt=({eb,title,sub,btn,attrs=''})=>`<div class="htxt rise" style="--i:1"><small>${eb}</small><strong>${title}</strong>${sub?`<span class="hs">${sub}</span>`:''}<button class="pill" ${attrs}>${btn}</button></div>`;
+const phead=(tab,{ph,round,pos,...t})=>`<header class="phead"><img class="bg" src="${PH(ph)}" alt=""${pos?` style="object-position:${pos}"`:''}><div class="fade"></div><div class="top rise" style="--i:0"><a class="logo" href="#irany">${MARK(34)}<b>mezo</b></a><button class="av" data-toast="Profil — az Én területen" aria-label="Profil">P</button></div>${seg(tab)}${round?`<img class="own" src="${PH(round)}" alt="">`:''}${heroTxt(t)}</header><div class="body">`;
 const header=(tab)=>`<div class="top rise" style="--i:0"><a class="logo" href="#irany">${MARK(34)}<b>mezo</b></a><button class="av" data-toast="Profil — az Én területen" aria-label="Profil">P</button></div>
   <div class="ctx rise" style="--i:0">${G('plate','deep')}Fuel <i>›</i> ${tab}</div>`;
 const seg=(on)=>`<div class="seg rise" style="--i:1" role="tablist">${[['Mai',''],['Kiegészítők','kieg'],['Trendek','trendek'],['Konyha','konyha']].map(([l,r])=>`<button role="tab" class="${l===on?'on':''}" ${l===on?'':`data-go="${r}"`}>${l}</button>`).join('')}</div>`;
@@ -615,11 +628,9 @@ const YMEALS={y1:{t:7.5,time:'07:30',win:'Reggeli',name:'Tojásrántotta · spen
   y2:{t:13,time:'13:00',win:'Ebéd',name:'Görög saláta · csirkével',kcal:540,score:8.0,m:[41,18,30],fib:6,glu:0,ph:'gorog',src:'receptből',ings:[['Csirkemell','meat','200 g',220],['Feta','bowl','60 g',160],['Paradicsom, uborka','leaf','250 g',60],['Olívaolaj','avocado','11 ml',100]],head:'Könnyű, fehérjés ebéd',lead:'Sok növény, mérsékelt kalória.',cert:95,dims:[8.5,8,8.6,8.2,8.8,8.4,7.9,8.3],mz:'Ilyen ebéd után délután nem esik vissza a koncentráció.'},
   y3:{t:19.5,time:'19:30',win:'Vacsora',name:'Vöröslencse-leves',kcal:410,score:7.7,m:[22,58,8],fib:14,glu:1,ph:'leves',src:'receptből',ings:[['Vöröslencse','jar','120 g',340],['Sárgarépa, hagyma','leaf','150 g',55],['Olívaolaj','avocado','5 ml',45]],head:'Rostban gazdag este',lead:'A rost viszi, a fehérje kevés volt.',cert:90,dims:[7,7.8,8.5,8,9,8.6,8.2,7.2],mz:'Vacsorára legközelebb mehet mellé 100 g csirke, és kész a nap fehérjéje.'}};
 function mai(){if(DAYVIEW==='tegnap')return maiTegnap();const n=AHEAD[0];const rem=DAY.target-DAY.eaten,pm=DAY.p[1]-DAY.p[0];
-  return `${header('Mai')}
+  return `${n?phead('Mai',{ph:n.ph+'.jpg',pos:n.pos,eb:`Következik · ${n.win} · ${n.time}`,title:n.name,sub:`${nb(n.kcal)} kalória · még ${nb(rem)} maradt mára`,btn:`${G('plus','ink')}Logolom`,attrs:`data-go="log-${n.win.toLowerCase()}"`}):phead('Mai',{ph:'brunch.jpg',eb:'Mára kész',title:'Minden étkezés megvan',btn:'A nap számai',attrs:'data-go="szamok"'})}
   <h1 class="head rise" style="--i:1">${rem>0?`Jól állsz. <em>${nb(rem)} kalória</em> van még, ${AHEAD.length===2?'két étkezésre':AHEAD.length===1?'egy étkezésre':'mára'}.`:'<em>Megvan a mai keret.</em> Szép nap volt.'}</h1>
   <p class="lead rise" style="--i:1">${pm>0?`A fehérjéből ${pm} gramm hiányzik${AHEAD.length?`, azt ${AHEAD.map(a=>'a '+a.win.toLowerCase()).join(' és ')} hozza`:''}.`:'A fehérje megvan mára.'}</p>
-  ${seg('Mai')}
-  ${n?photoHero({ph:n.ph+'.jpg',eb:`Következik · ${n.win} · ${n.time}`,title:n.name,sub:`${nb(n.kcal)} kalória · 2 perc · ${nb(rem)} kalória maradt`,btn:`${G('plus','ink')}Logolom`,attrs:`data-go="log-${n.win.toLowerCase()}"`}):photoHero({ph:'brunch.jpg',eb:'Mára kész',title:'Minden étkezés megvan',btn:'A nap számai',attrs:'data-go="szamok"'})}
   <article class="scene second rise" style="--i:3"><span class="now"><i></i>14:10 · a nap kétharmada</span>${scene()}</article>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Ma eddig</h3><a href="#szamok">Részletek ${G('chev')}</a></div>
     <div class="nums">${[['flame','deep',nb(DAY.eaten),'kalória',DAY.eaten/DAY.target,'var(--sage)'],['meat','peach',DAY.p[0],'g fehérje',DAY.p[0]/DAY.p[1],'var(--peach)'],['drop','sky',dec(DAY.water[0]),'l víz',DAY.water[0]/DAY.water[1],'var(--sky)']].map(([ic,pal,n,l,p,c])=>`<div class="n3 tap" role="button" tabindex="0" data-go="szamok">${G(ic,pal)}<b>${n}</b><span>${l}</span><u style="--p:${Math.round(p*100)}%;--c:${c}"><i></i></u></div>`).join('')}</div></section>
@@ -628,7 +639,7 @@ function mai(){if(DAYVIEW==='tegnap')return maiTegnap();const n=AHEAD[0];const r
       ${AHEAD.map(a=>`<div class="te ahead tap" role="button" tabindex="0" data-go="log-${a.win.toLowerCase()}"><time>${a.time}</time><span class="gl ${a.now?'now':''}">${G(a.now?'plus':'moon',a.now?'deep':'sky')}</span><div><strong>${a.win} · ${a.name}</strong><small><span>${nb(a.kcal)} kalória keret</span></small></div>${G('chev','ink','chev')}</div>`).join('')}</div></section>
   <section class="sec rise" style="--i:5"><div class="sh"><h3>Logolás</h3></div><div class="modes">${MODES.map(([l,ic],i)=>`<button data-go="log-${AHEAD[0]?AHEAD[0].win.toLowerCase():'vacsora'}">${G(ic,'ink')}<span>${l}</span></button>`).join('')}</div></section>
   <section class="sec rise" style="--i:6"><div class="sh"><h3>Estére ajánlom</h3><a href="#recept-r3">A recept ${G('chev')}</a></div><div class="pho edit tap" role="button" tabindex="0" data-go="recept-r3"><img src="${PH('lazac.jpg')}" alt=""><div class="scrim"></div><div class="txt"><small>Vacsora · 19:30 · 23 perc</small><strong>Lazac, barna rizs, brokkoli</strong><span style="font:600 13px var(--b);opacity:.9">Minden hozzávaló a kamrádban. 818 kalória, 49 g fehérje.</span><button class="pill" data-toast="Betervezve vacsorára">Betervezem</button></div></div></section>
-  <section class="sec rise" style="--i:7"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>Túró az uzsonnára, lazac vacsorára: így a <em>220 g fehérje</em> kijön, és 300 kalória még marad.</p><button class="pill soft" data-toast="Betervezve: túró 16:30, lazac 19:30">Betervezem</button></div>${FIG}</div></section>`}
+  <section class="sec rise" style="--i:7"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>Túró az uzsonnára, lazac vacsorára: így a <em>220 g fehérje</em> kijön, és 300 kalória még marad.</p><button class="pill soft" data-toast="Betervezve: túró 16:30, lazac 19:30">Betervezem</button></div>${FIG}</div></section></div>`}
 
 function szamok(){const rows=[['Kalória','flame','deep',DAY.eaten,DAY.target,''],['Fehérje','meat','peach',DAY.p[0],DAY.p[1],'g'],['Szénhidrát','bread','sun',DAY.c[0],DAY.c[1],'g'],['Zsír','avocado','sage',DAY.f[0],DAY.f[1],'g'],['Rost','broccoli','sage',DAY.fib[0],DAY.fib[1],'g'],['Víz','drop','sky',DAY.water[0],DAY.water[1],'l']];
   return `<div class="bar rise" style="--i:0"><button class="fb" data-back aria-label="Vissza">${G('back','ink')}</button><span class="crumb">Fuel › Mai › <b>A nap számai</b></span></div>
@@ -688,20 +699,18 @@ function sceneK(nx){const W=340,H=176,cx=170,cy=150,R=130;const ang=t=>Math.PI-(
   <text x="170" y="118" text-anchor="middle" class="big">${ALLS.filter(x=>x[3]).length} / ${ALLS.length}</text><text x="170" y="134" text-anchor="middle" class="sm">adag bevéve</text>
   <style>.ax{font:700 12px Manrope,system-ui;fill:#8E968F}.big{font:600 24px Outfit,system-ui;fill:#1E2321;letter-spacing:-.02em}.sm{font:700 12px Manrope,system-ui;fill:#5A635E}</style></svg>`}
 function kieg(){const taken=ALLS.filter(x=>x[3]).length,miss=ALLS.filter(x=>!x[3]&&x[5]<DAY.now),nx=ALLS.find(x=>!x[3]&&x[5]>=DAY.now)||ALLS.find(x=>!x[3]);
-  return `${header('Kiegészítők')}
+  return `${nx?phead('Kiegészítők',{ph:'herbs.jpg',eb:`Következik · ${nx[2]}`,title:nx[0],sub:`${nx[1]} · ${nx[7].split('.')[0]}.`,btn:`${G('check','sage')}Bevettem`,attrs:`data-take="${nx[0]}"`}):phead('Kiegészítők',{ph:'viz.jpg',eb:'Mára kész',title:'Minden adag megvolt',btn:'Protokoll',attrs:'data-go="protokoll"'})}
   <h1 class="head rise" style="--i:1"><em>${taken} adag</em> megvolt a ${ALLS.length}-ból.${nx?` A következő ${nx[2].toLowerCase().split(' ·')[0]}.`:' Mára kész.'}</h1>
   <p class="lead rise" style="--i:1">${miss.length?`Az ${miss[0][0]} kimaradt az ebédnél; vacsorával is ugyanúgy jó.`:'Minden a helyén, a ritmus tartja magát.'}</p>
-  ${seg('Kiegészítők')}
-  ${nx?photoHero({ph:'herbs.jpg',eb:`Következik · ${nx[2]}`,title:nx[0],sub:`${nx[1]} · ${nx[7].split('.')[0]}.`,btn:`${G('check','sage')}Bevettem`,attrs:`data-take="${nx[0]}"`}):photoHero({ph:'viz.jpg',eb:'Mára kész',title:'Minden adag megvolt',btn:'Protokoll',attrs:'data-go="protokoll"'})}
   <article class="scene second rise" style="--i:3"><span class="now"><i></i>14:10</span>${sceneK(nx)}</article>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Ma</h3></div>
     <div class="nums">${[['check','deep',taken,'bevéve'],['capsule','berry',ALLS.length-taken,'hátra'],['clock','peach',miss.length,'kimaradt']].map(([ic,pal,n,l])=>`<div class="n3">${G(ic,pal)}<b>${n}</b><span>${l}</span></div>`).join('')}</div></section>
   <section class="sec rise" style="--i:4"><div class="sh"><h3>A napod</h3><a href="#protokoll">Protokoll ${G('chev')}</a></div>
     <div class="card tl">${STACK.map(b=>`<div class="grp">${G(b.band==='Reggel'?'sun':b.band==='Dél'?'plate':b.band==='Délután'?'bolt':'moon','ink')}${b.band}</div>`+b.items.map(x=>{const on=x[3],next=x===nx,miss=!on&&x[5]<DAY.now;return `<div class="te ${on?'':'ahead'} ${miss?'out':''}"><time>${x[4]||x[2].match(/\d\d:\d\d/)?.[0]||(x[2]==='Este'?'21:00':'')}</time><button class="tk ${on?'on':''}" data-take="${x[0]}" aria-label="${on?'Visszavonom':'Bevettem'}">${G('check',on?'sage':'ink')}</button><div class="tap" role="button" tabindex="0" data-sheet="item" data-arg="${x[0]}"><strong>${x[0]}</strong><small><span>${x[1]}</span><span>${x[2]}${on?' · bevéve':miss?' · kimaradt':''}</span></small></div>${G('chev','ink','chev')}</div>`}).join('')).join('')}</div></section>
   <section class="sec rise" style="--i:5"><div class="sh"><h3>Beállítás</h3></div><div class="nums">${[['book','sage','Protokoll','8 elem','herbs'],['plus','deep','Új elem','beállítás',null],['capsule','berry','Gyógyszer','követés','viz']].map(([ic,pal,l,sm,ph])=>`<div class="n3 tap ${ph?'mat':''}" role="button" tabindex="0" data-go="${l==='Protokoll'?'protokoll':l==='Új elem'?'ujelem-1':'gyogyszer'}">${ph?`<img src="${PH(ph+'-sq.jpg')}" alt="">`:''}${G(ic,ph?'cream':pal)}<b style="font-size:15px">${l}</b><span>${sm}</span></div>`).join('')}</div></section>
-  <section class="sec rise" style="--i:6"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>Az <em>Omega-3</em> kimaradt az ebédnél. Vacsorával is beveheted, a hatás ugyanaz.</p><button class="pill soft" data-toast="Átteve: Omega-3 · vacsora">Átteszem vacsorára</button></div>${FIG}</div></section>`}
+  <section class="sec rise" style="--i:6"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>Az <em>Omega-3</em> kimaradt az ebédnél. Vacsorával is beveheted, a hatás ugyanaz.</p><button class="pill soft" data-toast="Átteve: Omega-3 · vacsora">Átteszem vacsorára</button></div>${FIG}</div></section></div>`}
 function kiegPatch(){const taken=ALLS.filter(x=>x[3]).length,miss=ALLS.filter(x=>!x[3]&&x[5]<DAY.now),nx=ALLS.find(x=>!x[3]&&x[5]>=DAY.now)||ALLS.find(x=>!x[3]);
-  const sc=$('#scroll .scene');if(sc){sc.querySelector('.art').outerHTML=sceneK(nx)}const hz=$('#scroll .hero2');if(hz){hz.outerHTML=nx?photoHero({ph:'herbs.jpg',eb:`Következik · ${nx[2]}`,title:nx[0],sub:`${nx[1]} · ${nx[7].split('.')[0]}.`,btn:`${G('check','sage')}Bevettem`,attrs:`data-take="${nx[0]}"`}):photoHero({ph:'viz.jpg',eb:'Mára kész',title:'Minden adag megvolt',btn:'Protokoll',attrs:'data-go="protokoll"'})}
+  const sc=$('#scroll .scene');if(sc){sc.querySelector('.art').outerHTML=sceneK(nx)}const hz=$('#scroll .phead .htxt');if(hz){hz.outerHTML=nx?heroTxt({eb:`Következik · ${nx[2]}`,title:nx[0],sub:`${nx[1]} · ${nx[7].split('.')[0]}.`,btn:`${G('check','sage')}Bevettem`,attrs:`data-take="${nx[0]}"`}):heroTxt({eb:'Mára kész',title:'Minden adag megvolt',btn:'Protokoll',attrs:'data-go="protokoll"'});if(!nx){const bg=$('#scroll .phead img.bg');if(bg)bg.src=PH('viz.jpg')}}
   const h=$('#scroll h1.head');if(h)h.innerHTML=`<em>${taken} adag</em> megvolt a ${ALLS.length}-ból.${nx?` A következő ${nx[2].toLowerCase().split(' ·')[0]}.`:' Mára kész.'}`;
   const ns=document.querySelectorAll('#scroll .nums')[0];if(ns){const bs=ns.querySelectorAll('b');bs[0].textContent=taken;bs[1].textContent=ALLS.length-taken;bs[2].textContent=miss.length}
   document.querySelectorAll('#scroll .te').forEach(row=>{const btn=row.querySelector('.tk');if(!btn)return;const x=ALLS.find(i=>i[0]===btn.dataset.take);if(!x)return;const on=!!x[3],ms=!on&&x[5]<DAY.now;btn.classList.toggle('on',on);btn.querySelector('.g').outerHTML=G('check',on?'sage':'ink');btn.setAttribute('aria-label',on?'Visszavonom':'Bevettem');row.classList.toggle('ahead',!on);row.classList.toggle('out',ms);const sm=row.querySelectorAll('small span')[1];if(sm)sm.textContent=x[2]+(on?' · bevéve':ms?' · kimaradt':'')})}
@@ -726,11 +735,9 @@ function sceneT(){const W=340,H=190;const u='st'+(++gid);const steps=[-0.4,-0.3,
   <style>.ax{font:700 12px Manrope,system-ui;fill:#8E968F}.big{font:600 22px Outfit,system-ui;fill:#1E2321;letter-spacing:-.02em}</style></svg>`}
 function trendek(){const past=WEEK.filter(d=>d[3]);const avg=Math.round(past.reduce((a,d)=>a+d[1],0)/past.length);const tr=WT.map((_,i)=>{const w=WT.slice(Math.max(0,i-2),i+3).filter(v=>v!=null);return w.reduce((a,b)=>a+b,0)/w.length});
   const W=320,h=120,P=8,mn=77.6,mx=84.4,X=i=>P+i*(W-2*P)/(tr.length-1),Y=v=>8+(mx-v)/(mx-mn)*(h-30);let d='';tr.forEach((v,i)=>{const x=X(i),y=Y(v);if(!i){d=`M${x} ${y}`;return}const px=X(i-1),py=Y(tr[i-1]),c=(x-px)/2;d+=`C${px+c} ${py} ${x-c} ${y} ${x} ${y}`});
-  return `${header('Trendek')}
+  return `${phead('Trendek',{ph:'reggelfeny.jpg',eb:'A heted története · szeptember 21–27.',title:'Három nyugodt reggel, egy hiányos szerda.',sub:'A hétvége még előtted: ott dől el a hét.',btn:`A hét napjai ${G('chev','ink')}`,attrs:'data-go="het"'})}
   <h1 class="head rise" style="--i:1">Hétköznap tartod a keretet. <em>A hétvége</em> viszi el.</h1>
   <p class="lead rise" style="--i:1">Múlt hétvégén 46%-kal többet ettél a keretedhez mérve, mint hétköznap. A súlyod közben szépen megy lefelé.</p>
-  ${seg('Trendek')}
-  ${photoHero({ph:'reggelfeny.jpg',eb:'A heted története · szeptember 21–27.',title:'Három nyugodt reggel, egy hiányos szerda.',sub:'A hétvége még előtted: ott dől el a hét.',btn:`A hét napjai ${G('chev','ink')}`,attrs:'data-go="het"'})}
   <article class="scene second rise" style="--i:3"><span class="now"><i></i>7 hét · 2,7 kiló le · még 3,3 a célig</span>${sceneT()}</article>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Ez a hét</h3><a href="#het">A hét napjai ${G('chev')}</a></div>
     <div class="card" style="padding:12px 12px 10px"><div class="seg" style="margin:0 0 12px"><button class="on" data-wm="het">Hét</button><button data-wm="ho">Hónap</button></div><div class="wk" id="wkv">${WEEK.map((d,i)=>{const today=i===3,fut=d[1]==null,p=fut?0:Math.min(1,d[1]/3300),fr=d[2]/3300,over=d[1]&&d[1]>d[2]+60;return `<div class="wd ${today?'today':''} ${fut?'fut':''}" data-hot="${fut?'':nb(d[1])+' / '+nb(d[2])}"><span class="val"></span><em>${today?'ma':d[3]||''}</em><span class="tube"><i style="height:${p*100}%" class="${over?'over':''}"></i><u style="bottom:${fr*100}%"></u></span><b>${d[0]}</b></div>`}).join('')}</div><div class="wk" id="mov" style="display:none">${[['1–7.',2410,2400],['8–14.',2380,2400],['15–21.',2290,2400],['22–28.',1852,2400]].map(([l,k,b])=>`<div class="wd" data-hot="${nb(k)} / ${nb(b)}"><span class="val"></span><em>${nb(k)}</em><span class="tube"><i style="height:${Math.min(1,k/3300)*100}%"></i><u style="bottom:${b/3300*100}%"></u></span><b>${l}</b></div>`).join('')}</div>
@@ -748,7 +755,7 @@ function trendek(){const past=WEEK.filter(d=>d[3]);const avg=Math.round(past.red
       <text x="${P}" y="${h-4}" class="t">augusztus 5.</text><text x="${W-P}" y="${h-4}" text-anchor="end" class="t">szeptember 24.</text></svg></div></section>
   <section class="sec rise" style="--i:7"><div class="sh"><h3>Mintázatok</h3><a href="#" data-toast="A mintázatok otthona a Mezo">Mezo ${G('chev')}</a></div>
     <div class="card pad">${[['moon','sky','Késő szénhidrát → másnap nehezebb edzés','20:00 után, 60 g felett','figyeljük',0],['cup','peach','Koffein 14:00 után → elalvás +24 perc','több hét adata','megerősítve',1]].map(([ic,pal,t,sm,st,ok])=>`<div class="row">${G(ic,pal)}<div><b>${t}</b><small>${sm}</small></div><span class="chip ${ok?'soft':'warm'}">${st}</span></div>`).join('')}</div></section>
-  <section class="sec rise" style="--i:8"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>A hétvége viszi el a hetet. Szombatra <em>egy tervezett vacsorát</em> teszek be: marad a lazaság, de nem folyik túl.</p><button class="pill soft" data-toast="Szombat vacsora betervezve">Betervezem</button></div>${FIG}</div></section>`}
+  <section class="sec rise" style="--i:8"><div class="mz"><div><small>${G('spark','deep')}Mezo</small><p>A hétvége viszi el a hetet. Szombatra <em>egy tervezett vacsorát</em> teszek be: marad a lazaság, de nem folyik túl.</p><button class="pill soft" data-toast="Szombat vacsora betervezve">Betervezem</button></div>${FIG}</div></section></div>`}
 
 /* ── Konyha ── */
 const REC=[{id:'r3',n:'Lazac + barna rizs + brokkoli',ph:'lazac',kcal:818,min:23,cat:'Vacsora',p:49,fit:'minden hozzávaló a kamrádban'},{id:'r6',n:'Túró · áfonya · méz',ph:'smoothie',kcal:324,min:2,cat:'Uzsonna',p:36,fit:'két perc'},{id:'r2',n:'Csirke + édesburgonya + spenót',ph:'csirke',kcal:1015,min:30,cat:'Ebéd',p:63,fit:'ma már volt'},{id:'r1',n:'Túrós zabkása · áfonyával',ph:'zab',kcal:689,min:8,cat:'Reggeli',p:49,fit:'a kedvenc reggelid'}];
@@ -765,11 +772,9 @@ function sceneKo(){const u='ko'+(++gid);return `<svg class="art" viewBox="0 0 34
   <text x="170" y="166" text-anchor="middle" class="sm">6 recept · 8 polc · 22 növény a heti 30-ból</text>
   <style>.sm{font:700 12px Manrope,system-ui;fill:#5A635E}</style></svg>`}
 function konyha(){const r=REC[0];
-  return `${header('Konyha')}
+  return `${phead('Konyha',{ph:r.ph+'.jpg',eb:'Javaslat · Vacsora · 19:30',title:r.n,sub:`${nb(r.kcal)} kalória · ${r.min} perc · ${r.p} g fehérje`,btn:`${G('check','sage')}Ezt főzöm`,attrs:'data-toast="Betervezve vacsorára"'})}
   <h1 class="head rise" style="--i:1">A vacsorához <em>a lazac</em> áll a legközelebb.</h1>
   <p class="lead rise" style="--i:1">Minden hozzávalója a kamrádban van, és pont kitölti, ami a fehérjéből hiányzik.</p>
-  ${seg('Konyha')}
-  ${photoHero({ph:r.ph+'.jpg',eb:'Javaslat · Vacsora · 19:30',title:r.n,sub:`${nb(r.kcal)} kalória · ${r.min} perc · ${r.p} g fehérje`,btn:`${G('check','sage')}Ezt főzöm`,attrs:'data-toast="Betervezve vacsorára"'})}
   <article class="scene second rise" style="--i:3"><span class="now"><i></i>a konyhád</span>${sceneKo()}</article>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Céljaim</h3><a href="#" data-toast="Célok beállítása — következik">Beállítom ${G('chev')}</a></div>
     <div class="nums">${[['meat','peach','160','g fehérje naponta',148/160,'var(--peach)'],['broccoli','sage','30','növény hetente',22/30,'var(--sage)'],['drop','sky','2,5','l víz naponta',1.3/2.5,'var(--sky)']].map(([ic,pal,n,l,p,c])=>`<div class="n3">${G(ic,pal)}<b>${n}</b><span>${l}</span><u style="--p:${Math.round(p*100)}%;--c:${c}"><i></i></u></div>`).join('')}</div></section>
@@ -779,7 +784,7 @@ function konyha(){const r=REC[0];
   <section class="sec rise" style="--i:5"><div class="sh"><h3>Kamra</h3><a href="#kamra">Mind a 8 ${G('chev')}</a></div>
     <div class="hrow">${KAM.map(([n,ic,pal,sm])=>`<div class="kcard tap" role="button" tabindex="0" data-go="kamra-${encodeURIComponent(n)}"><span class="kw">${G(ic,pal)}</span><strong>${n}</strong><small>${sm.split(' · ')[0]}</small></div>`).join('')}<div class="kcard add tap" role="button" tabindex="0" data-toast="Új tétel a kamrába — következik"><span class="kw">${G('plus','deep')}</span><strong>Új tétel</strong><small>fotóról, linkről, kézzel</small></div></div></section>
   <section class="sec rise" style="--i:6"><div class="sh"><h3>Receptműhely</h3></div>
-    <div class="pho" style="height:200px"><img src="${PH('konyha.jpg')}" alt=""><div class="scrim"></div><div class="txt"><small>Főzzünk valamit</small><strong>Mondd el, mi van otthon.</strong><span style="font:600 13px var(--b);opacity:.9">Kirakom belőle a receptet a céljaidhoz mérve.</span><button class="pill" data-toast="Receptműhely — a következő körben">${G('plus','ink')}Új recept</button></div></div></section>`}
+    <div class="pho" style="height:200px"><img src="${PH('konyha.jpg')}" alt=""><div class="scrim"></div><div class="txt"><small>Főzzünk valamit</small><strong>Mondd el, mi van otthon.</strong><span style="font:600 13px var(--b);opacity:.9">Kirakom belőle a receptet a céljaidhoz mérve.</span><button class="pill" data-toast="Receptműhely — a következő körben">${G('plus','ink')}Új recept</button></div></div></section></div>`}
 
 
 /* ── Logolás: the whole flow of the real composer (fuel.md §2 S1c, mezo-yhhvg, mezo-78rn) in the Lágy language ──
