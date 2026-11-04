@@ -434,6 +434,27 @@ body.still .stream{stroke-dashoffset:0}
 .rl .rf .chip{height:26px;font-size:12px;padding:0 10px}
 .w320 .rl{grid-template-columns:96px minmax(0,1fr);gap:10px}.w320 .rl .rph{width:96px;height:124px}.w320 .rl .rn{grid-template-columns:repeat(2,auto);gap:4px 12px}.w320 .aic{grid-template-columns:minmax(0,1fr) 104px}.w320 .aic .aph img{width:124px;height:124px;right:-4px;top:-10px}
 .phone[data-theme="dark"] .sfield,.phone[data-theme="dark"] .rl{background:var(--card)}.phone[data-theme="dark"] .aic{background:linear-gradient(135deg,#3A2A20,#2A241F)}.phone[data-theme="dark"] .aic small{color:#F0B48C}.phone[data-theme="dark"] .aic .aph .chip{background:#26312B;color:var(--ink)}
+/* ── Poharak ── */
+.pv{padding:18px 16px 16px;display:grid;gap:12px;justify-items:start}
+.pvrow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px;align-items:end;width:100%}
+.pvs{display:flex;justify-content:space-around;align-items:flex-end;width:100%;gap:6px}.pvs .ves{flex:1 1 0;min-width:0}.pvs .ves svg{width:100%}.pvs .ves figcaption small,.pvs .ves figcaption em{white-space:nowrap}
+.ves{margin:0;display:grid;justify-items:center;gap:2px}
+.ves svg{display:block;max-width:100%;height:auto;overflow:visible}
+.ves figcaption{display:grid;justify-items:center;text-align:center;line-height:1.15}
+.ves figcaption b{font:600 17px var(--d);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.ves figcaption small{font:700 12px var(--b);color:var(--mute)}
+.ves figcaption em{font-style:normal;font:600 12px var(--b);color:var(--ink2);margin-top:2px}
+.pv1 .pvrow > .ves:first-child figcaption b{font-size:24px}
+.pv2 .ves{width:100%}.pv2 .ves svg{width:100%}
+.pvcap{display:grid;gap:2px;margin-top:-6px}.pvcap b{font:600 26px var(--d);letter-spacing:-.025em}.pvcap small{font:700 12.5px var(--b);color:var(--mute)}
+.pv .mzl{margin:4px 0 0;font:600 13.5px/1.4 var(--b);color:var(--ink2)}
+.liq{transition:transform 1.2s cubic-bezier(.2,.8,.2,1);transform:translateY(var(--d))}
+.pre .liq{transform:translateY(var(--h))}
+@keyframes wave{to{transform:translateX(40px)}}
+@media (prefers-reduced-motion:no-preference){body:not(.still) .wave{animation:wave 2.8s linear infinite}body:not(.still) .ves:nth-child(2n) .wave{animation-duration:3.4s}}
+body.still .liq{transition:none}
+.w320 .pv1 .pvrow{grid-template-columns:1fr;justify-items:center;gap:14px}.w320 .ves figcaption b{font-size:15px}.w320 .ves figcaption em{display:none}.w320 .pvs{gap:4px}
+.phone[data-theme="dark"] .ves svg path[fill="rgba(255,255,255,.55)"]{fill:rgba(255,255,255,.08)}
 /* ── photo page head: the photo IS the top of the page (edge to edge, chrome on it, the paper rises over it) ── */
 .phead{position:relative;height:440px;margin:0;isolation:isolate;color:#fff;display:flex;flex-direction:column}
 .phead img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:saturate(.94) contrast(1) brightness(.94)}
@@ -695,6 +716,36 @@ function mealPage(k){const m=MEALS[k]||YMEALS[k]||MEALS.reggeli;
   <section class="sec rise" style="--i:7"><div class="mz" style="grid-template-columns:1fr;padding:16px 18px"><div><small>${G('spark','deep')}Mezo</small><p style="margin-bottom:0">${m.mz}</p></div></div></section>
   <div class="acts rise" style="--i:8"><button class="pill" data-toast="Logolva még egyszer — következik">Újra ezt</button><button class="pill soft" data-toast="Szerkesztés — következik">Szerkesztem</button></div>`}
 
+/* ── Poharak: the day's numbers as filling vessels (three variants for the owner) ── */
+const VPAL={kal:['#2E6B52','#5FB08A'],feh:['#E09A6A','#F5C9A8'],szh:['#E2B24A','#F8DC8E'],zsir:['#8FBF9F','#CFE8D6'],viz:['#6FAEDC','#B9DCF3']};
+const vesselPath=(W,H,taper=.8,r=12)=>{const b=W*taper,x0=(W-b)/2,x1=W-x0;return `M0 0H${W}L${x1} ${H-r}Q${x1-1} ${H} ${x1-r} ${H}H${x0+r}Q${x0+1} ${H} ${x0} ${H-r}Z`};
+const vessel=({W,H,p,pal,taper=.8,label,val,unit,note,marks=[],cls='',txt=true})=>{const u='v'+(++gid),[c1,c2]=VPAL[pal],lv=Math.max(.04,Math.min(1,p)),d=((1-lv)*H).toFixed(1);
+  const mk=marks.map(m=>`<line x1="-6" x2="4" y1="${((1-m[0])*H).toFixed(1)}" y2="${((1-m[0])*H).toFixed(1)}" stroke="rgba(30,35,33,.25)" stroke-width="2" stroke-linecap="round"/><text x="-10" y="${((1-m[0])*H+4).toFixed(1)}" text-anchor="end" class="sm">${m[1]}</text>`).join('');
+  const pl=marks.length?74:8;return `<figure class="ves ${cls}" style="--h:${H}px"><svg viewBox="-${pl} -8 ${W+pl+8} ${H+16}" width="${W+pl+8}" height="${H+16}" style="max-width:${W+pl+8}px" aria-hidden="true"><defs><linearGradient id="${u}g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient><clipPath id="${u}c"><path d="${vesselPath(W-4,H-2,taper)}" transform="translate(2 1)"/></clipPath></defs>
+  <path d="${vesselPath(W,H,taper)}" fill="rgba(255,255,255,.55)" stroke="rgba(30,35,33,.14)" stroke-width="1.5"/>
+  <g clip-path="url(#${u}c)"><g class="liq" style="--d:${d}px"><rect x="-10" y="4" width="${W+20}" height="${H+40}" fill="url(#${u}g)"/><path class="wave" d="M-80 4q10-7 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0v12H-80z" fill="#fff" opacity=".35"/></g></g>
+  <path d="M${W*.16} ${H*.14}v${H*.5}" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  ${mk}${note&&lv<.8?`<text x="${W/2}" y="${(((1-lv)*H)/2+5).toFixed(1)}" text-anchor="middle" class="note">${note}</text>`:''}
+  <style>.sm{font:700 12px Manrope,system-ui;fill:#8E968F}.note{font:700 12.5px Manrope,system-ui;fill:#5A635E}</style></svg>
+  ${txt?`<figcaption><b>${val}</b><small>${unit}</small>${label?`<em>${label}</em>`:''}</figcaption>`:''}</figure>`};
+function poharak(){const rem=DAY.target-DAY.eaten;const pr=(a)=>a[0]/a[1];
+  const ms=Object.values(MEALS).filter(m=>m.t<=DAY.now&&m.kcal);let acc=0;const marks=ms.map(m=>{acc+=m.kcal;return [acc/DAY.target,m.win==='Ablakon kívül'?'Nasi':m.win]});
+  const K={W:112,H:170,p:DAY.eaten/DAY.target,pal:'kal',val:nb(DAY.eaten),unit:`kalória a ${nb(DAY.target)}-ból`,note:`${nb(rem)} maradt`};
+  const M=[{p:pr(DAY.p),pal:'feh',val:DAY.p[0]+' g',unit:'fehérje',label:`${DAY.p[1]} g a cél`},{p:pr(DAY.c),pal:'szh',val:DAY.c[0]+' g',unit:'szénhidrát',label:`${DAY.c[1]} g a cél`},{p:pr(DAY.f),pal:'zsir',val:DAY.f[0]+' g',unit:'zsír',label:`${DAY.f[1]} g a cél`}];
+  const V={p:pr(DAY.water),pal:'viz',val:dec(DAY.water[0])+' l',unit:'víz',label:`${dec(DAY.water[1])} l a cél`};
+  return `<div class="bar rise" style="--i:0"><button class="fb" data-back aria-label="Vissza">${G('back','ink')}</button><span class="crumb">Fuel › Mai › <b>Poharak</b></span></div>
+  <h1 class="head rise" style="--i:1">A nap számai <em>három rajzban</em>.</h1><p class="lead rise" style="--i:1">Mindegyik ugyanazt mondja: mennyi telt a napból, és mennyi hiányzik. Válaszd ki, melyik üljön a Mai oldalon a tál helyett.</p>
+  <section class="sec rise" style="--i:2"><div class="sh"><h3>1 · Egy nagy, három kicsi</h3></div><div class="card pv pv1 pre">
+    <div class="pvrow">${vessel({...K,W:116,H:176,taper:.78})}<div class="pvs">${M.map(m=>vessel({...m,W:62,H:92,taper:.82})).join('')}</div></div>
+    <p class="mzl">A kalória a főszereplő, a makrók kísérik. A vízé külön sor marad.</p><button class="pill soft" data-toast="Választva: 1 · Egy nagy, három kicsi">${G('check','sage')}Ezt választom</button></div></section>
+  <section class="sec rise" style="--i:3"><div class="sh"><h3>2 · Mérőkancsó a nap jeleivel</h3></div><div class="card pv pv2 pre">
+    ${vessel({...K,W:300,H:152,taper:.9,marks,txt:false})}<div class="pvcap"><b>${nb(DAY.eaten)}</b><small>kalória a ${nb(DAY.target)}-ból · ${nb(rem)} maradt</small></div>
+    <div class="pvs four">${[...M,V].map(m=>vessel({...m,W:56,H:78,taper:.82,label:''})).join('')}</div>
+    <p class="mzl">A kancsó oldalán ott vannak az étkezések, ahol megtöltötték; így a nap íve is benne van, külön rajz nélkül.</p><button class="pill soft" data-toast="Választva: 2 · Mérőkancsó">${G('check','sage')}Ezt választom</button></div></section>
+  <section class="sec rise" style="--i:4"><div class="sh"><h3>3 · Öt egyforma pohár</h3></div><div class="card pv pv3 pre">
+    <div class="pvs five">${[{...K,unit:'kalória',label:`${nb(DAY.target)} a cél`,note:''},...M,V].map(m=>vessel({...m,W:50,H:118,taper:.8})).join('')}</div>
+    <p class="mzl">Minden szám egyenrangú, egy sorban. A legnyugodtabb; a kalória nem emelkedik ki.</p><button class="pill soft" data-toast="Választva: 3 · Öt egyforma pohár">${G('check','sage')}Ezt választom</button></div></section>
+  <section class="sec rise" style="--i:5"><div class="mz"><div class="mzt"><span class="who">${G('spark','sage')}Mezo</span><p>Én az elsőt tenném a Mai-ra: egy pillantásra látszik, hogy <em>${nb(rem)} kalória</em> hiányzik, és közben a három makró is ott áll. A kancsó a nap ívét is elmondja, ha az fontosabb neked.</p></div>${FIG}</div></section>`}
 function irany(){const fam=[['plate','deep','Fuel'],['bowl','sage','tál'],['cup','peach','kávé'],['capsule','berry','kapszula'],['leaf','sage','növény'],['drop','sky','víz'],['flame','peach','kalória'],['sun','sun','reggel'],['moon','sky','este'],['pot','sage','konyha'],['camera','ink','fotó'],['mic','ink','diktálás'],['book','sage','recept'],['jar','peach','kamra'],['star','sun','pont'],['chart','deep','trend'],['spark','deep','Mezo'],['dumbbell','berry','Edzés'],['person','sage','Én'],['fish','sky','hal']];
   return `<div class="bar rise" style="--i:0"><button class="fb" data-back aria-label="Vissza">${G('back','ink')}</button><span class="crumb">Mezo › <b>Lágy irány</b></span></div>
   <div class="id">
@@ -1077,7 +1128,7 @@ const SHEETS={
 const NAV=[['Nap','sun','sun'],['Edzés','dumbbell','berry'],['Fuel','plate','deep'],['Mezo','spark','deep'],['Én','person','sage']];
 $('#nav').innerHTML=NAV.map(([l,ic,pal])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját oldalán"`} aria-label="${l}">${G(ic,l==='Fuel'?pal:'ink')}<span>${l}</span></button>`).join('');
 function render(){const h=location.hash.slice(1);const m=h.match(/^meal-(\w+)$/);const lg=h.match(/^log-(\w+)$/),ks=h.match(/^kesz-(\w+)$/),rc=h.match(/^recept-(\w+)$/),ki=h.match(/^kamra-(.+)$/),uj=h.match(/^ujelem-(\d)$/);const inner=!['','kieg','trendek','konyha'].includes(h);$('#phone').classList.toggle('modal',!!lg);
-  $('#phone').classList.toggle('inner',inner);$('#scroll').innerHTML=m?mealPage(m[1]):lg?logPage(lg[1]):ks?keszPage(ks[1]):rc?recept(rc[1]):ki?kamraItem(decodeURIComponent(ki[1])):uj?ujelem(uj[1]):h==='protokoll'?protokoll():h==='gyogyszer'?gyogyszer(false):h==='gyogyszer-aktiv'?gyogyszer(true):h==='receptek'?receptek():h==='kamra'?kamra():h==='het'?het():h==='szamok'?szamok():h==='irany'?irany():h==='ios'?iosPage():h.startsWith('intro-')?intro(h.slice(6)):h==='kieg'?kieg():h==='trendek'?trendek():h==='konyha'?konyha():mai();$('#scroll').scrollTop=0;closeSheet();if(lg)patchLog();if(ks){countUp();autoReturn()}setupBar(h,m,lg,ks,rc,ki);flyIn();$('#cbar').classList.remove('on')}
+  $('#phone').classList.toggle('inner',inner);$('#scroll').innerHTML=m?mealPage(m[1]):lg?logPage(lg[1]):ks?keszPage(ks[1]):rc?recept(rc[1]):ki?kamraItem(decodeURIComponent(ki[1])):uj?ujelem(uj[1]):h==='protokoll'?protokoll():h==='gyogyszer'?gyogyszer(false):h==='gyogyszer-aktiv'?gyogyszer(true):h==='receptek'?receptek():h==='kamra'?kamra():h==='het'?het():h==='szamok'?szamok():h==='irany'?irany():h==='poharak'?poharak():h==='ios'?iosPage():h.startsWith('intro-')?intro(h.slice(6)):h==='kieg'?kieg():h==='trendek'?trendek():h==='konyha'?konyha():mai();$('#scroll').scrollTop=0;closeSheet();requestAnimationFrame(()=>requestAnimationFrame(()=>$$('#scroll .pre').forEach(x=>x.classList.remove('pre'))));if(lg)patchLog();if(ks){countUp();autoReturn()}setupBar(h,m,lg,ks,rc,ki);flyIn();$('#cbar').classList.remove('on')}
 let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)};
 const openSheet=h=>{const sh=$('#sheet');sh.innerHTML=h;sh.scrollTop=0;sh.classList.remove('full');sh.classList.add('on','medium');$('#scrim').classList.add('on')};
 const closeSheet=()=>{const sh=$('#sheet');sh.classList.remove('on');sh.style.height='';$('#scrim').classList.remove('on')};
