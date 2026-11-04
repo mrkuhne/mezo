@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Képes Fuel</title>
+<!-- KÉPES irány (owner decision 2026-11-04): light tinted ground, dark zones (header, floating nav, one highlighted
+     card), the user's own meal photos on the cards (a drawn tile where there is none), cards of varied sizes,
+     horizontal rows per section, pill chips. First page: Fuel · Mai. Standalone prototype: this file + foto/ +
+     sprite-3d.svg (the old Titanium 3D symbols, copied from elo/fuel.html). Serve over HTTP. Photos: foto/CREDITS.md. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Geist:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ground:#F1F4EE; --card:#fff; --ink:#15201A; --ink2:#4A5A50; --mute:#7A8A80; --line:rgba(21,32,26,.08);
+  --dark:#15201A; --dark2:#1E2D25; --glass:rgba(255,255,255,.10); --glass2:rgba(255,255,255,.18);
+  --dom:#1F8A5B; --dom2:#8FD14F; --domsoft:#E3F0E6; --warn:#D9822B; --gold:#C89B3C;
+  --protein:#5B8DEF; --carb:#E0A030; --fat:#8E6CC8; --fiber:#4CAF7A; --water:#3FB6D6;
+  --disp:'Bricolage Grotesque',system-ui,sans-serif; --ff:'Geist',system-ui,-apple-system,sans-serif;
+  --sh:0 12px 32px -18px rgba(21,32,26,.35),0 0 0 1px rgba(21,32,26,.04);
+  --r:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#E7E9E3;font-family:var(--ff);color:var(--ink);-webkit-font-smoothing:antialiased}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.ic3{display:block;width:1em;height:1em}
+/* ── lab frame ── */
+.lab{min-height:100vh;display:flex;gap:28px;align-items:flex-start;justify-content:center;padding:28px 16px}
+.phone{position:relative;width:390px;height:844px;background:var(--ground);border-radius:46px;overflow:hidden;box-shadow:0 30px 70px -30px rgba(0,0,0,.45),0 0 0 10px #0E1512,0 0 0 12px #2A332E;flex:0 0 auto}
+.phone.w320{width:320px;height:693px}
+.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding-bottom:120px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.notes{width:300px;font-size:13px;line-height:1.5;color:#3C4640;padding-top:8px}
+.notes h2{font:800 20px/1.1 var(--disp);margin:0 0 6px;color:var(--ink)}
+.notes p{margin:0 0 10px}
+.notes small{display:block;color:#7A8A80;margin-bottom:12px}
+.notes .tog{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.notes .tog button{font:600 12px var(--ff);padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.notes .tog button.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+.notes ul{margin:0;padding-left:18px}
+@media (max-width:760px){.lab{flex-direction:column;align-items:center;padding:0}.phone{width:100%;max-width:430px;height:100vh;border-radius:0;box-shadow:none}.notes{display:none}}
+/* ── dark header zone ── */
+.hdr{position:relative;background:var(--dark);color:#fff;padding:14px 18px 64px;border-radius:0 0 34px 34px;overflow:hidden;isolation:isolate}
+.hdr::before{content:"";position:absolute;inset:-40% -20% auto;height:140%;background:
+  radial-gradient(60% 50% at 80% 20%,rgba(143,209,79,.35),transparent 70%),
+  radial-gradient(50% 45% at 10% 80%,rgba(31,138,91,.45),transparent 70%);z-index:-1}
+.hdr .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hdr .who{display:flex;align-items:center;gap:10px;min-width:0}
+.hdr .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8FD14F,#1F8A5B);display:grid;place-items:center;font:700 13px var(--disp);color:#fff;flex:0 0 auto}
+.hdr .who small{display:block;font-size:12px;color:rgba(255,255,255,.65)}
+.hdr .who b{display:block;font:700 14px var(--disp)}
+.ib{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:grid;place-items:center;position:relative;color:#fff;padding:0}
+.ib .ic3{font-size:24px}
+.ib i{position:absolute;top:-2px;right:-2px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--dom2);color:var(--dark);font:700 12px/19px var(--ff);font-style:normal;text-align:center}
+.hdr h1{font:800 clamp(23px,6.4vw,27px)/1.12 var(--disp);letter-spacing:-.01em;margin:18px 0 0;max-width:22ch}
+.hdr h1 em{font-style:normal;color:var(--dom2)}
+.tabs{display:flex;gap:6px;margin-top:16px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;height:40px;padding:0 15px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;font:600 13.5px var(--ff)}
+.tabs button.on{background:#fff;color:var(--dark);border-color:#fff}
+/* ── floating next-meal card ── */
+.next{position:relative;margin:-48px 16px 0;background:var(--card);border-radius:26px;box-shadow:0 22px 44px -22px rgba(21,32,26,.5),0 0 0 1px rgba(21,32,26,.05);padding:14px;display:grid;grid-template-columns:104px 1fr;gap:14px;z-index:2}
+.next .ph{width:104px;height:124px;border-radius:18px;object-fit:cover;display:block}
+.next .eb{font:600 12px var(--ff);color:var(--dom);letter-spacing:.02em;text-transform:uppercase}
+.next h2{font:800 19px/1.15 var(--disp);margin:4px 0 8px;letter-spacing:-.01em}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:var(--ground);color:var(--ink2);font:600 12px var(--ff);white-space:nowrap}
+.chip.dark{background:var(--dark);color:#fff}
+.chip.dom{background:var(--domsoft);color:var(--dom)}
+.chip .ic3{font-size:16px}
+.next .act{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.next .act a{font:600 13px var(--ff);color:var(--ink2);text-decoration:none;padding:13px 0;display:inline-block}
+.rb{width:46px;height:46px;border-radius:50%;background:var(--dark);border:0;display:grid;place-items:center;color:#fff;box-shadow:0 10px 18px -10px rgba(21,32,26,.7);padding:0}
+.rb svg{width:22px;height:22px}
+/* ── sections ── */
+.sec{margin:22px 16px 0}
+.sh{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 10px}
+.sh h3{font:800 17px/1.1 var(--disp);margin:0;letter-spacing:-.01em}
+.sh a{font:600 13px var(--ff);color:var(--dom);text-decoration:none;padding:12px 0 12px 14px;margin:-12px 0;min-width:44px;text-align:right}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh)}
+/* numbers */
+.nums{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:14px 14px 12px;align-items:center}
+.gauge{position:relative;width:150px;height:96px}
+.gauge svg{width:150px;height:96px;overflow:visible;display:block}
+.gauge .n{position:absolute;left:0;right:0;top:38px;text-align:center}
+.gauge .n b{display:block;font:800 26px/1 var(--disp);letter-spacing:-.02em}
+.gauge .n small{display:block;font-size:12px;color:var(--mute);margin-top:3px}
+.gauge .left{position:absolute;left:0;right:0;bottom:-6px;text-align:center;font:600 12px var(--ff);color:var(--ink2)}
+.mac{display:grid;gap:7px}
+.mac div{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 8px;font-size:12.5px}
+.mac div span{color:var(--ink2)}
+.mac div b{font:700 12.5px var(--ff);color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+.mac div u{grid-column:1/-1;display:block;height:6px;border-radius:3px;background:var(--ground);overflow:hidden;text-decoration:none}
+.mac div u i{display:block;height:100%;width:var(--p);background:var(--c);border-radius:3px}
+/* day windows */
+.win{padding:4px 0 2px}
+.win+.win{margin-top:10px}
+.wh{display:flex;align-items:center;gap:10px;padding:10px 14px 8px}
+.wh .ic3{font-size:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.12))}
+.wh b{font:700 14.5px var(--disp)}
+.wh small{display:block;font-size:12px;color:var(--mute)}
+.wh .k{margin-left:auto;text-align:right;font:600 12px var(--ff);color:var(--ink2);white-space:nowrap}
+.wh .k b{display:block;font:800 15px var(--disp);color:var(--ink)}
+.meal{display:grid;grid-template-columns:60px 1fr auto;gap:12px;align-items:center;padding:10px 14px 12px;border-top:1px solid var(--line);width:100%;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;font:inherit;color:inherit}
+.meal:last-child{padding-bottom:14px}
+.meal .th{width:60px;height:60px;border-radius:16px;object-fit:cover;display:block}
+.meal .draw{width:60px;height:60px;border-radius:16px;background:var(--domsoft);display:grid;place-items:center}
+.meal .draw .ic3{font-size:36px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.14))}
+.meal strong{display:block;font:700 14.5px/1.2 var(--disp);letter-spacing:-.005em}
+.meal small{display:block;font-size:12px;color:var(--mute);margin-top:3px;line-height:1.35}
+.meal .kc{text-align:right;white-space:nowrap}
+.meal .kc b{display:block;font:800 16px var(--disp)}
+.meal .kc span{display:inline-block;margin-top:4px;height:22px;padding:0 8px;border-radius:999px;background:var(--domsoft);color:var(--dom);font:700 12px/22px var(--ff)}
+.meal .kc span.out{background:#FBEFE0;color:var(--warn)}
+.empty{display:flex;align-items:center;gap:12px;padding:12px 14px 14px;border-top:1px dashed rgba(21,32,26,.18);margin:0 14px 2px;border-radius:0}
+.empty .plus{width:44px;height:44px;border-radius:14px;border:1.5px dashed rgba(21,32,26,.25);display:grid;place-items:center;color:var(--ink2);flex:0 0 auto}
+.empty .plus svg{width:18px;height:18px}
+.empty strong{display:block;font:600 13.5px var(--ff);color:var(--ink2)}
+.empty small{display:block;font-size:12px;color:var(--mute)}
+.win.now{box-shadow:inset 0 0 0 2px var(--dom)}
+.win.now .wh small{color:var(--dom);font-weight:600}
+/* horizontal rows */
+.hrow{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 16px 10px;margin:0 -16px;scrollbar-width:none}
+.hrow::-webkit-scrollbar{display:none}
+.hrow>*{scroll-snap-align:start;flex:0 0 auto}
+.tile{width:92px;height:96px;border-radius:20px;background:var(--card);box-shadow:var(--sh);border:0;display:grid;place-items:center;align-content:center;gap:6px;font:600 12.5px var(--ff);color:var(--ink);padding:0}
+.tile .ic3{font-size:40px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.14))}
+.rc{width:196px;border-radius:22px;background:var(--card);box-shadow:var(--sh);overflow:hidden;border:0;text-align:left;padding:0;font:inherit;color:inherit}
+.rc .pic{position:relative;height:132px}
+.rc .pic img{width:100%;height:100%;object-fit:cover;display:block}
+.rc .pic .chip{position:absolute;left:10px;bottom:10px}
+.rc .pic .fav{position:absolute;right:10px;top:10px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.9);display:grid;place-items:center}
+.rc .pic .fav svg{width:16px;height:16px}
+.rc .tx{padding:10px 12px 12px}
+.rc strong{display:block;font:700 14px/1.2 var(--disp);min-height:34px}
+.rc small{display:block;font-size:12px;color:var(--mute);margin-top:4px}
+/* dark highlighted card */
+.mezo{position:relative;background:var(--dark);color:#fff;border-radius:26px;padding:16px 16px 14px;overflow:hidden;isolation:isolate;box-shadow:0 20px 40px -22px rgba(21,32,26,.6)}
+.mezo::before{content:"";position:absolute;inset:auto -30% -60% auto;width:70%;height:120%;background:radial-gradient(closest-side,rgba(143,209,79,.35),transparent);z-index:-1}
+.mezo .top{display:flex;align-items:center;gap:10px;font:600 12px var(--ff);color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.03em}
+.mezo .top .ic3{font-size:32px;filter:drop-shadow(0 0 6px rgba(255,255,255,.4))}
+.mezo p{font:600 16px/1.35 var(--disp);margin:10px 0 12px;letter-spacing:-.005em}
+.mezo p em{font-style:normal;color:var(--dom2)}
+.mezo .act{display:flex;gap:8px;align-items:center}
+.btn{height:44px;padding:0 18px;border-radius:999px;border:0;font:700 14px var(--ff);display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn.light{background:#fff;color:var(--dark)}
+.btn.ghost{background:var(--glass2);color:#fff}
+.btn.dark{background:var(--dark);color:#fff}
+.btn.wide{width:100%}
+/* supplements row */
+.supp{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 14px;width:100%;border:0;background:var(--card);text-align:left;font:inherit;color:inherit}
+.supp .ic3{font-size:38px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.14))}
+.supp strong{display:block;font:700 14.5px var(--disp)}
+.supp small{display:block;font-size:12px;color:var(--mute);margin-top:2px}
+.supp .caps{display:flex;gap:3px}
+.supp .caps i{width:8px;height:16px;border-radius:4px;background:var(--ground)}
+.supp .caps i.on{background:var(--dom)}
+/* floating nav */
+.nav{position:absolute;left:14px;right:14px;bottom:14px;height:66px;border-radius:999px;background:rgba(21,32,26,.9);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border:1px solid rgba(255,255,255,.08);box-shadow:0 20px 40px -18px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:space-between;padding:7px;z-index:5}
+.nav button{height:52px;min-width:46px;border-radius:999px;border:0;background:none;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 6px;color:rgba(255,255,255,.75);font:700 13px var(--ff)}
+.nav button .ic3{font-size:32px;filter:drop-shadow(0 0 6px rgba(255,255,255,.45)) drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.nav button.on{background:#fff;color:var(--dark);padding:0 16px 0 10px}
+.nav button.on .ic3{opacity:1}
+.nav button span{display:none}
+.nav button.on span{display:inline}
+/* sheet + toast */
+.scrim{position:absolute;inset:0;background:rgba(10,18,14,.45);opacity:0;pointer-events:none;transition:opacity .2s;z-index:8}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;overflow-y:auto;background:var(--card);border-radius:30px 30px 0 0;transform:translateY(104%);transition:transform .32s cubic-bezier(.2,.8,.2,1);z-index:9;padding:10px 16px 22px;scrollbar-width:none}
+.sheet.on{transform:none}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:rgba(21,32,26,.15);margin:0 auto 12px}
+.sheet .hero{height:200px;border-radius:22px;overflow:hidden;position:relative;margin-bottom:12px}
+.sheet .hero img{width:100%;height:100%;object-fit:cover;display:block}
+.sheet .hero .chip{position:absolute;left:12px;bottom:12px}
+.sheet .hero.draw{display:grid;place-items:center;background:var(--domsoft)}
+.sheet .hero.draw .ic3{font-size:110px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.16))}
+.sheet h2{font:800 22px/1.15 var(--disp);margin:0 0 6px;letter-spacing:-.01em}
+.sheet .sub{color:var(--mute);font-size:13px;margin:0 0 12px}
+.sheet .lab{display:block;font:700 12px var(--ff);color:var(--mute);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 8px;padding:0;min-height:0}
+.ing{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
+.ing:first-of-type{border-top:0}
+.ing .ic3{font-size:34px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.12))}
+.ing small{display:block;color:var(--mute);font-size:12px}
+.ing b{font:700 13.5px var(--ff);white-space:nowrap}
+.mz{display:flex;gap:10px;align-items:flex-start;background:var(--ground);border-radius:18px;padding:12px;margin-top:14px;font-size:13.5px;line-height:1.45}
+.mz .ic3{font-size:32px;flex:0 0 auto}
+.acts{display:flex;gap:8px;margin-top:16px}
+.acts .btn{flex:1}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+.modes .tile{width:auto;height:98px}
+.toast{position:absolute;left:50%;bottom:92px;transform:translate(-50%,10px);background:var(--dark);color:#fff;padding:10px 14px;border-radius:14px;font:600 13px var(--ff);opacity:0;transition:.25s;z-index:10;max-width:80%;text-align:center;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+/* motion */
+@media (prefers-reduced-motion:no-preference){body:not(.still) .rise{animation:rise .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*60ms)}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+body.still *{transition:none!important;animation:none!important}
+/* 320 — the lab toggle adds .w320 to the phone; a real narrow viewport adds it from script */
+.w320 .next{grid-template-columns:86px 1fr;gap:12px;margin-top:-44px}
+.w320 .next .ph{width:86px;height:112px}
+.w320 .next h2{font-size:17px}
+.w320 .gauge,.w320 .gauge svg{width:104px;height:68px}
+.w320 .gauge .n{top:24px}
+.w320 .gauge .n b{font-size:19px}
+.w320 .gauge .n small{font-size:12px}
+.w320 .gauge .left{bottom:-8px}
+.w320 .nums{gap:8px;padding:14px 12px 14px}
+.w320 .mac{gap:6px}
+.w320 .mac div{font-size:12px;gap:0 6px}
+.w320 .mac div b{font-size:12px}
+.w320 .meal{grid-template-columns:52px 1fr auto;gap:10px}
+.w320 .meal .th,.w320 .meal .draw{width:52px;height:52px}
+.w320 .nav button{min-width:42px}
+.w320 .nav button.on{padding:0 12px 0 8px}</style>
+</head>
+<body>
+<div class="lab">
+<div class="phone" id="phone">
+  <div class="scroll" id="scroll"></div>
+  <nav class="nav" id="nav" aria-label="Területek"></nav>
+  <div class="scrim" id="scrim" data-close></div>
+  <section class="sheet" id="sheet" role="dialog" aria-modal="true"></section>
+  <div class="toast" id="toast" role="status"></div>
+</div>
+<aside class="notes">
+  <h2>Képes irány · Fuel</h2>
+  <small>Állapot: 2026-11-04 · első oldal: Mai</small>
+  <p>Világos alap, sötét zónák (fejrész, lebegő menü, egy kiemelt kártya). A kártyákon a saját fotóid; ahol nincs, rajzolt kép. A fotók itt szabad helyettesítők (<code>foto/CREDITS.md</code>).</p>
+  <div class="tog"><button id="t320">320 px</button><button id="tstill">mozgás nélkül</button></div>
+  <p><b>Mit lehet kattintani:</b></p>
+  <ul>
+    <li>a lebegő kártya gombja → a logolás módjai</li>
+    <li>egy étkezés sora → az étkezés lapja</li>
+    <li>üres ablak → logolás</li>
+    <li>a receptkártyák → a recept lapja</li>
+    <li>a Logolj csempék, a kiegészítők sora, a fülek: üzenet (következő körök)</li>
+  </ul>
+</aside>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const I=(n,c='')=>`<svg class="ic3 ${c}" aria-hidden="true"><use href="#${n}"/></svg>`;
+const PLUS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+const CHEV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+const HEART='<svg viewBox="0 0 24 24" fill="#E0564B"><path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3.4 5 7 5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.6 0 5.8 3.6 4.5 6.8C19.5 16.4 12 21 12 21z"/></svg>';
+const nb=n=>String(n).replace(/\B(?=(\d{3})+$)/g,' ');
+
+/* data — real-looking, the record types of the real Fuel (today: csütörtök, szeptember 24., 14:10) */
+const DAY={eaten:2060,target:3100,p:[148,220],c:[224,380],f:[58,95],fib:[18,30],water:[1.3,2.5]};
+const SLOTS=[{k:'reggeli',l:'Reggeli',ic:'t-sun',t:'07:00–10:00',b:640},{k:'ebed',l:'Ebéd',ic:'t-bowl',t:'12:00–14:30',b:900},{k:'uzsonna',l:'Uzsonna',ic:'t-snack',t:'16:00–17:30',b:420},{k:'vacsora',l:'Vacsora',ic:'t-moon',t:'19:00–21:00',b:840}];
+const MEALS={
+  reggeli:{w:0,name:'Túrós zabkása · áfonyával',time:'07:20',kcal:689,score:'8,4',m:[49,74,22],ph:'zab',
+    ings:[['Zabpehely · gluténmentes','t-carb','60 g',223],['Túró · félzsíros','t-meat','250 g',325],['Áfonya · fagyasztott','t-fiber','100 g',57],['Akácméz','t-sugar','25 g',84]],
+    head:'Fehérjében erős, tiszta tányér',mz:'Lassú szénhidrát reggelre, a túró kazeinje délig kitart. Holnap mehet bele egy marék dió a zsírok miatt.'},
+  tizorai:{w:-1,name:'Whey + banán + mandulavaj',time:'10:05',kcal:356,score:'7,2',m:[36,30,11],ph:null,ic:'t-supps',
+    ings:[['Impact Whey · csoki','t-supps','30 g',120],['Banán','t-carb','120 g',105],['Mandulavaj · 100%','t-fat','20 g',131]],
+    head:'Gyors, célzott, de feldolgozott',mz:'Gyors fehérje edzés után. A banán szénhidrátja most jól jön; a whey viszi a pontot, a feldolgozottság húzza le.'},
+  ebed:{w:1,name:'Csirke + édesburgonya + spenót',time:'12:40',kcal:1015,score:'8,1',m:[63,120,25],ph:'csirke',
+    ings:[['Csirkemell · friss','t-meat','300 g',330],['Édesburgonya','t-carb','400 g',344],['Spenót · friss','t-fiber','200 g',46],['Olívaolaj · extra szűz','t-avocado','33 ml',295]],
+    head:'Kiegyensúlyozott, edzés utánra ideális',mz:'Edzés utáni ablakba pont jó: sok fehérje, elég szénhidrát a visszatöltéshez. Minden makró a helyén.'}};
+const REC=[
+  {id:'r6',n:'Túró · áfonya · méz',ph:'turo',kcal:324,min:2,cat:'Uzsonna',p:36},
+  {id:'r3',n:'Lazac + barna rizs + brokkoli',ph:'lazac',kcal:818,min:23,cat:'Vacsora',p:49},
+  {id:'r5',n:'Tojásrántotta · spenóttal',ph:'omlett',kcal:318,min:8,cat:'Reggeli',p:24},
+  {id:'r7',n:'Görög saláta · csirkével',ph:'gorog',kcal:540,min:12,cat:'Vacsora',p:41},
+  {id:'r8',n:'Vöröslencse-leves',ph:'leves',kcal:410,min:25,cat:'Ebéd',p:22}];
+const PH=p=>`foto/${p}`;
+
+/* ── pieces ── */
+function gauge(eaten,target){const segs=10,done=eaten/target*segs;let s='';const cx=75,cy=78,r=62,w=14,gap=4;const span=180-gap*(segs-1);const a0=180;
+  for(let i=0;i<segs;i++){const a1=a0-i*(span/segs+gap),a2=a1-span/segs;const p=(a)=>[cx+r*Math.cos(a*Math.PI/180),cy-r*Math.sin(a*Math.PI/180)];const [x1,y1]=p(a1),[x2,y2]=p(a2);
+    const fill=i+1<=Math.floor(done)?1:(i<done?done-i:0);const c=fill>=1?'var(--dom)':fill>0?'url(#gpart)':'#E6EAE3';
+    s+=`<path d="M${x1.toFixed(1)} ${y1.toFixed(1)}A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${c}" stroke-width="${w}" fill="none" stroke-linecap="butt"/>`}
+  const pct=Math.round(((done%1)||0)*100);
+  return `<div class="gauge"><svg viewBox="0 0 150 96" aria-label="${nb(eaten)} kalória a ${nb(target)}-ból"><defs><linearGradient id="gpart" x1="0" x2="1"><stop offset="${pct}%" stop-color="var(--dom)"/><stop offset="${pct}%" stop-color="#E6EAE3"/></linearGradient></defs>${s}</svg>
+    <div class="n"><b>${nb(eaten)}</b><small>a ${nb(target)} kalóriából</small></div><div class="left">${nb(target-eaten)} hátra</div></div>`}
+const macRow=(l,v,c)=>`<div style="--c:${c};--p:${Math.min(100,Math.round(v[0]/v[1]*100))}%"><span>${l}</span><b>${String(v[0]).replace('.',',')} / ${String(v[1]).replace('.',',')}${l==='Víz'?' l':' g'}</b><u><i></i></u></div>`;
+const mealRow=(k,m)=>`<button class="meal" data-sheet="meal" data-arg="${k}">${m.ph?`<img class="th" src="${PH(m.ph+'-sq.jpg')}" alt="">`:`<span class="draw">${I(m.ic)}</span>`}<span><strong>${m.name}</strong><small>${m.time}${m.w<0?' · ablakon kívül':''} · ${m.m[0]} g fehérje · ${m.m[1]} g szénhidrát · ${m.m[2]} g zsír</small></span><span class="kc"><b>${nb(m.kcal)}</b><span class="${m.w<0?'out':''}">${m.score} pont</span></span></button>`;
+const emptyRow=(s)=>`<button class="empty" data-sheet="log" data-arg="${s.k}" style="border:0;border-top:1px dashed rgba(21,32,26,.18);background:none;width:calc(100% - 28px);text-align:left;font:inherit;color:inherit"><span class="plus">${PLUS}</span><span><strong>Még előtted</strong><small>${nb(s.b)} kalória keret · koppints, és logolod</small></span></button>`;
+function winBlock(s,i){const ms=Object.entries(MEALS).filter(([,m])=>m.w===i);const sum=ms.reduce((a,[,m])=>a+m.kcal,0);const now=i===2;
+  const extra=i===0?Object.entries(MEALS).filter(([,m])=>m.w===-1):[];
+  return `<div class="card win ${now?'now':''}"><div class="wh">${I(s.ic)}<div><b>${s.l}</b><small>${now?'következik · ':''}${s.t}</small></div><div class="k">${ms.length?`<b>${nb(sum)}</b>a ${nb(s.b)} keretből`:`<b>${nb(s.b)}</b>keret`}</div></div>
+    ${ms.map(([k,m])=>mealRow(k,m)).join('')}${extra.map(([k,m])=>mealRow(k,m)).join('')}${ms.length?'':emptyRow(s)}</div>`}
+const recCard=r=>`<button class="rc" data-sheet="recept" data-arg="${r.id}"><span class="pic"><img src="${PH(r.ph+'.jpg')}" alt=""><span class="chip dark">${nb(r.kcal)} kalória</span><span class="fav">${HEART}</span></span><span class="tx"><strong>${r.n}</strong><small>${r.min} perc · ${r.cat} · ${r.p} g fehérje</small></span></button>`;
+const MODES=[['Fotó','t-camera'],['Recept','t-journal'],['Kamra','t-stack'],['Gyors','t-quick'],['Diktálás','t-mic'],['Szokásosak','t-repeat']];
+
+function mai(){const n=REC[0];
+  return `<header class="hdr rise" style="--i:0">
+    <div class="row"><div class="who"><span class="av">P</span><div><small>Csütörtök, szeptember 24.</small><b>Fuel</b></div></div>
+      <div style="display:flex;gap:8px"><button class="ib" data-toast="Értesítések — következő körben" aria-label="Értesítések">${I('t-bell')}<i>3</i></button><button class="ib" data-toast="Beállítások — következő körben" aria-label="Beállítások">${I('t-gear')}</button></div></div>
+    <h1>Két étkezés van hátra, <em>1&nbsp;040 kalória</em>. A fehérje még 72 grammal elmarad.</h1>
+    <div class="tabs" role="tablist"><button class="on" role="tab" aria-selected="true">Mai</button><button role="tab" data-toast="Kiegészítők — következő kör">Kiegészítők</button><button role="tab" data-toast="Trendek — következő kör">Trendek</button><button role="tab" data-toast="Konyha — következő kör">Konyha</button></div>
+  </header>
+  <article class="next rise" style="--i:1"><img class="ph" src="${PH(n.ph+'-sq.jpg')}" alt="">
+    <div><div class="eb">Következik · Uzsonna · 16:00–17:30</div><h2>${n.n}</h2>
+      <div class="chips"><span class="chip dark">1&nbsp;040 hátra</span><span class="chip">${nb(n.kcal)} kalória</span><span class="chip">${n.min} perc</span></div>
+      <div class="act"><a href="#" data-sheet="recept" data-arg="r6">Miért ezt?</a><button class="rb" data-sheet="log" data-arg="uzsonna" aria-label="Logolom">${PLUS}</button></div></div>
+  </article>
+  <section class="sec rise" style="--i:2"><div class="sh"><h3>A nap számai</h3><a href="#" data-toast="Trendek — következő kör">Hét</a></div>
+    <div class="card nums">${gauge(DAY.eaten,DAY.target)}<div class="mac">${macRow('Fehérje',DAY.p,'var(--protein)')}${macRow('Szénhidrát',DAY.c,'var(--carb)')}${macRow('Zsír',DAY.f,'var(--fat)')}${macRow('Rost',DAY.fib,'var(--fiber)')}${macRow('Víz',DAY.water,'var(--water)')}</div></div></section>
+  <section class="sec rise" style="--i:3"><div class="sh"><h3>A napod</h3><a href="#" data-toast="Tegnap — következő kör">Tegnap</a></div>${SLOTS.map(winBlock).join('')}</section>
+  <section class="sec rise" style="--i:4"><div class="sh"><h3>Logolj</h3></div><div class="hrow">${MODES.map(([l,ic])=>`<button class="tile" data-sheet="log" data-arg="${l}">${I(ic)}<span>${l}</span></button>`).join('')}</div></section>
+  <section class="sec rise" style="--i:5"><div class="sh"><h3>Neked most</h3><a href="#" data-toast="Konyha — következő kör">Összes</a></div><div class="hrow">${REC.map(recCard).join('')}</div></section>
+  <section class="sec rise" style="--i:6"><div class="mezo"><div class="top">${I('t-orb')}Mezo · a hátralévő napra</div>
+    <p>Az uzsonnára a túró <em>36 g</em> fehérjét hoz, a vacsorára a lazac <em>49-et</em>. Így a 220 grammos cél <em>kijön</em>, és a keretből 300 kalória még marad.</p>
+    <div class="act"><button class="btn light" data-toast="Betervezve: túró 16:30, lazac 19:30">Betervezem</button><button class="btn ghost" data-toast="Mezo chat — következő kör">Beszéljünk róla</button></div></div></section>
+  <section class="sec rise" style="--i:7"><div class="card"><button class="supp" data-toast="Kiegészítők — következő kör">${I('t-supps')}<span><strong>Kiegészítők · 5 a 8-ból</strong><small>Következő: Origin PWO · edzés előtt, 17:30</small></span><span class="caps">${'<i class="on"></i>'.repeat(5)}${'<i></i>'.repeat(3)}</span></button></div></section>`}
+
+/* sheets */
+const SH={
+  meal:k=>{const m=MEALS[k];return `<div class="grab"></div>${m.ph?`<div class="hero"><img src="${PH(m.ph+'.jpg')}" alt=""><span class="chip dark">${nb(m.kcal)} kalória</span></div>`:`<div class="hero draw">${I(m.ic)}</div>`}
+    <h2>${m.name}</h2><p class="sub">${m.time}${m.w<0?' · ablakon kívül':''} · ${m.score} pont · ${m.head}</p>
+    <div class="chips"><span class="chip">${m.m[0]} g fehérje</span><span class="chip">${m.m[1]} g szénhidrát</span><span class="chip">${m.m[2]} g zsír</span></div>
+    <span class="lab">Hozzávalók</span>${m.ings.map(([n,ic,a,k])=>`<div class="ing">${I(ic)}<span>${n}<small>${a}</small></span><b>${nb(k)}</b></div>`).join('')}
+    <div class="mz">${I('t-orb')}<span>${m.mz}</span></div>
+    <div class="acts"><button class="btn dark" data-toast="Értékelés — következő kör">Az értékelés</button><button class="btn" style="background:var(--ground)" data-close>Bezárom</button></div>`},
+  recept:id=>{const r=REC.find(x=>x.id===id)||REC[0];return `<div class="grab"></div><div class="hero"><img src="${PH(r.ph+'.jpg')}" alt=""><span class="chip dark">${nb(r.kcal)} kalória</span></div>
+    <h2>${r.n}</h2><p class="sub">${r.min} perc · ${r.cat} · ${r.p} g fehérje egy adagban</p>
+    <div class="mz">${I('t-orb')}<span>${id==='r6'?'Azért ezt: két perc, 36 g fehérje, és a túró már a kamrádban van. Pont annyi, amennyi az uzsonna keretébe fér.':'Illik a hátralévő keretbe, és a fehérjét is hozza. A teljes recept a Konyhában lesz.'}</span></div>
+    <div class="acts"><button class="btn dark" data-toast="Logolva ebbe az ablakba">Ezt eszem</button><button class="btn" style="background:var(--ground)" data-toast="Recept — következő kör">A recept</button></div>`},
+  log:a=>`<div class="grab"></div><h2>Mit ettél?</h2><p class="sub">${SLOTS.find(s=>s.k===a)?SLOTS.find(s=>s.k===a).l+' · '+SLOTS.find(s=>s.k===a).t:'Válassz módot'}</p>
+    <div class="modes">${MODES.map(([l,ic])=>`<button class="tile" data-toast="${l} — a logolás lapja a következő körben">${I(ic)}<span>${l}</span></button>`).join('')}</div>
+    <div class="acts"><button class="btn" style="background:var(--ground)" data-close>Mégse</button></div>`};
+
+/* chrome + router */
+const NAV=[['Nap','t-sun'],['Edzés','t-dumbbell'],['Fuel','t-plate'],['Mezo','t-orb'],['Én','t-person']];
+$('#nav').innerHTML=NAV.map(([l,ic])=>`<button class="${l==='Fuel'?'on':''}" ${l==='Fuel'?'':`data-toast="${l} — a saját prototípusában"`} aria-label="${l}">${I(ic)}<span>${l}</span></button>`).join('');
+function render(){$('#scroll').innerHTML=mai();$('#scroll').scrollTop=0}
+let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)};
+const openSheet=h=>{$('#sheet').innerHTML=h;$('#sheet').scrollTop=0;$('#sheet').classList.add('on');$('#scrim').classList.add('on')};
+const closeSheet=()=>{$('#sheet').classList.remove('on');$('#scrim').classList.remove('on')};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-sheet],[data-toast],[data-close]');if(!t)return;e.preventDefault();
+  if(t.hasAttribute('data-close'))return closeSheet();
+  if(t.dataset.sheet){const f=SH[t.dataset.sheet];if(f)return openSheet(f(t.dataset.arg||''))}
+  if(t.dataset.toast)toast(t.dataset.toast)});
+if(innerWidth<=360)$('#phone').classList.add('w320');
+$('#t320').onclick=()=>{$('#phone').classList.toggle('w320');$('#t320').classList.toggle('on')};
+$('#tstill').onclick=()=>{document.body.classList.toggle('still');$('#tstill').classList.toggle('on')};
+fetch('sprite-3d.svg').then(r=>r.text()).then(t=>{const d=document.createElement('div');d.innerHTML=t;const s=d.firstElementChild;s.setAttribute('class','sprite');document.body.prepend(s)}).catch(()=>{});
+render();
+</script>
+</body>
+</html>
