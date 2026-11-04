@@ -10,6 +10,7 @@ plans or "which direction wins" decisions until he asks.
 - Artifact (fixed): https://claude.ai/artifact/2ZdMk9D8jsjbFRhf2cB9cP — publish a copy of the shell with the
   extra `<script>` tag as `file_path`, all `vilagos/*.js` in `files`.
 - Approved pages stay reachable inside the experiment as `<route>-lista`.
+- Session driver: the `/kiserlet` skill (`.claude/skills/kiserlet/SKILL.md`); probes and the publish bundle in `vilagos/kiserlet-tools/` (2026-11-04).
 
 ## Rules the owner set (in the order he set them)
 
