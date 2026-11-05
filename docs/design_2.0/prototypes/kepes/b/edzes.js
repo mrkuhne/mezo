@@ -1566,13 +1566,690 @@ const loadMap=()=>`<div class="card deep rmap dk">${realMap({col:k=>lvl(MUS[k][1
 const TIERC={Hangsúly:'#2E6B52',Építés:'#7DC29C',Tartás:'#CFE6D7'};
 const planMap=()=>`<div class="card t-sage rmap lt">${realMap({col:k=>TIERC[MUS[k][4]],theme:'lt'})}<div class="rmch">${MORDER.map(k=>{const m=MUS[k];return `<a href="#edzes-izom-${k}"><b>${m[0]}<em style="color:${m[4]==='Tartás'?'var(--ink2)':TIERC[m[4]]}">${m[3]}</em></b><u><i style="width:${m[3]/14*100}%;background:${TIERC[m[4]]}"></i></u></a>`}).join('')}</div><div class="rmlg">${Object.entries(TIERC).map(([l,c])=>`<span><i style="background:${c}"></i>${l.toLowerCase()}</span>`).join('')}</div></div>`;
 
+/* ── Round B (owner, 2026-11-05 "mehet a következő kör"): the inner Edzés pages, each its own structure.
+   Eligazítás = dark pre-flight with a setlist, Összegzés = lanes + then-vs-now, one exercise's sets = a
+   ladder, an exercise = a record profile with a line, a day = the running order, the day editor = a
+   sticky live total, a muscle = the anatomy focus + columns, the weekly check = a leaderboard. ── */
+document.head.insertAdjacentHTML('beforeend',`<style>
+.lp{container-type:inline-size}
+.nxbar{display:flex;align-items:center;gap:10px;padding:16px 14px 0}
+.nxbar span{font:700 13px var(--b);color:var(--ink2)}.nxbar span b{color:var(--ink)}
+.nxbk{width:44px;height:44px;border-radius:50%;border:0;background:var(--card);box-shadow:var(--sh);display:grid;place-items:center;flex:0 0 44px}.nxbk .g{font-size:22px}
+.nxbk.lt{background:rgba(255,255,255,.92)}
+/* the photo poster with a heavy title overlapping it */
+.nxpo{position:relative;height:300px}
+.nxpo>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.nxpo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.4) 0%,rgba(16,20,18,0) 28%,rgba(16,20,18,0) 52%,rgba(16,20,18,.74) 100%)}
+.nxpb{position:absolute;left:14px;right:14px;top:16px;z-index:1;display:flex;align-items:center;gap:10px}
+.nxpb span{font:700 13px var(--b);color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}.nxpb span b{color:#fff}
+.nxpc{position:absolute;left:16px;right:16px;top:72px;z-index:1;display:flex;gap:6px;flex-wrap:wrap}.nxpc .chip{background:rgba(255,255,255,.92);border:0;height:32px}
+.nxpo .eb{position:absolute;left:18px;right:18px;bottom:88px;z-index:1;font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.92)}
+.nxpt{position:relative;z-index:2;margin:-.98em 0 0;padding:0 16px;font:800 76px/.86 var(--d);letter-spacing:-.045em;text-transform:uppercase;color:#fff;display:grid}
+.nxpt span{display:block}.nxpt .l2{color:var(--deep)}
+.nxps{position:relative;margin:16px 18px 0;font:600 16px/1.4 var(--b);color:var(--ink2)}.nxps em{font-style:normal;color:var(--deep);font-weight:800}
+.lpt button.chip{border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.nxacts{display:flex;gap:8px;flex-wrap:wrap;margin:16px 16px 0}.nxacts .pill{min-height:48px}
+.nxnums{display:grid;grid-template-columns:repeat(3,1fr);margin:0 16px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.nxnums div{padding:14px 6px;display:grid;gap:2px;justify-items:center;text-align:center}.nxnums div+div{border-left:1px solid var(--line)}
+.nxnums b{font:800 26px/1 var(--d);letter-spacing:-.03em;color:var(--ink)}.nxnums small{font:700 12px var(--b);color:var(--ink2)}
+/* Eligazítás: dark, the workout's world */
+.nxbf{--lime:#C9F24D;position:relative;min-height:100%;color:#F2F5F1;background:#0C100E;padding:16px 16px 40px;overflow:hidden;container-type:inline-size}
+.nxbf .glow{position:absolute;left:-30%;right:-30%;top:-140px;height:420px;background:radial-gradient(closest-side,rgba(201,242,77,.18),transparent);pointer-events:none}
+.nxbf .tb{position:relative;display:flex;align-items:center;gap:10px}
+.nxbf .tb .mid{flex:1;text-align:center;font:700 14px var(--b)}.nxbf .tb .mid small{display:block;font:700 12px var(--b);color:rgba(255,255,255,.7)}
+.nxbf .gb{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;background:rgba(255,255,255,.12)}.nxbf .gb .g{font-size:22px}
+.nxbf h1{position:relative;margin:24px 0 0;font:800 26cqw/.84 var(--d);letter-spacing:-.05em;text-transform:uppercase;color:#fff}.nxbf h1 em{font-style:normal;color:var(--lime)}
+.nxbf .lede{margin:12px 0 0;font:600 16px/1.4 var(--b);color:rgba(255,255,255,.8)}
+.nxbf .tr{margin-top:22px;padding:16px;border-radius:24px;background:linear-gradient(135deg,#17322A,#123026);box-shadow:inset 0 0 0 1px rgba(201,242,77,.18)}
+.nxbf .trh{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.nxbf .trh b{font:800 44px/1 var(--d);letter-spacing:-.04em;color:#fff}.nxbf .trh b small{font:700 15px var(--b);color:rgba(255,255,255,.75);margin-left:6px;letter-spacing:0}.nxbf .trh span{font:700 12px var(--b);color:rgba(255,255,255,.7);text-align:right}
+.nxbf .trb{position:relative;height:12px;border-radius:999px;background:rgba(255,255,255,.1);margin-top:14px}.nxbf .trb i{position:absolute;top:0;bottom:0;border-radius:999px;background:var(--lime)}
+.nxbf .tra{display:flex;justify-content:space-between;margin-top:6px;font:700 12px var(--b);color:rgba(255,255,255,.6)}
+.nxbf .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.nxbf .nums div{padding:12px 6px;border-radius:20px;background:rgba(255,255,255,.07);display:grid;justify-items:center}.nxbf .nums b{font:800 30px/1 var(--d);color:#fff}.nxbf .nums small{font:700 12px var(--b);color:rgba(255,255,255,.7);margin-top:4px}
+.nxbf .warn{display:flex;gap:12px;align-items:flex-start;margin-top:10px;padding:14px;border-radius:22px;background:rgba(240,180,140,.12);box-shadow:inset 0 0 0 1px rgba(240,180,140,.35)}.nxbf .warn .g{font-size:26px;flex:0 0 26px}.nxbf .warn b{display:block;font:700 15px var(--b);color:#fff}.nxbf .warn small{font:600 13px/1.4 var(--b);color:rgba(255,255,255,.78)}
+.nxbf .csh{display:flex;align-items:baseline;justify-content:space-between;margin:28px 2px 12px}.nxbf .csh h3{margin:0;font:700 20px var(--d);color:#fff}.nxbf .csh span{font:700 12px var(--b);color:rgba(255,255,255,.65)}
+.qcar{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}.qcar::-webkit-scrollbar{display:none}
+.nxq{position:relative;flex:0 0 232px;height:300px;border-radius:28px;overflow:hidden;scroll-snap-align:start;background:#1E2321;transition:opacity .25s}
+.nxq>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.85) brightness(.85)}
+.nxq::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,16,14,.2),rgba(12,16,14,.55) 40%,rgba(12,16,14,.96));pointer-events:none}
+.nxq .in{position:absolute;inset:0;z-index:1;padding:14px;display:flex;flex-direction:column}
+.nxq small{display:flex;align-items:center;gap:6px;font:700 12px var(--b);letter-spacing:.06em;text-transform:uppercase;color:#fff}.nxq small .g{font-size:20px}
+.nxq .ex2{margin-top:auto;font:700 13px var(--b);color:rgba(255,255,255,.75)}
+.nxq strong{font:800 24px/1.05 var(--d);letter-spacing:-.02em;color:#fff;margin-top:4px}
+.nxq .lv{display:flex;align-items:center;gap:8px;margin-top:10px}.nxq .lv u{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden}.nxq .lv u i{display:block;height:100%;background:var(--lime);border-radius:3px}.nxq .lv span{font:700 12px var(--b);color:rgba(255,255,255,.8)}
+.nxq .ac{display:flex;gap:6px;margin-top:12px}
+.nxq .ac button{height:42px;border-radius:999px;border:0;font:700 13px var(--b);padding:0 12px}
+.nxq .why{background:rgba(255,255,255,.14);color:#fff}
+.nxq .tg{flex:1;background:var(--lime);color:#10140F}
+.nxq.off>img{filter:grayscale(1) brightness(.5)}.nxq.off .tg{background:rgba(255,255,255,.14);color:#fff}.nxq.off strong{color:rgba(255,255,255,.6)}
+.setl{list-style:none;margin:0;padding:6px 14px;border-radius:24px;background:rgba(255,255,255,.06)}
+.setl li{display:grid;grid-template-columns:34px 48px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid rgba(255,255,255,.08)}.setl li:first-child{border-top:0}
+.setl .no{font:800 22px var(--d);color:rgba(255,255,255,.45);letter-spacing:-.03em}
+.setl img{width:48px;height:48px;border-radius:14px;object-fit:cover}
+.setl b{display:block;font:700 14px/1.25 var(--b);color:#fff}.setl small{font:600 13px var(--b);color:rgba(255,255,255,.7)}.setl small em{font-style:normal;color:var(--lime);font-weight:800}.setl small em.w{color:#F0B48C}
+.setl .st{width:32px;height:32px;border-radius:50%;background:rgba(244,200,96,.16);display:grid;place-items:center}.setl .st .g{font-size:18px}
+.nxbf .mzd{display:flex;gap:12px;align-items:flex-start;margin-top:22px;padding:16px;border-radius:24px;background:rgba(201,242,77,.08);box-shadow:inset 0 0 0 1px rgba(201,242,77,.25)}
+.nxbf .mzd .g{font-size:28px;flex:0 0 28px}.nxbf .mzd p{margin:0;font:600 14px/1.45 var(--b);color:#EEF2EE}.nxbf .mzd p em{font-style:normal;color:var(--lime);font-weight:800}.nxbf .mzd b{display:block;font:700 12px var(--b);color:var(--lime);margin-bottom:4px}
+.nxbf .go{position:sticky;bottom:18px;z-index:3;width:100%;height:60px;margin-top:22px;border-radius:999px;border:0;background:var(--lime);color:#10140F;font:800 16px var(--b);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 18px 30px -14px rgba(201,242,77,.55)}.nxbf .go .g{font-size:22px}
+/* Összegzés: lanes and then-vs-now */
+.nxln{margin:0 12px;padding:6px 14px 12px}
+.nxln .ln{width:100%;border:0;background:none;padding:12px 0;display:grid;grid-template-columns:48px minmax(0,1fr);gap:4px 12px;align-items:center;text-align:left;border-top:1px solid var(--line);color:var(--ink)}.nxln .ln:first-child{border-top:0}
+.nxln .ln img{grid-row:1/3;width:48px;height:48px;border-radius:14px;object-fit:cover}
+.nxln .nm{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.nxln .nm b{font:700 14px var(--b)}.nxln .nm small{font:700 13px var(--d);color:var(--ink2);white-space:nowrap}
+.nxln .sl{display:flex;gap:4px}.nxln .sl i,.nxln .lg i{flex:1;height:18px;border-radius:6px;background:rgba(30,35,33,.08);display:grid;place-items:center}
+.nxln .sl i.on,.nxln .lg i.on{background:var(--deep)}.nxln .sl i.rec,.nxln .lg i.rec{background:linear-gradient(135deg,#F7DD8C,#E2AE45)}.nxln .sl i .g{font-size:14px}
+.nxln .lg{display:flex;gap:14px;padding-top:10px;border-top:1px solid var(--line)}.nxln .lg span{display:inline-flex;align-items:center;gap:6px;font:700 12px var(--b);color:var(--ink2)}.nxln .lg i{flex:0 0 18px;height:10px;border-radius:3px}
+.nxvs{margin:0 12px;padding:16px 18px}
+.nxvs .hd{display:flex;justify-content:space-between;font:700 12px var(--b);letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.65)}.nxvs .hd .n{color:#C9F24D}
+.nxvs .r{padding:12px 0;border-top:1px solid rgba(255,255,255,.1)}.nxvs .r:first-of-type{border-top:0}
+.nxvs .r small{font:700 12px var(--b);color:rgba(255,255,255,.72)}
+.nxvs .v{display:flex;align-items:baseline;gap:8px;margin-top:4px;flex-wrap:wrap}
+.nxvs s{text-decoration:none;font:700 18px var(--d);color:rgba(255,255,255,.5)}.nxvs .ar{font-size:14px;align-self:center}
+.nxvs .v b{font:800 28px/1 var(--d);letter-spacing:-.03em;color:#fff}
+.nxvs em{margin-left:auto;font-style:normal;font:800 13px var(--b);color:#C9F24D}
+.nxqs{margin:0 12px;padding:6px 16px}
+.nxquote{position:relative;width:calc(100% - 24px);margin:0 12px;border:0;text-align:left;padding:22px 18px 16px 18px;border-radius:26px;background:var(--sky2,#E4F0F8);color:var(--ink)}
+.nxquote .qm{position:absolute;left:14px;top:-18px;font:800 80px/1 var(--d);color:var(--sky)}
+.nxquote p{margin:8px 0 0;font:600 16px/1.5 var(--d);color:var(--ink)}
+.nxquote .ed{display:inline-flex;align-items:center;gap:4px;margin-top:10px;min-height:40px;font:700 13px var(--b);color:var(--deep)}
+/* one exercise's sets: a ladder */
+.nxlad{margin:0 12px;padding:10px 16px 14px}
+.nxlad .st{display:grid;grid-template-columns:30px minmax(0,1fr) 36px;gap:10px;align-items:center;padding-top:12px}
+.nxlad .no{font:800 20px var(--d);color:var(--ink2)}
+.nxlad .bar{position:relative;height:40px;border-radius:14px;background:rgba(30,35,33,.06)}
+.nxlad .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:14px;background:var(--sage2);display:flex;align-items:center;padding-left:12px}
+.nxlad .bar i.record{background:linear-gradient(135deg,#F7DD8C,#E2AE45)}.nxlad .bar i.down{background:var(--peach2)}.nxlad .bar i.up{background:var(--sage)}
+.nxlad .bar i b{font:800 15px var(--d);color:var(--ink);white-space:nowrap}
+.nxlad .bar u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:1px}
+.nxlad .vd{width:36px;height:36px;border-radius:50%;background:var(--paper);display:grid;place-items:center}.nxlad .vd .g{font-size:20px}
+.nxlad .mt{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px 40px}.nxlad .mt span{font:700 12px var(--b);color:var(--ink2)}.nxlad .mt span+span::before{content:"· "}.nxlad .mt .say{color:var(--deep)}
+.nxlad .tl{display:flex;justify-content:flex-end;font:700 12px var(--b);color:var(--ink2);padding-right:46px}
+/* an exercise: goal, line, movement, days */
+.nxgoal{margin:0 12px;padding:18px}
+.nxgoal small{font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:#C9F24D}
+.nxgoal b{display:block;font:800 52px/.95 var(--d);letter-spacing:-.04em;color:#fff;margin-top:6px}
+.nxgoal p{margin:8px 0 0;font:600 14px var(--b);color:rgba(255,255,255,.8)}
+.nxline{margin:0 12px;padding:14px 10px 8px}
+.nxline svg{display:block;width:100%;height:auto}
+.nxline .ar{fill:url(#nxlg)}.nxline .ln{fill:none;stroke:var(--deep);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.nxline .pt{fill:#fff;stroke:var(--deep);stroke-width:2}.nxline .now{fill:var(--deep)}
+.nxline .lb{font:700 12px var(--b);fill:var(--ink2)}.nxline .vl{font:800 15px var(--d);fill:var(--deep)}
+.nxmv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 12px}
+.nxmv figure{position:relative;margin:0;height:180px;border-radius:24px;overflow:hidden}.nxmv img{width:100%;height:100%;object-fit:cover}
+.nxmv figcaption{position:absolute;left:10px;bottom:10px}.nxmv .chip{background:rgba(255,255,255,.92);border:0}
+.nxdays{display:flex;gap:8px;overflow-x:auto;padding:0 16px 4px;scrollbar-width:none}.nxdays::-webkit-scrollbar{display:none}
+.nxdays button{flex:0 0 auto;border:0;border-radius:20px;background:var(--card);box-shadow:var(--sh);padding:10px 14px;display:grid;gap:2px;text-align:left;min-height:56px;color:var(--ink)}
+.nxdays b{font:800 18px var(--d)}.nxdays small{font:700 12px var(--b);color:var(--ink2)}
+/* a day: the running order */
+.nxro{margin:0 12px;padding:4px 14px}
+.nxro button{width:100%;border:0;background:none;color:var(--ink);display:grid;grid-template-columns:40px 64px minmax(0,1fr);gap:12px;align-items:center;padding:12px 0;text-align:left;border-top:1px solid var(--line)}.nxro button:first-child{border-top:0}
+.nxro .no{font:800 30px/1 var(--d);letter-spacing:-.04em;color:var(--sage)}
+.nxro img{width:64px;height:64px;border-radius:18px;object-fit:cover}
+.nxro b{display:block;font:700 15px/1.25 var(--d)}.nxro small{display:block;font:700 13px var(--b);color:var(--ink2);margin-top:3px}.nxro small em{font-style:normal;color:#C0703F}
+.nxtime{margin:0 12px;padding:14px 16px;display:grid;gap:10px}
+.nxtime div{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:center}
+.nxtime span{font:700 12px var(--b);color:var(--ink2)}.nxtime u{height:12px;border-radius:999px;background:rgba(30,35,33,.08);overflow:hidden}.nxtime u i{display:block;height:100%;border-radius:999px;background:var(--sky)}.nxtime b{font:800 16px var(--d)}
+/* the day editor: a sticky live total */
+.nxsum{position:sticky;top:8px;z-index:4;display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin:16px 12px 0;padding:10px 10px 10px 18px;border-radius:24px;background:var(--deep);box-shadow:0 18px 30px -18px rgba(46,107,82,.9)}
+.nxsum div{display:grid}.nxsum b{font:800 30px/1 var(--d);letter-spacing:-.03em;color:#fff}.nxsum small{font:700 12px var(--b);color:rgba(255,255,255,.75)}
+.nxsum .pill{background:#C9F24D;color:#10140F;min-height:48px;box-shadow:none}
+.nxed{margin:0 12px;padding:4px 14px}
+.nxed .r{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.nxed .r:first-child{border-top:0}
+.nxed img{width:52px;height:52px;border-radius:16px;object-fit:cover}
+.nxed b{display:block;font:700 14px/1.25 var(--d)}.nxed small{font:700 12px var(--b);color:var(--ink2)}
+.nxed .sp{display:flex;align-items:center;gap:4px;padding:3px;border-radius:999px;background:var(--paper)}
+.nxed .sp button{width:40px;height:40px;border-radius:50%;border:0;background:#fff;font:800 18px var(--d);color:var(--ink);box-shadow:0 2px 6px -3px rgba(0,0,0,.3)}
+.nxed .sp b{min-width:24px;text-align:center;font:800 20px var(--d)}
+.nxadd{width:calc(100% - 24px);margin:10px 12px 0;height:52px;border-radius:20px;border:2px dashed rgba(46,107,82,.35);background:none;color:var(--deep);font:700 14px var(--b);display:flex;align-items:center;justify-content:center;gap:6px}.nxadd .g{font-size:20px}
+.nxchk{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 12px}
+.nxchk div{padding:14px;border-radius:22px;background:var(--card);box-shadow:var(--sh);display:grid;gap:4px}.nxchk .g{font-size:24px}.nxchk b{font:700 14px var(--d)}.nxchk small{font:700 12px var(--b);color:var(--ink2)}
+.nxchk .warn{background:var(--peach2)}
+/* a muscle: anatomy focus + six columns */
+.nxfm{padding:12px 10px 10px}
+.nxcols{margin:0 12px;padding:30px 14px 12px}
+.nxcols .pa{position:relative;height:150px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;border-bottom:1px solid var(--line)}
+.nxcols .c{position:relative;height:100%;display:flex;align-items:flex-end}
+.nxcols .c i{position:relative;display:block;width:100%;border-radius:10px 10px 4px 4px;background:var(--sage2)}
+.nxcols .c.past i{background:var(--deep)}.nxcols .c.now i{background:#C9F24D;box-shadow:inset 0 0 0 2px #9DC23A}
+.nxcols .c em{position:absolute;left:0;right:0;top:-20px;text-align:center;font-style:normal;font:800 14px var(--d);color:var(--ink)}
+.nxcols .pa u{position:absolute;left:-4px;right:-4px;height:0;border-top:2px dashed var(--ink2);z-index:1}
+.nxcols .pa u.cl{border-top-style:solid;border-color:var(--deep)}
+.nxcols .clg{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}.nxcols .clg span{display:inline-flex;align-items:center;gap:6px;font:700 12px var(--b);color:var(--ink2)}.nxcols .clg i{width:18px;height:0;border-top:2px dashed var(--ink2)}.nxcols .clg i.cl{border-top:2px solid var(--deep)}
+.nxcols .lb{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:6px}.nxcols .lb b{text-align:center;font:700 12px var(--b);color:var(--ink2)}.nxcols .lb b.on{color:var(--ink)}
+.nxchain{margin:0 12px;padding:6px 16px;list-style:none}
+.nxchain li{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:12px 0}
+.nxchain li::before{content:"";position:absolute;left:19px;top:52px;bottom:-12px;width:2px;background:var(--line)}.nxchain li:last-child::before{display:none}
+.nxchain i{width:40px;height:40px;border-radius:50%;background:var(--paper);display:grid;place-items:center}.nxchain i .g{font-size:22px}
+.nxchain b{display:block;font:700 14px var(--d)}.nxchain small{font:600 13px var(--b);color:var(--ink2)}
+/* the weekly check: a leaderboard */
+.nxcnt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 12px}
+.nxcnt div{padding:14px 12px;border-radius:22px;display:grid;gap:4px}.nxcnt b{font:800 40px/1 var(--d);letter-spacing:-.04em;color:var(--ink)}.nxcnt small{font:700 12px/1.3 var(--b);color:var(--ink2)}
+.nxlb{margin:0 12px;padding:4px 14px}
+.nxlb button{width:100%;border:0;background:none;color:var(--ink);display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:6px 10px;align-items:center;padding:12px 0;text-align:left;border-top:1px solid var(--line)}.nxlb button:first-child{border-top:0}
+.nxlb .no{grid-row:1/3;font:800 20px var(--d);color:var(--ink2)}
+.nxlb .nm{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.nxlb .nm b{font:700 15px var(--d)}.nxlb .nm .chip{height:26px;font-size:12px;padding:0 8px}
+.nxlb .v{text-align:right;font:800 16px var(--d)}.nxlb .v small{display:block;font:700 12px var(--b);color:var(--deep)}
+.nxlb .bar{grid-column:2/4;position:relative;height:10px;border-radius:999px;background:rgba(30,35,33,.08)}
+.nxlb .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+.nxlb .bar u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:1px}
+.nxmon{margin:0 12px}
+.w320 .nxq{flex-basis:212px;height:284px}.w320 .nxbf .trh b{font-size:38px}.w320 .nxgoal b{font-size:42px}.w320 .nxsum b{font-size:24px}.w320 .nxcnt b{font-size:32px}.w320 .nxro{padding:4px 10px}.w320 .nxro button{grid-template-columns:32px 52px minmax(0,1fr);gap:10px}.w320 .nxro img{width:52px;height:52px}.w320 .nxro .no{font-size:24px}
+.phone[data-theme="dark"] .nxpc .chip,.phone[data-theme="dark"] .nxmv .chip{color:#141A17}.phone[data-theme="dark"] .nxed .sp button{background:#26312B;color:#EEF2EE}
+</style>`);
+
+/* the longest word decides the size of a heavy title so it never breaks mid-word */
+const nxFit=(t,max,pad=36)=>{const L=Math.max(...t.replace(/<[^>]+>/g,' ').split(/\s+/).map(w=>w.length));return `font-size:min(${max}px,calc((100cqw - ${pad}px) / ${(L*.68).toFixed(2)}))`};
+const nxBar=crumb=>`<div class="nxbar rise" style="--i:0"><button class="nxbk" data-back aria-label="Vissza">${G('back','ink')}</button><span>${crumb}</span></div>`;
+const nxText=({crumb,eb,title='',big='',sub='',chips=''})=>`${nxBar(crumb)}<div class="lpt rise" style="--i:1"><small>${eb}</small>${title?`<h1 style="${nxFit(title,50)}">${title}</h1>`:''}${big}${sub?`<p>${sub}</p>`:''}${chips?`<div class="chips">${chips}</div>`:''}</div>`;
+const nxPoster=({src,pos='center 30%',crumb,eb,l1,l2='',sub='',chips=''})=>`<div class="nxpo rise" style="--i:0"><img src="${src}" alt="" style="object-position:${pos}"><div class="nxpb"><button class="nxbk lt" data-back aria-label="Vissza">${G('back','ink')}</button><span>${crumb}</span></div>${chips?`<div class="nxpc">${chips}</div>`:''}<span class="eb">${eb}</span></div><h1 class="nxpt rise" style="--i:1;${nxFit(l1+' '+l2,76,32)}"><span>${l1}</span>${l2?`<span class="l2">${l2}</span>`:''}</h1>${sub?`<p class="nxps rise" style="--i:1">${sub}</p>`:''}`;
+const nxNums=L=>`<div class="nxnums rise" style="--i:3">${L.map(([v,l])=>`<div><b>${v}</b><small>${l}</small></div>`).join('')}</div>`;
+const msplit=(mus,head,sub)=>{const tot=mus.reduce((a,m)=>a+m[1],0);return `<div class="card deep mmsplit"><div class="hd"><b>${tot}<small>${head}</small></b><span>${sub}</span></div><div class="bar">${mus.map(([l,n],k)=>`<i style="flex:${n||.0001};background:${RC6[k%6]}"></i>`).join('')}</div><div class="lg">${mus.map(([l,n],k)=>`<div><i style="background:${RC6[k%6]}"></i>${l}<b>${n}</b></div>`).join('')}</div></div>`};
+
+/* ── Eligazítás: dark pre-flight, quests as cards, the setlist ── */
+function indulas2(){const n=QUEST.filter(q=>q.on).length;
+  return `<div class="nxbf"><div class="glow"></div>
+  <div class="tb"><button class="gb" data-back aria-label="Vissza">${G('back','cream')}</button><div class="mid">Eligazítás<small>ma 16:00 · 3. hét / 6</small></div><button class="gb" data-go="edzes-nap-3" aria-label="A nap a tervben">${G('book','sun')}</button></div>
+  <h1>Pull<br><em>Day.</em></h1>
+  <p class="lede">Öt gyakorlat, 16 szett. Hát és bicepsz, a vállad kímélve.</p>
+  <div class="tr"><div class="trh"><b>70–85<small>perc</small></b><span>a saját<br>tempód alapján</span></div><div class="trb"><i style="left:${70/95*100}%;width:${15/95*100}%"></i></div><div class="tra"><span>0</span><span>30</span><span>60</span><span>90 perc</span></div></div>
+  <div class="nums">${[['5','gyakorlat'],['16','szett'],[`<span id="nxqn">${n}</span>`,'küldetés']].map(([v,l])=>`<div><b>${v}</b><small>${l}</small></div>`).join('')}</div>
+  <div class="warn">${G('bolt','peach')}<div><b>Jobb váll · 5 / 10</b><small>Először bemelegítő szett. A Rear Delt Fly ma könnyítve megy.</small></div></div>
+  <div class="csh"><h3>Mit vállalsz ma?</h3><span>passzolni ér</span></div>
+  <div class="qcar">${QUEST.map((q,i)=>`<article class="nxq ${q.on?'':'off'}"><img class="ex" src="${EPH(SX0[q.ex].p)}" alt=""><div class="in"><small>${G(q.ic,q.pal)}${q.t}</small><span class="ex2">${short(SX0[q.ex].n)}</span><strong>${q.target}</strong><div class="lv"><u><i style="width:${q.conf}%"></i></u><span>${q.cl}</span></div><div class="ac"><button class="why" data-sheet="edzQuest" data-arg="${i}">Miért ez?</button><button class="tg" data-nxq="${i}" aria-pressed="${q.on}" aria-label="${q.on?'Elengedem':'Vállalom'}: ${q.target}">${q.on?`Vállalom`:'Elengedtem'}</button></div></div></article>`).join('')}</div>
+  <div class="csh"><h3>A mai sor</h3><span>16 szett</span></div>
+  <ol class="setl">${SX0.map((e,i)=>`<li><span class="no">0${i+1}</span><img class="ex" src="${EPH(e.p)}" alt=""><div><b>${e.n}</b><small>${e.sets} × ${e.goal}${e.chg?` · <em class="${e.warn?'w':''}">${e.chg}</em>`:''}</small></div>${QUEST.some(q=>q.on&&q.ex===i)?`<span class="st" aria-label="küldetés">${G('star','sun')}</span>`:'<span></span>'}</li>`).join('')}</ol>
+  <div class="mzd">${G('spark','sage')}<div><b>Mezo</b><p>A húzódzkodásnál <em>+2,5 kg</em> a lépés, az evezésnél egy ismétlés. Ha a váll fáj, a Rear Delt Fly-t nyugodtan hagyd ki.</p></div></div>
+  <button class="go" data-go="edzes-jatszo">${G('bolt','ink')}<span>Indulás · ${n} küldetéssel</span></button>
+  </div>`}
+
+/* ── Összegzés: lanes, then-vs-now ── */
+function review2(){
+  return `<div class="lp">${nxText({crumb:'Mai › <b>Összegzés</b>',eb:'Pull Day · szeptember 24. · lezárva',big:`<div class="lpbig"><b>14</b><span>/ 16 szett<br>megvolt</span></div>`,sub:'<em>Három rekord</em>, és a legnehezebb szett három hete emelkedik.',chips:`<span class="chip">${G('dumbbell','deep')}4,2 tonna</span><span class="chip">${G('clock','sky')}71 perc · terv 62</span><button class="chip" data-toast="Előző Pull Day · szeptember 17." style="min-height:40px">${G('back','ink')}Előző Pull Day</button>`})}
+  <div class="lpsh rise" style="--i:2"><h3>Gyakorlatonként</h3><span>minden kocka egy szett</span></div>
+  <div class="card nxln rise" style="--i:2">${LANE.map(([n,p,t,of,d,rec],i)=>`<button class="ln" ${i===0?'data-go="edzes-review-gyak"':`data-toast="${n} összegzése — ugyanígy, mint a húzódzkodásé"`}><img class="ex" src="${EPH(p)}" alt=""><span class="nm"><b>${short(n)}</b><small>${t}</small></span><span class="sl">${Array.from({length:of},(_,k)=>rec&&k===1?`<i class="rec">${G('medal','sun')}</i>`:`<i class="${k<d?'on':''}"></i>`).join('')}</span></button>`).join('')}<div class="lg"><span><i class="on"></i>megvolt</span><span><i class="rec"></i>rekord</span><span><i></i>kimaradt</span></div></div>
+  <div class="lpsh rise" style="--i:3"><h3>Mihez képest</h3><span>az előző Pull Day</span></div>
+  <div class="card deep nxvs rise" style="--i:3"><div class="hd"><span>szeptember 17.</span><span class="n">ma</span></div>${[['Összesen megmozgatva','3,9 t','4,2 t','+0,3 t'],['Legnehezebb szett','+10 × 8','+12,5 × 8','+2,5 kg'],['Átlagos tartalék','2,0','1,6 ismétlés','kevesebb maradt']].map(([l,a,b,dl])=>`<div class="r"><small>${l}</small><div class="v"><s>${a}</s>${G('chev','cream','ar')}<b>${b}</b><em>${dl}</em></div></div>`).join('')}</div>
+  <div class="lpsh rise" style="--i:4"><h3>Érmek</h3><a href="#edzes-ermek">Mind ${G('chev')}</a></div>
+  <div class="mgrid rise" style="--i:4">${[['Húzódzkodás (súlyozott)','weighted-pull-up','Súlyrekord','+12,5 kg'],['Döntött törzsű evezés','barbell-row','Ismétlésrekord','10 × 72,5'],['Döntött törzsű evezés','barbell-row','Mennyiségi rekord','2 175 kg']].map(([n,p,t,v])=>`<button ${gxGo(n)} aria-label="${n}: ${t}, ${v}"><span class="rim"><img class="ex" src="${EPH(p)}" alt=""><i>${G(...KINDIC[t])}</i></span><b>${t}</b><small>${v}</small></button>`).join('')}</div>
+  <div class="lpsh rise" style="--i:5"><h3>Küldetések</h3><span>egy a kettőből</span></div>
+  <div class="card nxqs rise" style="--i:5"><div class="row">${G('check','sage')}<div><b>Húzódzkodás: 12,5 kg × 8 az első szetten</b><div class="chips"><span class="chip soft">megvan</span></div></div></div><div class="row">${G('moon','sky')}<div><b>Kalapácsbicepsz: utolsó szett tartalék nélkül</b><div class="chips"><span class="chip">kimaradt, nem büntet</span></div></div></div></div>
+  <div class="lpsh rise" style="--i:6"><h3>Amit aznap írtál</h3></div>
+  <button class="nxquote rise" style="--i:6" data-sheet="edzNote"><span class="qm">„</span><p>Ma a váll végig nyugton volt, a sorok tiszták. A kalapácsbicepsznél az utolsó szett elmaradt, elfogyott az idő.</p><span class="ed">Szerkesztem ${G('chev')}</span></button>
+  ${mzCard('A javulás itt <em>a trend</em>, nem egy nap: a legnehezebb szett súlya három hete emelkedik. Jövő héten a bicepsznél pótoljuk a két szettet.',`<button class="pill soft" data-toast="Betervezve: jövő heti Pull Day +2 szett bicepsz">Betervezem</button>`)}</div>`}
+
+/* ── one exercise in the summary: the set ladder ── */
+function reviewGyak2(){const S=[['12,5 × 8',8,2,'tick'],['12,5 × 8',8,1,'record'],['12,5 × 7',7,2,'down'],['12,5 × 8',8,2,'tick']];
+  return `<div class="lp">${nxPoster({src:PH('edz-huzodzkodas.jpg'),crumb:'Összegzés › <b>Húzódzkodás</b>',eb:'Hát · széles · súlyozott · Pull Day',l1:'Húzódz&shy;kodás',sub:'A legnehezebb szett <em>2,5 kg-mal több</em>, mint legutóbb.',chips:`<span class="chip">${G('medal','sun')}súlyrekord</span><span class="chip">4 / 4 szett</span>`})}
+  <div class="nxacts rise" style="--i:2"><button class="pill" ${gxGo('Húzódzkodás (súlyozott)')}>${G('dumbbell','ink')}A gyakorlat oldala</button></div>
+  <div class="lpsh rise" style="--i:2"><h3>A négy szett</h3><span>vonal: a cél, 8 ismétlés</span></div>
+  <div class="card nxlad rise" style="--i:2">${S.map(([a,r,ri,vd],i)=>{const [ic,pal,l]=VERD[vd];return `<div class="st"><span class="no">${i+1}.</span><div class="bar"><i class="${vd}" style="width:${r/9*100}%"><b>+${a}</b></i><u style="left:${8/9*100}%"></u></div><span class="vd" aria-label="${l}">${G(ic,pal)}</span></div><div class="mt"><span>${l}</span><span>${ri} tartalék</span>${i===1?'<span class="say">„az utolsó kemény volt”</span>':''}</div>`}).join('')}</div>
+  <div class="lpsh rise" style="--i:3"><h3>A számok</h3></div>
+  ${nxNums([['820 kg','összesen'],['1,8','tartalék átlag'],['10 × 8','előtte']])}
+  ${mzCard('A harmadik szettnél egy ismétlés hiányzott: <em>a pihenő 70 másodperc</em> volt. Jövő héten tartsd meg a teljes 90-et.')}</div>`}
+
+/* ── an exercise: the record profile ── */
+function exPage2(i){const g=GYAK[i]||GYAK[0],[n,r,p,max,best,med,kind,note]=g,mx=num(max),bs=num(best),meds=MEDS.filter(m=>m[2]===n),ses=12+((i*7)%17),days=[];
+  DAYD.forEach((d,di)=>d.ex.forEach(e=>{if(e[0]===n)days.push([di,e])}));
+  const ser=mx?[.82,.85,.88,.87,.91,.94,.97,1].map(f=>Math.round(mx*f)):[.6,.68,.72,.8,.86,.93,.97,1].map(f=>Math.round(bs*f));
+  const nextGoal=/×/.test(best)?best.replace(/× (\d+)/,(_,x)=>`× ${+x+1}`):`${bs+5} ${/másodperc/.test(best)?'mp':'ism.'}`;
+  const sn=n.split(' (')[0],sub=(n.match(/\((.*)\)/)||[])[1];
+  const W=340,H=160,lo=Math.min(...ser)*.94,hi=Math.max(...ser)*1.02,X=k=>18+k*(W-36)/7,Y=v=>H-28-(v-lo)/(hi-lo)*(H-62),M=['már','ápr','máj','jún','júl','aug','sze','most'];
+  const pts=ser.map((v,k)=>`${X(k).toFixed(1)} ${Y(v).toFixed(1)}`);
+  return `<div class="lp">${nxPoster({src:EPH(p),pos:'center 40%',crumb:`Gyakorlatok › <b>${sn}</b>`,eb:`${r} · ${kind.toLowerCase()}${sub?' · '+sub:''}`,l1:sn.replace('dzkodás','dz&shy;kodás'),chips:`${meds.length?`<span class="chip">${G('medal','sun')}${meds.length} érem</span>`:''}${note?`<span class="chip">${note}</span>`:''}<span class="chip">${ses} alkalom</span>`})}
+  <div class="nxacts rise" style="--i:2"><button class="pill" data-toast="Hozzáadva a mai edzéshez: ${n}">${G('plus','ink')}A mai edzéshez</button><button class="pill soft" data-sheet="edzExEdit" data-arg="${i}">${G('book','peach')}Szerkesztés</button></div>
+  <div class="lpsh rise" style="--i:2"><h3>Következő cél</h3></div>
+  <div class="card deep nxgoal rise" style="--i:2"><small>${meds.length?`${meds.length} érem után a következő`:'Ez lesz az első érmed'}</small><b>${nextGoal}</b><p>Ugyanaz a súly, egy ismétléssel több.</p></div>
+  <div class="lpsh rise" style="--i:3"><h3>${mx?'Becsült maximum':'A legjobb alkalom'}</h3><span>március óta</span></div>
+  <div class="card nxline rise" style="--i:3"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${mx?'Becsült maximum':'Legjobb eredmény'} hónapról hónapra"><defs><linearGradient id="nxlg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5FB08A" stop-opacity=".35"/><stop offset="1" stop-color="#5FB08A" stop-opacity="0"/></linearGradient></defs><path class="ar" d="M${pts.join(' L')} L${X(7)} ${H-28} L${X(0)} ${H-28} Z"/><path class="ln" d="M${pts.join(' L')}"/>${ser.map((v,k)=>k===7?`<circle class="now" cx="${X(k)}" cy="${Y(v)}" r="7"/><text class="vl" x="${X(k)-4}" y="${Y(v)-14}" text-anchor="end">${mx?max:best}</text>`:`<circle class="pt" cx="${X(k)}" cy="${Y(v)}" r="4"/>`).join('')}${M.map((m,k)=>`<text class="lb" x="${X(k)}" y="${H-6}" text-anchor="middle">${m}</text>`).join('')}</svg></div>
+  <div class="lpsh rise" style="--i:3"><h3>A rekordjaid</h3></div>
+  ${nxNums([[mx?max:'—','becsült max'],[best,'legjobb szett'],[ses,'alkalom']])}
+  <div class="lpsh rise" style="--i:4"><h3>A mozdulat</h3></div>
+  <div class="nxmv rise" style="--i:4">${[['','kezdés'],['-b','vég']].map(([s,l])=>`<figure><img class="ex" src="gyak/${p}${s}.jpg" alt=""><figcaption><span class="chip">${l}</span></figcaption></figure>`).join('')}</div>
+  <div class="lpsh rise" style="--i:5"><h3>Érmeid</h3><a href="#edzes-ermek">Mind ${G('chev')}</a></div>
+  ${meds.length?`<div class="mgrid rise" style="--i:5">${meds.map(m=>`<button data-toast="${m[3]} · ${m[1]}${m[5]?' · '+m[5]:''}" aria-label="${m[3]}, ${m[4]}"><span class="rim"><img class="ex" src="${EPH(p)}" alt=""><i>${G(...KINDIC[m[3]])}</i></span><b>${m[3]}</b><small>${m[4]}</small></button>`).join('')}</div>`:`<section class="sec rise" style="--i:5;margin-top:0"><div class="card t-sky pad"><div class="row">${G('medal','sun')}<div><b>Még nincs érmed ezen a gyakorlaton</b><small>A következő cél teljesítése érmet ér.</small></div></div></div></section>`}
+  <div class="lpsh rise" style="--i:6"><h3>Hol szerepel</h3></div>
+  <div class="nxdays rise" style="--i:6">${days.map(([di,e])=>`<button data-go="edzes-nap-${di}"><b>${EWEEK[di][1]}</b><small>${EWEEK[di][2]} · ${e[2]} × ${e[3]}</small></button>`).join('')}<button data-go="edzes-sablonok"><b>Sablon</b><small>Upper / Lower · alap</small></button></div>
+  ${days.length?'':`<p class="nxps rise" style="--i:6;font-size:14px">Most egyik napodon sincs. A saját edzésbe vagy egy napba bármikor beteheted.</p>`}
+  <div class="nxacts rise" style="--i:7"><button class="pill soft" data-toast="Videót a saját telefonodról tölthetsz fel ide">${G('camera','sky')}Saját videó feltöltése</button></div>
+  ${mzCard(note==='kímélve'?'A jobb vállad miatt <em>könnyített súllyal</em> megy, amíg a fájdalom 5 / 10 fölött van.':`A ${mx?'becsült maximumod':'legjobb eredményed'} <em>${Math.round((1-ser[0]/ser[7])*100)}%-ot</em> nőtt március óta. Tartsd a tempót: egy ismétlés hétről hétre.`)}</div>`}
+
+/* ── a day: the running order ── */
+function nap2(i){const d=DAYD[i],w=EWEEK[i],tot=d.mus.reduce((a,m)=>a+m[1],0);
+  const say=w[3]==='done'?`Megvolt: <em>${d.done}</em>.`:w[3]==='today'?'Ma jön, <em>16:00-kor</em>.':'Még előtted van, <em>pénteken</em>.';
+  return `<div class="lp">${nxPoster({src:PH(d.ph+'.jpg'),pos:i===3?'center 30%':'center 40%',crumb:`Terv › <b>${w[0]}</b>`,eb:`${w[0]} · 3. hét / 6 · ${d.ex.length} gyakorlat · ${tot} szett`,l1:w[2].split(' · ')[0],l2:w[2].includes('·')?w[2].split(' · ')[1]:'nap',sub:say,chips:`${w[3]==='done'?`<span class="chip">${G('check','sage')}kész</span>`:w[3]==='today'?`<span class="chip">${G('bolt','deep')}ma 16:00</span>`:`<span class="chip">${G('clock','sky')}betervezve</span>`}<span class="chip">${G('clock','sky')}≈ ${d.min} perc</span>`})}
+  <div class="nxacts rise" style="--i:2"><button class="pill" data-go="edzes-napszerk-${i}">${G('book','ink')}Szerkesztem</button>${w[3]==='today'?`<button class="pill soft" data-go="edzes-indulas">${G('bolt','deep')}Eligazítás</button>`:''}</div>
+  <div class="lpsh rise" style="--i:2"><h3>A sor</h3><span>ebben a sorrendben</span></div>
+  <div class="card nxro rise" style="--i:2">${d.ex.map(([n,p,s,r,kg,c],k)=>`<button ${gxGo(n)}><span class="no">0${k+1}</span><img class="ex" src="${EPH(p)}" alt=""><span><b>${n}</b><small>${s} × ${r} · ${kg}${c?` · <em>${c}</em>`:''}</small></span></button>`).join('')}</div>
+  <div class="lpsh rise" style="--i:3"><h3>Mit terhel</h3></div>
+  <section class="sec rise" style="--i:3;margin-top:0">${msplit(d.mus,'szett',`${d.mus.length} izomcsoport`)}</section>
+  <div class="lpsh rise" style="--i:4"><h3>Mennyi idő</h3></div>
+  <div class="card nxtime rise" style="--i:4"><div><span>Most</span><u><i style="width:${d.min/90*100}%"></i></u><b>${d.min} perc</b></div><div><span>Az 5. héten</span><u><i style="width:${d.min*1.15/90*100}%;background:var(--deep)"></i></u><b>≈ ${Math.round(d.min*1.15)} perc</b></div></div>
+  ${mzCard(i===3?'A vállad miatt a Rear Delt Fly <em>könnyített súllyal</em> megy, amíg 5 / 10 fölött jelzed a fájdalmat.':i===2?'Ez a hét <em>legnehezebb napja</em>. Előtte este legyen meg a 7 óra alvás.':'A nap rendben van: <em>minden izom</em> a heti tartományában kapja a szettjeit.')}</div>`}
+
+/* ── the day editor: steppers, a sticky live total ── */
+function napszerk2(i){const d=DAYD[i],w=EWEEK[i];if(NSZ.i!==i){NSZ.i=i;NSZ.sets=d.ex.map(e=>e[2])}
+  const tot=NSZ.sets.reduce((a,b)=>a+b,0),base=d.ex.reduce((a,e)=>a+e[2],0),min=Math.round(d.min*tot/base),dl=tot-base;
+  const mus=d.mus.map((m,mi)=>[m[0],NSZ.sets.reduce((a,v,k)=>a+(MX[i][k]===mi?v:0),0)]);
+  return `<div class="lp">${nxText({crumb:`${w[0]} › <b>Szerkesztés</b>`,eb:`${w[0]} · ${w[2]} · minden hétre érvényes`,title:'A nap szerkesz&shy;tése'})}
+  <div class="nxsum"><div><b>${tot}</b><small>szett${dl?` · ${dl>0?'+':''}${dl}`:' · az eredeti'}</small></div><div><b>${min}</b><small>perc körül</small></div><button class="pill" data-nsave="${i}">${G('check','ink')}Mentés</button></div>
+  <div class="lpsh rise" style="--i:2"><h3>Sorrend és szettek</h3><span>${d.ex.length} gyakorlat</span></div>
+  <div class="card nxed rise" style="--i:2">${d.ex.map(([n,p,s,r,kg],k)=>`<div class="r"><img class="ex" src="${EPH(p)}" alt=""><div><b>${n}</b><small>${r} ismétlés · ${kg}</small></div><span class="sp"><button data-nst="${k}|-1" aria-label="${n}: egy szettel kevesebb">−</button><b>${NSZ.sets[k]}</b><button data-nst="${k}|1" aria-label="${n}: egy szettel több">+</button></span></div>`).join('')}</div>
+  <button class="nxadd rise" style="--i:2" data-sheet="edzPick" data-arg="nap">${G('plus','sage')}Gyakorlat hozzáadása</button>
+  <div class="lpsh rise" style="--i:3"><h3>Így terheli a napot</h3><span>a változással együtt</span></div>
+  <section class="sec rise" style="--i:3;margin-top:0">${msplit(mus,'szett',`${dl>0?'+':''}${dl||'±0'} az eredetihez`)}</section>
+  <div class="lpsh rise" style="--i:4"><h3>Heti szettek izmonként</h3><span>pötty: ennyitől fejlődik</span></div>
+  <section class="sec rise" style="--i:4;margin-top:0"><div class="card gy only"><div class="bars">${Object.values(MUS).slice(0,6).map(m=>`<div class="br"><span>${m[0]}</span><b>${m[1]} <small>/ ${m[3]} szett</small></b>${mkBar(m[1],m[2],m[3],m[3]+2,m[1]>=m[3]?'var(--deep)':'var(--sage)')}</div>`).join('')}</div></div></section>
+  <div class="lpsh rise" style="--i:5"><h3>Ellenőrzés</h3></div>
+  <div class="nxchk rise" style="--i:5"><div class="${min>75?'warn':''}">${G('clock','sky')}<b>Csúcshét: ≈ ${Math.round(min*1.15)} perc</b><small>${min>75?'túl hosszú lehet':'belefér'}</small></div><div class="${tot>20?'warn':''}">${G('check','sage')}<b>Felépítés</b><small>összetett elöl · ${tot>20?'sok egy napra':'rendben'}</small></div></div>
+  ${mzCard(tot>base?'Egy szettel több itt <em>a csúcshéten 5 perccel</em> hosszabb edzést jelent. Ha belefér, mehet.':tot<base?'Kevesebb szettel a heti tartomány alá csúszhatsz. <em>Hétfőn szólok</em>, ha így lenne.':'Ez a nap <em>pont a heti tartományban</em> van. A sorrend is jó: az összetett gyakorlatok vannak elöl.')}</div>`}
+
+/* ── a muscle: the anatomy focus, six columns ── */
+function izom2(k){const key=MUS[k]?k:'hat',m=MUS[key],[n,s,mev,ceil,tier,ser,p,where]=m,lo=n.toLowerCase(),r=room(m),st=step(m),mx=Math.max(...ser,ceil)+2;
+  const say=tier==='Tartás'?'Ez így is marad: most máshol építesz, ez az izom közben megtartja, amit tud.':r>0?`Még ${r} fér bele, aztán a terv végéig ${ceil} marad a felső érték.`:'Ennél többet ez a terv már nem ad.';
+  return `<div class="lp">${nxText({crumb:`Heti vizsgálat › <b>${n}</b>`,eb:`3. hét · ${tier}`,title:n,big:`<div class="lpbig"><b>${s}</b><span>/ ${ceil} szett<br>a héten</span></div>`,sub:`${say} ${st>0?`Hétfőn <em>${st} szettel több</em> jön.`:'Hétfőn nem változik.'}`,chips:tierChip(tier)})}
+  <div class="lpsh rise" style="--i:2"><h3>Hol van</h3><span>elöl és hátul</span></div>
+  <div class="card deep rmap dk nxfm rise" style="--i:2">${realMap({col:x=>x===key?'#C9F24D':'rgba(255,255,255,.14)'})}</div>
+  <div class="lpsh rise" style="--i:3"><h3>A hat hét</h3><span>szett egy héten</span></div>
+  <div class="card nxcols rise" style="--i:3"><div class="pa">${ser.map((v,j)=>`<span class="c ${j===2?'now':j<2?'past':''}"><i style="height:${v/mx*100}%"><em>${v}</em></i></span>`).join('')}<u style="bottom:${mev/mx*100}%"></u>${ceil!==mev?`<u class="cl" style="bottom:${ceil/mx*100}%"></u>`:''}</div><div class="lb">${['1.','2.','3.','4.','csúcs','pihenő'].map((l,j)=>`<b class="${j===2?'on':''}">${l}</b>`).join('')}</div><div class="clg"><span><i></i>ennyitől fejlődik · ${mev}</span>${ceil!==mev?`<span><i class="cl"></i>a terv teteje · ${ceil}</span>`:''}</div></div>
+  <div class="lpsh rise" style="--i:4"><h3>Hol edzed</h3><span>${new Set(where.map(w=>w[0])).size} nap egy héten</span></div>
+  <div class="dcar rise" style="--i:4">${where.map(([d,e,ph,c])=>`<button class="dcd" data-go="edzes-nap-${d}" aria-label="${EWEEK[d][0]}: ${e}"><img class="ex" src="${EPH(ph)}" alt=""><span class="dl1">${EWEEK[d][1]}</span><span class="tx"><b>${e}</b><span class="chip">${c} szett</span></span></button>`).join('')}</div>
+  <div class="lpsh rise" style="--i:5"><h3>Honnan jön ez a szám</h3></div>
+  <ol class="card nxchain rise" style="--i:5">${[['book','sky','Kiinduló ajánlás',`${mev}–${ceil+2} szett hetente`],['star','sun',`Fókusz · ${tier}`,tier==='Hangsúly'?'a felső érték felé visszük':tier==='Építés'?'hétről hétre emelkedik':'szinten tartjuk'],['person','sage','Rád szabva',/Váll|Comb/.test(n)?'a röpi miatt 2 szettel kevesebb':'a múlt heti teljesítésed alapján'],['chart','deep','Ebben a tervben',`${ser[0]} → ${Math.max(...ser)}, a végén pihenőhét`]].map(([ic,pal,b,t])=>`<li><i>${G(ic,pal)}</i><div><b>${b}</b><small>${t}</small></div></li>`).join('')}</ol>
+  <div class="lpsh rise" style="--i:6"><h3>Az előző tervhez képest</h3></div>
+  <section class="sec rise" style="--i:6;margin-top:0"><div class="card pad"><div class="row tap" role="button" tabindex="0" data-go="edzes-riport">${G('repeat','berry')}<div><b>Hypertrophy 03</b><div class="chips"><span class="chip">akkor ${Math.max(2,ser[0]-2)} → ${ceil}</span><span class="chip soft">most ${ser[0]} → ${Math.max(...ser)}</span></div></div>${G('chev','ink','chev')}</div></div></section>
+  ${mzCard(tier==='Tartás'?`A ${lo} most <em>pihen az építéstől</em>: a következő tervben ő jön előre.`:`A ${lo} a <em>${ser.indexOf(Math.max(...ser))+1}. héten</em> éri el a csúcsot, utána a pihenőhéten ${ser[5]} szettre esik vissza.`)}</div>`}
+
+/* ── the weekly check: a leaderboard ── */
+function het2(){const L=Object.entries(MUS).sort((a,b)=>room(b[1])-room(a[1])||b[1][3]-a[1][3]),g=L.filter(([,m])=>room(m)>0).length,mx=L.filter(([,m])=>m[4]!=='Tartás'&&!room(m)).length,hd=L.filter(([,m])=>m[4]==='Tartás').length;
+  return `<div class="lp">${nxText({crumb:'Terv › <b>Heti vizsgálat</b>',eb:'Heti vizsgálat · 3. hét · szeptember 21–27.',big:`<div class="lpbig"><b>75</b><span>szett<br>a héten</span></div>`,sub:`<em>5 szettel több</em>, mint a múlt héten. ${L.length} izomcsoportot edzel.`})}
+  <div class="nxcnt rise" style="--i:2">${[[g,'izomban van még hova nőni','var(--sage3)'],[mx,'elérte a terv tetejét','var(--peach2)'],[hd,'szinten tartod','#E4F0F8']].map(([v,l,bg])=>`<div style="background:${bg}"><b>${v}</b><small>${l}</small></div>`).join('')}</div>
+  <div class="lpsh rise" style="--i:3"><h3>Hétfőtől változik</h3><span>hajnalban, magától</span></div>
+  <section class="sec rise nxmon" style="--i:3;margin-top:0"><div class="card t-sun pad"><div class="chips" style="padding:10px 0 4px">${L.map(([,m])=>m).filter(m=>step(m)>0).map(m=>`<span class="chip">${m[0]} +${step(m)}</span>`).join('')}<span class="chip">a többi marad</span></div><div class="acts" style="padding-bottom:6px"><button class="pill soft" data-sheet="edzRoll">${G('clock','sky')}Mi változik pontosan?</button></div></div></section>
+  <div class="lpsh rise" style="--i:4"><h3>Izmonként</h3><span>ahol a legtöbb a hely, elöl</span></div>
+  <div class="card nxlb rise" style="--i:4">${L.map(([k,m],j)=>{const c=m[4]==='Tartás'?'var(--sky)':m[1]>=m[3]?'#E2AE45':'var(--sage)';return `<button data-go="edzes-izom-${k}"><span class="no">${j+1}</span><span class="nm"><b>${m[0]}</b>${tierChip(m[4])}</span><span class="v">${m[1]} / ${m[3]}${room(m)?`<small>még ${room(m)}</small>`:''}</span><span class="bar"><i style="width:${Math.min(100,m[1]/(m[3]+2)*100)}%;background:${c}"></i>${m[2]<m[3]?`<u style="left:${m[2]/(m[3]+2)*100}%"></u>`:''}</span></button>`}).join('')}</div>
+  ${mzCard('A far és a bicepsz most csak <em>3 szettet</em> kap, de a 4. héttől gyorsan nő: a csúcshéten már 8.')}</div>`}
+
+/* the new versions take over the old names, so every link and handler reaches them */
+R3['edzes-het']=het2;indulas=indulas2;review=review2;reviewGyak=reviewGyak2;exPage=exPage2;nap=nap2;napszerk=napszerk2;izom=izom2;het=het2;
+document.addEventListener('click',e=>{const q=e.target.closest('[data-nxq]');if(!q)return;const i=+q.dataset.nxq;QUEST[i].on=!QUEST[i].on;const c=$('.qcar'),x=c?c.scrollLeft:0;repaintIn(indulas);const c2=$('.qcar');if(c2)c2.scrollLeft=x;haptic(8)});
+
+/* ── Round B, second half: the plan library, running and sport. The running plan = a week timeline,
+   plans = a road + covers, closed runs = a trophy list, a report = a magazine page, templates = week
+   patterns, one template = a split board, the wizard = numbered steps with a live arc, running = the
+   interval track + a recovery line, its plan = an 8-week calendar, two runs = head to head, the sport =
+   slots + effect tiles, logging = a photo picker, its form = a big dial, the custom workout = a basket
+   with a sticky total, the muscle map = the real anatomy map with a done/plan switch. ── */
+document.head.insertAdjacentHTML('beforeend',`<style>
+.nxsec{margin:0 12px}
+.nxcta{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 24px);margin:18px 12px 0;height:58px;border-radius:999px;border:0;background:var(--deep);color:#fff;font:800 16px var(--b);box-shadow:0 18px 30px -16px rgba(46,107,82,.9)}.nxcta .g{font-size:22px}
+.nxcta.stick{position:sticky;bottom:18px;z-index:4}
+/* the running plan: a week timeline */
+.nxtl{margin:0 12px;padding:6px 16px;list-style:none}
+.nxtl li{position:relative;display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}.nxtl li:first-child{border-top:0}
+.nxtl .wk{grid-row:1/3;font:800 34px/1 var(--d);letter-spacing:-.04em;color:var(--sage2)}.nxtl .past .wk{color:var(--deep)}
+.nxtl b{font:700 15px var(--d)}.nxtl small{font:700 12px var(--b);color:var(--ink2)}
+.nxtl .v{grid-row:1/3;grid-column:3;text-align:right;font:800 22px var(--d)}.nxtl .v small{display:block;font:700 12px var(--b);color:var(--ink2)}
+.nxtl u{grid-column:2;display:block;height:8px;border-radius:999px;background:rgba(30,35,33,.08);overflow:hidden}.nxtl u i{display:block;height:100%;border-radius:999px;background:var(--sage2)}.nxtl .past u i{background:var(--deep)}
+.nxtl li.now{margin:6px -10px;padding:14px 10px;border-radius:22px;border-top:0;background:var(--deep);color:#fff}.nxtl li.now+li{border-top:0}
+.nxtl .now .wk{color:#C9F24D}.nxtl .now b,.nxtl .now .v{color:#fff}.nxtl .now small,.nxtl .now .v small{color:rgba(255,255,255,.75)}.nxtl .now u{background:rgba(255,255,255,.16)}.nxtl .now u i{background:#C9F24D}
+.nxtl .days{grid-column:1/4;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.nxtl .days button{border:0;border-radius:14px;background:rgba(255,255,255,.1);color:#fff;display:grid;justify-items:center;gap:2px;padding:6px 0;min-height:52px;font:700 12px var(--b)}.nxtl .days button .g{font-size:18px}.nxtl .days button.on{background:#C9F24D;color:#10140F}
+.nxtl .chg{grid-column:1/4;display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}.nxtl .chg .chip{height:26px;font-size:12px;padding:0 8px}
+/* plans: the road + covers */
+.nxrib{margin:0 12px;padding:16px}
+.nxrib .rd{display:flex;gap:4px;margin-top:4px}
+.nxrib .rd div{display:grid;gap:6px;min-width:0}
+.nxrib .rd span{display:block;height:34px;border-radius:12px;background:rgba(255,255,255,.12);position:relative;overflow:hidden}
+.nxrib .rd span i{position:absolute;left:0;top:0;bottom:0;background:#C9F24D}
+.nxrib .rd .now span{box-shadow:inset 0 0 0 2px #C9F24D}
+.nxrib .rd small{font:700 12px/1.2 var(--b);color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nxrib .ax{display:flex;justify-content:space-between;margin-top:10px;font:700 12px var(--b);color:rgba(255,255,255,.65)}
+.nxrib .hd b{font:800 34px var(--d);color:#fff}.nxrib .hd b small{font:600 13px var(--b);color:rgba(255,255,255,.75);margin-left:6px}
+.nxcov{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 16px 6px;scrollbar-width:none}.nxcov::-webkit-scrollbar{display:none}
+.nxcov button{position:relative;flex:0 0 210px;height:280px;border-radius:28px;overflow:hidden;border:0;padding:0;text-align:left;scroll-snap-align:start;background:#1E2321}
+.nxcov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.nxcov button::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.1),rgba(16,20,18,.15) 40%,rgba(16,20,18,.9))}
+.nxcov .st{position:absolute;left:12px;top:12px;z-index:1}.nxcov .st .chip{background:rgba(255,255,255,.92);border:0;height:30px}
+.nxcov .tx{position:absolute;left:14px;right:14px;bottom:14px;z-index:1;display:grid;gap:4px}
+.nxcov .tx b{font:800 22px/1 var(--d);letter-spacing:-.03em;color:#fff;text-transform:uppercase}.nxcov .tx small{font:700 12px var(--b);color:rgba(255,255,255,.85)}
+.nxcov .tx u{display:block;height:6px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden;margin-top:6px}.nxcov .tx u i{display:block;height:100%;background:#C9F24D}
+/* closed runs: a trophy list */
+.nxtro{display:grid;gap:10px;padding:0 12px}
+.nxtro button{position:relative;height:132px;border-radius:26px;overflow:hidden;border:0;padding:0;text-align:left;background:#1E2321}
+.nxtro img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.nxtro button::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(16,20,18,.88),rgba(16,20,18,.45) 60%,rgba(16,20,18,.2))}
+.nxtro .tx{position:absolute;left:16px;top:14px;bottom:14px;right:110px;z-index:1;display:flex;flex-direction:column;gap:4px}
+.nxtro .tx b{font:800 20px/1.05 var(--d);color:#fff}.nxtro .tx small{font:700 12px var(--b);color:rgba(255,255,255,.82)}
+.nxtro .tx .chips{margin-top:auto;display:flex;gap:4px;flex-wrap:wrap}.nxtro .tx .chip{height:26px;font-size:12px;padding:0 8px;background:rgba(255,255,255,.92);border:0}
+.nxtro .pc{position:absolute;right:16px;top:50%;transform:translateY(-50%);z-index:1;font:800 44px/1 var(--d);letter-spacing:-.05em;color:#C9F24D;text-align:right}.nxtro .pc small{display:block;font:700 12px var(--b);letter-spacing:0;color:rgba(255,255,255,.8)}
+.nxtro .pc.na{font-size:16px;color:rgba(255,255,255,.75)}
+/* the report: a magazine page */
+.nxbig{margin:0 18px;display:flex;align-items:flex-end;gap:12px}
+.nxbig b{font:800 120px/.8 var(--d);letter-spacing:-.07em;color:var(--deep)}.nxbig span{font:700 18px/1.2 var(--d);color:var(--ink2);padding-bottom:8px}
+.nxrng{margin:0 12px;padding:10px 16px 14px}
+.nxrng .r{display:grid;grid-template-columns:86px minmax(0,1fr) 64px;gap:10px;align-items:center;padding:9px 0}
+.nxrng .r span{font:700 13px var(--b)}.nxrng .r em{font-style:normal;text-align:right;font:800 14px var(--d)}
+.nxrng .tr{position:relative;height:20px}
+.nxrng .tr::before{content:"";position:absolute;left:0;right:0;top:9px;height:2px;background:rgba(30,35,33,.08)}
+.nxrng .tr i{position:absolute;top:8px;height:4px;border-radius:2px;background:var(--sage)}
+.nxrng .tr b{position:absolute;top:3px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#fff;border:3px solid var(--sage2);box-sizing:border-box}
+.nxrng .tr b.pk{background:var(--deep);border-color:var(--deep)}
+.nxrng .tr u{position:absolute;top:0;height:20px;width:2px;background:var(--ink);margin-left:-1px}
+.nxrng .lg{display:flex;gap:14px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--line);font:700 12px var(--b);color:var(--ink2)}.nxrng .lg span{display:inline-flex;gap:6px;align-items:center}.nxrng .lg i{width:12px;height:12px;border-radius:50%;border:3px solid var(--sage2);box-sizing:border-box}.nxrng .lg i.pk{background:var(--deep);border-color:var(--deep)}.nxrng .lg u{width:2px;height:14px;background:var(--ink)}
+.nxstr{margin:0 12px;padding:4px 16px}
+.nxstr .r{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.nxstr .r:first-child{border-top:0}
+.nxstr img{grid-row:1/3;width:52px;height:52px;border-radius:16px;object-fit:cover}
+.nxstr b{font:700 14px var(--d)}.nxstr .v{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.nxstr .v s{text-decoration:none;font:700 15px var(--d);color:var(--mute)}.nxstr .v strong{font:800 22px/1 var(--d);letter-spacing:-.02em}.nxstr .v em{margin-left:auto;font-style:normal;font:800 13px var(--b);color:var(--deep)}
+.nxcloud{display:flex;gap:6px;flex-wrap:wrap;margin:0 16px}.nxcloud .chip{height:36px;font-size:13px}
+/* templates: week patterns */
+.nxtpl{display:grid;gap:10px;padding:0 12px}
+.nxtpl button{border:0;border-radius:26px;background:var(--card);box-shadow:var(--sh);padding:16px;text-align:left;display:grid;gap:10px;color:var(--ink)}
+.nxtpl .hd{display:flex;align-items:center;gap:12px}.nxtpl .hd .stk{flex:0 0 auto}
+.nxtpl .hd b{display:block;font:800 19px/1.1 var(--d)}.nxtpl .hd small{font:700 12px var(--b);color:var(--ink2)}
+.nxtpl .wkp{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.nxtpl .wkp span{display:grid;justify-items:center;gap:4px;font:700 12px var(--b);color:var(--ink2)}.nxtpl .wkp i{width:100%;height:30px;border-radius:10px;background:rgba(30,35,33,.06)}.nxtpl .wkp .on i{background:var(--sage)}
+.nxtpl .ft{display:flex;gap:6px;flex-wrap:wrap}
+/* one template: the split board */
+.nxbrd{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 16px 6px;scrollbar-width:none}.nxbrd::-webkit-scrollbar{display:none}
+.nxbrd .col{flex:0 0 200px;scroll-snap-align:start;border-radius:24px;background:var(--card);box-shadow:var(--sh);padding:14px;display:grid;gap:8px;align-content:start}
+.nxbrd .col>b{font:800 26px/1 var(--d);letter-spacing:-.03em;color:var(--sage)}.nxbrd .col>strong{font:700 15px var(--d)}.nxbrd .col>small{font:700 12px var(--b);color:var(--ink2)}
+.nxbrd .ex{display:grid;grid-template-columns:36px minmax(0,1fr);gap:8px;align-items:center;font:700 12px/1.25 var(--b);color:var(--ink)}.nxbrd .ex img{width:36px;height:36px;border-radius:10px;object-fit:cover}
+.nxbrd .col.off{background:transparent;box-shadow:inset 0 0 0 2px var(--line);flex-basis:110px;align-content:center;justify-items:center;text-align:center}.nxbrd .col.off .g{font-size:30px}
+.nxmg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 12px}
+.nxmg button{border:0;border-radius:20px;background:var(--card);box-shadow:var(--sh);padding:12px 8px;display:grid;justify-items:center;gap:6px;min-height:84px;font:700 13px var(--b);color:var(--ink)}.nxmg .g{font-size:26px}
+/* the wizard: numbered steps */
+.nxst{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 12px;margin:30px 16px 12px;align-items:baseline}
+.nxst b{grid-row:1/3;font:800 40px/1 var(--d);letter-spacing:-.04em;color:var(--sage)}.nxst h3{margin:0;font:700 20px var(--d)}.nxst small{font:700 12px var(--b);color:var(--ink2)}
+.nxwzp{position:sticky;top:8px;z-index:4;margin:16px 12px 0;padding:14px 16px 12px}
+.nxwzp .hd{display:flex;justify-content:space-between;align-items:baseline}.nxwzp .hd b{font:800 26px var(--d);color:#fff}.nxwzp .hd span{font:700 12px var(--b);color:rgba(255,255,255,.8);text-align:right}
+.nxwzp .arc{display:flex;gap:4px;align-items:flex-end;height:54px;margin-top:10px}.nxwzp .arc i{flex:1;border-radius:6px 6px 3px 3px;background:rgba(201,242,77,.75)}.nxwzp .arc i:last-child{background:rgba(255,255,255,.3)}
+.nxpad{padding:0 16px}
+/* running: the track and a recovery line */
+.nxivl{margin:0 12px;padding:16px}
+.nxivl .hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}.nxivl .hd b{font:800 34px var(--d);color:#fff}.nxivl .hd b small{font:600 13px var(--b);color:rgba(255,255,255,.75);margin-left:6px}.nxivl .hd span{font:700 12px var(--b);color:rgba(255,255,255,.8)}
+.nxses{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px}
+.nxses button{position:relative;height:180px;border-radius:26px;overflow:hidden;border:0;padding:14px;text-align:left;background:#1E2321;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}
+.nxses img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.nxses button::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.1),rgba(16,20,18,.88))}
+.nxses button>:not(img){position:relative;z-index:1}.nxses b{font:800 20px/1.05 var(--d);color:#fff}.nxses small{font:700 12px var(--b);color:rgba(255,255,255,.85)}.nxses .chip{align-self:flex-start;height:28px;font-size:12px;background:rgba(255,255,255,.92);border:0}
+.nxses .miss img{filter:grayscale(.8) brightness(.8)}
+.nxhr{margin:0 12px;padding:14px 10px 8px}.nxhr svg{display:block;width:100%;height:auto}
+.nxhr .ln{fill:none;stroke:var(--sky);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.nxhr .pt{fill:#fff;stroke:#4E92C2;stroke-width:2.5}.nxhr .vl{font:800 15px var(--d);fill:var(--ink)}.nxhr .lb{font:700 12px var(--b);fill:var(--ink2)}.nxhr .tg{stroke:var(--deep);stroke-width:1.5;stroke-dasharray:4 4}.nxhr .tl{font:700 12px var(--b);fill:var(--deep)}
+.nxlog{margin:0 12px;padding:6px 16px;list-style:none}
+.nxlog li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--line)}.nxlog li:first-child{border-top:0}
+.nxlog .d{display:grid;justify-items:center;align-content:center;height:52px;border-radius:16px;background:var(--paper)}.nxlog .d b{font:800 20px/1 var(--d)}.nxlog .d small{font:700 12px var(--b);color:var(--ink2)}
+.nxlog strong{display:block;font:700 14px var(--d)}.nxlog p{margin:4px 0 0;font:600 13px/1.4 var(--b);color:var(--ink2)}.nxlog .chips{margin-top:6px}
+/* its plan: the calendar */
+.nxcal{margin:0 12px;padding:12px 14px}
+.nxcal .r{display:grid;grid-template-columns:52px 1fr 1fr;gap:6px;align-items:center;padding:4px 0}
+.nxcal .r>span{font:700 12px var(--b);color:var(--ink2)}.nxcal .h span{text-align:center}
+.nxcal .c{height:44px;border-radius:14px;background:rgba(30,35,33,.05);display:flex;align-items:center;justify-content:center;gap:6px;font:800 14px var(--d);color:var(--ink2)}
+.nxcal .c.dn{background:var(--deep);color:#fff}.nxcal .c.dn .g{font-size:16px}.nxcal .c.ms{background:var(--peach2);color:#9A5530}.nxcal .c.nw{background:#C9F24D;color:#10140F}
+.nxcal .r.now>span{color:var(--ink);font-weight:800}
+/* two runs: head to head */
+.nxh2h{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 12px}
+.nxh2h button{position:relative;height:220px;border-radius:26px;overflow:hidden;border:0;padding:14px;text-align:left;background:#1E2321;display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.nxh2h img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.nxh2h button::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.15),rgba(16,20,18,.9))}
+.nxh2h button>:not(img){position:relative;z-index:1}.nxh2h .ab{font:800 13px var(--b);letter-spacing:.08em;color:#C9F24D}.nxh2h .b2 .ab{color:#8CC3E8}
+.nxh2h strong{font:800 52px/.9 var(--d);letter-spacing:-.05em;color:#fff}.nxh2h b{font:700 14px/1.2 var(--d);color:#fff}.nxh2h small{font:700 12px var(--b);color:rgba(255,255,255,.8)}
+.nxh2h .vs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:48px;height:48px;border-radius:50%;background:var(--paper);display:grid;place-items:center;font:800 15px var(--d);box-shadow:0 6px 16px -8px rgba(0,0,0,.5)}
+.nxbfly{margin:0 12px;padding:10px 14px 14px}
+.nxbfly .r{display:grid;grid-template-columns:minmax(0,1fr) 76px minmax(0,1fr);gap:8px;align-items:center;padding:7px 0}
+.nxbfly .r span{text-align:center;font:700 13px var(--b)}
+.nxbfly .l,.nxbfly .rr{position:relative;height:26px;border-radius:8px;background:rgba(30,35,33,.05)}
+.nxbfly .l i{position:absolute;right:0;top:0;bottom:0;border-radius:8px;background:var(--deep);display:flex;align-items:center;padding-left:8px;font:800 13px var(--d);color:#fff;font-style:normal}
+.nxbfly .rr i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--sky);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font:800 13px var(--d);color:var(--ink);font-style:normal}
+.nxbfly .hd{display:grid;grid-template-columns:1fr 76px 1fr;gap:8px;font:700 12px var(--b);color:var(--ink2);padding-bottom:6px}.nxbfly .hd span:last-child{text-align:right}
+.nxcmx{margin:0 12px;padding:4px 14px}
+.nxcmx .r{display:grid;grid-template-columns:62px minmax(0,1fr) 62px;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.nxcmx .r:first-child{border-top:0}
+.nxcmx .r>b{font:800 15px var(--d);color:var(--deep)}.nxcmx .r>b:last-child{text-align:right;color:#3E7FAE}
+.nxcmx .r div{display:grid;justify-items:center;gap:4px;text-align:center}.nxcmx img{width:44px;height:44px;border-radius:14px;object-fit:cover}.nxcmx small{font:700 12px/1.2 var(--b)}
+/* the sport: slots + effect tiles */
+.nxslot{display:flex;gap:10px;overflow-x:auto;padding:0 16px 6px;scrollbar-width:none}.nxslot::-webkit-scrollbar{display:none}
+.nxslot div{flex:0 0 150px;border-radius:24px;background:var(--card);box-shadow:var(--sh);padding:14px;display:grid;gap:4px}
+.nxslot b{font:800 30px/1 var(--d);letter-spacing:-.03em}.nxslot strong{font:700 14px var(--d)}.nxslot small{font:700 12px var(--b);color:var(--ink2)}
+.nxslot .today{background:var(--deep)}.nxslot .today b,.nxslot .today strong{color:#fff}.nxslot .today small{color:rgba(255,255,255,.78)}
+.nxfx{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 12px}
+.nxfx div{padding:14px;border-radius:22px;display:grid;gap:4px}.nxfx .g{font-size:26px}.nxfx b{font:800 22px/1.05 var(--d);letter-spacing:-.02em}.nxfx strong{font:700 13px var(--b)}.nxfx small{font:600 12px/1.35 var(--b);color:var(--ink2)}
+.nxsh{display:flex;gap:2px;margin-top:6px}.nxsh i{width:10px;height:10px;border-radius:3px;background:rgba(30,35,33,.1)}.nxsh i.on{background:var(--sage)}.nxsh i.hot{background:var(--peach)}
+/* logging: the photo picker */
+.nxsg{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px}
+.nxsg button{position:relative;height:112px;border-radius:24px;overflow:hidden;border:0;padding:12px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;color:var(--ink)}
+.nxsg button img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.nxsg button.pho::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,0) 30%,rgba(16,20,18,.85))}
+.nxsg button>:not(img){position:relative;z-index:1}.nxsg .gi{position:absolute;right:10px;top:10px;font-size:34px}.nxsg .gi .g{font-size:34px}
+.nxsg b{font:800 16px/1.1 var(--d)}.nxsg small{font:700 12px var(--b);color:var(--ink2)}.nxsg .pho b{color:#fff}.nxsg .pho small{color:rgba(255,255,255,.85)}
+.nxquick{position:relative;margin:0 12px;height:150px;border-radius:28px;overflow:hidden;border:0;width:calc(100% - 24px);padding:16px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;background:#1E2321}
+.nxquick img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.nxquick::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,40,32,.92),rgba(20,40,32,.3))}
+.nxquick>:not(img){position:relative;z-index:1}.nxquick small{font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:#C9F24D}.nxquick b{font:800 28px/1 var(--d);color:#fff}.nxquick span{font:700 13px var(--b);color:rgba(255,255,255,.85)}
+/* its form: the big dial */
+.nxdial{margin:0 12px;padding:18px 16px;display:grid;grid-template-columns:56px 1fr 56px;align-items:center;gap:8px;text-align:center}
+.nxdial button{width:56px;height:56px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font:800 24px var(--d)}
+.nxdial b{display:block;font:800 84px/.9 var(--d);letter-spacing:-.06em;color:#fff}.nxdial small{font:700 13px var(--b);color:rgba(255,255,255,.8)}
+.nxrpe{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;align-items:end}
+.nxrpe button{border:0;border-radius:10px 10px 6px 6px;background:rgba(30,35,33,.08);padding:0;font:800 13px var(--d);color:var(--ink2);display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;min-width:0;min-height:40px}
+.nxrpe button.lit{background:var(--sage2);color:var(--ink)}.nxrpe button.on{background:var(--deep);color:#fff}
+.nxrpl{display:flex;justify-content:space-between;margin-top:6px;font:700 12px var(--b);color:var(--ink2)}
+.nxkc{display:flex;align-items:center;gap:12px;width:calc(100% - 24px);margin:0 12px;padding:16px;border-radius:24px;border:0;background:var(--peach2);text-align:left;color:var(--ink)}.nxkc .g{font-size:30px}.nxkc div{flex:1}.nxkc b{display:block;font:800 26px/1 var(--d)}.nxkc small{font:700 12px var(--b);color:var(--ink2)}.nxkc>span{font:700 13px var(--b);color:#9A5530}
+.nxname{display:block;width:calc(100% - 36px);margin:8px 18px 0;border:0;border-bottom:3px solid var(--sage);background:none;padding:6px 0;font:800 30px/1.1 var(--d);letter-spacing:-.02em;color:var(--ink);border-radius:0}
+.nxname:focus{outline:none;border-color:var(--deep)}
+.nxbsk{margin:0 12px;padding:4px 14px}
+.nxbsk .r{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.nxbsk .r:first-child{border-top:0}
+.nxbsk img{grid-row:1/3;width:52px;height:52px;border-radius:16px;object-fit:cover}.nxbsk b{font:700 14px/1.25 var(--d)}.nxbsk small{font:700 12px var(--b);color:var(--ink2)}
+.nxbsk .rm{grid-column:3;grid-row:1;width:40px;height:40px;border-radius:50%;border:0;background:var(--paper);display:grid;place-items:center;justify-self:end}.nxbsk .rm .g{font-size:16px;transform:rotate(45deg)}
+.nxbsk .sp{grid-column:2/4;justify-self:start;display:flex;align-items:center;gap:4px;padding:3px;border-radius:999px;background:var(--paper)}.nxbsk .sp button{width:40px;height:40px;border-radius:50%;border:0;background:#fff;font:800 18px var(--d);box-shadow:0 2px 6px -3px rgba(0,0,0,.3)}.nxbsk .sp b{min-width:56px;text-align:center;font:800 15px var(--d)}
+.nxsum .rg{grid-column:1/4;display:flex;height:8px;border-radius:999px;overflow:hidden;gap:2px;margin-top:4px}
+.nxsum.c2{grid-template-columns:1fr auto}.nxsum.c2 .rg{grid-column:1/3}
+.nxemp{margin:0 12px;padding:22px;border-radius:26px;border:2px dashed var(--line);text-align:center;font:700 14px var(--b);color:var(--ink2)}
+/* the muscle map: the real map, done or planned */
+.nxtog{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:16px 12px 0;padding:4px;border-radius:999px;background:rgba(30,35,33,.06)}
+.nxtog button{height:44px;border-radius:999px;border:0;background:none;font:700 14px var(--b);color:var(--ink2);display:flex;align-items:center;justify-content:center;gap:6px}.nxtog button .g{font-size:18px}.nxtog button.on{background:var(--card);color:var(--ink);box-shadow:var(--sh)}
+.w320 .nxtl{padding:6px 12px}.w320 .nxtl li.now{margin:6px -10px;padding:14px 2px}.w320 .nxtl .days{gap:0}.w320 .nxtl .days button{border-radius:12px}
+.w320 .nxcov button{flex-basis:186px;height:254px}.w320 .nxtro .pc{font-size:36px}.w320 .nxtro .tx{right:92px}.w320 .nxbig b{font-size:96px}.w320 .nxh2h strong{font-size:40px}.w320 .nxdial b{font-size:66px}.w320 .nxrng .r{grid-template-columns:72px minmax(0,1fr) 56px}.w320 .nxbfly .r,.w320 .nxbfly .hd{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr)}.w320 .nxses button{height:164px}.w320 .nxses b{font-size:17px}
+.phone[data-theme="dark"] .nxcov .st .chip,.phone[data-theme="dark"] .nxtro .chip,.phone[data-theme="dark"] .nxses .chip{color:#141A17}
+</style>`);
+
+const DOW=['H','K','Sze','Cs','P','Szo','V'];
+/* ── the running plan: a week timeline ── */
+function run2(){const rows=Object.values(MUS),ups=rows.filter(m=>step(m)>0);
+  return `<div class="lp">${nxText({crumb:'Terv › <b>Hypertrophy 04</b>',eb:'Aktív · 3. hét / 6 · vége október 18.',title:'Hyper&shy;trophy <em>04</em>',sub:'Pull / Push / Legs, <em>öt edzés</em> egy héten. Az 5. hét a csúcs, a 6. a pihenőhét.',chips:`<span class="chip">${G('clock','sky')}szeptember 7. – október 18.</span><button class="chip" data-go="edzes-het" style="min-height:40px">${G('chart','deep')}Heti vizsgálat</button>`})}
+  <div class="lpsh rise" style="--i:2"><h3>A hat hét</h3><span>szett egy héten</span></div>
+  <ol class="card nxtl rise" style="--i:2">${MESO.sets.map((v,i)=>{const now=i===2;return `<li class="${now?'now':i<2?'past':''}"><span class="wk">${i+1}.</span><b>${['Alap','Alap','Építés','Építés','Csúcs','Pihenőhét'][i]}</b><span class="v">${v}<small>szett</small></span><u><i style="width:${v/100*100}%"></i></u>${now?`<div class="days">${EWEEK.map(([d,s,t,st],j)=>`<button class="${st==='today'?'on':''}" ${dayGo(j)} aria-label="${d}, ${t}">${st==='done'?G('check','sage'):st==='sport'?G('ball','sun'):st==='rest'?G('moon','sky'):G('dumbbell',st==='today'?'ink':'cream')}${s}</button>`).join('')}</div>`:i===3?`<div class="chg">${ups.map(m=>`<span class="chip soft">${m[0]} +${step(m)}</span>`).join('')}</div>`:''}</li>`}).join('')}</ol>
+  <div class="lpsh rise" style="--i:3"><h3>Hol tartasz</h3></div>
+  ${nxNums([['75','szett most'],[rows.filter(m=>room(m)>0).length,'izom emelkedik'],[rows.filter(m=>!room(m)).length,'izom tart']])}
+  <div class="lpsh rise" style="--i:4"><h3>Lezárás</h3><span>október 18-án magától</span></div>
+  <section class="sec rise" style="--i:4;margin-top:0"><div class="card pad"><div class="row tap" role="button" tabindex="0" data-toast="Lezárás: október 18-án magától, vagy most kézzel — riport készül róla">${G('check','sage')}<div><b>A terv lezárása</b><div class="chips"><span class="chip">riport készül róla</span><span class="chip">most kézzel is</span></div></div>${G('chev','ink','chev')}</div></div></section>
+  ${mzCard('A lábhajlító a múlt héten nehezen ment, ezért most <em>tartjuk a 9 szettet</em>. Az emelés folytatódik, amint visszaáll a tempó.')}</div>`}
+
+/* ── plans: the road + covers ── */
+function tervek2(){const tot=RUNS.reduce((a,r)=>a+r[3],0);
+  return `<div class="lp">${nxText({crumb:'Terv › <b>Edzéstervek</b>',eb:`Edzéstervek · ${tot} hét előre`,title:'Edzés&shy;tervek',sub:'Január elejéig <em>meg van tervezve</em> az edzésed: egy fut, kettő sorban áll.'})}
+  <div class="lpsh rise" style="--i:2"><h3>Egymás után</h3><span>${tot} hét</span></div>
+  <div class="card deep nxrib rise" style="--i:2"><div class="hd"><b>3<small>terv, sorban</small></b></div><div class="rd">${RUNS.map((r,i)=>`<div class="${i?'':'now'}" style="flex:${r[3]}"><span>${i?'':`<i style="width:${r[6]/r[3]*100}%"></i>`}</span><small>${r[0]}</small></div>`).join('')}</div><div class="ax"><span>szeptember 7.</span><span>január 3.</span></div></div>
+  <div class="lpsh rise" style="--i:3"><h3>Most fut és következik</h3></div>
+  <div class="nxcov rise" style="--i:3">${RUNS.map((r,i)=>`<button ${i?`data-toast="${r[0]} · ${r[4]} — a tervezett terv oldala ugyanígy néz ki"`:'data-go="edzes-run"'}><img src="${PH(r[5]+'.jpg')}" alt=""><span class="st"><span class="chip">${i?G('clock','sky')+r[4]:G('bolt','deep')+'fut · 3. hét / 6'}</span></span><span class="tx"><b>${r[0]}</b><small>${r[2]} · ${r[3]} hét</small>${i?'':`<u><i style="width:${r[6]/r[3]*100}%"></i></u>`}</span></button>`).join('')}</div>
+  <button class="nxcta rise" style="--i:3" data-go="edzes-ujterv">${G('plus','ink')}Új terv varázslóval</button>
+  <div class="lpsh rise" style="--i:4"><h3>A polcod</h3></div>
+  <div class="tgrid rise" style="--i:4">${[['edz-kettlebell','Sablonjaid','három sablon','edzes-sablonok'],['edz-kreta','Lezárt futamaid','három futam · 20 hét','edzes-futamok'],['edz-bandazs','Két futam összevetése','A · B','edzes-osszevetes']].map(([p,n,c,go])=>`<button data-go="${go}"><img src="${PH(p+'-sq.jpg')}" alt=""><b>${n}</b><span class="chips"><span class="chip">${c}</span></span></button>`).join('')}</div>
+  ${mzCard('A Strength 02 <em>október 19-én</em> magától indul. A röpi napjait már most kihagyja.')}</div>`}
+
+/* ── closed runs: a trophy list ── */
+function futamok2(){
+  return `<div class="lp">${nxText({crumb:'Edzéstervek › <b>Lezárt futamok</b>',eb:'Amit lezártál · 20 hét',big:`<div class="lpbig"><b>90%</b><span>átlagosan<br>megvolt</span></div>`,sub:'A legjobb futamod a <em>Hypertrophy 03</em> volt. Kettőről riport is van.'})}
+  <div class="lpsh rise" style="--i:2"><h3>Futamok</h3><span>a legfrissebb elöl</span></div>
+  <div class="nxtro rise" style="--i:2">${CLOSED.map(([n,w,d,rep,s,ph,p],i)=>`<button ${i===0?'data-go="edzes-riport"':`data-toast="${n} — ${rep?'a riport ugyanígy néz ki':'ehhez nem készült riport'}"`}><img src="${PH(ph+'.jpg')}" alt=""><span class="tx"><b>${n}</b><small>${d}</small><span class="chips"><span class="chip">${w} hét</span>${rep?`<span class="chip">${G('check','sage')}riport</span>`:''}</span></span><span class="pc ${p?'':'na'}">${p?`${p}%<small>megvolt</small>`:'nincs<br>riport'}</span></button>`).join('')}</div>
+  <button class="nxcta rise" style="--i:3" data-go="edzes-osszevetes">${G('repeat','ink')}Két futam összevetése</button>
+  ${mzCard('A két riportos futamból kiderül: <em>a vállat kímélve</em> is nőtt az erőd. A Strength 02 ezt viszi tovább.')}</div>`}
+
+/* ── the report: a magazine page ── */
+function riport2(){const MR=[['Hát',6,12,14],['Váll',8,14,16],['Comb',10,14,14],['Mell',10,14,14],['Lábhajlító',6,11,12],['Tricepsz',6,8,10]],X=16;
+  return `<div class="lp">${nxPoster({src:PH('edz-tarcsa.jpg'),crumb:'Lezárt futamok › <b>Hypertrophy 03</b>',eb:'Lezárt futam · június 1. – július 12.',l1:'Hyper&shy;trophy',l2:'03',sub:'A láb és a hát vitte, <em>a váll kímélve</em> maradt.'})}
+  <div class="nxacts rise" style="--i:2"><button class="pill" data-toast="Sablon mentve: Hypertrophy 03">${G('book','ink')}Mentés sablonként</button><button class="pill soft" data-toast="Riport újragenerálva">${G('repeat','deep')}Újragenerálom</button></div>
+  <div class="lpsh rise" style="--i:2"><h3>Hogy ment</h3></div>
+  <div class="nxbig rise" style="--i:2"><b>92%</b><span>megvolt<br>a tervből</span></div>
+  <div style="margin-top:16px"></div>${nxNums([['22 / 24','edzés'],['6 / 6','hét'],['84 / 96','célszett']])}
+  <div class="lpsh rise" style="--i:3"><h3>Izmonként</h3><span>indulás → csúcs</span></div>
+  <div class="card nxrng rise" style="--i:3">${MR.map(([l,a,b,c])=>`<div class="r"><span>${l}</span><span class="tr"><i style="left:${a/X*100}%;width:${(b-a)/X*100}%"></i><b style="left:${a/X*100}%"></b><b class="pk" style="left:${b/X*100}%"></b><u style="left:${c/X*100}%"></u></span><em>${a} → ${b}</em></div>`).join('')}<div class="lg"><span><i></i>indulás</span><span><i class="pk"></i>csúcs</span><span><u></u>a terv teteje</span></div></div>
+  <div class="lpsh rise" style="--i:4"><h3>Erő</h3><span>négy gyakorlat</span></div>
+  <div class="card nxstr rise" style="--i:4">${[['Guggolás','barbell-squat','110','117,5 kg','+7,5 kg'],['Román felhúzás','romanian-deadlift','90','100 kg','+10 kg'],['Döntött törzsű evezés','barbell-row','70','75 kg','+5 kg'],['Fekvenyomás','barbell-bench-press','77,5','77,5 kg','8 ismétlésig']].map(([n,p,a,b,d])=>`<div class="r"><img class="ex" src="${EPH(p)}" alt=""><b>${n}</b><span class="v"><s>${a} →</s><strong>${b}</strong><em>${d}</em></span></div>`).join('')}</div>
+  <div class="lpsh rise" style="--i:5"><h3>Az életed közben</h3><span>hat hét átlaga</span></div>
+  <div class="nxcloud rise" style="--i:5">${[['moon','sky','7,2 óra alvás'],['flame','peach','2 840 kalória naponta'],['bolt','sun','energia 6,8'],['drop','sky','stressz 4,1'],['scale','sun','+1,2 kg'],['ball','sun','1 260 perc sport']].map(([ic,pal,c])=>`<span class="chip">${G(ic,pal)}${c}</span>`).join('')}</div>
+  <div class="lpsh rise" style="--i:6"><h3>Amit a végén írtál</h3></div>
+  <div class="nxquote rise" style="--i:6"><span class="qm">„</span><p>Az utolsó két hét nehéz volt, de a guggolás végre nem fájt. A vállat kímélni kell a következőben.</p></div>
+  ${mzCard('A 24 edzésből 22 megvolt, a két kimaradt <em>a negyedik hétre</em> esett. Az erő a lábon mozdult a legtöbbet.')}</div>`}
+
+/* ── templates: week patterns ── */
+function sablonok2(){
+  return `<div class="lp">${nxText({crumb:'Edzéstervek › <b>Sablonok</b>',eb:'Sablonjaid · egy fut belőlük',title:'Sablonok',sub:'Egy sablonból bármikor új terv indul. A <em>Hypertrophy 04</em> a kedvenced: két futam indult belőle.'})}
+  <div class="lpsh rise" style="--i:2"><h3>A polcod</h3><span>három sablon</span></div>
+  <div class="nxtpl rise" style="--i:2">${TPL.map((t,i)=>`<button ${i===0?'data-go="edzes-sablon"':`data-toast="${t[0]} — a sablon oldala ugyanígy néz ki"`}><span class="hd">${exStack(t[7])}<span><b>${t[0]}</b><small>${t[1]} · ${t[2]} hét · ${t[4]} perc</small></span></span><span class="wkp">${DOW.map((d,j)=>`<span class="${t[8].includes(j)?'on':''}"><i></i>${d}</span>`).join('')}</span><span class="ft"><span class="chip ${i?'':'soft'}">${t[6]}</span>${t[5]?`<span class="chip">${t[5]} futam</span>`:''}</span></button>`).join('')}</div>
+  <button class="nxcta rise" style="--i:3" data-toast="Új sablon: a futó tervből vagy üresen">${G('plus','ink')}Új sablon</button>
+  ${mzCard('A <em>Full body · utazós</em> sablon jól jön, ha egyszer úton leszel: heti három nap, 42 perc.')}</div>`}
+
+/* ── one template: the split board ── */
+function sablon2(){const t=TPL[0],NM=['Push','Legs A','Legs','Pull','Push · könnyű'];
+  return `<div class="lp">${nxText({crumb:'Sablonok › <b>Hypertrophy 04</b>',eb:'Sablon · Pull / Push / Legs · ebből fut a terved',title:'Hyper&shy;trophy <em>04</em>',sub:'6 hét, hetente 5 edzésnap, átlagosan 58 perc. Két futam indult belőle, <em>mindkettő 90% fölött</em>.'})}
+  <div class="lpsh rise" style="--i:2"><h3>A hét</h3><span>lapozd végig a napokat</span></div>
+  <div class="nxbrd rise" style="--i:2">${DOW.map((d,j)=>t[8].includes(j)?`<div class="col"><b>${d}</b><strong>${NM[j]}</strong><small>${DAYD[j].ex.reduce((a,e)=>a+e[2],0)} szett · ${DAYD[j].min} perc</small>${DAYD[j].ex.slice(0,4).map(e=>`<span class="ex"><img class="ex" src="${EPH(e[1])}" alt="">${e[0]}</span>`).join('')}${DAYD[j].ex.length>4?`<small>+${DAYD[j].ex.length-4} gyakorlat</small>`:''}</div>`:`<div class="col off">${G('moon','sky')}<b style="font-size:20px">${d}</b><small>szabad</small></div>`).join('')}</div>
+  <div class="lpsh rise" style="--i:3"><h3>Mit épít</h3><span>a csúcshéten</span></div>
+  <div class="rise" style="--i:3">${planMap()}</div>
+  <div class="lpsh rise" style="--i:4"><h3>Futamok belőle</h3></div>
+  <div class="tgrid rise" style="--i:4">${[['edz-korlat','Hypertrophy 04','fut · 3. hét / 6','edzes-run'],['edz-sulyzotarto','Hypertrophy 03','92% megvolt','edzes-riport']].map(([p,n,c,go])=>`<button data-go="${go}"><img src="${PH(p+'-sq.jpg')}" alt=""><b>${n}</b><span class="chips"><span class="chip">${c}</span></span></button>`).join('')}</div>
+  <div class="lpsh rise" style="--i:5"><h3>A sablon kezelése</h3></div>
+  <div class="nxmg rise" style="--i:5">${[['book','peach','Szerkesztés','data-go="edzes-napszerk-0"'],['repeat','berry','Másolat','data-toast="Másolat kész: Hypertrophy 04 (másolat)"'],['moon','sky','Törlés','data-toast="Ebből fut a mostani terved, ezért most nem törölhető"']].map(([ic,pal,l,a])=>`<button ${a}>${G(ic,pal)}${l}</button>`).join('')}</div>
+  <button class="nxcta rise" style="--i:5" data-toast="Új terv a sablonból: a varázsló kitöltve nyílik">${G('bolt','ink')}Új terv ebből</button>
+  ${mzCard('Ha a röpi szezonja tart, ebből a sablonból <em>négy napos</em> változatot is csinálhatok.')}</div>`}
+
+/* ── the wizard: numbered steps, the arc stays in view ── */
+function ujterv2(){const W=WZ.w,cv=curve(W);
+  return `<div class="lp">${nxText({crumb:'Edzéstervek › <b>Új terv</b>',eb:'Új terv · négy kérdés',title:'Új terv',sub:'Csak ennyit kérdezünk, a többit Mezo rakja össze.'})}
+  <div class="card deep nxwzp"><div class="hd"><b>${W} hét · ${WZ.days.length} nap</b><span>${WZN[WZ.n]}<br>${W-1} emelkedő + 1 pihenő</span></div><div class="arc">${cv.map(v=>`<i style="height:${v}%"></i>`).join('')}</div></div>
+  <div class="nxst rise" style="--i:2"><b>01</b><h3>Hány napot edzel?</h3><small>${WZ.days.length} nap kijelölve</small></div>
+  <div class="nxpad rise" style="--i:2"><div class="cnt5">${[2,3,4,5,6].map(c=>`<button class="${WZ.n===c?'on':''}" data-wzn="${c}" aria-pressed="${WZ.n===c}"><b>${c}</b><small>nap</small></button>`).join('')}</div><div class="card wdays">${DOW.map((d,j)=>`<button class="${WZ.days.includes(j)?'on':''}" data-wzd="${j}" aria-pressed="${WZ.days.includes(j)}"><i>${WZ.days.includes(j)?G('check','ink'):''}</i>${d}</button>`).join('')}</div></div>
+  <div class="nxst rise" style="--i:3"><b>02</b><h3>Milyen hosszú?</h3><small>a végén mindig pihenőhét</small></div>
+  <div class="hrow fps rise" style="--i:3;margin:0">${[4,5,6,7,8].map(w=>`<button class="fp ${WZ.w===w?'on':''}" data-wzw="${w}">${G('clock','sky')}${w} hét</button>`).join('')}</div>
+  <div class="nxst rise" style="--i:4"><b>03</b><h3>Mire gyúrsz?</h3><small>legfeljebb kettő · ${WZ.f.length} kiválasztva</small></div>
+  <div class="hrow cats rise" style="--i:4;margin:0">${Object.values(MUS).map(m=>`<button class="cat ${WZ.f.includes(m[0])?'on':''}" data-wzf="${m[0]}"><img src="${EPH(m[6])}" alt=""><span>${m[0]}</span></button>`).join('')}</div>
+  <div class="nxst rise" style="--i:5"><b>04</b><h3>Mit szeretnél?</h3><small>nem kötelező</small></div>
+  <div class="nxpad rise" style="--i:5"><textarea class="wfld" rows="3" aria-label="Mit szeretnél ebben a tervben?" placeholder="Például: röpi szezon mellett, a vállam kímélve, de a hát nagyon jöhet."></textarea></div>
+  <div class="lpsh rise" style="--i:6"><h3>Ami magától megy</h3></div>
+  <section class="sec rise" style="--i:6;margin-top:0"><div class="card t-sky pad">${[['ball','sun','A röpi napjait kihagyja','kedd, csütörtök, szombat'],['bolt','peach','Kíméli a jobb vállad','amíg 5 / 10 fölött jelzed'],['moon','sky','Pihenőhét a végén','az utolsó hét könnyű']].map(([ic,pal,b,c])=>`<div class="row">${G(ic,pal)}<div><b>${b}</b><small>${c}</small></div></div>`).join('')}</div></section>
+  <button class="nxcta" data-wzgo>${G('spark','ink')}Összerakom</button>
+  ${mzCard(`${WZ.n} nap és ${W} hét: <em>${WZN[WZ.n]}</em> felosztást rakok össze, a ${WZ.f.length?WZ.f.join(' és ').toLowerCase():'teljes test'} hangsúllyal.`)}</div>`}
+
+/* ── running: the interval track, a recovery line ── */
+function futas2(){const L=[...RLOG].reverse(),W=340,H=150,X=k=>34+k*(W-68)/3,Y=v=>24+(v-40)/(60-40)*(H-60);
+  return `<div class="lp">${nxPoster({src:PH('edz-futas.jpg'),pos:'center 55%',crumb:'Terv › <b>Futás</b>',eb:'Robbanékonyság 01 · 3. hét / 8 · építő fázis',l1:'Futás',sub:'A szerdai sprint <em>elmaradt</em>, péntekre még megvan a piramis.',chips:`<span class="chip">${G('shoe','peach')}2 futás a héten</span>`})}
+  <div class="nxacts rise" style="--i:2"><button class="pill" data-sheet="edzRun" data-arg="sprint">${G('shoe','ink')}Pótolom a sprintet</button><button class="pill soft" data-go="edzes-futasterv">${G('book','peach')}A futóterv</button></div>
+  <div class="lpsh rise" style="--i:2"><h3>E hét</h3><span>két edzés</span></div>
+  <div class="nxses rise" style="--i:2">${[['Sprint','szerda 18:00','sprint',1],['Piramis','péntek 17:30','pyr',0]].map(([n,d,a,m])=>`<button class="${m?'miss':''}" data-sheet="edzRun" data-arg="${a}"><img src="${PH('edz-futas-sq.jpg')}" alt=""><span class="chip">${m?G('shoe','peach')+'elmaradt · pótolható':G('clock','sky')+'betervezve'}</span><b>${n}</b><small>${d}</small></button>`).join('')}</div>
+  <div class="lpsh rise" style="--i:3"><h3>A sprint-intervallum</h3><span>minden szerdán</span></div>
+  <div class="card deep nxivl rise" style="--i:3"><div class="hd"><b>9–10<small>kör · 15 mp</small></b><span>erőfeszítés 9 / 10</span></div><div class="ivl">${sprintShape().map((h,i,a)=>`<i class="${h===100?'s':i<2||i>a.length-3?'w':''}" style="height:${h}%"></i>`).join('')}</div><div class="ivlax" style="margin-top:8px"><span>bemelegítés</span><span>sprint és séta</span><span>levezetés</span></div></div>
+  <div class="lpsh rise" style="--i:4"><h3>Pulzus-megnyugvás</h3><span>egyre gyorsabb</span></div>
+  <div class="card nxhr rise" style="--i:4"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Pulzus-megnyugvás másodpercben, négy futás"><line class="tg" x1="18" x2="${W-18}" y1="${Y(45)}" y2="${Y(45)}"/><text class="tl" x="18" y="${Y(45)-8}">cél: 45 mp alatt</text><path class="ln" d="M${L.map((r,k)=>`${X(k)} ${Y(r[4])}`).join(' L')}"/>${L.map((r,k)=>`<circle class="pt" cx="${X(k)}" cy="${Y(r[4])}" r="6"/><text class="vl" x="${X(k)}" y="${Y(r[4])-12}" text-anchor="middle">${r[4]}</text><text class="lb" x="${X(k)}" y="${H-6}" text-anchor="middle">${r[0].split(',')[0].replace('szeptember','szept.')}</text>`).join('')}</svg></div>
+  <section class="sec rise" style="--i:5"><div class="card t-peach pad"><div class="row">${G('bolt','peach')}<div><b>Comb és lábhajlító · −2 szett</b><small>A sprintek a lábat is terhelik, ezért a heti láb-szettekből kettőt levonunk, ugyanúgy, mint a röpinél.</small></div></div></div></section>
+  <div class="lpsh rise" style="--i:6"><h3>Napló</h3></div>
+  <ol class="card nxlog rise" style="--i:6">${RLOG.map(([d,t,rpe,k,hr,n])=>`<li><span class="d"><b>${d.match(/\d+/)[0]}</b><small>szept.</small></span><div><strong>${t} · ${d.split(', ')[1]}</strong><div class="chips"><span class="chip soft">${k} kör</span><span class="chip">${rpe} / 10</span><span class="chip">${hr} mp</span></div>${n?`<p>„${n}”</p>`:''}</div></li>`).join('')}</ol>
+  <div class="lpsh rise" style="--i:7"><h3>Futótervek</h3></div>
+  <section class="sec rise" style="--i:7;margin-top:0"><div class="card t-sage pad">${[['bolt','deep','Robbanékonyság 01','aktív · 3. hét / 8','data-go="edzes-futasterv"'],['clock','sky','5K-alapozó','november 9-től · 6 hét','data-toast="5K-alapozó — tervezett, ugyanígy szerkeszthető"'],['check','sage','Téli base 02','lezárva · 16-ból 14 megvolt','data-toast="Téli base 02 — archív"']].map(([ic,pal,b,c,go])=>`<div class="row tap" role="button" tabindex="0" ${go}>${G(ic,pal)}<div><b>${b}</b><div class="chips"><span class="chip">${c}</span></div></div>${G('chev','ink','chev')}</div>`).join('')}</div></section>
+  ${mzCard('A pulzusod a sprint után <em>46 másodperc</em> alatt nyugszik meg, három hete még 56 volt. Ez a röpin a harmadik szettben érződik.')}</div>`}
+
+/* ── its plan: an 8-week calendar ── */
+function futasterv2(){const K=[6,7,9,9,10,10,11,6];
+  return `<div class="lp">${nxText({crumb:'Futás › <b>Robbanékonyság 01</b>',eb:'Futóterv · aktív · 3. hét / 8',title:'Robba&shy;nékonyság <em>01</em>',sub:'Sprint-állóképesség a röpihez. <em>Minden változás</em> magától mentődik.',chips:`<span class="chip">${G('clock','sky')}szeptember 8. – november 2.</span>`})}
+  <div class="lpsh rise" style="--i:2"><h3>Nyolc hét</h3><span>körök száma</span></div>
+  <div class="card nxcal rise" style="--i:2"><div class="r h"><span></span><span>Sprint · sze</span><span>Piramis · p</span></div>${K.map((k,i)=>{const p=i<4?1:2;return `<div class="r ${i===2?'now':''}"><span>${i+1}. hét${i===7?'<br>könnyű':''}</span><span class="c ${i<2?'dn':i===2?'ms':''}">${i<2?G('check','sage'):''}${k} kör${i===2?' · elmaradt':''}</span><span class="c ${i<2?'dn':i===2?'nw':''}">${i<2?G('check','sage'):''}${p===2?'kétszer':'egyszer'}${i===2?' · péntek':''}</span></div>`}).join('')}</div>
+  <div class="lpsh rise" style="--i:3"><h3>Alapadatok</h3><span>koppints és írd át</span></div>
+  <section class="sec rise" style="--i:3;margin-top:0"><div class="card t-sky pad">${[['spark','sun','Cél','sprint-állóképesség röpihez'],['clock','sky','Sprint','szerda 18:00 · 9 kör · 45 mp séta'],['repeat','sage','Piramis','péntek 17:30 · 15 / 30 / 45 / 30 / 15 mp']].map(([ic,pal,b,c])=>`<div class="row tap" role="button" tabindex="0" data-sheet="edzField" data-arg="${b}">${G(ic,pal)}<div><b>${b}</b><small>${c}</small></div>${G('chev','ink','chev')}</div>`).join('')}</div></section>
+  <button class="nxcta rise" style="--i:4;background:var(--card);color:var(--ink);box-shadow:var(--sh)" data-toast="Lezárás: a terv az archívumba kerül">${G('check','sage')}A futóterv lezárása</button>
+  ${mzCard('Az 5. héttől <em>a piramis kétszer</em> fut le egy edzésen. Ha a röpi meccs szombaton van, pénteken egyszer elég.')}</div>`}
+
+/* ── two runs: head to head ── */
+function osszevetes2(){const MX4=[['Hát',12,9],['Váll',14,10],['Comb',14,12],['Mell',14,11]];
+  return `<div class="lp">${nxText({crumb:'Lezárt futamok › <b>Összevetés</b>',eb:'Két lezárt futam egymás mellett',title:'A <em>vagy</em> B',sub:'Az A futam <em>rövidebb volt</em>, de egyenletesebb.',chips:`<button class="chip" data-toast="Két másik futam választása — a Lezárt futamok oldalán" style="min-height:40px">${G('repeat','ink')}Másik kettő</button>`})}
+  <div class="nxh2h rise" style="--i:2"><button data-go="edzes-riport"><img src="${PH('edz-tarcsa.jpg')}" alt=""><span class="ab">A</span><strong>92%</strong><b>Hypertrophy 03</b><small>22 / 24 edzés · 6 hét</small></button><button class="b2" data-toast="Recovery rebuild — a riport ugyanígy néz ki"><img src="${PH('edz-nyujtas.jpg')}" alt=""><span class="ab">B</span><strong>88%</strong><b>Recovery rebuild</b><small>28 / 32 edzés · 8 hét</small></button><span class="vs">VS</span></div>
+  <div class="lpsh rise" style="--i:3"><h3>Csúcs szett egy héten</h3></div>
+  <div class="card nxbfly rise" style="--i:3"><div class="hd"><span>A · Hypertrophy 03</span><span></span><span>B · Recovery</span></div>${MX4.map(([l,a,b])=>`<div class="r"><span class="l"><i style="width:${a/16*100}%">${a}</i></span><span>${l}</span><span class="rr"><i style="width:${b/16*100}%">${b}</i></span></div>`).join('')}</div>
+  <div class="lpsh rise" style="--i:4"><h3>Fókusz</h3></div>
+  <div class="nxfx rise" style="--i:4"><div style="background:var(--sage3)">${G('star','sun')}<strong>A · hangsúly</strong><small>Hát, comb · a váll tartva</small></div><div style="background:#E4F0F8">${G('repeat','sky')}<strong>B · visszaépítés</strong><small>minden izom építés, sérülés után</small></div></div>
+  <div class="lpsh rise" style="--i:5"><h3>Közös gyakorlatok</h3><span>mennyit nőtt az erő</span></div>
+  <div class="card nxcmx rise" style="--i:5">${[['Guggolás','barbell-squat','+7,5 kg','+12,5 kg'],['Döntött törzsű evezés','barbell-row','+5 kg','+2,5 kg'],['Fekvenyomás','barbell-bench-press','=','+5 kg']].map(([n,p,a,b])=>`<div class="r"><b>${a}</b><div><img class="ex" src="${EPH(p)}" alt=""><small>${n}</small></div><b>${b}</b></div>`).join('')}</div>
+  ${mzCard('A B futamban <em>sérülés után</em> nőttél nagyot, az A-ban már magasabbról indultál. Mindkettő jó volt a maga helyén.')}</div>`}
+
+/* ── the sport: slots and effect tiles ── */
+function sport2(){
+  return `<div class="lp">${nxPoster({src:PH('edz-ropi.jpg'),crumb:'Mai › <b>Röplabda</b>',eb:'Röplabda · BVSC · feladó · heti három alkalom',l1:'Röp&shy;labda',sub:'A röpi <em>öt órát</em> ad egy héten, és a vállad érzi.',chips:`<span class="chip">${G('ball','sun')}ma 18:00</span><span class="chip">${G('clock','sky')}90 perc</span>`})}
+  <div class="nxacts rise" style="--i:2"><button class="pill" data-go="edzes-sportlog-0">${G('ball','ink')}Naplózom</button><button class="pill soft" data-sheet="edzSportEv">${G('plus','deep')}Egyszeri esemény</button></div>
+  <div class="lpsh rise" style="--i:2"><h3>A heted</h3><span>a tervtől függetlenül</span></div>
+  <div class="nxslot rise" style="--i:2">${SLOTS.map(([d,t,m,c,r,int],i)=>`<div class="${i===1?'today':''}"><small>${i===1?'ma · ':''}${d}</small><b>${t}</b><strong>${m} perc · ${r}</strong><small>${c} · ${int} terhelés</small></div>`).join('')}</div>
+  <div class="lpsh rise" style="--i:3"><h3>Mire hat még</h3><span>amint naplóztad</span></div>
+  <div class="nxfx rise" style="--i:3">${[['dumbbell','sage','−2 szett','Edzés','A heti váll-szettekből kettőt levonunk.','var(--sage3)'],['flame','peach','+190 kalória','Fuel','A napi kereted nő.','var(--peach2)'],['moon','sky','+20 perc','Alvás','Esti meccs után később kérünk ágyba.','#E4F0F8'],['scale','sun','±0,4 kg','Súly','Másnap ingadozhat, nem trend.','#FBF0D2']].map(([ic,pal,v,b,t,bg])=>`<div style="background:${bg}">${G(ic,pal)}<b>${v}</b><strong>${b}</strong><small>${t}</small></div>`).join('')}</div>
+  <div class="lpsh rise" style="--i:4"><h3>Napló</h3><span>sáv: a váll terhelése</span></div>
+  <ol class="card nxlog rise" style="--i:4">${SLOG.map(([d,m,s,rpe,sh,q])=>`<li><span class="d"><b>${d.match(/\d+/)[0]}</b><small>szept.</small></span><div><strong>${d.split(', ')[1]} · ${m} perc · ${s} szett</strong><div class="chips"><span class="chip">nehézség ${rpe} / 10</span><span class="chip ${sh>=7?'warm':''}">váll ${sh} / 10</span></div><span class="nxsh">${Array.from({length:10},(_,k)=>`<i class="${k<sh?(sh>=7?'hot':'on'):''}"></i>`).join('')}</span>${q?`<p>„${q}”</p>`:''}</div></li>`).join('')}</ol>
+  ${mzCard('Két egymás utáni <em>7 fölötti vállterhelés</em> után a Pull Day vállgyakorlata könnyebb súlyt kap. Most 6-nál tartasz.')}</div>`}
+
+/* ── logging: a photo picker ── */
+const SPBG={sun:'#FBF0D2',sage:'var(--sage3)',sky:'#E4F0F8',peach:'var(--peach2)',berry:'#EFE4F6'};
+function sportlog2(){SPS.q='';
+  return `<div class="lp">${nxText({crumb:'Mai › <b>Naplózás</b>',eb:'Sport naplózása · ma',title:'Mi volt a mozgás?',sub:'Válaszd ki, és csak azt kérdezem, ami annál a sportnál számít.'})}
+  <div class="lpsh rise" style="--i:2"><h3>A szokásos</h3><span>a heti rendedből</span></div>
+  <button class="nxquick rise" style="--i:2" data-go="edzes-sportlog-0"><img src="${PH('edz-ropi.jpg')}" alt=""><small>ma 18:00 · BVSC</small><b>Röplabda · 90 perc</b><span>Egy koppintás, utána csak a részletek</span></button>
+  <div style="margin-top:18px"></div>${searchBar({ph:'Sport keresése…',cls:'spsin',aria:'Sport keresése'})}
+  <div class="lpsh rise" style="--i:3"><h3>Minden sport</h3><span>${SPORTS.length} féle</span></div>
+  <div class="nxsg rise" style="--i:3" id="spg">${SPORTS.map(([l,ic,pal,m,ph],i)=>`<button class="${ph?'pho':''}" data-go="${i===10?'edzes-futas':'edzes-sportlog-'+i}" data-sp="${l.toLowerCase()}" style="${ph?'':`background:${SPBG[pal]}`}">${ph?`<img src="${PH(ph+'-sq.jpg')}" alt="">`:`<span class="gi">${G(ic,pal)}</span>`}<b>${l}</b><small>körülbelül ${m} perc</small></button>`).join('')}</div>
+  <div class="lpsh rise" style="--i:4"><h3>A héten eddig</h3></div>
+  ${nxNums([['2','röpi'],['1 240','kalória'],['180','perc sport']])}
+  ${mzCard('A röpit a heti rendedből <em>magától felajánlom</em> 18:00 után. A többi sportot innen naplózhatod.')}</div>`}
+
+/* ── its form: the big dial ── */
+function sportForm2(i){const [l,ic,pal,m,ph]=SPORTS[i];if(SLF.i!==i)Object.assign(SLF,{i,min:m,rpe:i===0?7:6,f:(SPX[i]||[]).map(f=>f[0]==='c'?f[3]:f[2]),kc:null});
+  return `<div class="lp">${nxText({crumb:`Naplózás › <b>${l}</b>`,eb:`${l} · ma`,title:'Hogy ment?',sub:'Csak az, ami ennél a sportnál számít.'})}
+  <div class="lpsh rise" style="--i:2"><h3>Mennyi ideig</h3></div>
+  <div class="card deep nxdial rise" style="--i:2"><button data-slm="-5" aria-label="Öt perccel kevesebb">−</button><div><b>${SLF.min}</b><small>perc</small></div><button data-slm="5" aria-label="Öt perccel több">+</button></div>
+  ${(SPX[i]||[]).length?`<div class="lpsh rise" style="--i:3"><h3>A részletek</h3></div><section class="sec rise" style="--i:3;margin-top:0"><div class="card pad">${SPX[i].map((f,k)=>f[0]==='c'?`<div class="frow" style="grid-template-columns:1fr"><div><b>${f[1]}</b></div><div class="why">${f[2].map((o,j)=>`<button class="fp ${SLF.f[k]===j?'on':''}" data-slc="${k}|${j}">${o}</button>`).join('')}</div></div>`:`<div class="frow"><div><b>${f[0]}</b><small>${f[1]}</small></div><span class="stp"><button data-sln="${k}|-1" aria-label="${f[0]}: kevesebb">−</button><b>${nb(SLF.f[k])}</b><button data-sln="${k}|1" aria-label="${f[0]}: több">+</button></span></div>`).join('')}</div></section>`:''}
+  <div class="lpsh rise" style="--i:4"><h3>Mennyire volt nehéz?</h3><span>${SLF.rpe} / 10</span></div>
+  <div class="card rise" style="--i:4;margin:0 12px;padding:16px 14px 12px"><div class="nxrpe">${Array.from({length:10},(_,j)=>`<button class="${SLF.rpe===j+1?'on':j<SLF.rpe?'lit':''}" style="height:${44+(j%5)*8}px" data-slr="${j+1}" aria-label="Nehézség ${j+1}">${j+1}</button>`).join('')}</div><div class="nxrpl"><span>könnyű</span><span>maximális</span></div></div>
+  <div class="lpsh rise" style="--i:5"><h3>Kalória</h3></div>
+  <button class="nxkc rise" style="--i:5" data-sheet="edzKcal">${G('flame','peach')}<div><b>${SLF.kc!=null?nb(SLF.kc):'≈ '+nb(slKcal())}</b><small>${SLF.kc!=null?'saját érték, ezt mentjük':'becslés a súlyodból és a sportból'}</small></div><span>Saját érték</span></button>
+  <div class="lpsh rise" style="--i:6"><h3>Jegyzet</h3><span>nem kötelező</span></div>
+  <div class="nxpad rise" style="--i:6"><textarea class="wfld" rows="2" aria-label="Jegyzet" placeholder="Hogy érezted magad, mi ment jól, mi fájt…"></textarea></div>
+  <button class="nxcta stick" data-slsave>${G('check','ink')}Naplózom · ${SLF.min} perc</button>
+  ${mzCard(i===0?'Ha a vállterhelés <em>erős</em> volt, holnap a Pull Day vállgyakorlata könnyebb súlyt kap.':`A ${l.toLowerCase()} kalóriája <em>a Fuel keretedbe</em> kerül, amint naplóztad.`)}</div>`}
+
+/* ── the custom workout: a basket with a sticky total ── */
+function sajat2(){const tot=SJ.ex.reduce((a,e)=>a+e[1],0),by={};SJ.ex.forEach(([g,s])=>{const r=GYAK[g][1];by[r]=(by[r]||0)+s});const regs=Object.entries(by),ok=SJ.name.trim()&&SJ.ex.length;
+  return `<div class="lp">${nxBar('Mai › <b>Saját edzés</b>')}
+  <div class="lpt rise" style="--i:1"><small>Saját edzés · a neve</small></div>
+  <input class="nxname sjname rise" style="--i:1" value="${SJ.name.replace(/"/g,'&quot;')}" aria-label="Az edzés neve" placeholder="Például: pihenőnapi felső">
+  <div class="nxsum c2"><div><b>${tot} szett</b><small>${SJ.ex.length} gyakorlat · ≈ ${Math.round(tot*3.4)} perc</small></div><button class="pill" data-sjgo>${G('bolt','ink')}Indítás</button>${tot?`<span class="rg">${regs.map(([r,s])=>`<i style="flex:${s};background:${REGC[r]}"></i>`).join('')}</span>`:''}</div>
+  <div class="lpsh rise" style="--i:2"><h3>A kosarad</h3><span>${regs.map(([r,s])=>`${r} ${s}`).join(' · ')||'még üres'}</span></div>
+  ${SJ.ex.length?`<div class="card nxbsk rise" style="--i:2">${SJ.ex.map(([g,s],k)=>`<div class="r"><img class="ex" src="${EPH(GYAK[g][2])}" alt=""><div><b>${GYAK[g][0]}</b><br><small>${GYAK[g][1]} · múltkor ${GYAK[g][4]}</small></div><button class="rm" data-sjrm="${k}" aria-label="Kiveszem: ${GYAK[g][0]}">${G('plus','ink')}</button><span class="sp"><button data-sjs="${k}|-1" aria-label="Egy szettel kevesebb">−</button><b>${s} szett</b><button data-sjs="${k}|1" aria-label="Egy szettel több">+</button></span></div>`).join('')}</div>`:`<div class="nxemp rise" style="--i:2">Még üres. Tegyél bele egy gyakorlatot.</div>`}
+  <button class="nxadd rise" style="--i:2" data-sheet="edzPick" data-arg="sajat">${G('plus','sage')}Gyakorlat hozzáadása</button>
+  <div class="nxacts rise" style="--i:3"><button class="pill soft" data-sjsave ${ok?'':'disabled style="opacity:.45"'}>${G('book','peach')}Mentés későbbre</button></div>
+  ${mzCard(tot>16?'Ez <em>16 szett fölött</em> van: pihenőnapra sok. Egy gyakorlatot kivennék.':'Pihenőnapra <em>pont jó</em> mennyiség. A vállat a röpi miatt ne told túl.')}</div>`}
+
+/* ── the muscle map: the real map, done or planned ── */
+function terkep2(){const P=TMV.plan,L=MORDER.map(k=>[k,MUS[k]]),done=L.reduce((a,[,m])=>a+m[1],0),plan=L.reduce((a,[,m])=>a+m[3],0),wait=L.filter(([,m])=>m[1]<m[3]).sort((a,b)=>(b[1][3]-b[1][1])-(a[1][3]-a[1][1]));
+  const PLC=v=>v>=12?'#C9F24D':v>=9?'#8FD3A8':v>=6?'#5FB08A':'#3D7F63';
+  return `<div class="lp">${nxText({crumb:'Terhelés › <b>Izomtérkép</b>',eb:P?'Izomtérkép · a heti terv':'Izomtérkép · eddig megvolt',title:'Izom&shy;térkép',big:`<div class="lpbig"><b>${P?plan:done}</b><span>${P?'szett<br>a heti terv':`/ ${plan} szett<br>a héten`}</span></div>`})}
+  <div class="nxtog rise" style="--i:2">${[['Eddig megvolt',0,'check','sage'],['A heti terv',1,'clock','sky']].map(([l,v,ic,pal])=>`<button class="${+P===v?'on':''}" data-tmv="${v}" aria-pressed="${+P===v}">${G(ic,pal)}${l}</button>`).join('')}</div>
+  <div style="margin-top:12px"></div>
+  <div class="card deep rmap dk rise" style="--i:2">${realMap({col:k=>P?PLC(MUS[k][3]):lvl(MUS[k][1],MUS[k][3])})}<div class="rmch">${MORDER.map(k=>{const m=MUS[k],c=P?PLC(m[3]):lvl(m[1],m[3]);return `<a href="#edzes-izom-${k}"><b>${m[0]}<em style="color:${c}">${P?m[3]:`${m[1]}/${m[3]}`}</em></b><u><i style="width:${P?m[3]/14*100:Math.min(100,m[1]/m[3]*100)}%;background:${c}"></i></u></a>`}).join('')}</div><div class="rmlg">${(P?[['#3D7F63','kevés'],['#5FB08A','közepes'],['#8FD3A8','sok'],['#C9F24D','a legtöbb']]:LVD).map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join('')}</div></div>
+  <div class="lpsh rise" style="--i:3"><h3>Még munkára vár</h3><span>${wait.length} izom</span></div>
+  <div class="card nxlb rise" style="--i:3">${wait.map(([k,m],j)=>`<button data-go="edzes-izom-${k}"><span class="no">${j+1}</span><span class="nm"><b>${m[0]}</b></span><span class="v">${m[3]-m[1]}<small>szett vár</small></span><span class="bar"><i style="width:${m[1]/m[3]*100}%;background:${lvl(m[1],m[3])}"></i></span></button>`).join('')}</div>
+  <section class="sec rise" style="--i:4"><div class="card t-sun pad"><div class="row tap" role="button" tabindex="0" data-go="edzes-sport">${G('ball','sun')}<div><b>A röpi is dolgoztatott</b><div class="chips"><span class="chip">váll</span><span class="chip">láb</span><span class="chip">core</span><span class="chip">becslés, a szettekbe nem számít</span></div></div>${G('chev','ink','chev')}</div></div></section>
+  ${mzCard('A bicepsz és a far még <em>csak 3 szettnél</em> tart: a pénteki könnyű push napra beteszek két szett kalapácsbicepszt.')}</div>`}
+
+/* the new versions take over: by name for the handlers, in the route table for R3 */
+Object.assign(R3,{'edzes-run':run2,'edzes-tervek':tervek2,'edzes-futamok':futamok2,'edzes-riport':riport2,'edzes-sablonok':sablonok2,'edzes-sablon':sablon2,'edzes-ujterv':ujterv2,'edzes-futas':futas2,'edzes-futasterv':futasterv2,'edzes-osszevetes':osszevetes2});
+ujterv=ujterv2;sport=sport2;sportlog=sportlog2;sportForm=sportForm2;sajat=sajat2;terkep=terkep2;
+
 const R5=h=>h==='edzes-jatszo'?jatszo():h==='edzes-regi'?mai(''):null;
-const mintaAfter=h=>{const p=$('#phone');p.classList.toggle('jpon',h==='edzes-jatszo'||h==='edzes-cer');mmgo.classList.toggle('on',h==='edzes'&&!EST.day);if(h==='edzes-jatszo'){jpStart();jpWheels()}miniPaint()};
-window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h!=='edzes'||EST.day)mmgo.classList.remove('on');if(h!=='edzes-jatszo'&&h!=='edzes-cer')$('#phone').classList.remove('jpon');miniPaint()});
+const mintaAfter=h=>{const p=$('#phone');p.classList.toggle('jpon',h==='edzes-jatszo'||h==='edzes-cer'||h==='edzes-indulas');mmgo.classList.toggle('on',h==='edzes'&&!EST.day);if(h==='edzes-jatszo'){jpStart();jpWheels()}miniPaint()};
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h!=='edzes'||EST.day)mmgo.classList.remove('on');if(h!=='edzes-jatszo'&&h!=='edzes-cer'&&h!=='edzes-indulas')$('#phone').classList.remove('jpon');miniPaint()});
 
 /* side panel: Edzés notes while the domain is open (Fuel's notes come back outside it) */
 const notes=document.querySelector('.notes');
-const ENOTES=()=>`<h2>Lágy irány · Edzés</h2><small>Állapot: 2026-11-05 · mind a négy kör kész</small><p><b>Legutóbb változott · 2026-11-05 · minta:</b> minden Edzés-oldal saját felépítést kap. Két minta: <a href="#edzes">a Mai fül, új felépítés</a> és <a href="#edzes-jatszo">edzés közben, a lejátszó</a> (sötét, egy élénk színnel). Összevetésnek: <a href="#edzes-regi">a régi Mai</a>.</p><p>Az Edzés a Fuel nyelvén: fotó a lap tetején, egy mélyzöld kártya a fő számmal, színes kártyák, pirulák, Mezo a végén.</p><p><b>A Mai fül állapotai:</b></p><ul>${STATES.map(([k,l])=>`<li><a href="#edzes${k?'-mai-'+k:''}">${l}</a></li>`).join('')}</ul><p><b>Az edzés útja (2. kör):</b></p><ul><li><a href="#edzes-indulas">Eligazítás</a> → Indulás</li><li><a href="#edzes-session">Edzés közben</a>: a pipa → „hogy ment?” → pihenő</li><li><a href="#edzes-cer">Lezárás</a></li><li><a href="#edzes-review">Összegzés</a> · <a href="#edzes-review-gyak">egy gyakorlaté</a></li></ul><p><b>A Terv aloldalai (3. kör):</b></p><ul><li><a href="#edzes-run">a futó terv</a> · <a href="#edzes-nap-3">egy nap</a> · <a href="#edzes-napszerk-3">a nap szerkesztése</a></li><li><a href="#edzes-het">heti vizsgálat</a> · <a href="#edzes-izom-hat">egy izom</a></li><li><a href="#edzes-tervek">edzéstervek</a> · <a href="#edzes-ujterv">új terv</a></li><li><a href="#edzes-futamok">lezárt futamok</a> · <a href="#edzes-riport">riport</a> · <a href="#edzes-osszevetes">összevetés</a></li><li><a href="#edzes-sablonok">sablonok</a> · <a href="#edzes-sablon">egy sablon</a></li><li><a href="#edzes-futas">futás</a> · <a href="#edzes-futasterv">futóterv</a></li></ul><p><b>4. kör:</b></p><ul><li><a href="#edzes-gx-0">egy gyakorlat oldala</a> · <a href="#edzes-ermek">érmek</a></li><li><a href="#edzes-sport">röplabda</a> · <a href="#edzes-sportlog">sport naplózása</a> · <a href="#edzes-sportlog-0">egy sport űrlapja</a></li><li><a href="#edzes-sajat">saját edzés</a> (a gyakorlatválasztó lappal)</li><li><a href="#edzes-terkep">izomtérkép</a></li></ul><p>Az Edzés minden oldala és lapja kész.</p>`;
+const ENOTES=()=>`<h2>Lágy irány · Edzés</h2><small>Állapot: 2026-11-05 · minden oldal új felépítésben</small><p><b>Legutóbb változott · 2026-11-05 · a mélyebb oldalak:</b> minden belső Edzés-oldal saját felépítést kapott: <a href="#edzes-indulas">eligazítás</a> (sötét), <a href="#edzes-review">összegzés</a>, <a href="#edzes-gx-0">egy gyakorlat</a>, <a href="#edzes-nap-3">egy nap</a>, <a href="#edzes-izom-hat">egy izom</a>, <a href="#edzes-het">heti vizsgálat</a>, <a href="#edzes-run">a futó terv</a>, <a href="#edzes-tervek">tervek</a>, <a href="#edzes-riport">riport</a>, <a href="#edzes-osszevetes">összevetés</a>, <a href="#edzes-futas">futás</a>, <a href="#edzes-sport">röplabda</a>, <a href="#edzes-sajat">saját edzés</a>, <a href="#edzes-terkep">izomtérkép</a>.</p><p>Az Edzés a Fuel nyelvén: fotó a lap tetején, egy mélyzöld kártya a fő számmal, színes kártyák, pirulák, Mezo a végén.</p><p><b>A Mai fül állapotai:</b></p><ul>${STATES.map(([k,l])=>`<li><a href="#edzes${k?'-mai-'+k:''}">${l}</a></li>`).join('')}</ul><p><b>Az edzés útja (2. kör):</b></p><ul><li><a href="#edzes-indulas">Eligazítás</a> → Indulás</li><li><a href="#edzes-session">Edzés közben</a>: a pipa → „hogy ment?” → pihenő</li><li><a href="#edzes-cer">Lezárás</a></li><li><a href="#edzes-review">Összegzés</a> · <a href="#edzes-review-gyak">egy gyakorlaté</a></li></ul><p><b>A Terv aloldalai (3. kör):</b></p><ul><li><a href="#edzes-run">a futó terv</a> · <a href="#edzes-nap-3">egy nap</a> · <a href="#edzes-napszerk-3">a nap szerkesztése</a></li><li><a href="#edzes-het">heti vizsgálat</a> · <a href="#edzes-izom-hat">egy izom</a></li><li><a href="#edzes-tervek">edzéstervek</a> · <a href="#edzes-ujterv">új terv</a></li><li><a href="#edzes-futamok">lezárt futamok</a> · <a href="#edzes-riport">riport</a> · <a href="#edzes-osszevetes">összevetés</a></li><li><a href="#edzes-sablonok">sablonok</a> · <a href="#edzes-sablon">egy sablon</a></li><li><a href="#edzes-futas">futás</a> · <a href="#edzes-futasterv">futóterv</a></li></ul><p><b>4. kör:</b></p><ul><li><a href="#edzes-gx-0">egy gyakorlat oldala</a> · <a href="#edzes-ermek">érmek</a></li><li><a href="#edzes-sport">röplabda</a> · <a href="#edzes-sportlog">sport naplózása</a> · <a href="#edzes-sportlog-0">egy sport űrlapja</a></li><li><a href="#edzes-sajat">saját edzés</a> (a gyakorlatválasztó lappal)</li><li><a href="#edzes-terkep">izomtérkép</a></li></ul><p>Az Edzés minden oldala és lapja kész.</p>`;
 /* swap only the panel's text: the shell's toggle row (.tog) and its handlers stay in place */
 const setNotes=on=>{if(!notes)return;const has=!!document.getElementById('enotes');if(on&&!has){[...notes.children].forEach(c=>{if(!c.classList.contains('tog')){c.dataset.fh=1;c.style.display='none'}});const d=document.createElement('div');d.id='enotes';d.innerHTML=ENOTES();notes.insertBefore(d,notes.firstChild);const t=notes.querySelector('.tog');if(t)d.insertBefore(t,d.children[2]||null)}else if(!on&&has){const d=document.getElementById('enotes'),t=d.querySelector('.tog');if(t){const ref=[...notes.children].find(c=>c.dataset.fh&&c.tagName==='P'&&c.previousElementSibling&&c.previousElementSibling.tagName==='SMALL');notes.insertBefore(t,ref?ref.nextSibling:null)}d.remove();[...notes.children].forEach(c=>{if(c.dataset.fh){c.style.display='';delete c.dataset.fh}})}};
 window.addEventListener('hashchange',()=>setNotes(location.hash.slice(1).startsWith('edzes')));

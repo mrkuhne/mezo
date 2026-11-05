@@ -17,7 +17,7 @@ for(const W of [390,320]){const p=await b.newPage({viewport:{width:1200,height:9
   p.on('pageerror',e=>errs.push(`${W} ${e.message}`));p.on('response',r=>{if(r.status()>=400)errs.push(`${W} HTTP ${r.status()} ${r.url().slice(-50)}`)});
   for(const route of routes){
     await p.goto(`http://127.0.0.1:8757/kepes/${page}?v=${Date.now()}#${route}`);
-    await p.waitForSelector('#scroll .phead, #scroll .head, #scroll .top, #scroll .jp, #scroll .cer2',{timeout:15000}).catch(()=>errs.push(`${W} #${route}: no page rendered (did it throw?)`));
+    await p.waitForSelector('#scroll .phead, #scroll .head, #scroll .top, #scroll .jp, #scroll .cer2, #scroll .lp, #scroll .nxbf',{timeout:15000}).catch(()=>errs.push(`${W} #${route}: no page rendered (did it throw?)`));
     await p.waitForTimeout(1600);
     const is320=()=>p.evaluate(()=>!!document.querySelector('#phone')?.classList.contains('w320'));
     if(W===320&&!(await is320())){await p.click('#t320',{timeout:3000}).catch(()=>{});await p.waitForTimeout(300)}
