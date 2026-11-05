@@ -165,7 +165,7 @@ metallic 3D icons · many hues on one page · bare number tiles · grey helper l
 - New CSS blocks start with their own comment; new glyphs go into the `G` table (outline + soft gradient).
 - Every page function that opens `ihead`/`phead` closes the `.body` div at its end.
 - Traps met: a class name reused across pages silently restyles rows (`.sw` swatches vs swipe rows) —
-  grep before naming; state used by `render()` must be declared before the first render; `.phone`
+  grep before naming (it happened again in Edzés round 2: a `.lab` legend inherited the page frame's `.lab{min-height:100vh}` and stretched a card to 1 200 px — grep `index.html` for every new class name); state used by `render()` must be declared before the first render; `.phone`
   uses `overflow: clip`; a sheet must not open another sheet; heredocs containing `rm`-like text can be
   blocked — write scripts with the file tool and run them.
 - **Tab-switch flash (owner caught it 2026-11-05):** `.tabswap` only pauses the `.rise` entrance; when the class comes off, the animation restarts from opacity 0 and the page flashes ~0.4 s after the switch. The router strips `.rise` from the new tab's content *before* dropping `.tabswap`. Never add a timed class that pauses an animation without removing the animation's trigger first. Check with an opacity sample during the switch (min must stay 1.00).

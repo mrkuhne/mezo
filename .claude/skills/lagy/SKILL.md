@@ -37,7 +37,7 @@ The whole app lives on **one** Artifact: https://claude.ai/artifact/EEf8oNUm6EDe
   (registered domains live, others toast) and the compact bar (`setupDomBar`) pick it up; `phead(tab,{…,
   tabs:[[label,route]…]})` takes the domain's tab list. Fuel moving to `#fuel…` and Nap becoming the
   default route happen when Nap is built. Publish `index.html` + every `<domain>.js` (+ new `foto/*`).
-- **Order:** Edzés (owner, 2026-11-04; round 1 of 4 — the four tabs — done) → Nap → Mezo → Én. One domain per round; Mezo may take two.
+- **Order:** Edzés (owner, 2026-11-04; rounds 1–2 of 4 done: the four tabs, the in-workout flow) → Nap → Mezo → Én. One domain per round; Mezo may take two.
 
 ## The round (one domain)
 
