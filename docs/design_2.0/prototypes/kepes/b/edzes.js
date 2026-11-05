@@ -836,9 +836,212 @@ document.addEventListener('input',e=>{const c=e.target.classList;
 
 const R4=h=>{let m=h.match(/^edzes-gx-(\d+)$/);if(m)return exPage(+m[1]);if(h==='edzes-ermek')return ermek();if(h==='edzes-sport')return sport();if(h==='edzes-sportlog')return sportlog();m=h.match(/^edzes-sportlog-(\d+)$/);if(m)return sportForm(Math.min(9,+m[1]));if(h==='edzes-sajat')return sajat();if(h==='edzes-terkep')return terkep();return null};
 
+/* ── Minta (owner, 2026-11-05): every Edzés page gets its own structure. Two samples first:
+   the Mai tab rebuilt (week strip → poster with a giant title → a carousel of tall exercise cards →
+   pinned start button) and the in-workout player (dark, one vivid accent, giant numbers, the rest
+   countdown taking over the screen). The old Mai stays at #edzes-regi for comparison. ── */
+document.head.insertAdjacentHTML('beforeend',`<style>
+/* Mai · minta */
+.mm{padding-bottom:190px}
+.mm .top{padding-top:18px}
+.mm .seg{margin-top:14px}
+.mmwk{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin:18px 10px 0}
+.mmwk button{border:0;background:none;display:grid;justify-items:center;gap:6px;padding:8px 0 10px;border-radius:22px;font:700 12px var(--b);color:var(--mute);min-height:84px}
+.mmwk button i{width:16px;height:16px;display:grid;place-items:center;font-style:normal}
+.mmwk button i .g{font-size:16px}
+.mmwk button b{font:700 18px var(--d);color:var(--ink)}
+.mmwk button.done b{color:var(--ink2)}
+.mmwk button.today{background:var(--deep);color:rgba(255,255,255,.75);box-shadow:0 14px 24px -14px rgba(46,107,82,.9)}
+.mmwk button.today b{color:#fff}
+.mmwk button.today i::before{content:"";width:6px;height:6px;border-radius:50%;background:#C9F24D}
+.mmpo{position:relative;margin-top:14px;height:318px}
+.mmpo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 28%;filter:saturate(.95) contrast(1.04)}
+.mmpo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.35) 0%,rgba(16,20,18,0) 26%,rgba(16,20,18,0) 55%,rgba(16,20,18,.72) 100%)}
+.mmpo .mmch{position:absolute;left:16px;right:16px;top:16px;display:flex;gap:6px;flex-wrap:wrap;z-index:1}
+.mmpo .mmch .chip{background:rgba(255,255,255,.92);border:0;height:32px}
+.mmpo .eb{position:absolute;left:18px;bottom:84px;z-index:1;font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.9)}
+.mmt{position:relative;z-index:2;margin:-74px 0 0;padding:0 16px;font:800 84px/.84 var(--d);letter-spacing:-.045em;text-transform:uppercase}
+.mmt span{display:block}
+.mmt .l1{color:#fff}
+.mmt .l2{color:var(--ink);display:flex;align-items:flex-end;gap:14px}
+.mmt .l2 small{font:600 15px/1.35 var(--b);letter-spacing:0;text-transform:none;color:var(--ink2);padding-bottom:8px;max-width:150px}
+.mmt .l2 small em{font-style:normal;color:var(--deep);font-weight:800}
+.mmsh{display:flex;align-items:baseline;justify-content:space-between;margin:30px 18px 12px}
+.mmsh h3{font:700 20px var(--d);letter-spacing:-.01em;margin:0}
+.mmsh span{font:700 12px var(--b);color:var(--mute)}.mmsh a{display:inline-flex;align-items:center;gap:4px;min-height:40px;font:700 13px var(--b);color:var(--deep);text-decoration:none}.mmsh a .g{font-size:14px}
+.mmca{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 16px 6px;scrollbar-width:none}
+.mmca::-webkit-scrollbar{display:none}
+.mmc{position:relative;flex:0 0 156px;height:224px;border-radius:26px;overflow:hidden;scroll-snap-align:start;border:0;padding:0;text-align:left;background:#1E2321;box-shadow:0 18px 30px -22px rgba(30,35,33,.6)}
+.mmc img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mmc::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.1) 30%,rgba(16,20,18,.86) 100%)}
+.mmc .no{position:absolute;left:14px;top:10px;z-index:1;font:800 34px var(--d);letter-spacing:-.04em;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.35)}
+.mmc .tx{position:absolute;left:12px;right:12px;bottom:12px;z-index:1;display:grid;gap:6px}
+.mmc .tx b{font:700 15px/1.2 var(--d);color:#fff}
+.mmc .tx .chips{display:flex;gap:4px;flex-wrap:wrap}
+.mmc .tx .chip{height:26px;font-size:12px;padding:0 8px;background:rgba(255,255,255,.92);border:0}
+.mmc .care{position:absolute;right:10px;top:12px;z-index:1;height:26px;font-size:12px;padding:0 8px}
+.mmc.add{background:var(--paper);box-shadow:none;outline:2px dashed var(--sage2);outline-offset:-2px;display:grid;place-items:center;align-content:center;gap:8px;font:700 14px var(--b);color:var(--deep)}
+.mmc.add::after{display:none}.mmc.add .g{font-size:34px}
+.mmsplit{padding:18px 18px 16px}
+.mmsplit .bar{display:flex;height:22px;border-radius:999px;overflow:hidden;gap:3px;margin:14px 0 14px}
+.mmsplit .bar i{display:block;height:100%;border-radius:6px}
+.mmsplit .hd{display:flex;align-items:baseline;justify-content:space-between}
+.mmsplit .hd b{font:800 40px var(--d);letter-spacing:-.03em;color:#fff}.mmsplit .hd b small{font:600 14px var(--b);color:rgba(255,255,255,.75);margin-left:6px;letter-spacing:0}
+.mmsplit .hd span{font:700 12px var(--b);color:rgba(255,255,255,.8)}
+.mmsplit .lg{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.mmsplit .lg div{display:flex;align-items:center;gap:8px;font:600 13px var(--b);color:rgba(255,255,255,.92)}
+.mmsplit .lg div i{width:10px;height:10px;border-radius:3px;flex:0 0 10px}
+.mmsplit .lg div b{margin-left:auto;font:700 13px var(--d);color:#fff}
+.mmst{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px}
+.mmst div{display:grid;gap:8px}
+.mmst small{font:700 12px var(--b);color:var(--ink2)}
+.mmst b{font:800 26px var(--d);letter-spacing:-.02em}.mmst b small{font:600 13px var(--b);color:var(--ink2)}
+.mmst u{display:flex;gap:3px}.mmst u i{flex:1;height:8px;border-radius:3px;background:rgba(30,35,33,.12)}.mmst u i.on{background:var(--deep)}.mmst .low u i.on{background:var(--peach)}
+.mmgo{position:absolute;left:14px;right:14px;bottom:94px;z-index:5;height:60px;border:0;border-radius:999px;background:var(--deep);color:#fff;display:none;align-items:center;gap:12px;padding:0 10px 0 22px;font:700 16px var(--b);box-shadow:0 20px 34px -16px rgba(46,107,82,.95)}
+.mmgo.on{display:flex}.mmgo .ln{font-style:normal}.w320 .mmgo .ln{display:none}
+.mmgo span{margin-left:auto;height:42px;padding:0 16px;border-radius:999px;background:#C9F24D;color:#10140F;display:flex;align-items:center;gap:6px;font:800 14px var(--b)}
+.mmgo .g{font-size:22px}
+.w320 .mmt{font-size:68px}.w320 .mmt .l2 small{font-size:13px;max-width:128px}.w320 .mmc{flex-basis:140px;height:206px}.w320 .mmwk button b{font-size:16px}
+.phone[data-theme="dark"] .mmpo .mmch .chip,.phone[data-theme="dark"] .mmc .tx .chip{color:#141A17}.phone[data-theme="dark"] .mmc.add{background:var(--card)}.phone[data-theme="dark"] .mmst u i{background:#26312B}.phone[data-theme="dark"] .mmst u i.on{background:var(--sage)}
+
+/* Edzés közben · lejátszó (always dark, one vivid accent) */
+.phone.jpon .scroll{background:#0C100E;padding:0}
+.phone.jpon{background:#0C100E}
+.jp{--lime:#C9F24D;position:relative;min-height:100%;color:#F2F5F1;container-type:inline-size;overflow:hidden;background:#0C100E}
+.jp .ph{position:absolute;left:0;right:0;top:0;height:520px}
+.jp .ph img{width:100%;height:100%;object-fit:cover;object-position:center 22%;filter:saturate(.8) contrast(1.08) brightness(.82)}
+.jp .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,16,14,.55) 0%,rgba(12,16,14,.05) 24%,rgba(12,16,14,.25) 52%,#0C100E 96%)}
+.jp.rest .ph img{filter:saturate(.4) brightness(.45) blur(2px)}
+.jp .in{position:relative;z-index:1;display:flex;flex-direction:column;min-height:844px;padding:16px 16px 22px}.w320 .jp .in{min-height:693px;padding-bottom:16px}
+.jp .tb{display:flex;align-items:center;gap:10px}
+.jp .gb{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;background:rgba(255,255,255,.14);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);color:#fff}
+.jp .gb .g{font-size:22px}
+.jp .gb svg.jpx{width:18px;height:18px}
+.jp .tb .mid{flex:1;text-align:center;display:grid;gap:1px}
+.jp .tb .mid b{font:700 14px var(--b)}.jp .tb .mid small{font:700 12px var(--b);color:rgba(255,255,255,.72)}
+.jp .prog{display:flex;gap:6px;margin-top:16px}
+.jp .prog div{display:flex;gap:3px}
+.jp .prog i{height:5px;flex:1;border-radius:3px;background:rgba(255,255,255,.22);min-width:6px}
+.jp .prog i.d{background:var(--lime)}
+.jp .prog i.c{background:#fff;box-shadow:0 0 0 2px rgba(201,242,77,.55)}
+.jp .sp{flex:1;min-height:120px}
+.jp .ey{display:flex;gap:6px;flex-wrap:wrap}
+.jp .ey span{height:30px;padding:0 12px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;font:700 12px var(--b);background:rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff}
+.jp .ey span.l{background:var(--lime);color:#10140F}
+.jp h2{margin:12px 0 0;font:800 11.4cqw/.9 var(--d);letter-spacing:-.04em;text-transform:uppercase;color:#fff;overflow-wrap:anywhere}
+.jp h2 small{display:block;font:700 13px var(--b);letter-spacing:.08em;color:var(--lime);margin-bottom:8px}
+.jp .last{margin-top:10px;font:600 14px var(--b);color:rgba(255,255,255,.82)}.jp .last b{color:#fff}
+.jp .big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.jp .nb{border-radius:28px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);padding:14px 12px 12px;display:grid;justify-items:center;gap:4px}
+.jp .nb small{font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.jp .nb strong{font:800 64px/1 var(--d);letter-spacing:-.05em;color:#fff;font-variant-numeric:tabular-nums}
+.jp .nb strong em{font-style:normal;color:var(--lime)}
+.jp .nb .st{display:flex;gap:10px;margin-top:4px}
+.jp .nb .st button{width:48px;height:44px;border-radius:16px;border:0;background:rgba(255,255,255,.12);color:#fff;font:700 22px var(--d)}
+.jp .rir{display:flex;align-items:center;gap:8px;margin-top:12px}
+.jp .rir>small{font:700 12px var(--b);color:rgba(255,255,255,.72);flex:0 0 auto}
+.jp .rir div{display:flex;gap:6px;flex:1}
+.jp .rir button{flex:1;height:40px;border-radius:14px;border:0;background:rgba(255,255,255,.1);color:#fff;font:700 14px var(--b)}
+.jp .rir button.on{background:#fff;color:#10140F}
+.jp .sec2{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.jp .sec2 button{height:48px;border-radius:16px;border:0;background:rgba(255,255,255,.08);color:#fff;font:700 13px var(--b);display:flex;align-items:center;justify-content:center;gap:6px}
+.jp .sec2 .g{font-size:20px}
+.jp .go{margin-top:12px;height:62px;border-radius:999px;border:0;background:var(--lime);color:#10140F;font:800 17px var(--b);display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 18px 40px -16px rgba(201,242,77,.65)}
+.jp .go svg{width:22px;height:22px}
+/* rest */
+.jp .cd{text-align:center;margin-top:18px}
+.jp .cd small{display:block;font:700 13px var(--b);letter-spacing:.1em;text-transform:uppercase;color:var(--lime)}
+.jp .cd strong{display:block;font:800 36cqw/1 var(--d);letter-spacing:-.06em;color:#fff;font-variant-numeric:tabular-nums;margin-top:4px}
+.jp .cd u{display:block;height:8px;border-radius:999px;background:rgba(255,255,255,.14);margin:6px 8px 0;overflow:hidden}
+.jp .cd u i{display:block;height:100%;width:var(--w);background:var(--lime);border-radius:999px;transition:width 1s linear}
+.jp .how{margin-top:22px}
+.jp .how>small{display:block;font:700 12px var(--b);color:rgba(255,255,255,.72);margin-bottom:8px}
+.jp .how div{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.jp .how button{height:52px;border-radius:18px;border:0;background:rgba(255,255,255,.1);color:#fff;font:700 14px var(--b)}
+.jp .how button.on{background:#fff;color:#10140F}
+.jp .nx{display:flex;align-items:center;gap:12px;margin-top:14px;padding:10px;border-radius:22px;background:rgba(255,255,255,.08)}
+.jp .nx img{width:52px;height:52px;border-radius:16px;object-fit:cover}
+.jp .nx div{display:grid;gap:2px}.jp .nx small{font:700 12px var(--b);color:rgba(255,255,255,.7)}.jp .nx b{font:700 15px var(--b)}
+.jp .rb{display:grid;grid-template-columns:auto 1fr;gap:10px;margin-top:12px}
+.jp .rb .ghost{height:62px;padding:0 20px;border-radius:999px;border:0;background:rgba(255,255,255,.12);color:#fff;font:700 15px var(--b)}
+.jp .rb .go{margin-top:0}
+.w320 .jp .ph{height:420px}.w320 .jp .sp{min-height:24px}.w320 .jp .last{font-size:13px;margin-top:8px}.w320 .jp .big{margin-top:12px}.w320 .jp .nb{padding:10px 10px 10px;border-radius:22px}.w320 .jp .rir{margin-top:8px}.w320 .jp .sec2{margin-top:10px}.w320 .jp .sec2 button{height:44px}.w320 .jp .go{height:56px;margin-top:10px}.w320 .jp .rb .ghost{height:56px}.w320 .jp .how{margin-top:12px}.w320 .jp .how button{height:46px}.w320 .jp .nx img{width:44px;height:44px}.w320 .jp .nx b{font-size:13px}.w320 .jp .nb strong{font-size:48px}.w320 .jp .nb .st button{width:42px}.w320 .jp .sec2 button{font-size:12px;gap:4px}.w320 .jp .sec2 .g{display:none}
+</style>`);
+
+/* ── Mai · minta ── */
+const MMS=[['Hát · széles',4,'#C9F24D'],['Hát · közép',3,'#8CC3E8'],['Váll · hátsó',3,'#F0B48C'],['Bicepsz',3,'#F4C860'],['Trapéz',3,'#CDB4E3']];
+function maiMinta(){const D=[21,22,23,24,25,26,27];
+  const wk=`<div class="mmwk rise" style="--i:1">${EWEEK.map(([d,s,t,st],i)=>`<button class="${st==='done'?'done':st==='today'?'today':''}" ${dayGo(i)} aria-label="${d}, ${t}"><i>${st==='done'?G('check','sage'):st==='sport'?G('ball','sun'):st==='rest'?G('moon','sky'):st==='today'?'':G('dumbbell','ink')}</i>${s}<b>${D[i]}</b></button>`).join('')}</div>`;
+  const cards=PULL.map(([n,p,s,r,w,c],i)=>`<button class="mmc" ${gxGo(n)} aria-label="${n}"><img class="ex" src="${EPH(p)}" alt=""><span class="no">0${i+1}</span>${c?`<span class="chip warm care">${G('bolt','peach')}${c}</span>`:''}<span class="tx"><b>${n}</b><span class="chips"><span class="chip">${s} × ${r}</span><span class="chip">${w}</span></span></span></button>`).join('')+`<button class="mmc add" data-sheet="edzPick" data-arg="add">${G('plus','sage')}Gyakorlat</button>`;
+  const tot=MMS.reduce((a,m)=>a+m[1],0);
+  return `<div class="mm">
+  <div class="top rise" style="--i:0"><a class="logo" href="#irany">${MARK(34)}<b>mezo</b></a><button class="av" data-toast="Profil — az Én területen" aria-label="Profil">P</button></div>
+  ${seg('Mai',ETABS)}
+  ${wk}
+  <div class="mmpo rise" style="--i:2"><img src="${PH('edz-huzodzkodas.jpg')}" alt=""><div class="mmch"><span class="chip">${G('dumbbell','deep')}16:00</span><span class="chip">${G('clock','sky')}64 perc</span><span class="chip">${G('flame','peach')}540 kalória</span></div><span class="eb">Hypertrophy 04 · 3. hét / 6</span></div>
+  <h1 class="mmt rise" style="--i:2"><span class="l1">Pull</span><span class="l2">Day<small>Ma <em>hát és bicepsz</em>, a vállad kímélve.</small></span></h1>
+  <div class="mmsh rise" style="--i:3"><h3>A mai sor</h3><span>5 gyakorlat · 16 szett</span></div>
+  <div class="mmca rise" style="--i:3">${cards}</div>
+  <div class="mmsh rise" style="--i:4"><h3>Mit dolgoztat</h3><a href="#edzes-terheles">A heted ${G('chev')}</a></div>
+  <section class="sec rise" style="--i:4;margin-top:0"><div class="card deep mmsplit"><div class="hd"><b>${tot}<small>szett ma</small></b><span>a heti 83-ból</span></div><div class="bar">${MMS.map(([l,n,c])=>`<i style="flex:${n};background:${c}"></i>`).join('')}</div><div class="lg">${MMS.map(([l,n,c])=>`<div><i style="background:${c}"></i>${l}<b>${n}</b></div>`).join('')}</div></div></section>
+  <div class="mmsh rise" style="--i:5"><h3>Reggel ezt mondtad</h3><span>07:40</span></div>
+  <section class="sec rise" style="--i:5;margin-top:0"><div class="card t-sky mmst">${[['Kipihentség',4,'low'],['Izomláz',7,''],['Kedv',5,'']].map(([l,v,c])=>`<div class="${c}"><small>${l}</small><b>${v}<small> / 10</small></b><u>${Array.from({length:10},(_,k)=>`<i class="${k<v?'on':''}"></i>`).join('')}</u></div>`).join('')}</div></section>
+  <div class="mmsh rise" style="--i:6"><h3>Ma még jön</h3></div>
+  <section class="sec rise" style="--i:6;margin-top:0">${comingUp()}</section>
+  ${mzCard('Este röpi is van, ezért a <em>húzódzkodás utolsó szettjét</em> kihagynám: a vállad így frissebb marad a meccsre.',`<button class="pill soft" data-toast="Rendben: a negyedik szett kimarad">Így csináljuk</button>`)}
+  </div>`}
+const mmgo=document.createElement('button');mmgo.className='mmgo';mmgo.dataset.go='edzes-jatszo';mmgo.innerHTML=`${G('bolt','sun')}Indítsuk<i class="ln">&nbsp;a Pull Dayt</i><span>64 perc ${G('chev','ink')}</span>`;$('#phone').appendChild(mmgo);
+
+/* ── Edzés közben · lejátszó ── */
+const JPH=['edz-huzodzkodas.jpg','edz-sulyzotarto.jpg','edz-sulyzo.jpg','edz-sulyzotarto.jpg','edz-sulyzo.jpg'];
+const JPN=PULL.map(([n,p,s,r,w])=>{const kg=parseFloat(w.replace('+','').replace(',','.'))||0,rr=parseInt(r.split('–')[1]||r,10);return {n,p,s,r,w:kg,plus:w.startsWith('+'),rep:Math.max(6,rr-(n.startsWith('Húz')?0:2))}});
+JPN[0].rep=8;
+const JP={ex:0,set:2,w:12.5,r:8,ri:2,mode:'set',left:90,total:90,how:'',done:[2,0,0,0,0],t0:Date.now()-12*60000,iv:null};
+const LIMEX=`<svg class="jpx" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+const CHECK=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#10140F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+const jpNext=()=>{const e=JPN[JP.ex];if(JP.set+1<e.s)return [JP.ex,JP.set+1];for(let i=JP.ex+1;i<JPN.length;i++)if(JP.done[i]<JPN[i].s)return [i,JP.done[i]];return null};
+const jpMin=()=>Math.max(0,Math.round((Date.now()-JP.t0)/60000));
+function jatszo(){const e=JPN[JP.ex],kg=fk(JP.w),R=JP.mode==='rest',nx=jpNext(),ne=nx?JPN[nx[0]]:null,dn=JP.done.reduce((a,b)=>a+b,0),T=JPN.reduce((a,x)=>a+x.s,0);
+  const prog=`<div class="prog" aria-label="${dn} / ${T} szett kész">${JPN.map((x,i)=>`<div style="flex:${x.s}">${Array.from({length:x.s},(_,j)=>`<i class="${j<JP.done[i]?'d':(!R&&i===JP.ex&&j===JP.set)?'c':''}"></i>`).join('')}</div>`).join('')}</div>`;
+  const top=`<div class="tb"><button class="gb" data-jpx aria-label="Kilépés az edzésből">${LIMEX}</button><div class="mid"><b>Pull Day</b><small id="jpel">${jpMin()} perc · ${dn} / ${T} szett</small></div><button class="gb" data-go="edzes-session" aria-label="Táblázatos nézet">${G('dots','cream')}</button></div>${prog}`;
+  if(R)return `<div class="jp rest"><div class="ph"><img src="${PH(JPH[JP.ex])}" alt=""></div><div class="in">${top}
+    <div class="cd"><small>Pihenő</small><strong id="jpcd">${mmss(JP.left)}</strong><u><i id="jpbar" style="--w:${JP.left/JP.total*100}%"></i></u></div>
+    <div class="sp" style="min-height:24px"></div>
+    <div class="how"><small>Hogy ment az előző szett?</small><div>${['Könnyű','Jó','Nehéz'].map(l=>`<button class="${JP.how===l?'on':''}" data-jphow="${l}">${l}</button>`).join('')}</div></div>
+    ${ne?`<div class="nx"><img class="ex" src="${EPH(ne.p)}" alt=""><div><small>Következik · ${nx[1]+1}. szett / ${ne.s}</small><b>${ne.n} · ${ne.plus?'+':''}${fk(ne.w)} kg × ${ne.rep}</b></div></div>`:''}
+    <div class="rb"><button class="ghost" data-jpplus aria-label="Plusz 30 másodperc">+30 mp</button><button class="go" data-jpskip>Tovább ${G('chev','ink')}</button></div></div></div>`;
+  return `<div class="jp"><div class="ph"><img src="${PH(JPH[JP.ex])}" alt=""></div><div class="in">${top}
+    <div class="sp"></div>
+    <div class="ey"><span class="l">${JP.set+1}. szett / ${e.s}</span><span>${JP.ex+1}. gyakorlat / ${JPN.length}</span>${PULL[JP.ex][5]?`<span>kímélve</span>`:''}</div>
+    <h2>${e.n.replace(/\s*\(.*\)/,'')}${/\(/.test(e.n)?`<small>${e.n.match(/\((.*)\)/)[1]}</small>`:''}</h2>
+    <div class="last">Múlt héten <b>${JP.ex===0?'10 kg × 8':PULL[JP.ex][4]+' × '+e.rep}</b> · ma a cél <b>${e.plus?'+':''}${fk(e.w)} kg × ${e.rep}</b></div>
+    <div class="big"><div class="nb"><small>${e.plus?'Plusz súly':'Súly'}</small><strong>${e.plus?'<em>+</em>':''}${kg}</strong><div class="st"><button data-jpw="-1" aria-label="Kevesebb súly">−</button><button data-jpw="1" aria-label="Több súly">+</button></div></div><div class="nb"><small>Ismétlés</small><strong>${JP.r}</strong><div class="st"><button data-jpr="-1" aria-label="Kevesebb ismétlés">−</button><button data-jpr="1" aria-label="Több ismétlés">+</button></div></div></div>
+    <div class="rir"><small>Tartalék</small><div>${[0,1,2,3].map(v=>`<button class="${JP.ri===v?'on':''}" data-jpri="${v}" aria-label="${v} ismétlés tartalék">${v===3?'3+':v}</button>`).join('')}</div></div>
+    <div class="sec2"><button data-sheet="edzTech" data-arg="${JP.ex}">${G('book','cream')}Technika</button><button data-go="edzes-session">${G('repeat','cream')}Táblázat</button><button data-jpskipex>${G('chev','cream')}Kihagyom</button></div>
+    <button class="go" data-jpdone>${CHECK}Kész a ${JP.set+1}. szett</button></div></div>`}
+const jpPaint=()=>{if(location.hash!=='#edzes-jatszo')return;const sc=$('#scroll');sc.innerHTML=jatszo();sc.scrollTop=0;$('#cbar').classList.remove('on')};
+const jpLoad=i=>{JP.ex=i;JP.set=JP.done[i];JP.w=JPN[i].w;JP.r=JPN[i].rep;JP.ri=2};
+const jpAdvance=()=>{JP.mode='set';JP.how='';const nx=jpNext();if(!nx){location.hash='edzes-cer';return}if(nx[0]!==JP.ex){jpLoad(nx[0])}else JP.set=nx[1];jpPaint()};
+const jpTick=()=>{if(location.hash!=='#edzes-jatszo'){clearInterval(JP.iv);JP.iv=null;return}const el=$('#jpel');if(el)el.firstChild.textContent=el.firstChild.textContent.replace(/^\d+/,jpMin());
+  if(JP.mode==='rest'){JP.left--;if(JP.left<=0){haptic(20);toast('Pihenő vége, jöhet a következő szett');jpAdvance();return}const c=$('#jpcd'),b=$('#jpbar');if(c)c.textContent=mmss(JP.left);if(b)b.style.setProperty('--w',JP.left/JP.total*100+'%')}};
+document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest('.jp'))return;
+  const w=t.closest('[data-jpw]');if(w){JP.w=Math.max(0,JP.w+ +w.dataset.jpw*2.5);jpPaint();haptic(6);return}
+  const r=t.closest('[data-jpr]');if(r){JP.r=Math.max(1,JP.r+ +r.dataset.jpr);jpPaint();haptic(6);return}
+  const ri=t.closest('[data-jpri]');if(ri){JP.ri=+ri.dataset.jpri;jpPaint();return}
+  if(t.closest('[data-jpdone]')){JP.done[JP.ex]=Math.max(JP.done[JP.ex],JP.set+1);haptic(14);if(!jpNext()){location.hash='edzes-cer';return}JP.mode='rest';JP.left=JP.total=90;jpPaint();return}
+  const h=t.closest('[data-jphow]');if(h){JP.how=h.dataset.jphow;$$('.jp .how button').forEach(b=>b.classList.toggle('on',b===h));return}
+  if(t.closest('[data-jpplus]')){JP.left+=30;JP.total=Math.max(JP.total,JP.left);const c=$('#jpcd');if(c)c.textContent=mmss(JP.left);return}
+  if(t.closest('[data-jpskip]')){jpAdvance();return}
+  if(t.closest('[data-jpskipex]')){const n=JPN[JP.ex].n;JP.done[JP.ex]=JPN[JP.ex].s;toast(`Kihagyva: ${n}`);jpAdvance();return}
+  if(t.closest('[data-jpx]')){toast('Az edzés nyitva marad, a Mai fülről folytatod');location.hash='edzes';return}
+},true);
+const R5=h=>h==='edzes-jatszo'?jatszo():h==='edzes-regi'?mai(''):null;
+const mintaAfter=h=>{const p=$('#phone');p.classList.toggle('jpon',h==='edzes-jatszo');mmgo.classList.toggle('on',h==='edzes'&&!EST.day);if(h==='edzes-jatszo'&&!JP.iv)JP.iv=setInterval(jpTick,1000)};
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h!=='edzes'||EST.day)mmgo.classList.remove('on');if(h!=='edzes-jatszo')$('#phone').classList.remove('jpon')});
+
 /* side panel: Edzés notes while the domain is open (Fuel's notes come back outside it) */
 const notes=document.querySelector('.notes');
-const ENOTES=()=>`<h2>Lágy irány · Edzés</h2><small>Állapot: 2026-11-05 · mind a négy kör kész</small><p>Az Edzés a Fuel nyelvén: fotó a lap tetején, egy mélyzöld kártya a fő számmal, színes kártyák, pirulák, Mezo a végén.</p><p><b>A Mai fül állapotai:</b></p><ul>${STATES.map(([k,l])=>`<li><a href="#edzes${k?'-mai-'+k:''}">${l}</a></li>`).join('')}</ul><p><b>Az edzés útja (2. kör):</b></p><ul><li><a href="#edzes-indulas">Eligazítás</a> → Indulás</li><li><a href="#edzes-session">Edzés közben</a>: a pipa → „hogy ment?” → pihenő</li><li><a href="#edzes-cer">Lezárás</a></li><li><a href="#edzes-review">Összegzés</a> · <a href="#edzes-review-gyak">egy gyakorlaté</a></li></ul><p><b>A Terv aloldalai (3. kör):</b></p><ul><li><a href="#edzes-run">a futó terv</a> · <a href="#edzes-nap-3">egy nap</a> · <a href="#edzes-napszerk-3">a nap szerkesztése</a></li><li><a href="#edzes-het">heti vizsgálat</a> · <a href="#edzes-izom-hat">egy izom</a></li><li><a href="#edzes-tervek">edzéstervek</a> · <a href="#edzes-ujterv">új terv</a></li><li><a href="#edzes-futamok">lezárt futamok</a> · <a href="#edzes-riport">riport</a> · <a href="#edzes-osszevetes">összevetés</a></li><li><a href="#edzes-sablonok">sablonok</a> · <a href="#edzes-sablon">egy sablon</a></li><li><a href="#edzes-futas">futás</a> · <a href="#edzes-futasterv">futóterv</a></li></ul><p><b>4. kör:</b></p><ul><li><a href="#edzes-gx-0">egy gyakorlat oldala</a> · <a href="#edzes-ermek">érmek</a></li><li><a href="#edzes-sport">röplabda</a> · <a href="#edzes-sportlog">sport naplózása</a> · <a href="#edzes-sportlog-0">egy sport űrlapja</a></li><li><a href="#edzes-sajat">saját edzés</a> (a gyakorlatválasztó lappal)</li><li><a href="#edzes-terkep">izomtérkép</a></li></ul><p>Az Edzés minden oldala és lapja kész.</p>`;
+const ENOTES=()=>`<h2>Lágy irány · Edzés</h2><small>Állapot: 2026-11-05 · mind a négy kör kész</small><p><b>Legutóbb változott · 2026-11-05 · minta:</b> minden Edzés-oldal saját felépítést kap. Két minta: <a href="#edzes">a Mai fül, új felépítés</a> és <a href="#edzes-jatszo">edzés közben, a lejátszó</a> (sötét, egy élénk színnel). Összevetésnek: <a href="#edzes-regi">a régi Mai</a>.</p><p>Az Edzés a Fuel nyelvén: fotó a lap tetején, egy mélyzöld kártya a fő számmal, színes kártyák, pirulák, Mezo a végén.</p><p><b>A Mai fül állapotai:</b></p><ul>${STATES.map(([k,l])=>`<li><a href="#edzes${k?'-mai-'+k:''}">${l}</a></li>`).join('')}</ul><p><b>Az edzés útja (2. kör):</b></p><ul><li><a href="#edzes-indulas">Eligazítás</a> → Indulás</li><li><a href="#edzes-session">Edzés közben</a>: a pipa → „hogy ment?” → pihenő</li><li><a href="#edzes-cer">Lezárás</a></li><li><a href="#edzes-review">Összegzés</a> · <a href="#edzes-review-gyak">egy gyakorlaté</a></li></ul><p><b>A Terv aloldalai (3. kör):</b></p><ul><li><a href="#edzes-run">a futó terv</a> · <a href="#edzes-nap-3">egy nap</a> · <a href="#edzes-napszerk-3">a nap szerkesztése</a></li><li><a href="#edzes-het">heti vizsgálat</a> · <a href="#edzes-izom-hat">egy izom</a></li><li><a href="#edzes-tervek">edzéstervek</a> · <a href="#edzes-ujterv">új terv</a></li><li><a href="#edzes-futamok">lezárt futamok</a> · <a href="#edzes-riport">riport</a> · <a href="#edzes-osszevetes">összevetés</a></li><li><a href="#edzes-sablonok">sablonok</a> · <a href="#edzes-sablon">egy sablon</a></li><li><a href="#edzes-futas">futás</a> · <a href="#edzes-futasterv">futóterv</a></li></ul><p><b>4. kör:</b></p><ul><li><a href="#edzes-gx-0">egy gyakorlat oldala</a> · <a href="#edzes-ermek">érmek</a></li><li><a href="#edzes-sport">röplabda</a> · <a href="#edzes-sportlog">sport naplózása</a> · <a href="#edzes-sportlog-0">egy sport űrlapja</a></li><li><a href="#edzes-sajat">saját edzés</a> (a gyakorlatválasztó lappal)</li><li><a href="#edzes-terkep">izomtérkép</a></li></ul><p>Az Edzés minden oldala és lapja kész.</p>`;
 /* swap only the panel's text: the shell's toggle row (.tog) and its handlers stay in place */
 const setNotes=on=>{if(!notes)return;const has=!!document.getElementById('enotes');if(on&&!has){[...notes.children].forEach(c=>{if(!c.classList.contains('tog')){c.dataset.fh=1;c.style.display='none'}});const d=document.createElement('div');d.id='enotes';d.innerHTML=ENOTES();notes.insertBefore(d,notes.firstChild);const t=notes.querySelector('.tog');if(t)d.insertBefore(t,d.children[2]||null)}else if(!on&&has){const d=document.getElementById('enotes'),t=d.querySelector('.tog');if(t){const ref=[...notes.children].find(c=>c.dataset.fh&&c.tagName==='P'&&c.previousElementSibling&&c.previousElementSibling.tagName==='SMALL');notes.insertBefore(t,ref?ref.nextSibling:null)}d.remove();[...notes.children].forEach(c=>{if(c.dataset.fh){c.style.display='';delete c.dataset.fh}})}};
 window.addEventListener('hashchange',()=>setNotes(location.hash.slice(1).startsWith('edzes')));
@@ -849,6 +1052,6 @@ window.addEventListener('hashchange',()=>setNotes(location.hash.slice(1).startsW
 const MSTATES=STATES.map(s=>s[0]).filter(Boolean);
 DOM.edzes={tabs:['edzes','edzes-terv','edzes-terheles','edzes-gyak',...MSTATES.map(s=>'edzes-mai-'+s)],
   tabName:h=>h==='edzes-terv'?'Terv':h==='edzes-terheles'?'Terhelés':h==='edzes-gyak'?'Gyakorlatok':'Mai',
-  render:h=>route3(h)||R4(h)||(h==='edzes-indulas'?indulas():h==='edzes-session'?session():h==='edzes-cer'?cer():h==='edzes-review'?review():h==='edzes-review-gyak'?reviewGyak():h==='edzes-terv'?terv():h==='edzes-terheles'?terheles():h==='edzes-gyak'?gyak():h.startsWith('edzes-mai-')?mai(h.slice(10)):mai(EST.day)),
-  after:h=>{if(h==='edzes-cer')counter();if(h==='edzes-session')dockPaint();setNotes(true)}};
+  render:h=>route3(h)||R4(h)||R5(h)||(h==='edzes-indulas'?indulas():h==='edzes-session'?session():h==='edzes-cer'?cer():h==='edzes-review'?review():h==='edzes-review-gyak'?reviewGyak():h==='edzes-terv'?terv():h==='edzes-terheles'?terheles():h==='edzes-gyak'?gyak():h.startsWith('edzes-mai-')?mai(h.slice(10)):EST.day?mai(EST.day):maiMinta()),
+  after:h=>{mintaAfter(h);if(h==='edzes-cer')counter();if(h==='edzes-session')dockPaint();setNotes(true)}};
 })();
