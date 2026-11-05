@@ -1001,6 +1001,53 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .jp .q button{height:42px;border-radius:14px;border:0;background:rgba(255,255,255,.1);color:#fff;font:700 13px var(--b);padding:0 4px}
 .jp .q button.on{background:#fff;color:#10140F}
 .w320 .jp .vd b{font-size:22px}.w320 .jp .vi{width:52px;height:52px;flex-basis:52px}.w320 .jp .jsets b{font-size:12px}.w320 .jp .exh h3{font-size:24px}.w320 .jp .q button{font-size:12px}.w320 .jp .cdm strong{font-size:32px}
+/* player polish: wheels, planned vs confirmed, motion, minimised bar */
+.jp .grab{display:block;width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.35);margin:-6px auto 8px;touch-action:none}
+.jp .tb{touch-action:none}
+.jp .nb{gap:2px}
+.jp .wr{display:flex;align-items:center;justify-content:center;width:100%;gap:2px}
+.jp .wr em{font:800 44px var(--d);font-style:normal;color:var(--lime);margin-top:-4px}
+.jp .whl{height:104px;overflow-y:auto;scroll-snap-type:y mandatory;padding:20px 0;scrollbar-width:none;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 30%,#000 70%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 30%,#000 70%,transparent 100%);touch-action:pan-y;cursor:grab;outline:none;flex:0 1 auto;min-width:0}
+.jp .whl::-webkit-scrollbar{display:none}
+.jp .whl b{display:block;height:64px;line-height:64px;text-align:center;scroll-snap-align:center;font:800 60px/64px var(--d);letter-spacing:-.05em;color:rgba(255,255,255,.3);font-variant-numeric:tabular-nums;padding:0 6px;white-space:nowrap}
+.jp .whl b.on{color:#fff}
+.jp .nb .tv{font-style:normal;color:var(--lime);display:none}
+.jp .nb.plan .tv{display:inline}
+.jp .nb.plan .whl b.on{color:rgba(255,255,255,.5)}
+.jp .nb.plan{box-shadow:inset 0 0 0 1.5px rgba(201,242,77,.35);background:rgba(255,255,255,.05)}
+.w320 .jp .whl b{font-size:46px}.w320 .jp .wr em{font-size:34px}
+.jpflow{position:absolute;inset:0;z-index:8;background:#C9F24D;clip-path:circle(0 at var(--x) var(--y));transition:clip-path .42s cubic-bezier(.4,0,.2,1),opacity .38s;pointer-events:none}
+.jpflow.go{clip-path:circle(150% at var(--x) var(--y))}
+.jpflow.out{opacity:0}
+.jp .cd.soon strong,.jp .cdm.soon strong{color:var(--lime)}
+@media (prefers-reduced-motion:no-preference){
+body:not(.still) .jp.enter .in>*{animation:jpin .5s cubic-bezier(.2,.8,.2,1) both}
+body:not(.still) .jp.enter .in>:nth-child(n+5){animation-delay:.06s}body:not(.still) .jp.enter .in>:nth-child(n+7){animation-delay:.12s}
+body:not(.still) .jp.enter .ph img{animation:jpfade .6s both}
+body:not(.still) .jp.rest .cd strong{animation:cdin .5s cubic-bezier(.2,.9,.3,1.2) both}
+body:not(.still) .jp .vd{animation:jpup .45s .12s cubic-bezier(.2,.8,.2,1) both}
+body:not(.still) .jp .vd.record .vi .g{animation:medal .8s .3s cubic-bezier(.2,1.6,.4,1) both}
+body:not(.still) .jp .vd.record{position:relative;overflow:hidden}
+body:not(.still) .jp .vd.record::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,236,170,.45) 50%,transparent 70%);transform:translateX(-120%);animation:shine 1.3s .7s ease-out both}
+body:not(.still) .jp .cd.soon strong,body:not(.still) .jp .cdm.soon strong{animation:soon 1s ease-in-out infinite}
+body:not(.still) .jpmini.on{animation:jpup .35s cubic-bezier(.2,.8,.2,1) both}
+}
+@keyframes jpin{from{opacity:0;transform:translateX(30px)}}
+@keyframes jpfade{from{opacity:0;transform:scale(1.06)}}
+@keyframes cdin{from{opacity:0;transform:scale(.82)}}
+@keyframes jpup{from{opacity:0;transform:translateY(16px)}}
+@keyframes medal{from{transform:scale(.2) rotate(-30deg);opacity:0}}
+@keyframes shine{to{transform:translateX(120%)}}
+@keyframes soon{50%{transform:scale(1.04)}}
+.jpmini{position:absolute;left:14px;right:14px;bottom:92px;height:62px;border:0;border-radius:22px;background:#10140F;color:#fff;display:none;align-items:center;gap:10px;padding:0 16px 0 9px;z-index:5;box-shadow:0 18px 32px -16px rgba(0,0,0,.7);text-align:left}
+.jpmini.on{display:flex}
+.phone.inner .jpmini{bottom:20px}
+.jpmini img{width:44px;height:44px;border-radius:14px;object-fit:cover;flex:0 0 44px}
+.jpmini span{flex:1;min-width:0;display:grid;gap:1px}
+.jpmini small{font:700 12px var(--b);color:#C9F24D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jpmini b{font:700 14px var(--b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jpmini strong{font:800 22px var(--d);letter-spacing:-.03em;color:#C9F24D;font-variant-numeric:tabular-nums}
+.jpmini strong .g{font-size:20px}
 .w320 .jp .ph{height:420px}.w320 .jp .sp{min-height:24px}.w320 .jp .last{font-size:13px;margin-top:8px}.w320 .jp .big{margin-top:12px}.w320 .jp .nb{padding:10px 10px 10px;border-radius:22px}.w320 .jp .rir{margin-top:8px}.w320 .jp .sec2{margin-top:10px}.w320 .jp .sec2 button{height:44px}.w320 .jp .go{height:56px;margin-top:10px}.w320 .jp .rb .ghost{height:56px}.w320 .jp .how{margin-top:12px}.w320 .jp .how button{height:46px}.w320 .jp .nx img{width:44px;height:44px}.w320 .jp .nx b{font-size:13px}.w320 .jp .nb strong{font-size:48px}.w320 .jp .nb .st button{width:42px}.w320 .jp .sec2 button{font-size:12px;gap:4px}.w320 .jp .sec2 .g{display:none}
 </style>`);
 
@@ -1035,64 +1082,102 @@ const JPH=['edz-sotet.jpg','edz-felhuzas.jpg','edz-izom.jpg','edz-kettlebell.jpg
 const JPN=PULL.map(([n,p,s,r,w])=>{const kg=parseFloat(w.replace('+','').replace(',','.'))||0,rr=parseInt(r.split('–')[1]||r,10);return {n,p,s,r,w:kg,plus:w.startsWith('+'),rep:Math.max(6,rr-(n.startsWith('Húz')?0:2))}});
 JPN[0].rep=8;
 const JBEST=[[12.5,8],[72.5,10],[12.5,15],[16,12],[30,15]];
-const JP={ex:0,set:2,w:12.5,r:8,ri:2,mode:'set',left:90,total:90,done:[2,0,0,0,0],log:[[{w:12.5,r:8,v:'tick'},{w:12.5,r:8,v:'record'}],[],[],[],[]],q:[2,0,1],t0:Date.now()-12*60000,iv:null};
+const JP={ex:0,set:2,w:12.5,r:8,ri:2,mode:'set',left:90,total:90,done:[2,0,0,0,0],log:[[{w:12.5,r:8,v:'tick'},{w:12.5,r:8,v:'record'}],[],[],[],[]],q:[2,0,1],t0:Date.now()-12*60000,iv:null,touched:false,active:false,enter:false,flow:null};
 const JVD={record:['medal','sun','Új rekord','Ennyit még sosem emeltél ebből.'],up:['chart','sage','Cél fölött','Többet tudtál, mint a mai cél.'],tick:['check','sage','Célsávban','Pont a mai cél, így kell.'],down:['repeat','peach','Cél alatt','Kevesebb lett, mint a cél: semmi baj, a terv igazodik.']};
 const jpVerdict=(i,w,r)=>{const b=JBEST[i],e=JPN[i];if(w>b[0]||(w===b[0]&&r>b[1]))return 'record';if(w>e.w||(w===e.w&&r>e.rep))return 'up';if(w===e.w&&r===e.rep)return 'tick';return 'down'};
-const LIMEX=`<svg class="jpx" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+const LIMEX=`<svg class="jpx" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
 const CHECK=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#10140F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
 const jpNext=()=>{const e=JPN[JP.ex];if(JP.set+1<e.s&&JP.done[JP.ex]<e.s)return [JP.ex,JP.done[JP.ex]];for(let i=JP.ex+1;i<JPN.length;i++)if(JP.done[i]<JPN[i].s)return [i,JP.done[i]];return null};
 const jpMin=()=>Math.max(0,Math.round((Date.now()-JP.t0)/60000));
 const jpDiff=(L,e)=>{const dr=L.r-e.rep,dw=L.w-e.w;return dw?`${dw>0?'+':'−'}${fk(Math.abs(dw))} kg a célhoz képest`:dr?`${dr>0?'+':'−'}${Math.abs(dr)} ismétlés a célhoz képest`:'pont a mai cél'};
 const jpSets=i=>`<div class="jsets">${JP.log[i].map((L,j)=>{const [ic,pal]=JVD[L.v];return `<span class="${L.v}">${G(ic,pal)}<b>${fk(L.w)} × ${L.r}</b><small>${j+1}. szett</small></span>`}).join('')}</div>`;
-function jatszo(){const e=JPN[JP.ex],kg=fk(JP.w),R=JP.mode!=='set',nx=jpNext(),ne=nx?JPN[nx[0]]:null,dn=JP.done.reduce((a,b)=>a+b,0),T=JPN.reduce((a,x)=>a+x.s,0);
+const stillMo=()=>document.body.classList.contains('still')||matchMedia('(prefers-reduced-motion:reduce)').matches;
+/* the number wheels (drag or scroll, like an iOS picker) */
+const WH=64;
+const whVals=k=>k==='w'?Array.from({length:(JPN[JP.ex].plus?40:200)/2.5+1},(_,i)=>i*2.5):Array.from({length:30},(_,i)=>i+1);
+const wheel=(k,v)=>{const vals=whVals(k),idx=Math.max(0,vals.indexOf(v));return `<div class="whl" data-wh="${k}" data-i="${idx}" tabindex="0" aria-label="${k==='w'?'Súly':'Ismétlés'}: görgesd">${vals.map((x,i)=>`<b class="${i===idx?'on':''}">${k==='w'?fk(x):x}</b>`).join('')}</div>`};
+const jpWheels=()=>$$('.jp .whl').forEach(el=>{el.scrollTop=+el.dataset.i*WH;el._i=+el.dataset.i});
+const whCommit=(el,i)=>{const vals=whVals(el.dataset.wh),v=vals[Math.max(0,Math.min(vals.length-1,i))];if(el.dataset.wh==='w')JP.w=v;else JP.r=v;if(!JP.touched){JP.touched=true;$$('.jp .nb.plan').forEach(n=>n.classList.remove('plan'));const d=$('.jp [data-jpdone]');if(d)d.lastChild.textContent=`Kész a ${JP.set+1}. szett`}};
+const whMark=(el,i)=>{[...el.children].forEach((b,k)=>b.classList.toggle('on',k===i))};
+document.addEventListener('scroll',e=>{const el=e.target;if(!el.classList||!el.classList.contains('whl'))return;const i=Math.round(el.scrollTop/WH);if(i!==el._i){el._i=i;el._moved=true;whMark(el,i);haptic()}if(!el._moved)return;clearTimeout(el._t);el._t=setTimeout(()=>whCommit(el,i),110)},true);
+let whd=null;
+document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.closest('.jp .whl');if(!el||e.pointerType!=='mouse')return;whd={el,y:e.clientY,top:el.scrollTop};el.style.scrollSnapType='none';e.preventDefault()},true);
+document.addEventListener('pointermove',e=>{if(whd)whd.el.scrollTop=whd.top-(e.clientY-whd.y)},true);
+document.addEventListener('pointerup',()=>{if(!whd)return;const el=whd.el;whd=null;el.style.scrollSnapType='';el.scrollTo({top:Math.round(el.scrollTop/WH)*WH,behavior:stillMo()?'auto':'smooth'})},true);
+/* rest signals: a soft beep at ten seconds, ticks at three-two-one, a stronger one at zero */
+let AC=null;const beep=(f,d=.12,v=.07)=>{try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}};
+const buzz=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+function jatszo(){const e=JPN[JP.ex],R=JP.mode!=='set',nx=jpNext(),ne=nx?JPN[nx[0]]:null,dn=JP.done.reduce((a,b)=>a+b,0),T=JPN.reduce((a,x)=>a+x.s,0),en=JP.enter?' enter':'';JP.enter=false;
   const prog=`<div class="prog" aria-label="${dn} / ${T} szett kész">${JPN.map((x,i)=>`<div style="flex:${x.s}">${Array.from({length:x.s},(_,j)=>`<i class="${j<JP.done[i]?(JP.log[i][j]&&JP.log[i][j].v==='record'?'d rec':'d'):(!R&&i===JP.ex&&j===JP.set)?'c':''}"></i>`).join('')}</div>`).join('')}</div>`;
-  const top=`<div class="tb"><button class="gb" data-jpx aria-label="Kilépés az edzésből">${LIMEX}</button><div class="mid"><b>Pull Day</b><small id="jpel">${jpMin()} perc · ${dn} / ${T} szett</small></div><button class="gb" data-go="edzes-session" aria-label="Táblázatos nézet">${G('dots','cream')}</button></div>${prog}`;
+  const top=`<span class="grab" aria-hidden="true"></span><div class="tb"><button class="gb" data-jpmin aria-label="Kis méretre: az edzés tovább fut">${LIMEX}</button><div class="mid"><b>Pull Day</b><small id="jpel">${jpMin()} perc · ${dn} / ${T} szett</small></div><button class="gb" data-go="edzes-session" aria-label="Táblázatos nézet">${G('dots','cream')}</button></div>${prog}`;
+  const ph=i=>`<div class="ph"><img src="${PH(JPH[i])}" style="object-position:${JPP[i]}" alt=""></div>`;
   const nextRow=ne?`<div class="nx"><img class="ex" src="${EPH(ne.p)}" alt=""><div><small>Következik · ${nx[1]+1}. szett / ${ne.s}</small><b>${ne.n.replace(/\s*\(.*\)/,'')} · ${ne.plus?'+':''}${fk(ne.w)} kg × ${ne.rep}</b></div></div>`:'';
-  if(JP.mode==='rest'){const ex=JP.mode==='rest'&&JP.done[JP.ex]>=e.s?JP.ex:JP.ex,L=JP.log[ex][JP.log[ex].length-1],[ic,pal,vt,vs]=JVD[L.v];
-    return `<div class="jp rest"><div class="ph"><img src="${PH(JPH[JP.ex])}" style="object-position:${JPP[JP.ex]}" alt=""></div><div class="in">${top}
-    <div class="cd"><small>Pihenő</small><strong id="jpcd">${mmss(JP.left)}</strong><u><i id="jpbar" style="--w:${JP.left/JP.total*100}%"></i></u></div>
+  if(JP.mode==='rest'){const ex=JP.ex,L=JP.log[ex][JP.log[ex].length-1],[ic,pal,vt]=JVD[L.v];
+    return `<div class="jp rest">${ph(ex)}<div class="in">${top}
+    <div class="cd ${JP.left<=10?'soon':''}"><small>Pihenő</small><strong id="jpcd">${mmss(JP.left)}</strong><u><i id="jpbar" style="--w:${JP.left/JP.total*100}%"></i></u></div>
     <div class="sp" style="min-height:16px"></div>
-    <div class="vd ${L.v}"><span class="vi">${G(ic,pal)}</span><div><small>${JP.log[ex].length}. szett · ${fk(L.w)} kg × ${L.r}</small><b>${vt}</b><p>${L.v==='record'?`Az eddigi legjobb ${fk(JBEST[ex][0])} × ${JBEST[ex][1]} volt.`:(s=>s[0].toUpperCase()+s.slice(1))(jpDiff(L,JPN[ex]))+'.'}</p></div></div>
+    <div class="vd ${L.v}"><span class="vi">${G(ic,pal)}</span><div><small>${JP.log[ex].length}. szett · ${fk(L.w)} kg × ${L.r}</small><b>${vt}</b><p>${L.v==='record'?`Az eddigi legjobb ${fk(JP.prevBest[0])} × ${JP.prevBest[1]} volt.`:(s=>s[0].toUpperCase()+s.slice(1))(jpDiff(L,JPN[ex]))+'.'}</p></div></div>
     ${jpSets(ex)}
     ${nextRow}
     <div class="rb"><button class="ghost" data-jpplus aria-label="Plusz 30 másodperc">+30 mp</button><button class="go" data-jpskip>Tovább ${G('chev','ink')}</button></div></div></div>`}
   if(JP.mode==='exdone'){const ex=JP.ex,last=!nx,rec=JP.log[ex].filter(L=>L.v==='record').length;
-    return `<div class="jp rest exd"><div class="ph"><img src="${PH(JPH[ex])}" style="object-position:${JPP[ex]}" alt=""></div><div class="in">${top}
-    ${last?'':`<div class="cdm"><small>Pihenő</small><strong id="jpcd">${mmss(JP.left)}</strong><u><i id="jpbar" style="--w:${JP.left/JP.total*100}%"></i></u></div>`}
+    return `<div class="jp rest exd">${ph(ex)}<div class="in">${top}
+    ${last?'':`<div class="cdm ${JP.left<=10?'soon':''}"><small>Pihenő</small><strong id="jpcd">${mmss(JP.left)}</strong><u><i id="jpbar" style="--w:${JP.left/JP.total*100}%"></i></u></div>`}
     <div class="exh"><small>${ex+1}. gyakorlat kész</small>${rec?`<span class="recb">${G('medal','sun')}${rec} rekord</span>`:''}<h3>${e.n.replace(/\s*\(.*\)/,'')}</h3></div>
     ${jpSets(ex)}
     <div class="qs">${[['Pumpa · érzed?',['Semmi','Enyhe','Jó','Brutális']],['Ízületi fájdalom',['Nincs','Enyhe','Erős']],['Akarunk még?',['Kevés volt','Pont jó','Sok volt']]].map(([t,o],k)=>`<div class="q"><small>${t}</small><div style="grid-template-columns:repeat(${o.length},1fr)">${o.map((x,j)=>`<button class="${JP.q[k]===j?'on':''}" data-jpq="${k}|${j}">${x}</button>`).join('')}</div></div>`).join('')}</div>
     <div class="sp" style="min-height:8px"></div>
     ${last?`<button class="go" data-jpsave>${CHECK}Mentés · edzés vége</button>`:`${nextRow}<div class="rb"><button class="ghost" data-jpplus aria-label="Plusz 30 másodperc">+30 mp</button><button class="go" data-jpsave>Mentés · tovább ${G('chev','ink')}</button></div>`}</div></div>`}
-  return `<div class="jp"><div class="ph"><img src="${PH(JPH[JP.ex])}" style="object-position:${JPP[JP.ex]}" alt=""></div><div class="in">${top}
+  const pl=JP.touched?'':' plan';
+  return `<div class="jp${en}">${ph(JP.ex)}<div class="in">${top}
     <div class="sp"></div>
     <div class="ey"><span class="l">${JP.set+1}. szett / ${e.s}</span><span>${JP.ex+1}. gyakorlat / ${JPN.length}</span>${PULL[JP.ex][5]?`<span>kímélve</span>`:''}</div>
     <h2>${e.n.replace(/\s*\(.*\)/,'')}${/\(/.test(e.n)?`<small>${e.n.match(/\((.*)\)/)[1]}</small>`:''}</h2>
     <div class="last">Rekord <b>${fk(JBEST[JP.ex][0])} kg × ${JBEST[JP.ex][1]}</b> · ma a cél <b>${e.plus?'+':''}${fk(e.w)} kg × ${e.rep}</b></div>
-    <div class="big"><div class="nb"><small>${e.plus?'Plusz súly':'Súly'}</small><strong>${e.plus?'<em>+</em>':''}${kg}</strong><div class="st"><button data-jpw="-1" aria-label="Kevesebb súly">−</button><button data-jpw="1" aria-label="Több súly">+</button></div></div><div class="nb"><small>Ismétlés</small><strong>${JP.r}</strong><div class="st"><button data-jpr="-1" aria-label="Kevesebb ismétlés">−</button><button data-jpr="1" aria-label="Több ismétlés">+</button></div></div></div>
+    <div class="big"><div class="nb${pl}"><small>${e.plus?'Plusz súly':'Súly'}<i class="tv"> · terv</i></small><div class="wr">${e.plus?'<em>+</em>':''}${wheel('w',JP.w)}</div><div class="st"><button data-jpw="-1" aria-label="Kevesebb súly">−</button><button data-jpw="1" aria-label="Több súly">+</button></div></div><div class="nb${pl}"><small>Ismétlés<i class="tv"> · terv</i></small><div class="wr">${wheel('r',JP.r)}</div><div class="st"><button data-jpr="-1" aria-label="Kevesebb ismétlés">−</button><button data-jpr="1" aria-label="Több ismétlés">+</button></div></div></div>
     <div class="rir"><small>Tartalék</small><div>${[0,1,2,3].map(v=>`<button class="${JP.ri===v?'on':''}" data-jpri="${v}" aria-label="${v} ismétlés tartalék">${v===3?'3+':v}</button>`).join('')}</div></div>
     <div class="sec2"><button data-sheet="edzTech" data-arg="${JP.ex}">${G('book','cream')}Technika</button><button data-go="edzes-session">${G('repeat','cream')}Táblázat</button><button data-jpskipex>${G('chev','cream')}Kihagyom</button></div>
-    <button class="go" data-jpdone>${CHECK}Kész a ${JP.set+1}. szett</button></div></div>`}
-const jpPaint=()=>{if(location.hash!=='#edzes-jatszo')return;const sc=$('#scroll');sc.innerHTML=jatszo();sc.scrollTop=0;$('#cbar').classList.remove('on')};
+    <button class="go" data-jpdone>${CHECK}${JP.touched?`Kész a ${JP.set+1}. szett`:`Kész · a terv szerint`}</button></div></div>`}
+const jpPaint=()=>{if(location.hash!=='#edzes-jatszo')return;const sc=$('#scroll');sc.innerHTML=jatszo();sc.scrollTop=0;$('#cbar').classList.remove('on');jpWheels()};
 const jpLoad=i=>{JP.ex=i;JP.set=JP.done[i];JP.w=JPN[i].w;JP.r=JPN[i].rep;JP.ri=2};
-const jpAdvance=()=>{JP.mode='set';const nx=jpNext();if(!nx){location.hash='edzes-cer';return}if(nx[0]!==JP.ex){jpLoad(nx[0])}else JP.set=nx[1];jpPaint()};
-const jpTick=()=>{if(location.hash!=='#edzes-jatszo'){clearInterval(JP.iv);JP.iv=null;return}const el=$('#jpel');if(el)el.firstChild.textContent=el.firstChild.textContent.replace(/^\d+/,jpMin());
-  if(JP.mode==='rest'||(JP.mode==='exdone'&&jpNext())){if(JP.left<=0)return;JP.left--;if(JP.left<=0){haptic(20);toast('Pihenő vége, jöhet a következő szett');if(JP.mode==='rest'){jpAdvance();return}}const c=$('#jpcd'),b=$('#jpbar');if(c)c.textContent=mmss(JP.left);if(b)b.style.setProperty('--w',JP.left/JP.total*100+'%')}};
+const jpAdvance=()=>{JP.mode='set';JP.touched=false;const nx=jpNext();if(!nx){JP.active=false;miniPaint();location.hash='edzes-cer';return}if(nx[0]!==JP.ex){jpLoad(nx[0]);JP.enter=true}else{JP.set=nx[1];JP.w=JPN[JP.ex].w;JP.r=JPN[JP.ex].rep}jpPaint();miniPaint()};
+/* the lime button flows into the rest screen */
+const jpFlow=(btn,then)=>{if(stillMo()||!btn){then();return}const ph=$('#phone'),pr=ph.getBoundingClientRect(),r=btn.getBoundingClientRect(),x=r.left+r.width/2-pr.left,y=r.top+r.height/2-pr.top;const f=document.createElement('div');f.className='jpflow';f.style.setProperty('--x',x+'px');f.style.setProperty('--y',y+'px');ph.appendChild(f);requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.add('go')));setTimeout(()=>{then();f.classList.add('out')},330);setTimeout(()=>f.remove(),760)};
+const jpTick=()=>{if(!JP.active){clearInterval(JP.iv);JP.iv=null;return}const on=location.hash==='#edzes-jatszo';
+  if(on){const el=$('#jpel');if(el)el.firstChild.textContent=el.firstChild.textContent.replace(/^\d+/,jpMin())}
+  const resting=JP.mode==='rest'||(JP.mode==='exdone'&&jpNext());
+  if(resting&&JP.left>0){JP.left--;
+    if(JP.left===10){beep(660,.16);buzz(30);if(on){const c=$('#jpcd');if(c)c.parentElement.classList.add('soon')}}
+    if(JP.left>0&&JP.left<=3)beep(660,.06,.05);
+    if(JP.left===0){beep(990,.22,.09);setTimeout(()=>beep(990,.3,.09),260);buzz([60,80,60]);toast('Pihenő vége, jöhet a következő szett');if(JP.mode==='rest'){jpAdvance();return}}
+    if(on){const c=$('#jpcd'),b=$('#jpbar');if(c)c.textContent=mmss(JP.left);if(b)b.style.setProperty('--w',JP.left/JP.total*100+'%')}}
+  miniPaint()};
+const jpStart=()=>{JP.active=true;if(!JP.iv)JP.iv=setInterval(jpTick,1000)};
+/* minimised: a bar above the bottom bar keeps the workout and its rest in sight */
+const mini=document.createElement('button');mini.className='jpmini';mini.dataset.go='edzes-jatszo';$('#phone').appendChild(mini);
+const miniPaint=()=>{const h=location.hash.slice(1),show=JP.active&&!['edzes-jatszo','edzes-session','edzes-cer'].includes(h);mini.classList.toggle('on',show);mmgo.style.visibility=JP.active?'hidden':'';if(!show)return;const e=JPN[JP.ex],R=JP.mode!=='set'&&JP.left>0;
+  mini.innerHTML=`<img src="${EPH(e.p)}" alt=""><span><small>${R?'Pihenő · utána '+(jpNext()?((jpNext()[1]+1)+'. szett'):'vége'):'Folyamatban · '+jpMin()+' perc'}</small><b>${e.n.replace(/\s*\(.*\)/,'')} · ${JP.mode==='set'?JP.set+1:JP.done[JP.ex]}. szett / ${e.s}</b></span><strong>${R?mmss(JP.left):G('chev','cream')}</strong>`};
+const jpMinimize=()=>{location.hash='edzes'};
+/* drag the player down to minimise it */
+let jdr=null;
+document.addEventListener('pointerdown',e=>{const h=e.target.closest&&e.target.closest('.jp .grab,.jp .tb');if(!h||e.target.closest('button'))return;const el=$('.jp');jdr={y:e.clientY,el,dy:0};el.style.transition='none'},true);
+document.addEventListener('pointermove',e=>{if(!jdr)return;jdr.dy=Math.max(0,e.clientY-jdr.y);jdr.el.style.transform=`translateY(${jdr.dy}px) scale(${1-Math.min(.08,jdr.dy/2500)})`;jdr.el.style.borderRadius=Math.min(40,jdr.dy/4)+'px'},true);
+document.addEventListener('pointerup',()=>{if(!jdr)return;const {el,dy}=jdr;jdr=null;el.style.transition='transform .28s cubic-bezier(.2,.8,.2,1),border-radius .28s';if(dy>110){el.style.transform='translateY(110%)';setTimeout(jpMinimize,230)}else{el.style.transform='';el.style.borderRadius=''}},true);
 document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest('.jp'))return;
-  const w=t.closest('[data-jpw]');if(w){JP.w=Math.max(0,JP.w+ +w.dataset.jpw*2.5);jpPaint();haptic(6);return}
-  const r=t.closest('[data-jpr]');if(r){JP.r=Math.max(1,JP.r+ +r.dataset.jpr);jpPaint();haptic(6);return}
-  const ri=t.closest('[data-jpri]');if(ri){JP.ri=+ri.dataset.jpri;jpPaint();return}
-  if(t.closest('[data-jpdone]')){const i=JP.ex,v=jpVerdict(i,JP.w,JP.r);JP.log[i].push({w:JP.w,r:JP.r,v});if(v==='record')JBEST[i]=[JP.w,JP.r];JP.done[i]=Math.max(JP.done[i],JP.set+1);haptic(v==='record'?30:14);JP.left=JP.total=90;JP.q=[2,0,1];JP.mode=JP.done[i]>=JPN[i].s?'exdone':'rest';jpPaint();return}
+  const w=t.closest('[data-jpw]');if(w){const el=$('.jp .whl[data-wh="w"]');el.scrollTo({top:Math.max(0,el._i+ +w.dataset.jpw)*WH,behavior:stillMo()?'auto':'smooth'});return}
+  const r=t.closest('[data-jpr]');if(r){const el=$('.jp .whl[data-wh="r"]');el.scrollTo({top:Math.max(0,el._i+ +r.dataset.jpr)*WH,behavior:stillMo()?'auto':'smooth'});return}
+  const ri=t.closest('[data-jpri]');if(ri){JP.ri=+ri.dataset.jpri;$$('.jp [data-jpri]').forEach(b=>b.classList.toggle('on',b===ri));return}
+  const dn=t.closest('[data-jpdone]');if(dn){beep(20,.01,.0001);const i=JP.ex,v=jpVerdict(i,JP.w,JP.r);JP.prevBest=JBEST[i].slice();JP.log[i].push({w:JP.w,r:JP.r,v});if(v==='record'){JBEST[i]=[JP.w,JP.r];buzz([30,50,30,50,80])}else buzz(20);JP.done[i]=Math.max(JP.done[i],JP.set+1);JP.left=JP.total=90;JP.q=[2,0,1];JP.mode=JP.done[i]>=JPN[i].s?'exdone':'rest';jpFlow(dn,()=>{jpPaint();miniPaint()});return}
   const q=t.closest('[data-jpq]');if(q){const [k,j]=q.dataset.jpq.split('|').map(Number);JP.q[k]=j;$$(`.jp [data-jpq^="${k}|"]`).forEach(b=>b.classList.toggle('on',b===q));return}
   if(t.closest('[data-jpsave]')){toast('Mentve');jpAdvance();return}
-  if(t.closest('[data-jpplus]')){JP.left+=30;JP.total=Math.max(JP.total,JP.left);const c=$('#jpcd');if(c)c.textContent=mmss(JP.left);return}
+  if(t.closest('[data-jpplus]')){JP.left+=30;JP.total=Math.max(JP.total,JP.left);const c=$('#jpcd');if(c){c.textContent=mmss(JP.left);if(JP.left>10)c.parentElement.classList.remove('soon')}return}
   if(t.closest('[data-jpskip]')){jpAdvance();return}
   if(t.closest('[data-jpskipex]')){const n=JPN[JP.ex].n;JP.done[JP.ex]=JPN[JP.ex].s;toast(`Kihagyva: ${n}`);jpAdvance();return}
-  if(t.closest('[data-jpx]')){toast('Az edzés nyitva marad, a Mai fülről folytatod');location.hash='edzes';return}
+  if(t.closest('[data-jpmin]')){const el=$('.jp');if(!stillMo()&&el){el.style.transition='transform .28s cubic-bezier(.2,.8,.2,1)';el.style.transform='translateY(110%)';setTimeout(jpMinimize,230)}else jpMinimize();return}
 },true);
 const R5=h=>h==='edzes-jatszo'?jatszo():h==='edzes-regi'?mai(''):null;
-const mintaAfter=h=>{const p=$('#phone');p.classList.toggle('jpon',h==='edzes-jatszo');mmgo.classList.toggle('on',h==='edzes'&&!EST.day);if(h==='edzes-jatszo'&&!JP.iv)JP.iv=setInterval(jpTick,1000)};
-window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h!=='edzes'||EST.day)mmgo.classList.remove('on');if(h!=='edzes-jatszo')$('#phone').classList.remove('jpon')});
+const mintaAfter=h=>{const p=$('#phone');p.classList.toggle('jpon',h==='edzes-jatszo');mmgo.classList.toggle('on',h==='edzes'&&!EST.day);if(h==='edzes-jatszo'){jpStart();jpWheels()}miniPaint()};
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h!=='edzes'||EST.day)mmgo.classList.remove('on');if(h!=='edzes-jatszo')$('#phone').classList.remove('jpon');miniPaint()});
 
 /* side panel: Edzés notes while the domain is open (Fuel's notes come back outside it) */
 const notes=document.querySelector('.notes');
