@@ -171,6 +171,8 @@ metallic 3D icons · many hues on one page · bare number tiles · grey helper l
 - **Tab-switch flash (owner caught it 2026-11-05):** `.tabswap` only pauses the `.rise` entrance; when the class comes off, the animation restarts from opacity 0 and the page flashes ~0.4 s after the switch. The router strips `.rise` from the new tab's content *before* dropping `.tabswap`. Never add a timed class that pauses an animation without removing the animation's trigger first. Check with an opacity sample during the switch (min must stay 1.00).
 - **Inner heads grow with their text** (`.phead.in{height:auto;min-height:…}`): a fixed height once hid a wizard's only button under the paper panel. Check every inner page that its head action ends above `.body`.
 - **The side panel is the shell's**: a domain may swap the panel's text, never the whole panel — the `.tog` row (320 px, mozgás nélkül, sötét mód, nagyobb betű) and its handlers must survive. Replacing it once made every "320" probe run at 390 without a word; the probe now refuses to continue when it cannot switch.
+- **Dark theme flips `--ink` to light**: any control that turns ink when selected (`.fp.on` in a group, scale buttons, count buttons) needs dark text in dark mode, and a dark background override must not erase the selected state. Shoot every new control in dark once.
+- **No dead-end placeholders at the end of a domain**: grep the domain file for "körben" / "következő kör" before calling it done; a toast may only describe a real effect ("Mentve", "Hozzáadva"), never "comes later".
 - Commit, push (HTTPS with the gh credential helper), bd comment, publish — every round.
 
 ## 15. The report to the owner
