@@ -213,7 +213,7 @@ function terheles(){const DS=[16,12,17,0,12,null,null],PL=[16,12,19,16,12,0,0];
 /* ── Gyakorlatok ── */
 const exCard=([n,r,p,max,best,med,kind,note])=>`<article class="rl ex tap" role="button" tabindex="0" ${gxGo(n)}><div class="rph"><img class="ex" src="${EPH(p)}" alt="">${note?`<span class="chip ${note==='kímélve'?'warm':'soft'} care">${note}</span>`:''}</div><div class="rtx"><small class="ey">${G('dumbbell',REG[r][0])}${r} · ${kind.toLowerCase()}</small><strong>${n}</strong><div class="meta">${max!=='—'?`<span>${G('chart','deep')}max <b>${max}</b></span>`:''}<span>${G('star','sun')}legjobb <b>${best}</b></span></div></div>${med?`<span class="rate">${G('medal','sun')}${med}</span>`:''}<button class="go" data-toast="Hozzáadva a mai edzéshez: ${n}" aria-label="A mai edzéshez: ${n}">${G('plus','ink')}</button></article>`;
 const exFilter=()=>{const q=ES.q.trim().toLowerCase();const L=GYAK.filter(g=>(!ES.cat||g[1]===ES.cat)&&(!ES.f||(ES.f==='Érmes'?g[5]>0:ES.f==='Mostanában'?['Guggolás','Román felhúzás','Húzódzkodás (súlyozott)','Döntött törzsű evezés','Kalapácsbicepsz','Fekvenyomás'].includes(g[0]):g[6]===ES.f))&&(!q||(g[0]+' '+g[1]).toLowerCase().includes(q)));
-  return L.length?L.map(exCard).join(''):`<div class="emptyph"><img src="${PH('edz-sulyzo.jpg')}" alt=""><b>Ilyen gyakorlatod még nincs.</b><small>Felvehetsz újat, vagy választhatsz a tárból.</small><button class="pill soft" data-sheet="edzExEdit" data-arg="uj" style="margin-top:8px;justify-self:start">${G('plus','sage')}Új gyakorlat</button></div>`};
+  return L.length?L.map(exTile).join(''):`<div class="emptyph"><img src="${PH('edz-sulyzo.jpg')}" alt=""><b>Ilyen gyakorlatod még nincs.</b><small>Felvehetsz újat, vagy választhatsz a tárból.</small><button class="pill soft" data-sheet="edzExEdit" data-arg="uj" style="margin-top:8px;justify-self:start">${G('plus','sage')}Új gyakorlat</button></div>`};
 function gyak(){Object.assign(ES,{cat:'',f:'',q:''});
   return `${ehead('Gyakorlatok',{ph:'edz-sulyzo.jpg',eb:'Gyakorlattár',title:`${GYAK.length} gyakorlat · ${MEDS.length} érem`,sub:'Mindegyiknél a becsült maximumod és a legjobb szetted.',btn:`${G('plus','ink')}Új gyakorlat`,attrs:'data-sheet="edzExEdit" data-arg="uj"'})}
   <h1 class="head rise" style="--i:1">Ezen a héten <em>két új rekord</em> lett: guggolás és román felhúzás.</h1>
@@ -793,7 +793,7 @@ SHEETS.edzField=f=>`<div class="grab"></div><div class="dsh"><div class="dshph">
 const pkFilter=()=>{const l=$('#pklist');if(l)l.innerHTML=pkList()};
 document.addEventListener('click',e=>{
   const t=e.target;
-  const emf=t.closest('[data-emf]');if(emf){EMF.f=EMF.f===emf.dataset.emf?'':emf.dataset.emf;$$('#emfs .fp').forEach(x=>x.classList.toggle('on',x.dataset.emf===EMF.f));$('#emlist').innerHTML=medList();haptic(6);return}
+  const emf=t.closest('[data-emf]');if(emf){EMF.f=EMF.f===emf.dataset.emf?'':emf.dataset.emf;$$('#emfs .fp').forEach(x=>x.classList.toggle('on',x.dataset.emf===EMF.f));$('#emlist').innerHTML=medGrid();haptic(6);return}
   const pkc=t.closest('[data-pkc]');if(pkc){PK.cat=PK.cat===pkc.dataset.pkc?'':pkc.dataset.pkc;$$('#pkcats .cat').forEach(x=>x.classList.toggle('on',x.dataset.pkc===PK.cat));pkFilter();return}
   const pkf=t.closest('[data-pkf]');if(pkf){PK.f=PK.f===pkf.dataset.pkf?'':pkf.dataset.pkf;$$('#pkfps .fp').forEach(x=>x.classList.toggle('on',x.dataset.pkf===PK.f));pkFilter();return}
   const pks=t.closest('[data-pks]');if(pks){PK.scope=pks.dataset.pks;$$('[data-pks]').forEach(x=>x.classList.toggle('on',x===pks));return}
@@ -835,7 +835,7 @@ document.addEventListener('input',e=>{const c=e.target.classList;
   if(c.contains('spsin')){const q=e.target.value.trim().toLowerCase();$$('#spg button').forEach(b=>b.style.display=!q||b.dataset.sp.includes(q)?'':'none')}
   if(c.contains('sjname'))SJ.name=e.target.value});
 
-const R4=h=>{let m=h.match(/^edzes-gx-(\d+)$/);if(m)return exPage(+m[1]);if(h==='edzes-ermek')return ermek();if(h==='edzes-sport')return sport();if(h==='edzes-sportlog')return sportlog();m=h.match(/^edzes-sportlog-(\d+)$/);if(m)return sportForm(Math.min(9,+m[1]));if(h==='edzes-sajat')return sajat();if(h==='edzes-terkep')return terkep();return null};
+const R4=h=>{let m=h.match(/^edzes-gx-(\d+)$/);if(m)return exPage(+m[1]);if(h==='edzes-ermek')return ermek2();if(h==='edzes-sport')return sport();if(h==='edzes-sportlog')return sportlog();m=h.match(/^edzes-sportlog-(\d+)$/);if(m)return sportForm(Math.min(9,+m[1]));if(h==='edzes-sajat')return sajat();if(h==='edzes-terkep')return terkep();return null};
 
 /* ── Minta (owner, 2026-11-05): every Edzés page gets its own structure. Two samples first:
    the Mai tab rebuilt (week strip → poster with a giant title → a carousel of tall exercise cards →
@@ -916,7 +916,7 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .phone.jpon .scroll{background:#0C100E;padding:0}
 .phone.jpon{background:#0C100E}
 .jp{--lime:#C9F24D;position:relative;min-height:100%;color:#F2F5F1;container-type:inline-size;overflow:hidden;background:#0C100E}
-.jp .ph{position:absolute;left:0;right:0;top:0;height:520px}
+.jp .ph{position:absolute;left:0;right:0;top:0;height:520px;margin:0;border-radius:0;box-shadow:none}
 .jp .ph img{width:100%;height:100%;object-fit:cover;object-position:center 22%;filter:saturate(.8) contrast(1.08) brightness(.82)}
 .jp .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,16,14,.55) 0%,rgba(12,16,14,.05) 24%,rgba(12,16,14,.25) 52%,#0C100E 96%)}
 .jp.rest .ph img{filter:saturate(.4) brightness(.45) blur(2px)}
@@ -1283,9 +1283,275 @@ document.addEventListener('click',e=>{const t=e.target;if(!t.closest)return;
   const w2=t.closest('[data-jpw2]');if(w2){const a=w2.dataset.jpw2;if(a==='add'){later(()=>openSheet(SHEETS.edzPick('jadd')));return}if(a==='table'){closeSheet();location.hash='edzes-session';return}if(a==='fin'){later(()=>openSheet(SHEETS.jpFin()));return}}
   if(t.closest('[data-jpfin]')){closeSheet();JP.active=false;miniPaint();location.hash='edzes-cer';return}
 },true);
+/* ── Every Edzés page its own structure (owner OK 2026-11-05): Terhelés = the body map, Terv = the
+   corridor line, Gyakorlatok = search-first photo grid, the ceremony = dark with share cards, Érmek = a
+   medal collection grid. ── */
+document.head.insertAdjacentHTML('beforeend',`<style>
+.lp{padding-bottom:120px}
+.lp .top{padding-top:18px}.lp .seg{margin-top:14px}
+.lpt{margin:22px 18px 0}
+.lpt small{display:block;font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lpt h1{margin:6px 0 0;font:800 50px/.9 var(--d);letter-spacing:-.045em;text-transform:uppercase;color:var(--ink)}
+.lpt h1 em{font-style:normal;color:var(--deep)}
+.lpt p{margin:10px 0 0;font:600 16px/1.4 var(--b);color:var(--ink2)}.lpt p em{font-style:normal;color:var(--deep);font-weight:800}
+.lpt .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.lpt .acts{margin-top:14px}
+.lpbig{display:flex;align-items:flex-end;gap:10px;margin-top:6px}
+.lpbig b{font:800 96px/.82 var(--d);letter-spacing:-.06em;color:var(--ink)}
+.lpbig span{font:700 22px/1.1 var(--d);color:var(--ink2);padding-bottom:6px}
+.lpfill{position:relative;height:16px;border-radius:999px;background:rgba(30,35,33,.08);margin-top:14px;overflow:visible}
+.lpfill i{position:absolute;left:0;top:0;bottom:0;width:var(--w);border-radius:999px;background:linear-gradient(90deg,var(--sage),var(--deep))}
+.lpfill u{position:absolute;top:-6px;bottom:-6px;width:3px;border-radius:2px;background:var(--ink);left:var(--m)}
+.lpfill em{position:absolute;top:22px;left:var(--m);transform:translateX(-50%);font:700 12px var(--b);font-style:normal;color:var(--ink2);white-space:nowrap}
+.lpsh{display:flex;align-items:baseline;justify-content:space-between;margin:34px 18px 12px}
+.lpsh h3{margin:0;font:700 20px var(--d);letter-spacing:-.01em}
+.lpsh a{display:inline-flex;align-items:center;gap:4px;min-height:40px;font:700 13px var(--b);color:var(--deep);text-decoration:none}.lpsh a .g{font-size:14px}
+.lpsh span{font:700 12px var(--b);color:var(--mute)}
+/* body map */
+.bmap{margin:0 12px;padding:14px 6px 12px;border-radius:30px}
+.bmap svg{display:block;width:100%;height:auto}
+.bmap .base{fill:rgba(255,255,255,.13)}.bmap .neu{fill:rgba(255,255,255,.2)}
+.bmap .lbl{font:700 13px var(--b);fill:#fff}.bmap .val{font:800 15px var(--d);fill:#C9F24D}.bmap .val.low{fill:#F0B48C}
+.bmap .cap{font:700 12px var(--b);fill:rgba(255,255,255,.7);letter-spacing:.08em}
+.bmap .ln{stroke:rgba(255,255,255,.55);stroke-width:1.2;fill:none}.bmap .dot{fill:#fff}
+.bmap a:focus{outline:none}.bmap a:focus .hit{stroke:#C9F24D;stroke-width:2}
+.bmap .hit{fill:transparent}
+.bmlg{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:6px 8px 0}
+.bmlg span{display:inline-flex;align-items:center;gap:6px;font:700 12px var(--b);color:rgba(255,255,255,.85)}.bmlg i{width:12px;height:12px;border-radius:4px}
+.bmacts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 12px 0}
+.bmacts button{height:48px;border:0;border-radius:18px;background:var(--card);box-shadow:var(--sh);font:700 13px var(--b);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:6px}.bmacts .g{font-size:20px}
+/* corridor */
+.cor{margin:0 12px;padding:16px 10px 12px;border-radius:30px}
+.cor svg{display:block;width:100%;height:auto}
+.cor .cband{fill:rgba(201,242,77,.16)}.cor .bl{stroke:rgba(201,242,77,.5);stroke-width:1.2;stroke-dasharray:4 4;fill:none}
+.cor .ln{stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}.cor .ln.f{stroke-dasharray:2 7;opacity:.7}
+.cor .pt{fill:#fff}.cor .pt.f{fill:#1E4A39;stroke:#fff;stroke-width:2}
+.cor .now{fill:#C9F24D}.cor .halo{fill:rgba(201,242,77,.28)}
+.cor .cwk{font:700 12px var(--b);fill:rgba(255,255,255,.72)}.cor .cwk.on{fill:#C9F24D}
+.cor .cph{font:700 12px var(--b);fill:rgba(255,255,255,.55)}
+.cor .nl{font:800 15px var(--d);fill:#C9F24D}
+.cor .hd{display:flex;justify-content:space-between;align-items:baseline;padding:0 8px 8px}
+.cor .hd b{font:800 34px var(--d);letter-spacing:-.03em;color:#fff}.cor .hd b small{font:600 13px var(--b);color:rgba(255,255,255,.75);margin-left:6px}
+.cor .hd span{font:700 12px var(--b);color:rgba(255,255,255,.8)}
+.corlg{display:flex;gap:12px;flex-wrap:wrap;padding:8px 8px 0}.corlg span{display:inline-flex;align-items:center;gap:6px;font:700 12px var(--b);color:rgba(255,255,255,.85)}.corlg i{width:14px;height:10px;border-radius:3px}
+@media (prefers-reduced-motion:no-preference){body:not(.still) .cor .halo{animation:halo 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}}
+@keyframes halo{50%{transform:scale(1.5);opacity:.4}}
+.dcar{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 16px 6px;scrollbar-width:none}.dcar::-webkit-scrollbar{display:none}
+.dcd{position:relative;flex:0 0 132px;height:186px;border-radius:24px;overflow:hidden;border:0;padding:0;text-align:left;scroll-snap-align:start;background:#1E2321}
+.dcd img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dcd::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.25),rgba(16,20,18,.1) 35%,rgba(16,20,18,.86))}
+.dcd .dl1{position:absolute;left:12px;top:10px;z-index:1;font:800 30px var(--d);letter-spacing:-.04em;color:#fff}
+.dcd .tx{position:absolute;left:12px;right:10px;bottom:10px;z-index:1;display:grid;gap:5px}
+.dcd .tx b{font:700 14px/1.2 var(--d);color:#fff}
+.dcd .tx .chip{height:26px;font-size:12px;padding:0 8px;background:rgba(255,255,255,.92);border:0;justify-self:start}
+.dcd.today{box-shadow:0 0 0 3px var(--deep)}
+.dcd.fut img{filter:saturate(.5) brightness(.85)}
+.dcd .st{position:absolute;right:10px;top:12px;z-index:1;width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center}.dcd .st .g{font-size:18px}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.tgrid button{position:relative;height:132px;border-radius:22px;overflow:hidden;border:0;padding:12px;text-align:left;background:#1E2321;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}
+.tgrid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tgrid button::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,0) 20%,rgba(16,20,18,.84))}
+.tgrid b{position:relative;z-index:1;font:700 15px/1.2 var(--d);color:#fff}
+.tgrid .chips{position:relative;z-index:1;display:flex;gap:4px;flex-wrap:wrap}.tgrid .chip{height:26px;font-size:12px;padding:0 8px;background:rgba(255,255,255,.92);border:0}
+/* exercise grid */
+.xrec{position:relative;margin:0 12px;height:230px;border-radius:30px;overflow:hidden;display:block;border:0;padding:0;width:calc(100% - 24px);text-align:left}
+.xrec img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 35%}
+.xrec::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,40,32,.92) 0%,rgba(20,40,32,.6) 55%,rgba(20,40,32,.15) 100%)}
+.xrec .tx{position:absolute;left:18px;top:18px;bottom:16px;right:18px;z-index:1;display:flex;flex-direction:column}
+.xrec small{font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:#C9F24D}
+.xrec strong{font:700 18px var(--d);color:#fff;margin-top:4px}
+.xrec .bigv{font:800 52px/.95 var(--d);letter-spacing:-.04em;color:#fff;margin-top:auto}
+.xrec .bigv em{font-style:normal;font:700 15px var(--b);color:#C9F24D;margin-left:8px;letter-spacing:0}
+.xrec .spark{display:flex;gap:4px;align-items:flex-end;height:34px;margin-top:10px}
+.xrec .spark i{width:14px;border-radius:4px;background:rgba(255,255,255,.35);height:var(--h)}.xrec .spark i:last-child{background:#C9F24D}
+.xgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.xt{position:relative;height:218px;border-radius:24px;overflow:hidden;background:#1E2321;box-shadow:0 16px 28px -22px rgba(30,35,33,.7)}
+.xt>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.xt::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.15) 30%,rgba(16,20,18,.88));pointer-events:none}
+.xt .open{position:absolute;inset:0;z-index:1;border:0;background:none;padding:0}
+.xt .tx{position:absolute;left:12px;right:12px;bottom:12px;z-index:2;display:grid;gap:5px;pointer-events:none}
+.xt .tx small{font:700 12px var(--b);color:rgba(255,255,255,.8)}
+.xt .tx b{font:700 15px/1.2 var(--d);color:#fff}
+.xt .tx .chips{display:flex;gap:4px;flex-wrap:wrap}.xt .tx .chip{height:26px;font-size:12px;padding:0 8px;background:rgba(255,255,255,.92);border:0}
+.xt .md{position:absolute;left:10px;top:10px;z-index:2;height:30px;padding:0 10px 0 6px;border-radius:999px;background:#1E2321;color:#F4C860;display:flex;align-items:center;gap:4px;font:800 13px var(--b);pointer-events:none}.xt .md .g{font-size:18px}
+.xt .add{position:absolute;right:8px;top:8px;z-index:3;width:40px;height:40px;border-radius:50%;border:0;background:#fff;display:grid;place-items:center;box-shadow:0 6px 14px -8px rgba(0,0,0,.5)}.xt .add .g{font-size:20px}
+.xt .care{position:absolute;left:10px;top:46px;z-index:2;height:26px;font-size:12px;padding:0 8px}
+.xgrid .emptyph{grid-column:1/-1}
+.w320 .lpt h1{font-size:40px}.w320 .lpbig b{font-size:78px}.w320 .xt{height:196px}.w320 .dcd{flex-basis:120px;height:172px}.w320 .xrec .bigv{font-size:42px}
+/* medal grid */
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 8px;padding:4px 14px 0}
+.mgrid button{border:0;background:none;padding:0;display:grid;justify-items:center;gap:6px;text-align:center}
+.mgrid .rim{position:relative;width:88px;height:88px;border-radius:50%;padding:5px;background:conic-gradient(from 210deg,#F7DD8C,#E2AE45,#FBE8A9,#D49A33,#F7DD8C);box-shadow:0 12px 22px -14px rgba(160,110,20,.8)}
+.mgrid .rim img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid #fff;box-sizing:border-box}
+.mgrid .rim i{position:absolute;right:-2px;bottom:-2px;width:32px;height:32px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 4px 10px -6px rgba(0,0,0,.4)}.mgrid .rim i .g{font-size:20px}
+.mgrid b{font:700 13px/1.2 var(--d);color:var(--ink)}
+.mgrid small{font:700 12px var(--b);color:var(--ink2)}
+.mmon{margin:22px 18px 10px;font:700 16px var(--d)}
+.mstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 12px;padding:14px;border-radius:26px}
+.mstrip div{display:grid;justify-items:center;gap:6px}
+.mstrip .cs{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;min-height:44px;align-content:flex-end;max-width:62px}
+.mstrip .cs i{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,#FBE8A9,#E2AE45)}
+.mstrip b{font:800 20px var(--d);color:#fff}.mstrip small{font:700 12px var(--b);color:rgba(255,255,255,.75)}
+.mstrip .now b{color:#C9F24D}
+/* ceremony (dark, the workout's world) */
+.cer2{--lime:#C9F24D;position:relative;min-height:100%;color:#F2F5F1;background:#0C100E;padding:16px 16px 40px;overflow:hidden;container-type:inline-size}
+.cer2 .glow{position:absolute;left:-30%;right:-30%;top:-120px;height:420px;background:radial-gradient(closest-side,rgba(201,242,77,.22),transparent);pointer-events:none}
+.cer2 .tb{position:relative;display:flex;align-items:center;gap:10px}
+.cer2 .tb .mid{flex:1;text-align:center;font:700 14px var(--b)}.cer2 .tb .mid small{display:block;font:700 12px var(--b);color:rgba(255,255,255,.7)}
+.cer2 .gb{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;background:rgba(255,255,255,.12);color:#fff}
+.cer2 h1{position:relative;margin:26px 0 0;font:800 19cqw/.86 var(--d);letter-spacing:-.05em;text-transform:uppercase;color:#fff}
+.cer2 h1 em{font-style:normal;color:var(--lime)}
+.cer2 .cstars{margin-top:16px}.cer2 .cscore{color:#fff}.cer2 .cscore small{color:rgba(255,255,255,.7)}
+.cer2 .cnts{display:grid;gap:8px;margin-top:20px}
+.cer2 .cnt{display:flex;align-items:baseline;justify-content:space-between;padding:14px 18px;border-radius:24px;background:linear-gradient(135deg,#17322A,#123026);box-shadow:inset 0 0 0 1px rgba(201,242,77,.18)}
+.cer2 .cnt:nth-child(2){background:linear-gradient(135deg,#1A3B31,#14382C)}.cer2 .cnt:nth-child(3){background:linear-gradient(135deg,#1E4638,#174033)}
+.cer2 .cnt b{font:800 54px/1 var(--d);letter-spacing:-.05em;color:#fff;font-variant-numeric:tabular-nums}
+.cer2 .cnt small{font:700 13px var(--b);color:rgba(255,255,255,.8);text-align:right}
+.cer2 .csh{display:flex;align-items:baseline;justify-content:space-between;margin:30px 2px 12px}
+.cer2 .csh h3{margin:0;font:700 20px var(--d);color:#fff}.cer2 .csh span{font:700 12px var(--b);color:rgba(255,255,255,.65)}
+.shcar{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}.shcar::-webkit-scrollbar{display:none}
+.shc{position:relative;flex:0 0 244px;height:320px;border-radius:30px;overflow:hidden;scroll-snap-align:start;background:#1E2321;box-shadow:0 22px 40px -20px rgba(0,0,0,.8)}
+.shc>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shc::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,16,14,.35),rgba(12,16,14,.05) 35%,rgba(12,16,14,.92))}
+.shc .in{position:absolute;inset:0;z-index:1;padding:16px;display:flex;flex-direction:column}
+.shc .mk{display:flex;align-items:center;gap:6px;font:700 13px var(--b);color:#fff}.shc .mk .mark{width:24px;height:24px}
+.shc .md{margin-top:auto;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(from 210deg,#F7DD8C,#E2AE45,#FBE8A9,#D49A33,#F7DD8C)}.shc .md .g{font-size:32px}
+.shc small{margin-top:10px;font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:#F4C860}
+.shc b{font:700 17px/1.2 var(--d);color:#fff;margin-top:2px}
+.shc strong{font:800 40px/1 var(--d);letter-spacing:-.04em;color:#fff;margin-top:6px}
+.shc em{font-style:normal;font:600 13px var(--b);color:rgba(255,255,255,.75);margin-top:4px}
+.shc.sum{background:linear-gradient(160deg,#1E4638,#0F2219)}.shc.sum::after{display:none}
+.shc.sum .rows{margin-top:auto;display:grid;gap:8px}.shc.sum .rows div{display:flex;justify-content:space-between;align-items:baseline;font:700 13px var(--b);color:rgba(255,255,255,.8)}.shc.sum .rows b{font:800 24px var(--d);margin:0}
+.cer2 .shb{display:flex;gap:8px;margin-top:12px}
+.cer2 .shb button{flex:1;height:48px;border-radius:999px;border:0;background:rgba(255,255,255,.1);color:#fff;font:700 14px var(--b);display:flex;align-items:center;justify-content:center;gap:6px}.cer2 .shb .g{font-size:18px}
+.cer2 .dk{border-radius:24px;background:rgba(255,255,255,.07);padding:6px 14px}
+.cer2 .dk .row{border-color:rgba(255,255,255,.08)}.cer2 .dk .row b{color:#fff}.cer2 .dk .row small{color:rgba(255,255,255,.7)}
+.cer2 .dk .chip{background:#26312B;color:#EEF2EE;border-color:transparent}
+.cer2 .dk .br span,.cer2 .dk .br b{color:#fff}.cer2 .dk .br b small{color:rgba(255,255,255,.7)}.cer2 .dk .br u{background:rgba(255,255,255,.12)}
+.cer2 .trio3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cer2 .trio3 div{padding:12px 6px;border-radius:20px;background:rgba(255,255,255,.07);display:grid;justify-items:center;gap:2px}.cer2 .trio3 .g{font-size:24px}
+.cer2 .trio3 b{font:800 24px var(--d);color:#fff}.cer2 .trio3 small{font:700 12px var(--b);color:rgba(255,255,255,.7)}
+.cer2 .fuel{display:flex;align-items:center;gap:12px;padding:14px;border-radius:24px;background:linear-gradient(135deg,rgba(240,180,140,.2),rgba(240,180,140,.06));box-shadow:inset 0 0 0 1px rgba(240,180,140,.35)}
+.cer2 .fuel .g{font-size:30px}.cer2 .fuel div{flex:1}.cer2 .fuel b{display:block;font:700 15px var(--b);color:#fff}.cer2 .fuel small{font:600 13px var(--b);color:rgba(255,255,255,.75)}
+.cer2 .fuel button{height:40px;padding:0 14px;border-radius:999px;border:0;background:#fff;color:#10140F;font:700 13px var(--b)}
+.cer2 .nf{width:100%;display:flex;align-items:center;gap:10px;padding:14px;border-radius:24px;border:0;background:rgba(255,255,255,.07);color:rgba(255,255,255,.75);font:600 14px/1.4 var(--b);text-align:left}.cer2 .nf i{margin-left:auto;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center}.cer2 .nf .g{font-size:20px}
+.cer2 .mzd{display:flex;gap:12px;align-items:flex-start;margin-top:22px;padding:16px;border-radius:24px;background:rgba(201,242,77,.08);box-shadow:inset 0 0 0 1px rgba(201,242,77,.25)}
+.cer2 .mzd .g{font-size:28px;flex:0 0 28px}.cer2 .mzd p{margin:0;font:600 14px/1.45 var(--b);color:#EEF2EE}.cer2 .mzd p em{font-style:normal;color:var(--lime);font-weight:800}.cer2 .mzd b{display:block;font:700 12px var(--b);color:var(--lime);margin-bottom:4px}
+.cer2 .fin{display:grid;grid-template-columns:auto 1fr;gap:10px;margin-top:22px}
+.cer2 .fin .ghost{height:58px;padding:0 18px;border-radius:999px;border:0;background:rgba(255,255,255,.12);color:#fff;font:700 15px var(--b)}
+.cer2 .fin .go{height:58px;border-radius:999px;border:0;background:var(--lime);color:#10140F;font:800 16px var(--b)}
+@media (prefers-reduced-motion:no-preference){body:not(.still) .cer2 h1{animation:cdin .6s cubic-bezier(.2,.9,.3,1.2) both}body:not(.still) .cer2 .cnt{animation:jpup .5s cubic-bezier(.2,.8,.2,1) both}body:not(.still) .cer2 .cnt:nth-child(2){animation-delay:.1s}body:not(.still) .cer2 .cnt:nth-child(3){animation-delay:.2s}}
+.w320 .cer2 .cnt b{font-size:44px}.w320 .shc{flex-basis:220px;height:296px}
+.phone.jpon .scroll{background:#0C100E}.phone.jpon .cbar{display:none}
+</style>`);
+const lhd=tab=>`<div class="top rise" style="--i:0"><a class="logo" href="#irany">${MARK(34)}<b>mezo</b></a><button class="av" data-toast="Profil — az Én területen" aria-label="Profil">P</button></div>${seg(tab,ETABS)}`;
+const lvl=(d,c)=>d/c>=1?'#C9F24D':d/c>=.75?'#8FD3A8':d/c>=.5?'#5FB08A':'#F0B48C';
+
+/* ── Terhelés: the body map ── */
+function bodyMap(){const M=k=>MUS[k],f=k=>lvl(M(k)[1],M(k)[3]);
+  const fig=(cx,back)=>{const L=[`<circle class="neu" cx="${cx}" cy="30" r="15"/>`,`<rect class="neu" x="${cx-6}" y="43" width="12" height="12" rx="4"/>`,
+    `<path class="base" d="M${cx-37} 60 Q${cx} 52 ${cx+37} 60 L${cx+30} 112 Q${cx+25} 140 ${cx+27} 166 L${cx-27} 166 Q${cx-25} 140 ${cx-30} 112 Z"/>`,
+    ...[-1,1].map(s=>`<path class="base" d="M${cx+s*38} 62 L${cx+s*46} 118 L${cx+s*50} 166" stroke="rgba(255,255,255,.13)" stroke-width="15" stroke-linecap="round" fill="none"/>`),
+    ...[-1,1].map(s=>`<path d="M${cx+s*15} 168 L${cx+s*17} 236 L${cx+s*16} 296" stroke="rgba(255,255,255,.13)" stroke-width="22" stroke-linecap="round" fill="none"/>`),
+    ...[-1,1].map(s=>`<circle cx="${cx+s*37}" cy="66" r="11" fill="${f('vall')}"/>`)];
+    if(!back)L.push(...[-1,1].map(s=>`<ellipse cx="${cx+s*15}" cy="81" rx="15" ry="11" fill="${f('mell')}"/>`),`<rect class="neu" x="${cx-12}" y="96" width="24" height="52" rx="9"/>`,...[-1,1].map(s=>`<ellipse cx="${cx+s*43}" cy="92" rx="7" ry="18" fill="${f('bic')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*15}" cy="202" rx="11" ry="30" fill="${f('comb')}"/>`),...[-1,1].map(s=>`<ellipse class="neu" cx="${cx+s*16}" cy="262" rx="7" ry="20"/>`));
+    else L.push(`<path d="M${cx-24} 58 Q${cx} 66 ${cx+24} 58 L${cx+14} 78 L${cx-14} 78 Z" class="neu"/>`,...[-1,1].map(s=>`<ellipse cx="${cx+s*16}" cy="102" rx="13" ry="27" fill="${f('hat')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*43}" cy="92" rx="7" ry="18" fill="${f('tri')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*13}" cy="174" rx="14" ry="13" fill="${f('far')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*15}" cy="210" rx="11" ry="26" fill="${f('labh')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*16}" cy="262" rx="8" ry="21" fill="${f('vadli')}"/>`));
+    return L.join('')};
+  const lab=(k,x,y,px,py,right)=>{const m=M(k),lo=m[1]/m[3]<.5;return `<a href="#edzes-izom-${k}" aria-label="${m[0]}: ${m[1]} / ${m[3]} szett"><rect class="hit" x="${right?x-60:x-2}" y="${y-23}" width="62" height="55" rx="10"/><text class="lbl" x="${x}" y="${y}" text-anchor="${right?'end':'start'}">${m[0]}</text><text class="val ${lo?'low':''}" x="${x}" y="${y+17}" text-anchor="${right?'end':'start'}">${m[1]}/${m[3]}</text><path class="ln" d="M${right?x-64:x+62} ${y+4} L${px} ${py}"/><circle class="dot" cx="${px}" cy="${py}" r="3"/></a>`};
+  return `<svg viewBox="0 0 360 318" role="img" aria-label="Izomtérkép: a heti szettek izmonként">
+    <g transform="translate(0,6)">${fig(122,false)}${fig(238,true)}</g>
+    <text class="cap" x="122" y="316" text-anchor="middle">ELÖL</text><text class="cap" x="238" y="316" text-anchor="middle">HÁTUL</text>
+    ${lab('vall',2,52,85,72,false)}${lab('mell',2,104,108,87,false)}${lab('bic',2,156,79,98,false)}${lab('comb',2,220,108,208,false)}
+    ${lab('hat',358,52,254,108,true)}${lab('tri',358,104,281,98,true)}${lab('far',358,156,251,180,true)}${lab('labh',358,208,253,216,true)}${lab('vadli',358,262,254,268,true)}
+  </svg>`}
+function terheles2(){const DS=[16,12,17,0,12,null,null],PL=[16,12,19,16,12,0,0];
+  return `<div class="lp">${lhd('Terhelés')}
+  <div class="lpt rise" style="--i:1"><small>A hét terhelése · szeptember 21–27.</small><div class="lpbig"><b>55</b><span>/ 83 szett<br>a héten</span></div><div class="lpfill" style="--w:${55/83*100}%;--m:${4/7*100}%"><i></i><u></u><em>ma, a hét 4/7-e</em></div><p style="margin-top:34px"><em>A hát és a comb</em> jól halad, a kar és a far lemaradt.</p></div>
+  <div class="lpsh rise" style="--i:2"><h3>Izmaid a héten</h3><span>a szett / a heti cél</span></div>
+  <div class="card deep bmap rise" style="--i:2">${bodyMap()}<div class="bmlg">${[['#F0B48C','kevés'],['#5FB08A','halad'],['#8FD3A8','közel'],['#C9F24D','megvan']].map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join('')}</div></div>
+  <div class="bmacts rise" style="--i:2"><button data-go="edzes-terkep">${G('person','sage')}Részletes térkép</button><button data-go="edzes-het">${G('chart','deep')}Heti vizsgálat</button></div>
+  <div class="lpsh rise" style="--i:3"><h3>Napról napra</h3><span>vonal: a terv</span></div>
+  <section class="sec rise" style="--i:3;margin-top:0"><div class="card" style="padding:16px 12px 12px"><div class="wk">${EWEEK.map(([d,s,t,st],i)=>{const v=DS[i],p=PL[i],fut=v==null||st==='today'||st==='plan';return `<div class="wd ${st==='today'?'today':''} ${fut?'fut':''}"><em>${st==='today'?'ma':v?v:st==='sport'?'röpi':''}</em><span class="tube" style="height:124px"><i style="height:${v?Math.min(100,v/20*100):0}%"></i>${p?`<u style="bottom:${p/20*100}%"></u>`:''}</span><b>${s}</b></div>`}).join('')}</div></div></section>
+  <div class="lpsh rise" style="--i:4"><h3>Mit mond a tested</h3><span>reggel 07:40</span></div>
+  <section class="sec rise" style="--i:4;margin-top:0"><div class="card t-peach pad">${[['bolt','peach','Jobb váll','fáj, a Rear Delt Fly kímélve megy',['kímélve','5 / 10']],['flame','peach','Izomláz','a lábad, a szerdai guggolás után',['7 / 10']],['moon','sky','Alvás','6 óra 54 perc az éjjel',['kevesebb a szokottnál']]].map(([ic,pal,n,d,c])=>`<div class="row">${G(ic,pal)}<div><b>${n}</b><small>${d}</small><div class="chips">${c.map(x=>`<span class="chip">${x}</span>`).join('')}</div></div></div>`).join('')}</div></section>
+  <div class="lpsh rise" style="--i:5"><h3>Minden mozgásod</h3><span>2 röpi · 1 240 kalória · 180 perc</span></div>
+  <div class="tgrid rise" style="--i:5">${[['edz-ropi','Röplabda · kedd',[`<span class="chip">${G('flame','deep')}620 kalória</span>`],'edzes-sport'],['edz-futas','Sprint · szerda',[`<span class="chip">${G('shoe','peach')}elmaradt</span>`],'edzes-futas'],['edz-ropi','Röplabda · ma 18:00',['<span class="chip">betervezve</span>'],'edzes-sport'],['edz-futas','Piramis · péntek',['<span class="chip">17:30</span>'],'edzes-futas']].map(([p,n,c,go])=>`<button data-go="${go}"><img src="${PH(p+'-sq.jpg')}" alt=""><b>${n}</b><span class="chips">${c.join('')}</span></button>`).join('')}</div>
+  ${mzCard('A kar <em>9 szettnél</em> tart a 20-ból. A pénteki könnyű push napra beteszek két szett kalapácsbicepszt.',`<button class="pill soft" data-toast="Beteszem: péntek, 2 szett kalapácsbicepsz">Beteszem</button>`)}</div>`}
+
+/* ── Terv: the corridor ── */
+function corridor(){const S=MESO.sets,LO=[52,56,60,64,68,34],HI=[74,80,86,92,98,52],W=340,H=170,x=i=>24+i*(W-48)/5,y=v=>H-24-(v-30)/(105-30)*(H-48),now=2;
+  const band=`M${LO.map((v,i)=>`${x(i)} ${y(v)}`).join(' L')} L${HI.map((v,i)=>`${x(5-i)} ${y(HI[5-i])}`).join(' L')} Z`;
+  const past=S.slice(0,now+1).map((v,i)=>`${x(i)} ${y(v)}`).join(' L'),fut=S.slice(now).map((v,i)=>`${x(i+now)} ${y(v)}`).join(' L');
+  return `<svg viewBox="0 0 ${W} ${H+30}" role="img" aria-label="A hat hét szettjei a célsávban"><path class="cband" d="${band}"/><path class="bl" d="M${LO.map((v,i)=>`${x(i)} ${y(v)}`).join(' L')}"/><path class="bl" d="M${HI.map((v,i)=>`${x(i)} ${y(v)}`).join(' L')}"/>
+    <path class="ln" d="M${past}"/><path class="ln f" d="M${fut}"/>
+    ${S.map((v,i)=>i===now?`<circle class="halo" cx="${x(i)}" cy="${y(v)}" r="13"/><circle class="now" cx="${x(i)}" cy="${y(v)}" r="7"/><text class="nl" x="${x(i)}" y="${y(v)-18}" text-anchor="middle">${v} szett</text>`:`<circle class="pt ${i>now?'f':''}" cx="${x(i)}" cy="${y(v)}" r="5"/>`).join('')}
+    ${S.map((v,i)=>`<text class="cwk ${i===now?'on':''}" x="${x(i)}" y="${H+4}" text-anchor="middle">${i+1}. hét</text><text class="cph" x="${x(i)}" y="${H+22}" text-anchor="middle">${MESO.phase[i]}</text>`).join('')}</svg>`}
+function terv2(){const dph=['edz-tarcsa','edz-felhuzas','edz-crossfit','edz-sotet','edz-izom','edz-ropi','edz-oltozo'];
+  return `<div class="lp">${lhd('Terv')}
+  <div class="lpt rise" style="--i:1"><small>Futó terv · 3. hét / 6 · október 18-ig</small><h1>Hyper&shy;trophy <em>04</em></h1><div class="chips"><span class="chip">${G('dumbbell','deep')}Pull / Push / Legs</span><span class="chip">${G('clock','sky')}öt edzés egy héten</span></div><p>A harmadik hétnél tartasz, <em>innen emelkedik</em> a terhelés.</p></div>
+  <div class="lpsh rise" style="--i:2"><h3>A hat hét</h3><a href="#edzes-run">A terv ${G('chev')}</a></div>
+  <div class="card deep cor rise" style="--i:2"><div class="hd"><b>75<small>szett ezen a héten</small></b><span>a csúcs az 5. hét</span></div>${corridor()}<div class="corlg"><span><i style="background:rgba(201,242,77,.35)"></i>a sáv, ahol az izom nő</span><span><i style="background:#fff"></i>a terved</span></div></div>
+  <div class="lpsh rise" style="--i:3"><h3>Ez a hét</h3><span>szeptember 21–27.</span></div>
+  <div class="dcar rise" style="--i:3">${EWEEK.map(([d,s,t,st,n,ps,m],i)=>`<button class="dcd ${st==='today'?'today':''} ${st==='plan'||st==='rest'?'fut':''}" ${dayGo(i)} aria-label="${d}, ${t}"><img src="${PH(dph[i]+'-sq.jpg')}" alt=""><span class="dl1">${s}</span>${st==='done'?`<span class="st">${G('check','sage')}</span>`:st==='today'?`<span class="st">${G('bolt','deep')}</span>`:''}<span class="tx"><b>${t}</b><span class="chip">${n?set1(n):st==='sport'?'10:00':'pihenő'}</span></span></button>`).join('')}</div>
+  <div class="lpsh rise" style="--i:4"><h3>Izmaid a héten</h3><a href="#edzes-het">Heti vizsgálat ${G('chev')}</a></div>
+  <section class="sec rise" style="--i:4;margin-top:0"><div class="card gy only t-sage"><div class="bars">${WMUS.map(([l,d,t])=>`<div class="br"><span>${l}</span><b>${d} <small>/ ${t} szett</small></b><u><i style="--w:${Math.min(100,d/t*100)}%;background:${d>=t?'var(--deep)':d/t<.5?'var(--peach)':'var(--sage)'}"></i></u></div>`).join('')}</div></div></section>
+  <div class="lpsh rise" style="--i:5"><h3>Terveid</h3><a href="#edzes-tervek">Mind ${G('chev')}</a></div>
+  <div class="tgrid rise" style="--i:5">${[['edz-korlat','Hypertrophy 04',[`<span class="chip">${G('bolt','deep')}fut · 3. hét</span>`],'edzes-run'],['edz-tarcsa','Strength 02',['<span class="chip">október 19-től</span>'],'edzes-tervek'],['edz-kettlebell','Sablonok',['<span class="chip">három sablon</span>'],'edzes-sablonok'],['edz-kreta','Lezárt futamok',[`<span class="chip">${G('star','sun')}legjobb 92%</span>`],'edzes-futamok'],['edz-futas','Futás',['<span class="chip">Robbanékonyság 01</span>'],'edzes-futas'],['edz-nyujtas','Új terv',[`<span class="chip">${G('plus','ink')}varázslóval</span>`],'edzes-ujterv']].map(([p,n,c,go])=>`<button data-go="${go}"><img src="${PH(p+'-sq.jpg')}" alt=""><b>${n}</b><span class="chips">${c.join('')}</span></button>`).join('')}</div>
+  ${mzCard('A negyedik héten a hát <em>12 szettre</em> emelkedik. Ha a vállad addig sem jobb, a Rear Delt Fly helyére Face Pull jön.',`<button class="pill soft" data-toast="Rendben: a csere be van készítve">Így legyen</button>`)}</div>`}
+
+/* ── Gyakorlatok: search first, a photo grid ── */
+const exTile=([n,r,p,max,best,med,kind,note])=>`<article class="xt"><img class="ex" src="${EPH(p)}" alt=""><button class="open" ${gxGo(n)} aria-label="${n}"></button>${med?`<span class="md">${G('medal','sun')}${med}</span>`:''}${note?`<span class="chip ${note==='kímélve'?'warm':'soft'} care">${note}</span>`:''}<button class="add" data-toast="Hozzáadva a mai edzéshez: ${n}" aria-label="A mai edzéshez: ${n}">${G('plus','ink')}</button><span class="tx"><small>${r} · ${kind.toLowerCase()}</small><b>${n}</b><span class="chips">${max!=='—'?`<span class="chip">max ${max}</span>`:`<span class="chip">${best}</span>`}</span></span></article>`;
+function gyak2(){Object.assign(ES,{cat:'',f:'',q:''});
+  return `<div class="lp">${lhd('Gyakorlatok')}
+  <div class="lpt rise" style="--i:1"><small>A gyakorlattárad</small><h1>${GYAK.length} gyakor&shy;lat</h1><div class="chips"><a class="chip" href="#edzes-ermek" style="text-decoration:none;min-height:40px">${G('medal','sun')}${MEDS.length} érem</a><button class="chip" data-sheet="edzExEdit" data-arg="uj" style="min-height:40px">${G('plus','ink')}Új gyakorlat</button></div></div>
+  <div style="margin-top:16px"></div>${searchBar({ph:'Gyakorlat vagy izom…',cls:'esin',aria:'Keresés a gyakorlatok közt'})}
+  <div class="hrow cats rise" style="--i:2;margin-top:10px" id="ecats">${Object.entries(REG).map(([l,[,p]])=>`<button class="cat" data-ecat="${l}"><img src="${EPH(p)}" alt=""><span>${l}</span></button>`).join('')}</div>
+  ${filterPills('efps',GF,'','data-ef')}
+  <div class="lpsh rise" style="--i:3"><h3>A heti rekord</h3><a href="#edzes-ermek">Érmek ${G('chev')}</a></div>
+  <button class="card deep xrec rise" style="--i:3" ${gxGo('Guggolás')}><img src="${PH('edz-crossfit.jpg')}" alt=""><span class="tx"><small>Szerda · súlyrekord</small><strong>Guggolás</strong><span class="bigv">120 kg × 6<em>+2,5 kg</em></span><span class="spark">${[132,136,138,140,141,144].map(v=>`<i style="--h:${(v-125)/20*100}%"></i>`).join('')}</span></span></button>
+  <div class="lpsh rise" style="--i:4"><h3>A tárad</h3></div>
+  <section class="xgrid rise" style="--i:4" id="elist">${exFilter()}</section>
+  ${mzCard('A Face Pull két hete <em>27 kg-on áll</em>. Jövő héten 2,5 kg-mal feljebb próbáljuk, 15 ismétlésre.',`<button class="pill soft" data-toast="Betervezve: Face Pull 29,5 kg">Próbáljuk</button>`)}</div>`}
+
+/* ── Érmek: a collection ── */
+const MONTHS=['június','július','augusztus','szeptember'];
+const medGrid=()=>{const L=MEDS.filter(m=>!EMF.f||m[3]===EMF.f);return [...new Set(L.map(m=>m[0]))].map(mo=>`<h3 class="mmon">${mo[0].toUpperCase()+mo.slice(1)} · ${L.filter(m=>m[0]===mo).length} érem</h3><div class="mgrid">${L.filter(m=>m[0]===mo).map(m=>{const g=GYAK[gxOf(m[2])];return `<button ${gxGo(m[2])} aria-label="${m[2]}: ${m[3]}, ${m[4]}"><span class="rim"><img class="ex" src="${EPH(g?g[2]:'barbell-row')}" alt=""><i>${G(...KINDIC[m[3]])}</i></span><b>${m[2].replace(/\s*\(.*\)/,'')}</b><small>${m[4]}</small></button>`}).join('')}</div>`).join('')||`<div class="emptyph"><img src="${PH('edz-sulyzotarto.jpg')}" alt=""><b>Ilyen érmed még nincs.</b></div>`};
+function ermek2(){EMF.f='';const per=MONTHS.map(m=>MEDS.filter(x=>x[0]===m).length);
+  return `${ihead({ph:'edz-bandazs.jpg',crumb:'Edzés › Gyakorlatok › <b>Érmek</b>',eb:'Érmek · június óta',title:`${MEDS.length} érem, ebből ${per[3]} szeptemberben.`,sub:'A korábban logolt szetteidből visszamenőleg is felépültek.',btn:`${G('dumbbell','ink')}A gyakorlataid`,attrs:'data-go="edzes-gyak"'})}
+  <h1 class="head rise" style="--i:1">A <em>döntött törzsű evezés</em> vitte a legtöbbet: négy érem.</h1>
+  <section class="sec rise first" style="--i:2"><div class="card deep mstrip">${per.map((n,i)=>`<div class="${i===3?'now':''}"><span class="cs">${Array.from({length:n},()=>'<i></i>').join('')}</span><b>${n}</b><small>${MONTHS[i]}</small></div>`).join('')}</div></section>
+  <div class="sh rise" style="--i:3;margin:24px 20px 10px"><h3>A gyűjteményed</h3></div>
+  ${filterPills('emfs',MF,'','data-emf',false)}
+  <section class="rise" style="--i:4" id="emlist">${medGrid()}</section>
+  ${mzCard('A guggolás és a fekvenyomás <em>három hónap alatt</em> kétszer is rekordot döntött. A következő a vállból nyomás lehet.')}</div>`}
+
+/* ── the ceremony: the workout's dark world, with share cards ── */
+function cer2(){const done=[4,3,3,2,2];
+  return `<div class="cer2"><div class="glow"></div>
+  <div class="tb"><button class="gb" data-edone aria-label="Bezárom"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></button><div class="mid">Pull Day lezárva<small>szeptember 24. · 71 perc</small></div><button class="gb" data-go="edzes-review" aria-label="Az összegzés">${G('chart','cream')}</button></div>
+  <h1>Erős <em>nap.</em></h1>
+  <div class="cstars">${[1,1,1,1,.5].map(f=>`<span class="cst" style="--f:${f*100}%">${G('star','cream')}<span class="fill">${G('star','sun')}</span></span>`).join('')}<span class="cscore">4,5<small>/ 5</small></span></div>
+  <div class="cnts">${[['sets','szett','a 16-ból'],['reps','ismétlés','összesen'],['vol','kg','megmozgatva']].map(([k,l,s])=>`<div class="cnt"><b data-cnt="${CER[k]}">0</b><small>${l}<br>${s}</small></div>`).join('')}</div>
+  <div class="csh"><h3>Ez a tiéd mostantól</h3><span>lapozd, oszd meg</span></div>
+  <div class="shcar">${[['edz-sotet','Súlyrekord','Húzódzkodás','+12,5 kg × 8','előtte +10 kg'],['edz-felhuzas','Ismétlésrekord','Döntött törzsű evezés','72,5 kg × 10','előtte 9 ismétlés']].map(([p,t,n,v,pv])=>`<div class="shc"><img src="${PH(p+'.jpg')}" alt=""><div class="in"><span class="mk">${MARK(24)}mezo</span><span class="md">${G('medal','sun')}</span><small>${t}</small><b>${n}</b><strong>${v}</strong><em>${pv}</em></div></div>`).join('')}<div class="shc sum"><div class="in"><span class="mk">${MARK(24)}mezo</span><small style="margin-top:18px">Pull Day · szeptember 24.</small><b>Erős nap, két rekord</b><div class="rows">${[['Szett','14 / 16'],['Ismétlés','142'],['Megmozgatva','4 180 kg'],['Idő','71 perc']].map(([l,v])=>`<div>${l}<b>${v}</b></div>`).join('')}</div></div></div></div>
+  <div class="shb"><button data-toast="Kép elkészült: a fotóid közé mentve">${G('camera','cream')}Mentem képként</button><button data-toast="Megosztás: a kép kész, válaszd ki, hova">${G('spark','cream')}Megosztom</button></div>
+  <div class="csh"><h3>A mai számok</h3></div>
+  <div class="trio3">${[['clock','sky',CER.min,'perc edzés'],['star','sun','+'+CER.pts,'pont'],['flame','peach','+'+CER.kcal,'kalória']].map(([ic,pal,v,l])=>`<div>${G(ic,pal)}<b>${v}</b><small>${l}</small></div>`).join('')}</div>
+  <div class="csh"><h3>Küldetések</h3><span>egy a kettőből</span></div>
+  <div class="dk">${[['check','sage','Húzódzkodás: 12,5 kg × 8',`<span class="chip">${G('check','sage')}megvan</span>`],['moon','sky','Kalapácsbicepsz: utolsó szett tartalék nélkül','<span class="chip">most nem jött össze</span>']].map(([ic,pal,t,c])=>`<div class="row">${G(ic,pal)}<div><b>${t}</b><div class="chips">${c}</div></div></div>`).join('')}</div>
+  <div class="csh"><h3>Izmok a mai edzésen</h3></div>
+  <div class="dk" style="padding:14px"><div class="bars">${PMUS.map(([l,n],i)=>`<div class="br"><span>${l}</span><b>${done[i]} <small>/ ${n} szett</small></b><u><i style="--w:${done[i]/n*100}%;background:${done[i]>=n?'#C9F24D':'#5FB08A'}"></i></u></div>`).join('')}</div></div>
+  <div class="csh"><h3>A mai mozgással</h3></div>
+  <div class="fuel">${G('flame','peach')}<div><b>+540 kalória a mai keretedbe</b><small>A Fuel napi kerete ennyivel nőtt.</small></div><button data-go="">Fuel</button></div>
+  <div class="csh"><h3>Hogy ment?</h3></div>
+  <button class="nf" data-sheet="edzNote"><span>Például: rosszul aludtam, de a húzódzkodás jól ment…</span><i>${G('mic','cream')}</i></button>
+  <div class="mzd">${G('spark','sage')}<div><b>Mezo</b><p>A két rekord után a jövő héten <em>az evezés 75 kg-mal</em> indul. Egyél a röpi előtt egy banánt, 18:00-ig van időd.</p></div></div>
+  <div class="fin"><button class="ghost" data-go="edzes-review">Összegzés</button><button class="go" data-edone>Vissza a mai napra</button></div>
+  </div>`}
+
 const R5=h=>h==='edzes-jatszo'?jatszo():h==='edzes-regi'?mai(''):null;
-const mintaAfter=h=>{const p=$('#phone');p.classList.toggle('jpon',h==='edzes-jatszo');mmgo.classList.toggle('on',h==='edzes'&&!EST.day);if(h==='edzes-jatszo'){jpStart();jpWheels()}miniPaint()};
-window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h!=='edzes'||EST.day)mmgo.classList.remove('on');if(h!=='edzes-jatszo')$('#phone').classList.remove('jpon');miniPaint()});
+const mintaAfter=h=>{const p=$('#phone');p.classList.toggle('jpon',h==='edzes-jatszo'||h==='edzes-cer');mmgo.classList.toggle('on',h==='edzes'&&!EST.day);if(h==='edzes-jatszo'){jpStart();jpWheels()}miniPaint()};
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h!=='edzes'||EST.day)mmgo.classList.remove('on');if(h!=='edzes-jatszo'&&h!=='edzes-cer')$('#phone').classList.remove('jpon');miniPaint()});
 
 /* side panel: Edzés notes while the domain is open (Fuel's notes come back outside it) */
 const notes=document.querySelector('.notes');
@@ -1300,6 +1566,6 @@ window.addEventListener('hashchange',()=>setNotes(location.hash.slice(1).startsW
 const MSTATES=STATES.map(s=>s[0]).filter(Boolean);
 DOM.edzes={tabs:['edzes','edzes-terv','edzes-terheles','edzes-gyak',...MSTATES.map(s=>'edzes-mai-'+s)],
   tabName:h=>h==='edzes-terv'?'Terv':h==='edzes-terheles'?'Terhelés':h==='edzes-gyak'?'Gyakorlatok':'Mai',
-  render:h=>route3(h)||R4(h)||R5(h)||(h==='edzes-indulas'?indulas():h==='edzes-session'?session():h==='edzes-cer'?cer():h==='edzes-review'?review():h==='edzes-review-gyak'?reviewGyak():h==='edzes-terv'?terv():h==='edzes-terheles'?terheles():h==='edzes-gyak'?gyak():h.startsWith('edzes-mai-')?mai(h.slice(10)):EST.day?mai(EST.day):maiMinta()),
+  render:h=>route3(h)||R4(h)||R5(h)||(h==='edzes-indulas'?indulas():h==='edzes-session'?session():h==='edzes-cer'?cer2():h==='edzes-review'?review():h==='edzes-review-gyak'?reviewGyak():h==='edzes-terv'?terv2():h==='edzes-terheles'?terheles2():h==='edzes-gyak'?gyak2():h.startsWith('edzes-mai-')?mai(h.slice(10)):EST.day?mai(EST.day):maiMinta()),
   after:h=>{mintaAfter(h);if(h==='edzes-cer')counter();if(h==='edzes-session')dockPaint();setNotes(true)}};
 })();
