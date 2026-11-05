@@ -150,7 +150,7 @@ function mai(st=''){
       h1:'Ma <em>hát és bicepsz</em> jön, a vállad kímélve.',lead:'A Rear Delt Fly könnyített súllyal megy, amíg a jobb vállad fáj.'},
     folyamatban:{ph:'edz-huzodzkodas.jpg',pos:'center 30%',eb:'Folyamatban · 16:04 óta · 12 perc',title:'Pull Day',sub:'Az első gyakorlatnál tartasz: húzódzkodás, 3. szett.',btn:`${G('bolt','ink')}Folytassuk`,at:'data-go="edzes-session"',
       h1:'<em>Két szett megvan</em> a tizenhatból. Jó kezdés.',lead:'A második szett rekord lett: +12,5 kg nyolcszor.'},
-    kesz:{ph:'edz-sulyzotarto.jpg',eb:'Ma · kész · 71 perc',title:'Pull Day megvan',sub:'14 szett · 142 ismétlés · 4 180 kg megmozgatva',btn:`${G('star','ink')}Az eredmény`,at:'data-go="edzes-review"',
+    kesz:{ph:'edz-izom.jpg',eb:'Ma · kész · 71 perc',title:'Pull Day megvan',sub:'14 szett · 142 ismétlés · 4 180 kg megmozgatva',btn:`${G('star','ink')}Az eredmény`,at:'data-go="edzes-review"',
       h1:'<em>Két új rekord</em> ma: húzódzkodás és evezés.',lead:'A tizenhatból tizennégy szett lett meg, a vállad miatt kettőt kihagytál.'},
     kihagyva:{ph:'edz-nyujtas.jpg',eb:'Ma · kihagyva · fáradt vagy',title:'Ma nincs edzés',sub:'A Pull Day a jövő hétre tolódik, a terv igazodik hozzá.',btn:`${G('dumbbell','ink')}Mégis edzek`,at:'data-go="edzes"',
       h1:'Rendben, <em>ma pihensz</em>. A hét így is jól áll.',lead:'Az 55 szett a heti 83-ból elég ahhoz, hogy a hét ne vesszen el.'},
@@ -322,6 +322,7 @@ const isD=r=>typeof r[0]==='number';
 const sxDone=()=>EST.sx.reduce((a,e)=>a+e.rows.filter(isD).length,0),sxTot=()=>EST.sx.reduce((a,e)=>a+e.rows.length,0);
 const curI=()=>Math.max(0,EST.sx.findIndex(e=>e.rows.some(r=>r[0]==='cur')));
 const VERD={tick:['check','sage','célsávban'],record:['medal','sun','rekord'],up:['chart','sage','cél fölött'],down:['back','peach','cél alatt']};
+const saveSet=()=>{const P=EST.pend,ex=EST.sx[P.i],g=ex.r;const vd=P.r>g?'up':P.r<g?'down':P.ri<=1&&P.w>=ex.w?'record':'tick';ex.rows[P.j]=[P.w,P.r,P.ri,vd];EST.pend=null;EST.focus=null;const more=markCur();sessPaint();if(more){startRest();toast(`${P.j+1}. szett: ${VERD[vd][2]}`)}else{stopRest();setTimeout(()=>openSheet(SHEETS.edzFin()),340)}};
 const ensureSX=()=>{if(!EST.sx){seedSX(2);markCur()}};
 
 /* ── Eligazítás ── */
@@ -362,7 +363,7 @@ window.addEventListener('hashchange',()=>{if(location.hash!=='#edzes-session')st
 const CER={sets:14,reps:142,vol:4180,min:71,pts:185,kcal:540,stars:4.5};
 const counter=()=>{const still=document.body.classList.contains('still')||matchMedia('(prefers-reduced-motion:reduce)').matches;$$('#scroll [data-cnt]').forEach(el=>{const to=+el.dataset.cnt;if(still){el.textContent=nb(to);return}const t0=performance.now()+700;const f=now=>{const k=Math.max(0,Math.min(1,(now-t0)/1200)),v=Math.round(to*(1-Math.pow(1-k,3)));el.textContent=nb(v);if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)});requestAnimationFrame(()=>requestAnimationFrame(()=>{const s=$('#scroll .cstars');if(s)s.classList.add('go')}))};
 function cer(){const done=[4,3,3,2,2];
-  return `${ihead({ph:'edz-sulyzotarto.jpg',crumb:'Edzés › Pull Day › <b>Lezárva</b>',eb:'Pull Day · szeptember 24. · 71 perc',title:'Erős nap.',sub:'Négy és fél csillag az ötből, két új rekorddal.',btn:`${G('chart','ink')}Az összegzés`,attrs:'data-go="edzes-review"'})}
+  return `${ihead({ph:'edz-izom.jpg',crumb:'Edzés › Pull Day › <b>Lezárva</b>',eb:'Pull Day · szeptember 24. · 71 perc',title:'Erős nap.',sub:'Négy és fél csillag az ötből, két új rekorddal.',btn:`${G('chart','ink')}Az összegzés`,attrs:'data-go="edzes-review"'})}
   <h1 class="head rise" style="--i:1"><em>14 szett</em> a 16-ból, és két rekord.</h1>
   <section class="sec rise first" style="--i:2"><div class="sh"><h3>Így sikerült</h3></div><div class="card gy only deep"><div class="cstars">${[1,1,1,1,.5].map(f=>`<span class="cst" style="--f:${f*100}%">${G('star','cream')}<span class="fill">${G('star','sun')}</span></span>`).join('')}<span class="cscore">4,5<small>/ 5</small></span></div><div class="trio deep in">${[['repeat','sky','sets','szett'],['bolt','sun','reps','ismétlés'],['dumbbell','sage','vol','kg megmozgatva']].map(([ic,pal,k,l])=>`<div>${G(ic,pal)}<b data-cnt="${CER[k]}">0</b><small>${l}</small></div>`).join('')}</div></div></section>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Ez a tiéd mostantól</h3><span class="crumb">két új rekord</span></div><div class="card t-sun pad">${[['weighted-pull-up','Húzódzkodás (súlyozott)','Súlyrekord','+12,5 kg × 8','előtte +10 kg'],['barbell-row','Döntött törzsű evezés','Ismétlésrekord','72,5 kg × 10','előtte 9 ismétlés']].map(([p,n,t,v,pv])=>`<div class="row"><img class="rimg big ex" src="${EPH(p)}" alt=""><div><b>${n}</b><div class="chips"><span class="chip">${G('medal','sun')}${t}</span><span class="chip">${pv}</span></div></div><span class="v">${v}</span></div>`).join('')}</div></section>
@@ -377,7 +378,7 @@ function cer(){const done=[4,3,3,2,2];
 /* ── Összegzés ── */
 const LANE=[['Húzódzkodás (súlyozott)','weighted-pull-up','+12,5 × 8',4,4,1,'Hát széles'],['Döntött törzsű evezés','barbell-row','72,5 × 10',3,3,1,'Hát közép'],['Rear Delt Fly','cable-rear-delt-fly','10 × 12',3,3,0,'Hátsó váll'],['Kalapácsbicepsz','hammer-curl','16 × 13',3,2,0,'Bicepsz'],['Vállemelés','db-shrug','30 × 15',3,2,0,'Trapéz']];
 function review(){
-  return `${ihead({ph:'edz-sulyzotarto.jpg',crumb:'Edzés › Mai › <b>Összegzés</b>',eb:'Lezárva · szeptember 24. · Pull Day',title:'14 szett a 16-ból',sub:'4,2 tonna összesen · 71 perc a tervezett 62 helyett.',btn:`${G('back','ink')}Előző Pull Day`,attrs:'data-toast="Előző Pull Day · szeptember 17."'})}
+  return `${ihead({ph:'edz-tarcsa.jpg',crumb:'Edzés › Mai › <b>Összegzés</b>',eb:'Lezárva · szeptember 24. · Pull Day',title:'14 szett a 16-ból',sub:'4,2 tonna összesen · 71 perc a tervezett 62 helyett.',btn:`${G('back','ink')}Előző Pull Day`,attrs:'data-toast="Előző Pull Day · szeptember 17."'})}
   <h1 class="head rise" style="--i:1"><em>Három rekord</em>, és a legnehezebb szett három hete emelkedik.</h1>
   <section class="sec rise first" style="--i:2"><div class="sh"><h3>Gyakorlatonként</h3></div><div class="card gy only deep pre"><div class="dhead"><small>Kész szett / terv</small><b>14<small>/ 16</small></b></div>${tubesDeep(LANE.map(l=>l[4]),4,-1,LANE.map(l=>l[6].split(' ')[0]),'arc6 a5',v=>v)}</div></section>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Mihez képest</h3><span class="crumb">szeptember 17.</span></div><div class="card gy only cmp"><div class="bars">${[['Összesen megmozgatva','4,2 t','előtte 3,9 t',100,93],['Legnehezebb szett','12,5 × 8','előtte 10 × 8',100,80],['Átlagos tartalék','1,6 ismétlés','előtte 2,0: kevesebb maradt',80,100]].map(([l,v,p,a,b])=>`<div class="br"><span>${l}</span><b>${v}</b><u><i style="--w:${a}%;background:var(--sage)"></i></u><u><i class="prev" style="--w:${b}%;background:var(--ink2)"></i></u><em>${p}</em></div>`).join('')}</div></div></section>
@@ -397,7 +398,7 @@ function reviewGyak(){const S=[['12,5 × 8',8,2,'tick'],['12,5 × 8',8,1,'record
 /* ── the flow's sheets (each with a photo strip, chips, one action) ── */
 const strip=ps=>`<div class="dshph">${ps.map(p=>`<img class="ex" src="${EPH(p)}" alt="">`).join('')}</div>`;
 SHEETS.edzQuest=i=>{const q=QUEST[+i||0],e=SX0[q.ex];return `<div class="grab"></div><div class="dsh">${strip([e.p])}<h2>${q.target}</h2><div class="chips"><span class="chip">${G(q.ic,q.pal)}${q.t}</span><span class="chip">${e.n}</span><span class="chip ${q.on?'soft':''}">${q.on?'vállalva':'elengedve'}</span></div></div><div class="card t-sun gy only"><div class="bars"><div class="br"><span>Mennyire biztos</span><b>${q.cl}</b><u><i style="--w:${q.conf}%;background:var(--sun)"></i></u></div></div></div><p class="note">${G('spark','deep')}${q.why}</p><div class="acts" style="margin:14px 0 0"><button class="pill" data-qtog="${+i||0}" data-close>${q.on?'Elengedem':'Vállalom'}</button><button class="pill soft" data-close>Bezárom</button></div>`};
-SHEETS.edzRp=()=>{const e=EST.sx[EST.pend.i];return `<div class="grab"></div><div class="dsh">${strip([e.p])}<h2>Szett kész · hogy ment?</h2><div class="chips"><span class="chip soft">${G('check','sage')}${fk(EST.pend.w)} kg × ${EST.pend.r}</span><span class="chip">${e.n}</span></div></div>${[['Pumpa · érzed?',['Semmi','Enyhe','Jó','Brutális'],2],['Ízületi fájdalom',['Nincs','Enyhe','Erős'],0],['Akarunk még?',['Kevés volt','Pont jó','Sok volt'],1]].map(([qq,o,s],k)=>`<p class="sub" style="margin:12px 0 8px">${qq}</p><div class="why">${o.map((x,j)=>`<button class="fp ${j===s?'on':''}" data-rpq="${k}">${x}</button>`).join('')}</div>`).join('')}<div class="acts" style="margin:16px 0 0"><button class="pill" data-esave>Mentés · pihenő indul</button><button class="pill soft" data-esave>Csak a pihenő</button></div>`};
+SHEETS.edzRp=()=>{const e=EST.sx[EST.pend.i];return `<div class="grab"></div><div class="dsh">${strip([e.p])}<h2>${e.n} kész · hogy ment?</h2><div class="chips"><span class="chip soft">${G('check','sage')}${fk(EST.pend.w)} kg × ${EST.pend.r}</span><span class="chip">${e.n}</span></div></div>${[['Pumpa · érzed?',['Semmi','Enyhe','Jó','Brutális'],2],['Ízületi fájdalom',['Nincs','Enyhe','Erős'],0],['Akarunk még?',['Kevés volt','Pont jó','Sok volt'],1]].map(([qq,o,s],k)=>`<p class="sub" style="margin:12px 0 8px">${qq}</p><div class="why">${o.map((x,j)=>`<button class="fp ${j===s?'on':''}" data-rpq="${k}">${x}</button>`).join('')}</div>`).join('')}<div class="acts" style="margin:16px 0 0"><button class="pill" data-esave>Mentés · tovább</button></div>`};
 SHEETS.edzSet=a=>{const [i,j]=(a||'0.0').split('.').map(Number),e=EST.sx[i],r=e.rows[j],[ic,pal,l]=VERD[r[3]]||VERD.tick;return `<div class="grab"></div><div class="dsh">${strip([e.p])}<h2>${j+1}. szett · ${e.n}</h2><div class="chips"><span class="chip">${G(ic,pal)}${l}</span></div></div><div class="card pad" style="background:var(--paper);box-shadow:none">${[['Súly · kg',fk(r[0])],['Ismétlés',r[1]],['Tartalék',r[2]]].map(([k,v])=>`<div class="row"><div><b>${k}</b></div><span class="v">${v}</span><span></span></div>`).join('')}</div><div class="acts" style="margin:14px 0 0"><button class="pill" data-toast="Szett mentve" data-close>Mentés</button><button class="pill soft" data-toast="Szett törölve" data-close>Törlöm</button></div>`};
 SHEETS.edzFin=()=>{ensureSX();const L=EST.sx.filter(e=>e.rows.some(r=>!isD(r))),d=sxDone(),T=sxTot();return `<div class="grab"></div><div class="dsh">${strip(EST.sx.map(e=>e.p))}<h2>${T-d?`Van még ${T-d} szett hátra`:'Minden szett megvan'}</h2><div class="chips"><span class="chip soft">${G('check','sage')}${d} kész</span>${T-d?`<span class="chip">${T-d} kimarad</span>`:''}</div></div>${L.length?`<div class="card pad" style="background:var(--paper);box-shadow:none">${L.map(e=>{const k=e.rows.filter(isD).length;return `<div class="row"><img class="rimg big ex" src="${EPH(e.p)}" alt=""><div><b>${e.n}</b><div class="chips"><span class="chip">${e.rows.length-k} szett maradna ki</span></div></div></div>`}).join('')}</div><p class="note">${G('spark','deep')}A kimaradt szettek kihagyottként zárulnak, az összegzés nem büntet értük.</p>`:''}<div class="acts" style="margin:14px 0 0"><button class="pill" data-efin>Befejezem így</button><button class="pill soft" data-close>Visszamegyek</button></div>`};
 SHEETS.edzMenu=i=>{const e=(EST.sx||SX0)[+i||0];return `<div class="grab"></div><div class="dsh">${strip([e.p])}<h2>${e.n}</h2><div class="chips"><span class="chip">${e.mus}</span><span class="chip">${(e.rows||[]).length||e.sets} szett</span></div></div><div class="card pad" style="background:var(--paper);box-shadow:none">${[['camera','sky','A mozdulat két fázisa','gx'],['book','peach','Jegyzet a gyakorlathoz','note'],['plus','sage','Szett hozzáadása','set'],['repeat','berry','Gyakorlat cseréje','swap'],['chart','sage','Előrébb','up'],['back','sky','Hátrébb','down'],['moon','sky','Gyakorlat kihagyása','skip']].map(([ic,pal,l,a])=>`<div class="row tap" role="button" tabindex="0" ${a==='gx'?gxGo(e.n)+' data-close':`data-emo="${a}|${+i||0}"`}>${G(ic,pal)}<div><b>${l}</b></div>${G('chev','ink')}</div>`).join('')}</div>`};
@@ -410,9 +411,9 @@ document.addEventListener('click',e=>{
   const qt=e.target.closest('[data-qtog]');if(qt){const i=+qt.dataset.qtog,q=QUEST[i];q.on=!q.on;const c=$(`.qc[data-qi="${i}"]`);if(c){c.classList.toggle('off',!q.on);const b=c.querySelector('.qt');b.classList.toggle('on',q.on);b.setAttribute('aria-label',`${q.on?'Elengedem':'Vállalom'}: ${q.target}`)}const n=QUEST.filter(x=>x.on).length;const g=$('#qgo');if(g)g.textContent=n?`Indulás · ${n} küldetéssel`:'Indulás küldetés nélkül';const qn=$('#qn');if(qn)qn.textContent=n;haptic(8);if(!qt.hasAttribute('data-close'))return;if(location.hash==='#edzes-session')sessPaint();return}
   if(e.target.closest('[data-estart]')){seedSX(0);markCur();EST.focus=null;location.hash='edzes-session';return}
   const fo=e.target.closest('[data-efocus]');if(fo){EST.focus=+fo.dataset.efocus===curI()?null:+fo.dataset.efocus;sessPaint();$('#scroll').scrollTop=0;haptic(6);return}
-  const ok=e.target.closest('[data-eok]');if(ok){const [i,j]=ok.dataset.eok.split('.').map(Number),v=c=>$(`#scroll .ein[data-c="${c}"]`).value.replace(',','.');EST.pend={i,j,w:+v('w')||0,r:+v('r')||0,ri:+v('ri')||0};openSheet(SHEETS.edzRp());haptic(10);return}
+  const ok=e.target.closest('[data-eok]');if(ok){const [i,j]=ok.dataset.eok.split('.').map(Number),v=c=>$(`#scroll .ein[data-c="${c}"]`).value.replace(',','.');EST.pend={i,j,w:+v('w')||0,r:+v('r')||0,ri:+v('ri')||0};const ex0=EST.sx[i];if(j<ex0.rows.length-1){saveSet();haptic(10);return}openSheet(SHEETS.edzRp());haptic(10);return}
   const rq=e.target.closest('[data-rpq]');if(rq){rq.parentElement.querySelectorAll('.fp').forEach(x=>x.classList.toggle('on',x===rq));return}
-  if(e.target.closest('[data-esave]')){const P=EST.pend,ex=EST.sx[P.i],g=ex.r;const vd=P.r>g?'up':P.r<g?'down':P.ri<=1&&P.w>=ex.w?'record':'tick';ex.rows[P.j]=[P.w,P.r,P.ri,vd];EST.pend=null;closeSheet();EST.focus=null;const more=markCur();sessPaint();if(more)startRest();else{stopRest();openSheet(SHEETS.edzFin())}return}
+  if(e.target.closest('[data-esave]')){closeSheet();saveSet();return}
   if(e.target.closest('[data-eplus]')){if(EST.rest){EST.rest.left+=30;EST.rest.total+=30;dockPaint()}return}
   if(e.target.closest('[data-estop]')){stopRest();return}
   if(e.target.closest('[data-efin]')){stopRest();closeSheet();location.hash='edzes-cer';return}
@@ -466,8 +467,8 @@ const RC6=['#BFE3CC','#8CC3E8','#F0B48C','#F4C860','#CDB4E3','#A8D5BA'];
 /* the five training days of the week (index = EWEEK index) */
 const DAYD=[
   {ph:'edz-sulyzo',min:62,done:'68 perc · 1 rekord',mus:[['Mell · közép',4],['Mell · felső',3],['Váll · elülső',3],['Váll · oldalsó',3],['Tricepsz',3]],ex:[['Fekvenyomás','barbell-bench-press',4,'6–8','80 kg'],['Ferde kézisúlyzós nyomás','incline-db-press',3,'8–10','30 kg'],['Vállból nyomás','overhead-press',3,'8–10','45 kg','kímélő változat'],['Oldalemelés','lateral-raise',3,'12–15','10 kg'],['Tricepsz letolás','tricep-pushdown',3,'10–12','27 kg']]},
-  {ph:'edz-sulyzotarto',min:48,done:'51 perc',mus:[['Comb',6],['Lábhajlító',3],['Vádli',3]],ex:[['Elülső guggolás','front-squat',3,'8–10','90 kg'],['Lábhajlítás','leg-curl',3,'10–12','45 kg'],['Kitörés sétálva','walking-lunge',3,'12','20 kg'],['Álló vádliemelés','standing-calf-raise',3,'12–15','60 kg']]},
-  {ph:'edz-sulyzotarto',min:70,done:'74 perc · 2 rekord',mus:[['Comb',7],['Lábhajlító',6],['Far',3],['Vádli',3]],ex:[['Guggolás','barbell-squat',4,'6–8','120 kg'],['Román felhúzás','romanian-deadlift',3,'8–10','100 kg'],['Lábtolás','leg-press',3,'10–12','180 kg'],['Lábhajlítás','leg-curl',3,'10–12','45 kg'],['Csípőemelés','hip-thrust',3,'8–10','110 kg'],['Álló vádliemelés','standing-calf-raise',3,'12–15','60 kg']]},
+  {ph:'edz-felhuzas',min:48,done:'51 perc',mus:[['Comb',6],['Lábhajlító',3],['Vádli',3]],ex:[['Elülső guggolás','front-squat',3,'8–10','90 kg'],['Lábhajlítás','leg-curl',3,'10–12','45 kg'],['Kitörés sétálva','walking-lunge',3,'12','20 kg'],['Álló vádliemelés','standing-calf-raise',3,'12–15','60 kg']]},
+  {ph:'edz-crossfit',min:70,done:'74 perc · 2 rekord',mus:[['Comb',7],['Lábhajlító',6],['Far',3],['Vádli',3]],ex:[['Guggolás','barbell-squat',4,'6–8','120 kg'],['Román felhúzás','romanian-deadlift',3,'8–10','100 kg'],['Lábtolás','leg-press',3,'10–12','180 kg'],['Lábhajlítás','leg-curl',3,'10–12','45 kg'],['Csípőemelés','hip-thrust',3,'8–10','110 kg'],['Álló vádliemelés','standing-calf-raise',3,'12–15','60 kg']]},
   {ph:'edz-huzodzkodas',min:64,mus:PMUS.map(m=>[m[0],m[1]]),ex:PULL},
   {ph:'edz-sulyzo',min:46,mus:[['Mell · felső',3],['Mell · közép',3],['Váll · oldalsó',3],['Tricepsz',3]],ex:[['Ferde kézisúlyzós nyomás','incline-db-press',3,'10–12','26 kg'],['Kábeles tárogatás','cable-fly',3,'12–15','14 kg'],['Oldalemelés','lateral-raise',3,'12–15','9 kg'],['Tricepsz nyújtás fej fölött','cable-overhead-extension',3,'10–12','25 kg']]}];
 const MX=[[0,1,2,3,4],[0,1,0,2],[0,1,0,1,2,3],[0,1,2,3,4],[0,1,2,3]];
@@ -532,7 +533,7 @@ function het(){const L=Object.entries(MUS).sort((a,b)=>room(b[1])-room(a[1])||b[
 /* ── a muscle ── */
 function izom(k){const m=MUS[k]||MUS.hat,[n,s,mev,ceil,tier,ser,p,where]=m,lo=n.toLowerCase(),r=room(m),st=step(m);
   const say=tier==='Tartás'?'Ez így is marad: most máshol építesz, ez az izom közben megtartja, amit tud.':r>0?`Még ${r} fér bele, aztán a terv végéig ${ceil} marad a felső érték.`:'Ennél többet ez a terv már nem ad.';
-  return `${ihead({ph:/Comb|Lábh|Far|Vádli/.test(n)?'edz-sulyzotarto.jpg':/Hát|Bicepsz/.test(n)?'edz-huzodzkodas.jpg':'edz-sulyzo.jpg',pos:'center 30%',crumb:`Edzés › Heti vizsgálat › <b>${n}</b>`,eb:`3. hét · ${tier}`,title:`A ${lo} hetente ${s} szettet kap.`,sub:`${say} ${st>0?`Hétfőn ${st} szettel több jön.`:'Hétfőn nem változik.'}`})}
+  return `${ihead({ph:/Comb|Lábh|Far|Vádli/.test(n)?'edz-crossfit.jpg':/Hát|Bicepsz/.test(n)?'edz-huzodzkodas.jpg':'edz-sulyzo.jpg',pos:'center 30%',crumb:`Edzés › Heti vizsgálat › <b>${n}</b>`,eb:`3. hét · ${tier}`,title:`A ${lo} hetente ${s} szettet kap.`,sub:`${say} ${st>0?`Hétfőn ${st} szettel több jön.`:'Hétfőn nem változik.'}`})}
   <h1 class="head rise" style="--i:1">${r>0?`<em>Még ${r} szett</em> fér bele ebbe a tervbe.`:tier==='Tartás'?'<em>Szinten tartod</em>, amíg máshol építesz.':'<em>Elérte</em> a terv felső értékét.'}</h1>
   <section class="sec rise first" style="--i:2"><div class="sh"><h3>A hat hét</h3></div><div class="card gy only deep pre"><div class="dhead"><small>Szett egy héten · ${n}</small><b>${s}<small>most</small></b></div>${tubesDeep(ser,Math.max(...ser)+2,2,['1.','2.','3.','4.','csúcs','pihenő'])}<div class="bars"><div class="br"><span>Most · ennyitől fejlődik: ${mev}</span><b>${s} <small>/ ${ceil}</small></b>${mkBar(s,mev,ceil,ceil+2,s>=ceil?'#F4C860':'#BFE3CC')}</div></div></div></section>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Hol tartasz</h3></div><div class="card trio t-sun">${[['clock','sky',new Set(where.map(w=>w[0])).size,'edzés hetente'],['repeat','sage',ser[0],'szett az 1. héten'],['chart','deep',Math.max(...ser),'a legtöbb lesz']].map(([ic,pal,v,l])=>`<div>${G(ic,pal)}<b>${v}</b><small>${l}</small></div>`).join('')}</div></section>
@@ -552,7 +553,7 @@ function tervek(){const tot=RUNS.reduce((a,r)=>a+r[3],0);
   ${mzCard('A Strength 02 <em>október 19-én</em> magától indul. A röpi napjait már most kihagyja.')}</div>`}
 
 /* ── closed runs + a report ── */
-const CLOSED=[['Hypertrophy 03',6,'június 1. – július 12.',1,'A láb és a hát vitte, a váll kímélve.','edz-sulyzotarto',92],['Cut prep',6,'július 20. – augusztus 30.',0,'Riport nem készült.','edz-futas',null],['Recovery rebuild',8,'február 9. – április 5.',1,'Sérülés után vissza a teljes terhelésig.','edz-nyujtas',88]];
+const CLOSED=[['Hypertrophy 03',6,'június 1. – július 12.',1,'A láb és a hát vitte, a váll kímélve.','edz-tarcsa',92],['Cut prep',6,'július 20. – augusztus 30.',0,'Riport nem készült.','edz-futas',null],['Recovery rebuild',8,'február 9. – április 5.',1,'Sérülés után vissza a teljes terhelésig.','edz-nyujtas',88]];
 function futamok(){
   return `${ihead({ph:'edz-kreta.jpg',pos:'center 45%',crumb:'Edzés › Edzéstervek › <b>Lezárt futamok</b>',eb:'Amit lezártál',title:'3 lezárt futam, 20 hét összesen.',sub:'Kettőről riport is van: mi ment, mi nem, mennyit erősödtél.',btn:`${G('repeat','ink')}Összevetés`,attrs:'data-go="edzes-osszevetes"'})}
   <h1 class="head rise" style="--i:1">A legjobb futamod a <em>Hypertrophy 03</em> volt: 92% megvolt.</h1>
@@ -560,7 +561,7 @@ function futamok(){
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Futamok</h3></div><div class="dlist one">${CLOSED.map(([n,w,d,rep,s,ph,p],i)=>`<article class="dl tap ${rep?'':'fut'}" role="button" tabindex="0" ${i===0?'data-go="edzes-riport"':`data-toast="${n} — ${rep?'a riport ugyanígy néz ki':'ehhez nem készült riport'}"`}><span class="stk"><img src="${PH(ph+'-sq.jpg')}" alt=""></span><div class="dtx"><strong>${n}</strong><div class="chips"><span class="chip">${w} hét</span><span class="chip">${d}</span>${rep?`<span class="chip soft">${G('check','sage')}riport</span>`:''}</div></div>${G('chev','ink','chev')}</article>`).join('')}</div></section>
   ${mzCard('A két riportos futamból kiderül: <em>a vállat kímélve</em> is nőtt az erőd. A Strength 02 ezt viszi tovább.')}</div>`}
 function riport(){
-  return `${ihead({ph:'edz-sulyzotarto.jpg',crumb:'Edzés › Lezárt futamok › <b>Hypertrophy 03</b>',eb:'Lezárt futam · június 1. – július 12.',title:'92% megvolt',sub:'22 edzés a 24-ből, 6 hét a 6-ból.',btn:`${G('book','ink')}Sablon mentése`,attrs:'data-toast="Sablon mentve: Hypertrophy 03"'})}
+  return `${ihead({ph:'edz-tarcsa.jpg',crumb:'Edzés › Lezárt futamok › <b>Hypertrophy 03</b>',eb:'Lezárt futam · június 1. – július 12.',title:'92% megvolt',sub:'22 edzés a 24-ből, 6 hét a 6-ból.',btn:`${G('book','ink')}Sablon mentése`,attrs:'data-toast="Sablon mentve: Hypertrophy 03"'})}
   <h1 class="head rise" style="--i:1">A láb és a hát vitte, <em>a váll kímélve</em> maradt.</h1>
   <section class="sec rise first" style="--i:2"><div class="sh"><h3>Hogy ment</h3></div><div class="card gy g1 deep pre">${ring({d:104,sw:10,p:.92,c:'#BFE3CC',val:'92%',unit:'megvolt'})}<div class="bars">${[['Edzések',22,24],['Hetek',6,6],['Célszettek',84,96]].map(([l,a,b])=>`<div class="br"><span>${l}</span><b>${a} <small>/ ${b}</small></b><u><i style="--w:${a/b*100}%;background:${a>=b?'#F4C860':'#BFE3CC'}"></i></u></div>`).join('')}</div></div></section>
   <section class="sec rise" style="--i:3"><div class="sh"><h3>Izmonként</h3><span class="crumb">indulás → csúcs</span></div><div class="mklg"><span><u></u>a csúcs</span><span><i></i>az indulás</span></div><div class="card gy only"><div class="bars">${[['Hát',6,12,14],['Váll',8,14,16],['Comb',10,14,14],['Mell',10,14,14],['Lábhajlító',6,11,12],['Tricepsz',6,8,10]].map(([l,a,b,c])=>`<div class="br"><span>${l}</span><b>${a} → ${b} <small>/ ${c}</small></b>${mkBar(b,a,c,c,b>=c?'var(--deep)':'var(--sage)')}</div>`).join('')}</div></div></section>
@@ -691,7 +692,7 @@ const gxGo=n=>{const i=gxOf(n);return i<0?`data-toast="${n}"`:`data-go="edzes-gx
 const KINDIC={'Súlyrekord':['dumbbell','sage'],'Ismétlésrekord':['repeat','sky'],'Becsült maximum':['chart','deep'],'Mennyiségi rekord':['bolt','sun'],'Cél teljesítve':['check','sage']};
 const medRow=(m,name=true)=>{const g=GYAK[gxOf(m[2])];return `<div class="row tap" role="button" tabindex="0" ${gxGo(m[2])}><img class="rimg big ex" src="${EPH(g?g[2]:'barbell-row')}" alt=""><div><b>${name?m[2]:m[3]}</b><div class="chips"><span class="chip">${G(...KINDIC[m[3]])}${name?m[3]:m[1].split(',')[0]}</span>${m[5]?`<span class="chip">${m[5]}</span>`:''}</div></div><span class="v">${m[4]}</span></div>`};
 const num=s=>{const m=String(s).replace(',','.').match(/[\d.]+/);return m?+m[0]:0};
-const heroOf=r=>r==='Láb'?'edz-sulyzotarto.jpg':r==='Hát'?'edz-huzodzkodas.jpg':r==='Core'?'edz-nyujtas.jpg':'edz-sulyzo.jpg';
+const heroOf=r=>({Láb:'edz-crossfit.jpg',Hát:'edz-huzodzkodas.jpg',Core:'edz-nyujtas.jpg',Mell:'edz-tarcsa.jpg',Váll:'edz-izom.jpg',Kar:'edz-kettlebell.jpg'})[r]||'edz-sulyzo.jpg';
 
 /* ── an exercise ── */
 function exPage(i){const g=GYAK[i]||GYAK[0],[n,r,p,max,best,med,kind,note]=g,mx=num(max),bs=num(best),meds=MEDS.filter(m=>m[2]===n),ses=12+((i*7)%17),days=[];
@@ -713,7 +714,7 @@ const MF=[['Súlyrekord','dumbbell','sage'],['Ismétlésrekord','repeat','sky'],
 const EMF={f:''};
 const medList=()=>{const L=MEDS.filter(m=>!EMF.f||m[3]===EMF.f);return [...new Set(L.map(m=>m[0]))].map(mo=>`<div class="sh" style="margin:18px 4px 10px"><h3 style="font-size:16px">${mo[0].toUpperCase()+mo.slice(1)}</h3><span class="crumb">${L.filter(m=>m[0]===mo).length} érem</span></div><div class="card pad">${L.filter(m=>m[0]===mo).map(m=>medRow(m)).join('')}</div>`).join('')||`<div class="emptyph"><img src="${PH('edz-sulyzotarto.jpg')}" alt=""><b>Ilyen érmed még nincs.</b></div>`};
 function ermek(){EMF.f='';const per=['június','július','augusztus','szeptember'].map(m=>MEDS.filter(x=>x[0]===m).length);
-  return `${ihead({ph:'edz-sulyzotarto.jpg',crumb:'Edzés › Gyakorlatok › <b>Érmek</b>',eb:'Érmek · június óta',title:`${MEDS.length} érem, ebből ${per[3]} szeptemberben.`,sub:'A korábban logolt szetteidből visszamenőleg is felépültek.',btn:`${G('dumbbell','ink')}A gyakorlataid`,attrs:'data-go="edzes-gyak"'})}
+  return `${ihead({ph:'edz-bandazs.jpg',crumb:'Edzés › Gyakorlatok › <b>Érmek</b>',eb:'Érmek · június óta',title:`${MEDS.length} érem, ebből ${per[3]} szeptemberben.`,sub:'A korábban logolt szetteidből visszamenőleg is felépültek.',btn:`${G('dumbbell','ink')}A gyakorlataid`,attrs:'data-go="edzes-gyak"'})}
   <h1 class="head rise" style="--i:1">A <em>döntött törzsű evezés</em> vitte a legtöbbet: négy érem.</h1>
   <section class="sec rise first" style="--i:2"><div class="sh"><h3>Hónapról hónapra</h3></div><div class="card gy only deep pre"><div class="dhead"><small>Érem egy hónapban</small><b>${MEDS.length}<small>összesen</small></b></div>${tubesDeep(per,6,3,['június','július','augusztus','szeptember'],'arc6 a4')}</div></section>
   <div class="sh rise" style="--i:3;margin:24px 20px 10px"><h3>Érmek</h3></div>
@@ -897,8 +898,15 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .mmst small{font:700 12px var(--b);color:var(--ink2)}
 .mmst b{font:800 26px var(--d);letter-spacing:-.02em}.mmst b small{font:600 13px var(--b);color:var(--ink2)}
 .mmst u{display:flex;gap:3px}.mmst u i{flex:1;height:8px;border-radius:3px;background:rgba(30,35,33,.12)}.mmst u i.on{background:var(--deep)}.mmst .low u i.on{background:var(--peach)}
+.mmalt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px}
+.mmalt button{position:relative;height:150px;border:0;border-radius:22px;overflow:hidden;padding:0;text-align:left;background:#1E2321;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;padding:10px}
+.mmalt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mmalt button::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,0) 25%,rgba(16,20,18,.85) 100%)}
+.mmalt span{position:absolute;left:10px;top:10px;z-index:1;width:34px;height:34px;border-radius:50%;background:#fff;display:grid;place-items:center}.mmalt span .g{font-size:20px}
+.mmalt b,.mmalt small{position:relative;z-index:1;color:#fff}.mmalt b{font:700 14px/1.2 var(--d)}.mmalt small{font:600 12px/1.25 var(--b);color:rgba(255,255,255,.82)}
+.w320 .mmalt button{height:136px;padding:8px}.w320 .mmalt b{font-size:13px}
 .mmgo{position:absolute;left:14px;right:14px;bottom:94px;z-index:5;height:60px;border:0;border-radius:999px;background:var(--deep);color:#fff;display:none;align-items:center;gap:12px;padding:0 10px 0 22px;font:700 16px var(--b);box-shadow:0 20px 34px -16px rgba(46,107,82,.95)}
-.mmgo.on{display:flex}.mmgo .ln{font-style:normal}.w320 .mmgo .ln{display:none}
+.mmgo.on{display:flex}.mmgo .ln{font-style:normal}.mmgo .lb{font:inherit;white-space:nowrap}.w320 .mmgo .ln{display:none}
 .mmgo span{margin-left:auto;height:42px;padding:0 16px;border-radius:999px;background:#C9F24D;color:#10140F;display:flex;align-items:center;gap:6px;font:800 14px var(--b)}
 .mmgo .g{font-size:22px}
 .w320 .mmt{font-size:68px}.w320 .mmt .l2 small{font-size:13px;max-width:128px}.w320 .mmc{flex-basis:140px;height:206px}.w320 .mmwk button b{font-size:16px}
@@ -965,6 +973,34 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .jp .rb{display:grid;grid-template-columns:auto 1fr;gap:10px;margin-top:12px}
 .jp .rb .ghost{height:62px;padding:0 20px;border-radius:999px;border:0;background:rgba(255,255,255,.12);color:#fff;font:700 15px var(--b)}
 .jp .rb .go{margin-top:0}
+.jp .prog i.d.rec{background:#F4C860}
+.jp .vd{display:flex;gap:14px;align-items:center;padding:14px;border-radius:26px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.jp .vd.record{background:linear-gradient(135deg,rgba(244,200,96,.28),rgba(244,200,96,.08));box-shadow:inset 0 0 0 1px rgba(244,200,96,.5)}
+.jp .vd.up,.jp .vd.tick{box-shadow:inset 0 0 0 1px rgba(201,242,77,.35)}
+.jp .vd.down{box-shadow:inset 0 0 0 1px rgba(240,180,140,.45)}
+.jp .vi{width:64px;height:64px;flex:0 0 64px;border-radius:20px;display:grid;place-items:center;background:rgba(255,255,255,.1)}.jp .vi .g{font-size:40px}
+.jp .vd.record .vi{background:rgba(244,200,96,.22)}
+.jp .vd small{font:700 12px var(--b);color:rgba(255,255,255,.72)}
+.jp .vd b{display:block;font:800 26px/1.1 var(--d);letter-spacing:-.02em;color:#fff;margin-top:2px}.jp .vd.record b{color:#F4C860}.jp .vd.up b,.jp .vd.tick b{color:var(--lime)}.jp .vd.down b{color:#F0B48C}
+.jp .vd p{margin:4px 0 0;font:600 13px/1.35 var(--b);color:rgba(255,255,255,.82)}
+.jp .jsets{display:flex;gap:6px;margin-top:10px}
+.jp .jsets span{flex:1;min-width:0;display:grid;justify-items:center;gap:2px;padding:8px 4px;border-radius:16px;background:rgba(255,255,255,.07)}
+.jp .jsets span.record{background:rgba(244,200,96,.16)}
+.jp .jsets .g{font-size:18px}.jp .jsets b{font:700 13px var(--d);color:#fff;white-space:nowrap}.jp .jsets small{font:700 12px var(--b);color:rgba(255,255,255,.6)}
+.jp .cdm{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 12px;margin-top:16px;padding:12px 14px;border-radius:22px;background:rgba(255,255,255,.08)}
+.jp .cdm small{grid-column:1/-1;font:700 12px var(--b);letter-spacing:.1em;text-transform:uppercase;color:var(--lime)}
+.jp .cdm strong{font:800 40px/1 var(--d);letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:#fff}
+.jp .cdm u{display:block;height:8px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}.jp .cdm u i{display:block;height:100%;width:var(--w);background:var(--lime);transition:width 1s linear}
+.jp .exh{margin-top:18px}.jp .exh small{font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:var(--lime)}
+.jp .exh h3{margin:4px 0 0;font:800 30px/1 var(--d);letter-spacing:-.03em;text-transform:uppercase;color:#fff}
+.jp .exh{display:grid;grid-template-columns:1fr auto;align-items:end;column-gap:10px}.jp .exh small{grid-column:1}.jp .exh h3{grid-column:1}.jp .exh .recb{grid-column:2;grid-row:1/3;align-self:center;height:36px;padding:0 12px 0 8px;border-radius:999px;background:rgba(244,200,96,.2);box-shadow:inset 0 0 0 1px rgba(244,200,96,.5);color:#F4C860;font:800 13px var(--b);display:flex;align-items:center;gap:6px}.jp .exh .recb .g{font-size:22px}
+.w320 .jp.exd .nx{display:none}
+.jp .qs{display:grid;gap:12px;margin-top:16px}
+.jp .q small{display:block;font:700 13px var(--b);color:rgba(255,255,255,.85);margin-bottom:6px}
+.jp .q div{display:grid;gap:6px}
+.jp .q button{height:42px;border-radius:14px;border:0;background:rgba(255,255,255,.1);color:#fff;font:700 13px var(--b);padding:0 4px}
+.jp .q button.on{background:#fff;color:#10140F}
+.w320 .jp .vd b{font-size:22px}.w320 .jp .vi{width:52px;height:52px;flex-basis:52px}.w320 .jp .jsets b{font-size:12px}.w320 .jp .exh h3{font-size:24px}.w320 .jp .q button{font-size:12px}.w320 .jp .cdm strong{font-size:32px}
 .w320 .jp .ph{height:420px}.w320 .jp .sp{min-height:24px}.w320 .jp .last{font-size:13px;margin-top:8px}.w320 .jp .big{margin-top:12px}.w320 .jp .nb{padding:10px 10px 10px;border-radius:22px}.w320 .jp .rir{margin-top:8px}.w320 .jp .sec2{margin-top:10px}.w320 .jp .sec2 button{height:44px}.w320 .jp .go{height:56px;margin-top:10px}.w320 .jp .rb .ghost{height:56px}.w320 .jp .how{margin-top:12px}.w320 .jp .how button{height:46px}.w320 .jp .nx img{width:44px;height:44px}.w320 .jp .nx b{font-size:13px}.w320 .jp .nb strong{font-size:48px}.w320 .jp .nb .st button{width:42px}.w320 .jp .sec2 button{font-size:12px;gap:4px}.w320 .jp .sec2 .g{display:none}
 </style>`);
 
@@ -986,50 +1022,69 @@ function maiMinta(){const D=[21,22,23,24,25,26,27];
   <section class="sec rise" style="--i:4;margin-top:0"><div class="card deep mmsplit"><div class="hd"><b>${tot}<small>szett ma</small></b><span>a heti 83-ból</span></div><div class="bar">${MMS.map(([l,n,c])=>`<i style="flex:${n};background:${c}"></i>`).join('')}</div><div class="lg">${MMS.map(([l,n,c])=>`<div><i style="background:${c}"></i>${l}<b>${n}</b></div>`).join('')}</div></div></section>
   <div class="mmsh rise" style="--i:5"><h3>Reggel ezt mondtad</h3><span>07:40</span></div>
   <section class="sec rise" style="--i:5;margin-top:0"><div class="card t-sky mmst">${[['Kipihentség',4,'low'],['Izomláz',7,''],['Kedv',5,'']].map(([l,v,c])=>`<div class="${c}"><small>${l}</small><b>${v}<small> / 10</small></b><u>${Array.from({length:10},(_,k)=>`<i class="${k<v?'on':''}"></i>`).join('')}</u></div>`).join('')}</div></section>
+  <div class="mmsh rise" style="--i:6"><h3>Vagy inkább</h3></div>
+  <div class="mmalt rise" style="--i:6">${[['edz-kettlebell','dumbbell','sage','Egyedi edzés','saját gyakorlatokkal','data-go="edzes-sajat"'],['edz-ropi','ball','sun','Sport','röpi, futás, bármi','data-go="edzes-sportlog"'],['edz-oltozo','moon','sky','Ma kihagyom','okkal, gyorsan','data-sheet="edzWhy"']].map(([p,ic,pal,t,s,a])=>`<button ${a}><img src="${PH(p+'-sq.jpg')}" alt=""><span>${G(ic,pal)}</span><b>${t}</b><small>${s}</small></button>`).join('')}</div>
   <div class="mmsh rise" style="--i:6"><h3>Ma még jön</h3></div>
   <section class="sec rise" style="--i:6;margin-top:0">${comingUp()}</section>
   ${mzCard('Este röpi is van, ezért a <em>húzódzkodás utolsó szettjét</em> kihagynám: a vállad így frissebb marad a meccsre.',`<button class="pill soft" data-toast="Rendben: a negyedik szett kimarad">Így csináljuk</button>`)}
   </div>`}
-const mmgo=document.createElement('button');mmgo.className='mmgo';mmgo.dataset.go='edzes-jatszo';mmgo.innerHTML=`${G('bolt','sun')}Indítsuk<i class="ln">&nbsp;a Pull Dayt</i><span>64 perc ${G('chev','ink')}</span>`;$('#phone').appendChild(mmgo);
+const mmgo=document.createElement('button');mmgo.className='mmgo';mmgo.dataset.go='edzes-jatszo';mmgo.innerHTML=`${G('bolt','sun')}<b class="lb">Indítsuk<i class="ln"> a Pull Dayt</i></b><span>64 perc ${G('chev','ink')}</span>`;$('#phone').appendChild(mmgo);
 
 /* ── Edzés közben · lejátszó ── */
-const JPH=['edz-huzodzkodas.jpg','edz-sulyzotarto.jpg','edz-sulyzo.jpg','edz-sulyzotarto.jpg','edz-sulyzo.jpg'];
+const JPH=['edz-sotet.jpg','edz-felhuzas.jpg','edz-izom.jpg','edz-kettlebell.jpg','edz-tarcsa.jpg'],JPP=['86% 30%','center 40%','40% 20%','center','center'];
 const JPN=PULL.map(([n,p,s,r,w])=>{const kg=parseFloat(w.replace('+','').replace(',','.'))||0,rr=parseInt(r.split('–')[1]||r,10);return {n,p,s,r,w:kg,plus:w.startsWith('+'),rep:Math.max(6,rr-(n.startsWith('Húz')?0:2))}});
 JPN[0].rep=8;
-const JP={ex:0,set:2,w:12.5,r:8,ri:2,mode:'set',left:90,total:90,how:'',done:[2,0,0,0,0],t0:Date.now()-12*60000,iv:null};
+const JBEST=[[12.5,8],[72.5,10],[12.5,15],[16,12],[30,15]];
+const JP={ex:0,set:2,w:12.5,r:8,ri:2,mode:'set',left:90,total:90,done:[2,0,0,0,0],log:[[{w:12.5,r:8,v:'tick'},{w:12.5,r:8,v:'record'}],[],[],[],[]],q:[2,0,1],t0:Date.now()-12*60000,iv:null};
+const JVD={record:['medal','sun','Új rekord','Ennyit még sosem emeltél ebből.'],up:['chart','sage','Cél fölött','Többet tudtál, mint a mai cél.'],tick:['check','sage','Célsávban','Pont a mai cél, így kell.'],down:['repeat','peach','Cél alatt','Kevesebb lett, mint a cél: semmi baj, a terv igazodik.']};
+const jpVerdict=(i,w,r)=>{const b=JBEST[i],e=JPN[i];if(w>b[0]||(w===b[0]&&r>b[1]))return 'record';if(w>e.w||(w===e.w&&r>e.rep))return 'up';if(w===e.w&&r===e.rep)return 'tick';return 'down'};
 const LIMEX=`<svg class="jpx" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>`;
 const CHECK=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#10140F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
-const jpNext=()=>{const e=JPN[JP.ex];if(JP.set+1<e.s)return [JP.ex,JP.set+1];for(let i=JP.ex+1;i<JPN.length;i++)if(JP.done[i]<JPN[i].s)return [i,JP.done[i]];return null};
+const jpNext=()=>{const e=JPN[JP.ex];if(JP.set+1<e.s&&JP.done[JP.ex]<e.s)return [JP.ex,JP.done[JP.ex]];for(let i=JP.ex+1;i<JPN.length;i++)if(JP.done[i]<JPN[i].s)return [i,JP.done[i]];return null};
 const jpMin=()=>Math.max(0,Math.round((Date.now()-JP.t0)/60000));
-function jatszo(){const e=JPN[JP.ex],kg=fk(JP.w),R=JP.mode==='rest',nx=jpNext(),ne=nx?JPN[nx[0]]:null,dn=JP.done.reduce((a,b)=>a+b,0),T=JPN.reduce((a,x)=>a+x.s,0);
-  const prog=`<div class="prog" aria-label="${dn} / ${T} szett kész">${JPN.map((x,i)=>`<div style="flex:${x.s}">${Array.from({length:x.s},(_,j)=>`<i class="${j<JP.done[i]?'d':(!R&&i===JP.ex&&j===JP.set)?'c':''}"></i>`).join('')}</div>`).join('')}</div>`;
+const jpDiff=(L,e)=>{const dr=L.r-e.rep,dw=L.w-e.w;return dw?`${dw>0?'+':'−'}${fk(Math.abs(dw))} kg a célhoz képest`:dr?`${dr>0?'+':'−'}${Math.abs(dr)} ismétlés a célhoz képest`:'pont a mai cél'};
+const jpSets=i=>`<div class="jsets">${JP.log[i].map((L,j)=>{const [ic,pal]=JVD[L.v];return `<span class="${L.v}">${G(ic,pal)}<b>${fk(L.w)} × ${L.r}</b><small>${j+1}. szett</small></span>`}).join('')}</div>`;
+function jatszo(){const e=JPN[JP.ex],kg=fk(JP.w),R=JP.mode!=='set',nx=jpNext(),ne=nx?JPN[nx[0]]:null,dn=JP.done.reduce((a,b)=>a+b,0),T=JPN.reduce((a,x)=>a+x.s,0);
+  const prog=`<div class="prog" aria-label="${dn} / ${T} szett kész">${JPN.map((x,i)=>`<div style="flex:${x.s}">${Array.from({length:x.s},(_,j)=>`<i class="${j<JP.done[i]?(JP.log[i][j]&&JP.log[i][j].v==='record'?'d rec':'d'):(!R&&i===JP.ex&&j===JP.set)?'c':''}"></i>`).join('')}</div>`).join('')}</div>`;
   const top=`<div class="tb"><button class="gb" data-jpx aria-label="Kilépés az edzésből">${LIMEX}</button><div class="mid"><b>Pull Day</b><small id="jpel">${jpMin()} perc · ${dn} / ${T} szett</small></div><button class="gb" data-go="edzes-session" aria-label="Táblázatos nézet">${G('dots','cream')}</button></div>${prog}`;
-  if(R)return `<div class="jp rest"><div class="ph"><img src="${PH(JPH[JP.ex])}" alt=""></div><div class="in">${top}
+  const nextRow=ne?`<div class="nx"><img class="ex" src="${EPH(ne.p)}" alt=""><div><small>Következik · ${nx[1]+1}. szett / ${ne.s}</small><b>${ne.n.replace(/\s*\(.*\)/,'')} · ${ne.plus?'+':''}${fk(ne.w)} kg × ${ne.rep}</b></div></div>`:'';
+  if(JP.mode==='rest'){const ex=JP.mode==='rest'&&JP.done[JP.ex]>=e.s?JP.ex:JP.ex,L=JP.log[ex][JP.log[ex].length-1],[ic,pal,vt,vs]=JVD[L.v];
+    return `<div class="jp rest"><div class="ph"><img src="${PH(JPH[JP.ex])}" style="object-position:${JPP[JP.ex]}" alt=""></div><div class="in">${top}
     <div class="cd"><small>Pihenő</small><strong id="jpcd">${mmss(JP.left)}</strong><u><i id="jpbar" style="--w:${JP.left/JP.total*100}%"></i></u></div>
-    <div class="sp" style="min-height:24px"></div>
-    <div class="how"><small>Hogy ment az előző szett?</small><div>${['Könnyű','Jó','Nehéz'].map(l=>`<button class="${JP.how===l?'on':''}" data-jphow="${l}">${l}</button>`).join('')}</div></div>
-    ${ne?`<div class="nx"><img class="ex" src="${EPH(ne.p)}" alt=""><div><small>Következik · ${nx[1]+1}. szett / ${ne.s}</small><b>${ne.n} · ${ne.plus?'+':''}${fk(ne.w)} kg × ${ne.rep}</b></div></div>`:''}
-    <div class="rb"><button class="ghost" data-jpplus aria-label="Plusz 30 másodperc">+30 mp</button><button class="go" data-jpskip>Tovább ${G('chev','ink')}</button></div></div></div>`;
-  return `<div class="jp"><div class="ph"><img src="${PH(JPH[JP.ex])}" alt=""></div><div class="in">${top}
+    <div class="sp" style="min-height:16px"></div>
+    <div class="vd ${L.v}"><span class="vi">${G(ic,pal)}</span><div><small>${JP.log[ex].length}. szett · ${fk(L.w)} kg × ${L.r}</small><b>${vt}</b><p>${L.v==='record'?`Az eddigi legjobb ${fk(JBEST[ex][0])} × ${JBEST[ex][1]} volt.`:(s=>s[0].toUpperCase()+s.slice(1))(jpDiff(L,JPN[ex]))+'.'}</p></div></div>
+    ${jpSets(ex)}
+    ${nextRow}
+    <div class="rb"><button class="ghost" data-jpplus aria-label="Plusz 30 másodperc">+30 mp</button><button class="go" data-jpskip>Tovább ${G('chev','ink')}</button></div></div></div>`}
+  if(JP.mode==='exdone'){const ex=JP.ex,last=!nx,rec=JP.log[ex].filter(L=>L.v==='record').length;
+    return `<div class="jp rest exd"><div class="ph"><img src="${PH(JPH[ex])}" style="object-position:${JPP[ex]}" alt=""></div><div class="in">${top}
+    ${last?'':`<div class="cdm"><small>Pihenő</small><strong id="jpcd">${mmss(JP.left)}</strong><u><i id="jpbar" style="--w:${JP.left/JP.total*100}%"></i></u></div>`}
+    <div class="exh"><small>${ex+1}. gyakorlat kész</small>${rec?`<span class="recb">${G('medal','sun')}${rec} rekord</span>`:''}<h3>${e.n.replace(/\s*\(.*\)/,'')}</h3></div>
+    ${jpSets(ex)}
+    <div class="qs">${[['Pumpa · érzed?',['Semmi','Enyhe','Jó','Brutális']],['Ízületi fájdalom',['Nincs','Enyhe','Erős']],['Akarunk még?',['Kevés volt','Pont jó','Sok volt']]].map(([t,o],k)=>`<div class="q"><small>${t}</small><div style="grid-template-columns:repeat(${o.length},1fr)">${o.map((x,j)=>`<button class="${JP.q[k]===j?'on':''}" data-jpq="${k}|${j}">${x}</button>`).join('')}</div></div>`).join('')}</div>
+    <div class="sp" style="min-height:8px"></div>
+    ${last?`<button class="go" data-jpsave>${CHECK}Mentés · edzés vége</button>`:`${nextRow}<div class="rb"><button class="ghost" data-jpplus aria-label="Plusz 30 másodperc">+30 mp</button><button class="go" data-jpsave>Mentés · tovább ${G('chev','ink')}</button></div>`}</div></div>`}
+  return `<div class="jp"><div class="ph"><img src="${PH(JPH[JP.ex])}" style="object-position:${JPP[JP.ex]}" alt=""></div><div class="in">${top}
     <div class="sp"></div>
     <div class="ey"><span class="l">${JP.set+1}. szett / ${e.s}</span><span>${JP.ex+1}. gyakorlat / ${JPN.length}</span>${PULL[JP.ex][5]?`<span>kímélve</span>`:''}</div>
     <h2>${e.n.replace(/\s*\(.*\)/,'')}${/\(/.test(e.n)?`<small>${e.n.match(/\((.*)\)/)[1]}</small>`:''}</h2>
-    <div class="last">Múlt héten <b>${JP.ex===0?'10 kg × 8':PULL[JP.ex][4]+' × '+e.rep}</b> · ma a cél <b>${e.plus?'+':''}${fk(e.w)} kg × ${e.rep}</b></div>
+    <div class="last">Rekord <b>${fk(JBEST[JP.ex][0])} kg × ${JBEST[JP.ex][1]}</b> · ma a cél <b>${e.plus?'+':''}${fk(e.w)} kg × ${e.rep}</b></div>
     <div class="big"><div class="nb"><small>${e.plus?'Plusz súly':'Súly'}</small><strong>${e.plus?'<em>+</em>':''}${kg}</strong><div class="st"><button data-jpw="-1" aria-label="Kevesebb súly">−</button><button data-jpw="1" aria-label="Több súly">+</button></div></div><div class="nb"><small>Ismétlés</small><strong>${JP.r}</strong><div class="st"><button data-jpr="-1" aria-label="Kevesebb ismétlés">−</button><button data-jpr="1" aria-label="Több ismétlés">+</button></div></div></div>
     <div class="rir"><small>Tartalék</small><div>${[0,1,2,3].map(v=>`<button class="${JP.ri===v?'on':''}" data-jpri="${v}" aria-label="${v} ismétlés tartalék">${v===3?'3+':v}</button>`).join('')}</div></div>
     <div class="sec2"><button data-sheet="edzTech" data-arg="${JP.ex}">${G('book','cream')}Technika</button><button data-go="edzes-session">${G('repeat','cream')}Táblázat</button><button data-jpskipex>${G('chev','cream')}Kihagyom</button></div>
     <button class="go" data-jpdone>${CHECK}Kész a ${JP.set+1}. szett</button></div></div>`}
 const jpPaint=()=>{if(location.hash!=='#edzes-jatszo')return;const sc=$('#scroll');sc.innerHTML=jatszo();sc.scrollTop=0;$('#cbar').classList.remove('on')};
 const jpLoad=i=>{JP.ex=i;JP.set=JP.done[i];JP.w=JPN[i].w;JP.r=JPN[i].rep;JP.ri=2};
-const jpAdvance=()=>{JP.mode='set';JP.how='';const nx=jpNext();if(!nx){location.hash='edzes-cer';return}if(nx[0]!==JP.ex){jpLoad(nx[0])}else JP.set=nx[1];jpPaint()};
+const jpAdvance=()=>{JP.mode='set';const nx=jpNext();if(!nx){location.hash='edzes-cer';return}if(nx[0]!==JP.ex){jpLoad(nx[0])}else JP.set=nx[1];jpPaint()};
 const jpTick=()=>{if(location.hash!=='#edzes-jatszo'){clearInterval(JP.iv);JP.iv=null;return}const el=$('#jpel');if(el)el.firstChild.textContent=el.firstChild.textContent.replace(/^\d+/,jpMin());
-  if(JP.mode==='rest'){JP.left--;if(JP.left<=0){haptic(20);toast('Pihenő vége, jöhet a következő szett');jpAdvance();return}const c=$('#jpcd'),b=$('#jpbar');if(c)c.textContent=mmss(JP.left);if(b)b.style.setProperty('--w',JP.left/JP.total*100+'%')}};
+  if(JP.mode==='rest'||(JP.mode==='exdone'&&jpNext())){if(JP.left<=0)return;JP.left--;if(JP.left<=0){haptic(20);toast('Pihenő vége, jöhet a következő szett');if(JP.mode==='rest'){jpAdvance();return}}const c=$('#jpcd'),b=$('#jpbar');if(c)c.textContent=mmss(JP.left);if(b)b.style.setProperty('--w',JP.left/JP.total*100+'%')}};
 document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest('.jp'))return;
   const w=t.closest('[data-jpw]');if(w){JP.w=Math.max(0,JP.w+ +w.dataset.jpw*2.5);jpPaint();haptic(6);return}
   const r=t.closest('[data-jpr]');if(r){JP.r=Math.max(1,JP.r+ +r.dataset.jpr);jpPaint();haptic(6);return}
   const ri=t.closest('[data-jpri]');if(ri){JP.ri=+ri.dataset.jpri;jpPaint();return}
-  if(t.closest('[data-jpdone]')){JP.done[JP.ex]=Math.max(JP.done[JP.ex],JP.set+1);haptic(14);if(!jpNext()){location.hash='edzes-cer';return}JP.mode='rest';JP.left=JP.total=90;jpPaint();return}
-  const h=t.closest('[data-jphow]');if(h){JP.how=h.dataset.jphow;$$('.jp .how button').forEach(b=>b.classList.toggle('on',b===h));return}
+  if(t.closest('[data-jpdone]')){const i=JP.ex,v=jpVerdict(i,JP.w,JP.r);JP.log[i].push({w:JP.w,r:JP.r,v});if(v==='record')JBEST[i]=[JP.w,JP.r];JP.done[i]=Math.max(JP.done[i],JP.set+1);haptic(v==='record'?30:14);JP.left=JP.total=90;JP.q=[2,0,1];JP.mode=JP.done[i]>=JPN[i].s?'exdone':'rest';jpPaint();return}
+  const q=t.closest('[data-jpq]');if(q){const [k,j]=q.dataset.jpq.split('|').map(Number);JP.q[k]=j;$$(`.jp [data-jpq^="${k}|"]`).forEach(b=>b.classList.toggle('on',b===q));return}
+  if(t.closest('[data-jpsave]')){toast('Mentve');jpAdvance();return}
   if(t.closest('[data-jpplus]')){JP.left+=30;JP.total=Math.max(JP.total,JP.left);const c=$('#jpcd');if(c)c.textContent=mmss(JP.left);return}
   if(t.closest('[data-jpskip]')){jpAdvance();return}
   if(t.closest('[data-jpskipex]')){const n=JPN[JP.ex].n;JP.done[JP.ex]=JPN[JP.ex].s;toast(`Kihagyva: ${n}`);jpAdvance();return}

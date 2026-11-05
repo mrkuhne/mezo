@@ -137,6 +137,12 @@ kcal**, no grey helper text (Mezo says it, or it goes), no emojis, no numbered h
 ≥ 40 px taps at 320 px (44 for primary), today = csütörtök, szeptember 24., 14:10 (week 21–27). Real-looking
 invented content of the real record types; the owner's real data never goes into a page.
 
+## 11b. Edzés feature rules (owner, 2026-11-05)
+
+- The three workout questions (Pumpa · érzed? / Ízületi fájdalom / Akarunk még?) are asked **once per exercise, after its last set** — never between sets. Between sets there is only the rest, and the rest screen shows the **verdict of the set just done** (record / above / on / below target) — a medal when it is a record.
+- The workout itself (player, rest, exercise done) is dark with one vivid accent (lime `#C9F24D`, gold for records); the Edzés pages stay light but each page type has **its own structure** (owner: "mindegyik nagyon hasonló lett felépítésben").
+- **Photo variety:** no photo heads two pages of the same flow; a new page gets a photo that is not already the most used one (`grep -o "edz-[a-z]*" edzes.js | sort | uniq -c`).
+
 ## 12. Rejected — do not bring back
 
 Boxed photo card at the top of a tab · a drawn scene under the photo · vessels / glasses for the numbers ·

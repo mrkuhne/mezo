@@ -43,3 +43,18 @@ Mind CC0 vagy közkincs (Wikimedia Commons). 960×720 és 480×480 vágás, ugya
 | `edz-futas.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Running_along_the_beach_(Unsplash).jpg (CC0) |
 | `edz-nyujtas.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Stretching_before_a_run_(Unsplash).jpg (CC0) |
 | `edz-ropi.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Beach_volleyball_ball.jpg (közkincs) |
+
+## Edzés · több fotó (2026-11-05, a tulajdonos kérésére: „szedj még több stock fotót”)
+
+Wikimedia Commons. A CC BY / CC BY-SA képeknél a szerző neve kötelező: itt áll.
+
+| Fájl | Eredeti | Licenc · szerző |
+|---|---|---|
+| `edz-tarcsa.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Bench_Press.jpg | CC BY-SA 4.0 · Aditya Oberai |
+| `edz-izom.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Fit_man_(Unsplash).jpg | CC0 · Cristian Baron |
+| `edz-felhuzas.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Fit_young_man_doing_deadlift_exercise_in_gym.jpg | CC BY 2.0 · Nenad Stojkovic |
+| `edz-bandazs.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Gym_Life_(Unsplash).jpg | CC0 · Filip Mroz |
+| `edz-crossfit.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Kathy_Nguyen_performing_a_deadlift.jpg | CC BY-SA 2.0 · Mark Sebastian |
+| `edz-kettlebell.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Pair_of_kettlebells_on_a_shelf,_Results_Gym.jpg | CC BY-SA 4.0 · Ser Amantio di Nicolao |
+| `edz-oltozo.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:The_box_room_at_the_gym_Repeat_Fitness.jpg | CC0 · Jan Laugesen |
+| `edz-sotet.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:World_Gym_workout_(Unsplash).jpg | CC0 · Scott Webb |
