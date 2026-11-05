@@ -19,7 +19,10 @@ for(const W of [390,320]){const p=await b.newPage({viewport:{width:1200,height:9
     await p.goto(`http://127.0.0.1:8757/kepes/${page}?v=${Date.now()}#${route}`);
     await p.waitForSelector('#scroll .phead, #scroll .head, #scroll .top',{timeout:15000}).catch(()=>errs.push(`${W} #${route}: no page rendered (did it throw?)`));
     await p.waitForTimeout(1600);
-    if(W===320&&!(await p.evaluate(()=>document.querySelector('#phone')?.classList.contains('w320')))){await p.click('#t320').catch(()=>{});await p.waitForTimeout(300)}
+    const is320=()=>p.evaluate(()=>!!document.querySelector('#phone')?.classList.contains('w320'));
+    if(W===320&&!(await is320())){await p.click('#t320',{timeout:3000}).catch(()=>{});await p.waitForTimeout(300)}
+    /* never measure 390 and call it 320: a missing toggle once made every Edzés '320' run a silent 390 run */
+    if((W===320)!==(await is320())){errs.push(`${W} #${route}: could not switch the phone to ${W} px`);bad++;continue}
     const r=await p.evaluate(()=>{const sc=document.querySelector('#scroll'),ph=document.querySelector('#phone');
       const small=new Set();const w=document.createTreeWalker(ph,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){const el=n.parentElement;if(!n.textContent.trim()||!el.getClientRects().length)continue;const fs=parseFloat(getComputedStyle(el).fontSize);if(fs<11.95)small.add(n.textContent.trim().slice(0,18)+'('+fs+')')}
       const taps=[...ph.querySelectorAll('button,a,[role=button]')].filter(e=>e.getClientRects().length).map(e=>[String(e.className).slice(0,12),Math.round(e.getBoundingClientRect().width),Math.round(e.getBoundingClientRect().height)]).filter(([,w,h])=>w<40||h<40);
