@@ -58,3 +58,7 @@ Wikimedia Commons. A CC BY / CC BY-SA képeknél a szerző neve kötelező: itt 
 | `edz-kettlebell.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Pair_of_kettlebells_on_a_shelf,_Results_Gym.jpg | CC BY-SA 4.0 · Ser Amantio di Nicolao |
 | `edz-oltozo.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:The_box_room_at_the_gym_Repeat_Fitness.jpg | CC0 · Jan Laugesen |
 | `edz-sotet.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:World_Gym_workout_(Unsplash).jpg | CC0 · Scott Webb |
+
+## Izomtérkép (2026-11-05)
+
+`b/body.js` — the anatomy paths of **MuscleMap** (https://github.com/melihcolpan/MuscleMap), MIT License, Copyright (c) 2026 Melih Colpan: the same data the app's own muscle map draws (`frontend/src/features/train/logic/bodyGeometry.gen.ts`); full notice in `NOTICE.md` at the repository root.

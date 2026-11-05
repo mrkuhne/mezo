@@ -1448,27 +1448,11 @@ const lhd=tab=>`<div class="top rise" style="--i:0"><a class="logo" href="#irany
 const lvl=(d,c)=>d/c>=1?'#C9F24D':d/c>=.75?'#8FD3A8':d/c>=.5?'#5FB08A':'#F0B48C';
 
 /* ── Terhelés: the body map ── */
-function bodyMap(){const M=k=>MUS[k],f=k=>lvl(M(k)[1],M(k)[3]);
-  const fig=(cx,back)=>{const L=[`<circle class="neu" cx="${cx}" cy="30" r="15"/>`,`<rect class="neu" x="${cx-6}" y="43" width="12" height="12" rx="4"/>`,
-    `<path class="base" d="M${cx-37} 60 Q${cx} 52 ${cx+37} 60 L${cx+30} 112 Q${cx+25} 140 ${cx+27} 166 L${cx-27} 166 Q${cx-25} 140 ${cx-30} 112 Z"/>`,
-    ...[-1,1].map(s=>`<path class="base" d="M${cx+s*38} 62 L${cx+s*46} 118 L${cx+s*50} 166" stroke="rgba(255,255,255,.13)" stroke-width="15" stroke-linecap="round" fill="none"/>`),
-    ...[-1,1].map(s=>`<path d="M${cx+s*15} 168 L${cx+s*17} 236 L${cx+s*16} 296" stroke="rgba(255,255,255,.13)" stroke-width="22" stroke-linecap="round" fill="none"/>`),
-    ...[-1,1].map(s=>`<circle cx="${cx+s*37}" cy="66" r="11" fill="${f('vall')}"/>`)];
-    if(!back)L.push(...[-1,1].map(s=>`<ellipse cx="${cx+s*15}" cy="81" rx="15" ry="11" fill="${f('mell')}"/>`),`<rect class="neu" x="${cx-12}" y="96" width="24" height="52" rx="9"/>`,...[-1,1].map(s=>`<ellipse cx="${cx+s*43}" cy="92" rx="7" ry="18" fill="${f('bic')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*15}" cy="202" rx="11" ry="30" fill="${f('comb')}"/>`),...[-1,1].map(s=>`<ellipse class="neu" cx="${cx+s*16}" cy="262" rx="7" ry="20"/>`));
-    else L.push(`<path d="M${cx-24} 58 Q${cx} 66 ${cx+24} 58 L${cx+14} 78 L${cx-14} 78 Z" class="neu"/>`,...[-1,1].map(s=>`<ellipse cx="${cx+s*16}" cy="102" rx="13" ry="27" fill="${f('hat')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*43}" cy="92" rx="7" ry="18" fill="${f('tri')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*13}" cy="174" rx="14" ry="13" fill="${f('far')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*15}" cy="210" rx="11" ry="26" fill="${f('labh')}"/>`),...[-1,1].map(s=>`<ellipse cx="${cx+s*16}" cy="262" rx="8" ry="21" fill="${f('vadli')}"/>`));
-    return L.join('')};
-  const lab=(k,x,y,px,py,right)=>{const m=M(k),lo=m[1]/m[3]<.5;return `<a href="#edzes-izom-${k}" aria-label="${m[0]}: ${m[1]} / ${m[3]} szett"><rect class="hit" x="${right?x-60:x-2}" y="${y-23}" width="62" height="55" rx="10"/><text class="lbl" x="${x}" y="${y}" text-anchor="${right?'end':'start'}">${m[0]}</text><text class="val ${lo?'low':''}" x="${x}" y="${y+17}" text-anchor="${right?'end':'start'}">${m[1]}/${m[3]}</text><path class="ln" d="M${right?x-64:x+62} ${y+4} L${px} ${py}"/><circle class="dot" cx="${px}" cy="${py}" r="3"/></a>`};
-  return `<svg viewBox="0 0 360 318" role="img" aria-label="Izomtérkép: a heti szettek izmonként">
-    <g transform="translate(0,6)">${fig(122,false)}${fig(238,true)}</g>
-    <text class="cap" x="122" y="316" text-anchor="middle">ELÖL</text><text class="cap" x="238" y="316" text-anchor="middle">HÁTUL</text>
-    ${lab('vall',2,52,85,72,false)}${lab('mell',2,104,108,87,false)}${lab('bic',2,156,79,98,false)}${lab('comb',2,220,108,208,false)}
-    ${lab('hat',358,52,254,108,true)}${lab('tri',358,104,281,98,true)}${lab('far',358,156,251,180,true)}${lab('labh',358,208,253,216,true)}${lab('vadli',358,262,254,268,true)}
-  </svg>`}
 function terheles2(){const DS=[16,12,17,0,12,null,null],PL=[16,12,19,16,12,0,0];
   return `<div class="lp">${lhd('Terhelés')}
   <div class="lpt rise" style="--i:1"><small>A hét terhelése · szeptember 21–27.</small><div class="lpbig"><b>55</b><span>/ 83 szett<br>a héten</span></div><div class="lpfill" style="--w:${55/83*100}%;--m:${4/7*100}%"><i></i><u></u><em>ma, a hét 4/7-e</em></div><p style="margin-top:34px"><em>A hát és a comb</em> jól halad, a kar és a far lemaradt.</p></div>
   <div class="lpsh rise" style="--i:2"><h3>Izmaid a héten</h3><span>a szett / a heti cél</span></div>
-  <div class="card deep bmap rise" style="--i:2">${bodyMap()}<div class="bmlg">${[['#F0B48C','kevés'],['#5FB08A','halad'],['#8FD3A8','közel'],['#C9F24D','megvan']].map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join('')}</div></div>
+  <div class="rise" style="--i:2">${loadMap()}</div>
   <div class="bmacts rise" style="--i:2"><button data-go="edzes-terkep">${G('person','sage')}Részletes térkép</button><button data-go="edzes-het">${G('chart','deep')}Heti vizsgálat</button></div>
   <div class="lpsh rise" style="--i:3"><h3>Napról napra</h3><span>vonal: a terv</span></div>
   <section class="sec rise" style="--i:3;margin-top:0"><div class="card" style="padding:16px 12px 12px"><div class="wk">${EWEEK.map(([d,s,t,st],i)=>{const v=DS[i],p=PL[i],fut=v==null||st==='today'||st==='plan';return `<div class="wd ${st==='today'?'today':''} ${fut?'fut':''}"><em>${st==='today'?'ma':v?v:st==='sport'?'röpi':''}</em><span class="tube" style="height:124px"><i style="height:${v?Math.min(100,v/20*100):0}%"></i>${p?`<u style="bottom:${p/20*100}%"></u>`:''}</span><b>${s}</b></div>`}).join('')}</div></div></section>
@@ -1493,8 +1477,8 @@ function terv2(){const dph=['edz-tarcsa','edz-felhuzas','edz-crossfit','edz-sote
   <div class="card deep cor rise" style="--i:2"><div class="hd"><b>75<small>szett ezen a héten</small></b><span>a csúcs az 5. hét</span></div>${corridor()}<div class="corlg"><span><i style="background:rgba(201,242,77,.35)"></i>a sáv, ahol az izom nő</span><span><i style="background:#fff"></i>a terved</span></div></div>
   <div class="lpsh rise" style="--i:3"><h3>Ez a hét</h3><span>szeptember 21–27.</span></div>
   <div class="dcar rise" style="--i:3">${EWEEK.map(([d,s,t,st,n,ps,m],i)=>`<button class="dcd ${st==='today'?'today':''} ${st==='plan'||st==='rest'?'fut':''}" ${dayGo(i)} aria-label="${d}, ${t}"><img src="${PH(dph[i]+'-sq.jpg')}" alt=""><span class="dl1">${s}</span>${st==='done'?`<span class="st">${G('check','sage')}</span>`:st==='today'?`<span class="st">${G('bolt','deep')}</span>`:''}<span class="tx"><b>${t}</b><span class="chip">${n?set1(n):st==='sport'?'10:00':'pihenő'}</span></span></button>`).join('')}</div>
-  <div class="lpsh rise" style="--i:4"><h3>Izmaid a héten</h3><a href="#edzes-het">Heti vizsgálat ${G('chev')}</a></div>
-  <section class="sec rise" style="--i:4;margin-top:0"><div class="card gy only t-sage"><div class="bars">${WMUS.map(([l,d,t])=>`<div class="br"><span>${l}</span><b>${d} <small>/ ${t} szett</small></b><u><i style="--w:${Math.min(100,d/t*100)}%;background:${d>=t?'var(--deep)':d/t<.5?'var(--peach)':'var(--sage)'}"></i></u></div>`).join('')}</div></div></section>
+  <div class="lpsh rise" style="--i:4"><h3>Mit épít a terv</h3><a href="#edzes-het">Heti vizsgálat ${G('chev')}</a></div>
+  <div class="rise" style="--i:4">${planMap()}</div>
   <div class="lpsh rise" style="--i:5"><h3>Terveid</h3><a href="#edzes-tervek">Mind ${G('chev')}</a></div>
   <div class="tgrid rise" style="--i:5">${[['edz-korlat','Hypertrophy 04',[`<span class="chip">${G('bolt','deep')}fut · 3. hét</span>`],'edzes-run'],['edz-tarcsa','Strength 02',['<span class="chip">október 19-től</span>'],'edzes-tervek'],['edz-kettlebell','Sablonok',['<span class="chip">három sablon</span>'],'edzes-sablonok'],['edz-kreta','Lezárt futamok',[`<span class="chip">${G('star','sun')}legjobb 92%</span>`],'edzes-futamok'],['edz-futas','Futás',['<span class="chip">Robbanékonyság 01</span>'],'edzes-futas'],['edz-nyujtas','Új terv',[`<span class="chip">${G('plus','ink')}varázslóval</span>`],'edzes-ujterv']].map(([p,n,c,go])=>`<button data-go="${go}"><img src="${PH(p+'-sq.jpg')}" alt=""><b>${n}</b><span class="chips">${c.join('')}</span></button>`).join('')}</div>
   ${mzCard('A negyedik héten a hát <em>12 szettre</em> emelkedik. Ha a vállad addig sem jobb, a Rear Delt Fly helyére Face Pull jön.',`<button class="pill soft" data-toast="Rendben: a csere be van készítve">Így legyen</button>`)}</div>`}
@@ -1548,6 +1532,39 @@ function cer2(){const done=[4,3,3,2,2];
   <div class="mzd">${G('spark','sage')}<div><b>Mezo</b><p>A két rekord után a jövő héten <em>az evezés 75 kg-mal</em> indul. Egyél a röpi előtt egy banánt, 18:00-ig van időd.</p></div></div>
   <div class="fin"><button class="ghost" data-go="edzes-review">Összegzés</button><button class="go" data-edone>Vissza a mai napra</button></div>
   </div>`}
+
+/* ── the app's own anatomy map (MuscleMap geometry, body.js) in the Lágy look ── */
+document.head.insertAdjacentHTML('beforeend',`<style>
+.rmap{padding:16px 10px 14px;border-radius:30px;margin:0 12px}
+.rmap svg{display:block;width:100%;height:auto}
+.rmap .vw{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:4px;font:700 12px var(--b);letter-spacing:.08em}
+.rmap.dk .vw{color:rgba(255,255,255,.7)}.rmap.lt .vw{color:var(--ink2)}
+.rmap a path{transition:opacity .2s}.rmap a:hover path,.rmap a:focus path{opacity:.82}.rmap a:focus{outline:none}
+.rmch{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.rmch a{display:grid;gap:4px;padding:8px 10px;border-radius:16px;text-decoration:none;min-height:40px}
+.rmap.dk .rmch a{background:rgba(255,255,255,.08)}.rmap.lt .rmch a{background:rgba(255,255,255,.75)}
+.rmch b{font:700 13px var(--b);display:flex;justify-content:space-between;gap:4px;white-space:nowrap}
+.rmap.dk .rmch b{color:#fff}.rmap.lt .rmch b{color:var(--ink)}
+.rmch b em{font-style:normal;font:800 13px var(--d)}
+.rmch u{display:block;height:5px;border-radius:3px;overflow:hidden}.rmap.dk .rmch u{background:rgba(255,255,255,.14)}.rmap.lt .rmch u{background:rgba(30,35,33,.1)}
+.rmch u i{display:block;height:100%;border-radius:3px}
+.rmlg{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:10px}
+.rmlg span{display:inline-flex;align-items:center;gap:6px;font:700 12px var(--b)}.rmap.dk .rmlg span{color:rgba(255,255,255,.85)}.rmap.lt .rmlg span{color:var(--ink2)}.rmlg i{width:12px;height:12px;border-radius:4px}
+.w320 .rmch{grid-template-columns:repeat(2,1fr)}
+</style>`);
+/* which drawn shapes each muscle lights (the app's own mapping, bodyMapShapes.ts) */
+const MSHAPE={hat:[['back','upper-back']],vall:[['front','deltoids'],['front','front-deltoid'],['back','deltoids']],comb:[['front','quadriceps'],['front','inner-quad'],['front','outer-quad']],labh:[['back','hamstring']],mell:[['front','chest'],['front','upper-chest'],['front','lower-chest']],tri:[['back','triceps'],['front','triceps']],vadli:[['back','calves'],['front','calves']],far:[['back','gluteal']],bic:[['front','biceps']]};
+const realMap=({col,theme='dk'})=>{const B=window.MZBODY;if(!B)return '';const own={};Object.entries(MSHAPE).forEach(([k,L])=>L.forEach(([v,s])=>{own[v+'|'+s]=k}));
+  const base=theme==='dk'?'rgba(255,255,255,.14)':'rgba(30,35,33,.12)',hair=theme==='dk'?'rgba(255,255,255,.22)':'rgba(30,35,33,.2)';
+  const view=v=>Object.entries(B[v].p).map(([s,ps])=>{const k=own[v+'|'+s],d=ps.map(p=>`<path d="${p}"/>`).join('');if(!k)return `<g fill="${s==='hair'?hair:base}">${d}</g>`;return `<g fill="${col(k)}">${d}</g>`}).join('');
+  return `<svg viewBox="41 71 1366 1297" role="img" aria-label="Izomtérkép elölről és hátulról">${view('front')}${view('back')}</svg><div class="vw"><span>ELÖL</span><span>HÁTUL</span></div>`};
+const MORDER=['vall','mell','bic','comb','hat','tri','far','labh','vadli'];
+/* Terhelés: what this week did, against each muscle's weekly target */
+const LVD=[['#F0B48C','kevés'],['#5FB08A','halad'],['#8FD3A8','közel'],['#C9F24D','megvan']];
+const loadMap=()=>`<div class="card deep rmap dk">${realMap({col:k=>lvl(MUS[k][1],MUS[k][3])})}<div class="rmch">${MORDER.map(k=>{const m=MUS[k],c=lvl(m[1],m[3]);return `<a href="#edzes-izom-${k}"><b>${m[0]}<em style="color:${c}">${m[1]}/${m[3]}</em></b><u><i style="width:${Math.min(100,m[1]/m[3]*100)}%;background:${c}"></i></u></a>`}).join('')}</div><div class="rmlg">${LVD.map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join('')}</div></div>`;
+/* Terv: what the plan builds — each muscle's role in this mesocycle */
+const TIERC={Hangsúly:'#2E6B52',Építés:'#7DC29C',Tartás:'#CFE6D7'};
+const planMap=()=>`<div class="card t-sage rmap lt">${realMap({col:k=>TIERC[MUS[k][4]],theme:'lt'})}<div class="rmch">${MORDER.map(k=>{const m=MUS[k];return `<a href="#edzes-izom-${k}"><b>${m[0]}<em style="color:${m[4]==='Tartás'?'var(--ink2)':TIERC[m[4]]}">${m[3]}</em></b><u><i style="width:${m[3]/14*100}%;background:${TIERC[m[4]]}"></i></u></a>`}).join('')}</div><div class="rmlg">${Object.entries(TIERC).map(([l,c])=>`<span><i style="background:${c}"></i>${l.toLowerCase()}</span>`).join('')}</div></div>`;
 
 const R5=h=>h==='edzes-jatszo'?jatszo():h==='edzes-regi'?mai(''):null;
 const mintaAfter=h=>{const p=$('#phone');p.classList.toggle('jpon',h==='edzes-jatszo'||h==='edzes-cer');mmgo.classList.toggle('on',h==='edzes'&&!EST.day);if(h==='edzes-jatszo'){jpStart();jpWheels()}miniPaint()};
