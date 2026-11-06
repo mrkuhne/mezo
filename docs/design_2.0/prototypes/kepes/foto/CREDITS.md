@@ -62,3 +62,14 @@ Wikimedia Commons. A CC BY / CC BY-SA képeknél a szerző neve kötelező: itt 
 ## Izomtérkép (2026-11-05)
 
 `b/body.js` — the anatomy paths of **MuscleMap** (https://github.com/melihcolpan/MuscleMap), MIT License, Copyright (c) 2026 Melih Colpan: the same data the app's own muscle map draws (`frontend/src/features/train/logic/bodyGeometry.gen.ts`); full notice in `NOTICE.md` at the repository root.
+
+## Edzés · sportfotók (2026-11-06, C csomag: „egységes, változatosabb fotók”)
+
+Wikimedia Commons, 960×720 és 480×480 vágás, enyhe meleg tónussal. Az oldalon ráadásul minden edzésfotó egy közös tónust kap (kevesebb szín, kicsit melegebb).
+
+| Fájl | Eredeti | Licenc · szerző |
+|---|---|---|
+| `edz-ropi-terem.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Ramstein_spikes_Aviano_to_win_IMCOM-E_Varsity_Volleyball_Tournament_(7116171).jpg | közkincs · U.S. Army, Dani Johnson |
+| `edz-ropi-blokk.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Volleyball,_Qatar_vs_Slovenia_in_2011.jpg | CC BY 2.0 · Doha Stadium Plus Qatar |
+| `edz-sprint.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Ready,_set,_go_(Unsplash).jpg | CC0 · William Stitt |
+| `edz-palya.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:All-weather_running_track.jpg | CC BY-SA 4.0 · Mk2010 |
