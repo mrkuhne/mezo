@@ -1618,8 +1618,8 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .nxq strong{font:800 24px/1.05 var(--d);letter-spacing:-.02em;color:#fff;margin-top:4px}
 .nxq .lv{display:flex;align-items:center;gap:8px;margin-top:10px}.nxq .lv u{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden}.nxq .lv u i{display:block;height:100%;background:var(--lime);border-radius:3px}.nxq .lv span{font:700 12px var(--b);color:rgba(255,255,255,.8)}
 .nxq .ac{display:flex;gap:6px;margin-top:12px}
-.nxq .ac button{height:42px;border-radius:999px;border:0;font:700 13px var(--b);padding:0 12px}
-.nxq .why{background:rgba(255,255,255,.14);color:#fff}
+.nxq .ac button{height:44px;border-radius:999px;border:0;font:700 13px/1 var(--b);padding:0 14px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.nxq .nwy{flex:0 0 auto;background:rgba(255,255,255,.14);color:#fff}
 .nxq .tg{flex:1;background:var(--lime);color:#10140F}
 .nxq.off>img{filter:grayscale(1) brightness(.5)}.nxq.off .tg{background:rgba(255,255,255,.14);color:#fff}.nxq.off strong{color:rgba(255,255,255,.6)}
 .setl{list-style:none;margin:0;padding:6px 14px;border-radius:24px;background:rgba(255,255,255,.06)}
@@ -1755,7 +1755,7 @@ function indulas2(){const n=QUEST.filter(q=>q.on).length;
   <div class="nums">${[['5','gyakorlat'],['16','szett'],[`<span id="nxqn">${n}</span>`,'küldetés']].map(([v,l])=>`<div><b>${v}</b><small>${l}</small></div>`).join('')}</div>
   <div class="warn">${G('bolt','peach')}<div><b>Jobb váll · 5 / 10</b><small>Először bemelegítő szett. A Rear Delt Fly ma könnyítve megy.</small></div></div>
   <div class="csh"><h3>Mit vállalsz ma?</h3><span>passzolni ér</span></div>
-  <div class="qcar">${QUEST.map((q,i)=>`<article class="nxq ${q.on?'':'off'}"><img class="ex" src="${EPH(SX0[q.ex].p)}" alt=""><div class="in"><small>${G(q.ic,q.pal)}${q.t}</small><span class="ex2">${short(SX0[q.ex].n)}</span><strong>${q.target}</strong><div class="lv"><u><i style="width:${q.conf}%"></i></u><span>${q.cl}</span></div><div class="ac"><button class="why" data-sheet="edzQuest" data-arg="${i}">Miért ez?</button><button class="tg" data-nxq="${i}" aria-pressed="${q.on}" aria-label="${q.on?'Elengedem':'Vállalom'}: ${q.target}">${q.on?`Vállalom`:'Elengedtem'}</button></div></div></article>`).join('')}</div>
+  <div class="qcar">${QUEST.map((q,i)=>`<article class="nxq ${q.on?'':'off'}"><img class="ex" src="${EPH(SX0[q.ex].p)}" alt=""><div class="in"><small>${G(q.ic,q.pal)}${q.t}</small><span class="ex2">${short(SX0[q.ex].n)}</span><strong>${q.target}</strong><div class="lv"><u><i style="width:${q.conf}%"></i></u><span>${q.cl}</span></div><div class="ac"><button class="nwy" data-sheet="edzQuest" data-arg="${i}">Miért ez?</button><button class="tg" data-nxq="${i}" aria-pressed="${q.on}" aria-label="${q.on?'Elengedem':'Vállalom'}: ${q.target}">${q.on?`Vállalom`:'Elengedtem'}</button></div></div></article>`).join('')}</div>
   <div class="csh"><h3>A mai sor</h3><span>16 szett</span></div>
   <ol class="setl">${SX0.map((e,i)=>`<li><span class="no">0${i+1}</span><img class="ex" src="${EPH(e.p)}" alt=""><div><b>${e.n}</b><small>${e.sets} × ${e.goal}${e.chg?` · <em class="${e.warn?'w':''}">${e.chg}</em>`:''}</small></div>${QUEST.some(q=>q.on&&q.ex===i)?`<span class="st" aria-label="küldetés">${G('star','sun')}</span>`:'<span></span>'}</li>`).join('')}</ol>
   <div class="mzd">${G('spark','sage')}<div><b>Mezo</b><p>A húzódzkodásnál <em>+2,5 kg</em> a lépés, az evezésnél egy ismétlés. Ha a váll fáj, a Rear Delt Fly-t nyugodtan hagyd ki.</p></div></div>
