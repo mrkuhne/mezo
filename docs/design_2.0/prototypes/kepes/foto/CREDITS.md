@@ -73,3 +73,18 @@ Wikimedia Commons, 960×720 és 480×480 vágás, enyhe meleg tónussal. Az olda
 | `edz-ropi-blokk.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Volleyball,_Qatar_vs_Slovenia_in_2011.jpg | CC BY 2.0 · Doha Stadium Plus Qatar |
 | `edz-sprint.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Ready,_set,_go_(Unsplash).jpg | CC0 · William Stitt |
 | `edz-palya.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:All-weather_running_track.jpg | CC BY-SA 4.0 · Mk2010 |
+
+## Nap (2026-11-06, a tulajdonos jóváhagyásával: „töltsd le a fotókat is”)
+
+Mind CC0 (Unsplash-ről a Wikimedia Commonsra töltött képek). 960×720 és 480×480 vágás, enyhe meleg tónussal.
+
+| Fájl | Eredeti | Szerző |
+|---|---|---|
+| `nap-alkony.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Beach_at_dusk_(Unsplash).jpg | annabelle r |
+| `nap-baratok.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Coffee_and_Friends_(Unsplash).jpg | Nathan Dumlao |
+| `nap-tea.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Drew_Taylor_2017_(Unsplash).jpg | Drew Taylor |
+| `nap-naplo.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Journaling_over_coffee_(Unsplash).jpg | Thought Catalog |
+| `nap-lista.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Plan_a_lifetime_adventure_(Unsplash).jpg | Glenn Carstens-Peters |
+| `nap-seta.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Woman_walking_down_path_(Unsplash).jpg | Biel Morro |
+| `nap-ebredes.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Morning_snuggles_(Unsplash).jpg | Chris Abney |
+| `nap-ej.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Blue_dusk_in_the_mountains_(Unsplash).jpg | Dave Edgar |

@@ -147,6 +147,13 @@ invented content of the real record types; the owner's real data never goes into
 
 - **Outside the app (package C, 2026-11-06):** the workout shows outside the app as a live activity — lock screen card and the island at the top of the iPhone (compact → long press opens → opens itself at rest end). Its buttons mirror the player (+30 mp, Tovább, Kész a szett, Megnyitom). No ring for the countdown: a horizontal fill bar. Every training photo carries the one grade (`img[src*="foto/edz-"]`); never reuse one photo for several different things on the same page.
 
+## 11c. Nap notes (2026-11-06)
+
+- Nap follows the Fuel tab skeleton (photo head, verdict, one deep card, sections, Mezo) on all four tabs; inner pages each get their own structure (the day as a line with four moments, six big levels, photo quest cards, photo tiles, a dusk full-screen ceremony for napzárás, a linked order for a chain, a 29-day grid for a habit).
+- The team is named by field in message cards (Alvás, Mozgás, Étkezés, Közérzet, Mezo) with glyph badges.
+- Class names in `b/nap.js` start with `np`; check new names against the shell and Edzés CSS (a bare `.fb`, `.big`, `.rw`, `.edit`, `.n` already exist and silently restyle).
+- The side panel: each domain swaps only its own block (`#enotes`, `#nnotes`) and restores Fuel's text only when no other domain block is showing.
+
 ## 12. Rejected — do not bring back
 
 Boxed photo card at the top of a tab · a drawn scene under the photo · vessels / glasses for the numbers ·

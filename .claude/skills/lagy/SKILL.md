@@ -31,13 +31,13 @@ The whole app lives on **one** Artifact: https://claude.ai/artifact/EEf8oNUm6EDe
 - **Round 0 — done 2026-11-04.** `b/fuel.html` became `b/index.html`, the app shell: tokens, shared CSS,
   shared builders, router, sheets host, bottom bar — and Fuel itself (its hashes stay bare: `''`, `kieg`,
   `trendek`, `konyha`, …). Every other domain lives in its own file loaded after the shell
-  (`<script src="edzes.js">`, then `nap.js`, `mezo.js`, `en.js`) and registers
+  (`<script src="edzes.js">`, `nap.js`, then `mezo.js`, `en.js`) and registers
   `DOM.<key>={tabs:[routes], render(h)→html, tabName(h), after(h)?}`; its routes are `<key>` and
   `<key>-<page>` (e.g. `#edzes`, `#edzes-terv`, `#edzes-gyak-front-squat`). The router, the bottom bar
   (registered domains live, others toast) and the compact bar (`setupDomBar`) pick it up; `phead(tab,{…,
   tabs:[[label,route]…]})` takes the domain's tab list. Fuel moving to `#fuel…` and Nap becoming the
   default route happen when Nap is built. Publish `index.html` + every `<domain>.js` (+ new `foto/*`).
-- **Order:** Edzés (owner, 2026-11-04) — **done 2026-11-05** in four rounds (tabs, in-workout flow, Terv inner pages, exercise / medals / sport / custom / picker) → **Nap next** → Mezo → Én. When Nap is built, Fuel moves to `#fuel…` and Nap becomes the default route (Round 0 note). One domain per round; Mezo may take two.
+- **Order:** Edzés (owner, 2026-11-04) — **done 2026-11-05** in four rounds (tabs, in-workout flow, Terv inner pages, exercise / medals / sport / custom / picker) → Nap — **done 2026-11-06** (one round: four tabs, inner pages, sheets; `b/nap.js`; the app opens on `#nap`, an empty hash is replaced on load, Fuel keeps its bare routes) → **Mezo next** → Én. One domain per round; Mezo may take two.
 
 ## The round (one domain)
 
