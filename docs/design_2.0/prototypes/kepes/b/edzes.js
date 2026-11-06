@@ -1128,7 +1128,7 @@ function maiMinta(){const D=[21,22,23,24,25,26,27];
   <div class="mmsh rise" style="--i:6"><h3>Vagy inkább</h3></div>
   <div class="mmalt rise" style="--i:6">${[['edz-kettlebell','dumbbell','sage','Egyedi edzés','saját gyakorlatokkal','data-go="edzes-sajat"'],['edz-ropi','ball','sun','Sport','röpi, futás, bármi','data-go="edzes-sportlog"'],['edz-oltozo','moon','sky','Ma kihagyom','okkal, gyorsan','data-sheet="edzWhy"']].map(([p,ic,pal,t,s,a])=>`<button ${a}><img src="${PH(p+'-sq.jpg')}" alt=""><span>${G(ic,pal)}</span><b>${t}</b><small>${s}</small></button>`).join('')}</div>
   <div class="mmsh rise" style="--i:6"><h3>Ma még jön</h3></div>
-  <section class="sec rise" style="--i:6;margin-top:0">${comingUp()}</section>
+  <div class="rise" style="--i:6"><button class="spslim" data-go="edzes-sport"><img src="${PH('edz-ropi-sq.jpg')}" alt=""><div><b>Röplabda · ma 18:00</b><small>90 perc · a Sport fülön naplózod</small></div>${G('chev','ink')}</button></div>
   ${mzCard('Este röpi is van, ezért a <em>húzódzkodás utolsó szettjét</em> kihagynám: a vállad így frissebb marad a meccsre.',`<button class="pill soft" data-toast="Rendben: a negyedik szett kimarad">Így csináljuk</button>`)}
   </div>`}
 const mmgo=document.createElement('button');mmgo.className='mmgo';mmgo.dataset.go='edzes-jatszo';mmgo.innerHTML=`${G('bolt','sun')}<b class="lb">Indítsuk<i class="ln"> a Pull Dayt</i></b><span>64 perc ${G('chev','ink')}</span>`;$('#phone').appendChild(mmgo);
@@ -1458,8 +1458,8 @@ function terheles2(){const DS=[16,12,17,0,12,null,null],PL=[16,12,19,16,12,0,0];
   <section class="sec rise" style="--i:3;margin-top:0"><div class="card" style="padding:16px 12px 12px"><div class="wk">${EWEEK.map(([d,s,t,st],i)=>{const v=DS[i],p=PL[i],fut=v==null||st==='today'||st==='plan';return `<div class="wd ${st==='today'?'today':''} ${fut?'fut':''}"><em>${st==='today'?'ma':v?v:st==='sport'?'röpi':''}</em><span class="tube" style="height:124px"><i style="height:${v?Math.min(100,v/20*100):0}%"></i>${p?`<u style="bottom:${p/20*100}%"></u>`:''}</span><b>${s}</b></div>`}).join('')}</div></div></section>
   <div class="lpsh rise" style="--i:4"><h3>Mit mond a tested</h3><span>reggel 07:40</span></div>
   <section class="sec rise" style="--i:4;margin-top:0"><div class="card t-peach pad">${[['bolt','peach','Jobb váll','fáj, a Rear Delt Fly kímélve megy',['kímélve','5 / 10']],['flame','peach','Izomláz','a lábad, a szerdai guggolás után',['7 / 10']],['moon','sky','Alvás','6 óra 54 perc az éjjel',['kevesebb a szokottnál']]].map(([ic,pal,n,d,c])=>`<div class="row">${G(ic,pal)}<div><b>${n}</b><small>${d}</small><div class="chips">${c.map(x=>`<span class="chip">${x}</span>`).join('')}</div></div></div>`).join('')}</div></section>
-  <div class="lpsh rise" style="--i:5"><h3>Minden mozgásod</h3><span>2 röpi · 1 240 kalória · 180 perc</span></div>
-  <div class="tgrid rise" style="--i:5">${[['edz-ropi','Röplabda · kedd',[`<span class="chip">${G('flame','deep')}620 kalória</span>`],'edzes-sport'],['edz-futas','Sprint · szerda',[`<span class="chip">${G('shoe','peach')}elmaradt</span>`],'edzes-futas'],['edz-ropi','Röplabda · ma 18:00',['<span class="chip">betervezve</span>'],'edzes-sport'],['edz-futas','Piramis · péntek',['<span class="chip">17:30</span>'],'edzes-futas']].map(([p,n,c,go])=>`<button data-go="${go}"><img src="${PH(p+'-sq.jpg')}" alt=""><b>${n}</b><span class="chips">${c.join('')}</span></button>`).join('')}</div>
+  <div class="lpsh rise" style="--i:5"><h3>A sport is számít</h3><span>a Sport fülön</span></div>
+  <div class="rise" style="--i:5"><button class="spslim" data-go="edzes-sport"><img src="${PH('edz-ropi-sq.jpg')}" alt=""><div><b>2 röpi és 1 futás a héten</b><small>−4 szett a lábról és a vállról · 1 240 kalória</small></div>${G('chev','ink')}</button></div>
   ${mzCard('A kar <em>9 szettnél</em> tart a 20-ból. A pénteki könnyű push napra beteszek két szett kalapácsbicepszt.',`<button class="pill soft" data-toast="Beteszem: péntek, 2 szett kalapácsbicepsz">Beteszem</button>`)}</div>`}
 
 /* ── Terv: the corridor ── */
@@ -1480,7 +1480,7 @@ function terv2(){const dph=['edz-tarcsa','edz-felhuzas','edz-crossfit','edz-sote
   <div class="lpsh rise" style="--i:4"><h3>Mit épít a terv</h3><a href="#edzes-het">Heti vizsgálat ${G('chev')}</a></div>
   <div class="rise" style="--i:4">${planMap()}</div>
   <div class="lpsh rise" style="--i:5"><h3>Terveid</h3><a href="#edzes-tervek">Mind ${G('chev')}</a></div>
-  <div class="tgrid rise" style="--i:5">${[['edz-korlat','Hypertrophy 04',[`<span class="chip">${G('bolt','deep')}fut · 3. hét</span>`],'edzes-run'],['edz-tarcsa','Strength 02',['<span class="chip">október 19-től</span>'],'edzes-tervek'],['edz-kettlebell','Sablonok',['<span class="chip">három sablon</span>'],'edzes-sablonok'],['edz-kreta','Lezárt futamok',[`<span class="chip">${G('star','sun')}legjobb 92%</span>`],'edzes-futamok'],['edz-futas','Futás',['<span class="chip">Robbanékonyság 01</span>'],'edzes-futas'],['edz-nyujtas','Új terv',[`<span class="chip">${G('plus','ink')}varázslóval</span>`],'edzes-ujterv']].map(([p,n,c,go])=>`<button data-go="${go}"><img src="${PH(p+'-sq.jpg')}" alt=""><b>${n}</b><span class="chips">${c.join('')}</span></button>`).join('')}</div>
+  <div class="tgrid rise" style="--i:5">${[['edz-korlat','Hypertrophy 04',[`<span class="chip">${G('bolt','deep')}fut · 3. hét</span>`],'edzes-run'],['edz-tarcsa','Strength 02',['<span class="chip">október 19-től</span>'],'edzes-tervek'],['edz-kettlebell','Sablonok',['<span class="chip">három sablon</span>'],'edzes-sablonok'],['edz-kreta','Lezárt futamok',[`<span class="chip">${G('star','sun')}legjobb 92%</span>`],'edzes-futamok'],['edz-nyujtas','Új terv',[`<span class="chip">${G('plus','ink')}varázslóval</span>`],'edzes-ujterv']].map(([p,n,c,go])=>`<button data-go="${go}"><img src="${PH(p+'-sq.jpg')}" alt=""><b>${n}</b><span class="chips">${c.join('')}</span></button>`).join('')}</div>
   ${mzCard('A negyedik héten a hát <em>12 szettre</em> emelkedik. Ha a vállad addig sem jobb, a Rear Delt Fly helyére Face Pull jön.',`<button class="pill soft" data-toast="Rendben: a csere be van készítve">Így legyen</button>`)}</div>`}
 
 /* ── Gyakorlatok: search first, a photo grid ── */
@@ -2138,7 +2138,7 @@ function ujterv2(){const W=WZ.w,cv=curve(W);
 
 /* ── running: the interval track, a recovery line ── */
 function futas2(){const L=[...RLOG].reverse(),W=340,H=150,X=k=>34+k*(W-68)/3,Y=v=>24+(v-40)/(60-40)*(H-60);
-  return `<div class="lp">${nxPoster({src:PH('edz-futas.jpg'),pos:'center 55%',crumb:'Terv › <b>Futás</b>',eb:'Robbanékonyság 01 · 3. hét / 8 · építő fázis',l1:'Futás',sub:'A szerdai sprint <em>elmaradt</em>, péntekre még megvan a piramis.',chips:`<span class="chip">${G('shoe','peach')}2 futás a héten</span>`})}
+  return `<div class="lp">${nxPoster({src:PH('edz-futas.jpg'),pos:'center 55%',crumb:'Sport › <b>Futás</b>',eb:'Robbanékonyság 01 · 3. hét / 8 · építő fázis',l1:'Futás',sub:'A szerdai sprint <em>elmaradt</em>, péntekre még megvan a piramis.',chips:`<span class="chip">${G('shoe','peach')}2 futás a héten</span>`})}
   <div class="nxacts rise" style="--i:2"><button class="pill" data-sheet="edzRun" data-arg="sprint">${G('shoe','ink')}Pótolom a sprintet</button><button class="pill soft" data-go="edzes-futasterv">${G('book','peach')}A futóterv</button></div>
   <div class="lpsh rise" style="--i:2"><h3>E hét</h3><span>két edzés</span></div>
   <div class="nxses rise" style="--i:2">${[['Sprint','szerda 18:00','sprint',1],['Piramis','péntek 17:30','pyr',0]].map(([n,d,a,m])=>`<button class="${m?'miss':''}" data-sheet="edzRun" data-arg="${a}"><img src="${PH('edz-futas-sq.jpg')}" alt=""><span class="chip">${m?G('shoe','peach')+'elmaradt · pótolható':G('clock','sky')+'betervezve'}</span><b>${n}</b><small>${d}</small></button>`).join('')}</div>
@@ -2177,7 +2177,7 @@ function osszevetes2(){const MX4=[['Hát',12,9],['Váll',14,10],['Comb',14,12],[
 
 /* ── the sport: slots and effect tiles ── */
 function sport2(){
-  return `<div class="lp">${nxPoster({src:PH('edz-ropi.jpg'),crumb:'Mai › <b>Röplabda</b>',eb:'Röplabda · BVSC · feladó · heti három alkalom',l1:'Röp&shy;labda',sub:'A röpi <em>öt órát</em> ad egy héten, és a vállad érzi.',chips:`<span class="chip">${G('ball','sun')}ma 18:00</span><span class="chip">${G('clock','sky')}90 perc</span>`})}
+  return `<div class="lp">${nxPoster({src:PH('edz-ropi.jpg'),crumb:'Sport › <b>Röplabda</b>',eb:'Röplabda · BVSC · feladó · heti három alkalom',l1:'Röp&shy;labda',sub:'A röpi <em>öt órát</em> ad egy héten, és a vállad érzi.',chips:`<span class="chip">${G('ball','sun')}ma 18:00</span><span class="chip">${G('clock','sky')}90 perc</span>`})}
   <div class="nxacts rise" style="--i:2"><button class="pill" data-go="edzes-sportlog-0">${G('ball','ink')}Naplózom</button><button class="pill soft" data-sheet="edzSportEv">${G('plus','deep')}Egyszeri esemény</button></div>
   <div class="lpsh rise" style="--i:2"><h3>A heted</h3><span>a tervtől függetlenül</span></div>
   <div class="nxslot rise" style="--i:2">${SLOTS.map(([d,t,m,c,r,int],i)=>`<div class="${i===1?'today':''}"><small>${i===1?'ma · ':''}${d}</small><b>${t}</b><strong>${m} perc · ${r}</strong><small>${c} · ${int} terhelés</small></div>`).join('')}</div>
@@ -2190,7 +2190,7 @@ function sport2(){
 /* ── logging: a photo picker ── */
 const SPBG={sun:'#FBF0D2',sage:'var(--sage3)',sky:'#E4F0F8',peach:'var(--peach2)',berry:'#EFE4F6'};
 function sportlog2(){SPS.q='';
-  return `<div class="lp">${nxText({crumb:'Mai › <b>Naplózás</b>',eb:'Sport naplózása · ma',title:'Mi volt a mozgás?',sub:'Válaszd ki, és csak azt kérdezem, ami annál a sportnál számít.'})}
+  return `<div class="lp">${nxText({crumb:'Sport › <b>Naplózás</b>',eb:'Sport naplózása · ma',title:'Mi volt a mozgás?',sub:'Válaszd ki, és csak azt kérdezem, ami annál a sportnál számít.'})}
   <div class="lpsh rise" style="--i:2"><h3>A szokásos</h3><span>a heti rendedből</span></div>
   <button class="nxquick rise" style="--i:2" data-go="edzes-sportlog-0"><img src="${PH('edz-ropi.jpg')}" alt=""><small>ma 18:00 · BVSC</small><b>Röplabda · 90 perc</b><span>Egy koppintás, utána csak a részletek</span></button>
   <div style="margin-top:18px"></div>${searchBar({ph:'Sport keresése…',cls:'spsin',aria:'Sport keresése'})}
@@ -2243,13 +2243,70 @@ function terkep2(){const P=TMV.plan,L=MORDER.map(k=>[k,MUS[k]]),done=L.reduce((a
 Object.assign(R3,{'edzes-run':run2,'edzes-tervek':tervek2,'edzes-futamok':futamok2,'edzes-riport':riport2,'edzes-sablonok':sablonok2,'edzes-sablon':sablon2,'edzes-ujterv':ujterv2,'edzes-futas':futas2,'edzes-futasterv':futasterv2,'edzes-osszevetes':osszevetes2});
 ujterv=ujterv2;sport=sport2;sportlog=sportlog2;sportForm=sportForm2;sajat=sajat2;terkep=terkep2;
 
-const R5=h=>h==='edzes-jatszo'?jatszo():h==='edzes-regi'?mai(''):null;
+/* ── Sport tab (owner, 2026-11-06 "a Sport részt ki kéne vinni egy tabba"): everything sport lives here —
+   the weekly sport plan, logging, one-off events, röpi and running, what sport does to the rest. The other
+   pages keep one slim row that leads here. ── */
+document.head.insertAdjacentHTML('beforeend',`<style>
+.seg:has(>:nth-child(5)){overflow-x:auto;scrollbar-width:none}.seg:has(>:nth-child(5))::-webkit-scrollbar{display:none}
+.seg:has(>:nth-child(5)) button{flex:1 0 auto;padding:0 10px}
+.sptoday{position:relative;margin:0 12px;height:250px;border-radius:30px;overflow:hidden;background:#1E2321}
+.sptoday>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.sptoday::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.25),rgba(16,20,18,.05) 35%,rgba(16,20,18,.9));pointer-events:none}
+.sptoday .open{position:absolute;inset:0;z-index:1;border:0;background:none;padding:0}
+.sptoday .tx{position:absolute;left:18px;right:18px;bottom:16px;z-index:2;display:grid;gap:4px;pointer-events:none}
+.sptoday small{font:700 12px var(--b);letter-spacing:.08em;text-transform:uppercase;color:#C9F24D}
+.sptoday b{font:800 34px/1 var(--d);letter-spacing:-.03em;color:#fff}
+.sptoday span{font:700 13px var(--b);color:rgba(255,255,255,.85)}
+.sptoday .tx .pill{pointer-events:auto;justify-self:start;margin-top:8px;min-height:48px;background:#C9F24D;color:#10140F;box-shadow:none}
+.spwk{margin:0 12px;padding:14px 10px 10px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.spwk div{display:grid;justify-items:center;gap:4px;align-content:start}
+.spwk>div>b{font:700 12px var(--b);color:var(--ink2)}.spwk .today>b{color:var(--ink)}
+.spwk button{width:100%;border:0;border-radius:14px;padding:6px 0;display:grid;justify-items:center;gap:2px;font:800 12px var(--d);color:var(--ink);min-height:62px}
+.spwk button .g{font-size:20px}.spwk button small{font:700 12px var(--b);color:var(--ink2)}
+.spwk .r{background:#FBF0D2}.spwk .f{background:var(--peach2)}.spwk .miss{background:none;box-shadow:inset 0 0 0 2px var(--peach);color:#9A5530}.spwk .dn{opacity:.55}
+.spwk .today button{box-shadow:inset 0 0 0 2px var(--deep)}
+.spwk i{width:6px;height:6px;border-radius:50%;background:rgba(30,35,33,.15);margin-top:6px}
+.spmine{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px}
+.spmine button{position:relative;height:170px;border-radius:26px;overflow:hidden;border:0;padding:14px;text-align:left;background:#1E2321;display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.spmine img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.spmine button::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,20,18,.05),rgba(16,20,18,.88))}
+.spmine button>:not(img){position:relative;z-index:1}.spmine b{font:800 20px/1 var(--d);color:#fff}.spmine small{font:700 12px var(--b);color:rgba(255,255,255,.85)}
+.spmine .add{grid-column:1/-1;height:64px;background:var(--card);box-shadow:var(--sh);flex-direction:row;align-items:center;justify-content:center;gap:8px;font:700 14px var(--b);color:var(--deep)}.spmine .add::after{display:none}.spmine .add .g{font-size:22px}
+.spslim{display:flex;align-items:center;gap:12px;width:calc(100% - 24px);margin:0 12px;padding:10px 14px 10px 10px;border:0;border-radius:22px;background:var(--card);box-shadow:var(--sh);text-align:left;color:var(--ink)}
+.spslim img{width:52px;height:52px;border-radius:16px;object-fit:cover}.spslim div{flex:1;display:grid;gap:2px}.spslim b{font:700 14px var(--d)}.spslim small{font:700 12px var(--b);color:var(--ink2)}.spslim .g{font-size:16px}
+.sheet .spr{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.sheet .spr:first-of-type{border-top:0}
+.sheet .spr img{width:44px;height:44px;border-radius:14px;object-fit:cover}.sheet .spr b{display:block;font:700 14px var(--d)}.sheet .spr small{font:700 12px var(--b);color:var(--mute)}
+.w320 .sptoday b{font-size:28px}.w320 .spwk{margin:0 8px;padding:12px 4px 8px;gap:0}.w320 .spwk button{border-radius:12px}
+</style>`);
+/* the week of sport: [day short, kind r=röpi f=futás, label, time, state] */
+const SPW=[[],[['r','Röpi','18:00','dn']],[['f','Sprint','18:00','miss']],[['r','Röpi','18:00','']],[['f','Piramis','17:30','']],[['r','Meccs','10:00','']],[]];
+function sportTab(){
+  return `<div class="lp">${lhd('Sport')}
+  <div class="lpt rise" style="--i:1"><small>A heti sportod · szeptember 21–27.</small><div class="lpbig"><b>5</b><span>óra sport<br>ezen a héten</span></div><p>Három röpi és két futás. <em>A szerdai sprint</em> elmaradt, pótolható.</p></div>
+  <div class="lpsh rise" style="--i:2"><h3>Ma</h3><span>csütörtök</span></div>
+  <div class="sptoday rise" style="--i:2"><img src="${PH('edz-ropi.jpg')}" alt=""><button class="open" data-go="edzes-ropi" aria-label="Röplabda"></button><div class="tx"><small>ma 18:00 · BVSC csarnok</small><b>Röplabda</b><span>90 perc · feladó · közepes terhelés</span><button class="pill" data-go="edzes-sportlog-0">${G('check','ink')}Naplózom</button></div></div>
+  <div class="lpsh rise" style="--i:3"><h3>A heti rend</h3><a href="#" data-sheet="edzSportPlan">Beállítom ${G('chev')}</a></div>
+  <div class="card spwk rise" style="--i:3">${DOW.map((d,i)=>`<div class="${i===3?'today':''}"><b>${d}</b>${SPW[i].map(([k,l,t,st])=>`<button class="${k} ${st}" data-go="${k==='r'?'edzes-ropi':'edzes-futas'}" aria-label="${d}: ${l} ${t}${st==='miss'?', elmaradt':''}">${G(k==='r'?'ball':'shoe',k==='r'?'sun':'peach')}${l}<small>${t}</small></button>`).join('')||'<i></i>'}</div>`).join('')}</div>
+  <div class="lpsh rise" style="--i:4"><h3>Sportjaid</h3></div>
+  <div class="spmine rise" style="--i:4"><button data-go="edzes-ropi"><img src="${PH('edz-ropi-sq.jpg')}" alt=""><b>Röplabda</b><small>hetente 3 · BVSC</small></button><button data-go="edzes-futas"><img src="${PH('edz-futas-sq.jpg')}" alt=""><b>Futás</b><small>Robbanékonyság 01 · 3. hét / 8</small></button><button class="add" data-go="edzes-sportlog">${G('plus','sage')}Más sport naplózása</button></div>
+  <div class="nxacts rise" style="--i:4"><button class="pill soft" data-sheet="edzSportEv">${G('plus','deep')}Egyszeri esemény</button><button class="pill soft" data-sheet="edzRun" data-arg="sprint">${G('shoe','peach')}Pótolom a sprintet</button></div>
+  <div class="lpsh rise" style="--i:5"><h3>Mire hatott a héten</h3></div>
+  <div class="nxfx rise" style="--i:5">${[['dumbbell','sage','−4 szett','Edzés','A váll és a láb heti szettjeiből levonva.','var(--sage3)'],['flame','peach','+1 240 kalória','Fuel','Ennyivel nőtt a heti kereted.','var(--peach2)'],['moon','sky','+40 perc','Alvás','Két esti röpi után később kértünk ágyba.','#E4F0F8'],['bolt','sun','6 / 10','Váll','A röpi utáni vállterhelés átlaga.','#FBF0D2']].map(([ic,pal,v,b,t,bg])=>`<div style="background:${bg}">${G(ic,pal)}<b>${v}</b><strong>${b}</strong><small>${t}</small></div>`).join('')}</div>
+  <div class="lpsh rise" style="--i:6"><h3>Napló</h3><span>röpi és futás együtt</span></div>
+  <ol class="card nxlog rise" style="--i:6">${[['22','Röplabda · kedd','90 perc · 5 szett · váll 6 / 10','„Jól ment a nyitás, a harmadik szettben kicsit húzott a váll.”'],['19','Röplabda · szombat, meccs','120 perc · 4 szett · váll 7 / 10',''],['18','Piramis · péntek','5 kör · 8 / 10 · 46 mp',''],['16','Sprint · szerda','6 kör · 9 / 10 · 49 mp','„Az utolsó két kör nehéz volt, de tartottam az iramot.”']].map(([d,t,c,n])=>`<li><span class="d"><b>${d}</b><small>szept.</small></span><div><strong>${t}</strong><div class="chips"><span class="chip">${c}</span></div>${n?`<p>${n}</p>`:''}</div></li>`).join('')}</ol>
+  ${mzCard('A röpi és a sprint együtt <em>heti négy szettet</em> vesz le a lábról és a vállról. A konditermi terved ezt már beszámolja.')}</div>`}
+/* sheet: the weekly sport plan */
+SHEETS.edzSportPlan=()=>`<div class="grab"></div><div class="dsh"><div class="dshph"><img src="${PH('edz-ropi-sq.jpg')}" alt=""><img src="${PH('edz-futas-sq.jpg')}" alt=""></div><h2>A heti sportrend</h2><div class="chips"><span class="chip">minden héten így</span><span class="chip">a terved ehhez igazodik</span></div></div><div class="card pad" style="background:var(--paper);box-shadow:none">${[['edz-ropi','Röplabda · kedd','18:00 · 90 perc · BVSC'],['edz-ropi','Röplabda · csütörtök','18:00 · 90 perc · BVSC'],['edz-ropi','Röplabda · szombat, meccs','10:00 · 120 perc · Kőbánya Sport'],['edz-futas','Sprint · szerda','18:00 · Robbanékonyság 01'],['edz-futas','Piramis · péntek','17:30 · Robbanékonyság 01']].map(([p,b,s])=>`<div class="spr"><img src="${PH(p+'-sq.jpg')}" alt=""><div><b>${b}</b><small>${s}</small></div><button class="pill soft sm" data-toast="${b}: időpont és hossz szerkesztése">Átírom</button></div>`).join('')}</div><div class="acts" style="margin:14px 0 0"><button class="pill" data-toast="Új alkalom: válassz sportot, napot és időt" data-close>${G('plus','ink')}Új alkalom</button><button class="pill soft" data-toast="Mentve: a heti rend" data-close>Kész</button></div>`;
+ETABS.splice(2,0,['Sport','edzes-sport']);
+sport=sportTab;
+
+const R5=h=>h==='edzes-jatszo'?jatszo():h==='edzes-ropi'?sport2():h==='edzes-regi'?mai(''):null;
 const mintaAfter=h=>{const p=$('#phone');p.classList.toggle('jpon',h==='edzes-jatszo'||h==='edzes-cer'||h==='edzes-indulas');mmgo.classList.toggle('on',h==='edzes'&&!EST.day);if(h==='edzes-jatszo'){jpStart();jpWheels()}miniPaint()};
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h!=='edzes'||EST.day)mmgo.classList.remove('on');if(h!=='edzes-jatszo'&&h!=='edzes-cer'&&h!=='edzes-indulas')$('#phone').classList.remove('jpon');miniPaint()});
 
 /* side panel: Edzés notes while the domain is open (Fuel's notes come back outside it) */
 const notes=document.querySelector('.notes');
-const ENOTES=()=>`<h2>Lágy irány · Edzés</h2><small>Állapot: 2026-11-05 · minden oldal új felépítésben</small><p><b>Legutóbb változott · 2026-11-05 · a mélyebb oldalak:</b> minden belső Edzés-oldal saját felépítést kapott: <a href="#edzes-indulas">eligazítás</a> (sötét), <a href="#edzes-review">összegzés</a>, <a href="#edzes-gx-0">egy gyakorlat</a>, <a href="#edzes-nap-3">egy nap</a>, <a href="#edzes-izom-hat">egy izom</a>, <a href="#edzes-het">heti vizsgálat</a>, <a href="#edzes-run">a futó terv</a>, <a href="#edzes-tervek">tervek</a>, <a href="#edzes-riport">riport</a>, <a href="#edzes-osszevetes">összevetés</a>, <a href="#edzes-futas">futás</a>, <a href="#edzes-sport">röplabda</a>, <a href="#edzes-sajat">saját edzés</a>, <a href="#edzes-terkep">izomtérkép</a>.</p><p>Az Edzés a Fuel nyelvén: fotó a lap tetején, egy mélyzöld kártya a fő számmal, színes kártyák, pirulák, Mezo a végén.</p><p><b>A Mai fül állapotai:</b></p><ul>${STATES.map(([k,l])=>`<li><a href="#edzes${k?'-mai-'+k:''}">${l}</a></li>`).join('')}</ul><p><b>Az edzés útja (2. kör):</b></p><ul><li><a href="#edzes-indulas">Eligazítás</a> → Indulás</li><li><a href="#edzes-session">Edzés közben</a>: a pipa → „hogy ment?” → pihenő</li><li><a href="#edzes-cer">Lezárás</a></li><li><a href="#edzes-review">Összegzés</a> · <a href="#edzes-review-gyak">egy gyakorlaté</a></li></ul><p><b>A Terv aloldalai (3. kör):</b></p><ul><li><a href="#edzes-run">a futó terv</a> · <a href="#edzes-nap-3">egy nap</a> · <a href="#edzes-napszerk-3">a nap szerkesztése</a></li><li><a href="#edzes-het">heti vizsgálat</a> · <a href="#edzes-izom-hat">egy izom</a></li><li><a href="#edzes-tervek">edzéstervek</a> · <a href="#edzes-ujterv">új terv</a></li><li><a href="#edzes-futamok">lezárt futamok</a> · <a href="#edzes-riport">riport</a> · <a href="#edzes-osszevetes">összevetés</a></li><li><a href="#edzes-sablonok">sablonok</a> · <a href="#edzes-sablon">egy sablon</a></li><li><a href="#edzes-futas">futás</a> · <a href="#edzes-futasterv">futóterv</a></li></ul><p><b>4. kör:</b></p><ul><li><a href="#edzes-gx-0">egy gyakorlat oldala</a> · <a href="#edzes-ermek">érmek</a></li><li><a href="#edzes-sport">röplabda</a> · <a href="#edzes-sportlog">sport naplózása</a> · <a href="#edzes-sportlog-0">egy sport űrlapja</a></li><li><a href="#edzes-sajat">saját edzés</a> (a gyakorlatválasztó lappal)</li><li><a href="#edzes-terkep">izomtérkép</a></li></ul><p>Az Edzés minden oldala és lapja kész.</p>`;
+const ENOTES=()=>`<h2>Lágy irány · Edzés</h2><small>Állapot: 2026-11-05 · minden oldal új felépítésben</small><p><b>Legutóbb változott · 2026-11-06 · Sport fül:</b> a sport saját fület kapott fent: <a href="#edzes-sport">Sport</a> — a mai alkalom, a heti rend (beállítható), röpi és futás, egyszeri esemény, mire hatott, közös napló. A <a href="#edzes">Mai</a> és a <a href="#edzes-terheles">Terhelés</a> alján már csak egy sor vezet ide, a Terv polcáról kikerült a futás. Belül: <a href="#edzes-ropi">röplabda</a>, <a href="#edzes-futas">futás</a>, <a href="#edzes-sportlog">naplózás</a>.</p><p><b>Előtte · 2026-11-05:</b> minden belső Edzés-oldal saját felépítést kapott.</p><p>Az Edzés a Fuel nyelvén: fotó a lap tetején, egy mélyzöld kártya a fő számmal, színes kártyák, pirulák, Mezo a végén.</p><p><b>A Mai fül állapotai:</b></p><ul>${STATES.map(([k,l])=>`<li><a href="#edzes${k?'-mai-'+k:''}">${l}</a></li>`).join('')}</ul><p><b>Az edzés útja (2. kör):</b></p><ul><li><a href="#edzes-indulas">Eligazítás</a> → Indulás</li><li><a href="#edzes-session">Edzés közben</a>: a pipa → „hogy ment?” → pihenő</li><li><a href="#edzes-cer">Lezárás</a></li><li><a href="#edzes-review">Összegzés</a> · <a href="#edzes-review-gyak">egy gyakorlaté</a></li></ul><p><b>A Terv aloldalai (3. kör):</b></p><ul><li><a href="#edzes-run">a futó terv</a> · <a href="#edzes-nap-3">egy nap</a> · <a href="#edzes-napszerk-3">a nap szerkesztése</a></li><li><a href="#edzes-het">heti vizsgálat</a> · <a href="#edzes-izom-hat">egy izom</a></li><li><a href="#edzes-tervek">edzéstervek</a> · <a href="#edzes-ujterv">új terv</a></li><li><a href="#edzes-futamok">lezárt futamok</a> · <a href="#edzes-riport">riport</a> · <a href="#edzes-osszevetes">összevetés</a></li><li><a href="#edzes-sablonok">sablonok</a> · <a href="#edzes-sablon">egy sablon</a></li><li><a href="#edzes-futas">futás</a> · <a href="#edzes-futasterv">futóterv</a></li></ul><p><b>4. kör:</b></p><ul><li><a href="#edzes-gx-0">egy gyakorlat oldala</a> · <a href="#edzes-ermek">érmek</a></li><li><a href="#edzes-sport">röplabda</a> · <a href="#edzes-sportlog">sport naplózása</a> · <a href="#edzes-sportlog-0">egy sport űrlapja</a></li><li><a href="#edzes-sajat">saját edzés</a> (a gyakorlatválasztó lappal)</li><li><a href="#edzes-terkep">izomtérkép</a></li></ul><p>Az Edzés minden oldala és lapja kész.</p>`;
 /* swap only the panel's text: the shell's toggle row (.tog) and its handlers stay in place */
 const setNotes=on=>{if(!notes)return;const has=!!document.getElementById('enotes');if(on&&!has){[...notes.children].forEach(c=>{if(!c.classList.contains('tog')){c.dataset.fh=1;c.style.display='none'}});const d=document.createElement('div');d.id='enotes';d.innerHTML=ENOTES();notes.insertBefore(d,notes.firstChild);const t=notes.querySelector('.tog');if(t)d.insertBefore(t,d.children[2]||null)}else if(!on&&has){const d=document.getElementById('enotes'),t=d.querySelector('.tog');if(t){const ref=[...notes.children].find(c=>c.dataset.fh&&c.tagName==='P'&&c.previousElementSibling&&c.previousElementSibling.tagName==='SMALL');notes.insertBefore(t,ref?ref.nextSibling:null)}d.remove();[...notes.children].forEach(c=>{if(c.dataset.fh){c.style.display='';delete c.dataset.fh}})}};
 window.addEventListener('hashchange',()=>setNotes(location.hash.slice(1).startsWith('edzes')));
@@ -2258,8 +2315,8 @@ window.addEventListener('hashchange',()=>setNotes(location.hash.slice(1).startsW
 ['edz-huzodzkodas','edz-korlat','edz-kreta','edz-sulyzo'].forEach(n=>{const im=new Image();im.src=PH(n+'.jpg');if(im.decode)im.decode().catch(()=>{});TABPH.push(im)});
 
 const MSTATES=STATES.map(s=>s[0]).filter(Boolean);
-DOM.edzes={tabs:['edzes','edzes-terv','edzes-terheles','edzes-gyak',...MSTATES.map(s=>'edzes-mai-'+s)],
-  tabName:h=>h==='edzes-terv'?'Terv':h==='edzes-terheles'?'Terhelés':h==='edzes-gyak'?'Gyakorlatok':'Mai',
+DOM.edzes={tabs:['edzes','edzes-terv','edzes-sport','edzes-terheles','edzes-gyak',...MSTATES.map(s=>'edzes-mai-'+s)],
+  tabName:h=>h==='edzes-terv'?'Terv':h==='edzes-sport'?'Sport':h==='edzes-terheles'?'Terhelés':h==='edzes-gyak'?'Gyakorlatok':'Mai',
   render:h=>route3(h)||R4(h)||R5(h)||(h==='edzes-indulas'?indulas():h==='edzes-session'?session():h==='edzes-cer'?cer2():h==='edzes-review'?review():h==='edzes-review-gyak'?reviewGyak():h==='edzes-terv'?terv2():h==='edzes-terheles'?terheles2():h==='edzes-gyak'?gyak2():h.startsWith('edzes-mai-')?mai(h.slice(10)):EST.day?mai(EST.day):maiMinta()),
   after:h=>{mintaAfter(h);if(h==='edzes-cer')counter();if(h==='edzes-session')dockPaint();setNotes(true)}};
 })();
