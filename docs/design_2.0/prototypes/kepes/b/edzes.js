@@ -1131,7 +1131,7 @@ function maiMinta(){const D=[21,22,23,24,25,26,27];
   <div class="rise" style="--i:6"><button class="spslim" data-go="edzes-sport"><img src="${PH('edz-ropi-sq.jpg')}" alt=""><div><b>Röplabda · ma 18:00</b><small>90 perc · a Sport fülön naplózod</small></div>${G('chev','ink')}</button></div>
   ${mzCard('Este röpi is van, ezért a <em>húzódzkodás utolsó szettjét</em> kihagynám: a vállad így frissebb marad a meccsre.',`<button class="pill soft" data-toast="Rendben: a negyedik szett kimarad">Így csináljuk</button>`)}
   </div>`}
-const mmgo=document.createElement('button');mmgo.className='mmgo';mmgo.dataset.go='edzes-jatszo';mmgo.innerHTML=`${G('bolt','sun')}<b class="lb">Indítsuk<i class="ln"> a Pull Dayt</i></b><span>64 perc ${G('chev','ink')}</span>`;$('#phone').appendChild(mmgo);
+const mmgo=document.createElement('button');mmgo.className='mmgo';mmgo.dataset.go='edzes-indulas';mmgo.innerHTML=`${G('bolt','sun')}<b class="lb">Indítsuk<i class="ln"> a Pull Dayt</i></b><span>64 perc ${G('chev','ink')}</span>`;$('#phone').appendChild(mmgo);
 
 /* ── Edzés közben · lejátszó ── */
 const JPH=['edz-sotet.jpg','edz-felhuzas.jpg','edz-izom.jpg','edz-kettlebell.jpg','edz-tarcsa.jpg'],JPP=['86% 30%','center 40%','40% 20%','center','center'];
