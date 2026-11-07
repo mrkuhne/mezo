@@ -152,6 +152,7 @@ invented content of the real record types; the owner's real data never goes into
 - Nap follows the Fuel tab skeleton (photo head, verdict, one deep card, sections, Mezo) on all four tabs; inner pages each get their own structure (the day as a line with four moments, six big levels, photo quest cards, photo tiles, a dusk full-screen ceremony for napzárás, a linked order for a chain, a 29-day grid for a habit).
 - The team is named by field in message cards (Alvás, Mozgás, Étkezés, Közérzet, Mezo) with glyph badges.
 - Class names in `b/nap.js` start with `np`; check new names against the shell and Edzés CSS (a bare `.fb`, `.big`, `.rw`, `.edit`, `.n` already exist and silently restyle).
+- Package A (2026-11-07): a tab's hero action never reappears in the list below it; every destination appears once per page. Header carries "+" and the bell; unread counts on tabs. Habits ticked from data are locked ("adatból"). Chat-like cards: reasoning opens in place, feedback is a thumbs reaction.
 - The side panel: each domain swaps only its own block (`#enotes`, `#nnotes`) and restores Fuel's text only when no other domain block is showing.
 
 ## 12. Rejected — do not bring back
