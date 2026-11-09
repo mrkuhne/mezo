@@ -51,6 +51,7 @@ struct AuraSunrise: View {
     @State private var sel = min(4, max(0, UserDefaults.standard.integer(forKey: "auraMetric")))
     @State private var motion = OrbMotion()
     @State private var orbKey = 0
+    @State private var tab = min(3, max(0, UserDefaults.standard.integer(forKey: "auraTab")))
     private let base = Color(hex: 0x0D1218)
     private var m: SunMetric { SunMetric.all[sel] }
 
@@ -58,14 +59,21 @@ struct AuraSunrise: View {
         GeometryReader { geo in
             ScrollView {
                 VStack(spacing: 0) {
-                    hero(height: geo.size.height + geo.safeAreaInsets.top - 30)
-                    VStack(spacing: 12) {
-                        voiceCard
-                        detailCard
-                        nextCard
+                    if tab == 0 {
+                        hero(height: geo.size.height + geo.safeAreaInsets.top - 30)
+                        VStack(spacing: 12) {
+                            voiceCard
+                            detailCard
+                            nextSteps
+                            observation
+                            nextCard
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 170)
+                    } else {
+                        AuraNapTab(tab: tab, header: AnyView(header))
+                            .padding(.bottom, 170)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 170)
                 }
             }
             .scrollIndicators(.hidden)
@@ -105,18 +113,9 @@ struct AuraSunrise: View {
                                         startPoint: .top, endPoint: .bottom))
 
             VStack(spacing: 0) {
-                HStack {
-                    AuraGlyph("bell-cream", .white, size: 21).frame(width: 44, height: 44)
-                    Spacer()
-                    Text("boop").font(.custom("Outfit", size: 26).weight(.light)).tracking(3).foregroundStyle(.white)
-                    Spacer()
-                    AuraGlyph("person-sage", .white, size: 20).frame(width: 44, height: 44)
-                        .glassEffect(.clear, in: .circle)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 58)
+                header
 
-                metricRow.padding(.top, 14)
+                metricRow.padding(.top, 10)
 
                 sun.frame(height: 290).padding(.top, 0).padding(.bottom, 18)
 
@@ -143,6 +142,111 @@ struct AuraSunrise: View {
             }
             .frame(height: height)
         }
+    }
+
+    /// Title row + the Nap pages as thin text tabs with an underline (Oura's "Yesterday · Today" row, ours).
+    private var header: some View {
+        VStack(spacing: 10) {
+            HStack {
+                AuraGlyph("bell-cream", .white, size: 21).frame(width: 44, height: 44)
+                Spacer()
+                Text("boop").font(.custom("Outfit", size: 26).weight(.light)).tracking(3).foregroundStyle(.white)
+                Spacer()
+                AuraGlyph("person-sage", .white, size: 20).frame(width: 44, height: 44)
+                    .glassEffect(.clear, in: .circle)
+            }
+            .padding(.horizontal, 16)
+            HStack(spacing: 0) {
+                ForEach(0..<4) { i in
+                    let on = i == tab
+                    VStack(spacing: 7) {
+                        HStack(spacing: 4) {
+                            Text(["Mai", "A napom", "Beszélgetés", "Rutin"][i])
+                                .font(.system(size: 15, weight: on ? .semibold : .regular))
+                            if i == 1 { Circle().fill(.white).frame(width: 5, height: 5).opacity(on ? 0 : 0.9) }
+                        }
+                        .foregroundStyle(.white.opacity(on ? 1 : 0.62))
+                        Capsule().fill(.white).frame(height: 2).opacity(on ? 1 : 0)
+                            .padding(.horizontal, 6)
+                    }
+                    .fixedSize()
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                    .onTapGesture { withAnimation(.easeInOut(duration: 0.3)) { tab = i } }
+                }
+            }
+            .padding(.horizontal, 12)
+            .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.14)).frame(height: 0.5) }
+        }
+        .padding(.top, 58)
+    }
+
+    // MARK: Utána jön + Észrevétel
+
+    private var nextSteps: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            label("UTÁNA JÖN").padding(.bottom, 10)
+            step("pen-sun", "Reggeli check-in", "4 kérdés · 1 perc", primary: true)
+            divider
+            step("moon-cream", "Alvás", "Beolvasva · 7ó 12p", done: true)
+            divider
+            step("spark-cream", "Mai szándék", "Mire figyelsz ma?")
+            divider
+            step("scale-ink", "Mérlegelés", "Utoljára: 82,4 kg")
+            divider
+            step("camera-ink", "Első étkezés", "Fotó vagy pár szó")
+        }
+        .padding(20)
+        .background(card)
+    }
+
+    private var divider: some View { Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5).padding(.leading, 56) }
+
+    private func step(_ g: String, _ t: String, _ sub: String, primary: Bool = false, done: Bool = false) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle().fill(.white.opacity(done ? 0.18 : 0.08))
+                AuraGlyph(done ? "check-ink" : g, .white, size: 18)
+            }
+            .frame(width: 42, height: 42)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(t).font(.system(size: 16.5, weight: .medium)).foregroundStyle(.white.opacity(done ? 0.6 : 1))
+                Text(sub).font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.55))
+            }
+            Spacer()
+            if primary {
+                Text("Kitöltöm").font(.system(size: 14, weight: .semibold)).foregroundStyle(base)
+                    .padding(.horizontal, 14).padding(.vertical, 9).background(Capsule().fill(.white))
+            } else {
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+            }
+        }
+        .padding(.vertical, 10)
+    }
+
+    private var observation: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                LivingOrb(mood: .good, size: 22, motion: motion, palette: m.orb, glow: false, level: 0.85)
+                label("BOOP ÉSZREVETTE")
+                Spacer()
+                HStack(spacing: 4) { ForEach(0..<5) { k in Circle().fill(.white.opacity(k < 4 ? 0.85 : 0.2)).frame(width: 6, height: 6) } }
+            }
+            (Text("Amikor 23:00 előtt fekszel le, ") + Text("másnap 9 ponttal jobb a készenléted").bold().foregroundColor(.white) + Text(". Az elmúlt 3 hétben 4-ből 4 alkalommal így volt."))
+                .font(AuraFont.serif(18)).lineSpacing(4).foregroundStyle(.white.opacity(0.75))
+            HStack(spacing: 8) {
+                chip("Igaz", filled: true); chip("Nem rólam szól"); chip("Majd meglátjuk")
+            }
+        }
+        .padding(20)
+        .background(card)
+    }
+
+    private func chip(_ t: String, filled: Bool = false) -> some View {
+        Text(t).font(.system(size: 13.5, weight: .semibold))
+            .foregroundStyle(filled ? base : .white)
+            .padding(.horizontal, 13).padding(.vertical, 8)
+            .background(Capsule().fill(filled ? .white : .white.opacity(0.1)))
     }
 
     /// Three ways to make the photo carry the page (owner: "vivid like Oura").
@@ -465,5 +569,157 @@ struct PaintedLandscape: View {
                 hz.fill(Path(CGRect(x: 0, y: h * (l.0 + 0.02), width: w, height: h * 0.03)), with: .color(sky[2].opacity(0.18)))
             }
         }
+    }
+}
+
+// MARK: - The other Nap tabs, same language: a short painted head, glass cards below
+
+struct AuraNapTab: View {
+    var tab: Int
+    var header: AnyView
+    @State private var motion = OrbMotion()
+    private let base = Color(hex: 0x0D1218)
+    private var sky: [Color] { PaintedLandscape.skies[[0, 2, 0, 3][tab]] }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                Color.clear.frame(height: 330)
+                    .overlay { PaintedLandscape(sky: sky) }
+                    .clipped()
+                    .overlay(LinearGradient(stops: [.init(color: .clear, location: 0.5), .init(color: base, location: 1)], startPoint: .top, endPoint: .bottom))
+                VStack(spacing: 0) {
+                    header
+                    VStack(spacing: 6) {
+                        Text(["", "A napom", "Beszélgetés", "Rutin"][tab]).font(AuraFont.serif(38)).foregroundStyle(.white)
+                        Text(["", "Hétfő, november 9. · élő nézet", "Boop és a csapat", "Reggeli lánc · 3 / 5 kész"][tab])
+                            .font(.system(size: 15)).foregroundStyle(.white.opacity(0.8))
+                    }
+                    .padding(.top, 70)
+                }
+            }
+            VStack(spacing: 12) {
+                switch tab {
+                case 1: timeline
+                case 2: chat
+                default: routine
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, -10)
+        }
+        .onDisappear { motion.stop() }
+    }
+
+    private var timeline: some View {
+        let rows: [(String, String, String, Bool)] = [
+            ("06:53", "sun-ink", "Ébredés · 7ó 12p alvás", true), ("07:20", "check-ink", "Check-in · energia 7, hangulat 8", true),
+            ("08:10", "bowl-cream", "Reggeli · zabkása, 32 g fehérje", true), ("09:00", "clock-ink", "Megbeszélések 17:30-ig · 6 esemény", false),
+            ("12:30", "bowl-cream", "Ebéd · Boop: legalább 45 g fehérje", false), ("18:30", "dumbbell-ink", "Felsőtest edzés · 60 perc", false),
+            ("22:45", "moon-cream", "Lefekvés", false)]
+        return VStack(alignment: .leading, spacing: 0) {
+            ForEach(rows.indices, id: \.self) { i in
+                let r = rows[i]
+                HStack(alignment: .center, spacing: 14) {
+                    Text(r.0).font(AuraFont.mono(13)).foregroundStyle(.white.opacity(r.3 ? 0.55 : 0.85)).frame(width: 48, alignment: .leading)
+                    ZStack {
+                        Circle().fill(.white.opacity(r.3 ? 0.16 : 0.07))
+                        AuraGlyph(r.1, .white.opacity(r.3 ? 0.7 : 1), size: 16)
+                    }
+                    .frame(width: 36, height: 36)
+                    Text(r.2).font(.system(size: 15.5)).foregroundStyle(.white.opacity(r.3 ? 0.55 : 1))
+                    Spacer()
+                }
+                .padding(.vertical, 9)
+                if i == 2 {
+                    HStack(spacing: 8) {
+                        Capsule().fill(.white).frame(width: 30, height: 2)
+                        Text("MOST · 08:40").font(AuraFont.mono(11, .bold)).foregroundStyle(.white)
+                        Capsule().fill(.white.opacity(0.3)).frame(height: 1)
+                    }
+                    .padding(.vertical, 6)
+                }
+            }
+        }
+        .padding(20)
+        .background(glassCard)
+    }
+
+    private var chat: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            bubble(boop: true, "Jó reggelt! Jól aludtál, a mélyalvásod a heti átlag felett volt. Átrakjam az edzést 18:30-ra?")
+            bubble(boop: false, "Igen, és mit egyek ebédre, hogy meglegyen a fehérje?")
+            bubble(boop: true, "Lazac rizzsel és salátával: kb. 42 g fehérje. Ha marad egy joghurt délutánra, pont kijön.")
+            HStack {
+                Text("Írj a Boopnak…").font(.system(size: 15)).foregroundStyle(.white.opacity(0.5))
+                Spacer()
+                AuraGlyph("chat-ink", .white, size: 18)
+            }
+            .padding(.horizontal, 18).padding(.vertical, 14)
+            .background(Capsule().fill(.white.opacity(0.08)))
+            .overlay(Capsule().stroke(.white.opacity(0.12)))
+        }
+        .padding(20)
+        .background(glassCard)
+    }
+
+    private func bubble(boop: Bool, _ t: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            if boop { LivingOrb(mood: .good, size: 28, motion: motion, palette: SunMetric.all[0].orb, glow: false, level: 0.85) } else { Spacer(minLength: 40) }
+            Text(t).font(.system(size: 15.5)).lineSpacing(3).foregroundStyle(.white.opacity(boop ? 0.9 : 1))
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white.opacity(boop ? 0.07 : 0.16)))
+            if boop { Spacer(minLength: 20) }
+        }
+    }
+
+    private var routine: some View {
+        VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("REGGELI LÁNC").font(AuraFont.mono(12)).tracking(1.4).foregroundStyle(.white.opacity(0.6))
+                HStack(spacing: 0) {
+                    ForEach(0..<5) { k in
+                        VStack(spacing: 8) {
+                            ZStack {
+                                Circle().fill(.white.opacity(k < 3 ? 0.9 : 0.08)).frame(width: 40, height: 40)
+                                AuraGlyph(["drop-sky", "sun-ink", "person-sage", "pen-sun", "book-sage"][k], k < 3 ? base : .white, size: 17)
+                            }
+                            Text(["Víz", "Fény", "Nyújtás", "Szándék", "Olvasás"][k]).font(.system(size: 11.5)).fixedSize().foregroundStyle(.white.opacity(k < 3 ? 0.9 : 0.55))
+                        }
+                        if k < 4 { Rectangle().fill(.white.opacity(k < 2 ? 0.7 : 0.15)).frame(height: 1.5).padding(.bottom, 22).padding(.horizontal, -6) }
+                    }
+                }
+            }
+            .padding(20)
+            .background(glassCard)
+            VStack(alignment: .leading, spacing: 14) {
+                Text("SZOKÁSOK EREJE · 28 NAP").font(AuraFont.mono(12)).tracking(1.4).foregroundStyle(.white.opacity(0.6))
+                strength("Reggeli víz", 0.86)
+                strength("Lefekvés 23:00 előtt", 0.64)
+                strength("Esti levezetés", 0.38)
+            }
+            .padding(20)
+            .background(glassCard)
+        }
+    }
+
+    private func strength(_ n: String, _ v: Double) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack { Text(n).font(.system(size: 15)).foregroundStyle(.white.opacity(0.9)); Spacer(); Text("\(Int(v * 100))%").font(AuraFont.mono(12)).foregroundStyle(.white.opacity(0.7)) }
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.08))
+                    Capsule().fill(.white.opacity(0.9)).frame(width: g.size.width * v)
+                }
+            }
+            .frame(height: 6)
+        }
+    }
+
+    private var glassCard: some View {
+        RoundedRectangle(cornerRadius: 26, style: .continuous)
+            .fill(.white.opacity(0.07))
+            .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(LinearGradient(colors: [.white.opacity(0.16), .white.opacity(0.03)], startPoint: .top, endPoint: .bottom), lineWidth: 1))
     }
 }
