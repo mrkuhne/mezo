@@ -72,6 +72,8 @@ struct HealthSyncTests {
         await s.syncAll()
         #expect(stub.ops.filter { $0 == "ingestSleepNights" }.count == 3)
         #expect(s.phase == .done(.init(nights: 61, days: 0, workouts: 0, events: 0)))
+        #expect(s.pending == .init(nights: 61, days: 0, workouts: 0, events: 0))
+        #expect(s.lastSummary == .init(nights: 61, days: 0, workouts: 0, events: 0))
         #expect(store.string(forKey: "boop.health.syncedThrough.\(user)") == "2026-11-09")
     }
 

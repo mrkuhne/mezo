@@ -21,6 +21,8 @@ public final class HealthSync {
     public enum Phase: Equatable { case idle, running(progress: Double), done(Summary), failed(SyncError) }
 
     public private(set) var phase: Phase = .idle
+    /// What this run read from Health (known before sending), for the live counts on the backfill page.
+    public private(set) var pending: Summary?
 
     @ObservationIgnored private let client: Client
     @ObservationIgnored private let health: HealthReader
@@ -55,6 +57,7 @@ public final class HealthSync {
             let nights = buildNights(try await health.sleepSamples(from: from, to: end), calendar: cal)
             let days = mapDays(try await health.dayTotals(from: from, to: end, calendar: cal))
             let workouts = try await health.workouts(from: from, to: end).map(mapWorkout)
+            pending = Summary(nights: nights.count, days: days.count, workouts: workouts.count, events: 0)
             let batches = chunks(nights, 30).count + chunks(days, 60).count + chunks(workouts, 100).count + 1
             var sent = 0
             func step() { sent += 1; phase = .running(progress: Double(sent) / Double(batches)) }
