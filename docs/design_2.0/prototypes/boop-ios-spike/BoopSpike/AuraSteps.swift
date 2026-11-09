@@ -206,22 +206,10 @@ struct AuraCheckin: View {
                         }
                         .onEnded { _ in dragStart = nil }
                 )
-                .sensoryFeedback(.selection, trigger: v)
+                .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.45), trigger: v)   // a soft tick per step
                 Text("Húzd fel vagy le").font(.system(size: 12)).foregroundStyle(.white.opacity(0.55)).padding(.top, 2)
 
-                HStack(spacing: 8) {
-                    ForEach([2, 4, 6, 8, 10], id: \.self) { x in
-                        Button { withAnimation(.snappy) { values[q.key] = x } } label: {
-                            Text("\(x)").font(.custom("Outfit", size: 17).weight(.medium))
-                                .foregroundStyle(values[q.key] == x ? stepBase : .white)
-                                .frame(maxWidth: .infinity).frame(height: 46)
-                                .background(Capsule().fill(values[q.key] == x ? .white : .white.opacity(0.1)))
-                                .glassEffect(.clear, in: .capsule)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 20).padding(.top, 22)
+                Spacer()
 
                 HStack(spacing: 10) {
                     Button { withAnimation(.easeInOut(duration: 0.4)) { if i > 0 { i -= 1 } } } label: { AuraPill(text: "Vissza", primary: false) }
@@ -230,7 +218,7 @@ struct AuraCheckin: View {
                     Button { if values[q.key] == nil { values[q.key] = v }; next() } label: { AuraPill(text: i == qs.count - 1 ? "Kész" : "Tovább") }
                         .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 16)
+                .padding(.horizontal, 20).padding(.bottom, 16)
             }
         }
     }
