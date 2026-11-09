@@ -1,0 +1,15 @@
+generate:
+  - types
+  - client
+accessModifier: public
+filter:
+  operations:
+    - login
+    - register
+    - me
+    - completeOnboarding
+    - getBiometricProfile
+    - upsertBiometricProfile
+    - logWeight
+    - listWeightLogs
+    - getWeightTrend
