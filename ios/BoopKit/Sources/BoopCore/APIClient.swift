@@ -15,7 +15,17 @@ struct AuthMiddleware: ClientMiddleware {
     }
 }
 
-public func makeClient(baseURL: URL = BoopConfig.apiBaseURL, tokens: TokenStore, transport: any ClientTransport = URLSessionTransport()) -> Client {
+/// The app's transport: its own ephemeral session (no shared connection/Alt-Svc cache) and a 20 s request limit,
+/// so a stalled connection ends in the offline message instead of an endless spinner.
+public func makeTransport() -> URLSessionTransport {
+    let cfg = URLSessionConfiguration.ephemeral
+    cfg.timeoutIntervalForRequest = 20
+    cfg.timeoutIntervalForResource = 40
+    cfg.waitsForConnectivity = false
+    return URLSessionTransport(configuration: .init(session: URLSession(configuration: cfg)))
+}
+
+public func makeClient(baseURL: URL = BoopConfig.apiBaseURL, tokens: TokenStore, transport: any ClientTransport = makeTransport()) -> Client {
     Client(serverURL: baseURL, transport: transport, middlewares: [AuthMiddleware(tokens: tokens)])
 }
 

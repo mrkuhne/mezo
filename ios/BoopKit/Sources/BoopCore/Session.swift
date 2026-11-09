@@ -22,7 +22,7 @@ public final class Session {
     public let client: Client
     @ObservationIgnored let tokens: TokenStore
 
-    public init(tokens: TokenStore = KeychainTokenStore(), transport: any ClientTransport = URLSessionTransport(), baseURL: URL = BoopConfig.apiBaseURL) {
+    public init(tokens: TokenStore = KeychainTokenStore(), transport: any ClientTransport = makeTransport(), baseURL: URL = BoopConfig.apiBaseURL) {
         self.tokens = tokens
         self.client = makeClient(baseURL: baseURL, tokens: tokens, transport: transport)
     }
