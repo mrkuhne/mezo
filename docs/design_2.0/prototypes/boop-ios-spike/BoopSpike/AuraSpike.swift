@@ -106,6 +106,7 @@ struct AuraRoot: View {
                 switch variant {
                 case 0: AuraNight()
                 case 1: AuraDay()
+                case 3: AuraSunrise()
                 default: AuraMix()
                 }
             }
@@ -114,11 +115,11 @@ struct AuraRoot: View {
             VStack(spacing: 10) {
                 Picker("Változat", selection: $variant.animation(.easeInOut(duration: 0.35))) {
                     Text("A · Éj").tag(0)
-                    Text("B · Nappal").tag(1)
+                    Text("A2 · Napkelte").tag(3)
                     Text("C · Aura").tag(2)
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 270)
+                .frame(width: 300)
                 .padding(4)
                 .glassEffect(.regular, in: .capsule)
                 AuraTabBar(dark: variant != 1, accent: variant == 0 ? Color(hex: 0x4BA8E6) : Color(hex: 0x8B6CF0))
