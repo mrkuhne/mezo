@@ -7,7 +7,10 @@ final class FakeHealth: HealthReader, @unchecked Sendable {
     var days: [DayTotals] = []
     var workoutList: [WorkoutSample] = []
     private(set) var froms: [Date] = []
-    func sleepSamples(from: Date, to: Date) async throws -> [SleepSample] { froms.append(from); return nights }
+    func sleepSamples(from: Date, to: Date) async throws -> [SleepSample] {
+        froms.append(from)
+        return nights.filter { $0.end > from && $0.start < to }    // HealthKit: samples overlapping the window
+    }
     func dayTotals(from: Date, to: Date, calendar: Calendar) async throws -> [DayTotals] { days }
     func workouts(from: Date, to: Date) async throws -> [WorkoutSample] { workoutList }
 }
@@ -18,6 +21,7 @@ final class FakeCalendar: CalendarReader, @unchecked Sendable {
     func access() async -> CalendarAccess { state }
     func requestAccess() async -> CalendarAccess { state }
     func items(from: Date, to: Date) async throws -> [CalendarItem] { list }
+
 }
 
 @MainActor
@@ -55,14 +59,14 @@ struct HealthSyncTests {
         okEverything()
         await sync().syncAll()
         let expected = cal.date(byAdding: .day, value: -60, to: cal.startOfDay(for: now))!
-        #expect(health.froms.first == expected)
+        #expect(health.froms.first == expected.addingTimeInterval(-18 * 3600))   // sleep: 18 h before the window
     }
 
     @Test func laterRunOverlapsTwoDays() async {
         store.set("2026-11-08", forKey: "boop.health.syncedThrough.\(user)")
         okEverything()
         await sync().syncAll()
-        #expect(health.froms.first == cal.date(from: DateComponents(year: 2026, month: 11, day: 6)))
+        #expect(health.froms.first == cal.date(from: DateComponents(year: 2026, month: 11, day: 6))!.addingTimeInterval(-18 * 3600))
     }
 
     @Test func batchesAndProgress() async {
@@ -88,7 +92,7 @@ struct HealthSyncTests {
         okEverything()
         await sync().syncAll()
         let expected = cal.date(byAdding: .day, value: -60, to: cal.startOfDay(for: now))!
-        #expect(health.froms.last == expected)
+        #expect(health.froms.last == expected.addingTimeInterval(-18 * 3600))
     }
 
     @Test func rerunSendsSameIdsAgain() async {
@@ -130,5 +134,51 @@ struct HealthSyncTests {
         await s.syncAll()
         #expect(s.phase == .failed(.unauthorized))
         #expect(stub.ops == ["ingestSleepNights"])
+    }
+
+    // Final review C1: the night waking on the window's first day keeps its evening part.
+    @Test func windowEdgeNightKeepsItsEvening() async {
+        store.set("2026-11-08", forKey: "boop.health.syncedThrough.\(user)")    // window starts 2026-11-06 00:00
+        let bed = cal.date(from: DateComponents(year: 2026, month: 11, day: 5, hour: 22, minute: 30))!
+        let mid = cal.date(from: DateComponents(year: 2026, month: 11, day: 6, hour: 0, minute: 30))!
+        let wake = cal.date(from: DateComponents(year: 2026, month: 11, day: 6, hour: 6, minute: 30))!
+        let older = cal.date(from: DateComponents(year: 2026, month: 11, day: 5, hour: 6, minute: 0))!
+        health.nights = [
+            SleepSample(start: older.addingTimeInterval(-7 * 3600), end: older, stage: .core, source: "Sleep Cycle"),
+            SleepSample(start: bed, end: mid, stage: .deep, source: "Sleep Cycle"),
+            SleepSample(start: mid, end: wake, stage: .core, source: "Sleep Cycle"),
+        ]
+        okEverything()
+        await sync().syncAll()
+        let body = (stub.sent.first { $0.op == "ingestSleepNights" }?.body ?? "").filter { !$0.isWhitespace }
+        #expect(body.contains("hk-night-2026-11-06"))
+        #expect(body.contains(#""bedtime":"22:30""#))
+        #expect(body.contains(#""durationH":8"#))
+        #expect(!body.contains("hk-night-2026-11-05"))       // before the window: not re-sent half-read
+    }
+
+    // Final review I2: a run that read nothing does not use up the 60-day backfill.
+    @Test func emptyRunKeepsTheBackfillWindow() async {
+        okEverything()
+        let s = sync()
+        await s.syncAll()
+        #expect(s.phase == .done(.init(nights: 0, days: 0, workouts: 0, events: 0)))
+        #expect(store.string(forKey: "boop.health.syncedThrough.\(user)") == nil)
+        stub.on("replaceCalendarDays", .status(204))
+        await s.syncAll()
+        #expect(health.froms.last == cal.date(byAdding: .day, value: -60, to: cal.startOfDay(for: now))!.addingTimeInterval(-18 * 3600))
+    }
+
+    // Final review I1: a calendar failure does not undo the Health upload.
+    @Test func calendarFailureKeepsHealthResult() async {
+        health.nights = night(9)
+        stub.on("ingestSleepNights", .json(200, ok))
+        stub.on("replaceCalendarDays", .json(400, #"[{"field":"title","message":"x"}]"#))
+        calendarReader.list = [CalendarItem(title: "Edzés", start: now, end: now.addingTimeInterval(3600), allDay: false, calendar: "Munka")]
+        let s = sync()
+        await s.syncAll()
+        #expect(s.phase == .done(.init(nights: 1, days: 0, workouts: 0, events: 0)))
+        #expect(s.calendarFailed)
+        #expect(store.string(forKey: "boop.health.syncedThrough.\(user)") == "2026-11-09")
     }
 }

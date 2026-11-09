@@ -70,7 +70,7 @@ func countsChip(_ s: HealthSync.Summary) -> String {
 
 func syncErrorText(_ e: HealthSync.SyncError) -> String {
     switch e {
-    case .offline: "Most nem érem el a szervert. Nézd meg a netet, és próbáld újra — onnan folytatom, ahol tartottam."
+    case .offline: "Most nem érem el a szervert. Nézd meg a netet, és próbáld újra — amit már elküldtem, nem duplázódik."
     case .server: "Valami elakadt a szerveren. Próbáld újra egy kicsit később."
     case .unauthorized: "Lejárt a belépésed. Lépj be újra."
     }

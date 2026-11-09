@@ -23,6 +23,10 @@ struct BackfillStep: View {
                             Task { await link.syncNow() }
                         }
                     }
+                    if link.sync.calendarFailed {
+                        Text("A naptáradat most nem tudtam elküldeni — a következő megnyitáskor újra próbálom.")
+                            .font(.manrope(13.5, .bold)).foregroundStyle(Lagy.peachInk).fixedSize(horizontal: false, vertical: true)
+                    }
                     if link.calendarAccess == .denied {
                         Text("A naptárhoz nincs engedélyem — itt kapcsolhatod be: Beállítások › Boop › Naptárak.")
                             .font(.manrope(13.5, .bold)).foregroundStyle(Lagy.peachInk).fixedSize(horizontal: false, vertical: true)

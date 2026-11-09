@@ -37,6 +37,7 @@ struct ConnectCard: View {
         case .failed: out.append(Chip(text: "nem sikerült frissíteni", style: .warm, small: true))
         default:
             if link.calendarAccess == .denied { out.append(Chip(text: "naptár: nincs engedély", style: .warm, small: true)) }
+            else if link.sync.calendarFailed { out.append(Chip(text: "naptár: nem ment át", style: .warm, small: true)) }
             else if let at = link.sync.lastSyncedAt {
                 out.append(Chip(text: "frissítve \(at.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)))", style: .soft, small: true))
             }

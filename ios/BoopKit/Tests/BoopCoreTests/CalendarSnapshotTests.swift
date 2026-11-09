@@ -37,4 +37,15 @@ struct CalendarSnapshotTests {
         let days = buildCalendarDays([item("Holnapután", at(11, 9), at(11, 10))], today: today, calendar: cal)
         #expect(days.allSatisfy { $0.events.isEmpty })
     }
+
+    // Final review I1: the contract needs a title of 1…200 UTF-16 units.
+    @Test func blankTitleGetsAPlaceholder() {
+        let days = buildCalendarDays([item("  ", at(9, 9), at(9, 10))], today: today, calendar: cal)
+        #expect(days[0].events[0].title == "(cím nélkül)")
+    }
+    @Test func longTitleFitsTwoHundredUTF16Units() {
+        let days = buildCalendarDays([item(String(repeating: "🏋️", count: 150), at(9, 9), at(9, 10))], today: today, calendar: cal)
+        #expect(days[0].events[0].title.utf16.count <= 200)
+        #expect(!days[0].events[0].title.isEmpty)
+    }
 }

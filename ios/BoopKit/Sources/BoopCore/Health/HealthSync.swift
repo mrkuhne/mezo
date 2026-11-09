@@ -23,6 +23,8 @@ public final class HealthSync {
     public private(set) var phase: Phase = .idle
     /// What this run read from Health (known before sending), for the live counts on the backfill page.
     public private(set) var pending: Summary?
+    /// The last run uploaded Health but the calendar step failed (shown on its own; Health is kept).
+    public private(set) var calendarFailed = false
 
     @ObservationIgnored private let client: Client
     @ObservationIgnored private let health: HealthReader
@@ -54,7 +56,11 @@ public final class HealthSync {
         do {
             let end = now()
             let from = windowStart()
-            let nights = buildNights(try await health.sleepSamples(from: from, to: end), calendar: cal)
+            // Sleep is read from 18 h before the window so the night waking on its first day keeps its
+            // evening part; nights waking before the window are not re-sent (they would be half-read).
+            let firstDay = dayString(from, cal)
+            let nights = buildNights(try await health.sleepSamples(from: from.addingTimeInterval(-18 * 3600), to: end), calendar: cal)
+                .filter { $0.date >= firstDay }
             let days = mapDays(try await health.dayTotals(from: from, to: end, calendar: cal))
             let workouts = try await health.workouts(from: from, to: end).map(mapWorkout)
             pending = Summary(nights: nights.count, days: days.count, workouts: workouts.count, events: 0)
@@ -74,11 +80,17 @@ public final class HealthSync {
                 try check(try await client.ingestWorkouts(body: .json(.init(workouts: batch))))
                 step()
             }
-            let events = try await sendCalendar()
+            // The calendar is its own step: its failure is reported apart and never undoes the Health upload.
+            var events = 0
+            calendarFailed = false
+            do { events = try await sendCalendar() }
+            catch HealthSyncFailure.unauthorized { throw HealthSyncFailure.unauthorized }
+            catch { calendarFailed = true }
             step()
 
             let summary = Summary(nights: nights.count, days: days.count, workouts: workouts.count, events: events)
-            store.set(dayString(end, cal), forKey: markKey)
+            // A run that read nothing (Health refused, or not yet switched on) keeps the 60-day window open.
+            if nights.count + days.count + workouts.count > 0 { store.set(dayString(end, cal), forKey: markKey) }
             store.set(try? JSONEncoder().encode(summary), forKey: summaryKey)
             store.set(end, forKey: syncedAtKey)
             phase = .done(summary)
