@@ -129,7 +129,7 @@ jobs:
     # This job survives it because its bug class is invisible to BOTH other suites:
     # jsdom (test-frontend) computes no layout at all, and the goldens ran at 440x956,
     # taller than a real phone. It caught the keret-hero clipping 66 px at 852.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # Playwright has no chromium build for ubuntu-26.04 yet (mezo-6byhm)
     defaults:
       run:
         working-directory: frontend

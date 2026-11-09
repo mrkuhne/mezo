@@ -218,9 +218,11 @@ class HypothesisEvaluationServiceIT extends AbstractIntegrationTest {
     void testEvaluate_shouldGoDormant_whenNoDataForLongerThanConfigured() {
         UUID owner = userPopulator.createUser().getId();
         PatternEntity row = patternPopulator.reflection(owner, PLAN, PatternEntity.STATUS_MONITORING);
-        // born 31 days ago and never fed — past the configured 30-day dormancy window
+        // born 31 calendar days ago and never fed — past the configured 30-day dormancy window.
+        // Anchored to the local day: now-minus-31×24h lands on TODAY-30 late in the evening across
+        // the October DST change, and the rule counts calendar days.
         createdAtBackdater.backdate("pattern", row.getId(),
-                Instant.now().minus(31, ChronoUnit.DAYS));
+                TODAY.minusDays(31).atStartOfDay(java.time.ZoneId.systemDefault()).plusHours(12).toInstant());
 
         assertThat(evaluationService.evaluate(owner, TODAY)).isEqualTo(1);
 
