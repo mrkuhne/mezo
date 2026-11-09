@@ -5502,6 +5502,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/wearable/sleep-nights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upsert Apple Health sleep nights into sleep_log (source apple_health) */
+        post: operations["ingestSleepNights"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wearable/daily-metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upsert per-day Apple Health totals (steps, heart rate, active energy) */
+        post: operations["ingestDailyMetrics"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wearable/workouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upsert Apple Health workouts (display + AI context only) */
+        post: operations["ingestWorkouts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wearable/calendar-days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the calendar events of each given day (device calendar snapshot) */
+        put: operations["replaceCalendarDays"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -12749,6 +12817,75 @@ export interface components {
             /** @description Free slug identifying the AI generator (e.g. 'meal_draft', 'meso_plan') — not validated against a fixed list. */
             feature: string;
             outcome: string;
+        };
+        IngestResult: {
+            inserted: number;
+            updated: number;
+        };
+        SleepNightIn: {
+            /** @description Stable per night per user (client key) */
+            externalId: string;
+            /**
+             * Format: date
+             * @description The wake day (local)
+             */
+            date: string;
+            bedtime: string;
+            wakeup: string;
+            durationH: number;
+            inBedMin?: number;
+            awakeMin?: number;
+            lightMin?: number;
+            remMin?: number;
+            deepMin?: number;
+            hypnogram?: components["schemas"]["Hypnogram"];
+        };
+        SleepNightBatchRequest: {
+            nights: components["schemas"]["SleepNightIn"][];
+        };
+        DailyMetricIn: {
+            /** Format: date */
+            date: string;
+            steps?: number;
+            restingHr?: number;
+            avgHr?: number;
+            minHr?: number;
+            maxHr?: number;
+            activeKcal?: number;
+        };
+        DailyMetricBatchRequest: {
+            days: components["schemas"]["DailyMetricIn"][];
+        };
+        WorkoutIn: {
+            externalId: string;
+            activityType: string;
+            /** Format: date-time */
+            startAt: string;
+            /** Format: date-time */
+            endAt: string;
+            kcal?: number;
+            avgHr?: number;
+            sourceName?: string;
+        };
+        WorkoutBatchRequest: {
+            workouts: components["schemas"]["WorkoutIn"][];
+        };
+        CalendarEventIn: {
+            title: string;
+            /** Format: date-time */
+            startAt: string;
+            /** Format: date-time */
+            endAt: string;
+            allDay: boolean;
+            calendarName?: string;
+        };
+        CalendarDayIn: {
+            /** Format: date */
+            date: string;
+            events: components["schemas"]["CalendarEventIn"][];
+        };
+        CalendarDaysRequest: {
+            days: components["schemas"]["CalendarDayIn"][];
         };
     };
     responses: {
@@ -28404,6 +28541,172 @@ export interface operations {
                 content?: never;
             };
             /** @description Validation error (unknown outcome, blank/oversized feature) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    ingestSleepNights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SleepNightBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Upserted; counts of new and updated rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResult"];
+                };
+            };
+            /** @description Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    ingestDailyMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DailyMetricBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Upserted; counts of new and updated rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResult"];
+                };
+            };
+            /** @description Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    ingestWorkouts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Upserted; counts of new and updated rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResult"];
+                };
+            };
+            /** @description Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    replaceCalendarDays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarDaysRequest"];
+            };
+        };
+        responses: {
+            /** @description Replaced */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
             400: {
                 headers: {
                     [name: string]: unknown;

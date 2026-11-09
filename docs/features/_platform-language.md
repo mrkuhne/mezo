@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-02
+updated: 2026-11-10
 tags: [platform, frontend, backend, auth, ai]
 key_files:
   - frontend/src/shared/i18n
@@ -182,7 +182,7 @@ UserMessages.text(key, args…) → MessageSource (messages_hu / messages_en) �
 ```
 
 - **`UserLanguage`** (`feature/auth/service`): `of(userId)`, `current()` (through `LlmActorContext.capture()`, the same actor resolution the LLM audit uses, so request, SSE and cron threads all work without signature changes), `normalize(raw)`, `DEFAULT = "hu"`, `SUPPORTED`. It takes a user id and never reads `CurrentUser`, so it is safe on a cron or a pool thread that re-bound an actor.
-- **Bundles.** `messages_hu.properties` and `messages_en.properties`, 184 keys each; there is **no** base `messages.properties` — Hungarian is a bundle like English and the host locale must never pick a language. `MessageSourceConfiguration` declares the `MessageSource` bean (`ResourceBundleMessageSource`, UTF-8, `fallbackToSystemLocale=false`); `spring.messages.*` would stay inert without a base bundle. `MessageBundleParityTest` fails on a key present in one bundle only.
+- **Bundles.** `messages_hu.properties` and `messages_en.properties`, 184 keys each; there is **no** base `messages.properties` — Hungarian is a bundle like English and the host locale must never pick a language. `MessageSourceConfiguration` declares the `MessageSource` bean (`ResourceBundleMessageSource`, UTF-8, `fallbackToSystemLocale=false`); `spring.messages.*` would stay inert without a base bundle. `MessageBundleParityTest` fails on a key present in one bundle only. Boop S2 (`mezo-r36n9.2`, 2026-11-10) added `WEARABLE_BATCH_TOO_LARGE` to both bundles.
 - **`UserMessages`** (`techcore/message`): `text(key, args…)` resolves with the acting account's language; with no account (login, register, a missing token) it takes the first two letters of the `Accept-Language` header, which the client sends on every request and SSE call (`data/_client/api.ts`); else Hungarian. If loading the account fails (the database is the failure being reported) it falls back to Hungarian rather than mask the error. `GlobalExceptionHandler` resolves every `SystemMessage` through it.
 - **The stable `code` stays the contract.** Where the client maps codes to its own copy (`authErrorText.ts`) it keeps doing so — through the catalog now.
 - **Pattern for domain sentences** (first applied by Fuel, slice F5 — see the subsection below): a rule-based sentence a service produces is a bundle key with arguments rendered by `UserMessages`. Text that is **persisted** (feed rows, push bodies, summaries, a meal's score envelope, a stack item's placement reason) is rendered once, in the user's language at that moment, and stays as written; it is never re-translated on a later switch.

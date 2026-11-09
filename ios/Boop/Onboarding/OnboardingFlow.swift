@@ -6,7 +6,9 @@ import BoopDesign
 struct OnboardingFlow: View {
     let me: Me
     @Environment(Session.self) private var session
+    @Environment(HealthLink.self) private var link: HealthLink?
     @State private var model: OnboardingModel?
+    @State private var hello = HelloGate()
 
     var body: some View {
         Group {
@@ -24,7 +26,13 @@ struct OnboardingFlow: View {
                     .environment(\.colorScheme, .light)
                 case .profile: ProfileStep(model: model, name: me.name)
                 case .weight: WeightStep(model: model)
-                case .finishing: HelloStep()
+                case .finishing:
+                    if let link, hello.connecting || !link.connected, !hello.showing {
+                        // `connected` flips after the permission step; `connecting` keeps the backfill on screen.
+                        ConnectFlow(link: link) { hello.showing = true }.onAppear { hello.connecting = true }
+                    } else {
+                        HelloStep().onAppear { hello.showing = true }
+                    }
                 }
             } else {
                 Lagy.paper.ignoresSafeArea()
@@ -34,7 +42,8 @@ struct OnboardingFlow: View {
         .onChange(of: model?.problem) { _, p in if p == .unauthorized { session.signOut() } }
         .task {
             guard model == nil else { return }
-            let m = OnboardingModel(client: session.client) { [session] in
+            let m = OnboardingModel(client: session.client) { [session, hello] in
+                while !hello.showing { try? await Task.sleep(for: .milliseconds(200)) }   // Health + calendar first
                 try? await Task.sleep(for: .seconds(2.4))     // let the hello moment breathe
                 await session.markOnboarded()
             }
@@ -43,6 +52,9 @@ struct OnboardingFlow: View {
         }
     }
 }
+
+/// Opens once the hello shows: after the connect flow, or straight away when already connected.
+@MainActor @Observable private final class HelloGate { var connecting = false; var showing = false }
 
 private struct HelloStep: View {
     var body: some View {

@@ -2,14 +2,17 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-09
-tags: [ios, swiftui, boop, lagy, auth, onboarding]
+updated: 2026-11-10
+tags: [ios, swiftui, boop, lagy, auth, onboarding, healthkit, eventkit, wearable]
 key_files:
   - ios/Boop.xcodeproj
   - ios/Boop
   - ios/BoopKit/Sources/BoopCore
   - ios/BoopKit/Sources/BoopDesign
   - ios/scripts/install-on-phone.sh
+  - ios/Boop/Connect
+  - backend/src/main/java/io/mrkuhne/mezo/feature/wearable
+  - api/feature/wearable/wearable.yml
 related: [_platform-auth-security, _platform-api-backend, me, today]
 ---
 
@@ -18,15 +21,17 @@ related: [_platform-auth-security, _platform-api-backend, me, today]
 > One-line: the native SwiftUI iPhone app that replaces the web app once complete (epic `mezo-r36n9`).
 > Design canon **Lágy**, companion named **Boop**, same backend with a new account. Slice **S1** (the frame)
 > is shipped: project, Lágy kit, sign-in / register with invite, onboarding (profile + first weight),
-> the five-domain shell, a one-command weekly install. Spec:
+> the five-domain shell, a one-command weekly install. Slice **S2** (data) adds Apple Health (60-day
+> backfill, then refresh on every open) and today's + tomorrow's calendar into new `wearable` endpoints;
+> plan [`2026-11-09-boop-s2-adatok.md`](../superpowers/plans/2026-11-09-boop-s2-adatok.md). Spec:
 > [`2026-11-09-boop-ios-v1-design.md`](../superpowers/specs/2026-11-09-boop-ios-v1-design.md) · plan:
 > [`2026-11-09-boop-ios-v1.md`](../superpowers/plans/2026-11-09-boop-ios-v1.md) · approved look:
 > [`boop-ios-spike`](../design_2.0/prototypes/boop-ios-spike/README.md).
 
 ## 1. Summary
 
-Boop is built in four slices (spec §, plan "Slice map"): **S1 Alap** (this doc's current state),
-S2 Adatok (Apple Health + calendar ingestion), S3 Reggel (the morning brief, orb, energy curve),
+Boop is built in four slices (spec §, plan "Slice map"): **S1 Alap** and **S2 Adatok** (Apple Health +
+calendar ingestion) are this doc's current state; S3 Reggel (the morning brief, orb, energy curve),
 S4 Lépések (check-in, intention, weight, meal, patterns). The web PWA keeps running until Boop covers
 it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
 
@@ -41,6 +46,18 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
 - **Shell** (`ShellView`): floating bottom bar Nap · Edzés · Fuel · Boop · Én. Nap shows the "üres nap"
   page (greeting follows the clock); the other four say they still live in the web app and open it;
   Én adds the account card with a confirmed sign-out.
+- **Connect Health + calendar** (`ConnectFlow`, S2): after the first weigh-in, and from Nap's
+  "Kössük össze az Egészséget és a naptárat" row. *Kössük össze* lists Apple Egészség and Naptár, hints to
+  pick the full data range on the iPhone's Health sheet (iOS 26 offers "last 30 days" vs "all"), then asks
+  Health (read: sleep, steps, active energy, heart rate, resting HR, workouts) and calendar (full access,
+  read-only). *Behúzom az elmúlt 60 napot* fills Boop's orb with the progress and the live counts, then says
+  "Megvan: *58 éjszaka*, 60 nap mozgás és 21 edzés." No Health data → a peach card with where to switch
+  it on (Egészség app › Megosztás › Appok › Boop); calendar refused → a line with Beállítások › Boop ›
+  Naptárak; the other source still syncs; "Most kihagyom" always leaves.
+- **Nap card** once connected: "Beérkezett adatok" with the counts chip and one status chip
+  (frissítem… · nem sikerült frissíteni · naptár: nincs engedély · frissítve HH:mm); tapping refreshes.
+- **Refresh on open**: every return to the foreground re-syncs (10-minute debounce); a calendar change
+  re-sends today + tomorrow. Free team → no background delivery.
 
 ## 3. Architecture & data flow
 
@@ -53,14 +70,37 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
     `exclusiveMinimum` the generator rejects); operations filtered in `openapi-generator-config.yaml`.
   - `BoopCore` — `Session` (token + state), `KeychainTokenStore`, `makeClient`/`makeTransport`
     (Bearer middleware, ephemeral URLSession, 20 s request limit), `AuthError` + Hungarian texts,
-    `OnboardingModel`, `localDay`.
+    `OnboardingModel`, `localDay`; S2: `Health/` (`HealthReader` protocol + `HealthKitReader`,
+    `buildNights` — sessions split at > 90 min gaps, 14–18 h wake = nap dropped, per wake day the
+    session with most staged minutes wins, 5-min hypnogram letters D/R/L/A ≤ 200 — `mapDays`,
+    `mapWorkout`, `HealthSync`) and `Calendar/` (`CalendarReader` + `CalendarKitReader`,
+    `buildCalendarDays` → exactly today + tomorrow).
+  - `HealthSync` (`@MainActor @Observable`): window = 60 days on first run, afterwards from the
+    synced-through day − 2; sends nights (30/batch) → days (60) → workouts (100) → calendar; the
+    synced-through mark (`boop.health.syncedThrough.<userId>`) moves only after a fully successful run, so
+    an interrupted backfill re-reads the window (the server upserts are idempotent). 401 → sign-out.
   - `BoopDesign` — the Lágy kit ported from the spike: tokens, Outfit + Manrope (bundled), glyph assets
     (generated by `ios/tools/genglyphs.mjs` from the Lágy prototype's `G()` table), photos, components,
     page frames (`LagyTabPage`, `LagyFlowFrame`), `BoopFigure` (the Metal orb).
 
 ## 4. Data model & API
 
-No backend change in S1. Operations used: `login`, `register`, `me`, `completeOnboarding`,
+**S2 — feature `wearable`** (contract tag `Wearable`, `api/feature/wearable/wearable.yml`):
+
+| Operation | Endpoint | Stores |
+|---|---|---|
+| `ingestSleepNights` | `POST /api/wearable/sleep-nights` → `IngestResult{inserted,updated}` | `sleep_log` upsert by `(created_by, external_id)`, `source = 'apple_health'`, stages + hypnogram |
+| `ingestDailyMetrics` | `POST /api/wearable/daily-metrics` | `daily_metric` upsert by `(created_by, date)` — steps, active kcal, resting/avg/min/max HR |
+| `ingestWorkouts` | `POST /api/wearable/workouts` | `wearable_workout` upsert by `(created_by, external_id)`; date = local start day (Europe/Budapest) |
+| `replaceCalendarDays` | `PUT /api/wearable/calendar-days` → 204 | `calendar_event`: each sent day's rows hard-deleted and replaced |
+
+Caps (`mezo.wearable`): 100 nights, 120 days, 300 workouts, 3 calendar days × 150 events per request →
+`WEARABLE_BATCH_TOO_LARGE`. Sleep: one `SleepLogSavedEvent` per batch at most — only for the newest night,
+only when newly inserted and dated today or yesterday (a 60-night backfill never floods Boop's messages).
+Wearable workouts are display + AI context only (no calorie-target effect). Changesets
+`202611092300_mezo-r36n9.2_sleep_log_apple_health.sql`, `202611092310_mezo-r36n9.2_wearable_tables.sql`.
+
+S1 operations used: `login`, `register`, `me`, `completeOnboarding`,
 `getBiometricProfile` (always 200; all-null fields = no profile), `upsertBiometricProfile`,
 `listWeightLogs`, `logWeight` (201), `getWeightTrend`. JWT lasts 30 days, no refresh: a 401 signs out.
 
@@ -86,7 +126,11 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 - `BoopKit-Package` (simulator): generated-client decoding, session states (no token, 401, offline,
   sign-in), error mapping + copy, onboarding order/resume/local day, design kit (fonts, glyph catalog,
   photos, tokens, `hu1`).
-- `Boop` app tests: `AuthForm` rules, greeting by time of day.
+- `Boop` app tests: `AuthForm` rules, greeting by time of day, connect copy (`summaryLine`, `countsChip`).
+- S2 kit tests: `HealthBuildersTests` (nights across midnight, naps, two sources, hypnogram, workouts, days),
+  `CalendarSnapshotTests`, `HealthSyncTests` (60-day first window, 2-day overlap, batching + progress,
+  interrupted backfill, idempotent re-send, calendar denied/granted, 401 stops).
+- Backend: `WearableSleepServiceIT`, `WearableServiceIT`, `WearableContractIT` (+ existing sleep ITs).
 - Not in CI (`ci.yml` does not build `ios/`); run locally.
 
 ## 9. Decisions, gotchas & deferred
@@ -98,7 +142,12 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 - On the owner's Mac the **LuLu** firewall blocks network calls from the ad-hoc-signed simulator app
   (Safari in the simulator and host processes are fine); allow "Boop" in LuLu to test live calls.
 - `confirmationDialog` attached inside scroll content did not present — attach it at page level.
-- Deferred to S2–S4: health/calendar ingestion, the morning brief + orb readiness + voice + energy
+- Presentations: attach sheets/covers/dialogs at page level and let the page read the flag in its body
+  (`NapEmptyView` + `connectCover`); reading `scenePhase` on `RootView` itself stopped every presentation,
+  so the foreground/calendar triggers live in the invisible `SyncTriggers` view (S2).
+- HealthKit: the simulator has no Health data, so the walk-through ends on the no-data card; the
+  `-preview` switch uses a DEBUG-only `PreviewTransport` that answers the Wearable endpoints locally.
+- Deferred to S3–S4: the morning brief + orb readiness + voice + energy
   curve, the five morning steps, widgets.
 
 ## 10. Key files
@@ -106,4 +155,7 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 `ios/Boop/RootView.swift` · `ios/Boop/Auth/AuthFlow.swift` · `ios/Boop/Onboarding/OnboardingFlow.swift` ·
 `ios/Boop/Shell/ShellView.swift` · `ios/BoopKit/Sources/BoopCore/Session.swift` ·
 `ios/BoopKit/Sources/BoopCore/OnboardingModel.swift` · `ios/BoopKit/Sources/BoopDesign/Pages.swift` ·
-`ios/scripts/install-on-phone.sh` · `ios/scripts/sync-openapi.sh`
+`ios/scripts/install-on-phone.sh` · `ios/scripts/sync-openapi.sh` · S2: `ios/Boop/Connect/*` ·
+`ios/BoopKit/Sources/BoopCore/Health/HealthSync.swift` · `…/Health/SleepNightBuilder.swift` ·
+`…/Calendar/CalendarSnapshotBuilder.swift` · `backend/…/feature/wearable/service/WearableSleepService.java` ·
+`backend/…/feature/wearable/controller/WearableController.java`

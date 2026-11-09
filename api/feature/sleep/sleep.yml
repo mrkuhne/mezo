@@ -115,7 +115,7 @@ components:
           description: Tracker-reported quality 0–100 (Sleep Cycle's own metric)
         source:
           type: string
-          pattern: '^(manual|screenshot)$'
+          pattern: '^(manual|screenshot|apple_health)$'
           description: Row provenance; omitted → 'manual'
         hypnogram:
           $ref: '#/components/schemas/Hypnogram'
@@ -175,7 +175,7 @@ components:
           description: Tracker-reported quality 0–100 (Sleep Cycle's own metric)
         source:
           type: string
-          pattern: '^(manual|screenshot)$'
+          pattern: '^(manual|screenshot|apple_health)$'
           description: Row provenance; omitted → 'manual'
         hypnogram:
           $ref: '#/components/schemas/Hypnogram'

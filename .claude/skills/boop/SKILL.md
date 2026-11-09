@@ -100,5 +100,10 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 
 - **S1 alap — shipped 2026-11-09**: auth, onboarding, five-domain shell, install script; owner's Boop
   account live. Minors: `mezo-r36n9.1`.
-- **S2 adatok — planned** (`mezo-r36n9.2`, plan `2026-11-09-boop-s2-adatok.md`): Owns list in the issue.
+- **S2 adatok — shipped 2026-11-10** (`mezo-r36n9.2`): Health + calendar connect flow, `HealthSync`
+  (60-day backfill, refresh on open), backend feature `wearable` (4 endpoints, tables `daily_metric`,
+  `wearable_workout`, `calendar_event`; Health nights in `sleep_log` as `apple_health`).
+- Simulator gotchas found in S2: the simulator tool's screenshots can be several actions stale — use
+  `xcrun simctl io <udid> screenshot`; SwiftUI presentations must sit at page level and the page must read
+  the flag (see `boop-ios.md` §9); `@SceneStorage` restores the last tab on relaunch.
 - **S3 reggel, S4 lépések — not planned yet**; their look is in the spike (`LagyMai.swift`, `LagyFlows.swift`).
