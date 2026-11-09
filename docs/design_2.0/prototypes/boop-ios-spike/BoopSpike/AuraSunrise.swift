@@ -50,7 +50,7 @@ struct AuraSunrise: View {
     @State private var sel = min(4, max(0, UserDefaults.standard.integer(forKey: "auraMetric")))
     @State private var motion = OrbMotion()
     @State private var orbKey = 0
-    private let base = Color(hex: 0x0C1016)
+    private let base = Color(hex: 0x0D1218)
     private var m: SunMetric { SunMetric.all[sel] }
 
     var body: some View {
@@ -87,7 +87,7 @@ struct AuraSunrise: View {
     private var pageBackground: some View {
         ZStack {
             base
-            LinearGradient(colors: [m.top.opacity(0.35), base], startPoint: .top, endPoint: .center)
+            LinearGradient(colors: [m.top.opacity(0.12), base], startPoint: .top, endPoint: .center)
         }
     }
 
@@ -98,15 +98,13 @@ struct AuraSunrise: View {
             Color.clear.frame(height: height)
                 .overlay {
                     photo("aura-hegy.jpg").resizable().scaledToFill()
-                        .brightness(-0.04)
-                        .overlay(Rectangle().fill(m.glow).opacity(0.4).blendMode(.color))     // only the photo carries the hue
-                        .overlay(LinearGradient(colors: [.black.opacity(0.35), .clear], startPoint: .top, endPoint: .center))
-                        .blur(radius: 1.2)
+                        .overlay(Rectangle().fill(m.glow).opacity(0.16).blendMode(.color))    // a whisper of the metric's hue
+                        .overlay(LinearGradient(colors: [.black.opacity(0.3), .clear], startPoint: .top, endPoint: .init(x: 0.5, y: 0.3)))
                 }
                 .clipped()
-                .overlay(LinearGradient(stops: [.init(color: .clear, location: 0.5),
-                                                .init(color: base.opacity(0.55), location: 0.78),
-                                                .init(color: base.opacity(0.95), location: 1)],
+                .overlay(LinearGradient(stops: [.init(color: .clear, location: 0.6),
+                                                .init(color: base.opacity(0.45), location: 0.84),
+                                                .init(color: base, location: 1)],
                                         startPoint: .top, endPoint: .bottom))
 
             VStack(spacing: 0) {
@@ -197,7 +195,7 @@ struct AuraSunrise: View {
             let cy = H - 8 - t * (H - 8 - size / 2 - 6)          // t = 0: centre on the horizon
             ZStack(alignment: .topLeading) {
                 ZStack {
-                    Circle().fill(m.glow.opacity(0.35)).frame(width: size * 2).blur(radius: 70)
+                    Circle().fill(m.glow.opacity(0.18)).frame(width: size * 1.7).blur(radius: 60)
                     LivingOrb(mood: .good, size: size, motion: motion, palette: m.orb, glow: true,
                               level: Double(m.value) / 100)
                         .id(orbKey)
