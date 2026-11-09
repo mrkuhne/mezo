@@ -47,7 +47,7 @@ struct SunMetric {
 }
 
 struct AuraSunrise: View {
-    var photoMode = 0          // 0 vivid mountain, 1 own photo per metric, 2 painted landscape
+    var photoMode = 2          // 0 vivid mountain, 1 own photo per metric, 2 painted landscape
     @State private var sel = min(4, max(0, UserDefaults.standard.integer(forKey: "auraMetric")))
     @State private var motion = OrbMotion()
     @State private var orbKey = 0
@@ -176,8 +176,7 @@ struct AuraSunrise: View {
 
     /// Mini orbs instead of outlined rings: each metric is a small liquid sphere, filled to its level.
     private var metricRow: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 18) {
+        HStack(spacing: 0) {
                 ForEach(SunMetric.all.indices, id: \.self) { i in
                     let x = SunMetric.all[i]
                     let on = i == sel
@@ -199,14 +198,13 @@ struct AuraSunrise: View {
                         Text(x.name).font(.system(size: 13, weight: on ? .semibold : .regular))
                             .foregroundStyle(.white.opacity(on ? 1 : 0.6))
                     }
+                    .frame(maxWidth: .infinity)                     // five equal columns, edge to edge
                     .contentShape(Rectangle())
                     .onTapGesture { pick(i) }
                     .accessibilityAddTraits(.isButton)
                 }
             }
-            .padding(.horizontal, 20).padding(.vertical, 8)
-        }
-        .scrollIndicators(.hidden)
+            .padding(.horizontal, 12).padding(.vertical, 8)
     }
 
     /// The orb as a rising sun: the better the value, the higher it stands; a weak value sinks it

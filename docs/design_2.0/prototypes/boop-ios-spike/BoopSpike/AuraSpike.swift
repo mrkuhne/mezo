@@ -100,7 +100,7 @@ struct AuraTabBar: View {
 
 struct AuraRoot: View {
     @State private var variant = UserDefaults.standard.integer(forKey: "auraVariant")
-    @State private var photoMode = UserDefaults.standard.integer(forKey: "auraPhoto")
+    @State private var photoMode = UserDefaults.standard.object(forKey: "auraPhoto") as? Int ?? 2
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
