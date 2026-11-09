@@ -64,6 +64,11 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 - **Merging is sequential**: `git fetch && git rebase origin/main` right before the local `--no-ff`
   merge (detached HEAD, `git push origin HEAD:main`), regenerate `docs/CODEMAP.md` after the merge,
   re-run the tests you own. If main moved under you, rebase again — never force-push main.
+- **After every push to main, fast-forward the primary checkout's `main`** — new sessions' worktrees
+  are cut from it, so a stale local main hides new skills and code from them:
+  `P=$(git worktree list --porcelain | awk 'NR==1{print $2}'); git -C "$P" fetch -q origin &&
+  [ -z "$(git -C "$P" status --porcelain)" ] && git -C "$P" merge --ff-only -q refs/remotes/origin/main`
+  (skip with a note to the owner if that checkout is dirty or not on `main`).
 - Close or update your issue and run `node scripts/check-beads-backup.mjs --fix` before you end.
 
 ## 4. Environment facts
