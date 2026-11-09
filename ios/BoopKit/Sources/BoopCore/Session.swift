@@ -40,6 +40,14 @@ public final class Session {
     /// Reloads the account after onboarding finished on the server.
     public func markOnboarded() async { await loadMe() }
 
+    #if DEBUG
+    /// Simulator review only (launch argument `-preview onboarding|shell`); not compiled into release builds.
+    public func debugPreview(_ name: String) {
+        let me = Me(id: UUID(), name: "Dani", email: "dani@pelda.hu", onboarded: name == "shell", timezone: "Europe/Budapest")
+        state = name == "shell" ? .ready(me) : .needsOnboarding(me)
+    }
+    #endif
+
     public func signOut() {
         tokens.clear()
         state = .signedOut

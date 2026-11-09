@@ -10,7 +10,12 @@ struct BoopApp: App {
         WindowGroup {
             RootView()
                 .environment(session)
-                .task { await session.bootstrap() }
+                .task {
+                    #if DEBUG
+                    if let p = UserDefaults.standard.string(forKey: "preview") { session.debugPreview(p); return }
+                    #endif
+                    await session.bootstrap()
+                }
         }
     }
 }
