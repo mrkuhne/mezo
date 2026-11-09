@@ -52,6 +52,7 @@ struct AuraSunrise: View {
     @State private var motion = OrbMotion()
     @State private var orbKey = 0
     @State private var open: String? = UserDefaults.standard.string(forKey: "auraOpen").flatMap { $0.isEmpty ? nil : $0 }
+    @State private var sheet: String? = UserDefaults.standard.string(forKey: "auraSheet").flatMap { $0.isEmpty ? nil : $0 }
     @State private var tab = min(3, max(0, UserDefaults.standard.integer(forKey: "auraTab")))
     private let base = Color(hex: 0x0D1218)
     private var m: SunMetric { SunMetric.all[sel] }
@@ -84,6 +85,13 @@ struct AuraSunrise: View {
         }
         .preferredColorScheme(.dark)
         .onDisappear { motion.stop() }
+        .sheet(item: Binding(get: { sheet.map(StepID.init) }, set: { sheet = $0?.id })) { st in
+            AuraDetailSheet(kind: st.id)
+                .presentationDetents([.medium, .large])
+                .presentationBackground(Color(hex: 0x0D1218))
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
         .fullScreenCover(item: Binding(get: { open.map(StepID.init) }, set: { open = $0?.id })) { st in
             let close = { open = nil }
             switch st.id {
@@ -365,11 +373,13 @@ struct AuraSunrise: View {
                 Text("BOOP MONDJA").font(AuraFont.mono(12)).tracking(1.4).foregroundStyle(.white.opacity(0.6))
                 Spacer()
             }
-            (Text("Jól aludtál: a mélyalvás ") + Text("18 perccel a heti átlagod felett").bold().foregroundColor(.white)
-             + Text(" volt, a pulzusod ") + Text("két ütéssel lejjebb").bold().foregroundColor(.white)
-             + Text(" ment. A naptárad 9-től 17:30-ig tele, ezért ha teheted, ") + Text("told 18:30-ra").bold().foregroundColor(.white)
-             + Text(" az edzést."))
-                .font(AuraFont.serif(19)).lineSpacing(5).foregroundStyle(.white.opacity(0.75))
+            AuraBrief(segs: [
+                .init("Jól aludtál: a mélyalvás "), .init("18 perccel a heti átlagod felett", "sleep"),
+                .init(" volt, a pulzusod "), .init("két ütéssel lejjebb", "heart"),
+                .init(" ment. A naptárad 9-től 17:30-ig tele, ezért ha teheted, "), .init("told 18:30-ra", "day"),
+                .init(" az edzést."),
+            ])
+            .environment(\.openURL, OpenURLAction { url in sheet = url.host(); return .handled })
         }
         .padding(20)
         .background(card)
