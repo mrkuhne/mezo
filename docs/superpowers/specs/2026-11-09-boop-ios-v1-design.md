@@ -1,9 +1,34 @@
 # Boop — native iOS app, v1 (the morning) — design
 
-- **Date:** 2026-11-09 · **Epic:** `mezo-r36n9` · **Status:** draft for owner OK (builder check done, §8)
-- **Approved look:** the Xcode spike in [`docs/design_2.0/prototypes/boop-ios-spike/`](../../design_2.0/prototypes/boop-ios-spike/README.md), variant **A "Orb"**
+- **Date:** 2026-11-09 (revised the same day: **Lágy pivot**, §0) · **Epic:** `mezo-r36n9` · **Status:** draft for owner OK (builder check done, §8)
+- **Design canon:** the **Lágy** direction (`.claude/skills/lagy/IRANY.md` + `docs/design_2.0/prototypes/kepes/b/*`,
+  currently on branch `claude/mai-napom-custom-graphics-eedeb2`), built natively. The orb, Boop's voice and
+  "A nap energiája" from the first spike are merged into it in Lágy dress.
+- **Approved look so far:** the Xcode spike in [`docs/design_2.0/prototypes/boop-ios-spike/`](../../design_2.0/prototypes/boop-ios-spike/README.md) — the **Lágy** files (`Lagy*.swift`): Nap · Mai morning + the five morning steps
 - **Decided by the owner in this brainstorm** (marked *owner* below); everything marked *call* is the
   designer's call, open to correction.
+
+## 0. The Lágy pivot (owner, 2026-11-09, supersedes earlier wording below)
+
+After the first spike round the owner said nothing had been carried over from the **Lágy** prototype,
+where many decisions were already settled, and decided (*owner*):
+
+- **Lágy is the design canon for Boop.** The whole Lágy app (five domains: Nap, Edzés, Fuel, Mezo→Boop, Én)
+  is the target, built as a native iOS app. Light warm paper, white cards, one sage accent + one
+  deep-green card per page, photo heads on every page, Outfit + Manrope, the Lágy glyph family, chips,
+  rings / bars / level tubes. Lágy's rejections apply (no vessels/tanks, no dark header, no many hues).
+- **Merged in from the first spike, in Lágy dress:** the **living orb** (now inside the page's single
+  deep-green card as readiness, and Boop's small figure on Boop cards), **Boop speaks** (the verdict
+  read aloud in Hungarian and typed in sync, accent phrases deep green and tappable), and
+  **A nap energiája** (white card: sage energy curve, anchors, busy ribbon, magnifier, conflict callout).
+- **The companion is called Boop, not Mezo** (*owner*): Lágy's "Mezo card" is the **Boop card**,
+  "Mezo mondja" is "Boop mondja", the Mezo domain in the bottom bar is labelled **Boop**.
+- **All iteration happens in the iOS Simulator** from now on (*owner*) — no HTML artifacts for Boop.
+- Dropped from the first spike: the dark sky ground, mood-tinted multi-hue palettes, the liquid-tank
+  check-in, serif type, SF Symbol icons.
+- Kept unchanged: every backend / data / install decision (§3, §4.3–§4.5, §8).
+
+Where a later section still describes the dark first-spike look, §0 and §4.2 win.
 
 ## 1. Intent — what this is and why
 
@@ -44,15 +69,16 @@ Still logged by hand: weight, meals, free-text journal/activity, people, check-i
 
 **Goals (v1)**
 - A native SwiftUI app that runs the six morning moments above end to end against the real backend.
-- The **living-orb morning screen** exactly as approved in the spike (§4.2).
+- The **Lágy Nap · Mai morning** with orb, Boop's voice and the energy curve, as approved in the spike (§4.2).
 - Apple Health ingestion (sleep with stages, steps, heart rate, resting HR, active energy, workouts)
   and device-calendar ingestion from first launch.
 - Boop's morning brief reads aloud in Hungarian, typed in sync.
 - Runs on the owner's iPhone 17 Pro Max via free Apple ID, with a **one-command weekly reinstall**.
 
 **Non-goals (v1)** — later slices, not forgotten
-- The other domains as full screens (training plans/active workout, full Fuel, Mezo chat/team, Én),
-  evening ritual, journal, people. The web app keeps covering them until Boop takes them over.
+- The other domains' full functions (training plans/active workout, full Fuel, Boop chat/team, Én),
+  evening ritual, journal, people. Their Lágy landing pages may exist in the spike as the app shell,
+  but their real flows are later slices; the web app keeps covering them until Boop takes them over.
 - Home/lock-screen widgets, Live Activities, Control Center, Siri/Shortcuts, Apple Watch — the first
   follow-up slice (see §8 Q2).
 - Server push notifications (impossible on a free account; see §3). Cloud TTS voice.
@@ -87,40 +113,53 @@ Still logged by hand: weight, meals, free-text journal/activity, people, check-i
 ### 4.1 Workflow (changes the house rhythm for Boop) — *owner*
 Visual iteration happens **directly in Xcode + the iOS Simulator**, not in HTML artifacts. A Boop
 screen gets a throwaway SwiftUI spike the owner reviews in the simulator (gate 2), then the plan
-(gate 3), then build → test → simulator check → install on phone → report. If a page or diagram is
-ever needed on the web, it is a new Boop-specific artifact. The Folyadék/Lágy directions do **not**
-apply to Boop; Lágy continues elsewhere (*owner*). CLAUDE.md must be updated to say so.
+(gate 3), then build → test → simulator check → install on phone → report. The **Lágy** canon governs
+every Boop screen (§0); the Lágy HTML prototype is the reference for structure and content, the
+simulator spike is the approved look. CLAUDE.md must be updated to say so (Boop = Lágy, simulator-first).
 
-### 4.2 The morning screen (approved look, spike variant A)
-Dark, a sky gradient tinted by the day's state. Top to bottom:
+### 4.2 The morning screen — Nap · Mai, Lágy skeleton (approved spike: `LagyMai.swift`)
+Light paper ground; status bar white on the photo, dark once the page scrolls onto paper. Top to bottom:
 
-1. **Date + greeting.**
-2. **The living orb** — Boop's face. A Metal-shader glass sphere: marbled colour flowing inside,
-   a liquid filling to the **day's readiness** on open (ease-out ~1.8 s) with waves that swell and
-   settle, caustics, rising bubbles, rim light, specular glint, soft halo. **Tilt** (CoreMotion
-   gravity) and **drag** slosh the liquid (under-damped spring), **tap** sends a ripple from the tap
-   point with a soft haptic, every **spoken word** surges the liquid. **Palette = state**: good →
-   indigo/violet/sky/mint; okay → teal/mint/sun; tired → amber/peach/rose; the background sky follows.
-   The readiness number counts up inside it.
-3. **Boop speaks** — label with a "talking" dot, speaker toggle, "Mondd újra". Headline in a serif
-   ("Jó napod lesz" / "Átlagos nap jön" / "Kíméld ma magad"), then the brief in serif body text, left
-   aligned, typed **in sync with the Hungarian voice word by word**. Key phrases are bold with a
-   dotted underline and **tappable**: they open a sheet with the data behind them (sleep stages,
-   resting-HR week, the day). One primary action button appears when Boop finishes (e.g. "Edzés
-   áttétele 18:30-ra").
-4. **A nap energiája** — the day 06:00–24:00 as a liquid energy curve with a "most" line.
-   **Anchors** (icons on the curve): meals, training, sleep; **conflicts** lifted above on a stem.
-   **Meetings never become icons**: they form a 15-minute **busy ribbon** under the curve (darker =
-   overlapping). Anchors < ~1.4 h apart merge into a **numbered cluster**. **Press-and-drag**
-   magnifier: time, predicted energy %, what is on at that moment, 15-minute haptic tick. A callout
-   under the curve explains the selected anchor with Boop's note and, for conflicts, an action.
-   Header: "<n> esemény · Google Naptár".
-5. **Mai keret** — three filling capsules: sleep, food (eaten/target kcal), movement (done/planned).
-6. **Hogy érzed magad?** — the check-in entry.
-7. Then the rest of the morning: intention + 3 goals, weight, first meal, patterns (§4.3).
+1. **Photo head** (full bleed, ~440 pt, warm grade + scrims): logo mark + "boop", "+", bell with count,
+   avatar; the Nap tabs as glass pills (Mai · A napom · Beszélgetés · Rutin, a dot on A napom in the
+   morning); at the foot eyebrow "Jó reggelt · hétfő, 06:50", title "Kezdjük a napot", one line, one
+   white pill **Kitöltöm** → check-in. The paper panel rises over the photo (−32 pt, 34 pt radius).
+   Scrolling collapses it into a frosted compact bar ("Mai" + date).
+2. **The verdict** — Outfit 28, the key phrase in deep green ("Jól aludtál: *7 óra 12 perc*. Este szorít a naptár.").
+3. **Boop mondja** — a tiny orb + label, speaker toggle, "Újra". The longer brief in Manrope, typed **in sync
+   with the Hungarian voice word by word**; accent phrases deep green, dotted underline, **tappable** →
+   a Lágy sheet (photo strip, title, chips, a graphic: sleep stages, resting-HR week, the day).
+4. **Készenlét** — the page's **one deep-green card**: the **living orb** (Metal shader glass sphere,
+   sage liquid filling to readiness, tilt/drag slosh, tap ripple + haptic, word surges) with the count-up
+   number "78 · a 100-ból", beside it the state line and three thin bars (sleep, resting pulse, deep sleep;
+   peach when weak).
+5. **A nap energiája** — white card: sage energy curve 06–24 with "most" line; anchors (meal, training,
+   sleep) in Lágy hues, conflicts lifted on a stem; meetings only as the 15-minute **busy ribbon**;
+   clusters when < ~1.4 h apart; press-and-drag magnifier (time, energy %, what is on); a peach callout
+   with Boop's note and the action for conflicts; "<n> esemény · Google Naptár".
+6. **Mai szintek** — sky-tinted card with four level tubes (kalória, fehérje, alvás, mozgás; peach under 50 %).
+7. **Utána jön** — photo rows (44 pt round photo, title, chips, chevron): Alvás (beolvasva), Mai szándék,
+   Mérlegelés, Első étkezés; a done step gets a check badge and its summary chip. The hero's check-in is
+   not repeated in the list (it appears there only once done).
+8. **Észrevétel** — one observation card (warm status chip, sentence with a deep-green phrase, evidence
+   dots, Igaz / Nem rólam szól / Majd meglátjuk); "Mind" → Boop észrevette.
+9. **Boop card** — white→sage gradient, "BOOP", one concrete sentence, one soft action; the orb is Boop's figure.
+10. Floating bottom bar: Nap · Edzés · Fuel · Boop · Én with Lágy glyphs.
 
-Staggered entrance choreography; full **reduced-motion** branch (no typing, no slosh, instant fill,
-voice off by default). Icons: SF Symbols in v1 (*call*, see §8 Q3).
+The five morning steps are Lágy inner pages (`LagyFlows.swift`): photo head with back + crumb, paper body,
+a Boop card at the end that speaks. **Check-in**: one question at a time, Lágy level tube (draggable) +
+big number + 2/4/6/8/10 scale, Vissza / Kihagyom / Tovább, "Most csak ennyi"; summary rows with bars,
+Gondolatok, Boop, Mentés. **Mai szándék**: the creed as the deep card, three numbered focus cards, Boop's
+feedback adds fit chips. **Mérlegelés**: ruler dial; then deep card (today + trend), the weight road chart
+with the 79 kg goal line, a three-column card. **Első étkezés**: photo tile + text pill; photo analysis
+(scan line twice, label pill Felismerem… → Elemzem… → Kész · 86% biztos, corner marks, no circle);
+ingredient rows with photos and ± grams, stacked macro bar; verdict with score chip, ring + macro bars in
+the deep card, improvement chips, week tubes. **Boop észrevette**: observation cards with evidence dots and
+"Figyeljem tovább?".
+
+Entrance: soft rise on first load; **reduced motion** lands on end states (no typing, no slosh).
+Icons: the **Lágy glyph family** (generated from the prototype's `G()` table as vector assets), no emoji,
+no SF Symbols except system chevrons/arrows.
 
 ### 4.3 The six moments — what each needs
 
@@ -252,7 +291,7 @@ user. Event titles go to the LLM — acceptable for the owner's own data.
   when the night's sleep arrives, on a meaningful calendar change — rate-limited); existing model
   tiers, no new budget.
 - Wearable workouts are display + AI context only in v1; they do not raise the calorie target.
-- Dark-only UI in v1; SF Symbols as icons in v1 (a custom Boop icon family can come later).
+- Light Lágy UI in v1 (Lágy's dark theme is a later slice); Lágy glyph family as vector assets; Outfit + Manrope bundled (OFL).
 - Hungarian only in v1. Widgets / lock screen / Live Activities are the first follow-up slice.
 - Calendar via EventKit (Google account in iOS Settings), not Google OAuth.
 - The Xcode project lives in the monorepo under `ios/`; bundle id `io.mrkuhne.boop`.
