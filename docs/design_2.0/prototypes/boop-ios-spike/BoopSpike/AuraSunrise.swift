@@ -51,6 +51,7 @@ struct AuraSunrise: View {
     @State private var sel = min(4, max(0, UserDefaults.standard.integer(forKey: "auraMetric")))
     @State private var motion = OrbMotion()
     @State private var orbKey = 0
+    @State private var open: String? = UserDefaults.standard.string(forKey: "auraOpen").flatMap { $0.isEmpty ? nil : $0 }
     @State private var tab = min(3, max(0, UserDefaults.standard.integer(forKey: "auraTab")))
     private let base = Color(hex: 0x0D1218)
     private var m: SunMetric { SunMetric.all[sel] }
@@ -83,7 +84,18 @@ struct AuraSunrise: View {
         }
         .preferredColorScheme(.dark)
         .onDisappear { motion.stop() }
+        .fullScreenCover(item: Binding(get: { open.map(StepID.init) }, set: { open = $0?.id })) { st in
+            let close = { open = nil }
+            switch st.id {
+            case "checkin": AuraCheckin(onClose: close)
+            case "intention": AuraIntention(onClose: close)
+            case "weight": AuraWeight(onClose: close)
+            default: AuraMeal(onClose: close)
+            }
+        }
     }
+
+    struct StepID: Identifiable { let id: String }
 
     private func pick(_ i: Int) {
         guard i != sel else { return }
@@ -185,15 +197,15 @@ struct AuraSunrise: View {
     private var nextSteps: some View {
         VStack(alignment: .leading, spacing: 0) {
             label("UTÁNA JÖN").padding(.bottom, 10)
-            step("pen-sun", "Reggeli check-in", "4 kérdés · 1 perc", primary: true)
+            step("pen-sun", "Reggeli check-in", "6 kérdés · fél perc", primary: true, id: "checkin")
             divider
             step("moon-cream", "Alvás", "Beolvasva · 7ó 12p", done: true)
             divider
-            step("spark-cream", "Mai szándék", "Mire figyelsz ma?")
+            step("spark-cream", "Mai szándék", "Mire figyelsz ma?", id: "intention")
             divider
-            step("scale-ink", "Mérlegelés", "Utoljára: 82,4 kg")
+            step("scale-ink", "Mérlegelés", "Utoljára: 82,4 kg", id: "weight")
             divider
-            step("camera-ink", "Első étkezés", "Fotó vagy pár szó")
+            step("camera-ink", "Első étkezés", "Fotó vagy pár szó", id: "meal")
         }
         .padding(20)
         .background(card)
@@ -201,7 +213,7 @@ struct AuraSunrise: View {
 
     private var divider: some View { Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5).padding(.leading, 56) }
 
-    private func step(_ g: String, _ t: String, _ sub: String, primary: Bool = false, done: Bool = false) -> some View {
+    private func step(_ g: String, _ t: String, _ sub: String, primary: Bool = false, done: Bool = false, id: String? = nil) -> some View {
         HStack(spacing: 14) {
             ZStack {
                 Circle().fill(.white.opacity(done ? 0.18 : 0.08))
@@ -221,6 +233,8 @@ struct AuraSunrise: View {
             }
         }
         .padding(.vertical, 10)
+        .contentShape(Rectangle())
+        .onTapGesture { if let id { open = id } }
     }
 
     private var observation: some View {
