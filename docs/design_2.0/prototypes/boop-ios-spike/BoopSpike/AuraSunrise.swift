@@ -47,6 +47,7 @@ struct SunMetric {
 }
 
 struct AuraSunrise: View {
+    var photoMode = 0          // 0 vivid mountain, 1 own photo per metric, 2 painted landscape
     @State private var sel = min(4, max(0, UserDefaults.standard.integer(forKey: "auraMetric")))
     @State private var motion = OrbMotion()
     @State private var orbKey = 0
@@ -96,14 +97,10 @@ struct AuraSunrise: View {
     private func hero(height: CGFloat) -> some View {
         ZStack(alignment: .top) {
             Color.clear.frame(height: height)
-                .overlay {
-                    photo("aura-hegy.jpg").resizable().scaledToFill()
-                        .overlay(Rectangle().fill(m.glow).opacity(0.16).blendMode(.color))    // a whisper of the metric's hue
-                        .overlay(LinearGradient(colors: [.black.opacity(0.3), .clear], startPoint: .top, endPoint: .init(x: 0.5, y: 0.3)))
-                }
+                .overlay { heroBackdrop }
                 .clipped()
-                .overlay(LinearGradient(stops: [.init(color: .clear, location: 0.6),
-                                                .init(color: base.opacity(0.45), location: 0.84),
+                .overlay(LinearGradient(stops: [.init(color: .clear, location: 0.68),
+                                                .init(color: base.opacity(0.4), location: 0.86),
                                                 .init(color: base, location: 1)],
                                         startPoint: .top, endPoint: .bottom))
 
@@ -148,30 +145,57 @@ struct AuraSunrise: View {
         }
     }
 
+    /// Three ways to make the photo carry the page (owner: "vivid like Oura").
+    @ViewBuilder private var heroBackdrop: some View {
+        switch photoMode {
+        case 1:
+            let names = ["aura-hegy.jpg", "aura-alkony.jpg", "aura-futas.jpg", "aura-zold.jpg", "aura-erdo.jpg"]
+            ZStack {
+                ForEach(names.indices, id: \.self) { i in
+                    photo(names[i]).resizable().scaledToFill()
+                        .saturation(1.25).contrast(1.08)
+                        .opacity(i == sel ? 1 : 0)
+                }
+            }
+            .overlay(LinearGradient(colors: [.black.opacity(0.25), .clear], startPoint: .top, endPoint: .init(x: 0.5, y: 0.25)))
+            .overlay(LinearGradient(colors: [.clear, .black.opacity(0.35)], startPoint: .init(x: 0.5, y: 0.35), endPoint: .bottom))
+        case 2:
+            PaintedLandscape(sky: PaintedLandscape.skies[sel])
+        default:
+            photo("aura-hegy.jpg").resizable().scaledToFill()
+                .saturation(1.9).contrast(1.18).brightness(0.03)
+                .overlay {
+                    Rectangle()
+                        .fill(LinearGradient(colors: [Color(hex: 0x1E5BD8).opacity(0.55), Color(hex: 0x3D8BFF).opacity(0.15), .clear],
+                                             startPoint: .top, endPoint: .center))
+                        .blendMode(.overlay)
+                }
+                .overlay(Rectangle().fill(m.glow).opacity(0.12).blendMode(.color))
+        }
+    }
+
     /// Mini orbs instead of outlined rings: each metric is a small liquid sphere, filled to its level.
     private var metricRow: some View {
         ScrollView(.horizontal) {
-            HStack(spacing: 12) {
+            HStack(spacing: 18) {
                 ForEach(SunMetric.all.indices, id: \.self) { i in
                     let x = SunMetric.all[i]
                     let on = i == sel
                     VStack(spacing: 7) {
                         ZStack {
                             if on {
-                                LivingOrb(mood: .good, size: 58, motion: motion, palette: x.orb, glow: false,
+                                LivingOrb(mood: .good, size: 46, motion: motion, palette: x.orb, glow: false,
                                           level: Double(x.value) / 100)
                                     .id(orbKey)
                             } else {
-                                StillOrb(colors: x.orb, size: 58, level: Double(x.value) / 100)
+                                StillOrb(colors: x.orb, size: 46, level: Double(x.value) / 100)
                                     .saturation(0.25)
                                     .opacity(0.75)
                             }
-                            Text("\(x.value)").font(.custom("Outfit", size: 21).weight(.medium)).foregroundStyle(.white)
+                            Text("\(x.value)").font(.custom("Outfit", size: 17).weight(.medium)).foregroundStyle(.white)
                                 .shadow(color: .black.opacity(0.45), radius: 4)
                         }
                         .allowsHitTesting(false)                    // the orb's own gestures swallowed the tap
-                        .padding(5)
-                        .overlay(Circle().stroke(.white.opacity(on ? 0 : 0.18), lineWidth: 1))
                         Text(x.name).font(.system(size: 13, weight: on ? .semibold : .regular))
                             .foregroundStyle(.white.opacity(on ? 1 : 0.6))
                     }
@@ -190,7 +214,7 @@ struct AuraSunrise: View {
     private var sun: some View {
         GeometryReader { g in
             let H = g.size.height
-            let size: CGFloat = 190
+            let size: CGFloat = 156
             let t = min(1, max(0, (CGFloat(m.value) - 40) / 60))
             let cy = H - 8 - t * (H - 8 - size / 2 - 6)          // t = 0: centre on the horizon
             ZStack(alignment: .topLeading) {
@@ -199,7 +223,7 @@ struct AuraSunrise: View {
                     LivingOrb(mood: .good, size: size, motion: motion, palette: m.orb, glow: true,
                               level: Double(m.value) / 100)
                         .id(orbKey)
-                    Text("\(m.value)").font(.custom("Outfit", size: 70).weight(.light)).foregroundStyle(.white)
+                    Text("\(m.value)").font(.custom("Outfit", size: 58).weight(.light)).foregroundStyle(.white)
                         .monospacedDigit()
                         .contentTransition(.numericText(value: Double(m.value)))
                         .shadow(color: .black.opacity(0.35), radius: 10)
@@ -399,5 +423,49 @@ struct StillOrb: View {
                 .float(Float(level)), .float(0), .float(0), .float(9), .float(0)))
             .frame(width: size, height: size)
             .accessibilityHidden(true)
+    }
+}
+
+/// Our own painted landscape: a vivid sky in the metric's colours over layered, hazy ridges.
+struct PaintedLandscape: View {
+    var sky: [Color]
+    static let skies: [[Color]] = [
+        [Color(hex: 0x24308A), Color(hex: 0x6A6FE0), Color(hex: 0xF3B7CF)],
+        [Color(hex: 0x0A2152), Color(hex: 0x2C6CC4), Color(hex: 0x9FD6F5)],
+        [Color(hex: 0x2F57B0), Color(hex: 0xF09A55), Color(hex: 0xFFD98C)],
+        [Color(hex: 0x15567A), Color(hex: 0x4FB9A2), Color(hex: 0xE9F3B4)],
+        [Color(hex: 0x45277A), Color(hex: 0xD86E9C), Color(hex: 0xFFC6A6)],
+    ]
+    var body: some View {
+        Canvas { ctx, s in
+            let w = s.width, h = s.height
+            ctx.fill(Path(CGRect(origin: .zero, size: s)),
+                     with: .linearGradient(Gradient(stops: [.init(color: sky[0], location: 0), .init(color: sky[1], location: 0.45), .init(color: sky[2], location: 0.66)]),
+                                           startPoint: .zero, endPoint: CGPoint(x: 0, y: h)))
+            var glow = ctx
+            glow.addFilter(.blur(radius: 60))
+            glow.fill(Path(ellipseIn: CGRect(x: w * 0.1, y: h * 0.42, width: w * 0.8, height: h * 0.22)), with: .color(sky[2].opacity(0.9)))
+            let layers: [(Double, Double, Double, Double, Double)] = [   // base y, amplitude, freq, phase, darkness
+                (0.60, 0.05, 2.1, 0.4, 0.18), (0.66, 0.06, 3.3, 1.9, 0.34), (0.73, 0.05, 2.6, 3.1, 0.52), (0.82, 0.04, 4.2, 0.7, 0.72)]
+            for (k, l) in layers.enumerated() {
+                var p = Path()
+                p.move(to: CGPoint(x: 0, y: h))
+                for xi in stride(from: 0.0, through: w, by: 3) {
+                    let t = xi / w * .pi * 2
+                    let y = h * (l.0 - l.1 * (0.65 * sin(t * l.2 + l.3) + 0.3 * sin(t * l.2 * 2.1 + l.3 * 1.7) + 0.05 * sin(t * l.2 * 4.7)))
+                    p.addLine(to: CGPoint(x: xi, y: y))
+                }
+                p.addLine(to: CGPoint(x: w, y: h)); p.closeSubpath()
+                // far ridges melt into the sky, near ones are deep and dark (aerial perspective)
+                var c = ctx
+                c.addFilter(.blur(radius: CGFloat(3 - k) * 0.8))
+                c.fill(p, with: .color(sky[1]))
+                c.fill(p, with: .color(Color.black.opacity(l.4 * 0.95)))
+                c.fill(p, with: .linearGradient(Gradient(colors: [sky[2].opacity(0.45 * (1 - l.4)), .clear]),
+                                                startPoint: CGPoint(x: 0, y: h * (l.0 - l.1)), endPoint: CGPoint(x: 0, y: h * (l.0 + 0.08))))
+                var hz = ctx; hz.addFilter(.blur(radius: 22))
+                hz.fill(Path(CGRect(x: 0, y: h * (l.0 + 0.02), width: w, height: h * 0.03)), with: .color(sky[2].opacity(0.18)))
+            }
+        }
     }
 }

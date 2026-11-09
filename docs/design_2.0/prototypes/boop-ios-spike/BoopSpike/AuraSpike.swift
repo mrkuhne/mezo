@@ -100,28 +100,41 @@ struct AuraTabBar: View {
 
 struct AuraRoot: View {
     @State private var variant = UserDefaults.standard.integer(forKey: "auraVariant")
+    @State private var photoMode = UserDefaults.standard.integer(forKey: "auraPhoto")
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
                 switch variant {
                 case 0: AuraNight()
                 case 1: AuraDay()
-                case 3: AuraSunrise()
+                case 3: AuraSunrise(photoMode: photoMode).id(photoMode)
                 default: AuraMix()
                 }
             }
             .transition(.opacity)
 
             VStack(spacing: 10) {
-                Picker("Változat", selection: $variant.animation(.easeInOut(duration: 0.35))) {
-                    Text("A · Éj").tag(0)
-                    Text("A2 · Napkelte").tag(3)
-                    Text("C · Aura").tag(2)
+                if variant == 3 {
+                    Picker("Kép", selection: $photoMode.animation(.easeInOut(duration: 0.35))) {
+                        Text("1 · Élénk").tag(0)
+                        Text("2 · Saját kép").tag(1)
+                        Text("3 · Festett").tag(2)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 300)
+                    .padding(4)
+                    .glassEffect(.regular, in: .capsule)
+                } else {
+                    Picker("Változat", selection: $variant.animation(.easeInOut(duration: 0.35))) {
+                        Text("A · Éj").tag(0)
+                        Text("A2 · Napkelte").tag(3)
+                        Text("C · Aura").tag(2)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 300)
+                    .padding(4)
+                    .glassEffect(.regular, in: .capsule)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 300)
-                .padding(4)
-                .glassEffect(.regular, in: .capsule)
                 AuraTabBar(dark: variant != 1, accent: variant == 0 ? Color(hex: 0x4BA8E6) : variant == 3 ? .white : Color(hex: 0x8B6CF0))
             }
             .padding(.bottom, 6)
