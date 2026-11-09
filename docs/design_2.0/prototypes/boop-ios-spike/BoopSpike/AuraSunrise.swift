@@ -87,8 +87,7 @@ struct AuraSunrise: View {
     private var pageBackground: some View {
         ZStack {
             base
-            LinearGradient(colors: [m.top.opacity(0.9), base], startPoint: .top, endPoint: .center)
-            Circle().fill(m.glow.opacity(0.22)).frame(width: 600).blur(radius: 160).offset(x: -140, y: 520)
+            LinearGradient(colors: [m.top.opacity(0.35), base], startPoint: .top, endPoint: .center)
         }
     }
 
@@ -99,11 +98,9 @@ struct AuraSunrise: View {
             Color.clear.frame(height: height)
                 .overlay {
                     photo("aura-hegy.jpg").resizable().scaledToFill()
-                        .grayscale(1)
-                        .contrast(1.2)
-                        .brightness(-0.12)
-                        .overlay(Rectangle().fill(m.glow).opacity(0.55).blendMode(.color))
-                        .overlay(LinearGradient(colors: [m.top.opacity(0.7), m.top.opacity(0.15), .clear], startPoint: .top, endPoint: .center))
+                        .brightness(-0.04)
+                        .overlay(Rectangle().fill(m.glow).opacity(0.4).blendMode(.color))     // only the photo carries the hue
+                        .overlay(LinearGradient(colors: [.black.opacity(0.35), .clear], startPoint: .top, endPoint: .center))
                         .blur(radius: 1.2)
                 }
                 .clipped()
@@ -144,7 +141,7 @@ struct AuraSunrise: View {
                 }
                 .foregroundStyle(.white)
                 .padding(.leading, 14).padding(.trailing, 24).padding(.vertical, 12)
-                .background(Capsule().fill(m.glow.opacity(0.22)))
+                .background(Capsule().fill(.black.opacity(0.25)))
                 .glassEffect(.clear, in: .capsule)
                 .padding(.top, 8)
                 Spacer(minLength: 0)
@@ -160,23 +157,29 @@ struct AuraSunrise: View {
                 ForEach(SunMetric.all.indices, id: \.self) { i in
                     let x = SunMetric.all[i]
                     let on = i == sel
-                    Button { pick(i) } label: {
-                        VStack(spacing: 7) {
-                            ZStack {
+                    VStack(spacing: 7) {
+                        ZStack {
+                            if on {
                                 LivingOrb(mood: .good, size: 58, motion: motion, palette: x.orb, glow: false,
                                           level: Double(x.value) / 100)
-                                    .opacity(on ? 1 : 0.8)
-                                Text("\(x.value)").font(.custom("Outfit", size: 21).weight(.medium)).foregroundStyle(.white)
-                                    .shadow(color: .black.opacity(0.45), radius: 4)
+                                    .id(orbKey)
+                            } else {
+                                StillOrb(colors: x.orb, size: 58, level: Double(x.value) / 100)
+                                    .saturation(0.25)
+                                    .opacity(0.75)
                             }
-                            .padding(5)
-                            .overlay(Circle().stroke(.white.opacity(on ? 0.9 : 0.0), lineWidth: 1.5))
-                            .shadow(color: on ? x.glow.opacity(0.8) : .clear, radius: 12)
-                            Text(x.name).font(.system(size: 13, weight: on ? .semibold : .regular))
-                                .foregroundStyle(.white.opacity(on ? 1 : 0.7))
+                            Text("\(x.value)").font(.custom("Outfit", size: 21).weight(.medium)).foregroundStyle(.white)
+                                .shadow(color: .black.opacity(0.45), radius: 4)
                         }
+                        .allowsHitTesting(false)                    // the orb's own gestures swallowed the tap
+                        .padding(5)
+                        .overlay(Circle().stroke(.white.opacity(on ? 0.85 : 0.18), lineWidth: on ? 1.5 : 1))
+                        Text(x.name).font(.system(size: 13, weight: on ? .semibold : .regular))
+                            .foregroundStyle(.white.opacity(on ? 1 : 0.6))
                     }
-                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .onTapGesture { pick(i) }
+                    .accessibilityAddTraits(.isButton)
                 }
             }
             .padding(.horizontal, 20).padding(.vertical, 8)
@@ -194,7 +197,7 @@ struct AuraSunrise: View {
             let cy = H - 8 - t * (H - 8 - size / 2 - 6)          // t = 0: centre on the horizon
             ZStack(alignment: .topLeading) {
                 ZStack {
-                    Circle().fill(m.glow.opacity(0.5)).frame(width: size * 2).blur(radius: 70)
+                    Circle().fill(m.glow.opacity(0.35)).frame(width: size * 2).blur(radius: 70)
                     LivingOrb(mood: .good, size: size, motion: motion, palette: m.orb, glow: true,
                               level: Double(m.value) / 100)
                         .id(orbKey)
@@ -251,7 +254,7 @@ struct AuraSunrise: View {
             case 2:
                 label("LÉPÉSEK ÓRÁNKÉNT")
                 Text("1 240 / 9 000").font(.custom("Outfit", size: 34).weight(.light)).foregroundStyle(.white)
-                HourBars(color: m.glow).frame(height: 110).padding(.top, 14)
+                HourBars(color: .white).frame(height: 110).padding(.top, 14)
                 axis(["6", "9", "12", "15", "18", "21", "24"])
             case 3:
                 label("MAI TÁPANYAGOK")
@@ -265,13 +268,13 @@ struct AuraSunrise: View {
             case 4:
                 label("PULZUS ÉJSZAKA")
                 Text("57 bpm").font(.custom("Outfit", size: 34).weight(.light)).foregroundStyle(.white)
-                GlowLine(points: [0.7, 0.62, 0.5, 0.42, 0.36, 0.3, 0.28, 0.3, 0.27, 0.32, 0.4, 0.5], color: m.glow, nowAt: nil)
+                GlowLine(points: [0.7, 0.62, 0.5, 0.42, 0.36, 0.3, 0.28, 0.3, 0.27, 0.32, 0.4, 0.5], color: .white, nowAt: nil)
                     .frame(height: 110).padding(.top, 14)
                 axis(["22:48", "2:00", "4:00", "6:53"])
             default:
                 label("A NAP ENERGIÁJA")
                 Text("Délelőtt csúcs, délután hullámvölgy").font(.system(size: 17, weight: .medium)).foregroundStyle(.white).padding(.top, 2)
-                GlowLine(points: [0.35, 0.62, 0.82, 0.78, 0.6, 0.38, 0.5, 0.66, 0.55, 0.36, 0.2], color: m.glow, nowAt: 0.18)
+                GlowLine(points: [0.35, 0.62, 0.82, 0.78, 0.6, 0.38, 0.5, 0.66, 0.55, 0.36, 0.2], color: .white, nowAt: 0.18)
                     .frame(height: 120).padding(.top, 14)
                 axis(["6", "9", "12", "15", "18", "21", "24"])
             }
@@ -286,8 +289,7 @@ struct AuraSunrise: View {
     private var nextCard: some View {
         HStack(spacing: 14) {
             AuraGlyph("dumbbell-ink", .white, size: 24).frame(width: 56, height: 56)
-                .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(LinearGradient(colors: [m.glow, m.top], startPoint: .topLeading, endPoint: .bottomTrailing)))
+                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.12)))
             VStack(alignment: .leading, spacing: 3) {
                 Text("Felsőtest · 18:00").font(.system(size: 17, weight: .medium)).foregroundStyle(.white)
                 Text("Boop szerint 18:30 jobb lenne").font(.system(size: 14)).foregroundStyle(.white.opacity(0.6))
@@ -319,9 +321,8 @@ struct AuraSunrise: View {
             GeometryReader { g in
                 ZStack(alignment: .leading) {
                     Capsule().fill(.white.opacity(0.08))
-                    Capsule().fill(LinearGradient(colors: [m.glow.opacity(0.6), m.glow], startPoint: .leading, endPoint: .trailing))
+                    Capsule().fill(.white.opacity(0.9))
                         .frame(width: g.size.width * v / goal)
-                        .shadow(color: m.glow.opacity(0.7), radius: 6)
                 }
             }
             .frame(height: 8)
@@ -330,10 +331,7 @@ struct AuraSunrise: View {
 
     private var card: some View {
         RoundedRectangle(cornerRadius: 26, style: .continuous)
-            .fill(.white.opacity(0.05))
-            .overlay(alignment: .topTrailing) {
-                Circle().fill(m.glow.opacity(0.4)).frame(width: 200).blur(radius: 70).offset(x: 70, y: -90)
-            }
+            .fill(.white.opacity(0.07))
             .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .stroke(LinearGradient(colors: [.white.opacity(0.16), .white.opacity(0.03)], startPoint: .top, endPoint: .bottom), lineWidth: 1))
@@ -390,5 +388,23 @@ struct HourBars: View {
                 }
             }
         }
+    }
+}
+
+/// A still orb: the same shader frozen in one frame, for the inactive metrics.
+struct StillOrb: View {
+    var colors: [Color]
+    var size: CGFloat
+    var level: Double
+    var body: some View {
+        let c = colors + Array(repeating: colors.last ?? .white, count: max(0, 4 - colors.count))
+        Rectangle()
+            .frame(width: size, height: size)
+            .colorEffect(ShaderLibrary.orb(
+                .float2(size, size), .float(7.3),
+                .color(c[0]), .color(c[1]), .color(c[2]), .color(c[3]),
+                .float(Float(level)), .float(0), .float(0), .float(9), .float(0)))
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
     }
 }

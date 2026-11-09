@@ -122,7 +122,7 @@ struct AuraRoot: View {
                 .frame(width: 300)
                 .padding(4)
                 .glassEffect(.regular, in: .capsule)
-                AuraTabBar(dark: variant != 1, accent: variant == 0 ? Color(hex: 0x4BA8E6) : Color(hex: 0x8B6CF0))
+                AuraTabBar(dark: variant != 1, accent: variant == 0 ? Color(hex: 0x4BA8E6) : variant == 3 ? .white : Color(hex: 0x8B6CF0))
             }
             .padding(.bottom, 6)
         }
