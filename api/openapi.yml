@@ -212,6 +212,13 @@ tags:
       switch is off, and the frontend must fail silent on any error. The
       OWNER-only READ side lives on the AdminInsights tag (`GET
       /api/admin/usage/screens`).
+  - name: Wearable
+    description: >
+      Boop (native iOS app) ingestion of Apple Health data and the
+      device-calendar snapshot (spec 2026-11-09-boop-ios-v1-design §4.4). Every
+      write is idempotent: sleep nights and workouts upsert by the client's
+      `externalId`, daily metrics by date, calendar days replace that day's
+      rows. `created_by` always comes from the JWT.
 paths:
   /api/auth/login:
     post:
@@ -13467,6 +13474,134 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/wearable/sleep-nights:
+    post:
+      tags:
+        - Wearable
+      operationId: ingestSleepNights
+      summary: Upsert Apple Health sleep nights into sleep_log (source apple_health)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SleepNightBatchRequest'
+      responses:
+        '200':
+          description: Upserted; counts of new and updated rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResult'
+        '400':
+          description: >-
+            Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds
+            its `mezo.wearable.*` cap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/wearable/daily-metrics:
+    post:
+      tags:
+        - Wearable
+      operationId: ingestDailyMetrics
+      summary: 'Upsert per-day Apple Health totals (steps, heart rate, active energy)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DailyMetricBatchRequest'
+      responses:
+        '200':
+          description: Upserted; counts of new and updated rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResult'
+        '400':
+          description: >-
+            Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds
+            its `mezo.wearable.*` cap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/wearable/workouts:
+    post:
+      tags:
+        - Wearable
+      operationId: ingestWorkouts
+      summary: Upsert Apple Health workouts (display + AI context only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutBatchRequest'
+      responses:
+        '200':
+          description: Upserted; counts of new and updated rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResult'
+        '400':
+          description: >-
+            Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds
+            its `mezo.wearable.*` cap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/wearable/calendar-days:
+    put:
+      tags:
+        - Wearable
+      operationId: replaceCalendarDays
+      summary: Replace the calendar events of each given day (device calendar snapshot)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarDaysRequest'
+      responses:
+        '204':
+          description: Replaced
+        '400':
+          description: >-
+            Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds
+            its `mezo.wearable.*` cap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -13799,7 +13934,7 @@ components:
           description: Tracker-reported quality 0–100 (Sleep Cycle's own metric)
         source:
           type: string
-          pattern: ^(manual|screenshot)$
+          pattern: ^(manual|screenshot|apple_health)$
           description: Row provenance; omitted → 'manual'
         hypnogram:
           $ref: '#/components/schemas/Hypnogram'
@@ -13861,7 +13996,7 @@ components:
           description: Tracker-reported quality 0–100 (Sleep Cycle's own metric)
         source:
           type: string
-          pattern: ^(manual|screenshot)$
+          pattern: ^(manual|screenshot|apple_health)$
           description: Row provenance; omitted → 'manual'
         hypnogram:
           $ref: '#/components/schemas/Hypnogram'
@@ -31588,6 +31723,195 @@ components:
         outcome:
           type: string
           pattern: ^(accepted|edited|discarded)$
+    IngestResult:
+      type: object
+      required:
+        - inserted
+        - updated
+      properties:
+        inserted:
+          type: integer
+          minimum: 0
+        updated:
+          type: integer
+          minimum: 0
+    SleepNightIn:
+      type: object
+      required:
+        - externalId
+        - date
+        - bedtime
+        - wakeup
+        - durationH
+      properties:
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable per night per user (client key)
+        date:
+          type: string
+          format: date
+          description: The wake day (local)
+        bedtime:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        wakeup:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        durationH:
+          type: number
+          minimum: 0
+          maximum: 24
+        inBedMin:
+          type: integer
+          minimum: 0
+        awakeMin:
+          type: integer
+          minimum: 0
+        lightMin:
+          type: integer
+          minimum: 0
+        remMin:
+          type: integer
+          minimum: 0
+        deepMin:
+          type: integer
+          minimum: 0
+        hypnogram:
+          $ref: '#/components/schemas/Hypnogram'
+    SleepNightBatchRequest:
+      type: object
+      required:
+        - nights
+      properties:
+        nights:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/SleepNightIn'
+    DailyMetricIn:
+      type: object
+      required:
+        - date
+      properties:
+        date:
+          type: string
+          format: date
+        steps:
+          type: integer
+          minimum: 0
+        restingHr:
+          type: integer
+          minimum: 0
+        avgHr:
+          type: integer
+          minimum: 0
+        minHr:
+          type: integer
+          minimum: 0
+        maxHr:
+          type: integer
+          minimum: 0
+        activeKcal:
+          type: integer
+          minimum: 0
+    DailyMetricBatchRequest:
+      type: object
+      required:
+        - days
+      properties:
+        days:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/DailyMetricIn'
+    WorkoutIn:
+      type: object
+      required:
+        - externalId
+        - activityType
+        - startAt
+        - endAt
+      properties:
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        activityType:
+          type: string
+          pattern: '^[a-z_]{1,40}$'
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        kcal:
+          type: integer
+          minimum: 0
+        avgHr:
+          type: integer
+          minimum: 0
+        sourceName:
+          type: string
+          maxLength: 80
+    WorkoutBatchRequest:
+      type: object
+      required:
+        - workouts
+      properties:
+        workouts:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/WorkoutIn'
+    CalendarEventIn:
+      type: object
+      required:
+        - title
+        - startAt
+        - endAt
+        - allDay
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        allDay:
+          type: boolean
+        calendarName:
+          type: string
+          maxLength: 80
+    CalendarDayIn:
+      type: object
+      required:
+        - date
+        - events
+      properties:
+        date:
+          type: string
+          format: date
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalendarEventIn'
+    CalendarDaysRequest:
+      type: object
+      required:
+        - days
+      properties:
+        days:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CalendarDayIn'
   responses:
     AdminMemoryUnauthorized:
       description: Missing/invalid token

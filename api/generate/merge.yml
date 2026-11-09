@@ -50,4 +50,5 @@ inputs:
   - inputFile: ../feature/admin-memory/admin-memory.yml
   - inputFile: ../feature/telemetry/telemetry.yml
   - inputFile: ../feature/ai-drafts/ai-drafts.yml
+  - inputFile: ../feature/wearable/wearable.yml
 output: ../openapi.yml

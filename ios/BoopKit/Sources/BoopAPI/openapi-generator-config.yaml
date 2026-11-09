@@ -13,3 +13,7 @@ filter:
     - logWeight
     - listWeightLogs
     - getWeightTrend
+    - ingestSleepNights
+    - ingestDailyMetrics
+    - ingestWorkouts
+    - replaceCalendarDays
