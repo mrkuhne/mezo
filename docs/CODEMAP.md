@@ -53,6 +53,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [needs](features/needs.md), [proactive](features/proactive.md), [ritual](features/ritual.md), [today](features/today.md) |
 | [train](#train) | ✓ | 4 | ✓ | ✓ | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [tutorial](#tutorial) | ✓ | 1 | ✓ | ✓ | [tutorial](features/tutorial.md) |
+| [wearable](#wearable) | ✓ | 1 | · | · | · |
 
 ## Features
 
@@ -1698,6 +1699,25 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/tutorial` — 2 IT + 0 unit
   - **ITs:** `TutorialProgressApiIT`, `TutorialProgressSwitchOffApiIT`
 
+### wearable
+
+*BE + API* · read next: **none — no HOW doc exists for this feature yet**
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
+  - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,
+    `WearableWorkoutEntity`→`wearable_workout`
+  - **repositories:** `CalendarEventRepository`, `DailyMetricRepository`, `WearableWorkoutRepository`
+  - **services:** `CalendarSnapshotService`, `DailyMetricService`, `WearableBatches`, `WearableSleepService`,
+    `WearableWorkoutService`
+  - **controllers→contract:** `WearableController`→`WearableApi`
+  - **config:** `WearableProperties`
+- **Contract** `api/feature/wearable/wearable.yml` — 4 operations
+  - **endpoints:** POST /api/wearable/sleep-nights · POST /api/wearable/daily-metrics · POST /api/wearable/workouts ·
+    PUT /api/wearable/calendar-days
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/wearable` — 3 IT + 0 unit
+  - **ITs:** `WearableContractIT`, `WearableServiceIT`, `WearableSleepServiceIT`
+  - **populators:** `DatabasePopulator`
+
 ## Cross-cutting
 
 ### techcore — `backend/src/main/java/io/mrkuhne/mezo/techcore`
@@ -1750,23 +1770,23 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **Backend base classes:** `AbstractIntegrationTest.java` (service-level) · `ApiIntegrationTest.java` (HTTP-level, verb helpers + `ownerAuthHeaders()`)
 - **populators (`support/populator/`):** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`,
-  `AppNotificationPopulator`, `BiometricProfilePopulator`, `ChallengePopulator`, `CharacterClaimRevisionPopulator`,
-  `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
-  `CompanionPreferencesPopulator`, `CreatedAtBackdater`, `DailySummaryPopulator`, `DayReviewPopulator`,
-  `DiagnosisPopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`,
-  `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`, `GoalSuggestionPopulator`, `GraphPopulator`,
-  `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
-  `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MealRhythmFixtureIT`,
-  `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
-  `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `MesoTemplatePopulator`, `NeedsPopulator`,
-  `NotificationPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
-  `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`,
-  `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`, `QuestPopulator`, `ReadinessChoicePopulator`,
-  `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
-  `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`,
-  `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`,
-  `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`,
-  `WorkoutDayAdjustmentPopulator`
+  `AppNotificationPopulator`, `BiometricProfilePopulator`, `CalendarEventPopulator`, `ChallengePopulator`,
+  `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
+  `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `CreatedAtBackdater`, `DailyMetricPopulator`,
+  `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FeedbackPopulator`,
+  `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
+  `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`,
+  `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
+  `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
+  `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
+  `MesoTemplatePopulator`, `NeedsPopulator`, `NotificationPopulator`, `PantryCatalogPopulator`,
+  `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
+  `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
+  `ProtocolPopulatorIT`, `QuestPopulator`, `ReadinessChoicePopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`,
+  `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
+  `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`,
+  `UserPopulator`, `WaterLogPopulator`, `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`,
+  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
 - **`ResetDatabase` TRUNCATE list** — 1 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `character_council_quota`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
@@ -1783,5 +1803,5 @@ Sources that could not be bound to a feature block by convention — bind them b
 
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
 - **Feature doc** [`docs/features/boop-ios.md`](features/boop-ios.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`
+- **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`, `wearable`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
