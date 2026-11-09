@@ -154,6 +154,7 @@ invented content of the real record types; the owner's real data never goes into
 - Class names in `b/nap.js` start with `np`; check new names against the shell and Edzés CSS (a bare `.fb`, `.big`, `.rw`, `.edit`, `.n` already exist and silently restyle).
 - Package A (2026-11-07): a tab's hero action never reappears in the list below it; every destination appears once per page. Header carries "+" and the bell; unread counts on tabs. Habits ticked from data are locked ("adatból"). Chat-like cards: reasoning opens in place, feedback is a thumbs reaction.
 - Shell-owned data attributes (`data-src`, `data-step`, `data-del`, `data-when`, `data-save`, `data-ai`, `data-addk`…) are captured by Fuel handlers anywhere on the page: a Nap element must never carry one (a `data-src` on a menu swallowed every tap).
+- Outside the app (Nap package C, 2026-11-09): widgets and notifications do the job in place (water +250, tick, answer the check-in, snooze) and open the app only for the full flow. Overlay children reuse Edzés `.lkx` styles but scope absolutes as `.lkx.npx .x` (the `.lkx>*` rule otherwise wins).
 - The side panel: each domain swaps only its own block (`#enotes`, `#nnotes`) and restores Fuel's text only when no other domain block is showing.
 
 ## 12. Rejected — do not bring back
