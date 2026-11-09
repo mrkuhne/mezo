@@ -157,6 +157,12 @@ invented content of the real record types; the owner's real data never goes into
 - Outside the app (Nap package C, 2026-11-09): widgets and notifications do the job in place (water +250, tick, answer the check-in, snooze) and open the app only for the full flow. Overlay children reuse Edzés `.lkx` styles but scope absolutes as `.lkx.npx .x` (the `.lkx>*` rule otherwise wins).
 - The side panel: each domain swaps only its own block (`#enotes`, `#nnotes`) and restores Fuel's text only when no other domain block is showing.
 
+## 11d. Mezo notes (2026-11-09)
+
+- The team is named by field (Alvás, Mozgás, Étkezés, Közérzet, Mezo) plus the Szkeptikus, each with a glyph badge; the old nicknames never appear.
+- One card shape for every wall post; the full post lives on its own page, never in a drawer. The wall sentence names whoever is actually waiting.
+- Class names in `b/mezo.js` start with `mw` (`.mz` is the shell's Mezo card). Mezo reuses Nap's `.npopt`, `.npta`, `.npdone`, `.npempty`, `.nplv` styles.
+
 ## 12. Rejected — do not bring back
 
 Boxed photo card at the top of a tab · a drawn scene under the photo · vessels / glasses for the numbers ·

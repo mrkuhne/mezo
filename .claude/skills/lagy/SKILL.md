@@ -37,7 +37,7 @@ The whole app lives on **one** Artifact: https://claude.ai/artifact/EEf8oNUm6EDe
   (registered domains live, others toast) and the compact bar (`setupDomBar`) pick it up; `phead(tab,{…,
   tabs:[[label,route]…]})` takes the domain's tab list. Fuel moving to `#fuel…` and Nap becoming the
   default route happen when Nap is built. Publish `index.html` + every `<domain>.js` (+ new `foto/*`).
-- **Order:** Edzés (owner, 2026-11-04) — **done 2026-11-05** in four rounds (tabs, in-workout flow, Terv inner pages, exercise / medals / sport / custom / picker) → Nap — **done 2026-11-06** (one round: four tabs, inner pages, sheets; `b/nap.js`; the app opens on `#nap`, an empty hash is replaced on load, Fuel keeps its bare routes) → **Mezo next** → Én. One domain per round; Mezo may take two.
+- **Order:** Edzés (owner, 2026-11-04) — **done 2026-11-05** in four rounds (tabs, in-workout flow, Terv inner pages, exercise / medals / sport / custom / picker) → Nap — **done 2026-11-06** (one round: four tabs, inner pages, sheets; `b/nap.js`; the app opens on `#nap`, an empty hash is replaced on load, Fuel keeps its bare routes) → Mezo — round 1 (Üzenőfal + A csapat, `b/mezo.js`) **done 2026-11-09**, **round 2 next** (Rólad + Emlékek + the engine pages: tények, dimenziók, életesemények, emlékek, memoár, archívum, minták, előrejelzések, kísérletek, chat, coaching, napló, memória, gépterem) → Én. One domain per round; Mezo may take two.
 
 ## The round (one domain)
 

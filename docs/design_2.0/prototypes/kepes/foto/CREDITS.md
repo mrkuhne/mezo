@@ -88,3 +88,15 @@ Mind CC0 (Unsplash-ről a Wikimedia Commonsra töltött képek). 960×720 és 48
 | `nap-seta.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Woman_walking_down_path_(Unsplash).jpg | Biel Morro |
 | `nap-ebredes.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Morning_snuggles_(Unsplash).jpg | Chris Abney |
 | `nap-ej.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Blue_dusk_in_the_mountains_(Unsplash).jpg | Dave Edgar |
+
+## Mezo, 1. kör (2026-11-09, a tulajdonos jóváhagyásával: „töltsd le a fotókat is”)
+
+Wikimedia Commons, 960×720 és 480×480 vágás, enyhe meleg tónussal.
+
+| Fájl | Eredeti | Licenc · szerző |
+|---|---|---|
+| `mezo-vacsora.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Dinner_at_a_bistro_(Unsplash).jpg | CC0 · Paweł Wojciechowski |
+| `mezo-tanyer.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Dinner_is_served_(Unsplash).jpg | CC0 · NeONBRAND |
+| `mezo-asztal.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Conference_room_table_(Unsplash).jpg | CC0 · Breather |
+| `mezo-nagyito.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Magnfying_glass_book_globe.jpg | közkincs · João Silas |
+| `mezo-ejjel.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Bedside_(Unsplash).jpg | CC0 · Rhema Kallianpur |
