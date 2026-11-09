@@ -29,7 +29,7 @@ let package = Package(
                 .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
             ]
         ),
-        .target(name: "BoopDesign"),
+        .target(name: "BoopDesign", resources: [.process("Resources")]),
         .testTarget(name: "BoopCoreTests", dependencies: ["BoopCore", "BoopAPI"]),
         .testTarget(name: "BoopDesignTests", dependencies: ["BoopDesign"]),
     ]
