@@ -171,7 +171,7 @@ struct AuraSunrise: View {
                         }
                         .allowsHitTesting(false)                    // the orb's own gestures swallowed the tap
                         .padding(5)
-                        .overlay(Circle().stroke(.white.opacity(on ? 0.85 : 0.18), lineWidth: on ? 1.5 : 1))
+                        .overlay(Circle().stroke(.white.opacity(on ? 0 : 0.18), lineWidth: 1))
                         Text(x.name).font(.system(size: 13, weight: on ? .semibold : .regular))
                             .foregroundStyle(.white.opacity(on ? 1 : 0.6))
                     }
@@ -213,11 +213,6 @@ struct AuraSunrise: View {
                         .frame(height: H - 8 + 14)
                 }
 
-                Rectangle().fill(LinearGradient(colors: [.clear, .white.opacity(0.45), .clear], startPoint: .leading, endPoint: .trailing))
-                    .frame(width: g.size.width, height: 1).offset(y: H - 8)
-                HStack { Text("0"); Spacer(); Text("100") }
-                    .font(AuraFont.mono(11)).foregroundStyle(.white.opacity(0.5))
-                    .padding(.horizontal, 28).frame(width: g.size.width).offset(y: H + 0)
             }
         }
     }
