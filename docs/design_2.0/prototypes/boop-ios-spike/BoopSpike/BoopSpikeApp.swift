@@ -2,7 +2,12 @@ import SwiftUI
 
 @main
 struct BoopSpikeApp: App {
-    var body: some Scene { WindowGroup { RootView() } }
+    init() { Lagy.registerFonts() }
+    var body: some Scene {
+        WindowGroup {
+            if UserDefaults.standard.bool(forKey: "legacy") { RootView() } else { LagyRoot() }
+        }
+    }
 }
 
 /// Throwaway spike: three takes on the morning screen, switched from the top.

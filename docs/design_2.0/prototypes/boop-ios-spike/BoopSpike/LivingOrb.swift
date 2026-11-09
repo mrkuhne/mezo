@@ -104,6 +104,9 @@ struct LivingOrb: View {
     var mood: Mood
     var size: CGFloat = 260
     var motion: OrbMotion
+    var palette: [Color]? = nil          // Lágy: sage liquid inside the deep card
+    var glow: Bool = true
+    var level: Double? = nil             // nil = readiness
     @State private var start = Date()
     @State private var taps = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -112,8 +115,8 @@ struct LivingOrb: View {
         TimelineView(.animation(paused: reduceMotion)) { tl in
             let e = tl.date.timeIntervalSince(start)
             let p = min(1.0, e / 1.8)
-            let fill = Double(mood.readiness) / 100 * (1 - pow(1 - p, 3))
-            let c = mood.colors
+            let fill = (level ?? Double(mood.readiness) / 100) * (1 - pow(1 - p, 3))
+            let c = palette ?? mood.colors
             Rectangle()
                 .frame(width: size, height: size)
                 .colorEffect(ShaderLibrary.orb(
@@ -124,12 +127,14 @@ struct LivingOrb: View {
                     .float(Float(motion.speak))))
                 .scaleEffect(1 + 0.012 * sin(e * 1.9) + 0.02 * motion.speak)
                 .background {
-                    Circle()
-                        .fill(RadialGradient(colors: [c[2].opacity(0.55), c[0].opacity(0.25), .clear],
-                                             center: .center, startRadius: size * 0.2, endRadius: size * 0.75))
-                        .frame(width: size * 1.5, height: size * 1.5)
-                        .blur(radius: size * 0.12)
-                        .opacity(0.7 + 0.2 * sin(e * 1.1) + 0.25 * motion.speak)
+                    if glow {
+                        Circle()
+                            .fill(RadialGradient(colors: [c[2].opacity(0.55), c[0].opacity(0.25), .clear],
+                                                 center: .center, startRadius: size * 0.2, endRadius: size * 0.75))
+                            .frame(width: size * 1.5, height: size * 1.5)
+                            .blur(radius: size * 0.12)
+                            .opacity(0.7 + 0.2 * sin(e * 1.1) + 0.25 * motion.speak)
+                    }
                 }
         }
         .frame(width: size, height: size)
@@ -157,7 +162,7 @@ struct LivingOrb: View {
 @Observable final class Typer: NSObject, AVSpeechSynthesizerDelegate {
     var shown = 0
     var total = 0
-    var voiceOn = UserDefaults.standard.object(forKey: "voiceOn") as? Bool ?? true {
+    var voiceOn = UserDefaults.standard.object(forKey: "voiceOn") == nil ? true : UserDefaults.standard.bool(forKey: "voiceOn") {
         didSet { UserDefaults.standard.set(voiceOn, forKey: "voiceOn"); if !voiceOn { synth.stopSpeaking(at: .word) } }
     }
     @ObservationIgnored private var timer: Timer?

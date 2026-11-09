@@ -1,4 +1,26 @@
-# Boop iOS spike — the approved morning look (2026-11-09)
+# Boop iOS spike — Lágy, built natively (2026-11-09)
+
+> **Current state (Lágy pivot, owner 2026-11-09):** the app starts in the **Lágy** shell (`LagyRoot`
+> in `LagyShell.swift`): five domains in the floating bottom bar, each a Lágy tab page.
+>
+> | File | What it shows |
+> |---|---|
+> | `Lagy.swift` | Lágy tokens, Outfit + Manrope (bundled OFL, `Res/`), glyph view, logo mark, chips, pills, cards, bars |
+> | `LagyMai.swift` | **Nap · Mai** morning: photo head, verdict, *Boop mondja* (spoken + typed), readiness orb in the deep card, sheets |
+> | `LagyCurve.swift` | *A nap energiája* in Lágy dress (generated from `EnergyCurve.swift`) |
+> | `LagyFlowKit.swift`, `LagyFlows.swift` | the five morning steps as Lágy inner pages: check-in, Mai szándék, Mérlegelés, Első étkezés (photo analysis), Boop észrevette |
+> | `LagyShell.swift`, `LagyDomains.swift` | bottom bar + Edzés · Mai, Fuel · Mai, Boop · Üzenőfal, Én · Hol tartok |
+>
+> The companion is called **Boop** (not Mezo). Glyphs are generated from the Lágy prototype's `G()`
+> table into `Assets.xcassets/Glyphs` by `tools/genglyphs.mjs`; photos in `Res/` come from
+> `docs/design_2.0/prototypes/kepes/foto` (CC0, see its `CREDITS.md`).
+> Launch arguments: `-tab Nap|Edzés|Fuel|Boop|Én`, `-open checkin|intention|weight|meal|patterns`,
+> `-checkinDone YES`, `-intentionAsked YES`, `-weightSaved YES`, `-mealStage 0–3`, `-sheet sleep|heart|day`,
+> `-mood 0|1|2`, `-crowded YES`, `-scrubAt 14.25`, `-voiceOn NO`, `-legacy YES` (the first dark spike below).
+>
+> Everything below describes the **first, dark spike round** (superseded look, kept for reference).
+
+## First round — the dark morning look
 
 Throwaway SwiftUI spike the owner reviewed in the iOS Simulator while brainstorming the native
 iPhone app **Boop** (epic `mezo-r36n9`, spec

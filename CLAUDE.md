@@ -121,6 +121,16 @@ slice F1 (`frontend/src/shared/ui/folyadek`); until a surface is converted it ke
 
 Any new screen still gets a clickable prototype and the owner's OK before code.
 
+### Boop — the native iOS app (owner decision 2026-11-09, epic `mezo-r36n9`)
+
+The Folyadék rules above govern the **web app**. **Boop** (the native iPhone app that replaces the web
+app once complete) follows the **Lágy** canon instead — `.claude/skills/lagy/IRANY.md` and the Lágy
+prototype `docs/design_2.0/prototypes/kepes/b/*` (on branch `claude/mai-napom-custom-graphics-eedeb2`
+until merged) — with the orb, Boop's spoken verdict and "A nap energiája" merged in, and the companion
+named **Boop** (not Mezo). Boop's visual iteration happens **in Xcode + the iOS Simulator**, not in
+HTML artifacts; the approved look lives in `docs/design_2.0/prototypes/boop-ios-spike/`. Spec:
+`docs/superpowers/specs/2026-11-09-boop-ios-v1-design.md`.
+
 ## Frontend change workflow (MANDATORY for every change the owner will see)
 
 The owner's working rhythm (set 2026-09-23 in the Üvegesítés programme and `/csapatfal`, made the default
