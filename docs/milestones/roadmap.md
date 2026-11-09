@@ -30,6 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1 of 4 slices shipped (2026-11-09) | The native SwiftUI iPhone app in the Lágy look that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -61,6 +62,14 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-11-09 — Boop S1 · alap — elindult a natív iPhone-app (`mezo-r36n9`).**
+  A Boop az első natív iPhone-app, amely a webes appot váltja majd: a Lágy irány kinézetében, ugyanazzal a
+  szerverrel, új fiókkal. Az első szakaszban megvan a váz: belépés és regisztráció meghívókóddal, a beállítás
+  (nem, magasság, születési dátum, első mérés), az alsó sáv az öt területtel (a Nap saját oldala, a többi még a
+  webes appot nyitja), kijelentkezés, és egyetlen paranccsal telepíthető a telefonra hetente. Tervezés:
+  [spec](../superpowers/specs/2026-11-09-boop-ios-v1-design.md), [terv](../superpowers/plans/2026-11-09-boop-ios-v1.md),
+  [működés](../features/boop-ios.md).
 
 - **2026-10-12 — Folyadék F5 · Fuel — az egész Fuel az új arculatban, és angolul is (`mezo-n4wf5.5`, epic `mezo-n4wf5`).**
   A harmadik terület, amely átöltözött, és az első, amely rögtön két nyelven készült el. Minden Fuel-oldal

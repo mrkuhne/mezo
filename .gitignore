@@ -78,3 +78,8 @@ frontend/tests/parity/
 # mutató jelkapcsot elutasítja — attól MINDEN telepítés csendben leáll, zöld CI és zöld deploy
 # mellett.
 docs/design_2.0/prototypes/**/node_modules
+
+# Boop iOS (SwiftPM / Xcode local state)
+ios/BoopKit/.build/
+ios/**/.swiftpm/
+ios/**/xcuserdata/
