@@ -10,6 +10,9 @@ struct VariantOrb: View {
     @State private var count = 0
     @State private var sheet: String?
     @State private var crowded = UserDefaults.standard.bool(forKey: "crowded")
+    @State private var done: [Moment: String] = [.sleep: "7ó 12p · Sleep Cycle-ből beolvasva"]
+    @State private var openMoment: Moment? = Moment(rawValue: UserDefaults.standard.string(forKey: "open") ?? "")
+    @State private var showOnboarding = UserDefaults.standard.string(forKey: "open") == "onboarding"
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -103,11 +106,8 @@ struct VariantOrb: View {
                 .overlay(RoundedRectangle(cornerRadius: 28).stroke(.white.opacity(0.08)))
                 .entrance(0.75)
 
-                VStack(spacing: 12) {
-                    SectionHead(title: "Hogy érzed magad?", color: .white.opacity(0.5))
-                    CheckinChips(dark: true)
-                }
-                .entrance(0.85)
+                MorningPath(mood: mood, done: done) { openMoment = $0 }
+                    .entrance(0.85)
 
                 // Demo-only control: see how the whole page reacts to the day's state.
                 VStack(spacing: 10) {
@@ -121,6 +121,12 @@ struct VariantOrb: View {
                             .font(.subheadline).foregroundStyle(.white.opacity(0.8))
                     }
                     .tint(Boop.indigo)
+                    .padding(.top, 4)
+                    Button { showOnboarding = true } label: {
+                        Label("Első indítás megtekintése (belépés, engedélyek)", systemImage: "sparkles")
+                            .font(.subheadline).frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glass)
                     .padding(.top, 4)
                 }
                 .padding(.bottom, 44)
@@ -143,6 +149,18 @@ struct VariantOrb: View {
                 .presentationBackground(.ultraThinMaterial)
         }
         .sensoryFeedback(.success, trigger: typer.shown >= typer.total && typer.total > 0)
+        .fullScreenCover(item: $openMoment) { m in
+            let finish: (String) -> Void = { summary in withAnimation(.spring) { done[m] = summary } }
+            switch m {
+            case .checkin: CheckinFlow(mood: mood, onDone: finish)
+            case .intention: IntentionFlow(mood: mood, onDone: finish)
+            case .weight: WeightFlow(mood: mood, onDone: finish)
+            case .meal: MealFlow(mood: mood, onDone: finish)
+            case .patterns: PatternsView(mood: mood, onDone: finish)
+            case .sleep: EmptyView()
+            }
+        }
+        .fullScreenCover(isPresented: $showOnboarding) { OnboardingFlow { } }
     }
 
     private func speak() {

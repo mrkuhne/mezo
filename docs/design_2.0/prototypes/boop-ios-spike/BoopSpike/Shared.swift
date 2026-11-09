@@ -122,6 +122,7 @@ struct FillCapsule: View {
             VStack(spacing: 2) {
                 Text(amount).font(.system(.subheadline, design: .rounded).weight(.semibold)).foregroundStyle(text)
                 Text(label).font(.caption).foregroundStyle(text.opacity(0.6))
+                    .lineLimit(1).minimumScaleFactor(0.6)
             }
         }
         .onAppear { withAnimation(.spring(response: 1.1, dampingFraction: 0.75).delay(0.25)) { shown = true } }
