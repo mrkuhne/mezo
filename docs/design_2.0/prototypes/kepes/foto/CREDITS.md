@@ -100,3 +100,15 @@ Wikimedia Commons, 960×720 és 480×480 vágás, enyhe meleg tónussal.
 | `mezo-asztal.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Conference_room_table_(Unsplash).jpg | CC0 · Breather |
 | `mezo-nagyito.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Magnfying_glass_book_globe.jpg | közkincs · João Silas |
 | `mezo-ejjel.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Bedside_(Unsplash).jpg | CC0 · Rhema Kallianpur |
+
+## Mezo, 2. kör (2026-11-09, a tulajdonos jóváhagyásával)
+
+Wikimedia Commons, 960×720 és 480×480 vágás, enyhe meleg tónussal.
+
+| Fájl | Eredeti | Licenc · szerző |
+|---|---|---|
+| `mezo-album.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Analog_polaroid,_instant_camera_(41718437570).jpg | CC0 · Markus Spiske |
+| `mezo-polc.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Old_books_on_bookshelf._(Unsplash).jpg | CC0 · Clem Onojeghuo |
+| `mezo-labor.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Plants_in_beakers_(Unsplash).jpg | CC0 · chuttersnap |
+| `mezo-gep.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Engine_block_(Unsplash).jpg | CC0 · Garett Mizunaka |
+| `mezo-felho.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Clouds_(Unsplash).jpg | CC0 · Aaron Guzman |
