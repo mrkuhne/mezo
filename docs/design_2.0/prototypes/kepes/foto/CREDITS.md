@@ -112,3 +112,14 @@ Wikimedia Commons, 960×720 és 480×480 vágás, enyhe meleg tónussal.
 | `mezo-labor.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Plants_in_beakers_(Unsplash).jpg | CC0 · chuttersnap |
 | `mezo-gep.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Engine_block_(Unsplash).jpg | CC0 · Garett Mizunaka |
 | `mezo-felho.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Clouds_(Unsplash).jpg | CC0 · Aaron Guzman |
+
+## Én, 1. kör (2026-11-09, a tulajdonos jóváhagyásával)
+
+Wikimedia Commons, 960×720 és 480×480 vágás, enyhe meleg tónussal. Jó éremképet nem találtunk; a Fejlődéshez és a Hol tartokhoz egy futóverseny-kép került helyette.
+
+| Fájl | Eredeti | Licenc · szerző |
+|---|---|---|
+| `en-merleg.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Elements_of_Weighing_scale.jpg | CC0 · Pink Flojd |
+| `en-cipo.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Hiker%27s_Legs_and_Shoes_(Unsplash).jpg | CC0 · Justin Main |
+| `en-hold.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Crescent_moon_(Unsplash).jpg | CC0 · Hugo Kemmel |
+| `en-futam.jpg`, `-sq` | https://commons.wikimedia.org/wiki/File:Brussels_marathon_runners_(Unsplash).jpg | CC0 · Martins Zemlickis |

@@ -163,6 +163,11 @@ invented content of the real record types; the owner's real data never goes into
 - One card shape for every wall post; the full post lives on its own page, never in a drawer. The wall sentence names whoever is actually waiting.
 - Class names in `b/mezo.js` start with `mw` (`.mz` is the shell's Mezo card). Mezo reuses Nap's `.npopt`, `.npta`, `.npdone`, `.npempty`, `.nplv` styles.
 
+## 11e. Én notes (2026-11-09)
+
+- Five tabs (owner): Hol tartok · Súly · Alvás · Célok · Napló. Class names in `b/en.js` start with `eu`.
+- Trap met: a container rule like `.euline svg{width:100%}` also hits the glyph svgs inside it and blows them up to card width — size charts with `>svg` or `svg[role]`.
+
 ## 12. Rejected — do not bring back
 
 Boxed photo card at the top of a tab · a drawn scene under the photo · vessels / glasses for the numbers ·
