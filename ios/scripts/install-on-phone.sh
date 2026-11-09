@@ -37,6 +37,7 @@ if [[ -z "$udid" ]]; then
   exit 3
 fi
 
+mkdir -p "$root/ios/build"
 echo "Építem a Boopot a telefonodra…"
 if ! xcodebuild -project "$root/ios/Boop.xcodeproj" -scheme Boop -configuration Release \
      -destination "id=$udid" -allowProvisioningUpdates -skipPackagePluginValidation \

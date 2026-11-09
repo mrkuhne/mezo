@@ -24,8 +24,8 @@ struct SignInView: View {
                       sub: "Lépj be a Boop-fiókoddal.", showsBack: false) {
             VStack(alignment: .leading, spacing: 16) {
                 if let serverError { ServerErrorCard(error: serverError) }
-                LagyField("E-mail cím", text: $form.email, keyboard: .emailAddress, content: .username, problem: shown[.email])
-                LagyField("Jelszó", text: $form.password, secure: true, content: .password, problem: shown[.password])
+                LagyField("E-mail cím", text: $form.email, kind: .email, content: .username, problem: shown[.email])
+                LagyField("Jelszó", text: $form.password, kind: .password, content: .password, problem: shown[.password])
                 WidePill(title: "Belépek", busy: busy) { submit() }.padding(.top, 6)
                 Button(action: onRegister) {
                     Text("Van meghívókódom").font(.manrope(14, .bold)).foregroundStyle(Lagy.deep)
@@ -69,10 +69,10 @@ struct RegisterView: View {
                       sub: "A meghívókóddal regisztrálsz.", onBack: onBack) {
             VStack(alignment: .leading, spacing: 16) {
                 if let serverError, !isFieldError(serverError) { ServerErrorCard(error: serverError) }
-                LagyField("Meghívókód", text: $form.invite, problem: problem(.invite, "inviteCode"))
-                LagyField("A neved", text: $form.name, content: .name, problem: problem(.name, "name"))
-                LagyField("E-mail cím", text: $form.email, keyboard: .emailAddress, content: .username, problem: problem(.email, "email"))
-                LagyField("Jelszó · legalább 8 karakter", text: $form.password, secure: true, content: .newPassword, problem: problem(.password, "password"))
+                LagyField("Meghívókód", text: $form.invite, kind: .code, problem: problem(.invite, "inviteCode"))
+                LagyField("A neved", text: $form.name, kind: .name, content: .name, problem: problem(.name, "name"))
+                LagyField("E-mail cím", text: $form.email, kind: .email, content: .username, problem: problem(.email, "email"))
+                LagyField("Jelszó · legalább 8 karakter", text: $form.password, kind: .password, content: .newPassword, problem: problem(.password, "password"))
                 WidePill(title: "Regisztrálok", busy: busy) { submit() }.padding(.top, 6)
             }
         }

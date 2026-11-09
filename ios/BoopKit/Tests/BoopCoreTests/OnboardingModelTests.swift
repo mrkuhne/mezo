@@ -43,6 +43,32 @@ struct OnboardingModelTests {
         #expect(finished.count == 1)
     }
 
+    @Test func resumeFailureDoesNotFallBackToProfile() async {
+        stub.on("getBiometricProfile", .json(200, fullProfile))
+        stub.on("listWeightLogs", .fail(URLError(.notConnectedToInternet)))
+        let m = model(); await m.start()
+        #expect(m.step == .failed)
+        #expect(m.problem == .offline)
+    }
+
+    @Test func unauthorizedFromAnyResumeCallSignsOut() async {
+        stub.on("getBiometricProfile", .json(200, fullProfile))
+        stub.on("listWeightLogs", .json(401, #"[{"code":"AUTH_UNAUTHORIZED","type":"REQUEST"}]"#))
+        let m = model(); await m.start()
+        #expect(m.problem == .unauthorized)
+    }
+
+    @Test func retryAfterFailedCompleteDoesNotLogWeightTwice() async throws {
+        stub.on("logWeight", .json(201, #"{"id":"0b6f3c1e-1111-4a2b-9c3d-222233334444","date":"2026-11-09","value":82.4}"#))
+        stub.on("completeOnboarding", .fail(URLError(.timedOut)))
+        let m = model()
+        await #expect(throws: OnboardingError.offline) { try await m.saveWeight(82.4, now: Date(), calendar: budapest) }
+        stub.on("completeOnboarding", .status(204))
+        try await m.saveWeight(82.4, now: Date(), calendar: budapest)
+        #expect(stub.ops == ["logWeight", "completeOnboarding", "completeOnboarding"])
+        #expect(finished.count == 1)
+    }
+
     @Test func saveProfileSendsContractFields() async throws {
         stub.on("upsertBiometricProfile", .json(200, fullProfile))
         let m = model()

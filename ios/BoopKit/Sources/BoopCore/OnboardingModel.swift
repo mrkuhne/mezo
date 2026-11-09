@@ -8,10 +8,11 @@ public enum OnboardingError: Error, Equatable { case offline, server, unauthoriz
 /// Resumes where it stopped (the profile endpoint answers 200 with all-null fields when none exists).
 @MainActor @Observable
 public final class OnboardingModel {
-    public enum Step: Equatable { case loading, profile, weight, finishing }
+    public enum Step: Equatable { case loading, failed, profile, weight, finishing }
     public private(set) var step: Step = .loading
     public private(set) var problem: OnboardingError?
 
+    @ObservationIgnored private var weightSaved = false
     @ObservationIgnored private let client: Client
     @ObservationIgnored private let onFinished: () async -> Void
 
@@ -22,16 +23,19 @@ public final class OnboardingModel {
 
     public func start() async {
         problem = nil
+        step = .loading
         do {
             let profile = try await client.getBiometricProfile()
             if case .unauthorized = profile { throw OnboardingError.unauthorized }
             guard case .ok(let ok) = profile else { throw OnboardingError.server }
             guard try ok.body.json.sex != nil else { step = .profile; return }
-            guard case .ok(let logs) = try await client.listWeightLogs() else { throw OnboardingError.server }
+            let list = try await client.listWeightLogs()
+            if case .unauthorized = list { throw OnboardingError.unauthorized }
+            guard case .ok(let logs) = list else { throw OnboardingError.server }
             if try logs.body.json.isEmpty { step = .weight } else { try await finish() }
         } catch {
             problem = map(error)
-            if step == .loading { step = .profile }
+            step = .failed          // never fall back to the profile form: its defaults would overwrite saved data
         }
     }
 
@@ -51,9 +55,12 @@ public final class OnboardingModel {
     public func saveWeight(_ kg: Double, now: Date = Date(), calendar: Calendar = .current) async throws {
         problem = nil
         do {
+            if weightSaved { try await finish(); return }    // retry after a failed onboarding-complete: don't log twice
             let rounded = (kg * 10).rounded() / 10
             switch try await client.logWeight(body: .json(.init(date: localDay(now, calendar: calendar), weightKg: rounded))) {
-            case .created: try await finish()
+            case .created:
+                weightSaved = true
+                try await finish()
             case .unauthorized: throw OnboardingError.unauthorized
             case .badRequest(let r): throw OnboardingError.field((try? r.body.json.first?.message) ?? "Ellenőrizd a súlyt.")
             default: throw OnboardingError.server
@@ -62,7 +69,9 @@ public final class OnboardingModel {
     }
 
     private func finish() async throws {
-        guard case .noContent = try await client.completeOnboarding() else { throw OnboardingError.server }
+        let done = try await client.completeOnboarding()
+        if case .unauthorized = done { throw OnboardingError.unauthorized }
+        guard case .noContent = done else { throw OnboardingError.server }
         step = .finishing
         await onFinished()
     }

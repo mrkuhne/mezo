@@ -13,6 +13,15 @@ struct OnboardingFlow: View {
             if let model {
                 switch model.step {
                 case .loading: ZStack { Lagy.paper.ignoresSafeArea(); ProgressView().tint(Lagy.deep) }
+                case .failed:
+                    ZStack {
+                        Lagy.paper.ignoresSafeArea()
+                        ErrorCard(title: "Most nem érem el az adataidat.", text: onboardingText(model.problem ?? .server)) {
+                            Task { await model.start() }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                    .environment(\.colorScheme, .light)
                 case .profile: ProfileStep(model: model, name: me.name)
                 case .weight: WeightStep(model: model)
                 case .finishing: HelloStep()

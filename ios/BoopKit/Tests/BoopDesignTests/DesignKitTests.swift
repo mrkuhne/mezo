@@ -36,3 +36,10 @@ import SwiftUI
     #expect(hu1(82.4) == "82,4")
     #expect(hu1(80) == "80,0")
 }
+
+@Test func codeFieldsNeverAutocorrect() {
+    #expect(LagyField.Kind.code.autocorrectionDisabled)
+    #expect(!LagyField.Kind.code.capitalizesWords)
+    #expect(LagyField.Kind.email.autocorrectionDisabled)
+    #expect(LagyField.Kind.name.capitalizesWords)
+}
