@@ -1782,5 +1782,6 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
+- **Feature doc** [`docs/features/boop-ios.md`](features/boop-ios.md) — its `key_files` point outside any single feature package
 - **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

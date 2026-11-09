@@ -34,3 +34,11 @@ Adding an API operation: add its `operationId` to `BoopKit/Sources/BoopAPI/opena
 and run `scripts/sync-openapi.sh` whenever `api/openapi.yml` changes.
 
 Signing uses the owner's free Personal Team. **Never commit a team id**; pass it at build time.
+
+## Telepítés a telefonra (hetente)
+
+1. Dugd be az iPhone-t kábellel a Macbe, és oldd fel a képernyőt.
+2. Futtasd: `ios/scripts/install-on-phone.sh`
+3. Csak az első alkalommal: a telefonon *Beállítások › Általános › VPN és eszközkezelés* → a fejlesztői
+   profilnál *Megbízom*.
+4. Kész. Az app 7 napig fut; utána ugyanezt kell lefuttatni újra (a szkript kiírja a lejárat napját).
