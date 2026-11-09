@@ -81,9 +81,14 @@ public class SleepLogEntity extends OwnedEntity {
     @Column(name = "source_quality_pct")
     private Integer sourceQualityPct;
 
-    @Pattern(regexp = "manual|screenshot")
-    @Column(length = 10)
+    @Pattern(regexp = "manual|screenshot|apple_health")
+    @Column(length = 16)
     private String source = "manual";
+
+    /** Client key of a night imported from Apple Health (Boop S2, mezo-r36n9.2) — unique per owner;
+     *  null on manual and screenshot rows. */
+    @Column(name = "external_id", length = 64)
+    private String externalId;
 
     /** Quantised stage sequence from the screenshot (mezo-fk9a) — display-only provenance;
      *  null on manual rows and whenever the extraction failed cross-validation. */

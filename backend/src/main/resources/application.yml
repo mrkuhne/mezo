@@ -693,6 +693,16 @@ mezo:
     rate-limit-per-minute: 120
     # The client clock is trusted but pinned into now +/- this many hours (spec T4).
     occurred-at-clamp-hours: 24
+  # Boop Apple Health + calendar ingestion (mezo-r36n9.2) — binds WearableProperties. A batch over
+  # its cap is a 400 WEARABLE_BATCH_TOO_LARGE; the iOS client sends 30 nights / 60 days / 100
+  # workouts per call, well below these.
+  wearable:
+    max-sleep-nights: 100
+    max-days: 120
+    max-workouts: 300
+    max-calendar-days: 3
+    max-events-per-day: 150
+    zone: Europe/Budapest
   # LLM call audit log (mezo-2zyu) — binds LlmLogProperties + LlmPricingProperties.
   llm-log:
     # Prompt/response payloads are truncated to this many characters before persisting
