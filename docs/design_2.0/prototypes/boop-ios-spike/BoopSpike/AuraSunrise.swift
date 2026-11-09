@@ -166,7 +166,7 @@ struct AuraSunrise: View {
                             if i == 1 { Circle().fill(.white).frame(width: 5, height: 5).opacity(on ? 0 : 0.9) }
                         }
                         .foregroundStyle(.white.opacity(on ? 1 : 0.62))
-                        Capsule().fill(.white).frame(height: 2).opacity(on ? 1 : 0)
+                        Capsule().fill(.white).frame(height: 1).opacity(on ? 1 : 0)
                             .padding(.horizontal, 6)
                     }
                     .fixedSize()
@@ -176,7 +176,6 @@ struct AuraSunrise: View {
                 }
             }
             .padding(.horizontal, 12)
-            .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.14)).frame(height: 0.5) }
         }
         .padding(.top, 58)
     }
