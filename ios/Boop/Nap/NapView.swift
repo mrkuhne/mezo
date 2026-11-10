@@ -28,34 +28,39 @@ struct NapView: View {
         return .from(connected: link.connected, syncProgress: progress, nights: t?.nights ?? 0, calendarRows: t?.events ?? 0, online: online, syncFailed: failed)
     }
 
-    /// The brief replaces every state except "not connected": a refresh, a failed sync or a lost network leave the
-    /// morning on screen (the Health row below reports them). Simulator review (`-preview shell`) always shows it,
-    /// unless `-previewEmpty YES` asks for the empty states.
-    private func showsBrief(_ s: NapEmptyState) -> Bool {
+    /// Simulator review (`-preview shell`) always shows the brief (the preview user is never connected), unless
+    /// `-previewEmpty YES` asks for the empty states.
+    private var forceBrief: Bool {
         #if DEBUG
-        if let p = UserDefaults.standard.string(forKey: "preview"), p == "shell" {
-            return !UserDefaults.standard.bool(forKey: "previewEmpty")
-        }
+        if UserDefaults.standard.string(forKey: "preview") == "shell" { return !UserDefaults.standard.bool(forKey: "previewEmpty") }
         #endif
-        return s != .notConnected
+        return false
     }
 
     var body: some View {
         let s = state
         Group {
-            if showsBrief(s), let morning, let brief = morning.brief {
-                MaiView(brief: brief) { cards }
-            } else if showsBrief(s), let problem = morning?.problem {
+            switch napScreen(state: s, hasStore: morning != nil, hasBrief: morning?.brief != nil, loading: morning?.loading ?? false,
+                             problem: morning?.problem, forceBrief: forceBrief) {
+            case .mai:
+                if let brief = morning?.brief { MaiView(brief: brief) { cards } }
+            case .loading:
+                page(s, copy: loadingCopy, offline: false) {}
+            case .problem(let problem):
                 page(s, copy: morningProblemCopy(problem), offline: problem == .offline) { Task { await morning?.load(date: Date()) } }
-            } else {
-                page(s, copy: napCopy(s), offline: s == .offline) { act(s) }
+            case .empty(let e):
+                page(e, copy: napCopy(e), offline: e == .offline) { act(e) }
             }
         }
         .nkToast($toast)
         // Read the flag here so the page re-renders when it flips (a binding passed down left the cover unpresented).
         .connectCover(link, isPresented: Binding(get: { [showing = connecting] in showing }, set: { connecting = $0 }))
         .onDisappear { motion.stop() }
-        .onChange(of: link?.sync.phase) { _, p in if p == .failed(.unauthorized) { session.signOut() } }
+        .onChange(of: link?.sync.phase) { old, new in
+            if new == .failed(.unauthorized) { session.signOut() }
+            // last night reached the server: fetch the brief again (the server regenerates when its inputs changed)
+            if let new, reloadsBriefAfterSync(from: old, to: new) { Task { await morning?.load(date: Date()) } }
+        }
         .background { if let morning { MorningTriggers(store: morning) } }
     }
 
@@ -117,8 +122,40 @@ private struct MorningTriggers: View {
         Color.clear
             .task { await store.load(date: Date()) }
             .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await store.load(date: Date()) } } }
+            // left open past midnight: the new day's brief
+            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+                Task { await store.load(date: Date()) }
+            }
     }
 }
+
+/// What Nap · Mai shows.
+enum NapScreen: Equatable { case mai, loading, problem(MorningProblem), empty(NapEmptyState) }
+
+/// A brief replaces every state except "not connected" (a refresh, a failed sync or a lost network leave the morning on
+/// screen; the Health row reports them). Without a brief: syncing / sync failed / offline keep their pages; otherwise
+/// the page waits calmly for the first load (never the "Holnap reggel…" promise), or offers a retry after a problem.
+func napScreen(state s: NapEmptyState, hasStore: Bool, hasBrief: Bool, loading: Bool, problem: MorningProblem?,
+               forceBrief: Bool) -> NapScreen {
+    guard hasStore, forceBrief || s != .notConnected else { return .empty(s) }
+    if hasBrief { return .mai }
+    switch s {
+    case .syncing, .syncFailed, .offline: return .empty(s)
+    default: break
+    }
+    if !loading, let problem { return .problem(problem) }
+    return .loading      // in flight, or about to start (the load fires on appear)
+}
+
+/// A Health sync that finished and sent something: the brief may now know last night.
+func reloadsBriefAfterSync(from old: HealthSync.Phase?, to new: HealthSync.Phase) -> Bool {
+    guard case .running = old, case .done(let s) = new else { return false }
+    return s.nights + s.days + s.workouts > 0
+}
+
+/// While the brief is being put together.
+let loadingCopy = NapCopy(orb: "", orbCaption: nil, caps: "EGY PILLANAT", title: "Boop összerakja a reggeledet…",
+                          sentence: "Átnézem az éjszakádat és a mai napodat, pár másodperc.", action: nil)
 
 /// The words and the orb label for each state.
 struct NapCopy: Equatable { let orb: String, orbCaption: String?, caps: String, title: String, sentence: String, action: String? }

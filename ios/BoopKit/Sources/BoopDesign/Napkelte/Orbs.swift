@@ -14,6 +14,12 @@ public func riseFraction(score: Int?) -> Double? {
     return min(1, max(0, (Double(s) - 40) / 60))
 }
 
+/// What VoiceOver says for an orb value: the no-data dash is "nincs adat".
+public func orbSpoken(_ display: String) -> String { display == "–" ? "nincs adat" : display }
+
+/// The hero number's size: numbers and the no-data dash are big (58); a learning label ("9 / 14") is smaller (34).
+public func risingDisplaySize(score: Int?, display: String) -> CGFloat { score != nil || display == "–" ? 58 : 34 }
+
 /// Physics and sensors behind a living orb: tilt spring (device gravity or drag), speech surge, tap ripple.
 @MainActor @Observable public final class OrbMotion {
     public var tilt: Double = 0
@@ -159,7 +165,8 @@ public struct RisingOrb: View {
                 }
                 VStack(spacing: 2) {
                     // a display like "7ó 12p" or "3 240" must stay inside the orb
-                    Text(display).font(.nkNumber(score == nil ? 34 : 58)).foregroundStyle(.white).monospacedDigit()
+                    Text(display).font(.nkNumber(risingDisplaySize(score: score, display: display))).foregroundStyle(.white).monospacedDigit()
+                        .fontWeight(display == "–" ? .medium : nil)       // the light dash alone reads as a hairline
                         .lineLimit(1).minimumScaleFactor(0.4).frame(maxWidth: size - 20)
                         .contentTransition(.numericText())
                     if let caption { Text(caption).nkFont(12).foregroundStyle(.white.opacity(0.75)) }
@@ -176,7 +183,7 @@ public struct RisingOrb: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(hue.name): \(display)")
+        .accessibilityLabel("\(hue.name): \(orbSpoken(display))")
     }
 }
 
@@ -213,7 +220,7 @@ public struct MiniOrbRow: View {
                 .contentShape(Rectangle())
                 .onTapGesture { withAnimation(.spring(response: 0.7, dampingFraction: 0.82)) { selected = item.0 } }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(item.0.name) \(item.1)")
+                .accessibilityLabel("\(item.0.name) \(orbSpoken(item.1))")
                 .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
             }
         }

@@ -96,7 +96,7 @@ struct MaiView<Below: View>: View {
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: inhale) { _, _ in breathing }
         .onAppear { if voice == nil { voice = BoopVoice() } }
         .onDisappear { motion.stop(); stopBreath(); voice?.stop() }
-        .onChange(of: selected) { stopBreath() }
+        .onChange(of: selected) { stopBreath(); voice?.stop() }
         .onChange(of: voice?.isSpeaking ?? false) { _, talking in motion.talking = talking }
         .onChange(of: voice?.shown ?? "") { _, _ in if voice?.isSpeaking == true { motion.kick() } }
     }

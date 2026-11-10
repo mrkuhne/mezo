@@ -83,6 +83,7 @@ struct MaiCopyTests {
         all += [MaiText.breathDone, MaiText.inhale, MaiText.exhale, MaiText.breathLine, MaiText.breathEnded,
                 MaiText.mute, MaiText.unmute, MaiText.replay, MaiText.speak, soonToast("Lefotózom")]
         all += [MaiText.problemCaps, MaiText.problemTitle, MaiText.problemSentence, MaiText.retry]
+        all += [loadingCopy.caps, loadingCopy.title, loadingCopy.sentence]
         for s in all { #expect(!s.localizedCaseInsensitiveContains("mezo"), "\(s)") }
     }
 }

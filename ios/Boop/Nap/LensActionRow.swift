@@ -128,7 +128,7 @@ struct LensActionRow: View {
             } else if hue == .mozgas && !breathing {
                 Menu {
                     ForEach(workoutMenu(sessionTitle: sessionTitle), id: \.self) { item in
-                        Button { onMenu(item) } label: { Label(item, systemImage: "chevron.right") }
+                        Button(item) { onMenu(item) }
                     }
                 } label: { pillLabel } primaryAction: { onPrimary() }
                     .menuStyle(.button)
@@ -142,9 +142,8 @@ struct LensActionRow: View {
     }
 
     @ViewBuilder private var voiceMenu: some View {
-        Button(action: onToggleMute) {
-            Label(muted ? MaiText.unmute : MaiText.mute, systemImage: muted ? "speaker.wave.2" : "speaker.slash")
-        }
+        // text only: menus cannot draw the kit glyphs, and SF Symbols are limited to arrows and chevrons
+        Button(muted ? MaiText.unmute : MaiText.mute, action: onToggleMute)
         Button(action: onSpeak) { Label(MaiText.replay, systemImage: "arrow.counterclockwise") }
     }
 
