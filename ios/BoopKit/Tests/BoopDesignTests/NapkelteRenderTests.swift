@@ -80,3 +80,8 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
 @Test @MainActor func skyScreenRenders() {
     #expect(render(NKSkyScreen(hue: .forma, onBack: nil) { Text("Jó újra látni") }, height: 800) != nil)
 }
+
+@Test @MainActor func rowWithTagsRenders() {
+    #expect(render(NKRow(glyph: "heart-cream", title: "Apple Egészség",
+                         tags: [NKTag("alvás, mozgás, pulzus"), NKTag("nincs engedély", warn: true)], chevron: true), height: 90) != nil)
+}

@@ -13,13 +13,12 @@ struct ConnectCard: View {
         Group {
             if link.connected {
                 Button { Task { await link.syncNow() } } label: {
-                    PhotoRow(img: nil, glyph: ("heart", "berry"), title: "Beérkezett adatok", chips: chips, chevron: false)
+                    NKRow(glyph: "heart-cream", title: "Beérkezett adatok", tags: tags)
                 }
                 .buttonStyle(PressStyle())
             } else {
                 Button(action: onConnect) {
-                    PhotoRow(img: nil, glyph: ("heart", "berry"), title: "Kössük össze az Egészséget és a naptárat",
-                             chips: [Chip(text: "alvás, mozgás, naptár", small: true)])
+                    NKRow(glyph: "heart-cream", title: "Kössük össze az Egészséget és a naptárat", tags: [NKTag("alvás, mozgás, naptár")], chevron: true)
                 }
                 .buttonStyle(PressStyle())
             }
@@ -27,19 +26,19 @@ struct ConnectCard: View {
     }
 
     /// Two chips at most: the counts, then one status (refreshing › failed › calendar refused › last refresh).
-    private var chips: [Chip] {
-        var out: [Chip] = []
+    private var tags: [NKTag] {
+        var out: [NKTag] = []
         if let last = link.sync.totals ?? link.sync.lastSummary {    // everything synced so far (mezo-r36n9.5)
-            out.append(Chip(text: countsChip(last), style: last.nights + last.days + last.workouts == 0 ? .warm : .plain, small: true))
+            out.append(NKTag(countsChip(last), warn: last.nights + last.days + last.workouts == 0))
         }
         switch link.sync.phase {
-        case .running: out.append(Chip(text: "frissítem…", style: .soft, small: true))
-        case .failed: out.append(Chip(text: "nem sikerült frissíteni", style: .warm, small: true))
+        case .running: out.append(NKTag("frissítem…"))
+        case .failed: out.append(NKTag("nem sikerült frissíteni", warn: true))
         default:
-            if link.calendarAccess == .denied { out.append(Chip(text: "naptár: nincs engedély", style: .warm, small: true)) }
-            else if link.sync.calendarFailed { out.append(Chip(text: "naptár: nem ment át", style: .warm, small: true)) }
+            if link.calendarAccess == .denied { out.append(NKTag("naptár: nincs engedély", warn: true)) }
+            else if link.sync.calendarFailed { out.append(NKTag("naptár: nem ment át", warn: true)) }
             else if let at = link.sync.lastSyncedAt {
-                out.append(Chip(text: "frissítve \(at.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)))", style: .soft, small: true))
+                out.append(NKTag("frissítve \(at.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)))"))
             }
         }
         return out

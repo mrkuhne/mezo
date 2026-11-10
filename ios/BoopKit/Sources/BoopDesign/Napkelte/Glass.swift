@@ -213,3 +213,36 @@ public struct NKSkyScreen<Content: View>: View {
         .preferredColorScheme(.dark)
     }
 }
+
+/// A small status pill: white 10 % (plain) or rose (warn).
+public struct NKTag: View {
+    let text: String, warn: Bool
+    public init(_ text: String, warn: Bool = false) { self.text = text; self.warn = warn }
+    public var body: some View {
+        Text(text).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+            .foregroundStyle(warn ? Color(hex: 0xF7A8C4) : .white.opacity(0.85))
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(Capsule().fill(warn ? Color(hex: 0xF06A9A).opacity(0.16) : .white.opacity(0.1)))
+    }
+}
+
+/// A list row: glyph in a glass circle, title, status tags, optional chevron.
+public struct NKRow: View {
+    let glyph: String, title: String, tags: [NKTag], chevron: Bool
+    public init(glyph: String, title: String, tags: [NKTag] = [], chevron: Bool = false) {
+        self.glyph = glyph; self.title = title; self.tags = tags; self.chevron = chevron
+    }
+    public var body: some View {
+        HStack(spacing: 14) {
+            NKGlyph(glyph, .white, size: 18).frame(width: 44, height: 44).background(Circle().fill(.white.opacity(0.1)))
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title).font(.system(size: 16.5, weight: .medium)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                if !tags.isEmpty { HStack(spacing: 6) { ForEach(tags.indices, id: \.self) { tags[$0] } } }
+            }
+            Spacer(minLength: 0)
+            if chevron { Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4)) }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
+        .accessibilityElement(children: .combine)
+    }
+}

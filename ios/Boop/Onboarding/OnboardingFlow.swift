@@ -11,19 +11,36 @@ struct OnboardingFlow: View {
     @State private var hello = HelloGate()
 
     var body: some View {
+        #if DEBUG
+        if let step = UserDefaults.standard.string(forKey: "previewStep") {
+            let m = OnboardingModel(client: session.client) {}
+            switch step {
+            case "weight": WeightStep(model: m)
+            case "hello": HelloStep()
+            case "connect": if let link { ConnectFlow(link: link) {} } else { Text("no link") }
+            default: ProfileStep(model: m, name: me.name)
+            }
+        } else { flow }
+        #else
+        flow
+        #endif
+    }
+
+    private var flow: some View {
         Group {
             if let model {
                 switch model.step {
-                case .loading: ZStack { Lagy.paper.ignoresSafeArea(); ProgressView().tint(Lagy.deep) }
+                case .loading: ZStack { NKGround(hue: .forma); ProgressView().tint(.white) }.preferredColorScheme(.dark)
                 case .failed:
-                    ZStack {
-                        Lagy.paper.ignoresSafeArea()
-                        ErrorCard(title: "Most nem érem el az adataidat.", text: onboardingText(model.problem ?? .server)) {
-                            Task { await model.start() }
+                    NKSkyScreen(hue: .alvas, onBack: nil) {
+                        VStack(spacing: 14) {
+                            Spacer(minLength: 220)
+                            StillOrb(palette: Hue.alvas.orb, size: 110, level: 0.3).saturation(0.3)
+                            Text("Most nem érem el az adataidat.").font(.nkSerif(30)).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 10)
+                            Text(onboardingText(model.problem ?? .server)).font(.system(size: 15.5)).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center)
+                            NKPill("Újra próbálom") { Task { await model.start() } }.padding(.top, 14)
                         }
-                        .padding(.horizontal, 16)
                     }
-                    .environment(\.colorScheme, .light)
                 case .profile: ProfileStep(model: model, name: me.name)
                 case .weight: WeightStep(model: model)
                 case .finishing:
@@ -35,7 +52,7 @@ struct OnboardingFlow: View {
                     }
                 }
             } else {
-                Lagy.paper.ignoresSafeArea()
+                NKGround(hue: .forma)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: model?.step)
@@ -57,11 +74,19 @@ struct OnboardingFlow: View {
 @MainActor @Observable private final class HelloGate { var connecting = false; var showing = false }
 
 private struct HelloStep: View {
+    @State private var motion = OrbMotion()
     var body: some View {
-        LagyFlowFrame(photoName: "reggelfeny.jpg", crumb: ("Első lépések › ", "Kész"), eyebrow: "Minden megvan", title: "Szia, Boop vagyok",
-                      sub: "Innentől én viszem a reggeleidet.", showsBack: false) {
-            BoopCard(pre: "Holnap reggeltől ", em: "én kezdem a napod", post: ": az alvásodból, a naptáradból és a tervedből mondom meg, mire figyelj.")
-            ProgressView().tint(Lagy.deep).frame(maxWidth: .infinity).padding(.top, 24)
+        NKSkyScreen(hue: .forma, onBack: nil) {
+            VStack(spacing: 0) {
+                LivingOrb(palette: Hue.forma.orb, size: 220, level: 0.85, glow: true, motion: motion).allowsHitTesting(false).padding(.top, 110)
+                Text("MINDEN MEGVAN").font(.nkMono(12)).tracking(1.6).foregroundStyle(.white.opacity(0.75)).padding(.top, 34)
+                Text("Szia, Boop vagyok").font(.nkSerif(42)).foregroundStyle(.white).padding(.top, 8)
+                Text("Innentől én viszem a reggeleidet.").font(.system(size: 16)).foregroundStyle(.white.opacity(0.85)).padding(.top, 6)
+                Text("Holnap reggeltől én kezdem a napod: az alvásodból, a naptáradból és a tervedből mondom meg, mire figyelj. Ez a gömb vagyok én: minél jobb a napod, annál magasabbra kelek.")
+                    .font(.nkSerif(18)).lineSpacing(4).foregroundStyle(.white.opacity(0.8)).multilineTextAlignment(.center).padding(.top, 20)
+                ProgressView().tint(.white).padding(.top, 28)
+            }
         }
+        .onDisappear { motion.stop() }
     }
 }
