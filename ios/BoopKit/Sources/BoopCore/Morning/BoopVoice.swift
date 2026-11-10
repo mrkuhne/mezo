@@ -35,6 +35,7 @@ public final class BoopVoice {
     @ObservationIgnored private var fullText = ""
     @ObservationIgnored private var reduceMotion = false
     @ObservationIgnored private var generation = 0
+    @ObservationIgnored private var revealedUnits = 0
     @ObservationIgnored private var silentTask: Task<Void, Never>?
 
     public init(synthesizer: any SpeechSynthesizing? = nil, defaults: UserDefaults = .standard,
@@ -68,6 +69,7 @@ public final class BoopVoice {
         guard !fullText.isEmpty else { shown = ""; isSpeaking = false; return }
         if reduceMotion { shown = fullText; isSpeaking = false; return }
         shown = ""
+        revealedUnits = 0
         isSpeaking = true
         let gen = generation
         if !muted, synth.hasVoice {
@@ -99,8 +101,9 @@ public final class BoopVoice {
         let units = fullText.utf16
         let clamped = min(max(end, 0), units.count)
         let idx = units.index(units.startIndex, offsetBy: clamped)
-        let next = String(fullText[..<idx])
-        if next.count > shown.count { shown = next }     // never moves backwards
+        guard clamped > revealedUnits else { return }    // never moves backwards
+        revealedUnits = clamped
+        shown = String(fullText[..<idx])
     }
 
     private func revealSilently(_ gen: Int) {
@@ -129,11 +132,12 @@ public final class BoopVoice {
         }
     }
 
-    // Ambient: respects the silent switch and mixes with other audio, so Boop never blasts in a meeting.
+    // Matches the approved spike: playback + spokenAudio so the brief is audible even on the silent switch,
+    // duckOthers so music/podcasts dip while Boop talks and come back (notifyOthersOnDeactivation) afterwards.
     private func activateAudio() {
         #if os(iOS)
         let s = AVAudioSession.sharedInstance()
-        try? s.setCategory(.ambient, mode: .default, options: [])
+        try? s.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
         try? s.setActive(true)
         #endif
     }
@@ -144,13 +148,23 @@ public final class BoopVoice {
     }
 }
 
+/// An utterance carrying a monotonically increasing token, so late delegate callbacks are matched by value
+/// (an `ObjectIdentifier` can be reused once the old utterance is freed).
+private final class TokenUtterance: AVSpeechUtterance, @unchecked Sendable {
+    // @unchecked: the stored token is an immutable `let`, set once in init; AVSpeechUtterance itself is not Sendable.
+    let token: Int
+    init(string: String, token: Int) { self.token = token; super.init(string: string) }
+    required init?(coder: NSCoder) { fatalError("not decoded") }
+}
+
 /// AVSpeechSynthesizer behind `SpeechSynthesizing`. The delegate callbacks arrive on an arbitrary queue; they are
-/// `nonisolated`, carry only Sendable values (an `ObjectIdentifier`, an offset) and hop to the main actor, where
+/// `nonisolated`, carry only Sendable values (a token, an offset) and hop to the main actor, where
 /// the handlers live. No `@unchecked` needed.
 @MainActor
 final class AVSpeechSynthesizerAdapter: NSObject, SpeechSynthesizing, AVSpeechSynthesizerDelegate {
     private let synth = AVSpeechSynthesizer()
-    private var current: ObjectIdentifier?
+    private var current: Int?
+    private var nextToken = 0
     private var onWord: (@MainActor (Int) -> Void)?
     private var onFinish: (@MainActor () -> Void)?
 
@@ -169,12 +183,13 @@ final class AVSpeechSynthesizerAdapter: NSObject, SpeechSynthesizing, AVSpeechSy
     func speak(_ text: String, onWord: @escaping @MainActor (Int) -> Void, onFinish: @escaping @MainActor () -> Void) {
         stop()
         guard let voice = Self.bestVoice else { onFinish(); return }
-        let u = AVSpeechUtterance(string: text)
+        nextToken += 1
+        let u = TokenUtterance(string: text, token: nextToken)
         u.voice = voice
         u.rate = AVSpeechUtteranceDefaultSpeechRate * 1.02
         u.pitchMultiplier = 1.05
         u.preUtteranceDelay = 0.6               // let the orb fill first
-        current = ObjectIdentifier(u)
+        current = u.token
         self.onWord = onWord
         self.onFinish = onFinish
         synth.speak(u)
@@ -186,13 +201,13 @@ final class AVSpeechSynthesizerAdapter: NSObject, SpeechSynthesizing, AVSpeechSy
     }
 
     nonisolated func speechSynthesizer(_ s: AVSpeechSynthesizer, willSpeakRangeOfSpeechString r: NSRange, utterance: AVSpeechUtterance) {
-        let id = ObjectIdentifier(utterance), end = r.location + r.length
+        let id = (utterance as? TokenUtterance)?.token, end = r.location + r.length
         Task { @MainActor in if id == self.current { self.onWord?(end) } }
     }
     nonisolated func speechSynthesizer(_ s: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) { finished(utterance) }
     nonisolated func speechSynthesizer(_ s: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) { finished(utterance) }
     private nonisolated func finished(_ utterance: AVSpeechUtterance) {
-        let id = ObjectIdentifier(utterance)
+        let id = (utterance as? TokenUtterance)?.token
         Task { @MainActor in
             guard id == self.current else { return }
             let done = self.onFinish

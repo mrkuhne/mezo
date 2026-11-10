@@ -90,4 +90,27 @@ struct BoopVoiceTests {
         v.muted = true
         #expect(BoopVoice(synthesizer: s, defaults: d).muted)
     }
+
+    @Test func staleWordCallbackAfterReplayDoesNotChangeShown() {
+        let s = FakeSynth(); let v = voice(s)
+        v.speak(segments: segs, reduceMotion: false)
+        let oldWord = s.onWord
+        v.replay()
+        oldWord?(20)
+        #expect(v.shown.isEmpty)
+    }
+
+    @Test func multiUnitTextRevealsWholeWords() {
+        let s = FakeSynth(); let v = voice(s)
+        // "ű" and "ő" are single UTF-16 units; the last word uses a combining accent (o + U+0301 = 2 units, 1 Character)
+        let text = "Tűrő hűvös reggel és o\u{301}"
+        v.speak(segments: [Brief.Line(text: text, link: nil)], reduceMotion: false)
+        s.onWord?(4);  #expect(v.shown == "Tűrő")
+        s.onWord?(10); #expect(v.shown == "Tűrő hűvös")
+        s.onWord?(2);  #expect(v.shown == "Tűrő hűvös")          // never backwards
+        s.onWord?(text.utf16.count - 1)                           // lands between o and its combining mark: no crash
+        #expect(text.unicodeScalars.starts(with: v.shown.unicodeScalars))
+        s.onWord?(9999)                                           // beyond the end clamps
+        #expect(v.shown == text)
+    }
 }
