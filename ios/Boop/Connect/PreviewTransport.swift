@@ -6,6 +6,10 @@ import OpenAPIRuntime
 /// Simulator review only (`-preview shell|onboarding`): the Wearable endpoints and the morning brief answer locally,
 /// so the connect flow can be walked without a server (the Mac's firewall blocks the simulator app).
 struct PreviewTransport: ClientTransport {
+    /// What the review has changed so far (DEBUG preview only): a moved session and the judged observations.
+    nonisolated(unsafe) private static var movedTime: String?
+    nonisolated(unsafe) private static var decided: Set<String> = []
+
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         try await Task.sleep(for: .milliseconds(400))
         var sent = ""
@@ -28,9 +32,14 @@ struct PreviewTransport: ClientTransport {
         case "setSessionTime":
             // Echo the requested date and time (the request body is the JSON the client sent).
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: String]
+            movedTime = obj?["time"]
             return json(#"{"date":"\#(obj?["date"] ?? queryDate(request))","time":"\#(obj?["time"] ?? "19:00")","plannedTime":"17:30"}"#)
-        case "clearSessionTime": return (HTTPResponse(status: .noContent), nil)
+        case "clearSessionTime":
+            movedTime = nil
+            return (HTTPResponse(status: .noContent), nil)
         case "decidePattern":
+            let parts = (request.path ?? "").split(separator: "/")
+            if let i = parts.firstIndex(of: "pattern"), i + 1 < parts.count { decided.insert(String(parts[i + 1])) }
             return json(#"{"id":"6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0001","kind":"statistical","pairKey":"minta","category":"trigger","categoryLabel":"Kiváltó","title":"Minta","evidence":[],"status":"confirmed","lastDetectedAt":"2026-11-10T05:00:00Z","evidenceHits":4,"evidenceMisses":1}"#)
         default: return nil
         }
@@ -49,6 +58,15 @@ struct PreviewTransport: ClientTransport {
         let hourly = [0.35, 0.5, 0.68, 0.82, 0.9, 0.86, 0.74, 0.6, 0.52, 0.44, 0.5, 0.62, 0.7, 0.66, 0.55, 0.45, 0.36, 0.28, 0.2]
             .map { String($0) }.joined(separator: ",")
         // 06:00–24:00 in quarter hours: a 10:00–11:00 meeting and a 16:00–17:00 meeting just before the 17:30 session.
+        let time = movedTime ?? "17:30"
+        let conflict = movedTime == nil
+            ? #"{"text":"A 16:00-s megbeszélés 17:00-ig tart, alig fél órával az edzés előtt.","suggestedTime":"18:30"}"#
+            : "null"
+        let observations = [
+            #"{"id":"6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0001","lead":"Úgy látszik, ha későn eszel,","bold":"kevesebb mély alvásod","tail":"van másnap.","strength":3}"#,
+            #"{"id":"6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0002","lead":"Az edzésnapokon","bold":"délután 3-kor mélyebb a hullámvölgyed","tail":", ha ebédre kevés a fehérje.","strength":3}"#,
+            #"{"id":"6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0003","lead":"Hétfőnként","bold":"a feszültséged átlagosan 2-vel magasabb","tail":"a hét többi napjánál.","strength":4}"#,
+        ].filter { o in !decided.contains { o.contains($0) } }.joined(separator: ",")
         let slots = (0..<72).map { i in (16..<20).contains(i) || (40..<44).contains(i) ? "true" : "false" }.joined(separator: ",")
         return #"""
         {"date":"\#(date)","generatedAt":"\#(date)T05:40:00Z","state":"okay","nightsKnown":12,
@@ -64,18 +82,18 @@ struct PreviewTransport: ClientTransport {
          "energy":{"hourly":[\#(hourly)],"dipHour":15},
          "tonightTip":"Ma 22:30 körül érdemes lefeküdni, hogy a holnapi edzés előtt kipihent legyél.",
          "nextMealTip":"Ebédre tegyél be egy jó adag fehérjét.",
-         "conflict":{"text":"A 16:00-s megbeszélés 17:00-ig tart, alig fél órával az edzés előtt.","suggestedTime":"18:30"},
+         "conflict":\#(conflict),
          "day":{"sleep":{"bedtime":"23:05","wakeup":"06:17","totalMin":432,"deepMin":88,"remMin":96,"lightMin":238,"awakeMin":30,
                   "hypnogram":[{"stage":2,"minutes":40},{"stage":3,"minutes":50},{"stage":2,"minutes":60},{"stage":1,"minutes":45},{"stage":0,"minutes":10},{"stage":2,"minutes":90},{"stage":3,"minutes":38},{"stage":1,"minutes":51},{"stage":2,"minutes":48}]},
           "bedtimeTarget":"22:30","deepSleepWeek":[72,64,null,80,70,76,88],"restingHrWeek":[59,58,60,null,58,59,57],
           "hrToday":{"min":54,"avg":66,"max":92},"steps":3240,"stepsGoal":10000,"activeKcal":210,
-          "session":{"title":"Vállak és hát","time":"17:30","plannedTime":"17:30","minutes":60,
+          "session":{"title":"Vállak és hát","time":"\#(time)","plannedTime":"17:30","minutes":60,
                      "exercises":[{"name":"Húzódzkodás","sets":4},{"name":"Evezés rúddal","sets":4},{"name":"Vállnyomás","sets":3},{"name":"Oldalemelés","sets":3}]},
           "meals":[{"time":"08:00","title":"Zabkása gyümölccsel","kcal":420,"proteinG":22,"logged":false},{"time":"12:30","title":"Csirkés rizs","kcal":650,"proteinG":48,"logged":false}],
           "kcalSoFar":0,"kcalTarget":2400,"proteinG":0,"proteinTarget":150,"carbsG":0,"fatG":0,
           "checkins":[{"slot":"morning","time":"08:00","done":false},{"slot":"midday","time":"13:00","done":false}],
           "intention":{"creed":"Egyenletesen, nem erőből.","foci":["Nyugodt tempó","Vizet inni"]},
-          "observations":[{"id":"6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0001","lead":"Úgy látszik, ha későn eszel,","bold":"kevesebb mély alvásod","tail":"van másnap.","strength":3}],
+          "observations":[\#(observations)],
           "calendar":{"count":2,"busySlots":[\#(slots)]},
           "weight":{"kg":78.4,"trendKg":78.1},"recovery":null}}
         """#

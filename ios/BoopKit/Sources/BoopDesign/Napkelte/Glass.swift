@@ -104,22 +104,36 @@ public struct NKGlyph: View {
 }
 
 /// A glass capsule that slides in from the top for 2.2 s ("Kávé · hozzáadva"), with a success haptic.
+/// With an action ("Visszavonom") it stays 6 s and the action is a white text button at its end.
 public struct NKToast: ViewModifier {
     @Binding var text: String?
+    var action: String?
+    var onAction: () -> Void = {}
     public func body(content: Content) -> some View {
         content
             .overlay(alignment: .top) {
                 if let t = text {
                     HStack(spacing: 8) {
                         NKGlyph("check-ink", .white, size: 15)
-                        Text(t).nkFont(14, .semibold).foregroundStyle(.white)
+                        Text(t).nkFont(14, .semibold).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)
+                        if let action {
+                            Button {
+                                onAction()
+                                withAnimation(.easeInOut) { text = nil }
+                            } label: {
+                                Text(action).nkFont(14, .bold).foregroundStyle(NK.ground)
+                                    .padding(.horizontal, 12).frame(minHeight: 30)
+                                    .background(Capsule().fill(.white))
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .padding(.horizontal, 16).frame(height: 42)
+                    .padding(.leading, 16).padding(.trailing, action == nil ? 16 : 6).frame(minHeight: 42)
                     .glassEffect(.regular, in: .capsule)
                     .padding(.top, 6)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task(id: t) {
-                        try? await Task.sleep(for: .seconds(2.2))
+                        try? await Task.sleep(for: .seconds(action == nil ? 2.2 : 6))
                         withAnimation(.easeInOut) { if text == t { text = nil } }
                     }
                 }
@@ -131,6 +145,10 @@ public struct NKToast: ViewModifier {
 
 public extension View {
     func nkToast(_ text: Binding<String?>) -> some View { modifier(NKToast(text: text)) }
+    /// A toast with one action at its end (e.g. undo); `action == nil` behaves like the plain toast.
+    func nkToast(_ text: Binding<String?>, action: String?, onAction: @escaping () -> Void) -> some View {
+        modifier(NKToast(text: text, action: action, onAction: onAction))
+    }
 }
 
 /// Boop speaks: a tiny still orb, "BOOP", one serif sentence with a bold phrase, an optional soft action.

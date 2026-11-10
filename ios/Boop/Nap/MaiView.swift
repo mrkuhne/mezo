@@ -67,10 +67,11 @@ func morningProblemCopy(_ p: MorningProblem) -> NapCopy {
 // MARK: - The Mai hero (spec §5.1, §5.1a; spike AuraSunrise)
 
 /// Nap · Mai with the morning brief: title row, tabs, five mini orbs, the selected metric rising as the sun, its verdict
-/// and the lens action row. Tapping a mini orb re-colours the page. `below` is what follows the hero.
+/// and the lens action row. Tapping a mini orb re-colours the page. `below` is what follows the hero; it receives the
+/// selected orb, Boop's voice and the page toast (`MaiContext`).
 struct MaiView<Below: View>: View {
     let brief: Brief
-    @ViewBuilder let below: () -> Below
+    @ViewBuilder let below: (MaiContext) -> Below
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selected: Hue = .forma
     @State private var motion = OrbMotion()
@@ -79,6 +80,8 @@ struct MaiView<Below: View>: View {
     @State private var inhale = false
     @State private var breathTask: Task<Void, Never>?
     @State private var toast: String?
+    /// The undo of the toast on screen (nil = a plain toast).
+    @State private var undo: (() -> Void)?
 
     private var copy: MaiCopy { maiCopy(brief, metricKey(for: selected)) }
     // Evening (hour ≥ 18) arrives with Task 14.
@@ -90,9 +93,10 @@ struct MaiView<Below: View>: View {
                   compact: NKCompact(palette: selected.orb, title: c.name, value: c.orbDisplay, line: c.headline)) {
             hero(c)
         } content: {
-            below()
+            below(MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
+                             toast: { show($0) }, undoToast: { show($0, undo: $1) }))
         }
-        .nkToast($toast)
+        .nkToast($toast, action: undo == nil ? nil : SessionText.undo) { undo?(); undo = nil }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: inhale) { _, _ in breathing }
         .onAppear { if voice == nil { voice = BoopVoice() } }
         .onDisappear { motion.stop(); stopBreath(); voice?.stop() }
@@ -103,11 +107,11 @@ struct MaiView<Below: View>: View {
 
     private func hero(_ c: MaiCopy) -> some View {
         VStack(spacing: 0) {
-            NKTitleRow(bellCount: 0, onBell: { toast = soonToast("Értesítések") }, onPlus: { toast = soonToast("Gyors hozzáadás") },
-                       onAvatar: { toast = soonToast("Beállítások") })
+            NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: { show(soonToast("Gyors hozzáadás")) },
+                       onAvatar: { show(soonToast("Beállítások")) })
                 .padding(.top, 54)
             NKTabStrip(tabs: ["Mai", "A napom", "Beszélgetés", "Rutin"],
-                       selected: Binding(get: { "Mai" }, set: { if $0 != "Mai" { toast = soonToast($0) } }),
+                       selected: Binding(get: { "Mai" }, set: { if $0 != "Mai" { show(soonToast($0)) } }),
                        dot: morning ? "A napom" : nil)
                 .padding(.top, 10)
             MiniOrbRow(items: Hue.allCases.map { ($0, maiCopy(brief, metricKey(for: $0)).miniValue) },
@@ -130,7 +134,7 @@ struct MaiView<Below: View>: View {
                 .contentTransition(.opacity)
             LensActionRow(hue: selected, action: action, breathing: breathing, sessionTitle: brief.day.session?.title,
                           motion: motion, muted: voice?.muted ?? false,
-                          onPrimary: primary, onMenu: { toast = soonToast($0) }, onChip: { toast = soonToast($0.title) },
+                          onPrimary: primary, onMenu: { show(soonToast($0)) }, onChip: { show(soonToast($0.title)) },
                           onSpeak: speak, onToggleMute: { voice?.muted.toggle() })
                 .padding(.top, 4)
             Spacer(minLength: 0)
@@ -139,12 +143,17 @@ struct MaiView<Below: View>: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    private func show(_ text: String, undo: (() -> Void)? = nil) {
+        self.undo = undo
+        toast = text
+    }
+
     private var morning: Bool { (5..<12).contains(Calendar.current.component(.hour, from: Date())) }
 
     private func primary() {
         if breathing { stopBreath(); return }
         guard let action else { speak(); return }
-        if action.kind == .breath { startBreath() } else { toast = soonToast(soonName(action.kind)) }
+        if action.kind == .breath { startBreath() } else { show(soonToast(soonName(action.kind))) }
     }
 
     private func speak() {
@@ -163,7 +172,7 @@ struct MaiView<Below: View>: View {
                 try? await Task.sleep(for: .seconds(4))
                 if Task.isCancelled { return }
             }
-            toast = MaiText.breathEnded
+            show(MaiText.breathEnded)
             stopBreath()
         }
     }

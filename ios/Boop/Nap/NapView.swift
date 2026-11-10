@@ -43,7 +43,7 @@ struct NapView: View {
             switch napScreen(state: s, hasStore: morning != nil, hasBrief: morning?.brief != nil, loading: morning?.loading ?? false,
                              problem: morning?.problem, forceBrief: forceBrief) {
             case .mai:
-                if let brief = morning?.brief { MaiView(brief: brief) { cards } }
+                if let morning, let brief = morning.brief { MaiView(brief: brief) { ctx in cards(brief, morning, ctx) } }
             case .loading:
                 page(s, copy: loadingCopy, offline: false) {}
             case .problem(let problem):
@@ -64,9 +64,12 @@ struct NapView: View {
         .background { if let morning { MorningTriggers(store: morning) } }
     }
 
-    /// Below the hero until the lens cards arrive (Task 12): the Health row.
-    @ViewBuilder private var cards: some View {
-        if let link { ConnectCard(link: link) { connecting = true } }
+    /// Below the hero: the selected orb's tiles, path and cards, then the Health row (sync status and "refresh now"
+    /// stay one scroll away on every orb, as on the empty states).
+    @ViewBuilder private func cards(_ brief: Brief, _ store: MorningStore, _ ctx: MaiContext) -> some View {
+        // Task 13 replaces the toast with the detail sheet of the phrase.
+        MaiBelow(brief: brief, store: store, ctx: ctx) { link in ctx.toast(soonToast(linkSheetName(link))) }
+        if let link { ConnectCard(link: link) { connecting = true }.padding(.top, 8) }
         Color.clear.frame(height: 90)
     }
 
