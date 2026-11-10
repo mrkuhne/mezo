@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S2 of 4 slices shipped (2026-11-10) | The native SwiftUI iPhone app in the Lágy look that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data. [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5 shipped (2026-11-10) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data. [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -62,6 +62,14 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-11-10 — Boop S2.5 · Napkelte — új, saját kinézetet kapott az iPhone-app (`mezo-r36n9.3`).**
+  A tulajdonos az Oura és az Ultrahuman képei alapján egy egyedi irányt választott: sötét üveg, festett égbolt,
+  és a Boop-gömb, amely a reggel napjaként kel fel. Minden, ami eddig az appban volt (belépés, regisztráció,
+  bemutatkozás, az Egészség és a naptár bekötése, az alsó menü csak ikonokkal, a webes fülek és a Nap lap
+  üres és „még tanulom” állapotai), most ebben a kinézetben jelenik meg. A teljes reggel a gömbökkel, a
+  lencsével és az ösvényekkel a következő szeletben jön. Tervezés: [terv](../superpowers/specs/2026-11-10-boop-napkelte-design.md),
+  [építés](../superpowers/plans/2026-11-10-boop-napkelte-kit.md), [működés](../features/boop-ios.md).
 
 - **2026-11-10 — Boop S2 · adatok — a Boop látja az alvásodat, a mozgásodat és a naptáradat (`mezo-r36n9.2`).**
   Az iPhone-app összeköthető az Egészség appal és a naptárral: első alkalommal behúzza az elmúlt 60 napot

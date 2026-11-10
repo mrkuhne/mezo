@@ -1,5 +1,9 @@
 # Boop — native iOS app, v1 (the morning) — design
 
+> **Look superseded 2026-11-10:** the visual canon is now **Napkelte** —
+> [`2026-11-10-boop-napkelte-design.md`](2026-11-10-boop-napkelte-design.md). Everything here that is not about looks
+> (data, backend, install, slices, owner decisions in §8) still holds.
+
 - **Date:** 2026-11-09 (revised the same day: **Lágy pivot**, §0) · **Epic:** `mezo-r36n9` · **Status:** draft for owner OK (builder check done, §8)
 - **Design canon:** the **Lágy** direction (`.claude/skills/lagy/IRANY.md` + `docs/design_2.0/prototypes/kepes/b/*`,
   currently on branch `claude/mai-napom-custom-graphics-eedeb2`), built natively. The orb, Boop's voice and

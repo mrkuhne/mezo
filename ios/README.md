@@ -3,14 +3,15 @@
 Boop is the native iPhone app that replaces the Mezo web app once complete (epic `mezo-r36n9`).
 Spec: [`docs/superpowers/specs/2026-11-09-boop-ios-v1-design.md`](../docs/superpowers/specs/2026-11-09-boop-ios-v1-design.md) ·
 Plan: [`docs/superpowers/plans/2026-11-09-boop-ios-v1.md`](../docs/superpowers/plans/2026-11-09-boop-ios-v1.md) ·
-Approved look: [`docs/design_2.0/prototypes/boop-ios-spike/`](../docs/design_2.0/prototypes/boop-ios-spike/README.md).
+Look: **Napkelte** — [spec](../docs/superpowers/specs/2026-11-10-boop-napkelte-design.md), reference spike
+[`docs/design_2.0/prototypes/boop-ios-spike/`](../docs/design_2.0/prototypes/boop-ios-spike/README.md) (`Aura*.swift`).
 
 ## Layout
 
 - `Boop.xcodeproj` — app target `Boop` (bundle `io.mrkuhne.boop`) + unit tests `BoopTests`.
 - `Boop/` — screens, one folder per area (file-system synchronized group: new files are picked up automatically).
 - `BoopKit/` — local Swift package: `BoopAPI` (client generated from the backend contract),
-  `BoopCore` (session, token, API wiring), `BoopDesign` (the Lágy kit).
+  `BoopCore` (session, token, API wiring), `BoopDesign` (the Napkelte kit in `Napkelte/`, plus the remaining Lágy tokens and glyph assets).
 - `scripts/sync-openapi.sh` — copies `api/openapi.yml` into `BoopKit/Sources/BoopAPI/openapi.yaml`
   (rewriting the 3.1-style `exclusiveMinimum: N` the Swift generator rejects); `--check` fails when stale.
 
