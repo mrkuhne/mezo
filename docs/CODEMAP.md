@@ -248,16 +248,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `BoopBriefEntity`→`boop_brief`, `WorkoutTimeOverrideEntity`→`workout_time_override`
   - **repositories:** `BoopBriefRepository`, `WorkoutTimeOverrideRepository`
   - **services:** `BoopBriefService`, `BoopBriefStore`, `BoopDay`, `BoopDayAssembler`, `BoopPrompts`, `BoopScores`,
-    `BoopVerdictWriter`, `EnergyCurveModel`, `RuleVerdicts`
+    `BoopVerdictWriter`, `EnergyCurveModel`, `RuleVerdicts`, `SessionTimeService`
   - **controllers→contract:** `BoopController`→`BoopApi`
   - **mappers:** `BoopBriefMapper`
   - **config:** `BoopProperties`
 - **Contract** `api/feature/boop/boop.yml` — 4 operations
   - **endpoints:** GET /api/boop/brief · POST /api/boop/brief/regenerate · PUT /api/boop/session-time ·
     DELETE /api/boop/session-time
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 6 IT + 2 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 7 IT + 2 unit
   - **ITs:** `BoopBriefConcurrencyIT`, `BoopBriefServiceIT`, `BoopContractIT`, `BoopDayAssemblerIT`,
-    `BoopRepositoriesIT`, `BoopVerdictWriterIT`
+    `BoopRepositoriesIT`, `BoopVerdictWriterIT`, `SessionTimeIT`
   - **populators:** `BoopBriefPopulator`, `CalendarEventPopulator`, `CheckInPopulator`, `DailyMetricPopulator`,
     `DatabasePopulator`, `IntentionPopulator`, `MealPopulator`, `PatternPopulator`, `RecoveryPeriodPopulator`,
     `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`, `WearableWorkoutPopulator`, `WeightLogPopulator`,

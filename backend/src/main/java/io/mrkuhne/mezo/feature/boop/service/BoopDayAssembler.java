@@ -224,7 +224,9 @@ public class BoopDayAssembler {
 
     // ------------------------------------------------------------------ training
 
-    private BoopDay.Session session(UUID user, LocalDate date) {
+    /** The planned session of the day (override applied); null on a rest day. Also the 404 check of
+     *  {@link SessionTimeService}. */
+    public BoopDay.Session session(UUID user, LocalDate date) {
         Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDateUnlessSkipped(user, date);
         if (template.isEmpty()) {
             return null;

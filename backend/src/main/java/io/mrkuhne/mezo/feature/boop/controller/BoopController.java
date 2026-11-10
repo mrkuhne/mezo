@@ -5,13 +5,12 @@ import io.mrkuhne.mezo.api.dto.BoopBrief;
 import io.mrkuhne.mezo.api.dto.SessionTime;
 import io.mrkuhne.mezo.api.dto.SessionTimeRequest;
 import io.mrkuhne.mezo.feature.boop.service.BoopBriefService;
+import io.mrkuhne.mezo.feature.boop.service.SessionTimeService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 /** /api/boop surface (Boop S3, mezo-r36n9.7) — thin delegation, ownership from the principal. The
  *  {@code date} is the client's local day, already pattern-validated by the generated interface. */
@@ -20,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class BoopController implements BoopApi {
 
     private final BoopBriefService briefService;
+    private final SessionTimeService sessionTimeService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -41,15 +41,13 @@ public class BoopController implements BoopApi {
         }
     }
 
-    /** Task 7 (session time) replaces this placeholder. */
     @Override
-    public SessionTime setSessionTime(SessionTimeRequest sessionTimeRequest) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+    public SessionTime setSessionTime(SessionTimeRequest request) {
+        return sessionTimeService.set(currentUserId.get(), day(request.getDate()), request.getTime());
     }
 
-    /** Task 7 (session time) replaces this placeholder. */
     @Override
     public void clearSessionTime(String date) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+        sessionTimeService.clear(currentUserId.get(), day(date));
     }
 }

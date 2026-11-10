@@ -146,7 +146,7 @@ public class BoopBriefService {
             HttpStatus.BAD_REQUEST);
     }
 
-    private void requireNotFuture(LocalDate date, Instant now) {
+    void requireNotFuture(LocalDate date, Instant now) {
         if (date.isAfter(now.atZone(zone).toLocalDate())) {
             throw invalidDate();
         }
