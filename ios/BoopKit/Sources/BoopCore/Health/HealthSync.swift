@@ -43,6 +43,16 @@ public final class HealthSync {
     private var markKey: String { "boop.health.syncedThrough.\(userId)" }
     private var summaryKey: String { "boop.health.summary.\(userId)" }
     private var syncedAtKey: String { "boop.health.syncedAt.\(userId)" }
+    private var idsKey: String { "boop.health.syncedIds.\(userId)" }
+
+    /// Everything synced so far (distinct nights, days, workouts; events = the last calendar snapshot),
+    /// for the Nap card. Kept as id sets so re-sent records are not counted twice. Nil before the first run.
+    public var totals: Summary? {
+        guard let ids = storedIds else { return nil }
+        return Summary(nights: ids.nights.count, days: ids.days.count, workouts: ids.workouts.count, events: lastSummary?.events ?? 0)
+    }
+    private struct SyncedIds: Codable { var nights: Set<String> = [], days: Set<String> = [], workouts: Set<String> = [] }
+    private var storedIds: SyncedIds? { store.data(forKey: idsKey).flatMap { try? JSONDecoder().decode(SyncedIds.self, from: $0) } }
 
     /// The last successful run's counts and time (for the Nap card).
     public var lastSummary: Summary? {
@@ -90,7 +100,14 @@ public final class HealthSync {
 
             let summary = Summary(nights: nights.count, days: days.count, workouts: workouts.count, events: events)
             // A run that read nothing (Health refused, or not yet switched on) keeps the 60-day window open.
-            if nights.count + days.count + workouts.count > 0 { store.set(dayString(end, cal), forKey: markKey) }
+            if nights.count + days.count + workouts.count > 0 {
+                store.set(dayString(end, cal), forKey: markKey)
+                var ids = storedIds ?? SyncedIds()
+                ids.nights.formUnion(nights.map(\.date))
+                ids.days.formUnion(days.map(\.date))
+                ids.workouts.formUnion(workouts.map(\.externalId))
+                store.set(try? JSONEncoder().encode(ids), forKey: idsKey)
+            }
             store.set(try? JSONEncoder().encode(summary), forKey: summaryKey)
             store.set(end, forKey: syncedAtKey)
             phase = .done(summary)
@@ -119,7 +136,8 @@ public final class HealthSync {
 
     private func windowStart() -> Date {
         let today = cal.startOfDay(for: now())
-        if let mark = store.string(forKey: markKey), let markDay = parseDay(mark) {
+        // No id sets yet (a phone synced before totals existed): re-read the 60 days once to count them.
+        if storedIds != nil, let mark = store.string(forKey: markKey), let markDay = parseDay(mark) {
             return cal.date(byAdding: .day, value: -2, to: markDay)!
         }
         return cal.date(byAdding: .day, value: -60, to: today)!

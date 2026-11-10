@@ -54,7 +54,9 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
   "Megvan: *58 éjszaka*, 60 nap mozgás és 21 edzés." No Health data → a peach card with where to switch
   it on (Egészség app › Megosztás › Appok › Boop); calendar refused → a line with Beállítások › Boop ›
   Naptárak; the other source still syncs; "Most kihagyom" always leaves.
-- **Nap card** once connected: "Beérkezett adatok" with the counts chip and one status chip
+- **Nap card** once connected: "Beérkezett adatok" with the counts chip — everything synced so far
+  (`HealthSync.totals`: distinct night dates / day dates / workout ids kept per user, so re-sent records
+  count once; a phone synced before totals existed re-reads the 60 days once, `mezo-r36n9.5`) — and one status chip
   (frissítem… · nem sikerült frissíteni · naptár: nincs engedély · frissítve HH:mm); tapping refreshes.
 - **Refresh on open**: every return to the foreground re-syncs (10-minute debounce); a calendar change
   re-sends today + tomorrow. Free team → no background delivery.

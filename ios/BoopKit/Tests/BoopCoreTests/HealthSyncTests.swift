@@ -52,6 +52,11 @@ struct HealthSyncTests {
             return [SleepSample(start: start, end: wake, stage: .core, source: "Sleep Cycle")]
         }
     }
+    /// A phone that already synced through `day` (mark + the id sets the totals count).
+    func markSynced(_ day: String) {
+        store.set(day, forKey: "boop.health.syncedThrough.\(user)")
+        store.set(Data(#"{"nights":[],"days":[],"workouts":[]}"#.utf8), forKey: "boop.health.syncedIds.\(user)")
+    }
     let ok = #"{"inserted":1,"updated":0}"#
     func okEverything() { for _ in 0..<5 { stub.on("ingestSleepNights", .json(200, ok)); stub.on("ingestDailyMetrics", .json(200, ok)); stub.on("ingestWorkouts", .json(200, ok)) }; stub.on("replaceCalendarDays", .status(204)) }
 
@@ -63,7 +68,7 @@ struct HealthSyncTests {
     }
 
     @Test func laterRunOverlapsTwoDays() async {
-        store.set("2026-11-08", forKey: "boop.health.syncedThrough.\(user)")
+        markSynced("2026-11-08")
         okEverything()
         await sync().syncAll()
         #expect(health.froms.first == cal.date(from: DateComponents(year: 2026, month: 11, day: 6))!.addingTimeInterval(-18 * 3600))
@@ -138,7 +143,7 @@ struct HealthSyncTests {
 
     // Final review C1: the night waking on the window's first day keeps its evening part.
     @Test func windowEdgeNightKeepsItsEvening() async {
-        store.set("2026-11-08", forKey: "boop.health.syncedThrough.\(user)")    // window starts 2026-11-06 00:00
+        markSynced("2026-11-08")    // window starts 2026-11-06 00:00
         let bed = cal.date(from: DateComponents(year: 2026, month: 11, day: 5, hour: 22, minute: 30))!
         let mid = cal.date(from: DateComponents(year: 2026, month: 11, day: 6, hour: 0, minute: 30))!
         let wake = cal.date(from: DateComponents(year: 2026, month: 11, day: 6, hour: 6, minute: 30))!
@@ -180,5 +185,33 @@ struct HealthSyncTests {
         #expect(s.phase == .done(.init(nights: 1, days: 0, workouts: 0, events: 0)))
         #expect(s.calendarFailed)
         #expect(store.string(forKey: "boop.health.syncedThrough.\(user)") == "2026-11-09")
+    }
+
+    // mezo-r36n9.5: the Nap card counts everything synced so far, not just the last refresh.
+    @Test func totalsAccumulateAcrossRuns() async {
+        health.nights = nightsBack(3)                     // nights waking 11-07, 11-08, 11-09
+        okEverything()
+        let s = sync()
+        await s.syncAll()
+        #expect(s.totals == .init(nights: 3, days: 0, workouts: 0, events: 0))
+        health.nights = nightsBack(2)                     // re-sent 11-08, 11-09: no new nights
+        okEverything()
+        await s.syncAll()
+        #expect(s.lastSummary?.nights == 2)              // the run itself
+        #expect(s.totals?.nights == 3)                   // the card: everything so far
+    }
+
+    // mezo-r36n9.5: a phone synced before totals existed re-reads the 60 days once to count them.
+    @Test func missingTotalsRereadSixtyDaysOnce() async {
+        store.set("2026-11-09", forKey: "boop.health.syncedThrough.\(user)")
+        health.nights = night(9)
+        okEverything()
+        let s = sync()
+        await s.syncAll()
+        let sixty = cal.date(byAdding: .day, value: -60, to: cal.startOfDay(for: now))!.addingTimeInterval(-18 * 3600)
+        #expect(health.froms.first == sixty)
+        okEverything()
+        await s.syncAll()
+        #expect(health.froms.last != sixty)                // afterwards incremental again
     }
 }
