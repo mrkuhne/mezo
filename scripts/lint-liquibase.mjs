@@ -48,6 +48,9 @@ const GRANDFATHERED = {
   // mezo-q4xt2.1: released (deployed) with an ix_ index; 202609290300_mezo-q4xt2.1_planned_skip_naming.sql
   // renames it in the live schema.
   '202609281500_mezo-q4xt2.1_planned_skip.sql': new Set(['index-prefix']),
+  // mezo-r36n9.2: released (deployed) with unnamed inline CHECKs on daily_metric / wearable_workout;
+  // 202611100100_mezo-r36n9.2_wearable_check_naming.sql renames them in the live schema.
+  '202611092310_mezo-r36n9.2_wearable_tables.sql': new Set(['inline-check']),
 };
 
 // `(?:\.\d+)*` (zero or more), not `?` (at most one): CLAUDE.md mandates the
