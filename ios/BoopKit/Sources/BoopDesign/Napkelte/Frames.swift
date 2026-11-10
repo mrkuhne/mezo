@@ -262,23 +262,13 @@ public struct NKBackdropPanorama: View, @preconcurrency Animatable {
     private func sky(_ p: NKBackdrop, w: CGFloat, shift: CGFloat) -> some View {
         ZStack(alignment: .top) {
             LinearGradient(colors: NK.deepGround(p.hue), startPoint: .top, endPoint: .bottom)
-            Color.clear.frame(width: w, height: p.heroHeight)
-                .overlay { PaintedLandscape(hue: p.hue) }
+            // The same ridges run on past both screen edges, so a slide never uncovers a gap or a seam.
+            Color.clear.frame(width: w * 3, height: p.heroHeight)
+                .overlay { PaintedLandscape(hue: p.hue, span: 3) }
                 .clipped()
-                .mask(nkLandscapeMask)
-                // While it slides, the edge that comes into view melts into the ground instead of showing a cut.
-                .mask(edgeFeather(shift: shift, width: w))
-                .offset(x: shift, y: -max(0, p.scrollY))
+            .mask(nkLandscapeMask)
+            .offset(x: shift, y: -max(0, p.scrollY))
         }
-    }
-
-    /// No feather at rest; while shifted right the left edge fades over a band as wide as the shift (and vice versa).
-    private func edgeFeather(shift: CGFloat, width: CGFloat) -> LinearGradient {
-        let f = min(0.45, abs(shift) / max(width, 1) * 1.4)
-        let stops: [Gradient.Stop] = shift >= 0
-            ? [.init(color: .clear, location: 0), .init(color: .black, location: f), .init(color: .black, location: 1)]
-            : [.init(color: .black, location: 0), .init(color: .black, location: 1 - f), .init(color: .clear, location: 1)]
-        return LinearGradient(stops: stops, startPoint: .leading, endPoint: .trailing)
     }
 
     /// Ease the blend so the middle of the trip is a real mix, not a quick swap.

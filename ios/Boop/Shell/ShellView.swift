@@ -25,8 +25,8 @@ struct ShellView: View {
                     .id(tab)
                     .onPreferenceChange(NKBackdropKey.self) { [tab] sky in if let sky { skies[tab] = sky } }
                     // The old page leaves quickly and the new one arrives just after, so text never doubles up.
-                    .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.32).delay(0.16)),
-                                            removal: .opacity.animation(.easeIn(duration: 0.14))))
+                    .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.5).delay(0.3)),
+                                            removal: .opacity.animation(.easeIn(duration: 0.22))))
             }
             .environment(\.nkBackdropHosted, true)
             NKNav(selected: Binding(get: { tab }, set: select))
@@ -57,7 +57,7 @@ struct ShellView: View {
             progress = 0
         }
         DispatchQueue.main.async {
-            withAnimation(.smooth(duration: 0.6)) {
+            withAnimation(.smooth(duration: 0.95)) {
                 tab = new
                 progress = 1
             }
