@@ -64,6 +64,15 @@ func morningProblemCopy(_ p: MorningProblem) -> NapCopy {
                    sentence: MaiText.problemSentence, action: MaiText.retry)
 }
 
+// MARK: - The Nap tabs
+
+enum NapTab {
+    static let mai = "Mai", day = "A napom"
+    static let all = ["Mai", "A napom", "Beszélgetés", "Rutin"]
+    /// The tabs that have a page; the others answer "hamarosan".
+    static let built: Set<String> = [mai, day]
+}
+
 // MARK: - The Mai hero (spec §5.1, §5.1a; spike AuraSunrise)
 
 /// Nap · Mai with the morning brief: title row, tabs, five mini orbs, the selected metric rising as the sun, its verdict
@@ -82,6 +91,8 @@ struct MaiView<Below: View>: View {
     @State private var toast: String?
     /// The undo of the toast on screen (nil = a plain toast).
     @State private var undo: (() -> Void)?
+    /// The Nap tab on screen: Mai or A napom (Beszélgetés and Rutin are "hamarosan").
+    @State private var tab = MaiView.initialTab
 
     private var copy: MaiCopy { maiCopy(brief, metricKey(for: selected)) }
     // Evening (hour ≥ 18) arrives with Task 14.
@@ -89,12 +100,18 @@ struct MaiView<Below: View>: View {
 
     var body: some View {
         let c = copy
-        NKTabPage(hue: selected, heroHeight: nil,
-                  compact: NKCompact(palette: selected.orb, title: c.name, value: c.orbDisplay, line: c.headline)) {
-            hero(c)
-        } content: {
-            below(MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
-                             toast: { show($0) }, undoToast: { show($0, undo: $1) }))
+        Group {
+            if tab == NapTab.day {
+                ANapomView(brief: brief) { header }
+            } else {
+                NKTabPage(hue: selected, heroHeight: nil,
+                          compact: NKCompact(palette: selected.orb, title: c.name, value: c.orbDisplay, line: c.headline)) {
+                    hero(c)
+                } content: {
+                    below(MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
+                                     toast: { show($0) }, undoToast: { show($0, undo: $1) }))
+                }
+            }
         }
         .nkToast($toast, action: undo == nil ? nil : SessionText.undo) { undo?(); undo = nil }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: inhale) { _, _ in breathing }
@@ -105,15 +122,29 @@ struct MaiView<Below: View>: View {
         .onChange(of: voice?.shown ?? "") { _, _ in if voice?.isSpeaking == true { motion.kick() } }
     }
 
+    /// The title row and the Nap tabs, shared by Mai and A napom.
+    @ViewBuilder private var header: some View {
+        NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: { show(soonToast("Gyors hozzáadás")) },
+                   onAvatar: { show(soonToast("Beállítások")) })
+            .padding(.top, 54)
+        NKTabStrip(tabs: NapTab.all,
+                   selected: Binding(get: { tab }, set: { t in
+                       if NapTab.built.contains(t) { tab = t } else { show(soonToast(t)) }
+                   }),
+                   dot: morning ? NapTab.day : nil)
+            .padding(.top, 10)
+    }
+
+    private static var initialTab: String {
+        #if DEBUG
+        if UserDefaults.standard.string(forKey: "previewTab") == "napom" { return NapTab.day }
+        #endif
+        return NapTab.mai
+    }
+
     private func hero(_ c: MaiCopy) -> some View {
         VStack(spacing: 0) {
-            NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: { show(soonToast("Gyors hozzáadás")) },
-                       onAvatar: { show(soonToast("Beállítások")) })
-                .padding(.top, 54)
-            NKTabStrip(tabs: ["Mai", "A napom", "Beszélgetés", "Rutin"],
-                       selected: Binding(get: { "Mai" }, set: { if $0 != "Mai" { show(soonToast($0)) } }),
-                       dot: morning ? "A napom" : nil)
-                .padding(.top, 10)
+            header
             MiniOrbRow(items: Hue.allCases.map { ($0, maiCopy(brief, metricKey(for: $0)).miniValue) },
                        selected: $selected, motion: motion)
                 .padding(.vertical, 8).padding(.top, 10)

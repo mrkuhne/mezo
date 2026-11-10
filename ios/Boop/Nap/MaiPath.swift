@@ -23,15 +23,6 @@ struct MaiContext {
     let undoToast: (String, @escaping () -> Void) -> Void
 }
 
-/// The name of the detail sheet behind a tappable phrase (the sheets themselves arrive in Task 13).
-func linkSheetName(_ link: Brief.Link) -> String {
-    switch link {
-    case .sleep: "Az éjszakád"
-    case .heart: "A pulzusod"
-    case .day: "A napod"
-    }
-}
-
 // MARK: - Below the hero (spec §5.1a, §5.1b)
 
 /// The selected orb's tiles, its short path with the cards hanging off it, and on Forma the Boop mondja card.
@@ -40,7 +31,7 @@ struct MaiBelow: View {
     let brief: Brief
     let store: MorningStore
     let ctx: MaiContext
-    /// A tappable phrase in Boop mondja (Task 13 presents the sheet).
+    /// A tappable phrase in Boop mondja (the page presents its detail sheet).
     let onLink: (Brief.Link) -> Void
 
     private var key: MetricKey { metricKey(for: ctx.hue) }

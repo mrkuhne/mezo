@@ -13,6 +13,8 @@ struct NapView: View {
     @State private var connecting = false
     @State private var toast: String?
     @State private var motion = OrbMotion()
+    /// The detail sheet behind a tapped Boop mondja phrase.
+    @State private var sheet: DetailSheet? = NapView.initialSheet
 
     private var state: NapEmptyState {
         guard let link else { return .notConnected }
@@ -67,10 +69,20 @@ struct NapView: View {
     /// Below the hero: the selected orb's tiles, path and cards, then the Health row (sync status and "refresh now"
     /// stay one scroll away on every orb, as on the empty states).
     @ViewBuilder private func cards(_ brief: Brief, _ store: MorningStore, _ ctx: MaiContext) -> some View {
-        // Task 13 replaces the toast with the detail sheet of the phrase.
-        MaiBelow(brief: brief, store: store, ctx: ctx) { link in ctx.toast(soonToast(linkSheetName(link))) }
+        MaiBelow(brief: brief, store: store, ctx: ctx) { link in sheet = DetailSheet(link) }
+            .sheet(item: $sheet) { kind in
+                DetailSheetView(kind: kind, brief: store.brief ?? brief, store: store, ctx: ctx) { sheet = nil }
+            }
         if let link { ConnectCard(link: link) { connecting = true }.padding(.top, 8) }
         Color.clear.frame(height: 90)
+    }
+
+    /// Simulator review: `-previewSheet sleep|heart|day` opens that sheet (`-previewDetent large` at the large detent).
+    private static var initialSheet: DetailSheet? {
+        #if DEBUG
+        if let k = UserDefaults.standard.string(forKey: "previewSheet").flatMap(Brief.Link.init(rawValue:)) { return DetailSheet(k) }
+        #endif
+        return nil
     }
 
     private func page(_ s: NapEmptyState, copy: NapCopy, offline: Bool, onAction: @escaping () -> Void) -> some View {

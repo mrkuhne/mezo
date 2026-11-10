@@ -71,10 +71,8 @@ func maiTiles(_ key: MetricKey, _ x: TileInputs) -> [TileModel] {
             out.append(TileModel(label: "ALVÁSIDŐ", value: hoursMinutes(total), sub: span, graphic: .nightArc))
         }
         if let deep = x.deepMin {
-            let prior = x.deepWeek.dropLast().compactMap { $0 }
             var sub = "a legpihentetőbb szakasz"
-            if !prior.isEmpty {
-                let delta = Int((Double(deep) - Double(prior.reduce(0, +)) / Double(prior.count)).rounded())
+            if let delta = deepDelta(deep: deep, week: x.deepWeek) {
                 sub = delta == 0 ? "mint általában" : "\(delta > 0 ? "+" : "−")\(abs(delta)) p az átlaghoz"
             }
             out.append(TileModel(label: "MÉLYALVÁS", value: hoursMinutes(deep), sub: sub,

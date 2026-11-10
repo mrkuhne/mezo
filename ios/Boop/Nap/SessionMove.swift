@@ -34,6 +34,27 @@ func moveProblemToast(_ p: MorningProblem?) -> String? {
     }
 }
 
+/// A session whose time differs from the planned one has been moved (its conflict is settled).
+func sessionMoved(planned: String?, time: String?) -> Bool { planned != nil && time != nil && time != planned }
+
+// MARK: - Moving the session (shared by the Mozgás path card and the A napod sheet)
+
+/// Moves today's session, then tells: the problem, or "Áttettem HH:mm-ra" with an undo that puts it back.
+@MainActor
+func moveSession(_ store: MorningStore, to time: String, planned: String?,
+                 toast: @escaping (String) -> Void, undoToast: @escaping (String, @escaping () -> Void) -> Void) async {
+    await store.moveSession(to: time)
+    if let problem = moveProblemToast(store.problem) { toast(problem); return }
+    undoToast(movedToast(time)) { Task { @MainActor in await undoSessionMove(store, planned: planned, toast: toast) } }
+}
+
+/// Puts the session back to its planned time and says so (or that it did not work).
+@MainActor
+func undoSessionMove(_ store: MorningStore, planned: String?, toast: (String) -> Void) async {
+    await store.undoMove()
+    if store.problem != nil { toast(SessionText.undoFailed) } else if let planned { toast(undoneToast(planned)) }
+}
+
 enum SessionText {
     static let undo = "Visszavonom"
     static let undoFailed = "Most nem sikerült visszatenni"
@@ -52,7 +73,7 @@ struct SessionCard: View {
     let undoToast: (String, @escaping () -> Void) -> Void
     @State private var busy = false
 
-    private var moved: Bool { session.plannedTime != nil && session.time != nil && session.time != session.plannedTime }
+    private var moved: Bool { sessionMoved(planned: session.plannedTime, time: session.time) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -96,11 +117,8 @@ struct SessionCard: View {
         guard !busy else { return }
         busy = true
         Task { @MainActor in
-            await store.moveSession(to: time)
+            await moveSession(store, to: time, planned: session.plannedTime, toast: toast, undoToast: undoToast)
             busy = false
-            if let problem = moveProblemToast(store.problem) { toast(problem); return }
-            let planned = session.plannedTime
-            undoToast(movedToast(time)) { if let planned { undo(to: planned) } else { undo(to: nil) } }
         }
     }
 
@@ -108,9 +126,8 @@ struct SessionCard: View {
         guard !busy else { return }
         busy = true
         Task { @MainActor in
-            await store.undoMove()
+            await undoSessionMove(store, planned: planned, toast: toast)
             busy = false
-            if store.problem != nil { toast(SessionText.undoFailed) } else if let planned { toast(undoneToast(planned)) }
         }
     }
 

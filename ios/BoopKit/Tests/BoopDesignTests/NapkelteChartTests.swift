@@ -32,3 +32,22 @@ import SwiftUI
     #expect(render(WeekBars(values: [1, 2, 3], average: 2, unit: "p", labels: ["K", "Sze", "Cs"]), width: 300, height: 140) != nil)
     #expect(render(BusyRibbon(slots: Array(repeating: 0.5, count: 72), trainingSlot: 50), width: 300, height: 14) != nil)
 }
+
+@Test func weekBarsScaleIgnoresMissingDays() {
+    let (lo, hi) = weekBarScale(values: [nil, 60, nil, 58])
+    #expect(lo == 58 * 0.85)
+    #expect(hi == 60 * 1.04)
+    let (lo2, hi2) = weekBarScale(values: [Double?](repeating: nil, count: 7))
+    #expect(lo2 < hi2)
+}
+
+@Test func weekBarValueLabelSaysDashForAMissingDay() {
+    #expect(weekBarValueLabel(96, unit: "p") == "96p")
+    #expect(weekBarValueLabel(57.6, unit: "") == "58")
+    #expect(weekBarValueLabel(nil, unit: "p") == "–")
+}
+
+@Test @MainActor func weekBarsRenderWithMissingDays() {
+    #expect(render(WeekBars(values: [72, nil, 80, nil], average: 76, unit: "p", labels: ["K", "Sze", "Cs", "P"]), width: 300, height: 140) != nil)
+    #expect(render(WeekBars(values: [Double?](repeating: nil, count: 7), average: nil, unit: "", labels: []), width: 300, height: 140) != nil)
+}
