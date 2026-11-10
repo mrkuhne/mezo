@@ -29,4 +29,7 @@ public interface DailyMetricRepository extends JpaRepository<DailyMetricEntity, 
     void upsert(@Param("createdBy") UUID createdBy, @Param("date") LocalDate date, @Param("steps") Integer steps,
                 @Param("restingHr") Integer restingHr, @Param("avgHr") Integer avgHr, @Param("minHr") Integer minHr,
                 @Param("maxHr") Integer maxHr, @Param("activeKcal") Integer activeKcal);
+
+    /** Inclusive day range, oldest first (Boop S3 brief inputs, mezo-r36n9.7). */
+    List<DailyMetricEntity> findByCreatedByAndDateBetweenOrderByDate(UUID createdBy, LocalDate from, LocalDate to);
 }

@@ -3,17 +3,17 @@ title: Boop — native iOS app
 type: feature-domain
 status: in-progress
 updated: 2026-11-10
-tags: [ios, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable]
+tags: [ios, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
   - ios/BoopKit/Sources/BoopCore
-  - ios/BoopKit/Sources/BoopDesign/Napkelte
   - ios/Boop/Nap
-  - ios/scripts/install-on-phone.sh
-  - ios/Boop/Connect
   - backend/src/main/java/io/mrkuhne/mezo/feature/wearable
   - api/feature/wearable/wearable.yml
-related: [_platform-auth-security, _platform-api-backend, me, today]
+  - backend/src/main/java/io/mrkuhne/mezo/feature/boop
+  - api/feature/boop/boop.yml
+  - ios/BoopKit/Sources/BoopCore/Morning
+related: [proactive, _platform-auth-security, _platform-api-backend, me, today]
 ---
 
 # Boop — native iOS app — Feature Documentation
@@ -29,12 +29,15 @@ related: [_platform-auth-security, _platform-api-backend, me, today]
 > [`2026-11-09-boop-ios-v1.md`](../superpowers/plans/2026-11-09-boop-ios-v1.md) · approved look:
 > [`boop-ios-spike`](../design_2.0/prototypes/boop-ios-spike/README.md) (`Aura*.swift`). Slice **S2.5** (the look) moved
 > every shipped screen onto the Napkelte kit; plan [`2026-11-10-boop-napkelte-kit.md`](../superpowers/plans/2026-11-10-boop-napkelte-kit.md).
+> Slice **S3** (reggel, shipped 2026-11-10) adds the real **Nap · Mai**: a new backend `boop` feature (the morning brief: five scores,
+> an energy curve, Hungarian verdicts, today's day data) and the SwiftUI morning built on it; plan
+> [`2026-11-10-boop-s3-reggel.md`](../superpowers/plans/2026-11-10-boop-s3-reggel.md).
 
 ## 1. Summary
 
-Boop is built in four slices (spec §, plan "Slice map"): **S1 Alap** and **S2 Adatok** (Apple Health +
-calendar ingestion) are this doc's current state; S3 Reggel (the morning brief, orb, energy curve),
-S4 Lépések (check-in, intention, weight, meal, patterns). The web PWA keeps running until Boop covers
+Boop is built in four slices (spec §, plan "Slice map"): **S1 Alap**, **S2 Adatok** (Apple Health +
+calendar ingestion), **S2.5 Napkelte** (the look) and **S3 Reggel** (the morning brief: five orbs, Boop's voice,
+energy curve, paths) are this doc's current state; S4 Lépések (check-in, intention, weight, meal, patterns) follows. The web PWA keeps running until Boop covers
 it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
 
 ## 2. User-facing behavior
@@ -42,10 +45,53 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
 - **The look (S2.5, Napkelte):** near-black ground that keeps the page's hue all the way down, a painted landscape
   backdrop per page, white type on glass cards, colour only in the sky and the orbs. Bottom bar = five icons, no
   labels. Sign-in/register, offline, onboarding (profile, first weight, "Szia, Boop vagyok"), Health + calendar
-  connect and backfill, the four web-only tabs and Nap · Mai all use it. **Nap · Mai** shows one state until the
-  morning brief exists (S3): not connected ("Összekötöm" opens the connect flow), syncing, learning (< 14 nights:
-  a still "még tanulom" orb with "9 / 14 éjszaka", no score), no calendar, offline, ready. Bell / "+" / avatar and
-  the other Nap tabs answer "hamarosan" until S4.
+  connect and backfill, the four web-only tabs and Nap · Mai all use it. **Nap · Mai** without a brief still shows
+  one state: not connected ("Összekötöm" opens the connect flow), syncing, learning (< 14 nights:
+  a still "még tanulom" orb with "9 / 14 éjszaka", no score), no calendar, offline, ready. With a brief loaded the
+  real Mai (below) stays through syncing / failed / offline / no-calendar (no flip back on every foreground sync).
+  Bell / "+" / avatar, Beszélgetés and Rutin answer "hamarosan" until S4.
+
+- **Nap · Mai (S3, `MaiView`)** — Boop's morning, built from the server's brief:
+  - **Hero:** title row, tabs (a dot on "A napom" 05–12 h), a row of **five mini orbs** — Forma (the old "készenlét"),
+    Alvás, Mozgás, Fuel, Pulzus — and one big rising orb for the selected one (score or `display`: "7ó 12p", "3 240",
+    Pulzus shows bpm), name in caps, serif headline, one–two sentences in Boop's voice. A missing or learning
+    score reads "–" with "még tanulom", never 0. Tapping a mini orb re-colours the whole page (sky, ground, lights);
+    the selected orb is the **lens**: the white pill under the text morphs to that orb's action (Forma: check-in,
+    Alvás: bedtime reminder, Mozgás: today's workout / run / walk menu, Fuel: photo + quick chips, Pulzus: one-minute
+    breathing with haptics) and a small voice circle. S4 actions toast "<név> · hamarosan". When Forma's current
+    check-in is already done the pill is "Boop elmondja".
+  - **Boop voice:** `Boop elmondja` reads the brief aloud in Hungarian (best hu-HU voice, plays with the silent
+    switch on and ducks other audio) and types it word by word; the voice circle (long press) mutes, un-mutes and
+    replays ("Mondd újra"); reduced motion = the text appears at once and the orbs stay still, but Boop still speaks
+    (unless muted) — reduced motion is about movement, not sound.
+  - **Below the hero, per orb:** tiles (Forma, Alvás: mély, elalvás; Mozgás: steps, active kcal vs 500; Fuel: kcal,
+    macros, víz "–"; Pulzus: resting HR, today min·átl·max), a short **path** of stations ("most" first, then what
+    belongs to that orb: check-ins, szándék, hypnogram + bedtime, dip walk + session strip, meals, breath before the
+    densest meeting block, the meeting ribbon) and, on Forma, the **Boop mondja** card whose coloured phrases open the
+    sleep / pulse / day sheets. Tiles without data are dropped, not shown as 0 (no wearable day → no Mozgás tiles; a night
+    logged without bedtime/wakeup keeps its length tile, the times show "–", and the path skips its night stations).
+  - **Boop észrevette:** up to three observation cards (the companion's proposed patterns); swipe right = Igaz
+    (`decidePattern` confirm), left = Nem rólam szól (reject), with a thank-you toast after the last.
+  - **Move today's session:** the session strip shows a conflict hint when the last meeting ends too close to the
+    start; "Áttolom 18:30-ra" moves the session, the conflict card disappears, a toast + an inline "Vissza 17:30-ra"
+    pill undo it (`PUT`/`DELETE session-time`). Nothing in the training plan itself changes.
+  - **Sheets** (medium + large): Az éjszakád (tiles, hypnogram with legend, deep sleep ×7), A pulzusod (weekly resting
+    HR bars, today min·átl·max; no per-night line, no HRV), A napod (energy curve with a press-and-drag **magnifier**:
+    time · energy % · what is on, soft haptic per hour, busy ribbon with the training slot, hour anchors, the
+    conflict card with Áttolom / Marad így).
+  - **A napom** tab: the strict chronological full day as one path; meetings are a single "Megbeszélések · n esemény"
+    station.
+  - **Evening** (local hour ≥ 18): the whole Nap page takes the dusk (Pulzus) sky, Forma's pill is "Esti check-in"
+    (hamarosan), Alvás's is "Esti levezetés", evening breath and fuel stations replace the morning ones.
+    **Kímélő mód** (the brief's `recovery`): a calm grey-blue sky, a banner "Kímélő mód · N. nap · ok" with "Kilépek"
+    (hamarosan), no session, walk / water / early-bed stations. Kímélő wins over evening; one sky per mode for the
+    whole page (orb taps then re-colour only orbs and lights).
+  - **Bedtime reminder:** the Alvás pill (and the bedtime card's "Emlékeztess") asks notification permission on the
+    first tap, then a nightly local notification at **bedtime target − 30 min** ("Emlékeztetlek HH:mm-kor"); tap
+    again to cancel; a changed target moves it; denied permission stays off with a gentle line pointing at Beállítások.
+  - **Domain switch:** Nap · Edzés · Fuel · Boop · Én share **one painted landscape** (`NKBackdropPanorama`, three
+    screens wide, no seams): switching pans left/right by bar order with the sky cross-fading (0.95 s), a sliding
+    nav pill and a sequenced content fade (owner OK 2026-11-10).
 
 - **Sign-in** (`SignInView`): e-mail + password; Hungarian problems under each field, cleared on edit;
   server errors in a peach card (wrong password, offline after 20 s, server error). "Van meghívókódom"
@@ -73,6 +119,38 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
 
 ## 3. Architecture & data flow
 
+- **S3 — the morning brief, end to end** (backend feature `boop`, `io.mrkuhne.mezo.feature.boop`, a leaf: nothing imports it back):
+  1. The phone sends **its local date** (`GET /api/boop/brief?date=YYYY-MM-DD`); the server never calls `LocalDate.now()` for the day.
+  2. `BoopDayAssembler.assemble(user, date)` — read-only (no `@Transactional`; never `WorkoutService.getToday`, which writes) —
+     gathers last night + 60-night window, 7-day deep-sleep / resting-HR series, 14-day baselines, today's wearable day, planned
+     session (override time else gym-schedule time), yesterday's wearable workout minutes, meals + targets, check-in plan and
+     answers, intention, up to 3 proposed patterns (observations), calendar → 72 busy slots, sleep-goal bedtime, recovery, weight.
+  3. `BoopScores.compute` → five scores + state; `EnergyCurveModel.hourly` → 19 values (06:00…24:00).
+  4. `BoopVerdictWriter.write` — one cheap-tier LLM call (`LlmCallContext("boop_brief", "verdicts")`) turns the computed numbers into
+     Hungarian headline + sentence per metric, the spoken brief (segments with links `sleep|heart|day`), tonight and next-meal tips.
+     The model never scores and never decides the session conflict (rule-detected in `RuleVerdicts`). Any failure — no LLM bean, a
+     thrown call, a call slower than `mezo.boop.llm-timeout` (8 s; run on `applicationTaskExecutor` with the llm-log context and
+     actor re-bound inside the task), no JSON, a missing field — falls back **per field** to `RuleVerdicts`, same schema; the brief
+     never fails on the LLM. The prompt carries the calendar as count, time spans and busy minutes only — **never event titles**.
+  5. `BoopBriefService` caches one `boop_brief` row per user + local day: an **input hash** (`v2|`: night id + content, calendar
+     events, meal and logged-meal count, weight, session title + time, recovery, the sorted pending observation ids, each check-in's
+     slot + done flag, the intention creed + foci, and a **time-of-day bucket** of the owner zone — reggel < 12:00, délután 12–18,
+     este ≥ 18, a past day always este) equal to the stored one returns the stored payload with no scoring and no LLM call. So a
+     decided pattern, a check-in done on the web or a changed intention regenerates on the next GET, and time-dependent sentences
+     ("a nap nagy része még előtted") refresh at most three times a day. Steps, HR and the exact clock are not hashed. A changed
+     hash regenerates. iOS keeps an observation it judged out of the brief locally until a brief arrives without it, so a stale
+     brief can never bring it back to be decided twice. `POST …/regenerate` always
+     regenerates, at most 3 per day (`regen_count`, atomic capped UPDATE; the 4th is 409 `BOOP_REGENERATE_LIMIT_REACHED`, refused before the LLM).
+     Generation runs outside any transaction; only `BoopBriefStore.upsert` is transactional. Two racing first requests both
+     generate, the loser's INSERT hits `uq_boop_brief_user_date`, re-reads and returns the winner's brief (never a 500).
+  6. A past date is judged as of 23:59 of that day; a date after today in the owner zone is a **400**.
+  7. iOS: `MorningClient`/`MorningStore` (`BoopCore/Morning`) loads the brief, with a generation guard so an older load never
+     overwrites a newer one; on a 400 for a future date (phone day ahead of the owner zone) it falls back to yesterday. Pure
+     builders `PathBuilder.steps(for:…)` and `Lens.action(for:…)` (BoopCore, keyed by `MetricKey`) make stations and the pill;
+     the app maps them to the kit's `PathStation` / `Hue` and `MaiView`/`MaiBelow` render. **Reload triggers:** every return to the
+     foreground, a change of day, and right after a Health sync finishes (so the brief refreshes by itself after the morning sync).
+     Move/undo of the session refetch the brief after success.
+
 - `ios/Boop.xcodeproj` — app target `Boop` (bundle `io.mrkuhne.boop`, iOS 26) + `BoopTests`; screens
   under `ios/Boop/{Auth,Onboarding,Shell}`; `RootView` switches on `Session.State`
   (`loading · signedOut · offline · needsOnboarding · ready`).
@@ -86,7 +164,7 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
     `buildNights` — sessions split at > 90 min gaps, 14–18 h wake = nap dropped, per wake day the
     session with most staged minutes wins, 5-min hypnogram letters D/R/L/A ≤ 200 — `mapDays`,
     `mapWorkout`, `HealthSync`) and `Calendar/` (`CalendarReader` + `CalendarKitReader`,
-    `buildCalendarDays` → exactly today + tomorrow).
+    `buildCalendarDays` → exactly today + tomorrow); S3: `Morning/` (`Brief`, `MorningClient` + `MorningStore`, `PathBuilder`, `Lens`, `BoopVoice`).
   - `HealthSync` (`@MainActor @Observable`): window = 60 days on first run, afterwards from the
     synced-through day − 2; sends nights (30/batch) → days (60) → workouts (100) → calendar; the
     synced-through mark (`boop.health.syncedThrough.<userId>`) moves only after a fully successful run, so
@@ -101,6 +179,8 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
     `RisingOrb`, `MiniOrbRow`), `Glass` (`nkGlass`, `NKPill`, `NKMono`, `Trend`, `NKGlyph`, `nkToast`, `NKBoopCard`,
     `NKField`, `NKSkyScreen`, `NKTag`, `NKRow`), `Frames` (`NKTitleRow`, `NKTabStrip`, `NKTabPage`, `NKFlowFrame`,
     `NKSheetFrame`, `NKNav`, `FloatingLights`, `NKGround`), `Charts`, `Tiles`, `DayPath`.
+  - S3 additions to the kit: `NKSky` (`.hue` or `.calm`), `NKBackdropPanorama` (the shared landscape and the domain-switch pan), `nkToast(_:action:onAction:)`,
+    `WeekBars` with optional days, `RisingOrb(orbScale:)`.
   - `BoopDesign` (legacy) — what is left of the Lágy kit: tokens, Outfit + Manrope (bundled), glyph assets
     (generated by `ios/tools/genglyphs.mjs` from the Lágy prototype's `G()` table), photos, components,
     page frames (`LagyTabPage`, `LagyFlowFrame`), `BoopFigure` (the Metal orb).
@@ -121,6 +201,54 @@ Caps (`mezo.wearable`): 100 nights, 120 days, 300 workouts, 3 calendar days × 1
 only when newly inserted and dated today or yesterday (a 60-night backfill never floods Boop's messages).
 Wearable workouts are display + AI context only (no calorie-target effect). Changesets
 `202611092300_mezo-r36n9.2_sleep_log_apple_health.sql`, `202611092310_mezo-r36n9.2_wearable_tables.sql`.
+
+**S3 — feature `boop`** (contract tag `Boop`, `api/feature/boop/boop.yml`; the web app gets no new feed kind):
+
+| Operation | Endpoint | Notes |
+|---|---|---|
+| `getBoopBrief` | `GET /api/boop/brief?date=YYYY-MM-DD` → `BoopBrief` | cached per user + local day in `boop_brief`; 400 on an impossible or future date |
+| `regenerateBoopBrief` | `POST /api/boop/brief/regenerate?date=` → `BoopBrief` | 409 `BOOP_REGENERATE_LIMIT_REACHED` after 3 per day |
+| `setSessionTime` | `PUT /api/boop/session-time` `{date, time HH:mm}` → `SessionTime{date,time,plannedTime}` | upsert into `workout_time_override`, last write wins; 404 `BOOP_NO_PLANNED_SESSION`; 400 on a bad time |
+| `clearSessionTime` | `DELETE /api/boop/session-time?date=` → 204 | soft-deletes the override; the planned time is back |
+
+iOS also uses the existing `decidePattern` for the observation swipes. `BoopBrief` carries `date`, `generatedAt`, `state`
+(`good|okay|tired|learning`), `nightsKnown`, `metrics[5]` (`forma|alvas|mozgas|fuel|pulzus`: nullable `score`, `display`, `caption`,
+`headline`, `sentence`, `trendUp`), `brief[]` (text + link), `energy{hourly[19], dipHour}`, `tonightTip`, `nextMealTip`, `conflict`,
+and `day` (sleep + hypnogram stages 0 awake · 1 REM · 2 light · 3 deep, week series, `hrToday{min,avg,max}`, steps, session, meals,
+check-ins, intention, observations, calendar `busySlots[72]` = 06:00–24:00 in 15-minute slots, weight, recovery). Nullable by design:
+session minutes/time/plannedTime, sleep stage minutes, sleep `bedtime`/`wakeup` (a night may be logged without times) and `day.steps` /
+`day.activeKcal` (null without a wearable day, never a fake 0).
+
+Tables (changeset `202611101300_mezo-r36n9.7_boop_brief.sql`, both soft-delete, partial unique indexes `where is_deleted = false`):
+
+| Table | Columns | Unique |
+|---|---|---|
+| `boop_brief` | `created_by`, `date`, `payload jsonb` (the `BoopBrief` as JSON), `input_hash varchar(64)`, `regen_count int ≥ 0` (`ck_boop_brief_regen_count`), `generated_at` | `uq_boop_brief_user_date (created_by, date)` |
+| `workout_time_override` | `created_by`, `date`, `time` | `uq_workout_time_override_user_date (created_by, date)` |
+
+Tunables (`mezo.boop`, `BoopProperties`): `steps-goal` 9000, `regen-per-day` 3, `nights-needed` 14, `llm-timeout` 8s.
+
+### Formulas (S3 — product calls; the code is the truth: `BoopScores`, `EnergyCurveModel`)
+
+All scores are integers 0–100 (`clamp(round(x))`), computed from the assembled `BoopDay` and the owner-local "now".
+
+- **alvás** = `round(100 × (0.7 × min(1, totalMin / targetMin) + 0.3 × clamp01((quality − 1) / 9)))`; with no quality, `min(1, totalMin / targetMin)` alone.
+  Mirrors the sleep dimension of `DayEvaluationEngine` (private there, so duplicated). `null` without a night or with a non-positive target.
+- **pulzus** = `clamp(round(70 + (baselineRestingHr − restingHr) × 6))`; `baselineRestingHr` = average resting HR of the 14 days before the date;
+  display = today's bpm. `null` if either is missing.
+- **mozgás** = `clamp(round(steps × 100 / stepsGoal))`; **steps null → mozgás null** (never a fake 0); non-positive goal → null.
+- **fuel** = `clamp(round(kcalSoFar / (kcalTarget × share) × 100))` with `share = min(1, minutesSince07:00 / 840)` (linear 07:00 → 21:00). **null while
+  `share < 0.05`** (before about 07:42, otherwise any breakfast reads 100 %), when `now` is not after 07:00, or the kcal target is not positive.
+- **forma** = `round(0.45 × alvás + 0.35 × p + 0.20 × load)` with `load = 100 − min(60, yesterdayWorkoutMinutes / 2)` (unrounded) and `p` = pulzus,
+  **neutral 70 when resting HR is missing** (a missing watch reading must not blank the hero); only the final forma is rounded.
+  `null` when `nightsKnown < 14` (60-day window) or alvás is null.
+- **state** (the **forma thresholds**): `≥ 70` good · `50–69` okay · `< 50` tired · forma null → learning (still orb, "még tanulom", no rise).
+- **Energy curve** — 19 hourly points, index 0 = 06:00 … 18 = 24:00. Template by linear interpolation between anchors
+  (06: 0.35, 10: 0.82, 11: 0.82, 14: 0.38, 15: 0.38, 17: 0.66, 18: 0.66, 24: 0.20), × `scale = 0.6 + 0.4 × forma / 100` (0.8 when forma is null).
+  Then: first logged meal between 11:00 and 15:00 later than 13:30 → −0.05 at 14:00 and 15:00; a session at hour *h* → +0.06 at *h*, −0.08 at *h*+1 and *h*+2.
+  A model, not a measurement. The mapper clamps each value to 0..1 (3 decimals); `dipHour` = the lowest point between 12:00 and 18:00 inclusive.
+- **Session conflict** (rule only, `RuleVerdicts.conflict`): the latest-ending timed meeting that started before the session; if it ends less than 45 min
+  before the session start (or is still running) → suggest meeting end + 60 min rounded up to :00/:30; past 24:00, all-day or overnight → no conflict.
 
 S1 operations used: `login`, `register`, `me`, `completeOnboarding`,
 `getBiometricProfile` (always 200; all-null fields = no profile), `upsertBiometricProfile`,
@@ -158,6 +286,18 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
   `CalendarSnapshotTests`, `HealthSyncTests` (60-day first window, 2-day overlap, batching + progress,
   interrupted backfill, idempotent re-send, calendar denied/granted, 401 stops).
 - Backend: `WearableSleepServiceIT`, `WearableServiceIT`, `WearableContractIT` (+ existing sleep ITs).
+- **S3 backend** (`-Dmezo.test.use-testcontainers=true`, brief ITs need `@ActiveProfiles("companion-fake")`):
+  `BoopRepositoriesIT`, `BoopDayAssemblerIT` (owner scoping, 00:30 local picks the new day under a UTC server), `BoopScoresTest` + `EnergyCurveModelTest`
+  (plain unit, value-pinning), `BoopVerdictWriterIT` (valid JSON used, junk falls back, learning headline), `BoopBriefServiceIT`, `BoopBriefConcurrencyIT`,
+  `BoopContractIT`, `SessionTimeIT`, plus `ArchitectureTest`. Run e.g.
+  `./mvnw test -Dtest='Boop*,SessionTimeIT,EnergyCurveModelTest,ArchitectureTest' -Dmezo.test.use-testcontainers=true`; the full suite
+  (7314 green before the last fix rounds) with `./mvnw clean test -Dmezo.test.use-testcontainers=true`.
+- **S3 BoopKit** (`BoopKit-Package`): `MorningClientTests` (local date on the wire, gregorian dates on any device calendar, 409 → limit, move/undo,
+  unauthorized sign-out, future-date fallback, load guard), `PathBuilderTests` (ordered id/title/time sequences per orb, after-midnight, 24:00),
+  `PathFixtures`, `LensTests`, `BoopVoiceTests`; kit `NapkelteChartTests` (week bars with missing days).
+- **S3 app** (`Boop` scheme): `MaiCopyTests`, `MaiBelowTests` (tile mapper, swipe mapping, -ra/-re suffix), `SheetsTests` (routing, magnifier index, weeks),
+  `MaiModeTests` (evening, kímélő, sky choice, reminder target), `BedtimeReminderTests` (trigger = target − 30 min, crosses midnight).
+  Last recorded counts: app 73, BoopKit 106 + 48. Commands: [`ios/README.md`](../../ios/README.md).
 - Not in CI (`ci.yml` does not build `ios/`); run locally.
 
 ## 9. Decisions, gotchas & deferred
@@ -180,8 +320,46 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
   so the foreground/calendar triggers live in the invisible `SyncTriggers` view (S2).
 - HealthKit: the simulator has no Health data, so the walk-through ends on the no-data card; the
   `-preview` switch uses a DEBUG-only `PreviewTransport` that answers the Wearable endpoints locally.
-- Deferred to S3–S4: the morning brief + orb readiness + voice + energy
-  curve, the five morning steps, widgets.
+
+- **S3 rulings** (ledger `.superpowers/sdd/2026-11-10-boop-s3-reggel/progress.md`):
+  - P1: `day.hrToday {min, avg, max}` added to the contract and assembler — the pulse sheet shows daily min/avg/max (spec §9.3).
+  - P2: `day.observations` are the patterns awaiting the owner's decision (what `decidePattern` accepts); swipe right = confirm, left = reject.
+  - Error code is `BOOP_REGENERATE_LIMIT_REACHED` (UPPER_SNAKE like the other message codes), not `boop.brief.regenLimit`.
+  - Hypnogram stage order 0 awake, 1 REM, 2 light, 3 deep, matching the shipped kit colours.
+  - `busySlots` = 72 slots, 06:00–24:00, 15 min each; session minutes/time/plannedTime and sleep stage minutes are nullable (real data has nulls).
+  - Observations = proposed patterns, newest 3; lead = title, bold/tail empty; strength from belief → confidence → |r| scaled 0..5.
+  - Missing resting HR → forma uses a neutral pulzus 70; sleep score mirrors `DayEvaluationEngine` (no companion refactor), duration only without quality.
+  - Conflict "last meeting" = latest-ending timed event that started before the session; a meeting running at the start counts; past 24:00 → none.
+  - "≤ 2 sentences per metric" is a prompt instruction, not truncation (cutting Hungarian mid-thought reads worse).
+  - Input hash uses night content + weight values (no updated/log id on `BoopDay`); steps, HR and the exact clock excluded — the movement score in a cached brief
+    lags until a hashed input changes, the time-of-day bucket turns, or the owner regenerates. The intention is hashed by content (creed + foci), not an id.
+  - `BoopCore` cannot import `BoopDesign`: `MetricKey` (string enum) is bridged to `Hue` in the app; `PathBuilder`/`Lens` take `MetricKey` and return BoopCore value types
+    (`PathStep`, `LensAction` with a glyph name), mapped to `PathStation` in the app.
+  - `Lens.action` is nil when Forma's current check-in is done (app shows "Boop elmondja"); weigh-in is not a station; the session is never marked done
+    (the brief has no done flag); recovery adds walk / water / early bed.
+  - Audio follows the approved spike (`.playback` + `.spokenAudio` + `.duckOthers`, deactivated with `.notifyOthersOnDeactivation`), not `.ambient`; there is an in-app mute.
+  - With a brief loaded Mai stays through sync states; long-press menus use `Menu(primaryAction:)` (`contextMenu` does not open on glass).
+  - Tiles without v1 data were adapted: Elalvás = bedtime, Feszültség → Pulzus ma min·átl·max, Víz "–" + hamarosan, kcal bar vs 500, glyphs instead of photos.
+  - Pulzus breath targets the next upcoming densest block (an in-progress one loses).
+  - A napom = strict chronological full day, meetings as one station (spec §5.2); curve anchors added per spec §10.3.
+  - Evening (dusk = Pulzus sky) and kímélő (calm sky) keep one sky for the whole Nap page; orb taps re-colour orbs and lights only.
+  - The bedtime reminder repeats nightly at target − 30 and follows a changed target.
+  - Implementers run strictly sequentially on one branch (parallel commits mixed files in Task 8/9).
+  - Owner OK 2026-11-10 on the domain-switch transition ("Jó, mehet tovább").
+- **S3 traps:**
+  - Brief ITs need `@ActiveProfiles("companion-fake")` so the LLM is the canned `FakeCompanionLlm` (marker `BOOP_BRIEF_V1`).
+  - A future date is a **400**; a phone whose day is ahead of the owner zone falls back to yesterday (`MorningStore`).
+  - `NKBackdropPanorama` conforms with `@preconcurrency Animatable` (a plain `Animatable` conformance clashes with the main-actor `View` under strict concurrency); keep the attribute when touching it.
+  - DEBUG preview flags (simulator network is blocked): `-preview shell`, `-previewOrb`, `-previewTab napom`, `-previewSheet sleep|heart|day`, `-previewDetent large`,
+    `-previewScrub 15.5`, `-previewEvening` (clock 21:10), `-previewRecovery`, `-previewKept`, `-previewScroll`, `-previewSwitch`; `PreviewTransport` answers every Boop op coherently
+    (moved session remembered, judged observations remembered).
+  - `PathBuilder` lives in `BoopCore` and speaks `MetricKey`, never `Hue`.
+  - A SwiftUI `DragGesture` on the observation card swallowed vertical page scrolls — the stack uses a `UIGestureRecognizerRepresentable` horizontal pan.
+  - Reading and writing the observable `brief` in one statement is a Swift "Fatal access conflict" — use locals.
+  - Native upsert of the session override relies on column defaults (`id`, `created_at`, `is_deleted`); a `PUT` with no body at all is a 500 from the platform handler (not Boop-specific).
+  - Soft delete: derived finders on `daily_metric`/`wearable_workout`/`calendar_event` ignore `is_deleted` (parked minor, S2 tables).
+- **Parked minors (bd under `mezo-r36n9`):** payload versioning, `trendUp` on equal values, reload supersedes an in-flight regenerate, swallowed `setActive(false)`, real synthesizer adapter only verified on a device.
+- Deferred to S4: the five morning steps (check-in, szándék, weigh-in, meal capture, quick food log, "+" sheet, notification list, settings), widgets, Beszélgetés and Rutin tabs.
 
 ## 10. Key files
 
@@ -191,4 +369,8 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 `ios/scripts/install-on-phone.sh` · `ios/scripts/sync-openapi.sh` · S2: `ios/Boop/Connect/*` ·
 `ios/BoopKit/Sources/BoopCore/Health/HealthSync.swift` · `…/Health/SleepNightBuilder.swift` ·
 `…/Calendar/CalendarSnapshotBuilder.swift` · `backend/…/feature/wearable/service/WearableSleepService.java` ·
-`backend/…/feature/wearable/controller/WearableController.java`
+`backend/…/feature/wearable/controller/WearableController.java` ·
+S3: `api/feature/boop/boop.yml` · `backend/…/feature/boop/service/{BoopDayAssembler,BoopScores,EnergyCurveModel,BoopVerdictWriter,RuleVerdicts,BoopPrompts,BoopBriefService,BoopBriefStore,SessionTimeService}.java` ·
+`…/feature/boop/controller/BoopController.java` · `…/feature/boop/config/BoopProperties.java` · `backend/src/main/resources/db/changelog/1.1.0/script/202611101300_mezo-r36n9.7_boop_brief.sql` ·
+`ios/BoopKit/Sources/BoopCore/Morning/{Brief,MorningClient,PathBuilder,Lens,BoopVoice}.swift` · `ios/Boop/Nap/{MaiView,MaiTiles,MaiPath,LensActionRow,ObservationStack,SessionMove,MaiMode,BedtimeReminder,DetailSheet,SleepSheet,PulseSheet,DaySheet,ANapomView,NapView}.swift` ·
+`ios/Boop/Shell/ShellView.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Frames.swift` (`NKBackdropPanorama`)

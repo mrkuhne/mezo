@@ -93,17 +93,44 @@ public struct GlowLine: View {
     }
 }
 
-/// The value range seven week bars are drawn against: always finite with lo < hi, even for flat or empty data.
-public func weekBarScale(values: [Double]) -> (Double, Double) {
-    guard let mn = values.min(), let mx = values.max() else { return (0, 1) }
+/// The value `GlowLine` draws at a fractional point index (0 … count − 1): the same cubic it strokes between two points
+/// (control points at the horizontal midpoint), solved for x by bisection. Clamped to the ends.
+public func glowLineValue(_ points: [Double], at index: Double) -> Double {
+    guard let first = points.first else { return 0 }
+    guard points.count > 1 else { return first }
+    let f = min(Double(points.count - 1), max(0, index))
+    let i = min(points.count - 2, Int(f)), u = f - Double(i)
+    let a = points[i], b = points[i + 1]
+    // x(t) = 1.5(1−t)²t + 1.5(1−t)t² + t³ over the segment (0…1), monotonic
+    func x(_ t: Double) -> Double { 1.5 * (1 - t) * (1 - t) * t + 1.5 * (1 - t) * t * t + t * t * t }
+    var lo = 0.0, hi = 1.0
+    for _ in 0..<40 { let m = (lo + hi) / 2; if x(m) < u { lo = m } else { hi = m } }
+    let t = (lo + hi) / 2
+    let wa = (1 - t) * (1 - t) * (1 - t) + 3 * (1 - t) * (1 - t) * t
+    return a * wa + b * (1 - wa)
+}
+
+/// The value range seven week bars are drawn against: always finite with lo < hi, even for flat, empty or all-missing
+/// data. Missing days (nil) do not count.
+public func weekBarScale(values: [Double?]) -> (Double, Double) {
+    let present = values.compactMap { $0 }
+    guard let mn = present.min(), let mx = present.max() else { return (0, 1) }
     let lo = mn * 0.85, hi = mx * 1.04
     return hi > lo ? (lo, hi) : (lo - 1, lo + 1)
 }
 
-/// Seven days as soft white bars, the average as a dashed waterline, today (the last) lit.
+/// The number over a bar: rounded, with its unit; a missing day says "–", never 0.
+public func weekBarValueLabel(_ value: Double?, unit: String) -> String {
+    value.map { "\(Int($0.rounded()))\(unit)" } ?? "–"
+}
+
+/// Seven days as soft white bars, the average as a dashed waterline, today (the last) lit. A missing day (nil) is a
+/// faint dashed stub; with no average (no data at all) the waterline is left out.
 public struct WeekBars: View {
-    let values: [Double], average: Double, unit: String, labels: [String]
-    public init(values: [Double], average: Double, unit: String, labels: [String]) { self.values = values; self.average = average; self.unit = unit; self.labels = labels }
+    let values: [Double?], average: Double?, unit: String, labels: [String]
+    public init(values: [Double?], average: Double?, unit: String, labels: [String]) {
+        self.values = values; self.average = average; self.unit = unit; self.labels = labels
+    }
     public var body: some View {
         GeometryReader { g in
             let (lo, hi) = weekBarScale(values: values)
@@ -115,18 +142,30 @@ public struct WeekBars: View {
                         let last = i == values.count - 1
                         VStack(spacing: 6) {
                             Spacer(minLength: 0)
-                            if last { Text("\(Int(values[i]))\(unit)").nkFont(11, .bold, design: .monospaced).foregroundStyle(.white) }
-                            RoundedRectangle(cornerRadius: 6, style: .continuous).fill(.white.opacity(last ? 0.95 : 0.28))
-                                .frame(width: 22, height: max(6, H - y(values[i])))
+                            if last { Text(weekBarValueLabel(values[i], unit: unit)).nkFont(11, .bold, design: .monospaced).foregroundStyle(.white) }
+                            if let v = values[i] {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous).fill(.white.opacity(last ? 0.95 : 0.28))
+                                    .frame(width: 22, height: max(6, H - y(v)))
+                            } else {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke(.white.opacity(0.25), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                                    .frame(width: 22, height: 10)
+                            }
                             Text(i < labels.count ? labels[i] : "").nkFont(11, last ? .semibold : .regular)
                                 .foregroundStyle(.white.opacity(last ? 1 : 0.5))
                         }
                         .frame(maxWidth: .infinity)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("\(i < labels.count ? labels[i] : ""): \(values[i] == nil ? "nincs adat" : weekBarValueLabel(values[i], unit: unit))")
                     }
                 }
-                Path { p in p.move(to: CGPoint(x: 0, y: y(average))); p.addLine(to: CGPoint(x: g.size.width, y: y(average))) }
-                    .stroke(.white.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                Text("átlag \(Int(average))\(unit)").nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.7)).offset(y: y(average) - 16)
+                if let average {
+                    Path { p in p.move(to: CGPoint(x: 0, y: y(average))); p.addLine(to: CGPoint(x: g.size.width, y: y(average))) }
+                        .stroke(.white.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                        .accessibilityHidden(true)
+                    Text("átlag \(Int(average.rounded()))\(unit)").nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.7))
+                        .offset(y: y(average) - 16)
+                }
             }
         }
     }

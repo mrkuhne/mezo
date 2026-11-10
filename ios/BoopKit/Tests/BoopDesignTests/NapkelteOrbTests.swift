@@ -31,3 +31,14 @@ import SwiftUI
 @Test @MainActor func risingOrbRendersLearningState() {
     #expect(render(RisingOrb(hue: .forma, score: nil, display: "9 / 14", motion: OrbMotion()), height: 290) != nil)
 }
+
+@Test func noDataIsSpokenAsNincsAdat() {
+    #expect(orbSpoken("–") == "nincs adat")
+    #expect(orbSpoken("74") == "74")
+    #expect(orbSpoken("7ó 12p") == "7ó 12p")
+}
+
+@Test func noDataDashIsNumberSized() {
+    #expect(risingDisplaySize(score: nil, display: "–") == risingDisplaySize(score: 74, display: "74"))
+    #expect(risingDisplaySize(score: nil, display: "9 / 14") < risingDisplaySize(score: 74, display: "74"))
+}

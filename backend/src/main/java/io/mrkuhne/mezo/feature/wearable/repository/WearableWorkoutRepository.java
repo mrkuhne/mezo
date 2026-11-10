@@ -32,4 +32,7 @@ public interface WearableWorkoutRepository extends JpaRepository<WearableWorkout
                 @Param("date") LocalDate date, @Param("activityType") String activityType,
                 @Param("startAt") Instant startAt, @Param("endAt") Instant endAt, @Param("kcal") Integer kcal,
                 @Param("avgHr") Integer avgHr, @Param("sourceName") String sourceName);
+
+    /** Inclusive day range, oldest first (Boop S3 brief inputs, mezo-r36n9.7). */
+    List<WearableWorkoutEntity> findByCreatedByAndDateBetweenOrderByDate(UUID createdBy, LocalDate from, LocalDate to);
 }

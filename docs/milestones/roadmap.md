@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5 shipped (2026-11-10) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data. [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -62,6 +62,21 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-11-10 — Boop S3 · reggel — az iPhone-app elmondja a reggeledet (`mezo-r36n9.7`).**
+  A Nap · Mai lap most már a valódi napodat mutatja: öt kis gömb (Forma, Alvás, Mozgás, Fuel, Pulzus), a
+  kiválasztott felkel, alatta a Boop saját szavaival a cím és a mondat. A szerver minden reggel kiszámolja az
+  öt pontot és az energiagörbét, a szöveget a Boop írja (ha a nyelvi modell kiesik, szabályalapú szöveg lép
+  a helyére, így a reggel sosem marad el), és napi egyszer eltárolja. A Boop fel is olvassa magyarul, szóról
+  szóra gépelve. Gömbváltáskor az egész lap átszíneződik; mindegyik gömbnek saját csempéi, rövid ösvénye és
+  gombja van, a kiemelt szavak részletlapot nyitnak (alvás, pulzus, a napod energiagörbével és nagyítóval), az
+  „A napom” fül a teljes napot mutatja. A „Boop észrevette” kártyákat jobbra húzva igaznak, balra húzva
+  „nem rólam szól”-nak jelölöd. Ha egy megbeszélés ütközik az edzéssel, az „Áttolom 18:30-ra” gomb áttolja
+  a mai edzést, és visszavonható. Este és kímélő módban külön változat jelenik meg, a lefekvés-emlékeztető
+  a céllefekvés előtt fél órával szól. A domainek között váltáskor egyetlen közös táj csúszik el. Az
+  ellenőrző lépések (check-in, szándék, mérés, étkezés) a következő szeletben (S4) jönnek. Tervezés:
+  [terv](../superpowers/specs/2026-11-10-boop-napkelte-design.md),
+  [építés](../superpowers/plans/2026-11-10-boop-s3-reggel.md), [működés](../features/boop-ios.md).
 
 - **2026-11-10 — Boop S2.5 · Napkelte — új, saját kinézetet kapott az iPhone-app (`mezo-r36n9.3`).**
   A tulajdonos az Oura és az Ultrahuman képei alapján egy egyedi irányt választott: sötét üveg, festett égbolt,

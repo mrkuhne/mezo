@@ -27,6 +27,12 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
     }
 }
 
+@Test @MainActor func calmSkyRendersALandscape() {
+    let img = render(PaintedLandscape(sky: .calm))
+    #expect(img != nil)
+    if let img, let c = pixel(img, x: 195, y: 150) { #expect(c != (0x0D, 0x12, 0x18)) }
+}
+
 @Test @MainActor func mirroredLandRenders() {
     #expect(render(MirroredLand(hue: .fuel), height: 300) != nil)
 }

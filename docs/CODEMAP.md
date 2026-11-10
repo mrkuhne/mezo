@@ -22,6 +22,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | ✓ | ✓ | [admin-hub](features/admin-hub.md), [_platform-auth-security](features/_platform-auth-security.md), [_platform-language](features/_platform-language.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md) |
+| [boop](#boop) | ✓ | 1 | · | · | [boop-ios](features/boop-ios.md) |
 | [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md), [insights](features/insights.md) |
 | [companion](#companion) | ✓ | 5 | ✓ | · | [admin-memory-explorer](features/admin-memory-explorer.md), [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [settings](features/settings.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [feedback](#feedback) | · | · | ✓ | · | [insights](features/insights.md) |
@@ -239,6 +240,29 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **populators:** `CheckInPopulator`, `DatabasePopulator`, `GoalPopulator`, `SleepGoalPopulator`,
     `SleepLogPopulator`, `UserPopulator`, `WeightLogPopulator`
 
+### boop
+
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-10, in-progress)
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
+  - **entities→tables:** `BoopBriefEntity`→`boop_brief`, `WorkoutTimeOverrideEntity`→`workout_time_override`
+  - **repositories:** `BoopBriefRepository`, `WorkoutTimeOverrideRepository`
+  - **services:** `BoopBriefService`, `BoopBriefStore`, `BoopDay`, `BoopDayAssembler`, `BoopPrompts`, `BoopScores`,
+    `BoopVerdictWriter`, `EnergyCurveModel`, `RuleVerdicts`, `SessionTimeService`
+  - **controllers→contract:** `BoopController`→`BoopApi`
+  - **mappers:** `BoopBriefMapper`
+  - **config:** `BoopProperties`
+- **Contract** `api/feature/boop/boop.yml` — 4 operations
+  - **endpoints:** GET /api/boop/brief · POST /api/boop/brief/regenerate · PUT /api/boop/session-time ·
+    DELETE /api/boop/session-time
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 7 IT + 6 unit
+  - **ITs:** `BoopBriefConcurrencyIT`, `BoopBriefServiceIT`, `BoopContractIT`, `BoopDayAssemblerIT`,
+    `BoopRepositoriesIT`, `BoopVerdictWriterIT`, `SessionTimeIT`
+  - **populators:** `BoopBriefPopulator`, `CalendarEventPopulator`, `CheckInPopulator`, `DailyMetricPopulator`,
+    `DatabasePopulator`, `IntentionPopulator`, `MealPopulator`, `PatternPopulator`, `RecoveryPeriodPopulator`,
+    `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`, `WearableWorkoutPopulator`, `WeightLogPopulator`,
+    `WorkoutTimeOverridePopulator`
+
 ### character
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-10, shipped) ·
@@ -368,7 +392,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-10-09, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-11-10, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-10-11, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-11-10, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-10-12, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-10, mixed) ·
@@ -831,7 +855,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-10-11, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-11-10, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-10-09, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -975,7 +999,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### llmlog
 
 *BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-10-12, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-10-11, mixed)
+  [docs/features/companion.md](features/companion.md) (updated 2026-11-10, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -1770,14 +1794,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **Backend base classes:** `AbstractIntegrationTest.java` (service-level) · `ApiIntegrationTest.java` (HTTP-level, verb helpers + `ownerAuthHeaders()`)
 - **populators (`support/populator/`):** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`,
-  `AppNotificationPopulator`, `BiometricProfilePopulator`, `CalendarEventPopulator`, `ChallengePopulator`,
-  `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
-  `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `CreatedAtBackdater`, `DailyMetricPopulator`,
-  `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FeedbackPopulator`,
-  `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
-  `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`,
-  `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
-  `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
+  `AppNotificationPopulator`, `BiometricProfilePopulator`, `BoopBriefPopulator`, `CalendarEventPopulator`,
+  `ChallengePopulator`, `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`,
+  `CheckInPopulator`, `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `CreatedAtBackdater`,
+  `DailyMetricPopulator`, `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`,
+  `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
+  `GoalPopulator`, `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`,
+  `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`,
+  `LlmLogPopulator`, `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
   `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
   `MesoTemplatePopulator`, `NeedsPopulator`, `NotificationPopulator`, `PantryCatalogPopulator`,
   `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
@@ -1786,7 +1810,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
   `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`,
   `UserPopulator`, `WaterLogPopulator`, `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`,
-  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
+  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
 - **`ResetDatabase` TRUNCATE list** — 1 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `character_council_quota`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`

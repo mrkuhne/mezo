@@ -600,6 +600,26 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern ACTIVITY_SENTINEL =
             Pattern.compile("\\[fake-activity:(\\{.*\\}|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Mirror of BoopPrompts.MARKER (feature/boop) — LITERAL, cycle rule (boop is a leaf feature;
+     *  nothing imports it back). Drift is caught by BoopVerdictWriterIT's canned-answer assertions. */
+    public static final String BOOP_BRIEF_MARKER_MIRROR = "BOOP_BRIEF_V1";
+    /** Boop brief: planted in the day's intention creed → a non-JSON answer (rule fallback path). */
+    public static final String BOOP_JUNK = "[fake-boop-junk]";
+    /** Boop brief: planted in the creed → a JSON object carrying ONLY {@code alvas} (per-field fallback). */
+    public static final String BOOP_PARTIAL = "[fake-boop-partial]";
+    /** Default Boop brief answer — valid, complete, Hungarian, Boop voice. */
+    public static final String BOOP_CANNED_ANSWER = """
+            {"forma":{"headline":"Jó formában vagy","sentence":"Kipihented magad, ma bírni fogod a terhelést."},
+             "alvas":{"headline":"Jól aludtál","sentence":"Hét és fél óra alvás, a mélyalvásod is rendben van."},
+             "mozgas":{"headline":"Még korán van","sentence":"A nap nagy része még előtted, lesz idő sétálni."},
+             "fuel":{"headline":"Jó ütemben eszel","sentence":"A reggeli megvolt, így tartsd."},
+             "pulzus":{"headline":"Nyugodt a szíved","sentence":"A nyugalmi pulzusod a szokásos alatt van. Ez jó jel."},
+             "brief":[{"text":"Hét és fél órát aludtál, ez jó alap a naphoz.","link":"sleep"},
+                      {"text":"A szíved nyugodt.","link":"heart"},
+                      {"text":"Este edzés vár rád.","link":"day"}],
+             "tonightTip":"Ma este fél tizenegy körül bújj ágyba.",
+             "nextMealTip":"Ebédnél egyél egy nagyobb adag fehérjét."}""";
+
     /** Mirror of QuestFlavor.FLAVOR_MARKER (feature/quest) — LITERAL, cycle rule. */
     public static final String QUEST_FLAVOR_MARKER_MIRROR = "KULDETES-IZESITES-FELADAT";
 
@@ -745,6 +765,14 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  never by this fake, so it cannot serve as the call-count oracle under {@code companion-fake}. */
     private final java.util.concurrent.atomic.AtomicInteger feedSmartCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int feedSmartCallCount() { return feedSmartCalls.get(); }
+
+    /** Boop brief calls (mezo-r36n9.7): ITs assert the brief cache (same input hash → no new LLM call). */
+    private final java.util.concurrent.atomic.AtomicInteger boopBriefCalls = new java.util.concurrent.atomic.AtomicInteger();
+    public int boopBriefCallCount() { return boopBriefCalls.get(); }
+    /** Concurrency ITs (mezo-r36n9.7): every Boop brief call waits at this barrier (10 s cap) so
+     *  two racing requests are both past their "no row yet" read before either writes; null = off. */
+    private volatile java.util.concurrent.CyclicBarrier boopBriefBarrier;
+    public void holdBoopBriefCalls(java.util.concurrent.CyclicBarrier barrier) { boopBriefBarrier = barrier; }
 
     private final java.util.concurrent.atomic.AtomicInteger completeCallCount =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -1039,6 +1067,27 @@ public class FakeCompanionLlm implements CompanionLlm {
                     : "{\"challenges\":[{\"exerciseIndex\":0,\"type\":\"PR\",\"targetWeightKg\":107.5,"
                             + "\"targetReps\":8,\"risk\":\"low\",\"why\":\"FAKE-INDOK\",\"glory\":\"FAKE-DICS\","
                             + "\"refIndexes\":[0],\"patternIndex\":0}]}";
+        }
+        if (systemPrompt.startsWith(BOOP_BRIEF_MARKER_MIRROR)) {
+            boopBriefCalls.incrementAndGet();
+            java.util.concurrent.CyclicBarrier barrier = boopBriefBarrier;
+            if (barrier != null) {
+                try {
+                    barrier.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (java.util.concurrent.BrokenBarrierException | java.util.concurrent.TimeoutException e) {
+                    // a lone call (or a broken race) just proceeds
+                }
+            }
+            if (userMessage.contains(BOOP_JUNK)) {
+                return "nem json";
+            }
+            if (userMessage.contains(BOOP_PARTIAL)) {
+                return "{\"alvas\":{\"headline\":\"Részleges alvás-ítélet\",\"sentence\":\"Csak ennyit tudok.\"},"
+                        + "\"forma\":{\"headline\":\"\"},\"brief\":[]}";
+            }
+            return BOOP_CANNED_ANSWER;
         }
         if (systemPrompt.startsWith(ACTIVITY_MARKER_MIRROR)) {
             Matcher m = ACTIVITY_SENTINEL.matcher(userMessage);

@@ -5570,6 +5570,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boop/brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get (generating if needed) the brief of a day */
+        get: operations["getBoopBrief"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boop/brief/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Regenerate the brief of a day (at most 3 manual regenerations per day) */
+        post: operations["regenerateBoopBrief"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boop/session-time": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Move the planned training session of a day to a time */
+        put: operations["setSessionTime"];
+        post?: never;
+        /** Remove the session-time override of a day (back to the planned time) */
+        delete: operations["clearSessionTime"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -12887,6 +12939,166 @@ export interface components {
         CalendarDaysRequest: {
             days: components["schemas"]["CalendarDayIn"][];
         };
+        SessionTimeRequest: {
+            date: string;
+            /** @description HH:mm */
+            time: string;
+        };
+        SessionTime: {
+            date: string;
+            /**
+             * @description HH:mm
+             * @example 17:30
+             */
+            time: string;
+            /** @description HH:mm of the original plan */
+            plannedTime?: string | null;
+        };
+        BoopBrief: {
+            /** @description YYYY-MM-DD */
+            date: string;
+            /** Format: date-time */
+            generatedAt: string;
+            /** @enum {string} */
+            state: "good" | "okay" | "tired" | "learning";
+            nightsKnown: number;
+            metrics: components["schemas"]["BoopMetric"][];
+            brief: components["schemas"]["BoopBriefLine"][];
+            energy: components["schemas"]["BoopEnergy"];
+            tonightTip: string;
+            nextMealTip?: string | null;
+            conflict?: components["schemas"]["BoopConflict"];
+            day: components["schemas"]["BoopDay"];
+        };
+        BoopMetric: {
+            /** @enum {string} */
+            key: "forma" | "alvas" | "mozgas" | "fuel" | "pulzus";
+            score?: number | null;
+            display: string;
+            caption?: string | null;
+            headline: string;
+            sentence: string;
+            trendUp?: boolean | null;
+        };
+        BoopBriefLine: {
+            text: string;
+            /** @enum {string|null} */
+            link?: "sleep" | "heart" | "day" | null;
+        };
+        BoopEnergy: {
+            /** @description 19 values in 0..1 for 06:00 through 24:00, hourly */
+            hourly: number[];
+            dipHour?: number | null;
+        };
+        BoopConflict: {
+            text: string;
+            /** @description HH:mm */
+            suggestedTime: string;
+        } | null;
+        BoopDay: {
+            sleep?: components["schemas"]["BoopSleep"];
+            /** @description HH:mm */
+            bedtimeTarget?: string | null;
+            deepSleepWeek: (number | null)[];
+            restingHrWeek: (number | null)[];
+            hrToday?: components["schemas"]["BoopHrToday"];
+            /** @description null without a wearable day (never a fake 0) */
+            steps?: number | null;
+            stepsGoal: number;
+            /** @description null without a wearable day (never a fake 0) */
+            activeKcal?: number | null;
+            session?: components["schemas"]["BoopSession"];
+            meals: components["schemas"]["BoopMeal"][];
+            kcalSoFar: number;
+            kcalTarget: number;
+            proteinG: number;
+            proteinTarget: number;
+            carbsG: number;
+            fatG: number;
+            checkins: components["schemas"]["BoopCheckin"][];
+            intention: components["schemas"]["BoopIntention"];
+            observations: components["schemas"]["BoopObservation"][];
+            calendar: components["schemas"]["BoopCalendar"];
+            weight?: components["schemas"]["BoopWeight"];
+            recovery?: components["schemas"]["BoopRecovery"];
+        };
+        BoopHrToday: {
+            min?: number | null;
+            avg?: number | null;
+            max?: number | null;
+        } | null;
+        BoopSleep: {
+            /** @description HH:mm; null when the night was logged without times */
+            bedtime?: string | null;
+            /** @description HH:mm; null when the night was logged without times */
+            wakeup?: string | null;
+            totalMin: number;
+            deepMin?: number | null;
+            remMin?: number | null;
+            lightMin?: number | null;
+            awakeMin?: number | null;
+            hypnogram: components["schemas"]["BoopHypnogramSegment"][];
+        } | null;
+        BoopHypnogramSegment: {
+            /** @description 0 awake, 1 REM, 2 light, 3 deep */
+            stage: number;
+            minutes: number;
+        };
+        BoopSession: {
+            title: string;
+            /** @description HH:mm (moved time if overridden, else the planned slot) */
+            time?: string | null;
+            /** @description HH:mm */
+            plannedTime?: string | null;
+            minutes?: number | null;
+            exercises: {
+                name: string;
+                sets: number;
+            }[];
+        } | null;
+        BoopMeal: {
+            /** @description HH:mm */
+            time: string;
+            title: string;
+            kcal: number;
+            proteinG: number;
+            logged: boolean;
+        };
+        BoopCheckin: {
+            /** @enum {string} */
+            slot: "morning" | "midday" | "afternoon" | "evening";
+            /** @description HH:mm */
+            time: string;
+            done: boolean;
+            summary?: string | null;
+        };
+        BoopIntention: {
+            creed?: string | null;
+            foci: string[];
+        };
+        BoopObservation: {
+            /** @description Companion pattern id (accepted by decidePattern) */
+            id: string;
+            lead: string;
+            bold: string;
+            tail: string;
+            strength: number;
+        };
+        BoopCalendar: {
+            count: number;
+            /** @description 72 slots, 06:00–24:00, 15 minutes each; true = busy */
+            busySlots: boolean[];
+        };
+        BoopWeight: {
+            /** Format: double */
+            kg: number;
+            /** Format: double */
+            trendKg: number;
+        } | null;
+        BoopRecovery: {
+            reason: string;
+            day: number;
+        } | null;
     };
     responses: {
         /** @description Missing/invalid token */
@@ -28707,6 +28919,187 @@ export interface operations {
                 content?: never;
             };
             /** @description Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getBoopBrief: {
+        parameters: {
+            query: {
+                /** @description The client's local calendar date: today or a past day (a date after today in the owner zone, or an impossible one, is a 400) */
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The brief for that date */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoopBrief"];
+                };
+            };
+            /** @description Invalid date */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    regenerateBoopBrief: {
+        parameters: {
+            query: {
+                /** @description The client's local calendar date: today or a past day (a date after today in the owner zone, or an impossible one, is a 400) */
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The brief for that date */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoopBrief"];
+                };
+            };
+            /** @description Invalid date */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description BOOP_REGENERATE_LIMIT_REACHED; the daily regeneration limit is used up */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setSessionTime: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionTimeRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored session time */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTime"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description BOOP_NO_PLANNED_SESSION; no planned training session on that day */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    clearSessionTime: {
+        parameters: {
+            query: {
+                /** @description The client's local calendar date */
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cleared */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid date */
             400: {
                 headers: {
                     [name: string]: unknown;

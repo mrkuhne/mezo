@@ -4,7 +4,7 @@ import OpenAPIRuntime
 
 /// Scripted transport: answers each operation from a queue, records every request.
 final class StubTransport: ClientTransport, @unchecked Sendable {
-    enum Reply { case json(Int, String), status(Int), fail(Error) }
+    enum Reply { case json(Int, String), status(Int), fail(Error), slowJson(Int, String, ms: Int) }
     struct Sent { let op: String; let path: String; let auth: String?; let body: String? }
     private let lock = NSLock()
     private var replies: [String: [Reply]] = [:]
@@ -22,6 +22,10 @@ final class StubTransport: ClientTransport, @unchecked Sendable {
         }
         switch reply {
         case .json(let code, let json)?:
+            var h = HTTPFields(); h[.contentType] = "application/json"
+            return (HTTPResponse(status: .init(code: code), headerFields: h), HTTPBody(json))
+        case .slowJson(let code, let json, let ms)?:
+            try await Task.sleep(for: .milliseconds(ms))
             var h = HTTPFields(); h[.contentType] = "application/json"
             return (HTTPResponse(status: .init(code: code), headerFields: h), HTTPBody(json))
         case .status(let code)?: return (HTTPResponse(status: .init(code: code)), nil)

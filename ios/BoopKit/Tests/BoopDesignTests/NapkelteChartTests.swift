@@ -32,3 +32,34 @@ import SwiftUI
     #expect(render(WeekBars(values: [1, 2, 3], average: 2, unit: "p", labels: ["K", "Sze", "Cs"]), width: 300, height: 140) != nil)
     #expect(render(BusyRibbon(slots: Array(repeating: 0.5, count: 72), trainingSlot: 50), width: 300, height: 14) != nil)
 }
+
+@Test func weekBarsScaleIgnoresMissingDays() {
+    let (lo, hi) = weekBarScale(values: [nil, 60, nil, 58])
+    #expect(lo == 58 * 0.85)
+    #expect(hi == 60 * 1.04)
+    let (lo2, hi2) = weekBarScale(values: [Double?](repeating: nil, count: 7))
+    #expect(lo2 < hi2)
+}
+
+@Test func weekBarValueLabelSaysDashForAMissingDay() {
+    #expect(weekBarValueLabel(96, unit: "p") == "96p")
+    #expect(weekBarValueLabel(57.6, unit: "") == "58")
+    #expect(weekBarValueLabel(nil, unit: "p") == "–")
+}
+
+@Test @MainActor func weekBarsRenderWithMissingDays() {
+    #expect(render(WeekBars(values: [72, nil, 80, nil], average: 76, unit: "p", labels: ["K", "Sze", "Cs", "P"]), width: 300, height: 140) != nil)
+    #expect(render(WeekBars(values: [Double?](repeating: nil, count: 7), average: nil, unit: "", labels: []), width: 300, height: 140) != nil)
+}
+
+@Test func glowLineValueFollowsTheDrawnCurve() {
+    let pts = [0.2, 0.8, 0.4]
+    #expect(abs(glowLineValue(pts, at: 0) - 0.2) < 1e-9)
+    #expect(abs(glowLineValue(pts, at: 1) - 0.8) < 1e-9)
+    #expect(abs(glowLineValue(pts, at: 2) - 0.4) < 1e-9)
+    #expect(abs(glowLineValue(pts, at: 0.5) - 0.5) < 1e-6)       // symmetric halfway
+    // a quarter in, the eased curve is still close to the start (linear would say 0.35)
+    #expect(glowLineValue(pts, at: 0.25) < 0.33)
+    #expect(abs(glowLineValue(pts, at: 9) - 0.4) < 1e-9)         // clamps to the ends
+    #expect(abs(glowLineValue([0.7], at: 3) - 0.7) < 1e-9)
+}

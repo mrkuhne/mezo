@@ -14,6 +14,12 @@ public func riseFraction(score: Int?) -> Double? {
     return min(1, max(0, (Double(s) - 40) / 60))
 }
 
+/// What VoiceOver says for an orb value: the no-data dash is "nincs adat".
+public func orbSpoken(_ display: String) -> String { display == "–" ? "nincs adat" : display }
+
+/// The hero number's size: numbers and the no-data dash are big (58); a learning label ("9 / 14") is smaller (34).
+public func risingDisplaySize(score: Int?, display: String) -> CGFloat { score != nil || display == "–" ? 58 : 34 }
+
 /// Physics and sensors behind a living orb: tilt spring (device gravity or drag), speech surge, tap ripple.
 @MainActor @Observable public final class OrbMotion {
     public var tilt: Double = 0
@@ -135,10 +141,12 @@ public struct StillOrb: View {
 
 /// The hero: the metric's orb as the morning sun. Good scores stand high, a weak one sinks behind the horizon
 /// (clipped). A nil score is "még tanulom": a calm, half-saturated still orb at mid height, no rise.
+/// `orbScale` scales the orb alone (Pulzus breathing: 1.22 in, 0.84 out); the number and the glow stay put.
 public struct RisingOrb: View {
-    let hue: Hue, score: Int?, display: String, caption: String?, motion: OrbMotion
-    public init(hue: Hue, score: Int?, display: String, caption: String? = nil, motion: OrbMotion) {
+    let hue: Hue, score: Int?, display: String, caption: String?, motion: OrbMotion, orbScale: CGFloat
+    public init(hue: Hue, score: Int?, display: String, caption: String? = nil, motion: OrbMotion, orbScale: CGFloat = 1) {
         self.hue = hue; self.score = score; self.display = display; self.caption = caption; self.motion = motion
+        self.orbScale = orbScale
     }
 
     public var body: some View {
@@ -153,9 +161,13 @@ public struct RisingOrb: View {
                 } else {
                     LivingOrb(palette: hue.orb, size: size, level: Double(score ?? 0) / 100, glow: true, motion: motion)
                         .id(hue)
+                        .scaleEffect(orbScale)
                 }
                 VStack(spacing: 2) {
-                    Text(display).font(.nkNumber(score == nil ? 34 : 58)).foregroundStyle(.white).monospacedDigit()
+                    // a display like "7ó 12p" or "3 240" must stay inside the orb
+                    Text(display).font(.nkNumber(risingDisplaySize(score: score, display: display))).foregroundStyle(.white).monospacedDigit()
+                        .fontWeight(display == "–" ? .medium : nil)       // the light dash alone reads as a hairline
+                        .lineLimit(1).minimumScaleFactor(0.4).frame(maxWidth: size - 20)
                         .contentTransition(.numericText())
                     if let caption { Text(caption).nkFont(12).foregroundStyle(.white.opacity(0.75)) }
                 }
@@ -171,7 +183,7 @@ public struct RisingOrb: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(hue.name): \(display)")
+        .accessibilityLabel("\(hue.name): \(orbSpoken(display))")
     }
 }
 
@@ -208,7 +220,7 @@ public struct MiniOrbRow: View {
                 .contentShape(Rectangle())
                 .onTapGesture { withAnimation(.spring(response: 0.7, dampingFraction: 0.82)) { selected = item.0 } }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(item.0.name) \(item.1)")
+                .accessibilityLabel("\(item.0.name) \(orbSpoken(item.1))")
                 .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
             }
         }
