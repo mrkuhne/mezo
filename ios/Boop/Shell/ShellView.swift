@@ -16,7 +16,7 @@ struct ShellView: View {
                 case "Fuel": WebOnlyTabView(domain: .fuel)
                 case "Boop": WebOnlyTabView(domain: .boop)
                 case "Én": WebOnlyTabView(domain: .en(me))
-                default: NapEmptyView()
+                default: NapView()
                 }
             }
             .id(tab)
