@@ -31,9 +31,15 @@ public class RuleVerdicts {
     private static final LocalTime LAST_MEAL_TIP = LocalTime.of(20, 0);
 
     private final int stepsGoal;
+    private final int nightsNeeded;
 
     public RuleVerdicts(int stepsGoal) {
+        this(stepsGoal, BoopScores.MIN_NIGHTS_FOR_FORMA);
+    }
+
+    public RuleVerdicts(int stepsGoal, int nightsNeeded) {
         this.stepsGoal = stepsGoal;
+        this.nightsNeeded = nightsNeeded;
     }
 
     public Verdicts write(BoopDay d, Scores s, LocalTime now) {
@@ -44,12 +50,12 @@ public class RuleVerdicts {
 
     // --- metrics ------------------------------------------------------------------------------
 
-    private static Verdict forma(BoopDay d, Scores s) {
+    private Verdict forma(BoopDay d, Scores s) {
         if (s.forma() == null || "learning".equals(s.state())) {
-            if (d.nightsKnown() < BoopScores.MIN_NIGHTS_FOR_FORMA) {
+            if (d.nightsKnown() < nightsNeeded) {
                 String known = d.nightsKnown() <= 0 ? "Még egyetlen éjszakádat sem ismerem"
                     : "Eddig " + d.nightsKnown() + " éjszakádat ismerem";
-                return new Verdict(LEARNING_HEADLINE, known + ", " + BoopScores.MIN_NIGHTS_FOR_FORMA
+                return new Verdict(LEARNING_HEADLINE, known + ", " + nightsNeeded
                     + " kell, hogy megbízható formát mondjak. Addig az alvásodat és a pulzusodat figyelem.");
             }
             return new Verdict(LEARNING_HEADLINE,

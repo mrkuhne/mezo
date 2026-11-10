@@ -39,9 +39,15 @@ final class BoopPrompts {
          "brief":[{"text":"...","link":"sleep"}],"tonightTip":"...","nextMealTip":"..."}""";
 
     private final int stepsGoal;
+    private final int nightsNeeded;
 
     BoopPrompts(int stepsGoal) {
+        this(stepsGoal, BoopScores.MIN_NIGHTS_FOR_FORMA);
+    }
+
+    BoopPrompts(int stepsGoal, int nightsNeeded) {
         this.stepsGoal = stepsGoal;
+        this.nightsNeeded = nightsNeeded;
     }
 
     String context(BoopDay d, Scores s, LocalTime now, Conflict conflict) {
@@ -51,7 +57,7 @@ final class BoopPrompts {
         b.append("[Forma] ").append(score(s.forma()));
         if (s.forma() == null) {
             b.append(" (ismert éjszakák: ").append(d.nightsKnown()).append(", kell legalább ")
-                .append(BoopScores.MIN_NIGHTS_FOR_FORMA).append(')');
+                .append(nightsNeeded).append(')');
         }
         b.append('\n');
 

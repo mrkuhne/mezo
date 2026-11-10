@@ -766,6 +766,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger feedSmartCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int feedSmartCallCount() { return feedSmartCalls.get(); }
 
+    /** Boop brief calls (mezo-r36n9.7): ITs assert the brief cache (same input hash → no new LLM call). */
+    private final java.util.concurrent.atomic.AtomicInteger boopBriefCalls = new java.util.concurrent.atomic.AtomicInteger();
+    public int boopBriefCallCount() { return boopBriefCalls.get(); }
+
     private final java.util.concurrent.atomic.AtomicInteger completeCallCount =
             new java.util.concurrent.atomic.AtomicInteger();
     private volatile List<Turn> lastMemoryRewriteHistory = List.of();
@@ -1061,6 +1065,7 @@ public class FakeCompanionLlm implements CompanionLlm {
                             + "\"refIndexes\":[0],\"patternIndex\":0}]}";
         }
         if (systemPrompt.startsWith(BOOP_BRIEF_MARKER_MIRROR)) {
+            boopBriefCalls.incrementAndGet();
             if (userMessage.contains(BOOP_JUNK)) {
                 return "nem json";
             }

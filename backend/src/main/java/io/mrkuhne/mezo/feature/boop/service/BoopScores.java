@@ -11,6 +11,7 @@ import java.time.LocalTime;
  */
 public class BoopScores {
 
+    /** Default of {@code mezo.boop.nights-needed}: logged nights before Forma is computed. */
     static final int MIN_NIGHTS_FOR_FORMA = 14;
     private static final double MIN_FUEL_SHARE = 0.05;
     private static final LocalTime FUEL_FROM = LocalTime.of(7, 0);
@@ -21,13 +22,19 @@ public class BoopScores {
                          Integer pulzusBpm, String state) {}
 
     private final int stepsGoal;
+    private final int nightsNeeded;
 
     public BoopScores(int stepsGoal) {
+        this(stepsGoal, MIN_NIGHTS_FOR_FORMA);
+    }
+
+    public BoopScores(int stepsGoal, int nightsNeeded) {
         this.stepsGoal = stepsGoal;
+        this.nightsNeeded = nightsNeeded;
     }
 
     public BoopScores(BoopProperties props) {
-        this(props.stepsGoal());
+        this(props.stepsGoal(), props.nightsNeeded());
     }
 
     public Scores compute(BoopDay d, LocalTime now) {
@@ -42,7 +49,7 @@ public class BoopScores {
         Integer fuel = fuel(d, now);
 
         Integer forma = null;
-        if (alvas != null && d.nightsKnown() >= MIN_NIGHTS_FOR_FORMA) {
+        if (alvas != null && d.nightsKnown() >= nightsNeeded) {
             double load = 100 - Math.min(60, d.yesterdayLoad().minutes() / 2.0); // unrounded; only forma rounds
             double p = pulzus == null ? 70 : pulzus; // no resting HR: neutral
             forma = (int) Math.round(0.45 * alvas + 0.35 * p + 0.20 * load);

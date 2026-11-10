@@ -60,8 +60,8 @@ public class BoopVerdictWriter {
         this.companionLlm = companionLlm;
         this.llmCallContextHolder = llmCallContextHolder;
         this.objectMapper = objectMapper;
-        this.rules = new RuleVerdicts(props.stepsGoal());
-        this.prompts = new BoopPrompts(props.stepsGoal());
+        this.rules = new RuleVerdicts(props.stepsGoal(), props.nightsNeeded());
+        this.prompts = new BoopPrompts(props.stepsGoal(), props.nightsNeeded());
     }
 
     public Verdicts write(BoopDay d, Scores s, LocalTime now) {
