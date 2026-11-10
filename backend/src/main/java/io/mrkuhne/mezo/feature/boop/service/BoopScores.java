@@ -12,11 +12,12 @@ import java.time.LocalTime;
 public class BoopScores {
 
     static final int MIN_NIGHTS_FOR_FORMA = 14;
+    private static final double MIN_FUEL_SHARE = 0.05;
     private static final LocalTime FUEL_FROM = LocalTime.of(7, 0);
     private static final LocalTime FUEL_TO = LocalTime.of(21, 0);
 
     /** {@code state}: good (>=70), okay (50-69), tired (<50) or learning (forma unknown). */
-    public record Scores(Integer forma, Integer alvas, int mozgas, Integer fuel, Integer pulzus,
+    public record Scores(Integer forma, Integer alvas, Integer mozgas, Integer fuel, Integer pulzus,
                          Integer pulzusBpm, String state) {}
 
     private final int stepsGoal;
@@ -36,21 +37,25 @@ public class BoopScores {
             pulzus = clamp(Math.round(70 + (d.baselineRestingHr() - d.restingHr()) * 6));
         }
         int steps = d.steps() == null ? 0 : d.steps();
-        int mozgas = clamp(Math.round(steps * 100.0 / stepsGoal));
+        // A non-positive goal is a misconfiguration: no score rather than a divide-by-zero 100.
+        Integer mozgas = stepsGoal <= 0 ? null : clamp(Math.round(steps * 100.0 / stepsGoal));
         Integer fuel = fuel(d, now);
 
         Integer forma = null;
         if (alvas != null && d.nightsKnown() >= MIN_NIGHTS_FOR_FORMA) {
-            int load = (int) Math.round(100 - Math.min(60, d.yesterdayLoad().minutes() / 2.0));
+            double load = 100 - Math.min(60, d.yesterdayLoad().minutes() / 2.0); // unrounded; only forma rounds
             double p = pulzus == null ? 70 : pulzus; // no resting HR: neutral
             forma = (int) Math.round(0.45 * alvas + 0.35 * p + 0.20 * load);
         }
-        String state = forma == null ? "learning" : forma >= 70 ? "good" : forma >= 50 ? "okay" : "tired";
-        return new Scores(forma, alvas, mozgas, fuel, pulzus, d.restingHr(), state);
+        return new Scores(forma, alvas, mozgas, fuel, pulzus, d.restingHr(), stateOf(forma));
+    }
+
+    static String stateOf(Integer forma) {
+        return forma == null ? "learning" : forma >= 70 ? "good" : forma >= 50 ? "okay" : "tired";
     }
 
     private static Integer alvas(BoopDay d) {
-        if (d.sleep() == null) return null;
+        if (d.sleep() == null || d.sleepTargetMin() <= 0) return null;
         double ratio = Math.min(1.0, d.sleep().totalMin() / (double) d.sleepTargetMin());
         Integer q = d.sleep().quality();
         double v = q == null ? ratio : 0.7 * ratio + 0.3 * Math.max(0, Math.min(1, (q - 1) / 9.0));
@@ -62,6 +67,9 @@ public class BoopScores {
         double span = java.time.Duration.between(FUEL_FROM, FUEL_TO).toMinutes();
         double elapsed = java.time.Duration.between(FUEL_FROM, now).toMinutes();
         double share = Math.min(1.0, elapsed / span);
+        // Too early to judge: just past 07:00 the expected share is ~0 and any breakfast would read
+        // as 100 %. Below 5 % of the 07:00-21:00 span (07:42) there is no fuel score yet.
+        if (share < MIN_FUEL_SHARE) return null;
         return clamp(Math.round(d.kcalSoFar() / (d.kcalTarget() * share) * 100));
     }
 
