@@ -1,6 +1,6 @@
 # Boop — the "Napkelte" look (dark glass, painted sky, the rising orb) — design
 
-- **Date:** 2026-11-10 · **Epic:** `mezo-r36n9` · **Issue:** `mezo-r36n9.3` · **Status:** draft for owner OK
+- **Date:** 2026-11-10 · **Epic:** `mezo-r36n9` · **Issue:** `mezo-r36n9.3` · **Status:** draft for owner OK — the orb-as-lens Mai (§5.1a) approved in the simulator 2026-11-10
 - **Replaces:** the **Lágy** look for Boop (spec `2026-11-09-boop-ios-v1-design.md` §0 and §4.2 visuals). Everything in
   that spec that is *not* about looks — data, backend, install, slices, the six moments, owner decisions in its §8 —
   stays valid.
@@ -129,6 +129,10 @@ Mai szándék, Mérlegelés, Első étkezés; done ones dimmed with a check), ea
 Készenlét, the **Boop mondja** card last. The old full *Utána jön* list card and the single observation card are
 replaced by the strip and the stack.
 
+**Boop mondja** card: tiny orb + "BOOP MONDJA", the longer brief in serif; key phrases white semibold with a **dotted
+underline**, tappable → detail sheet (§5.4); the word-by-word typing synced to the voice runs here when *Boop elmondja*
+is pressed.
+
 **Boop észrevette stack** (*owner* liked the notification-style idea): up to three observation cards stacked
 (back cards scaled 5 % per step and offset 10 pt); drag the top card — **right = Igaz**, **left = Nem rólam szól** —
 a label fades in with the drag, past 110 pt it flies off with a soft haptic and the next one rises; "<n> új" counter;
@@ -225,7 +229,8 @@ Launch: `-aura YES -auraVariant 3` · `-auraPhoto 2` (painted, default) · `-aur
 `-mealStage 0–3` · `-auraSheet sleep|heart|day` · `-auraBottom YES` (open scrolled to the end) · `-voiceOn NO`.
 Rejected along the way (do not reintroduce): B "Nappal" (light, Ultrahuman-like); C's coloured card auras; A's arc
 gauge + number (Oura copy); the photo options (vivid photo, photo per metric); white rings around selected orbs; the
-0–100 horizon scale; the hairline under the tabs; the check-in quick-scale buttons.
+0–100 horizon scale; the hairline under the tabs; the check-in quick-scale buttons; a fixed card list that is the same
+for every metric (replaced by the lens, §5.1a).
 
 ## 9. Builder-check answers (2026-11-10)
 
