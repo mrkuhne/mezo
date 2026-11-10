@@ -1,31 +1,76 @@
 import SwiftUI
 
-// Throwaway spike (mezo-r36n9.3): "a nap ösvénye" — below the hero, the day is one glowing line with stations
-// instead of a pile of cards (after Gentler Streak's Activity Path and Flighty's timeline). The selected orb (lens)
-// decides which stations open up into cards. Above it: three tiles with their own little drawings (Apple Weather's
-// modules), and the water tile is "juicy" (a drop falls in, the level rises, a haptic) after (Not Boring) Habits.
+// Throwaway spike (mezo-r36n9.3): below the hero each orb shows only what belongs to it (owner, 2026-11-10):
+// 2–3 tiles with their own drawings + a short path of its own stations. The whole day's path lives on the
+// "A napom" tab (mode -1). Background: the page keeps a deep hue, floating lights, and a mirrored landscape at the end.
 
 private let pathBase = Color(hex: 0x0D1218)
 
-// MARK: - Tiles
+// MARK: - Tiles per orb
 
-struct AuraTileRow: View {
-    var accent: Color
+struct LensTile<G: View>: View {
+    var label: String
+    var value: String
+    var sub: String
+    @ViewBuilder var graphic: G
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label).font(AuraFont.mono(10.5)).tracking(1.2).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.8)
+            graphic.frame(height: 56).frame(maxWidth: .infinity)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(value).font(.custom("Outfit", size: 19).weight(.light)).foregroundStyle(.white).contentTransition(.numericText()).lineLimit(1).minimumScaleFactor(0.7)
+                Text(sub).font(.system(size: 11)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.8)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .auraGlass(22)
+        .contentShape(Rectangle())
+    }
+}
+
+struct LensTiles: View {
+    var lens: Int
     @State private var water = 0.5
     @State private var drop = false
     @State private var drops = 0
 
     var body: some View {
-        HStack(spacing: 10) {
-            tile("VÍZ", "\(String(format: "%.2f", water * 2.5).replacingOccurrences(of: ".", with: ",")) l", "koppints: +250 ml") {
-                WaterGlass(level: water, drop: drop)
+        switch lens {
+        case 1:
+            HStack(spacing: 10) {
+                LensTile(label: "ALVÁSIDŐ", value: "7ó 12p", sub: "22:48 – 06:53") { NightArc() }
+                LensTile(label: "MÉLYALVÁS", value: "1ó 36p", sub: "+18 p az átlaghoz") { StillOrb(colors: SunMetric.all[1].orb, size: 46, level: 0.62) }
+                LensTile(label: "ELALVÁS", value: "12 perc", sub: "gyorsabb, mint szokott") { SleepLatency() }
             }
-            .onTapGesture { pour() }
-            .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: drops)
-            tile("LÉPÉSEK", "5 580", "/ 9 000") { StepTrail(progress: 0.62) }
-            tile("FEHÉRJE", "38 g", "/ 165 g") {
-                StillOrb(colors: SunMetric.all[4].orb, size: 46, level: 0.23)
+        case 2:
+            HStack(spacing: 10) {
+                LensTile(label: "LÉPÉSEK", value: "5 580", sub: "/ 9 000") { StepTrail(progress: 0.62) }
+                LensTile(label: "AKTÍV KALÓRIA", value: "310 kcal", sub: "/ 620 cél") { LevelBars(values: [0.5], tints: [Color(hex: 0xF29A4A)], wide: true) }
             }
+        case 3:
+            HStack(spacing: 10) {
+                LensTile(label: "VÍZ", value: String(format: "%.2f l", water * 2.5).replacingOccurrences(of: ".", with: ","), sub: "koppints: +250 ml") {
+                    WaterGlass(level: water, drop: drop)
+                }
+                .onTapGesture { pour() }
+                .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: drops)
+                LensTile(label: "KALÓRIA", value: "820", sub: "/ 2 350 kcal") { StillOrb(colors: SunMetric.all[3].orb, size: 46, level: 0.35) }
+                LensTile(label: "MAKRÓK", value: "38 · 120 · 30", sub: "fehérje · szénh. · zsír") {
+                    LevelBars(values: [38.0 / 165, 120.0 / 260, 30.0 / 75], tints: [.white, .white.opacity(0.7), .white.opacity(0.45)], wide: false)
+                }
+            }
+        case 4:
+            HStack(spacing: 10) {
+                LensTile(label: "NYUGALMI PULZUS", value: "57", sub: "heti átlag 59") {
+                    GlowLine(points: [0.55, 0.5, 0.62, 0.42, 0.35, 0.42, 0.2], color: .white, nowAt: nil)
+                }
+                LensTile(label: "FESZÜLTSÉG", value: "4 / 10", sub: "reggeli check-in") {
+                    StillOrb(colors: SunMetric.all[0].orb, size: 46, level: 0.4)
+                }
+            }
+        default:
+            EmptyView()
         }
     }
 
@@ -38,21 +83,6 @@ struct AuraTileRow: View {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.55)) { water = min(1, water + 0.1) }
             drop = false
         }
-    }
-
-    private func tile<G: View>(_ l: String, _ v: String, _ sub: String, @ViewBuilder g: () -> G) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(l).font(AuraFont.mono(10.5)).tracking(1.2).foregroundStyle(.white.opacity(0.6))
-            g().frame(height: 56).frame(maxWidth: .infinity)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(v).font(.custom("Outfit", size: 19).weight(.light)).foregroundStyle(.white).contentTransition(.numericText())
-                Text(sub).font(.system(size: 11)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .auraGlass(22)
-        .contentShape(Rectangle())
     }
 }
 
@@ -119,61 +149,120 @@ struct StepTrail: View {
     }
 }
 
-// MARK: - The day path
+/// The night as an arc from falling asleep to waking, a small moon at its top.
+struct NightArc: View {
+    var body: some View {
+        Canvas { ctx, s in
+            let c = CGPoint(x: s.width / 2, y: s.height - 4)
+            let r = min(s.width / 2 - 6, s.height - 8)
+            var arc = Path(); arc.addArc(center: c, radius: r, startAngle: .degrees(180), endAngle: .degrees(360), clockwise: false)
+            var g = ctx; g.addFilter(.blur(radius: 4))
+            g.stroke(arc, with: .color(Color(hex: 0x4BA8E6)), lineWidth: 4)
+            ctx.stroke(arc, with: .color(.white), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+            for a in [180.0, 360.0] {
+                let p = CGPoint(x: c.x + r * cos(a * .pi / 180), y: c.y + r * sin(a * .pi / 180))
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - 3.5, y: p.y - 3.5, width: 7, height: 7)), with: .color(.white))
+            }
+            let top = CGPoint(x: c.x, y: c.y - r)
+            ctx.fill(Path(ellipseIn: CGRect(x: top.x - 7, y: top.y - 7, width: 14, height: 14)), with: .color(Color(hex: 0xF4E9E2)))
+            ctx.fill(Path(ellipseIn: CGRect(x: top.x - 3, y: top.y - 9, width: 13, height: 13)), with: .color(Color(hex: 0x1A2A3C)))
+        }
+    }
+}
+
+/// How fast you fell asleep: a short descent from "awake" down into sleep.
+struct SleepLatency: View {
+    var body: some View {
+        Canvas { ctx, s in
+            var p = Path()
+            p.move(to: CGPoint(x: 4, y: 8))
+            p.addLine(to: CGPoint(x: s.width * 0.3, y: 8))
+            p.addCurve(to: CGPoint(x: s.width - 4, y: s.height - 6), control1: CGPoint(x: s.width * 0.5, y: 8), control2: CGPoint(x: s.width * 0.55, y: s.height - 6))
+            ctx.stroke(p, with: .color(.white), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+            ctx.fill(Path(ellipseIn: CGRect(x: 0, y: 4, width: 8, height: 8)), with: .color(Color(hex: 0xF4E9E2)))
+            ctx.fill(Path(ellipseIn: CGRect(x: s.width - 8, y: s.height - 10, width: 8, height: 8)), with: .color(Color(hex: 0x4BA8E6)))
+        }
+    }
+}
+
+/// Upright level bars: each fills to its share; one wide bar or a small group.
+struct LevelBars: View {
+    var values: [Double]
+    var tints: [Color]
+    var wide: Bool
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            ForEach(values.indices, id: \.self) { i in
+                ZStack(alignment: .bottom) {
+                    Capsule().fill(.white.opacity(0.1))
+                    Capsule().fill(tints[i]).frame(height: 52 * min(1, values[i]))
+                }
+                .frame(width: wide ? 22 : 12, height: 52)
+            }
+        }
+    }
+}
+
+// MARK: - The path (a short one per orb, or the whole day on "A napom")
 
 struct DayPath: View {
-    var lens: Int
+    var mode: Int              // 0–4 = that orb's own stations, -1 = the whole day
     var hue: Color
     var motion: OrbMotion
     var orb: [Color]
     var onOpen: (String) -> Void
 
-    enum Kind { case sleep, weight, checkin, meal, now, observe, meetings, dip, breath, workout, bed }
-    struct Station: Identifiable { let id = UUID(); let time: String; let glyph: String; let title: String; let sub: String; let kind: Kind; let past: Bool }
+    enum Kind { case lastBed, night, sleep, weight, checkin, intention, meal, now, observe, meetings, dip, breath, workout, bed }
+    struct Station { let time: String; let glyph: String; let title: String; let sub: String; let kind: Kind; let past: Bool; var card = true }
+
+    private let now = Station(time: "08:40", glyph: "", title: "Most", sub: "", kind: .now, past: true, card: false)
 
     private var stations: [Station] {
-        var s: [Station] = [
-            .init(time: "06:53", glyph: "sun-ink", title: "Ébredés", sub: "7ó 12p alvás · mély 1ó 36p", kind: .sleep, past: true),
-            .init(time: "06:55", glyph: "scale-ink", title: "Mérlegelés", sub: "82,4 kg · trend 82,2", kind: .weight, past: true),
-            .init(time: "07:35", glyph: "bowl-cream", title: "Reggeli", sub: "zabkása bogyókkal · 523 kcal", kind: .meal, past: true),
-            .init(time: "08:40", glyph: "", title: "Most", sub: "", kind: .now, past: true),
+        switch mode {
+        case 0: return [
+            now,
             .init(time: "", glyph: "pen-sun", title: "Reggeli check-in", sub: "6 kérdés · fél perc", kind: .checkin, past: false),
-        ]
-        if lens == 0 { s.append(.init(time: "", glyph: "spark-cream", title: "Boop észrevette", sub: "3 új megfigyelés", kind: .observe, past: false)) }
-        s.append(.init(time: "09:00", glyph: "clock-ink", title: "Megbeszélések", sub: "6 esemény · 17:30-ig", kind: .meetings, past: false))
-        s.append(.init(time: "12:30", glyph: "bowl-cream", title: "Ebéd", sub: "Boop javaslata: lazac rizzsel", kind: .meal, past: false))
-        if lens == 4 { s.append(.init(time: "13:55", glyph: "heart-cream", title: "Egy perc légzés", sub: "a 14:00-s hívás előtt", kind: .breath, past: false)) }
-        s += [
-            .init(time: "15:00", glyph: "shoe-cream", title: "Mélypont", sub: "10 perc séta segít", kind: .dip, past: false),
-            .init(time: "18:30", glyph: "dumbbell-ink", title: "Felsőtest edzés", sub: "60 perc · Boop: 18:30 jobb", kind: .workout, past: false),
-            .init(time: "20:00", glyph: "bowl-cream", title: "Vacsora", sub: "könnyű, 20:00-ig", kind: .meal, past: false),
-            .init(time: "22:45", glyph: "moon-cream", title: "Lefekvés", sub: "emlékeztető 22:15-kor", kind: .bed, past: false),
-        ]
-        return s
-    }
-
-    private func emphasized(_ k: Kind) -> Bool {
-        switch lens {
-        case 1: return k == .sleep || k == .bed
-        case 2: return k == .workout || k == .dip
-        case 3: return k == .meal
-        case 4: return k == .meetings || k == .breath
-        default: return k == .checkin || k == .observe || k == .dip
+            .init(time: "", glyph: "spark-cream", title: "Mai szándék", sub: "egy mondat, legfeljebb három fókusz", kind: .intention, past: false),
+            .init(time: "", glyph: "spark-cream", title: "Boop észrevette", sub: "3 új megfigyelés", kind: .observe, past: false)]
+        case 1: return [
+            .init(time: "22:48", glyph: "moon-cream", title: "Elalvás", sub: "12 perc alatt aludtál el", kind: .lastBed, past: true, card: false),
+            .init(time: "", glyph: "moon-cream", title: "Az éjszaka", sub: "7ó 12p · mély 1ó 36p · REM 1ó 44p", kind: .night, past: true),
+            .init(time: "06:53", glyph: "sun-ink", title: "Ébredés", sub: "kipihenten", kind: .sleep, past: true, card: false),
+            now,
+            .init(time: "22:45", glyph: "moon-cream", title: "Lefekvés", sub: "emlékeztető 22:15-kor", kind: .bed, past: false)]
+        case 2: return [
+            now,
+            .init(time: "15:00", glyph: "shoe-cream", title: "Mélyponti séta", sub: "10 perc · kb. 1 200 lépés", kind: .dip, past: false),
+            .init(time: "18:30", glyph: "dumbbell-ink", title: "Felsőtest edzés", sub: "60 perc · Boop: 18:30 jobb", kind: .workout, past: false)]
+        case 3: return [
+            .init(time: "07:35", glyph: "bowl-cream", title: "Reggeli", sub: "zabkása bogyókkal · 523 kcal", kind: .meal, past: true),
+            now,
+            .init(time: "12:30", glyph: "bowl-cream", title: "Ebéd", sub: "Boop javaslata: lazac rizzsel", kind: .meal, past: false),
+            .init(time: "20:00", glyph: "bowl-cream", title: "Vacsora", sub: "könnyű, 20:00-ig", kind: .meal, past: false)]
+        case 4: return [
+            now,
+            .init(time: "13:55", glyph: "heart-cream", title: "Egy perc légzés", sub: "a sűrű sáv előtt", kind: .breath, past: false),
+            .init(time: "14:00", glyph: "clock-ink", title: "Sűrű megbeszélés-sáv", sub: "4 esemény · 16:00-ig", kind: .meetings, past: false)]
+        default: return [
+            .init(time: "06:53", glyph: "sun-ink", title: "Ébredés", sub: "7ó 12p alvás · mély 1ó 36p", kind: .sleep, past: true, card: false),
+            .init(time: "06:55", glyph: "scale-ink", title: "Mérlegelés", sub: "82,4 kg · trend 82,2", kind: .weight, past: true, card: false),
+            .init(time: "07:35", glyph: "bowl-cream", title: "Reggeli", sub: "zabkása bogyókkal · 523 kcal", kind: .meal, past: true, card: false),
+            now,
+            .init(time: "", glyph: "pen-sun", title: "Reggeli check-in", sub: "6 kérdés · fél perc", kind: .checkin, past: false, card: false),
+            .init(time: "09:00", glyph: "clock-ink", title: "Megbeszélések", sub: "6 esemény · 17:30-ig", kind: .meetings, past: false, card: false),
+            .init(time: "12:30", glyph: "bowl-cream", title: "Ebéd", sub: "Boop javaslata: lazac rizzsel", kind: .meal, past: false, card: false),
+            .init(time: "15:00", glyph: "shoe-cream", title: "Mélypont", sub: "10 perc séta segít", kind: .dip, past: false, card: false),
+            .init(time: "18:30", glyph: "dumbbell-ink", title: "Felsőtest edzés", sub: "60 perc", kind: .workout, past: false, card: false),
+            .init(time: "20:00", glyph: "bowl-cream", title: "Vacsora", sub: "könnyű, 20:00-ig", kind: .meal, past: false, card: false),
+            .init(time: "22:45", glyph: "moon-cream", title: "Lefekvés", sub: "emlékeztető 22:15-kor", kind: .bed, past: false, card: false)]
         }
     }
 
     var body: some View {
+        let list = stations
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                AuraMono("A NAPOD")
-                Spacer()
-                Text("6 esemény · Google Naptár").font(.system(size: 12)).foregroundStyle(.white.opacity(0.5))
-            }
-            .padding(.horizontal, 4).padding(.bottom, 14)
-            let list = stations
             ForEach(list.indices, id: \.self) { i in
-                let st = list[i]
-                row(st, first: i == 0, last: i == list.count - 1, nextPast: i + 1 < list.count && list[i + 1].past)
+                row(list[i], first: i == 0, last: i == list.count - 1, nextPast: i + 1 < list.count && list[i + 1].past)
                     .scrollTransition(.animated(.spring(response: 0.5, dampingFraction: 0.85))) { c, phase in
                         c.opacity(phase.isIdentity ? 1 : 0.35)
                             .scaleEffect(phase.isIdentity ? 1 : 0.94, anchor: .leading)
@@ -183,14 +272,11 @@ struct DayPath: View {
         }
     }
 
-    // MARK: rows
-
     private func row(_ st: Station, first: Bool, last: Bool, nextPast: Bool) -> some View {
-        let emph = emphasized(st.kind)
+        let open = st.card && st.kind != .now
         return HStack(alignment: .top, spacing: 12) {
             Text(st.time).font(AuraFont.mono(11.5)).foregroundStyle(.white.opacity(st.kind == .now ? 1 : (st.past ? 0.45 : 0.7)))
                 .frame(width: 42, alignment: .trailing).padding(.top, st.kind == .now ? 4 : 12)
-            // the line + node
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
                     segment(lit: st.past).frame(height: st.kind == .now ? 8 : 14).opacity(first ? 0 : 1)
@@ -198,30 +284,25 @@ struct DayPath: View {
                 }
                 VStack(spacing: 0) {
                     Color.clear.frame(height: st.kind == .now ? 8 : 14)
-                    node(st, emph: emph)
+                    node(st, open: open)
                     segment(lit: st.past && nextPast).frame(maxHeight: .infinity).opacity(last ? 0 : 1)
                 }
             }
             .frame(width: 24)
-            // the content
             VStack(alignment: .leading, spacing: 10) {
                 if st.kind == .now {
                     Text("MOST").font(AuraFont.mono(11, .bold)).tracking(1.4).foregroundStyle(.white).padding(.top, 4)
                     Color.clear.frame(height: 6)
                 } else {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(st.title).font(.system(size: emph ? 17 : 15.5, weight: emph ? .semibold : .regular))
-                            .foregroundStyle(.white.opacity(st.past ? 0.55 : (emph ? 1 : 0.8)))
-                        Spacer()
-                    }
-                    .padding(.top, 10)
+                    Text(st.title).font(.system(size: open ? 17 : 15.5, weight: open && !st.past ? .semibold : .regular))
+                        .foregroundStyle(.white.opacity(st.past ? 0.6 : (open ? 1 : 0.8)))
+                        .padding(.top, 10)
                     Text(st.sub).font(.system(size: 13)).foregroundStyle(.white.opacity(st.past ? 0.4 : 0.6)).padding(.top, -6)
-                    if emph { card(for: st).padding(.top, 2).transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .top))) }
+                    if open { card(for: st).padding(.top, 2) }
                 }
             }
-            .padding(.bottom, emph ? 18 : 10)
+            .padding(.bottom, open ? 18 : 10)
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: lens)
     }
 
     private func segment(lit: Bool) -> some View {
@@ -236,23 +317,21 @@ struct DayPath: View {
         .frame(maxWidth: .infinity)
     }
 
-    @ViewBuilder private func node(_ st: Station, emph: Bool) -> some View {
+    @ViewBuilder private func node(_ st: Station, open: Bool) -> some View {
         if st.kind == .now {
             NowPulse(hue: hue)
         } else {
             ZStack {
-                Circle().fill(st.past ? Color.white : (emph ? Color.white.opacity(0.14) : pathBase))
-                Circle().stroke(.white.opacity(st.past ? 0 : (emph ? 0.9 : 0.35)), lineWidth: 1.2)
-                if !st.glyph.isEmpty {
-                    AuraGlyph(st.past ? "check-ink" : st.glyph, st.past ? pathBase : .white.opacity(emph ? 1 : 0.7), size: 11)
-                }
+                Circle().fill(st.past ? Color.white : (open ? Color.white.opacity(0.14) : pathBase))
+                Circle().stroke(.white.opacity(st.past ? 0 : (open ? 0.9 : 0.35)), lineWidth: 1.2)
+                AuraGlyph(st.past ? "check-ink" : st.glyph, st.past ? pathBase : .white.opacity(open ? 1 : 0.7), size: 11)
             }
             .frame(width: 22, height: 22)
-            .shadow(color: emph ? hue.opacity(0.8) : .clear, radius: 8)
+            .shadow(color: open && !st.past ? hue.opacity(0.8) : .clear, radius: 8)
         }
     }
 
-    // MARK: the cards that hang off emphasized stations
+    // MARK: cards that hang off the path
 
     @ViewBuilder private func card(for st: Station) -> some View {
         switch st.kind {
@@ -261,19 +340,25 @@ struct DayPath: View {
                 StillOrb(colors: SunMetric.all[2].orb, size: 40, level: 0.5)
                 Text("Hogy vagy ma reggel? Öt alap és a nap kérdése.").font(.system(size: 14)).foregroundStyle(.white.opacity(0.8))
                 Spacer(minLength: 0)
-                Button { onOpen("checkin") } label: {
-                    Text("Kitöltöm").font(.system(size: 14, weight: .semibold)).foregroundStyle(pathBase)
-                        .padding(.horizontal, 14).padding(.vertical, 9).background(Capsule().fill(.white))
+                pill("Kitöltöm") { onOpen("checkin") }
+            }
+            .padding(14).auraGlass(20)
+        case .intention:
+            VStack(alignment: .leading, spacing: 8) {
+                Text("„Szándékkal élek, nem sodródom.”").font(AuraFont.serif(18)).foregroundStyle(.white)
+                HStack {
+                    Text("Még nincs mai fókuszod.").font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.65))
+                    Spacer()
+                    pill("Megírom") { onOpen("intention") }
                 }
-                .buttonStyle(.plain)
             }
             .padding(14).auraGlass(20)
         case .observe:
             ObservationStack(orb: orb, motion: motion, showHeader: false)
-        case .sleep:
+        case .night:
             VStack(alignment: .leading, spacing: 6) {
                 Hypnogram().frame(height: 64)
-                HStack { Text("22:48"); Spacer(); Text("6:53") }.font(AuraFont.mono(10)).foregroundStyle(.white.opacity(0.45))
+                HStack { Text("22:48"); Spacer(); Text("06:53") }.font(AuraFont.mono(10)).foregroundStyle(.white.opacity(0.45))
             }
             .padding(14).auraGlass(20)
         case .bed:
@@ -281,7 +366,7 @@ struct DayPath: View {
                 AuraGlyph("moon-cream", .white, size: 18).frame(width: 40, height: 40).background(Circle().fill(.white.opacity(0.1)))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("21:30 után képernyő nélkül").font(.system(size: 14, weight: .medium)).foregroundStyle(.white)
-                    Text("Így holnap is ilyen mélyalvásod lesz.").font(.system(size: 13)).foregroundStyle(.white.opacity(0.6))
+                    Text("Vacsora 20:00-ig, így holnap is ilyen mély lesz.").font(.system(size: 13)).foregroundStyle(.white.opacity(0.6))
                 }
             }
             .padding(14).frame(maxWidth: .infinity, alignment: .leading).auraGlass(20)
@@ -298,16 +383,14 @@ struct DayPath: View {
                 HStack {
                     Text("5 gyakorlat · 3. hét, 2. nap").font(.system(size: 13)).foregroundStyle(.white.opacity(0.7))
                     Spacer()
-                    Text("Áttolom 18:30-ra").font(.system(size: 13, weight: .semibold)).foregroundStyle(pathBase)
-                        .padding(.horizontal, 12).padding(.vertical, 8).background(Capsule().fill(.white))
+                    pill("Áttolom 18:30-ra") {}
                 }
             }
             .padding(14).auraGlass(20)
         case .dip:
             HStack(spacing: 12) {
                 GlowLine(points: [0.7, 0.55, 0.3, 0.42, 0.6], color: .white, nowAt: nil).frame(width: 90, height: 40)
-                Text(lens == 2 ? "Egy 10 perces séta a mélypontban 1 200 lépés és frissebb délután." : "Ide tegyél sétát, ne újabb kávét.")
-                    .font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.8))
+                Text("A délutáni mélypontban egy séta frissebb délutánt ad, mint egy újabb kávé.").font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.8))
             }
             .padding(14).auraGlass(20)
         case .meal:
@@ -338,7 +421,7 @@ struct DayPath: View {
         case .meetings:
             VStack(alignment: .leading, spacing: 8) {
                 AuraBusyRibbon().frame(height: 12)
-                Text("A 14:00 és 16:00 közötti sáv a legsűrűbb. Előtte egy perc légzés.").font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.8))
+                Text("Négy hívás egymás után. Közöttük két perc nyújtás is sokat segít.").font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.8))
             }
             .padding(14).auraGlass(20)
         case .breath:
@@ -350,6 +433,14 @@ struct DayPath: View {
         default:
             EmptyView()
         }
+    }
+
+    private func pill(_ t: String, _ act: @escaping () -> Void) -> some View {
+        Button(action: act) {
+            Text(t).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(pathBase)
+                .padding(.horizontal, 13).padding(.vertical, 8).background(Capsule().fill(.white))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -364,5 +455,41 @@ struct NowPulse: View {
         }
         .frame(width: 24, height: 16)
         .onAppear { withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { on = true } }
+    }
+}
+
+// MARK: - Background: deep hue, floating lights, mirrored landscape
+
+/// Very soft lights in the page hue that drift slower than the scroll.
+struct FloatingLights: View {
+    var hue: Color
+    var body: some View {
+        GeometryReader { g in
+            ZStack {
+                light(size: 360, x: g.size.width * 0.15, y: 60, o: 0.30)
+                light(size: 300, x: g.size.width * 0.85, y: g.size.height * 0.45, o: 0.24)
+                light(size: 380, x: g.size.width * 0.3, y: g.size.height * 0.85, o: 0.20)
+            }
+            .frame(width: g.size.width, height: g.size.height)
+            .visualEffect { c, proxy in c.offset(y: -proxy.frame(in: .scrollView).minY * 0.35) }
+        }
+        .allowsHitTesting(false)
+    }
+    private func light(size: CGFloat, x: CGFloat, y: CGFloat, o: Double) -> some View {
+        Circle().fill(hue.opacity(o)).frame(width: size, height: size).blur(radius: size * 0.33)
+            .position(x: x, y: y)
+    }
+}
+
+/// The landscape again at the very bottom, mirrored and faint, like a lake closing the page.
+struct MirroredLand: View {
+    var sky: [Color]
+    var body: some View {
+        PaintedLandscape(sky: sky)
+            .frame(height: 300)
+            .scaleEffect(x: 1, y: -1)
+            .opacity(0.28)
+            .mask(LinearGradient(colors: [.clear, .black.opacity(0.9)], startPoint: .top, endPoint: .bottom))
+            .allowsHitTesting(false)
     }
 }

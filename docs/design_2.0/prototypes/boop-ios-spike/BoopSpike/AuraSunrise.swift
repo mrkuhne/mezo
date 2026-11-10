@@ -71,7 +71,10 @@ struct AuraSunrise: View {
                         hero(height: geo.size.height + geo.safeAreaInsets.top - 30)
                         lensCards
                             .padding(.horizontal, 16)
-                            .padding(.bottom, 170)
+                            .padding(.bottom, 40)
+                        MirroredLand(sky: PaintedLandscape.skies[sel])
+                            .padding(.top, -20)
+                            .animation(.easeInOut(duration: 0.6), value: sel)
                     } else {
                         AuraNapTab(tab: tab, header: AnyView(header))
                             .padding(.bottom, 170)
@@ -142,11 +145,14 @@ struct AuraSunrise: View {
     @ViewBuilder private var lensCards: some View {
         if UserDefaults.standard.object(forKey: "auraPath") as? Bool ?? true {
             VStack(spacing: 16) {
-                AuraTileRow(accent: m.glow)
-                DayPath(lens: sel, hue: m.glow, motion: motion, orb: m.orb, onOpen: { open = $0 })
-                    .padding(.top, 8)
-                voiceCard
+                LensTiles(lens: sel)
+                DayPath(mode: sel, hue: m.glow, motion: motion, orb: m.orb, onOpen: { open = $0 })
+                    .padding(.top, 4)
+                if sel == 0 { voiceCard }
             }
+            .background(FloatingLights(hue: m.glow).padding(.horizontal, -16).padding(.vertical, -120))
+            .id(sel)
+            .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 28)), removal: .opacity))
         } else {
             oldLensCards
         }
@@ -253,7 +259,10 @@ struct AuraSunrise: View {
     private var pageBackground: some View {
         ZStack {
             base
-            LinearGradient(colors: [m.top.opacity(0.12), base], startPoint: .top, endPoint: .center)
+            // never black: the page keeps the deepest shade of its hue all the way down
+            LinearGradient(colors: [m.top.mix(with: base, by: 0.55), m.top.mix(with: base, by: 0.78), m.top.mix(with: base, by: 0.7)],
+                           startPoint: .top, endPoint: .bottom)
+                .animation(.easeInOut(duration: 0.6), value: sel)
         }
     }
 
@@ -743,7 +752,7 @@ struct AuraNapTab: View {
                 Color.clear.frame(height: 330)
                     .overlay { PaintedLandscape(sky: sky) }
                     .clipped()
-                    .overlay(LinearGradient(stops: [.init(color: .clear, location: 0.5), .init(color: base, location: 1)], startPoint: .top, endPoint: .bottom))
+                    .mask(LinearGradient(stops: [.init(color: .black, location: 0.55), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
                 VStack(spacing: 0) {
                     header
                     VStack(spacing: 6) {
@@ -756,7 +765,8 @@ struct AuraNapTab: View {
             }
             VStack(spacing: 12) {
                 switch tab {
-                case 1: timeline
+                case 1: DayPath(mode: -1, hue: Color(hex: 0xF29A4A), motion: motion, orb: SunMetric.all[2].orb, onOpen: { _ in })
+                        .padding(.top, 14)
                 case 2: chat
                 default: routine
                 }
