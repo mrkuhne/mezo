@@ -51,4 +51,5 @@ inputs:
   - inputFile: ../feature/telemetry/telemetry.yml
   - inputFile: ../feature/ai-drafts/ai-drafts.yml
   - inputFile: ../feature/wearable/wearable.yml
+  - inputFile: ../feature/boop/boop.yml
 output: ../openapi.yml
