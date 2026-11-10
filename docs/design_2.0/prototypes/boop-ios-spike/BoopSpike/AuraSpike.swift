@@ -107,13 +107,10 @@ struct AuraTabBar: View {
         HStack(spacing: 0) {
             ForEach(items.indices, id: \.self) { i in
                 let on = i == 0
-                VStack(spacing: 3) {
-                    AuraGlyph(items[i].0, on ? (dark ? .white : Color(hex: 0x15171C)) : (dark ? .white.opacity(0.45) : Color(hex: 0x15171C).opacity(0.35)), size: 21)
-                    Text(items[i].1).font(.system(size: 10.5, weight: on ? .semibold : .medium))
-                        .foregroundStyle(on ? (dark ? .white : Color(hex: 0x15171C)) : (dark ? .white.opacity(0.45) : Color(hex: 0x15171C).opacity(0.4)))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 9)
+                AuraGlyph(items[i].0, on ? (dark ? .white : Color(hex: 0x15171C)) : (dark ? .white.opacity(0.45) : Color(hex: 0x15171C).opacity(0.35)), size: 22)
+                    .accessibilityLabel(items[i].1)          // icons only on screen; the name stays for VoiceOver
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
                 .background { if on { Capsule().fill(dark ? .white.opacity(0.12) : .black.opacity(0.05)).padding(.horizontal, 4) } }
             }
         }

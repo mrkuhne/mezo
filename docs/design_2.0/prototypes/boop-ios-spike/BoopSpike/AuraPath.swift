@@ -223,7 +223,10 @@ struct DayPath: View {
             now,
             .init(time: "", glyph: "pen-sun", title: "Reggeli check-in", sub: "6 kérdés · fél perc", kind: .checkin, past: false),
             .init(time: "", glyph: "spark-cream", title: "Mai szándék", sub: "egy mondat, legfeljebb három fókusz", kind: .intention, past: false),
-            .init(time: "", glyph: "spark-cream", title: "Boop észrevette", sub: "3 új megfigyelés", kind: .observe, past: false)]
+            .init(time: "", glyph: "spark-cream", title: "Boop észrevette", sub: "3 új megfigyelés", kind: .observe, past: false),
+            .init(time: "12:30", glyph: "pen-sun", title: "Déli check-in", sub: "energia és fókusz · 3 kérdés", kind: .checkin, past: false, card: false),
+            .init(time: "16:00", glyph: "pen-sun", title: "Délutáni check-in", sub: "feszültség és éhség · 3 kérdés", kind: .checkin, past: false, card: false),
+            .init(time: "21:30", glyph: "moon-cream", title: "Esti check-in", sub: "napzárás · a nap kérdése", kind: .checkin, past: false, card: false)]
         case 1: return [
             .init(time: "22:48", glyph: "moon-cream", title: "Elalvás", sub: "12 perc alatt aludtál el", kind: .lastBed, past: true, card: false),
             .init(time: "", glyph: "moon-cream", title: "Az éjszaka", sub: "7ó 12p · mély 1ó 36p · REM 1ó 44p", kind: .night, past: true),

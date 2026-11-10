@@ -13,7 +13,7 @@ struct SunMetric {
     let detail: Int        // 0 energy line, 1 hypnogram, 2 hourly bars, 3 fuel levels, 4 pulse line
 
     static let all: [SunMetric] = [
-        SunMetric(name: "Készenlét", value: 78, unit: "", glyph: "spark-cream",
+        SunMetric(name: "Forma", value: 78, unit: "", glyph: "spark-cream",
                   top: Color(hex: 0x2E2470), glow: Color(hex: 0x8B6CF0),
                   orb: [Color(hex: 0x2A1E6E), Color(hex: 0x6A4FD8), Color(hex: 0x9FB8FF), Color(hex: 0xF08BB4)],
                   headline: "Jó napod lesz",
