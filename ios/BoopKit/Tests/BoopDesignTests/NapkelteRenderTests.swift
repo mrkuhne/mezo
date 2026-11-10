@@ -67,3 +67,7 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
 @Test @MainActor func tabPageRenders() {
     #expect(render(NKTabPage(hue: .forma, heroHeight: 500, compact: nil) { Text("hero") } content: { Text("body") }, height: 800) != nil)
 }
+
+@Test @MainActor func boopCardRenders() {
+    #expect(render(NKBoopCard(pre: "A csapat üzenőfala ", em: "ide költözik", post: ".", action: "Megnyitom") {}, height: 200) != nil)
+}

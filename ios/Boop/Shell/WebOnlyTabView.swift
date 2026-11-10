@@ -8,7 +8,8 @@ struct WebOnlyTabView: View {
         case edzes, fuel, boop, en(Me)
         var name: String { switch self { case .edzes: "Edzés"; case .fuel: "Fuel"; case .boop: "Boop"; case .en: "Én" } }
         var article: String { switch self { case .edzes, .en: "az"; default: "a" } }
-        var photo: String { switch self { case .edzes: "edz-sulyzotarto.jpg"; case .fuel: "zab.jpg"; case .boop: "mezo-vacsora.jpg"; case .en: "en-futam.jpg" } }
+        /// The domain's colour world until its own round (Edzés orange, Fuel green, Boop violet, Én blue).
+        var hue: Hue { switch self { case .edzes: .mozgas; case .fuel: .fuel; case .boop: .forma; case .en: .alvas } }
         var tabs: [String] {
             switch self {
             case .edzes: ["Mai", "Terv", "Sport", "Terhelés", "Tár"]
@@ -32,16 +33,22 @@ struct WebOnlyTabView: View {
     @State private var askingSignOut = false
 
     var body: some View {
-        LagyTabPage(head: TabHead(photo: domain.photo, tabs: domain.tabs, on: domain.tabs[0],
-                                  eyebrow: "\(domain.name) · a webes appban", title: "Ez a rész még a webes appban él",
-                                  sub: "Boop hamarosan átveszi.", pill: "Megnyitom", pillGlyph: nil),
-                    verdict: ("Hamarosan \(domain.article) ", domain.name, " is itt lesz, egy koppintásra."),
-                    pillAction: { openURL(BoopConfig.webAppURL) }) {
-            BoopCard(pre: domain.boopLine.0, em: domain.boopLine.1, post: domain.boopLine.2)
-                .padding(.horizontal, 16).padding(.top, 26).entrance(0.2)
-            if case .en(let me) = domain {
-                EnAccountSection(me: me, asking: $askingSignOut).padding(.horizontal, 16).padding(.top, 26).entrance(0.3)
+        NKTabPage(hue: domain.hue, heroHeight: 560, compact: nil) {
+            VStack(spacing: 0) {
+                Text("boop").font(.custom(Lagy.outfitFamily, size: 26).weight(.light)).tracking(3).foregroundStyle(.white).padding(.top, 58)
+                NKTabStrip(tabs: domain.tabs, selected: .constant(domain.tabs[0])).padding(.top, 12).allowsHitTesting(false)
+                Spacer()
+                Text("\(domain.name) · a webes appban".uppercased()).font(.nkMono(12)).tracking(1.6).foregroundStyle(.white.opacity(0.8))
+                Text("Ez a rész még a webes appban él").font(.nkSerif(36)).foregroundStyle(.white).multilineTextAlignment(.center)
+                    .padding(.horizontal, 24).padding(.top, 8)
+                Text("Hamarosan \(domain.article) \(domain.name) is itt lesz, egy koppintásra.").font(.system(size: 16))
+                    .foregroundStyle(.white.opacity(0.85)).multilineTextAlignment(.center).padding(.horizontal, 30).padding(.top, 8)
+                NKPill("Megnyitom", wide: false) { openURL(BoopConfig.webAppURL) }.padding(.top, 18).padding(.bottom, 60)
             }
+        } content: {
+            NKBoopCard(pre: domain.boopLine.0, em: domain.boopLine.1, post: domain.boopLine.2)
+            if case .en(let me) = domain { EnAccountSection(me: me, asking: $askingSignOut) }
+            Color.clear.frame(height: 90)
         }
         .confirmationDialog("Kijelentkezel?", isPresented: $askingSignOut, titleVisibility: .visible) {
             Button("Kijelentkezem", role: .destructive) { session.signOut() }

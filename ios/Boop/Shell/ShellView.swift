@@ -9,6 +9,7 @@ struct ShellView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            NK.ground.ignoresSafeArea()
             Group {
                 switch tab {
                 case "Edzés": WebOnlyTabView(domain: .edzes)
@@ -19,38 +20,9 @@ struct ShellView: View {
                 }
             }
             .id(tab)
-            LagyNav(selected: $tab)
+            NKNav(selected: $tab)
         }
-    }
-}
-
-struct LagyNav: View {
-    @Binding var selected: String
-    private let items: [(String, String, String)] = [("Nap", "sun", "sun"), ("Edzés", "dumbbell", "berry"), ("Fuel", "plate", "deep"), ("Boop", "spark", "deep"), ("Én", "person", "sage")]
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(items, id: \.0) { it in
-                let on = it.0 == selected
-                Button { selected = it.0 } label: {
-                    VStack(spacing: 2) {
-                        Glyph(it.1, it.2, size: 26).opacity(on ? 1 : 0.75)
-                        Text(it.0).font(.manrope(12, .bold)).foregroundStyle(on ? Lagy.deep : Lagy.mute)
-                    }
-                    .frame(maxWidth: .infinity).frame(height: 56).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(on ? .isSelected : [])
-            }
-        }
-        .padding(.horizontal, 6)
-        .frame(height: 68)
-        .background(Capsule().fill(.white.opacity(0.86)))
-        .background(.ultraThinMaterial, in: Capsule())
-        .shadow(color: Lagy.ink.opacity(0.22), radius: 20, y: 14)
-        .padding(.horizontal, 14)
-        .padding(.bottom, 4)
-        .sensoryFeedback(.selection, trigger: selected)
-        .environment(\.colorScheme, .light)
+        .preferredColorScheme(.dark)
     }
 }
 

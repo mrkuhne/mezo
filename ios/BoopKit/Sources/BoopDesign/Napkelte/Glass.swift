@@ -132,3 +132,27 @@ public struct NKToast: ViewModifier {
 public extension View {
     func nkToast(_ text: Binding<String?>) -> some View { modifier(NKToast(text: text)) }
 }
+
+/// Boop speaks: a tiny still orb, "BOOP", one serif sentence with a bold phrase, an optional soft action.
+public struct NKBoopCard: View {
+    let pre: String, em: String, post: String, action: String?, onAction: () -> Void
+    public init(pre: String, em: String, post: String, action: String? = nil, onAction: @escaping () -> Void = {}) {
+        self.pre = pre; self.em = em; self.post = post; self.action = action; self.onAction = onAction
+    }
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                StillOrb(palette: Hue.forma.orb, size: 22, level: 0.85)
+                NKMono("BOOP")
+            }
+            (Text(pre) + Text(em).bold().foregroundColor(.white) + Text(post))
+                .font(.nkSerif(18)).lineSpacing(4).foregroundStyle(.white.opacity(0.8))
+                .fixedSize(horizontal: false, vertical: true)
+            if let action { NKPill(action, primary: false, wide: false, action: onAction) }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass()
+        .accessibilityElement(children: .combine)
+    }
+}
