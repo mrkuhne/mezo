@@ -110,4 +110,8 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 - Simulator gotchas found in S2: the simulator tool's screenshots can be several actions stale — use
   `xcrun simctl io <udid> screenshot`; SwiftUI presentations must sit at page level and the page must read
   the flag (see `boop-ios.md` §9); `@SceneStorage` restores the last tab on relaunch.
-- **S3 reggel, S4 lépések — not planned yet**; their look is the Napkelte spec §5 and the spike's `Aura*.swift`.
+- **S3 reggel — shipped 2026-11-10** (`mezo-r36n9.7`, plan `2026-11-10-boop-s3-reggel.md`, v2.401.0): backend
+  feature `boop` (`GET /api/boop/brief`, regenerate ≤3/day, `PUT/DELETE /api/boop/session-time`; tables
+  `boop_brief`, `workout_time_override`), Mai (orb + five orbs, lens actions, path, observations), sheets, A napom,
+  voice, evening/kímélő modes, bedtime reminder, shared-panorama domain switch. Minors: `mezo-r36n9.8`.
+- **S4 lépések — not planned yet**; its look is the Napkelte spec §5 and the spike's `Aura*.swift`.
