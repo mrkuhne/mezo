@@ -7,6 +7,7 @@ import BoopDesign
 struct RootView: View {
     @Environment(Session.self) private var session
     @State private var link: HealthLink?
+    @State private var morning: MorningStore?
 
     var body: some View {
         Group {
@@ -20,26 +21,31 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: session.state)
         .environment(link)
+        .environment(morning)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
     }
 
-    /// One Health link per signed-in user; refreshed on open once the shell shows.
+    /// One Health link and one morning brief store per signed-in user; refreshed on open once the shell shows.
     private func updateLink(_ state: Session.State) {
         let me: Me?
         switch state {
         case .needsOnboarding(let m), .ready(let m): me = m
         default: me = nil
         }
-        guard let me else { link = nil; return }
+        guard let me else { link = nil; morning = nil; return }
         if link?.userId != me.id {
+            let signOut: @MainActor () -> Void = { [session] in session.signOut() }
             #if DEBUG
             if UserDefaults.standard.string(forKey: "preview") != nil {
-                link = HealthLink(client: makeClient(tokens: MemoryTokenStore("preview"), transport: PreviewTransport()), userId: me.id)
+                let preview = makeClient(tokens: MemoryTokenStore("preview"), transport: PreviewTransport())
+                link = HealthLink(client: preview, userId: me.id)
+                morning = MorningStore(client: preview, onUnauthorized: signOut)
                 return
             }
             #endif
             link = HealthLink(client: session.client, userId: me.id)
+            morning = MorningStore(client: session.client, onUnauthorized: signOut)
         }
         if case .ready = state { Task { await link?.syncIfStale() } }
     }

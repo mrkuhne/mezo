@@ -2,11 +2,13 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// Nap · Mai before the morning brief exists (S2.5): the Napkelte page with a still "még tanulom" orb and the right
-/// state — not connected, syncing, learning (< 14 nights), no calendar, offline, ready. The brief arrives in S3.
+/// Nap · Mai. With the morning brief in hand it is the Mai hero (`MaiView`, S3); before that, the Napkelte page with a
+/// still orb and the right state — not connected, syncing, learning (< 14 nights), no calendar, offline, ready — or,
+/// when the brief did not arrive, a calm retry.
 struct NapView: View {
     @Environment(\.openURL) private var openURL
     @Environment(HealthLink.self) private var link: HealthLink?
+    @Environment(MorningStore.self) private var morning: MorningStore?
     @Environment(Session.self) private var session
     @State private var connecting = false
     @State private var toast: String?
@@ -26,8 +28,44 @@ struct NapView: View {
         return .from(connected: link.connected, syncProgress: progress, nights: t?.nights ?? 0, calendarRows: t?.events ?? 0, online: online, syncFailed: failed)
     }
 
+    /// The brief replaces every state except "not connected": a refresh, a failed sync or a lost network leave the
+    /// morning on screen (the Health row below reports them). Simulator review (`-preview shell`) always shows it,
+    /// unless `-previewEmpty YES` asks for the empty states.
+    private func showsBrief(_ s: NapEmptyState) -> Bool {
+        #if DEBUG
+        if let p = UserDefaults.standard.string(forKey: "preview"), p == "shell" {
+            return !UserDefaults.standard.bool(forKey: "previewEmpty")
+        }
+        #endif
+        return s != .notConnected
+    }
+
     var body: some View {
-        let s = state, copy = napCopy(s)
+        let s = state
+        Group {
+            if showsBrief(s), let morning, let brief = morning.brief {
+                MaiView(brief: brief) { cards }
+            } else if showsBrief(s), let problem = morning?.problem {
+                page(s, copy: morningProblemCopy(problem), offline: problem == .offline) { Task { await morning?.load(date: Date()) } }
+            } else {
+                page(s, copy: napCopy(s), offline: s == .offline) { act(s) }
+            }
+        }
+        .nkToast($toast)
+        // Read the flag here so the page re-renders when it flips (a binding passed down left the cover unpresented).
+        .connectCover(link, isPresented: Binding(get: { [showing = connecting] in showing }, set: { connecting = $0 }))
+        .onDisappear { motion.stop() }
+        .onChange(of: link?.sync.phase) { _, p in if p == .failed(.unauthorized) { session.signOut() } }
+        .background { if let morning { MorningTriggers(store: morning) } }
+    }
+
+    /// Below the hero until the lens cards arrive (Task 12): the Health row.
+    @ViewBuilder private var cards: some View {
+        if let link { ConnectCard(link: link) { connecting = true } }
+        Color.clear.frame(height: 90)
+    }
+
+    private func page(_ s: NapEmptyState, copy: NapCopy, offline: Bool, onAction: @escaping () -> Void) -> some View {
         NKTabPage(hue: .forma, heroHeight: nil, compact: NKCompact(palette: Hue.forma.orb, title: "Forma", value: copy.orb, line: copy.title)) {
             VStack(spacing: 0) {
                 NKTitleRow(bellCount: 0, onBell: { toast = "Az értesítések hamarosan" }, onPlus: { toast = "A gyors hozzáadás hamarosan" },
@@ -38,14 +76,14 @@ struct NapView: View {
                     .padding(.top, 10)
                 RisingOrb(hue: .forma, score: nil, display: copy.orb, caption: copy.orbCaption, motion: motion)
                     .frame(height: 260).padding(.top, 20)
-                    .saturation(s == .offline ? 0.35 : 1)
+                    .saturation(offline ? 0.35 : 1)
                 Text(copy.caps).nkFont(14, .semibold).tracking(2.6).foregroundStyle(.white.opacity(0.85)).padding(.top, 22)
                 Text(copy.title).nkFont(38, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center).minimumScaleFactor(0.7)
                     .padding(.horizontal, 20).padding(.top, 10)
                 Text(copy.sentence).nkFont(16).lineSpacing(3).foregroundStyle(.white.opacity(0.82)).multilineTextAlignment(.center)
                     .padding(.horizontal, 30).padding(.top, 10)
                 if let action = copy.action {
-                    NKPill(action, wide: false) { act(s) }.padding(.top, 18)
+                    NKPill(action, wide: false, action: onAction).padding(.top, 18)
                 }
                 Spacer(minLength: 0)
             }
@@ -59,11 +97,6 @@ struct NapView: View {
                        action: "Megnyitom") { openURL(BoopConfig.webAppURL) }
             Color.clear.frame(height: 90)
         }
-        .nkToast($toast)
-        // Read the flag here so the page re-renders when it flips (a binding passed down left the cover unpresented).
-        .connectCover(link, isPresented: Binding(get: { [showing = connecting] in showing }, set: { connecting = $0 }))
-        .onDisappear { motion.stop() }
-        .onChange(of: link?.sync.phase) { _, p in if p == .failed(.unauthorized) { session.signOut() } }
     }
 
     private func act(_ s: NapEmptyState) {
@@ -72,6 +105,18 @@ struct NapView: View {
         case .offline, .syncFailed: Task { await link?.syncNow() }
         default: break
         }
+    }
+}
+
+/// Loads the brief of the device's day when the page appears and on every return to the foreground. Its own invisible
+/// view, like the root's sync triggers: reading the scene phase on the page itself can stop presentations.
+private struct MorningTriggers: View {
+    let store: MorningStore
+    @Environment(\.scenePhase) private var scenePhase
+    var body: some View {
+        Color.clear
+            .task { await store.load(date: Date()) }
+            .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await store.load(date: Date()) } } }
     }
 }
 

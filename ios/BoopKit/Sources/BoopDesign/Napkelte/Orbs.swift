@@ -135,10 +135,12 @@ public struct StillOrb: View {
 
 /// The hero: the metric's orb as the morning sun. Good scores stand high, a weak one sinks behind the horizon
 /// (clipped). A nil score is "még tanulom": a calm, half-saturated still orb at mid height, no rise.
+/// `orbScale` scales the orb alone (Pulzus breathing: 1.22 in, 0.84 out); the number and the glow stay put.
 public struct RisingOrb: View {
-    let hue: Hue, score: Int?, display: String, caption: String?, motion: OrbMotion
-    public init(hue: Hue, score: Int?, display: String, caption: String? = nil, motion: OrbMotion) {
+    let hue: Hue, score: Int?, display: String, caption: String?, motion: OrbMotion, orbScale: CGFloat
+    public init(hue: Hue, score: Int?, display: String, caption: String? = nil, motion: OrbMotion, orbScale: CGFloat = 1) {
         self.hue = hue; self.score = score; self.display = display; self.caption = caption; self.motion = motion
+        self.orbScale = orbScale
     }
 
     public var body: some View {
@@ -153,9 +155,12 @@ public struct RisingOrb: View {
                 } else {
                     LivingOrb(palette: hue.orb, size: size, level: Double(score ?? 0) / 100, glow: true, motion: motion)
                         .id(hue)
+                        .scaleEffect(orbScale)
                 }
                 VStack(spacing: 2) {
+                    // a display like "7ó 12p" or "3 240" must stay inside the orb
                     Text(display).font(.nkNumber(score == nil ? 34 : 58)).foregroundStyle(.white).monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.4).frame(maxWidth: size - 20)
                         .contentTransition(.numericText())
                     if let caption { Text(caption).nkFont(12).foregroundStyle(.white.opacity(0.75)) }
                 }
