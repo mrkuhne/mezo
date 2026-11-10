@@ -29,7 +29,7 @@ struct ConnectCard: View {
     /// Two chips at most: the counts, then one status (refreshing › failed › calendar refused › last refresh).
     private var chips: [Chip] {
         var out: [Chip] = []
-        if let last = link.sync.lastSummary {
+        if let last = link.sync.totals ?? link.sync.lastSummary {    // everything synced so far (mezo-r36n9.5)
             out.append(Chip(text: countsChip(last), style: last.nights + last.days + last.workouts == 0 ? .warm : .plain, small: true))
         }
         switch link.sync.phase {
