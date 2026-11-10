@@ -15,12 +15,6 @@ import SwiftUI
     }
 }
 
-@Test func everyPhotoExists() {
-    for name in Photos.all {
-        #expect(UIImage(named: name, in: .module, with: nil) != nil, "missing photo \(name)")
-    }
-}
-
 @Test func tokensMatchCanon() {
     func rgb(_ c: Color) -> (Int, Int, Int) {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0

@@ -60,12 +60,3 @@ public extension Font {
 public func hu1(_ v: Double) -> String {
     v.formatted(.number.precision(.fractionLength(1)).locale(Locale(identifier: "hu_HU")))
 }
-
-/// Bundled stock photos (CC0, see `Resources/Photos/CREDITS.md`).
-public enum Photos {
-    public static let all = ["reggelfeny.jpg", "kave.jpg", "en-merleg.jpg", "nap-lista.jpg", "edz-sulyzotarto.jpg", "zab.jpg", "mezo-vacsora.jpg", "en-futam.jpg"]
-}
-
-public func photo(_ name: String) -> Image {
-    Image(uiImage: UIImage(named: name, in: .module, with: nil) ?? UIImage())
-}
