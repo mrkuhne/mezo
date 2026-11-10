@@ -202,3 +202,27 @@ Launch: `-aura YES -auraVariant 3` · `-auraPhoto 2` (painted, default) · `-aur
 Rejected along the way (do not reintroduce): B "Nappal" (light, Ultrahuman-like); C's coloured card auras; A's arc
 gauge + number (Oura copy); the photo options (vivid photo, photo per metric); white rings around selected orbs; the
 0–100 horizon scale; the hairline under the tabs; the check-in quick-scale buttons.
+
+## 9. Builder-check answers (2026-11-10)
+
+Calls settled by the designer after the builder check (open to correction):
+
+1. **Per-metric headline + sentence** — the S3 morning brief (already a new message kind in v1 §4.3) returns, besides
+   readiness, a short headline and one sentence for each of the five metrics. No change to the web's messages. This is
+   S3 backend scope, not new scope. *call*
+2. **What 0–100 means per metric** (fill level and rise height; the number shown can differ) — *call*:
+   Készenlét = readiness score; Alvás = the sleep score (shown as score); Mozgás = share of the day's step goal
+   (capped at 100); Fuel = the day's intake progress against the time-of-day expected share of the calorie target;
+   Pulzus shows **bpm** in the orb, but fill and rise come from a score of resting HR vs the 14-day baseline
+   (at/below baseline = high). Rise mapping stays `(score − 40) / 60` clamped, so ≤ 40 sinks to the horizon.
+3. **Charts without data in v1** — v1 ingests one daily-metrics row and min/avg/max HR, no HRV. Until S2's import
+   grows (separate follow-up issue), the builder substitutes: Mozgás detail = steps vs goal bar + active energy;
+   Pulzus detail/sheet = min · avg · max of the night + the 7-day resting-HR bars; the HRV tile is dropped. Rutin's
+   habit strength exists on the backend (28-day derived strength, `habit.md`). *call*
+4. **Slicing** — a separate slice **"S2.5 · Napkelte kit"** before S3: tokens, painted landscape, orbs (live + still),
+   glass, type ramp, page and sheet frames, chart pieces, and the re-skin of S1 screens not owned by S2; the S2-owned
+   files are re-skinned in S3 after S2 lands. S3/S4 build on the kit. *call*
+5. **v1 parts not mentioned above** — "Mai szintek" is replaced by the mini-orb row; the brief keeps the word-by-word
+   typing synced to the voice (in the Boop mondja card, started by "Boop elmondja"); the energy curve keeps the
+   press-and-drag magnifier; conflicts are shown in the A napod sheet's conflict card instead of stems on the curve.
+   *call*
