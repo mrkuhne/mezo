@@ -17,6 +17,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 # Karakter (user character dossier) — Feature Documentation
 
+> **2026-11-10 — `mezo-r36n9.7` (no character change).** The 1.1.0 changelog gained `boop_brief` and `workout_time_override` (Boop S3, owned by [`boop-ios.md`](boop-ios.md)) and `fix(api): name the boop_brief CHECK constraint` named its CHECK `ck_boop_brief_regen_count`. No character table, job or read changed.
+
 > **2026-11-10 — `mezo-r36n9.2` (no character change).** The 1.1.0 changelog gained the Boop wearable tables (`daily_metric`, `wearable_workout`, `calendar_event`) and widened `sleep_log` (`apple_health` source, `external_id`); owned by [`boop-ios.md`](boop-ios.md); `202611100100_mezo-r36n9.2_wearable_check_naming.sql` then renamed their CHECKs to `ck_*` (`mezo-6byhm`). No character table, job or read changed.
 >
 > **2026-10-12 — `mezo-n4wf5.11` (no character change).** The 1.1.0 changelog gained `app_user.language` (`202610111200_mezo-n4wf5.11_app_user_language.sql`, `'hu'` / `'en'`, default `'hu'`; owned by [`_platform-language.md`](_platform-language.md)). No character table, job or read changed.

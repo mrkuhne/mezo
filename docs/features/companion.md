@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-10-11
+updated: 2026-11-10
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -16,6 +16,8 @@ related: [insights, proactive, today, me, character, _platform-api-backend, _pla
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-11-10 — Boop brief (`mezo-r36n9.7`, no companion change).** The Boop morning brief reuses the companion LLM routing (`CompanionLlm`) but is NOT a companion message kind: no chat turn, feed item or memory write. Only `FakeCompanionLlm` changed: it answers system prompts starting `BOOP_BRIEF_V1` (a literal mirror of `BoopPrompts.MARKER`, cycle rule) with a canned Hungarian JSON, plus `[fake-boop-junk]` / `[fake-boop-partial]` sentinels and a call counter / barrier for the brief ITs. See [`boop-ios.md`](boop-ios.md).
 
 > **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** Three more flags go quiet in a kímélő period (`RECOVERY_MODE`: under-eating, logging-gap, meal-rhythm — seven rules silenced in total), and the coach lines stop judging food on a recovery day: `ContextSnapshotAssembler.fuelBlock`, `FuelTools` and `MealCoachPrompt` read the Fuel mode from `FuelDayService` and say a guidance/estimate line instead of "eaten/target" (wording shared in `companion/tools/FuelModeText`); a skipped meal adds "Kihagyott étkezés: <slot> (<ok>)". See [`fuel.md`](fuel.md) §2 "Kihagyás S3" for the per-consumer table.
 
