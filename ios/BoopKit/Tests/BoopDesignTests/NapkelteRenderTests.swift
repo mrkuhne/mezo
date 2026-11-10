@@ -30,3 +30,21 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
 @Test @MainActor func mirroredLandRenders() {
     #expect(render(MirroredLand(hue: .fuel), height: 300) != nil)
 }
+
+@Test @MainActor func outlinedGlyphsRender() {
+    for n in ["check-ink", "clock-ink", "camera-ink", "book-sage", "sun-ink"] {
+        #expect(render(NKGlyph(n, .white, size: 22), width: 22, height: 22) != nil, "glyph \(n)")
+    }
+}
+
+@Test func outlinedSetCoversTheBlobbingGlyphs() {
+    #expect(NKGlyph.outlined == ["check-ink", "clock-ink", "camera-ink", "book-sage"])
+}
+
+@Test @MainActor func pillRendersAtAccessibilitySize() {
+    #expect(render(NKPill("Kitöltöm") {}.dynamicTypeSize(.accessibility3), width: 300, height: 80) != nil)
+}
+
+@Test @MainActor func glassCardRenders() {
+    #expect(render(Text("x").padding().nkGlass(), width: 200, height: 100) != nil)
+}
