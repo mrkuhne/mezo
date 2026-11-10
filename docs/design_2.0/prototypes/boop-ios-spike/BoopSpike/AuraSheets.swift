@@ -80,6 +80,13 @@ struct AuraDetailSheet: View {
             Hypnogram().frame(height: 110).padding(.top, 14)
             HStack { Text("22:48"); Spacer(); Text("2:00"); Spacer(); Text("4:00"); Spacer(); Text("6:53") }
                 .font(AuraFont.mono(11)).foregroundStyle(.white.opacity(0.45)).padding(.top, 6)
+            VStack(alignment: .leading, spacing: 9) {
+                stage(Color(hex: 0xF4E9E2), "Ébren", "38p", "5%", 0.12)
+                stage(Color(hex: 0x9ED4F5), "REM", "1ó 44p", "24%", 0.45)
+                stage(Color(hex: 0x4BA8E6), "Könnyű", "3ó 52p", "54%", 0.9)
+                stage(Color(hex: 0x2A6E96), "Mély", "1ó 36p", "22%", 0.4)
+            }
+            .padding(.top, 16)
         }
         .padding(20).auraGlass()
         VStack(alignment: .leading, spacing: 4) {
@@ -144,6 +151,17 @@ struct AuraDetailSheet: View {
         .padding(20).frame(maxWidth: .infinity, alignment: .leading).auraGlass()
 
         AuraBoopCard(text: "Délután 3 körül jön egy mélypont: oda tegyél egy rövid sétát, ne egy újabb kávét. Este 22:45-re feküdj le, hogy holnap is ilyen formában ébredj.", motion: motion)
+    }
+
+    /// Legend row: the stage's colour as a bar as long as its share, name, time, percent.
+    private func stage(_ c: Color, _ n: String, _ t: String, _ pct: String, _ f: CGFloat) -> some View {
+        HStack(spacing: 10) {
+            Capsule().fill(c).frame(width: 14 + 80 * f, height: 7).frame(width: 96, alignment: .leading)
+            Text(n).font(.system(size: 15)).foregroundStyle(.white)
+            Text(t).font(.system(size: 15)).foregroundStyle(.white.opacity(0.75))
+            Spacer()
+            Text(pct).font(AuraFont.mono(12)).foregroundStyle(.white.opacity(0.6))
+        }
     }
 
     private func tile(_ l: String, _ v: String, _ note: String, up: Bool) -> some View {
