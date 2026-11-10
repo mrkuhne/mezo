@@ -92,6 +92,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: BOOP_NO_PLANNED_SESSION; no planned training session on that day
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
     delete:
       tags: [Boop]
       operationId: clearSessionTime
