@@ -16,10 +16,18 @@ struct ShellTests {
         #expect(WebOnlyTabView.Domain.boop.hue == .forma)
     }
 
-    @Test func panFollowsTheBarOrder() {
-        #expect(domainDirection(from: "Nap", to: "Fuel") == 1)
-        #expect(domainDirection(from: "Én", to: "Edzés") == -1)
-        #expect(domainDirection(from: "Boop", to: "Fuel") == -1)
-        #expect(domainDirection(from: "Edzés", to: "Boop") == 1)
+    @Test func backdropFollowsTheBarOrder() {
+        #expect(domainIndex("Nap") == 0)
+        #expect(domainIndex("Fuel") == 2)
+        #expect(domainIndex("Én") == 4)
+        #expect(domainIndex("valami") == 0)
+    }
+
+    @Test func eachDomainHasItsSky() {
+        let panels = domainPanels([:])
+        #expect(panels.map(\.hue) == [.forma, .mozgas, .fuel, .forma, .alvas])
+        let napOnSleep = domainPanels(["Nap": NKBackdrop(hue: .alvas, heroHeight: 900, scrollY: 0)])
+        #expect(napOnSleep[0].hue == .alvas)
+        #expect(napOnSleep[0].heroHeight == 900)
     }
 }

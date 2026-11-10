@@ -115,17 +115,23 @@ public struct NKTabPage<Hero: View, Content: View>: View {
         self.hue = hue; self.heroHeight = heroHeight; self.compact = compact; self.hero = hero(); self.content = content()
     }
 
+    @Environment(\.nkBackdropHosted) private var hosted
+    @State private var scrollY: CGFloat = 0
+
     public var body: some View {
         GeometryReader { geo in
             let h = heroHeight ?? (geo.size.height + geo.safeAreaInsets.top - 30)
             ScrollView {
                 VStack(spacing: 0) {
                     ZStack(alignment: .top) {
-                        Color.clear.frame(height: h)
-                            .overlay { PaintedLandscape(hue: hue) }
-                            .clipped()
-                            .mask(LinearGradient(stops: [.init(color: .black, location: 0.62), .init(color: .clear, location: 1)],
-                                                 startPoint: .top, endPoint: .bottom))
+                        if hosted {
+                            Color.clear.frame(height: h)
+                        } else {
+                            Color.clear.frame(height: h)
+                                .overlay { PaintedLandscape(hue: hue) }
+                                .clipped()
+                                .mask(nkLandscapeMask)
+                        }
                         hero.frame(minHeight: h, alignment: .top)
                     }
                     VStack(spacing: 16) { content }
@@ -138,10 +144,13 @@ public struct NKTabPage<Hero: View, Content: View>: View {
             .onPreferenceChange(NKHeroEndKey.self) { heroEnd = $0 }
             .scrollIndicators(.hidden)
             .ignoresSafeArea(edges: .top)
-            .background(NKGround(hue: hue))
+            .background { if !hosted { NKGround(hue: hue) } }
+            // Hosted: the shell paints the sky, so tell it which sky, how tall, and how far it has scrolled.
+            .preference(key: NKBackdropKey.self, value: hosted ? NKBackdrop(hue: hue, heroHeight: h, scrollY: scrollY) : nil)
             // The capsule arrives once the hero's marked end (its last control) slides under the top bar
             // (safe area + the capsule's row); unmarked heroes fall back to the frame height.
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in
+                if hosted { scrollY = y }
                 let threshold = heroEnd.map { $0 - geo.safeAreaInsets.top - 50 } ?? (h - 120)
                 let v = y > threshold
                 if v != showCompact { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showCompact = v } }
@@ -182,6 +191,98 @@ public extension View {
             Color.clear.preference(key: NKHeroEndKey.self, value: g.frame(in: .named(NKHeroEndKey.space)).maxY)
         })
     }
+}
+
+// MARK: - Shared backdrop (one landscape across the five domains)
+
+/// The tab page's sky fades into the ground over its lower part.
+let nkLandscapeMask = LinearGradient(stops: [.init(color: .black, location: 0.62), .init(color: .clear, location: 1)],
+                                     startPoint: .top, endPoint: .bottom)
+
+private struct NKBackdropHostedKey: EnvironmentKey { static let defaultValue = false }
+public extension EnvironmentValues {
+    /// True under a shell that paints one shared sky behind every domain: tab pages then leave their sky out.
+    var nkBackdropHosted: Bool {
+        get { self[NKBackdropHostedKey.self] }
+        set { self[NKBackdropHostedKey.self] = newValue }
+    }
+}
+
+/// What a hosted tab page asks the shared sky to show.
+public struct NKBackdrop: Equatable, Sendable {
+    public var hue: Hue, heroHeight: CGFloat, scrollY: CGFloat
+    public init(hue: Hue, heroHeight: CGFloat, scrollY: CGFloat) { self.hue = hue; self.heroHeight = heroHeight; self.scrollY = scrollY }
+}
+
+public struct NKBackdropKey: PreferenceKey {
+    public static let defaultValue: NKBackdrop? = nil
+    public static func reduce(value: inout NKBackdrop?, nextValue: () -> NKBackdrop?) { if let n = nextValue() { value = n } }
+}
+
+/// One painted landscape behind the domains of the bottom bar. A switch slides the old land out toward the side away
+/// from the tapped domain while the new land slides in from the tapped side and the two skies blend straight into each
+/// other — one continuous horizon, never a swapped screen. `progress` runs 0 → 1 over a switch (animatable).
+public struct NKBackdropPanorama: View, @preconcurrency Animatable {
+    public var progress: Double
+    let from: NKBackdrop, to: NKBackdrop, direction: CGFloat, travel: CGFloat
+    /// `direction` +1 when the new domain sits right of the old one; `travel` = how far each land moves, as a share of
+    /// the width (0 = pure cross-fade, for reduced motion).
+    public init(from: NKBackdrop, to: NKBackdrop, direction: CGFloat, progress: Double, travel: CGFloat = 0.5) {
+        self.from = from; self.to = to; self.direction = direction; self.progress = progress; self.travel = travel
+    }
+    public var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    public var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width + geo.safeAreaInsets.leading + geo.safeAreaInsets.trailing
+            let p = CGFloat(min(1, max(0, progress)))
+            ZStack(alignment: .top) {
+                if p < 0.999 { panel(from, shift: -direction * p * w * travel, geo: geo) }
+                panel(to, shift: direction * (1 - p) * w * travel, geo: geo).opacity(p >= 0.999 ? 1 : smooth(Double(p)))
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+
+    private func panel(_ p: NKBackdrop, shift: CGFloat, geo: GeometryProxy) -> some View {
+        let w = geo.size.width + geo.safeAreaInsets.leading + geo.safeAreaInsets.trailing
+        return ZStack(alignment: .top) {
+            sky(p, w: w, shift: shift).id(p.hue).transition(.opacity)
+        }
+        // A page re-colouring itself (a Nap orb tapped) cross-fades its own sky.
+        .animation(.easeInOut(duration: 0.6), value: p.hue)
+        .frame(width: w, height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom, alignment: .top)
+        .clipped()
+    }
+
+    private func sky(_ p: NKBackdrop, w: CGFloat, shift: CGFloat) -> some View {
+        ZStack(alignment: .top) {
+            LinearGradient(colors: NK.deepGround(p.hue), startPoint: .top, endPoint: .bottom)
+            Color.clear.frame(width: w, height: p.heroHeight)
+                .overlay { PaintedLandscape(hue: p.hue) }
+                .clipped()
+                .mask(nkLandscapeMask)
+                // While it slides, the edge that comes into view melts into the ground instead of showing a cut.
+                .mask(edgeFeather(shift: shift, width: w))
+                .offset(x: shift, y: -max(0, p.scrollY))
+        }
+    }
+
+    /// No feather at rest; while shifted right the left edge fades over a band as wide as the shift (and vice versa).
+    private func edgeFeather(shift: CGFloat, width: CGFloat) -> LinearGradient {
+        let f = min(0.45, abs(shift) / max(width, 1) * 1.4)
+        let stops: [Gradient.Stop] = shift >= 0
+            ? [.init(color: .clear, location: 0), .init(color: .black, location: f), .init(color: .black, location: 1)]
+            : [.init(color: .black, location: 0), .init(color: .black, location: 1 - f), .init(color: .clear, location: 1)]
+        return LinearGradient(stops: stops, startPoint: .leading, endPoint: .trailing)
+    }
+
+    /// Ease the blend so the middle of the trip is a real mix, not a quick swap.
+    private func smooth(_ t: Double) -> Double { t * t * (3 - 2 * t) }
 }
 
 /// An inner page (a step, a list, settings): painted head with back button and crumb, mono eyebrow, serif title, glass body.
@@ -272,6 +373,8 @@ public struct NKNav: View {
         .init(label: "Boop", glyph: "chat-ink"), .init(label: "Én", glyph: "person-sage"),
     ]
     @Binding var selected: String
+    /// The selection capsule glides from icon to icon instead of jumping.
+    @Namespace private var pill
     public init(selected: Binding<String>) { self._selected = selected }
     public var body: some View {
         HStack(spacing: 0) {
@@ -280,7 +383,12 @@ public struct NKNav: View {
                 Button { selected = it.label } label: {
                     NKGlyph(it.glyph, .white.opacity(on ? 1 : 0.45), size: 22)
                         .frame(maxWidth: .infinity).frame(height: 46)
-                        .background { if on { Capsule().fill(.white.opacity(0.12)).padding(.horizontal, 4) } }
+                        .background {
+                            if on {
+                                Capsule().fill(.white.opacity(0.12)).padding(.horizontal, 4)
+                                    .matchedGeometryEffect(id: "pill", in: pill)
+                            }
+                        }
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

@@ -3,25 +3,36 @@ import BoopCore
 import BoopDesign
 
 /// The five domains in the floating bottom bar. In v1 only Nap is Boop's own; the rest point to the web app.
-/// Switching pans the page toward the side the tapped domain sits on while the two skies cross-fade.
+/// One painted landscape runs behind all five: switching slides it toward the tapped domain while the skies blend,
+/// the page content cross-fades over it, and the bar's selection capsule glides to the new icon.
 struct ShellView: View {
     let me: Me
     @SceneStorage("tab") private var tab = "Nap"
-    /// +1 when the new domain sits to the right of the old one, −1 to the left.
+    /// The switch in flight: the domain we came from, which side the new one sits on, and how far along (0 → 1).
+    @State private var fromTab = "Nap"
     @State private var direction: CGFloat = 1
+    @State private var progress: Double = 1
+    /// Last sky each domain asked for (Nap re-colours with its orbs); unseen domains use their default.
+    @State private var skies: [String: NKBackdrop] = [:]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            NK.ground.ignoresSafeArea()
+            NKBackdropPanorama(from: sky(fromTab), to: sky(tab), direction: direction, progress: progress,
+                               travel: reduceMotion ? 0 : 0.5)
             ZStack {
                 page(tab)
                     .id(tab)
-                    .transition(reduceMotion ? .opacity : .domainPan(direction))
+                    .onPreferenceChange(NKBackdropKey.self) { [tab] sky in if let sky { skies[tab] = sky } }
+                    // The old page leaves quickly and the new one arrives just after, so text never doubles up.
+                    .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.32).delay(0.16)),
+                                            removal: .opacity.animation(.easeIn(duration: 0.14))))
             }
+            .environment(\.nkBackdropHosted, true)
             NKNav(selected: Binding(get: { tab }, set: select))
         }
         .preferredColorScheme(.dark)
+        .onAppear { fromTab = tab }
     }
 
     @ViewBuilder private func page(_ tab: String) -> some View {
@@ -34,43 +45,36 @@ struct ShellView: View {
         }
     }
 
-    /// Direction is set first and the switch animates on the next turn, so the leaving page already
-    /// knows which way to go when it is removed.
+    private func sky(_ tab: String) -> NKBackdrop { domainPanels(skies)[Int(domainIndex(tab))] }
+
+    /// The old land starts from where it is now (no jump), then the blend runs to the new one.
     private func select(_ new: String) {
         guard new != tab else { return }
-        direction = domainDirection(from: tab, to: new)
+        var still = Transaction(); still.disablesAnimations = true
+        withTransaction(still) {
+            fromTab = tab
+            direction = domainIndex(new) >= domainIndex(tab) ? 1 : -1
+            progress = 0
+        }
         DispatchQueue.main.async {
-            withAnimation(.smooth(duration: 0.5)) { tab = new }
+            withAnimation(.smooth(duration: 0.6)) {
+                tab = new
+                progress = 1
+            }
         }
     }
 }
 
-/// +1 when `to` sits right of `from` in the bottom bar, −1 when left (unknown names count as Nap).
-func domainDirection(from: String, to: String) -> CGFloat {
-    let order = NKNav.items.map(\.label)
-    let a = order.firstIndex(of: from) ?? 0, b = order.firstIndex(of: to) ?? 0
-    return b >= a ? 1 : -1
+/// The bar's order as backdrop positions (unknown names count as Nap).
+func domainIndex(_ tab: String) -> Double {
+    Double(NKNav.items.map(\.label).firstIndex(of: tab) ?? 0)
 }
 
-private struct DomainPan: ViewModifier {
-    /// −1…1: where the page sits relative to the screen (0 = in place).
-    let shift: CGFloat
-    let fade: Double
-    func body(content: Content) -> some View {
-        content
-            .visualEffect { effect, proxy in effect.offset(x: shift * proxy.size.width * 0.45) }
-            .opacity(fade)
-    }
-}
-
-extension AnyTransition {
-    /// The new page comes in from the side of the tapped domain and the old one leaves the other way,
-    /// a little under half a screen each, while both fade — the two skies blend in the middle.
-    static func domainPan(_ direction: CGFloat) -> AnyTransition {
-        .asymmetric(
-            insertion: .modifier(active: DomainPan(shift: direction, fade: 0), identity: DomainPan(shift: 0, fade: 1)),
-            removal: .modifier(active: DomainPan(shift: -direction, fade: 0), identity: DomainPan(shift: 0, fade: 1))
-        )
+/// One sky per domain in bar order: what the domain last reported, else its default colour world.
+func domainPanels(_ skies: [String: NKBackdrop]) -> [NKBackdrop] {
+    let defaults: [String: Hue] = ["Nap": .forma, "Edzés": .mozgas, "Fuel": .fuel, "Boop": .forma, "Én": .alvas]
+    return NKNav.items.map { item in
+        skies[item.label] ?? NKBackdrop(hue: defaults[item.label] ?? .forma, heroHeight: 560, scrollY: 0)
     }
 }
 
