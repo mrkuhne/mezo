@@ -22,6 +22,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | ✓ | ✓ | [admin-hub](features/admin-hub.md), [_platform-auth-security](features/_platform-auth-security.md), [_platform-language](features/_platform-language.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md) |
+| [boop](#boop) | ✓ | · | · | · | · |
 | [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md), [insights](features/insights.md) |
 | [companion](#companion) | ✓ | 5 | ✓ | · | [admin-memory-explorer](features/admin-memory-explorer.md), [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [settings](features/settings.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [feedback](#feedback) | · | · | ✓ | · | [insights](features/insights.md) |
@@ -238,6 +239,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `SleepShotLlmUnavailableApiIT`, `WeightLogServiceIT`, `WeightTrendServiceIT`
   - **populators:** `CheckInPopulator`, `DatabasePopulator`, `GoalPopulator`, `SleepGoalPopulator`,
     `SleepLogPopulator`, `UserPopulator`, `WeightLogPopulator`
+
+### boop
+
+*BE* · read next: **none — no HOW doc exists for this feature yet**
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
+  - **entities→tables:** `BoopBriefEntity`→`boop_brief`, `WorkoutTimeOverrideEntity`→`workout_time_override`
+  - **repositories:** `BoopBriefRepository`, `WorkoutTimeOverrideRepository`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 1 IT + 0 unit
+  - **ITs:** `BoopRepositoriesIT`
+  - **populators:** `BoopBriefPopulator`, `DailyMetricPopulator`, `DatabasePopulator`, `WorkoutTimeOverridePopulator`
 
 ### character
 
@@ -1770,14 +1782,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **Backend base classes:** `AbstractIntegrationTest.java` (service-level) · `ApiIntegrationTest.java` (HTTP-level, verb helpers + `ownerAuthHeaders()`)
 - **populators (`support/populator/`):** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`,
-  `AppNotificationPopulator`, `BiometricProfilePopulator`, `CalendarEventPopulator`, `ChallengePopulator`,
-  `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
-  `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `CreatedAtBackdater`, `DailyMetricPopulator`,
-  `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FeedbackPopulator`,
-  `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
-  `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`,
-  `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
-  `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
+  `AppNotificationPopulator`, `BiometricProfilePopulator`, `BoopBriefPopulator`, `CalendarEventPopulator`,
+  `ChallengePopulator`, `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`,
+  `CheckInPopulator`, `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `CreatedAtBackdater`,
+  `DailyMetricPopulator`, `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`,
+  `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
+  `GoalPopulator`, `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`,
+  `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`,
+  `LlmLogPopulator`, `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
   `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
   `MesoTemplatePopulator`, `NeedsPopulator`, `NotificationPopulator`, `PantryCatalogPopulator`,
   `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
@@ -1786,7 +1798,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
   `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`,
   `UserPopulator`, `WaterLogPopulator`, `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`,
-  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
+  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
 - **`ResetDatabase` TRUNCATE list** — 1 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `character_council_quota`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
@@ -1801,6 +1813,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
+- **Contract fragment** `api/feature/boop/boop.yml` — tags `Boop`; no backend controller implements the matching `<Tag>Api`
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`
+- **Features with no `docs/features/` doc:** `aidraft`, `boop`, `medication`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
