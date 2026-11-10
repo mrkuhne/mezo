@@ -62,7 +62,8 @@ struct PathBuilderTests {
         f.session = #"{"title":"Váll","time":"17:30","plannedTime":"17:30","exercises":[]}"#
         f.recovery = #"{"reason":"influenza","day":2}"#; f.bedtimeTarget = #""22:45""#
         let full = try build(nil, f, now: at(10))
-        #expect(ids(full) == ["now", "intention", "water", "easy-walk", "bedtime"])
+        // the full day keeps the 08:00 intention at its clock time, before MOST
+        #expect(ids(full) == ["intention", "now", "water", "easy-walk", "bedtime"])
         #expect(full.first { $0.id == "bedtime" }?.title == "Korai lefekvés")
         var g = f; g.recovery = "null"
         #expect(ids(try build(.mozgas, f, now: at(10))) == ["now", "easy-walk"])
@@ -192,5 +193,38 @@ struct PathBuilderTests {
         let s = try build(.pulzus, f, now: at(20))
         #expect(ids(s) == ["busy-block", "now"])
         #expect(s[0].done)
+    }
+
+    // MARK: A napom (key == nil): the whole day in clock order
+
+    @Test func fullDayKeepsEveryClockTimeAndNothingWaitsAtMost() throws {
+        var f = BriefFixture(); f.observations = obs
+        f.checkins = #"[{"slot":"morning","time":"08:00","done":false},{"slot":"midday","time":"13:00","done":false},{"slot":"evening","time":"21:30","done":false}]"#
+        let s = try build(nil, f, now: at(15, 21))
+        #expect(ids(s) == ["checkin-morning", "intention", "observations", "checkin-midday", "now", "checkin-evening"])
+        #expect(s.map(\.time) == ["08:00", "08:00", "08:00", "13:00", "15:21", "21:30"])
+        #expect(!s.contains { $0.time == "most" })
+        // the per-orb path keeps its Task 12 behaviour
+        #expect(try build(.forma, f, now: at(15, 21)).contains { $0.time == "most" })
+    }
+
+    @Test func fullDayCalendarIsOneMeetingsStationAtTheFirstMeeting() throws {
+        var f = BriefFixture()
+        f.busyRuns = [16...19, 40...43]          // 10:00–11:00 and 16:00–17:00
+        let s = try build(nil, f, now: at(15, 21))
+        #expect(ids(s) == ["intention", "calendar", "now"])
+        #expect(s[1].title == "Megbeszélések · 2 esemény")
+        #expect(s[1].time == "10:00" && s[1].sub == "10:00–17:00")
+        #expect(!s[1].done)
+        #expect(!s.contains { $0.id == "breath" || $0.id == "busy-block" })
+        let late = try build(nil, f, now: at(20))
+        #expect(ids(late) == ["intention", "calendar", "now"] && late[1].done)
+        // per-orb Pulzus is unchanged
+        #expect(ids(try build(.pulzus, f, now: at(15, 21))) == ["now", "breath", "busy-block"])
+    }
+
+    @Test func fullDayWithAnEmptyCalendarHasNoMeetingsStation() throws {
+        let s = try build(nil, BriefFixture(), now: at(10))
+        #expect(!s.contains { $0.id == "calendar" })
     }
 }

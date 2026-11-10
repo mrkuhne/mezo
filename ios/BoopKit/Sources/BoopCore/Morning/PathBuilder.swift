@@ -16,12 +16,13 @@ public struct PathStep: Sendable, Equatable, Identifiable {
 public enum PathBuilder {
     private struct Item { let key: Int; let step: PathStep }
 
-    /// `key == nil` = the full day (A napom).
+    /// `key == nil` = the full day (A napom, spec §5.2): every station at its own clock time in strict time order
+    /// (nothing waits at MOST, no "most" labels), the calendar as one "Megbeszélések · n esemény" station.
     public static func steps(for key: MetricKey?, brief: Brief, now: Date, evening: Bool,
                              calendar: Calendar = .current) -> [PathStep] {
         let c = calendar.dateComponents([.hour, .minute], from: now)
         let nowMin = (c.hour ?? 0) * 60 + (c.minute ?? 0)
-        let ctx = Ctx(day: brief.day, energy: brief.energy, nowMin: nowMin, evening: evening)
+        let ctx = Ctx(day: brief.day, energy: brief.energy, nowMin: nowMin, evening: evening, fullDay: key == nil)
         let wanted = key.map { [$0] } ?? MetricKey.allCases
         var items: [Item] = []
         for k in wanted {
@@ -46,9 +47,10 @@ public enum PathBuilder {
         var out: [Item] = []
         let morning = x.day.checkins.first { $0.slot == .morning }
         let anchor = morning.flatMap { mins($0.time) } ?? 8 * 60
-        func held(_ t: Int, done: Bool) -> Int { done ? t : max(t, x.nowMin) }   // undone morning stack waits right after MOST
+        // undone morning stack waits right after MOST (per-orb only; the full day keeps clock order)
+        func held(_ t: Int, done: Bool) -> Int { done || x.fullDay ? t : max(t, x.nowMin) }
         // A past, undone station has no honest clock time any more: it reads "most" (it is due now).
-        func label(_ t: Int, done: Bool) -> String { !done && t < x.nowMin ? "most" : fmt(t) }
+        func label(_ t: Int, done: Bool) -> String { !done && !x.fullDay && t < x.nowMin ? "most" : fmt(t) }
         if !x.evening {
             if let m = morning {
                 out.append(Item(key: held(anchor, done: m.done), step: PathStep(
@@ -154,6 +156,7 @@ public enum PathBuilder {
     }
 
     private static func pulzus(_ x: Ctx) -> [Item] {
+        if x.fullDay { return meetings(x) }
         if x.evening {
             let t = x.nowMin + 15
             return [Item(key: t, step: PathStep(id: "breath", time: fmt(t), glyph: "heart-cream",
@@ -176,9 +179,20 @@ public enum PathBuilder {
         return out
     }
 
+    /// The full day's calendar as one station at the first meeting's start, spanning to the last meeting's end.
+    private static func meetings(_ x: Ctx) -> [Item] {
+        let runs = busyRuns(x.day.calendar.busySlots)
+        guard let first = runs.first, let last = runs.last else { return [] }
+        let start = 360 + 15 * first.lowerBound, end = 360 + 15 * (last.upperBound + 1)
+        let n = x.day.calendar.count > 0 ? x.day.calendar.count : runs.count
+        return [Item(key: start, step: PathStep(id: "calendar", time: fmt(start), glyph: "clock-ink",
+                                                title: "Megbeszélések · \(n) esemény", sub: "\(fmt(start))–\(fmtEnd(end))",
+                                                done: end <= x.nowMin, isNow: false))]
+    }
+
     // MARK: helpers
 
-    private struct Ctx { let day: Brief.Day; let energy: Brief.Energy; let nowMin: Int; let evening: Bool }
+    private struct Ctx { let day: Brief.Day; let energy: Brief.Energy; let nowMin: Int; let evening: Bool; let fullDay: Bool }
 
     /// Every consecutive busy run, in order, as slot indices.
     private static func busyRuns(_ slots: [Bool]) -> [ClosedRange<Int>] {

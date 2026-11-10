@@ -5,7 +5,7 @@ import BoopDesign
 // MARK: - The energy magnifier, as pure functions (spec §9.5, §10.3)
 
 /// What the magnifier reads: the hourly energy (06:00 … 24:00, one value per hour), the 72 busy quarter hours from 06:00,
-/// today's session and meals.
+/// today's session and meals, and the energy dip hour.
 struct MagnifierInput {
     struct Session { let title: String, time: String; let minutes: Int? }
     struct Meal { let time: String, title: String }
@@ -13,6 +13,7 @@ struct MagnifierInput {
     let busy: [Bool]
     let session: Session?
     let meals: [Meal]
+    var dipHour: Int? = nil
 }
 
 extension MagnifierInput {
@@ -20,12 +21,30 @@ extension MagnifierInput {
         let d = b.day
         self.init(hourly: b.energy.hourly, busy: d.calendar.busySlots,
                   session: d.session.flatMap { s in (s.time ?? s.plannedTime).map { Session(title: s.title, time: $0, minutes: s.minutes) } },
-                  meals: d.meals.map { Meal(time: $0.time, title: $0.title) })
+                  meals: d.meals.map { Meal(time: $0.time, title: $0.title) }, dipHour: b.energy.dipHour)
     }
 }
 
+/// A small mark on the curve (spec §10.3): a meal, the energy dip, the session. The magnifier lands on it.
+struct CurveAnchor: Equatable {
+    enum Kind: Equatable { case meal, dip, session }
+    let minutes: Int, kind: Kind, title: String
+    var glyph: String {
+        switch kind { case .meal: "bowl-cream"; case .dip: "shoe-cream"; case .session: "dumbbell-ink" }
+    }
+}
+
+/// The anchors inside 06:00–24:00, in time order (ties: meal, dip, session).
+func curveAnchors(_ x: MagnifierInput) -> [CurveAnchor] {
+    var out = x.meals.compactMap { m in clockMinutes(m.time).map { CurveAnchor(minutes: $0, kind: .meal, title: m.title) } }
+    if let h = x.dipHour { out.append(CurveAnchor(minutes: h * 60, kind: .dip, title: "Mélypont")) }
+    if let s = x.session, let t = clockMinutes(s.time) { out.append(CurveAnchor(minutes: t, kind: .session, title: s.title)) }
+    return out.filter { (360...1440).contains($0.minutes) }.enumerated()
+        .sorted { ($0.element.minutes, $0.offset) < ($1.element.minutes, $1.offset) }.map(\.element)
+}
+
 struct MagnifierReading: Equatable {
-    /// Minutes from midnight, snapped to the quarter hour, 360…1440.
+    /// Minutes from midnight: an anchor's time when within 10 minutes of one, else the quarter hour, 360…1440.
     let minutes: Int
     let time: String
     /// The energy at that time 0…1; nil without a curve.
@@ -35,17 +54,17 @@ struct MagnifierReading: Equatable {
     let what: String
     /// The hour the reading is in (a soft haptic per change).
     let hour: Int
+    /// The anchor the magnifier landed on.
+    let anchor: CurveAnchor?
 }
 
 /// The position of a time on the hourly curve: 06:00 = 0 … 24:00 = 18 (clamped).
 func energyIndex(minutes: Int) -> Double { min(18, max(0, Double(minutes - 360) / 60)) }
 
-/// The curve at a time, linear between the hourly values; past the last value it holds the end. nil without a curve.
+/// The curve at a time, exactly as `GlowLine` draws it; past the last value it holds the end. nil without a curve.
 func energyLevel(_ hourly: [Double], minutes: Int) -> Double? {
     guard !hourly.isEmpty else { return nil }
-    let f = min(Double(hourly.count - 1), energyIndex(minutes: minutes))
-    let i = Int(f), j = min(hourly.count - 1, i + 1)
-    return hourly[i] + (hourly[j] - hourly[i]) * (f - Double(i))
+    return glowLineValue(hourly, at: energyIndex(minutes: minutes))
 }
 
 private func clockMinutes(_ hhmm: String) -> Int? {
@@ -57,7 +76,11 @@ private func clockMinutes(_ hhmm: String) -> Int? {
 /// The reading under a finger at `fraction` (0 = 06:00, 1 = 24:00) of the curve's width.
 func magnifierReading(fraction: Double, _ x: MagnifierInput) -> MagnifierReading {
     let f = min(1, max(0, fraction))
-    let minutes = 360 + Int((f * 72 + 1e-9).rounded(.down)) * 15      // 72 quarter hours; epsilon keeps 15:30 at 15:30
+    let raw = 360 + f * 1080
+    let anchor = curveAnchors(x).min { abs(Double($0.minutes) - raw) < abs(Double($1.minutes) - raw) }
+        .flatMap { abs(Double($0.minutes) - raw) <= 10 ? $0 : nil }
+    // 72 quarter hours; epsilon keeps 15:30 at 15:30
+    let minutes = anchor?.minutes ?? 360 + Int((f * 72 + 1e-9).rounded(.down)) * 15
     let time = minutes == 1440 ? "24:00" : String(format: "%02d:%02d", minutes / 60, minutes % 60)
     let level = energyLevel(x.hourly, minutes: minutes)
     var what: [String] = []
@@ -69,14 +92,27 @@ func magnifierReading(fraction: Double, _ x: MagnifierInput) -> MagnifierReading
     }
     let slot = (minutes - 360) / 15
     if x.busy.indices.contains(slot), x.busy[slot] { what.append("Megbeszélés") }
+    if anchor?.kind == .dip { what.append("Mélypont") }
     return MagnifierReading(minutes: minutes, time: time, level: level,
-                            percent: level.map { Int((min(1, max(0, $0)) * 100).rounded()) },
-                            what: what.isEmpty ? "Szabad idő" : what.joined(separator: " · "), hour: minutes / 60)
+                            percent: level.map { Int((min(1, max(0, $0)) * 100 + 1e-9).rounded()) },   // epsilon: the curve solve lands a hair under .5
+                            what: what.isEmpty ? "Szabad idő" : what.joined(separator: " · "), hour: minutes / 60, anchor: anchor)
 }
 
 /// Where "now" sits on the 06:00–24:00 curve; nil outside it.
 func nowFraction(minutes: Int) -> Double? {
     (360...1440).contains(minutes) ? Double(minutes - 360) / 1080 : nil
+}
+
+/// The conflict as the sheet shows it: the card hides once kept ("Marad így") or settled by a move; the title says
+/// "Szoros" as long as the conflict is real (keeping it does not make the day roomier).
+struct DayConflict: Equatable {
+    let active: Bool, showCard: Bool
+    func title(events: Int) -> String { dayTitle(events: events, conflict: active) }
+}
+
+func dayConflict(hasConflict: Bool, moved: Bool, kept: Bool) -> DayConflict {
+    let active = hasConflict && !moved
+    return DayConflict(active: active, showCard: active && !kept)
 }
 
 /// The sheet's headline from the calendar.
@@ -93,18 +129,20 @@ struct DaySheet: View {
     let store: MorningStore
     let ctx: MaiContext
     let close: () -> Void
-    @State private var kept = false
+    /// One tap on "Áttolom" only, even before the sheet has finished closing.
+    @State private var moveTapped = false
 
-    private var conflict: Brief.Conflict? {
-        guard !kept, let c = brief.conflict else { return nil }
+    private var state: DayConflict {
         let s = brief.day.session
-        return sessionMoved(planned: s?.plannedTime, time: s?.time) ? nil : c
+        return dayConflict(hasConflict: brief.conflict != nil, moved: sessionMoved(planned: s?.plannedTime, time: s?.time),
+                           kept: store.conflictKept)
     }
 
     var body: some View {
         let d = brief.day
         let eyebrow = weekdayName(brief.date).map { "\($0) · a napod" } ?? "A napod"
-        NKSheetFrame(hue: .mozgas, eyebrow: eyebrow, title: dayTitle(events: d.calendar.count, conflict: conflict != nil)) {
+        let st = state
+        NKSheetFrame(hue: .mozgas, eyebrow: eyebrow, title: st.title(events: d.calendar.count)) {
             SheetCard(title: "ENERGIA ÉS NAPTÁR") {
                 if brief.energy.hourly.count > 1 {
                     EnergyMagnifier(input: MagnifierInput(brief)).frame(height: 120).padding(.top, 14)
@@ -126,7 +164,7 @@ struct DaySheet: View {
                     Text("Tartsd lenyomva a görbét, és húzd végig").nkFont(12).foregroundStyle(.white.opacity(0.4))
                 }
             }
-            if let conflict { conflictCard(conflict).transition(.opacity.combined(with: .scale(scale: 0.96))) }
+            if st.showCard, let c = brief.conflict { conflictCard(c).transition(.opacity.combined(with: .scale(scale: 0.96))) }
             if let dip = brief.energy.dipHour {
                 NKBoopCard(pre: "\(dip):00 körül jön egy mélypont: ", em: "oda tegyél egy rövid sétát",
                            post: ", ne egy újabb kávét. " + brief.tonightTip)
@@ -134,7 +172,13 @@ struct DaySheet: View {
                 NKBoopCard(pre: "", em: "", post: brief.tonightTip)
             }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: kept)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: st.showCard)
+        .onAppear {
+            #if DEBUG
+            // Simulator review: `-previewKept YES` opens the sheet as if "Marad így" had been tapped.
+            if UserDefaults.standard.bool(forKey: "previewKept") { store.keepConflict() }
+            #endif
+        }
     }
 
     private func conflictCard(_ c: Brief.Conflict) -> some View {
@@ -146,7 +190,7 @@ struct DaySheet: View {
             Text(c.text).nkFont(15.5).lineSpacing(3).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 NKPill(moveButtonTitle(c.suggestedTime), wide: false) { move(to: c.suggestedTime) }
-                NKPill("Marad így", primary: false, wide: false) { kept = true }
+                NKPill("Marad így", primary: false, wide: false) { store.keepConflict() }
             }
         }
         .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
@@ -154,6 +198,8 @@ struct DaySheet: View {
 
     /// The sheet closes so the page's toast (with its undo) is in view; the move runs on the page's store.
     private func move(to time: String) {
+        guard !moveTapped, !store.moving else { return }
+        moveTapped = true
         let planned = brief.day.session?.plannedTime
         close()
         Task { @MainActor in
@@ -181,7 +227,9 @@ private struct EnergyMagnifier: View {
             ZStack(alignment: .topLeading) {
                 GlowLine(points: input.hourly, nowAt: fraction == nil && debugFraction == nil ? nowAt : nil, glow: Hue.mozgas.glow)
                     .id(fraction == nil && debugFraction == nil)    // Canvas keeps its drawing otherwise; MOST hides under the lens
-                if let f = fraction ?? debugFraction { lens(magnifierReading(fraction: f, input), w: w, h: h) }
+                let reading = (fraction ?? debugFraction).map { magnifierReading(fraction: $0, input) }
+                anchors(on: reading?.anchor, w: w, h: h)
+                if let reading { lens(reading, w: w, h: h) }
             }
             .contentShape(Rectangle())
             .gesture(
@@ -193,7 +241,10 @@ private struct EnergyMagnifier: View {
                     .onEnded { _ in withAnimation(.easeOut(duration: 0.2)) { fraction = nil } }
             )
         }
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.45), trigger: fraction.map { magnifierReading(fraction: $0, input).hour })
+        // only an hour step ticks: not the press that opens the lens, not the release that closes it
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.45), trigger: fraction.map { magnifierReading(fraction: $0, input).hour }) { old, new in
+            old != nil && new != nil
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Energiagörbe")
         .accessibilityValue(spokenCurve)
@@ -216,10 +267,32 @@ private struct EnergyMagnifier: View {
         return nil
     }
 
+    /// The curve's y for a level, the mapping GlowLine draws with.
+    private func curveY(_ level: Double, h: CGFloat) -> CGFloat { h * (1 - min(1, max(0, level))) * 0.9 + 6 }
+
+    /// Meals, the dip and the session as small glyph marks sitting on the line; the one under the lens lights up.
+    private func anchors(on active: CurveAnchor?, w: CGFloat, h: CGFloat) -> some View {
+        ForEach(Array(curveAnchors(input).enumerated()), id: \.offset) { _, a in
+            let on = a == active
+            ZStack {
+                Circle().fill(on ? Color.white : NK.ground)
+                Circle().stroke(.white.opacity(on ? 0 : 0.55), lineWidth: 1)
+                NKGlyph(a.glyph, on ? NK.ground : .white.opacity(0.85), size: 9)
+            }
+            .frame(width: 17, height: 17)
+            .scaleEffect(on ? 1.2 : 1)
+            .shadow(color: on ? Hue.mozgas.glow : .clear, radius: 6)
+            .position(x: w * Double(a.minutes - 360) / 1080,
+                      y: energyLevel(input.hourly, minutes: a.minutes).map { curveY($0, h: h) } ?? h - 9)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: on)
+        }
+        .allowsHitTesting(false)
+    }
+
     @ViewBuilder private func lens(_ r: MagnifierReading, w: CGFloat, h: CGFloat) -> some View {
         let sx = w * Double(r.minutes - 360) / 1080
         // the same mapping GlowLine draws with
-        let py = r.level.map { h * (1 - min(1, max(0, $0))) * 0.9 + 6 }
+        let py = r.level.map { curveY($0, h: h) }
         let cardW: CGFloat = 196
         ZStack(alignment: .topLeading) {
             Capsule().fill(.white).frame(width: 1.5, height: h).offset(x: sx - 0.75)

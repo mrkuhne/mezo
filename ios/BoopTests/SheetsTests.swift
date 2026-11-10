@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import BoopCore
 import BoopDesign
@@ -135,6 +136,61 @@ struct SheetsTests {
         #expect(dayTitle(events: 3, conflict: false) == "Belefér minden")
     }
 
+    // MARK: Day: keeping the conflict ("Marad így")
+
+    @Test func keepingHidesTheCardButTheConflictTitleStays() {
+        let open = dayConflict(hasConflict: true, moved: false, kept: false)
+        let kept = dayConflict(hasConflict: true, moved: false, kept: true)
+        #expect(open.showCard && !kept.showCard)
+        #expect(open.title(events: 2) == "Szoros, de belefér")
+        #expect(kept.title(events: 2) == "Szoros, de belefér")
+        // a moved session settles it: no card, no conflict title
+        let moved = dayConflict(hasConflict: true, moved: true, kept: false)
+        #expect(!moved.showCard && moved.title(events: 2) == "Belefér minden")
+        #expect(!dayConflict(hasConflict: false, moved: false, kept: false).showCard)
+    }
+
+    // MARK: Day: anchors on the curve (spec §10.3)
+
+    private var anchored: MagnifierInput {
+        var i = input; i.dipHour = 15; return i
+    }
+
+    @Test func anchorsAreTheMealsTheDipAndTheSessionInTimeOrder() {
+        let a = curveAnchors(anchored)
+        #expect(a.map(\.minutes) == [750, 900, 1050])
+        #expect(a.map(\.kind) == [.meal, .dip, .session])
+        #expect(a.map(\.title) == ["Csirkés rizs", "Mélypont", "Vállak és hát"])
+        #expect(curveAnchors(MagnifierInput(hourly: [], busy: [], session: nil, meals: [])).isEmpty)
+    }
+
+    @Test func theMagnifierLandsOnAnAnchorWithinTenMinutes() {
+        let near = magnifierReading(fraction: at(17 * 60 + 38), anchored)
+        #expect(near.time == "17:30" && near.anchor?.kind == .session)
+        let dip = magnifierReading(fraction: at(14 * 60 + 52), anchored)
+        #expect(dip.time == "15:00" && dip.what == "Mélypont")
+        let far = magnifierReading(fraction: at(17 * 60 + 45), anchored)
+        #expect(far.time == "17:45" && far.anchor == nil)
+    }
+
+    // MARK: The shared move guard
+
+    @MainActor @Test func aSecondMoveWhileOneIsInFlightDoesNothing() async {
+        let store = MorningStore(client: makeClient(tokens: MemoryTokenStore("t"), transport: PreviewTransport()), onUnauthorized: {})
+        await store.load(date: Date())
+        let log = ToastLog()
+        let t1 = Task { await moveSession(store, to: "18:30", planned: "17:30", toast: { log.items.append($0) }, undoToast: { t, _ in log.items.append(t) }) }
+        let t2 = Task { await moveSession(store, to: "18:30", planned: "17:30", toast: { log.items.append($0) }, undoToast: { t, _ in log.items.append(t) }) }
+        await t1.value; await t2.value
+        #expect(log.items == ["Áttettem 18:30-ra"])
+        // two undos at once: one "Visszatettem", no spurious failure
+        log.items = []
+        let u1 = Task { await undoSessionMove(store, planned: "17:30", toast: { log.items.append($0) }) }
+        let u2 = Task { await undoSessionMove(store, planned: "17:30", toast: { log.items.append($0) }) }
+        await u1.value; await u2.value
+        #expect(log.items == ["Visszatettem 17:30-ra"])
+    }
+
     @Test func nowMarkerOnlyInsideTheDay() {
         #expect(nowFraction(minutes: 360) == 0)
         #expect(nowFraction(minutes: 900) == 0.5)
@@ -162,3 +218,5 @@ struct SheetsTests {
         #expect(st[1].isNow && st[0].done)
     }
 }
+
+@MainActor final class ToastLog { var items: [String] = [] }

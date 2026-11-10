@@ -93,6 +93,23 @@ public struct GlowLine: View {
     }
 }
 
+/// The value `GlowLine` draws at a fractional point index (0 … count − 1): the same cubic it strokes between two points
+/// (control points at the horizontal midpoint), solved for x by bisection. Clamped to the ends.
+public func glowLineValue(_ points: [Double], at index: Double) -> Double {
+    guard let first = points.first else { return 0 }
+    guard points.count > 1 else { return first }
+    let f = min(Double(points.count - 1), max(0, index))
+    let i = min(points.count - 2, Int(f)), u = f - Double(i)
+    let a = points[i], b = points[i + 1]
+    // x(t) = 1.5(1−t)²t + 1.5(1−t)t² + t³ over the segment (0…1), monotonic
+    func x(_ t: Double) -> Double { 1.5 * (1 - t) * (1 - t) * t + 1.5 * (1 - t) * t * t + t * t * t }
+    var lo = 0.0, hi = 1.0
+    for _ in 0..<40 { let m = (lo + hi) / 2; if x(m) < u { lo = m } else { hi = m } }
+    let t = (lo + hi) / 2
+    let wa = (1 - t) * (1 - t) * (1 - t) + 3 * (1 - t) * (1 - t) * t
+    return a * wa + b * (1 - wa)
+}
+
 /// The value range seven week bars are drawn against: always finite with lo < hi, even for flat, empty or all-missing
 /// data. Missing days (nil) do not count.
 public func weekBarScale(values: [Double?]) -> (Double, Double) {

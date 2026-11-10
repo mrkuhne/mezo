@@ -19,6 +19,14 @@ public final class MorningStore {
     public private(set) var problem: MorningProblem?
     /// True while any load is in flight.
     public var loading: Bool { inFlight > 0 }
+    /// True while a session move or undo is in flight (one at a time; the app's move paths check it).
+    public private(set) var moving = false
+    /// The brief date whose conflict the user chose to keep ("Marad így"); a new day starts fresh.
+    public private(set) var keptConflictDate: String?
+    /// The current brief's conflict was kept: its card hides everywhere for the rest of that day.
+    public var conflictKept: Bool { keptConflictDate != nil && keptConflictDate == brief?.date }
+    /// "Marad így": keep today's conflict as it is.
+    public func keepConflict() { keptConflictDate = brief?.date }
     private var inFlight = 0
 
     @ObservationIgnored private let client: Client
@@ -73,6 +81,7 @@ public final class MorningStore {
 
     public func moveSession(to time: String) async {
         guard let day = brief?.date else { return }
+        moving = true; defer { moving = false }
         do {
             switch try await client.setSessionTime(body: .json(.init(date: day, time: time))) {
             case .ok(let ok):
@@ -93,6 +102,7 @@ public final class MorningStore {
     /// Back to the planned time.
     public func undoMove() async {
         guard let day = brief?.date else { return }
+        moving = true; defer { moving = false }
         do {
             switch try await client.clearSessionTime(query: .init(date: day)) {
             case .noContent:

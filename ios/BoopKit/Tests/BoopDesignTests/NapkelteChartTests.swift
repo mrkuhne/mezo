@@ -51,3 +51,15 @@ import SwiftUI
     #expect(render(WeekBars(values: [72, nil, 80, nil], average: 76, unit: "p", labels: ["K", "Sze", "Cs", "P"]), width: 300, height: 140) != nil)
     #expect(render(WeekBars(values: [Double?](repeating: nil, count: 7), average: nil, unit: "", labels: []), width: 300, height: 140) != nil)
 }
+
+@Test func glowLineValueFollowsTheDrawnCurve() {
+    let pts = [0.2, 0.8, 0.4]
+    #expect(abs(glowLineValue(pts, at: 0) - 0.2) < 1e-9)
+    #expect(abs(glowLineValue(pts, at: 1) - 0.8) < 1e-9)
+    #expect(abs(glowLineValue(pts, at: 2) - 0.4) < 1e-9)
+    #expect(abs(glowLineValue(pts, at: 0.5) - 0.5) < 1e-6)       // symmetric halfway
+    // a quarter in, the eased curve is still close to the start (linear would say 0.35)
+    #expect(glowLineValue(pts, at: 0.25) < 0.33)
+    #expect(abs(glowLineValue(pts, at: 9) - 0.4) < 1e-9)         // clamps to the ends
+    #expect(abs(glowLineValue([0.7], at: 3) - 0.7) < 1e-9)
+}

@@ -107,6 +107,37 @@ struct MorningClientTests {
         #expect(stub.sent[3].path.contains("date=2026-11-10"))
     }
 
+    @Test func keptConflictStaysForTheDayAndResetsOnTheNext() async {
+        let c = #""conflict":{"text":"Ütközik.","suggestedTime":"19:00"},"#
+        stub.on("getBoopBrief", .json(200, briefJSON(conflict: c)))
+        stub.on("getBoopBrief", .json(200, briefJSON(conflict: c)))
+        stub.on("getBoopBrief", .json(200, briefJSON(date: "2026-11-11", conflict: c)))
+        let s = store()
+        await s.load(date: day(2026, 11, 10))
+        #expect(!s.conflictKept)
+        s.keepConflict()
+        #expect(s.conflictKept)
+        #expect(s.brief?.conflict != nil)          // keeping does not remove the conflict itself
+        await s.load(date: day(2026, 11, 10))      // a reload (or a re-presented sheet) keeps it
+        #expect(s.conflictKept)
+        await s.load(date: day(2026, 11, 11))      // a new day starts fresh
+        #expect(!s.conflictKept)
+    }
+
+    @Test func movingIsTrueOnlyWhileAMoveIsInFlight() async {
+        stub.on("getBoopBrief", .json(200, briefJSON()))
+        stub.on("setSessionTime", .json(200, #"{"date":"2026-11-10","time":"19:00","plannedTime":"17:30"}"#))
+        stub.on("getBoopBrief", .json(200, briefJSON()))
+        let s = store()
+        await s.load(date: day(2026, 11, 10))
+        #expect(!s.moving)
+        let t = Task { await s.moveSession(to: "19:00") }
+        await Task.yield()
+        #expect(s.moving)
+        await t.value
+        #expect(!s.moving)
+    }
+
     @Test func moveSessionWithNothingPlanned() async {
         stub.on("getBoopBrief", .json(200, briefJSON(session: "null")))
         stub.on("setSessionTime", .json(404, #"[{"code":"BOOP_NO_PLANNED_SESSION","type":"REQUEST"}]"#))

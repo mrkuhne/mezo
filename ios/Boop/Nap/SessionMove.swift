@@ -43,6 +43,7 @@ func sessionMoved(planned: String?, time: String?) -> Bool { planned != nil && t
 @MainActor
 func moveSession(_ store: MorningStore, to time: String, planned: String?,
                  toast: @escaping (String) -> Void, undoToast: @escaping (String, @escaping () -> Void) -> Void) async {
+    guard !store.moving else { return }      // one move or undo at a time, whichever path asked
     await store.moveSession(to: time)
     if let problem = moveProblemToast(store.problem) { toast(problem); return }
     undoToast(movedToast(time)) { Task { @MainActor in await undoSessionMove(store, planned: planned, toast: toast) } }
@@ -51,6 +52,7 @@ func moveSession(_ store: MorningStore, to time: String, planned: String?,
 /// Puts the session back to its planned time and says so (or that it did not work).
 @MainActor
 func undoSessionMove(_ store: MorningStore, planned: String?, toast: (String) -> Void) async {
+    guard !store.moving else { return }
     await store.undoMove()
     if store.problem != nil { toast(SessionText.undoFailed) } else if let planned { toast(undoneToast(planned)) }
 }
@@ -95,7 +97,7 @@ struct SessionCard: View {
                 .scrollIndicators(.hidden)
                 .padding(.horizontal, -14).contentMargins(.horizontal, 14)
             }
-            if let conflict, !moved {
+            if let conflict, !moved, !store.conflictKept {
                 Text(conflict.text).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: 10) {
@@ -103,7 +105,7 @@ struct SessionCard: View {
                 Spacer(minLength: 0)
                 if moved, let planned = session.plannedTime {
                     smallPill(undoTitle(planned), primary: false) { undo(to: planned) }
-                } else if let conflict {
+                } else if let conflict, !store.conflictKept {
                     smallPill(moveButtonTitle(conflict.suggestedTime), primary: true) { move(to: conflict.suggestedTime) }
                 } else {
                     smallPill(SessionText.start, primary: true) { toast(soonToast("Edzés")) }
@@ -136,9 +138,9 @@ struct SessionCard: View {
             Text(title).nkFont(13.5, .semibold).foregroundStyle(primary ? NK.ground : .white).lineLimit(1).fixedSize()
                 .padding(.horizontal, 13).padding(.vertical, 8)
                 .background(Capsule().fill(primary ? .white : .white.opacity(0.14)))
-                .opacity(busy ? 0.6 : 1)
+                .opacity(busy || store.moving ? 0.6 : 1)
         }
         .buttonStyle(.plain)
-        .disabled(busy)
+        .disabled(busy || store.moving)
     }
 }
