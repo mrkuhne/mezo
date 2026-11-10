@@ -219,6 +219,12 @@ tags:
       write is idempotent: sleep nights and workouts upsert by the client's
       `externalId`, daily metrics by date, calendar days replace that day's
       rows. `created_by` always comes from the JWT.
+  - name: Boop
+    description: >
+      Boop (native iOS app) morning brief: one assembled read model for the Mai
+      screen (verdict, metrics, energy curve, day sheets), manual regeneration
+      (max 3 per day) and the planned training-session time. The client sends
+      its local date; `created_by` comes from the JWT.
 paths:
   /api/auth/login:
     post:
@@ -13592,6 +13598,143 @@ paths:
           description: >-
             Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds
             its `mezo.wearable.*` cap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/boop/brief:
+    get:
+      tags:
+        - Boop
+      operationId: getBoopBrief
+      summary: Get (generating if needed) the brief of a day
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: >-
+            The client's local calendar date: today or a past day (a date after
+            today in the owner zone, or an impossible one, is a 400)
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+      responses:
+        '200':
+          description: The brief for that date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoopBrief'
+        '400':
+          description: Invalid date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/boop/brief/regenerate:
+    post:
+      tags:
+        - Boop
+      operationId: regenerateBoopBrief
+      summary: Regenerate the brief of a day (at most 3 manual regenerations per day)
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: >-
+            The client's local calendar date: today or a past day (a date after
+            today in the owner zone, or an impossible one, is a 400)
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+      responses:
+        '200':
+          description: The brief for that date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoopBrief'
+        '400':
+          description: Invalid date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            BOOP_REGENERATE_LIMIT_REACHED; the daily regeneration limit is used
+            up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/boop/session-time:
+    put:
+      tags:
+        - Boop
+      operationId: setSessionTime
+      summary: Move the planned training session of a day to a time
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionTimeRequest'
+      responses:
+        '200':
+          description: The stored session time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionTime'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Boop
+      operationId: clearSessionTime
+      summary: Remove the session-time override of a day (back to the planned time)
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: The client's local calendar date
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+      responses:
+        '204':
+          description: Cleared
+        '400':
+          description: Invalid date
           content:
             application/json:
               schema:
@@ -31917,6 +32060,454 @@ components:
           minItems: 1
           items:
             $ref: '#/components/schemas/CalendarDayIn'
+    SessionTimeRequest:
+      type: object
+      required:
+        - date
+        - time
+      properties:
+        date:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          description: 'HH:mm'
+    SessionTime:
+      type: object
+      required:
+        - date
+        - time
+      properties:
+        date:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        time:
+          type: string
+          description: 'HH:mm'
+          example: '17:30'
+        plannedTime:
+          type: string
+          nullable: true
+          description: 'HH:mm of the original plan'
+    BoopBrief:
+      type: object
+      required:
+        - date
+        - generatedAt
+        - state
+        - nightsKnown
+        - metrics
+        - brief
+        - energy
+        - tonightTip
+        - day
+      properties:
+        date:
+          type: string
+          description: YYYY-MM-DD
+        generatedAt:
+          type: string
+          format: date-time
+        state:
+          type: string
+          enum:
+            - good
+            - okay
+            - tired
+            - learning
+        nightsKnown:
+          type: integer
+          minimum: 0
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoopMetric'
+        brief:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoopBriefLine'
+        energy:
+          $ref: '#/components/schemas/BoopEnergy'
+        tonightTip:
+          type: string
+        nextMealTip:
+          type: string
+          nullable: true
+        conflict:
+          $ref: '#/components/schemas/BoopConflict'
+        day:
+          $ref: '#/components/schemas/BoopDay'
+    BoopMetric:
+      type: object
+      required:
+        - key
+        - display
+        - headline
+        - sentence
+      properties:
+        key:
+          type: string
+          enum:
+            - forma
+            - alvas
+            - mozgas
+            - fuel
+            - pulzus
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        display:
+          type: string
+        caption:
+          type: string
+          nullable: true
+        headline:
+          type: string
+        sentence:
+          type: string
+        trendUp:
+          type: boolean
+          nullable: true
+    BoopBriefLine:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+        link:
+          type: string
+          enum:
+            - sleep
+            - heart
+            - day
+          nullable: true
+    BoopEnergy:
+      type: object
+      required:
+        - hourly
+      properties:
+        hourly:
+          type: array
+          description: '19 values in 0..1 for 06:00 through 24:00, hourly'
+          minItems: 19
+          maxItems: 19
+          items:
+            type: number
+            format: double
+            minimum: 0
+            maximum: 1
+        dipHour:
+          type: integer
+          nullable: true
+          minimum: 6
+          maximum: 24
+    BoopConflict:
+      type: object
+      nullable: true
+      required:
+        - text
+        - suggestedTime
+      properties:
+        text:
+          type: string
+        suggestedTime:
+          type: string
+          description: 'HH:mm'
+    BoopDay:
+      type: object
+      required:
+        - deepSleepWeek
+        - restingHrWeek
+        - steps
+        - stepsGoal
+        - activeKcal
+        - meals
+        - kcalSoFar
+        - kcalTarget
+        - proteinG
+        - proteinTarget
+        - carbsG
+        - fatG
+        - checkins
+        - intention
+        - observations
+        - calendar
+      properties:
+        sleep:
+          $ref: '#/components/schemas/BoopSleep'
+        bedtimeTarget:
+          type: string
+          nullable: true
+          description: 'HH:mm'
+        deepSleepWeek:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            type: integer
+            nullable: true
+        restingHrWeek:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            type: integer
+            nullable: true
+        hrToday:
+          $ref: '#/components/schemas/BoopHrToday'
+        steps:
+          type: integer
+        stepsGoal:
+          type: integer
+        activeKcal:
+          type: integer
+        session:
+          $ref: '#/components/schemas/BoopSession'
+        meals:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoopMeal'
+        kcalSoFar:
+          type: integer
+        kcalTarget:
+          type: integer
+        proteinG:
+          type: integer
+        proteinTarget:
+          type: integer
+        carbsG:
+          type: integer
+        fatG:
+          type: integer
+        checkins:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoopCheckin'
+        intention:
+          $ref: '#/components/schemas/BoopIntention'
+        observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoopObservation'
+        calendar:
+          $ref: '#/components/schemas/BoopCalendar'
+        weight:
+          $ref: '#/components/schemas/BoopWeight'
+        recovery:
+          $ref: '#/components/schemas/BoopRecovery'
+    BoopHrToday:
+      type: object
+      nullable: true
+      properties:
+        min:
+          type: integer
+          nullable: true
+        avg:
+          type: integer
+          nullable: true
+        max:
+          type: integer
+          nullable: true
+    BoopSleep:
+      type: object
+      nullable: true
+      required:
+        - bedtime
+        - wakeup
+        - totalMin
+        - hypnogram
+      properties:
+        bedtime:
+          type: string
+          description: 'HH:mm'
+        wakeup:
+          type: string
+          description: 'HH:mm'
+        totalMin:
+          type: integer
+        deepMin:
+          type: integer
+          nullable: true
+        remMin:
+          type: integer
+          nullable: true
+        lightMin:
+          type: integer
+          nullable: true
+        awakeMin:
+          type: integer
+          nullable: true
+        hypnogram:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoopHypnogramSegment'
+    BoopHypnogramSegment:
+      type: object
+      required:
+        - stage
+        - minutes
+      properties:
+        stage:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: '0 awake, 1 REM, 2 light, 3 deep'
+        minutes:
+          type: integer
+          minimum: 0
+    BoopSession:
+      type: object
+      nullable: true
+      required:
+        - title
+        - exercises
+      properties:
+        title:
+          type: string
+        time:
+          type: string
+          nullable: true
+          description: 'HH:mm (moved time if overridden, else the planned slot)'
+        plannedTime:
+          type: string
+          nullable: true
+          description: 'HH:mm'
+        minutes:
+          type: integer
+          nullable: true
+        exercises:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - sets
+            properties:
+              name:
+                type: string
+              sets:
+                type: integer
+    BoopMeal:
+      type: object
+      required:
+        - time
+        - title
+        - kcal
+        - proteinG
+        - logged
+      properties:
+        time:
+          type: string
+          description: 'HH:mm'
+        title:
+          type: string
+        kcal:
+          type: integer
+        proteinG:
+          type: integer
+        logged:
+          type: boolean
+    BoopCheckin:
+      type: object
+      required:
+        - slot
+        - time
+        - done
+      properties:
+        slot:
+          type: string
+          enum:
+            - morning
+            - midday
+            - afternoon
+            - evening
+        time:
+          type: string
+          description: 'HH:mm'
+        done:
+          type: boolean
+        summary:
+          type: string
+          nullable: true
+    BoopIntention:
+      type: object
+      required:
+        - foci
+      properties:
+        creed:
+          type: string
+          nullable: true
+        foci:
+          type: array
+          items:
+            type: string
+    BoopObservation:
+      type: object
+      required:
+        - id
+        - lead
+        - bold
+        - tail
+        - strength
+      properties:
+        id:
+          type: string
+          description: Companion pattern id (accepted by decidePattern)
+        lead:
+          type: string
+        bold:
+          type: string
+        tail:
+          type: string
+        strength:
+          type: integer
+          minimum: 0
+          maximum: 5
+    BoopCalendar:
+      type: object
+      required:
+        - count
+        - busySlots
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        busySlots:
+          type: array
+          description: '72 slots, 06:00–24:00, 15 minutes each; true = busy'
+          minItems: 72
+          maxItems: 72
+          items:
+            type: boolean
+    BoopWeight:
+      type: object
+      nullable: true
+      required:
+        - kg
+        - trendKg
+      properties:
+        kg:
+          type: number
+          format: double
+        trendKg:
+          type: number
+          format: double
+    BoopRecovery:
+      type: object
+      nullable: true
+      required:
+        - reason
+        - day
+      properties:
+        reason:
+          type: string
+        day:
+          type: integer
+          minimum: 1
   responses:
     AdminMemoryUnauthorized:
       description: Missing/invalid token

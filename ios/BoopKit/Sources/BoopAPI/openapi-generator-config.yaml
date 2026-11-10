@@ -17,3 +17,8 @@ filter:
     - ingestDailyMetrics
     - ingestWorkouts
     - replaceCalendarDays
+    - getBoopBrief
+    - regenerateBoopBrief
+    - setSessionTime
+    - clearSessionTime
+    - decidePattern
