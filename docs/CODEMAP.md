@@ -255,8 +255,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/boop/boop.yml` — 4 operations
   - **endpoints:** GET /api/boop/brief · POST /api/boop/brief/regenerate · PUT /api/boop/session-time ·
     DELETE /api/boop/session-time
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 5 IT + 2 unit
-  - **ITs:** `BoopBriefServiceIT`, `BoopContractIT`, `BoopDayAssemblerIT`, `BoopRepositoriesIT`, `BoopVerdictWriterIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 6 IT + 2 unit
+  - **ITs:** `BoopBriefConcurrencyIT`, `BoopBriefServiceIT`, `BoopContractIT`, `BoopDayAssemblerIT`,
+    `BoopRepositoriesIT`, `BoopVerdictWriterIT`
   - **populators:** `BoopBriefPopulator`, `CalendarEventPopulator`, `CheckInPopulator`, `DailyMetricPopulator`,
     `DatabasePopulator`, `IntentionPopulator`, `MealPopulator`, `PatternPopulator`, `RecoveryPeriodPopulator`,
     `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`, `WearableWorkoutPopulator`, `WeightLogPopulator`,

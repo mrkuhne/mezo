@@ -81,6 +81,8 @@ class BoopBriefServiceIT extends AbstractIntegrationTest {
         assertThat(b.getDay().getSleep().getDeepMin()).isNull(); // manual row: no stages
         assertThat(b.getDay().getStepsGoal()).isEqualTo(9000);
         assertThat(b.getDay().getSteps()).isZero();
+        assertThat(b.getMetrics().get(2).getDisplay()).isEqualTo("–");
+        assertThat(b.getMetrics().get(2).getScore()).isNull(); // no wearable day: no fake 0 level
         assertThat(b.getDay().getDeepSleepWeek()).hasSize(7);
         assertThat(b.getDay().getCalendar().getBusySlots()).hasSize(72);
     }
@@ -178,6 +180,48 @@ class BoopBriefServiceIT extends AbstractIntegrationTest {
         // 05:00 today: too early for a fuel score; yesterday is judged at its end: 0 kcal of the target.
         assertThat(today.getMetrics().get(3).getScore()).isNull();
         assertThat(yesterday.getMetrics().get(3).getScore()).isZero();
+    }
+
+    @Test
+    void testGet_shouldRefuseWith400_whenTheDateIsAfterTodayInTheOwnerZone() {
+        UUID user = databasePopulator.populateUser("brief-future@test.local");
+
+        assertThatThrownBy(() -> service.get(user, DAY.plusDays(1), NOW))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+        assertThatThrownBy(() -> service.regenerate(user, DAY.plusDays(1), NOW))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+        assertThat(rows(user)).isZero();
+    }
+
+    @Test
+    void testRegenerate_shouldCountAtomically_whenAConcurrentRegenerateAlreadyUsedTheLastOne() {
+        UUID user = databasePopulator.populateUser("brief-regen-race@test.local");
+        service.get(user, DAY, NOW);
+        service.regenerate(user, DAY, NOW);
+        service.regenerate(user, DAY, NOW); // this session's entity now says 2
+        // A concurrent request commits the third regeneration behind this persistence context's back.
+        jdbc.update("update boop_brief set regen_count = 3 where created_by = ?", user);
+
+        assertThatThrownBy(() -> service.regenerate(user, DAY, NOW))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessage("BOOP_REGENERATE_LIMIT_REACHED");
+        assertThat(jdbc.queryForObject("select regen_count from boop_brief where created_by = ?", Integer.class, user))
+            .isEqualTo(3);
+    }
+
+    @Test
+    void testGet_shouldNeverWriteBackAnOlderRegenCount_whenTheHashChangesAfterAConcurrentRegenerate() {
+        UUID user = databasePopulator.populateUser("brief-regen-keep@test.local");
+        service.get(user, DAY, NOW); // this session's entity says 0
+        jdbc.update("update boop_brief set regen_count = 2 where created_by = ?", user);
+
+        sleepLogs.createSleepLog(user, DAY, new BigDecimal("7.00"), 7); // new hash → the GET rewrites the row
+        service.get(user, DAY, NOW);
+
+        assertThat(jdbc.queryForObject("select regen_count from boop_brief where created_by = ?", Integer.class, user))
+            .isEqualTo(2);
     }
 
     private int rows(UUID user) {

@@ -769,6 +769,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Boop brief calls (mezo-r36n9.7): ITs assert the brief cache (same input hash → no new LLM call). */
     private final java.util.concurrent.atomic.AtomicInteger boopBriefCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int boopBriefCallCount() { return boopBriefCalls.get(); }
+    /** Concurrency ITs (mezo-r36n9.7): every Boop brief call waits at this barrier (10 s cap) so
+     *  two racing requests are both past their "no row yet" read before either writes; null = off. */
+    private volatile java.util.concurrent.CyclicBarrier boopBriefBarrier;
+    public void holdBoopBriefCalls(java.util.concurrent.CyclicBarrier barrier) { boopBriefBarrier = barrier; }
 
     private final java.util.concurrent.atomic.AtomicInteger completeCallCount =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -1066,6 +1070,16 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(BOOP_BRIEF_MARKER_MIRROR)) {
             boopBriefCalls.incrementAndGet();
+            java.util.concurrent.CyclicBarrier barrier = boopBriefBarrier;
+            if (barrier != null) {
+                try {
+                    barrier.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (java.util.concurrent.BrokenBarrierException | java.util.concurrent.TimeoutException e) {
+                    // a lone call (or a broken race) just proceeds
+                }
+            }
             if (userMessage.contains(BOOP_JUNK)) {
                 return "nem json";
             }

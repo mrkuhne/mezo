@@ -41,7 +41,9 @@ public class BoopBriefEntity extends OwnedEntity {
     @Column(name = "input_hash", nullable = false, length = 64)
     private String inputHash;
 
-    @Column(name = "regen_count", nullable = false)
+    /** Written on INSERT only; later changes go through {@code BoopBriefRepository#incrementRegen}
+     *  (atomic, capped), so a payload rewrite can never write back a stale count. */
+    @Column(name = "regen_count", nullable = false, updatable = false)
     private int regenCount;
 
     @Column(name = "generated_at", nullable = false)

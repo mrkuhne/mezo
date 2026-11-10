@@ -43,9 +43,10 @@ public class BoopScores {
         if (d.restingHr() != null && d.baselineRestingHr() != null) {
             pulzus = clamp(Math.round(70 + (d.baselineRestingHr() - d.restingHr()) * 6));
         }
-        int steps = d.steps() == null ? 0 : d.steps();
-        // A non-positive goal is a misconfiguration: no score rather than a divide-by-zero 100.
-        Integer mozgas = stepsGoal <= 0 ? null : clamp(Math.round(steps * 100.0 / stepsGoal));
+        // No wearable day (steps null) = no score, never a fake 0; a non-positive goal is a
+        // misconfiguration: no score rather than a divide-by-zero 100.
+        Integer mozgas = d.steps() == null || stepsGoal <= 0 ? null
+            : clamp(Math.round(d.steps() * 100.0 / stepsGoal));
         Integer fuel = fuel(d, now);
 
         Integer forma = null;

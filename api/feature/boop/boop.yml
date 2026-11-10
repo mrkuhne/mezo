@@ -16,7 +16,7 @@ paths:
         - name: date
           in: query
           required: true
-          description: The client's local calendar date
+          description: "The client's local calendar date: today or a past day (a date after today in the owner zone, or an impossible one, is a 400)"
           schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
       responses:
         '200':
@@ -43,7 +43,7 @@ paths:
         - name: date
           in: query
           required: true
-          description: The client's local calendar date
+          description: "The client's local calendar date: today or a past day (a date after today in the owner zone, or an impossible one, is a 400)"
           schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
       responses:
         '200':
@@ -310,7 +310,7 @@ components:
         count: { type: integer, minimum: 0 }
         busySlots:
           type: array
-          description: '72 slots, 06:00–24:00, 15 minutes each; 1 = busy'
+          description: '72 slots, 06:00–24:00, 15 minutes each; true = busy'
           minItems: 72
           maxItems: 72
           items: { type: boolean }

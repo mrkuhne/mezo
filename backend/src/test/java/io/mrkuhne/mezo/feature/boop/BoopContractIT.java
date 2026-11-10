@@ -54,6 +54,19 @@ class BoopContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testGetBrief_shouldReturn400WithAFieldError_whenTheDateDoesNotExistOrIsInTheFuture() {
+        RegisteredUser u = registerUser("Boop impossible date");
+        String impossible = getForBody("/api/boop/brief?date=2026-02-30", u.headers(), HttpStatus.BAD_REQUEST,
+            String.class);
+        assertHasFieldError(impossible, "date", "VALIDATION_INVALID_VALUE");
+        String month13 = postForBody("/api/boop/brief/regenerate?date=2026-13-01", null, u.headers(),
+            HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(month13, "date", "VALIDATION_INVALID_VALUE");
+        String future = getForBody("/api/boop/brief?date=2099-01-01", u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(future, "date", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
     void testRegenerate_shouldReturn409WithTheLimitCode_whenCalledAFourthTime() {
         RegisteredUser u = registerUser("Boop regen");
         for (int i = 0; i < 3; i++) {

@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.boop.repository.BoopBriefRepository;
 import io.mrkuhne.mezo.feature.boop.service.BoopScores.Scores;
 import io.mrkuhne.mezo.feature.boop.service.BoopVerdictWriter.Verdicts;
 import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -20,6 +22,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -40,9 +44,11 @@ import tools.jackson.databind.ObjectMapper;
  * (refused before the LLM call).
  *
  * <p>"Now" is the server clock in the owner zone ({@code mezo.wearable.zone}); a past date is judged
- * as of 23:59 of that day, a future one as of 00:00. No {@code @Transactional} here: generation
- * (the LLM call) runs outside any transaction, only {@link BoopBriefStore#upsert} is one.
- * Everything is keyed by the owner id.
+ * as of 23:59 of that day; a date after today in that zone is a 400 (the phone asks for today or the
+ * past only). No {@code @Transactional} here: generation (the LLM call) runs outside any
+ * transaction, only {@link BoopBriefStore#upsert} is one. Two racing first requests of one day both
+ * generate; the INSERT that loses on the unique index re-reads the row and answers with the
+ * winner's brief (never a 500). Everything is keyed by the owner id.
  */
 @Service
 public class BoopBriefService {
@@ -81,11 +87,12 @@ public class BoopBriefService {
 
     /** Clock-explicit variant — the tested one. */
     public BoopBrief get(UUID owner, LocalDate date, Instant now) {
+        requireNotFuture(date, now);
         BoopDay day = assembler.assemble(owner, date);
         String hash = inputHash(day);
         Optional<BoopBriefEntity> existing = briefs.findByCreatedByAndDate(owner, date);
         if (existing.isPresent() && hash.equals(existing.get().getInputHash())) {
-            return objectMapper.readValue(existing.get().getPayload(), BoopBrief.class);
+            return read(existing.get());
         }
         return generateAndStore(owner, day, hash, now, false);
     }
@@ -96,6 +103,7 @@ public class BoopBriefService {
 
     /** Clock-explicit variant — the tested one. */
     public BoopBrief regenerate(UUID owner, LocalDate date, Instant now) {
+        requireNotFuture(date, now);
         Optional<BoopBriefEntity> existing = briefs.findByCreatedByAndDate(owner, date);
         if (existing.isPresent() && existing.get().getRegenCount() >= props.regenPerDay()) {
             throw BoopBriefStore.limitReached();
@@ -112,18 +120,46 @@ public class BoopBriefService {
         Verdicts v = verdictWriter.write(day, s, localNow);
         Instant generatedAt = now.truncatedTo(ChronoUnit.MICROS);
         BoopBrief brief = mapper.toBrief(day, s, v, hourly, props.stepsGoal(), props.nightsNeeded(), generatedAt);
-        store.upsert(owner, day.date(), hash, objectMapper.writeValueAsString(brief), generatedAt, manual,
-            props.regenPerDay());
+        String payload = objectMapper.writeValueAsString(brief);
+        try {
+            store.upsert(owner, day.date(), hash, payload, generatedAt, manual, props.regenPerDay());
+        } catch (DataIntegrityViolationException raced) {
+            // Only "a parallel first request won" (uq_boop_brief_user_date) if the row now really
+            // exists; any other integrity failure is rethrown, never swallowed.
+            Optional<BoopBriefEntity> winner = briefs.findByCreatedByAndDate(owner, day.date());
+            if (winner.isEmpty()) {
+                throw raced;
+            }
+            if (!manual) {
+                return read(winner.get());
+            }
+            // A manual regeneration still has to be counted (and capped) on the winner's row.
+            store.upsert(owner, day.date(), hash, payload, generatedAt, true, props.regenPerDay());
+        }
         return brief;
+    }
+
+    /** A pattern-valid but impossible date, or one after today: the same 400 field error the
+     *  generated validation gives a malformed one. */
+    public static SystemRuntimeErrorException invalidDate() {
+        return new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_INVALID_VALUE", "date").build(),
+            HttpStatus.BAD_REQUEST);
+    }
+
+    private void requireNotFuture(LocalDate date, Instant now) {
+        if (date.isAfter(now.atZone(zone).toLocalDate())) {
+            throw invalidDate();
+        }
+    }
+
+    private BoopBrief read(BoopBriefEntity row) {
+        return objectMapper.readValue(row.getPayload(), BoopBrief.class);
     }
 
     private LocalTime localNow(LocalDate date, Instant now) {
         ZonedDateTime local = now.atZone(zone);
         if (date.isBefore(local.toLocalDate())) {
             return END_OF_DAY;
-        }
-        if (date.isAfter(local.toLocalDate())) {
-            return LocalTime.MIDNIGHT;
         }
         return local.toLocalTime().truncatedTo(ChronoUnit.MINUTES);
     }

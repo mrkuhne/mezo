@@ -27,24 +27,33 @@ public class BoopBriefStore {
     private final BoopBriefRepository briefs;
 
     /**
-     * Inserts or overwrites the day's brief. {@code manual} = a user-asked regeneration: it is
-     * re-checked against {@code regenLimit} here (the service already refused before the LLM call;
-     * this closes the gap of two regenerations racing past that check) and counted.
+     * Inserts or overwrites the day's brief. {@code manual} = a user-asked regeneration: on an
+     * existing row it is counted with one atomic capped UPDATE ({@link BoopBriefRepository#incrementRegen}
+     * — two regenerations racing past the service's pre-check cannot both win the last slot); a new
+     * row starts at 1. {@code regen_count} is not updatable through the entity, so the payload rewrite
+     * of a GET never writes back a count it read before a concurrent regeneration committed.
+     *
+     * <p>Two racing first writes of the same day: one INSERT loses on {@code uq_boop_brief_user_date}
+     * with a {@code DataIntegrityViolationException}; {@link BoopBriefService} handles that outside
+     * this (then rolled back) transaction.
      */
     @Transactional
     public void upsert(UUID owner, LocalDate date, String inputHash, String payload, Instant generatedAt,
                        boolean manual, int regenLimit) {
-        BoopBriefEntity row = briefs.findByCreatedByAndDate(owner, date).orElseGet(() -> {
-            BoopBriefEntity e = new BoopBriefEntity();
-            e.setCreatedBy(owner);
-            e.setDate(date);
-            return e;
-        });
-        if (manual) {
-            if (row.getRegenCount() >= regenLimit) {
+        BoopBriefEntity row = briefs.findByCreatedByAndDate(owner, date).orElse(null);
+        if (row == null) {
+            row = new BoopBriefEntity();
+            row.setCreatedBy(owner);
+            row.setDate(date);
+            row.setRegenCount(manual ? 1 : 0);
+            if (manual && regenLimit < 1) {
                 throw limitReached();
             }
-            row.setRegenCount(row.getRegenCount() + 1);
+        } else if (manual) {
+            if (briefs.incrementRegen(owner, date, regenLimit) == 0) {
+                throw limitReached();
+            }
+            row = briefs.findByCreatedByAndDate(owner, date).orElseThrow(); // fresh: the update cleared the context
         }
         row.setInputHash(inputHash);
         row.setPayload(payload);

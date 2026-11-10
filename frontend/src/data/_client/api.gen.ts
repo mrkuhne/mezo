@@ -13084,7 +13084,7 @@ export interface components {
         };
         BoopCalendar: {
             count: number;
-            /** @description 72 slots, 06:00–24:00, 15 minutes each; 1 = busy */
+            /** @description 72 slots, 06:00–24:00, 15 minutes each; true = busy */
             busySlots: boolean[];
         };
         BoopWeight: {
@@ -28939,7 +28939,7 @@ export interface operations {
     getBoopBrief: {
         parameters: {
             query: {
-                /** @description The client's local calendar date */
+                /** @description The client's local calendar date: today or a past day (a date after today in the owner zone, or an impossible one, is a 400) */
                 date: string;
             };
             header?: never;
@@ -28980,7 +28980,7 @@ export interface operations {
     regenerateBoopBrief: {
         parameters: {
             query: {
-                /** @description The client's local calendar date */
+                /** @description The client's local calendar date: today or a past day (a date after today in the owner zone, or an impossible one, is a 400) */
                 date: string;
             };
             header?: never;

@@ -119,6 +119,12 @@ class BoopScoresTest {
     }
 
     @Test
+    void noStepsMeansNoMovementScore() {
+        // No wearable day: no score next to the "–" display, never a fake 0 level (review M5).
+        assertThat(scores.compute(day(null, 0, null, null, null, 0, 2000), LocalTime.NOON).mozgas()).isNull();
+    }
+
+    @Test
     void partialStepsScoreProportionally() {
         assertThat(scores.compute(day(null, 0, null, null, 4500, 0, 2000), LocalTime.NOON).mozgas()).isEqualTo(50);
     }
