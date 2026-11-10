@@ -37,7 +37,7 @@ public enum PathBuilder {
         let nowStep = PathStep(id: "now", time: fmt(nowMin), glyph: "sun-ink", title: "Most", sub: "", done: false, isNow: true)
         var out = sorted.map(\.step)
         out.insert(nowStep, at: sorted.firstIndex { $0.key >= nowMin } ?? sorted.count)
-        return out
+        return uniqueIds(out)
     }
 
     // MARK: orbs
@@ -47,19 +47,21 @@ public enum PathBuilder {
         let morning = x.day.checkins.first { $0.slot == .morning }
         let anchor = morning.flatMap { mins($0.time) } ?? 8 * 60
         func held(_ t: Int, done: Bool) -> Int { done ? t : max(t, x.nowMin) }   // undone morning stack waits right after MOST
+        // A past, undone station has no honest clock time any more: it reads "most" (it is due now).
+        func label(_ t: Int, done: Bool) -> String { !done && t < x.nowMin ? "most" : fmt(t) }
         if !x.evening {
             if let m = morning {
                 out.append(Item(key: held(anchor, done: m.done), step: PathStep(
-                    id: "checkin-morning", time: m.time, glyph: "sun-ink", title: "Reggeli check-in",
+                    id: "checkin-morning", time: label(anchor, done: m.done), glyph: "sun-ink", title: "Reggeli check-in",
                     sub: m.summary ?? "", done: m.done, isNow: false, opens: !m.done)))
             }
             let creed = x.day.intention.creed
             out.append(Item(key: held(anchor, done: creed != nil), step: PathStep(
-                id: "intention", time: fmt(anchor), glyph: "pen-sun", title: "Mai szándék",
+                id: "intention", time: label(anchor, done: creed != nil), glyph: "pen-sun", title: "Mai szándék",
                 sub: creed ?? "", done: creed != nil, isNow: false, opens: true)))
             if !x.day.observations.isEmpty {
                 out.append(Item(key: held(anchor, done: false), step: PathStep(
-                    id: "observations", time: fmt(anchor), glyph: "spark-cream", title: "Boop észrevette",
+                    id: "observations", time: label(anchor, done: false), glyph: "spark-cream", title: "Boop észrevette",
                     sub: "\(x.day.observations.count) új", done: false, isNow: false, opens: true)))
             }
         }
@@ -92,7 +94,8 @@ public enum PathBuilder {
                                                        title: "Ébredés", sub: "", done: true, isNow: false)))
         }
         let target = x.day.bedtimeTarget.flatMap(mins) ?? (recovery ? 22 * 60 : nil)
-        if let t = target {
+        if let rawT = target {
+            let t = ordered(rawT)   // after-midnight targets belong to the end of this day
             if x.evening {
                 out.append(Item(key: t - 30, step: PathStep(id: "wind-down", time: fmt(t - 30), glyph: "book-sage",
                                                              title: "Esti levezetés", sub: "", done: false, isNow: false, opens: true)))
@@ -142,7 +145,7 @@ public enum PathBuilder {
                 opens: m.logged || i == firstOpen)))
         }
         if x.day.recovery != nil {
-            let t = min(x.nowMin + 30, 23 * 60 + 45)
+            let t = x.nowMin + 30
             out.append(Item(key: t, step: PathStep(id: "water", time: fmt(t), glyph: "drop-sky",
                                                     title: "Igyál egy pohár vizet", sub: "", done: false, isNow: false)))
         }
@@ -151,7 +154,7 @@ public enum PathBuilder {
 
     private static func pulzus(_ x: Ctx) -> [Item] {
         if x.evening {
-            let t = min(x.nowMin + 15, 23 * 60 + 45)
+            let t = x.nowMin + 15
             return [Item(key: t, step: PathStep(id: "breath", time: fmt(t), glyph: "heart-cream",
                                                 title: "Esti légzés", sub: "Egy perc lefekvés előtt", done: false, isNow: false, opens: true))]
         }
@@ -163,7 +166,7 @@ public enum PathBuilder {
                                                            title: "Egy perc légzés", sub: "Mielőtt belefutsz", done: false, isNow: false, opens: true)))
         }
         out.append(Item(key: start, step: PathStep(id: "busy-block", time: fmt(start), glyph: "clock-ink",
-                                                    title: "Sűrű megbeszélés-sáv", sub: "\(fmt(start))–\(fmt(end))",
+                                                    title: "Sűrű megbeszélés-sáv", sub: "\(fmt(start))–\(fmtEnd(end))",
                                                     done: end <= x.nowMin, isNow: false, opens: true)))
         return out
     }
@@ -184,6 +187,22 @@ public enum PathBuilder {
         }
         return best
     }
+
+    /// Times before 06:00 belong to the night that ends the day (the day grid starts at 06:00).
+    private static func ordered(_ t: Int) -> Int { t < 360 ? t + 1440 : t }
+
+    private static func uniqueIds(_ steps: [PathStep]) -> [PathStep] {
+        var seen: [String: Int] = [:]
+        return steps.map { st in
+            let n = (seen[st.id] ?? 0) + 1; seen[st.id] = n
+            guard n > 1 else { return st }
+            return PathStep(id: "\(st.id)-\(n)", time: st.time, glyph: st.glyph, title: st.title, sub: st.sub,
+                            done: st.done, isNow: st.isNow, opens: st.opens)
+        }
+    }
+
+    /// End of a range: midnight reads "24:00", not "00:00".
+    private static func fmtEnd(_ m: Int) -> String { m == 1440 ? "24:00" : fmt(m) }
 
     private static func mins(_ hhmm: String) -> Int? {
         let p = hhmm.split(separator: ":")

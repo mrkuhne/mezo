@@ -9,6 +9,8 @@ struct PathBuilderTests {
      {"slot":"afternoon","time":"16:00","done":false},
      {"slot":"evening","time":"21:30","done":false}]
     """#
+    let obs = #"[{"id":"6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0001","lead":"a","bold":"b","tail":"c","strength":3}]"#
+    let sleep = #"{"bedtime":"22:48","wakeup":"06:53","totalMin":425,"hypnogram":[]}"#
     func ids(_ s: [PathStep]) -> [String] { s.map(\.id) }
     func build(_ key: MetricKey?, _ f: BriefFixture, now: Date, evening: Bool = false) throws -> [PathStep] {
         PathBuilder.steps(for: key, brief: try f.brief(), now: now, evening: evening, calendar: budapest)
@@ -17,9 +19,11 @@ struct PathBuilderTests {
     @Test func formaListsAllCheckIns() throws {
         var f = BriefFixture(); f.checkins = allCheckins
         let s = try build(.forma, f, now: at(10))
-        #expect(["checkin-morning", "checkin-midday", "checkin-afternoon", "checkin-evening"].allSatisfy(ids(s).contains))
-        #expect(s.first { $0.id == "checkin-evening" }?.time == "21:30")
-        #expect(ids(s).contains("intention"))
+        #expect(ids(s) == ["checkin-morning", "now", "intention", "checkin-midday", "checkin-afternoon", "checkin-evening"])
+        #expect(s.map(\.title) == ["Reggeli check-in", "Most", "Mai szándék", "Déli check-in", "Délutáni check-in", "Esti check-in · napzárás"])
+        #expect(s.last?.time == "21:30")
+        var g = f; g.observations = obs
+        #expect(ids(try build(.forma, g, now: at(10))) == ["checkin-morning", "now", "intention", "observations", "checkin-midday", "checkin-afternoon", "checkin-evening"])
     }
 
     @Test func fuelShowsOnlyMeals() throws {
@@ -58,11 +62,11 @@ struct PathBuilderTests {
         f.session = #"{"title":"Váll","time":"17:30","plannedTime":"17:30","exercises":[]}"#
         f.recovery = #"{"reason":"influenza","day":2}"#; f.bedtimeTarget = #""22:45""#
         let full = try build(nil, f, now: at(10))
-        #expect(!ids(full).contains("session"))
-        #expect(ids(full).contains("easy-walk") && ids(full).contains("water"))
+        #expect(ids(full) == ["now", "intention", "water", "easy-walk", "bedtime"])
         #expect(full.first { $0.id == "bedtime" }?.title == "Korai lefekvés")
         var g = f; g.recovery = "null"
-        #expect(ids(try build(.mozgas, g, now: at(10))).contains("session"))
+        #expect(ids(try build(.mozgas, f, now: at(10))) == ["now", "easy-walk"])
+        #expect(ids(try build(.mozgas, g, now: at(10))) == ["now", "session"])
     }
 
     @Test func eveningFormaPillIsEveningCheckin() throws {
@@ -73,7 +77,7 @@ struct PathBuilderTests {
         var m = BriefFixture(); m.checkins = #"[{"slot":"morning","time":"08:00","done":false}]"#
         #expect(Lens.action(for: .forma, brief: try m.brief(), now: at(9), evening: false)?.kind == .checkin)
         let s = try build(.forma, f, now: at(21, 40), evening: true)
-        #expect(!ids(s).contains("intention"))
+        #expect(ids(s) == ["checkin-midday", "checkin-afternoon", "checkin-evening", "now"])
         #expect(Lens.action(for: .alvas, brief: b, now: at(21, 40), evening: true)?.kind == .windDown)
     }
 
@@ -86,5 +90,76 @@ struct PathBuilderTests {
                 #expect(s.first { $0.isNow }?.time == "09:30")
             }
         }
+    }
+
+    @Test func alvasOrder() throws {
+        var f = BriefFixture(); f.sleep = sleep; f.bedtimeTarget = #""22:45""#
+        let s = try build(.alvas, f, now: at(10))
+        #expect(ids(s) == ["sleep-in", "sleep-night", "wake", "now", "bedtime"])
+        #expect(s.map(\.time) == ["22:48", "02:50", "06:53", "10:00", "22:45"])
+        #expect(s[1].sub == "7 ó 5 p")
+    }
+
+    @Test func pulzusBreathPrecedesDensestBlock() throws {
+        var f = BriefFixture()
+        f.busyRuns = [4...4, 32...39, 50...51]   // 07:00 (1 slot), 14:00-16:00, 18:30-19:00
+        let s = try build(.pulzus, f, now: at(10))
+        #expect(ids(s) == ["now", "breath", "busy-block"])
+        #expect(s[1].time == "13:55" && s[2].time == "14:00" && s[2].sub == "14:00–16:00")
+        #expect(ids(try build(.pulzus, f, now: at(15))) == ["busy-block", "now"])
+        var one = BriefFixture(); one.busyRuns = [4...4]
+        #expect(ids(try build(.pulzus, one, now: at(10))) == ["now"])
+    }
+
+    @Test func nowIsFirstBeforeSixAndLastAfterEverything() throws {
+        var f = BriefFixture()
+        f.meals = #"[{"time":"08:00","title":"A","kcal":1,"proteinG":1,"logged":false},{"time":"19:00","title":"B","kcal":1,"proteinG":1,"logged":false}]"#
+        #expect(ids(try build(.fuel, f, now: at(5, 10))) == ["now", "meal-0", "meal-1"])
+        #expect(ids(try build(.fuel, f, now: at(23, 50))) == ["meal-0", "meal-1", "now"])
+    }
+
+    @Test func eveningFuelPulzusAlvas() throws {
+        var f = BriefFixture()
+        f.meals = #"[{"time":"08:00","title":"A","kcal":1,"proteinG":1,"logged":true},{"time":"13:00","title":"B","kcal":1,"proteinG":1,"logged":true},{"time":"19:00","title":"C","kcal":1,"proteinG":1,"logged":false}]"#
+        f.sleep = sleep; f.bedtimeTarget = #""22:45""#; f.busyRuns = [32...39]
+        #expect(ids(try build(.fuel, f, now: at(18), evening: true)) == ["now", "meal-2"])
+        let p = try build(.pulzus, f, now: at(21), evening: true)
+        #expect(ids(p) == ["now", "breath"] && p[1].title == "Esti légzés" && p[1].time == "21:15")
+        let a = try build(.alvas, f, now: at(21), evening: true)
+        #expect(ids(a) == ["now", "wind-down", "bedtime"])
+        #expect(a.map(\.time) == ["21:00", "22:15", "22:45"])
+    }
+
+    @Test func afterMidnightTargetsStayAfterNow() throws {
+        var f = BriefFixture(); f.bedtimeTarget = #""00:30""#
+        let a = try build(.alvas, f, now: at(22), evening: true)
+        #expect(ids(a) == ["now", "wind-down", "bedtime"])
+        #expect(a.map(\.time) == ["22:00", "00:00", "00:30"])
+        let p = try build(.pulzus, BriefFixture(), now: at(23, 50), evening: true)
+        #expect(ids(p) == ["now", "breath"] && p[1].time == "00:05")
+    }
+
+    @Test func blockEndingAtMidnightReads2400() throws {
+        var f = BriefFixture(); f.busyRuns = [60...71]   // 21:00-24:00
+        #expect(try build(.pulzus, f, now: at(10)).last?.sub == "21:00–24:00")
+    }
+
+    @Test func sameTimeMealsGetDistinctIds() throws {
+        var f = BriefFixture()
+        f.meals = #"[{"time":"13:00","title":"A","kcal":1,"proteinG":1,"logged":false},{"time":"13:00","title":"B","kcal":1,"proteinG":1,"logged":false}]"#
+        #expect(ids(try build(.fuel, f, now: at(10))) == ["now", "meal-0", "meal-1"])
+        var g = BriefFixture()
+        g.checkins = #"[{"slot":"midday","time":"12:00","done":false},{"slot":"midday","time":"12:30","done":false}]"#
+        #expect(ids(try build(.forma, g, now: at(10))) == ["now", "intention", "checkin-midday", "checkin-midday-2"])
+    }
+
+    @Test func pastUndoneFormaStationsReadMost() throws {
+        var f = BriefFixture(); f.checkins = #"[{"slot":"morning","time":"08:00","done":false}]"#
+        let late = try build(.forma, f, now: at(14, 5))
+        #expect(ids(late) == ["now", "checkin-morning", "intention"])
+        #expect(late[1].time == "most" && late[2].time == "most")
+        let early = try build(.forma, f, now: at(7))
+        #expect(ids(early) == ["now", "checkin-morning", "intention"])
+        #expect(early[1].time == "08:00" && early[2].time == "08:00")
     }
 }
