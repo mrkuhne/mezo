@@ -130,7 +130,7 @@ class MealCoachPromptTest {
         String prompt = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
             List.of(block("Vacsora", 1, BigDecimal.ZERO)));
         assertThat(prompt).contains("NAPI CÉLOK: 1500 kcal");
-        assertThat(prompt).doesNotContain("3100");
+        assertThat(prompt).doesNotContain("3100 kcal");    // not bare "3100": a random meal UUID can contain it
     }
 
     @Test
