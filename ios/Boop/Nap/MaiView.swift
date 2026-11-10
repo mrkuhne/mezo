@@ -96,9 +96,14 @@ struct MaiView<Below: View>: View {
 
     /// Alvás's bedtime reminder (local notification), shared with the bedtime card below.
     @State private var reminder = BedtimeReminder()
+    /// Bumped at each evening/day boundary and on return to the foreground, so the mode is re-read live.
+    @State private var clockTick = 0
+    /// The label of the toast's action (nil = "Visszavonom" when there is an undo).
+    @State private var toastAction: String?
+    @Environment(\.openURL) private var openURL
 
     private var copy: MaiCopy { maiCopy(brief, metricKey(for: selected)) }
-    private var now: Date { BoopClock.now() }
+    private var now: Date { _ = clockTick; return BoopClock.now() }
     private var evening: Bool { isEvening(now) }
     /// Evening's dusk or kímélő's calm over the page; nil = the selected orb's own sky.
     private var sky: NKSky? { maiSky(evening: evening, recovery: brief.day.recovery != nil) }
@@ -127,7 +132,8 @@ struct MaiView<Below: View>: View {
                 }
             }
         }
-        .nkToast($toast, action: undo == nil ? nil : SessionText.undo) { undo?(); undo = nil }
+        .nkToast($toast, action: undo == nil ? nil : (toastAction ?? SessionText.undo)) { undo?(); undo = nil }
+        .background { ModeClock { clockTick += 1 } }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: inhale) { _, _ in breathing }
         .onAppear { if voice == nil { voice = BoopVoice() } }
         .onDisappear { motion.stop(); stopBreath(); voice?.stop() }
@@ -205,8 +211,9 @@ struct MaiView<Below: View>: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func show(_ text: String, undo: (() -> Void)? = nil) {
+    private func show(_ text: String, undo: (() -> Void)? = nil, action: String? = nil) {
         self.undo = undo
+        toastAction = action
         toast = text
     }
 
@@ -224,7 +231,14 @@ struct MaiView<Below: View>: View {
 
     /// First tap asks for notifications and sets the reminder; the next one turns it off.
     private func toggleReminder() {
-        Task { @MainActor in show(await reminder.toggle(target: reminderTarget(brief))) }
+        Task { @MainActor in
+            guard let reply = await reminder.toggle(target: reminderTarget(brief)) else { return }   // a tap still running
+            if reply.opensSettings, let url = URL(string: UIApplication.openSettingsURLString) {
+                show(reply.text, undo: { openURL(url) }, action: BedtimeText.settings)
+            } else {
+                show(reply.text)
+            }
+        }
     }
 
     private func speak() {

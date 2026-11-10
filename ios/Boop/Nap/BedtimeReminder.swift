@@ -15,6 +15,8 @@ protocol ReminderCenter: Sendable {
     /// A notification every day at hour:minute (replaces the one with the same id).
     func schedule(id: String, hour: Int, minute: Int, title: String, body: String) async throws
     func cancel(id: String)
+    /// Whether a request with this id is still waiting to ring.
+    func isPending(id: String) async -> Bool
 }
 
 /// The real centre: local notifications, no server.
@@ -36,14 +38,34 @@ struct SystemReminderCenter: ReminderCenter {
         content.title = title
         content.body = body
         content.sound = .default
-        // a repeating clock time: crossing midnight needs no date arithmetic, and it holds after a relaunch
-        let trigger = UNCalendarNotificationTrigger(dateMatching: DateComponents(hour: hour, minute: minute), repeats: true)
-        try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: Self.trigger(hour: hour, minute: minute))
+        try await UNUserNotificationCenter.current().add(request)
+    }
+
+    /// A repeating local clock time: crossing midnight and DST need no date arithmetic, and it holds after a relaunch.
+    static func trigger(hour: Int, minute: Int) -> UNCalendarNotificationTrigger {
+        UNCalendarNotificationTrigger(dateMatching: DateComponents(hour: hour, minute: minute), repeats: true)
     }
 
     func cancel(id: String) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
     }
+
+    func isPending(id: String) async -> Bool {
+        await UNUserNotificationCenter.current().pendingNotificationRequests().contains { $0.identifier == id }
+    }
+}
+
+/// Lets Boop's own notifications show while the app is open (by default iOS keeps them silent in the foreground).
+/// Installed once at launch (`BoopApp`); the centre holds its delegate weakly, so this one lives for the process.
+final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Sendable {
+    static let shared = ReminderPresenter()
+    static let foregroundOptions: UNNotificationPresentationOptions = [.banner, .sound]
+
+    static func install() { UNUserNotificationCenter.current().delegate = shared }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
+        -> UNNotificationPresentationOptions { Self.foregroundOptions }
 }
 
 // MARK: - When it rings (pure)
@@ -64,18 +86,6 @@ enum BedtimeTime {
     static func label(for target: String) -> String? {
         trigger(for: target).map { String(format: "%02d:%02d", $0.hour, $0.minute) }
     }
-
-    /// The next time it rings after `now`: tonight's (before-06:00 targets count as tonight's), else tomorrow's.
-    static func nextFire(target: String, now: Date, calendar: Calendar = .current) -> Date? {
-        let p = target.split(separator: ":")
-        guard p.count == 2, let h = Int(p[0]), let m = Int(p[1]) else { return nil }
-        var t = h * 60 + m
-        if t < 6 * 60 { t += 1440 }
-        let start = calendar.startOfDay(for: now)
-        guard var fire = calendar.date(byAdding: .minute, value: t - lead, to: start) else { return nil }
-        if fire <= now, let next = calendar.date(byAdding: .day, value: 1, to: fire) { fire = next }
-        return fire
-    }
 }
 
 // MARK: - The reminder
@@ -85,10 +95,17 @@ enum BedtimeText {
     static let off = "Lefekvés-emlékeztető kikapcsolva"
     static let denied = "Rendben, nem zavarlak. Ha mégis kéred, a Beállításokban engedélyezd a Boop értesítéseit."
     static let noTarget = "Még nincs lefekvési célod, így nem tudok időben szólni."
+    static let settings = "Beállítások"
     static let failed = "Most nem sikerült beállítani, próbáld újra egy kicsit később."
     static let title = "Fél óra múlva lefekvés"
     static let body = "Tedd le a telefont, és kezdd a levezetést. Holnap hálás leszel érte."
     static func on(_ time: String) -> String { "Emlékeztetlek \(time)-kor" }
+}
+
+/// What a tap answers: the toast, and whether it carries a "Beállítások" button (notifications denied).
+struct ReminderReply: Equatable {
+    let text: String
+    var opensSettings = false
 }
 
 /// The Alvás pill while the reminder is on.
@@ -97,14 +114,22 @@ func reminderPillTitle(_ time: String) -> String { BedtimeText.on(time) }
 /// Alvás's bedtime reminder (spec §5.1a): the first tap asks for permission, then a local notification rings every
 /// evening half an hour before the bedtime target; a second tap turns it off. The on/off state and the clock time
 /// are kept across launches, and a new target moves the reminder with it.
+///
+/// A brief without a target keeps the reminder on the **last known target** (stored with the state): the user asked
+/// to be reminded, and a brief that momentarily has no target (still learning, a missing plan) is no reason to go
+/// quiet. It is re-derived from that target, never from a bare stored time.
 @MainActor @Observable
 final class BedtimeReminder {
     static let id = "boop.bedtime"
-    private static let onKey = "bedtimeReminder.on", timeKey = "bedtimeReminder.time"
+    private static let onKey = "bedtimeReminder.on", timeKey = "bedtimeReminder.time", targetKey = "bedtimeReminder.target"
 
     private(set) var isOn: Bool
     /// The clock time it rings, "22:15".
     private(set) var time: String?
+    /// The bedtime it counts back from (the last one a brief gave).
+    @ObservationIgnored private var target: String?
+    /// A tap is being handled (the permission prompt may be up): further taps are ignored.
+    @ObservationIgnored private var busy = false
     @ObservationIgnored private let center: ReminderCenter
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -113,32 +138,47 @@ final class BedtimeReminder {
         self.defaults = defaults
         isOn = defaults.bool(forKey: Self.onKey)
         time = defaults.string(forKey: Self.timeKey)
+        target = defaults.string(forKey: Self.targetKey)
     }
 
-    /// The pill or the card was tapped. Returns the toast to show.
-    func toggle(target: String?) async -> String {
+    /// The pill or the card was tapped. Returns the toast to show; nil = ignored (the previous tap is still running).
+    func toggle(target: String?) async -> ReminderReply? {
+        guard !busy else { return nil }
+        busy = true
+        defer { busy = false }
         if isOn {
             center.cancel(id: Self.id)
-            set(on: false, time: nil)
-            return BedtimeText.off
+            set(on: false, time: nil, target: nil)
+            return ReminderReply(text: BedtimeText.off)
         }
-        guard let target, let label = BedtimeTime.label(for: target) else { return BedtimeText.noTarget }
+        guard let target = target ?? self.target, let label = BedtimeTime.label(for: target) else {
+            return ReminderReply(text: BedtimeText.noTarget)
+        }
         switch await center.status() {
-        case .denied: return BedtimeText.denied
-        case .notDetermined: if !(await center.request()) { return BedtimeText.denied }
+        case .denied: return ReminderReply(text: BedtimeText.denied, opensSettings: true)
+        case .notDetermined: if !(await center.request()) { return ReminderReply(text: BedtimeText.denied, opensSettings: true) }
         case .allowed: break
         }
-        guard await schedule(target) else { return BedtimeText.failed }
-        set(on: true, time: label)
-        return BedtimeText.on(label)
+        guard await schedule(target) else { return ReminderReply(text: BedtimeText.failed) }
+        set(on: true, time: label, target: target)
+        return ReminderReply(text: BedtimeText.on(label))
     }
 
-    /// A new brief: follow a changed target; turn off if notifications were withdrawn in Settings.
+    /// On launch and with every brief: follow a changed target (none = keep the last known one), put back a request
+    /// the system dropped, and turn off if notifications were withdrawn in Settings.
     func refresh(target: String?) async {
-        guard isOn else { return }
-        if await center.status() != .allowed { set(on: false, time: nil); return }
-        guard let target, let label = BedtimeTime.label(for: target), label != time else { return }
-        if await schedule(target) { set(on: true, time: label) }
+        guard isOn, !busy else { return }
+        busy = true
+        defer { busy = false }
+        if await center.status() != .allowed { set(on: false, time: nil, target: nil); return }
+        guard let target = target ?? self.target, let label = BedtimeTime.label(for: target) else {
+            // on, but nothing to count back from: it cannot ring honestly
+            center.cancel(id: Self.id)
+            set(on: false, time: nil, target: nil)
+            return
+        }
+        if label == time, target == self.target, await center.isPending(id: Self.id) { return }
+        if await schedule(target) { set(on: true, time: label, target: target) }
     }
 
     private func schedule(_ target: String) async -> Bool {
@@ -149,10 +189,12 @@ final class BedtimeReminder {
         } catch { return false }
     }
 
-    private func set(on: Bool, time: String?) {
+    private func set(on: Bool, time: String?, target: String?) {
         isOn = on
         self.time = time
+        self.target = target
         defaults.set(on, forKey: Self.onKey)
         defaults.set(time, forKey: Self.timeKey)
+        defaults.set(target, forKey: Self.targetKey)
     }
 }

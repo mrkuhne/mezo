@@ -9,6 +9,40 @@ func isEvening(_ date: Date, calendar: Calendar = .current) -> Bool {
     calendar.component(.hour, from: date) >= 18
 }
 
+/// When the mode next flips: 18:00 today while it is day, midnight while it is evening (after midnight it is day
+/// again until 18:00). The page sleeps until then so it turns to the evening, and back, while it stays open.
+func nextModeBoundary(after date: Date, calendar: Calendar = .current) -> Date {
+    let start = calendar.startOfDay(for: date)
+    if !isEvening(date, calendar: calendar), let six = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: start) {
+        return six
+    }
+    return calendar.date(byAdding: .day, value: 1, to: start) ?? date.addingTimeInterval(3600)
+}
+
+/// Re-reads the clock at each mode boundary and on every return to the foreground (`onTick`). Its own invisible view:
+/// reading the scene phase on the page itself can stop presentations.
+struct ModeClock: View {
+    let onTick: () -> Void
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var wake = 0
+
+    var body: some View {
+        Color.clear
+            .task(id: wake) {
+                let now = BoopClock.now()
+                let wait = nextModeBoundary(after: now).timeIntervalSince(now) + 1
+                try? await Task.sleep(for: .seconds(max(1, wait)))
+                guard !Task.isCancelled else { return }
+                onTick()
+                wake += 1
+            }
+            .onChange(of: scenePhase) { _, phase in
+                // a suspended app misses its wake-up: look again on return (and sleep afresh from now)
+                if phase == .active { onTick(); wake += 1 }
+            }
+    }
+}
+
 /// "Kímélő mód · 2. nap · megfázás" (the reason is left out when the server sends none).
 func kimeloBanner(reason: String, day: Int) -> String {
     let r = reason.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -5,7 +5,10 @@ import BoopDesign
 @main
 struct BoopApp: App {
     @State private var session = Session()
-    init() { Lagy.registerFonts() }
+    init() {
+        Lagy.registerFonts()
+        ReminderPresenter.install()     // the bedtime reminder also shows while Boop is open
+    }
     var body: some Scene {
         WindowGroup {
             RootView()
