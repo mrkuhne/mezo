@@ -77,7 +77,9 @@ struct PathBuilderTests {
         var m = BriefFixture(); m.checkins = #"[{"slot":"morning","time":"08:00","done":false}]"#
         #expect(Lens.action(for: .forma, brief: try m.brief(), now: at(9), evening: false)?.kind == .checkin)
         let s = try build(.forma, f, now: at(21, 40), evening: true)
-        #expect(ids(s) == ["checkin-midday", "checkin-afternoon", "checkin-evening", "now"])
+        // past and undone check-ins are due: they wait at MOST, in slot order, labelled "most"
+        #expect(ids(s) == ["now", "checkin-midday", "checkin-afternoon", "checkin-evening"])
+        #expect(s.dropFirst().allSatisfy { $0.time == "most" })
         #expect(Lens.action(for: .alvas, brief: b, now: at(21, 40), evening: true)?.kind == .windDown)
     }
 
@@ -106,7 +108,10 @@ struct PathBuilderTests {
         let s = try build(.pulzus, f, now: at(10))
         #expect(ids(s) == ["now", "breath", "busy-block"])
         #expect(s[1].time == "13:55" && s[2].time == "14:00" && s[2].sub == "14:00–16:00")
-        #expect(ids(try build(.pulzus, f, now: at(15))) == ["busy-block", "now"])
+        // at 15:00 the 14:00 block is under way: the next block that has not started yet (18:30) wins
+        let later = try build(.pulzus, f, now: at(15))
+        #expect(ids(later) == ["now", "breath", "busy-block"])
+        #expect(later[1].time == "18:25" && later[2].sub == "18:30–19:00")
         var one = BriefFixture(); one.busyRuns = [4...4]
         #expect(ids(try build(.pulzus, one, now: at(10))) == ["now"])
     }
@@ -161,5 +166,31 @@ struct PathBuilderTests {
         let early = try build(.forma, f, now: at(7))
         #expect(ids(early) == ["now", "checkin-morning", "intention"])
         #expect(early[1].time == "08:00" && early[2].time == "08:00")
+    }
+
+    @Test func pastUndoneLaterCheckInsJoinTheMorningStackAtMost() throws {
+        var f = BriefFixture(); f.creed = #""Egyenletesen.""#
+        f.checkins = #"[{"slot":"morning","time":"08:00","done":false},{"slot":"midday","time":"13:00","done":false},{"slot":"evening","time":"21:30","done":false}]"#
+        let s = try build(.forma, f, now: at(15, 21))
+        #expect(ids(s) == ["intention", "now", "checkin-morning", "checkin-midday", "checkin-evening"])
+        #expect(s[2].time == "most" && s[3].time == "most")
+        #expect(s[4].time == "21:30")
+        #expect(s[3].opens)
+    }
+
+    @Test func pulzusPrefersTheUpcomingBlockOverAnEarlierEqualOne() throws {
+        var f = BriefFixture()
+        f.busyRuns = [16...19, 40...43]          // 10:00–11:00 and 16:00–17:00, equal length
+        let s = try build(.pulzus, f, now: at(15, 21))
+        #expect(ids(s) == ["now", "breath", "busy-block"])
+        #expect(s[1].time == "15:55" && s[2].sub == "16:00–17:00")
+    }
+
+    @Test func pulzusWithNoUpcomingBlockShowsTheDensestPastOneWithoutBreath() throws {
+        var f = BriefFixture()
+        f.busyRuns = [16...19, 40...43]
+        let s = try build(.pulzus, f, now: at(20))
+        #expect(ids(s) == ["busy-block", "now"])
+        #expect(s[0].done)
     }
 }

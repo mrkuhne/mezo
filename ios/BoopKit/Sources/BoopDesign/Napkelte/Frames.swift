@@ -108,6 +108,8 @@ public struct NKTabPage<Hero: View, Content: View>: View {
     let hue: Hue, heroHeight: CGFloat?, compact: NKCompact?
     let hero: Hero, content: Content
     @State private var showCompact = false
+    /// Where the hero really ends (content y of the view marked `nkHeroEnd()`); nil = not marked.
+    @State private var heroEnd: CGFloat?
 
     public init(hue: Hue, heroHeight: CGFloat?, compact: NKCompact?, @ViewBuilder hero: () -> Hero, @ViewBuilder content: () -> Content) {
         self.hue = hue; self.heroHeight = heroHeight; self.compact = compact; self.hero = hero(); self.content = content()
@@ -131,12 +133,18 @@ public struct NKTabPage<Hero: View, Content: View>: View {
                         .background(FloatingLights(hue: hue).padding(.horizontal, -16).padding(.vertical, -120))
                     MirroredLand(hue: hue).padding(.top, 20)
                 }
+                .coordinateSpace(name: NKHeroEndKey.space)
             }
+            .onPreferenceChange(NKHeroEndKey.self) { heroEnd = $0 }
             .scrollIndicators(.hidden)
             .ignoresSafeArea(edges: .top)
             .background(NKGround(hue: hue))
-            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y > h - 120 } action: { _, v in
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showCompact = v }
+            // The capsule arrives once the hero's marked end (its last control) slides under the top bar
+            // (safe area + the capsule's row); unmarked heroes fall back to the frame height.
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in
+                let threshold = heroEnd.map { $0 - geo.safeAreaInsets.top - 50 } ?? (h - 120)
+                let v = y > threshold
+                if v != showCompact { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showCompact = v } }
             }
             .overlay(alignment: .top) {
                 if showCompact, let c = compact {
@@ -154,6 +162,25 @@ public struct NKTabPage<Hero: View, Content: View>: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+}
+
+/// The content y where a tab page's hero ends, reported by the view marked with `nkHeroEnd()`.
+public struct NKHeroEndKey: PreferenceKey {
+    static let space = "nkTabPageContent"
+    public static let defaultValue: CGFloat? = nil
+    public static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        if let n = nextValue() { value = max(value ?? n, n) }
+    }
+}
+
+public extension View {
+    /// Marks the bottom of this view as the end of the `NKTabPage` hero: the compact capsule slides in as soon as it
+    /// scrolls under the top bar (instead of at a fixed offset from the frame height).
+    func nkHeroEnd() -> some View {
+        background(GeometryReader { g in
+            Color.clear.preference(key: NKHeroEndKey.self, value: g.frame(in: .named(NKHeroEndKey.space)).maxY)
+        })
     }
 }
 

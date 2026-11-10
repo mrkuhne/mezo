@@ -144,4 +144,37 @@ struct MaiBelowTests {
         let water = maiTiles(.fuel, inputs())[0]
         #expect(water.value == "–")
     }
+
+    // MARK: Fix round 1
+
+    @Test func restingPulseTileShowsOnlyTodayDashWhenTodayIsMissing() {
+        let tile = maiTiles(.pulzus, inputs(resting: [59, 58, 60, nil, 58, 59, nil]))[0]
+        #expect(tile.label == "NYUGALMI PULZUS")
+        #expect(tile.value == "–")
+        #expect(tile.sub == "heti átlag 59")
+    }
+
+    private let lines = [Brief.Line(text: "Nyugodt napnak nézel elébe.", link: .sleep),
+                         Brief.Line(text: "A nyugalmi pulzusod rendben.", link: .heart),
+                         Brief.Line(text: "Ma edzés van.", link: nil)]
+
+    @Test func boopSaysCardReadsExactlyTheSpokenText() {
+        #expect(String(boopSaysText(lines, revealed: nil).characters) == BoopVoice.spokenText(lines))
+        #expect(String(boopSaysText(lines, revealed: nil).characters).contains("elébe. A"))
+    }
+
+    @Test func theRevealPrefixMatchesTheVoiceAtEveryWordBoundary() {
+        let spoken = BoopVoice.spokenText(lines)
+        for (i, ch) in spoken.enumerated() where ch == " " {
+            #expect(String(boopSaysText(lines, revealed: i).characters) == String(spoken.prefix(i)))
+        }
+    }
+
+    @Test func aCardInFlightCannotBeDecidedTwice() {
+        var gate = DecideGate()
+        let first = gate.begin("a"), again = gate.begin("a"), other = gate.begin("b")
+        gate.end("a")
+        let afterEnd = gate.begin("a")
+        #expect(first && !again && other && afterEnd)
+    }
 }

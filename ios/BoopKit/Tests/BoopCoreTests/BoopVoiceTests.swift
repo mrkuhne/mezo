@@ -113,4 +113,13 @@ struct BoopVoiceTests {
         s.onWord?(9999)                                           // beyond the end clamps
         #expect(v.shown == text)
     }
+
+    @Test func wholeSentenceLinesAreJoinedWithOneSpace() {
+        let lines = [Brief.Line(text: "Nyugodt napnak nézel elébe.", link: .sleep), Brief.Line(text: "A nyugalmi pulzusod rendben.", link: nil),
+                     Brief.Line(text: "Ma edzés van. ", link: .day), Brief.Line(text: "Szép napot!", link: nil)]
+        #expect(BoopVoice.spokenText(lines) == "Nyugodt napnak nézel elébe. A nyugalmi pulzusod rendben. Ma edzés van. Szép napot!")
+        let s = FakeSynth(); let v = voice(s)
+        v.speak(segments: lines, reduceMotion: false)
+        #expect(s.spoken.first?.contains("elébe. A") == true)
+    }
 }

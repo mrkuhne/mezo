@@ -49,6 +49,7 @@ struct ObservationStack: View {
     @State private var drag: CGFloat = 0
     @State private var gone: Set<String> = []
     @State private var decided = 0
+    @State private var gate = DecideGate()
 
     private var cards: [Brief.Observation] { observations.filter { !gone.contains($0.id) } }
 
@@ -99,13 +100,16 @@ struct ObservationStack: View {
     }
 
     private func send(_ o: Brief.Observation, _ verdict: Bool) {
+        guard gate.begin(o.id) else { return }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { drag = verdict ? 500 : -500 }
         decided += 1
         let last = cards.count == 1
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(250))
             withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { _ = gone.insert(o.id); drag = 0 }
-            if await decide(o.id, verdict) {
+            let saved = await decide(o.id, verdict)
+            gate.end(o.id)
+            if saved {
                 if last { toast(ObservationText.thanks) }
             } else {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { _ = gone.remove(o.id) }
@@ -184,4 +188,13 @@ private struct HorizontalPan: UIGestureRecognizerRepresentable {
             return abs(v.x) > abs(v.y)
         }
     }
+}
+
+/// Verdicts in flight: a card flying off (250 ms before it leaves the stack) cannot be judged a second time by another
+/// swipe or a VoiceOver action.
+struct DecideGate {
+    private var inFlight: Set<String> = []
+    /// False when this card's verdict is already on its way.
+    mutating func begin(_ id: String) -> Bool { inFlight.insert(id).inserted }
+    mutating func end(_ id: String) { inFlight.remove(id) }
 }

@@ -46,9 +46,20 @@ public final class BoopVoice {
         self.muted = defaults.bool(forKey: Self.mutedKey)
     }
 
+    /// The spoken (and shown) text: the lines joined with exactly one space where neither side already has one, so
+    /// whole-sentence lines never run together ("elébe. A"). The app's Boop mondja card joins the same way.
+    public nonisolated static func spokenText(_ segments: [Brief.Line]) -> String {
+        var out = ""
+        for line in segments {
+            if !out.isEmpty, !(out.last?.isWhitespace ?? true), !(line.text.first?.isWhitespace ?? true) { out += " " }
+            out += line.text
+        }
+        return out
+    }
+
     /// The spoken text is all segments joined (the links only mark phrases for the UI).
     public func speak(segments: [Brief.Line], reduceMotion: Bool) {
-        fullText = segments.map(\.text).joined()
+        fullText = Self.spokenText(segments)
         self.reduceMotion = reduceMotion
         start()
     }

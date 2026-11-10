@@ -73,8 +73,9 @@ public enum PathBuilder {
             case .afternoon: title = "Délutáni check-in"
             default: title = "Esti check-in · napzárás"
             }
-            out.append(Item(key: t, step: PathStep(
-                id: "checkin-\(ch.slot.rawValue)", time: ch.time, glyph: ch.slot == .evening ? "moon-cream" : "clock-ink",
+            // past and undone: due now, so it waits at MOST after the morning stack (ties keep slot order)
+            out.append(Item(key: held(t, done: ch.done), step: PathStep(
+                id: "checkin-\(ch.slot.rawValue)", time: label(t, done: ch.done), glyph: ch.slot == .evening ? "moon-cream" : "clock-ink",
                 title: title, sub: ch.summary ?? "", done: ch.done, isNow: false, opens: !ch.done && t <= x.nowMin)))
         }
         return out
@@ -158,7 +159,11 @@ public enum PathBuilder {
             return [Item(key: t, step: PathStep(id: "breath", time: fmt(t), glyph: "heart-cream",
                                                 title: "Esti légzés", sub: "Egy perc lefekvés előtt", done: false, isNow: false, opens: true))]
         }
-        guard let run = densestRun(x.day.calendar.busySlots), run.count >= 2 else { return [] }
+        // the densest block that has not started yet; with none left, the densest of the day (shown without breath)
+        let firstUpcoming = max(0, (x.nowMin - 360 + 14) / 15)
+        let all = busyRuns(x.day.calendar.busySlots).filter { $0.count >= 2 }
+        let upcoming = all.filter { $0.lowerBound >= firstUpcoming }
+        guard let run = longest(upcoming) ?? longest(all) else { return [] }
         let start = 360 + 15 * run.lowerBound, end = 360 + 15 * (run.upperBound + 1)
         var out: [Item] = []
         if start - 5 >= x.nowMin {
@@ -175,17 +180,19 @@ public enum PathBuilder {
 
     private struct Ctx { let day: Brief.Day; let energy: Brief.Energy; let nowMin: Int; let evening: Bool }
 
-    /// The longest consecutive busy run (first one on ties), as slot indices.
-    private static func densestRun(_ slots: [Bool]) -> ClosedRange<Int>? {
-        var best: ClosedRange<Int>?, start: Int?
+    /// Every consecutive busy run, in order, as slot indices.
+    private static func busyRuns(_ slots: [Bool]) -> [ClosedRange<Int>] {
+        var out: [ClosedRange<Int>] = [], start: Int?
         for i in 0...slots.count {
             if i < slots.count, slots[i] { start = start ?? i; continue }
-            if let s = start {
-                if best == nil || (i - s) > best!.count { best = s...(i - 1) }
-                start = nil
-            }
+            if let s = start { out.append(s...(i - 1)); start = nil }
         }
-        return best
+        return out
+    }
+
+    /// The longest run (first one on ties).
+    private static func longest(_ runs: [ClosedRange<Int>]) -> ClosedRange<Int>? {
+        runs.reduce(nil) { best, r in best == nil || r.count > best!.count ? r : best }
     }
 
     /// Times before 06:00 belong to the night that ends the day (the day grid starts at 06:00).

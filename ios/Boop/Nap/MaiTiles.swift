@@ -105,12 +105,15 @@ func maiTiles(_ key: MetricKey, _ x: TileInputs) -> [TileModel] {
         }
     case .pulzus:
         let week = x.restingHrWeek.compactMap { $0 }
-        if let today = week.last {
+        if let lo0 = week.min(), let hi0 = week.max() {
+            // today = the last day of the series only; not delivered yet = "–" like the hero, never yesterday's value
+            let today = x.restingHrWeek.last ?? nil
             let avg = Int((Double(week.reduce(0, +)) / Double(week.count)).rounded())
-            let lo = Double(week.min() ?? today) - 2, hi = Double(week.max() ?? today) + 2
+            let lo = Double(lo0) - 2, hi = Double(hi0) + 2
             // lower resting pulse = calmer = higher on the line
-            let points = week.map { hi > lo ? (hi - Double($0)) / (hi - lo) : 0.5 }
-            out.append(TileModel(label: "NYUGALMI PULZUS", value: "\(today)", sub: "heti átlag \(avg)", graphic: .line(points)))
+            let points = week.map { (hi - Double($0)) / (hi - lo) }
+            out.append(TileModel(label: "NYUGALMI PULZUS", value: today.map(String.init) ?? "–", sub: "heti átlag \(avg)",
+                                 graphic: .line(points)))
         }
         if let mn = x.hrMin, let av = x.hrAvg, let mx = x.hrMax {
             let top = Double(mx) * 1.1

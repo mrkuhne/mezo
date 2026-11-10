@@ -19,7 +19,10 @@ public struct Brief: Sendable, Equatable {
     }
     public enum State: String, Sendable { case good, okay, tired, learning }
     public enum Link: String, Sendable { case sleep, heart, day }
-    public struct Line: Sendable, Equatable { public let text: String; public let link: Link? }
+    public struct Line: Sendable, Equatable {
+        public let text: String; public let link: Link?
+        public init(text: String, link: Link?) { self.text = text; self.link = link }
+    }
     public struct Energy: Sendable, Equatable { public let hourly: [Double]; public let dipHour: Int? }
     public struct Conflict: Sendable, Equatable { public let text: String; public let suggestedTime: String }
     public struct Segment: Sendable, Equatable { public let stage: Int; public let minutes: Int }

@@ -136,6 +136,7 @@ struct MaiView<Below: View>: View {
                           motion: motion, muted: voice?.muted ?? false,
                           onPrimary: primary, onMenu: { show(soonToast($0)) }, onChip: { show(soonToast($0.title)) },
                           onSpeak: speak, onToggleMute: { voice?.muted.toggle() })
+                .nkHeroEnd()       // the compact capsule arrives as this row slides under the top bar
                 .padding(.top, 4)
             Spacer(minLength: 0)
         }

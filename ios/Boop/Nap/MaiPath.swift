@@ -295,16 +295,22 @@ struct BoopSaysCard: View {
     }
 }
 
-/// The brief as one attributed text, links as `boop://sleep|heart|day`. `revealed` = how many characters are shown
-/// while Boop speaks (nil = all).
+/// The brief as one attributed text, links as `boop://sleep|heart|day`, joined exactly like the spoken text
+/// (`BoopVoice.spokenText`). `revealed` = how many characters of the spoken text are shown while Boop speaks (nil = all);
+/// the joining spaces count, so the card stays in step with `voice.shown`.
 func boopSaysText(_ lines: [Brief.Line], revealed: Int?) -> AttributedString {
     var out = AttributedString()
     var left = revealed ?? Int.max
-    for (i, line) in lines.enumerated() {
+    var joined = ""
+    for line in lines {
         guard left > 0 else { break }
-        // the voice joins the lines without a gap; the card reads them as one paragraph
+        if !joined.isEmpty, !(joined.last?.isWhitespace ?? true), !(line.text.first?.isWhitespace ?? true) {
+            out += AttributedString(" "); joined += " "; left -= 1
+            guard left > 0 else { break }
+        }
         let text = String(line.text.prefix(left))
         left -= line.text.count
+        joined += line.text
         var a = AttributedString(text)
         if let link = line.link {
             a.link = URL(string: "boop://\(link.rawValue)")
@@ -313,7 +319,6 @@ func boopSaysText(_ lines: [Brief.Line], revealed: Int?) -> AttributedString {
             a.underlineStyle = Text.LineStyle(pattern: .dot, color: .white.opacity(0.5))
         }
         out += a
-        if i < lines.count - 1 && left > 0 && !(line.text.last?.isWhitespace ?? true) { out += AttributedString(" ") }
     }
     return out
 }
