@@ -214,7 +214,7 @@ struct DaySheet: View {
 private struct EnergyMagnifier: View {
     let input: MagnifierInput
     @State private var fraction: Double?
-    @State private var now = Date()
+    @State private var now = BoopClock.now()
 
     private var nowAt: Double? {
         let c = Calendar.current.dateComponents([.hour, .minute], from: now)

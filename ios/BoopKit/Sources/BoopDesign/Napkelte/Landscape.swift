@@ -3,15 +3,17 @@ import SwiftUI
 /// Boop's own painted landscape (spec §4.2): a vivid sky in the hue over four hazy ridges with aerial perspective.
 /// Ridge shapes are seeded per hue, so a page always looks the same.
 public struct PaintedLandscape: View {
-    let hue: Hue
+    let skyKind: NKSky
     /// How many screen widths the canvas spans. The middle one is the usual landscape; the others continue the same
     /// ridges past its edges (for a land that slides sideways without a seam).
     let span: Int
-    public init(hue: Hue, span: Int = 1) { self.hue = hue; self.span = max(1, span) }
+    public init(hue: Hue, span: Int = 1) { self.init(sky: .hue(hue), span: span) }
+    /// A mood sky (kímélő's calm) or a metric's.
+    public init(sky: NKSky, span: Int = 1) { self.skyKind = sky; self.span = max(1, span) }
 
     public var body: some View {
-        let sky = hue.sky
-        let seed = Double(hue.rawValue) * 0.9
+        let sky = skyKind.colors
+        let seed = skyKind.seed
         let span = CGFloat(span)
         Canvas { ctx, s in
             let w = s.width / span, h = s.height
@@ -54,10 +56,11 @@ public struct PaintedLandscape: View {
 
 /// The landscape again at the very bottom of a page, mirrored and faint, like a lake closing it (spec §5.1b).
 public struct MirroredLand: View {
-    let hue: Hue
-    public init(hue: Hue) { self.hue = hue }
+    let sky: NKSky
+    public init(hue: Hue) { self.sky = .hue(hue) }
+    public init(sky: NKSky) { self.sky = sky }
     public var body: some View {
-        PaintedLandscape(hue: hue)
+        PaintedLandscape(sky: sky)
             .frame(height: 300)
             .scaleEffect(x: 1, y: -1)
             .opacity(0.28)

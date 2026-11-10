@@ -33,6 +33,17 @@ struct ShellView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear { fromTab = tab }
+        #if DEBUG
+        // Simulator review: `-previewScroll 900` opens the pages scrolled; `-previewSwitch Edzés` switches to that
+        // domain after 3 s and back to Nap 3 s later (records the backdrop blend without taps).
+        .environment(\.nkInitialScrollY, UserDefaults.standard.object(forKey: "previewScroll") == nil
+                     ? nil : CGFloat(UserDefaults.standard.double(forKey: "previewScroll")))
+        .task {
+            guard let to = UserDefaults.standard.string(forKey: "previewSwitch") else { return }
+            try? await Task.sleep(for: .seconds(3)); select(to)
+            try? await Task.sleep(for: .seconds(3)); select("Nap")
+        }
+        #endif
     }
 
     @ViewBuilder private func page(_ tab: String) -> some View {

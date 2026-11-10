@@ -82,7 +82,7 @@ struct MaiView<Below: View>: View {
     let brief: Brief
     @ViewBuilder let below: (MaiContext) -> Below
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var selected: Hue = .forma
+    @State private var selected: Hue = MaiView.initialOrb
     @State private var motion = OrbMotion()
     @State private var voice: BoopVoice?
     @State private var breathing = false
@@ -94,22 +94,36 @@ struct MaiView<Below: View>: View {
     /// The Nap tab on screen: Mai or A napom (Beszélgetés and Rutin are "hamarosan").
     @State private var tab = MaiView.initialTab
 
+    /// Alvás's bedtime reminder (local notification), shared with the bedtime card below.
+    @State private var reminder = BedtimeReminder()
+
     private var copy: MaiCopy { maiCopy(brief, metricKey(for: selected)) }
-    // Evening (hour ≥ 18) arrives with Task 14.
-    private var action: LensAction? { Lens.action(for: metricKey(for: selected), brief: brief, now: Date(), evening: false) }
+    private var now: Date { BoopClock.now() }
+    private var evening: Bool { isEvening(now) }
+    /// Evening's dusk or kímélő's calm over the page; nil = the selected orb's own sky.
+    private var sky: NKSky? { maiSky(evening: evening, recovery: brief.day.recovery != nil) }
+    private var action: LensAction? {
+        let a = Lens.action(for: metricKey(for: selected), brief: brief, now: now, evening: evening)
+        // the reminder is on: the pill says when it rings (a tap turns it off)
+        if let a, a.kind == .bedtime, reminder.isOn, let time = reminder.time {
+            return LensAction(glyph: a.glyph, title: reminderPillTitle(time), kind: .bedtime)
+        }
+        return a
+    }
 
     var body: some View {
         let c = copy
         Group {
             if tab == NapTab.day {
-                ANapomView(brief: brief) { header }
+                ANapomView(brief: brief, now: now, evening: evening, sky: sky) { header }
             } else {
-                NKTabPage(hue: selected, heroHeight: nil,
+                NKTabPage(hue: selected, sky: sky, heroHeight: nil,
                           compact: NKCompact(palette: selected.orb, title: c.name, value: c.orbDisplay, line: c.headline)) {
                     hero(c)
                 } content: {
                     below(MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
-                                     toast: { show($0) }, undoToast: { show($0, undo: $1) }))
+                                     toast: { show($0) }, undoToast: { show($0, undo: $1) },
+                                     now: now, evening: evening, reminder: reminder, toggleReminder: toggleReminder))
                 }
             }
         }
@@ -121,6 +135,8 @@ struct MaiView<Below: View>: View {
         .onChange(of: tab) { stopBreath(); voice?.stop() }
         .onChange(of: voice?.isSpeaking ?? false) { _, talking in motion.talking = talking }
         .onChange(of: voice?.shown ?? "") { _, _ in if voice?.isSpeaking == true { motion.kick() } }
+        // a new brief may move the bedtime: the reminder follows (and turns off if notifications were withdrawn)
+        .task(id: reminderTarget(brief)) { await reminder.refresh(target: reminderTarget(brief)) }
     }
 
     /// The title row and the Nap tabs, shared by Mai and A napom.
@@ -136,6 +152,15 @@ struct MaiView<Below: View>: View {
             .padding(.top, 10)
     }
 
+    /// Simulator review: `-previewOrb alvas` opens on that orb (Hue name, lower case, no accents).
+    private static var initialOrb: Hue {
+        #if DEBUG
+        let names = ["forma", "alvas", "mozgas", "fuel", "pulzus"]
+        if let n = UserDefaults.standard.string(forKey: "previewOrb"), let i = names.firstIndex(of: n), let h = Hue(rawValue: i) { return h }
+        #endif
+        return .forma
+    }
+
     private static var initialTab: String {
         #if DEBUG
         if UserDefaults.standard.string(forKey: "previewTab") == "napom" { return NapTab.day }
@@ -146,6 +171,10 @@ struct MaiView<Below: View>: View {
     private func hero(_ c: MaiCopy) -> some View {
         VStack(spacing: 0) {
             header
+            if let r = brief.day.recovery {
+                KimeloBanner(recovery: r) { show(soonToast("Kilépés a kímélő módból")) }
+                    .padding(.top, 14)
+            }
             MiniOrbRow(items: Hue.allCases.map { ($0, maiCopy(brief, metricKey(for: $0)).miniValue) },
                        selected: $selected, motion: motion)
                 .padding(.vertical, 8).padding(.top, 10)
@@ -181,12 +210,21 @@ struct MaiView<Below: View>: View {
         toast = text
     }
 
-    private var morning: Bool { (5..<12).contains(Calendar.current.component(.hour, from: Date())) }
+    private var morning: Bool { (5..<12).contains(Calendar.current.component(.hour, from: now)) }
 
     private func primary() {
         if breathing { stopBreath(); return }
         guard let action else { speak(); return }
-        if action.kind == .breath { startBreath() } else { show(soonToast(soonName(action.kind))) }
+        switch action.kind {
+        case .breath: startBreath()
+        case .bedtime: toggleReminder()
+        default: show(soonToast(soonName(action.kind)))
+        }
+    }
+
+    /// First tap asks for notifications and sets the reminder; the next one turns it off.
+    private func toggleReminder() {
+        Task { @MainActor in show(await reminder.toggle(target: reminderTarget(brief))) }
     }
 
     private func speak() {

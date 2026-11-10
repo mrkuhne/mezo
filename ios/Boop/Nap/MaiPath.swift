@@ -21,6 +21,12 @@ struct MaiContext {
     let toast: (String) -> Void
     /// A toast with an undo action at its end.
     let undoToast: (String, @escaping () -> Void) -> Void
+    /// The clock the page reads (simulator review can move it) and whether it is evening (hour ≥ 18).
+    let now: Date
+    let evening: Bool
+    /// Alvás's bedtime reminder and its tap (the bedtime card carries the same switch as the hero pill).
+    let reminder: BedtimeReminder
+    let toggleReminder: () -> Void
 }
 
 // MARK: - Below the hero (spec §5.1a, §5.1b)
@@ -46,8 +52,8 @@ struct MaiBelow: View {
     }
 
     private var content: some View {
-        // Evening paths arrive with Task 14.
-        let steps = PathBuilder.steps(for: key, brief: brief, now: Date(), evening: false)
+        let steps = withReminder(PathBuilder.steps(for: key, brief: brief, now: ctx.now, evening: ctx.evening),
+                                 time: ctx.reminder.isOn ? ctx.reminder.time : nil)
         return VStack(spacing: 16) {
             MaiTiles(tiles: maiTiles(key, TileInputs(brief))) { ctx.toast(soonToast("Víz +250 ml")) }
             DayPath(stations: pathStations(steps), hue: ctx.hue) { st in card(st) }
@@ -155,10 +161,23 @@ struct MaiBelow: View {
         }
     }
 
+    /// Tonight's tip and the bedtime reminder's switch (the same one as Alvás's hero pill).
     private var bedtimeCard: some View {
-        HStack(spacing: 12) {
-            NKGlyph("moon-cream", .white, size: 18).frame(width: 40, height: 40).background(Circle().fill(.white.opacity(0.1)))
-            Text(brief.tonightTip).nkFont(14, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                NKGlyph("moon-cream", .white, size: 18).frame(width: 40, height: 40).background(Circle().fill(.white.opacity(0.1)))
+                Text(brief.tonightTip).nkFont(14, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+            }
+            if reminderTarget(brief) != nil {
+                HStack {
+                    Spacer()
+                    if ctx.reminder.isOn, let time = ctx.reminder.time {
+                        pill(reminderPillTitle(time), primary: false, ctx.toggleReminder)
+                    } else {
+                        pill("Emlékeztess", ctx.toggleReminder)
+                    }
+                }
+            }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(20)
     }

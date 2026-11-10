@@ -7,7 +7,45 @@ public enum NK {
 
     /// The page never goes black: the deepest shade of the hue, as a soft vertical gradient (top, middle, bottom).
     public static func deepGround(_ h: Hue) -> [Color] {
-        [h.top.mix(with: ground, by: 0.55), h.top.mix(with: ground, by: 0.78), h.top.mix(with: ground, by: 0.7)]
+        deepGround(.hue(h))
+    }
+
+    /// The deep ground under a sky (a metric's hue, or a mood sky such as kímélő's calm).
+    public static func deepGround(_ s: NKSky) -> [Color] {
+        [s.top.mix(with: ground, by: 0.55), s.top.mix(with: ground, by: 0.78), s.top.mix(with: ground, by: 0.7)]
+    }
+}
+
+/// What a painted backdrop is drawn with: a metric's colour world, or a mood sky. The evening's dusk is the Pulzus
+/// sky (`.hue(.pulzus)`); kímélő mód has its own calm grey-blue (spec §10, spike `FrameMaiMode`). The orbs keep their
+/// hues either way — a mood changes only the sky and the ground under it.
+public enum NKSky: Hashable, Sendable {
+    case hue(Hue)
+    /// Kímélő mód: grey-blue sky over a pale sage horizon.
+    case calm
+
+    /// Sky gradient: top, middle, horizon.
+    public var colors: [Color] {
+        switch self {
+        case .hue(let h): h.sky
+        case .calm: [Color(hex: 0x2A3A4E), Color(hex: 0x6E8FA0), Color(hex: 0xD6E4DC)]
+        }
+    }
+
+    /// The sky's dark top, the base of the deep ground.
+    public var top: Color {
+        switch self {
+        case .hue(let h): h.top
+        case .calm: Color(hex: 0x1E3040)
+        }
+    }
+
+    /// Seeds the ridge shapes, so a sky always has the same land.
+    var seed: Double {
+        switch self {
+        case .hue(let h): Double(h.rawValue) * 0.9
+        case .calm: 4.6
+        }
     }
 }
 

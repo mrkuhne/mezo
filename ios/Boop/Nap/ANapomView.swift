@@ -14,12 +14,15 @@ func quietStations(_ steps: [PathStep]) -> [PathStation] {
 /// day's path lit up to MOST. `header` is the same title row and tab strip the Mai hero uses.
 struct ANapomView<Header: View>: View {
     let brief: Brief
+    /// The page's clock and mood (evening paths; dusk or kímélő sky over the head, nil = A napom's own).
+    let now: Date
+    let evening: Bool
+    let sky: NKSky?
     @ViewBuilder let header: Header
 
     var body: some View {
-        // Evening paths arrive with Task 14.
-        let stations = quietStations(PathBuilder.steps(for: nil, brief: brief, now: Date(), evening: false))
-        NKTabPage(hue: .mozgas, heroHeight: 330, compact: nil) {
+        let stations = quietStations(PathBuilder.steps(for: nil, brief: brief, now: now, evening: evening))
+        NKTabPage(hue: .mozgas, sky: sky, heroHeight: 330, compact: nil) {
             VStack(spacing: 0) {
                 header
                 VStack(spacing: 6) {

@@ -31,3 +31,17 @@ private func rgb(_ c: Color) -> (Int, Int, Int) {
         #expect(g.allSatisfy { rgb($0) != rgb(NK.ground) })
     }
 }
+
+// Kímélő mód paints a calm grey-blue sky (spike FrameMaiMode); a metric's sky stays its hue's.
+@Test func calmSkyIsTheSpikeGreyBlue() {
+    #expect(NKSky.calm.colors.count == 3)
+    #expect(rgb(NKSky.calm.colors[0]) == (0x2A, 0x3A, 0x4E))
+    #expect(rgb(NKSky.calm.colors[2]) == (0xD6, 0xE4, 0xDC))
+    #expect(NK.deepGround(.calm).allSatisfy { rgb($0) != rgb(NK.ground) })
+    for h in Hue.allCases { #expect(NKSky.hue(h).colors.map(rgb).elementsEqual(h.sky.map(rgb), by: ==)) }
+}
+
+@Test func backdropDefaultsToItsHuesSky() {
+    #expect(NKBackdrop(hue: .alvas, heroHeight: 500, scrollY: 0).sky == .hue(.alvas))
+    #expect(NKBackdrop(hue: .alvas, heroHeight: 500, scrollY: 0, sky: .calm).sky == .calm)
+}
