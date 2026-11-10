@@ -71,3 +71,12 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
 @Test @MainActor func boopCardRenders() {
     #expect(render(NKBoopCard(pre: "A csapat üzenőfala ", em: "ide költözik", post: ".", action: "Megnyitom") {}, height: 200) != nil)
 }
+
+@Test @MainActor func glassFieldShowsItsProblem() {
+    #expect(render(NKField("Meghívókód", text: .constant("BOOP-7Q2K"), kind: .code, problem: "Ezt a kódot már felhasználták."), height: 120) != nil)
+    #expect(render(NKField("Jelszó", text: .constant("x"), kind: .password).dynamicTypeSize(.accessibility3), height: 140) != nil)
+}
+
+@Test @MainActor func skyScreenRenders() {
+    #expect(render(NKSkyScreen(hue: .forma, onBack: nil) { Text("Jó újra látni") }, height: 800) != nil)
+}

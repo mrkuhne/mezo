@@ -156,3 +156,60 @@ public struct NKBoopCard: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+/// A glass input with a mono label and its problem line (rose) under it. Same typing rules as `LagyField.Kind`.
+public struct NKField: View {
+    let label: String
+    @Binding var text: String
+    let kind: LagyField.Kind, content: UITextContentType?, problem: String?
+    public init(_ label: String, text: Binding<String>, kind: LagyField.Kind = .name, content: UITextContentType? = nil, problem: String? = nil) {
+        self.label = label; self._text = text; self.kind = kind; self.content = content; self.problem = problem
+    }
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased()).font(.nkMono(11)).tracking(1.2).foregroundStyle(.white.opacity(0.6))
+            Group {
+                if kind == .password { SecureField("", text: $text) } else { TextField("", text: $text) }
+            }
+            .font(.system(size: 17)).foregroundStyle(.white).tint(.white)
+            .keyboardType(kind == .email ? .emailAddress : (kind == .code ? .asciiCapable : .default))
+            .textContentType(content)
+            .textInputAutocapitalization(kind.capitalizesWords ? .words : .never)
+            .autocorrectionDisabled(kind.autocorrectionDisabled)
+            .padding(.horizontal, 16).frame(minHeight: 52)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.07)))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(problem == nil ? .white.opacity(0.12) : Color(hex: 0xF06A9A).opacity(0.9), lineWidth: 1))
+            .accessibilityLabel(label)
+            if let problem {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Circle().fill(Color(hex: 0xF06A9A)).frame(width: 6, height: 6)
+                    Text(problem).font(.system(size: 13)).foregroundStyle(Color(hex: 0xF7A8C4)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+}
+
+/// A full-screen painted sky with the content floating over it (sign-in, the greeting, offline).
+public struct NKSkyScreen<Content: View>: View {
+    let hue: Hue, onBack: (() -> Void)?, content: Content
+    public init(hue: Hue, onBack: (() -> Void)?, @ViewBuilder content: () -> Content) { self.hue = hue; self.onBack = onBack; self.content = content() }
+    public var body: some View {
+        ZStack(alignment: .topLeading) {
+            NKGround(hue: hue)
+            PaintedLandscape(hue: hue).ignoresSafeArea()
+                .overlay(LinearGradient(colors: [.clear, NK.ground.opacity(0.92)], startPoint: UnitPoint(x: 0.5, y: 0.35), endPoint: .bottom).ignoresSafeArea())
+            ScrollView { content.padding(.horizontal, 20).padding(.bottom, 40) }
+                .scrollIndicators(.hidden).scrollDismissesKeyboard(.interactively)
+            if let onBack {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
+                }
+                .buttonStyle(.plain).accessibilityLabel("Vissza").padding(.leading, 16).padding(.top, 4)
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+}

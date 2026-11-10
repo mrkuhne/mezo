@@ -37,3 +37,12 @@ struct AuthFormTests {
         #expect(AuthForm(invite: "", email: "rossz", password: "", name: "").problems(register: false).keys.sorted() == [.email, .password])
     }
 }
+
+struct AuthCopyTests {
+    @Test func authCopyIsBoop() {
+        #expect(!AuthCopy.all.isEmpty)
+        for s in AuthCopy.all { #expect(!s.contains("Mezo"), "\(s)") }
+        #expect(AuthCopy.signInTitle == "Jó újra látni")
+        #expect(AuthCopy.registerTitle == "Kezdjük el")
+    }
+}
