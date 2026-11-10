@@ -14,6 +14,8 @@ related: [companion, today, insights, train, me, character, _platform-api-backen
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
 
+> **2026-11-10 — Boop S3 (`mezo-r36n9.7`).** The native iPhone app's morning brief is **separate** from the companion messages described here: it has its own table (`boop_brief`) and endpoint (`GET /api/boop/brief`), is computed on demand per local day, and adds **no new `companion_message` kind** — the web app's feed and its kind filters are unchanged. Details: [`boop-ios.md`](boop-ios.md) §3–§4.
+
 > **2026-10-12 — reviewed after N1 (`mezo-n4wf5.11`).** `NapMezoPage` reads the team field names through the kit's `memberLabel()` (the `kit` message catalog, so they follow the app language) instead of the `MEMBER_LABEL` constant. Nudge logic and surfaces as described below.
 
 > **2026-10-11 — reviewed after Folyadék F3 (`mezo-n4wf5.3`).** `NapMezoPage` changed in one line: its standalone back pill is the kit's `.fo-backpill`. Nudge logic and surfaces as described below.
