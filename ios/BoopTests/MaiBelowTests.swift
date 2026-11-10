@@ -85,10 +85,11 @@ struct MaiBelowTests {
     // MARK: Tiles: null = no tile, never 0
 
     private func inputs(sleep: Bool = true, deep: Int? = 88, resting: [Int?] = [59, 58, 60, nil, 58, 59, 57],
-                        hr: (Int?, Int?, Int?) = (54, 66, 92), stepsGoal: Int = 10000, kcalTarget: Int = 2400) -> TileInputs {
+                        hr: (Int?, Int?, Int?) = (54, 66, 92), stepsGoal: Int = 10000, kcalTarget: Int = 2400,
+                        steps: Int? = 3240, activeKcal: Int? = 210) -> TileInputs {
         TileInputs(sleepTotalMin: sleep ? 432 : nil, bedtime: sleep ? "23:05" : nil, wakeup: sleep ? "06:17" : nil,
                    deepMin: sleep ? deep : nil, deepWeek: [72, 64, nil, 80, 70, 76, 88], restingHrWeek: resting,
-                   hrMin: hr.0, hrAvg: hr.1, hrMax: hr.2, steps: 3240, stepsGoal: stepsGoal, activeKcal: 210,
+                   hrMin: hr.0, hrAvg: hr.1, hrMax: hr.2, steps: steps, stepsGoal: stepsGoal, activeKcal: activeKcal,
                    kcalSoFar: 0, kcalTarget: kcalTarget, proteinG: 0, proteinTarget: 150, carbsG: 0, fatG: 0)
     }
 
@@ -131,6 +132,22 @@ struct MaiBelowTests {
         let partial = maiTiles(.pulzus, inputs(hr: (54, nil, 92)))
         #expect(partial.map(\.label) == ["NYUGALMI PULZUS"])
         #expect(!partial.contains { $0.value.contains("0") && $0.value == "0" })
+    }
+
+    /// Final review M1: no wearable day → no Mozgás tile at all, never "0 / 9 000".
+    @Test func missingStepsDropsTheMovementTilesNeverZero() {
+        #expect(maiTiles(.mozgas, inputs(steps: nil, activeKcal: nil)).isEmpty)
+        #expect(maiTiles(.mozgas, inputs(activeKcal: nil)).map(\.label) == ["LÉPÉSEK"])
+    }
+
+    /// Final review I3: a night without times keeps its length tile and drops the times.
+    @Test func aNightWithoutTimesKeepsItsLengthOnly() {
+        let x = TileInputs(sleepTotalMin: 420, bedtime: nil, wakeup: nil, deepMin: nil, deepWeek: [], restingHrWeek: [],
+                           hrMin: nil, hrAvg: nil, hrMax: nil, steps: nil, stepsGoal: 9000, activeKcal: nil,
+                           kcalSoFar: 0, kcalTarget: 0, proteinG: 0, proteinTarget: 0, carbsG: 0, fatG: 0)
+        let tiles = maiTiles(.alvas, x)
+        #expect(tiles.map(\.label) == ["ALVÁSIDŐ"])
+        #expect(tiles.first?.sub == "")
     }
 
     @Test func noGoalsMeansNoFractionAndNoKcalTiles() {

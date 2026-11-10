@@ -255,7 +255,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/boop/boop.yml` — 4 operations
   - **endpoints:** GET /api/boop/brief · POST /api/boop/brief/regenerate · PUT /api/boop/session-time ·
     DELETE /api/boop/session-time
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 7 IT + 2 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 7 IT + 6 unit
   - **ITs:** `BoopBriefConcurrencyIT`, `BoopBriefServiceIT`, `BoopContractIT`, `BoopDayAssemblerIT`,
     `BoopRepositoriesIT`, `BoopVerdictWriterIT`, `SessionTimeIT`
   - **populators:** `BoopBriefPopulator`, `CalendarEventPopulator`, `CheckInPopulator`, `DailyMetricPopulator`,
@@ -392,7 +392,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-10-09, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-11-10, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-10-11, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-11-10, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-10-12, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-10, mixed) ·
@@ -855,7 +855,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-10-11, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-11-10, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-10-09, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -999,7 +999,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### llmlog
 
 *BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-10-12, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-10-11, mixed)
+  [docs/features/companion.md](features/companion.md) (updated 2026-11-10, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`

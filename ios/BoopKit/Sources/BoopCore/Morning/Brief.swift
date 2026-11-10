@@ -27,7 +27,8 @@ public struct Brief: Sendable, Equatable {
     public struct Conflict: Sendable, Equatable { public let text: String; public let suggestedTime: String }
     public struct Segment: Sendable, Equatable { public let stage: Int; public let minutes: Int }
     public struct Sleep: Sendable, Equatable {
-        public let bedtime: String, wakeup: String
+        /// Null when the night was logged without times (the sleep API allows it).
+        public let bedtime: String?, wakeup: String?
         public let totalMin: Int
         public let deepMin, remMin, lightMin, awakeMin: Int?
         public let hypnogram: [Segment]
@@ -68,7 +69,10 @@ public struct Brief: Sendable, Equatable {
         public let deepSleepWeek: [Int?]
         public let restingHrWeek: [Int?]
         public let hrToday: HrToday?
-        public let steps, stepsGoal, activeKcal: Int
+        /// Null = no wearable day yet (never a fake 0).
+        public let steps: Int?
+        public let stepsGoal: Int
+        public let activeKcal: Int?
         public var session: Session?
         public let meals: [Meal]
         public let kcalSoFar, kcalTarget, proteinG, proteinTarget, carbsG, fatG: Int

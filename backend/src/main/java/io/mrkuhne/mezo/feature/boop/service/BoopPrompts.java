@@ -66,8 +66,10 @@ final class BoopPrompts {
             b.append(", ma éjjel: ").append(NO_DATA);
         } else {
             BoopDay.Sleep n = d.sleep();
-            b.append(", ").append(n.bedtime()).append("–").append(n.wakeup())
-                .append(", ").append(RuleVerdicts.duration(n.totalMin()))
+            if (n.bedtime() != null && n.wakeup() != null) {
+                b.append(", ").append(n.bedtime()).append("–").append(n.wakeup());
+            }
+            b.append(", ").append(RuleVerdicts.duration(n.totalMin()))
                 .append(" (cél ").append(RuleVerdicts.duration(d.sleepTargetMin())).append(')')
                 .append(", mélyalvás ").append(n.deepMin() == null ? NO_DATA : n.deepMin() + " perc")
                 .append(", szokásos mélyalvás ").append(d.baselineDeepMin() == null ? NO_DATA
@@ -119,14 +121,21 @@ final class BoopPrompts {
         return b.toString();
     }
 
+    /**
+     * Count, time spans and busy density only — never an event title: the model needs when the day
+     * is full, not what the meetings are about (titles are private and would also land in the LLM
+     * log). The conflict itself comes from the rules.
+     */
     private static String calendar(BoopDay d) {
         List<BoopDay.CalendarItem> timed = RuleVerdicts.timedEvents(d);
         if (timed.isEmpty()) {
             return "ma nincs időponthoz kötött esemény";
         }
-        return timed.stream()
-            .map(e -> RuleVerdicts.hhmm(e.start()) + "–" + RuleVerdicts.hhmm(e.end()) + " " + e.title())
-            .collect(Collectors.joining(", "));
+        long busy = d.calendar().busySlots().stream().filter(Boolean::booleanValue).count();
+        return timed.size() + " esemény: " + timed.stream()
+            .map(e -> RuleVerdicts.hhmm(e.start()) + "–" + RuleVerdicts.hhmm(e.end()))
+            .collect(Collectors.joining(", "))
+            + String.format(Locale.ROOT, " (foglalt %d perc 06:00 és 24:00 között)", busy * BoopDay.SLOT_MINUTES);
     }
 
     private static String score(Integer v) {

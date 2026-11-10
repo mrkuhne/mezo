@@ -55,8 +55,7 @@ public interface BoopBriefMapper {
         return b;
     }
 
-    @Mapping(target = "steps", source = "day.steps", defaultValue = "0")
-    @Mapping(target = "activeKcal", source = "day.activeKcal", defaultValue = "0")
+    /** Day sheet; null steps / active kcal stay null on the wire ("no wearable day", never a fake 0). */
     @Mapping(target = "stepsGoal", source = "stepsGoal")
     io.mrkuhne.mezo.api.dto.BoopDay toDay(BoopDay day, int stepsGoal);
 

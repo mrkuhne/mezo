@@ -153,7 +153,7 @@ struct MaiBelow: View {
                     Text("Az alvásszakaszaidat erről az éjszakáról nem látom.").nkFont(13.5).foregroundStyle(.white.opacity(0.7))
                 } else {
                     Hypnogram(segments: s.hypnogram.map { (stage: $0.stage, minutes: Double($0.minutes)) }).frame(height: 64)
-                    HStack { Text(s.bedtime); Spacer(); Text(s.wakeup) }
+                    HStack { Text(s.bedtime ?? "–"); Spacer(); Text(s.wakeup ?? "–") }
                         .nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.45))
                 }
             }

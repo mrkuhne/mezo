@@ -5,12 +5,21 @@ import io.mrkuhne.mezo.feature.boop.service.BoopScores.Scores;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
+import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -19,7 +28,8 @@ import tools.jackson.databind.ObjectMapper;
  * The words of the Boop morning brief (Boop S3, mezo-r36n9.7): one cheap-tier LLM call turns the
  * already computed scores into Hungarian verdicts in Boop's voice; {@link RuleVerdicts} is the
  * fallback for the whole answer and for every single field the model left out or broke. The brief
- * never fails because of the LLM: no companion bean, a thrown call, a non-JSON answer or a missing
+ * never fails because of the LLM: no companion bean, a thrown call, a call slower than
+ * {@code mezo.boop.llm-timeout} (8 s; the phone gives up at 20 s), a non-JSON answer or a missing
  * field all degrade to rule text with the same schema.
  *
  * <p>The model never scores (the prompt hands it the numbers) and never decides the session
@@ -54,14 +64,19 @@ public class BoopVerdictWriter {
     private final ObjectMapper objectMapper;
     private final RuleVerdicts rules;
     private final BoopPrompts prompts;
+    private final AsyncTaskExecutor executor;
+    private final Duration timeout;
 
     public BoopVerdictWriter(ObjectProvider<CompanionLlm> companionLlm, LlmCallContextHolder llmCallContextHolder,
-                             ObjectMapper objectMapper, BoopProperties props) {
+                             ObjectMapper objectMapper, BoopProperties props,
+                             @Qualifier("applicationTaskExecutor") AsyncTaskExecutor executor) {
         this.companionLlm = companionLlm;
         this.llmCallContextHolder = llmCallContextHolder;
         this.objectMapper = objectMapper;
         this.rules = new RuleVerdicts(props.stepsGoal(), props.nightsNeeded());
         this.prompts = new BoopPrompts(props.stepsGoal(), props.nightsNeeded());
+        this.executor = executor;
+        this.timeout = props.llmTimeout();
     }
 
     public Verdicts write(BoopDay d, Scores s, LocalTime now) {
@@ -93,11 +108,33 @@ public class BoopVerdictWriter {
             return null;
         }
         String raw;
+        String userMessage = prompts.context(d, s, now, conflict);
+        // The holder and the actor are thread-bound and the call runs on the pool, so both are bound
+        // INSIDE the task (the LlmMemoryReranker pattern, mezo-ozri.1/.7): the llm-log row and the
+        // per-user cap still see the owner.
+        UUID actor = LlmActorContext.capture();
+        Future<String> call = null;
         try {
-            raw = llmCallContextHolder.runWith(
-                new LlmCallContext(LLM_FEATURE, "verdicts", null, null),
-                () -> llm.complete(BoopPrompts.SYSTEM_PROMPT, prompts.context(d, s, now, conflict)));
-        } catch (Exception e) {
+            call = executor.submit(() -> LlmActorContext.runAsCaptured(actor,
+                () -> llmCallContextHolder.runWith(new LlmCallContext(LLM_FEATURE, "verdicts", null, null),
+                    () -> llm.complete(BoopPrompts.SYSTEM_PROMPT, userMessage))));
+            raw = call.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            call.cancel(true);
+            log.warn("Boop brief LLM call took longer than {}, using rule verdicts", timeout);
+            return null;
+        } catch (InterruptedException e) {
+            if (call != null) {
+                call.cancel(true);
+            }
+            Thread.currentThread().interrupt();
+            log.warn("Boop brief LLM call interrupted, using rule verdicts");
+            return null;
+        } catch (ExecutionException e) {
+            log.warn("Boop brief LLM call failed, using rule verdicts: {}", e.getCause() == null
+                ? e.getClass().getSimpleName() : e.getCause().getMessage());
+            return null;
+        } catch (RuntimeException e) {
             log.warn("Boop brief LLM call failed, using rule verdicts: {}", e.getMessage());
             return null;
         }

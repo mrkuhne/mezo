@@ -38,12 +38,36 @@ struct BoopVoiceTests {
         #expect(!v.isSpeaking)
     }
 
-    @Test func instantWhenReducedMotion() {
+    /// Reduce Motion is about movement, not sound (final review I4): the text appears at once, no typing,
+    /// but Boop still speaks; `isSpeaking` holds until the voice ends, so mute and "Mondd újra" behave the same.
+    @Test func reducedMotionStillSpeaks() {
         let s = FakeSynth(); let v = voice(s)
+        v.speak(segments: segs, reduceMotion: true)
+        #expect(s.spoken == ["Jó reggelt. Az alvásod rendben volt."])
+        #expect(v.shown == "Jó reggelt. Az alvásod rendben volt.")
+        #expect(v.isSpeaking)
+        s.onWord?(10)                      // word callbacks do not re-type the text
+        #expect(v.shown == "Jó reggelt. Az alvásod rendben volt.")
+        s.onFinish?()
+        #expect(!v.isSpeaking)
+        #expect(v.shown == "Jó reggelt. Az alvásod rendben volt.")
+    }
+
+    @Test func reducedMotionWhenMutedShowsInstantlyInSilence() {
+        let s = FakeSynth(); let v = voice(s, muted: true)
         v.speak(segments: segs, reduceMotion: true)
         #expect(v.shown == "Jó reggelt. Az alvásod rendben volt.")
         #expect(s.spoken.isEmpty)
         #expect(!v.isSpeaking)
+    }
+
+    @Test func reducedMotionMuteMidSentenceStopsTheVoice() {
+        let s = FakeSynth(); let v = voice(s)
+        v.speak(segments: segs, reduceMotion: true)
+        v.muted = true
+        #expect(!v.isSpeaking)
+        #expect(s.stops >= 1)
+        #expect(v.shown == "Jó reggelt. Az alvásod rendben volt.")
     }
 
     @Test func mutedDoesNotSpeak() async {

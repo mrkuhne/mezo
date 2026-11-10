@@ -13002,9 +13002,11 @@ export interface components {
             deepSleepWeek: (number | null)[];
             restingHrWeek: (number | null)[];
             hrToday?: components["schemas"]["BoopHrToday"];
-            steps: number;
+            /** @description null without a wearable day (never a fake 0) */
+            steps?: number | null;
             stepsGoal: number;
-            activeKcal: number;
+            /** @description null without a wearable day (never a fake 0) */
+            activeKcal?: number | null;
             session?: components["schemas"]["BoopSession"];
             meals: components["schemas"]["BoopMeal"][];
             kcalSoFar: number;
@@ -13026,10 +13028,10 @@ export interface components {
             max?: number | null;
         } | null;
         BoopSleep: {
-            /** @description HH:mm */
-            bedtime: string;
-            /** @description HH:mm */
-            wakeup: string;
+            /** @description HH:mm; null when the night was logged without times */
+            bedtime?: string | null;
+            /** @description HH:mm; null when the night was logged without times */
+            wakeup?: string | null;
             totalMin: number;
             deepMin?: number | null;
             remMin?: number | null;

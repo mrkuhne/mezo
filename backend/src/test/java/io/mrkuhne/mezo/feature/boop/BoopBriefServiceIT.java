@@ -5,19 +5,27 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.BoopBrief;
 import io.mrkuhne.mezo.api.dto.BoopMetric;
+import io.mrkuhne.mezo.api.dto.BoopObservation;
+import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
 import io.mrkuhne.mezo.feature.boop.entity.BoopBriefEntity;
 import io.mrkuhne.mezo.feature.boop.repository.BoopBriefRepository;
 import io.mrkuhne.mezo.feature.boop.service.BoopBriefService;
 import io.mrkuhne.mezo.feature.boop.service.RuleVerdicts;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
+import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.IntentionPopulator;
+import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -44,6 +52,10 @@ class BoopBriefServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private SleepLogPopulator sleepLogs;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private PatternPopulator patterns;
+    @Autowired private PatternService patternService;
+    @Autowired private CheckInPopulator checkIns;
+    @Autowired private IntentionPopulator intentions;
 
     @Test
     void testGet_shouldCreateOneRowWithTheFullBrief_whenFirstCall() {
@@ -80,7 +92,8 @@ class BoopBriefServiceIT extends AbstractIntegrationTest {
         assertThat(b.getDay().getSleep().getTotalMin()).isEqualTo(450);
         assertThat(b.getDay().getSleep().getDeepMin()).isNull(); // manual row: no stages
         assertThat(b.getDay().getStepsGoal()).isEqualTo(9000);
-        assertThat(b.getDay().getSteps()).isZero();
+        assertThat(b.getDay().getSteps()).isNull(); // M1: no wearable day is null, never a fake 0
+        assertThat(b.getDay().getActiveKcal()).isNull();
         assertThat(b.getMetrics().get(2).getDisplay()).isEqualTo("–");
         assertThat(b.getMetrics().get(2).getScore()).isNull(); // no wearable day: no fake 0 level
         assertThat(b.getDay().getDeepSleepWeek()).hasSize(7);
@@ -222,6 +235,83 @@ class BoopBriefServiceIT extends AbstractIntegrationTest {
 
         assertThat(jdbc.queryForObject("select regen_count from boop_brief where created_by = ?", Integer.class, user))
             .isEqualTo(2);
+    }
+
+    // ---- final review I1: what the brief SHOWS (observations, check-ins, intention) is in the hash
+
+    @Test
+    void testGet_shouldRegenerateWithoutTheDecidedObservation_whenAPatternIsDecided() {
+        UUID user = databasePopulator.populateUser("brief-decide@test.local");
+        PatternEntity p = patterns.createPattern(user, "pair-decide", "Későn eszel, rosszabbul alszol");
+        BoopBrief first = service.get(user, DAY, NOW);
+        assertThat(first.getDay().getObservations()).extracting(BoopObservation::getId)
+            .containsExactly(p.getId().toString());
+        int before = fakeLlm.boopBriefCallCount();
+
+        patternService.decide(user, p.getId(), new PatternDecisionRequest().decision("confirm"));
+        BoopBrief second = service.get(user, DAY, NOW);
+
+        assertThat(fakeLlm.boopBriefCallCount()).isEqualTo(before + 1);
+        assertThat(second.getDay().getObservations()).isEmpty();
+    }
+
+    @Test
+    void testGet_shouldRegenerate_whenACheckInIsDoneElsewhere() {
+        UUID user = databasePopulator.populateUser("brief-checkin@test.local");
+        BoopBrief first = service.get(user, DAY, NOW);
+        assertThat(first.getDay().getCheckins().getFirst().getDone()).isFalse();
+        int before = fakeLlm.boopBriefCallCount();
+
+        checkIns.createCheckIn(user, DAY, "06:30", 4, 2, null); // the morning slot, done on the web
+        BoopBrief second = service.get(user, DAY, NOW);
+
+        assertThat(fakeLlm.boopBriefCallCount()).isEqualTo(before + 1);
+        assertThat(second.getDay().getCheckins().getFirst().getDone()).isTrue();
+    }
+
+    @Test
+    void testGet_shouldRegenerate_whenTheIntentionChanges() {
+        UUID user = databasePopulator.populateUser("brief-intention@test.local");
+        service.get(user, DAY, NOW);
+        int before = fakeLlm.boopBriefCallCount();
+
+        intentions.focus(user, DAY, "Séta ebéd után");
+        BoopBrief second = service.get(user, DAY, NOW);
+
+        assertThat(fakeLlm.boopBriefCallCount()).isEqualTo(before + 1);
+        assertThat(second.getDay().getIntention().getFoci()).containsExactly("Séta ebéd után");
+    }
+
+    // ---- final review I2: a coarse time-of-day bucket (reggel / délután / este) is in the hash
+
+    @Test
+    void testGet_shouldRegenerate_whenTheTimeOfDayBucketChangesFromMorningToEvening() {
+        UUID user = databasePopulator.populateUser("brief-bucket@test.local");
+        sleepLogs.createSleepLog(user, DAY, new BigDecimal("7.00"), 7);
+        int before = fakeLlm.boopBriefCallCount();
+
+        BoopBrief morning = service.get(user, DAY, at(9, 0));
+        BoopBrief evening = service.get(user, DAY, at(19, 0));
+
+        assertThat(fakeLlm.boopBriefCallCount()).isEqualTo(before + 2);
+        assertThat(evening.getGeneratedAt().toInstant()).isAfter(morning.getGeneratedAt().toInstant());
+    }
+
+    @Test
+    void testGet_shouldReuseTheStoredBrief_whenTwoGetsFallInTheSameMorningBucket() {
+        UUID user = databasePopulator.populateUser("brief-bucket-same@test.local");
+        sleepLogs.createSleepLog(user, DAY, new BigDecimal("7.00"), 7);
+        int before = fakeLlm.boopBriefCallCount();
+
+        BoopBrief nine = service.get(user, DAY, at(9, 0));
+        BoopBrief ten = service.get(user, DAY, at(10, 0));
+
+        assertThat(fakeLlm.boopBriefCallCount()).isEqualTo(before + 1);
+        assertThat(ten.getGeneratedAt().toInstant()).isEqualTo(nine.getGeneratedAt().toInstant());
+    }
+
+    private static Instant at(int hour, int minute) {
+        return LocalDateTime.of(DAY, LocalTime.of(hour, minute)).atZone(BUDAPEST).toInstant();
     }
 
     private int rows(UUID user) {

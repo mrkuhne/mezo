@@ -86,14 +86,15 @@ public enum PathBuilder {
     private static func alvas(_ x: Ctx) -> [Item] {
         var out: [Item] = []
         let recovery = x.day.recovery != nil
-        if !x.evening, let s = x.day.sleep, let bed = mins(s.bedtime), let wake = mins(s.wakeup) {
+        if !x.evening, let s = x.day.sleep, let bedtime = s.bedtime, let wakeup = s.wakeup,
+           let bed = mins(bedtime), let wake = mins(wakeup) {
             let bedKey = bed > wake ? bed - 1440 : bed
-            out.append(Item(key: bedKey, step: PathStep(id: "sleep-in", time: s.bedtime, glyph: "moon-cream",
+            out.append(Item(key: bedKey, step: PathStep(id: "sleep-in", time: bedtime, glyph: "moon-cream",
                                                         title: "Elalvás", sub: "", done: true, isNow: false)))
             out.append(Item(key: (bedKey + wake) / 2, step: PathStep(
                 id: "sleep-night", time: fmt((bedKey + wake) / 2), glyph: "moon-cream", title: "Az éjszaka",
                 sub: "\(s.totalMin / 60) ó \(s.totalMin % 60) p", done: true, isNow: false, opens: true)))
-            out.append(Item(key: wake, step: PathStep(id: "wake", time: s.wakeup, glyph: "sun-ink",
+            out.append(Item(key: wake, step: PathStep(id: "wake", time: wakeup, glyph: "sun-ink",
                                                        title: "Ébredés", sub: "", done: true, isNow: false)))
         }
         let target = x.day.bedtimeTarget.flatMap(mins) ?? (recovery ? 22 * 60 : nil)

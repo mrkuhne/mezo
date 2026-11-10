@@ -14,7 +14,8 @@ public protocol SpeechSynthesizing: AnyObject {
 }
 
 /// Boop reads the morning brief aloud (Hungarian) and reveals the text word by word, in step with the voice.
-/// Port of the spike's `Typer`. `isSpeaking` is true while Boop is "talking" — audible or silent reveal.
+/// Port of the spike's `Typer`. `isSpeaking` is true while Boop is "talking" — audible or silent reveal. Under Reduce
+/// Motion the text shows at once and the voice still speaks (unless muted).
 @MainActor @Observable
 public final class BoopVoice {
     public static let mutedKey = "boop.voice.muted"
@@ -78,11 +79,24 @@ public final class BoopVoice {
     private func start() {
         cancelRunning()
         guard !fullText.isEmpty else { shown = ""; isSpeaking = false; return }
-        if reduceMotion { shown = fullText; isSpeaking = false; return }
+        let gen = generation
+        if reduceMotion {
+            // Reduce Motion is about movement, not sound: the whole text at once (no typing), but Boop still speaks.
+            shown = fullText
+            revealedUnits = fullText.utf16.count
+            guard !muted, synth.hasVoice else { isSpeaking = false; return }
+            isSpeaking = true
+            activateAudio()
+            synth.speak(fullText, onWord: { _ in }, onFinish: { [weak self] in
+                guard let self, self.generation == gen else { return }
+                self.isSpeaking = false
+                self.deactivateAudio()
+            })
+            return
+        }
         shown = ""
         revealedUnits = 0
         isSpeaking = true
-        let gen = generation
         if !muted, synth.hasVoice {
             activateAudio()
             synth.speak(

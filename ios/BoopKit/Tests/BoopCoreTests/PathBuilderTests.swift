@@ -103,6 +103,13 @@ struct PathBuilderTests {
         #expect(s[1].sub == "7 ó 5 p")
     }
 
+    /// Final review I3: a night without times has no stations on the path, the rest of the day still builds.
+    @Test func alvasNightWithoutTimesSkipsItsStations() throws {
+        var f = BriefFixture(); f.sleep = #"{"bedtime":null,"wakeup":null,"totalMin":420,"hypnogram":[]}"#
+        f.bedtimeTarget = #""22:45""#
+        #expect(ids(try build(.alvas, f, now: at(10))) == ["now", "bedtime"])
+    }
+
     @Test func pulzusBreathPrecedesDensestBlock() throws {
         var f = BriefFixture()
         f.busyRuns = [4...4, 32...39, 50...51]   // 07:00 (1 slot), 14:00-16:00, 18:30-19:00

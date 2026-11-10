@@ -9,7 +9,7 @@ struct TileInputs: Equatable {
     var sleepTotalMin: Int?, bedtime: String?, wakeup: String?, deepMin: Int?
     var deepWeek: [Int?], restingHrWeek: [Int?]
     var hrMin: Int?, hrAvg: Int?, hrMax: Int?
-    var steps: Int, stepsGoal: Int, activeKcal: Int
+    var steps: Int?, stepsGoal: Int, activeKcal: Int?
     var kcalSoFar: Int, kcalTarget: Int, proteinG: Int, proteinTarget: Int, carbsG: Int, fatG: Int
 }
 
@@ -82,12 +82,16 @@ func maiTiles(_ key: MetricKey, _ x: TileInputs) -> [TileModel] {
             out.append(TileModel(label: "ELALVÁS", value: bed, sub: "ekkor aludtál el", graphic: .latency))
         }
     case .mozgas:
-        out.append(TileModel(label: "LÉPÉSEK", value: grouped(x.steps),
-                             sub: x.stepsGoal > 0 ? "/ \(grouped(x.stepsGoal))" : "lépés ma",
-                             graphic: .trail(share(x.steps, of: Double(x.stepsGoal)))))
-        // No active-energy goal in the brief: the bar fills against 500 kcal, a typical active day.
-        out.append(TileModel(label: "AKTÍV KALÓRIA", value: "\(grouped(x.activeKcal)) kcal", sub: "mozgással ma",
-                             graphic: .bars([share(x.activeKcal, of: 500)], wide: true)))
+        if let steps = x.steps {
+            out.append(TileModel(label: "LÉPÉSEK", value: grouped(steps),
+                                 sub: x.stepsGoal > 0 ? "/ \(grouped(x.stepsGoal))" : "lépés ma",
+                                 graphic: .trail(share(steps, of: Double(x.stepsGoal)))))
+        }
+        if let kcal = x.activeKcal {
+            // No active-energy goal in the brief: the bar fills against 500 kcal, a typical active day.
+            out.append(TileModel(label: "AKTÍV KALÓRIA", value: "\(grouped(kcal)) kcal", sub: "mozgással ma",
+                                 graphic: .bars([share(kcal, of: 500)], wide: true)))
+        }
     case .fuel:
         out.append(TileModel(label: "VÍZ", value: "–", sub: "koppints: +250 ml", graphic: .water))
         if x.kcalTarget > 0 {

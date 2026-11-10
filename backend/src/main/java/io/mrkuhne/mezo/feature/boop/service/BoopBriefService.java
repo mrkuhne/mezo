@@ -33,11 +33,15 @@ import tools.jackson.databind.ObjectMapper;
  *
  * <p>{@link #get}: assemble the day → input hash → the stored row has the same hash: its payload
  * comes back as is (no scoring, no LLM call); otherwise scores + energy curve + verdicts are
- * computed and the row is upserted. The hash covers what should change the words: last night (id
- * and its content, so an edited night counts), the calendar (count and every event), the meals
- * (count and logged count), the weight, the session (title and time) and the recovery state. Steps,
- * HR and the clock are deliberately NOT in it — they move all day and would re-call the LLM on
- * every open.
+ * computed and the row is upserted. The hash covers what should change the words or what the
+ * brief shows: last night (id and its content, so an edited night counts), the calendar (count and
+ * every event), the meals (count and logged count), the weight, the session (title and time), the
+ * recovery state, the pending observations (sorted ids — a decided one leaves the list), the
+ * check-ins (slot and done flag — one done on the web counts), the intention (creed and foci) and a
+ * coarse time-of-day bucket of the owner zone (reggel &lt; 12:00, délután 12–18, este ≥ 18; a past
+ * day is always este), so time-dependent sentences ("a nap nagy része még előtted") refresh at most
+ * three times a day. Steps, HR and the exact clock are deliberately NOT in it — they move all day
+ * and would re-call the LLM on every open.
  *
  * <p>{@link #regenerate}: a user-asked rebuild, always generated, at most
  * {@code mezo.boop.regen-per-day} times per day's row, then 409 {@code BOOP_REGENERATE_LIMIT_REACHED}
@@ -56,6 +60,8 @@ public class BoopBriefService {
     private static final LocalTime END_OF_DAY = LocalTime.of(23, 59);
     private static final LocalTime LUNCH_FROM = LocalTime.of(11, 0);
     private static final LocalTime LUNCH_TO = LocalTime.of(15, 0);
+    private static final LocalTime NOON = LocalTime.NOON;
+    private static final LocalTime EVENING = LocalTime.of(18, 0);
 
     private final BoopDayAssembler assembler;
     private final BoopVerdictWriter verdictWriter;
@@ -89,7 +95,7 @@ public class BoopBriefService {
     public BoopBrief get(UUID owner, LocalDate date, Instant now) {
         requireNotFuture(date, now);
         BoopDay day = assembler.assemble(owner, date);
-        String hash = inputHash(day);
+        String hash = inputHash(day, localNow(date, now));
         Optional<BoopBriefEntity> existing = briefs.findByCreatedByAndDate(owner, date);
         if (existing.isPresent() && hash.equals(existing.get().getInputHash())) {
             return read(existing.get());
@@ -109,7 +115,7 @@ public class BoopBriefService {
             throw BoopBriefStore.limitReached();
         }
         BoopDay day = assembler.assemble(owner, date);
-        return generateAndStore(owner, day, inputHash(day), now, true);
+        return generateAndStore(owner, day, inputHash(day, localNow(date, now)), now, true);
     }
 
     private BoopBrief generateAndStore(UUID owner, BoopDay day, String hash, Instant now, boolean manual) {
@@ -175,8 +181,16 @@ public class BoopBriefService {
             .orElse(null);
     }
 
-    static String inputHash(BoopDay d) {
-        StringBuilder b = new StringBuilder("v1|").append(d.date());
+    /** reggel / délután / este — the coarse part of the clock the brief's sentences depend on. */
+    static String timeBucket(LocalTime localNow) {
+        if (localNow.isBefore(NOON)) {
+            return "reggel";
+        }
+        return localNow.isBefore(EVENING) ? "delutan" : "este";
+    }
+
+    static String inputHash(BoopDay d, LocalTime localNow) {
+        StringBuilder b = new StringBuilder("v2|").append(d.date()).append("|t:").append(timeBucket(localNow));
         BoopDay.Sleep s = d.sleep();
         b.append("|night:");
         if (s != null) {
@@ -203,6 +217,17 @@ public class BoopBriefService {
         b.append("|recovery:");
         if (d.recovery() != null) {
             b.append(d.recovery().reason()).append(',').append(d.recovery().day());
+        }
+        b.append("|obs:");
+        d.observations().stream().map(BoopDay.Observation::id).sorted()
+            .forEach(id -> b.append(id).append(';'));
+        b.append("|checkins:");
+        for (BoopDay.Checkin c : d.checkins()) {
+            b.append(c.slot()).append(',').append(c.done()).append(';');
+        }
+        b.append("|intention:");
+        if (d.intention() != null) {
+            b.append(d.intention().creed()).append(',').append(d.intention().foci());
         }
         return sha256(b.toString());
     }

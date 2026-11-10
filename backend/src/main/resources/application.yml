@@ -710,6 +710,8 @@ mezo:
     steps-goal: 9000
     regen-per-day: 3
     nights-needed: 14
+    # The brief's LLM call is bounded; past this the rule verdicts answer (final review M4).
+    llm-timeout: 8s
   # LLM call audit log (mezo-2zyu) — binds LlmLogProperties + LlmPricingProperties.
   llm-log:
     # Prompt/response payloads are truncated to this many characters before persisting

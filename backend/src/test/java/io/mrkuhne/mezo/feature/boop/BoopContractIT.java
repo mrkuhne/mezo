@@ -3,6 +3,9 @@ package io.mrkuhne.mezo.feature.boop;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.BoopBrief;
+import io.mrkuhne.mezo.api.dto.BoopDay;
+import io.mrkuhne.mezo.api.dto.BoopSleep;
+import jakarta.validation.constraints.NotNull;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import java.math.BigDecimal;
@@ -11,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import tools.jackson.databind.JsonNode;
 
 /** Boop S3 Task 6 (mezo-r36n9.7): /api/boop/brief round-trips through the generated BoopApi. */
 @ActiveProfiles("companion-fake")
@@ -19,6 +23,40 @@ class BoopContractIT extends ApiIntegrationTest {
     private static final String DATE = "2026-11-10";
 
     @Autowired private SleepLogPopulator sleepLogs;
+
+    /** Final review I3: a night logged without bedtime or wakeup (the sleep API allows it) must not
+     *  break the brief — 200, the two times are explicit nulls, and the contract says they may be. */
+    @Test
+    void testGetBrief_shouldSerializeNullSleepTimes_whenTheNightHasNoBedtimeOrWakeup() throws Exception {
+        RegisteredUser u = registerUser("Boop timeless night");
+        sleepLogs.createSleepLog(u.id(), LocalDate.parse(DATE), new BigDecimal("7.00"), 7); // no times
+
+        String raw = getForBody("/api/boop/brief?date=" + DATE, u.headers(), HttpStatus.OK, String.class);
+
+        JsonNode sleep = objectMapper.readTree(raw).get("day").get("sleep");
+        assertThat(sleep.get("totalMin").asInt()).isEqualTo(420);
+        assertThat(sleep.has("bedtime")).isTrue();
+        assertThat(sleep.get("bedtime").isNull()).isTrue();
+        assertThat(sleep.get("wakeup").isNull()).isTrue();
+        // The contract (and so every generated client) declares both nullable.
+        assertThat(BoopSleep.class.getMethod("getBedtime").isAnnotationPresent(NotNull.class)).isFalse();
+        assertThat(BoopSleep.class.getMethod("getWakeup").isAnnotationPresent(NotNull.class)).isFalse();
+    }
+
+    /** Final review M1: no wearable day → steps and active kcal are null on the wire, never a fake 0. */
+    @Test
+    void testGetBrief_shouldSendNullStepsAndActiveKcal_whenThereIsNoWearableDay() throws Exception {
+        RegisteredUser u = registerUser("Boop no steps");
+
+        String raw = getForBody("/api/boop/brief?date=" + DATE, u.headers(), HttpStatus.OK, String.class);
+
+        JsonNode day = objectMapper.readTree(raw).get("day");
+        assertThat(day.get("steps").isNull()).isTrue();
+        assertThat(day.get("activeKcal").isNull()).isTrue();
+        assertThat(day.get("stepsGoal").asInt()).isEqualTo(9000);
+        assertThat(BoopDay.class.getMethod("getSteps").isAnnotationPresent(NotNull.class)).isFalse();
+        assertThat(BoopDay.class.getMethod("getActiveKcal").isAnnotationPresent(NotNull.class)).isFalse();
+    }
 
     @Test
     void testGetBrief_shouldReturnTheFullSchema_whenAuthenticated() {

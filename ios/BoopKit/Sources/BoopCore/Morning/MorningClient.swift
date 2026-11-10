@@ -36,6 +36,9 @@ public final class MorningStore {
     @ObservationIgnored private let onUnauthorized: @MainActor () -> Void
     /// The time before the last move, for `undoMove` to restore locally.
     @ObservationIgnored private var movedFrom: String?
+    /// Observations judged here. The server's cached brief may still carry one until it regenerates; it stays out
+    /// locally (so it can never be decided twice) until a brief arrives without it.
+    @ObservationIgnored private var decidedIds: Set<String> = []
 
     public init(client: Client, calendar: Calendar = .current, onUnauthorized: @escaping @MainActor () -> Void) {
         // Dates on the wire are always Gregorian (a Buddhist/Japanese device calendar would send year 2569), in the device zone.
@@ -65,7 +68,7 @@ public final class MorningStore {
                 result = try await fetch(.get, ymd(y))
             }
             guard mine == generation else { return }
-            brief = result; problem = nil; movedFrom = nil
+            brief = accept(result); problem = nil; movedFrom = nil
         } catch { if mine == generation { fail(error) } }
     }
 
@@ -75,7 +78,7 @@ public final class MorningStore {
         do {
             let result = try await fetch(.regenerate, day)
             guard mine == generation else { return }
-            brief = result; problem = nil; movedFrom = nil
+            brief = accept(result); problem = nil; movedFrom = nil
         } catch { if mine == generation { fail(error) } }
     }
 
@@ -122,7 +125,7 @@ public final class MorningStore {
         generation += 1; let mine = generation
         do {
             let fresh = try await fetch(.get, day)
-            if mine == generation { brief = fresh }
+            if mine == generation { brief = accept(fresh) }
         } catch Failure.unauthorized { onUnauthorized() } catch {}
     }
 
@@ -133,12 +136,24 @@ public final class MorningStore {
             switch try await client.decidePattern(path: .init(patternId: uuid.uuidString.lowercased()),
                                                   body: .json(.init(decision: confirmed ? "confirm" : "reject"))) {
             case .ok:
+                decidedIds.insert(id)
                 brief?.day.observations.removeAll { $0.id == id }
                 problem = nil
             case .unauthorized: throw Failure.unauthorized
             default: throw Failure.server
             }
         } catch { fail(error) }
+    }
+
+    /// A brief from the server minus the observations already judged here; a judged id the server no longer sends is
+    /// forgotten (its decision has reached the brief).
+    private func accept(_ fresh: Brief) -> Brief {
+        guard !decidedIds.isEmpty else { return fresh }
+        let sent = Set(fresh.day.observations.map(\.id))
+        decidedIds.formIntersection(sent)
+        var out = fresh
+        out.day.observations.removeAll { decidedIds.contains($0.id) }
+        return out
     }
 
     private enum Op { case get, regenerate }

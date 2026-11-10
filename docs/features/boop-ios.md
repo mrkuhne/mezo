@@ -62,12 +62,14 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
     check-in is already done the pill is "Boop elmondja".
   - **Boop voice:** `Boop elmondja` reads the brief aloud in Hungarian (best hu-HU voice, plays with the silent
     switch on and ducks other audio) and types it word by word; the voice circle (long press) mutes, un-mutes and
-    replays ("Mondd újra"); reduced motion = text appears at once.
+    replays ("Mondd újra"); reduced motion = the text appears at once and the orbs stay still, but Boop still speaks
+    (unless muted) — reduced motion is about movement, not sound.
   - **Below the hero, per orb:** tiles (Forma, Alvás: mély, elalvás; Mozgás: steps, active kcal vs 500; Fuel: kcal,
     macros, víz "–"; Pulzus: resting HR, today min·átl·max), a short **path** of stations ("most" first, then what
     belongs to that orb: check-ins, szándék, hypnogram + bedtime, dip walk + session strip, meals, breath before the
     densest meeting block, the meeting ribbon) and, on Forma, the **Boop mondja** card whose coloured phrases open the
-    sleep / pulse / day sheets. Tiles without data are dropped, not shown as 0.
+    sleep / pulse / day sheets. Tiles without data are dropped, not shown as 0 (no wearable day → no Mozgás tiles; a night
+    logged without bedtime/wakeup keeps its length tile, the times show "–", and the path skips its night stations).
   - **Boop észrevette:** up to three observation cards (the companion's proposed patterns); swipe right = Igaz
     (`decidePattern` confirm), left = Nem rólam szól (reject), with a thank-you toast after the last.
   - **Move today's session:** the session strip shows a conflict hint when the last meeting ends too close to the
@@ -127,10 +129,17 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
   4. `BoopVerdictWriter.write` — one cheap-tier LLM call (`LlmCallContext("boop_brief", "verdicts")`) turns the computed numbers into
      Hungarian headline + sentence per metric, the spoken brief (segments with links `sleep|heart|day`), tonight and next-meal tips.
      The model never scores and never decides the session conflict (rule-detected in `RuleVerdicts`). Any failure — no LLM bean, a
-     thrown call, no JSON, a missing field — falls back **per field** to `RuleVerdicts`, same schema; the brief never fails on the LLM.
-  5. `BoopBriefService` caches one `boop_brief` row per user + local day: an **input hash** (night id + content, calendar events,
-     meal and logged-meal count, weight, session title + time, recovery) equal to the stored one returns the stored payload with no
-     scoring and no LLM call. Steps, HR and the clock are not hashed. A changed hash regenerates. `POST …/regenerate` always
+     thrown call, a call slower than `mezo.boop.llm-timeout` (8 s; run on `applicationTaskExecutor` with the llm-log context and
+     actor re-bound inside the task), no JSON, a missing field — falls back **per field** to `RuleVerdicts`, same schema; the brief
+     never fails on the LLM. The prompt carries the calendar as count, time spans and busy minutes only — **never event titles**.
+  5. `BoopBriefService` caches one `boop_brief` row per user + local day: an **input hash** (`v2|`: night id + content, calendar
+     events, meal and logged-meal count, weight, session title + time, recovery, the sorted pending observation ids, each check-in's
+     slot + done flag, the intention creed + foci, and a **time-of-day bucket** of the owner zone — reggel < 12:00, délután 12–18,
+     este ≥ 18, a past day always este) equal to the stored one returns the stored payload with no scoring and no LLM call. So a
+     decided pattern, a check-in done on the web or a changed intention regenerates on the next GET, and time-dependent sentences
+     ("a nap nagy része még előtted") refresh at most three times a day. Steps, HR and the exact clock are not hashed. A changed
+     hash regenerates. iOS keeps an observation it judged out of the brief locally until a brief arrives without it, so a stale
+     brief can never bring it back to be decided twice. `POST …/regenerate` always
      regenerates, at most 3 per day (`regen_count`, atomic capped UPDATE; the 4th is 409 `BOOP_REGENERATE_LIMIT_REACHED`, refused before the LLM).
      Generation runs outside any transaction; only `BoopBriefStore.upsert` is transactional. Two racing first requests both
      generate, the loser's INSERT hits `uq_boop_brief_user_date`, re-reads and returns the winner's brief (never a 500).
@@ -207,7 +216,8 @@ iOS also uses the existing `decidePattern` for the observation swipes. `BoopBrie
 `headline`, `sentence`, `trendUp`), `brief[]` (text + link), `energy{hourly[19], dipHour}`, `tonightTip`, `nextMealTip`, `conflict`,
 and `day` (sleep + hypnogram stages 0 awake · 1 REM · 2 light · 3 deep, week series, `hrToday{min,avg,max}`, steps, session, meals,
 check-ins, intention, observations, calendar `busySlots[72]` = 06:00–24:00 in 15-minute slots, weight, recovery). Nullable by design:
-session minutes/time/plannedTime and sleep stage minutes.
+session minutes/time/plannedTime, sleep stage minutes, sleep `bedtime`/`wakeup` (a night may be logged without times) and `day.steps` /
+`day.activeKcal` (null without a wearable day, never a fake 0).
 
 Tables (changeset `202611101300_mezo-r36n9.7_boop_brief.sql`, both soft-delete, partial unique indexes `where is_deleted = false`):
 
@@ -216,7 +226,7 @@ Tables (changeset `202611101300_mezo-r36n9.7_boop_brief.sql`, both soft-delete, 
 | `boop_brief` | `created_by`, `date`, `payload jsonb` (the `BoopBrief` as JSON), `input_hash varchar(64)`, `regen_count int ≥ 0` (`ck_boop_brief_regen_count`), `generated_at` | `uq_boop_brief_user_date (created_by, date)` |
 | `workout_time_override` | `created_by`, `date`, `time` | `uq_workout_time_override_user_date (created_by, date)` |
 
-Tunables (`mezo.boop`, `BoopProperties`): `steps-goal` 9000, `regen-per-day` 3, `nights-needed` 14.
+Tunables (`mezo.boop`, `BoopProperties`): `steps-goal` 9000, `regen-per-day` 3, `nights-needed` 14, `llm-timeout` 8s.
 
 ### Formulas (S3 — product calls; the code is the truth: `BoopScores`, `EnergyCurveModel`)
 
@@ -321,8 +331,8 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
   - Missing resting HR → forma uses a neutral pulzus 70; sleep score mirrors `DayEvaluationEngine` (no companion refactor), duration only without quality.
   - Conflict "last meeting" = latest-ending timed event that started before the session; a meeting running at the start counts; past 24:00 → none.
   - "≤ 2 sentences per metric" is a prompt instruction, not truncation (cutting Hungarian mid-thought reads worse).
-  - Input hash uses night content + weight values (no updated/log id on `BoopDay`); steps, HR, clock excluded — the movement score in a cached brief lags until a
-    hashed input changes or the owner regenerates.
+  - Input hash uses night content + weight values (no updated/log id on `BoopDay`); steps, HR and the exact clock excluded — the movement score in a cached brief
+    lags until a hashed input changes, the time-of-day bucket turns, or the owner regenerates. The intention is hashed by content (creed + foci), not an id.
   - `BoopCore` cannot import `BoopDesign`: `MetricKey` (string enum) is bridged to `Hue` in the app; `PathBuilder`/`Lens` take `MetricKey` and return BoopCore value types
     (`PathStep`, `LensAction` with a glyph name), mapped to `PathStation` in the app.
   - `Lens.action` is nil when Forma's current check-in is done (app shows "Boop elmondja"); weigh-in is not a station; the session is never marked done

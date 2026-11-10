@@ -191,7 +191,7 @@ components:
         suggestedTime: { type: string, description: HH:mm }
     BoopDay:
       type: object
-      required: [deepSleepWeek, restingHrWeek, steps, stepsGoal, activeKcal, meals, kcalSoFar, kcalTarget, proteinG, proteinTarget, carbsG, fatG, checkins, intention, observations, calendar]
+      required: [deepSleepWeek, restingHrWeek, stepsGoal, meals, kcalSoFar, kcalTarget, proteinG, proteinTarget, carbsG, fatG, checkins, intention, observations, calendar]
       properties:
         sleep: { $ref: '#/components/schemas/BoopSleep' }
         bedtimeTarget: { type: string, nullable: true, description: HH:mm }
@@ -206,9 +206,9 @@ components:
           maxItems: 7
           items: { type: integer, nullable: true }
         hrToday: { $ref: '#/components/schemas/BoopHrToday' }
-        steps: { type: integer }
+        steps: { type: integer, nullable: true, description: null without a wearable day (never a fake 0) }
         stepsGoal: { type: integer }
-        activeKcal: { type: integer }
+        activeKcal: { type: integer, nullable: true, description: null without a wearable day (never a fake 0) }
         session: { $ref: '#/components/schemas/BoopSession' }
         meals:
           type: array
@@ -239,10 +239,10 @@ components:
     BoopSleep:
       type: object
       nullable: true
-      required: [bedtime, wakeup, totalMin, hypnogram]
+      required: [totalMin, hypnogram]
       properties:
-        bedtime: { type: string, description: HH:mm }
-        wakeup: { type: string, description: HH:mm }
+        bedtime: { type: string, nullable: true, description: 'HH:mm; null when the night was logged without times' }
+        wakeup: { type: string, nullable: true, description: 'HH:mm; null when the night was logged without times' }
         totalMin: { type: integer }
         deepMin: { type: integer, nullable: true }
         remMin: { type: integer, nullable: true }

@@ -70,7 +70,7 @@ struct SleepSheet: View {
             } else {
                 SheetTile(label: "MÉLY", value: "–", note: "nincs szakaszadat")
             }
-            SheetTile(label: "ELALVÁS", value: s.bedtime, note: "ébredés \(s.wakeup)")
+            SheetTile(label: "ELALVÁS", value: s.bedtime ?? "–", note: s.wakeup.map { "ébredés \($0)" } ?? "nincs időadat")
         }
     }
 
@@ -85,7 +85,7 @@ struct SleepSheet: View {
                 Hypnogram(segments: segs.map { (stage: $0.stage, minutes: Double($0.minutes)) }).frame(height: 110).padding(.top, 14)
                     .accessibilityLabel("Alvásszakaszok")
                 HStack {
-                    ForEach(Array(axisTimes(start: s.bedtime, minutes: span, count: 4).enumerated()), id: \.offset) { i, t in
+                    ForEach(Array(axisTimes(start: s.bedtime ?? "", minutes: span, count: 4).enumerated()), id: \.offset) { i, t in
                         if i > 0 { Spacer() }
                         Text(t)
                     }

@@ -157,6 +157,50 @@ struct MorningClientTests {
         #expect(s.brief?.day.observations.isEmpty == true)
     }
 
+    /// Final review I1: a stale brief (the server's cache not yet regenerated) must never bring a decided card back,
+    /// so it cannot be decided twice; a brief without it ends the local memory.
+    @Test func decidedObservationNeverComesBackFromAStaleBrief() async {
+        let obsID = "6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0001"
+        stub.on("getBoopBrief", .json(200, briefJSON()))
+        stub.on("decidePattern", .json(200, #"{"id":"6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0001","kind":"statistical","pairKey":"k","category":"trigger","categoryLabel":"Kiváltó","title":"t","evidence":[],"status":"confirmed","lastDetectedAt":"2026-11-10T05:00:00Z","evidenceHits":1,"evidenceMisses":0}"#))
+        stub.on("getBoopBrief", .json(200, briefJSON()))     // stale: still carries the decided card
+        stub.on("getBoopBrief", .json(200, briefJSON()))     // tab switch / back to the app: still stale
+        let s = store()
+        await s.load(date: day(2026, 11, 10))
+        await s.decide(observation: obsID, true: true)
+        await s.load(date: day(2026, 11, 10))
+        #expect(s.brief?.day.observations.isEmpty == true)
+        await s.load(date: day(2026, 11, 10))
+        #expect(s.brief?.day.observations.isEmpty == true)
+        #expect(stub.ops.filter { $0 == "decidePattern" }.count == 1)
+    }
+
+    /// Final review I3: a night logged without bedtime or wakeup still loads the brief.
+    @Test func briefLoadsWithNullBedtimeAndWakeup() async throws {
+        let json = briefJSON().replacingOccurrences(of: #""day":{"#, with:
+            #""day":{"sleep":{"bedtime":null,"wakeup":null,"totalMin":420,"deepMin":null,"remMin":null,"lightMin":null,"awakeMin":null,"hypnogram":[]},"#)
+        stub.on("getBoopBrief", .json(200, json))
+        let s = store()
+        await s.load(date: day(2026, 11, 10))
+        #expect(s.problem == nil)
+        let sleep = try #require(s.brief?.day.sleep)
+        #expect(sleep.totalMin == 420)
+        #expect(sleep.bedtime == nil)
+        #expect(sleep.wakeup == nil)
+    }
+
+    /// Final review M1: no wearable day → steps and active kcal arrive as null and stay "no data".
+    @Test func briefLoadsWithNullStepsAndActiveKcal() async throws {
+        let json = briefJSON().replacingOccurrences(of: #""steps":3200"#, with: #""steps":null"#)
+            .replacingOccurrences(of: #""activeKcal":180"#, with: #""activeKcal":null"#)
+        stub.on("getBoopBrief", .json(200, json))
+        let s = store()
+        await s.load(date: day(2026, 11, 10))
+        #expect(s.problem == nil)
+        #expect(s.brief?.day.steps == nil)
+        #expect(s.brief?.day.activeKcal == nil)
+    }
+
     @Test func unauthorizedSignsOut() async throws {
         try tokens.write("old")
         stub.on("getBoopBrief", .json(401, #"[{"code":"AUTH_UNAUTHORIZED","type":"REQUEST"}]"#))

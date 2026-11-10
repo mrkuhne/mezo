@@ -102,11 +102,12 @@ public class RuleVerdicts {
     }
 
     private Verdict mozgas(BoopDay d, Scores s, LocalTime now) {
-        if (s.mozgas() == null) {
-            return new Verdict("Nincs lépéscél", "Lépéscél nélkül nem tudom megmondani, hol tartasz.");
-        }
+        // No step data first: the score is null then too, and "no goal" would be a false reason.
         if (d.steps() == null) {
             return new Verdict("Még nincs lépésadat", "Ma még nem jött lépésszám a telefonodról vagy az órádról.");
+        }
+        if (s.mozgas() == null) {
+            return new Verdict("Nincs lépéscél", "Lépéscél nélkül nem tudom megmondani, hol tartasz.");
         }
         String where = d.steps() + " lépésnél tartasz, a cél " + stepsGoal + ".";
         if (s.mozgas() >= 100) {

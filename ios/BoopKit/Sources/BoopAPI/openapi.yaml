@@ -32228,9 +32228,7 @@ components:
       required:
         - deepSleepWeek
         - restingHrWeek
-        - steps
         - stepsGoal
-        - activeKcal
         - meals
         - kcalSoFar
         - kcalTarget
@@ -32267,10 +32265,14 @@ components:
           $ref: '#/components/schemas/BoopHrToday'
         steps:
           type: integer
+          nullable: true
+          description: null without a wearable day (never a fake 0)
         stepsGoal:
           type: integer
         activeKcal:
           type: integer
+          nullable: true
+          description: null without a wearable day (never a fake 0)
         session:
           $ref: '#/components/schemas/BoopSession'
         meals:
@@ -32322,17 +32324,17 @@ components:
       type: object
       nullable: true
       required:
-        - bedtime
-        - wakeup
         - totalMin
         - hypnogram
       properties:
         bedtime:
           type: string
-          description: 'HH:mm'
+          nullable: true
+          description: 'HH:mm; null when the night was logged without times'
         wakeup:
           type: string
-          description: 'HH:mm'
+          nullable: true
+          description: 'HH:mm; null when the night was logged without times'
         totalMin:
           type: integer
         deepMin:
