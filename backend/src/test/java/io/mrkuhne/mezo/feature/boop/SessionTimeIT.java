@@ -133,4 +133,39 @@ class SessionTimeIT extends ApiIntegrationTest {
         assertThat(brief(b).getDay().getSession().getTime()).isEqualTo("18:00");
         putForBody(URL, req(DATE, "18:30"), null, HttpStatus.UNAUTHORIZED, String.class);
     }
+
+    @Test
+    void testPut_shouldAcceptEveryBadTimeShapeAs400() {
+        RegisteredUser u = plannedUser();
+        assertHasFieldError(putForBody(URL, req(DATE, "25:00"), u.headers(), HttpStatus.BAD_REQUEST, String.class),
+            "time", "VALIDATION_INVALID_VALUE");
+        putForBody(URL, req(DATE, "18:7"), u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        putForBody(URL, req(DATE, null), u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        putForBody(URL, java.util.Map.of(), u.headers(), HttpStatus.BAD_REQUEST, String.class);
+    }
+
+    @Test
+    void testPut_shouldKeepExactlyOneLiveRowAndReturn200_whenTwoFirstPutsRace() throws Exception {
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            for (int round = 0; round < 8; round++) {
+                RegisteredUser u = plannedUser();
+                var barrier = new java.util.concurrent.CyclicBarrier(2);
+                java.util.List<java.util.concurrent.Future<SessionTime>> calls = new java.util.ArrayList<>();
+                for (String time : new String[] {"18:30", "19:00"}) {
+                    calls.add(pool.submit(() -> {
+                        barrier.await();
+                        return putForBody(URL, req(DATE, time), u.headers(), HttpStatus.OK, SessionTime.class);
+                    }));
+                }
+                for (var f : calls) {
+                    assertThat(f.get().getTime()).isIn("18:30", "19:00");
+                }
+                assertThat(overrides.findAll().stream()
+                    .filter(o -> o.getCreatedBy().equals(u.id())).count()).isEqualTo(1);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+    }
 }

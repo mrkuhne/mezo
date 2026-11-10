@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.boop.service;
 
 import io.mrkuhne.mezo.api.dto.SessionTime;
-import io.mrkuhne.mezo.feature.boop.entity.WorkoutTimeOverrideEntity;
 import io.mrkuhne.mezo.feature.boop.repository.WorkoutTimeOverrideRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -40,14 +39,7 @@ public class SessionTimeService {
         if (planned == null) {
             throw new SystemRuntimeErrorException(SystemMessage.error(NO_SESSION_CODE).build(), HttpStatus.NOT_FOUND);
         }
-        WorkoutTimeOverrideEntity row = overrides.findByCreatedByAndDate(owner, date).orElseGet(() -> {
-            WorkoutTimeOverrideEntity e = new WorkoutTimeOverrideEntity();
-            e.setCreatedBy(owner);
-            e.setDate(date);
-            return e;
-        });
-        row.setTime(parsed);
-        overrides.saveAndFlush(row);
+        overrides.upsert(owner, date, parsed);
         SessionTime out = new SessionTime();
         out.setDate(date.toString());
         out.setTime(parsed.toString());
