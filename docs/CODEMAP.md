@@ -247,9 +247,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **entities→tables:** `BoopBriefEntity`→`boop_brief`, `WorkoutTimeOverrideEntity`→`workout_time_override`
   - **repositories:** `BoopBriefRepository`, `WorkoutTimeOverrideRepository`
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 1 IT + 0 unit
-  - **ITs:** `BoopRepositoriesIT`
-  - **populators:** `BoopBriefPopulator`, `DailyMetricPopulator`, `DatabasePopulator`, `WorkoutTimeOverridePopulator`
+  - **services:** `BoopDay`, `BoopDayAssembler`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 2 IT + 0 unit
+  - **ITs:** `BoopDayAssemblerIT`, `BoopRepositoriesIT`
+  - **populators:** `BoopBriefPopulator`, `CalendarEventPopulator`, `CheckInPopulator`, `DailyMetricPopulator`,
+    `DatabasePopulator`, `IntentionPopulator`, `MealPopulator`, `PatternPopulator`, `RecoveryPeriodPopulator`,
+    `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`, `WearableWorkoutPopulator`, `WeightLogPopulator`,
+    `WorkoutTimeOverridePopulator`
 
 ### character
 
