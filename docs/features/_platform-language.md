@@ -18,7 +18,7 @@ related: [_platform-auth-security, _platform-design-system, companion, settings,
 
 # Language — Feature Documentation
 
-> **2026-11-10 — Boop S3 (`mezo-r36n9.7`).** Two more server sentences in both bundles: `BOOP_REGENERATE_LIMIT_REACHED` and `BOOP_NO_PLANNED_SESSION`. The Boop brief itself is written in Hungarian by the companion LLM (see [`boop-ios.md`](boop-ios.md)).
+> **2026-11-10 — Boop S3 (`mezo-r36n9.7`).** Two more server sentences in both bundles: `BOOP_REGENERATE_LIMIT_REACHED` and `BOOP_NO_PLANNED_SESSION`. The Boop brief itself is written in Hungarian by the companion LLM (see [`boop-ios.md`](boop-ios.md)). Re-verified after the final-review fixes: the only resources change was the `mezo.boop.llm-timeout` tunable in `application.yml`; no message bundle or language behaviour changed.
 
 > One-line: the app speaks Hungarian (source, default) and English (second). The choice is stored with the account (`app_user.language`), switched in Settings → Nyelv, and drives the client message catalog, the date/number formats, the server-written error sentences and the language of every LLM answer. **Status: ✅ the mechanism is done (slice N1, `mezo-n4wf5.11`, 2026-10-11); 🔶 coverage is partial** — the frame, the Folyadék kit, the Settings pages and, since slice F5 (`mezo-n4wf5.5`, 2026-10-12), the whole **Fuel** domain (client catalogs and the server-written Fuel sentences) are bilingual; every other screen still shows Hungarian in English mode until its slice (N2 Nap/Edzés/Edzés közben, F6–F8 the rest, N3 the prompts and catalogs, F9 the full audit). This is a *platform* feature — no route of its own; its one control is the Nyelv block on `/settings/general`.
 
