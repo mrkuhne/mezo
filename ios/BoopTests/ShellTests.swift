@@ -15,4 +15,11 @@ struct ShellTests {
         #expect(WebOnlyTabView.Domain.fuel.hue == .fuel)
         #expect(WebOnlyTabView.Domain.boop.hue == .forma)
     }
+
+    @Test func panFollowsTheBarOrder() {
+        #expect(domainDirection(from: "Nap", to: "Fuel") == 1)
+        #expect(domainDirection(from: "Én", to: "Edzés") == -1)
+        #expect(domainDirection(from: "Boop", to: "Fuel") == -1)
+        #expect(domainDirection(from: "Edzés", to: "Boop") == 1)
+    }
 }
