@@ -48,3 +48,22 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
 @Test @MainActor func glassCardRenders() {
     #expect(render(Text("x").padding().nkGlass(), width: 200, height: 100) != nil)
 }
+
+@Test func navIsIconsWithSpokenNames() {
+    #expect(NKNav.items.map(\.label) == ["Nap", "Edzés", "Fuel", "Boop", "Én"])
+    #expect(NKNav.items.map(\.glyph) == ["sun-ink", "dumbbell-ink", "bowl-cream", "chat-ink", "person-sage"])
+}
+
+@Test @MainActor func tabStripRendersAtAccessibilitySize() {
+    #expect(render(NKTabStrip(tabs: ["Mai", "A napom", "Beszélgetés", "Rutin"], selected: .constant("Mai"), dot: "A napom")
+        .dynamicTypeSize(.accessibility3), width: 390, height: 60) != nil)
+}
+
+@Test @MainActor func flowFrameRenders() {
+    #expect(render(NKFlowFrame(hue: .alvas, crumb: "Egészség és naptár", eyebrow: "Kössük össze", title: "Egészség és naptár",
+                               sub: "Ebből tudom, milyen napod lesz.", onBack: {}) { Text("x") }, height: 800) != nil)
+}
+
+@Test @MainActor func tabPageRenders() {
+    #expect(render(NKTabPage(hue: .forma, heroHeight: 500, compact: nil) { Text("hero") } content: { Text("body") }, height: 800) != nil)
+}
