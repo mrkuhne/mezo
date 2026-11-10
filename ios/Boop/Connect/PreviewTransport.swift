@@ -8,7 +8,9 @@ import OpenAPIRuntime
 struct PreviewTransport: ClientTransport {
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         try await Task.sleep(for: .milliseconds(400))
-        if let reply = Self.morningReply(operationID, request) { return reply }
+        var sent = ""
+        if operationID == "setSessionTime", let body { sent = String(decoding: try await Data(collecting: body, upTo: 1 << 16), as: UTF8.self) }
+        if let reply = Self.morningReply(operationID, request, sent: sent) { return reply }
         if request.method == .put { return (HTTPResponse(status: .noContent), nil) }
         var h = HTTPFields(); h[.contentType] = "application/json"
         return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(#"{"inserted":0,"updated":0}"#))
@@ -20,10 +22,13 @@ struct PreviewTransport: ClientTransport {
     }
 
     /// Canned morning brief (invented numbers) and its session/pattern operations.
-    private static func morningReply(_ op: String, _ request: HTTPRequest) -> (HTTPResponse, HTTPBody?)? {
+    private static func morningReply(_ op: String, _ request: HTTPRequest, sent: String) -> (HTTPResponse, HTTPBody?)? {
         switch op {
         case "getBoopBrief", "regenerateBoopBrief": return json(morningBrief(date: queryDate(request)))
-        case "setSessionTime": return json(#"{"date":"\#(queryDate(request))","time":"19:00","plannedTime":"17:30"}"#)
+        case "setSessionTime":
+            // Echo the requested date and time (the request body is the JSON the client sent).
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: String]
+            return json(#"{"date":"\#(obj?["date"] ?? queryDate(request))","time":"\#(obj?["time"] ?? "19:00")","plannedTime":"17:30"}"#)
         case "clearSessionTime": return (HTTPResponse(status: .noContent), nil)
         case "decidePattern":
             return json(#"{"id":"6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0001","kind":"statistical","pairKey":"minta","category":"trigger","categoryLabel":"Kiváltó","title":"Minta","evidence":[],"status":"confirmed","lastDetectedAt":"2026-11-10T05:00:00Z","evidenceHits":4,"evidenceMisses":1}"#)
@@ -35,15 +40,16 @@ struct PreviewTransport: ClientTransport {
         let q = request.path?.split(separator: "?").last.map(String.init) ?? ""
         let hit = q.split(separator: "&").first { $0.hasPrefix("date=") }.map { String($0.dropFirst(5)) }
         if let hit { return hit }
-        let c = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        var greg = Calendar(identifier: .gregorian); greg.timeZone = .current
+        let c = greg.dateComponents([.year, .month, .day], from: Date())
         return String(format: "%04d-%02d-%02d", c.year ?? 2026, c.month ?? 1, c.day ?? 1)
     }
 
     private static func morningBrief(date: String) -> String {
         let hourly = [0.35, 0.5, 0.68, 0.82, 0.9, 0.86, 0.74, 0.6, 0.52, 0.44, 0.5, 0.62, 0.7, 0.66, 0.55, 0.45, 0.36, 0.28, 0.2]
             .map { String($0) }.joined(separator: ",")
-        // 06:00–24:00 in quarter hours: a 10:00–11:00 meeting and a 14:00–14:30 call.
-        let slots = (0..<72).map { i in (16..<20).contains(i) || (32..<34).contains(i) ? "true" : "false" }.joined(separator: ",")
+        // 06:00–24:00 in quarter hours: a 10:00–11:00 meeting and a 16:00–17:00 meeting just before the 17:30 session.
+        let slots = (0..<72).map { i in (16..<20).contains(i) || (40..<44).contains(i) ? "true" : "false" }.joined(separator: ",")
         return #"""
         {"date":"\#(date)","generatedAt":"\#(date)T05:40:00Z","state":"okay","nightsKnown":12,
          "metrics":[
@@ -58,8 +64,8 @@ struct PreviewTransport: ClientTransport {
          "energy":{"hourly":[\#(hourly)],"dipHour":15},
          "tonightTip":"Ma 22:30 körül érdemes lefeküdni, hogy a holnapi edzés előtt kipihent legyél.",
          "nextMealTip":"Ebédre tegyél be egy jó adag fehérjét.",
-         "conflict":{"text":"A 14:00-s hívás rányúlik a megszokott edzésidőre.","suggestedTime":"18:30"},
-         "day":{"sleep":{"bedtime":"23:05","wakeup":"06:17","totalMin":432,"deepMin":88,"remMin":96,"lightMin":218,"awakeMin":30,
+         "conflict":{"text":"A 16:00-s megbeszélés 17:00-ig tart, alig fél órával az edzés előtt.","suggestedTime":"18:30"},
+         "day":{"sleep":{"bedtime":"23:05","wakeup":"06:17","totalMin":432,"deepMin":88,"remMin":96,"lightMin":238,"awakeMin":30,
                   "hypnogram":[{"stage":2,"minutes":40},{"stage":3,"minutes":50},{"stage":2,"minutes":60},{"stage":1,"minutes":45},{"stage":0,"minutes":10},{"stage":2,"minutes":90},{"stage":3,"minutes":38},{"stage":1,"minutes":51},{"stage":2,"minutes":48}]},
           "bedtimeTarget":"22:30","deepSleepWeek":[72,64,null,80,70,76,88],"restingHrWeek":[59,58,60,null,58,59,57],
           "hrToday":{"min":54,"avg":66,"max":92},"steps":3240,"stepsGoal":10000,"activeKcal":210,

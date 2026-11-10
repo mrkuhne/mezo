@@ -3,7 +3,7 @@ import Testing
 @testable import BoopCore
 
 func briefJSON(session: String = #"{"title":"Vállak és hát","time":"17:30","plannedTime":"17:30","minutes":55,"exercises":[{"name":"Húzódzkodás","sets":4}]}"#,
-               date: String = "2026-11-10") -> String {
+               date: String = "2026-11-10", conflict: String = "") -> String {
     let slots = Array(repeating: "false", count: 72).joined(separator: ",")
     let hourly = Array(repeating: "0.6", count: 19).joined(separator: ",")
     return #"""
@@ -16,7 +16,7 @@ func briefJSON(session: String = #"{"title":"Vállak és hát","time":"17:30","p
        {"key":"pulzus","score":64,"display":"58","headline":"Pulzus","sentence":"Nyugodt."}],
      "brief":[{"text":"Jó reggelt!","link":"sleep"},{"text":"Ma edzés van."}],
      "energy":{"hourly":[\#(hourly)],"dipHour":15},
-     "tonightTip":"Feküdj le 22:30-kor.","nextMealTip":null,
+     "tonightTip":"Feküdj le 22:30-kor.","nextMealTip":null,\#(conflict)
      "day":{"deepSleepWeek":[60,null,70,65,80,75,72],"restingHrWeek":[58,59,null,57,58,56,57],
        "steps":3200,"stepsGoal":10000,"activeKcal":180,
        "session":\#(session),
@@ -87,18 +87,24 @@ struct MorningClientTests {
     }
 
     @Test func moveSessionUpdatesBrief() async {
-        stub.on("getBoopBrief", .json(200, briefJSON()))
+        let c = #""conflict":{"text":"Ütközik.","suggestedTime":"19:00"},"#
+        stub.on("getBoopBrief", .json(200, briefJSON(conflict: c)))
         stub.on("setSessionTime", .json(200, #"{"date":"2026-11-10","time":"19:00","plannedTime":"17:30"}"#))
+        stub.on("getBoopBrief", .json(200, briefJSON(session: #"{"title":"Vállak és hát","time":"19:00","plannedTime":"17:30","minutes":55,"exercises":[]}"#)))
         stub.on("clearSessionTime", .status(204))
+        stub.on("getBoopBrief", .json(200, briefJSON(conflict: c)))
         let s = store()
         await s.load(date: day(2026, 11, 10))
+        #expect(s.brief?.conflict != nil)
         await s.moveSession(to: "19:00")
         #expect(s.brief?.day.session?.time == "19:00")
-        #expect(stub.sent.last?.body?.contains("19:00") == true)
+        #expect(s.brief?.conflict == nil)
+        #expect(stub.sent.contains { $0.op == "setSessionTime" && $0.body?.contains("19:00") == true })
         await s.undoMove()
         #expect(s.brief?.day.session?.time == "17:30")
-        #expect(stub.ops.last == "clearSessionTime")
-        #expect(stub.sent.last?.path.contains("date=2026-11-10") == true)
+        #expect(s.brief?.conflict != nil)
+        #expect(stub.ops == ["getBoopBrief", "setSessionTime", "getBoopBrief", "clearSessionTime", "getBoopBrief"])
+        #expect(stub.sent[3].path.contains("date=2026-11-10"))
     }
 
     @Test func moveSessionWithNothingPlanned() async {
@@ -146,5 +152,28 @@ struct MorningClientTests {
         let s = store()
         await s.load(date: day(2026, 11, 10))
         #expect(s.problem == .offline)
+    }
+
+    @Test func gregorianDateEvenOnBuddhistDeviceCalendar() async {
+        stub.on("getBoopBrief", .json(200, briefJSON()))
+        var buddhist = Calendar(identifier: .buddhist)
+        buddhist.timeZone = TimeZone(identifier: "Europe/Budapest")!
+        let s = MorningStore(client: session.client, calendar: buddhist, onUnauthorized: {})
+        await s.load(date: day(2026, 11, 10))
+        #expect(stub.sent.first?.path.contains("date=2026-11-10") == true)
+    }
+
+    @Test func olderLoadNeverOverwritesNewer() async {
+        stub.on("getBoopBrief", .slowJson(200, briefJSON(date: "2026-11-09"), ms: 300))
+        stub.on("getBoopBrief", .json(200, briefJSON(date: "2026-11-10")))
+        let s = store()
+        let first = Task { await s.load(date: day(2026, 11, 9)) }
+        while stub.sent.isEmpty { await Task.yield() }
+        await s.load(date: day(2026, 11, 10))
+        #expect(s.brief?.date == "2026-11-10")
+        #expect(s.loading == true)   // the older call is still in flight
+        await first.value
+        #expect(s.brief?.date == "2026-11-10")
+        #expect(s.loading == false)
     }
 }

@@ -17,16 +17,24 @@ public enum MorningProblem: Equatable, Sendable {
 public final class MorningStore {
     public private(set) var brief: Brief?
     public private(set) var problem: MorningProblem?
-    public private(set) var loading = false
+    /// True while any load is in flight.
+    public var loading: Bool { inFlight > 0 }
+    private var inFlight = 0
 
     @ObservationIgnored private let client: Client
     @ObservationIgnored private let cal: Calendar
+    /// Bumped by every call that replaces the brief; a response applies only while it is still the latest.
+    @ObservationIgnored private var generation = 0
     @ObservationIgnored private let onUnauthorized: @MainActor () -> Void
     /// The time before the last move, for `undoMove` to restore locally.
     @ObservationIgnored private var movedFrom: String?
 
     public init(client: Client, calendar: Calendar = .current, onUnauthorized: @escaping @MainActor () -> Void) {
-        self.client = client; self.cal = calendar; self.onUnauthorized = onUnauthorized
+        // Dates on the wire are always Gregorian (a Buddhist/Japanese device calendar would send year 2569), in the device zone.
+        var greg = Calendar(identifier: .gregorian)
+        greg.timeZone = calendar.timeZone
+        greg.locale = Locale(identifier: "en_US_POSIX")
+        self.client = client; self.cal = greg; self.onUnauthorized = onUnauthorized
     }
 
     private enum Failure: Error { case unauthorized, offline, server, limit, noSession, badDate }
@@ -39,20 +47,28 @@ public final class MorningStore {
     /// Loads the brief of the device-local day. A day the server still calls "the future"
     /// (device zone ahead of Europe/Budapest around midnight) is retried once as yesterday.
     public func load(date: Date) async {
-        loading = true; defer { loading = false }
+        generation += 1; let mine = generation
+        inFlight += 1; defer { inFlight -= 1 }
         do {
-            do { brief = try await fetch(.get, ymd(date)) }
+            let result: Brief
+            do { result = try await fetch(.get, ymd(date)) }
             catch Failure.badDate {
                 guard let y = cal.date(byAdding: .day, value: -1, to: date) else { throw Failure.server }
-                brief = try await fetch(.get, ymd(y))
+                result = try await fetch(.get, ymd(y))
             }
-            problem = nil; movedFrom = nil
-        } catch { fail(error) }
+            guard mine == generation else { return }
+            brief = result; problem = nil; movedFrom = nil
+        } catch { if mine == generation { fail(error) } }
     }
 
     public func regenerate() async {
         guard let day = brief?.date else { return }
-        do { brief = try await fetch(.regenerate, day); problem = nil; movedFrom = nil } catch { fail(error) }
+        generation += 1; let mine = generation
+        do {
+            let result = try await fetch(.regenerate, day)
+            guard mine == generation else { return }
+            brief = result; problem = nil; movedFrom = nil
+        } catch { if mine == generation { fail(error) } }
     }
 
     public func moveSession(to time: String) async {
@@ -65,9 +81,11 @@ public final class MorningStore {
                 if movedFrom == nil { movedFrom = before }
                 brief?.day.session?.time = stored.time
                 problem = nil
+                await reloadAfterMove(day)
             case .badRequest: throw Failure.server
             case .unauthorized: throw Failure.unauthorized
-            case .undocumented(let status, _): throw status == 404 ? Failure.noSession : Failure.server
+            case .notFound: throw Failure.noSession
+            case .undocumented: throw Failure.server
             }
         } catch { fail(error) }
     }
@@ -81,10 +99,21 @@ public final class MorningStore {
                 let planned = brief?.day.session?.plannedTime ?? movedFrom
                 brief?.day.session?.time = planned
                 movedFrom = nil; problem = nil
+                await reloadAfterMove(day)
             case .unauthorized: throw Failure.unauthorized
             default: throw Failure.server
             }
         } catch { fail(error) }
+    }
+
+    /// The server recomputes conflict, energy and session after a move (the time is part of the brief's input),
+    /// so the brief is refetched. If that fails the local time update stays and the next load corrects it.
+    private func reloadAfterMove(_ day: String) async {
+        generation += 1; let mine = generation
+        do {
+            let fresh = try await fetch(.get, day)
+            if mine == generation { brief = fresh }
+        } catch Failure.unauthorized { onUnauthorized() } catch {}
     }
 
     /// Judges a pattern shown in the brief: `true` confirms, `false` rejects. The observation leaves the list.
