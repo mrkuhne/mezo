@@ -299,6 +299,31 @@ class BoopDayAssemblerIT extends AbstractIntegrationTest {
         assertThat(d.session()).isNull();
     }
 
+    @Test
+    void otherUsersRowsStayOut() {
+        UUID me = databasePopulator.populateUser("me@test.local");
+        UUID other = databasePopulator.populateUser("other@test.local");
+        sleepLogs.createTrackerSleepLog(other, DAY, "23:00", "07:00", new BigDecimal("8.00"), 7, 1,
+            480, 20, 240, 100, 90, null, "apple_health", new SleepHypnogram(10, "LLDD"), null);
+        metricPopulator.createDay(other, DAY, 9000, 50);
+        meals.createMealWithItems(other, DAY, "lunch", local(DAY, 12, 0),
+            List.of(new MealPopulator.Line("Idegen ebéd boopday", "700", "40", "80", "20", (short) 1)));
+        checkIns.createCheckIn(other, DAY, "06:30", 5, 1, null);
+        patterns.createPattern(other, "pair-other", "Idegen minta");
+
+        BoopDay d = assembler.assemble(me, DAY);
+
+        assertThat(d.sleep()).isNull();
+        assertThat(d.nightsKnown()).isZero();
+        assertThat(d.deepSleepWeek()).containsOnlyNulls();
+        assertThat(d.steps()).isNull();
+        assertThat(d.restingHrWeek()).containsOnlyNulls();
+        assertThat(d.meals()).isEmpty();
+        assertThat(d.kcalSoFar()).isZero();
+        assertThat(d.checkins()).noneMatch(BoopDay.Checkin::done);
+        assertThat(d.observations()).isEmpty();
+    }
+
     private static Instant local(LocalDate date, int hour, int minute) {
         return LocalDateTime.of(date, LocalTime.of(hour, minute)).atZone(BUDAPEST).toInstant();
     }
