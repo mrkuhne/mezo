@@ -234,15 +234,15 @@ components:
     BoopSleep:
       type: object
       nullable: true
-      required: [bedtime, wakeup, totalMin, deepMin, remMin, lightMin, awakeMin, hypnogram]
+      required: [bedtime, wakeup, totalMin, hypnogram]
       properties:
         bedtime: { type: string, description: HH:mm }
         wakeup: { type: string, description: HH:mm }
         totalMin: { type: integer }
-        deepMin: { type: integer }
-        remMin: { type: integer }
-        lightMin: { type: integer }
-        awakeMin: { type: integer }
+        deepMin: { type: integer, nullable: true }
+        remMin: { type: integer, nullable: true }
+        lightMin: { type: integer, nullable: true }
+        awakeMin: { type: integer, nullable: true }
         hypnogram:
           type: array
           items: { $ref: '#/components/schemas/BoopHypnogramSegment' }
@@ -255,12 +255,12 @@ components:
     BoopSession:
       type: object
       nullable: true
-      required: [title, time, minutes, exercises]
+      required: [title, exercises]
       properties:
         title: { type: string }
-        time: { type: string, description: HH:mm }
+        time: { type: string, nullable: true, description: 'HH:mm (moved time if overridden, else the planned slot)' }
         plannedTime: { type: string, nullable: true, description: HH:mm }
-        minutes: { type: integer }
+        minutes: { type: integer, nullable: true }
         exercises:
           type: array
           items:
@@ -310,7 +310,7 @@ components:
         count: { type: integer, minimum: 0 }
         busySlots:
           type: array
-          description: 72 flags, 20-minute slots over the day
+          description: '72 slots, 06:00–24:00, 15 minutes each; 1 = busy'
           minItems: 72
           maxItems: 72
           items: { type: boolean }

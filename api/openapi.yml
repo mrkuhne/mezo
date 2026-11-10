@@ -32310,10 +32310,6 @@ components:
         - bedtime
         - wakeup
         - totalMin
-        - deepMin
-        - remMin
-        - lightMin
-        - awakeMin
         - hypnogram
       properties:
         bedtime:
@@ -32326,12 +32322,16 @@ components:
           type: integer
         deepMin:
           type: integer
+          nullable: true
         remMin:
           type: integer
+          nullable: true
         lightMin:
           type: integer
+          nullable: true
         awakeMin:
           type: integer
+          nullable: true
         hypnogram:
           type: array
           items:
@@ -32355,21 +32355,21 @@ components:
       nullable: true
       required:
         - title
-        - time
-        - minutes
         - exercises
       properties:
         title:
           type: string
         time:
           type: string
-          description: 'HH:mm'
+          nullable: true
+          description: 'HH:mm (moved time if overridden, else the planned slot)'
         plannedTime:
           type: string
           nullable: true
           description: 'HH:mm'
         minutes:
           type: integer
+          nullable: true
         exercises:
           type: array
           items:
@@ -32469,7 +32469,7 @@ components:
           minimum: 0
         busySlots:
           type: array
-          description: '72 flags, 20-minute slots over the day'
+          description: '72 slots, 06:00–24:00, 15 minutes each; 1 = busy'
           minItems: 72
           maxItems: 72
           items:
