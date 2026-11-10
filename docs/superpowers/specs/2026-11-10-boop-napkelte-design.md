@@ -104,22 +104,46 @@ Top to bottom, the hero fills the first screen:
    ~58 pt). Its height over the horizon encodes the value: good values stand high, a weak value **sinks behind the
    ridges** (clipped at the horizon). No scale line, no 0/100 labels (*owner*). Soft glow behind it in the hue.
 5. **Verdict block:** metric name in spaced caps, a serif headline ("Jó napod lesz", "Kipihented magad", "Van még benne
-   több", "Jó úton jársz", "Nyugodt szív"), one or two sentences, and a glass pill **"Boop elmondja"** with a tiny orb
-   (plays the spoken brief).
+   több", "Jó úton jársz", "Nyugodt szív") and one or two sentences.
 6. **Tap a mini orb → the whole page re-colours** (*owner*): backdrop hue, hero orb (refills and re-rises), headline,
-   sentence, and the detail card below; a spring animation (~0.7 s).
+   sentence, the hero action and the cards below (§5.1a); a spring animation (~0.7 s).
+7. Floating glass **bottom bar**: Nap · Edzés · Fuel · Boop · Én.
 
-Below the hero, glass cards:
-7. **Boop mondja** — the longer brief in serif; key phrases white semibold with a **dotted underline** and tappable →
-   detail sheet (§5.4).
-8. **The selected metric's detail** — Készenlét: the day's energy curve with a "MOST" line; Alvás: the hypnogram;
-   Mozgás: steps per hour (past hours lit, the rest outlined); Fuel: three nutrient bars; Pulzus: the night's pulse line.
-9. **Utána jön** — rows with a glass icon circle, title, one line, chevron: Reggeli check-in (white **"Kitöltöm"** pill),
-   Alvás (done: check icon, dimmed), Mai szándék, Mérlegelés, Első étkezés. Each opens its step (§5.3).
-10. **Boop észrevette** — one observation in serif with a white bold phrase, evidence dots, chips *Igaz* (white) /
-    *Nem rólam szól* / *Majd meglátjuk*.
-11. **The action card** — today's session and Boop's suggestion with a white "Áttolom" pill.
-12. Floating glass **bottom bar**: Nap · Edzés · Fuel · Boop · Én.
+### 5.1a The orb is a lens — the selected metric decides the action and the cards (*owner*, 2026-11-10)
+
+**Hero action row** (under the verdict): one **white primary pill** (system Liquid Glass tinted white, interactive) with
+a glyph and a label, plus a **glass circle with Boop's tiny orb** = *Boop elmondja* (plays the spoken brief). On a
+metric switch the pill **melts into the next one** (`GlassEffectContainer` + shared `glassEffectID`, label
+interpolates) instead of being swapped.
+
+| Metric | Primary pill | Extra in the hero | Cards below, in order |
+|---|---|---|---|
+| **Készenlét** (violet) | **Kitöltöm** → check-in (while the check-in is not done; afterwards the pill becomes *Boop elmondja* and the circle hides — *call*) | — | Boop mondja · A nap energiája · **Mai szándék** (creed + foci, "Szerkesztem ›" → szándék step) · **Boop észrevette stack** |
+| **Alvás** (blue) | **Lefekvés 22:45 · Emlékeztess** → sets a bedtime reminder; becomes *Emlékeztetlek 22:15-kor* (in the evening the pill turns into *Esti levezetés* — *call*) | — | Tonight's hypnogram (with legend) · Mélyalvás 7 nap ("Részletek ›" → sleep sheet) · Boop's tip for tonight |
+| **Mozgás** (orange) | **Edzés indítása** → starts today's session; **long press = context menu**: *Mai edzés · Felsőtest*, *Futás*, *Séta* | — | **Mai edzés** card: title, "5 gyakorlat · kb. 60 perc · 3. hét, 2. nap", **sideways-snapping exercise photo cards** (name, sets × reps · kg) · Lépések ma (value / goal bar, active kcal, Boop's line) · the Áttolom card |
+| **Fuel** (green) | **Lefotózom** → first-meal capture | **Quick-log glass chips** under the pills: *Szokásos reggeli · Kávé · Víz +250 ml* — one tap logs, a glass toast "… · hozzáadva" slides from the top, success haptic | **Mai tápanyagok**: protein / carbs / fat as three still orbs filled to their share of the goal, grams inside ("820 / 2 350 kcal ›") · **Mai étkezések** timeline (time · round photo · title · kcal/protein; the suggested next meal dashed and dimmed) · Boop's next-meal suggestion |
+| **Pulzus** (rose) | **Légzés · 1 perc** → **the hero orb breathes**: scales up over 4 s, down over 4 s, headline "Belégzés" / "Kilégzés", one line "Kövesd a gömböt…", a soft haptic at each turn; pill becomes **Kész**; ends by itself after 60 s with a toast | — | Nyugalmi pulzus 7 nap ("Részletek ›" → pulse sheet) · Feszültség from today's check-in (still orb with the value, Boop's line) |
+
+Under every lens: a slim **Utána jön strip** — the morning steps as sideways-scrolling glass capsules (Check-in,
+Mai szándék, Mérlegelés, Első étkezés; done ones dimmed with a check), each opens its step — and, for every lens but
+Készenlét, the **Boop mondja** card last. The old full *Utána jön* list card and the single observation card are
+replaced by the strip and the stack.
+
+**Boop észrevette stack** (*owner* liked the notification-style idea): up to three observation cards stacked
+(back cards scaled 5 % per step and offset 10 pt); drag the top card — **right = Igaz**, **left = Nem rólam szól** —
+a label fades in with the drag, past 110 pt it flies off with a soft haptic and the next one rises; "<n> új" counter;
+an empty state "Köszönöm, ezekből tanulok."; hint line "Jobbra: igaz · balra: nem rólam szól". *Majd meglátjuk* is
+no longer a button (leaving the card in the stack is "majd meglátjuk") — *call*.
+
+The cards slide in on a switch (opacity + 28 pt rise); the check-in, szándék, mérlegelés and étkezés steps open as
+full-screen covers, the sheets as sheets (§5.3, §5.4).
+
+Interactions that are real behaviour, not only looks (for the plan): the bedtime reminder (a local notification),
+quick food logging (posts a meal from a template), starting a workout / run / walk (opens the Edzés flow — the Live
+Activity on the lock screen is a later slice), the observation verdicts (existing observation feedback endpoints).
+
+Every Boop line referred to here — the five metric verdicts, tonight's tip, the next-meal suggestion — comes from the S3
+morning brief (§9 point 1).
 
 ### 5.2 The other Nap tabs
 Same skeleton: title row + tabs over a **shorter painted head** (330 pt) with a serif page title and one line, glass
