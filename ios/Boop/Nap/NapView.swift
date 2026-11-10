@@ -7,6 +7,7 @@ import BoopDesign
 struct NapView: View {
     @Environment(\.openURL) private var openURL
     @Environment(HealthLink.self) private var link: HealthLink?
+    @Environment(Session.self) private var session
     @State private var connecting = false
     @State private var toast: String?
     @State private var motion = OrbMotion()
@@ -14,14 +15,15 @@ struct NapView: View {
     private var state: NapEmptyState {
         guard let link else { return .notConnected }
         var progress: Double?
-        var online = true
+        var online = true, failed = false
         switch link.sync.phase {
         case .running(let p): progress = p
         case .failed(.offline): online = false
+        case .failed: failed = true
         default: break
         }
         let t = link.sync.totals ?? link.sync.lastSummary
-        return .from(connected: link.connected, syncProgress: progress, nights: t?.nights ?? 0, calendarRows: t?.events ?? 0, online: online)
+        return .from(connected: link.connected, syncProgress: progress, nights: t?.nights ?? 0, calendarRows: t?.events ?? 0, online: online, syncFailed: failed)
     }
 
     var body: some View {
@@ -61,12 +63,13 @@ struct NapView: View {
         // Read the flag here so the page re-renders when it flips (a binding passed down left the cover unpresented).
         .connectCover(link, isPresented: Binding(get: { [showing = connecting] in showing }, set: { connecting = $0 }))
         .onDisappear { motion.stop() }
+        .onChange(of: link?.sync.phase) { _, p in if p == .failed(.unauthorized) { session.signOut() } }
     }
 
     private func act(_ s: NapEmptyState) {
         switch s {
         case .notConnected: connecting = true
-        case .offline, .syncing: Task { await link?.syncNow() }
+        case .offline, .syncFailed: Task { await link?.syncNow() }
         default: break
         }
     }
@@ -83,6 +86,9 @@ func napCopy(_ s: NapEmptyState) -> NapCopy {
     case .syncing(let p):
         NapCopy(orb: "\(Int((p * 100).rounded())) %", orbCaption: "betöltve", caps: "BEHÚZOM", title: "Olvasom az elmúlt 60 napot",
                 sentence: "Pár perc, közben használhatod a telefont.", action: nil)
+    case .syncFailed:
+        NapCopy(orb: "–", orbCaption: nil, caps: "MEGAKADTAM", title: "Nem sikerült frissíteni",
+                sentence: "Az utolsó frissítés közben hibát kaptam. Amit eddig behúztam, megvan; próbáljuk újra.", action: "Újra próbálom")
     case .learning(let n):
         NapCopy(orb: "\(n) / \(NapEmptyState.nightsNeeded)", orbCaption: "éjszaka", caps: "MÉG TANULOM", title: "Még tanulom a ritmusod",
                 sentence: "\(n) éjszakát látok, \(NapEmptyState.nightsNeeded) kell, hogy pontos legyek. Addig is mutatom, amit már tudok, de pontszámot még nem adok.",

@@ -20,4 +20,9 @@ struct NapCopyTests {
             #expect(!(c.title + c.sentence + c.caps).contains("Mezo"))
         }
     }
+    @Test func failedSyncOffersARetry() {
+        let c = napCopy(.syncFailed)
+        #expect(c.title == "Nem sikerült frissíteni")
+        #expect(c.action == "Újra próbálom")
+    }
 }

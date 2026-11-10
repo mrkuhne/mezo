@@ -21,3 +21,12 @@ struct NapEmptyStateTests {
         #expect(NapEmptyState.from(connected: true, syncProgress: nil, nights: 14, calendarRows: 2, online: true) == .ready)
     }
 }
+
+struct NapEmptyStateSyncFailedTests {
+    @Test func failedSyncHasItsOwnState() {
+        #expect(NapEmptyState.from(connected: true, syncProgress: nil, nights: 35, calendarRows: 3, online: true, syncFailed: true) == .syncFailed)
+    }
+    @Test func offlineStillWinsOverFailed() {
+        #expect(NapEmptyState.from(connected: true, syncProgress: nil, nights: 35, calendarRows: 3, online: false, syncFailed: true) == .offline)
+    }
+}
