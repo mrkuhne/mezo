@@ -1,6 +1,6 @@
 # Boop — the "Napkelte" look (dark glass, painted sky, the rising orb) — design
 
-- **Date:** 2026-11-10 · **Epic:** `mezo-r36n9` · **Issue:** `mezo-r36n9.3` · **Status:** draft for owner OK — the orb-as-lens Mai (§5.1a) and day path (§5.1b) approved in the simulator 2026-11-10
+- **Date:** 2026-11-10 · **Epic:** `mezo-r36n9` · **Issue:** `mezo-r36n9.3` · **Status:** draft for owner OK — the orb-as-lens Mai (§5.1a) and day path (§5.1b) and the per-orb pages, path, ground, icon-only bar and Forma (§5.1a–b) approved in the simulator 2026-11-10
 - **Replaces:** the **Lágy** look for Boop (spec `2026-11-09-boop-ios-v1-design.md` §0 and §4.2 visuals). Everything in
   that spec that is *not* about looks — data, backend, install, slices, the six moments, owner decisions in its §8 —
   stays valid.
@@ -61,7 +61,7 @@ day looks; tapping a number re-colours the world around it.
   Everything else is white on glass: cards, buttons, charts, bars, tab bar, icons.
 - **Five hues**, one per metric, each a sky triple (top, middle, horizon) and an orb quadruple (from the spike's
   `PaintedLandscape.skies` and `SunMetric.all[].orb`):
-  Készenlét violet-dawn · Alvás deep blue · Mozgás orange sunrise · Fuel teal-green · Pulzus rose dusk.
+  Forma (formerly Készenlét) violet-dawn · Alvás deep blue · Mozgás orange sunrise · Fuel teal-green · Pulzus rose dusk.
   Inner pages pick a hue by meaning (szándék violet, mérlegelés green, étkezés orange, A napom orange, Beszélgetés
   violet, Rutin green). *call* for the per-page picks.
 - **Type** — *owner* ("the A font is very good"):
@@ -98,7 +98,7 @@ Top to bottom, the hero fills the first screen:
 2. **Nap tabs** as thin text tabs: *Mai · A napom · Beszélgetés · Rutin*; selected = white semibold with a **1 pt**
    underline; others white 62 %; a small dot on "A napom" in the morning; **no hairline under the row** (*owner*).
 3. **Metric row:** five **mini orbs** in five equal columns, edge to edge (*owner*: even spacing), 46 pt, value in the
-   orb, name under it — Készenlét, Alvás, Mozgás, Fuel, Pulzus. **Only the selected one is in full colour and alive**;
+   orb, name under it — **Forma**, Alvás, Mozgás, Fuel, Pulzus (*owner* 2026-11-10: "Készenlét" is renamed **Forma**). **Only the selected one is in full colour and alive**;
    the others are ~25 % saturation and **frozen** (a still frame of the shader). **No ring** on any of them (*owner*).
 4. **The rising orb:** the selected metric's orb, ~156 pt, liquid filled to the value, the number inside (Outfit Light
    ~58 pt). Its height over the horizon encodes the value: good values stand high, a weak value **sinks behind the
@@ -107,7 +107,8 @@ Top to bottom, the hero fills the first screen:
    több", "Jó úton jársz", "Nyugodt szív") and one or two sentences.
 6. **Tap a mini orb → the whole page re-colours** (*owner*): backdrop hue, hero orb (refills and re-rises), headline,
    sentence, the hero action and the cards below (§5.1a); a spring animation (~0.7 s).
-7. Floating glass **bottom bar**: Nap · Edzés · Fuel · Boop · Én.
+7. Floating glass **bottom bar**: Nap · Edzés · Fuel · Boop · Én as **icons only, no labels** (*owner*); the names stay as
+   accessibility labels.
 
 ### 5.1a The orb is a lens — the selected metric decides the action and the cards (*owner*, 2026-11-10)
 
@@ -116,17 +117,17 @@ a glyph and a label, plus a **glass circle with Boop's tiny orb** = *Boop elmond
 metric switch the pill **melts into the next one** (`GlassEffectContainer` + shared `glassEffectID`, label
 interpolates) instead of being swapped.
 
-| Metric | Primary pill | Extra in the hero | Stations that open into cards on the day path (§5.1b) |
+| Metric | Primary pill | Extra in the hero | Below the hero: tiles · short path (only this orb's own stations, §5.1b) |
 |---|---|---|---|
-| **Készenlét** (violet) | **Kitöltöm** → check-in (while the check-in is not done; afterwards the pill becomes *Boop elmondja* and the circle hides — *call*) | — | Check-in (still orb + line + white *Kitöltöm*) · **Boop észrevette** (the swipe stack) · Mélypont (mini curve + Boop's line) |
-| **Alvás** (blue) | **Lefekvés 22:45 · Emlékeztess** → sets a bedtime reminder; becomes *Emlékeztetlek 22:15-kor* (in the evening the pill turns into *Esti levezetés* — *call*) | — | Ébredés (last night's hypnogram) · Lefekvés (tonight's wind-down advice) |
-| **Mozgás** (orange) | **Edzés indítása** → starts today's session; **long press = context menu**: *Mai edzés · Felsőtest*, *Futás*, *Séta* | — | Mélypont (a 10-minute walk suggestion) · Edzés (sideways exercise photo strip, "5 gyakorlat · 3. hét, 2. nap", white *Áttolom 18:30-ra*) |
-| **Fuel** (green) | **Lefotózom** → first-meal capture | **Quick-log glass chips** under the pills: *Szokásos reggeli · Kávé · Víz +250 ml* — one tap logs, a glass toast "… · hozzáadva" slides from the top, success haptic | Every meal: photo, protein/carbs line, white stacked macro bar; future meals dimmed with a white camera button |
-| **Pulzus** (rose) | **Légzés · 1 perc** → **the hero orb breathes**: scales up over 4 s, down over 4 s, headline "Belégzés" / "Kilégzés", one line "Kövesd a gömböt…", a soft haptic at each turn; pill becomes **Kész**; ends by itself after 60 s with a toast | — | Megbeszélések (busy ribbon + "the 14–16 band is the densest") · an extra station **Egy perc légzés · 13:55** before the dense block |
+| **Forma** (violet; renamed from Készenlét, *owner*) | **Kitöltöm** → check-in (while the check-in is not done; afterwards the pill becomes *Boop elmondja* and the circle hides — *call*) | — | no tiles · MOST → Reggeli check-in (card, *Kitöltöm*) → Mai szándék (card, creed + *Megírom*) → Boop észrevette (swipe stack) → **all of the day's later check-ins** as one-line stations: 12:30 Déli, 16:00 Délutáni, 21:30 Esti (napzárás) — each opens into a card when it is due (*owner*) · then the Boop mondja card |
+| **Alvás** (blue) | **Lefekvés 22:45 · Emlékeztess** → sets a bedtime reminder; becomes *Emlékeztetlek 22:15-kor* (in the evening the pill turns into *Esti levezetés* — *call*) | — | tiles: Alvásidő (night arc with a moon) · Mélyalvás (still blue orb) · Elalvás (a short descent line) · path: Elalvás 22:48 → Az éjszaka (hypnogram card) → Ébredés 06:53 → MOST → Lefekvés 22:45 (wind-down card) |
+| **Mozgás** (orange) | **Edzés indítása** → starts today's session; **long press = context menu**: *Mai edzés · Felsőtest*, *Futás*, *Séta* | — | tiles: Lépések (winding trail) · Aktív kalória (a filling bar) · path: MOST → Mélyponti séta (card) → Felsőtest edzés (exercise photo strip + *Áttolom 18:30-ra*) |
+| **Fuel** (green) | **Lefotózom** → first-meal capture | **Quick-log glass chips** under the pills: *Szokásos reggeli · Kávé · Víz +250 ml* — one tap logs, a glass toast "… · hozzáadva" slides from the top, success haptic | tiles (*owner*): **Víz** (the waving glass; tap = +250 ml, a drop falls in) · **Kalória** (still green orb, "820 / 2 350 kcal") · **Makrók** (three filling bars: protein · carbs · fat) · path: meals only — Reggeli (photo + macro bar) → MOST → Ebéd (Boop's suggestion, camera button) → Vacsora |
+| **Pulzus** (rose) | **Légzés · 1 perc** → **the hero orb breathes**: scales up over 4 s, down over 4 s, headline "Belégzés" / "Kilégzés", one line "Kövesd a gömböt…", a soft haptic at each turn; pill becomes **Kész**; ends by itself after 60 s with a toast | — | tiles: Nyugalmi pulzus (7-day mini line) · Feszültség (still violet orb, from the check-in) · path: MOST → Egy perc légzés 13:55 (card) → Sűrű megbeszélés-sáv 14:00–16:00 (busy ribbon card) |
 
-Under the hero, for every lens: the **tile row**, the **day path** (§5.1b) and the **Boop mondja** card last. The
-earlier per-lens card piles, the full *Utána jön* list and the slim *Utána jön* strip are replaced by the path (the
-morning steps are stations on it).
+**Only what belongs to the orb** (*owner*, 2026-11-10: "egy gömb oldalán túl sok mindent mutatunk"): under the hero
+each orb shows its 2–3 tiles and a **short path of its own stations** (table above) — about one screen of scrolling.
+The whole day's path lives on the **A napom** tab (§5.2). The Boop mondja card closes the Forma page only.
 
 **Boop mondja** card: tiny orb + "BOOP MONDJA", the longer brief in serif; key phrases white semibold with a **dotted
 underline**, tappable → detail sheet (§5.4); the word-by-word typing synced to the voice runs here when *Boop elmondja*
@@ -148,42 +149,43 @@ Activity on the lock screen is a later slice), the observation verdicts (existin
 Every Boop line referred to here — the five metric verdicts, tonight's tip, the next-meal suggestion — comes from the S3
 morning brief (§9 point 1).
 
-### 5.1b Below the hero: three tiles and the day path (*owner*, 2026-11-10)
+### 5.1b Below the hero: tiles, the path, and a ground that never goes black (*owner*, 2026-11-10)
 
-The owner found plain stacked cards flat ("nincsenek új grafikák, custom megoldások"). After a look at award-winning
-apps (Gentler Streak's Activity Path, Flighty's timeline, Apple Weather's modules, (Not Boring) Habits' tactile
-checkbox) the page below the hero became **one custom graphic — the day as a glowing path** — with a tile row above.
+Plain stacked cards read flat to the owner; after a look at award-winning apps (Gentler Streak's Activity Path,
+Flighty's timeline, Apple Weather's modules, (Not Boring) Habits' tactile checkbox) the area below the hero became
+**tiles with their own drawings + a glowing path**, and then was cut down to **only the orb's own content**.
 
-**Tile row** — three equal glass tiles (22 pt radius), mono label, a **drawn mini graphic**, value + sub-line:
-- **Víz** — a glass whose water surface gently waves, filled to the day's intake. **Tap = +250 ml**: a drop falls into
-  the glass, the level springs up, soft haptic; value updates ("1,75 l").
-- **Lépések** — a winding dotted trail; the walked part lit white with a warm glow, a dot where you are, the goal dot
-  at the end.
-- **Fehérje** — a still orb filled to the share of the protein goal.
+**Tiles** — equal glass tiles in one row (22 pt radius): mono label, a **drawn mini graphic**, value + sub-line. The
+drawings per orb are in the table in §5.1a. The Víz tile is tactile: tap = +250 ml, a drop falls into the waving glass,
+the level springs up, soft haptic.
 
-**The day path** — header "A NAPOD" + "<n> esemény · Google Naptár"; then rows: time (mono, right-aligned) · the line
-with a node · title + one line. Rules:
+**The path** — rows: time (mono, right-aligned) · the line with a node · title + one line. Rules:
 - The line is continuous; the part **up to now is lit** (2 pt white with a soft glow in the page hue), the rest is
   white 16 %.
 - Past stations: solid white node with a dark check, dimmed text. Future stations: dark node with a thin ring and the
-  station glyph. **Emphasised** stations (by the lens, table above) get a brighter ring, a hue glow, a larger title and
-  open a **glass card hanging off the line**; the rest stay one line.
+  station glyph. Stations that carry content (table) open a **glass card hanging off the line** and get a brighter
+  ring + hue glow; one-line stations stay quiet.
 - A **MOST** row sits at the current time: a white dot with a breathing halo in the page hue.
-- Stations come from today's data: wake-up (sleep), weigh-in, meals (logged + planned + Boop's suggestion), the
-  check-in (pending at "now" until done), Boop's observations (Készenlét lens), the calendar block summarised as one
-  "Megbeszélések · <n> esemény" station (*call* — not one row per meeting), the energy dip, the training session,
-  bedtime; the Pulzus lens adds a breathing station before the densest block.
-- Scroll: rows ease in with a slight 3D tilt, fade and scale (scroll transitions); cards open/close with a spring when
-  the lens changes.
+- Scroll: rows ease in with a slight 3D tilt, fade and scale (scroll transitions); content swaps with a spring when the
+  orb changes.
+
+**The ground never goes black** (*owner*: "görgetés után teljesen eltűnik minden szín … full fekete") — three layers:
+1. **Derengés:** below the backdrop the page keeps the **deepest shade of the orb's hue** (violet-night, blue-night,
+   amber-night…) as a soft vertical gradient all the way down; it re-colours with the orb.
+2. **Úszó fények:** two or three very large, very soft lights in the hue behind the cards that move **slower than the
+   scroll** (parallax), so scrolling passes through them.
+3. **Tükröződő táj:** at the very bottom the painted landscape returns **mirrored and faint** (~28 %), like a lake
+   closing the page (*owner*: "finoman").
 
 **Compact header** — once the hero scrolls away, a glass capsule slides in at the top: live mini orb · metric name ·
-value · headline ("Készenlét 78 · Jó napod lesz").
+value · headline ("Forma 78 · Jó napod lesz").
 
 ### 5.2 The other Nap tabs
 Same skeleton: title row + tabs over a **shorter painted head** (330 pt) with a serif page title and one line, glass
 cards below.
-- **A napom** — the day as a timeline: time (mono) · glass icon circle · line of text; past rows dimmed; a "MOST · hh:mm"
-  marker between past and future.
+- **A napom** — **the whole day's path** (same path component as §5.1b, every station as a quiet one-line row: wake-up,
+  weigh-in, meals, check-ins, the calendar block as one "Megbeszélések · <n> esemény" station, energy dip, training,
+  bedtime), lit up to MOST. The head fades into the page hue without an edge.
 - **Beszélgetés** — chat with Boop: Boop's bubbles left with the small orb as avatar (white 7 %), the user's right
   (white 16 %), a glass input pill "Írj a Boopnak…".
 - **Rutin** — the morning chain as linked circles (done = solid white with dark glyph, pending = glass) with labels; a
