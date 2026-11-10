@@ -74,4 +74,18 @@ class BoopRepositoriesIT extends AbstractIntegrationTest {
         assertThat(rows).extracting(r -> r.getDate()).containsExactly(DAY.minusDays(3), DAY.minusDays(1));
         assertThat(workouts.findByCreatedByAndDateBetweenOrderByDate(user, DAY.minusDays(5), DAY)).isEmpty();
     }
+
+    @Test
+    void softDeletedRowsAreInvisibleAndFreeTheSlot() {
+        UUID user = databasePopulator.populateUser("soft@test.local");
+        var old = briefPopulator.createBrief(user, DAY, "{\"v\":1}", "old");
+        var oldOverride = overridePopulator.createOverride(user, DAY, LocalTime.of(7, 0));
+        jdbc.update("update boop_brief set is_deleted = true where id = ?", old.getId());
+        jdbc.update("update workout_time_override set is_deleted = true where id = ?", oldOverride.getId());
+        briefPopulator.createBrief(user, DAY, "{\"v\":2}", "new");
+        overridePopulator.createOverride(user, DAY, LocalTime.of(19, 0));
+        assertThat(briefs.findByCreatedByAndDate(user, DAY)).get().extracting(b -> b.getInputHash()).isEqualTo("new");
+        assertThat(overrides.findByCreatedByAndDate(user, DAY)).get()
+            .extracting(o -> o.getTime()).isEqualTo(LocalTime.of(19, 0));
+    }
 }

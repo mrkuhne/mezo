@@ -11,12 +11,16 @@ import java.time.LocalTime;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 /** Today's training session moved to another time of day (Boop S3, mezo-r36n9.7). */
 @Getter
 @Setter
 @Entity
 @Table(name = "workout_time_override")
+@SQLDelete(sql = "update workout_time_override set is_deleted = true where id = ?")
+@SQLRestriction("is_deleted = false")
 public class WorkoutTimeOverrideEntity extends OwnedEntity {
 
     @Id
