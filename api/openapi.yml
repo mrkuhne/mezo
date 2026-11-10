@@ -32346,7 +32346,7 @@ components:
           type: integer
           minimum: 0
           maximum: 3
-          description: '0 awake, 1 light, 2 REM, 3 deep'
+          description: '0 awake, 1 REM, 2 light, 3 deep'
         minutes:
           type: integer
           minimum: 0
