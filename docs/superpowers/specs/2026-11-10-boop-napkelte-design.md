@@ -287,3 +287,43 @@ Calls settled by the designer after the builder check (open to correction):
    typing synced to the voice (in the Boop mondja card, started by "Boop elmondja"); the energy curve keeps the
    press-and-drag magnifier; conflicts are shown in the A napod sheet's conflict card instead of stems on the curve.
    *call*
+
+## 10. Gap review against Lágy and the shipped app (owner decisions, 2026-11-10)
+
+A read-through of the Lágy prototype, the Lágy Swift spike, the shipped app and the v1 spec found what this design did
+not yet carry. Nothing is dropped without a joint decision (*owner*).
+
+**Added — details the builder must deliver (no product decision needed):**
+1. **States** for Mai, the orbs, tiles and path: no sync yet · thin data (< 14 nights: orbs show "még tanulom" and no
+   rise) · no calendar · offline · brief failed / loading (skeleton orb + shimmer on tiles). Every inner page and sheet
+   gets an empty and an error state.
+2. **Boop's voice controls**: mute toggle and **Mondd újra** (replay) next to *Boop elmondja* and in the Boop mondja
+   card.
+3. **The energy curve keeps its press-and-drag magnifier** (time, energy %, what is on) — on the *A napod* sheet, with
+   anchors and the conflict card.
+4. **Boop észrevette full list**: a "Mind ›" at the end of the swipe stack opens a page of all observations with evidence
+   dots and *Figyeljem tovább / Elengedem*.
+5. **Mérlegelés** becomes a morning station on the Forma path (before the check-in); **finished steps show a one-line
+   summary** on their station ("82,4 kg · trend 82,2", "energia 8 · hangulat 8").
+6. **Header destinations**: the bell opens the notification list and carries an unread count; the avatar opens
+   settings/profile.
+7. **Midday and afternoon check-in content**: the shorter question sets of the web's Check-in 2.0 plan, in the same
+   orb-answer screen.
+8. **Frame screens in this look**: sign-in, register (invite code, field errors, offline card), onboarding (profile,
+   first weight, "Szia, Boop vagyok"), Health/Calendar permissions with the 60-day backfill progress, the Connect card.
+9. **The four other domains** keep what the shipped app shows today until their own rounds.
+10. **Widgets and in-place notification actions** (water +250, tick a step, answer the check-in, snooze) are named as a
+    later slice so they are not lost.
+
+**Decided by the owner (recommendations accepted):**
+- **"+" quick add returns** in the header: a sheet with Víz · Étel · Súly · Edzés · Napló.
+- **Evening Mai now**: in the evening the hero pill, the orbs' headlines and the paths turn to the evening (wind-down,
+  dinner, bedtime); the **napzárás ceremony** (gratitude, day score) comes with the Rutin tab's round — until then the
+  21:30 Esti check-in closes the day.
+- **"Fáj valami?" body map stays** as one check-in question, drawn as a glass body silhouette.
+- **Kímélő mód stays**: when active, the hero and the paths switch to the recovery version (gentler verdict, no
+  training station, a kímélő banner).
+- **Életjelek (six vitals) and daily quests / XP are not in Boop v1**; they stay in the web app (the orbs already carry
+  the state; points do not fit the calm, premium tone).
+- **Deeper Rutin, Beszélgetés and A napom features** (habit builder, 29-day grid, team messages, past days) are **kept
+  for their tabs' own rounds**, not dropped.
