@@ -54,6 +54,11 @@ struct AuraSunrise: View {
     @State private var open: String? = UserDefaults.standard.string(forKey: "auraOpen").flatMap { $0.isEmpty ? nil : $0 }
     @State private var sheet: String? = UserDefaults.standard.string(forKey: "auraSheet").flatMap { $0.isEmpty ? nil : $0 }
     @State private var tab = min(3, max(0, UserDefaults.standard.integer(forKey: "auraTab")))
+    @State private var breathing = false
+    @State private var inhale = false
+    @State private var breathTimer: Timer?
+    @State private var reminderSet = false
+    @State private var toast: String?
     private let base = Color(hex: 0x0D1218)
     private var m: SunMetric { SunMetric.all[sel] }
 
@@ -63,15 +68,9 @@ struct AuraSunrise: View {
                 VStack(spacing: 0) {
                     if tab == 0 {
                         hero(height: geo.size.height + geo.safeAreaInsets.top - 30)
-                        VStack(spacing: 12) {
-                            voiceCard
-                            detailCard
-                            nextSteps
-                            observation
-                            nextCard
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 170)
+                        lensCards
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 170)
                     } else {
                         AuraNapTab(tab: tab, header: AnyView(header))
                             .padding(.bottom, 170)
@@ -84,7 +83,21 @@ struct AuraSunrise: View {
             .background(pageBackground.ignoresSafeArea())
         }
         .preferredColorScheme(.dark)
-        .onDisappear { motion.stop() }
+        .onDisappear { motion.stop(); stopBreath() }
+        .overlay(alignment: .top) {
+            if let t = toast {
+                HStack(spacing: 8) {
+                    AuraGlyph("check-ink", .white, size: 15)
+                    Text(t).font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                }
+                .padding(.horizontal, 16).frame(height: 42)
+                .glassEffect(.regular, in: .capsule)
+                .padding(.top, 6)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .sensoryFeedback(.success, trigger: toast)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: inhale)
         .sheet(item: Binding(get: { sheet.map(StepID.init) }, set: { sheet = $0?.id })) { st in
             AuraDetailSheet(kind: st.id)
                 .presentationDetents([.medium, .large])
@@ -105,8 +118,100 @@ struct AuraSunrise: View {
 
     struct StepID: Identifiable { let id: String }
 
+    // MARK: The lens: what the selected orb shows below the hero
+
+    @ViewBuilder private var lensCards: some View {
+        VStack(spacing: 12) {
+            switch sel {
+            case 1:
+                detailCard
+                LensCard(label: "MÉLYALVÁS · 7 NAP", trailing: "Részletek", onTrailing: { sheet = "sleep" }) {
+                    WeekBars(values: [72, 81, 64, 90, 77, 84, 96], avg: 78, unit: "p").frame(height: 130)
+                }
+                AuraBoopCard(text: "Ma este 22:45-re feküdj le: 21:30 után már ne nézz képernyőt, és a vacsora legyen meg 20:00-ig. Így holnap is ilyen mélyalvásod lesz.", motion: motion)
+            case 2:
+                WorkoutPreview()
+                StepsCard()
+                nextCard
+            case 3:
+                MacroOrbs()
+                MealsTimeline()
+                AuraBoopCard(text: "Ebédre lazac rizzsel és salátával: kb. 42 g fehérje. Ha marad egy joghurt délutánra, estére meglesz a 165 g.", motion: motion)
+            case 4:
+                LensCard(label: "NYUGALMI PULZUS · 7 NAP", trailing: "Részletek", onTrailing: { sheet = "heart" }) {
+                    WeekBars(values: [61, 60, 62, 59, 58, 59, 57], avg: 59, unit: "").frame(height: 130)
+                }
+                TensionCard()
+            default:
+                voiceCard
+                detailCard
+                intentionCard
+                ObservationStack(orb: m.orb, motion: motion)
+            }
+            NextStrip(onOpen: { open = $0 }).padding(.top, 6)
+            if sel != 0 { voiceCard }
+        }
+        .id(sel)
+        .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 28)), removal: .opacity))
+    }
+
+    private var intentionCard: some View {
+        LensCard(label: "MAI SZÁNDÉK", trailing: "Szerkesztem", onTrailing: { open = "intention" }) {
+            Text("„Szándékkal élek, nem sodródom.”").font(AuraFont.serif(20)).foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(["Nyugodt tempó a megbeszéléseken", "45 g fehérje ebédre"].enumerated()), id: \.offset) { k, f in
+                    HStack(spacing: 10) {
+                        Text("\(k + 1)").font(.custom("Outfit", size: 17).weight(.light)).foregroundStyle(.white.opacity(0.6))
+                        Text(f).font(.system(size: 15)).foregroundStyle(.white.opacity(0.9))
+                    }
+                }
+            }
+        }
+    }
+
+    private func act(_ what: String) {
+        switch what {
+        case "checkin": open = "checkin"
+        case "meal": open = "meal"
+        case "bedtime": reminderSet.toggle(); if reminderSet { show("Emlékeztető 22:15-re beállítva") }
+        case "workout": show("Felsőtest indul · 00:00")
+        case "run": show("Futás indul · 00:00")
+        case "walk": show("Séta indul · 00:00")
+        case "breath": breathing ? stopBreath() : startBreath()
+        default:
+            if what.hasPrefix("log:") { show(String(what.dropFirst(4)) + " · hozzáadva") }
+        }
+    }
+
+    private func show(_ t: String) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { toast = t }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+            if toast == t { withAnimation(.easeInOut) { toast = nil } }
+        }
+    }
+
+    private func startBreath() {
+        breathing = true
+        inhale = false
+        withAnimation(.easeInOut(duration: 4)) { inhale = true }
+        var n = 0
+        let t = Timer(timeInterval: 4, repeats: true) { _ in
+            n += 1
+            if n >= 15 { stopBreath(); show("Egy perc légzés · kész"); return }
+            withAnimation(.easeInOut(duration: 4)) { inhale.toggle() }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        breathTimer = t
+    }
+
+    private func stopBreath() {
+        breathTimer?.invalidate(); breathTimer = nil
+        withAnimation(.easeInOut(duration: 0.8)) { breathing = false; inhale = false }
+    }
+
     private func pick(_ i: Int) {
         guard i != sel else { return }
+        stopBreath()
         withAnimation(.spring(response: 0.7, dampingFraction: 0.82)) { sel = i }
         orbKey += 1
     }
@@ -142,22 +247,17 @@ struct AuraSunrise: View {
                 Text(m.name.uppercased()).font(.system(size: 14, weight: .semibold)).tracking(2.6)
                     .foregroundStyle(.white.opacity(0.85)).padding(.top, 4)
                     .contentTransition(.opacity)
-                Text(m.headline).font(AuraFont.serif(42)).foregroundStyle(.white).padding(.top, 10)
+                Text(breathing ? (inhale ? "Belégzés" : "Kilégzés") : m.headline).font(AuraFont.serif(42)).foregroundStyle(.white).padding(.top, 10)
                     .contentTransition(.opacity)
-                Text(m.sentence)
+                    .animation(.easeInOut(duration: 0.6), value: inhale)
+                Text(breathing ? "Kövesd a gömböt: négy másodperc be, négy másodperc ki." : m.sentence)
                     .font(.system(size: 17)).lineSpacing(4).multilineTextAlignment(.center)
                     .foregroundStyle(.white.opacity(0.85)).padding(.horizontal, 30).padding(.top, 10)
                     .frame(height: 96, alignment: .top)
                     .contentTransition(.opacity)
-                HStack(spacing: 10) {
-                    LivingOrb(mood: .good, size: 20, motion: motion, palette: m.orb, glow: false, level: 0.85)
-                    Text("Boop elmondja").font(.system(size: 16, weight: .semibold))
-                }
-                .foregroundStyle(.white)
-                .padding(.leading, 14).padding(.trailing, 24).padding(.vertical, 12)
-                .background(Capsule().fill(.black.opacity(0.25)))
-                .glassEffect(.clear, in: .capsule)
-                .padding(.top, 8)
+                AuraLensAction(sel: sel, orb: m.orb, motion: motion, breathing: breathing, reminderSet: $reminderSet,
+                               onPrimary: act, onSpeak: { show("Boop beszél…") })
+                    .padding(.top, 4)
                 Spacer(minLength: 0)
             }
             .frame(height: height)
@@ -346,6 +446,7 @@ struct AuraSunrise: View {
                     LivingOrb(mood: .good, size: size, motion: motion, palette: m.orb, glow: true,
                               level: Double(m.value) / 100)
                         .id(orbKey)
+                        .scaleEffect(breathing ? (inhale ? 1.22 : 0.84) : 1)
                     Text("\(m.value)").font(.custom("Outfit", size: 58).weight(.light)).foregroundStyle(.white)
                         .monospacedDigit()
                         .contentTransition(.numericText(value: Double(m.value)))

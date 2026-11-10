@@ -141,17 +141,7 @@ struct AuraRoot: View {
             .transition(.opacity)
 
             VStack(spacing: 10) {
-                if variant == 3 {
-                    Picker("Kép", selection: $photoMode.animation(.easeInOut(duration: 0.35))) {
-                        Text("1 · Élénk").tag(0)
-                        Text("2 · Saját kép").tag(1)
-                        Text("3 · Festett").tag(2)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 300)
-                    .padding(4)
-                    .glassEffect(.regular, in: .capsule)
-                } else {
+                if variant != 3 {
                     Picker("Változat", selection: $variant.animation(.easeInOut(duration: 0.35))) {
                         Text("A · Éj").tag(0)
                         Text("A2 · Napkelte").tag(3)
