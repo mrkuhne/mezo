@@ -23,8 +23,8 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
    - slice plans `docs/superpowers/plans/2026-11-09-boop-ios-v1.md` (slice map + S1) and
      `docs/superpowers/plans/2026-11-09-boop-s2-adatok.md` (S2); a later slice gets its own plan
    - how it works now: `docs/features/boop-ios.md`; build/test/install: `ios/README.md`
-   - the approved look: `docs/design_2.0/prototypes/boop-ios-spike/` (the `Lagy*.swift` files are the
-     build target for screens; README lists launch arguments)
+   - the approved look in executable form: `docs/design_2.0/prototypes/boop-ios-spike/` (the `Aura*.swift` files are
+     the build target for screens; README lists launch arguments; `Lagy*.swift` is the superseded look)
    - the look: Napkelte spec `docs/superpowers/specs/2026-11-10-boop-napkelte-design.md` (§4–§5, §9–§10) and its kit
      `ios/BoopKit/Sources/BoopDesign/Napkelte/`; plan of the look slice `docs/superpowers/plans/2026-11-10-boop-napkelte-kit.md`
 
