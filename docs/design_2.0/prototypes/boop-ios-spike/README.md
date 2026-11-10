@@ -1,5 +1,12 @@
 # Boop iOS spike — Lágy, built natively (2026-11-09)
 
+> **Newest round — "Napkelte" (owner, 2026-11-10, `mezo-r36n9.3`):** a dark-glass look with a painted sky backdrop
+> and the orb rising as the morning sun; it replaces Lágy as Boop's look once its spec is approved
+> ([`2026-11-10-boop-napkelte-design.md`](../../../superpowers/specs/2026-11-10-boop-napkelte-design.md)).
+> Files `Aura*.swift`; launch `-aura YES -auraVariant 3` (plus `-auraMetric 0–4`, `-auraTab 0–3`,
+> `-auraOpen checkin|intention|weight|meal`, `-auraSheet sleep|heart|day`, `-auraBottom YES`, `-auraPhoto 0–2`).
+> Screenshots of each approved state: `aura-*.png` in this folder.
+
 > **Current state (Lágy pivot, owner 2026-11-09):** the app starts in the **Lágy** shell (`LagyRoot`
 > in `LagyShell.swift`): five domains in the floating bottom bar, each a Lágy tab page.
 >

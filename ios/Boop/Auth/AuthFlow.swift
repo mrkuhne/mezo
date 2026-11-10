@@ -2,6 +2,30 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
+/// Every visible string of sign-in and register (Boop, never Mezo — a test checks).
+enum AuthCopy {
+    static let signInEyebrow = "Boop", signInTitle = "Jó újra látni", signInSub = "Lépj be a Boop-fiókoddal."
+    static let registerEyebrow = "Új fiók", registerTitle = "Kezdjük el", registerSub = "A meghívókóddal regisztrálsz."
+    static let signIn = "Belépek", register = "Regisztrálok", haveInvite = "Van meghívókódom", haveAccount = "Már van fiókom"
+    static let all = [signInEyebrow, signInTitle, signInSub, registerEyebrow, registerTitle, registerSub, signIn, register, haveInvite, haveAccount]
+}
+
+/// The top of both auth screens: wordmark, a living orb, eyebrow, serif title, one line.
+private struct AuthHead: View {
+    let eyebrow: String, title: String, sub: String, orb: CGFloat
+    @State private var motion = OrbMotion()
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("boop").font(.custom(Lagy.outfitFamily, size: 30).weight(.light)).tracking(4).foregroundStyle(.white).padding(.top, 70)
+            LivingOrb(palette: Hue.forma.orb, size: orb, level: 0.8, glow: true, motion: motion).allowsHitTesting(false).padding(.top, 26)
+            Text(eyebrow.uppercased()).nkFont(12, .medium, design: .monospaced).tracking(1.6).foregroundStyle(.white.opacity(0.75)).padding(.top, 26)
+            Text(title).nkFont(40, design: .serif).foregroundStyle(.white).padding(.top, 6)
+            Text(sub).nkFont(16).foregroundStyle(.white.opacity(0.8)).padding(.top, 6)
+        }
+        .onDisappear { motion.stop() }
+    }
+}
+
 /// Sign-in, with a way to register with an invite code.
 struct AuthFlow: View {
     @State private var registering = UserDefaults.standard.bool(forKey: "register")
@@ -20,18 +44,21 @@ struct SignInView: View {
     @State private var busy = false
 
     var body: some View {
-        LagyFlowFrame(photoName: "reggelfeny.jpg", crumb: ("", "Belépés"), eyebrow: "Boop", title: "Jó újra látni",
-                      sub: "Lépj be a Boop-fiókoddal.", showsBack: false) {
-            VStack(alignment: .leading, spacing: 16) {
-                if let serverError { ServerErrorCard(error: serverError) }
-                LagyField("E-mail cím", text: $form.email, kind: .email, content: .username, problem: shown[.email])
-                LagyField("Jelszó", text: $form.password, kind: .password, content: .password, problem: shown[.password])
-                WidePill(title: "Belépek", busy: busy) { submit() }.padding(.top, 6)
-                Button(action: onRegister) {
-                    Text("Van meghívókódom").font(.manrope(14, .bold)).foregroundStyle(Lagy.deep)
-                        .frame(maxWidth: .infinity).frame(height: 44)
+        NKSkyScreen(hue: .forma, onBack: nil) {
+            VStack(spacing: 0) {
+                AuthHead(eyebrow: AuthCopy.signInEyebrow, title: AuthCopy.signInTitle, sub: AuthCopy.signInSub, orb: 130)
+                VStack(alignment: .leading, spacing: 14) {
+                    if let serverError { ServerErrorCard(error: serverError) }
+                    NKField("E-mail cím", text: $form.email, kind: .email, content: .username, problem: shown[.email])
+                    NKField("Jelszó", text: $form.password, kind: .password, content: .password, problem: shown[.password])
+                    NKPill(busy ? "Pillanat…" : AuthCopy.signIn) { if !busy { submit() } }.padding(.top, 10)
+                    Button(action: onRegister) {
+                        Text(AuthCopy.haveInvite).nkFont(15, .semibold).foregroundStyle(.white.opacity(0.85))
+                            .frame(maxWidth: .infinity).frame(height: 44)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                .padding(.top, 28)
             }
         }
         .onChange(of: form) { old, new in
@@ -65,15 +92,23 @@ struct RegisterView: View {
     @State private var busy = false
 
     var body: some View {
-        LagyFlowFrame(photoName: "kave.jpg", crumb: ("Belépés › ", "Regisztráció"), eyebrow: "Új fiók", title: "Kezdjük el",
-                      sub: "A meghívókóddal regisztrálsz.", onBack: onBack) {
-            VStack(alignment: .leading, spacing: 16) {
-                if let serverError, !isFieldError(serverError) { ServerErrorCard(error: serverError) }
-                LagyField("Meghívókód", text: $form.invite, kind: .code, problem: problem(.invite, "inviteCode"))
-                LagyField("A neved", text: $form.name, kind: .name, content: .name, problem: problem(.name, "name"))
-                LagyField("E-mail cím", text: $form.email, kind: .email, content: .username, problem: problem(.email, "email"))
-                LagyField("Jelszó · legalább 8 karakter", text: $form.password, kind: .password, content: .newPassword, problem: problem(.password, "password"))
-                WidePill(title: "Regisztrálok", busy: busy) { submit() }.padding(.top, 6)
+        NKSkyScreen(hue: .forma, onBack: onBack) {
+            VStack(spacing: 0) {
+                AuthHead(eyebrow: AuthCopy.registerEyebrow, title: AuthCopy.registerTitle, sub: AuthCopy.registerSub, orb: 96)
+                VStack(alignment: .leading, spacing: 14) {
+                    if let serverError, !isFieldError(serverError) { ServerErrorCard(error: serverError) }
+                    NKField("Meghívókód", text: $form.invite, kind: .code, problem: problem(.invite, "inviteCode"))
+                    NKField("A neved", text: $form.name, kind: .name, content: .name, problem: problem(.name, "name"))
+                    NKField("E-mail cím", text: $form.email, kind: .email, content: .username, problem: problem(.email, "email"))
+                    NKField("Jelszó · legalább 8 karakter", text: $form.password, kind: .password, content: .newPassword, problem: problem(.password, "password"))
+                    NKPill(busy ? "Pillanat…" : AuthCopy.register) { if !busy { submit() } }.padding(.top, 10)
+                    Button(action: onBack) {
+                        Text(AuthCopy.haveAccount).nkFont(15, .semibold).foregroundStyle(.white.opacity(0.85))
+                            .frame(maxWidth: .infinity).frame(height: 44)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, 28)
             }
         }
         .onChange(of: form) { old, new in
@@ -116,11 +151,12 @@ private struct ServerErrorCard: View {
     let error: AuthError
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Glyph("repeat", "peach", size: 22)
-            Text(hungarianText(error)).font(.manrope(14, .semibold)).foregroundStyle(Lagy.peachInk)
+            NKGlyph("repeat-peach", Color(hex: 0xF7A8C4), size: 20)
+            Text(hungarianText(error)).nkFont(14, .medium).foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .lagyCard(18, fill: Lagy.peach2)
+        .nkGlass(18)
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color(hex: 0xF06A9A).opacity(0.6), lineWidth: 1))
     }
 }

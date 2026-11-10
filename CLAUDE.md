@@ -124,12 +124,12 @@ Any new screen still gets a clickable prototype and the owner's OK before code.
 ### Boop — the native iOS app (owner decision 2026-11-09, epic `mezo-r36n9`)
 
 The Folyadék rules above govern the **web app**. **Boop** (the native iPhone app that replaces the web
-app once complete) follows the **Lágy** canon instead — `.claude/skills/lagy/IRANY.md` and the Lágy
-prototype `docs/design_2.0/prototypes/kepes/b/*` (on branch `claude/mai-napom-custom-graphics-eedeb2`
-until merged) — with the orb, Boop's spoken verdict and "A nap energiája" merged in, and the companion
-named **Boop** (not Mezo). Boop's visual iteration happens **in Xcode + the iOS Simulator**, not in
-HTML artifacts; the approved look lives in `docs/design_2.0/prototypes/boop-ios-spike/`. Spec:
-`docs/superpowers/specs/2026-11-09-boop-ios-v1-design.md`.
+app once complete) follows the **Napkelte** canon (owner, 2026-11-10; it replaced Lágy) — dark glass, a painted
+sky per page, colour only in the sky and the orbs, the orb rising as the morning sun, the selected orb as a lens:
+spec `docs/superpowers/specs/2026-11-10-boop-napkelte-design.md`, executable look
+`docs/design_2.0/prototypes/boop-ios-spike/BoopSpike/Aura*.swift`, kit `ios/BoopKit/Sources/BoopDesign/Napkelte/`.
+The companion is **Boop** (not Mezo). Boop's visual iteration happens **in Xcode + the iOS Simulator**, not in
+HTML artifacts. Data/backend spec: `docs/superpowers/specs/2026-11-09-boop-ios-v1-design.md`.
 
 ## Frontend change workflow (MANDATORY for every change the owner will see)
 

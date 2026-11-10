@@ -12,46 +12,45 @@ struct ProfileStep: View {
     @State private var missingSex = false
 
     var body: some View {
-        LagyFlowFrame(photoName: "nap-lista.jpg", crumb: ("Első lépések › ", "Rólad"), eyebrow: "Szia, \(name)", title: "Pár adat rólad",
-                      sub: "Ebből számolom a keretedet.", showsBack: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                if let p = model.problem { problemCard(onboardingText(p)) }
-                LagySection(title: "Nem", top: 4) {
-                    HStack(spacing: 8) {
-                        choice("Férfi", "M"); choice("Nő", "F")
+        NKFlowFrame(hue: .forma, crumb: "Első lépések · Rólad", eyebrow: "Szia, \(name)", title: "Pár adat rólad",
+                    sub: "Ebből számolom a keretedet.", onBack: nil) {
+            if let p = model.problem { problemCard(onboardingText(p)) }
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 8) {
+                    NKMono("NEM")
+                    HStack(spacing: 8) { choice("Férfi", "M"); choice("Nő", "F") }
+                    if missingSex {
+                        Text("Válaszd ki az egyiket.").nkFont(13).foregroundStyle(Color(hex: 0xF7A8C4))
                     }
-                    if missingSex { Text("Válaszd ki az egyiket.").font(.manrope(13, .semibold)).foregroundStyle(Lagy.peachInk).padding(.leading, 6) }
                 }
-                LagySection(title: "Magasság") {
-                    VStack(spacing: 10) {
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Text("\(Int(height))").font(.outfit(48, .heavy)).tracking(-1).monospacedDigit()
-                                .contentTransition(.numericText(value: height))
-                            Text("centi").font(.manrope(15, .bold)).foregroundStyle(Lagy.ink2)
-                        }
-                        .foregroundStyle(Lagy.ink).frame(maxWidth: .infinity)
-                        RulerDial(value: $height, step: 1, range: 50...260, major: 10) { "\(Int($0))" }
+                VStack(alignment: .leading, spacing: 6) {
+                    NKMono("MAGASSÁG")
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("\(Int(height))").font(.nkNumber(52)).monospacedDigit().contentTransition(.numericText(value: height))
+                        Text("centi").nkFont(15).foregroundStyle(.white.opacity(0.7))
                     }
-                    .padding(.vertical, 18).padding(.horizontal, 12).lagyCard()
+                    .foregroundStyle(.white)
+                    RulerDial(value: $height, step: 1, range: 50...260, major: 10) { "\(Int($0))" }
                 }
-                LagySection(title: "Születési dátum") {
+                VStack(alignment: .leading, spacing: 6) {
+                    NKMono("SZÜLETÉSI DÁTUM")
                     DatePicker("Születési dátum", selection: $birth, in: ...Date(), displayedComponents: .date)
                         .datePickerStyle(.wheel).labelsHidden()
                         .environment(\.locale, Locale(identifier: "hu_HU"))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6).lagyCard()
                 }
-                WidePill(title: "Tovább", busy: busy) { save() }.padding(.top, 24)
             }
+            .padding(20).nkGlass()
+            NKPill(busy ? "Pillanat…" : "Tovább") { if !busy { save() } }.padding(.top, 6)
         }
     }
 
     private func choice(_ title: String, _ value: String) -> some View {
         let on = sex == value
         return Button { sex = value; missingSex = false } label: {
-            Text(title).font(.manrope(15, .bold)).frame(maxWidth: .infinity).frame(height: 50)
-                .foregroundStyle(on ? .white : Lagy.ink)
-                .background(Capsule().fill(on ? Lagy.ink : .white).shadow(color: Lagy.ink.opacity(on ? 0 : 0.08), radius: 10, y: 6))
+            Text(title).nkFont(15, .semibold).frame(maxWidth: .infinity).frame(height: 46)
+                .foregroundStyle(on ? NK.ground : .white)
+                .background(Capsule().fill(on ? .white : .white.opacity(0.1)))
         }
         .buttonStyle(PressStyle())
         .sensoryFeedback(.selection, trigger: on)
@@ -69,10 +68,10 @@ struct ProfileStep: View {
 
 @MainActor func problemCard(_ text: String) -> some View {
     HStack(alignment: .top, spacing: 10) {
-        Glyph("repeat", "peach", size: 22)
-        Text(text).font(.manrope(14, .semibold)).foregroundStyle(Lagy.peachInk).fixedSize(horizontal: false, vertical: true)
+        NKGlyph("repeat-peach", Color(hex: 0xF7A8C4), size: 20)
+        Text(text).nkFont(14, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
     }
     .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-    .lagyCard(18, fill: Lagy.peach2)
-    .padding(.bottom, 8)
+    .nkGlass(18)
+    .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color(hex: 0xF06A9A).opacity(0.6), lineWidth: 1))
 }

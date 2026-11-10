@@ -22,14 +22,14 @@ struct RulerDial: View {
                 let len: CGFloat = isMajor ? 30 : (isHalf ? 20 : 12)
                 let fade = max(0.12, 1 - abs(Double(k)) / Double(ticks))
                 var p = Path(); p.move(to: CGPoint(x: x, y: 6)); p.addLine(to: CGPoint(x: x, y: 6 + len))
-                ctx.stroke(p, with: .color(Lagy.ink.opacity(0.45 * fade)), lineWidth: isMajor ? 2 : 1)
+                ctx.stroke(p, with: .color(.white.opacity(0.7 * fade)), lineWidth: isMajor ? 1.6 : 1)
                 if isMajor {
-                    ctx.draw(Text(label(n * step)).font(.manrope(12, .bold)).foregroundColor(Lagy.ink2.opacity(fade)), at: CGPoint(x: x, y: 52))
+                    ctx.draw(Text(label(n * step)).font(.nkMono(11)).foregroundColor(Color.white.opacity(0.7 * fade)), at: CGPoint(x: x, y: 52))
                 }
             }
         }
         .frame(height: 64)
-        .overlay { Capsule().fill(Lagy.sage).frame(width: 4, height: 46).offset(y: -6) }
+        .overlay { Capsule().fill(.white).frame(width: 2.5, height: 40).offset(y: -8) }
         .contentShape(Rectangle())
         .gesture(DragGesture(minimumDistance: 0)
             .onChanged { g in

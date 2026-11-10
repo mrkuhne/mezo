@@ -1,6 +1,6 @@
 ---
 name: boop
-description: Session driver for Boop, the native SwiftUI iPhone app (epic mezo-r36n9, owner decisions 2026-11-09) that replaces the web app once complete — Lágy design canon, companion named Boop, same backend with a new account, visual iteration in the iOS Simulator (no HTML artifacts), weekly sideload on the owner's phone with a free Apple ID. Built in slices (S1 alap shipped; S2 adatok = Apple Health + calendar; S3 reggel = morning brief, orb, voice, energy curve; S4 lépések = check-in, intention, weight, meal, patterns). Several sessions may work on Boop in parallel; this skill holds the ownership rules that keep them apart. Use when the user invokes /boop or asks to work on Boop / the iPhone app / iOS / the simulator / the Lágy app.
+description: Session driver for Boop, the native SwiftUI iPhone app (epic mezo-r36n9, owner decisions 2026-11-09) that replaces the web app once complete — Napkelte design canon (dark glass, painted sky, the rising orb; replaced Lágy 2026-11-10), companion named Boop, same backend with a new account, visual iteration in the iOS Simulator (no HTML artifacts), weekly sideload on the owner's phone with a free Apple ID. Built in slices (S1 alap, S2 adatok = Apple Health + calendar, S2.5 Napkelte look shipped; S3 reggel = morning brief, orb, voice, energy curve; S4 lépések = check-in, intention, weight, meal, patterns). Several sessions may work on Boop in parallel; this skill holds the ownership rules that keep them apart. Use when the user invokes /boop or asks to work on Boop / the iPhone app / iOS / the simulator / the Napkelte look.
 ---
 
 # Boop session driver
@@ -19,20 +19,22 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
    description, then `bd update <id> --claim`. If what the owner asked overlaps an owned path,
    say so in Hungarian and offer a non-overlapping alternative or to wait.
 5. Read what your task needs (don't read everything):
-   - spec `docs/superpowers/specs/2026-11-09-boop-ios-v1-design.md` (§0 Lágy pivot, §4, §8)
+   - spec `docs/superpowers/specs/2026-11-09-boop-ios-v1-design.md` (data, backend, §4, §8; its look sections are superseded by Napkelte)
    - slice plans `docs/superpowers/plans/2026-11-09-boop-ios-v1.md` (slice map + S1) and
      `docs/superpowers/plans/2026-11-09-boop-s2-adatok.md` (S2); a later slice gets its own plan
    - how it works now: `docs/features/boop-ios.md`; build/test/install: `ios/README.md`
-   - the approved look: `docs/design_2.0/prototypes/boop-ios-spike/` (the `Lagy*.swift` files are the
-     build target for screens; README lists launch arguments)
-   - Lágy canon: `.claude/skills/lagy/IRANY.md` on branch `claude/mai-napom-custom-graphics-eedeb2`
-     (`git show origin/claude/mai-napom-custom-graphics-eedeb2:.claude/skills/lagy/IRANY.md`)
+   - the approved look in executable form: `docs/design_2.0/prototypes/boop-ios-spike/` (the `Aura*.swift` files are
+     the build target for screens; README lists launch arguments; `Lagy*.swift` is the superseded look)
+   - the look: Napkelte spec `docs/superpowers/specs/2026-11-10-boop-napkelte-design.md` (§4–§5, §9–§10) and its kit
+     `ios/BoopKit/Sources/BoopDesign/Napkelte/`; plan of the look slice `docs/superpowers/plans/2026-11-10-boop-napkelte-kit.md`
 
 ## 2. Owner decisions — do not re-litigate
 
-- **Lágy is the canon**: light warm paper, white cards, one deep-green card per page, photo head on
-  every page, Outfit + Manrope, Lágy glyphs (never emoji; no SF Symbols except chevrons/arrows),
-  chips, rings/bars/level tubes; Lágy's rejections hold (no vessels/tanks, no dark header, no many hues).
+- **Napkelte is the canon** (owner 2026-11-10, replaced Lágy): spec `docs/superpowers/specs/2026-11-10-boop-napkelte-design.md`
+  — dark glass, painted sky per page, colour only in sky + orbs, white type, serif headlines / Outfit numbers /
+  mono labels, the orb rising as the sun, mini orbs as a lens (each orb shows only its own tiles + short path),
+  icon-only bottom bar, "Készenlét" is called **Forma**. Build from the kit `ios/BoopKit/Sources/BoopDesign/Napkelte/`;
+  the look's reference is the spike's `Aura*.swift`. Never emoji; no SF Symbols except chevrons/arrows.
 - **The companion is Boop**, never "Mezo", in every user-visible string. The orb is Boop's face.
 - **Simulator first**: visual iteration happens in Xcode + the iOS Simulator; no HTML artifacts for Boop.
   A new screen gets a throwaway simulator spike and the owner's OK before it is built.
@@ -98,6 +100,8 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 
 ## 6. Where things stand (update this block when a slice ships)
 
+- **S2.5 Napkelte — shipped 2026-11-10** (`mezo-r36n9.3`): the Napkelte kit + every shipped screen re-skinned;
+  plan `2026-11-10-boop-napkelte-kit.md`. S3/S4 build on the kit with the spec as visual target.
 - **S1 alap — shipped 2026-11-09**: auth, onboarding, five-domain shell, install script; owner's Boop
   account live. Minors: `mezo-r36n9.1`.
 - **S2 adatok — shipped 2026-11-10** (`mezo-r36n9.2`): Health + calendar connect flow, `HealthSync`
@@ -106,4 +110,4 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 - Simulator gotchas found in S2: the simulator tool's screenshots can be several actions stale — use
   `xcrun simctl io <udid> screenshot`; SwiftUI presentations must sit at page level and the page must read
   the flag (see `boop-ios.md` §9); `@SceneStorage` restores the last tab on relaunch.
-- **S3 reggel, S4 lépések — not planned yet**; their look is in the spike (`LagyMai.swift`, `LagyFlows.swift`).
+- **S3 reggel, S4 lépések — not planned yet**; their look is the Napkelte spec §5 and the spike's `Aura*.swift`.

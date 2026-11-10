@@ -61,21 +61,26 @@ private struct SyncTriggers: View {
 
 private struct Splash: View {
     var body: some View {
-        ZStack { Lagy.paper.ignoresSafeArea(); LagyMark(size: 64, onPhoto: false) }
-            .environment(\.colorScheme, .light)
+        ZStack {
+            NKGround(hue: .forma)
+            StillOrb(palette: Hue.forma.orb, size: 96, level: 0.8)
+        }
+        .preferredColorScheme(.dark)
     }
 }
 
 private struct OfflineView: View {
     @Environment(Session.self) private var session
     var body: some View {
-        ZStack {
-            Lagy.paper.ignoresSafeArea()
-            ErrorCard(title: "Nem érem el a szervert.", text: "A belépésed megvan, csak most nem jön válasz. Nézd meg a netet, és próbáld újra.") {
-                Task { await session.retry() }
+        NKSkyScreen(hue: .alvas, onBack: nil) {
+            VStack(spacing: 14) {
+                Spacer(minLength: 220)
+                StillOrb(palette: Hue.alvas.orb, size: 110, level: 0.3).saturation(0.3)
+                Text("Nem érem el a szervert.").nkFont(32, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 10)
+                Text("A belépésed megvan, csak most nem jön válasz. Nézd meg a netet, és próbáld újra.")
+                    .nkFont(15.5).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center)
+                NKPill("Újra próbálom") { Task { await session.retry() } }.padding(.top, 14)
             }
-            .padding(.horizontal, 16)
         }
-        .environment(\.colorScheme, .light)
     }
 }

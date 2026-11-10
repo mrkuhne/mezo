@@ -1,0 +1,248 @@
+import SwiftUI
+
+public extension View {
+    /// The Napkelte card: white 7 % glass, continuous corners, a 1 pt top-light stroke. No coloured glow (spec §4.3).
+    func nkGlass(_ radius: CGFloat = 26) -> some View {
+        background(
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(.white.opacity(0.07))
+                .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(LinearGradient(colors: [.white.opacity(0.16), .white.opacity(0.03)], startPoint: .top, endPoint: .bottom), lineWidth: 1))
+        )
+    }
+}
+
+/// White primary pill (dark text) or a 10 % white secondary pill.
+public struct NKPill: View {
+    let title: String, glyph: String?, primary: Bool, wide: Bool, action: () -> Void
+    public init(_ title: String, glyph: String? = nil, primary: Bool = true, wide: Bool = true, action: @escaping () -> Void) {
+        self.title = title; self.glyph = glyph; self.primary = primary; self.wide = wide; self.action = action
+    }
+    public var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                if let glyph { NKGlyph(glyph, primary ? NK.ground : .white, size: 16) }
+                Text(title).nkFont(16, .semibold).lineLimit(1).minimumScaleFactor(0.7)
+            }
+            .foregroundStyle(primary ? NK.ground : .white)
+            .padding(.horizontal, 22)
+            .frame(maxWidth: wide ? .infinity : nil, minHeight: 52)
+            .background(Capsule().fill(primary ? .white : .white.opacity(0.1)))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(PressStyle())
+    }
+}
+
+/// Monospaced caps label ("BOOP MONDJA").
+public struct NKMono: View {
+    let text: String
+    public init(_ text: String) { self.text = text }
+    public var body: some View {
+        Text(text).nkFont(12, .medium, design: .monospaced).tracking(1.4).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.8)
+    }
+}
+
+/// Up = better than yesterday (green), down = worse (rose). The only status colours outside orbs and skies.
+public struct Trend: View {
+    let up: Bool, size: CGFloat
+    public init(up: Bool, size: CGFloat = 9) { self.up = up; self.size = size }
+    public var body: some View {
+        Path { p in
+            if up { p.move(to: CGPoint(x: size / 2, y: 0)); p.addLine(to: CGPoint(x: size, y: size)); p.addLine(to: CGPoint(x: 0, y: size)) }
+            else { p.move(to: .zero); p.addLine(to: CGPoint(x: size, y: 0)); p.addLine(to: CGPoint(x: size / 2, y: size)) }
+            p.closeSubpath()
+        }
+        .fill(LinearGradient(colors: up ? [Color(hex: 0x43C59E), Color(hex: 0x167A5F)] : [Color(hex: 0xF0508C), Color(hex: 0xA8195A)],
+                             startPoint: .top, endPoint: .bottom))
+        .frame(width: size, height: size)
+        .accessibilityLabel(up ? "jobb" : "rosszabb")
+    }
+}
+
+/// A Lágy glyph tinted as one colour for the dark look. The four whose artwork relies on white inner detail would
+/// flatten into a blob, so they are drawn as thin outlines on the same 64-unit grid.
+public struct NKGlyph: View {
+    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage"]
+    let name: String, color: Color, size: CGFloat
+    public init(_ name: String, _ color: Color, size: CGFloat = 18) { self.name = name; self.color = color; self.size = size }
+
+    public var body: some View {
+        Group {
+            if Self.outlined.contains(name) {
+                Canvas { ctx, s in
+                    let k = s.width / 64
+                    func P(_ f: (inout Path) -> Void) -> Path { var p = Path(); f(&p); return p.applying(CGAffineTransform(scaleX: k, y: k)) }
+                    let st = StrokeStyle(lineWidth: 5 * k, lineCap: .round, lineJoin: .round)
+                    switch name {
+                    case "check-ink":
+                        ctx.stroke(P { $0.addEllipse(in: CGRect(x: 9, y: 9, width: 46, height: 46)) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 21, y: 33)); $0.addLine(to: CGPoint(x: 28, y: 40)); $0.addLine(to: CGPoint(x: 43, y: 24)) }, with: .color(color), style: st)
+                    case "clock-ink":
+                        ctx.stroke(P { $0.addEllipse(in: CGRect(x: 9, y: 9, width: 46, height: 46)) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 32, y: 20)); $0.addLine(to: CGPoint(x: 32, y: 32)); $0.addLine(to: CGPoint(x: 40, y: 37)) }, with: .color(color), style: st)
+                    case "camera-ink":
+                        ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 8, y: 18, width: 48, height: 34), cornerSize: CGSize(width: 10, height: 10)) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.addEllipse(in: CGRect(x: 23, y: 26, width: 18, height: 18)) }, with: .color(color), style: st)
+                        ctx.fill(P { $0.addRoundedRect(in: CGRect(x: 23, y: 11, width: 18, height: 8), cornerSize: CGSize(width: 4, height: 4)) }, with: .color(color))
+                    default:
+                        ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 14, y: 10, width: 36, height: 44), cornerSize: CGSize(width: 8, height: 8)) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 24, y: 24)); $0.addLine(to: CGPoint(x: 40, y: 24))
+                            $0.move(to: CGPoint(x: 24, y: 32)); $0.addLine(to: CGPoint(x: 40, y: 32))
+                            $0.move(to: CGPoint(x: 24, y: 40)); $0.addLine(to: CGPoint(x: 32, y: 40))
+                        }, with: .color(color), style: st)
+                    }
+                }
+            } else {
+                Image("g-\(name)", bundle: .module).renderingMode(.template).resizable().scaledToFit().foregroundStyle(color)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A glass capsule that slides in from the top for 2.2 s ("Kávé · hozzáadva"), with a success haptic.
+public struct NKToast: ViewModifier {
+    @Binding var text: String?
+    public func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .top) {
+                if let t = text {
+                    HStack(spacing: 8) {
+                        NKGlyph("check-ink", .white, size: 15)
+                        Text(t).nkFont(14, .semibold).foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 16).frame(height: 42)
+                    .glassEffect(.regular, in: .capsule)
+                    .padding(.top, 6)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task(id: t) {
+                        try? await Task.sleep(for: .seconds(2.2))
+                        withAnimation(.easeInOut) { if text == t { text = nil } }
+                    }
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: text)
+            .sensoryFeedback(.success, trigger: text) { _, new in new != nil }
+    }
+}
+
+public extension View {
+    func nkToast(_ text: Binding<String?>) -> some View { modifier(NKToast(text: text)) }
+}
+
+/// Boop speaks: a tiny still orb, "BOOP", one serif sentence with a bold phrase, an optional soft action.
+public struct NKBoopCard: View {
+    let pre: String, em: String, post: String, action: String?, onAction: () -> Void
+    public init(pre: String, em: String, post: String, action: String? = nil, onAction: @escaping () -> Void = {}) {
+        self.pre = pre; self.em = em; self.post = post; self.action = action; self.onAction = onAction
+    }
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                StillOrb(palette: Hue.forma.orb, size: 22, level: 0.85)
+                NKMono("BOOP")
+            }
+            (Text(pre) + Text(em).bold().foregroundColor(.white) + Text(post))
+                .nkFont(18, design: .serif).lineSpacing(4).foregroundStyle(.white.opacity(0.8))
+                .fixedSize(horizontal: false, vertical: true)
+            if let action { NKPill(action, primary: false, wide: false, action: onAction) }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass()
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A glass input with a mono label and its problem line (rose) under it. Same typing rules as `LagyField.Kind`.
+public struct NKField: View {
+    let label: String
+    @Binding var text: String
+    let kind: LagyField.Kind, content: UITextContentType?, problem: String?
+    public init(_ label: String, text: Binding<String>, kind: LagyField.Kind = .name, content: UITextContentType? = nil, problem: String? = nil) {
+        self.label = label; self._text = text; self.kind = kind; self.content = content; self.problem = problem
+    }
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased()).nkFont(11, .medium, design: .monospaced).tracking(1.2).foregroundStyle(.white.opacity(0.6))
+            Group {
+                if kind == .password { SecureField("", text: $text) } else { TextField("", text: $text) }
+            }
+            .nkFont(17).foregroundStyle(.white).tint(.white)
+            .keyboardType(kind == .email ? .emailAddress : (kind == .code ? .asciiCapable : .default))
+            .textContentType(content)
+            .textInputAutocapitalization(kind.capitalizesWords ? .words : .never)
+            .autocorrectionDisabled(kind.autocorrectionDisabled)
+            .padding(.horizontal, 16).frame(minHeight: 52)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.07)))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(problem == nil ? .white.opacity(0.12) : Color(hex: 0xF06A9A).opacity(0.9), lineWidth: 1))
+            .accessibilityLabel(label)
+            if let problem {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Circle().fill(Color(hex: 0xF06A9A)).frame(width: 6, height: 6)
+                    Text(problem).nkFont(13).foregroundStyle(Color(hex: 0xF7A8C4)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+}
+
+/// A full-screen painted sky with the content floating over it (sign-in, the greeting, offline).
+public struct NKSkyScreen<Content: View>: View {
+    let hue: Hue, onBack: (() -> Void)?, content: Content
+    public init(hue: Hue, onBack: (() -> Void)?, @ViewBuilder content: () -> Content) { self.hue = hue; self.onBack = onBack; self.content = content() }
+    public var body: some View {
+        ZStack(alignment: .topLeading) {
+            NKGround(hue: hue)
+            PaintedLandscape(hue: hue).ignoresSafeArea()
+                .overlay(LinearGradient(colors: [.clear, NK.ground.opacity(0.92)], startPoint: UnitPoint(x: 0.5, y: 0.35), endPoint: .bottom).ignoresSafeArea())
+            ScrollView { content.padding(.horizontal, 20).padding(.bottom, 40) }
+                .scrollIndicators(.hidden).scrollDismissesKeyboard(.interactively)
+            if let onBack {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left").nkFont(16, .semibold).foregroundStyle(.white)
+                        .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
+                }
+                .buttonStyle(.plain).accessibilityLabel("Vissza").padding(.leading, 16).padding(.top, 4)
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
+/// A small status pill: white 10 % (plain) or rose (warn).
+public struct NKTag: View {
+    let text: String, warn: Bool
+    public init(_ text: String, warn: Bool = false) { self.text = text; self.warn = warn }
+    public var body: some View {
+        Text(text).nkFont(12.5, .semibold).lineLimit(1)
+            .foregroundStyle(warn ? Color(hex: 0xF7A8C4) : .white.opacity(0.85))
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(Capsule().fill(warn ? Color(hex: 0xF06A9A).opacity(0.16) : .white.opacity(0.1)))
+    }
+}
+
+/// A list row: glyph in a glass circle, title, status tags, optional chevron.
+public struct NKRow: View {
+    let glyph: String, title: String, tags: [NKTag], chevron: Bool
+    public init(glyph: String, title: String, tags: [NKTag] = [], chevron: Bool = false) {
+        self.glyph = glyph; self.title = title; self.tags = tags; self.chevron = chevron
+    }
+    public var body: some View {
+        HStack(spacing: 14) {
+            NKGlyph(glyph, .white, size: 18).frame(width: 44, height: 44).background(Circle().fill(.white.opacity(0.1)))
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title).nkFont(16.5, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                if !tags.isEmpty { HStack(spacing: 6) { ForEach(tags.indices, id: \.self) { tags[$0] } } }
+            }
+            Spacer(minLength: 0)
+            if chevron { Image(systemName: "chevron.right").nkFont(13, .semibold).foregroundStyle(.white.opacity(0.4)) }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
+        .accessibilityElement(children: .combine)
+    }
+}

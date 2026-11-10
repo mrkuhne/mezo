@@ -8,21 +8,19 @@ struct EnAccountSection: View {
     @Binding var asking: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "A fiókod")
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    Text(String(me.name.prefix(1))).font(.outfit(20)).foregroundStyle(.white).frame(width: 52, height: 52)
-                        .background(Circle().fill(LinearGradient(colors: [Lagy.sage, Lagy.deep], startPoint: .topLeading, endPoint: .bottomTrailing)))
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(me.name).font(.outfit(16)).foregroundStyle(Lagy.ink)
-                        Chip(text: me.email, small: true)
-                    }
-                    Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 14) {
+            NKMono("A FIÓKOD")
+            HStack(spacing: 12) {
+                Text(String(me.name.prefix(1))).font(.nkNumber(22)).foregroundStyle(.white).frame(width: 52, height: 52)
+                    .background(Circle().fill(.white.opacity(0.12)))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(me.name).nkFont(17, .medium).foregroundStyle(.white)
+                    Text(me.email).nkFont(13.5).foregroundStyle(.white.opacity(0.6))
                 }
-                Pill(title: "Kijelentkezés", soft: true) { asking = true }
+                Spacer(minLength: 0)
             }
-            .padding(16).frame(maxWidth: .infinity, alignment: .leading).lagyCard(22)
+            NKPill("Kijelentkezés", primary: false) { asking = true }
         }
+        .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
     }
 }
