@@ -18,9 +18,9 @@ private struct AuthHead: View {
         VStack(spacing: 0) {
             Text("boop").font(.custom(Lagy.outfitFamily, size: 30).weight(.light)).tracking(4).foregroundStyle(.white).padding(.top, 70)
             LivingOrb(palette: Hue.forma.orb, size: orb, level: 0.8, glow: true, motion: motion).allowsHitTesting(false).padding(.top, 26)
-            Text(eyebrow.uppercased()).font(.nkMono(12)).tracking(1.6).foregroundStyle(.white.opacity(0.75)).padding(.top, 26)
-            Text(title).font(.nkSerif(40)).foregroundStyle(.white).padding(.top, 6)
-            Text(sub).font(.system(size: 16)).foregroundStyle(.white.opacity(0.8)).padding(.top, 6)
+            Text(eyebrow.uppercased()).nkFont(12, .medium, design: .monospaced).tracking(1.6).foregroundStyle(.white.opacity(0.75)).padding(.top, 26)
+            Text(title).nkFont(40, design: .serif).foregroundStyle(.white).padding(.top, 6)
+            Text(sub).nkFont(16).foregroundStyle(.white.opacity(0.8)).padding(.top, 6)
         }
         .onDisappear { motion.stop() }
     }
@@ -53,7 +53,7 @@ struct SignInView: View {
                     NKField("Jelszó", text: $form.password, kind: .password, content: .password, problem: shown[.password])
                     NKPill(busy ? "Pillanat…" : AuthCopy.signIn) { if !busy { submit() } }.padding(.top, 10)
                     Button(action: onRegister) {
-                        Text(AuthCopy.haveInvite).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white.opacity(0.85))
+                        Text(AuthCopy.haveInvite).nkFont(15, .semibold).foregroundStyle(.white.opacity(0.85))
                             .frame(maxWidth: .infinity).frame(height: 44)
                     }
                     .buttonStyle(.plain)
@@ -103,7 +103,7 @@ struct RegisterView: View {
                     NKField("Jelszó · legalább 8 karakter", text: $form.password, kind: .password, content: .newPassword, problem: problem(.password, "password"))
                     NKPill(busy ? "Pillanat…" : AuthCopy.register) { if !busy { submit() } }.padding(.top, 10)
                     Button(action: onBack) {
-                        Text(AuthCopy.haveAccount).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white.opacity(0.85))
+                        Text(AuthCopy.haveAccount).nkFont(15, .semibold).foregroundStyle(.white.opacity(0.85))
                             .frame(maxWidth: .infinity).frame(height: 44)
                     }
                     .buttonStyle(.plain)
@@ -152,7 +152,7 @@ private struct ServerErrorCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             NKGlyph("repeat-peach", Color(hex: 0xF7A8C4), size: 20)
-            Text(hungarianText(error)).font(.system(size: 14, weight: .medium)).foregroundStyle(.white)
+            Text(hungarianText(error)).nkFont(14, .medium).foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)

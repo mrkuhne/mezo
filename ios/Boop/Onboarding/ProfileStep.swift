@@ -20,14 +20,14 @@ struct ProfileStep: View {
                     NKMono("NEM")
                     HStack(spacing: 8) { choice("Férfi", "M"); choice("Nő", "F") }
                     if missingSex {
-                        Text("Válaszd ki az egyiket.").font(.system(size: 13)).foregroundStyle(Color(hex: 0xF7A8C4))
+                        Text("Válaszd ki az egyiket.").nkFont(13).foregroundStyle(Color(hex: 0xF7A8C4))
                     }
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     NKMono("MAGASSÁG")
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("\(Int(height))").font(.nkNumber(52)).monospacedDigit().contentTransition(.numericText(value: height))
-                        Text("centi").font(.system(size: 15)).foregroundStyle(.white.opacity(0.7))
+                        Text("centi").nkFont(15).foregroundStyle(.white.opacity(0.7))
                     }
                     .foregroundStyle(.white)
                     RulerDial(value: $height, step: 1, range: 50...260, major: 10) { "\(Int($0))" }
@@ -48,7 +48,7 @@ struct ProfileStep: View {
     private func choice(_ title: String, _ value: String) -> some View {
         let on = sex == value
         return Button { sex = value; missingSex = false } label: {
-            Text(title).font(.system(size: 15, weight: .semibold)).frame(maxWidth: .infinity).frame(height: 46)
+            Text(title).nkFont(15, .semibold).frame(maxWidth: .infinity).frame(height: 46)
                 .foregroundStyle(on ? NK.ground : .white)
                 .background(Capsule().fill(on ? .white : .white.opacity(0.1)))
         }
@@ -69,7 +69,7 @@ struct ProfileStep: View {
 @MainActor func problemCard(_ text: String) -> some View {
     HStack(alignment: .top, spacing: 10) {
         NKGlyph("repeat-peach", Color(hex: 0xF7A8C4), size: 20)
-        Text(text).font(.system(size: 14, weight: .medium)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+        Text(text).nkFont(14, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
     }
     .padding(14).frame(maxWidth: .infinity, alignment: .leading)
     .nkGlass(18)

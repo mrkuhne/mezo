@@ -25,21 +25,21 @@ struct BackfillStep: View {
             case .failed(let error):
                 failure("Megakadtam.", syncErrorText(error))
                 Button("Most kihagyom", action: onDone)
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white.opacity(0.75)).frame(maxWidth: .infinity).frame(height: 44)
+                    .nkFont(15, .semibold).foregroundStyle(.white.opacity(0.75)).frame(maxWidth: .infinity).frame(height: 44)
             }
         }
         .onChange(of: link.sync.phase) { _, p in if p == .failed(.unauthorized) { session.signOut() } }
     }
 
     private func note(_ t: String) -> some View {
-        Text(t).font(.system(size: 13.5, weight: .medium)).foregroundStyle(Color(hex: 0xF7A8C4))
+        Text(t).nkFont(13.5, .medium).foregroundStyle(Color(hex: 0xF7A8C4))
             .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
     }
 
     private func failure(_ title: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.nkSerif(24)).foregroundStyle(.white)
-            Text(text).font(.system(size: 14.5)).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+            Text(title).nkFont(24, design: .serif).foregroundStyle(.white)
+            Text(text).nkFont(14.5).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
             NKPill("Újra próbálom", primary: false, wide: false) { Task { await link.syncNow() } }
         }
         .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
@@ -57,7 +57,7 @@ struct BackfillStep: View {
                 Text("\(Int((progress * 100).rounded())) %").font(.nkNumber(40)).foregroundStyle(.white).monospacedDigit()
                     .contentTransition(.numericText(value: progress)).shadow(color: .black.opacity(0.3), radius: 6)
             }
-            Text(countsLine).font(.system(size: 15, weight: .medium)).foregroundStyle(.white.opacity(0.8)).monospacedDigit()
+            Text(countsLine).nkFont(15, .medium).foregroundStyle(.white.opacity(0.8)).monospacedDigit()
                 .contentTransition(.numericText())
         }
         .frame(maxWidth: .infinity).padding(.vertical, 24).nkGlass()

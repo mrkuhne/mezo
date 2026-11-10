@@ -22,7 +22,7 @@ public struct NKPill: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 if let glyph { NKGlyph(glyph, primary ? NK.ground : .white, size: 16) }
-                Text(title).font(.system(size: 16, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(title).nkFont(16, .semibold).lineLimit(1).minimumScaleFactor(0.7)
             }
             .foregroundStyle(primary ? NK.ground : .white)
             .padding(.horizontal, 22)
@@ -39,7 +39,7 @@ public struct NKMono: View {
     let text: String
     public init(_ text: String) { self.text = text }
     public var body: some View {
-        Text(text).font(.nkMono(12)).tracking(1.4).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.8)
+        Text(text).nkFont(12, .medium, design: .monospaced).tracking(1.4).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.8)
     }
 }
 
@@ -112,7 +112,7 @@ public struct NKToast: ViewModifier {
                 if let t = text {
                     HStack(spacing: 8) {
                         NKGlyph("check-ink", .white, size: 15)
-                        Text(t).font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                        Text(t).nkFont(14, .semibold).foregroundStyle(.white)
                     }
                     .padding(.horizontal, 16).frame(height: 42)
                     .glassEffect(.regular, in: .capsule)
@@ -146,7 +146,7 @@ public struct NKBoopCard: View {
                 NKMono("BOOP")
             }
             (Text(pre) + Text(em).bold().foregroundColor(.white) + Text(post))
-                .font(.nkSerif(18)).lineSpacing(4).foregroundStyle(.white.opacity(0.8))
+                .nkFont(18, design: .serif).lineSpacing(4).foregroundStyle(.white.opacity(0.8))
                 .fixedSize(horizontal: false, vertical: true)
             if let action { NKPill(action, primary: false, wide: false, action: onAction) }
         }
@@ -167,11 +167,11 @@ public struct NKField: View {
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label.uppercased()).font(.nkMono(11)).tracking(1.2).foregroundStyle(.white.opacity(0.6))
+            Text(label.uppercased()).nkFont(11, .medium, design: .monospaced).tracking(1.2).foregroundStyle(.white.opacity(0.6))
             Group {
                 if kind == .password { SecureField("", text: $text) } else { TextField("", text: $text) }
             }
-            .font(.system(size: 17)).foregroundStyle(.white).tint(.white)
+            .nkFont(17).foregroundStyle(.white).tint(.white)
             .keyboardType(kind == .email ? .emailAddress : (kind == .code ? .asciiCapable : .default))
             .textContentType(content)
             .textInputAutocapitalization(kind.capitalizesWords ? .words : .never)
@@ -184,7 +184,7 @@ public struct NKField: View {
             if let problem {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Circle().fill(Color(hex: 0xF06A9A)).frame(width: 6, height: 6)
-                    Text(problem).font(.system(size: 13)).foregroundStyle(Color(hex: 0xF7A8C4)).fixedSize(horizontal: false, vertical: true)
+                    Text(problem).nkFont(13).foregroundStyle(Color(hex: 0xF7A8C4)).fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -204,7 +204,7 @@ public struct NKSkyScreen<Content: View>: View {
                 .scrollIndicators(.hidden).scrollDismissesKeyboard(.interactively)
             if let onBack {
                 Button(action: onBack) {
-                    Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                    Image(systemName: "chevron.left").nkFont(16, .semibold).foregroundStyle(.white)
                         .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
                 }
                 .buttonStyle(.plain).accessibilityLabel("Vissza").padding(.leading, 16).padding(.top, 4)
@@ -219,7 +219,7 @@ public struct NKTag: View {
     let text: String, warn: Bool
     public init(_ text: String, warn: Bool = false) { self.text = text; self.warn = warn }
     public var body: some View {
-        Text(text).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+        Text(text).nkFont(12.5, .semibold).lineLimit(1)
             .foregroundStyle(warn ? Color(hex: 0xF7A8C4) : .white.opacity(0.85))
             .padding(.horizontal, 10).padding(.vertical, 5)
             .background(Capsule().fill(warn ? Color(hex: 0xF06A9A).opacity(0.16) : .white.opacity(0.1)))
@@ -236,11 +236,11 @@ public struct NKRow: View {
         HStack(spacing: 14) {
             NKGlyph(glyph, .white, size: 18).frame(width: 44, height: 44).background(Circle().fill(.white.opacity(0.1)))
             VStack(alignment: .leading, spacing: 6) {
-                Text(title).font(.system(size: 16.5, weight: .medium)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                Text(title).nkFont(16.5, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
                 if !tags.isEmpty { HStack(spacing: 6) { ForEach(tags.indices, id: \.self) { tags[$0] } } }
             }
             Spacer(minLength: 0)
-            if chevron { Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4)) }
+            if chevron { Image(systemName: "chevron.right").nkFont(13, .semibold).foregroundStyle(.white.opacity(0.4)) }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
         .accessibilityElement(children: .combine)

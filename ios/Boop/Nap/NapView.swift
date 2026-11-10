@@ -39,10 +39,10 @@ struct NapView: View {
                 RisingOrb(hue: .forma, score: nil, display: copy.orb, caption: copy.orbCaption, motion: motion)
                     .frame(height: 260).padding(.top, 20)
                     .saturation(s == .offline ? 0.35 : 1)
-                Text(copy.caps).font(.system(size: 14, weight: .semibold)).tracking(2.6).foregroundStyle(.white.opacity(0.85)).padding(.top, 22)
-                Text(copy.title).font(.nkSerif(38)).foregroundStyle(.white).multilineTextAlignment(.center).minimumScaleFactor(0.7)
+                Text(copy.caps).nkFont(14, .semibold).tracking(2.6).foregroundStyle(.white.opacity(0.85)).padding(.top, 22)
+                Text(copy.title).nkFont(38, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center).minimumScaleFactor(0.7)
                     .padding(.horizontal, 20).padding(.top, 10)
-                Text(copy.sentence).font(.system(size: 16)).lineSpacing(3).foregroundStyle(.white.opacity(0.82)).multilineTextAlignment(.center)
+                Text(copy.sentence).nkFont(16).lineSpacing(3).foregroundStyle(.white.opacity(0.82)).multilineTextAlignment(.center)
                     .padding(.horizontal, 30).padding(.top, 10)
                 if let action = copy.action {
                     NKPill(action, wide: false) { act(s) }.padding(.top, 18)

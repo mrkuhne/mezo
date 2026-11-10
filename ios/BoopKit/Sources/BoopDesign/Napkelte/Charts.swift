@@ -52,10 +52,10 @@ public struct HypnogramLegend: View {
                 let r = rows[i]
                 HStack(spacing: 10) {
                     Capsule().fill(stageColors[min(3, max(0, r.stage))]).frame(width: 14 + 80 * r.share, height: 7).frame(width: 96, alignment: .leading)
-                    Text(r.label).font(.system(size: 15)).foregroundStyle(.white)
-                    Text(r.time).font(.system(size: 15)).foregroundStyle(.white.opacity(0.75))
+                    Text(r.label).nkFont(15).foregroundStyle(.white)
+                    Text(r.time).nkFont(15).foregroundStyle(.white.opacity(0.75))
                     Spacer()
-                    Text("\(Int((r.share * 100).rounded()))%").font(.nkMono(12)).foregroundStyle(.white.opacity(0.6))
+                    Text("\(Int((r.share * 100).rounded()))%").nkFont(12, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.6))
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -115,10 +115,10 @@ public struct WeekBars: View {
                         let last = i == values.count - 1
                         VStack(spacing: 6) {
                             Spacer(minLength: 0)
-                            if last { Text("\(Int(values[i]))\(unit)").font(.nkMono(11, .bold)).foregroundStyle(.white) }
+                            if last { Text("\(Int(values[i]))\(unit)").nkFont(11, .bold, design: .monospaced).foregroundStyle(.white) }
                             RoundedRectangle(cornerRadius: 6, style: .continuous).fill(.white.opacity(last ? 0.95 : 0.28))
                                 .frame(width: 22, height: max(6, H - y(values[i])))
-                            Text(i < labels.count ? labels[i] : "").font(.system(size: 11, weight: last ? .semibold : .regular))
+                            Text(i < labels.count ? labels[i] : "").nkFont(11, last ? .semibold : .regular)
                                 .foregroundStyle(.white.opacity(last ? 1 : 0.5))
                         }
                         .frame(maxWidth: .infinity)
@@ -126,7 +126,7 @@ public struct WeekBars: View {
                 }
                 Path { p in p.move(to: CGPoint(x: 0, y: y(average))); p.addLine(to: CGPoint(x: g.size.width, y: y(average))) }
                     .stroke(.white.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                Text("átlag \(Int(average))\(unit)").font(.nkMono(10)).foregroundStyle(.white.opacity(0.7)).offset(y: y(average) - 16)
+                Text("átlag \(Int(average))\(unit)").nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.7)).offset(y: y(average) - 16)
             }
         }
     }

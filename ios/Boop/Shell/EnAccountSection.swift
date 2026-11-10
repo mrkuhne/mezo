@@ -14,8 +14,8 @@ struct EnAccountSection: View {
                 Text(String(me.name.prefix(1))).font(.nkNumber(22)).foregroundStyle(.white).frame(width: 52, height: 52)
                     .background(Circle().fill(.white.opacity(0.12)))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(me.name).font(.system(size: 17, weight: .medium)).foregroundStyle(.white)
-                    Text(me.email).font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.6))
+                    Text(me.name).nkFont(17, .medium).foregroundStyle(.white)
+                    Text(me.email).nkFont(13.5).foregroundStyle(.white.opacity(0.6))
                 }
                 Spacer(minLength: 0)
             }

@@ -15,7 +15,7 @@ public struct NKTitleRow: View {
                 NKGlyph("bell-cream", .white, size: 21).frame(width: 44, height: 44)
                     .overlay(alignment: .topTrailing) {
                         if bellCount > 0 {
-                            Text("\(bellCount)").font(.system(size: 10, weight: .bold)).foregroundStyle(NK.ground)
+                            Text("\(bellCount)").nkFont(10, .bold).foregroundStyle(NK.ground)
                                 .frame(minWidth: 16, minHeight: 16).background(Circle().fill(.white)).offset(x: -4, y: 6)
                         }
                     }
@@ -45,7 +45,7 @@ public struct NKTabStrip: View {
                 let on = t == selected
                 VStack(spacing: 7) {
                     HStack(spacing: 4) {
-                        Text(t).font(.system(size: 15, weight: on ? .semibold : .regular)).lineLimit(1).minimumScaleFactor(0.6)
+                        Text(t).nkFont(15, on ? .semibold : .regular).lineLimit(1).minimumScaleFactor(0.6)
                         if t == dot && !on { Circle().fill(.white).frame(width: 5, height: 5) }
                     }
                     .foregroundStyle(.white.opacity(on ? 1 : 0.62))
@@ -124,7 +124,7 @@ public struct NKTabPage<Hero: View, Content: View>: View {
                             .clipped()
                             .mask(LinearGradient(stops: [.init(color: .black, location: 0.62), .init(color: .clear, location: 1)],
                                                  startPoint: .top, endPoint: .bottom))
-                        hero.frame(height: h, alignment: .top)
+                        hero.frame(minHeight: h, alignment: .top)
                     }
                     VStack(spacing: 16) { content }
                         .padding(.horizontal, 16)
@@ -142,9 +142,9 @@ public struct NKTabPage<Hero: View, Content: View>: View {
                 if showCompact, let c = compact {
                     HStack(spacing: 10) {
                         StillOrb(palette: c.palette, size: 26, level: 0.8)
-                        Text(c.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                        Text(c.title).nkFont(15, .semibold).foregroundStyle(.white)
                         Text(c.value).font(.nkNumber(17)).foregroundStyle(.white.opacity(0.8))
-                        Text("· \(c.line)").font(.system(size: 14)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                        Text("· \(c.line)").nkFont(14).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
                     }
                     .padding(.leading, 8).padding(.trailing, 16).frame(height: 44)
                     .glassEffect(.regular, in: .capsule)
@@ -177,21 +177,21 @@ public struct NKFlowFrame<Content: View>: View {
                         HStack {
                             if let onBack {
                                 Button(action: onBack) {
-                                    Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                                    Image(systemName: "chevron.left").nkFont(16, .semibold).foregroundStyle(.white)
                                         .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
                                 }
                                 .buttonStyle(.plain).accessibilityLabel("Vissza")
                             } else { Color.clear.frame(width: 44, height: 44) }
                             Spacer()
-                            Text(crumb).font(.system(size: 14, weight: .medium)).foregroundStyle(.white.opacity(0.8)).lineLimit(1)
+                            Text(crumb).nkFont(14, .medium).foregroundStyle(.white.opacity(0.8)).lineLimit(1)
                             Spacer()
                             Color.clear.frame(width: 44, height: 44)
                         }
                         .padding(.horizontal, 16).padding(.top, 58)
                         VStack(spacing: 8) {
-                            Text(eyebrow.uppercased()).font(.nkMono(12)).tracking(1.6).foregroundStyle(.white.opacity(0.75))
-                            Text(title).font(.nkSerif(40)).foregroundStyle(.white).multilineTextAlignment(.center).minimumScaleFactor(0.6)
-                            Text(sub).font(.system(size: 16)).foregroundStyle(.white.opacity(0.85)).multilineTextAlignment(.center)
+                            Text(eyebrow.uppercased()).nkFont(12, .medium, design: .monospaced).tracking(1.6).foregroundStyle(.white.opacity(0.75))
+                            Text(title).nkFont(40, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center).minimumScaleFactor(0.6)
+                            Text(sub).nkFont(16).foregroundStyle(.white.opacity(0.85)).multilineTextAlignment(.center)
                         }
                         .padding(.horizontal, 24).padding(.top, 62)
                     }
@@ -221,8 +221,8 @@ public struct NKSheetFrame<Content: View>: View {
                     Color.clear.frame(height: 170).overlay { PaintedLandscape(hue: hue) }.clipped()
                         .overlay(LinearGradient(colors: [.clear, NK.ground], startPoint: .center, endPoint: .bottom))
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(eyebrow.uppercased()).font(.nkMono(12)).tracking(1.6).foregroundStyle(.white.opacity(0.75))
-                        Text(title).font(.nkSerif(34)).foregroundStyle(.white)
+                        Text(eyebrow.uppercased()).nkFont(12, .medium, design: .monospaced).tracking(1.6).foregroundStyle(.white.opacity(0.75))
+                        Text(title).nkFont(34, design: .serif).foregroundStyle(.white)
                     }
                     .padding(.horizontal, 22).padding(.bottom, 8)
                 }

@@ -38,10 +38,10 @@ struct WebOnlyTabView: View {
                 Text("boop").font(.custom(Lagy.outfitFamily, size: 26).weight(.light)).tracking(3).foregroundStyle(.white).padding(.top, 58)
                 NKTabStrip(tabs: domain.tabs, selected: .constant(domain.tabs[0])).padding(.top, 12).allowsHitTesting(false)
                 Spacer()
-                Text("\(domain.name) · a webes appban".uppercased()).font(.nkMono(12)).tracking(1.6).foregroundStyle(.white.opacity(0.8))
-                Text("Ez a rész még a webes appban él").font(.nkSerif(36)).foregroundStyle(.white).multilineTextAlignment(.center)
+                Text("\(domain.name) · a webes appban".uppercased()).nkFont(12, .medium, design: .monospaced).tracking(1.6).foregroundStyle(.white.opacity(0.8))
+                Text("Ez a rész még a webes appban él").nkFont(36, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center)
                     .padding(.horizontal, 24).padding(.top, 8)
-                Text("Hamarosan \(domain.article) \(domain.name) is itt lesz, egy koppintásra.").font(.system(size: 16))
+                Text("Hamarosan \(domain.article) \(domain.name) is itt lesz, egy koppintásra.").nkFont(16)
                     .foregroundStyle(.white.opacity(0.85)).multilineTextAlignment(.center).padding(.horizontal, 30).padding(.top, 8)
                 NKPill("Megnyitom", wide: false) { openURL(BoopConfig.webAppURL) }.padding(.top, 18).padding(.bottom, 60)
             }

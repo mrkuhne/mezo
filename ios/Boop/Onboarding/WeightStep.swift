@@ -14,11 +14,11 @@ struct WeightStep: View {
             VStack(spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(hu1(kg)).font(.nkNumber(64)).monospacedDigit().contentTransition(.numericText(value: kg))
-                    Text("kiló").font(.system(size: 16)).foregroundStyle(.white.opacity(0.7))
+                    Text("kiló").nkFont(16).foregroundStyle(.white.opacity(0.7))
                 }
                 .foregroundStyle(.white)
                 RulerDial(value: $kg, step: 0.1, range: 30...250, major: 10) { "\(Int($0.rounded()))" }
-                Text("Húzd oldalra · tizedenként rezeg").font(.system(size: 12)).foregroundStyle(.white.opacity(0.5))
+                Text("Húzd oldalra · tizedenként rezeg").nkFont(12).foregroundStyle(.white.opacity(0.5))
             }
             .padding(.vertical, 22).padding(.horizontal, 8).nkGlass()
             NKPill(busy ? "Pillanat…" : "Rögzítem", glyph: "check-ink") { if !busy { save() } }.padding(.top, 6)

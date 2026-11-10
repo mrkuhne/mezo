@@ -44,7 +44,7 @@ public struct DayPath<Card: View>: View {
     private func row(_ st: PathStation, first: Bool, last: Bool, litBelow: Bool, litAbove: Bool) -> some View {
         let top: CGFloat = st.isNow ? 8 : 14
         return HStack(alignment: .top, spacing: 12) {
-            Text(st.time).font(.nkMono(11.5)).foregroundStyle(.white.opacity(st.isNow ? 1 : (st.done ? 0.45 : 0.7)))
+            Text(st.time).nkFont(11.5, .medium, design: .monospaced).foregroundStyle(.white.opacity(st.isNow ? 1 : (st.done ? 0.45 : 0.7)))
                 .frame(width: 42, alignment: .trailing).padding(.top, st.isNow ? 4 : 12)
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
@@ -60,13 +60,13 @@ public struct DayPath<Card: View>: View {
             .frame(width: 24)
             VStack(alignment: .leading, spacing: 10) {
                 if st.isNow {
-                    Text("MOST").font(.nkMono(11, .bold)).tracking(1.4).foregroundStyle(.white).padding(.top, 4)
+                    Text("MOST").nkFont(11, .bold, design: .monospaced).tracking(1.4).foregroundStyle(.white).padding(.top, 4)
                     Color.clear.frame(height: 6)
                 } else {
-                    Text(st.title).font(.system(size: st.opens ? 17 : 15.5, weight: st.opens && !st.done ? .semibold : .regular))
+                    Text(st.title).nkFont(st.opens ? 17 : 15.5, st.opens && !st.done ? .semibold : .regular)
                         .foregroundStyle(.white.opacity(st.done ? 0.6 : (st.opens ? 1 : 0.8))).padding(.top, 10)
                     if !st.sub.isEmpty {
-                        Text(st.sub).font(.system(size: 13)).foregroundStyle(.white.opacity(st.done ? 0.4 : 0.6)).padding(.top, -6)
+                        Text(st.sub).nkFont(13).foregroundStyle(.white.opacity(st.done ? 0.4 : 0.6)).padding(.top, -6)
                     }
                     if st.opens { card(st).padding(.top, 2) }
                 }

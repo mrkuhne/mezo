@@ -16,18 +16,18 @@ struct PermissionsStep: View {
             NKRow(glyph: "clock-ink", title: "Naptár", tags: calendarTags(link.calendarAccess))
             if link.calendarAccess == .denied {
                 Text("A naptárat itt kapcsolhatod be: Beállítások › Boop › Naptárak.")
-                    .font(.system(size: 13.5, weight: .medium)).foregroundStyle(Color(hex: 0xF7A8C4)).fixedSize(horizontal: false, vertical: true)
+                    .nkFont(13.5, .medium).foregroundStyle(Color(hex: 0xF7A8C4)).fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
             }
             HStack(alignment: .top, spacing: 10) {
                 NKGlyph("spark-cream", .white.opacity(0.8), size: 16)
                 Text("Amikor az iPhone megkérdezi, mennyi adatot adjon, a teljeset válaszd — így látom mind a 60 napot.")
-                    .font(.system(size: 14)).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+                    .nkFont(14).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading).nkGlass(20)
             NKPill(busy ? "Pillanat…" : "Engedélyezem", glyph: "check-ink") { if !busy { allow() } }.padding(.top, 6)
             Button("Most kihagyom", action: onSkip)
-                .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white.opacity(0.75))
+                .nkFont(15, .semibold).foregroundStyle(.white.opacity(0.75))
                 .frame(maxWidth: .infinity).frame(height: 44)
         }
         .task { await link.refreshCalendarAccess() }

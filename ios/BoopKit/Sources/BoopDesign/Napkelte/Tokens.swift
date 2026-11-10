@@ -58,3 +58,21 @@ public extension Font {
     /// Numbers: Outfit Light.
     static func nkNumber(_ size: CGFloat) -> Font { .custom(Lagy.outfitFamily, size: size).weight(.light) }
 }
+
+/// A system font (sans, serif or mono) whose size follows the user's text size setting (Dynamic Type), relative to body.
+struct NKScaledFont: ViewModifier {
+    @ScaledMetric private var size: CGFloat
+    let weight: Font.Weight, design: Font.Design
+    init(size: CGFloat, weight: Font.Weight, design: Font.Design) {
+        _size = ScaledMetric(wrappedValue: size, relativeTo: .body)
+        self.weight = weight; self.design = design
+    }
+    func body(content: Content) -> some View { content.font(.system(size: size, weight: weight, design: design)) }
+}
+
+public extension View {
+    /// Napkelte text: `design: .serif` for headlines and Boop's voice, `.monospaced` for labels, default for body.
+    func nkFont(_ size: CGFloat, _ weight: Font.Weight = .regular, design: Font.Design = .default) -> some View {
+        modifier(NKScaledFont(size: size, weight: weight, design: design))
+    }
+}

@@ -8,11 +8,11 @@ public struct NKTile<G: View>: View {
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(label).font(.nkMono(10.5)).tracking(1.2).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7)
+            Text(label).nkFont(10.5, .medium, design: .monospaced).tracking(1.2).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7)
             graphic.frame(height: 56).frame(maxWidth: .infinity)
             VStack(alignment: .leading, spacing: 1) {
                 Text(value).font(.nkNumber(19)).foregroundStyle(.white).contentTransition(.numericText()).lineLimit(1).minimumScaleFactor(0.7)
-                Text(sub).font(.system(size: 11)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(sub).nkFont(11).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.7)
             }
         }
         .padding(14)

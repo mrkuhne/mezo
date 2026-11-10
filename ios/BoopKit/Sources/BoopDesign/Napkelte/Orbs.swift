@@ -157,7 +157,7 @@ public struct RisingOrb: View {
                 VStack(spacing: 2) {
                     Text(display).font(.nkNumber(score == nil ? 34 : 58)).foregroundStyle(.white).monospacedDigit()
                         .contentTransition(.numericText())
-                    if let caption { Text(caption).font(.system(size: 12)).foregroundStyle(.white.opacity(0.75)) }
+                    if let caption { Text(caption).nkFont(12).foregroundStyle(.white.opacity(0.75)) }
                 }
                 .shadow(color: .black.opacity(0.35), radius: 10)
                 .allowsHitTesting(false)
@@ -201,7 +201,7 @@ public struct MiniOrbRow: View {
                             .minimumScaleFactor(0.6).lineLimit(1).frame(width: 42)
                     }
                     .allowsHitTesting(false)
-                    Text(item.0.name).font(.system(size: 13, weight: on ? .semibold : .regular))
+                    Text(item.0.name).nkFont(13, on ? .semibold : .regular)
                         .foregroundStyle(.white.opacity(on ? 1 : 0.6)).lineLimit(1).minimumScaleFactor(0.7)
                 }
                 .frame(maxWidth: .infinity)

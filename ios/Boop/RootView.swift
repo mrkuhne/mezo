@@ -76,9 +76,9 @@ private struct OfflineView: View {
             VStack(spacing: 14) {
                 Spacer(minLength: 220)
                 StillOrb(palette: Hue.alvas.orb, size: 110, level: 0.3).saturation(0.3)
-                Text("Nem érem el a szervert.").font(.nkSerif(32)).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 10)
+                Text("Nem érem el a szervert.").nkFont(32, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 10)
                 Text("A belépésed megvan, csak most nem jön válasz. Nézd meg a netet, és próbáld újra.")
-                    .font(.system(size: 15.5)).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center)
+                    .nkFont(15.5).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center)
                 NKPill("Újra próbálom") { Task { await session.retry() } }.padding(.top, 14)
             }
         }

@@ -36,8 +36,8 @@ struct OnboardingFlow: View {
                         VStack(spacing: 14) {
                             Spacer(minLength: 220)
                             StillOrb(palette: Hue.alvas.orb, size: 110, level: 0.3).saturation(0.3)
-                            Text("Most nem érem el az adataidat.").font(.nkSerif(30)).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 10)
-                            Text(onboardingText(model.problem ?? .server)).font(.system(size: 15.5)).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center)
+                            Text("Most nem érem el az adataidat.").nkFont(30, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 10)
+                            Text(onboardingText(model.problem ?? .server)).nkFont(15.5).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center)
                             NKPill("Újra próbálom") { Task { await model.start() } }.padding(.top, 14)
                         }
                     }
@@ -79,11 +79,11 @@ private struct HelloStep: View {
         NKSkyScreen(hue: .forma, onBack: nil) {
             VStack(spacing: 0) {
                 LivingOrb(palette: Hue.forma.orb, size: 220, level: 0.85, glow: true, motion: motion).allowsHitTesting(false).padding(.top, 110)
-                Text("MINDEN MEGVAN").font(.nkMono(12)).tracking(1.6).foregroundStyle(.white.opacity(0.75)).padding(.top, 34)
-                Text("Szia, Boop vagyok").font(.nkSerif(42)).foregroundStyle(.white).padding(.top, 8)
-                Text("Innentől én viszem a reggeleidet.").font(.system(size: 16)).foregroundStyle(.white.opacity(0.85)).padding(.top, 6)
+                Text("MINDEN MEGVAN").nkFont(12, .medium, design: .monospaced).tracking(1.6).foregroundStyle(.white.opacity(0.75)).padding(.top, 34)
+                Text("Szia, Boop vagyok").nkFont(42, design: .serif).foregroundStyle(.white).padding(.top, 8)
+                Text("Innentől én viszem a reggeleidet.").nkFont(16).foregroundStyle(.white.opacity(0.85)).padding(.top, 6)
                 Text("Holnap reggeltől én kezdem a napod: az alvásodból, a naptáradból és a tervedből mondom meg, mire figyelj. Ez a gömb vagyok én: minél jobb a napod, annál magasabbra kelek.")
-                    .font(.nkSerif(18)).lineSpacing(4).foregroundStyle(.white.opacity(0.8)).multilineTextAlignment(.center).padding(.top, 20)
+                    .nkFont(18, design: .serif).lineSpacing(4).foregroundStyle(.white.opacity(0.8)).multilineTextAlignment(.center).padding(.top, 20)
                 ProgressView().tint(.white).padding(.top, 28)
             }
         }

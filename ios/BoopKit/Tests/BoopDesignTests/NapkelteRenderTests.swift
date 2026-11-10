@@ -85,3 +85,17 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
     #expect(render(NKRow(glyph: "heart-cream", title: "Apple Egészség",
                          tags: [NKTag("alvás, mozgás, pulzus"), NKTag("nincs engedély", warn: true)], chevron: true), height: 90) != nil)
 }
+
+@MainActor private func naturalWidth<V: View>(_ v: V) -> CGFloat {
+    let r = ImageRenderer(content: v.fixedSize())
+    r.scale = 1
+    return r.uiImage?.size.width ?? 0
+}
+
+@Test @MainActor func scaledFontGrowsWithDynamicType() {
+    for design in [Font.Design.default, .serif, .monospaced] {
+        let small = naturalWidth(Text("Jó napod lesz").nkFont(17, design: design).dynamicTypeSize(.large))
+        let big = naturalWidth(Text("Jó napod lesz").nkFont(17, design: design).dynamicTypeSize(.accessibility3))
+        #expect(big > small * 1.3, "design \(design): \(small) → \(big)")
+    }
+}
