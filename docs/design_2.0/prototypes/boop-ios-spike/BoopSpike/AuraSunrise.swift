@@ -59,6 +59,7 @@ struct AuraSunrise: View {
     @State private var breathTimer: Timer?
     @State private var reminderSet = false
     @State private var toast: String?
+    @State private var compact = false
     private let base = Color(hex: 0x0D1218)
     private var m: SunMetric { SunMetric.all[sel] }
 
@@ -81,6 +82,24 @@ struct AuraSunrise: View {
             .defaultScrollAnchor(auraBottom ? .bottom : .top)
             .ignoresSafeArea(edges: .top)
             .background(pageBackground.ignoresSafeArea())
+            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y > geo.size.height - 120 } action: { _, v in
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { compact = v }
+            }
+            .overlay(alignment: .top) {
+                if compact && tab == 0 {
+                    HStack(spacing: 10) {
+                        LivingOrb(mood: .good, size: 26, motion: motion, palette: m.orb, glow: false, level: Double(m.value) / 100)
+                            .allowsHitTesting(false)
+                        Text(m.name).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                        Text("\(m.value)").font(.custom("Outfit", size: 17).weight(.light)).foregroundStyle(.white.opacity(0.8))
+                        Text("· \(m.headline)").font(.system(size: 14)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                    }
+                    .padding(.leading, 8).padding(.trailing, 16).frame(height: 44)
+                    .glassEffect(.regular, in: .capsule)
+                    .padding(.top, 2)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
         }
         .preferredColorScheme(.dark)
         .onDisappear { motion.stop(); stopBreath() }
@@ -121,6 +140,19 @@ struct AuraSunrise: View {
     // MARK: The lens: what the selected orb shows below the hero
 
     @ViewBuilder private var lensCards: some View {
+        if UserDefaults.standard.object(forKey: "auraPath") as? Bool ?? true {
+            VStack(spacing: 16) {
+                AuraTileRow(accent: m.glow)
+                DayPath(lens: sel, hue: m.glow, motion: motion, orb: m.orb, onOpen: { open = $0 })
+                    .padding(.top, 8)
+                voiceCard
+            }
+        } else {
+            oldLensCards
+        }
+    }
+
+    @ViewBuilder private var oldLensCards: some View {
         VStack(spacing: 12) {
             switch sel {
             case 1:

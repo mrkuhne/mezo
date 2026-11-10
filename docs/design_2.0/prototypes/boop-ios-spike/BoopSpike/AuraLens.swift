@@ -134,15 +134,16 @@ struct ObservationStack: View {
     @State private var decided = 0
     var orb: [Color]
     var motion: OrbMotion
+    var showHeader = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
+            if showHeader { HStack {
                 AuraMono("BOOP ÉSZREVETTE")
                 Spacer()
                 Text(cards.isEmpty ? "mind átnézve" : "\(cards.count) új").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.6))
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 4) }
             ZStack {
                 if cards.isEmpty {
                     Text("Köszönöm, ezekből tanulok.").font(AuraFont.serif(18)).foregroundStyle(.white.opacity(0.7))
