@@ -56,7 +56,11 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 Adding an API operation: add its `operationId` to `BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`
 and run `scripts/sync-openapi.sh` whenever `api/openapi.yml` changes.
 
-Signing uses the owner's free Personal Team. **Never commit a team id**; pass it at build time.
+## Signing
+
+- Today: the owner's **free Personal Team** (7-day profiles). **Never commit a team id**; pass it at build time (or `~/.config/boop/team`).
+- `Boop.entitlements` = HealthKit + HealthKit background delivery (the free team accepts both; the background wake code is present but **unverified on a device**). Push is not in it — the free team refuses the Push Notifications capability.
+- `Boop-Paid.entitlements` = the same plus `aps-environment`. When the paid team is active, `touch ~/.config/boop/paid` and `install-on-phone.sh` builds with it (`CODE_SIGN_ENTITLEMENTS=Boop-Paid.entitlements`). Follow-up: `mezo-r36n9.19`.
 
 ## Telepítés a telefonra (hetente)
 

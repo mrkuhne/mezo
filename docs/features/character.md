@@ -1058,6 +1058,8 @@ raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
 
 ## 5. Integrations
 
+- **B1 touch-up (2026-11-11):** the `1.1.0/script` directory gained Boop B1 changesets (`health_sample`, `apns_device`, widened wearable/sleep/calendar/weight tables). None touch the character tables; this doc is unchanged in substance (verified).
+
 ### Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) — both konzíliums read the memory platform
 
 `CharacterBootstrapService` and `CharacterMonthlyService` each append one `[Hosszú távú memória]`

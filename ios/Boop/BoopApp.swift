@@ -5,6 +5,7 @@ import BoopDesign
 @main
 struct BoopApp: App {
     @State private var session = Session()
+    @UIApplicationDelegateAdaptor(BoopAppDelegate.self) private var appDelegate
     init() {
         Lagy.registerFonts()
         ReminderPresenter.install()     // the bedtime reminder also shows while Boop is open

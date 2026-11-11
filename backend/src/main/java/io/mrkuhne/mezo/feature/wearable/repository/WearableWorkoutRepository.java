@@ -21,18 +21,31 @@ public interface WearableWorkoutRepository extends JpaRepository<WearableWorkout
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
         insert into wearable_workout (created_by, external_id, date, activity_type, start_at, end_at, kcal, avg_hr,
-                                      source_name, is_deleted, created_at)
-        values (:createdBy, :externalId, :date, :activityType, :startAt, :endAt, :kcal, :avgHr, :sourceName, false, now())
+                                      source_name, distance_m, max_hr, source_bundle, is_deleted, created_at, updated_at)
+        values (:createdBy, :externalId, :date, :activityType, :startAt, :endAt, :kcal, :avgHr, :sourceName,
+                :distanceM, :maxHr, :sourceBundle, false, now(), now())
         on conflict on constraint uq_wearable_workout_owner_external
         do update set date = excluded.date, activity_type = excluded.activity_type, start_at = excluded.start_at,
                       end_at = excluded.end_at, kcal = excluded.kcal, avg_hr = excluded.avg_hr,
-                      source_name = excluded.source_name, is_deleted = false
+                      source_name = excluded.source_name, distance_m = excluded.distance_m, max_hr = excluded.max_hr,
+                      source_bundle = excluded.source_bundle, is_deleted = false, updated_at = now()
         """, nativeQuery = true)
     void upsert(@Param("createdBy") UUID createdBy, @Param("externalId") String externalId,
                 @Param("date") LocalDate date, @Param("activityType") String activityType,
                 @Param("startAt") Instant startAt, @Param("endAt") Instant endAt, @Param("kcal") Integer kcal,
-                @Param("avgHr") Integer avgHr, @Param("sourceName") String sourceName);
+                @Param("avgHr") Integer avgHr, @Param("sourceName") String sourceName,
+                @Param("distanceM") Integer distanceM, @Param("maxHr") Integer maxHr,
+                @Param("sourceBundle") String sourceBundle);
 
-    /** Inclusive day range, oldest first (Boop S3 brief inputs, mezo-r36n9.7). */
-    List<WearableWorkoutEntity> findByCreatedByAndDateBetweenOrderByDate(UUID createdBy, LocalDate from, LocalDate to);
+    /** Soft-deletes the owner's live workouts with these external ids; returns how many were live. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+        update wearable_workout set is_deleted = true, updated_at = now()
+        where created_by = :createdBy and external_id in (:ids) and is_deleted = false
+        """, nativeQuery = true)
+    int softDeleteByExternalIds(@Param("createdBy") UUID createdBy, @Param("ids") Collection<String> ids);
+
+    /** Live rows only, inclusive day range, oldest first — readers must not see soft-deleted workouts. */
+    List<WearableWorkoutEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(
+        UUID createdBy, LocalDate from, LocalDate to);
 }

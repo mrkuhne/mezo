@@ -3,7 +3,7 @@ title: Boop — native iOS app
 type: feature-domain
 status: in-progress
 updated: 2026-11-11
-tags: [ios, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
+tags: [ios, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
   - ios/BoopKit/Sources/BoopCore
@@ -13,6 +13,7 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/boop
   - api/feature/boop/boop.yml
   - ios/BoopKit/Sources/BoopCore/Morning
+  - api/feature/device/device.yml
 related: [proactive, _platform-auth-security, _platform-api-backend, me, today]
 ---
 
@@ -149,9 +150,22 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
   count once; a phone synced before totals existed re-reads the 60 days once, `mezo-r36n9.5`) — and one status chip
   (frissítem… · nem sikerült frissíteni · naptár: nincs engedély · frissítve HH:mm); tapping refreshes.
 - **Refresh on open**: every return to the foreground re-syncs (10-minute debounce); a calendar change
-  re-sends today + tomorrow. Free team → no background delivery.
+  re-sends today + tomorrow. **B1:** the code also wakes on new Health data in the background (`HKObserverQuery` +
+  background delivery) — present but **unverified on a device** (the free team accepts the entitlement; verification is the paid-team follow-up `mezo-r36n9.19`).
 
 ## 3. Architecture & data flow
+
+- **B1 · Adatalap (shipped 2026-11-11 on the FREE Apple team, `mezo-r36n9.11`; plan [`2026-11-11-boop-b1-adatalap.md`](../superpowers/plans/2026-11-11-boop-b1-adatalap.md))** — the data foundation:
+  - **Hybrid storage.** `daily_metric` is widened for day rollups (distance, basal kcal, exercise min, HRV, respiratory rate, SpO2, wrist temperature, VO2max, walking HR, mindful min, daylight min) and the new per-sample table `health_sample` holds discrete samples (metric code, start/end, value, unit, source name/bundle, device, user-entered). **Heart rate is stored as 5-minute buckets** (avg/min/max in one row, key `hr-<bucket start epoch>`; HR backfill 14 days, everything else 60).
+  - **23 HealthKit read types** (`HealthKitReader`), read with **anchored queries** (`HealthReader` + `HealthChange`); an anchor is saved only **after the server acknowledged** the batch, so an interrupted run re-sends and never loses. Cumulative day rollups use HealthKit statistics (Apple de-duplicates by the user's source order).
+  - **Background delivery** (`HealthBackground`, `BoopAppDelegate`, `BackgroundSyncHost`): one `HKObserverQuery` + `enableBackgroundDelivery` per observed type from `didFinishLaunching`; each wake runs one coalesced incremental sync and always calls the completion handler. Code is in and the free team accepts the entitlement, but **delivery is unverified on a device** (→ `mezo-r36n9.19`).
+  - **Nights.** Source priority per night: Apple Watch → ring apps (Oura/Ultrahuman/RingConn) → Sleep Cycle → any other app → (tie-break) the session with the most staged minutes. The phone computes **sleeping HR** over the winning session's asleep intervals and sends `sourceApp`. **One live night per date** (`uq_sleep_log_owner_date_live`, partial unique): the Health writer and the web/manual writer both go through `SleepNightMerge` — sensor fields (times, duration, stages, hypnogram, in-bed, sleeping HR, source app) come from Health, subjective ones (quality, awakenings, notes) are kept from the manual row; an insert race retries the merge once. A night the user **deleted stays deleted** (a re-send does not revive it). When the phone sends `windowFrom/windowTo`, Health nights inside the window that are missing from the payload are soft-deleted (this is how a deleted Health sleep propagates).
+  - **Deletions.** Deleted workout/sample uuids from the anchored queries go to `POST /api/wearable/deletions` (soft delete, `WearableDeletionService`).
+  - **Weight from Health.** `bodyMass` upserts into `weight_log` (`source` manual|apple_health, `external_id`) through a dedicated path — **one** goal recompute and **one** companion event per batch, only for a new weigh-in from today/yesterday (a 60-day backfill never floods).
+  - **Workout reconciliation** (read-time, `WorkoutReconciler` in `wearable`; logged sessions via `LoggedSessionReadPort`, implemented in `train`): a Health workout matching a logged gym session or sport session (overlap ≥ 50 % of the shorter one) is counted once. `BoopDayAssembler`'s *yesterday load* now counts logged gym/sport sessions (matched Health workouts dropped, lending kcal/min) so Forma reflects real training even without Health.
+  - **Calendar history.** `calendar_event.external_id` (EventKit external id + occurrence), unique per `(created_by, external_id, date)`; for each sent day, live rows missing from the payload are soft-deleted (cancelled event); first sync backfills 60 past days; past days are not touched again.
+  - **APNs registration.** `PushRegistrar` (BoopCore) registers the device token with `PUT /api/devices/apns` (`apns_device`, `notification` feature; a token registered by another account is moved). The environment is **hard-coded to sandbox**; the backend does **not send** pushes yet.
+  - **Account merge.** `scripts/ops/boop-b1-merge-accounts.sql` (+ rollback, [README](../../scripts/ops/README-boop-b1-merge.md)) moves the Boop account's Health data into the original account; dry-run unless `-v apply`, rehearsed in `BoopB1MergeScriptIT`. **The production run needs the owner's OK and has not been done.**
 
 - **S3 — the morning brief, end to end** (backend feature `boop`, `io.mrkuhne.mezo.feature.boop`, a leaf: nothing imports it back):
   1. The phone sends **its local date** (`GET /api/boop/brief?date=YYYY-MM-DD`); the server never calls `LocalDate.now()` for the day.
@@ -230,6 +244,8 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
 | `ingestWorkouts` | `POST /api/wearable/workouts` | `wearable_workout` upsert by `(created_by, external_id)`; date = local start day (Europe/Budapest) |
 | `replaceCalendarDays` | `PUT /api/wearable/calendar-days` → 204 | `calendar_event`: each sent day's rows hard-deleted and replaced |
 
+**B1 additions** (same tag, plus `Device`): `ingestHealthSamples` `POST /api/wearable/health-samples` (upsert into `health_sample` by `(created_by, external_id)`), `deleteHealthRecords` `POST /api/wearable/deletions` (soft delete workouts/samples/weights by external id), `SleepNightBatchRequest.windowFrom/windowTo` (window deletion above), widened `DailyMetricIn`/`WorkoutIn` (distance, max HR, source bundle) and `SleepNightIn` (`sourceApp`, `sleepingHr`), calendar days carry an `externalId` per event, `registerApnsDevice` `PUT /api/devices/apns` → 204 and `unregisterApnsDevice` `DELETE /api/devices/apns/{deviceId}` → 204 (contract `api/feature/device/device.yml`).
+
 Caps (`mezo.wearable`): 100 nights, 120 days, 300 workouts, 3 calendar days × 150 events per request →
 `WEARABLE_BATCH_TOO_LARGE`. Sleep: one `SleepLogSavedEvent` per batch at most — only for the newest night,
 only when newly inserted and dated today or yesterday (a 60-night backfill never floods Boop's messages).
@@ -252,6 +268,8 @@ and `day` (sleep + hypnogram stages 0 awake · 1 REM · 2 light · 3 deep, week 
 check-ins, intention, observations, calendar `busySlots[72]` = 06:00–24:00 in 15-minute slots, weight, recovery). Nullable by design:
 session minutes/time/plannedTime, sleep stage minutes, sleep `bedtime`/`wakeup` (a night may be logged without times) and `day.steps` /
 `day.activeKcal` (null without a wearable day, never a fake 0).
+
+**B1 tables** (changesets `202611111000…202611111130_mezo-r36n9.11_*.sql` in `1.1.0/script/`): `health_sample` (`created_by`, `external_id`, `metric`, start/end, value, unit, source name/bundle, device, user-entered; unique `(created_by, external_id)`, index `(created_by, metric, start_at)`); `daily_metric`, `wearable_workout` widened; `sleep_log` + `source_app`, `sleeping_hr`, `source` now `varchar(16)` (`manual|screenshot|apple_health`), generic dedup then `uq_sleep_log_owner_date_live`; `calendar_event` + `external_id`; `weight_log` + `source`, `external_id`; `apns_device` (device id, token, environment `sandbox|production`, bundle id, app version, last seen, invalidated at).
 
 Tables (changeset `202611101300_mezo-r36n9.7_boop_brief.sql`, both soft-delete, partial unique indexes `where is_deleted = false`):
 
@@ -297,7 +315,9 @@ goal) are set up in the web app with the Boop account (spec §8.1).
 
 Build/test commands and launch arguments: [`ios/README.md`](../../ios/README.md). Weekly install on the
 owner's phone: `ios/scripts/install-on-phone.sh` (team id from `$BOOP_TEAM` or `~/.config/boop/team`;
-exit 2 no team, 3 no phone, 4 build, 5 install).
+exit 2 no team, 3 no phone, 4 build, 5 install). Until the paid Apple team is active (~2026-11-25) it signs with the **free
+Personal Team** (weekly reinstall, `Boop.entitlements`: HealthKit + background-delivery, no push). When the paid team is active, `touch ~/.config/boop/paid`: the script then builds with
+`CODE_SIGN_ENTITLEMENTS=Boop-Paid.entitlements` (adds `aps-environment`; the free team refuses the Push capability). Moving to the paid team is `mezo-r36n9.19` (label `paid-team`): subscribe, re-register the bundle id once, then verify background delivery, APNs and HealthKit deletions on the device.
 
 ## 7. How to extend it
 
@@ -319,6 +339,7 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 - S2 kit tests: `HealthBuildersTests` (nights across midnight, naps, two sources, hypnogram, workouts, days),
   `CalendarSnapshotTests`, `HealthSyncTests` (60-day first window, 2-day overlap, batching + progress,
   interrupted backfill, idempotent re-send, calendar denied/granted, 401 stops).
+- **B1:** backend `HealthSchemaIT`, `HealthSampleServiceIT`, `SleepLogDedupMigrationIT`, `SleepNightMergeTest`, `WorkoutReconcilerTest`, `ApnsDeviceContractIT`, `BoopB1MergeScriptIT`; BoopKit `HealthSyncTests` (anchors, deletions), `HealthBackgroundTests`, `PushRegistrarTests`, `HealthBuildersTests`.
 - Backend: `WearableSleepServiceIT`, `WearableServiceIT`, `WearableContractIT` (+ existing sleep ITs).
 - **S3 backend** (`-Dmezo.test.use-testcontainers=true`, brief ITs need `@ActiveProfiles("companion-fake")`):
   `BoopRepositoriesIT`, `BoopDayAssemblerIT` (owner scoping, 00:30 local picks the new day under a UTC server), `BoopScoresTest` + `EnergyCurveModelTest`
@@ -392,6 +413,16 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
   - Reading and writing the observable `brief` in one statement is a Swift "Fatal access conflict" — use locals.
   - Native upsert of the session override relies on column defaults (`id`, `created_at`, `is_deleted`); a `PUT` with no body at all is a 500 from the platform handler (not Boop-specific).
   - Soft delete: derived finders on `daily_metric`/`wearable_workout`/`calendar_event` ignore `is_deleted` (parked minor, S2 tables).
+- **B1 known limits / traps:**
+  - Free team: no push (the entitlement is only in `Boop-Paid.entitlements`; putting `aps-environment` in `Boop.entitlements` breaks free-team signing). Background delivery is coded but unverified on a device.
+  - An **empty sleep window** (the user deleted every night in the 60 days) cannot be sent (contract `minItems 1`), so that deletion is lost.
+  - **HR bucket deletions are not propagated** (a deleted Health HR sample leaves its 5-minute bucket).
+  - A **user-deleted night blocks its external id** permanently (a revived Health night with the same id stays deleted).
+  - A cross-midnight logged session vs a Health workout dated on the other day can **double count** in the day load.
+  - APNs environment is hard-coded to sandbox (a TestFlight/production build needs it switched); the register call goes out twice per launch; a keychain write failure mints a new device id.
+  - `daily_metric` upsert overwrites every column, so the phone must send the full day; a Sleep Cycle rewrite re-builds the 60-day window (budget).
+  - Deleting a Health weight does not recompute the goal; body-mass bounds are unvalidated (500 not 400).
+  - The merge script is a production write — dry run first, owner OK with counts + rollback; never commit the user ids.
 - **Parked minors (bd under `mezo-r36n9`):** payload versioning, `trendUp` on equal values, reload supersedes an in-flight regenerate, swallowed `setActive(false)`, real synthesizer adapter only verified on a device.
 - Deferred (now B3/B4): the five morning steps (check-in, szándék, weigh-in, meal capture, quick food log, "+" sheet, notification list, settings), widgets, Beszélgetés and Rutin tabs.
 
@@ -407,7 +438,8 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 S3: `api/feature/boop/boop.yml` · `backend/…/feature/boop/service/{BoopDayAssembler,BoopScores,EnergyCurveModel,BoopVerdictWriter,RuleVerdicts,BoopPrompts,BoopBriefService,BoopBriefStore,SessionTimeService}.java` ·
 `…/feature/boop/controller/BoopController.java` · `…/feature/boop/config/BoopProperties.java` · `backend/src/main/resources/db/changelog/1.1.0/script/202611101300_mezo-r36n9.7_boop_brief.sql` ·
 `ios/BoopKit/Sources/BoopCore/Morning/{Brief,MorningClient,PathBuilder,Lens,BoopVoice}.swift` · `ios/Boop/Nap/{MaiView,MaiTiles,MaiPath,LensActionRow,ObservationStack,SessionMove,MaiMode,BedtimeReminder,DetailSheet,SleepSheet,PulseSheet,DaySheet,ANapomView,NapView}.swift` ·
-`ios/Boop/Shell/ShellView.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Frames.swift` (`NKBackdropPanorama`)
+`ios/Boop/Shell/ShellView.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Frames.swift` (`NKBackdropPanorama`) ·
 B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet}.swift` · `ios/Boop/Capture/CaptureSheet.swift` · `ios/Boop/{Terv,Naplo,BoopChat}/*` ·
 `ios/Boop/Nap/{MaPhases,MaDrill,ProposalDesk,RoomSwipeBack}.swift` · `ios/BoopKit/Sources/BoopCore/Morning/{DayPhase,DayPlan,Proposals}.swift` ·
-`ios/BoopKit/Sources/BoopDesign/Napkelte/{SpineBar,Proposal,Drill}.swift`
+`ios/BoopKit/Sources/BoopDesign/Napkelte/{SpineBar,Proposal,Drill}.swift` ·
+B1: `ios/BoopKit/Sources/BoopCore/Health/{HealthKitReader,HealthReader,HealthSync,HealthBackground,SleepNightBuilder,WorkoutMapper}.swift` · `…/Push/PushRegistrar.swift` · `ios/Boop/App/{BoopAppDelegate,BackgroundSyncHost}.swift` · `ios/Boop.entitlements` · `ios/Boop-Paid.entitlements` · `backend/…/feature/wearable/service/{HealthSampleService,WearableDeletionService,WorkoutReconciler}.java` · `backend/…/feature/biometrics/sleep/service/SleepNightMerge.java` · `api/feature/device/device.yml` · `scripts/ops/boop-b1-merge-accounts*.sql`

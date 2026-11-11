@@ -5,8 +5,8 @@ tags:
     description: >
       Boop (native iOS app) ingestion of Apple Health data and the device-calendar snapshot
       (spec 2026-11-09-boop-ios-v1-design §4.4). Every write is idempotent: sleep nights and
-      workouts upsert by the client's `externalId`, daily metrics by date, calendar days replace
-      that day's rows. `created_by` always comes from the JWT.
+      workouts upsert by the client's `externalId`, daily metrics by date, calendar days sync
+      that day's rows (cancelled events are soft-deleted, other days kept). `created_by` always comes from the JWT.
 paths:
   /api/wearable/sleep-nights:
     post:
@@ -90,7 +90,11 @@ paths:
     put:
       tags: [Wearable]
       operationId: replaceCalendarDays
-      summary: Replace the calendar events of each given day (device calendar snapshot)
+      summary: Sync the calendar events of each given day (device calendar history)
+      description: >
+        For each sent day, events upsert by (externalId, date) and revive if cancelled earlier; live
+        events of that day missing from the payload are soft-deleted (cancelled). Days not in the
+        payload are never touched, so past days stay as history. An empty `events` list cancels the day.
       requestBody:
         required: true
         content:
@@ -98,7 +102,59 @@ paths:
             schema: { $ref: '#/components/schemas/CalendarDaysRequest' }
       responses:
         '204':
-          description: Replaced
+          description: Synced
+        '400':
+          description: Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/wearable/samples:
+    post:
+      tags: [Wearable]
+      operationId: ingestHealthSamples
+      summary: Upsert Apple Health samples with provenance (body_mass also lands in weight_log)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HealthSampleBatchRequest' }
+      responses:
+        '200':
+          description: Upserted; counts of new and updated rows
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IngestResult' }
+        '400':
+          description: Validation failure (end before start); WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/wearable/deletions:
+    post:
+      tags: [Wearable]
+      operationId: deleteHealthRecords
+      summary: Soft-delete Health records (samples, workouts, Health weigh-ins) by the client's external ids
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HealthDeletionRequest' }
+      responses:
+        '200':
+          description: Deleted; count of live rows that were soft-deleted (idempotent)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthDeletionResult' }
         '400':
           description: Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap
           content:
@@ -133,14 +189,58 @@ components:
         deepMin: { type: integer, minimum: 0 }
         hypnogram:
           $ref: '#/components/schemas/Hypnogram'
+        sourceApp: { type: string, maxLength: 80, description: Name of the app whose night won on the phone }
+        sleepingHr: { type: integer, minimum: 0, description: Average heart rate over the asleep intervals }
     SleepNightBatchRequest:
       type: object
       required: [nights]
       properties:
+        windowFrom: { type: string, format: date, description: Start of the re-sent window (health nights missing inside it are deleted) }
+        windowTo: { type: string, format: date }
         nights:
           type: array
           minItems: 1
           items: { $ref: '#/components/schemas/SleepNightIn' }
+    HealthSampleIn:
+      type: object
+      required: [externalId, metric, start, end, value]
+      properties:
+        externalId: { type: string, minLength: 1, maxLength: 64, description: HealthKit uuid or a derived bucket key }
+        metric:
+          type: string
+          enum: [heart_rate, hrv_sdnn, respiratory_rate, oxygen_saturation, wrist_temperature, vo2max, hr_recovery_1min, walking_hr_avg, body_mass, body_fat_pct, lean_body_mass, mindful_session, state_of_mind, sleeping_breathing_disturbances]
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        value: { type: number, format: double }
+        unit: { type: string, maxLength: 16 }
+        sourceName: { type: string, maxLength: 80 }
+        sourceBundle: { type: string, maxLength: 120 }
+        device: { type: string, maxLength: 80 }
+        userEntered: { type: boolean }
+        meta: { type: object, additionalProperties: true, description: Free-form extras such as bucket min and max }
+    HealthSampleBatchRequest:
+      type: object
+      required: [samples]
+      properties:
+        samples:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items: { $ref: '#/components/schemas/HealthSampleIn' }
+    HealthDeletionRequest:
+      type: object
+      required: [externalIds]
+      properties:
+        externalIds:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items: { type: string, minLength: 1, maxLength: 200 }
+    HealthDeletionResult:
+      type: object
+      required: [deleted]
+      properties:
+        deleted: { type: integer, minimum: 0 }
     DailyMetricIn:
       type: object
       required: [date]
@@ -152,6 +252,17 @@ components:
         minHr: { type: integer, minimum: 0 }
         maxHr: { type: integer, minimum: 0 }
         activeKcal: { type: integer, minimum: 0 }
+        distanceM: { type: integer, minimum: 0 }
+        basalKcal: { type: integer, minimum: 0 }
+        exerciseMin: { type: integer, minimum: 0 }
+        hrvMs: { type: number, minimum: 0 }
+        respRate: { type: number, minimum: 0 }
+        spo2Pct: { type: number, minimum: 0 }
+        wristTempC: { type: number, description: Signed deviation or absolute wrist temperature }
+        vo2max: { type: number, minimum: 0 }
+        walkingHr: { type: integer, minimum: 0 }
+        mindfulMin: { type: integer, minimum: 0 }
+        daylightMin: { type: integer, minimum: 0 }
     DailyMetricBatchRequest:
       type: object
       required: [days]
@@ -171,6 +282,9 @@ components:
         kcal: { type: integer, minimum: 0 }
         avgHr: { type: integer, minimum: 0 }
         sourceName: { type: string, maxLength: 80 }
+        distanceM: { type: integer, minimum: 0 }
+        maxHr: { type: integer, minimum: 0 }
+        sourceBundle: { type: string, maxLength: 120 }
     WorkoutBatchRequest:
       type: object
       required: [workouts]
@@ -181,8 +295,9 @@ components:
           items: { $ref: '#/components/schemas/WorkoutIn' }
     CalendarEventIn:
       type: object
-      required: [title, startAt, endAt, allDay]
+      required: [externalId, title, startAt, endAt, allDay]
       properties:
+        externalId: { type: string, minLength: 1, maxLength: 200, description: EventKit item id plus occurrence start }
         title: { type: string, minLength: 1, maxLength: 200 }
         startAt: { type: string, format: date-time }
         endAt: { type: string, format: date-time }

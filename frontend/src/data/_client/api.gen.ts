@@ -5561,9 +5561,46 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Replace the calendar events of each given day (device calendar snapshot) */
+        /**
+         * Sync the calendar events of each given day (device calendar history)
+         * @description For each sent day, events upsert by (externalId, date) and revive if cancelled earlier; live events of that day missing from the payload are soft-deleted (cancelled). Days not in the payload are never touched, so past days stay as history. An empty `events` list cancels the day.
+         */
         put: operations["replaceCalendarDays"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wearable/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upsert Apple Health samples with provenance (body_mass also lands in weight_log) */
+        post: operations["ingestHealthSamples"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wearable/deletions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Soft-delete Health records (samples, workouts, Health weigh-ins) by the client's external ids */
+        post: operations["deleteHealthRecords"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5617,6 +5654,40 @@ export interface paths {
         post?: never;
         /** Remove the session-time override of a day (back to the planned time) */
         delete: operations["clearSessionTime"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/apns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Register or refresh this device's APNs token (upsert by deviceId; moves the device to the caller) */
+        put: operations["registerApnsDevice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/apns/{deviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unregister this device on sign-out (idempotent; the caller's own device only) */
+        delete: operations["unregisterApnsDevice"];
         options?: never;
         head?: never;
         patch?: never;
@@ -12891,9 +12962,50 @@ export interface components {
             remMin?: number;
             deepMin?: number;
             hypnogram?: components["schemas"]["Hypnogram"];
+            /** @description Name of the app whose night won on the phone */
+            sourceApp?: string;
+            /** @description Average heart rate over the asleep intervals */
+            sleepingHr?: number;
         };
         SleepNightBatchRequest: {
+            /**
+             * Format: date
+             * @description Start of the re-sent window (health nights missing inside it are deleted)
+             */
+            windowFrom?: string;
+            /** Format: date */
+            windowTo?: string;
             nights: components["schemas"]["SleepNightIn"][];
+        };
+        HealthSampleIn: {
+            /** @description HealthKit uuid or a derived bucket key */
+            externalId: string;
+            /** @enum {string} */
+            metric: "heart_rate" | "hrv_sdnn" | "respiratory_rate" | "oxygen_saturation" | "wrist_temperature" | "vo2max" | "hr_recovery_1min" | "walking_hr_avg" | "body_mass" | "body_fat_pct" | "lean_body_mass" | "mindful_session" | "state_of_mind" | "sleeping_breathing_disturbances";
+            /** Format: date-time */
+            start: string;
+            /** Format: date-time */
+            end: string;
+            /** Format: double */
+            value: number;
+            unit?: string;
+            sourceName?: string;
+            sourceBundle?: string;
+            device?: string;
+            userEntered?: boolean;
+            /** @description Free-form extras such as bucket min and max */
+            meta?: {
+                [key: string]: unknown;
+            };
+        };
+        HealthSampleBatchRequest: {
+            samples: components["schemas"]["HealthSampleIn"][];
+        };
+        HealthDeletionRequest: {
+            externalIds: string[];
+        };
+        HealthDeletionResult: {
+            deleted: number;
         };
         DailyMetricIn: {
             /** Format: date */
@@ -12904,6 +13016,18 @@ export interface components {
             minHr?: number;
             maxHr?: number;
             activeKcal?: number;
+            distanceM?: number;
+            basalKcal?: number;
+            exerciseMin?: number;
+            hrvMs?: number;
+            respRate?: number;
+            spo2Pct?: number;
+            /** @description Signed deviation or absolute wrist temperature */
+            wristTempC?: number;
+            vo2max?: number;
+            walkingHr?: number;
+            mindfulMin?: number;
+            daylightMin?: number;
         };
         DailyMetricBatchRequest: {
             days: components["schemas"]["DailyMetricIn"][];
@@ -12918,11 +13042,16 @@ export interface components {
             kcal?: number;
             avgHr?: number;
             sourceName?: string;
+            distanceM?: number;
+            maxHr?: number;
+            sourceBundle?: string;
         };
         WorkoutBatchRequest: {
             workouts: components["schemas"]["WorkoutIn"][];
         };
         CalendarEventIn: {
+            /** @description EventKit item id plus occurrence start */
+            externalId: string;
             title: string;
             /** Format: date-time */
             startAt: string;
@@ -13099,6 +13228,19 @@ export interface components {
             reason: string;
             day: number;
         } | null;
+        ApnsDeviceIn: {
+            /**
+             * Format: uuid
+             * @description Stable per-install id kept in the keychain
+             */
+            deviceId: string;
+            /** @description APNs device token (hex) */
+            token: string;
+            /** @enum {string} */
+            environment: "sandbox" | "production";
+            bundleId: string;
+            appVersion?: string;
+        };
     };
     responses: {
         /** @description Missing/invalid token */
@@ -28911,12 +29053,96 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Replaced */
+            /** @description Synced */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    ingestHealthSamples: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthSampleBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Upserted; counts of new and updated rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResult"];
+                };
+            };
+            /** @description Validation failure (end before start); WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteHealthRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthDeletionRequest"];
+            };
+        };
+        responses: {
+            /** @description Deleted; count of live rows that were soft-deleted (idempotent) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthDeletionResult"];
+                };
             };
             /** @description Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
             400: {
@@ -29100,6 +29326,84 @@ export interface operations {
                 content?: never;
             };
             /** @description Invalid date */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    registerApnsDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApnsDeviceIn"];
+            };
+        };
+        responses: {
+            /** @description Registered */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    unregisterApnsDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unregistered (or nothing to do) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -116,6 +116,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     io.mrkuhne.mezo.support.populator.DailyMetricPopulator.class,
     io.mrkuhne.mezo.support.populator.WearableWorkoutPopulator.class,
     io.mrkuhne.mezo.support.populator.CalendarEventPopulator.class,
+    io.mrkuhne.mezo.support.populator.HealthSamplePopulator.class,
+    io.mrkuhne.mezo.support.populator.ApnsDevicePopulator.class,
     io.mrkuhne.mezo.support.populator.BoopBriefPopulator.class,
     io.mrkuhne.mezo.support.populator.WorkoutTimeOverridePopulator.class,
     SleepGoalPopulator.class,

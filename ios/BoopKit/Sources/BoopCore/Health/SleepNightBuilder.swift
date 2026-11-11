@@ -1,15 +1,23 @@
 import Foundation
 import BoopAPI
 
-/// Apple Health sleep samples → one night per wake day (Boop S2, mezo-r36n9.2).
+/// One night ready to send, with the asleep intervals of the winning session (for the sleeping heart
+/// rate, which needs a Health statistics query and so is filled in by `HealthSync`).
+public struct NightDraft: Sendable {
+    public var night: Components.Schemas.SleepNightIn
+    public let asleep: [DateInterval]
+}
+
+/// Apple Health sleep samples → one night per wake day (Boop S2 mezo-r36n9.2, B1 mezo-r36n9.11).
 ///
 /// - Samples of each source are split into sessions where asleep samples are > 90 min apart.
 /// - A session that ends between 14:00 and 18:00 local is a nap and is dropped.
-/// - Several sessions on the same wake day (two apps writing the same night): the one with the most
-///   staged minutes (deep + REM + core) wins, then the longest.
+/// - Several sessions on the same wake day (several apps writing the same night): the best source wins —
+///   Apple Watch (Apple's own bundle on a Watch) → ring apps (Oura, Ultrahuman, RingConn) → Sleep Cycle →
+///   any other app; between equals the one with the most staged minutes (deep + REM + core), then the longest.
 /// - `externalId` is per night (`hk-night-<wake day>`) so a re-sync or a source change never
-///   duplicates a night on the server.
-public func buildNights(_ samples: [SleepSample], calendar: Calendar) -> [Components.Schemas.SleepNightIn] {
+///   duplicates a night on the server; `sourceApp` names the winning source.
+public func buildNightDrafts(_ samples: [SleepSample], calendar: Calendar) -> [NightDraft] {
     let bySource = Dictionary(grouping: samples, by: \.source)
     var best: [String: SleepSession] = [:]
     for (_, list) in bySource {
@@ -21,7 +29,24 @@ public func buildNights(_ samples: [SleepSample], calendar: Calendar) -> [Compon
             best[day] = session
         }
     }
-    return best.keys.sorted().map { day in best[day]!.night(day: day, calendar: calendar) }
+    return best.keys.sorted().map { day in
+        let s = best[day]!
+        return NightDraft(night: s.night(day: day, calendar: calendar), asleep: s.asleepIntervals)
+    }
+}
+
+/// The nights without the sleeping heart rate (see `buildNightDrafts`).
+public func buildNights(_ samples: [SleepSample], calendar: Calendar) -> [Components.Schemas.SleepNightIn] {
+    buildNightDrafts(samples, calendar: calendar).map(\.night)
+}
+
+/// Source priority of one sample (lower wins): 0 Apple Watch, 1 ring app, 2 Sleep Cycle, 3 anything else.
+func sourceRank(_ s: SleepSample) -> Int {
+    let bundle = s.bundle.lowercased(), name = s.source.lowercased(), device = (s.device ?? "").lowercased()
+    if bundle.hasPrefix("com.apple.health") && device.contains("watch") { return 0 }
+    if ["oura", "ultrahuman", "ringconn"].contains(where: { bundle.contains($0) || name.contains($0) }) { return 1 }
+    if bundle.contains("sleepcycle") || name.contains("sleep cycle") || name.contains("sleepcycle") { return 2 }
+    return 3
 }
 
 private let asleepStages: Set<SleepSample.Stage> = [.core, .deep, .rem, .asleepUnspecified]
@@ -37,7 +62,27 @@ private struct SleepSession {
     }
     var staged: Int { minutes([.deep, .rem, .core]) }
     var asleep: Int { minutes(asleepStages) }
-    func beats(_ other: SleepSession) -> Bool { staged != other.staged ? staged > other.staged : asleep > other.asleep }
+    /// The best (lowest) source rank among the session's samples.
+    var rank: Int { samples.map(sourceRank).min() ?? 3 }
+    func beats(_ other: SleepSession) -> Bool {
+        if rank != other.rank { return rank < other.rank }
+        return staged != other.staged ? staged > other.staged : asleep > other.asleep
+    }
+
+    /// The asleep stretches inside [bed, wake], overlaps merged (the sleeping-HR query covers these).
+    var asleepIntervals: [DateInterval] {
+        let parts = samples.filter { asleepStages.contains($0.stage) }.map(clipped)
+            .filter { $0.duration > 0 }.sorted { $0.start < $1.start }
+        var out: [DateInterval] = []
+        for p in parts {
+            if let last = out.last, p.start <= last.end {
+                out[out.count - 1] = DateInterval(start: last.start, end: max(last.end, p.end))
+            } else {
+                out.append(p)
+            }
+        }
+        return out
+    }
 
     private func clipped(_ s: SleepSample) -> DateInterval {
         let a = max(s.start, bed), b = min(s.end, wake)
@@ -54,7 +99,7 @@ private struct SleepSession {
             durationH: (Double(asleep) / 60 * 100).rounded() / 100,
             inBedMin: inBedMin, awakeMin: minutes([.awake]),
             lightMin: minutes([.core, .asleepUnspecified]), remMin: minutes([.rem]), deepMin: minutes([.deep]),
-            hypnogram: hypnogram())
+            hypnogram: hypnogram(), sourceApp: samples.first.map { String($0.source.prefix(80)) })
     }
 
     /// One letter per bucket from bedtime: the stage covering most of the bucket (D deep, R REM,

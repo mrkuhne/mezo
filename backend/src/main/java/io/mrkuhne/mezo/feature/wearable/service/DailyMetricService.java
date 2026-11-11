@@ -30,7 +30,9 @@ public class DailyMetricService {
         int inserted = 0;
         for (DailyMetricIn d : days) {
             repository.upsert(createdBy, d.getDate(), d.getSteps(), d.getRestingHr(), d.getAvgHr(), d.getMinHr(),
-                d.getMaxHr(), d.getActiveKcal());
+                d.getMaxHr(), d.getActiveKcal(), d.getDistanceM(), d.getBasalKcal(), d.getExerciseMin(), d.getHrvMs(),
+                d.getRespRate(), d.getSpo2Pct(), d.getWristTempC(), d.getVo2max(), d.getWalkingHr(),
+                d.getMindfulMin(), d.getDaylightMin());
             if (!existing.contains(d.getDate()) && seen.add(d.getDate())) {
                 inserted++;
             }

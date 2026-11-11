@@ -49,7 +49,9 @@ public final class Session {
     #endif
 
     public func signOut() {
+        let old = tokens.read()
         tokens.clear()
+        if old != nil { NotificationCenter.default.post(name: .boopSignedOut, object: nil, userInfo: ["token": old as Any]) }
         state = .signedOut
     }
 
@@ -93,6 +95,7 @@ public final class Session {
                 let m = try ok.body.json
                 let me = Me(id: UUID(uuidString: m.id) ?? UUID(), name: m.name, email: m.email, onboarded: m.onboarded, timezone: m.timezone)
                 state = me.onboarded ? .ready(me) : .needsOnboarding(me)
+                NotificationCenter.default.post(name: .boopSignedIn, object: nil, userInfo: ["userId": me.id])
             case .unauthorized:
                 signOut()
             default:
@@ -102,4 +105,12 @@ public final class Session {
             state = .offline
         }
     }
+}
+
+public extension Notification.Name {
+    /// The account is known (after `me` succeeded: bootstrap, sign-in, register). userInfo `userId: UUID`.
+    /// The app delegate listens to register for remote notifications — no UI involved.
+    static let boopSignedIn = Notification.Name("io.mrkuhne.boop.signedIn")
+    /// Sign-out; userInfo `token: String` is the JWT just cleared, so the delegate can still DELETE the push device.
+    static let boopSignedOut = Notification.Name("io.mrkuhne.boop.signedOut")
 }

@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-10-11
+updated: 2026-11-11
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -936,6 +936,8 @@ A **standalone** owner-scoped weekly schedule answering only *when* the user tra
 ---
 
 ## 5. Integrations
+
+- **`LoggedSessionReadPort` (B1, `mezo-r36n9.11`)** — a read-only port in `feature/train/service` exposing logged gym sessions (`workout_session` start/finish, active seconds) and sport sessions (date + time + duration) for a day range. Consumed by the `wearable` `WorkoutReconciler` (a Health workout overlapping a logged session by ≥ 50 % of the shorter one is counted once) and by Boop's `BoopDayAssembler` (yesterday's load counts logged sessions). No writes, no behaviour change in Train itself.
 
 **Companion source access:** Chat training summaries expose individual exercises, sets, targets and feedback. Historical workouts, running/sport sessions, plans, schedules and mesocycles are available through the full-source reader. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 

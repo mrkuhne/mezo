@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.wearable.service.WearableWorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -37,18 +38,21 @@ class WearableServiceIT extends AbstractIntegrationTest {
     private static final LocalDate D2 = LocalDate.parse("2026-11-09");
 
     private static DailyMetricIn day(LocalDate d, int steps) {
-        return new DailyMetricIn().date(d).steps(steps).restingHr(57).avgHr(72).minHr(48).maxHr(151).activeKcal(620);
+        return new DailyMetricIn().date(d).steps(steps).restingHr(57).avgHr(72).minHr(48).maxHr(151).activeKcal(620)
+            .distanceM(5200).basalKcal(1700).exerciseMin(41).hrvMs(new BigDecimal("48.5")).respRate(new BigDecimal("14.2"))
+            .spo2Pct(new BigDecimal("97.0")).wristTempC(new BigDecimal("-0.35")).vo2max(new BigDecimal("44.1"))
+            .walkingHr(96).mindfulMin(10).daylightMin(62);
     }
 
     private static WorkoutIn workout(String id, String start) {
         OffsetDateTime s = OffsetDateTime.parse(start);
         return new WorkoutIn().externalId(id).activityType("strength").startAt(s).endAt(s.plusMinutes(60))
-            .kcal(480).avgHr(128).sourceName("Huawei Health");
+            .kcal(480).avgHr(128).sourceName("Huawei Health").distanceM(0).maxHr(171).sourceBundle("com.huawei.health");
     }
 
     private static CalendarEventIn event(String title, String start) {
         OffsetDateTime s = OffsetDateTime.parse(start);
-        return new CalendarEventIn().title(title).startAt(s).endAt(s.plusMinutes(30)).allDay(false).calendarName("Munka");
+        return new CalendarEventIn().externalId("ek-" + title + "-" + start).title(title).startAt(s).endAt(s.plusMinutes(30)).allDay(false).calendarName("Munka");
     }
 
     private int count(String table, UUID user) {
@@ -68,6 +72,34 @@ class WearableServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void widenedDailyMetricFieldsPersist() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        metrics.ingest(user, List.of(day(D1, 6000)));
+        var row = jdbc.queryForMap("select * from daily_metric where created_by = ? and date = ?", user, D1);
+        assertThat(row).containsEntry("distance_m", 5200).containsEntry("basal_kcal", 1700)
+            .containsEntry("exercise_min", 41).containsEntry("walking_hr", 96).containsEntry("mindful_min", 10)
+            .containsEntry("daylight_min", 62);
+        assertThat((BigDecimal) row.get("hrv_ms")).isEqualByComparingTo("48.5");
+        assertThat((BigDecimal) row.get("resp_rate")).isEqualByComparingTo("14.2");
+        assertThat((BigDecimal) row.get("spo2_pct")).isEqualByComparingTo("97.0");
+        assertThat((BigDecimal) row.get("wrist_temp_c")).isEqualByComparingTo("-0.35");
+        assertThat((BigDecimal) row.get("vo2max")).isEqualByComparingTo("44.1");
+    }
+
+    @Test
+    void widenedWorkoutAndCalendarFieldsPersist() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        workouts.ingest(user, List.of(workout("hk-1", "2026-11-08T17:00:00+01:00")));
+        var row = jdbc.queryForMap("select * from wearable_workout where created_by = ?", user);
+        assertThat(row).containsEntry("distance_m", 0).containsEntry("max_hr", 171)
+            .containsEntry("source_bundle", "com.huawei.health");
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2)
+            .events(List.of(event("Egyeztetés", "2026-11-09T09:00:00+01:00")))));
+        assertThat(jdbc.queryForObject("select external_id from calendar_event where created_by = ?",
+            String.class, user)).startsWith("ek-Egyeztetés-");
+    }
+
+    @Test
     void workoutsUpsertByExternalId() {
         UUID user = databasePopulator.populateUser("a@test.local");
         workouts.ingest(user, List.of(workout("hk-1", "2026-11-08T17:00:00+01:00")));
@@ -79,21 +111,71 @@ class WearableServiceIT extends AbstractIntegrationTest {
             LocalDate.class, user)).isEqualTo(D1);
     }
 
+    private static CalendarEventIn eventId(String id, String title, String start) {
+        OffsetDateTime s = OffsetDateTime.parse(start);
+        return new CalendarEventIn().externalId(id).title(title).startAt(s).endAt(s.plusMinutes(30)).allDay(false).calendarName("Munka");
+    }
+
+    private int live(UUID user, LocalDate d) {
+        return jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ? and is_deleted = false",
+            Integer.class, user, d);
+    }
+
     @Test
-    void calendarReplaceClearsTheDay() {
+    void twoSyncsADayApartKeepYesterday() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        calendar.replace(user, List.of(new CalendarDayIn().date(D1).events(List.of(event("Tegnapi", "2026-11-08T12:00:00+01:00")))));
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of(event("Mai", "2026-11-09T12:00:00+01:00")))));
+        assertThat(live(user, D1)).isEqualTo(1);
+        assertThat(live(user, D2)).isEqualTo(1);
+    }
+
+    @Test
+    void cancelledEventDisappearsFromThatDayOnly() {
         UUID user = databasePopulator.populateUser("a@test.local");
         calendar.replace(user, List.of(
             new CalendarDayIn().date(D2).events(List.of(event("Egyeztetés", "2026-11-09T09:00:00+01:00"),
-                event("Workshop", "2026-11-09T10:30:00+01:00"), event("Hívás", "2026-11-09T17:30:00+01:00"))),
+                event("Workshop", "2026-11-09T10:30:00+01:00"))),
             new CalendarDayIn().date(D1).events(List.of(event("Tegnapi", "2026-11-08T12:00:00+01:00")))));
-        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of(event("Csak ez", "2026-11-09T12:00:00+01:00")))));
-        assertThat(jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ?",
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of(event("Egyeztetés", "2026-11-09T09:00:00+01:00")))));
+        assertThat(live(user, D2)).isEqualTo(1);
+        assertThat(live(user, D1)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ? and is_deleted = true",
             Integer.class, user, D2)).isEqualTo(1);
         calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of())));
-        assertThat(jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ?",
-            Integer.class, user, D2)).isZero();
-        assertThat(jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ?",
-            Integer.class, user, D1)).isEqualTo(1);
+        assertThat(live(user, D2)).isZero();
+        assertThat(live(user, D1)).isEqualTo(1);
+    }
+
+    @Test
+    void multiDayEventLivesUnderTwoDaysAndResendIsIdempotentAndRevives() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        CalendarEventIn trip = eventId("ek-trip", "Konferencia", "2026-11-08T09:00:00+01:00");
+        List<CalendarDayIn> both = List.of(new CalendarDayIn().date(D1).events(List.of(trip)),
+            new CalendarDayIn().date(D2).events(List.of(trip, trip)));
+        calendar.replace(user, both);
+        calendar.replace(user, both);
+        assertThat(count("calendar_event", user)).isEqualTo(2);
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of())));
+        assertThat(live(user, D2)).isZero();
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of(
+            eventId("ek-trip", "Konferencia (új cím)", "2026-11-08T09:00:00+01:00")))));
+        assertThat(live(user, D2)).isEqualTo(1);
+        assertThat(count("calendar_event", user)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select title from calendar_event where created_by = ? and date = ?",
+            String.class, user, D2)).isEqualTo("Konferencia (új cím)");
+    }
+
+    @Test
+    void anotherUsersRowsAreUntouched() {
+        UUID a = databasePopulator.populateUser("a@test.local");
+        UUID b = databasePopulator.populateUser("b@test.local");
+        CalendarEventIn shared = eventId("ek-same", "Közös", "2026-11-09T09:00:00+01:00");
+        calendar.replace(a, List.of(new CalendarDayIn().date(D2).events(List.of(shared))));
+        calendar.replace(b, List.of(new CalendarDayIn().date(D2).events(List.of(shared))));
+        calendar.replace(b, List.of(new CalendarDayIn().date(D2).events(List.of())));
+        assertThat(live(a, D2)).isEqualTo(1);
+        assertThat(live(b, D2)).isZero();
     }
 
     @Test
@@ -105,7 +187,7 @@ class WearableServiceIT extends AbstractIntegrationTest {
         List<WorkoutIn> tooManyWorkouts = IntStream.range(0, 301)
             .mapToObj(i -> workout("hk-" + i, "2026-11-09T07:30:00+01:00")).toList();
         assertThatThrownBy(() -> workouts.ingest(user, tooManyWorkouts)).isInstanceOf(SystemRuntimeErrorException.class);
-        List<CalendarDayIn> tooManyCalendarDays = IntStream.range(0, 4)
+        List<CalendarDayIn> tooManyCalendarDays = IntStream.range(0, 32)
             .mapToObj(i -> new CalendarDayIn().date(D2.plusDays(i)).events(List.of())).toList();
         assertThatThrownBy(() -> calendar.replace(user, tooManyCalendarDays)).isInstanceOf(SystemRuntimeErrorException.class);
     }

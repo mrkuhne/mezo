@@ -38,4 +38,12 @@ public class WeightLogEntity extends OwnedEntity {
 
     @Column(length = 500)
     private String note;
+
+    /** {@code manual} or {@code apple_health} (Boop B1, mezo-r36n9.11). */
+    @Column(nullable = false, length = 16)
+    private String source = "manual";
+
+    /** HealthKit sample uuid of an imported weigh-in; null on manual rows. */
+    @Column(name = "external_id", length = 64)
+    private String externalId;
 }

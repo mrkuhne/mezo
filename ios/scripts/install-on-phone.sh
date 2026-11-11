@@ -37,11 +37,18 @@ if [[ -z "$udid" ]]; then
   exit 3
 fi
 
+# Paid Apple team (mezo-r36n9.19): touch ~/.config/boop/paid to sign with push notifications.
+# The free Personal Team refuses the Push Notifications capability, so it signs without it.
+extra=()
+if [[ -f "$HOME/.config/boop/paid" ]]; then
+  extra+=(CODE_SIGN_ENTITLEMENTS=Boop-Paid.entitlements)
+fi
+
 mkdir -p "$root/ios/build"
 echo "Építem a Boopot a telefonodra…"
 if ! xcodebuild -project "$root/ios/Boop.xcodeproj" -scheme Boop -configuration Release \
      -destination "id=$udid" -allowProvisioningUpdates -skipPackagePluginValidation \
-     -derivedDataPath "$root/ios/build/device" DEVELOPMENT_TEAM="$team" build > "$root/ios/build/install.log" 2>&1; then
+     -derivedDataPath "$root/ios/build/device" DEVELOPMENT_TEAM="$team" ${extra[@]+"${extra[@]}"} build > "$root/ios/build/install.log" 2>&1; then
   echo "Az építés nem sikerült. A részletek: ios/build/install.log" >&2
   exit 4
 fi
