@@ -4,7 +4,7 @@ One-off production write (mezo-r36n9.11). Needs the owner's explicit OK with the
 **before** the real run. Never run it from CI; never commit the user ids.
 
 Files: `boop-b1-merge-accounts.sql` (merge), `boop-b1-merge-accounts-rollback.sql` (undo). Both take the psql
-variables `from_user` (the Boop account) and `to_user` (the original account), and are **dry runs unless `-v apply=1`**.
+variables `from_user` (the Boop account) and `to_user` (the original account), and are **dry runs unless `-v apply` is a true value (1, on, true, yes)**.
 Rehearsal: `BoopB1MergeScriptIT` (Testcontainers, synthetic data of the production shape).
 
 ## Steps
@@ -68,5 +68,8 @@ are not in the backup). The backups are kept.
 
 ```sql
 DROP TABLE b1_backup_sleep_log, b1_backup_daily_metric, b1_backup_wearable_workout, b1_backup_calendar_event,
-           b1_backup_boop_brief, b1_backup_weight_log, b1_backup_workout_time_override;
+           b1_backup_boop_brief, b1_backup_weight_log, b1_backup_workout_time_override, b1_backup_health_sample;
 ```
+
+Notes: `apply=0`, `apply=` or any false value rolls back. `health_sample` is part of the backup/move/rollback (TO wins
+on an external-id collision). The rollback re-inserts with explicit column lists taken from the backup tables.

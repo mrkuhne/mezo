@@ -36,7 +36,7 @@ class BoopB1MergeScriptIT extends AbstractIntegrationTest {
     private static final Path MERGE = Path.of("..", "scripts", "ops", "boop-b1-merge-accounts.sql");
     private static final Path ROLLBACK = Path.of("..", "scripts", "ops", "boop-b1-merge-accounts-rollback.sql");
     private static final List<String> TABLES = List.of("sleep_log", "daily_metric", "wearable_workout",
-        "calendar_event", "boop_brief", "weight_log", "workout_time_override");
+        "calendar_event", "boop_brief", "weight_log", "workout_time_override", "health_sample");
     private static final LocalDate TO_BASE = LocalDate.parse("2026-08-01");
     private static final LocalDate FROM_BASE = LocalDate.parse("2026-10-01");
     /** TO night indexes that FROM also has a night on: 9 screenshot (0..8) + 3 manual (19..21). */
@@ -110,6 +110,15 @@ class BoopB1MergeScriptIT extends AbstractIntegrationTest {
         jdbc.update("""
             insert into boop_brief (created_by, date, payload, input_hash, generated_at)
             values (?, ?, '{"k":"v"}'::jsonb, 'h', now())""", from, FROM_BASE);
+        // 5 health samples; TO already holds a LIVE one with the id of FROM's first (collision: TO wins).
+        for (int i = 0; i < 5; i++) {
+            jdbc.update("""
+                insert into health_sample (created_by, external_id, metric, start_at, end_at, value, unit)
+                values (?, ?, 'heart_rate', now(), now(), 60 + ?, 'count/min')""", from, "hk-s-" + i, i);
+        }
+        jdbc.update("""
+            insert into health_sample (created_by, external_id, metric, start_at, end_at, value, unit)
+            values (?, 'hk-s-0', 'heart_rate', now(), now(), 99, 'count/min')""", to);
         jdbc.update("insert into weight_log (created_by, date, weight_kg, source, external_id) values (?, ?, 79.9, 'apple_health', 'hk-w-1')",
             from, FROM_BASE);
     }
@@ -173,6 +182,8 @@ class BoopB1MergeScriptIT extends AbstractIntegrationTest {
         assertThat(live("calendar_event", to)).isEqualTo(9);
         assertThat(live("boop_brief", to)).isEqualTo(1);
         assertThat(live("weight_log", to)).isEqualTo(39 + 1);
+        assertThat(live("health_sample", to)).isEqualTo(1 + 4);          // TO's colliding sample won
+        assertThat(count("select value from health_sample where created_by = ? and external_id = 'hk-s-0'", to)).isEqualTo(99);
         assertThat(live("workout_time_override", to)).isZero();
         for (String t : TABLES) {
             assertThat(t.equals("sleep_log") ? 0 : live(t, from)).as(t).isZero();
@@ -187,6 +198,31 @@ class BoopB1MergeScriptIT extends AbstractIntegrationTest {
         psql(ROLLBACK, true);
         assertThat(snapshot()).isEqualTo(before); // every row of both users, full-row text
         assertThat(jdbc.queryForObject("select to_regclass('b1_backup_sleep_log') is not null", Boolean.class)).isTrue();
+    }
+
+    @Test
+    void testMerge_shouldRollBack_whenApplyIsFalseOrEmpty() {
+        Map<String, List<String>> before = snapshot();
+        for (String v : new String[] {"0", "off", "false", "no", ""}) {
+            psqlWith(MERGE, from, to, v);
+            assertThat(snapshot()).as("apply=" + v).isEqualTo(before);
+        }
+        assertThat(jdbc.queryForObject("select to_regclass('b1_backup_sleep_log') is null", Boolean.class)).isTrue();
+        psqlWith(MERGE, from, to, "yes"); // a true value commits
+        assertThat(live("sleep_log", to)).isEqualTo(24 + 23);
+        psqlWith(ROLLBACK, from, to, "off");
+        assertThat(live("sleep_log", to)).isEqualTo(24 + 23);
+        psqlWith(ROLLBACK, from, to, "true");
+        assertThat(snapshot()).isEqualTo(before);
+    }
+
+    @Test
+    void testMerge_shouldNameTheHolder_whenToAlreadyHoldsAMergedNightsExternalId() {
+        UUID holder = jdbc.queryForObject("""
+            insert into sleep_log (created_by, date, source, external_id, is_deleted)
+            values (?, '2020-01-01', 'apple_health', 'hk-night-0', true) returning id""", UUID.class, to);
+        assertThatThrownBy(() -> psql(MERGE, false)).rootCause()
+            .hasMessageContaining(holder.toString()).hasMessageContaining("hk-night-0");
     }
 
     @Test
@@ -221,10 +257,15 @@ class BoopB1MergeScriptIT extends AbstractIntegrationTest {
     }
 
     private void psql(Path script, boolean apply) throws IOException {
-        psqlWith(script, from, to, apply);
+        psqlWith(script, from, to, apply ? "1" : null);
     }
 
     private void psqlWith(Path script, UUID f, UUID t, boolean apply) {
+        psqlWith(script, f, t, apply ? "1" : null);
+    }
+
+    /** {@code apply} null = the variable is not defined; otherwise its psql value. */
+    private void psqlWith(Path script, UUID f, UUID t, String apply) {
         String sql = toJdbc(read(script), f, t, apply);
         jdbc.execute((ConnectionCallback<Void>) con -> {
             try (Statement st = con.createStatement()) {
@@ -250,24 +291,33 @@ class BoopB1MergeScriptIT extends AbstractIntegrationTest {
         }
     }
 
-    /** psql -> JDBC: drop \set / \echo, substitute :'from_user' / :'to_user', keep one branch of \if :{?apply}. */
-    static String toJdbc(String script, UUID from, UUID to, boolean apply) {
+    /** psql boolean as {@code \if} reads it. */
+    private static boolean truthy(String v) {
+        return v != null && List.of("1", "on", "true", "yes", "t", "y").contains(v.toLowerCase());
+    }
+
+    /**
+     * psql -> JDBC: drop \set / \echo, substitute :'from_user' / :'to_user', and evaluate (nested)
+     * \if :{?apply} / \if :apply / \else / \endif the way psql does ({@code apply} null = undefined).
+     */
+    static String toJdbc(String script, UUID from, UUID to, String apply) {
         List<String> out = new ArrayList<>();
-        boolean inIf = false;
-        boolean keeping = true;
+        java.util.ArrayDeque<boolean[]> stack = new java.util.ArrayDeque<>(); // {parentActive, branchTaken}
+        boolean active = true;
         for (String line : script.split("\n")) {
             String t = line.strip();
             if (t.startsWith("\\if ")) {
-                inIf = true;
-                keeping = apply;
+                boolean cond = t.equals("\\if :{?apply}") ? apply != null : t.equals("\\if :apply") && truthy(apply);
+                stack.push(new boolean[] {active, cond});
+                active = active && cond;
             } else if (t.equals("\\else")) {
-                keeping = !apply;
+                boolean[] top = stack.peek();
+                active = top[0] && !top[1];
             } else if (t.equals("\\endif")) {
-                inIf = false;
-                keeping = true;
+                active = stack.pop()[0];
             } else if (t.startsWith("\\set ") || t.startsWith("\\echo ")) {
                 continue;
-            } else if (!inIf || keeping) {
+            } else if (active) {
                 out.add(line.replace(":'from_user'", "'" + from + "'").replace(":'to_user'", "'" + to + "'"));
             }
         }

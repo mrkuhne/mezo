@@ -19,12 +19,12 @@
 --               unique index spans soft-deleted rows, so the id is freed first, then given to TO's row).
 --               A date TO has no live night on -> FROM's row is reassigned to TO. FROM's live non-apple_health
 --               nights are left with FROM.
---   daily_metric, wearable_workout, calendar_event, boop_brief, weight_log, workout_time_override
+--   daily_metric, wearable_workout, health_sample, calendar_event, boop_brief, weight_log, workout_time_override
 --               FROM's live rows are reassigned to TO. If TO already has a LIVE colliding row (daily_metric
---               same date; wearable_workout same external_id; calendar_event same external_id+date;
+--               same date; wearable_workout / health_sample same external_id; calendar_event same external_id+date;
 --               boop_brief / workout_time_override same date; weight_log same external_id) TO's row wins
 --               and FROM's row is soft-deleted in place. Tables whose unique key spans soft-deleted rows
---               (daily_metric, wearable_workout, calendar_event, weight_log external id) additionally lose
+--               (daily_metric, wearable_workout, health_sample, calendar_event, weight_log external id) additionally lose
 --               TO's colliding TOMBSTONE rows (hard delete; the backup holds them) so the move cannot trip.
 --
 -- Backups: b1_backup_<table> hold every row (live and deleted) of BOTH users. The rollback script restores from them.
@@ -38,7 +38,7 @@ CREATE TEMP TABLE b1_ctx ON COMMIT DROP AS SELECT :'from_user'::uuid AS from_use
 
 CREATE TEMP TABLE b1_tables (tbl text) ON COMMIT DROP;
 INSERT INTO b1_tables VALUES ('sleep_log'), ('daily_metric'), ('wearable_workout'), ('calendar_event'),
-                             ('boop_brief'), ('weight_log'), ('workout_time_override');
+                             ('boop_brief'), ('weight_log'), ('workout_time_override'), ('health_sample');
 
 DO $$
 DECLARE c b1_ctx;
@@ -60,6 +60,7 @@ CREATE TABLE b1_backup_calendar_event AS SELECT t.* FROM calendar_event t, b1_ct
 CREATE TABLE b1_backup_boop_brief AS SELECT t.* FROM boop_brief t, b1_ctx c WHERE t.created_by IN (c.from_user, c.to_user);
 CREATE TABLE b1_backup_weight_log AS SELECT t.* FROM weight_log t, b1_ctx c WHERE t.created_by IN (c.from_user, c.to_user);
 CREATE TABLE b1_backup_workout_time_override AS SELECT t.* FROM workout_time_override t, b1_ctx c WHERE t.created_by IN (c.from_user, c.to_user);
+CREATE TABLE b1_backup_health_sample AS SELECT t.* FROM health_sample t, b1_ctx c WHERE t.created_by IN (c.from_user, c.to_user);
 
 -- Live counts per table and user; report rows collect what each step did.
 CREATE TEMP TABLE b1_counts (phase text, tbl text, from_live bigint, to_live bigint) ON COMMIT DROP;
@@ -87,6 +88,19 @@ FROM sleep_log f
 JOIN b1_ctx c ON f.created_by = c.from_user
 JOIN sleep_log t ON t.created_by = c.to_user AND t.date = f.date AND NOT t.is_deleted
 WHERE NOT f.is_deleted AND f.source = 'apple_health';
+
+-- Friendly pre-check: any TO row (live or deleted) other than the target that already holds the external id of a
+-- merged FROM night would trip uq_sleep_log_owner_external; name it instead of failing on the raw index.
+DO $$
+DECLARE r record;
+BEGIN
+    FOR r IN SELECT p.to_id, p.from_external_id, t.id AS holder FROM b1_sleep_pairs p, b1_ctx c, sleep_log t
+             WHERE p.from_external_id IS NOT NULL AND t.created_by = c.to_user AND t.external_id = p.from_external_id
+               AND t.id <> p.to_id LIMIT 1 LOOP
+        RAISE EXCEPTION 'sleep_log: TO row % already holds external id % of a FROM night merging into TO row %',
+            r.holder, r.from_external_id, r.to_id;
+    END LOOP;
+END $$;
 
 -- Keep FROM's sensor values of the merged nights, then free the FROM rows (soft delete + clear external id)
 -- BEFORE TO's rows take the external id (uq_sleep_log_owner_external spans soft-deleted rows).
@@ -146,6 +160,7 @@ BEGIN
         SELECT * FROM (VALUES
             ('daily_metric',          'a.date = b.date',                                                true),
             ('wearable_workout',      'a.external_id = b.external_id',                                  true),
+            ('health_sample',         'a.external_id = b.external_id',                                  true),
             ('calendar_event',        'a.external_id = b.external_id AND a.date = b.date',              true),
             ('boop_brief',            'a.date = b.date',                                                false),
             ('weight_log',            'a.external_id IS NOT NULL AND a.external_id = b.external_id',    true),
@@ -234,8 +249,13 @@ SELECT * FROM b1_report ORDER BY tbl;
 
 -- Dry run unless `-v apply=1` was passed (undefined variable -> rollback branch).
 \if :{?apply}
-    \echo 'COMMIT (apply=1)'
-    COMMIT;
+    \if :apply
+        \echo 'COMMIT (apply is true)'
+        COMMIT;
+    \else
+        \echo 'DRY RUN (apply is false) - rolling back'
+        ROLLBACK;
+    \endif
 \else
     \echo 'DRY RUN - rolling back (pass -v apply=1 to commit)'
     ROLLBACK;

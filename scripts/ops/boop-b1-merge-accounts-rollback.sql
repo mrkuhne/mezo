@@ -8,7 +8,7 @@
 -- The b1_backup_* tables are KEPT. Dropping them is a separate manual step, only after the owner confirmed
 -- everything is well (or after a successful rollback no longer needs them):
 --   DROP TABLE b1_backup_sleep_log, b1_backup_daily_metric, b1_backup_wearable_workout, b1_backup_calendar_event,
---              b1_backup_boop_brief, b1_backup_weight_log, b1_backup_workout_time_override;
+--              b1_backup_boop_brief, b1_backup_weight_log, b1_backup_workout_time_override, b1_backup_health_sample;
 
 \set ON_ERROR_STOP on
 
@@ -20,7 +20,7 @@ DO $$
 DECLARE t text;
 BEGIN
     FOREACH t IN ARRAY ARRAY['sleep_log', 'daily_metric', 'wearable_workout', 'calendar_event', 'boop_brief',
-                             'weight_log', 'workout_time_override'] LOOP
+                             'weight_log', 'workout_time_override', 'health_sample'] LOOP
         IF to_regclass('b1_backup_' || t) IS NULL THEN
             RAISE EXCEPTION 'backup table b1_backup_% is missing - nothing to restore from', t;
         END IF;
@@ -32,7 +32,7 @@ DO $$
 DECLARE t text; n bigint;
 BEGIN
     FOREACH t IN ARRAY ARRAY['sleep_log', 'daily_metric', 'wearable_workout', 'calendar_event', 'boop_brief',
-                             'weight_log', 'workout_time_override'] LOOP
+                             'weight_log', 'workout_time_override', 'health_sample'] LOOP
         EXECUTE format('SELECT count(*) FROM %I x, b1_ctx c WHERE x.created_by IN (c.from_user, c.to_user)
                         AND NOT EXISTS (SELECT 1 FROM %I b WHERE b.id = x.id)', t, 'b1_backup_' || t) INTO n;
         RAISE NOTICE '% : % rows not in backup (will be discarded)', t, n;
@@ -40,13 +40,16 @@ BEGIN
 END $$;
 
 DO $$
-DECLARE t text; n_backup bigint; n_now bigint; c b1_ctx;
+DECLARE t text; n_backup bigint; n_now bigint; c b1_ctx; cols text;
 BEGIN
     SELECT * INTO c FROM b1_ctx;
     FOREACH t IN ARRAY ARRAY['sleep_log', 'daily_metric', 'wearable_workout', 'calendar_event', 'boop_brief',
-                             'weight_log', 'workout_time_override'] LOOP
+                             'weight_log', 'workout_time_override', 'health_sample'] LOOP
         EXECUTE format('DELETE FROM %I WHERE created_by IN (%L, %L)', t, c.from_user, c.to_user);
-        EXECUTE format('INSERT INTO %I SELECT * FROM %I', t, 'b1_backup_' || t);
+        -- explicit column list taken from the backup, so a column added since the backup cannot shift the mapping
+        SELECT string_agg(quote_ident(attname), ', ' ORDER BY attnum) INTO cols
+        FROM pg_attribute WHERE attrelid = to_regclass('b1_backup_' || t) AND attnum > 0 AND NOT attisdropped;
+        EXECUTE format('INSERT INTO %I (%s) SELECT %s FROM %I', t, cols, cols, 'b1_backup_' || t);
         EXECUTE format('SELECT count(*) FROM %I', 'b1_backup_' || t) INTO n_backup;
         EXECUTE format('SELECT count(*) FROM %I WHERE created_by IN (%L, %L)', t, c.from_user, c.to_user) INTO n_now;
         IF n_now <> n_backup THEN
@@ -57,8 +60,13 @@ BEGIN
 END $$;
 
 \if :{?apply}
-    \echo 'COMMIT (apply=1)'
-    COMMIT;
+    \if :apply
+        \echo 'COMMIT (apply is true)'
+        COMMIT;
+    \else
+        \echo 'DRY RUN (apply is false) - rolling back'
+        ROLLBACK;
+    \endif
 \else
     \echo 'DRY RUN - rolling back (pass -v apply=1 to commit)'
     ROLLBACK;
