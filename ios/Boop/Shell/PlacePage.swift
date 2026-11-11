@@ -6,7 +6,6 @@ import BoopDesign
 struct PlacePage<Content: View>: View {
     let hue: Hue, title: String, line: String
     @ViewBuilder let content: () -> Content
-    @State private var toast: String?
 
     var body: some View {
         NKTabPage(hue: hue, heroHeight: 330, compact: nil) {
@@ -20,6 +19,5 @@ struct PlacePage<Content: View>: View {
             VStack(spacing: 16) { content() }.padding(.top, -20)
             Color.clear.frame(height: 110)
         }
-        .nkToast($toast)
     }
 }

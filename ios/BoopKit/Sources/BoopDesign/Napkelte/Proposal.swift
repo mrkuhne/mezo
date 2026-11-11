@@ -74,7 +74,7 @@ public struct NKProposalCard: View {
             .frame(width: 30, height: 30)
             VStack(alignment: .leading, spacing: 1) {
                 Text(line).nkFont(14.5, .medium).foregroundStyle(.white.opacity(ok ? 1 : 0.6))
-                Text(ok ? "Elfogadtad · visszavonhatod" : "Szólok, ha újra számít").nkFont(12.5).foregroundStyle(.white.opacity(0.45))
+                Text(ok ? "Elfogadtad" : "Szólok, ha újra számít").nkFont(12.5).foregroundStyle(.white.opacity(0.45))
             }
             Spacer(minLength: 8)
             Button(action: onWhy) { Text("miért?").nkFont(13, .medium).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 6) }

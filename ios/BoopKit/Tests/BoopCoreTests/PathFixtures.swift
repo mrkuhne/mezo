@@ -16,6 +16,7 @@ struct BriefFixture {
     var recovery = "null"
     var conflict = "null"
     var nextMealTip = "null"
+    var tonightTip = "t"
     var formaScore = "null"
     var alvasScore = "null"
     var alvasDisplay = "–"
@@ -36,7 +37,7 @@ struct BriefFixture {
         {"date":"2026-11-10","generatedAt":"2026-11-10T05:30:00Z","state":"okay","nightsKnown":9,
          "metrics":[\#(metrics)],"brief":[],
          "energy":{"hourly":[\#(hourly)],"dipHour":\#(dipHour)},
-         "tonightTip":"t","nextMealTip":\#(nextMealTip),"conflict":\#(conflict),
+         "tonightTip":"\#(tonightTip)","nextMealTip":\#(nextMealTip),"conflict":\#(conflict),
          "day":{"sleep":\#(sleep),"bedtimeTarget":\#(bedtimeTarget),"deepSleepWeek":[],"restingHrWeek":[],
            "steps":0,"stepsGoal":10000,"activeKcal":0,"session":\#(session),"meals":\#(meals),
            "kcalSoFar":0,"kcalTarget":\#(kcalTarget),"proteinG":\#(proteinG),"proteinTarget":\#(proteinTarget),"carbsG":0,"fatG":0,

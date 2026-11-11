@@ -78,8 +78,7 @@ public struct DayPath<Card: View>: View {
             .padding(.bottom, st.opens ? 18 : 10)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture { if !st.isNow { onTap?(st) } }
+        .stationTap(onTap.flatMap { tap in st.isNow ? nil : { tap(st) } })
         .accessibilityElement(children: st.opens ? .contain : .combine)
         .accessibilityAddTraits(onTap != nil && !st.isNow ? .isButton : [])
     }
@@ -124,5 +123,17 @@ public struct NowPulse: View {
         }
         .frame(width: 24, height: 16)
         .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { on = true } } }
+    }
+}
+
+private extension View {
+    /// A station takes taps only when the path has a tap handler (and it is not the "MOST" marker): a read-only path
+    /// leaves the gesture off entirely, so it never swallows a tap meant for the card or the scroll view.
+    @ViewBuilder func stationTap(_ action: (() -> Void)?) -> some View {
+        if let action {
+            contentShape(Rectangle()).onTapGesture(perform: action)
+        } else {
+            self
+        }
     }
 }

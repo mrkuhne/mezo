@@ -25,19 +25,20 @@ final class ProposalDesk {
         dismissedRaw = defaults.string(forKey: Self.dismissedKey) ?? ""
     }
 
-    func pending(_ brief: Brief, now: Date) -> [Proposal] {
-        Proposals.from(brief, now: now, dismissed: dismissedSet(from: dismissedRaw))
+    /// `conflictKept` is the morning store's "Marad így": a kept conflict proposes no move for the rest of the day.
+    func pending(_ brief: Brief, now: Date, conflictKept: Bool) -> [Proposal] {
+        Proposals.from(brief, now: now, dismissed: dismissedSet(from: dismissedRaw), conflictKept: conflictKept)
     }
 
     /// Pending first, then the settled ones the brief no longer sends (an undone move comes back as pending).
-    func shown(_ brief: Brief, now: Date) -> [(proposal: Proposal, state: NKProposalState)] {
-        let p = pending(brief, now: now)
+    func shown(_ brief: Brief, now: Date, conflictKept: Bool) -> [(proposal: Proposal, state: NKProposalState)] {
+        let p = pending(brief, now: now, conflictKept: conflictKept)
         let ids = Set(p.map(\.id))
         return p.map { ($0, NKProposalState.pending) } + settled.filter { !ids.contains($0.proposal.id) }
     }
 
-    func state(of p: Proposal, _ brief: Brief, now: Date) -> NKProposalState {
-        if pending(brief, now: now).contains(where: { $0.id == p.id }) { return .pending }
+    func state(of p: Proposal, _ brief: Brief, now: Date, conflictKept: Bool) -> NKProposalState {
+        if pending(brief, now: now, conflictKept: conflictKept).contains(where: { $0.id == p.id }) { return .pending }
         return settled.first { $0.proposal.id == p.id }?.state ?? .pending
     }
 
@@ -49,12 +50,14 @@ final class ProposalDesk {
     }
 
     /// *Elfogadom*: the same move as the session card (toast with undo); on failure the card stays pending.
-    func accept(_ p: Proposal, brief: Brief, store: MorningStore, ctx: MaiContext) {
-        guard !busy, !store.moving else { return }
+    /// Returns the move in flight (nil when another accept or move is already running), so tests can await it.
+    @discardableResult
+    func accept(_ p: Proposal, brief: Brief, store: MorningStore, ctx: MaiContext) -> Task<Void, Never>? {
+        guard !busy, !store.moving else { return nil }
         switch p.kind {
         case .moveSession(let time):
             busy = true
-            Task { @MainActor in
+            return Task { @MainActor in
                 await moveSession(store, to: time, planned: brief.day.session?.plannedTime, toast: ctx.toast, undoToast: ctx.undoToast)
                 busy = false
                 if moveProblemToast(store.problem) == nil { settle(p, .accepted(p.acceptedLine)) }
@@ -62,9 +65,11 @@ final class ProposalDesk {
         }
     }
 
-    /// *Most nem*: hidden for today only (the key carries the date).
+    /// *Most nem*: hidden for today only (the key carries the date). Other days' keys are dropped on the write, so
+    /// the stored list never grows past one day.
     func dismiss(_ p: Proposal, brief: Brief, toast: (String) -> Void) {
-        var keys = dismissedSet(from: dismissedRaw)
+        let today = Proposals.dismissKey(date: brief.date, id: "")
+        var keys = dismissedSet(from: dismissedRaw).filter { $0.hasPrefix(today) }
         keys.insert(Proposals.dismissKey(date: brief.date, id: p.id))
         dismissedRaw = dismissedString(keys)
         settle(p, .dismissed(p.text))
@@ -113,7 +118,7 @@ struct ProposalWhySheet: View {
 
     var body: some View {
         let p = proposal
-        let s = desk.state(of: p, brief, now: ctx.now)
+        let s = desk.state(of: p, brief, now: ctx.now, conflictKept: store.conflictKept)
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 NKWhyBody(title: p.text, sub: p.sub,

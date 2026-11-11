@@ -127,7 +127,7 @@ struct MaBelow: View {
 
     // MARK: proposals
 
-    private var shown: [(proposal: Proposal, state: NKProposalState)] { desk.shown(brief, now: ctx.now) }
+    private var shown: [(proposal: Proposal, state: NKProposalState)] { desk.shown(brief, now: ctx.now, conflictKept: store.conflictKept) }
 
     private var planAccepted: Bool { planAcceptedDate == brief.date }
     private var planCollapsed: Bool { (planAccepted || phase != .reggel) && !planOpen }

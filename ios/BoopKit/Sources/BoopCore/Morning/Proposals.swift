@@ -38,9 +38,11 @@ public enum Proposals {
     public static let dailyCap = 3
 
     /// Today's proposals from the brief (B2: only the session-move source), minus the dismissed ones, capped.
-    public static func from(_ brief: Brief, now: Date, dismissed: Set<String>, calendar: Calendar = .current) -> [Proposal] {
+    /// `conflictKept` is the morning store's "Marad így": the conflict is settled for the day, so no move is proposed.
+    public static func from(_ brief: Brief, now: Date, dismissed: Set<String>, conflictKept: Bool,
+                            calendar: Calendar = .current) -> [Proposal] {
         var out: [Proposal] = []
-        if let p = moveSession(brief, now: now, calendar: calendar),
+        if !conflictKept, let p = moveSession(brief, now: now, calendar: calendar),
            !dismissed.contains(dismissKey(date: brief.date, id: p.id)) {
             out.append(p)
         }
@@ -70,7 +72,7 @@ public enum Proposals {
         }
 
         var experts: [ExpertLine] = []
-        if brief.day.bedtimeTarget != nil { experts.append(ExpertLine(field: .alvas, text: brief.tonightTip)) }
+        if brief.day.bedtimeTarget != nil, !brief.tonightTip.isEmpty { experts.append(ExpertLine(field: .alvas, text: brief.tonightTip)) }
         experts.append(ExpertLine(field: .mozgas, text: conflict.text))
         if let tip = brief.nextMealTip { experts.append(ExpertLine(field: .etkezes, text: tip)) }
 

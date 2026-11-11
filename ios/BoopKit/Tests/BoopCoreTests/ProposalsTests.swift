@@ -13,8 +13,8 @@ struct ProposalsTests {
         f.busyRuns = [4...7, 20...23]
         return f
     }
-    func make(_ f: BriefFixture, now: Date = at(10), dismissed: Set<String> = []) throws -> [Proposal] {
-        Proposals.from(try f.brief(), now: now, dismissed: dismissed, calendar: budapest)
+    func make(_ f: BriefFixture, now: Date = at(10), dismissed: Set<String> = [], conflictKept: Bool = false) throws -> [Proposal] {
+        Proposals.from(try f.brief(), now: now, dismissed: dismissed, conflictKept: conflictKept, calendar: budapest)
     }
 
     @Test func conflictMakesMoveProposal() throws {
@@ -68,5 +68,19 @@ struct ProposalsTests {
         #expect(try #require(try make(f).first).facts.map(\.label) == ["a naptáradban ma", "a mai Formád"])
         var g = fixture(); g.alvasDisplay = "–"
         #expect(try #require(try make(g).first).facts.count == 2)
+    }
+
+    /// "Marad így" on the conflict card hides the conflict everywhere for the day, the proposal included.
+    @Test func conflictKeptHidesMoveProposal() throws {
+        #expect(try make(fixture(), conflictKept: true).isEmpty)
+        #expect(try make(fixture(), conflictKept: false).count == 1)
+    }
+
+    /// Alvás speaks only when the brief carries a tonight line.
+    @Test func noTonightTipNoAlvasLine() throws {
+        var f = fixture(); f.tonightTip = ""
+        let p = try #require(try make(f).first)
+        #expect(!p.experts.contains { $0.field == .alvas })
+        #expect(p.experts.map(\.field) == [.mozgas, .etkezes])
     }
 }

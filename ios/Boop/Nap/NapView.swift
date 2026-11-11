@@ -166,7 +166,7 @@ private struct NapSheets: ViewModifier {
             .task {
                 // Simulator review: `-previewWhy YES` opens the first proposal's "miért?" page.
                 if UserDefaults.standard.bool(forKey: "previewWhy"), why == nil {
-                    try? await Task.sleep(for: .seconds(1)); why = desk.pending(brief, now: ctx.now).first
+                    try? await Task.sleep(for: .seconds(1)); why = desk.pending(brief, now: ctx.now, conflictKept: store.conflictKept).first
                 }
             }
             #endif

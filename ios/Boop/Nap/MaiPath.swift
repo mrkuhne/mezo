@@ -82,7 +82,7 @@ struct OrbPathCards: View {
                 SessionCard(session: s, conflict: brief.conflict, store: store, toast: ctx.toast, undoToast: ctx.undoToast)
             }
         case "breath":
-            textCard(orb: .pulzus, "Egy perc lassú légzés, mielőtt belefutsz. Fent a gömb vezeti a ritmust.")
+            textCard(orb: .pulzus, "Egy perc lassú légzés, mielőtt belefutsz. A Ma oldalon a gömb vezeti a ritmust.")
         case "busy-block":
             busyCard(d, past: st.done)
         default:

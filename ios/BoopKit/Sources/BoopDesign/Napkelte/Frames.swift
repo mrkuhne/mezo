@@ -33,7 +33,7 @@ public struct NKTitleRow: View {
                 Color.clear.frame(width: 44, height: 44)
             }
             Button(action: onAvatar) { NKGlyph("person-sage", .white, size: 20).frame(width: 44, height: 44).glassEffect(.clear, in: .circle) }
-                .buttonStyle(.plain).accessibilityLabel("Beállítások")
+                .buttonStyle(.plain).accessibilityLabel("Fiók")
         }
         .padding(.horizontal, 16)
     }

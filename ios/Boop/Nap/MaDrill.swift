@@ -82,6 +82,7 @@ struct MaDrill: View {
             Color.clear.frame(height: 20)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
     }
 
     // MARK: 1 A szint
@@ -180,7 +181,7 @@ struct MaDrill: View {
     // MARK: 4 Mit tehetsz
 
     private var actions: some View {
-        let mine = desk.shown(brief, now: ctx.now).filter { proposalHue($0.proposal.kind) == hue }
+        let mine = desk.shown(brief, now: ctx.now, conflictKept: store.conflictKept).filter { proposalHue($0.proposal.kind) == hue }
         return VStack(alignment: .leading, spacing: 14) {
             if !mine.isEmpty {
                 ProposalCards(items: mine, compact: true, desk: desk, brief: brief, store: store, ctx: ctx)
