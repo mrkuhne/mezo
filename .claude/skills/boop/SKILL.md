@@ -98,8 +98,9 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
   the last tab on relaunch.
 - Production DB reads are free, writes need the owner's explicit OK per change (CLAUDE.md).
 - Device launches from a locked phone fail harmlessly; ask the owner to unlock and open the app.
-- Known prod health issues at re-plan time (fixed in B0): memory embeddings failing since 2026-10-21, nightly
-  konzílium failing — check B0's status before building anything that reads memory or konzílium output.
+- Prod health issues found at re-plan time (memory embeddings failing since 2026-10-21, nightly konzílium failing)
+  were fixed and deployed in B0 (v2.402.0, 2026-11-11); memory now embeds on OpenAI. Check B0's issue for the
+  overnight verification before building on memory or konzílium output.
 
 ## 5. How work is done
 
@@ -128,7 +129,7 @@ v2.401.0; `mezo-r36n9.8`). **S4 lépések is cancelled** — its parts live in B
 
 | Slice | Issue | State | Can start |
 |---|---|---|---|
-| B0 Javítás — memory + konzílium repair (backend) | `mezo-r36n9.10` | open | now (parallel) |
+| B0 Javítás — memory + konzílium repair (backend) | `mezo-r36n9.10` | deployed v2.402.0 (2026-11-11): embeddings on OpenAI, re-embed backfill running, nightly-pass + quota + fact-merge + retriever fixes, 2 new admin alerts; overnight prod check 2026-11-12 08:00 | done when the check passes |
 | B1 Adatalap — paid team, account switch, wide Health, sources, background | `mezo-r36n9.11` | open | now (parallel) |
 | B2 Gerinc — Ma · Terv · Napló · Boop + `+`, proposal card, drill-down | `mezo-r36n9.12` | open | spike now; live data after B1's account switch |
 | B3 Napi ritmus — check-in + snapshot, goal, journal, evening close, basic chat | `mezo-r36n9.13` | open | after B2 |
