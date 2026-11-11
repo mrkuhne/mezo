@@ -43,17 +43,6 @@ struct TileModel: Equatable, Identifiable {
 /// "7ó 12p" — the same shape the hero's Alvás display uses.
 func hoursMinutes(_ minutes: Int) -> String { "\(minutes / 60)ó \(minutes % 60)p" }
 
-/// "3 240" with a non-breaking space between thousands.
-func grouped(_ n: Int) -> String {
-    let s = String(abs(n))
-    var out = ""
-    for (i, ch) in s.enumerated() {
-        if i > 0 && (s.count - i) % 3 == 0 { out.append("\u{00A0}") }
-        out.append(ch)
-    }
-    return n < 0 ? "-" + out : out
-}
-
 private func share(_ v: Int, of goal: Double) -> Double { goal > 0 ? min(1, max(0, Double(v) / goal)) : 0 }
 
 /// The tiles of one orb (spec §5.1a). Forma has none. Every tile whose number is missing is left out.
