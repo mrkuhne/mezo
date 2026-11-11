@@ -32,6 +32,21 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
     List<AiMessageEntity> findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
             UUID createdBy, String role, Instant from, Instant toExclusive);
 
+    /** mezo-o8tcu: the owner's role rows in a window whose conversation is still LIVE, with the
+     *  conversation fetched in the same query. A soft-deleted conversation can leave live messages
+     *  behind; dereferencing such a message's lazy conversation proxy throws
+     *  EntityNotFoundException ({@code @SQLRestriction} hides the row) and marks the caller's
+     *  transaction rollback-only — this read never hands one out. */
+    @Query("""
+        select m from AiMessageEntity m join fetch m.conversation c
+        where m.createdBy = :createdBy and m.role = :role and m.deleted = false and c.deleted = false
+          and m.createdAt >= :from and m.createdAt < :toExclusive
+        order by m.createdAt asc
+        """)
+    List<AiMessageEntity> findLiveConversationRowsInWindow(
+            @Param("createdBy") UUID createdBy, @Param("role") String role,
+            @Param("from") Instant from, @Param("toExclusive") Instant toExclusive);
+
     /** S8 (mezo-d6ivw.12): the owner's chat rows in a window MINUS the ones "ezt ne jegyezd meg"
      *  blocked — the input of every day-level learning pass (nightly people extraction, the chat-day
      *  text signal). A forgotten message must not be re-read and re-learned in other words. */

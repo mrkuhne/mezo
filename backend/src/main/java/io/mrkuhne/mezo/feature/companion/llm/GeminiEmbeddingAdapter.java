@@ -45,6 +45,7 @@ import java.util.List;
 @Component
 @Profile("!companion-fake")
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
+@ConditionalOnProperty(name = "mezo.companion.embedding.provider", havingValue = "gemini", matchIfMissing = true)
 @RequiredArgsConstructor
 public class GeminiEmbeddingAdapter implements EmbeddingPort {
 
@@ -127,7 +128,8 @@ public class GeminiEmbeddingAdapter implements EmbeddingPort {
         return baseRecord(kind, latencyMs, context)
             .status(CallStatus.ERROR)
             .errorClass(failure.getClass().getSimpleName())
-            .errorCode(errorCodeOf(failure))
+            .errorCode(EmbeddingFailure.code(failure))
+            .responseText(EmbeddingFailure.detail(failure))
             .embed(new EmbedUsage(inputCount, DIMENSIONS, null))
             .build();
     }
@@ -151,15 +153,6 @@ public class GeminiEmbeddingAdapter implements EmbeddingPort {
         return response == null
             ? null
             : response.metadata().flatMap(EmbedContentMetadata::billableCharacterCount).orElse(null);
-    }
-
-    /** An app-level failure carries its SystemMessage code; a provider/transport failure has none. */
-    private static String errorCodeOf(Throwable failure) {
-        if (failure instanceof SystemRuntimeErrorException system && !system.getMessages().isEmpty()) {
-            SystemMessage first = system.getMessages().get(0);
-            return first != null ? first.getCode() : null;
-        }
-        return null;
     }
 
     private static List<float[]> toVectors(EmbedContentResponse response, int expectedCount) {

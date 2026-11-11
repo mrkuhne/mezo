@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.admin.repository.AdminAlertQuery;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.config.CompanionFeatureFlag;
+import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
+import io.mrkuhne.mezo.feature.companion.memory.repository.MemorySourceRepairQuery;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmDailyAggregate;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureErrorRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
@@ -31,9 +33,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Owner status-band alert rules (mezo-kjwa): five install-wide health checks, evaluated in a
- * fixed order (cost_spike, llm_errors, memory_stuck, job_missed, tester_quiet) and rendered as
- * Hungarian, owner-facing copy.
+ * Owner status-band alert rules (mezo-kjwa): install-wide health checks, evaluated in a fixed
+ * order (cost_spike, llm_errors, embedding_down, memory_stuck, job_missed, tester_quiet) and
+ * rendered as Hungarian, owner-facing copy. {@code embedding_down} and the source-row half of
+ * {@code memory_stuck} came with mezo-lb2yb, after a three-week embedding outage stayed green.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,6 +45,10 @@ public class AdminAlertService {
     private static final DateTimeFormatter JOB_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final int COST_SPIKE_LOOKBACK_DAYS = 8;
     private static final int LLM_ERROR_WINDOW_HOURS = 24;
+    /** embedding_down: at least this many embed calls in the window, and more than half failed. */
+    private static final int EMBEDDING_MIN_CALLS = 3;
+    /** Upper bound on source rows checked per user for memory_stuck — the count saturates there. */
+    private static final int MISSING_SOURCE_SCAN_LIMIT = 500;
 
     /** {@code /admin/memory} shipped in slice 7 (mezo-l096.7, mezo-k5zy). */
     private static final String MEMORY_STUCK_LINK = "/admin/memory";
@@ -61,6 +68,8 @@ public class AdminAlertService {
      * {@code @ConditionalOnProperty}-at-the-bean-boundary rule); see its javadoc (mezo-kjwa).
      */
     private final CompanionFeatureFlag companionFeatureFlag;
+    private final MemorySourceRepairQuery memorySourceRepairQuery;
+    private final MemoryPlatformProperties memoryPlatformProperties;
 
     @Transactional(readOnly = true)
     public AdminAlertsResponse alerts() {
@@ -72,7 +81,8 @@ public class AdminAlertService {
         costSpike(zone, thresholds).ifPresent(alerts::add);
         alerts.addAll(llmErrors(thresholds));
         if (companionFeatureFlag.enabled()) {
-            memoryStuck().ifPresent(alerts::add);
+            embeddingDown().ifPresent(alerts::add);
+            memoryStuck(zone).ifPresent(alerts::add);
             jobMissed(thresholds, zone).ifPresent(alerts::add);
         }
         testerQuiet(zone, thresholds).ifPresent(alerts::add);
@@ -139,9 +149,38 @@ public class AdminAlertService {
                 .toList();
     }
 
-    /** Failed embeddings (BAD) take priority over merely-stale ones (WARN) — a hard failure is a
-     *  worse state than a queued-but-not-yet-refreshed vector. */
-    private Optional<AdminAlert> memoryStuck() {
+    /** mezo-lb2yb: the vector provider itself is failing — names the provider's last code (e.g.
+     *  HTTP_402, prepay credits depleted), which is what the owner needs to act on. */
+    private Optional<AdminAlert> embeddingDown() {
+        AdminAlertQuery.EmbeddingCalls calls =
+                alertQuery.embeddingCallsSince(Instant.now().minus(LLM_ERROR_WINDOW_HOURS, ChronoUnit.HOURS),
+                        memoryPlatformProperties.embeddingModel());
+        if (calls.total() < EMBEDDING_MIN_CALLS || calls.errors() * 2 <= calls.total()) {
+            return Optional.empty();
+        }
+        String code = calls.lastErrorCode() == null ? "ismeretlen" : calls.lastErrorCode();
+        return Optional.of(new AdminAlert()
+                .key("embedding_down")
+                .severity(SeverityEnum.BAD)
+                .title("Nem működik az emlékek beágyazása")
+                .detail("Az elmúlt 24 órában %d/%d beágyazási hívás hibázott (utolsó hibakód: %s) — új emlék nem kerül a memóriába."
+                        .formatted(calls.errors(), calls.total(), code))
+                .link(MEMORY_STUCK_LINK));
+    }
+
+    /** Failed embeddings and source rows with no vector at all (BAD) take priority over merely-stale
+     *  ones (WARN) — a hard failure is a worse state than a queued-but-not-yet-refreshed vector. */
+    private Optional<AdminAlert> memoryStuck(ZoneId zone) {
+        long missing = missingSourceVectors(zone);
+        if (missing > 0) {
+            return Optional.of(new AdminAlert()
+                    .key("memory_stuck")
+                    .severity(SeverityEnum.BAD)
+                    .title("Hiányzó emlékek")
+                    .detail("%d%s korábbi bejegyzés még nincs beágyazva a memóriába.".formatted(
+                            missing, missing >= MISSING_SOURCE_SCAN_LIMIT ? "+" : ""))
+                    .link(MEMORY_STUCK_LINK));
+        }
         long failed = alertQuery.failedMemoryVectors();
         if (failed > 0) {
             return Optional.of(new AdminAlert()
@@ -161,6 +200,19 @@ public class AdminAlertService {
                     .link(MEMORY_STUCK_LINK));
         }
         return Optional.empty();
+    }
+
+    /** mezo-lb2yb: authoritative source rows dated before today with no up-to-date vector in the
+     *  serving generation — the repair job's own query, so the alert and the healing agree. A failed
+     *  embed throws before any vector row exists, which is why failed-vector counts stayed 0. */
+    private long missingSourceVectors(ZoneId zone) {
+        LocalDate through = LocalDate.now(zone).minusDays(1);
+        String version = memoryPlatformProperties.servingEmbeddingVersion();
+        return appUserRepository.findAll().stream()
+                .filter(user -> user.getStatus() == AppUserEntity.UserStatus.ACTIVE)
+                .mapToLong(user -> memorySourceRepairQuery
+                        .changed(user.getId(), through, version, MISSING_SOURCE_SCAN_LIMIT).size())
+                .sum();
     }
 
     /** Silent on a fresh install (no daily_summary row has ever been written) — never a false

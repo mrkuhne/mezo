@@ -70,6 +70,11 @@ public class ToolCallAudit {
         this.maxRefs = maxRefs;
     }
 
+    /** Tool calls still allowed in this audit's budget (never negative). */
+    public synchronized int remainingCalls() {
+        return Math.max(0, maxCalls - calls.size());
+    }
+
     public synchronized boolean budgetExhausted() {
         return calls.size() >= maxCalls;
     }

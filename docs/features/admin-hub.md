@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-10-12
+updated: 2026-11-11
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -17,6 +17,8 @@ related: [_platform-auth-security, me, _platform-api-backend, _platform-data-lay
 ---
 
 # Admin hub — Feature Documentation
+
+> **2026-11-11 — Two memory alerts (Boop B0, `mezo-lb2yb`).** The status band gains **`embedding_down`** (BAD: ≥ 3 embed calls of the configured model in 24 h and more than half failed; names the provider's last error code, e.g. `HTTP_402`) and **`memory_stuck`** now also fires BAD when source rows dated before today have no up-to-date vector in the serving generation. Details: [`companion.md`](companion.md) (2026-11-11 note).
 
 > One-line: the owner's full console at `/admin/*` (desktop, OWNER-only, gated by
 > `mezo.feature.admin-insights.enabled`) — a value dashboard (Pulzus · Emberek · Funkciók ·

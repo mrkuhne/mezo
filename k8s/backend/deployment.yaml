@@ -139,6 +139,26 @@ spec:
               value: "NEW"
             - name: MEZO_FEATURE_COMPANION_ENABLED
               value: "true"
+            # mezo-lb2yb (B0, owner decision 2026-11-11): memory embeddings on OpenAI. The Gemini
+            # prepay credits ran dry (HTTP 402 on every embed from 2026-10-21), so nothing new
+            # reached the vector store for three weeks. text-embedding-3-small at 768 dims fits the
+            # vector(768) schema; provider, model and serving generation flip TOGETHER (one vector
+            # space), and the re-embedding job backfills the generation hourly until it is complete,
+            # then keeps healing failures. Rollback = delete these entries (back to Gemini).
+            - name: MEZO_COMPANION_EMBEDDING_PROVIDER
+              value: "openai"
+            - name: MEZO_COMPANION_EMBEDDING_MODEL
+              value: "text-embedding-3-small"
+            - name: MEZO_MEMORY_EMBEDDING_PROVIDER
+              value: "openai"
+            - name: MEZO_MEMORY_EMBEDDING_VERSION
+              value: "openai-text-embedding-3-small-768-v1"
+            - name: MEZO_MEMORY_REEMBEDDING_ENABLED
+              value: "true"
+            - name: MEZO_MEMORY_REEMBEDDING_BATCH_SIZE
+              value: "150"
+            - name: MEZO_MEMORY_REEMBEDDING_CRON
+              value: "0 5 * * * *"
             # Phase-4 proactive layer LIVE (B1.2, mezo-h4wp.2): the generated morning
             # briefing + dawn BriefingJob (05:45). Explicit switch (the companion
             # precedent) rather than relying on the application.yml default.

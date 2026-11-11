@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-10-12
+updated: 2026-11-11
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -16,6 +16,8 @@ related: [me, companion, ritual, _platform-data-layer, _platform-api-backend, _p
 ---
 
 # Journal — Free-Prose Notes + Narrative Memory Embedding
+
+> **2026-11-11 — Embedding writer reuse rule (Boop B0, `mezo-lb2yb`).** `MemoryEmbeddingWriter` no longer hands a STORED legacy vector to the canonical projection — only a vector computed in the same call is reused for chunk 0 — because production embeddings moved from Gemini to OpenAI and the legacy table still holds Gemini vectors. Journal/gratitude/decision embedding behaviour is otherwise unchanged. See [`companion.md`](companion.md).
 
 > **2026-10-12 — reviewed after `mezo-n4wf5.11` (no journal change).** `MemoryEmbeddingWriter` names its usage-log feature through the shared constant `LlmCallContext.FEATURE_EMBED_MEMORY` (value unchanged, `embed_memory`) instead of a string literal. The write / sync / delete seams described below are as they were.
 

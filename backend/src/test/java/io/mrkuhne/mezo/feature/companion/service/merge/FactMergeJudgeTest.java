@@ -130,4 +130,20 @@ class FactMergeJudgeTest {
 
         assertThat(judge.judge(userId, facts(4))).isEmpty();
     }
+
+    /** mezo-lb2yb: the OpenAI path rejects a blank user message before any call (24/24 ERROR in
+     *  prod, 0 ms) — the numbered facts must travel as the user message, the instructions as the
+     *  system prompt. */
+    @Test
+    void factListTravelsAsTheUserMessageNeverBlank() {
+        when(companionLlm.completeSmart(anyString(), anyString())).thenReturn("{\"groups\":[]}");
+
+        judge.judge(userId, facts(3));
+
+        org.mockito.ArgumentCaptor<String> system = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.ArgumentCaptor<String> user = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(companionLlm).completeSmart(system.capture(), user.capture());
+        assertThat(system.getValue()).startsWith(FactMergeJudge.MARKER).doesNotContain("1. Tény 1");
+        assertThat(user.getValue()).isNotBlank().contains("1. Tény 1", "3. Tény 3");
+    }
 }

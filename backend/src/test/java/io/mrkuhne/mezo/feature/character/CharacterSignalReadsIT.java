@@ -695,6 +695,28 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         });
     }
 
+    /** mezo-o8tcu: a soft-deleted conversation whose messages stayed live killed the nightly pass
+     *  for 49 nights (EntityNotFoundException on the title proxy → rollback-only → FAILED). Its
+     *  tool calls are simply not evidence any more; the live conversation's still are. */
+    @Test
+    void gather_skipsToolCallsOfASoftDeletedConversation_neverThrows() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        AiConversationEntity gone = aiConversationPopulator.conversation(owner,
+                "Törölt beszélgetés", day.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        AiConversationEntity live = aiConversationPopulator.conversation(owner,
+                "Élő beszélgetés", day.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        saveToolCallRow(gone, day.atTime(10, 0), "get_recovery");
+        saveToolCallRow(live, day.atTime(11, 0), "get_weight_trend");
+        jdbcTemplate.update("update ai_conversation set is_deleted = true where id = ?", gone.getId());
+
+        List<DetectorInput.ChatToolCallPoint> calls = signalReads.gather(owner, day).trend().chatToolCalls();
+
+        assertThat(calls).singleElement().satisfies(c -> {
+            assertThat(c.conversationId()).isEqualTo(live.getId());
+            assertThat(c.toolName()).isEqualTo("get_weight_trend");
+        });
+    }
+
     // ── Check-in 2.0 (mezo-ck2, plan Task 6) ────────────────────────────────────
 
     @Test

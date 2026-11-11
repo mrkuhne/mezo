@@ -135,6 +135,23 @@ class GeminiEmbeddingAdapterRecordingTest {
         assertThat(record.embed().billableChars()).isNull();
     }
 
+    /** mezo-lb2yb: a three-week outage went undiagnosed because the provider's reason never
+     *  reached the log — the HTTP status lands as the code, the provider's text as the response. */
+    @Test
+    void testEmbedDocuments_shouldRecordTheProviderStatusAndText_whenTheProviderRejects() {
+        GeminiEmbeddingAdapter adapter = adapter(texts -> {
+            throw new com.google.genai.errors.ClientException(402, "",
+                    "Your prepayment credits are depleted.");
+        });
+
+        assertThatThrownBy(() -> adapter.embedDocuments(List.of("alma")))
+            .isInstanceOf(com.google.genai.errors.ClientException.class);
+
+        LlmCallRecord record = recorder.single();
+        assertThat(record.errorCode()).isEqualTo("HTTP_402");
+        assertThat(record.responseText()).contains("prepayment credits are depleted");
+    }
+
     /** A malformed response is an app-level failure — its SystemMessage code lands on the row. */
     @Test
     void testEmbedDocuments_shouldRecordTheSystemMessageCode_whenTheResponseIsMalformed() {
@@ -213,7 +230,7 @@ class GeminiEmbeddingAdapterRecordingTest {
 
     private static CompanionProperties companionProperties() {
         return new CompanionProperties(null, null, null, null, null, null, null,
-            new CompanionProperties.Embedding(EMBED_MODEL, false, 2_000, true, 80, 200), null, null, null, null, null, null, null, null, null, null, null,
+            new CompanionProperties.Embedding("gemini", EMBED_MODEL, false, 2_000, true, 80, 200), null, null, null, null, null, null, null, null, null, null, null,
             new CompanionProperties.Turn(true,
                 new CompanionProperties.Turn.Gear(true),
                 new CompanionProperties.Turn.Planner(1),

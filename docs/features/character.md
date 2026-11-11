@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-11-10
+updated: 2026-11-11
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -16,6 +16,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 # Karakter (user character dossier) — Feature Documentation
+
+> **2026-11-11 — Nightly pass + council quota repair (Boop B0, `mezo-r36n9.10` / `mezo-o8tcu`).** The nightly observation pass FAILED 49 nights running (2026-09-23 → 11-10) for the main account: `CharacterSignalReads.gatherChatToolCalls` dereferenced the lazy conversation of a message whose conversation had been **soft-deleted** (`@SQLRestriction` hides it) → `EntityNotFoundException` → rollback-only → `UnexpectedRollbackException`; the daily council failed the same way, since it heals the nightly pass first. The read now uses `AiMessageRepository.findLiveConversationRowsInWindow` (fetch-join on live conversations). Separately, the Szkeptikus call hit `CHARACTER_COUNCIL_QUOTA_EXHAUSTED` 17× because cross-talk kept a flat reserve of 2 while its evidence reads — charged to the same per-cycle cap — ate it; cross-talk now reserves `Session.verdictReserve()` = 2 + remaining tool calls, and `council-budget.cycle-calls` went 14 → 20 (daily caps unchanged). `proactive_advice` being silent since 2026-09-23 is intended (`mezo.proactive.advice-card.enabled=false`, `mezo-a9bo7.25`).
 
 > **2026-11-10 — `mezo-r36n9.7` (no character change).** The 1.1.0 changelog gained `boop_brief` and `workout_time_override` (Boop S3, owned by [`boop-ios.md`](boop-ios.md)) and `fix(api): name the boop_brief CHECK constraint` named its CHECK `ck_boop_brief_regen_count`. No character table, job or read changed.
 

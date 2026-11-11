@@ -219,6 +219,36 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
                 .allMatch(candidate -> conversation.getId().equals(candidate.diversityGroupId()));
     }
 
+    /** mezo-lb2yb: proactive consumers pass 500–2000-char context dumps as the query.
+     *  websearch_to_tsquery ANDs every term of such a dump, so FTS could never match and the
+     *  production lexical retriever returned 0 hits. A long query is shaped into its few most
+     *  frequent content keywords, OR-ed. */
+    @Test
+    void testLexicalRetrieve_shouldStillMatch_whenTheQueryIsALongContextDump() {
+        UUID owner = databasePopulator.populateUser("hybrid-lexical-dump@test.local");
+        UUID hit = item(owner, "journal_entry", "Boglárka kedden segített a költözésben.", AS_OF.minusDays(2), 1);
+        item(owner, "journal_entry", "Napsütéses délután a parkban.", AS_OF.minusDays(1), 0);
+        String dump = ("Mai állapot: alvás 6 óra, edzés kimaradt, kalória 2100, fehérje 90 gramm. "
+                + "Boglárka költözés Boglárka költözés. Hangulat közepes, stressz magas, lépés 4200. ").repeat(6);
+
+        assertThat(lexical.retrieve(input(owner, null, dump)))
+                .extracting(MemoryCandidate::sourceId)
+                .first().isEqualTo(hit);
+    }
+
+    /** The same shaping on the facts retriever (same FTS + trigram scoring, same dump queries). */
+    @Test
+    void testFactRetrieve_shouldStillMatch_whenTheQueryIsALongContextDump() {
+        UUID owner = databasePopulator.populateUser("hybrid-fact-dump@test.local");
+        KnowledgeFactEntity matching = factForAsOf(owner, "Boglárka segít a költözésekben.", 2);
+        String dump = ("Mai állapot: alvás 6 óra, edzés kimaradt, kalória 2100, fehérje 90 gramm. "
+                + "Boglárka költözés Boglárka költözés. Hangulat közepes, stressz magas, lépés 4200. ").repeat(6);
+
+        assertThat(facts.retrieve(input(owner, null, dump)))
+                .extracting(MemoryCandidate::sourceId)
+                .contains(matching.getId());
+    }
+
     @Test
     void testFactRetrieve_shouldUnionPinnedAndMatchingActiveFacts() {
         UUID owner = databasePopulator.populateUser("hybrid-fact-owner@test.local");

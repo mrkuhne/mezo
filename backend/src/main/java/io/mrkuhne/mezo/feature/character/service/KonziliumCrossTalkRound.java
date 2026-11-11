@@ -90,7 +90,7 @@ public class KonziliumCrossTalkRound {
                 for (String expert : participants) {
                     boolean hasPeer = chapter.getValue().stream().anyMatch(index -> !expert.equals(proposals.get(index).expertKey()));
                     if (round == 1 && !hasPeer) continue;
-                    if (calls >= properties.maxCalls() || !io.mrkuhne.mezo.feature.llmlog.context.LlmCallQuota.canRun(false, 2)) return new Result(List.copyOf(reactions));
+                    if (calls >= properties.maxCalls() || !io.mrkuhne.mezo.feature.llmlog.context.LlmCallQuota.canRun(false, evidence.verdictReserve())) return new Result(List.copyOf(reactions));
                     calls++;
                     var added = runExpert(owner, periodLabel, expert, chapter.getKey(), chapter.getValue(),
                             proposals, round, List.copyOf(chapterReactions), evidence);
