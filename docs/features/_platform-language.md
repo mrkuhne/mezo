@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-10
+updated: 2026-11-11
 tags: [platform, frontend, backend, auth, ai]
 key_files:
   - frontend/src/shared/i18n
@@ -17,6 +17,8 @@ related: [_platform-auth-security, _platform-design-system, companion, settings,
 ---
 
 # Language — Feature Documentation
+
+> **2026-11-11 — Config-only touch (Boop B0, `mezo-lb2yb`).** `application.yml` gained memory-embedding provider/generation keys and retriever timing keys; nothing language-related changed. See [`companion.md`](companion.md).
 
 > **2026-11-10 — Boop S3 (`mezo-r36n9.7`).** Two more server sentences in both bundles: `BOOP_REGENERATE_LIMIT_REACHED` and `BOOP_NO_PLANNED_SESSION`. The Boop brief itself is written in Hungarian by the companion LLM (see [`boop-ios.md`](boop-ios.md)). Re-verified after the final-review fixes: the only resources change was the `mezo.boop.llm-timeout` tunable in `application.yml`; no message bundle or language behaviour changed.
 

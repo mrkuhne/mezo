@@ -2,7 +2,7 @@
 title: RAG memory explorer — owner console part 2
 type: feature-domain
 status: done
-updated: 2026-10-09
+updated: 2026-11-11
 tags: [admin, companion, memory, rag, pgvector, knowledge-graph, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin-memory/admin-memory.yml
@@ -15,6 +15,8 @@ related: [admin-hub, companion, insights, _platform-auth-security, _platform-dat
 ---
 
 # RAG memory explorer — Feature Documentation
+
+> **2026-11-11 — `AdminAlertQuery.embeddingCallsSince` (Boop B0, `mezo-lb2yb`).** The shared alert query gained an embedding-traffic read (total / errors / last error code for one model) used by the new `embedding_down` owner alert; the explorer's own health counts are unchanged. See [`admin-hub.md`](admin-hub.md).
 
 > One-line: the owner's "Memória" section — an installation-wide entry page at `/admin/memory`
 > plus a per-user explorer at `/admin/users/:id/memory` (five views: Áttekintés · Felidézések ·
