@@ -58,6 +58,8 @@ class BoopDayAssemblerIT extends AbstractIntegrationTest {
     @Autowired private WearableWorkoutPopulator workoutPopulator;
     @Autowired private WearableWorkoutRepository wearableWorkouts;
     @Autowired private CalendarEventPopulator calendar;
+    @Autowired private io.mrkuhne.mezo.feature.wearable.repository.CalendarEventRepository calendarEvents;
+    @Autowired private io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository workoutSessionRepository;
     @Autowired private MealPopulator meals;
     @Autowired private TrainPopulator train;
     @Autowired private WorkoutTimeOverridePopulator overrides;
@@ -335,6 +337,57 @@ class BoopDayAssemblerIT extends AbstractIntegrationTest {
         assertThat(d.kcalSoFar()).isZero();
         assertThat(d.checkins()).noneMatch(BoopDay.Checkin::done);
         assertThat(d.observations()).isEmpty();
+    }
+
+    @Test
+    void healthStrengthWorkoutOverlappingALoggedGymSessionIsCountedOnce() {
+        UUID user = databasePopulator.populateUser("boopmatch@test.local");
+        LocalDate yesterday = DAY.minusDays(1);
+        var meso = train.createActiveMeso(user);
+        var template = train.createWorkoutSession(user, meso.getId(), "Hétfő", "gym", 0, "planned");
+        // Auto-closed: no finished_at, 50 active minutes.
+        var gym = train.createWorkoutInstance(user, template, yesterday, "completed");
+        gym.setStartedAt(local(yesterday, 18, 0));
+        gym.setFinishedAt(null);
+        gym.setActiveSeconds(50 * 60);
+        workoutSessionRepository.saveAndFlush(gym);
+        // The Watch recorded the same session 5 min later, 60 min, 420 kcal.
+        var w = workoutPopulator.createWorkout(user, "hk-strength", yesterday, "traditionalStrengthTraining",
+            local(yesterday, 18, 5), local(yesterday, 19, 5));
+        w.setKcal(420);
+        wearableWorkouts.saveAndFlush(w);
+        // And an unrelated run the log knows nothing about: 30 min, 300 kcal.
+        var run = workoutPopulator.createWorkout(user, "hk-run", yesterday, "running",
+            local(yesterday, 8, 0), local(yesterday, 8, 30));
+        run.setKcal(300);
+        wearableWorkouts.saveAndFlush(run);
+
+        // Gym once (its own 50 min, kcal lent by the Health workout) + the run; the strength workout is not added.
+        assertThat(assembler.assemble(user, DAY).yesterdayLoad()).isEqualTo(new BoopDay.WorkoutLoad(80, 720));
+    }
+
+    @Test
+    void softDeletedHealthWorkoutAndCalendarEventAreIgnored() {
+        UUID user = databasePopulator.populateUser("boopdeleted@test.local");
+        LocalDate yesterday = DAY.minusDays(1);
+        var w = workoutPopulator.createWorkout(user, "hk-gone", yesterday, "running",
+            local(yesterday, 18, 0), local(yesterday, 18, 45));
+        w.setKcal(350);
+        w.setDeleted(true);
+        wearableWorkouts.saveAndFlush(w);
+        var e = calendar.createEvent(user, DAY, "Törölt", local(DAY, 9, 0), local(DAY, 10, 0));
+        e.setDeleted(true);
+        calendarEvents.saveAndFlush(e);
+        var m = metricPopulator.createDay(user, DAY, 9000, 50);
+        m.setDeleted(true);
+        metrics.saveAndFlush(m);
+
+        BoopDay d = assembler.assemble(user, DAY);
+
+        assertThat(d.yesterdayLoad()).isEqualTo(new BoopDay.WorkoutLoad(0, 0));
+        assertThat(d.calendar().count()).isZero();
+        assertThat(d.steps()).isNull();
+        assertThat(d.restingHr()).isNull();
     }
 
     private static Instant local(LocalDate date, int hour, int minute) {

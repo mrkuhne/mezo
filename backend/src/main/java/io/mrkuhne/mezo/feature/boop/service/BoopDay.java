@@ -39,7 +39,7 @@ public record BoopDay(
         Integer activeKcal,
         /** Today's planned gym session (not skipped, not a rest day), or null. */
         Session session,
-        /** Wearable workouts of {@code date-1}: total minutes and kcal (zeros when none). */
+        /** Yesterday's load, each session once: logged gym/sport sessions plus unmatched live Health workouts (zeros when none). */
         WorkoutLoad yesterdayLoad,
         List<Meal> meals,
         int kcalSoFar,

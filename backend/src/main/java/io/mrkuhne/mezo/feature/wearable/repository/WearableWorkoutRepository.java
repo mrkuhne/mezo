@@ -47,4 +47,8 @@ public interface WearableWorkoutRepository extends JpaRepository<WearableWorkout
         where created_by = :createdBy and external_id in (:ids) and is_deleted = false
         """, nativeQuery = true)
     int softDeleteByExternalIds(@Param("createdBy") UUID createdBy, @Param("ids") Collection<String> ids);
+
+    /** Live rows only, inclusive day range, oldest first — readers must not see soft-deleted workouts. */
+    List<WearableWorkoutEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(
+        UUID createdBy, LocalDate from, LocalDate to);
 }

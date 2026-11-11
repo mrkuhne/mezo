@@ -27,6 +27,8 @@ import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
+import io.mrkuhne.mezo.feature.train.service.LoggedSession;
+import io.mrkuhne.mezo.feature.train.service.LoggedSessionReadPort;
 import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
@@ -36,6 +38,7 @@ import io.mrkuhne.mezo.feature.wearable.entity.WearableWorkoutEntity;
 import io.mrkuhne.mezo.feature.wearable.repository.CalendarEventRepository;
 import io.mrkuhne.mezo.feature.wearable.repository.DailyMetricRepository;
 import io.mrkuhne.mezo.feature.wearable.repository.WearableWorkoutRepository;
+import io.mrkuhne.mezo.feature.wearable.service.WorkoutReconciler;
 import io.mrkuhne.mezo.techcore.query.WeightTrendQuery;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -47,6 +50,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -90,6 +94,8 @@ public class BoopDayAssembler {
     private final WearableWorkoutRepository wearableWorkouts;
     private final CalendarEventRepository calendarEvents;
     private final WearableProperties wearableProperties;
+    private final LoggedSessionReadPort loggedSessions;
+    private final WorkoutReconciler reconciler;
     private final WorkoutService workoutService;
     private final ExerciseRepository exercises;
     private final WorkoutDayAdjustmentRepository dayAdjustments;
@@ -122,7 +128,7 @@ public class BoopDayAssembler {
 
         // --- wearable day metrics: today, the 7-day resting-HR series and the 14-day baseline
         Map<LocalDate, DailyMetricEntity> metricByDate = dailyMetrics
-            .findByCreatedByAndDateBetweenOrderByDate(user, date.minusDays(BASELINE_DAYS), date).stream()
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(user, date.minusDays(BASELINE_DAYS), date).stream()
             .collect(Collectors.toMap(DailyMetricEntity::getDate, Function.identity(), (a, b) -> b));
         DailyMetricEntity today = metricByDate.get(date);
         List<Integer> restingWeek = week(date, d -> Optional.ofNullable(metricByDate.get(d))
@@ -149,7 +155,7 @@ public class BoopDayAssembler {
             today == null ? null : today.getSteps(),
             today == null ? null : today.getActiveKcal(),
             session(user, date),
-            yesterdayLoad(user, date),
+            yesterdayLoad(user, date, zone),
             meals(fuel, zone),
             toInt(consumed == null ? null : consumed.getKcal()),
             toInt(targets == null ? null : targets.getKcal()),
@@ -255,16 +261,37 @@ public class BoopDayAssembler {
             template.get().getDurationEst(), lines);
     }
 
-    private BoopDay.WorkoutLoad yesterdayLoad(UUID user, LocalDate date) {
+    /**
+     * Yesterday's training load, each real session counted ONCE. The owner's logged gym / sport
+     * sessions are the truth; a live Health workout that {@link WorkoutReconciler} matches to one
+     * of them is not an extra load — it only lends minutes / kcal where the log has none. Health
+     * workouts with no logged counterpart (a run, a Watch-only workout) count as they are.
+     */
+    private BoopDay.WorkoutLoad yesterdayLoad(UUID user, LocalDate date, ZoneId zone) {
         LocalDate yesterday = date.minusDays(1);
+        List<LoggedSession> logged = loggedSessions.loggedSessions(user, yesterday, yesterday, zone);
+        Map<UUID, Integer> lentMinutes = new HashMap<>();
+        Map<UUID, Integer> lentKcal = new HashMap<>();
         int minutes = 0;
         int kcal = 0;
-        for (WearableWorkoutEntity w : wearableWorkouts.findByCreatedByAndDateBetweenOrderByDate(
+        for (WearableWorkoutEntity w : wearableWorkouts.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(
                 user, yesterday, yesterday)) {
-            if (w.getStartAt() != null && w.getEndAt() != null && w.getEndAt().isAfter(w.getStartAt())) {
-                minutes += (int) Duration.between(w.getStartAt(), w.getEndAt()).toMinutes();
+            int wMinutes = w.getStartAt() != null && w.getEndAt() != null && w.getEndAt().isAfter(w.getStartAt())
+                ? (int) Duration.between(w.getStartAt(), w.getEndAt()).toMinutes() : 0;
+            int wKcal = w.getKcal() == null ? 0 : w.getKcal();
+            Optional<LoggedSession> match = reconciler.match(new WorkoutReconciler.HealthWorkout(
+                w.getActivityType(), w.getStartAt(), w.getEndAt(), w.getKcal(), w.getAvgHr()), logged);
+            if (match.isPresent()) {
+                lentMinutes.merge(match.get().id(), wMinutes, Math::max);
+                lentKcal.merge(match.get().id(), wKcal, Integer::sum);
+            } else {
+                minutes += wMinutes;
+                kcal += wKcal;
             }
-            kcal += w.getKcal() == null ? 0 : w.getKcal();
+        }
+        for (LoggedSession s : logged) {
+            minutes += s.minutes() > 0 ? s.minutes() : lentMinutes.getOrDefault(s.id(), 0);
+            kcal += s.kcal() != null ? s.kcal() : lentKcal.getOrDefault(s.id(), 0);
         }
         return new BoopDay.WorkoutLoad(minutes, kcal);
     }
@@ -360,7 +387,7 @@ public class BoopDayAssembler {
     // ------------------------------------------------------------------ calendar
 
     private BoopDay.Calendar calendar(UUID user, LocalDate date, ZoneId zone) {
-        List<CalendarEventEntity> events = calendarEvents.findByCreatedByAndDateOrderByStartAt(user, date);
+        List<CalendarEventEntity> events = calendarEvents.findByCreatedByAndDeletedFalseAndDateOrderByStartAt(user, date);
         boolean[] busy = new boolean[BoopDay.BUSY_SLOTS];
         LocalDateTime windowStart = date.atTime(BoopDay.BUSY_FROM);
         List<BoopDay.CalendarItem> items = new ArrayList<>();
