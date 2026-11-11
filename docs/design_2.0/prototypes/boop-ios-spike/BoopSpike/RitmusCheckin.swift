@@ -12,10 +12,14 @@ struct RitmusCheckin: View {
     var onClose: () -> Void
 
     struct Q { let key, label, question: String; let hue: Int; var why: String? = nil }
+    // the five core items every time (continuous curves) + ONE "question of the day" (slot / what Boop watches)
     private let qs: [Q] = [
         .init(key: "energy", label: "Energia", question: "Mennyi energia van benned most?", hue: 2),
+        .init(key: "mood", label: "Hangulat", question: "Milyen a hangulatod?", hue: 4),
+        .init(key: "stress", label: "Feszültség", question: "Mennyire vagy feszült?", hue: 0),
+        .init(key: "body", label: "Test", question: "Hogy érzed a tested?", hue: 3),
         .init(key: "mental", label: "Fejtisztaság", question: "Mennyire tiszta a fejed?", hue: 1),
-        .init(key: "motivation", label: "Motiváció", question: "Mennyire van kedved a ma esti röpihez?", hue: 4,
+        .init(key: "motivation", label: "A nap kérdése", question: "Mennyire van kedved a ma esti röpihez?", hue: 4,
               why: "Edzésnap van — azt figyelem, a délutáni kedved megjósolja-e, milyen lesz a játék."),
     ]
     @State private var i = 0
@@ -58,7 +62,16 @@ struct RitmusCheckin: View {
                         }
                     }
                     Spacer()
-                    Text("Délután · 16:02").font(AuraFont.mono(12)).foregroundStyle(.white.opacity(0.75)).fixedSize().frame(width: 120, alignment: .trailing)
+                    Group {
+                        if i >= 1 {
+                            Button("Most csak ennyi") { taps += 1; save() }
+                                .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                                .padding(.horizontal, 12).frame(height: 34).glassEffect(.clear.interactive(), in: .capsule)
+                        } else {
+                            Text("Délután · 16:02").font(AuraFont.mono(12)).foregroundStyle(.white.opacity(0.75)).fixedSize()
+                        }
+                    }
+                    .frame(width: 130, alignment: .trailing)
                 }
                 .padding(.horizontal, 16).padding(.top, 8)
 
@@ -124,11 +137,19 @@ struct RitmusCheckin: View {
     }
 
     /// Starts from the last answer of the day (energy: noon's 6), so "same as before" is one tap on Tovább.
-    private var previous: [String: Int] { ["energy": day.checkins.last?.energy ?? 5] }
+    private var previous: [String: Int] {
+        var d = ["energy": day.checkins.last?.energy ?? 5]
+        for (l, v) in day.checkins.last?.others ?? [] { if let q = qs.first(where: { $0.label == l }) { d[q.key] = v } }
+        return d
+    }
     private var v: Int { values[q.key] ?? previous[q.key] ?? 5 }
 
     private func advance() {
         if i < qs.count - 1 { withAnimation(.easeInOut(duration: 0.45)) { i += 1 }; return }
+        save()
+    }
+
+    private func save() {
         // third answer = saved (on the phone first; sent now, or later when offline)
         seconds = max(1, Int(Date().timeIntervalSince(started)))
         let others = qs.dropFirst().compactMap { q in values[q.key].map { (q.label, $0) } }

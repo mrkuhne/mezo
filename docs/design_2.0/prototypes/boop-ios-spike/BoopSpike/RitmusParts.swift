@@ -37,9 +37,9 @@ struct RCheckin: Identifiable, Equatable {
     var eveningEnergy: Int? = nil
     var journal: String? = nil
     var checkins: [RCheckin] = [
-        RCheckin(t: 7.33, time: "07:20", slot: "Reggel", energy: 7, others: [("Kipihentség", 7), ("Izomláz", 3)],
+        RCheckin(t: 7.33, time: "07:20", slot: "Reggel", energy: 7, others: [("Hangulat", 8), ("Feszültség", 3), ("Test", 7), ("Fejtisztaság", 8), ("Kipihentség", 7)],
                  snap: RSnapshot(hr: 61, hrv: 52, hrvUsual: 50, steps: 320, sleep: "7ó 12p")),
-        RCheckin(t: 12.67, time: "12:40", slot: "Délben", energy: 6, others: [("Feszültség", 5), ("Éhség", 7)],
+        RCheckin(t: 12.67, time: "12:40", slot: "Délben", energy: 6, others: [("Hangulat", 7), ("Feszültség", 5), ("Test", 6), ("Fejtisztaság", 6), ("Éhség", 7)],
                  note: "Hosszú volt a workshop, kicsit leeresztettem.",
                  snap: RSnapshot(hr: 74, hrv: 41, hrvUsual: 50, steps: 4_860, sleep: "7ó 12p")),
     ]
@@ -54,9 +54,9 @@ struct RCheckin: Identifiable, Equatable {
 
     init() {
         let o = RArg.open
-        if o == "checkinDone" { addAfternoon(energy: 5, others: [("Fejtisztaság", 4), ("Motiváció", 7)]) }
+        if o == "checkinDone" { addAfternoon(energy: 5, others: [("Hangulat", 6), ("Feszültség", 6), ("Test", 6), ("Fejtisztaság", 4), ("A nap kérdése", 7)]) }
         if o == "esteDone" || o == "checkinDone" { goal = "Ügyfélprezentáció 14:00"; planAccepted = true }
-        if o == "esteDone" { addAfternoon(energy: 5, others: [("Fejtisztaság", 4), ("Motiváció", 7)])
+        if o == "esteDone" { addAfternoon(energy: 5, others: [("Hangulat", 6), ("Feszültség", 6), ("Test", 6), ("Fejtisztaság", 4), ("A nap kérdése", 7)])
             closed = true; dayRating = 4; goalOutcome = 0; eveningEnergy = 4
             journal = "Jól ment a prezentáció, a röpi után kellemesen elfáradtam. A vacsora kicsit késő lett." }
     }
@@ -270,10 +270,9 @@ struct RCheckinDetail: View {
                 Spacer()
                 if c.pending { ROfflineGlyph(color: .white.opacity(0.6), size: 14); Text("még a telefonon").font(.system(size: 12)).foregroundStyle(.white.opacity(0.6)) }
             }
-            HStack(spacing: 18) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 3), alignment: .leading, spacing: 10) {
                 answer("Energia", c.energy)
                 ForEach(c.others, id: \.0) { answer($0.0, $0.1) }
-                Spacer()
             }
             if let n = c.note {
                 Text("„\(n)”").font(AuraFont.serif(16)).foregroundStyle(.white.opacity(0.85))
