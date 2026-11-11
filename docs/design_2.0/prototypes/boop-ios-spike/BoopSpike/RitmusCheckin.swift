@@ -27,12 +27,14 @@ struct RitmusCheckin: View {
     @State private var seconds = 0
     @State private var note: String? = nil
     @State private var selected: UUID? = nil
+    @State private var dragStart: Int? = nil
+    @State private var swipes = 0
 
     var body: some View {
         Group { if finished { done } else { question } }
             .onDisappear { motion.stop() }
             .preferredColorScheme(.dark)
-            .onAppear { if finished { taps = 4; seconds = 6; selected = day.checkins.last?.id } }
+            .onAppear { if finished { taps = 4; swipes = 3; seconds = 8; selected = day.checkins.last?.id } }
     }
 
     private var q: Q { qs[i] }
@@ -77,48 +79,60 @@ struct RitmusCheckin: View {
 
                 Spacer()
 
+                // the orb is the answer: swipe up or down on it, the liquid follows; then tap Tovább
                 ZStack {
-                    Circle().fill(PaintedLandscape.skies[q.hue][2].opacity(0.35)).frame(width: 280).blur(radius: 60)
-                    LivingOrb(mood: .good, size: 190, motion: motion, palette: SunMetric.all[q.hue].orb, glow: false,
-                              level: max(0.04, Double(values[q.key] ?? 0) / 10))
+                    Circle().fill(PaintedLandscape.skies[q.hue][2].opacity(0.35)).frame(width: 300).blur(radius: 60)
+                    LivingOrb(mood: .good, size: 220, motion: motion, palette: SunMetric.all[q.hue].orb, glow: false,
+                              level: max(0.04, Double(v) / 10))
                         .allowsHitTesting(false)
-                    Text(values[q.key].map { "\($0)" } ?? "–").font(.custom("Outfit", size: 70).weight(.light)).foregroundStyle(.white)
-                        .contentTransition(.numericText(value: Double(values[q.key] ?? 0)))
-                        .shadow(color: .black.opacity(0.3), radius: 8)
+                    VStack(spacing: 0) {
+                        Text("\(v)").font(.custom("Outfit", size: 78).weight(.light)).foregroundStyle(.white)
+                            .contentTransition(.numericText(value: Double(v)))
+                        Text("a 10-ből").font(.system(size: 13)).foregroundStyle(.white.opacity(0.75))
+                    }
+                    .shadow(color: .black.opacity(0.3), radius: 8)
+                    .allowsHitTesting(false)
                 }
-                .frame(height: 230)
-                Text(values[q.key] == nil ? "Koppints egy számra lent" : " ").font(.system(size: 13)).foregroundStyle(.white.opacity(0.6))
+                .frame(width: 300, height: 260)
+                .contentShape(Circle())
+                .gesture(
+                    DragGesture(minimumDistance: 2)
+                        .onChanged { g in
+                            if dragStart == nil { dragStart = v; swipes += 1 }
+                            let nv = max(1, min(10, (dragStart ?? 5) - Int((g.translation.height / 26).rounded())))
+                            if nv != v { withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) { values[q.key] = nv } }
+                        }
+                        .onEnded { _ in dragStart = nil }
+                )
+                .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.45), trigger: v)
+                Text(previous[q.key].map { "Húzd fel vagy le · legutóbb \($0) volt" } ?? "Húzd fel vagy le")
+                    .font(.system(size: 13)).foregroundStyle(.white.opacity(0.65)).padding(.top, 4)
 
                 Spacer()
 
-                VStack(spacing: 14) {
-                    RLevelRow(palette: SunMetric.all[q.hue].orb, value: values[q.key]) { k in pick(k) }
-                    HStack {
-                        Text("1 · alig").font(.system(size: 12)).foregroundStyle(.white.opacity(0.5))
-                        Spacer()
-                        Button("Kihagyom") { taps += 1; advance() }
-                            .font(.system(size: 14, weight: .medium)).foregroundStyle(.white.opacity(0.7))
-                        Spacer()
-                        Text("10 · teljesen").font(.system(size: 12)).foregroundStyle(.white.opacity(0.5))
+                HStack(spacing: 10) {
+                    Button { taps += 1; advance() } label: { AuraPill(text: "Kihagyom", primary: false) }
+                        .buttonStyle(.plain).frame(width: 130)
+                    Button { taps += 1; if values[q.key] == nil { values[q.key] = v }; advance() } label: {
+                        AuraPill(text: i == qs.count - 1 ? "Kész" : "Tovább")
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 18).padding(.bottom, 26)
+                .padding(.horizontal, 20).padding(.bottom, 20)
             }
         }
     }
 
-    private func pick(_ k: Int) {
-        taps += 1
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) { values[q.key] = k }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { advance() }
-    }
+    /// Starts from the last answer of the day (energy: noon's 6), so "same as before" is one tap on Tovább.
+    private var previous: [String: Int] { ["energy": day.checkins.last?.energy ?? 5] }
+    private var v: Int { values[q.key] ?? previous[q.key] ?? 5 }
 
     private func advance() {
         if i < qs.count - 1 { withAnimation(.easeInOut(duration: 0.45)) { i += 1 }; return }
         // third answer = saved (on the phone first; sent now, or later when offline)
         seconds = max(1, Int(Date().timeIntervalSince(started)))
         let others = qs.dropFirst().compactMap { q in values[q.key].map { (q.label, $0) } }
-        day.addAfternoon(energy: values["energy"] ?? 5, others: others)
+        day.addAfternoon(energy: values["energy"] ?? previous["energy"] ?? 5, others: others)
         selected = day.checkins.last?.id
         withAnimation(.easeInOut(duration: 0.5)) { finished = true }
     }
@@ -162,13 +176,13 @@ struct RitmusCheckin: View {
                     }
                     Text(day.offline
                          ? "Megvan. Amint lesz net, megnézem a délutánodat, és szólok, mit egyél a röpi előtt."
-                         : "Délben még 6 voltál, most 5, és a HRV-d is a szokott alatt. Egyél 17:30 körül egy banánt joghurttal, hogy a 19:00-s röpire maradjon erőd.")
+                         : "Délben még 6 voltál, most \(day.checkins.last?.energy ?? 5), és a HRV-d is a szokott alatt. Egyél 17:30 körül egy banánt joghurttal, hogy a 19:00-s röpire maradjon erőd.")
                         .font(AuraFont.serif(18)).lineSpacing(4).foregroundStyle(.white.opacity(0.9))
                 }
                 .padding(20).frame(maxWidth: .infinity, alignment: .leading).gCard()
 
                 GPill(title: "Kész") { onClose() }.padding(.top, 4)
-                RTapCount(taps: taps, seconds: seconds).padding(.top, 2)
+                RTapCount(taps: taps, swipes: swipes, seconds: seconds).padding(.top, 2)
             }
             .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 40)
         }
