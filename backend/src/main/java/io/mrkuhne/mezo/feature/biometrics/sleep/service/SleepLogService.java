@@ -27,26 +27,21 @@ public class SleepLogService {
 
     @Transactional
     public SleepLogResponse log(UUID createdBy, LogSleepRequest req) {
-        SleepLogEntity e = new SleepLogEntity();
-        e.setCreatedBy(createdBy); // server-side from principal, never from client
-        e.setDate(req.getDate());
-        e.setBedtime(req.getBedtime());
-        e.setWakeup(req.getWakeup());
-        e.setDurationH(req.getDurationH());
-        e.setQuality(req.getQuality());
-        e.setAwakenings(req.getAwakenings());
-        e.setNotes(req.getNote());
-        e.setInBedMin(req.getInBedMin());
-        e.setAwakeMin(req.getAwakeMin());
-        e.setLightMin(req.getLightMin());
-        e.setRemMin(req.getRemMin());
-        e.setDeepMin(req.getDeepMin());
-        e.setSourceQualityPct(req.getSourceQualityPct());
-        e.setHypnogram(req.getHypnogram() == null ? null
-            : new SleepHypnogram(req.getHypnogram().getBucketMin(), req.getHypnogram().getStages()));
-        if (req.getSource() != null) {
-            e.setSource(req.getSource()); // entity default stays "manual" when omitted
-        }
+        SleepHypnogram hypnogram = req.getHypnogram() == null ? null
+            : new SleepHypnogram(req.getHypnogram().getBucketMin(), req.getHypnogram().getStages());
+        SleepNightMerge.Entry entry = new SleepNightMerge.Entry(req.getBedtime(), req.getWakeup(), req.getDurationH(),
+            req.getQuality(), req.getAwakenings(), req.getNote(), req.getInBedMin(), req.getAwakeMin(),
+            req.getLightMin(), req.getRemMin(), req.getDeepMin(), req.getSourceQualityPct(), hypnogram,
+            req.getSource());
+        // One live night per date: merge into the date's row when there is one (locked), else insert.
+        SleepLogEntity e = repository.findByCreatedByAndDateAndDeletedFalse(createdBy, req.getDate())
+            .orElseGet(() -> {
+                SleepLogEntity fresh = new SleepLogEntity();
+                fresh.setCreatedBy(createdBy); // server-side from principal, never from client
+                fresh.setDate(req.getDate());
+                return fresh; // entity default source stays "manual" when the request omits it
+            });
+        SleepNightMerge.applyEntry(e, entry);
         SleepLogResponse resp = mapper.toResponse(repository.save(e));
         // AFTER_COMMIT listener (CompanionMessageEventListener) reacts once this row is durable.
         eventPublisher.publishEvent(new SleepLogSavedEvent(createdBy, req.getDate()));

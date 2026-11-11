@@ -31,7 +31,8 @@ public class WearableController implements WearableApi {
 
     @Override
     public IngestResult ingestSleepNights(SleepNightBatchRequest request) {
-        return sleepService.ingest(currentUserId.get(), request.getNights(), LocalDate.now(ZoneId.of(properties.zone())));
+        return sleepService.ingest(currentUserId.get(), request.getNights(),
+            LocalDate.now(ZoneId.of(properties.zone())), request.getWindowFrom(), request.getWindowTo());
     }
 
     @Override

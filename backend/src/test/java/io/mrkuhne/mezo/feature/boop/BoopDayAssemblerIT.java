@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.boop;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepHypnogram;
 import io.mrkuhne.mezo.feature.boop.service.BoopDay;
@@ -219,6 +220,18 @@ class BoopDayAssemblerIT extends AbstractIntegrationTest {
         assertThat(d.weight().kg()).isEqualTo(79.6);
         assertThat(d.weight().trendKg()).isBetween(79.6, 80.0);
         assertThat(d.recovery()).isNull();
+    }
+
+    @Test
+    void nightsKnownCountsDatesAndTheDbRefusesASecondLiveNightOnADate() {
+        UUID user = databasePopulator.populateUser("onenight@test.local");
+        sleepLogs.createTrackerSleepLog(user, DAY, "23:10", "06:40", new BigDecimal("7.50"), 8, 1, 470,
+            20, 230, 100, 90, null, "apple_health", null, null);
+        sleepLogs.createTrackerSleepLog(user, DAY.minusDays(1), "23:00", "07:00", new BigDecimal("8.00"), 7, 1,
+            480, 20, 240, 100, 60, null, "apple_health", null, null);
+        assertThatThrownBy(() -> sleepLogs.createTrackerSleepLog(user, DAY, "22:00", "06:00",
+            new BigDecimal("8.00"), 5, 1, null, null, null, null, null, null, "manual", null, null))
+            .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     @Test

@@ -139,7 +139,7 @@ public class BoopDayAssembler {
             sleep,
             sleepTargetMin,
             sleepAnchor.resolve(user).bed(),
-            nights.size(),
+            (int) nights.stream().map(SleepLogEntity::getDate).distinct().count(),
             deepWeek,
             restingWeek,
             baselineResting,
