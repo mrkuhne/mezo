@@ -181,6 +181,60 @@ class AdminAlertsIT extends ApiIntegrationTest {
                 });
     }
 
+    /** mezo-lb2yb: every Gemini embed failed for three weeks (HTTP 402) and nothing named it. */
+    @Test
+    void testAlerts_shouldFireEmbeddingDown_withTheProviderCode_whenEmbedsKeepFailing() {
+        Instant now = Instant.now();
+        for (int i = 0; i < 3; i++) {
+            var entity = llmLogPopulator.logError(null, CallKind.EMBED_DOC, "embed_memory",
+                    "gemini-embedding-001", "HTTP_402");
+            jdbcTemplate.update("update llm_log_history set created_at = ? where id = ?",
+                    java.sql.Timestamp.from(now.minusSeconds(60L * (i + 1))), entity.getId());
+        }
+
+        AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
+
+        assertThat(body.getAlerts()).filteredOn(a -> "embedding_down".equals(a.getKey()))
+                .singleElement()
+                .satisfies(a -> {
+                    assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.BAD);
+                    assertThat(a.getDetail()).contains("3/3", "HTTP_402");
+                    assertThat(a.getLink()).contains("/admin/memory");
+                });
+    }
+
+    @Test
+    void testAlerts_shouldNotFireEmbeddingDown_whenMostEmbedsSucceed() {
+        Instant now = Instant.now();
+        for (int i = 0; i < 4; i++) {
+            llmLogPopulator.logAt(now.minus(1, ChronoUnit.HOURS), null, CallKind.EMBED_QUERY, "companion_recall",
+                    "text-embedding-3-small", 0, 0, null, new BigDecimal("0.0001"));
+        }
+        llmLogPopulator.logError(null, CallKind.EMBED_QUERY, "companion_recall", "text-embedding-3-small", "HTTP_500");
+
+        AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
+
+        assertThat(body.getAlerts()).noneMatch(a -> "embedding_down".equals(a.getKey()));
+    }
+
+    /** mezo-lb2yb: a failed embed throws BEFORE any vector row exists, so counting failed vectors
+     *  stayed at 0 for the whole outage. The rule now also counts authoritative source rows (from
+     *  before today) that have no up-to-date vector in the serving generation. */
+    @Test
+    void testAlerts_shouldFireMemoryStuck_whenASourceRowHasNoVector() {
+        RegisteredUser anna = registerUser("Anna");
+        dailySummaryPopulator.summary(anna.id(), LocalDate.now(ZONE).minusDays(2), "Csendes nap volt.");
+
+        AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
+
+        assertThat(body.getAlerts()).filteredOn(a -> "memory_stuck".equals(a.getKey()))
+                .singleElement()
+                .satisfies(a -> {
+                    assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.BAD);
+                    assertThat(a.getDetail()).contains("1 ");
+                });
+    }
+
     @Test
     void testAlerts_shouldFireMemoryStuckAsWarn_whenAVectorIsStaleButNotFailed() {
         RegisteredUser anna = registerUser("Anna");
