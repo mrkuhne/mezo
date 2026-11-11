@@ -36,10 +36,9 @@ public class SleepLogService {
         // One live night per date: merge into the date's row when there is one (locked), else insert.
         SleepLogEntity e = repository.findByCreatedByAndDateAndDeletedFalse(createdBy, req.getDate())
             .orElseGet(() -> {
-                SleepLogEntity fresh = new SleepLogEntity();
-                fresh.setCreatedBy(createdBy); // server-side from principal, never from client
-                fresh.setDate(req.getDate());
-                return fresh; // entity default source stays "manual" when the request omits it
+                // Race-safe: insert-if-absent, then lock + load whichever row now owns the date.
+                repository.insertLiveShellIfAbsent(createdBy, req.getDate());
+                return repository.findByCreatedByAndDateAndDeletedFalse(createdBy, req.getDate()).orElseThrow();
             });
         SleepNightMerge.applyEntry(e, entry);
         SleepLogResponse resp = mapper.toResponse(repository.save(e));

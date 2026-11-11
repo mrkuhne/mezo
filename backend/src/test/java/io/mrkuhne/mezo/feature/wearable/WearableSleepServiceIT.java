@@ -249,4 +249,45 @@ class WearableSleepServiceIT extends AbstractIntegrationTest {
         assertThat(live(user)).hasSize(3);
         assertThat(events.stream(SleepLogSavedEvent.class)).isEmpty();
     }
+
+    @Autowired private io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository sleepRepository;
+
+    @Test
+    void aDeletedNightStaysDeletedWhenHealthResendsIt() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        service.ingest(user, List.of(night(TODAY, 80)), TODAY);
+        jdbc.update("update sleep_log set is_deleted = true where created_by = ?", user);
+        events.clear();
+        IngestResult r = service.ingest(user, List.of(night(TODAY, 80)), TODAY);
+        assertThat(r.getInserted()).isZero();
+        assertThat(r.getUpdated()).isZero();
+        assertThat(live(user)).isEmpty();
+        assertThat(events.stream(SleepLogSavedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void aWindowDeletedNightStaysDeletedOnResend() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        service.ingest(user, nightsEndingOn(TODAY, 2), TODAY);
+        service.ingest(user, List.of(night(TODAY, 80)), TODAY, TODAY.minusDays(1), TODAY); // drops TODAY-1
+        IngestResult r = service.ingest(user, nightsEndingOn(TODAY, 2), TODAY);
+        assertThat(r.getInserted()).isZero();
+        assertThat(r.getUpdated()).isEqualTo(1);
+        assertThat(live(user)).hasSize(1);
+    }
+
+    @Test
+    void aLiveRowInsertedBetweenLookupAndInsertIsMerged() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        // The race outcome: the shell insert finds the date already owned (0 rows) and the writer merges.
+        assertThat(sleepRepository.insertLiveShellIfAbsent(user, TODAY)).isEqualTo(1);
+        assertThat(sleepRepository.insertLiveShellIfAbsent(user, TODAY)).isZero();
+        IngestResult r = service.ingest(user, List.of(night(TODAY, 80)), TODAY);
+        assertThat(r.getUpdated()).isEqualTo(1);
+        sleepLogService.log(user, manual(TODAY, 8, null, null));
+        assertThat(live(user)).hasSize(1).first().satisfies(row -> {
+            assertThat(row.get("source")).isEqualTo("apple_health");
+            assertThat(row.get("quality")).isEqualTo(8);
+        });
+    }
 }

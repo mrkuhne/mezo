@@ -55,11 +55,13 @@ public class WearableSleepService {
         int inserted = 0;
         int updated = 0;
         for (SleepNightIn n : nights) {
-            if (merge(createdBy, n)) {
-                updated++;
-            } else {
-                inserted++;
-                insertedIds.add(n.getExternalId());
+            switch (merge(createdBy, n)) {
+                case UPDATED -> updated++;
+                case INSERTED -> {
+                    inserted++;
+                    insertedIds.add(n.getExternalId());
+                }
+                case SKIPPED -> { }
             }
         }
         if (windowFrom != null && windowTo != null) {
@@ -72,8 +74,10 @@ public class WearableSleepService {
         return new IngestResult(inserted, updated);
     }
 
-    /** @return true when an existing live row was updated, false when a new row was inserted */
-    private boolean merge(UUID createdBy, SleepNightIn n) {
+    private enum Outcome { INSERTED, UPDATED, SKIPPED }
+
+    /** A night the user (or a window deletion) removed stays removed: SKIPPED. */
+    private Outcome merge(UUID createdBy, SleepNightIn n) {
         SleepNightMerge.HealthNight night = new SleepNightMerge.HealthNight(n.getExternalId(), n.getBedtime(),
             n.getWakeup(), n.getDurationH(), positiveOrNull(n.getInBedMin()), n.getAwakeMin(), n.getLightMin(),
             n.getRemMin(), n.getDeepMin(), hypnogram(n), n.getSourceApp(), n.getSleepingHr());
@@ -96,15 +100,19 @@ public class WearableSleepService {
         }
         boolean existed = target != null;
         if (target == null) {
-            target = new SleepLogEntity();
-            target.setCreatedBy(createdBy);
-            target.setDate(n.getDate());
+            if (repository.existsDeletedExternalId(createdBy, n.getExternalId())) {
+                return Outcome.SKIPPED; // deleted night, nothing live on its date: stays deleted
+            }
+            // Race-safe insert (a concurrent sync may have just created the date's row).
+            existed = repository.insertLiveShellIfAbsent(createdBy, n.getDate()) == 0;
+            target = repository.findByCreatedByAndDateAndDeletedFalse(createdBy, n.getDate()).orElseThrow();
         }
-        // A deleted-then-revived id still holds the unique slot on its soft-deleted row: free it first.
+        // A different live row owns the date, so a stale soft-deleted holder of the id is cleared
+        // first (it would trip uq_sleep_log_owner_external).
         repository.clearDeletedExternalId(createdBy, n.getExternalId());
         SleepNightMerge.applyHealth(target, night);
         repository.saveAndFlush(target);
-        return existed;
+        return existed ? Outcome.UPDATED : Outcome.INSERTED;
     }
 
     private void deleteMissingInWindow(UUID createdBy, List<SleepNightIn> nights, LocalDate from, LocalDate to) {

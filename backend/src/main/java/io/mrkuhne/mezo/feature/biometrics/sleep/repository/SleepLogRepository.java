@@ -58,4 +58,21 @@ public interface SleepLogRepository extends OwnedRepository<SleepLogEntity> {
     @Query(value = "update sleep_log set external_id = null "
         + "where created_by = :createdBy and external_id = :externalId and is_deleted = true", nativeQuery = true)
     int clearDeletedExternalId(@Param("createdBy") UUID createdBy, @Param("externalId") String externalId);
+
+    /** True when a SOFT-DELETED row of this owner holds the external id — the user (or a window
+     *  deletion) removed that night and a Health re-send must not bring it back. */
+    @Query(value = "select count(*) > 0 from sleep_log "
+        + "where created_by = :createdBy and external_id = :externalId and is_deleted = true", nativeQuery = true)
+    boolean existsDeletedExternalId(@Param("createdBy") UUID createdBy, @Param("externalId") String externalId);
+
+    /** Race-safe first insert of a date's live row: an empty manual shell, or nothing when a live row
+     *  already exists (a concurrent writer won — background vs on-open sync). Native ON CONFLICT DO
+     *  NOTHING, so no unique violation aborts the transaction; callers then load the date row and
+     *  merge into it.
+     *  @return 1 when the shell was inserted, 0 when a live row of that date was already there */
+    @Modifying(flushAutomatically = true)
+    @Query(value = "insert into sleep_log (created_by, date, source, is_deleted, created_at) "
+        + "values (:createdBy, :date, 'manual', false, now()) "
+        + "on conflict (created_by, date) where is_deleted = false do nothing", nativeQuery = true)
+    int insertLiveShellIfAbsent(@Param("createdBy") UUID createdBy, @Param("date") LocalDate date);
 }
