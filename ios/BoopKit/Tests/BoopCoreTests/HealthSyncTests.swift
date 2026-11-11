@@ -2,17 +2,47 @@ import Foundation
 import Testing
 @testable import BoopCore
 
+/// Anchored-read semantics: a nil anchor returns everything (`nights`, `workoutList`, `samples`), a
+/// stored anchor only the `fresh*` additions and the `deleted*` uuids. Every read hands out a new anchor.
 final class FakeHealth: HealthReader, @unchecked Sendable {
     var nights: [SleepSample] = []
     var days: [DayTotals] = []
     var workoutList: [WorkoutSample] = []
+    var samples: [HealthMetric: [HealthSampleValue]] = [:]
+    var freshSleep: [SleepSample] = [], deletedSleep: [UUID] = []
+    var freshWorkouts: [WorkoutSample] = [], deletedWorkouts: [UUID] = []
+    var freshSamples: [HealthMetric: [HealthSampleValue]] = [:], deletedSamples: [HealthMetric: [UUID]] = [:]
+    var buckets: [HeartRateBucket] = []
+    var hr: HeartRateStats?
     private(set) var froms: [Date] = []
+    private(set) var dayFroms: [Date] = []
+    private(set) var bucketFroms: [Date] = []
+    private(set) var hrQueries: [[DateInterval]] = []
+    private(set) var anchorsIn: [String: [Data?]] = [:]
+    private var counter = 0
+
+    private func next<T>(_ key: String, _ anchor: Data?, all: [T], fresh: [T], deleted: [UUID]) -> HealthChange<T> {
+        anchorsIn[key, default: []].append(anchor)
+        counter += 1
+        return HealthChange(added: anchor == nil ? all : fresh, deletedIds: anchor == nil ? [] : deleted,
+                            anchor: Data("\(key)-\(counter)".utf8))
+    }
     func sleepSamples(from: Date, to: Date) async throws -> [SleepSample] {
         froms.append(from)
-        return nights.filter { $0.end > from && $0.start < to }    // HealthKit: samples overlapping the window
+        return (nights + freshSleep).filter { $0.end > from && $0.start < to }    // HealthKit: samples overlapping the window
     }
-    func dayTotals(from: Date, to: Date, calendar: Calendar) async throws -> [DayTotals] { days }
-    func workouts(from: Date, to: Date) async throws -> [WorkoutSample] { workoutList }
+    func sleepChanges(anchor: Data?, from: Date) async throws -> HealthChange<SleepSample> {
+        next("sleep", anchor, all: nights, fresh: freshSleep, deleted: deletedSleep)
+    }
+    func dayTotals(from: Date, to: Date, calendar: Calendar) async throws -> [DayTotals] { dayFroms.append(from); return days }
+    func workoutChanges(anchor: Data?, from: Date) async throws -> HealthChange<WorkoutSample> {
+        next("workouts", anchor, all: workoutList, fresh: freshWorkouts, deleted: deletedWorkouts)
+    }
+    func sampleChanges(_ metric: HealthMetric, anchor: Data?, from: Date) async throws -> HealthChange<HealthSampleValue> {
+        next(metric.rawValue, anchor, all: samples[metric] ?? [], fresh: freshSamples[metric] ?? [], deleted: deletedSamples[metric] ?? [])
+    }
+    func heartRateBuckets(from: Date, to: Date) async throws -> [HeartRateBucket] { bucketFroms.append(from); return buckets }
+    func heartRate(during intervals: [DateInterval]) async throws -> HeartRateStats? { hrQueries.append(intervals); return hr }
 }
 
 final class FakeCalendar: CalendarReader, @unchecked Sendable {
@@ -56,9 +86,23 @@ struct HealthSyncTests {
     func markSynced(_ day: String) {
         store.set(day, forKey: "boop.health.syncedThrough.\(user)")
         store.set(Data(#"{"nights":[],"days":[],"workouts":[]}"#.utf8), forKey: "boop.health.syncedIds.\(user)")
+        store.set(true, forKey: "boop.health.v2.\(user)")
     }
+    func anchorKey(_ kind: String) -> String { "boop.health.anchor.\(user).\(kind)" }
+    func setAnchor(_ kind: String) { store.set(Data("old-\(kind)".utf8), forKey: anchorKey(kind)) }
     let ok = #"{"inserted":1,"updated":0}"#
-    func okEverything() { for _ in 0..<5 { stub.on("ingestSleepNights", .json(200, ok)); stub.on("ingestDailyMetrics", .json(200, ok)); stub.on("ingestWorkouts", .json(200, ok)) }; stub.on("replaceCalendarDays", .status(204)) }
+    func okEverything() {
+        for _ in 0..<5 {
+            stub.on("ingestSleepNights", .json(200, ok)); stub.on("ingestDailyMetrics", .json(200, ok)); stub.on("ingestWorkouts", .json(200, ok))
+            stub.on("ingestHealthSamples", .json(200, ok)); stub.on("deleteHealthRecords", .json(200, #"{"deleted":1}"#))
+            stub.on("replaceCalendarDays", .status(204))
+        }
+    }
+    func bodies(_ op: String) -> [String] { stub.sent.filter { $0.op == op }.compactMap(\.body).map { $0.filter { !$0.isWhitespace } } }
+    func hrv(_ value: Double, _ id: UUID = UUID()) -> HealthSampleValue {
+        HealthSampleValue(uuid: id, metric: .hrvSdnn, start: now.addingTimeInterval(-3600), end: now.addingTimeInterval(-3600),
+                          value: value, sourceName: "Apple Watch", sourceBundle: "com.apple.health.x", device: "Watch7,1")
+    }
 
     @Test func firstRunReadsSixtyDays() async {
         okEverything()
@@ -100,10 +144,12 @@ struct HealthSyncTests {
         #expect(health.froms.last == expected.addingTimeInterval(-18 * 3600))
     }
 
+    // A lost anchor (or a re-send) carries the same night ids: the server never duplicates.
     @Test func rerunSendsSameIdsAgain() async {
         health.nights = night(9)
         okEverything(); okEverything()
         await sync().syncAll()
+        store.removeObject(forKey: anchorKey("sleep"))
         await sync().syncAll()
         let bodies = stub.sent.filter { $0.op == "ingestSleepNights" }.compactMap(\.body)
         #expect(bodies.count == 2)
@@ -122,12 +168,12 @@ struct HealthSyncTests {
         guard case .done = s.phase else { Issue.record("phase \(s.phase)"); return }
     }
 
-    @Test func calendarGrantedSendsTwoDays() async {
-        calendarReader.list = [CalendarItem(title: "Egyeztetés", start: now.addingTimeInterval(3600), end: now.addingTimeInterval(5400), allDay: false, calendar: "Munka")]
+    @Test func calendarGrantedSendsTodayAndTomorrow() async {
+        calendarReader.list = [CalendarItem(externalId: "ev1|2026-11-09T06:50:00Z", title: "Egyeztetés", start: now.addingTimeInterval(3600), end: now.addingTimeInterval(5400), allDay: false, calendar: "Munka")]
         okEverything()
         let s = sync()
         await s.syncAll()
-        let body = stub.sent.first { $0.op == "replaceCalendarDays" }?.body ?? ""
+        let body = bodies("replaceCalendarDays").last ?? ""             // the backfill's last batch ends with today + tomorrow
         #expect(body.contains("2026-11-09") && body.contains("2026-11-10"))
         #expect(s.phase == .done(.init(nights: 0, days: 0, workouts: 0, events: 1)))
     }
@@ -171,7 +217,7 @@ struct HealthSyncTests {
         #expect(store.string(forKey: "boop.health.syncedThrough.\(user)") == nil)
         stub.on("replaceCalendarDays", .status(204))
         await s.syncAll()
-        #expect(health.froms.last == cal.date(byAdding: .day, value: -60, to: cal.startOfDay(for: now))!.addingTimeInterval(-18 * 3600))
+        #expect(health.dayFroms.last == cal.date(byAdding: .day, value: -60, to: cal.startOfDay(for: now))!)
     }
 
     // Final review I1: a calendar failure does not undo the Health upload.
@@ -179,7 +225,7 @@ struct HealthSyncTests {
         health.nights = night(9)
         stub.on("ingestSleepNights", .json(200, ok))
         stub.on("replaceCalendarDays", .json(400, #"[{"field":"title","message":"x"}]"#))
-        calendarReader.list = [CalendarItem(title: "Edzés", start: now, end: now.addingTimeInterval(3600), allDay: false, calendar: "Munka")]
+        calendarReader.list = [CalendarItem(externalId: "ev2|2026-11-09T05:50:00Z", title: "Edzés", start: now, end: now.addingTimeInterval(3600), allDay: false, calendar: "Munka")]
         let s = sync()
         await s.syncAll()
         #expect(s.phase == .done(.init(nights: 1, days: 0, workouts: 0, events: 0)))
@@ -194,7 +240,8 @@ struct HealthSyncTests {
         let s = sync()
         await s.syncAll()
         #expect(s.totals == .init(nights: 3, days: 0, workouts: 0, events: 0))
-        health.nights = nightsBack(2)                     // re-sent 11-08, 11-09: no new nights
+        health.nights = []
+        health.freshSleep = nightsBack(2)                 // Health re-wrote 11-08, 11-09: no new nights
         okEverything()
         await s.syncAll()
         #expect(s.lastSummary?.nights == 2)              // the run itself
@@ -208,10 +255,250 @@ struct HealthSyncTests {
         okEverything()
         let s = sync()
         await s.syncAll()
-        let sixty = cal.date(byAdding: .day, value: -60, to: cal.startOfDay(for: now))!.addingTimeInterval(-18 * 3600)
-        #expect(health.froms.first == sixty)
+        let sixty = cal.date(byAdding: .day, value: -60, to: cal.startOfDay(for: now))!
+        #expect(health.froms.first == sixty.addingTimeInterval(-18 * 3600))
+        #expect(health.dayFroms.first == sixty)
         okEverything()
         await s.syncAll()
-        #expect(health.froms.last != sixty)                // afterwards incremental again
+        #expect(health.dayFroms.last != sixty)             // afterwards incremental again
+    }
+
+    // MARK: - B1: anchors
+
+    @Test func anchorNotSavedOn5xxAndSavedAfter2xx() async {
+        health.samples[.hrvSdnn] = [hrv(42)]
+        stub.on("ingestHealthSamples", .json(500, "[]"))
+        let s = sync()
+        await s.syncAll()
+        #expect(s.phase == .failed(.server))
+        #expect(store.data(forKey: anchorKey("hrv_sdnn")) == nil)
+        #expect(store.data(forKey: anchorKey("sleep")) != nil)          // an earlier, acknowledged kind keeps its anchor
+        okEverything()
+        await s.syncAll()
+        guard case .done = s.phase else { Issue.record("phase \(s.phase)"); return }
+        #expect(store.data(forKey: anchorKey("hrv_sdnn")) != nil)
+    }
+
+    @Test func interruptedRunResendsAndThenSendsNothing() async {
+        let id = UUID()
+        health.samples[.hrvSdnn] = [hrv(42, id)]
+        stub.on("ingestHealthSamples", .fail(URLError(.notConnectedToInternet)))
+        let s = sync()
+        await s.syncAll()
+        #expect(s.phase == .failed(.offline))
+        okEverything()
+        await s.syncAll()
+        let sent = bodies("ingestHealthSamples")
+        #expect(sent.count == 2)
+        #expect(sent[0] == sent[1])
+        #expect(sent[1].contains(id.uuidString.lowercased()))
+        okEverything()
+        await s.syncAll()                                                  // anchor moved: nothing new to send
+        #expect(bodies("ingestHealthSamples").count == 2)
+        #expect(health.anchorsIn["hrv_sdnn"]?.last != .some(nil))
+    }
+
+    @Test func workoutDeletionsReachTheServer() async {
+        setAnchor("workouts")
+        let gone = UUID()
+        health.deletedWorkouts = [gone]
+        okEverything()
+        await sync().syncAll()
+        let body = bodies("deleteHealthRecords").first ?? ""
+        #expect(body.contains("hk-\(gone.uuidString.lowercased())"))
+        #expect(store.data(forKey: anchorKey("workouts")) != Data("old-workouts".utf8))
+    }
+
+    @Test func sampleDeletionsReachTheServer() async {
+        setAnchor("body_mass")
+        let gone = UUID()
+        health.deletedSamples[.bodyMass] = [gone]
+        okEverything()
+        await sync().syncAll()
+        let body = bodies("deleteHealthRecords").first ?? ""
+        #expect(body.contains(#""\#(gone.uuidString.lowercased())""#))
+        #expect(!body.contains("hk-"))
+    }
+
+    @Test func deletionFailureKeepsTheAnchor() async {
+        setAnchor("workouts")
+        health.deletedWorkouts = [UUID()]
+        stub.on("deleteHealthRecords", .json(503, "[]"))
+        await sync().syncAll()
+        #expect(store.data(forKey: anchorKey("workouts")) == Data("old-workouts".utf8))
+    }
+
+    // MARK: - B1: nights by sleep change
+
+    @Test func noSleepChangeSkipsNights() async {
+        markSynced("2026-11-08")
+        setAnchor("sleep")
+        health.nights = night(9)
+        okEverything()
+        await sync().syncAll()
+        #expect(!stub.ops.contains("ingestSleepNights"))
+        #expect(health.froms.isEmpty)
+    }
+
+    @Test func addedSleepRebuildsTheRecentWindow() async {
+        markSynced("2026-11-08")
+        setAnchor("sleep")
+        health.freshSleep = night(9)
+        okEverything()
+        await sync().syncAll()
+        #expect(health.froms.last == cal.date(from: DateComponents(year: 2026, month: 11, day: 6))!.addingTimeInterval(-18 * 3600))
+        let body = bodies("ingestSleepNights").first ?? ""
+        #expect(body.contains("hk-night-2026-11-09"))
+        #expect(!body.contains("windowFrom"))
+    }
+
+    @Test func addedOldSleepReachesBackToIt() async {
+        markSynced("2026-11-08")
+        setAnchor("sleep")
+        health.freshSleep = night(1)                                      // Sleep Cycle synced a week-old night late
+        okEverything()
+        await sync().syncAll()
+        #expect(health.froms.last == cal.date(from: DateComponents(year: 2026, month: 11, day: 1))!.addingTimeInterval(-18 * 3600))
+        #expect((bodies("ingestSleepNights").first ?? "").contains("hk-night-2026-11-01"))
+    }
+
+    @Test func sleepDeletionResendsTheSixtyDayWindow() async {
+        markSynced("2026-11-08")
+        setAnchor("sleep")
+        health.nights = nightsBack(40)
+        health.deletedSleep = [UUID()]
+        okEverything()
+        await sync().syncAll()
+        let sixty = cal.date(from: DateComponents(year: 2026, month: 9, day: 10))!
+        #expect(health.froms.last == sixty.addingTimeInterval(-18 * 3600))
+        let sent = bodies("ingestSleepNights")
+        #expect(sent.count == 2)                                          // 40 nights in batches of 30
+        #expect(sent.allSatisfy { $0.contains(#""windowFrom":"2026-09-10""#) && $0.contains(#""windowTo":"2026-11-09""#) })
+    }
+
+    @Test func nightCarriesSourceAppAndSleepingHr() async {
+        health.nights = night(9)
+        health.hr = HeartRateStats(avg: 54.4, max: 71)
+        okEverything()
+        await sync().syncAll()
+        let body = bodies("ingestSleepNights").first ?? ""
+        #expect(body.contains(#""sleepingHr":54"#))
+        #expect(body.contains(#""sourceApp":"SleepCycle""#))               // whitespace stripped by bodies()
+        let s = night(9)[0]
+        #expect(health.hrQueries.first == [DateInterval(start: s.start, end: s.end)])
+    }
+
+    // MARK: - B1: workouts, heart rate
+
+    @Test func workoutWithoutWriterHeartRateAsksHealth() async {
+        let start = now.addingTimeInterval(-5 * 3600)
+        health.workoutList = [WorkoutSample(uuid: UUID(), activity: "traditionalStrengthTraining", start: start,
+                                            end: start.addingTimeInterval(3600), kcal: 300, avgHr: nil, source: "Huawei Health",
+                                            distanceM: nil, bundle: "com.huawei.health")]
+        health.hr = HeartRateStats(avg: 118.6, max: 162)
+        okEverything()
+        await sync().syncAll()
+        let body = bodies("ingestWorkouts").first ?? ""
+        #expect(body.contains(#""avgHr":119"#))
+        #expect(body.contains(#""maxHr":162"#))
+        #expect(body.contains(#""sourceBundle":"com.huawei.health""#))
+        #expect(health.hrQueries.last == [DateInterval(start: start, end: start.addingTimeInterval(3600))])
+    }
+
+    @Test func workoutWithWriterHeartRateKeepsIt() async {
+        let start = now.addingTimeInterval(-5 * 3600)
+        health.workoutList = [WorkoutSample(uuid: UUID(), activity: "running", start: start, end: start.addingTimeInterval(1800),
+                                            kcal: 250, avgHr: 150, source: "Apple Watch", maxHr: 175, distanceM: 5200)]
+        okEverything()
+        await sync().syncAll()
+        let body = bodies("ingestWorkouts").first ?? ""
+        #expect(body.contains(#""avgHr":150"#) && body.contains(#""maxHr":175"#) && body.contains(#""distanceM":5200"#))
+        #expect(health.hrQueries.isEmpty)
+    }
+
+    @Test func heartRateBucketsFirstFourteenDaysThenFromTheirMark() async {
+        let b = cal.date(from: DateComponents(year: 2026, month: 11, day: 9, hour: 5, minute: 0))!
+        health.buckets = [HeartRateBucket(start: b, end: b.addingTimeInterval(300), avg: 61.24, min: 55, max: 70)]
+        okEverything()
+        let s = sync()
+        await s.syncAll()
+        #expect(health.bucketFroms.first == cal.date(from: DateComponents(year: 2026, month: 10, day: 26))!)
+        let body = bodies("ingestHealthSamples").first ?? ""
+        #expect(body.contains("hr-\(Int(b.timeIntervalSince1970))"))
+        #expect(body.contains(#""metric":"heart_rate""#))
+        #expect(body.contains(#""value":61.2"#))
+        #expect(body.contains(#""min":55"#) && body.contains(#""max":70"#))
+        #expect(s.lastSummary?.samples == 1)
+        okEverything()
+        await s.syncAll()
+        #expect(health.bucketFroms.last == cal.date(from: DateComponents(year: 2026, month: 11, day: 7))!)
+    }
+
+    // MARK: - B1: calendar history
+
+    @Test func calendarBackfillsSixtyDaysOnceInFortnightBatches() async {
+        calendarReader.list = [CalendarItem(externalId: "abc|2026-11-09T08:00:00Z", title: "Egyeztetés",
+                                            start: now.addingTimeInterval(3600), end: now.addingTimeInterval(5400), allDay: false, calendar: "Munka")]
+        okEverything()
+        let s = sync()
+        await s.syncAll()
+        let first = bodies("replaceCalendarDays")
+        #expect(first.count == 5)                                         // 60 past days + today + tomorrow = 62 days
+        let dayCounts = first.map { $0.components(separatedBy: #""date":"#).count - 1 }
+        #expect(dayCounts == [14, 14, 14, 14, 6])
+        #expect(first[0].contains(#""date":"2026-09-10""#))
+        #expect(first[4].contains(#""date":"2026-11-10""#))
+        #expect(first.joined().contains(#""externalId":"abc|2026-11-09T08:00:00Z""#))
+        #expect(s.lastSummary?.events == 1)
+        okEverything()
+        await s.syncAll()
+        let all = bodies("replaceCalendarDays")
+        #expect(all.count == 6)
+        #expect(all[5].components(separatedBy: #""date":"#).count - 1 == 3)
+        #expect(all[5].contains(#""date":"2026-11-08""#) && all[5].contains(#""date":"2026-11-10""#))
+    }
+
+    @Test func interruptedCalendarBackfillRunsAgain() async {
+        stub.on("replaceCalendarDays", .status(204))
+        stub.on("replaceCalendarDays", .json(500, "[]"))
+        let s = sync()
+        await s.syncAll()
+        #expect(s.calendarFailed)
+        okEverything()
+        await s.syncAll()
+        #expect(bodies("replaceCalendarDays").count == 2 + 5)
+    }
+
+    // MARK: - B1: background entry point
+
+    @Test func incrementalReportsSuccessWithoutProgressChurn() async {
+        health.samples[.hrvSdnn] = [hrv(40)]
+        okEverything()
+        let s = sync()
+        #expect(await s.syncIncremental())
+        guard case .done = s.phase else { Issue.record("phase \(s.phase)"); return }
+    }
+
+    @Test func incrementalFailureLeavesThePhase() async {
+        health.samples[.hrvSdnn] = [hrv(40)]
+        stub.on("ingestHealthSamples", .fail(URLError(.notConnectedToInternet)))
+        let s = sync()
+        #expect(await s.syncIncremental() == false)
+        #expect(s.phase == .idle)
+        #expect(store.data(forKey: anchorKey("hrv_sdnn")) == nil)
+    }
+
+    @Test func incrementalUnauthorizedSignsOut() async {
+        health.nights = night(9)
+        stub.on("ingestSleepNights", .json(401, #"[{"code":"AUTH_UNAUTHORIZED","type":"REQUEST"}]"#))
+        let s = sync()
+        #expect(await s.syncIncremental() == false)
+        #expect(s.phase == .failed(.unauthorized))
+    }
+
+    @Test func summaryStoredBeforeSamplesStillDecodes() throws {
+        let old = Data(#"{"nights":3,"days":2,"workouts":1,"events":4}"#.utf8)
+        let s = try JSONDecoder().decode(HealthSync.Summary.self, from: old)
+        #expect(s == .init(nights: 3, days: 2, workouts: 1, events: 4, samples: 0))
     }
 }

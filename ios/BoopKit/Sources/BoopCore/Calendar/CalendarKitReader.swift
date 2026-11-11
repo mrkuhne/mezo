@@ -24,7 +24,10 @@ public final class CalendarKitReader: CalendarReader, @unchecked Sendable {
     public func items(from: Date, to: Date) async throws -> [CalendarItem] {
         let predicate = store.predicateForEvents(withStart: from, end: to, calendars: nil)
         return store.events(matching: predicate).map {
-            CalendarItem(title: $0.title ?? "", start: $0.startDate, end: $0.endDate,
+            CalendarItem(externalId: calendarExternalId(
+                             itemId: $0.calendarItemExternalIdentifier ?? $0.eventIdentifier ?? $0.calendarItemIdentifier,
+                             occurrenceStart: $0.startDate),
+                         title: $0.title ?? "", start: $0.startDate, end: $0.endDate,
                          allDay: $0.isAllDay, calendar: $0.calendar?.title ?? "")
         }
     }
