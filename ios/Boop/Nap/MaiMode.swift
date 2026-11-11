@@ -72,12 +72,16 @@ func withReminder(_ steps: [PathStep], time: String?) -> [PathStep] {
     }
 }
 
-/// The device clock, which simulator review can move: `-previewEvening YES` reads 21:10 today.
+/// The device clock, which simulator review can move: `-previewEvening YES` reads 21:10 today;
+/// `-previewPhase reggel|napkozben|este` reads 08:10 / 13:40 / 21:10 today.
 enum BoopClock {
     static func now() -> Date {
         #if DEBUG
-        if UserDefaults.standard.bool(forKey: "previewEvening") {
-            return Calendar.current.date(bySettingHour: 21, minute: 10, second: 0, of: Date()) ?? Date()
+        let phaseTimes = ["reggel": (8, 10), "napkozben": (13, 40), "este": (21, 10)]
+        let hm = UserDefaults.standard.bool(forKey: "previewEvening")
+            ? (21, 10) : UserDefaults.standard.string(forKey: "previewPhase").flatMap { phaseTimes[$0] }
+        if let hm {
+            return Calendar.current.date(bySettingHour: hm.0, minute: hm.1, second: 0, of: Date()) ?? Date()
         }
         #endif
         return Date()

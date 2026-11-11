@@ -67,10 +67,12 @@ struct NapView: View {
         .background { if let morning { MorningTriggers(store: morning) } }
     }
 
-    /// Below the hero: the selected orb's tiles, path and cards, then the Health row (sync status and "refresh now"
-    /// stay one scroll away on every orb, as on the empty states).
+    /// Below the hero: the lens strip and the day's three phases, then the Health row (sync status and "refresh now"
+    /// stay one scroll away, as on the empty states).
     @ViewBuilder private func cards(_ brief: Brief, _ store: MorningStore, _ ctx: MaiContext) -> some View {
-        MaiBelow(brief: brief, store: store, ctx: ctx) { link in sheet = DetailSheet(link) }
+        // the drill-down page arrives with the next slice step; until then the door says so
+        MaBelow(brief: brief, store: store, ctx: ctx, phase: DayPhase.at(ctx.now),
+                onDrill: { hue in ctx.toast(soonToast("\(hue.name) részletesen")) }) { link in sheet = DetailSheet(link) }
             .sheet(item: $sheet) { kind in
                 DetailSheetView(kind: kind, brief: store.brief ?? brief, store: store, ctx: ctx) { sheet = nil }
             }
@@ -91,8 +93,9 @@ struct NapView: View {
             VStack(spacing: 0) {
                 NKTitleRow(bellCount: 0, onBell: { toast = "Az értesítések hamarosan" }, onPlus: nil, onAvatar: openAccount)
                     .padding(.top, 54)
-                NKTabStrip(tabs: ["Mai", "A napom", "Beszélgetés", "Rutin"],
-                           selected: Binding(get: { "Mai" }, set: { if $0 != "Mai" { toast = "\($0) · hamarosan" } }))
+                // the phases have nothing to scroll to yet: the strip only says where the day is
+                NKTabStrip(tabs: DayPhase.allCases.map(\.name),
+                           selected: .constant(DayPhase.at(BoopClock.now()).name))
                     .padding(.top, 10)
                 RisingOrb(hue: .forma, score: nil, display: copy.orb, caption: copy.orbCaption, motion: motion)
                     .frame(height: 260).padding(.top, 20)

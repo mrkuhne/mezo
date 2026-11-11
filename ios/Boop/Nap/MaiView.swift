@@ -64,19 +64,16 @@ func morningProblemCopy(_ p: MorningProblem) -> NapCopy {
                    sentence: MaiText.problemSentence, action: MaiText.retry)
 }
 
-// MARK: - The Nap tabs
-
-enum NapTab {
-    static let mai = "Mai", day = "A napom"
-    static let all = ["Mai", "A napom", "Beszélgetés", "Rutin"]
-    /// The tabs that have a page; the others answer "hamarosan".
-    static let built: Set<String> = [mai, day]
+/// "13:40" for the compact capsule.
+func clockLabel(_ date: Date, calendar: Calendar = .current) -> String {
+    let c = calendar.dateComponents([.hour, .minute], from: date)
+    return String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
 }
 
 // MARK: - The Mai hero (spec §5.1, §5.1a; spike AuraSunrise)
 
-/// Nap · Mai with the morning brief: title row, tabs, five mini orbs, the selected metric rising as the sun, its verdict
-/// and the lens action row. Tapping a mini orb re-colours the page. `below` is what follows the hero; it receives the
+/// Ma with the morning brief: title row, the phase strip (Reggel · Napközben · Este), five mini orbs, the selected metric rising as the sun, its verdict
+/// and the lens action row. Tapping a mini orb re-colours the page; tapping a phase scrolls to its section. `below` is what follows the hero; it receives the
 /// selected orb, Boop's voice and the page toast (`MaiContext`).
 struct MaiView<Below: View>: View {
     let brief: Brief
@@ -91,8 +88,8 @@ struct MaiView<Below: View>: View {
     @State private var toast: String?
     /// The undo of the toast on screen (nil = a plain toast).
     @State private var undo: (() -> Void)?
-    /// The Nap tab on screen: Mai or A napom (Beszélgetés and Rutin are "hamarosan").
-    @State private var tab = MaiView.initialTab
+    /// The phase the strip shows as selected (a tap scrolls there); starts on the clock's phase.
+    @State private var shownPhase = DayPhase.at(BoopClock.now())
 
     /// Alvás's bedtime reminder (local notification), shared with the bedtime card below.
     @State private var reminder = BedtimeReminder()
@@ -106,6 +103,7 @@ struct MaiView<Below: View>: View {
     private var copy: MaiCopy { maiCopy(brief, metricKey(for: selected)) }
     private var now: Date { _ = clockTick; return BoopClock.now() }
     private var evening: Bool { isEvening(now) }
+    private var phase: DayPhase { DayPhase.at(now) }
     /// Evening's dusk or kímélő's calm over the page; nil = the selected orb's own sky.
     private var sky: NKSky? { maiSky(evening: evening, recovery: brief.day.recovery != nil) }
     private var action: LensAction? {
@@ -119,18 +117,17 @@ struct MaiView<Below: View>: View {
 
     var body: some View {
         let c = copy
-        Group {
-            if tab == NapTab.day {
-                ANapomView(brief: brief, now: now, evening: evening, sky: sky) { header }
-            } else {
-                NKTabPage(hue: selected, sky: sky, heroHeight: nil,
-                          compact: NKCompact(palette: selected.orb, title: c.name, value: c.orbDisplay, line: c.headline)) {
-                    hero(c)
-                } content: {
-                    below(MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
-                                     toast: { show($0) }, undoToast: { show($0, undo: $1) },
-                                     now: now, evening: evening, reminder: reminder, toggleReminder: toggleReminder))
-                }
+        // The phase strip scrolls the page's own scroll view to a section (ScrollViewReader reaches the ScrollView
+        // inside NKTabPage; each section carries an invisible anchor above its title, `phaseAnchor`).
+        ScrollViewReader { proxy in
+            NKTabPage(hue: selected, sky: sky, heroHeight: nil,
+                      compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
+                                         line: "\(c.name) \(c.miniValue)")) {
+                hero(c, proxy: proxy)
+            } content: {
+                below(MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
+                                 toast: { show($0) }, undoToast: { show($0, undo: $1) },
+                                 now: now, evening: evening, reminder: reminder, toggleReminder: toggleReminder))
             }
         }
         .nkToast($toast, action: undo == nil ? nil : (toastAction ?? SessionText.undo)) { undo?(); undo = nil }
@@ -139,22 +136,24 @@ struct MaiView<Below: View>: View {
         .onAppear { if voice == nil { voice = BoopVoice() } }
         .onDisappear { motion.stop(); stopBreath(); voice?.stop() }
         .onChange(of: selected) { stopBreath(); voice?.stop() }
-        .onChange(of: tab) { stopBreath(); voice?.stop() }
+        .onChange(of: phase) { _, p in shownPhase = p }
         .onChange(of: voice?.isSpeaking ?? false) { _, talking in motion.talking = talking }
         .onChange(of: voice?.shown ?? "") { _, _ in if voice?.isSpeaking == true { motion.kick() } }
         // a new brief may move the bedtime: the reminder follows (and turns off if notifications were withdrawn)
         .task(id: reminderTarget(brief)) { await reminder.refresh(target: reminderTarget(brief)) }
     }
 
-    /// The title row and the Nap tabs, shared by Mai and A napom.
-    @ViewBuilder private var header: some View {
+    /// The title row and the phase strip; the clock's phase carries the dot, a tap scrolls to that section.
+    @ViewBuilder private func header(_ proxy: ScrollViewProxy) -> some View {
         NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: nil, onAvatar: openAccount)
             .padding(.top, 54)
-        NKTabStrip(tabs: NapTab.all,
-                   selected: Binding(get: { tab }, set: { t in
-                       if NapTab.built.contains(t) { tab = t } else { show(soonToast(t)) }
+        NKTabStrip(tabs: DayPhase.allCases.map(\.name),
+                   selected: Binding(get: { shownPhase.name }, set: { name in
+                       guard let p = DayPhase.allCases.first(where: { $0.name == name }) else { return }
+                       shownPhase = p
+                       withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) { proxy.scrollTo(phaseSectionId(p), anchor: .top) }
                    }),
-                   dot: morning ? NapTab.day : nil)
+                   dot: phase.name)
             .padding(.top, 10)
     }
 
@@ -167,16 +166,9 @@ struct MaiView<Below: View>: View {
         return .forma
     }
 
-    private static var initialTab: String {
-        #if DEBUG
-        if UserDefaults.standard.string(forKey: "previewTab") == "napom" { return NapTab.day }
-        #endif
-        return NapTab.mai
-    }
-
-    private func hero(_ c: MaiCopy) -> some View {
+    private func hero(_ c: MaiCopy, proxy: ScrollViewProxy) -> some View {
         VStack(spacing: 0) {
-            header
+            header(proxy)
             if let r = brief.day.recovery {
                 KimeloBanner(recovery: r) { show(soonToast("Kilépés a kímélő módból")) }
                     .padding(.top, 14)
@@ -216,8 +208,6 @@ struct MaiView<Below: View>: View {
         toastAction = action
         toast = text
     }
-
-    private var morning: Bool { (5..<12).contains(Calendar.current.component(.hour, from: now)) }
 
     private func primary() {
         if breathing { stopBreath(); return }
