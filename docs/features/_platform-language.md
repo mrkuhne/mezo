@@ -251,6 +251,8 @@ The five rules:
 
 ## 5. Integrations
 
+- **B1 touch-up (2026-11-11):** `backend/src/main/resources` gained B1 Liquibase changesets and the wearable calendar-day cap change; no message bundles or language resolution changed (verified).
+
 - **Auth & account** ([`_platform-auth-security.md`](_platform-auth-security.md)). *Contract:* `me.language` is the account value of the resolution order; `LanguageProvider` is the only place that aligns the store with it (and it remounts nothing — `LanguageBoundary` does). Registration sends the resolved language.
 - **Design system / kit** ([`_platform-design-system.md`](_platform-design-system.md)). *Contract:* the Folyadék kit's own strings (`kit` catalog), the frame (`frame` catalog) and `FrameProvider` titles read the catalog; a kit piece takes text as props and owns only its fixed words (Back, Close, …). `memberLabel` / `memberMeta` give the team field names.
 - **Settings** ([`settings.md`](settings.md)). *Contract:* the Nyelv block is the one writer of the preference (`useLanguageSetting`); the Settings pages read the `settings` catalog.

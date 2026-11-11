@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-10-12
+updated: 2026-11-11
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -938,6 +938,8 @@ equivalent validation code** — `kind` is a plain string on the wire (§3a), an
 the OpenAPI schema itself (1..100).
 
 ## 5. Integrations
+
+- **Boop iOS APNs registration (B1, `mezo-r36n9.11`):** `DeviceController` (`PUT /api/devices/apns` → 204 upsert, `DELETE /api/devices/apns/{deviceId}` → 204; contract `api/feature/device/device.yml`, tag `Device`) → `ApnsDeviceService` → `apns_device` table (device id from the phone's keychain, token, environment `sandbox|production`, bundle id, app version, last seen, invalidated at; a token registered by another account is moved to the caller). **Nothing is sent yet** — no APNs sender exists; the iOS `PushRegistrar` hard-codes the sandbox environment. Push needs the paid Apple team: follow-up `mezo-r36n9.19`. See [`boop-ios.md`](boop-ios.md) §3.
 
 - **Proactive** ([`proactive.md`](proactive.md)) — **now wired.** `AnchorResolver` reads
   `CompanionMessageRepository` (kinds `morning`/`midday`/`evening`/`sleep`/`weight` — replaced the
