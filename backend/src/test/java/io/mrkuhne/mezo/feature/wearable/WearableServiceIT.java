@@ -187,7 +187,7 @@ class WearableServiceIT extends AbstractIntegrationTest {
         List<WorkoutIn> tooManyWorkouts = IntStream.range(0, 301)
             .mapToObj(i -> workout("hk-" + i, "2026-11-09T07:30:00+01:00")).toList();
         assertThatThrownBy(() -> workouts.ingest(user, tooManyWorkouts)).isInstanceOf(SystemRuntimeErrorException.class);
-        List<CalendarDayIn> tooManyCalendarDays = IntStream.range(0, 4)
+        List<CalendarDayIn> tooManyCalendarDays = IntStream.range(0, 32)
             .mapToObj(i -> new CalendarDayIn().date(D2.plusDays(i)).events(List.of())).toList();
         assertThatThrownBy(() -> calendar.replace(user, tooManyCalendarDays)).isInstanceOf(SystemRuntimeErrorException.class);
     }

@@ -695,13 +695,14 @@ mezo:
     occurred-at-clamp-hours: 24
   # Boop Apple Health + calendar ingestion (mezo-r36n9.2) — binds WearableProperties. A batch over
   # its cap is a 400 WEARABLE_BATCH_TOO_LARGE; the iOS client sends 30 nights / 60 days / 100
-  # workouts per call, well below these.
+  # workouts / 500 samples per call, well below these, and the calendar backfill (60 past days,
+  # mezo-r36n9.11) in batches of 14 days, so max-calendar-days must stay >= 14.
   wearable:
     max-sleep-nights: 100
     max-days: 120
     max-workouts: 300
     max-samples: 1000
-    max-calendar-days: 3
+    max-calendar-days: 31
     max-events-per-day: 150
     zone: Europe/Budapest
     reconcile-min-overlap-ratio: 0.5
