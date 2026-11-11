@@ -1,0 +1,11 @@
+# Boop standalone — owner decisions log
+
+Issue `mezo-r36n9.9`. Each decision was put to the owner in the CLAUDE.md §Communication format.
+
+| # | Date | Decision | Owner's choice | Consequence |
+|---|---|---|---|---|
+| 1 | 2026-11-11 | The spine | **One home screen + daily loop** | "Ma" home (morning plan → live proposal cards with "why?", never applied without OK → evening close <60 s); sleep/food/training/energy become identical drill-downs; bottom bar Ma · Terv · Napló · Boop + global "+". Napkelte look (glass, sky, orb) stays; navigation and page structure change → new simulator spike. Supersedes the five-domain icon bar of the Napkelte spec. |
+| 2 | 2026-11-11 | One account, one history | **The original (web) account** | Boop signs in with the original account; the Boop account's small data set (Health nights, daily_metric, wearable_workout, calendar_event, boop_brief) is migrated into it. The production write needs a separate per-change owner OK before execution. Unused web-only features stay in the backend, hidden from Boop. |
+| 3 | 2026-11-11 | Paid Apple Developer Program | **Yes, paid** ($99/yr) | Subscribe when the first slice needing it starts (data foundation: background HealthKit delivery). Unlocks APNs push, background delivery, a watchOS app without weekly expiry, longer-lived installs/TestFlight. Supersedes the "free Apple ID, weekly reinstall" decision of 2026-11-09. Bundle ids must be re-registered under the paid team — plan it in that slice. |
+| 4 | 2026-11-11 | What comes first after repair + data foundation | **The daily loop** | Order: repair → data foundation → daily loop (Ma: morning plan, check-in with biomarker snapshot, goal of the day, journal, <60 s evening close) → the Plan (diet + training + weight goal) → day capacity (calendar scoring, units, doable-day prediction, live proposals). Rationale: restarts dormant logging and builds the calibration data the Plan and capacity need. Food/training native surfaces slot in where the loop and Plan need them (spec decides). |
+| 5 | 2026-11-11 | Visibility of domain agents | **One voice: Boop** | Boop is the only speaker. Domain experts (Alvás, Mozgás, Étkezés, Közérzet, Szkeptikus) work in the background and appear only inside a proposal's "miért?" view as short labelled lines. No team wall / expert pages in Boop. |

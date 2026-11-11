@@ -1,5 +1,9 @@
 # Boop — native iOS app, v1 (the morning) — design
 
+> **Re-planned 2026-11-11:** Boop is now a standalone app built in slices **B0–B8** —
+> [`2026-11-11-boop-standalone-design.md`](2026-11-11-boop-standalone-design.md). This spec's slice map (S4) and the
+> "new Boop account" + "free Apple ID" decisions are superseded there; S1–S3 as shipped remain the base.
+
 > **Look superseded 2026-11-10:** the visual canon is now **Napkelte** —
 > [`2026-11-10-boop-napkelte-design.md`](2026-11-10-boop-napkelte-design.md). Everything here that is not about looks
 > (data, backend, install, slices, owner decisions in §8) still holds.

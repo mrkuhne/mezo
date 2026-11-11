@@ -1,5 +1,8 @@
 # Boop — the "Napkelte" look (dark glass, painted sky, the rising orb) — design
 
+> **2026-11-11:** the look stays canon, but the five-domain bottom bar and page skeleton are replaced by the
+> one-home spine (Ma · Terv · Napló · Boop + `+`) of [`2026-11-11-boop-standalone-design.md`](2026-11-11-boop-standalone-design.md) §3.
+
 - **Date:** 2026-11-10 · **Epic:** `mezo-r36n9` · **Issue:** `mezo-r36n9.3` · **Status:** draft for owner OK — the orb-as-lens Mai (§5.1a) and day path (§5.1b) and the per-orb pages, path, ground, icon-only bar and Forma (§5.1a–b) approved in the simulator 2026-11-10
 - **Replaces:** the **Lágy** look for Boop (spec `2026-11-09-boop-ios-v1-design.md` §0 and §4.2 visuals). Everything in
   that spec that is *not* about looks — data, backend, install, slices, the six moments, owner decisions in its §8 —
