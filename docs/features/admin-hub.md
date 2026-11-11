@@ -323,7 +323,8 @@ backend `LlmCallContext` feature slug ships with no Hungarian entry — it scans
 variant, resolved in TWO passes so a constant used through another class, e.g.
 `TeamChatBudget.FEATURE` read from `TeamChatVoiceWriter`/`TeamChatReplyVoiceWriter`, is still
 found even though the constant's OWN file never calls `new LlmCallContext(`) and asserts every
-discovered slug is a `FEATURE_LABELS` key. Latest entry: `team_chat` („Csapat-chat (élő
+discovered slug is a `FEATURE_LABELS` key. Latest entry: `boop_brief` („Boop reggeli összefoglaló”, Boop S3; added
+2026-11-11 after the gate went red on main). Entry before it: `team_chat` („Csapat-chat (élő
 beszélgetés)”, Emlékezet S7 `mezo-d6ivw.7`) — the csapatfal ügy-beszélgetés's guarded voice calls
 (nyitó/lezáró sorok és a felhasználó válaszára adott karakter-hang). (Previous entry:
 `companion_recheck` („Tudás-újraellenőrzés”, `mezo-d6ivw.2`) — the quarterly re-check of a
