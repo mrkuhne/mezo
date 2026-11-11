@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed (2026-11-11) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -63,6 +63,12 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-11 — Boop B0 · javítás — újra tanul a memória, újra fut az éjszakai konzílium (`mezo-r36n9.10`).**
+  Kiderült, miért állt le három hétre az AI emlékezete: a Google-nál elfogyott az előre befizetett keret. Az
+  emlékezés átkerült az OpenAI-hoz (a csevegés is ott fut), a régi bejegyzések újrafeldolgozása elindult. Az
+  éjszakai konzílium 49 éjjel bukott el egyetlen törölt beszélgetés miatt — ez javítva. A szkeptikus hang nem
+  kap többé „elfogyott a keret” választ, a heti tény-összevonás végre fut, a memóriakeresés gyorsabb, és két új
+  figyelmeztetés jelez, ha a memória újra elakadna. [terv](../superpowers/plans/2026-11-11-boop-b0-javitas.md).
 - **2026-11-11 — Boop újratervezés — önálló, letisztult app lesz a Boopból (`mezo-r36n9.9`).**
   Végignéztük a mostani Mezo minden területét (tíz kódtérkép, a Lágy-lista, webes kutatás), és öt döntés
   született: egy főképernyő napi ritmussal (Ma · Terv · Napló · Boop + „+”), az eredeti fiók marad, fizetős
