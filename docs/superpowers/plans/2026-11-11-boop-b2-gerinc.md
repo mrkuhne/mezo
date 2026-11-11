@@ -17,7 +17,7 @@
 - The companion is **Boop** in every user-visible string, never "Mezo". One voice: expert names (Alvás, Mozgás, Étkezés, Közérzet, Szkeptikus) appear only as labels inside "miért?".
 - **Nothing changes without the owner's tap**: a proposal applies only on *Elfogadom*; *Most nem* only hides it for today.
 - Proposals sit **inline in the Ma timeline at MOST** (owner, 2026-11-11), never as a pinned queue. Cap: 3 per day.
-- Ma is **one scroll** (Reggel, Napközben, Este); a finished phase collapses; the phase strip scrolls to a section.
+- Ma is **one scroll** (Reggel, Napközben, Este); the Reggel plan card collapses once accepted (Napközben stays open); the phase strip scrolls to a section.
 - Bottom bar: icons only, names as accessibility labels; the "+" is its own glass circle beside the bar.
 - **Keep the shipped backdrop motion** (owner, 2026-11-11): switching places in the bar slides the painted landscape toward the tapped place while the two skies blend (`NKBackdropPanorama`, travel 0.5, 0.95 s smooth; reduced motion = pure cross-fade), and tapping a mini orb cross-fades the page's sky (0.6 s) with the spring re-colour. Neither may be replaced by a plain swap.
 - Phase boundaries reuse the shipped clock rules: Reggel 04:00–10:00, Napközben 10:00–18:00, Este 18:00–04:00 (`isEvening` = hour ≥ 18).

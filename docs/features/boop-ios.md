@@ -104,24 +104,24 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
   painted landscape (`NKBackdropPanorama`) toward the tapped place while the two skies blend (reduced motion = cross-fade),
   and a mini-orb tap still cross-fades the page sky. While a room is open the bar slides away.
   - **Ma** (`Nap/NapView` → `MaiView`) is **one scroll**: the S3 hero (orb, verdict, five mini orbs, lens strip) plus a
-    **phase strip** Reggel · Napközben · Este that scrolls to its section; a finished phase collapses. The phase follows the clock
+    **phase strip** Reggel · Napközben · Este that scrolls to its section; the Reggel plan card collapses once accepted (Napközben stays open). The phase follows the clock
     (`BoopCore/Morning/DayPhase`): Reggel 04:00–10:00, Napközben 10:00–18:00, Este 18:00–04:00 (wakes at 04:00, 10:00, 18:00).
     - **Reggel:** the plan card (`DayPlan`: the day's rows from the brief) with **"Elfogadom a napot"**, stored per day, and **Boop mondja**
       (tappable phrases, the meetings phrase opens the detail sheet).
     - **Napközben:** the whole day as one quiet path in clock order; proposals hang inline at **MOST** (never a pinned queue).
     - **Este:** the close-out frame; **"Lezárom" still answers "hamarosan"** until B3 (evening close).
   - **Proposals** (`BoopCore/Morning/Proposals`, `Boop/Nap/ProposalDesk`, kit `NKProposalCard`): B2's one live source is the brief's
-    meeting conflict, which becomes a **move-session** proposal. **Elfogadom** = `moveSession` with an undo toast (and "Vissza ..." on
-    the card); **Most nem** hides it for that day only (dismissed keys under `dismissedProposals` in UserDefaults); **miért?** opens a
+    meeting conflict, which becomes a **move-session** proposal. **Elfogadom** = `moveSession` with an undo toast (the "Vissza ..." button lives on
+    the Mozgás room's session card; the settled proposal row just says "Elfogadtad"); **Most nem** hides it for that day only (dismissed keys under `dismissedProposals` in UserDefaults); **miért?** opens a
     page-level sheet with the facts plus only the expert lines the brief carries — Közérzet / Szkeptikus lines arrive with B8. Cap **3 per day**.
     Nothing changes without the tap. Ma and the rooms share one desk, so accepting in a room shows on Ma.
   - **Rooms** (`Nap/MaDrill`, kit `NKDrillPage`): a tap on an orb (lens strip row, the big orb, a timeline station) pushes the orb's room
     (Forma, Alvás, Mozgás, Fuel, Pulzus) in a `NavigationStack` inside Ma. Four sections: **1 A szint** (number, caption, Alvás hypnogram,
     the orb's tiles, detail-sheet row), **2** the week (deep-sleep / resting-HR bars, Forma's energy line, else an honest "hamarosan" line),
-    **3 A napok mögötte** (the days behind the week, today on top), **4 Mit tehetsz** (the orb's proposal plus the S3 orb path cards re-homed).
-    `NKDrillPage` takes an optional inner tab row (unused in B2; B4 Étel / B5 Edzés will use it). Swipe-back via `Shell/SwipeBack.swift`.
+    **3 A napok mögötte** (the days behind the week, today on top), **4 Mit tehetsz** (the orb's proposal plus the S3 orb path cards re-homed). A kept conflict ("Marad így") hides the proposal too, for the rest of the day.
+    `NKDrillPage` takes an optional inner tab row (unused in B2; B4 Étel / B5 Edzés will use it). Swipe-back via `Nap/RoomSwipeBack.swift`, scoped to the room: it stands in as the pop gesture's delegate only while a room is on screen and restores the original on exit.
   - **"+" capture sheet** (`Capture/CaptureSheet`): the frame only — every item (étel, edzés, súly, ...) says "hamarosan" until B3/B4.
-  - **Account sheet** (`Shell/AccountSheet`, opened from the Boop place): the account card with the confirmed sign-out
+  - **Account sheet** (`Shell/AccountSheet`, opened from the avatar on Ma's title row, accessibility label "Fiók"): the account card with the confirmed sign-out
     (the old Én account section, `EnAccountSection`).
   - **Placeholders:** Terv, Napló and Boop (`Terv/TervView`, `Naplo/NaploView`, `BoopChat/BoopTabView`) are honest frames with their own sky until B6 / B3 / B3+B8.
   - **Presentations stay at page level** (§9): the detail sheet and miért? hang outside the room stack, so they reach Ma and every room.
@@ -135,7 +135,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
   e-mail show under their own field.
 - **Onboarding** (`OnboardingFlow`): Pár adat rólad (sex, height ruler, birth date wheel) → Mennyi ma?
   (weight ruler, 0,1 kg) → "Szia, Boop vagyok" → shell. Resumes at the right step after an interruption.
-- **Shell** (`ShellView`): superseded by B2 — see **The spine (B2 Gerinc)** below.
+- **Shell** (`ShellView`): superseded by B2 — see **The spine (B2 Gerinc)** above.
 - **Connect Health + calendar** (`ConnectFlow`, S2): after the first weigh-in, and from Nap's
   "Kössük össze az Egészséget és a naptárat" row. *Kössük össze* lists Apple Egészség and Naptár, hints to
   pick the full data range on the iPhone's Health sheet (iOS 26 offers "last 30 days" vs "all"), then asks
@@ -408,6 +408,6 @@ S3: `api/feature/boop/boop.yml` · `backend/…/feature/boop/service/{BoopDayAss
 `…/feature/boop/controller/BoopController.java` · `…/feature/boop/config/BoopProperties.java` · `backend/src/main/resources/db/changelog/1.1.0/script/202611101300_mezo-r36n9.7_boop_brief.sql` ·
 `ios/BoopKit/Sources/BoopCore/Morning/{Brief,MorningClient,PathBuilder,Lens,BoopVoice}.swift` · `ios/Boop/Nap/{MaiView,MaiTiles,MaiPath,LensActionRow,ObservationStack,SessionMove,MaiMode,BedtimeReminder,DetailSheet,SleepSheet,PulseSheet,DaySheet,ANapomView,NapView}.swift` ·
 `ios/Boop/Shell/ShellView.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Frames.swift` (`NKBackdropPanorama`)
-B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet,SwipeBack}.swift` · `ios/Boop/Capture/CaptureSheet.swift` · `ios/Boop/{Terv,Naplo,BoopChat}/*` ·
-`ios/Boop/Nap/{MaPhases,MaDrill,ProposalDesk}.swift` · `ios/BoopKit/Sources/BoopCore/Morning/{DayPhase,DayPlan,Proposals}.swift` ·
+B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet}.swift` · `ios/Boop/Capture/CaptureSheet.swift` · `ios/Boop/{Terv,Naplo,BoopChat}/*` ·
+`ios/Boop/Nap/{MaPhases,MaDrill,ProposalDesk,RoomSwipeBack}.swift` · `ios/BoopKit/Sources/BoopCore/Morning/{DayPhase,DayPlan,Proposals}.swift` ·
 `ios/BoopKit/Sources/BoopDesign/Napkelte/{SpineBar,Proposal,Drill}.swift`
