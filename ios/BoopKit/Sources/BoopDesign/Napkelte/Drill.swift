@@ -2,14 +2,20 @@ import SwiftUI
 
 /// A domain drill-down: 360 pt painted head (glass back circle, crumb, orb with the hue's glow, eyebrow, serif headline,
 /// one sentence), numbered glass sections below, floating lights and the mirrored land at the end.
+///
+/// A room with depth (Étel, Edzés) carries its own inner top tabs: pass `tabs` and `selectedTab` and an `NKTabStrip`
+/// sits under the verdict block; the caller switches `content` on the selected tab. No tabs = a single-page room.
 public struct NKDrillPage<Content: View>: View {
     let hue: Hue, crumb: String, eyebrow: String, headline: String, sentence: String, level: Double?
+    let tabs: [String]
+    let selectedTab: Binding<String>?
     let onBack: () -> Void
     let content: Content
     public init(hue: Hue, crumb: String, eyebrow: String, headline: String, sentence: String, level: Double?,
+                tabs: [String] = [], selectedTab: Binding<String>? = nil,
                 onBack: @escaping () -> Void, @ViewBuilder content: () -> Content) {
         self.hue = hue; self.crumb = crumb; self.eyebrow = eyebrow; self.headline = headline; self.sentence = sentence
-        self.level = level; self.onBack = onBack; self.content = content()
+        self.level = level; self.tabs = tabs; self.selectedTab = selectedTab; self.onBack = onBack; self.content = content()
     }
 
     public var body: some View {
@@ -42,6 +48,9 @@ public struct NKDrillPage<Content: View>: View {
                                 .foregroundStyle(.white.opacity(0.85)).padding(.horizontal, 28)
                         }
                         .padding(.top, level == nil ? 70 : 34)
+                        if drillPageShowsTabs(tabs, selected: selectedTab), let selectedTab {
+                            NKTabStrip(tabs: tabs, selected: selectedTab).padding(.top, 22)
+                        }
                     }
                 }
                 VStack(spacing: 14) { content }
@@ -56,6 +65,9 @@ public struct NKDrillPage<Content: View>: View {
         .preferredColorScheme(.dark)
     }
 }
+
+/// The inner tab row shows only when there are tabs and a selection to drive.
+public func drillPageShowsTabs(_ tabs: [String], selected: Binding<String>?) -> Bool { !tabs.isEmpty && selected != nil }
 
 /// One numbered glass section of a drill-down ("1  A SZINT").
 public struct NKDrillSection<C: View>: View {

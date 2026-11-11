@@ -47,6 +47,19 @@ import SwiftUI
     #expect(render(NKDrillPage(hue: .forma, crumb: "c", eyebrow: "e", headline: "h", sentence: "s", level: nil, onBack: {}) { Text("x") }, height: 900) != nil)
 }
 
+@Test @MainActor func drillPageRendersWithInnerTabs() {
+    var tab = "Receptek"
+    let selected = Binding(get: { tab }, set: { tab = $0 })
+    let v = NKDrillPage(hue: .fuel, crumb: "Ma · Étel", eyebrow: "Étel · ma", headline: "Jól állsz", sentence: "Két étkezés megvan.",
+                        level: 0.6, tabs: ["Ma", "Receptek", "Kamra", "Hét"], selectedTab: selected, onBack: {}) {
+        NKDrillSection(number: 1, label: "RECEPTEK") { Text(tab) }
+    }
+    #expect(render(v, height: 900) != nil)
+    #expect(drillPageShowsTabs(["Ma", "Receptek"], selected: selected))
+    #expect(!drillPageShowsTabs([], selected: selected))
+    #expect(!drillPageShowsTabs(["Ma"], selected: nil))
+}
+
 @Test @MainActor func titleRowRendersWithoutPlus() {
     #expect(render(NKTitleRow(onBell: {}, onAvatar: {}), height: 60) != nil)
 }
