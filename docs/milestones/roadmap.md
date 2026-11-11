@@ -70,7 +70,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   kézzel megadott érzet összeolvad. A súly az Egészségből is jön, a törlések
   átmennek, az edzések nem számolódnak duplán a naplózott edzéssel, a naptár története megmarad, és az
   értesítési regisztráció is kész (küldés még nincs). A két fiók összevonásához migrációs szkript készült
-  (az éles futtatáshoz külön engedély kell). **Az ingyenes Apple-csapaton készült**; a fizetős csapat
+  (a tulajdonos engedélyével 2026-11-11-én lefutott, a telefon már az eredeti fiókkal szinkronizál). **Az ingyenes Apple-csapaton készült**; a fizetős csapat
   ~2026-11-25-re várható, a hozzá tartozó teendők: `mezo-r36n9.19`.
   [terv](../superpowers/plans/2026-11-11-boop-b1-adatalap.md), [működés](../features/boop-ios.md).
 
