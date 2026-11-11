@@ -16,6 +16,8 @@ public record WearableProperties(
         @Min(1) @Max(1000) int maxSleepNights,
         @Min(1) @Max(1000) int maxDays,
         @Min(1) @Max(2000) int maxWorkouts,
+        /** Health samples per POST /samples (and ids per POST /deletions). */
+        @Min(1) @Max(1000) int maxSamples,
         @Min(1) @Max(31) int maxCalendarDays,
         @Min(1) @Max(1000) int maxEventsPerDay,
         /** Calendar zone that decides "today" for the one-sleep-event rule and workout days. */

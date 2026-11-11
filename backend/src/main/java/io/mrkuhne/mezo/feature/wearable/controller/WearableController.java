@@ -3,12 +3,17 @@ package io.mrkuhne.mezo.feature.wearable.controller;
 import io.mrkuhne.mezo.api.controller.WearableApi;
 import io.mrkuhne.mezo.api.dto.CalendarDaysRequest;
 import io.mrkuhne.mezo.api.dto.DailyMetricBatchRequest;
+import io.mrkuhne.mezo.api.dto.HealthDeletionRequest;
+import io.mrkuhne.mezo.api.dto.HealthDeletionResult;
+import io.mrkuhne.mezo.api.dto.HealthSampleBatchRequest;
 import io.mrkuhne.mezo.api.dto.IngestResult;
 import io.mrkuhne.mezo.api.dto.SleepNightBatchRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutBatchRequest;
 import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
 import io.mrkuhne.mezo.feature.wearable.service.CalendarSnapshotService;
 import io.mrkuhne.mezo.feature.wearable.service.DailyMetricService;
+import io.mrkuhne.mezo.feature.wearable.service.HealthSampleService;
+import io.mrkuhne.mezo.feature.wearable.service.WearableDeletionService;
 import io.mrkuhne.mezo.feature.wearable.service.WearableSleepService;
 import io.mrkuhne.mezo.feature.wearable.service.WearableWorkoutService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -26,6 +31,8 @@ public class WearableController implements WearableApi {
     private final DailyMetricService dailyMetricService;
     private final WearableWorkoutService workoutService;
     private final CalendarSnapshotService calendarService;
+    private final HealthSampleService sampleService;
+    private final WearableDeletionService deletionService;
     private final WearableProperties properties;
     private final CurrentUserId currentUserId;
 
@@ -48,5 +55,16 @@ public class WearableController implements WearableApi {
     @Override
     public void replaceCalendarDays(CalendarDaysRequest request) {
         calendarService.replace(currentUserId.get(), request.getDays());
+    }
+
+    @Override
+    public IngestResult ingestHealthSamples(HealthSampleBatchRequest request) {
+        return sampleService.ingest(currentUserId.get(), request.getSamples(),
+            LocalDate.now(ZoneId.of(properties.zone())));
+    }
+
+    @Override
+    public HealthDeletionResult deleteHealthRecords(HealthDeletionRequest request) {
+        return new HealthDeletionResult(deletionService.delete(currentUserId.get(), request.getExternalIds()));
     }
 }

@@ -5570,6 +5570,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/wearable/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upsert Apple Health samples with provenance (body_mass also lands in weight_log) */
+        post: operations["ingestHealthSamples"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wearable/deletions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Soft-delete Health records (samples, workouts, Health weigh-ins) by the client's external ids */
+        post: operations["deleteHealthRecords"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boop/brief": {
         parameters: {
             query?: never;
@@ -12905,6 +12939,36 @@ export interface components {
             /** Format: date */
             windowTo?: string;
             nights: components["schemas"]["SleepNightIn"][];
+        };
+        HealthSampleIn: {
+            /** @description HealthKit uuid or a derived bucket key */
+            externalId: string;
+            /** @enum {string} */
+            metric: "heart_rate" | "hrv_sdnn" | "respiratory_rate" | "oxygen_saturation" | "wrist_temperature" | "vo2max" | "hr_recovery_1min" | "walking_hr_avg" | "body_mass" | "body_fat_pct" | "lean_body_mass" | "mindful_session" | "state_of_mind" | "sleeping_breathing_disturbances";
+            /** Format: date-time */
+            start: string;
+            /** Format: date-time */
+            end: string;
+            /** Format: double */
+            value: number;
+            unit?: string;
+            sourceName?: string;
+            sourceBundle?: string;
+            device?: string;
+            userEntered?: boolean;
+            /** @description Free-form extras such as bucket min and max */
+            meta?: {
+                [key: string]: unknown;
+            };
+        };
+        HealthSampleBatchRequest: {
+            samples: components["schemas"]["HealthSampleIn"][];
+        };
+        HealthDeletionRequest: {
+            externalIds: string[];
+        };
+        HealthDeletionResult: {
+            deleted: number;
         };
         DailyMetricIn: {
             /** Format: date */
@@ -28945,6 +29009,90 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    ingestHealthSamples: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthSampleBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Upserted; counts of new and updated rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResult"];
+                };
+            };
+            /** @description Validation failure (end before start); WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteHealthRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthDeletionRequest"];
+            };
+        };
+        responses: {
+            /** @description Deleted; count of live rows that were soft-deleted (idempotent) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthDeletionResult"];
+                };
             };
             /** @description Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap */
             400: {

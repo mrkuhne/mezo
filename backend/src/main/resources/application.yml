@@ -700,6 +700,7 @@ mezo:
     max-sleep-nights: 100
     max-days: 120
     max-workouts: 300
+    max-samples: 1000
     max-calendar-days: 3
     max-events-per-day: 150
     zone: Europe/Budapest

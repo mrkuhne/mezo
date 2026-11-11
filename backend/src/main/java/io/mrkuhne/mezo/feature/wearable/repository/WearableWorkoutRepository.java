@@ -39,4 +39,12 @@ public interface WearableWorkoutRepository extends JpaRepository<WearableWorkout
 
     /** Inclusive day range, oldest first (Boop S3 brief inputs, mezo-r36n9.7). */
     List<WearableWorkoutEntity> findByCreatedByAndDateBetweenOrderByDate(UUID createdBy, LocalDate from, LocalDate to);
+
+    /** Soft-deletes the owner's live workouts with these external ids; returns how many were live. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+        update wearable_workout set is_deleted = true, updated_at = now()
+        where created_by = :createdBy and external_id in (:ids) and is_deleted = false
+        """, nativeQuery = true)
+    int softDeleteByExternalIds(@Param("createdBy") UUID createdBy, @Param("ids") Collection<String> ids);
 }

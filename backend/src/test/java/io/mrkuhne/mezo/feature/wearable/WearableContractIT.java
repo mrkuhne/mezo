@@ -7,6 +7,10 @@ import io.mrkuhne.mezo.api.dto.CalendarDaysRequest;
 import io.mrkuhne.mezo.api.dto.CalendarEventIn;
 import io.mrkuhne.mezo.api.dto.DailyMetricBatchRequest;
 import io.mrkuhne.mezo.api.dto.DailyMetricIn;
+import io.mrkuhne.mezo.api.dto.HealthDeletionRequest;
+import io.mrkuhne.mezo.api.dto.HealthDeletionResult;
+import io.mrkuhne.mezo.api.dto.HealthSampleBatchRequest;
+import io.mrkuhne.mezo.api.dto.HealthSampleIn;
 import io.mrkuhne.mezo.api.dto.IngestResult;
 import io.mrkuhne.mezo.api.dto.SleepNightBatchRequest;
 import io.mrkuhne.mezo.api.dto.SleepNightIn;
@@ -73,5 +77,42 @@ class WearableContractIT extends ApiIntegrationTest {
     void malformedBedtimeIsBadRequest() {
         var r = exchangeForResponse(HttpMethod.POST, "/api/wearable/sleep-nights", nights("7:5"), ownerAuthHeaders());
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    private static HealthSampleBatchRequest samples(String end) {
+        OffsetDateTime s = OffsetDateTime.parse("2026-11-09T08:00:00+01:00");
+        return new HealthSampleBatchRequest().samples(List.of(new HealthSampleIn().externalId("hs-1")
+            .metric(HealthSampleIn.MetricEnum.BODY_MASS).start(s).end(OffsetDateTime.parse(end)).value(80.4)
+            .unit("kg").meta(java.util.Map.of("k", 1))));
+    }
+
+    @Test
+    void samplesAndDeletionsRoundTrip() {
+        HttpHeaders h = ownerAuthHeaders();
+        IngestResult r = postForBody("/api/wearable/samples", samples("2026-11-09T08:01:00+01:00"), h, HttpStatus.OK, IngestResult.class);
+        assertThat(r.getInserted()).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select weight_kg from weight_log where external_id = 'hs-1'", BigDecimal.class))
+            .isEqualByComparingTo("80.40");
+        HealthDeletionResult d = postForBody("/api/wearable/deletions",
+            new HealthDeletionRequest().externalIds(List.of("hs-1")), h, HttpStatus.OK, HealthDeletionResult.class);
+        assertThat(d.getDeleted()).isEqualTo(2);
+        d = postForBody("/api/wearable/deletions", new HealthDeletionRequest().externalIds(List.of("hs-1")), h,
+            HttpStatus.OK, HealthDeletionResult.class);
+        assertThat(d.getDeleted()).isZero();
+    }
+
+    @Test
+    void samplesEndBeforeStartIsBadRequest() {
+        var r = exchangeForResponse(HttpMethod.POST, "/api/wearable/samples", samples("2026-11-09T07:00:00+01:00"), ownerAuthHeaders());
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void samplesAndDeletionsWithoutTokenAreUnauthorized() {
+        assertThat(exchangeForResponse(HttpMethod.POST, "/api/wearable/samples", samples("2026-11-09T08:01:00+01:00"),
+            new HttpHeaders()).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(exchangeForResponse(HttpMethod.POST, "/api/wearable/deletions",
+            new HealthDeletionRequest().externalIds(List.of("x")), new HttpHeaders()).getStatusCode())
+            .isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 }

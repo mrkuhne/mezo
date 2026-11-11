@@ -16,6 +16,8 @@ filter:
     - ingestSleepNights
     - ingestDailyMetrics
     - ingestWorkouts
+    - ingestHealthSamples
+    - deleteHealthRecords
     - replaceCalendarDays
     - getBoopBrief
     - regenerateBoopBrief
