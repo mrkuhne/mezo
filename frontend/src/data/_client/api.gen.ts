@@ -5659,6 +5659,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/devices/apns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Register or refresh this device's APNs token (upsert by deviceId; moves the device to the caller) */
+        put: operations["registerApnsDevice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/apns/{deviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unregister this device on sign-out (idempotent; the caller's own device only) */
+        delete: operations["unregisterApnsDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -13194,6 +13228,19 @@ export interface components {
             reason: string;
             day: number;
         } | null;
+        ApnsDeviceIn: {
+            /**
+             * Format: uuid
+             * @description Stable per-install id kept in the keychain
+             */
+            deviceId: string;
+            /** @description APNs device token (hex) */
+            token: string;
+            /** @enum {string} */
+            environment: "sandbox" | "production";
+            bundleId: string;
+            appVersion?: string;
+        };
     };
     responses: {
         /** @description Missing/invalid token */
@@ -29279,6 +29326,84 @@ export interface operations {
                 content?: never;
             };
             /** @description Invalid date */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    registerApnsDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApnsDeviceIn"];
+            };
+        };
+        responses: {
+            /** @description Registered */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    unregisterApnsDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unregistered (or nothing to do) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure */
             400: {
                 headers: {
                     [name: string]: unknown;

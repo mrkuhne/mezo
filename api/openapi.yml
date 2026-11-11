@@ -226,6 +226,11 @@ tags:
       screen (verdict, metrics, energy curve, day sheets), manual regeneration
       (max 3 per day) and the planned training-session time. The client sends
       its local date; `created_by` comes from the JWT.
+  - name: Device
+    description: >
+      Native (iOS) device registration for push (Boop B1, mezo-r36n9.11). No
+      sending yet. `created_by` always comes from the JWT; a device is owned by
+      whoever registered it last.
 paths:
   /api/auth/login:
     post:
@@ -13817,6 +13822,65 @@ paths:
           description: Cleared
         '400':
           description: Invalid date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/devices/apns:
+    put:
+      tags:
+        - Device
+      operationId: registerApnsDevice
+      summary: >-
+        Register or refresh this device's APNs token (upsert by deviceId; moves
+        the device to the caller)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApnsDeviceIn'
+      responses:
+        '204':
+          description: Registered
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/devices/apns/{deviceId}':
+    delete:
+      tags:
+        - Device
+      operationId: unregisterApnsDevice
+      summary: >-
+        Unregister this device on sign-out (idempotent; the caller's own device
+        only)
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Unregistered (or nothing to do)
+        '400':
+          description: Validation failure
           content:
             application/json:
               schema:
@@ -32742,6 +32806,36 @@ components:
         day:
           type: integer
           minimum: 1
+    ApnsDeviceIn:
+      type: object
+      required:
+        - deviceId
+        - token
+        - environment
+        - bundleId
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+          description: Stable per-install id kept in the keychain
+        token:
+          type: string
+          minLength: 64
+          maxLength: 200
+          pattern: '^[0-9a-fA-F]{64,200}$'
+          description: APNs device token (hex)
+        environment:
+          type: string
+          enum:
+            - sandbox
+            - production
+        bundleId:
+          type: string
+          minLength: 1
+          maxLength: 120
+        appVersion:
+          type: string
+          maxLength: 20
   responses:
     AdminMemoryUnauthorized:
       description: Missing/invalid token

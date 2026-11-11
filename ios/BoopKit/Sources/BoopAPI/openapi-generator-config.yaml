@@ -24,3 +24,5 @@ filter:
     - setSessionTime
     - clearSessionTime
     - decidePattern
+    - registerApnsDevice
+    - unregisterApnsDevice
