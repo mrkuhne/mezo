@@ -2,19 +2,52 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// The five domains in the floating bottom bar. In v1 only Nap is Boop's own; the rest point to the web app.
-/// One painted landscape runs behind all five: switching slides it toward the tapped domain while the skies blend,
-/// the page content cross-fades over it, and the bar's selection capsule glides to the new icon.
+/// The four places of the spine, in bar order: Ma · Terv · Napló · Boop.
+enum ShellTab: Int, CaseIterable {
+    case ma, terv, naplo, boop
+
+    var storageKey: String { ["ma", "terv", "naplo", "boop"][rawValue] }
+    init?(key: String) { guard let t = Self.allCases.first(where: { $0.storageKey == key }) else { return nil }; self = t }
+    /// What the scene storage held: the new keys map to themselves, anything else (the old domain names) lands on Ma.
+    static func restored(_ raw: String) -> ShellTab { ShellTab(key: raw) ?? .ma }
+    /// The colour world the place paints until its page reports another.
+    var defaultHue: Hue { [.forma, .fuel, .alvas, .forma][rawValue] }
+}
+
+/// Tells the shell that a page has a room (a domain drill-down) open over it: the bar steps aside until it closes.
+private struct SetRoomOpenKey: EnvironmentKey { static let defaultValue: @MainActor @Sendable (Bool) -> Void = { _ in } }
+extension EnvironmentValues {
+    var setRoomOpen: @MainActor @Sendable (Bool) -> Void {
+        get { self[SetRoomOpenKey.self] }
+        set { self[SetRoomOpenKey.self] = newValue }
+    }
+}
+
+/// One sky per place in bar order: what the page last reported, else its default colour world.
+func shellPanels(_ skies: [ShellTab: NKBackdrop]) -> [NKBackdrop] {
+    ShellTab.allCases.map { skies[$0] ?? NKBackdrop(hue: $0.defaultHue, heroHeight: 560, scrollY: 0) }
+}
+
+/// The four places in the floating bar, the "+" beside it, and one painted landscape behind them all: switching
+/// slides it toward the tapped place while the skies blend, the page cross-fades over it, and the bar's capsule
+/// glides to the new icon. The capture and account sheets are presented here, at page level.
 struct ShellView: View {
     let me: Me
-    @SceneStorage("tab") private var tab = "Nap"
-    /// The switch in flight: the domain we came from, which side the new one sits on, and how far along (0 → 1).
-    @State private var fromTab = "Nap"
+    @SceneStorage("tab") private var tabKey = "ma"
+    /// The switch in flight: the place we came from, which side the new one sits on, and how far along (0 → 1).
+    @State private var fromTab = ShellTab.ma
     @State private var direction: CGFloat = 1
     @State private var progress: Double = 1
-    /// Last sky each domain asked for (Nap re-colours with its orbs); unseen domains use their default.
-    @State private var skies: [String: NKBackdrop] = [:]
+    /// Last sky each place asked for (Ma re-colours with its orbs); unseen places use their default.
+    @State private var skies: [ShellTab: NKBackdrop] = [:]
+    @State private var capturing = false
+    @State private var account = false
+    @State private var toast: String?
+    /// A room is open over the page: the bar is hidden.
+    @State private var roomOpen = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var tab: ShellTab { ShellTab.restored(tabKey) }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -29,63 +62,83 @@ struct ShellView: View {
                                             removal: .opacity.animation(.easeIn(duration: 0.22))))
             }
             .environment(\.nkBackdropHosted, true)
-            NKNav(selected: Binding(get: { tab }, set: select))
+            .environment(\.setRoomOpen, { open in withAnimation(.smooth(duration: 0.35)) { roomOpen = open } })
+            NKSpineBar(selected: Binding(get: { tab.rawValue }, set: { select(ShellTab(rawValue: $0) ?? .ma) }),
+                       onPlus: { capturing = true })
+                .offset(y: roomOpen ? 140 : 0)
+                .opacity(roomOpen ? 0 : 1)
+                .allowsHitTesting(!roomOpen)
+                .accessibilityHidden(roomOpen)
         }
+        .environment(\.openAccount, { account = true })
+        .nkToast($toast)
         .preferredColorScheme(.dark)
-        .onAppear { fromTab = tab }
+        // page-level presentations (boop-ios.md §9)
+        .sheet(isPresented: $capturing) {
+            CaptureSheet { name in capturing = false; toast = soonToast(name) }
+                .presentationDetents([.height(560), .large])
+                .presentationBackground(NK.ground)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $account) {
+            AccountSheet(me: me)
+                .presentationDetents([.medium, .large])
+                .presentationBackground(NK.ground)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
+        .onAppear {
+            fromTab = tab
+            #if DEBUG
+            // Simulator review: `-previewTab ma|terv|naplo|boop` opens that place, `-previewOpen capture|account` a sheet.
+            if let t = UserDefaults.standard.string(forKey: "previewTab").flatMap(ShellTab.init(key:)) { tabKey = t.storageKey; fromTab = t }
+            switch UserDefaults.standard.string(forKey: "previewOpen") {
+            case "capture": capturing = true
+            case "account": account = true
+            default: break
+            }
+            #endif
+        }
         #if DEBUG
-        // Simulator review: `-previewScroll 900` opens the pages scrolled; `-previewSwitch Edzés` switches to that
-        // domain after 3 s and back to Nap 3 s later (records the backdrop blend without taps).
+        // `-previewScroll 900` opens the pages scrolled; `-previewSwitch terv|naplo|boop` switches to that place
+        // after 3 s and back to Ma 3 s later (records the backdrop slide + blend without taps).
         .environment(\.nkInitialScrollY, UserDefaults.standard.object(forKey: "previewScroll") == nil
                      ? nil : CGFloat(UserDefaults.standard.double(forKey: "previewScroll")))
         .task {
-            guard let to = UserDefaults.standard.string(forKey: "previewSwitch") else { return }
+            guard let to = UserDefaults.standard.string(forKey: "previewSwitch").flatMap(ShellTab.init(key:)) else { return }
             try? await Task.sleep(for: .seconds(3)); select(to)
-            try? await Task.sleep(for: .seconds(3)); select("Nap")
+            try? await Task.sleep(for: .seconds(3)); select(.ma)
         }
         #endif
     }
 
-    @ViewBuilder private func page(_ tab: String) -> some View {
+    @ViewBuilder private func page(_ tab: ShellTab) -> some View {
         switch tab {
-        case "Edzés": WebOnlyTabView(domain: .edzes)
-        case "Fuel": WebOnlyTabView(domain: .fuel)
-        case "Boop": WebOnlyTabView(domain: .boop)
-        case "Én": WebOnlyTabView(domain: .en(me))
-        default: NapView()
+        case .ma: NapView()
+        case .terv: TervView()
+        case .naplo: NaploView()
+        case .boop: BoopTabView()
         }
     }
 
-    private func sky(_ tab: String) -> NKBackdrop { domainPanels(skies)[Int(domainIndex(tab))] }
+    private func sky(_ tab: ShellTab) -> NKBackdrop { shellPanels(skies)[tab.rawValue] }
 
     /// The old land starts from where it is now (no jump), then the blend runs to the new one.
-    private func select(_ new: String) {
+    private func select(_ new: ShellTab) {
         guard new != tab else { return }
         var still = Transaction(); still.disablesAnimations = true
         withTransaction(still) {
             fromTab = tab
-            direction = domainIndex(new) >= domainIndex(tab) ? 1 : -1
+            direction = new.rawValue >= tab.rawValue ? 1 : -1
             progress = 0
         }
         DispatchQueue.main.async {
             withAnimation(.smooth(duration: 0.95)) {
-                tab = new
+                tabKey = new.storageKey
                 progress = 1
             }
         }
-    }
-}
-
-/// The bar's order as backdrop positions (unknown names count as Nap).
-func domainIndex(_ tab: String) -> Double {
-    Double(NKNav.items.map(\.label).firstIndex(of: tab) ?? 0)
-}
-
-/// One sky per domain in bar order: what the domain last reported, else its default colour world.
-func domainPanels(_ skies: [String: NKBackdrop]) -> [NKBackdrop] {
-    let defaults: [String: Hue] = ["Nap": .forma, "Edzés": .mozgas, "Fuel": .fuel, "Boop": .forma, "Én": .alvas]
-    return NKNav.items.map { item in
-        skies[item.label] ?? NKBackdrop(hue: defaults[item.label] ?? .forma, heroHeight: 560, scrollY: 0)
     }
 }
 

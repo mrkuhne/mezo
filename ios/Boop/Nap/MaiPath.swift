@@ -27,41 +27,26 @@ struct MaiContext {
     /// Alvás's bedtime reminder and its tap (the bedtime card carries the same switch as the hero pill).
     let reminder: BedtimeReminder
     let toggleReminder: () -> Void
+    /// Opens an orb's room (the domain drill-down) on top of Ma.
+    let drill: (Hue) -> Void
 }
 
-// MARK: - Below the hero (spec §5.1a, §5.1b)
+// MARK: - An orb's short path (spec §5.1b; a room's section 4 since B2)
 
-/// The selected orb's tiles, its short path with the cards hanging off it, and on Forma the Boop mondja card.
-/// Swaps with a spring when the orb changes (opacity + 28 pt rise).
-struct MaiBelow: View {
+/// The orb's short path with the cards hanging off it (check-in, intention, observations, night, bedtime, walk,
+/// session with move + undo, breath, busy block, meals). Lives in the orb's room, under "Mit tehetsz".
+struct OrbPathCards: View {
+    let hue: Hue
     let brief: Brief
     let store: MorningStore
     let ctx: MaiContext
-    /// A tappable phrase in Boop mondja (the page presents its detail sheet).
-    let onLink: (Brief.Link) -> Void
 
-    private var key: MetricKey { metricKey(for: ctx.hue) }
+    private var key: MetricKey { metricKey(for: hue) }
 
     var body: some View {
-        VStack(spacing: 16) {
-            content
-                .id(ctx.hue)
-                .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 28)), removal: .opacity))
-        }
-        .animation(.spring(response: 0.7, dampingFraction: 0.82), value: ctx.hue)
-    }
-
-    private var content: some View {
         let steps = withReminder(PathBuilder.steps(for: key, brief: brief, now: ctx.now, evening: ctx.evening),
                                  time: ctx.reminder.isOn ? ctx.reminder.time : nil)
-        return VStack(spacing: 16) {
-            MaiTiles(tiles: maiTiles(key, TileInputs(brief))) { ctx.toast(soonToast("Víz +250 ml")) }
-            DayPath(stations: pathStations(steps), hue: ctx.hue) { st in card(st) }
-                .padding(.top, 4)
-            if key == .forma && !brief.brief.isEmpty {
-                BoopSaysCard(lines: brief.brief, hue: ctx.hue, motion: ctx.motion, voice: ctx.voice, speak: ctx.speak, onLink: onLink)
-            }
-        }
+        DayPath(stations: pathStations(steps), hue: hue) { st in card(st) }
     }
 
     // MARK: cards that hang off the path
@@ -80,7 +65,7 @@ struct MaiBelow: View {
         case "intention":
             intentionCard(d.intention)
         case "observations":
-            ObservationStack(observations: d.observations, hue: ctx.hue, motion: ctx.motion,
+            ObservationStack(observations: d.observations, hue: hue, motion: ctx.motion,
                              decide: { id, verdict in
                                  await store.decide(observation: id, true: verdict)
                                  return store.problem == nil
@@ -97,7 +82,7 @@ struct MaiBelow: View {
                 SessionCard(session: s, conflict: brief.conflict, store: store, toast: ctx.toast, undoToast: ctx.undoToast)
             }
         case "breath":
-            textCard(orb: .pulzus, "Egy perc lassú légzés, mielőtt belefutsz. Fent a gömb vezeti a ritmust.")
+            textCard(orb: .pulzus, "Egy perc lassú légzés, mielőtt belefutsz. A Ma oldalon a gömb vezeti a ritmust.")
         case "busy-block":
             busyCard(d, past: st.done)
         default:

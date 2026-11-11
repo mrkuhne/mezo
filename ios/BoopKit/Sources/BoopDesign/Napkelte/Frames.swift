@@ -5,8 +5,9 @@ import SwiftUI
 /// Bell (with unread count), the "boop" wordmark, "+" quick add and the avatar.
 public struct NKTitleRow: View {
     let bellCount: Int
-    let onBell: () -> Void, onPlus: () -> Void, onAvatar: () -> Void
-    public init(bellCount: Int = 0, onBell: @escaping () -> Void, onPlus: @escaping () -> Void, onAvatar: @escaping () -> Void) {
+    let onBell: () -> Void, onPlus: (() -> Void)?, onAvatar: () -> Void
+    /// `onPlus == nil` hides the "+" (the spine has its own beside the bar); the wordmark stays centred.
+    public init(bellCount: Int = 0, onBell: @escaping () -> Void, onPlus: (() -> Void)? = nil, onAvatar: @escaping () -> Void) {
         self.bellCount = bellCount; self.onBell = onBell; self.onPlus = onPlus; self.onAvatar = onAvatar
     }
     public var body: some View {
@@ -25,10 +26,14 @@ public struct NKTitleRow: View {
             Spacer()
             Text("boop").font(.custom(Lagy.outfitFamily, size: 26).weight(.light)).tracking(3).foregroundStyle(.white)
             Spacer()
-            Button(action: onPlus) { NKGlyph("plus-ink", .white, size: 18).frame(width: 44, height: 44) }
-                .buttonStyle(.plain).accessibilityLabel("Gyors hozzáadás")
+            if let onPlus {
+                Button(action: onPlus) { NKGlyph("plus-ink", .white, size: 18).frame(width: 44, height: 44) }
+                    .buttonStyle(.plain).accessibilityLabel("Gyors hozzáadás")
+            } else {
+                Color.clear.frame(width: 44, height: 44)
+            }
             Button(action: onAvatar) { NKGlyph("person-sage", .white, size: 20).frame(width: 44, height: 44).glassEffect(.clear, in: .circle) }
-                .buttonStyle(.plain).accessibilityLabel("Beállítások")
+                .buttonStyle(.plain).accessibilityLabel("Fiók")
         }
         .padding(.horizontal, 16)
     }
@@ -160,6 +165,8 @@ public struct NKTabPage<Hero: View, Content: View>: View {
             // (safe area + the capsule's row); unmarked heroes fall back to the frame height.
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in
                 if hosted { scrollY = y }
+                // a zero-size layout pass (a navigation stack measures its root once at zero) must not flip the capsule
+                guard geo.size.height > 0 else { return }
                 let threshold = heroEnd.map { $0 - geo.safeAreaInsets.top - 50 } ?? (h - 120)
                 let v = y > threshold
                 if v != showCompact { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showCompact = v } }
@@ -372,46 +379,5 @@ public struct NKSheetFrame<Content: View>: View {
         .scrollIndicators(.hidden)
         .background(NK.ground)
         .preferredColorScheme(.dark)
-    }
-}
-
-// MARK: - Bottom bar
-
-/// The five domains as icons only (names stay for VoiceOver), on a glass capsule.
-public struct NKNav: View {
-    public struct Item: Sendable { public let label: String, glyph: String }
-    public static let items: [Item] = [
-        .init(label: "Nap", glyph: "sun-ink"), .init(label: "Edzés", glyph: "dumbbell-ink"), .init(label: "Fuel", glyph: "bowl-cream"),
-        .init(label: "Boop", glyph: "chat-ink"), .init(label: "Én", glyph: "person-sage"),
-    ]
-    @Binding var selected: String
-    /// The selection capsule glides from icon to icon instead of jumping.
-    @Namespace private var pill
-    public init(selected: Binding<String>) { self._selected = selected }
-    public var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Self.items, id: \.label) { it in
-                let on = it.label == selected
-                Button { selected = it.label } label: {
-                    NKGlyph(it.glyph, .white.opacity(on ? 1 : 0.45), size: 22)
-                        .frame(maxWidth: .infinity).frame(height: 46)
-                        .background {
-                            if on {
-                                Capsule().fill(.white.opacity(0.12)).padding(.horizontal, 4)
-                                    .matchedGeometryEffect(id: "pill", in: pill)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(it.label)
-                .accessibilityAddTraits(on ? .isSelected : [])
-            }
-        }
-        .padding(5)
-        .glassEffect(.regular, in: .capsule)
-        .padding(.horizontal, 18)
-        .padding(.bottom, 4)
-        .sensoryFeedback(.selection, trigger: selected)
     }
 }

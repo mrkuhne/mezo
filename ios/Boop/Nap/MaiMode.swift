@@ -19,7 +19,22 @@ func nextModeBoundary(after date: Date, calendar: Calendar = .current) -> Date {
     return calendar.date(byAdding: .day, value: 1, to: start) ?? date.addingTimeInterval(3600)
 }
 
-/// Re-reads the clock at each mode boundary and on every return to the foreground (`onTick`). Its own invisible view:
+/// When Ma's phase next changes: 04:00 (Este → Reggel), 10:00 (→ Napközben), 18:00 (→ Este), the first one after `date`.
+func nextPhaseBoundary(after date: Date, calendar: Calendar = .current) -> Date {
+    let start = calendar.startOfDay(for: date)
+    for h in [4, 10, 18] {
+        if let b = calendar.date(bySettingHour: h, minute: 0, second: 0, of: start), b > date { return b }
+    }
+    let tomorrow = calendar.date(byAdding: .day, value: 1, to: start) ?? date.addingTimeInterval(86_400)
+    return calendar.date(bySettingHour: 4, minute: 0, second: 0, of: tomorrow) ?? tomorrow
+}
+
+/// The page's next wake-up: the nearer of the evening/day flip and the phase change.
+func nextClockWake(after date: Date, calendar: Calendar = .current) -> Date {
+    min(nextModeBoundary(after: date, calendar: calendar), nextPhaseBoundary(after: date, calendar: calendar))
+}
+
+/// Re-reads the clock at each mode and phase boundary and on every return to the foreground (`onTick`). Its own invisible view:
 /// reading the scene phase on the page itself can stop presentations.
 struct ModeClock: View {
     let onTick: () -> Void
@@ -30,7 +45,7 @@ struct ModeClock: View {
         Color.clear
             .task(id: wake) {
                 let now = BoopClock.now()
-                let wait = nextModeBoundary(after: now).timeIntervalSince(now) + 1
+                let wait = nextClockWake(after: now).timeIntervalSince(now) + 1
                 try? await Task.sleep(for: .seconds(max(1, wait)))
                 guard !Task.isCancelled else { return }
                 onTick()
@@ -72,12 +87,16 @@ func withReminder(_ steps: [PathStep], time: String?) -> [PathStep] {
     }
 }
 
-/// The device clock, which simulator review can move: `-previewEvening YES` reads 21:10 today.
+/// The device clock, which simulator review can move: `-previewEvening YES` reads 21:10 today;
+/// `-previewPhase reggel|napkozben|este` reads 08:10 / 13:40 / 21:10 today.
 enum BoopClock {
     static func now() -> Date {
         #if DEBUG
-        if UserDefaults.standard.bool(forKey: "previewEvening") {
-            return Calendar.current.date(bySettingHour: 21, minute: 10, second: 0, of: Date()) ?? Date()
+        let phaseTimes = ["reggel": (8, 10), "napkozben": (13, 40), "este": (21, 10)]
+        let hm = UserDefaults.standard.bool(forKey: "previewEvening")
+            ? (21, 10) : UserDefaults.standard.string(forKey: "previewPhase").flatMap { phaseTimes[$0] }
+        if let hm {
+            return Calendar.current.date(bySettingHour: hm.0, minute: hm.1, second: 0, of: Date()) ?? Date()
         }
         #endif
         return Date()

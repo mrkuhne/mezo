@@ -39,15 +39,19 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 |---|---|
 | `-preview shell` / `-preview onboarding` | signs in a local preview user; the brief and Health endpoints answer from `PreviewTransport` |
 | `-previewEmpty YES` | Nap shows the empty states instead of the brief |
-| `-previewTab napom` | opens Nap on A napom |
-| `-previewOrb alvas` | opens Mai on that orb (`forma`, `alvas`, `mozgas`, `fuel`, `pulzus`) |
+| `-previewTab ma\|terv\|naplo\|boop` | opens that place of the spine |
+| `-previewPhase reggel\|napkozben\|este` | Ma's clock reads 08:10 / 13:40 / 21:10 today (the phase strip, plan card, MOST, close-out follow) |
+| `-previewWhy YES` | opens the first proposal's *miért?* page |
+| `-previewOrb alvas` | opens Ma on that orb (`forma`, `alvas`, `mozgas`, `fuel`, `pulzus`) |
+| `-previewDrill alvas` | opens Ma with that orb's room (the domain drill-down) pushed (`forma`, `alvas`, `mozgas`, `fuel`, `pulzus`) |
 | `-previewSheet sleep\|heart\|day`, `-previewDetent large` | opens that detail sheet (at the large detent) |
 | `-previewKept YES`, `-previewScrub 15.5` | A napod sheet: conflict kept; magnifier held at 15:30 |
 | `-previewStep <step>` | onboarding opens on that step |
 | `-previewEvening YES` | the clock reads 21:10 and the brief is an evening one: dusk sky, *Esti check-in* / *Esti levezetés* pills, evening paths |
 | `-previewRecovery YES` | kímélő mód, day 2 of a cold: calm grey-blue sky, the banner, no session |
 | `-previewScroll 850` | tab pages open scrolled to that offset |
-| `-previewSwitch Edzés` | switches to that domain after 3 s and back to Nap 3 s later (record the backdrop blend without taps) |
+| `-previewOpen capture\|account` | opens the "+" capture sheet or the account sheet |
+| `-previewSwitch terv\|naplo\|boop` | switches to that place after 3 s and back to Ma 3 s later (record the backdrop slide + blend without taps) |
 
 Adding an API operation: add its `operationId` to `BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`
 and run `scripts/sync-openapi.sh` whenever `api/openapi.yml` changes.

@@ -7,6 +7,7 @@ import BoopDesign
 /// when the brief did not arrive, a calm retry.
 struct NapView: View {
     @Environment(\.openURL) private var openURL
+    @Environment(\.openAccount) private var openAccount
     @Environment(HealthLink.self) private var link: HealthLink?
     @Environment(MorningStore.self) private var morning: MorningStore?
     @Environment(Session.self) private var session
@@ -15,6 +16,8 @@ struct NapView: View {
     @State private var motion = OrbMotion()
     /// The detail sheet behind a tapped Boop mondja phrase.
     @State private var sheet: DetailSheet? = NapView.initialSheet
+    /// Boop's proposals, shared by Ma and the rooms.
+    @State private var desk = ProposalDesk()
 
     private var state: NapEmptyState {
         guard let link else { return .notConnected }
@@ -45,7 +48,19 @@ struct NapView: View {
             switch napScreen(state: s, hasStore: morning != nil, hasBrief: morning?.brief != nil, loading: morning?.loading ?? false,
                              problem: morning?.problem, forceBrief: forceBrief) {
             case .mai:
-                if let morning, let brief = morning.brief { MaiView(brief: brief) { ctx in cards(brief, morning, ctx) } }
+                if let morning, let brief = morning.brief {
+                    MaiView(brief: brief) { ctx in
+                        cards(brief, morning, ctx)
+                    } drill: { hue, ctx in
+                        MaDrill(hue: hue, brief: morning.brief ?? brief, store: morning, ctx: ctx, desk: desk) { sheet = DetailSheet($0) }
+                    } sheets: { ctx in
+                        // Read both flags here so the page re-renders when they flip (a plain binding passed down
+                        // left presentations unpresented, see the connect cover below).
+                        NapSheets(sheet: Binding(get: { [s = sheet] in s }, set: { sheet = $0 }),
+                                  why: Binding(get: { [w = desk.why] in w }, set: { desk.why = $0 }),
+                                  desk: desk, brief: morning.brief ?? brief, store: morning, ctx: ctx)
+                    }
+                }
             case .loading:
                 page(s, copy: loadingCopy, offline: false) {}
             case .problem(let problem):
@@ -66,13 +81,11 @@ struct NapView: View {
         .background { if let morning { MorningTriggers(store: morning) } }
     }
 
-    /// Below the hero: the selected orb's tiles, path and cards, then the Health row (sync status and "refresh now"
-    /// stay one scroll away on every orb, as on the empty states).
+    /// Below the hero: the lens strip and the day's three phases, then the Health row (sync status and "refresh now"
+    /// stay one scroll away, as on the empty states).
     @ViewBuilder private func cards(_ brief: Brief, _ store: MorningStore, _ ctx: MaiContext) -> some View {
-        MaiBelow(brief: brief, store: store, ctx: ctx) { link in sheet = DetailSheet(link) }
-            .sheet(item: $sheet) { kind in
-                DetailSheetView(kind: kind, brief: store.brief ?? brief, store: store, ctx: ctx) { sheet = nil }
-            }
+        MaBelow(brief: brief, store: store, ctx: ctx, phase: DayPhase.at(ctx.now), desk: desk,
+                onDrill: ctx.drill) { link in sheet = DetailSheet(link) }
         if let link { ConnectCard(link: link) { connecting = true }.padding(.top, 8) }
         Color.clear.frame(height: 90)
     }
@@ -88,11 +101,13 @@ struct NapView: View {
     private func page(_ s: NapEmptyState, copy: NapCopy, offline: Bool, onAction: @escaping () -> Void) -> some View {
         NKTabPage(hue: .forma, heroHeight: nil, compact: NKCompact(palette: Hue.forma.orb, title: "Forma", value: copy.orb, line: copy.title)) {
             VStack(spacing: 0) {
-                NKTitleRow(bellCount: 0, onBell: { toast = "Az értesítések hamarosan" }, onPlus: { toast = "A gyors hozzáadás hamarosan" },
-                           onAvatar: { toast = "A beállítások hamarosan" })
+                NKTitleRow(bellCount: 0, onBell: { toast = "Az értesítések hamarosan" }, onPlus: nil, onAvatar: openAccount)
                     .padding(.top, 54)
-                NKTabStrip(tabs: ["Mai", "A napom", "Beszélgetés", "Rutin"],
-                           selected: Binding(get: { "Mai" }, set: { if $0 != "Mai" { toast = "\($0) · hamarosan" } }))
+                // the phases have nothing to scroll to yet: the strip only says where the day is
+                NKTabStrip(tabs: DayPhase.allCases.map(\.name),
+                           selected: .constant(DayPhase.at(BoopClock.now()).name))
+                    .allowsHitTesting(false)
+                    .accessibilityHint("A napod betöltése után működik")
                     .padding(.top, 10)
                 RisingOrb(hue: .forma, score: nil, display: copy.orb, caption: copy.orbCaption, motion: motion)
                     .frame(height: 260).padding(.top, 20)
@@ -125,6 +140,36 @@ struct NapView: View {
         case .offline, .syncFailed: Task { await link?.syncNow() }
         default: break
         }
+    }
+}
+
+/// The page-level sheets of Ma and its rooms (boop-ios.md §9): the detail sheet behind a Boop mondja phrase or a
+/// room's detail row, and a proposal's "miért?" page. They hang outside the navigation stack, so they present over
+/// Ma and over a pushed room alike.
+private struct NapSheets: ViewModifier {
+    @Binding var sheet: DetailSheet?
+    @Binding var why: Proposal?
+    let desk: ProposalDesk
+    let brief: Brief
+    let store: MorningStore
+    let ctx: MaiContext
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(item: $sheet) { kind in
+                DetailSheetView(kind: kind, brief: store.brief ?? brief, store: store, ctx: ctx) { sheet = nil }
+            }
+            .sheet(item: $why) { p in
+                ProposalWhySheet(proposal: p, desk: desk, brief: brief, store: store, ctx: ctx)
+            }
+            #if DEBUG
+            .task {
+                // Simulator review: `-previewWhy YES` opens the first proposal's "miért?" page.
+                if UserDefaults.standard.bool(forKey: "previewWhy"), why == nil {
+                    try? await Task.sleep(for: .seconds(1)); why = desk.pending(brief, now: ctx.now, conflictKept: store.conflictKept).first
+                }
+            }
+            #endif
     }
 }
 

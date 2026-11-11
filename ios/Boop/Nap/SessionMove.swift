@@ -4,21 +4,6 @@ import BoopDesign
 
 // MARK: - The words of a session move
 
-/// "-ra" or "-re" after a clock time, by how it is said aloud: "18:00" = "tizennyolc óra" (-ra), "18:30" = "harminc"
-/// (-ra), "18:45" = "negyvenöt" (-re). The minutes' last spoken word decides; whole hours end on "óra".
-func timeSuffix(_ hhmm: String) -> String {
-    let parts = hhmm.split(separator: ":")
-    guard parts.count == 2, let m = Int(parts[1]) else { return "ra" }
-    if m == 0 { return "ra" }
-    let unit = m % 10
-    if unit != 0 {
-        // egy, kettő, négy, öt, hét, kilenc → -re; három, hat, nyolc → -ra
-        return [3, 6, 8].contains(unit) ? "ra" : "re"
-    }
-    // tíz, negyven, ötven → -re; húsz, harminc → -ra
-    return [20, 30].contains(m) ? "ra" : "re"
-}
-
 func moveButtonTitle(_ time: String) -> String { "Áttolom \(time)-\(timeSuffix(time))" }
 func movedToast(_ time: String) -> String { "Áttettem \(time)-\(timeSuffix(time))" }
 func undoneToast(_ time: String) -> String { "Visszatettem \(time)-\(timeSuffix(time))" }
@@ -33,9 +18,6 @@ func moveProblemToast(_ p: MorningProblem?) -> String? {
     default: "Most nem sikerült áttenni"
     }
 }
-
-/// A session whose time differs from the planned one has been moved (its conflict is settled).
-func sessionMoved(planned: String?, time: String?) -> Bool { planned != nil && time != nil && time != planned }
 
 // MARK: - Moving the session (shared by the Mozgás path card and the A napod sheet)
 

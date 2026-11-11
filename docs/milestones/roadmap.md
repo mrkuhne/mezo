@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed (2026-11-11) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B2 Gerinc shipped (2026-11-11) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -62,6 +62,15 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-11-11 — Boop B2 · Gerinc — új gerinc az iPhone-appban (`mezo-r36n9.12`).**
+  Az alsó sáv mostantól Ma · Terv · Napló · Boop és egy külön „+” gomb. A Ma egyetlen görgetés: reggeli
+  napterv az „Elfogadom a napot” gombbal, napközben a teljes nap egy ösvényen, a MOST pontnál a Boop javaslataival
+  (a megbeszélés-ütközésből edzésáttolás, elfogadás visszavonással, „Most nem” csak mára rejt, „miért?” a tényekkel),
+  este a lezárás kerete. Minden gömbnek saját szobája van (négy rész: a szint, a hét, a napok mögötte, mit tehetsz).
+  A Terv, a Napló, a Boop fül és a „+” lap egyelőre keret („hamarosan”). Ismert hiányok: éjfél és 04:00 között az
+  Este még nappali égen látszik; az Alvás-szobában az alvásgörbe kétszer szerepel (tulajdonosi döntésre vár).
+  [működés](../features/boop-ios.md).
 
 - **2026-11-11 — Boop B0 · javítás — újra tanul a memória, újra fut az éjszakai konzílium (`mezo-r36n9.10`).**
   Kiderült, miért állt le három hétre az AI emlékezete: a Google-nál elfogyott az előre befizetett keret. Az

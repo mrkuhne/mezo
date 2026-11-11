@@ -4,7 +4,7 @@ import BoopDesign
 @testable import Boop
 
 /// Below the Mai hero (Task 12): path mapping, observation swipes, the session move words, the tiles' null rule.
-struct MaiBelowTests {
+struct OrbPathCardsTests {
 
     // MARK: PathStep → PathStation
 

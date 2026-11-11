@@ -2,7 +2,7 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// Én: who is signed in; the sign-out confirmation lives on the page (WebOnlyTabView).
+/// Én: who is signed in; the sign-out confirmation lives on the account sheet.
 struct EnAccountSection: View {
     let me: Me
     @Binding var asking: Bool

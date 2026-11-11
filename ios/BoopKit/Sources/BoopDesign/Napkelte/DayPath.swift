@@ -23,8 +23,11 @@ public func pathLit(_ stations: [PathStation]) -> [Bool] {
 public struct DayPath<Card: View>: View {
     let stations: [PathStation], hue: Hue
     let card: (PathStation) -> Card
-    public init(stations: [PathStation], hue: Hue, @ViewBuilder card: @escaping (PathStation) -> Card) {
-        self.stations = stations; self.hue = hue; self.card = card
+    /// A tap on a station's row (MOST excepted, its card has its own buttons); nil = the rows are not tappable.
+    let onTap: ((PathStation) -> Void)?
+    public init(stations: [PathStation], hue: Hue, onTap: ((PathStation) -> Void)? = nil,
+                @ViewBuilder card: @escaping (PathStation) -> Card) {
+        self.stations = stations; self.hue = hue; self.onTap = onTap; self.card = card
     }
 
     public var body: some View {
@@ -62,6 +65,7 @@ public struct DayPath<Card: View>: View {
                 if st.isNow {
                     Text("MOST").nkFont(11, .bold, design: .monospaced).tracking(1.4).foregroundStyle(.white).padding(.top, 4)
                     Color.clear.frame(height: 6)
+                    if st.opens { card(st) }
                 } else {
                     Text(st.title).nkFont(st.opens ? 17 : 15.5, st.opens && !st.done ? .semibold : .regular)
                         .foregroundStyle(.white.opacity(st.done ? 0.6 : (st.opens ? 1 : 0.8))).padding(.top, 10)
@@ -73,7 +77,10 @@ public struct DayPath<Card: View>: View {
             }
             .padding(.bottom, st.opens ? 18 : 10)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .stationTap(onTap.flatMap { tap in st.isNow ? nil : { tap(st) } })
         .accessibilityElement(children: st.opens ? .contain : .combine)
+        .accessibilityAddTraits(onTap != nil && !st.isNow ? .isButton : [])
     }
 
     private func segment(lit: Bool) -> some View {
@@ -116,5 +123,17 @@ public struct NowPulse: View {
         }
         .frame(width: 24, height: 16)
         .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { on = true } } }
+    }
+}
+
+private extension View {
+    /// A station takes taps only when the path has a tap handler (and it is not the "MOST" marker): a read-only path
+    /// leaves the gesture off entirely, so it never swallows a tap meant for the card or the scroll view.
+    @ViewBuilder func stationTap(_ action: (() -> Void)?) -> some View {
+        if let action {
+            contentShape(Rectangle()).onTapGesture(perform: action)
+        } else {
+            self
+        }
     }
 }
