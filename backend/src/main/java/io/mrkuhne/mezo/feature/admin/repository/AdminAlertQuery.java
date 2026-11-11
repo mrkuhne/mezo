@@ -61,21 +61,24 @@ public class AdminAlertQuery {
                count(*) filter (where status = 'ERROR') as errors,
                (select l.error_code from llm_log_history l
                  where l.call_kind in ('EMBED_DOC', 'EMBED_QUERY') and l.status = 'ERROR'
-                   and l.created_at >= :since
+                   and l.created_at >= :since and l.requested_model = :model
                  order by l.created_at desc limit 1) as last_error_code
         from llm_log_history
         where call_kind in ('EMBED_DOC', 'EMBED_QUERY') and created_at >= :since
+          and requested_model = :model
         """;
 
-    /** Embedding calls since a point in time, with the newest failure's code (null when none). */
+    /** Embedding calls of {@code model} since a point in time, with the newest failure's code (null
+     *  when none). Scoped to the CURRENT model so a provider switch does not keep the old one's
+     *  errors red for a day (review finding). */
     public record EmbeddingCalls(long total, long errors, String lastErrorCode) {}
 
     private final NamedParameterJdbcTemplate jdbc;
 
-    public EmbeddingCalls embeddingCallsSince(Instant since) {
+    public EmbeddingCalls embeddingCallsSince(Instant since, String model) {
         return jdbc.queryForObject(EMBEDDING_CALLS_SINCE,
                 new org.springframework.jdbc.core.namedparam.MapSqlParameterSource("since",
-                        java.sql.Timestamp.from(since)),
+                        java.sql.Timestamp.from(since)).addValue("model", model),
                 (rs, row) -> new EmbeddingCalls(rs.getLong("total"), rs.getLong("errors"),
                         rs.getString("last_error_code")));
     }

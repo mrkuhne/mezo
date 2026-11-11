@@ -153,7 +153,8 @@ public class AdminAlertService {
      *  HTTP_402, prepay credits depleted), which is what the owner needs to act on. */
     private Optional<AdminAlert> embeddingDown() {
         AdminAlertQuery.EmbeddingCalls calls =
-                alertQuery.embeddingCallsSince(Instant.now().minus(LLM_ERROR_WINDOW_HOURS, ChronoUnit.HOURS));
+                alertQuery.embeddingCallsSince(Instant.now().minus(LLM_ERROR_WINDOW_HOURS, ChronoUnit.HOURS),
+                        memoryPlatformProperties.embeddingModel());
         if (calls.total() < EMBEDDING_MIN_CALLS || calls.errors() * 2 <= calls.total()) {
             return Optional.empty();
         }

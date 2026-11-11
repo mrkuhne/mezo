@@ -208,9 +208,21 @@ class AdminAlertsIT extends ApiIntegrationTest {
         Instant now = Instant.now();
         for (int i = 0; i < 4; i++) {
             llmLogPopulator.logAt(now.minus(1, ChronoUnit.HOURS), null, CallKind.EMBED_QUERY, "companion_recall",
-                    "text-embedding-3-small", 0, 0, null, new BigDecimal("0.0001"));
+                    "gemini-embedding-001", 0, 0, null, new BigDecimal("0.0001"));
         }
-        llmLogPopulator.logError(null, CallKind.EMBED_QUERY, "companion_recall", "text-embedding-3-small", "HTTP_500");
+        llmLogPopulator.logError(null, CallKind.EMBED_QUERY, "companion_recall", "gemini-embedding-001", "HTTP_500");
+
+        AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
+
+        assertThat(body.getAlerts()).noneMatch(a -> "embedding_down".equals(a.getKey()));
+    }
+
+    /** After a provider switch the OLD model's errors are history, not an outage. */
+    @Test
+    void testAlerts_shouldNotFireEmbeddingDown_forErrorsOfAModelNoLongerConfigured() {
+        for (int i = 0; i < 5; i++) {
+            llmLogPopulator.logError(null, CallKind.EMBED_DOC, "embed_memory", "some-retired-embed-model", "HTTP_402");
+        }
 
         AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
 

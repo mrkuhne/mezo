@@ -156,7 +156,7 @@ spec:
             - name: MEZO_MEMORY_REEMBEDDING_ENABLED
               value: "true"
             - name: MEZO_MEMORY_REEMBEDDING_BATCH_SIZE
-              value: "300"
+              value: "150"
             - name: MEZO_MEMORY_REEMBEDDING_CRON
               value: "0 5 * * * *"
             # Phase-4 proactive layer LIVE (B1.2, mezo-h4wp.2): the generated morning

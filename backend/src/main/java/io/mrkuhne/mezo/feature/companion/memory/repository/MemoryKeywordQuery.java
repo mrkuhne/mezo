@@ -15,26 +15,30 @@ import java.util.Set;
  * a string cost ~2 s over the owner's ~200 items in production (the 200 ms retriever deadline
  * timed out in 186 of 194 runs), and {@code websearch_to_tsquery} ANDs every term, so full-text
  * could not match anyway. A long query is therefore shaped into its {@link #MAX_KEYWORDS} most
- * frequent content words (≥ 4 letters, not a stop word, not a number), OR-ed for full-text and
+ * frequent content words (≥ 3 letters, not a stop word, not a number), OR-ed for full-text and
  * space-joined for trigram — a short query again (~10 ms full-text, ~80 ms trigram in production).
  */
 public record MemoryKeywordQuery(String text, String tsQuery, boolean keywordMode) {
 
     /** At most this many words keep the query as written. */
     static final int MAX_PLAIN_WORDS = 8;
+    /** ...and so does any query up to this length: an ordinary chat sentence is never shaped,
+     *  only a context dump (review finding — short Hungarian content words like "fáj" matter). */
+    static final int MAX_PLAIN_CHARS = 200;
     /** Keywords kept from a long query. */
     static final int MAX_KEYWORDS = 8;
-    private static final int MIN_KEYWORD_LENGTH = 4;
+    private static final int MIN_KEYWORD_LENGTH = 3;
 
     /** Folded (lowercase, accent-free) Hungarian function words and dump-label noise. */
-    private static final Set<String> STOP_WORDS = Set.of(
-            "akkor", "alatt", "amely", "amelyek", "amikor", "amit", "annak", "arra", "attol", "azert",
+    private static final Set<String> STOP_WORDS = java.util.stream.Stream.of(
+            "akkor", "egy", "ami", "aki", "nem", "igen", "ezt", "ora", "het", "napja", "fel", "alatt", "amely", "amelyek", "amikor", "amit", "annak", "arra", "attol", "azert",
             "azok", "azon", "azt", "bele", "csak", "eddig", "egyik", "egyes", "elott", "ember", "eppen",
             "ezek", "ezert", "ezzel", "hogy", "illetve", "itt", "kell", "kozott", "lesz", "lett", "maga",
             "meg", "mellett", "mert", "mind", "minden", "mint", "mivel", "most", "nagyon", "neki", "nekem",
             "nelkul", "nincs", "olyan", "ott", "pedig", "szerint", "tobb", "utan", "vagy", "valami",
             "van", "vannak", "volt", "voltak", "akar", "allapot", "adat", "adatok", "nap", "napi",
-            "napon", "heti", "hetente", "mai", "tegnap", "orak", "perc", "gramm", "kcal", "darab");
+            "napon", "heti", "hetente", "mai", "tegnap", "orak", "perc", "gramm", "kcal", "darab")
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
     public static MemoryKeywordQuery of(String raw) {
         String folded = ToolText.fold(raw == null ? "" : raw).trim();
@@ -44,7 +48,7 @@ public record MemoryKeywordQuery(String text, String tsQuery, boolean keywordMod
         if (words.isEmpty()) {
             return new MemoryKeywordQuery("", "", false);
         }
-        if (words.size() <= MAX_PLAIN_WORDS) {
+        if (words.size() <= MAX_PLAIN_WORDS || folded.length() <= MAX_PLAIN_CHARS) {
             return new MemoryKeywordQuery(folded, folded, false);
         }
         Map<String, int[]> counts = new LinkedHashMap<>(); // word -> {count, firstPosition}

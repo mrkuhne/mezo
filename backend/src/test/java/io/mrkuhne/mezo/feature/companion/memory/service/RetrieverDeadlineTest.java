@@ -66,4 +66,17 @@ class RetrieverDeadlineTest {
         deadline.markStarted();
         assertThat(deadline.finishedInTime(System.nanoTime() + TIMEOUT * 2)).isFalse();
     }
+
+    /** Review finding: the common case is await() BEFORE the pool thread marks the start. A task
+     *  that starts at once and then hangs must time out at ~its run budget, not at the queue cap. */
+    @Test
+    void aTaskThatStartsJustAfterTheWaitBegins_timesOutAtItsRunBudget_notAtTheQueueCap() {
+        RetrieverDeadline deadline = new RetrieverDeadline(System.nanoTime(), TIMEOUT, QUEUE_WAIT);
+        CompletableFuture<String> never = new CompletableFuture<>();
+        scheduler.schedule(deadline::markStarted, 5, TimeUnit.MILLISECONDS);
+
+        long before = System.nanoTime();
+        assertThatThrownBy(() -> deadline.await(never)).isInstanceOf(TimeoutException.class);
+        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before)).isLessThan(500);
+    }
 }

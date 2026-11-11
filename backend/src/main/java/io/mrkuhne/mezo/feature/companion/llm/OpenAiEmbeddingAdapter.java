@@ -62,7 +62,10 @@ public class OpenAiEmbeddingAdapter implements EmbeddingPort {
         this.llmCallContextHolder = llmCallContextHolder;
         OpenAiEmbeddingOptions.Builder options = OpenAiEmbeddingOptions.builder()
                 .dimensions(DIMENSIONS);
-        options.apiKey(apiKey).model(companionProperties.embedding().model()).maxRetries(1);
+        // Review finding: the SDK default is a 10-minute timeout, held under the re-embed batch's
+        // row locks — bound it so a hung provider fails fast and the next run retries.
+        options.apiKey(apiKey).model(companionProperties.embedding().model()).maxRetries(1)
+                .timeout(java.time.Duration.ofSeconds(20));
         if (baseUrl != null) {
             options.baseUrl(baseUrl);
         }
