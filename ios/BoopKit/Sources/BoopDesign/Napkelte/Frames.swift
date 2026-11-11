@@ -5,8 +5,9 @@ import SwiftUI
 /// Bell (with unread count), the "boop" wordmark, "+" quick add and the avatar.
 public struct NKTitleRow: View {
     let bellCount: Int
-    let onBell: () -> Void, onPlus: () -> Void, onAvatar: () -> Void
-    public init(bellCount: Int = 0, onBell: @escaping () -> Void, onPlus: @escaping () -> Void, onAvatar: @escaping () -> Void) {
+    let onBell: () -> Void, onPlus: (() -> Void)?, onAvatar: () -> Void
+    /// `onPlus == nil` hides the "+" (the spine has its own beside the bar); the wordmark stays centred.
+    public init(bellCount: Int = 0, onBell: @escaping () -> Void, onPlus: (() -> Void)? = nil, onAvatar: @escaping () -> Void) {
         self.bellCount = bellCount; self.onBell = onBell; self.onPlus = onPlus; self.onAvatar = onAvatar
     }
     public var body: some View {
@@ -25,8 +26,12 @@ public struct NKTitleRow: View {
             Spacer()
             Text("boop").font(.custom(Lagy.outfitFamily, size: 26).weight(.light)).tracking(3).foregroundStyle(.white)
             Spacer()
-            Button(action: onPlus) { NKGlyph("plus-ink", .white, size: 18).frame(width: 44, height: 44) }
-                .buttonStyle(.plain).accessibilityLabel("Gyors hozzáadás")
+            if let onPlus {
+                Button(action: onPlus) { NKGlyph("plus-ink", .white, size: 18).frame(width: 44, height: 44) }
+                    .buttonStyle(.plain).accessibilityLabel("Gyors hozzáadás")
+            } else {
+                Color.clear.frame(width: 44, height: 44)
+            }
             Button(action: onAvatar) { NKGlyph("person-sage", .white, size: 20).frame(width: 44, height: 44).glassEffect(.clear, in: .circle) }
                 .buttonStyle(.plain).accessibilityLabel("Beállítások")
         }

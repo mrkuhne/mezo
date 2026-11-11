@@ -62,6 +62,7 @@ public struct DayPath<Card: View>: View {
                 if st.isNow {
                     Text("MOST").nkFont(11, .bold, design: .monospaced).tracking(1.4).foregroundStyle(.white).padding(.top, 4)
                     Color.clear.frame(height: 6)
+                    if st.opens { card(st) }
                 } else {
                     Text(st.title).nkFont(st.opens ? 17 : 15.5, st.opens && !st.done ? .semibold : .regular)
                         .foregroundStyle(.white.opacity(st.done ? 0.6 : (st.opens ? 1 : 0.8))).padding(.top, 10)
