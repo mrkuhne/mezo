@@ -1174,7 +1174,7 @@ public class FakeCompanionLlm implements CompanionLlm {
                             + "\"claim\":\"Mostanában ez másképp alakul.\"}";
         }
         if (systemPrompt.startsWith(FactMergeJudge.MARKER)) {
-            return FakeFactMerge.answer(systemPrompt);
+            return FakeFactMerge.answer(userMessage);
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             if (userMessage.contains("[fake-recovery-batch:")) {

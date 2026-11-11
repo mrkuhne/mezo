@@ -348,9 +348,10 @@ public class CharacterSignalReads {
         Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant toExclusive = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
         List<DetectorInput.ChatToolCallPoint> out = new ArrayList<>();
+        // mezo-o8tcu: live conversations only — a message left behind by a soft-deleted
+        // conversation failed this whole nightly pass for 49 nights (dangling title proxy).
         for (AiMessageEntity m : aiMessageRepository
-                .findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
-                        owner, CHAT_ROLE_ASSISTANT, fromInstant, toExclusive)) {
+                .findLiveConversationRowsInWindow(owner, CHAT_ROLE_ASSISTANT, fromInstant, toExclusive)) {
             if (m.getToolCalls() == null || m.getToolCalls().calls() == null) {
                 continue;
             }

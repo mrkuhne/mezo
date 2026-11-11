@@ -9,8 +9,8 @@ import java.util.regex.Pattern;
 
 /**
  * {@link FakeCompanionLlm}'s deterministic twin of {@code FactMergeJudge} (S9, mezo-d6ivw.10).
- * Reads the {@code FactMergeJudge.MARKER}-prefixed prompt's own numbered sentence list back out
- * of the prompt text — never leaking real ids into the prompt keeps the ITs deterministic without
+ * Reads the judge's numbered sentence list back out of its USER message (mezo-lb2yb moved it
+ * there from the {@code FactMergeJudge.MARKER}-prefixed system prompt) — never leaking real ids into the prompt keeps the ITs deterministic without
  * a scripted sentinel for every case.
  */
 final class FakeFactMerge {
@@ -27,9 +27,9 @@ final class FakeFactMerge {
      * (at most 3, the real judge's bound) as a {@code "same"} group; the first two lines carrying {@code #comb} pair up as a
      * {@code "combine"} group with a canned sentence. Anything else ⇒ {@code {"groups":[]}}.
      */
-    static String answer(String systemPrompt) {
+    static String answer(String userMessage) {
         Map<Integer, String> lines = new LinkedHashMap<>();
-        Matcher matcher = NUMBERED_LINE.matcher(systemPrompt);
+        Matcher matcher = NUMBERED_LINE.matcher(userMessage);
         while (matcher.find()) {
             lines.put(Integer.parseInt(matcher.group(1)), matcher.group(2));
         }
