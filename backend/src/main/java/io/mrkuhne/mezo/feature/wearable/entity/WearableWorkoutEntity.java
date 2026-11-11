@@ -47,4 +47,16 @@ public class WearableWorkoutEntity extends OwnedEntity {
 
     @Column(name = "source_name", length = 80)
     private String sourceName;
+
+    @Column(name = "distance_m")
+    private Integer distanceM;
+
+    @Column(name = "max_hr")
+    private Integer maxHr;
+
+    @Column(name = "source_bundle", length = 120)
+    private String sourceBundle;
+
+    @Column(name = "updated_at", nullable = false, insertable = false, updatable = false)
+    private Instant updatedAt;
 }

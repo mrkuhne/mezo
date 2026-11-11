@@ -258,3 +258,66 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202611101300_mezo-r36n9.7_boop_brief.sql
+  - changeSet:
+      id: "1.1.0:202611111000_mezo-r36n9.11_health_sample"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611111000_mezo-r36n9.11_health_sample.sql
+  - changeSet:
+      id: "1.1.0:202611111010_mezo-r36n9.11_daily_metric_widen"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611111010_mezo-r36n9.11_daily_metric_widen.sql
+  - changeSet:
+      id: "1.1.0:202611111020_mezo-r36n9.11_wearable_workout_widen"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611111020_mezo-r36n9.11_wearable_workout_widen.sql
+  - changeSet:
+      id: "1.1.0:202611111030_mezo-r36n9.11_sleep_log_source_columns"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611111030_mezo-r36n9.11_sleep_log_source_columns.sql
+  - changeSet:
+      id: "1.1.0:202611111040_mezo-r36n9.11_sleep_log_dedup"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611111040_mezo-r36n9.11_sleep_log_dedup.sql
+  - changeSet:
+      id: "1.1.0:202611111050_mezo-r36n9.11_sleep_log_one_night_per_date"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611111050_mezo-r36n9.11_sleep_log_one_night_per_date.sql
+  - changeSet:
+      id: "1.1.0:202611111100_mezo-r36n9.11_calendar_event_external_id"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611111100_mezo-r36n9.11_calendar_event_external_id.sql
+  - changeSet:
+      id: "1.1.0:202611111110_mezo-r36n9.11_weight_log_source"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611111110_mezo-r36n9.11_weight_log_source.sql
+  - changeSet:
+      id: "1.1.0:202611111120_mezo-r36n9.11_apns_device"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611111120_mezo-r36n9.11_apns_device.sql

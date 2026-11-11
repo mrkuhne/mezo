@@ -24,6 +24,10 @@ public class CalendarEventEntity extends OwnedEntity {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
+    /** EventKit item id plus occurrence start (Boop B1, mezo-r36n9.11) — unique per owner. */
+    @Column(name = "external_id", nullable = false, length = 200)
+    private String externalId;
+
     @Column(nullable = false)
     private LocalDate date;
 

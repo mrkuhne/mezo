@@ -33,7 +33,7 @@ public class WearableWorkoutService {
         for (WorkoutIn w : workouts) {
             repository.upsert(createdBy, w.getExternalId(), w.getStartAt().atZoneSameInstant(zone).toLocalDate(),
                 w.getActivityType(), w.getStartAt().toInstant(), w.getEndAt().toInstant(), w.getKcal(), w.getAvgHr(),
-                w.getSourceName());
+                w.getSourceName(), w.getDistanceM(), w.getMaxHr(), w.getSourceBundle());
             if (!existing.contains(w.getExternalId()) && seen.add(w.getExternalId())) {
                 inserted++;
             }

@@ -19,6 +19,7 @@ public class CalendarEventPopulator {
     public CalendarEventEntity createEvent(UUID owner, LocalDate date, String title, Instant start, Instant end) {
         CalendarEventEntity e = new CalendarEventEntity();
         e.setCreatedBy(owner);
+        e.setExternalId("test-" + UUID.randomUUID());
         e.setDate(date);
         e.setTitle(title);
         e.setStartAt(start);

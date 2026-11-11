@@ -41,7 +41,7 @@ public class WearableSleepService {
         for (SleepNightIn n : nights) {
             repository.upsertAppleHealthNight(createdBy, n.getExternalId(), n.getDate(), n.getBedtime(),
                 n.getWakeup(), n.getDurationH(), positiveOrNull(n.getInBedMin()), n.getAwakeMin(),
-                n.getLightMin(), n.getRemMin(), n.getDeepMin(), hypnogramJson(n));
+                n.getLightMin(), n.getRemMin(), n.getDeepMin(), hypnogramJson(n), n.getSourceApp(), n.getSleepingHr());
             if (existing.contains(n.getExternalId()) || !seen.add(n.getExternalId())) {
                 updated++;
             } else {

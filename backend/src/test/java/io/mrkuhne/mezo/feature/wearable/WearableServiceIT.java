@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.wearable.service.WearableWorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -37,18 +38,21 @@ class WearableServiceIT extends AbstractIntegrationTest {
     private static final LocalDate D2 = LocalDate.parse("2026-11-09");
 
     private static DailyMetricIn day(LocalDate d, int steps) {
-        return new DailyMetricIn().date(d).steps(steps).restingHr(57).avgHr(72).minHr(48).maxHr(151).activeKcal(620);
+        return new DailyMetricIn().date(d).steps(steps).restingHr(57).avgHr(72).minHr(48).maxHr(151).activeKcal(620)
+            .distanceM(5200).basalKcal(1700).exerciseMin(41).hrvMs(new BigDecimal("48.5")).respRate(new BigDecimal("14.2"))
+            .spo2Pct(new BigDecimal("97.0")).wristTempC(new BigDecimal("-0.35")).vo2max(new BigDecimal("44.1"))
+            .walkingHr(96).mindfulMin(10).daylightMin(62);
     }
 
     private static WorkoutIn workout(String id, String start) {
         OffsetDateTime s = OffsetDateTime.parse(start);
         return new WorkoutIn().externalId(id).activityType("strength").startAt(s).endAt(s.plusMinutes(60))
-            .kcal(480).avgHr(128).sourceName("Huawei Health");
+            .kcal(480).avgHr(128).sourceName("Huawei Health").distanceM(0).maxHr(171).sourceBundle("com.huawei.health");
     }
 
     private static CalendarEventIn event(String title, String start) {
         OffsetDateTime s = OffsetDateTime.parse(start);
-        return new CalendarEventIn().title(title).startAt(s).endAt(s.plusMinutes(30)).allDay(false).calendarName("Munka");
+        return new CalendarEventIn().externalId("ek-" + title + "-" + start).title(title).startAt(s).endAt(s.plusMinutes(30)).allDay(false).calendarName("Munka");
     }
 
     private int count(String table, UUID user) {
@@ -65,6 +69,34 @@ class WearableServiceIT extends AbstractIntegrationTest {
         assertThat(count("daily_metric", user)).isEqualTo(2);
         assertThat(jdbc.queryForObject("select steps from daily_metric where created_by = ? and date = ?",
             Integer.class, user, D2)).isEqualTo(8000);
+    }
+
+    @Test
+    void widenedDailyMetricFieldsPersist() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        metrics.ingest(user, List.of(day(D1, 6000)));
+        var row = jdbc.queryForMap("select * from daily_metric where created_by = ? and date = ?", user, D1);
+        assertThat(row).containsEntry("distance_m", 5200).containsEntry("basal_kcal", 1700)
+            .containsEntry("exercise_min", 41).containsEntry("walking_hr", 96).containsEntry("mindful_min", 10)
+            .containsEntry("daylight_min", 62);
+        assertThat((BigDecimal) row.get("hrv_ms")).isEqualByComparingTo("48.5");
+        assertThat((BigDecimal) row.get("resp_rate")).isEqualByComparingTo("14.2");
+        assertThat((BigDecimal) row.get("spo2_pct")).isEqualByComparingTo("97.0");
+        assertThat((BigDecimal) row.get("wrist_temp_c")).isEqualByComparingTo("-0.35");
+        assertThat((BigDecimal) row.get("vo2max")).isEqualByComparingTo("44.1");
+    }
+
+    @Test
+    void widenedWorkoutAndCalendarFieldsPersist() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        workouts.ingest(user, List.of(workout("hk-1", "2026-11-08T17:00:00+01:00")));
+        var row = jdbc.queryForMap("select * from wearable_workout where created_by = ?", user);
+        assertThat(row).containsEntry("distance_m", 0).containsEntry("max_hr", 171)
+            .containsEntry("source_bundle", "com.huawei.health");
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2)
+            .events(List.of(event("Egyeztetés", "2026-11-09T09:00:00+01:00")))));
+        assertThat(jdbc.queryForObject("select external_id from calendar_event where created_by = ?",
+            String.class, user)).startsWith("ek-Egyeztetés-");
     }
 
     @Test

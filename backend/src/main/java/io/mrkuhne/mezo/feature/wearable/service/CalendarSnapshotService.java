@@ -35,6 +35,7 @@ public class CalendarSnapshotService {
     private static CalendarEventEntity toEntity(UUID createdBy, CalendarDayIn day, CalendarEventIn in) {
         CalendarEventEntity e = new CalendarEventEntity();
         e.setCreatedBy(createdBy); // server-side from principal, never from client
+        e.setExternalId(in.getExternalId());
         e.setDate(day.getDate());
         e.setTitle(in.getTitle());
         e.setStartAt(in.getStartAt().toInstant());

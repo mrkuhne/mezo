@@ -38,7 +38,7 @@ class WearableSleepServiceIT extends AbstractIntegrationTest {
     private static SleepNightIn night(LocalDate date, int deep) {
         return new SleepNightIn().externalId("hk-night-" + date).date(date).bedtime("23:40").wakeup("06:50")
             .durationH(new BigDecimal("6.83")).inBedMin(430).awakeMin(22).lightMin(228).remMin(98).deepMin(deep)
-            .hypnogram(new Hypnogram().bucketMin(5).stages("LLLLDDRR"));
+            .hypnogram(new Hypnogram().bucketMin(5).stages("LLLLDDRR")).sourceApp("Sleep Cycle").sleepingHr(52);
     }
 
     private static List<SleepNightIn> nightsEndingOn(LocalDate last, int count) {
@@ -47,7 +47,7 @@ class WearableSleepServiceIT extends AbstractIntegrationTest {
 
     private List<Map<String, Object>> rows(UUID user) {
         return jdbc.queryForList(
-            "select source, deep_min, hypnogram::text as hyp from sleep_log where created_by = ? order by date", user);
+            "select source, source_app, sleeping_hr, deep_min, hypnogram::text as hyp from sleep_log where created_by = ? order by date", user);
     }
 
     @Test
@@ -60,6 +60,8 @@ class WearableSleepServiceIT extends AbstractIntegrationTest {
             assertThat(row.get("source")).isEqualTo("apple_health");
             assertThat(row.get("deep_min")).isEqualTo(80);
             assertThat((String) row.get("hyp")).contains("LLLLDDRR");
+            assertThat(row.get("source_app")).isEqualTo("Sleep Cycle");
+            assertThat(row.get("sleeping_hr")).isEqualTo(52);
         });
     }
 

@@ -44,20 +44,23 @@ public interface SleepLogRepository extends OwnedRepository<SleepLogEntity> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
         insert into sleep_log (created_by, external_id, date, bedtime, wakeup, duration_h, in_bed_min,
-                               awake_min, light_min, rem_min, deep_min, hypnogram, source, is_deleted, created_at)
+                               awake_min, light_min, rem_min, deep_min, hypnogram, source_app, sleeping_hr, source,
+                               is_deleted, created_at)
         values (:createdBy, :externalId, :date, :bedtime, :wakeup, :durationH, :inBedMin,
-                :awakeMin, :lightMin, :remMin, :deepMin, cast(:hypnogram as jsonb), 'apple_health', false, now())
+                :awakeMin, :lightMin, :remMin, :deepMin, cast(:hypnogram as jsonb), :sourceApp, :sleepingHr, 'apple_health', false, now())
         on conflict (created_by, external_id) where external_id is not null
         do update set date = excluded.date, bedtime = excluded.bedtime, wakeup = excluded.wakeup,
                       duration_h = excluded.duration_h, in_bed_min = excluded.in_bed_min,
                       awake_min = excluded.awake_min, light_min = excluded.light_min,
                       rem_min = excluded.rem_min, deep_min = excluded.deep_min,
-                      hypnogram = excluded.hypnogram, source = 'apple_health'
+                      hypnogram = excluded.hypnogram, source_app = excluded.source_app,
+                      sleeping_hr = excluded.sleeping_hr, source = 'apple_health'
         """, nativeQuery = true)
     void upsertAppleHealthNight(@Param("createdBy") UUID createdBy, @Param("externalId") String externalId,
                                 @Param("date") LocalDate date, @Param("bedtime") String bedtime,
                                 @Param("wakeup") String wakeup, @Param("durationH") BigDecimal durationH,
                                 @Param("inBedMin") Integer inBedMin, @Param("awakeMin") Integer awakeMin,
                                 @Param("lightMin") Integer lightMin, @Param("remMin") Integer remMin,
-                                @Param("deepMin") Integer deepMin, @Param("hypnogram") String hypnogramJson);
+                                @Param("deepMin") Integer deepMin, @Param("hypnogram") String hypnogramJson,
+                                @Param("sourceApp") String sourceApp, @Param("sleepingHr") Integer sleepingHr);
 }

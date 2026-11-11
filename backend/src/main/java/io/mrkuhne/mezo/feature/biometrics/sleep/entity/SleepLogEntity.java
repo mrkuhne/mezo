@@ -90,6 +90,15 @@ public class SleepLogEntity extends OwnedEntity {
     @Column(name = "external_id", length = 64)
     private String externalId;
 
+    /** Name of the app whose night won on the phone (Boop B1, mezo-r36n9.11); null on manual rows. */
+    @Column(name = "source_app", length = 80)
+    private String sourceApp;
+
+    /** Average heart rate over the asleep intervals (Boop B1); null when not measured. */
+    @Min(0)
+    @Column(name = "sleeping_hr")
+    private Integer sleepingHr;
+
     /** Quantised stage sequence from the screenshot (mezo-fk9a) — display-only provenance;
      *  null on manual rows and whenever the extraction failed cross-validation. */
     @JdbcTypeCode(SqlTypes.JSON)
