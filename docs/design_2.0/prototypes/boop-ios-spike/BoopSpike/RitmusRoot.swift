@@ -103,7 +103,7 @@ struct RitmusPlus: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Rögzítés").font(AuraFont.serif(28)).foregroundStyle(.white).padding(.top, 26)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                tile("pen-sun", "Kitöltés", "3 kérdés · 3 koppintás", "checkin")
+                tile("pen-sun", "Kitöltés", "6 kérdés · fél perc", "checkin")
                 tile("spark-cream", "Esti zárás", "egy perc", "este")
                 tile("bowl-cream", "Étkezés", "B4-ben jön", "Étkezés · B4")
                 tile("dumbbell-ink", "Edzés", "B5-ben jön", "Edzés · B5")
