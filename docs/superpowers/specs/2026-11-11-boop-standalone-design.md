@@ -1,6 +1,6 @@
 # Boop standalone — product architecture and build order (design)
 
-- **Status:** draft for owner OK · **Date:** 2026-11-11 · **Issue:** `mezo-r36n9.9` · **Epic:** `mezo-r36n9`
+- **Status:** **approved by the owner 2026-11-11** · **Date:** 2026-11-11 · **Issue:** `mezo-r36n9.9` · **Epic:** `mezo-r36n9`
 - **Supersedes:** the slice map of `2026-11-09-boop-ios-v1-design.md` §8 (S4 lépések is cancelled as a slice;
   its parts move into B3/B4) and, in `2026-11-10-boop-napkelte-design.md`, only the five-domain bottom bar and the
   page skeleton. The Napkelte **look** (dark glass, painted sky, colour only in sky + orbs, the rising orb,

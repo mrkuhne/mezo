@@ -2,7 +2,7 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-10
+updated: 2026-11-11
 tags: [ios, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
@@ -17,6 +17,11 @@ related: [proactive, _platform-auth-security, _platform-api-backend, me, today]
 ---
 
 # Boop — native iOS app — Feature Documentation
+
+> **Re-planned 2026-11-11 (`mezo-r36n9.9`):** S4 is cancelled; Boop continues as a standalone app in slices
+> **B0–B8** (repair → data foundation → new spine Ma · Terv · Napló · Boop → daily loop → food → training + Watch →
+> the Plan → day capacity → one AI) — spec [`2026-11-11-boop-standalone-design.md`](../superpowers/specs/2026-11-11-boop-standalone-design.md),
+> research [`boop-standalone/`](../superpowers/research/boop-standalone/13-synthesis.md). The sections below describe what is shipped (S1–S3).
 
 > One-line: the native SwiftUI iPhone app that replaces the web app once complete (epic `mezo-r36n9`).
 > Design canon **Napkelte** since S2.5 (dark glass, painted sky, the orb rising as the sun — spec
