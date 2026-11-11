@@ -2471,7 +2471,10 @@ mezo:
       recheck-days: 3
       max-horizon-days: 30
     council-budget:
-      cycle-calls: 14
+      # mezo-o8tcu: 14 -> 20. Cross-talk now leaves the verdict calls PLUS every evidence read still
+      # allowed (max-tool-calls) in reserve, so one cycle needs observe + propose + up to 6 cross-talk
+      # + skeptic + integrator + up to 8 reads = 18. The daily caps below are unchanged.
+      cycle-calls: 20
       cycle-smart-calls: 4
       autonomous-daily-calls: 90
       total-daily-calls: 120

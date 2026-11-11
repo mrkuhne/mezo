@@ -34,6 +34,19 @@ public class CharacterCouncilEvidenceTools {
 
     /** Raw results stay in the transient session; persisted comments retain only tool names. */
     public record Session(List<ToolCallback> callbacks, Map<String, Object> context, ToolCallAudit audit) {
+        /** LLM calls of the verdict phase (Szkeptikus + integrator). */
+        static final int VERDICT_CALLS = 2;
+
+        /**
+         * mezo-o8tcu: what cross-talk must leave in the per-cycle quota — the verdict calls PLUS
+         * every evidence read still allowed, because each read is charged to the same cap. With a
+         * flat reserve of 2, cross-talk's own reads ate the reserve and the Szkeptikus was refused
+         * (CHARACTER_COUNCIL_QUOTA_EXHAUSTED, 17× in production).
+         */
+        public int verdictReserve() {
+            return VERDICT_CALLS + audit.remainingCalls();
+        }
+
         public List<String> successfulToolNames(int fromCall) {
             return audit.toolOutcomes().stream().skip(fromCall).filter(outcome -> {
                 if (outcome.result() == null) return false;
