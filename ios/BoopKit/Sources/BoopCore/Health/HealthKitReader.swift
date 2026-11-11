@@ -39,6 +39,13 @@ public final class HealthKitReader: HealthReader, @unchecked Sendable {
         try await store.requestAuthorization(toShare: [], read: Self.readTypes)
     }
 
+    /// True when HealthKit would show its sheet for the read set — i.e. types were added since the user
+    /// connected (the sheet then lists only the new ones). False when unavailable or already decided.
+    public func needsAuthorizationRequest() async -> Bool {
+        guard Self.isAvailable else { return false }
+        return (try? await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes)) == .shouldRequest
+    }
+
     // MARK: - Sleep
 
     public func sleepSamples(from: Date, to: Date) async throws -> [SleepSample] {

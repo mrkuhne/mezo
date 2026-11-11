@@ -161,7 +161,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Boop.entitlements;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "A Boop a naptáradból látja, mennyi időd marad edzésre és evésre.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "A Boop az alvásodból, a mozgásodból és a pulzusodból mondja meg, milyen napod lesz.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "A Boop az alvásodból, a mozgásodból, a pulzusodból, a testsúlyodból és a hangulatodból mondja meg, milyen napod lesz.";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -184,7 +184,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Boop.entitlements;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "A Boop a naptáradból látja, mennyi időd marad edzésre és evésre.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "A Boop az alvásodból, a mozgásodból és a pulzusodból mondja meg, milyen napod lesz.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "A Boop az alvásodból, a mozgásodból, a pulzusodból, a testsúlyodból és a hangulatodból mondja meg, milyen napod lesz.";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
