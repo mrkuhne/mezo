@@ -75,9 +75,24 @@ func clockLabel(_ date: Date, calendar: Calendar = .current) -> String {
 /// Ma with the morning brief: title row, the phase strip (Reggel · Napközben · Este), five mini orbs, the selected metric rising as the sun, its verdict
 /// and the lens action row. Tapping a mini orb re-colours the page; tapping a phase scrolls to its section. `below` is what follows the hero; it receives the
 /// selected orb, Boop's voice and the page toast (`MaiContext`).
-struct MaiView<Below: View>: View {
+///
+/// The page sits in a navigation stack: an orb's room (`drill`) is pushed over it from the lens strip's door, the big
+/// orb and the timeline's stations; the shell hides its bar while a room is open. The toast and the page-level sheets
+/// (`sheets`, boop-ios.md §9) hang outside the stack, so they reach Ma and every room.
+struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     let brief: Brief
-    @ViewBuilder let below: (MaiContext) -> Below
+    let below: (MaiContext) -> Below
+    let drill: (Hue, MaiContext) -> Drill
+    let sheets: (MaiContext) -> Sheets
+
+    init(brief: Brief, @ViewBuilder below: @escaping (MaiContext) -> Below,
+         @ViewBuilder drill: @escaping (Hue, MaiContext) -> Drill, sheets: @escaping (MaiContext) -> Sheets) {
+        self.brief = brief; self.below = below; self.drill = drill; self.sheets = sheets
+    }
+
+    /// The rooms pushed over Ma (at most one in B2).
+    @State private var path: [Hue] = MaiView.initialPath
+    @Environment(\.setRoomOpen) private var setRoomOpen
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selected: Hue = MaiView.initialOrb
     @State private var motion = OrbMotion()
@@ -115,26 +130,41 @@ struct MaiView<Below: View>: View {
         return a
     }
 
+    private var context: MaiContext {
+        MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
+                   toast: { show($0) }, undoToast: { show($0, undo: $1) },
+                   now: now, evening: evening, reminder: reminder, toggleReminder: toggleReminder,
+                   drill: { openRoom($0) })
+    }
+
     var body: some View {
         let c = copy
-        // The phase strip scrolls the page's own scroll view to a section (ScrollViewReader reaches the ScrollView
-        // inside NKTabPage; each section carries an invisible anchor above its title, `phaseAnchor`).
-        ScrollViewReader { proxy in
-            NKTabPage(hue: selected, sky: sky, heroHeight: nil,
-                      compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
-                                         line: "\(c.name) \(c.miniValue)")) {
-                hero(c, proxy: proxy)
-            } content: {
-                below(MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
-                                 toast: { show($0) }, undoToast: { show($0, undo: $1) },
-                                 now: now, evening: evening, reminder: reminder, toggleReminder: toggleReminder))
+        let ctx = context
+        NavigationStack(path: $path) {
+            // The phase strip scrolls the page's own scroll view to a section (ScrollViewReader reaches the ScrollView
+            // inside NKTabPage; each section carries an invisible anchor above its title, `phaseAnchor`).
+            ScrollViewReader { proxy in
+                NKTabPage(hue: selected, sky: sky, heroHeight: nil,
+                          compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
+                                             line: "\(c.name) \(c.miniValue)")) {
+                    hero(c, proxy: proxy)
+                } content: {
+                    below(ctx)
+                }
             }
+            .toolbar(.hidden, for: .navigationBar)
+            // the shell's painted landscape shows through the stack
+            .containerBackground(.clear, for: .navigation)
+            .navigationDestination(for: Hue.self) { h in drill(h, ctx) }
         }
+        .modifier(sheets(ctx))
+        .onChange(of: path.isEmpty) { _, empty in setRoomOpen(!empty) }
+        .onAppear { setRoomOpen(!path.isEmpty) }
         .nkToast($toast, action: undo == nil ? nil : (toastAction ?? SessionText.undo)) { undo?(); undo = nil }
         .background { ModeClock { clockTick += 1 } }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: inhale) { _, _ in breathing }
         .onAppear { if voice == nil { voice = BoopVoice() } }
-        .onDisappear { motion.stop(); stopBreath(); voice?.stop() }
+        .onDisappear { motion.stop(); stopBreath(); voice?.stop(); setRoomOpen(false) }
         .onChange(of: selected) { stopBreath(); voice?.stop() }
         .onChange(of: phase) { _, p in shownPhase = p }
         .onChange(of: voice?.isSpeaking ?? false) { _, talking in motion.talking = talking }
@@ -166,6 +196,21 @@ struct MaiView<Below: View>: View {
         return .forma
     }
 
+    /// Simulator review: `-previewDrill alvas` opens Ma with that orb's room pushed.
+    private static var initialPath: [Hue] {
+        #if DEBUG
+        let names = ["forma", "alvas", "mozgas", "fuel", "pulzus"]
+        if let n = UserDefaults.standard.string(forKey: "previewDrill"), let i = names.firstIndex(of: n), let h = Hue(rawValue: i) { return [h] }
+        #endif
+        return []
+    }
+
+    private func openRoom(_ h: Hue) {
+        guard path.isEmpty else { return }
+        stopBreath()
+        path.append(h)
+    }
+
     private func hero(_ c: MaiCopy, proxy: ScrollViewProxy) -> some View {
         VStack(spacing: 0) {
             header(proxy)
@@ -179,6 +224,12 @@ struct MaiView<Below: View>: View {
             RisingOrb(hue: selected, score: c.score, display: c.orbDisplay, caption: c.orbCaption, motion: motion,
                       orbScale: breathing && !reduceMotion ? (inhale ? 1.22 : 0.84) : 1)
                 .frame(height: 290).padding(.bottom, 18)
+                // the big orb is a door to its room (the ripple still plays)
+                .simultaneousGesture(TapGesture().onEnded { if !breathing { openRoom(selected) } })
+                .accessibilityElement(children: .combine)
+                .accessibilityHint("\(c.name) részletesen")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { openRoom(selected) }
             Text(c.caps).nkFont(14, .semibold).tracking(2.6).foregroundStyle(.white.opacity(0.85)).padding(.top, 4)
                 .contentTransition(.opacity)
             Text(breathing ? (inhale ? MaiText.inhale : MaiText.exhale) : c.headline)

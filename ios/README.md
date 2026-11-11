@@ -43,6 +43,7 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewPhase reggel\|napkozben\|este` | Ma's clock reads 08:10 / 13:40 / 21:10 today (the phase strip, plan card, MOST, close-out follow) |
 | `-previewWhy YES` | opens the first proposal's *miért?* page |
 | `-previewOrb alvas` | opens Ma on that orb (`forma`, `alvas`, `mozgas`, `fuel`, `pulzus`) |
+| `-previewDrill alvas` | opens Ma with that orb's room (the domain drill-down) pushed (`forma`, `alvas`, `mozgas`, `fuel`, `pulzus`) |
 | `-previewSheet sleep\|heart\|day`, `-previewDetent large` | opens that detail sheet (at the large detent) |
 | `-previewKept YES`, `-previewScrub 15.5` | A napod sheet: conflict kept; magnifier held at 15:30 |
 | `-previewStep <step>` | onboarding opens on that step |

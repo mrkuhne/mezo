@@ -14,6 +14,15 @@ enum ShellTab: Int, CaseIterable {
     var defaultHue: Hue { [.forma, .fuel, .alvas, .forma][rawValue] }
 }
 
+/// Tells the shell that a page has a room (a domain drill-down) open over it: the bar steps aside until it closes.
+private struct SetRoomOpenKey: EnvironmentKey { static let defaultValue: @MainActor @Sendable (Bool) -> Void = { _ in } }
+extension EnvironmentValues {
+    var setRoomOpen: @MainActor @Sendable (Bool) -> Void {
+        get { self[SetRoomOpenKey.self] }
+        set { self[SetRoomOpenKey.self] = newValue }
+    }
+}
+
 /// One sky per place in bar order: what the page last reported, else its default colour world.
 func shellPanels(_ skies: [ShellTab: NKBackdrop]) -> [NKBackdrop] {
     ShellTab.allCases.map { skies[$0] ?? NKBackdrop(hue: $0.defaultHue, heroHeight: 560, scrollY: 0) }
@@ -34,6 +43,8 @@ struct ShellView: View {
     @State private var capturing = false
     @State private var account = false
     @State private var toast: String?
+    /// A room is open over the page: the bar is hidden.
+    @State private var roomOpen = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var tab: ShellTab { ShellTab.restored(tabKey) }
@@ -51,8 +62,13 @@ struct ShellView: View {
                                             removal: .opacity.animation(.easeIn(duration: 0.22))))
             }
             .environment(\.nkBackdropHosted, true)
+            .environment(\.setRoomOpen, { open in withAnimation(.smooth(duration: 0.35)) { roomOpen = open } })
             NKSpineBar(selected: Binding(get: { tab.rawValue }, set: { select(ShellTab(rawValue: $0) ?? .ma) }),
                        onPlus: { capturing = true })
+                .offset(y: roomOpen ? 140 : 0)
+                .opacity(roomOpen ? 0 : 1)
+                .allowsHitTesting(!roomOpen)
+                .accessibilityHidden(roomOpen)
         }
         .environment(\.openAccount, { account = true })
         .nkToast($toast)

@@ -111,17 +111,14 @@ struct MaBelow: View {
     let ctx: MaiContext
     /// The phase the clock is in.
     let phase: DayPhase
+    /// Boop's proposals (shared with the rooms; the page presents their "miért?").
+    let desk: ProposalDesk
     let onDrill: (Hue) -> Void
     /// A tappable phrase in Boop mondja, and the meetings station (the page presents the detail sheet).
     let onLink: (Brief.Link) -> Void
 
     @AppStorage("planAcceptedDate") private var planAcceptedDate = ""
-    @AppStorage("dismissedProposals") private var dismissedRaw = ""
-    /// Proposals settled this session: they stay on screen as a quiet row after the brief stops sending them.
-    @State private var settled: [(proposal: Proposal, state: NKProposalState)] = []
     @State private var planOpen = false
-    @State private var why: Proposal? = nil
-    @State private var busy = false
     @State private var rating = 0
     @State private var closeLine = ""
     @State private var skipped = false
@@ -130,16 +127,7 @@ struct MaBelow: View {
 
     // MARK: proposals
 
-    private var pending: [Proposal] {
-        Proposals.from(brief, now: ctx.now, dismissed: dismissedSet(from: dismissedRaw))
-    }
-
-    /// Pending first, then the settled ones the brief no longer sends (an undone move comes back as pending).
-    private var shown: [(proposal: Proposal, state: NKProposalState)] {
-        let p = pending
-        let ids = Set(p.map(\.id))
-        return p.map { ($0, NKProposalState.pending) } + settled.filter { !ids.contains($0.proposal.id) }
-    }
+    private var shown: [(proposal: Proposal, state: NKProposalState)] { desk.shown(brief, now: ctx.now) }
 
     private var planAccepted: Bool { planAcceptedDate == brief.date }
     private var planCollapsed: Bool { (planAccepted || phase != .reggel) && !planOpen }
@@ -153,15 +141,6 @@ struct MaBelow: View {
             napkozben.phaseAnchor(.napkozben)
             este.phaseAnchor(.este)
         }
-        .sheet(item: $why) { p in whySheet(p) }
-        #if DEBUG
-        .task {
-            // Simulator review: `-previewWhy YES` opens the first proposal's "miért?" page.
-            if UserDefaults.standard.bool(forKey: "previewWhy"), why == nil {
-                try? await Task.sleep(for: .seconds(1)); why = pending.first
-            }
-        }
-        #endif
     }
 
     // MARK: lens strip
@@ -317,82 +296,7 @@ struct MaBelow: View {
     }
 
     private func proposalCards(compact: Bool) -> some View {
-        VStack(spacing: 10) {
-            ForEach(shown, id: \.proposal.id) { item in
-                NKProposalCard(text: item.proposal.text, sub: item.proposal.sub, state: item.state, compact: compact,
-                               onAccept: { accept(item.proposal) }, onDismiss: { dismiss(item.proposal) },
-                               onWhy: { why = item.proposal })
-                    .opacity(busy ? 0.6 : 1)
-                    .disabled(busy)
-            }
-        }
-        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: shown.map(\.proposal.id))
-    }
-
-    private func state(of p: Proposal) -> NKProposalState {
-        if pending.contains(where: { $0.id == p.id }) { return .pending }
-        return settled.first { $0.proposal.id == p.id }?.state ?? .pending
-    }
-
-    private func settle(_ p: Proposal, _ s: NKProposalState) {
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
-            settled.removeAll { $0.proposal.id == p.id }
-            settled.append((p, s))
-        }
-    }
-
-    /// *Elfogadom*: the same move as the session card (toast with undo); on failure the card stays pending.
-    private func accept(_ p: Proposal) {
-        guard !busy, !store.moving else { return }
-        switch p.kind {
-        case .moveSession(let time):
-            busy = true
-            Task { @MainActor in
-                await moveSession(store, to: time, planned: brief.day.session?.plannedTime, toast: ctx.toast, undoToast: ctx.undoToast)
-                busy = false
-                if moveProblemToast(store.problem) == nil { settle(p, .accepted(p.acceptedLine)) }
-            }
-        }
-    }
-
-    /// *Most nem*: hidden for today only (the key carries the date).
-    private func dismiss(_ p: Proposal) {
-        var keys = dismissedSet(from: dismissedRaw)
-        keys.insert(Proposals.dismissKey(date: brief.date, id: p.id))
-        dismissedRaw = dismissedString(keys)
-        settle(p, .dismissed(p.text))
-        ctx.toast(MaText.dismissed)
-    }
-
-    private func whySheet(_ p: Proposal) -> some View {
-        let s = state(of: p)
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                NKWhyBody(title: p.text, sub: p.sub,
-                          facts: p.facts.map { (value: $0.value, unit: $0.unit, label: $0.label) },
-                          experts: p.experts.map { (label: $0.field.label, palette: expertPalette($0.field), text: $0.text,
-                                                    doubt: $0.field == .szkeptikus) },
-                          closing: MaText.whyClosing)
-                Group {
-                    if s == .pending {
-                        HStack(spacing: 10) {
-                            NKPill("Elfogadom", wide: false) { why = nil; accept(p) }
-                            NKPill("Most nem", primary: false, wide: false) { why = nil; dismiss(p) }
-                        }
-                    } else {
-                        Text(s == .accepted(p.acceptedLine) ? "Ezt már elfogadtad." : "Ezt most félretetted.")
-                            .nkFont(14).foregroundStyle(.white.opacity(0.55))
-                    }
-                }
-                .padding(.horizontal, 20).padding(.bottom, 40)
-            }
-        }
-        .scrollIndicators(.hidden)
-        .presentationDetents([.large])
-        .presentationBackground(NK.ground)
-        .presentationCornerRadius(34)
-        .presentationDragIndicator(.visible)
-        .preferredColorScheme(.dark)
+        ProposalCards(items: shown, compact: compact, desk: desk, brief: brief, store: store, ctx: ctx)
     }
 
     // MARK: Este

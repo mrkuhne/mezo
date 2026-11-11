@@ -84,6 +84,16 @@ func weekLabels(endingOn ymd: String, count: Int = 7) -> [String] {
     }
 }
 
+/// The capitalised day names of the `count` days ending on `ymd` (oldest first): "Szerda" … "Kedd". Unreadable: blanks.
+func weekdayNames(endingOn ymd: String, count: Int = 7) -> [String] {
+    guard let end = dateOf(ymd) else { return Array(repeating: "", count: count) }
+    return (0..<count).map { k in
+        let d = gregorian.date(byAdding: .day, value: k - (count - 1), to: end)!
+        let n = dayNames[gregorian.component(.weekday, from: d) - 1]
+        return n.prefix(1).uppercased() + n.dropFirst()
+    }
+}
+
 /// "kedd" for "2026-11-10".
 func weekdayName(_ ymd: String) -> String? {
     dateOf(ymd).map { dayNames[gregorian.component(.weekday, from: $0) - 1] }
