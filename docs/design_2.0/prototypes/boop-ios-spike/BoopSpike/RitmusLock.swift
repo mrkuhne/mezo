@@ -13,7 +13,8 @@ struct RitmusLock: View {
     @State private var mode = RArg.open == "widget" ? 1 : 0
     @State private var wIdx = 0
     @State private var wVals: [Int] = []
-    private let wQs = [("ENERGIA", "Mennyi energia van benned most?"), ("FEJTISZTASÁG", "Mennyire tiszta a fejed?"), ("MOTIVÁCIÓ", "Kedv a röpihez?")]
+    private let wQs = [("ENERGIA", "Mennyi energia van benned most?"), ("HANGULAT", "Milyen a hangulatod?"), ("FESZÜLTSÉG", "Mennyire vagy feszült?"),
+                       ("TEST", "Hogy érzed a tested?"), ("FEJTISZTASÁG", "Mennyire tiszta a fejed?"), ("A NAP KÉRDÉSE", "Kedv a ma esti röpihez?")]
 
     var body: some View {
         ZStack {
@@ -57,7 +58,7 @@ struct RitmusLock: View {
             Text("kedd, november 11.").font(.system(size: 19, weight: .semibold)).foregroundStyle(.white.opacity(0.9)).padding(.top, 34)
             Text("16:00").font(.system(size: 92, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.95))
             VStack(spacing: 10) {
-                notif(time: "most", title: "Délutáni kitöltés", body: "Mennyi energia van benned most? · 3 kérdés, 3 koppintás", action: onOpenCheckin)
+                notif(time: "most", title: "Délutáni kitöltés", body: "Mennyi energia van benned most? · 6 kérdés, fél perc", action: onOpenCheckin)
                 notif(time: "21:30", title: "Zárjuk le a napot", body: "Egy perc: hogy vagy, sikerült-e a prezentáció, milyen volt a nap.", action: onOpenEste, dim: true)
             }
             .padding(.horizontal, 12).padding(.top, 150)
@@ -110,11 +111,16 @@ struct RitmusLock: View {
                 StillOrb(colors: SunMetric.all[0].orb, size: 20, level: 0.8)
                 Text(wIdx < wQs.count ? wQs[wIdx].0 : "KÉSZ").font(AuraFont.mono(11, .semibold)).tracking(1.2).foregroundStyle(.white.opacity(0.75))
                 Spacer()
-                if wIdx < wQs.count { Text("\(wIdx + 1)/3").font(AuraFont.mono(11)).foregroundStyle(.white.opacity(0.55)) }
+                if wIdx < wQs.count { Text("\(wIdx + 1)/\(wQs.count)").font(AuraFont.mono(11)).foregroundStyle(.white.opacity(0.55)) }
             }
             if wIdx < wQs.count {
-                Text(wQs[wIdx].1).font(AuraFont.serif(19)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)
-                    .id(wIdx).transition(.opacity)
+                HStack {
+                    Text(wQs[wIdx].1).font(AuraFont.serif(19)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)
+                        .id(wIdx).transition(.opacity)
+                    Spacer()
+                    if wIdx >= 1 { Text("Ennyi").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.8))
+                        .onTapGesture { withAnimation { wIdx = wQs.count } } }
+                }
                 VStack(spacing: 8) {
                     ForEach(0..<2, id: \.self) { r in
                         HStack(spacing: 8) {
@@ -130,7 +136,7 @@ struct RitmusLock: View {
                 }
             } else {
                 HStack(spacing: 18) {
-                    ForEach(Array(zip(wQs, wVals)), id: \.0.0) { q, v in
+                    ForEach(Array(zip(wQs, wVals).prefix(4)), id: \.0.0) { q, v in
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(v)").font(.custom("Outfit", size: 28).weight(.light)).foregroundStyle(.white)
                             Text(q.0.capitalized).font(.system(size: 11)).foregroundStyle(.white.opacity(0.6))
@@ -138,7 +144,7 @@ struct RitmusLock: View {
                     }
                     Spacer()
                 }
-                Text("16:02 · 3 koppintás").font(AuraFont.mono(11)).foregroundStyle(.white.opacity(0.55))
+                Text("16:02 · \(wVals.count) koppintás").font(AuraFont.mono(11)).foregroundStyle(.white.opacity(0.55))
             }
         }
         .padding(16)
