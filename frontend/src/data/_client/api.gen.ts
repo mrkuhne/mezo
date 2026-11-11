@@ -12891,8 +12891,19 @@ export interface components {
             remMin?: number;
             deepMin?: number;
             hypnogram?: components["schemas"]["Hypnogram"];
+            /** @description Name of the app whose night won on the phone */
+            sourceApp?: string;
+            /** @description Average heart rate over the asleep intervals */
+            sleepingHr?: number;
         };
         SleepNightBatchRequest: {
+            /**
+             * Format: date
+             * @description Start of the re-sent window (health nights missing inside it are deleted)
+             */
+            windowFrom?: string;
+            /** Format: date */
+            windowTo?: string;
             nights: components["schemas"]["SleepNightIn"][];
         };
         DailyMetricIn: {
@@ -12904,6 +12915,18 @@ export interface components {
             minHr?: number;
             maxHr?: number;
             activeKcal?: number;
+            distanceM?: number;
+            basalKcal?: number;
+            exerciseMin?: number;
+            hrvMs?: number;
+            respRate?: number;
+            spo2Pct?: number;
+            /** @description Signed deviation or absolute wrist temperature */
+            wristTempC?: number;
+            vo2max?: number;
+            walkingHr?: number;
+            mindfulMin?: number;
+            daylightMin?: number;
         };
         DailyMetricBatchRequest: {
             days: components["schemas"]["DailyMetricIn"][];
@@ -12918,11 +12941,16 @@ export interface components {
             kcal?: number;
             avgHr?: number;
             sourceName?: string;
+            distanceM?: number;
+            maxHr?: number;
+            sourceBundle?: string;
         };
         WorkoutBatchRequest: {
             workouts: components["schemas"]["WorkoutIn"][];
         };
         CalendarEventIn: {
+            /** @description EventKit item id plus occurrence start */
+            externalId: string;
             title: string;
             /** Format: date-time */
             startAt: string;

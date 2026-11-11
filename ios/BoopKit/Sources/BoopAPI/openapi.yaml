@@ -31934,11 +31934,28 @@ components:
           minimum: 0
         hypnogram:
           $ref: '#/components/schemas/Hypnogram'
+        sourceApp:
+          type: string
+          maxLength: 80
+          description: Name of the app whose night won on the phone
+        sleepingHr:
+          type: integer
+          minimum: 0
+          description: Average heart rate over the asleep intervals
     SleepNightBatchRequest:
       type: object
       required:
         - nights
       properties:
+        windowFrom:
+          type: string
+          format: date
+          description: >-
+            Start of the re-sent window (health nights missing inside it are
+            deleted)
+        windowTo:
+          type: string
+          format: date
         nights:
           type: array
           minItems: 1
@@ -31968,6 +31985,39 @@ components:
           type: integer
           minimum: 0
         activeKcal:
+          type: integer
+          minimum: 0
+        distanceM:
+          type: integer
+          minimum: 0
+        basalKcal:
+          type: integer
+          minimum: 0
+        exerciseMin:
+          type: integer
+          minimum: 0
+        hrvMs:
+          type: number
+          minimum: 0
+        respRate:
+          type: number
+          minimum: 0
+        spo2Pct:
+          type: number
+          minimum: 0
+        wristTempC:
+          type: number
+          description: Signed deviation or absolute wrist temperature
+        vo2max:
+          type: number
+          minimum: 0
+        walkingHr:
+          type: integer
+          minimum: 0
+        mindfulMin:
+          type: integer
+          minimum: 0
+        daylightMin:
           type: integer
           minimum: 0
     DailyMetricBatchRequest:
@@ -32010,6 +32060,15 @@ components:
         sourceName:
           type: string
           maxLength: 80
+        distanceM:
+          type: integer
+          minimum: 0
+        maxHr:
+          type: integer
+          minimum: 0
+        sourceBundle:
+          type: string
+          maxLength: 120
     WorkoutBatchRequest:
       type: object
       required:
@@ -32023,11 +32082,17 @@ components:
     CalendarEventIn:
       type: object
       required:
+        - externalId
         - title
         - startAt
         - endAt
         - allDay
       properties:
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: EventKit item id plus occurrence start
         title:
           type: string
           minLength: 1
