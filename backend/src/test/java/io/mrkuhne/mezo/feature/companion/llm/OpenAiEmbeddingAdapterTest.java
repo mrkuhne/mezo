@@ -113,4 +113,43 @@ class OpenAiEmbeddingAdapterTest {
                 new CompanionProperties.Turn.Replan(1),
                         new CompanionProperties.Turn.Provenance(90, "0 50 3 * * *")));
     }
+
+    /** What actually goes ON THE WIRE: the configured model and 768 dimensions (the vector(768)
+     *  schema), against a local stand-in for the provider. Guards the Spring AI default-options merge. */
+    @Test
+    void wireRequest_carriesTheConfiguredModelAndSchemaDimensions() throws Exception {
+        java.util.concurrent.atomic.AtomicReference<String> body = new java.util.concurrent.atomic.AtomicReference<>();
+        com.sun.net.httpserver.HttpServer server =
+                com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+        StringBuilder vector = new StringBuilder();
+        for (int i = 0; i < EmbeddingPort.DIMENSIONS; i++) {
+            vector.append(i == 0 ? "1.0" : ",0.0");
+        }
+        String reply = "{\"object\":\"list\",\"model\":\"" + EMBED_MODEL + "\",\"data\":[{\"object\":\"embedding\","
+                + "\"index\":0,\"embedding\":[" + vector + "]}],\"usage\":{\"prompt_tokens\":2,\"total_tokens\":2}}";
+        server.createContext("/", exchange -> {
+            body.set(new String(exchange.getRequestBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+            byte[] bytes = reply.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+        server.start();
+        try {
+            OpenAiEmbeddingAdapter adapter = new OpenAiEmbeddingAdapter(properties(), recorder,
+                    new LlmCallContextHolder(), "sk-test",
+                    "http://127.0.0.1:" + server.getAddress().getPort() + "/v1");
+
+            float[] result = adapter.embedQuery("alvás");
+
+            assertThat(result).hasSize(EmbeddingPort.DIMENSIONS);
+            assertThat(result[0]).isEqualTo(1f);
+            assertThat(body.get()).contains("\"model\":\"" + EMBED_MODEL + "\"")
+                    .contains("\"dimensions\":" + EmbeddingPort.DIMENSIONS)
+                    .contains("alvás");
+        } finally {
+            server.stop(0);
+        }
+    }
 }

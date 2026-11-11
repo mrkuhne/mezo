@@ -47,19 +47,26 @@ public class OpenAiEmbeddingAdapter implements EmbeddingPort {
     private final LlmCallContextHolder llmCallContextHolder;
     private final OpenAiEmbeddingModel model;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public OpenAiEmbeddingAdapter(CompanionProperties companionProperties, LlmCallRecorder llmCallRecorder,
                                   LlmCallContextHolder llmCallContextHolder,
                                   @Value("${spring.ai.openai.api-key}") String apiKey) {
+        this(companionProperties, llmCallRecorder, llmCallContextHolder, apiKey, null);
+    }
+
+    /** {@code baseUrl} null = the provider's default endpoint; a test points it at a local server. */
+    OpenAiEmbeddingAdapter(CompanionProperties companionProperties, LlmCallRecorder llmCallRecorder,
+                           LlmCallContextHolder llmCallContextHolder, String apiKey, String baseUrl) {
         this.companionProperties = companionProperties;
         this.llmCallRecorder = llmCallRecorder;
         this.llmCallContextHolder = llmCallContextHolder;
-        this.model = apiKey == null ? null : OpenAiEmbeddingModel.builder()
-                .options(OpenAiEmbeddingOptions.builder()
-                        .apiKey(apiKey)
-                        .model(companionProperties.embedding().model())
-                        .dimensions(DIMENSIONS)
-                        .build())
-                .build();
+        OpenAiEmbeddingOptions.Builder options = OpenAiEmbeddingOptions.builder()
+                .dimensions(DIMENSIONS);
+        options.apiKey(apiKey).model(companionProperties.embedding().model()).maxRetries(1);
+        if (baseUrl != null) {
+            options.baseUrl(baseUrl);
+        }
+        this.model = OpenAiEmbeddingModel.builder().options(options.build()).build();
     }
 
     @Override
