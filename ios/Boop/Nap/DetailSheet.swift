@@ -75,23 +75,24 @@ private var gregorian: Calendar {
     return c
 }
 
+/// The Gregorian weekday index (0 = Sunday) of each of the `count` days ending on `ymd`, oldest first; nil = unreadable.
+private func weekdayIndices(endingOn ymd: String, count: Int) -> [Int]? {
+    guard let end = dateOf(ymd) else { return nil }
+    return (0..<count).map { k in
+        gregorian.component(.weekday, from: gregorian.date(byAdding: .day, value: k - (count - 1), to: end)!) - 1
+    }
+}
+
 /// The short day names of the `count` days ending on `ymd` (oldest first, the last is that day). Unreadable date: blanks.
 func weekLabels(endingOn ymd: String, count: Int = 7) -> [String] {
-    guard let end = dateOf(ymd) else { return Array(repeating: "", count: count) }
-    return (0..<count).map { k in
-        let d = gregorian.date(byAdding: .day, value: k - (count - 1), to: end)!
-        return dayAbbrev[gregorian.component(.weekday, from: d) - 1]
-    }
+    weekdayIndices(endingOn: ymd, count: count)?.map { dayAbbrev[$0] } ?? Array(repeating: "", count: count)
 }
 
 /// The capitalised day names of the `count` days ending on `ymd` (oldest first): "Szerda" … "Kedd". Unreadable: blanks.
 func weekdayNames(endingOn ymd: String, count: Int = 7) -> [String] {
-    guard let end = dateOf(ymd) else { return Array(repeating: "", count: count) }
-    return (0..<count).map { k in
-        let d = gregorian.date(byAdding: .day, value: k - (count - 1), to: end)!
-        let n = dayNames[gregorian.component(.weekday, from: d) - 1]
-        return n.prefix(1).uppercased() + n.dropFirst()
-    }
+    weekdayIndices(endingOn: ymd, count: count)?.map { i in
+        let n = dayNames[i]; return n.prefix(1).uppercased() + n.dropFirst()
+    } ?? Array(repeating: "", count: count)
 }
 
 /// "kedd" for "2026-11-10".

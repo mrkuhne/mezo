@@ -63,12 +63,12 @@ final class ProposalDesk {
     }
 
     /// *Most nem*: hidden for today only (the key carries the date).
-    func dismiss(_ p: Proposal, brief: Brief, ctx: MaiContext) {
+    func dismiss(_ p: Proposal, brief: Brief, toast: (String) -> Void) {
         var keys = dismissedSet(from: dismissedRaw)
         keys.insert(Proposals.dismissKey(date: brief.date, id: p.id))
         dismissedRaw = dismissedString(keys)
         settle(p, .dismissed(p.text))
-        ctx.toast(MaText.dismissed)
+        toast(MaText.dismissed)
     }
 }
 
@@ -93,7 +93,7 @@ struct ProposalCards: View {
             ForEach(items, id: \.proposal.id) { item in
                 NKProposalCard(text: item.proposal.text, sub: item.proposal.sub, state: item.state, compact: compact,
                                onAccept: { desk.accept(item.proposal, brief: brief, store: store, ctx: ctx) },
-                               onDismiss: { desk.dismiss(item.proposal, brief: brief, ctx: ctx) },
+                               onDismiss: { desk.dismiss(item.proposal, brief: brief, toast: ctx.toast) },
                                onWhy: { desk.why = item.proposal })
                     .opacity(desk.busy ? 0.6 : 1)
                     .disabled(desk.busy)
@@ -125,7 +125,7 @@ struct ProposalWhySheet: View {
                     if s == .pending {
                         HStack(spacing: 10) {
                             NKPill("Elfogadom", wide: false) { desk.why = nil; desk.accept(p, brief: brief, store: store, ctx: ctx) }
-                            NKPill("Most nem", primary: false, wide: false) { desk.why = nil; desk.dismiss(p, brief: brief, ctx: ctx) }
+                            NKPill("Most nem", primary: false, wide: false) { desk.why = nil; desk.dismiss(p, brief: brief, toast: ctx.toast) }
                         }
                     } else {
                         Text(s == .accepted(p.acceptedLine) ? "Ezt már elfogadtad." : "Ezt most félretetted.")
