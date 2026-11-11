@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B2 Gerinc shipped (2026-11-11) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -62,6 +62,17 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-11-11 — Boop B1 · Adatalap — a Boop sokkal többet lát az Egészségből (`mezo-r36n9.11`).**
+  Az iPhone-app mostantól 23 féle Apple Egészség-adatot húz be forrásmegjelöléssel (a pulzus 5 perces
+  sávokban), úgy követi a változásokat, hogy semmi nem veszik el, és a háttérben is képes ébredni új adatra
+  (a kód bent van, telefonon még nem ellenőrizve). Egy napra egy éjszaka jut: az óra/gyűrű mért adatai és a
+  kézzel megadott érzet összeolvad. A súly az Egészségből is jön, a törlések
+  átmennek, az edzések nem számolódnak duplán a naplózott edzéssel, a naptár története megmarad, és az
+  értesítési regisztráció is kész (küldés még nincs). A két fiók összevonásához migrációs szkript készült
+  (az éles futtatáshoz külön engedély kell). **Az ingyenes Apple-csapaton készült**; a fizetős csapat
+  ~2026-11-25-re várható, a hozzá tartozó teendők: `mezo-r36n9.19`.
+  [terv](../superpowers/plans/2026-11-11-boop-b1-adatalap.md), [működés](../features/boop-ios.md).
 
 - **2026-11-11 — Boop B2 · Gerinc — új gerinc az iPhone-appban (`mezo-r36n9.12`).**
   Az alsó sáv mostantól Ma · Terv · Napló · Boop és egy külön „+” gomb. A Ma egyetlen görgetés: reggeli

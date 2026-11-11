@@ -46,7 +46,7 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
   "Mezo", in every user-visible string. The orb is Boop's face.
 - **The original (web) account** is Boop's only account (2026-11-11); the Boop account's data migrates into it in
   B1 (production write → per-change owner OK + rollback plan).
-- **Paid Apple Developer Program** (2026-11-11), subscribed when B1 starts: background HealthKit delivery, APNs,
+- **Paid Apple Developer Program** (2026-11-11; the team arrives ~2026-11-25 — treat it as **still pending until the owner says it is active**; follow-up `mezo-r36n9.19`): background HealthKit delivery, APNs,
   watchOS app, no weekly reinstall. Until then the free team rules in §3 apply.
 - **Order** (2026-11-11): repair → data foundation → spine → **daily loop** → food / training + Watch → the Plan →
   day capacity → one AI.
@@ -90,6 +90,7 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 
 - `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` (xcode-select points at the CLT).
 - Build/test commands, launch arguments and the DEBUG `-preview onboarding|shell` switch: `ios/README.md`.
+- Paid-team switch: `touch ~/.config/boop/paid` makes `install-on-phone.sh` sign with `Boop-Paid.entitlements` (push); never before the paid team is active.
 - Team id lives in `~/.config/boop/team` (never commit it; `git grep DEVELOPMENT_TEAM ios/` must be empty).
 - **LuLu firewall on the Mac blocks network calls from the ad-hoc signed simulator app** (simulator Safari and host
   tools work). Test live calls on the phone or with stubbed transports; don't change the owner's firewall.
@@ -130,7 +131,7 @@ v2.401.0; `mezo-r36n9.8`). **S4 lépések is cancelled** — its parts live in B
 | Slice | Issue | State | Can start |
 |---|---|---|---|
 | B0 Javítás — memory + konzílium repair (backend) | `mezo-r36n9.10` | deployed v2.402.0 (2026-11-11): embeddings on OpenAI, re-embed backfill running, nightly-pass + quota + fact-merge + retriever fixes, 2 new admin alerts; overnight prod check 2026-11-12 08:00 | done when the check passes |
-| B1 Adatalap — paid team, account switch, wide Health, sources, background | `mezo-r36n9.11` | open | now (parallel) |
+| B1 Adatalap — wide Health, sources, background, merge scripts | `mezo-r36n9.11` | shipped 2026-11-11 (free team; paid items → `mezo-r36n9.19`; production account merge still needs the owner's OK) | done |
 | B2 Gerinc — Ma · Terv · Napló · Boop + `+`, proposal card, drill-down | `mezo-r36n9.12` | **shipped 2026-11-11** | spine bar, Ma one-scroll (Reggel plan, Napközben MOST proposals, Este frame), five rooms, capture/account sheets, Terv/Napló/Boop frames |
 | B3 Napi ritmus — check-in + snapshot, goal, journal, evening close, basic chat | `mezo-r36n9.13` | open | after B2 |
 | B4 Étel — native capture, allergens, day budget | `mezo-r36n9.14` | open | after B3 (∥ B5) |

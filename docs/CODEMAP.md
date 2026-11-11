@@ -39,7 +39,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [meal](#meal) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · | · | · |
 | [needs](#needs) | ✓ | 1 | ✓ | · | [needs](features/needs.md) |
-| [notification](#notification) | ✓ | 2 | ✓ | ✓ | [_platform-notifications](features/_platform-notifications.md) |
+| [notification](#notification) | ✓ | 2 | ✓ | ✓ | [boop-ios](features/boop-ios.md), [_platform-notifications](features/_platform-notifications.md) |
 | [nutrition](#nutrition) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
 | [pantry](#pantry) | ✓ | 1 | · | · | [pantry](features/pantry.md) |
 | [people](#people) | ✓ | 1 | · | · | [me](features/me.md) |
@@ -1164,7 +1164,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### notification
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-10-12, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-11, in-progress) ·
+  [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-10-12, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/notification`
   - **sub-features:** `domain`
