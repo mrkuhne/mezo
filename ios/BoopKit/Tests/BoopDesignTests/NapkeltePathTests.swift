@@ -21,3 +21,8 @@ private func st(_ id: String, done: Bool = false, now: Bool = false) -> PathStat
     let s = [st("a", done: true), st("now", now: true), st("b")]
     #expect(render(DayPath(stations: s, hue: .forma) { _ in EmptyView() }, height: 400) != nil)
 }
+
+@Test @MainActor func tappableDayPathRenders() {
+    let s = [st("a", done: true), st("now", now: true), st("b")]
+    #expect(render(DayPath(stations: s, hue: .forma, onTap: { _ in }) { _ in EmptyView() }, height: 400) != nil)
+}

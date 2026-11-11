@@ -23,8 +23,11 @@ public func pathLit(_ stations: [PathStation]) -> [Bool] {
 public struct DayPath<Card: View>: View {
     let stations: [PathStation], hue: Hue
     let card: (PathStation) -> Card
-    public init(stations: [PathStation], hue: Hue, @ViewBuilder card: @escaping (PathStation) -> Card) {
-        self.stations = stations; self.hue = hue; self.card = card
+    /// A tap on a station's row (MOST excepted, its card has its own buttons); nil = the rows are not tappable.
+    let onTap: ((PathStation) -> Void)?
+    public init(stations: [PathStation], hue: Hue, onTap: ((PathStation) -> Void)? = nil,
+                @ViewBuilder card: @escaping (PathStation) -> Card) {
+        self.stations = stations; self.hue = hue; self.onTap = onTap; self.card = card
     }
 
     public var body: some View {
@@ -74,7 +77,11 @@ public struct DayPath<Card: View>: View {
             }
             .padding(.bottom, st.opens ? 18 : 10)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { if !st.isNow { onTap?(st) } }
         .accessibilityElement(children: st.opens ? .contain : .combine)
+        .accessibilityAddTraits(onTap != nil && !st.isNow ? .isButton : [])
     }
 
     private func segment(lit: Bool) -> some View {

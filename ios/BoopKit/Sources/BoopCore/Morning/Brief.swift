@@ -147,3 +147,12 @@ extension Brief {
         )
     }
 }
+
+extension Brief {
+    /// Decodes the server's brief JSON (ISO-8601 dates) through the same mapping the client uses; app tests build
+    /// their fixtures this way.
+    public init(json: Data) throws {
+        let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
+        self.init(try d.decode(Components.Schemas.BoopBrief.self, from: json))
+    }
+}
