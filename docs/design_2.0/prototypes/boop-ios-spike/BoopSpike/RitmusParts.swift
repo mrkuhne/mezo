@@ -153,9 +153,11 @@ struct ROfflineChip: View {
 /// Spike-only: the tap count of a flow, shown where it ends (the design goal is counted, not guessed).
 struct RTapCount: View {
     var taps: Int
+    var swipes = 0
     var seconds: Int? = nil
     var body: some View {
-        Text(seconds.map { "\(taps) koppintás · \($0) mp" } ?? "\(taps) koppintás")
+        let g = swipes > 0 ? "\(swipes) húzás · \(taps) koppintás" : "\(taps) koppintás"
+        Text(seconds.map { "\(g) · \($0) mp" } ?? g)
             .font(AuraFont.mono(11, .semibold)).tracking(1).foregroundStyle(.white.opacity(0.5))
     }
 }
