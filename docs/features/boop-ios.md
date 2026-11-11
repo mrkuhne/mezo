@@ -183,7 +183,7 @@ it; in v1 the Edzés, Fuel, Boop and Én tabs open the web app.
     (`PaintedLandscape`, `MirroredLand`), `Orbs` (`orbPalette`, `riseFraction`, `OrbMotion`, `LivingOrb`, `StillOrb`,
     `RisingOrb`, `MiniOrbRow`), `Glass` (`nkGlass`, `NKPill`, `NKMono`, `Trend`, `NKGlyph`, `nkToast`, `NKBoopCard`,
     `NKField`, `NKSkyScreen`, `NKTag`, `NKRow`), `Frames` (`NKTitleRow`, `NKTabStrip`, `NKTabPage`, `NKFlowFrame`,
-    `NKSheetFrame`, `NKNav`, `FloatingLights`, `NKGround`), `Charts`, `Tiles`, `DayPath`.
+    `NKSheetFrame`, `FloatingLights`, `NKGround`), `Charts`, `Tiles`, `DayPath`.
   - S3 additions to the kit: `NKSky` (`.hue` or `.calm`), `NKBackdropPanorama` (the shared landscape and the domain-switch pan), `nkToast(_:action:onAction:)`,
     `WeekBars` with optional days, `RisingOrb(orbScale:)`.
   - `BoopDesign` (legacy) — what is left of the Lágy kit: tokens, Outfit + Manrope (bundled), glyph assets

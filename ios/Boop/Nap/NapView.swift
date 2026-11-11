@@ -7,6 +7,7 @@ import BoopDesign
 /// when the brief did not arrive, a calm retry.
 struct NapView: View {
     @Environment(\.openURL) private var openURL
+    @Environment(\.openAccount) private var openAccount
     @Environment(HealthLink.self) private var link: HealthLink?
     @Environment(MorningStore.self) private var morning: MorningStore?
     @Environment(Session.self) private var session
@@ -88,8 +89,7 @@ struct NapView: View {
     private func page(_ s: NapEmptyState, copy: NapCopy, offline: Bool, onAction: @escaping () -> Void) -> some View {
         NKTabPage(hue: .forma, heroHeight: nil, compact: NKCompact(palette: Hue.forma.orb, title: "Forma", value: copy.orb, line: copy.title)) {
             VStack(spacing: 0) {
-                NKTitleRow(bellCount: 0, onBell: { toast = "Az értesítések hamarosan" }, onPlus: { toast = "A gyors hozzáadás hamarosan" },
-                           onAvatar: { toast = "A beállítások hamarosan" })
+                NKTitleRow(bellCount: 0, onBell: { toast = "Az értesítések hamarosan" }, onPlus: nil, onAvatar: openAccount)
                     .padding(.top, 54)
                 NKTabStrip(tabs: ["Mai", "A napom", "Beszélgetés", "Rutin"],
                            selected: Binding(get: { "Mai" }, set: { if $0 != "Mai" { toast = "\($0) · hamarosan" } }))

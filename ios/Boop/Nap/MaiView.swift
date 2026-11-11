@@ -101,6 +101,7 @@ struct MaiView<Below: View>: View {
     /// The label of the toast's action (nil = "Visszavonom" when there is an undo).
     @State private var toastAction: String?
     @Environment(\.openURL) private var openURL
+    @Environment(\.openAccount) private var openAccount
 
     private var copy: MaiCopy { maiCopy(brief, metricKey(for: selected)) }
     private var now: Date { _ = clockTick; return BoopClock.now() }
@@ -147,8 +148,7 @@ struct MaiView<Below: View>: View {
 
     /// The title row and the Nap tabs, shared by Mai and A napom.
     @ViewBuilder private var header: some View {
-        NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: { show(soonToast("Gyors hozzáadás")) },
-                   onAvatar: { show(soonToast("Beállítások")) })
+        NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: nil, onAvatar: openAccount)
             .padding(.top, 54)
         NKTabStrip(tabs: NapTab.all,
                    selected: Binding(get: { tab }, set: { t in

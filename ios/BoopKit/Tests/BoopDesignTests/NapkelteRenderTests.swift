@@ -55,11 +55,6 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
     #expect(render(Text("x").padding().nkGlass(), width: 200, height: 100) != nil)
 }
 
-@Test func navIsIconsWithSpokenNames() {
-    #expect(NKNav.items.map(\.label) == ["Nap", "Edzés", "Fuel", "Boop", "Én"])
-    #expect(NKNav.items.map(\.glyph) == ["sun-ink", "dumbbell-ink", "bowl-cream", "chat-ink", "person-sage"])
-}
-
 @Test @MainActor func tabStripRendersAtAccessibilitySize() {
     #expect(render(NKTabStrip(tabs: ["Mai", "A napom", "Beszélgetés", "Rutin"], selected: .constant("Mai"), dot: "A napom")
         .dynamicTypeSize(.accessibility3), width: 390, height: 60) != nil)
