@@ -1,4 +1,12 @@
-# Boop iOS spike — Lágy, built natively (2026-11-09)
+# Boop iOS spike
+
+> **Newest round — "Gerinc" (B2, `mezo-r36n9.12`, 2026-11-11):** the standalone spine in the Napkelte look —
+> bottom bar Ma · Terv · Napló · Boop + "+", Ma as one day (Reggel plan → Napközben timeline with proposal cards →
+> Este close), proposal card + "miért?" with labelled expert lines, the domain drill-down template (Alvás),
+> the "+" quick-capture sheet, placeholders. Files `Gerinc*.swift`; launch `-gerinc YES` plus `-gerincTab 0–3`,
+> `-gerincPhase 0|1|2` (the clock; also the time chip top-left), `-gerincMetric 0–4`,
+> `-gerincOpen why|plus|drill`, `-gerincScroll reggel|napkozben|este`. Screenshots: `gerinc-*.png`.
+
 
 > **Newest round — "Napkelte" (owner, 2026-11-10, `mezo-r36n9.3`):** a dark-glass look with a painted sky backdrop
 > and the orb rising as the morning sun; it replaces Lágy as Boop's look once its spec is approved
