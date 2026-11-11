@@ -96,6 +96,8 @@ struct NapView: View {
                 // the phases have nothing to scroll to yet: the strip only says where the day is
                 NKTabStrip(tabs: DayPhase.allCases.map(\.name),
                            selected: .constant(DayPhase.at(BoopClock.now()).name))
+                    .allowsHitTesting(false)
+                    .accessibilityHint("A napod betöltése után működik")
                     .padding(.top, 10)
                 RisingOrb(hue: .forma, score: nil, display: copy.orb, caption: copy.orbCaption, motion: motion)
                     .frame(height: 260).padding(.top, 20)

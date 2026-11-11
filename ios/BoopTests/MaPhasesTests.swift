@@ -85,6 +85,18 @@ struct MaPhasesTests {
                                               calendar: Self.budapest)))
     }
 
+    @Test func napkozbenRangeIsTheTimelinesRealSpan() throws {
+        let st = napkozbenStations(try fullDay(), now: at(13, 40), evening: false, hasProposals: false, calendar: Self.budapest)
+        #expect(timelineSpan(st) == "23:05 – 22:30")
+        let now = PathStation(id: "now", time: "13:40", glyph: "sun-ink", title: "Most", sub: "", done: false, isNow: true)
+        #expect(timelineSpan([now]) == nil)
+        #expect(timelineSpan([]) == nil)
+        // MOST itself and timeless stations never set an end
+        let session = PathStation(id: "session", time: "–", glyph: "dumbbell-ink", title: "Edzés", sub: "", done: false, isNow: false)
+        let meal = PathStation(id: "meal-0", time: "12:30", glyph: "bowl-cream", title: "Ebéd", sub: "", done: false, isNow: false)
+        #expect(timelineSpan([meal, now, session]) == "12:30 – 12:30")
+    }
+
     @Test func dismissStorageRoundTrip() {
         let keys: Set<String> = [Proposals.dismissKey(date: "2026-11-10", id: "move-session"), "2026-11-09|move-session"]
         let raw = dismissedString(keys)

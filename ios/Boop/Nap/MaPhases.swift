@@ -22,6 +22,16 @@ func phaseRange(_ p: DayPhase) -> String {
     }
 }
 
+/// The span the Napközben timeline really covers: the first station's time – the last one's (MOST and timeless
+/// stations left out), e.g. "23:05 – 22:30"; nil on an empty day.
+func timelineSpan(_ stations: [PathStation]) -> String? {
+    let times = stations.filter { !$0.isNow }.map(\.time).filter { t in
+        let p = t.split(separator: ":"); return p.count == 2 && p.allSatisfy { $0.count == 2 && Int($0) != nil }
+    }
+    guard let first = times.first, let last = times.last else { return nil }
+    return "\(first) – \(last)"
+}
+
 /// The whole day's stations as quiet one-line rows (no card hangs off them).
 func quietStations(_ steps: [PathStep]) -> [PathStation] {
     steps.map { PathStation(id: $0.id, time: $0.time, glyph: $0.glyph, title: $0.title, sub: $0.sub,
@@ -179,10 +189,12 @@ struct MaBelow: View {
         .animation(.spring(response: 0.7, dampingFraction: 0.82), value: ctx.hue)
     }
 
-    private func phaseHead(_ p: DayPhase) -> some View {
+    /// `range` nil = the phase's clock range; Napközben passes its timeline's real span ("" hides it).
+    private func phaseHead(_ p: DayPhase, range: String? = nil) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(p.name).nkFont(28, design: .serif).foregroundStyle(.white)
-            Text(phaseRange(p)).nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+            let r = range ?? phaseRange(p)
+            if !r.isEmpty { Text(r).nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.5)) }
             Spacer()
             if p == phase {
                 HStack(spacing: 6) {
@@ -284,7 +296,7 @@ struct MaBelow: View {
         let stations = napkozbenStations(brief, now: ctx.now, evening: ctx.evening, hasProposals: !proposalsInPlan && !shown.isEmpty,
                                          reminder: ctx.reminder.isOn ? ctx.reminder.time : nil)
         return VStack(alignment: .leading, spacing: 14) {
-            phaseHead(.napkozben)
+            phaseHead(.napkozben, range: timelineSpan(stations) ?? "")
             if isEmptyDay(stations) {
                 Text(MaText.emptyDay)
                     .nkFont(15).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)

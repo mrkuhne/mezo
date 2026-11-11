@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import BoopCore
 import BoopDesign
 @testable import Boop
 
@@ -16,6 +17,25 @@ struct MaiModeTests {
         #expect(isEvening(at(23, 30)))
         #expect(!isEvening(at(6)))
         #expect(!isEvening(at(12)))
+    }
+
+    @Test func thePhaseClockWakesAtFourTenAndSix() {
+        let c = Calendar.current
+        let tomorrow = c.date(byAdding: .day, value: 1, to: at(4))!
+        #expect(nextPhaseBoundary(after: at(3, 59)) == at(4))
+        #expect(nextPhaseBoundary(after: at(9)) == at(10))
+        #expect(nextPhaseBoundary(after: at(12)) == at(18))
+        #expect(nextPhaseBoundary(after: at(23)) == tomorrow)
+        // on a boundary: the next one, never the same instant
+        #expect(nextPhaseBoundary(after: at(10)) == at(18))
+        #expect(nextPhaseBoundary(after: at(18)) == tomorrow)
+        // the phase really changes at each wake-up
+        for d in [at(3, 59), at(9), at(12), at(17, 59)] {
+            #expect(DayPhase.at(nextPhaseBoundary(after: d)) != DayPhase.at(d))
+        }
+        // the page sleeps until the nearer of the two
+        #expect(nextClockWake(after: at(9)) == at(10))
+        #expect(nextClockWake(after: at(23)) == c.date(byAdding: .day, value: 1, to: c.startOfDay(for: at(12))))
     }
 
     @Test func theModeClockWakesAtTheNextBoundary() {
