@@ -372,7 +372,7 @@ struct HealthSyncTests {
         let sixty = cal.date(from: DateComponents(year: 2026, month: 9, day: 10))!
         #expect(health.froms.last == sixty.addingTimeInterval(-18 * 3600))
         let sent = bodies("ingestSleepNights")
-        #expect(sent.count == 2)                                          // 40 nights in batches of 30
+        #expect(sent.count == 1)                                          // one call: the server spares only that call's nights
         #expect(sent.allSatisfy { $0.contains(#""windowFrom":"2026-09-10""#) && $0.contains(#""windowTo":"2026-11-09""#) })
     }
 

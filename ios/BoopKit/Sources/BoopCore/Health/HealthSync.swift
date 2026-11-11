@@ -28,7 +28,7 @@ import BoopAPI
 /// synced before B1 re-read the 60 days once for the new day fields) moves only when a whole run succeeds.
 ///
 /// **Order**: nights → days → workouts (+ deletions) → samples per metric (+ deletions) → HR buckets →
-/// calendar. Batches: nights 30, days 60, workouts 100, samples 500, deletions 500, calendar 14 days.
+/// calendar. Batches: nights 30 (a deletion window: one call), days 60, workouts 100, samples 500, deletions 500, calendar 14 days.
 ///
 /// **Calendar**: the first run backfills 60 past days + today + tomorrow (≤ 14 days per call); afterwards
 /// yesterday…tomorrow. Its failure is reported apart and never undoes the Health upload.
@@ -212,7 +212,8 @@ public final class HealthSync {
         pending = Summary(nights: nights.count, days: days.count, workouts: workouts.count, events: 0, samples: sampleCount)
 
         // 2. Send, kind by kind; an anchor moves only after all of its batches were acknowledged.
-        var batches = chunks(nights, 30).count + chunks(days, 60).count + chunks(workouts, 100).count
+        let nightBatch = nightWindow == nil ? 30 : 100
+        var batches = chunks(nights, nightBatch).count + chunks(days, 60).count + chunks(workouts, 100).count
             + chunks(workoutDeletions, 500).count + chunks(buckets, 500).count + 1
         for w in sampleWork { batches += chunks(w.added, 500).count + chunks(w.deleted, 500).count }
         var sent = 0
@@ -221,7 +222,9 @@ public final class HealthSync {
             if visible { phase = .running(progress: Double(sent) / Double(batches)) }
         }
 
-        for batch in chunks(nights, 30) {
+        // A window payload must go out whole: the server spares only the nights of the same call, and a
+        // night it deleted stays deleted on re-send. 61 nights fit the server cap (100) in one call.
+        for batch in chunks(nights, nightBatch) {
             try check(try await client.ingestSleepNights(body: .json(.init(
                 windowFrom: nightWindow?.from, windowTo: nightWindow?.to, nights: batch))))
             step()
