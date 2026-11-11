@@ -129,7 +129,13 @@ public record MemoryPlatformProperties(
              * (mezo-iddo). It must stay well above the provider's real latency: this is a network
              * call, while {@link #retrieverTimeoutMs} is sized for a database query.
              */
-            @Min(200) @Max(30000) int queryEmbeddingTimeoutMs) {
+            @Min(200) @Max(30000) int queryEmbeddingTimeoutMs,
+            /**
+             * mezo-lb2yb: how long a retriever may WAIT in the shared executor's queue before it
+             * starts. {@link #retrieverTimeoutMs} is measured from the task's start, so a queued
+             * retriever is no longer killed by its own run budget before it runs.
+             */
+            @Min(10) @Max(30000) int retrieverQueueWaitMs) {
     }
 
     public record Reranker(

@@ -1,6 +1,5 @@
 package io.mrkuhne.mezo.feature.companion.memory.repository;
 
-import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.sql.Savepoint;
@@ -31,7 +30,7 @@ public class LexicalMemoryQuery {
             select i.id as item_id, i.source_id, i.source_kind,
                    coalesce(i.title, i.source_kind) as label, i.content, i.occurred_on, i.salience,
                    source_message.conversation_id as diversity_group_id,
-                   ts_rank_cd(i.search_vector, websearch_to_tsquery('simple', :query))
+                   ts_rank_cd(i.search_vector, %TSQUERY%)
                      + greatest(similarity(i.search_text, :query),
                                 word_similarity(:query, i.search_text)) * 0.25 as score
             from memory_item i
@@ -78,16 +77,18 @@ public class LexicalMemoryQuery {
 
     public List<Hit> search(UUID userId, String rawQuery, LocalDate asOf,
                             UUID conversationId, int candidateLimit, String sourceKind) {
-        String query = ToolText.fold(rawQuery).trim();
-        if (query.isEmpty()) {
+        // mezo-lb2yb: a context-dump query is shaped into a few keywords (see MemoryKeywordQuery).
+        MemoryKeywordQuery shaped = MemoryKeywordQuery.of(rawQuery);
+        if (shaped.text().isEmpty()) {
             return List.of();
         }
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("userId", userId)
-                .addValue("query", query)
+                .addValue("query", shaped.text())
+                .addValue("tsQuery", shaped.tsQuery())
                 .addValue("asOf", asOf)
                 .addValue("candidateLimit", candidateLimit);
-        StringBuilder sql = new StringBuilder(SQL_HEAD);
+        StringBuilder sql = new StringBuilder(SQL_HEAD.replace("%TSQUERY%", shaped.tsQuerySql()));
         if (conversationId != null) {
             params.addValue("conversationId", conversationId);
             sql.append(EXCLUDE_CONVERSATION);

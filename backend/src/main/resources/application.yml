@@ -1147,7 +1147,13 @@ mezo:
         # else. Do NOT put a network hop inside it (mezo-iddo: the query embedding used to live
         # here, and at p50 ~270 ms it lost the race on 55 of 55 live runs, silently disabling
         # semantic recall while every run still audited clean).
+        # mezo-lb2yb: measured from the moment the retriever STARTS on the pool (it used to start at
+        # submission, so queued retrievers in the dawn burst timed out before running: lexical
+        # TIMEOUT in 186 of 194 production runs).
         retriever-timeout-ms: 200
+        # Separate cap on the time a retriever may wait in the shared executor's queue before it
+        # starts. Worst case for a caller = this + retriever-timeout-ms.
+        retriever-queue-wait-ms: 2000
         # The one query-embedding hop, taken ONCE before the fan-out. Sized off measured provider
         # latency (p50 ~270 ms, p95 ~675 ms, slowest observed success 1430 ms) with headroom, so it
         # bounds a hung provider without ever cutting off a normal call.

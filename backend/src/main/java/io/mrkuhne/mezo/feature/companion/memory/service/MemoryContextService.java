@@ -301,6 +301,7 @@ public class MemoryContextService {
                 request.consumerPolicy().scopedSourceKind());
         Map<String, RetrieverTask> tasks = new LinkedHashMap<>();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverTimeoutMs());
+        long queueWaitNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverQueueWaitMs());
         // mezo-4qyt: both LLM breadcrumb ThreadLocals are plain, so a retriever's embed call on a
         // pool thread sees neither the actor nor the feature — capture them HERE, on the calling
         // thread, and re-bind them inside the task. The two are deliberately NOT symmetric:
@@ -327,10 +328,13 @@ public class MemoryContextService {
         ordered.stream()
                 .filter(retriever -> retriever.appliesTo(input))
                 .forEach(retriever -> {
-                    long deadline = System.nanoTime() + timeoutNanos;
+                    // mezo-lb2yb: the run budget starts when the task STARTS on the pool, not here.
+                    RetrieverDeadline deadline = new RetrieverDeadline(System.nanoTime(), timeoutNanos, queueWaitNanos);
                     try {
-                        Future<RetrieverOutcome> future = applicationTaskExecutor.submit(
-                                () -> executeInScope(retriever, input, actor, propagated));
+                        Future<RetrieverOutcome> future = applicationTaskExecutor.submit(() -> {
+                            deadline.markStarted();
+                            return executeInScope(retriever, input, actor, propagated);
+                        });
                         tasks.put(retriever.name(), new RetrieverTask(future, deadline, null));
                     } catch (RuntimeException exception) {
                         tasks.put(retriever.name(), new RetrieverTask(null, deadline,
@@ -357,16 +361,11 @@ public class MemoryContextService {
             try {
                 if (task.future() == null) {
                     outcome = new RetrieverOutcome(List.of(), 0L, task.submissionError(), 0L);
-                } else if (task.future().isDone()) {
-                    outcome = task.future().get();
                 } else {
-                    long remaining = task.deadlineNanos() - System.nanoTime();
-                    if (remaining <= 0) {
-                        throw new TimeoutException("retriever deadline elapsed");
-                    }
-                    outcome = task.future().get(remaining, TimeUnit.NANOSECONDS);
+                    outcome = task.deadline().await(task.future());
                 }
-                if (outcome.error() == null && outcome.completedNanos() > task.deadlineNanos()) {
+                if (outcome.error() == null && task.future() != null
+                        && !task.deadline().finishedInTime(outcome.completedNanos())) {
                     throw new TimeoutException("retriever completed after deadline");
                 }
                 if (outcome.error() == null) {
@@ -443,17 +442,15 @@ public class MemoryContextService {
         return Math.max(0L, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos));
     }
 
-    private long elapsedToDeadline(RetrieverTask task) {
-        long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverTimeoutMs());
-        long submittedNanos = task.deadlineNanos() - timeoutNanos;
-        return elapsedMillis(submittedNanos);
+    private static long elapsedToDeadline(RetrieverTask task) {
+        return task.deadline().elapsedSinceSubmissionMillis();
     }
 
     private record RetrieverOutcome(
             List<MemoryCandidate> candidates, long durationMs, String error, long completedNanos) {
     }
 
-    private record RetrieverTask(Future<RetrieverOutcome> future, long deadlineNanos, String submissionError) {
+    private record RetrieverTask(Future<RetrieverOutcome> future, RetrieverDeadline deadline, String submissionError) {
     }
 
     /**

@@ -1,6 +1,5 @@
 package io.mrkuhne.mezo.feature.companion.memory.repository;
 
-import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.time.LocalDate;
@@ -31,7 +30,7 @@ public class KnowledgeFactRetrievalQuery {
                    coalesce(f.valid_from, cast(f.created_at as date)) as occurred_on,
                    f.reinforcement_count, f.pinned, f.conflicts_with,
                    ts_rank_cd(to_tsvector('simple', lower(unaccent(f.fact_text))),
-                              websearch_to_tsquery('simple', :query))
+                              %TSQUERY%)
                      + greatest(similarity(lower(unaccent(f.fact_text)), :query),
                                 word_similarity(:query, lower(unaccent(f.fact_text)))) * 0.25 as score
             from knowledge_fact f
@@ -81,13 +80,16 @@ public class KnowledgeFactRetrievalQuery {
     private final NamedParameterJdbcTemplate jdbc;
 
     public List<Hit> search(UUID userId, String rawQuery, LocalDate asOf, int candidateLimit) {
-        String query = ToolText.fold(rawQuery).trim();
+        // mezo-lb2yb: a context-dump query is shaped into a few keywords (see MemoryKeywordQuery).
+        MemoryKeywordQuery shaped = MemoryKeywordQuery.of(rawQuery);
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("userId", userId)
-                .addValue("query", query)
+                .addValue("query", shaped.text())
+                .addValue("tsQuery", shaped.tsQuery())
                 .addValue("asOf", asOf)
                 .addValue("candidateLimit", candidateLimit);
-        return underSavepoint(template -> template.query(SQL, params, ROW_MAPPER));
+        String sql = SQL.replace("%TSQUERY%", shaped.tsQuerySql());
+        return underSavepoint(template -> template.query(sql, params, ROW_MAPPER));
     }
 
     private <T> T underSavepoint(Function<NamedParameterJdbcTemplate, T> work) {

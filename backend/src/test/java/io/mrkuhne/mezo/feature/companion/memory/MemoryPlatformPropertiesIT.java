@@ -33,6 +33,7 @@ class MemoryPlatformPropertiesIT {
         PREFIX + "fusion.temporal-max-boost=0.004", PREFIX + "fusion.salience-max-adjustment=0.002",
         PREFIX + "fusion.recency-max-boost=0.003", PREFIX + "execution.retriever-timeout-ms=200",
         PREFIX + "execution.query-embedding-timeout-ms=2500",
+        PREFIX + "execution.retriever-queue-wait-ms=2000",
         PREFIX + "reranker.enabled=false", PREFIX + "reranker.uncertainty-delta=0.002",
         PREFIX + "reranker.max-candidates=20", PREFIX + "reranker.max-content-chars=600",
         PREFIX + "reranker.timeout-ms=200",
