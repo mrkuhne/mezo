@@ -50,7 +50,8 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewEvening YES` | the clock reads 21:10 and the brief is an evening one: dusk sky, *Esti check-in* / *Esti levezetés* pills, evening paths |
 | `-previewRecovery YES` | kímélő mód, day 2 of a cold: calm grey-blue sky, the banner, no session |
 | `-previewScroll 850` | tab pages open scrolled to that offset |
-| `-previewSwitch Edzés` | switches to that domain after 3 s and back to Nap 3 s later (record the backdrop blend without taps) |
+| `-previewOpen capture\|account` | opens the "+" capture sheet or the account sheet |
+| `-previewSwitch terv\|naplo\|boop` | switches to that place after 3 s and back to Ma 3 s later (record the backdrop slide + blend without taps) |
 
 Adding an API operation: add its `operationId` to `BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`
 and run `scripts/sync-openapi.sh` whenever `api/openapi.yml` changes.

@@ -131,7 +131,7 @@ v2.401.0; `mezo-r36n9.8`). **S4 lépések is cancelled** — its parts live in B
 |---|---|---|---|
 | B0 Javítás — memory + konzílium repair (backend) | `mezo-r36n9.10` | deployed v2.402.0 (2026-11-11): embeddings on OpenAI, re-embed backfill running, nightly-pass + quota + fact-merge + retriever fixes, 2 new admin alerts; overnight prod check 2026-11-12 08:00 | done when the check passes |
 | B1 Adatalap — paid team, account switch, wide Health, sources, background | `mezo-r36n9.11` | open | now (parallel) |
-| B2 Gerinc — Ma · Terv · Napló · Boop + `+`, proposal card, drill-down | `mezo-r36n9.12` | open | spike now; live data after B1's account switch |
+| B2 Gerinc — Ma · Terv · Napló · Boop + `+`, proposal card, drill-down | `mezo-r36n9.12` | **shipped 2026-11-11** | spine bar, Ma one-scroll (Reggel plan, Napközben MOST proposals, Este frame), five rooms, capture/account sheets, Terv/Napló/Boop frames |
 | B3 Napi ritmus — check-in + snapshot, goal, journal, evening close, basic chat | `mezo-r36n9.13` | open | after B2 |
 | B4 Étel — native capture, allergens, day budget | `mezo-r36n9.14` | open | after B3 (∥ B5) |
 | B5 Edzés + Watch — player, Live Activity, watchOS | `mezo-r36n9.15` | open | after B3 (∥ B4) |
