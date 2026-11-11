@@ -295,7 +295,7 @@ public class MemoryEmbeddingWriter {
                     existing.setOccurredOn(occurredOn);
                     existing.setDeleted(false); // revive: the key is still ours, take it back
                     memoryEmbeddingRepository.saveAndFlush(existing);
-                    publishProjection(existing, content);
+                    publishFreshProjection(existing, content);
                 }, () -> write(createdBy, kind, refId, content, occurredOn));
     }
 
@@ -326,7 +326,7 @@ public class MemoryEmbeddingWriter {
         // A lost race raises the uq violation and rolls back this unit's tx — deliberate:
         // catching it here cannot recover an aborted PG transaction. Callers log-and-continue.
         memoryEmbeddingRepository.saveAndFlush(entity);
-        publishProjection(entity, content);
+        publishFreshProjection(entity, content);
     }
 
     private void deleteAndSuppress(MemoryEmbeddingEntity row) {
@@ -335,13 +335,30 @@ public class MemoryEmbeddingWriter {
         publishSuppression(row);
     }
 
+    /**
+     * Re-publishes an EXISTING legacy row. Its stored vector is never handed on (mezo-lb2yb): the
+     * legacy table keeps vectors of whatever model wrote them — Gemini until the OpenAI switch — and
+     * copying one into the serving generation would mix two vector spaces under one version. The
+     * projection writer re-embeds with the current port, and only when the serving generation does
+     * not already hold a ready vector for the same content, so an unchanged source costs nothing.
+     */
     private void publishProjection(MemoryEmbeddingEntity row, String fullContent) {
+        publish(row, fullContent, null);
+    }
+
+    /** Publishes a row whose vector was computed by the current port IN THIS CALL — safe to reuse
+     *  as chunk 0's vector when it covers exactly that chunk. */
+    private void publishFreshProjection(MemoryEmbeddingEntity row, String fullContent) {
+        publish(row, fullContent, row.getContent().equals(cap(fullContent)) ? row.getEmbedding() : null);
+    }
+
+    private void publish(MemoryEmbeddingEntity row, String fullContent, float[] reusableEmbedding) {
         eventPublisher.publishEvent(new MemoryProjectionEvent.Upsert(
                 new ProjectionCommand(
                     row.getCreatedBy(), row.getKind(), row.getRefId(), null, fullContent,
                     row.getOccurredOn(), List.of(), List.of(), 0.5,
                     MemoryProvenanceEnvelope.empty()),
-                row.getContent().equals(cap(fullContent)) ? row.getEmbedding() : null));
+                reusableEmbedding));
     }
 
     private void publishSuppression(MemoryEmbeddingEntity row) {

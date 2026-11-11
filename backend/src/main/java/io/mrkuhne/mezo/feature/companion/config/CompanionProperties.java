@@ -218,6 +218,10 @@ public record CompanionProperties(
 
     /** V2.1 embedding port — which provider model produces memory vectors (+ V2.2 pipeline tuning). */
     public record Embedding(
+        /** mezo-lb2yb: which adapter answers {@code EmbeddingPort} — {@code gemini} (default; dev, CI,
+         *  tests) or {@code openai} (production since the Gemini prepay credits ran dry, 2026-10-21).
+         *  {@link #model} must name a model of THIS provider. */
+        @NotBlank @Pattern(regexp = "gemini|openai") String provider,
         /** gemini-embedding-001 (bd mezo-c30) — the 768 dimension is structural (vector(768) schema + EmbeddingPort.DIMENSIONS), not config. */
         @NotBlank String model,
         /** V2.2: embed each completed chat turn (user+assistant as one unit, post-commit async) — off removes the listener bean (COMPANION_EMBED_TURNS_SWITCH). */

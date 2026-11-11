@@ -69,6 +69,25 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(vector.getEmbedding()).containsExactly(embeddingPort.embedDocuments(List.of(first)).getFirst());
     }
 
+    /** mezo-lb2yb: the legacy store keeps vectors of whatever model wrote them (Gemini until the
+     *  OpenAI switch). Re-publishing an unchanged legacy row must NEVER copy that stored vector into
+     *  the serving generation — the projection re-embeds with the CURRENT port instead. */
+    @Test
+    void testWriteSummary_shouldNeverCopyAStoredLegacyVector_intoTheServingGeneration() {
+        UUID owner = userPopulator.createUser().getId();
+        String narrative = "Nyugodt nap, korai lefekvés.";
+        var summary = dailySummaryPopulator.summary(owner, DAY, narrative);
+        float[] oldModelVector = io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator.axisVector(3);
+        embeddingPopulator.embedding(owner, "daily_summary", summary.getId(), narrative, DAY, oldModelVector);
+
+        memoryEmbeddingWriter.writeSummary(summary);
+
+        var item = memoryItemRepository.findByCreatedByAndSourceKindAndSourceId(owner, "daily_summary", summary.getId()).orElseThrow();
+        var vector = memoryVectorRepository.findByCreatedByAndMemoryItemIdOrderByEmbeddingVersion(owner, item.getId()).getFirst();
+        assertThat(vector.getEmbedding()).isNotEqualTo(oldModelVector)
+                .containsExactly(embeddingPort.embedDocuments(List.of(narrative)).getFirst());
+    }
+
     @Test
     void testEmbedTurnByMessageId_shouldPersistTurnUnit_whenNewTurn() {
         UUID owner = userPopulator.createUser().getId();

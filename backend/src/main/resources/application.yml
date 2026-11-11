@@ -801,6 +801,9 @@ mezo:
         "[gemini-2.5-flash]":     { input-per-million: 0.30, output-per-million: 2.50, thinking-per-million: 2.50, cached-per-million: 0.075, reasoning-billing: SEPARATE }
         "[gemini-2.5-pro]":       { input-per-million: 1.25, output-per-million: 10.0, thinking-per-million: 10.0, cached-per-million: 0.31, reasoning-billing: SEPARATE }
         "[gemini-embedding-001]": { embed-per-million-chars: 0.15 }
+        # mezo-lb2yb: OpenAI bills $0.02 / 1M TOKENS; this table prices embeddings per CHARACTER
+        # (the adapter reports input length), so ~4 chars/token → $0.005 / 1M chars.
+        "[text-embedding-3-small]": { embed-per-million-chars: 0.005 }
         # GPT-5.6 (mezo-ozri.2). No thinking-per-million on purpose: OpenAI reports reasoning
         # tokens INSIDE completion_tokens, so INCLUDED_IN_OUTPUT is what stops the same tokens
         # being billed twice. WARNING (spec §8.13): these rates are PROMOTIONAL and guaranteed only
@@ -995,9 +998,13 @@ mezo:
     people-recall:
       enabled: true
     embedding:
+      # mezo-lb2yb: gemini | openai — which adapter answers the EmbeddingPort. `gemini` stays the
+      # default so dev, CI and every test run key-less; PRODUCTION overrides provider + model on the
+      # k3s Deployment (Gemini prepay credits depleted 2026-10-21 → OpenAI text-embedding-3-small).
+      provider: ${MEZO_COMPANION_EMBEDDING_PROVIDER:gemini}
       # V2.1 memory vectors (L1 episodic recall) — embedding model behind the EmbeddingPort.
       # The 768 dimension is structural (memory_embedding vector(768) + EmbeddingPort.DIMENSIONS), not config.
-      model: gemini-embedding-001
+      model: ${MEZO_COMPANION_EMBEDDING_MODEL:gemini-embedding-001}
       # V2.2: embed each completed chat turn (user+assistant as ONE unit) after commit;
       # off = the TurnEmbeddingListener bean does not exist (no post-turn embedding call ever)
       embed-chat-turns: true
@@ -1085,11 +1092,13 @@ mezo:
       cron: "0 30 7 * * MON"
     memory-platform:
       # Vector generation served by the new retrieval path; re-embedding never flips this value.
-      serving-embedding-version: gemini-embedding-001-768-v1
+      # mezo-lb2yb: production serves openai-text-embedding-3-small-768-v1 (k3s env) — the same
+      # deploy that flips mezo.companion.embedding.provider, since the two must name one vector space.
+      serving-embedding-version: ${MEZO_MEMORY_EMBEDDING_VERSION:gemini-embedding-001-768-v1}
       # Provider metadata persisted with every canonical vector generation.
-      embedding-provider: google
+      embedding-provider: ${MEZO_MEMORY_EMBEDDING_PROVIDER:google}
       # Provider model persisted with every canonical vector generation.
-      embedding-model: gemini-embedding-001
+      embedding-model: ${MEZO_COMPANION_EMBEDDING_MODEL:gemini-embedding-001}
       # Version of the canonical memory_item projection shape.
       schema-version: 1
       # Safe beta rollout: legacy context serves while unified retrieval is audited in the background.
@@ -1102,14 +1111,16 @@ mezo:
         # Maximum characters retained from one projected item.
         item-max-chars: 600
       reembedding:
-        # Off by default: no scheduled generation backfill bean exists.
-        enabled: false
+        # Off by default: no scheduled generation backfill bean exists. mezo-lb2yb: production turns
+        # it on (k3s env) to backfill the OpenAI generation and to heal failed vectors afterwards.
+        enabled: ${MEZO_MEMORY_REEMBEDDING_ENABLED:false}
         # Generation created or repaired without changing serving-embedding-version.
-        target-version: gemini-embedding-001-768-v1
+        target-version: ${MEZO_MEMORY_EMBEDDING_VERSION:gemini-embedding-001-768-v1}
         # Maximum items processed for one user in one scheduled run.
-        batch-size: 100
-        # Daily backfill slot, after the existing dawn memory jobs.
-        cron: "0 10 4 * * *"
+        batch-size: ${MEZO_MEMORY_REEMBEDDING_BATCH_SIZE:100}
+        # Daily backfill slot, after the existing dawn memory jobs (production: hourly — a run with
+        # nothing missing is one indexed query).
+        cron: ${MEZO_MEMORY_REEMBEDDING_CRON:0 10 4 * * *}
       audit:
         # Retrieval audit rows older than this many days become retention candidates.
         retention-days: 30
