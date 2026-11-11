@@ -37,9 +37,6 @@ public interface WearableWorkoutRepository extends JpaRepository<WearableWorkout
                 @Param("distanceM") Integer distanceM, @Param("maxHr") Integer maxHr,
                 @Param("sourceBundle") String sourceBundle);
 
-    /** Inclusive day range, oldest first (Boop S3 brief inputs, mezo-r36n9.7). */
-    List<WearableWorkoutEntity> findByCreatedByAndDateBetweenOrderByDate(UUID createdBy, LocalDate from, LocalDate to);
-
     /** Soft-deletes the owner's live workouts with these external ids; returns how many were live. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """

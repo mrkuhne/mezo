@@ -38,28 +38,28 @@ class WorkoutReconcilerTest {
     void overlapOfHalfTheShorterIntervalMatches() {
         LoggedSession g = gym(0, 60);
         // Health 40..70: starts 40 min apart (> 20), overlap 20 of shorter 30 = 67 %.
-        assertThat(reconciler.match(health("traditionalStrengthTraining", 40, 70), List.of(g))).contains(g);
+        assertThat(reconciler.match(health("strength", 40, 70), List.of(g))).contains(g);
     }
 
     @Test
     void tooLittleOverlapAndFarStartDoesNotMatch() {
         LoggedSession g = gym(0, 60);
         // Health 50..110: start 50 apart, overlap 10 of shorter 60 = 17 %.
-        assertThat(reconciler.match(health("traditionalStrengthTraining", 50, 110), List.of(g))).isEmpty();
+        assertThat(reconciler.match(health("strength", 50, 110), List.of(g))).isEmpty();
     }
 
     @Test
     void startsWithinTwentyMinutesMatchEvenWithoutOverlapShare() {
         LoggedSession shortG = gym(0, 15);
-        assertThat(reconciler.match(health("traditionalStrengthTraining", 20, 80), List.of(shortG))).contains(shortG);
-        assertThat(reconciler.match(health("traditionalStrengthTraining", 21, 80), List.of(shortG))).isEmpty();
+        assertThat(reconciler.match(health("strength", 20, 80), List.of(shortG))).contains(shortG);
+        assertThat(reconciler.match(health("strength", 21, 80), List.of(shortG))).isEmpty();
     }
 
     @Test
     void activityMismatchNeverMatches() {
         assertThat(reconciler.match(health("running", 0, 60), List.of(gym(0, 60)))).isEmpty();
         assertThat(reconciler.match(health("volleyball", 0, 60), List.of(gym(0, 60)))).isEmpty();
-        assertThat(reconciler.match(health("traditionalStrengthTraining", 0, 60),
+        assertThat(reconciler.match(health("strength", 0, 60),
             List.of(sport("volleyball", 0, 60)))).isEmpty();
     }
 
@@ -68,17 +68,17 @@ class WorkoutReconcilerTest {
         // The port resolves started_at + active_seconds (50 min) when finished_at is null.
         LoggedSession autoClosed = gym(0, 50);
         // Health 20..80: starts 20 apart -> match; Health 30..90: 30 apart, overlap 20 of 50 = 40 % -> no.
-        assertThat(reconciler.match(health("functionalStrengthTraining", 20, 80), List.of(autoClosed)))
+        assertThat(reconciler.match(health("strength", 20, 80), List.of(autoClosed)))
             .contains(autoClosed);
-        assertThat(reconciler.match(health("functionalStrengthTraining", 30, 90), List.of(autoClosed))).isEmpty();
+        assertThat(reconciler.match(health("strength", 30, 90), List.of(autoClosed))).isEmpty();
     }
 
     @Test
     void gymSessionWithNoEndMatchesOnStartGapOnly() {
         LoggedSession startOnly = gym(5, null);
-        assertThat(reconciler.match(health("highIntensityIntervalTraining", 0, 60), List.of(startOnly)))
+        assertThat(reconciler.match(health("hiit", 0, 60), List.of(startOnly)))
             .contains(startOnly);
-        assertThat(reconciler.match(health("highIntensityIntervalTraining", 40, 100), List.of(startOnly))).isEmpty();
+        assertThat(reconciler.match(health("hiit", 40, 100), List.of(startOnly))).isEmpty();
     }
 
     @Test
@@ -91,7 +91,7 @@ class WorkoutReconcilerTest {
     @Test
     void crossAndTrxSportsFitStrengthActivities() {
         LoggedSession c = sport("cross", 0, 45);
-        assertThat(reconciler.match(health("highIntensityIntervalTraining", 0, 45), List.of(c))).contains(c);
+        assertThat(reconciler.match(health("hiit", 0, 45), List.of(c))).contains(c);
         assertThat(reconciler.match(health("volleyball", 0, 45), List.of(c))).isEmpty();
     }
 
@@ -104,7 +104,23 @@ class WorkoutReconcilerTest {
     void twoCandidatesLargestOverlapWins() {
         LoggedSession small = gym(0, 30);   // overlap with 10..70 = 20
         LoggedSession large = gym(15, 75);  // overlap = 55
-        assertThat(reconciler.match(health("traditionalStrengthTraining", 10, 70), List.of(small, large)))
+        assertThat(reconciler.match(health("strength", 10, 70), List.of(small, large)))
             .contains(large);
+    }
+
+    @Test
+    void theWireCodesTheClientSendsMatchTheirSessions() {
+        LoggedSession g = gym(0, 60);
+        assertThat(reconciler.match(health("strength", 0, 60), List.of(g))).contains(g);
+        assertThat(reconciler.match(health("hiit", 0, 60), List.of(g))).contains(g);
+        assertThat(reconciler.match(health("other", 0, 60), List.of(g))).contains(g);
+        assertThat(reconciler.match(health("walking", 0, 60), List.of(g))).isEmpty();
+        LoggedSession v = sport("volleyball", 0, 60);
+        assertThat(reconciler.match(health("volleyball", 0, 60), List.of(v))).contains(v);
+        assertThat(reconciler.match(health("other", 0, 60), List.of(v))).contains(v);
+        assertThat(reconciler.match(health("strength", 0, 60), List.of(v))).isEmpty();
+        LoggedSession trx = sport("trx", 0, 60);
+        assertThat(reconciler.match(health("strength", 0, 60), List.of(trx))).contains(trx);
+        assertThat(reconciler.match(health("hiit", 0, 60), List.of(trx))).contains(trx);
     }
 }

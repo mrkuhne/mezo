@@ -266,14 +266,34 @@ class WearableSleepServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void aWindowDeletedNightStaysDeletedOnResend() {
+    void aWindowDeletedNightComesBackWhenHealthResendsItLater() {
         UUID user = databasePopulator.populateUser("a@test.local");
         service.ingest(user, nightsEndingOn(TODAY, 2), TODAY);
         service.ingest(user, List.of(night(TODAY, 80)), TODAY, TODAY.minusDays(1), TODAY); // drops TODAY-1
-        IngestResult r = service.ingest(user, nightsEndingOn(TODAY, 2), TODAY);
-        assertThat(r.getInserted()).isZero();
-        assertThat(r.getUpdated()).isEqualTo(1);
         assertThat(live(user)).hasSize(1);
+        IngestResult r = service.ingest(user, nightsEndingOn(TODAY, 2), TODAY);
+        assertThat(r.getInserted()).isEqualTo(1);
+        assertThat(live(user)).hasSize(2);
+    }
+
+    private void assertWindowRejected(UUID user, List<SleepNightIn> nights, LocalDate from, LocalDate to) {
+        assertThatThrownBy(() -> service.ingest(user, nights, TODAY, from, to))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class, e ->
+                assertThat(e.getStatus()).isEqualTo(org.springframework.http.HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void invalidWindowsAreRejectedWith400() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        List<SleepNightIn> nights = nightsEndingOn(TODAY, 2);
+        assertWindowRejected(user, nights, TODAY.minusDays(1), null);
+        assertWindowRejected(user, nights, null, TODAY);
+        assertWindowRejected(user, nights, TODAY, TODAY.minusDays(1));
+        assertWindowRejected(user, nights, TODAY.minusDays(101), TODAY);
+        assertWindowRejected(user, nights, TODAY, TODAY); // the TODAY-1 night is outside
+        assertThat(live(user)).isEmpty();
+        service.ingest(user, nights, TODAY, TODAY.minusDays(100), TODAY); // 100-day span is fine
+        assertThat(live(user)).hasSize(2);
     }
 
     @Test

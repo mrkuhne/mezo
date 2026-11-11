@@ -45,9 +45,6 @@ public interface DailyMetricRepository extends JpaRepository<DailyMetricEntity, 
                 @Param("walkingHr") Integer walkingHr, @Param("mindfulMin") Integer mindfulMin,
                 @Param("daylightMin") Integer daylightMin);
 
-    /** Inclusive day range, oldest first (Boop S3 brief inputs, mezo-r36n9.7). */
-    List<DailyMetricEntity> findByCreatedByAndDateBetweenOrderByDate(UUID createdBy, LocalDate from, LocalDate to);
-
     /** Live rows only, inclusive day range, oldest first. */
     List<DailyMetricEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(
         UUID createdBy, LocalDate from, LocalDate to);

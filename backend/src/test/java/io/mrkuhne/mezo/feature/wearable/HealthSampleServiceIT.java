@@ -150,4 +150,14 @@ class HealthSampleServiceIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from weight_log where created_by = ? and is_deleted = false",
             Integer.class, other)).isEqualTo(1);
     }
+
+    @Test
+    void implausibleBodyMassIsStoredButSkipsWeightLogAndDoesNotFailTheBatch() {
+        UUID user = databasePopulator.populateUser("bounds@test.local");
+        IngestResult r = samples.ingest(user, List.of(mass("m-ok", TODAY, 80.4), mass("m-huge", TODAY.minusDays(1), 99999.0),
+            mass("m-tiny", TODAY.minusDays(2), 3.0)), TODAY);
+        assertThat(r.getInserted()).isEqualTo(3);
+        assertThat(live("health_sample", user)).isEqualTo(3);
+        assertThat(live("weight_log", user)).isEqualTo(1);
+    }
 }

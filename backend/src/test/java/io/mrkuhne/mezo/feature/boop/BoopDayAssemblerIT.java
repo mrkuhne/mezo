@@ -352,7 +352,7 @@ class BoopDayAssemblerIT extends AbstractIntegrationTest {
         gym.setActiveSeconds(50 * 60);
         workoutSessionRepository.saveAndFlush(gym);
         // The Watch recorded the same session 5 min later, 60 min, 420 kcal.
-        var w = workoutPopulator.createWorkout(user, "hk-strength", yesterday, "traditionalStrengthTraining",
+        var w = workoutPopulator.createWorkout(user, "hk-strength", yesterday, "strength",
             local(yesterday, 18, 5), local(yesterday, 19, 5));
         w.setKcal(420);
         wearableWorkouts.saveAndFlush(w);

@@ -34,6 +34,9 @@ import tools.jackson.databind.ObjectMapper;
 public class HealthSampleService {
 
     private static final String BODY_MASS = "body_mass";
+    /** weight_log.weight_kg is numeric(5,2); anything outside this is a bad sample, kept in health_sample only. */
+    private static final double MIN_WEIGHT_KG = 20;
+    private static final double MAX_WEIGHT_KG = 400;
 
     private final HealthSampleRepository repository;
     private final HealthWeightService weightService;
@@ -65,7 +68,7 @@ public class HealthSampleService {
             if (!existing.contains(s.getExternalId()) && seen.add(s.getExternalId())) {
                 inserted++;
             }
-            if (BODY_MASS.equals(s.getMetric().getValue()) && s.getValue() != null) {
+            if (BODY_MASS.equals(s.getMetric().getValue()) && plausibleWeightKg(s.getValue())) {
                 weighIns.add(new HealthWeighIn(s.getExternalId(),
                     s.getStart().atZoneSameInstant(zone).toLocalDate(), s.getValue()));
             }
@@ -76,5 +79,9 @@ public class HealthSampleService {
             eventPublisher.publishEvent(new WeightLogSavedEvent(createdBy, newest));
         });
         return new IngestResult(inserted, samples.size() - inserted);
+    }
+
+    private static boolean plausibleWeightKg(Double kg) {
+        return kg != null && kg >= MIN_WEIGHT_KG && kg <= MAX_WEIGHT_KG;
     }
 }

@@ -8,7 +8,10 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepLogSavedEvent;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepNightMerge;
 import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +21,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class WearableSleepService {
+
+    private static final long MAX_WINDOW_DAYS = 100;
 
     private final SleepLogRepository repository;
     private final WearableProperties properties;
@@ -51,6 +57,7 @@ public class WearableSleepService {
     public IngestResult ingest(UUID createdBy, List<SleepNightIn> nights, LocalDate today,
                                LocalDate windowFrom, LocalDate windowTo) {
         WearableBatches.requireAtMost(nights.size(), properties.maxSleepNights());
+        requireValidWindow(nights, windowFrom, windowTo);
         Set<String> insertedIds = new HashSet<>();
         int inserted = 0;
         int updated = 0;
@@ -126,10 +133,24 @@ public class WearableSleepService {
                 SleepNightMerge.demoteToManual(row);
                 repository.saveAndFlush(row);
             } else {
+                // Free the id so a later re-send of this night is a fresh insert, not a "stays deleted" skip.
+                row.setExternalId(null);
+                repository.saveAndFlush(row);
                 repository.delete(row);
             }
         }
         repository.flush();
+    }
+
+    private static void requireValidWindow(List<SleepNightIn> nights, LocalDate from, LocalDate to) {
+        if (from == null && to == null) {
+            return;
+        }
+        if (from == null || to == null || from.isAfter(to) || ChronoUnit.DAYS.between(from, to) > MAX_WINDOW_DAYS
+            || nights.stream().anyMatch(n -> n.getDate().isBefore(from) || n.getDate().isAfter(to))) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("WEARABLE_SLEEP_WINDOW_INVALID").build(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     /** sleep_log.in_bed_min is {@code >= 1}; Health can report 0 for a night without an in-bed sample. */

@@ -70,9 +70,9 @@ class BoopRepositoriesIT extends AbstractIntegrationTest {
         metricPopulator.createDay(user, DAY.minusDays(1), 3000, 55);
         metricPopulator.createDay(user, DAY.minusDays(3), 4000, 56);
         metricPopulator.createDay(user, DAY.minusDays(10), 5000, 57);
-        var rows = metrics.findByCreatedByAndDateBetweenOrderByDate(user, DAY.minusDays(5), DAY);
+        var rows = metrics.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(user, DAY.minusDays(5), DAY);
         assertThat(rows).extracting(r -> r.getDate()).containsExactly(DAY.minusDays(3), DAY.minusDays(1));
-        assertThat(workouts.findByCreatedByAndDateBetweenOrderByDate(user, DAY.minusDays(5), DAY)).isEmpty();
+        assertThat(workouts.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(user, DAY.minusDays(5), DAY)).isEmpty();
     }
 
     @Test

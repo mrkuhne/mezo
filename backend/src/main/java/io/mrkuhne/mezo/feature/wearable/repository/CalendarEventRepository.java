@@ -45,8 +45,6 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEventEnti
         """, nativeQuery = true)
     void softDeleteDay(@Param("createdBy") UUID createdBy, @Param("date") LocalDate date);
 
-    List<CalendarEventEntity> findByCreatedByAndDateOrderByStartAt(UUID createdBy, LocalDate date);
-
     /** Live (not cancelled / soft-deleted) events of the day. */
     List<CalendarEventEntity> findByCreatedByAndDeletedFalseAndDateOrderByStartAt(UUID createdBy, LocalDate date);
 }

@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class WorkoutReconciler {
 
-    private static final Set<String> STRENGTH = Set.of("traditionalstrengthtraining", "functionalstrengthtraining",
-        "highintensityintervaltraining", "crosstraining", "other");
+    private static final Set<String> STRENGTH = Set.of("strength", "hiit", "other", "traditionalstrengthtraining", "functionalstrengthtraining",
+        "highintensityintervaltraining", "crosstraining");
     private static final Set<String> VOLLEYBALL = Set.of("volleyball", "other");
     private static final String SPORT_VOLLEYBALL = "volleyball";
 
