@@ -165,6 +165,8 @@ public struct NKTabPage<Hero: View, Content: View>: View {
             // (safe area + the capsule's row); unmarked heroes fall back to the frame height.
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in
                 if hosted { scrollY = y }
+                // a zero-size layout pass (a navigation stack measures its root once at zero) must not flip the capsule
+                guard geo.size.height > 0 else { return }
                 let threshold = heroEnd.map { $0 - geo.safeAreaInsets.top - 50 } ?? (h - 120)
                 let v = y > threshold
                 if v != showCompact { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showCompact = v } }
