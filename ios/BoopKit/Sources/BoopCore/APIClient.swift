@@ -26,7 +26,19 @@ public func makeTransport() -> URLSessionTransport {
 }
 
 public func makeClient(baseURL: URL = BoopConfig.apiBaseURL, tokens: TokenStore, transport: any ClientTransport = makeTransport()) -> Client {
-    Client(serverURL: baseURL, transport: transport, middlewares: [AuthMiddleware(tokens: tokens)])
+    Client(serverURL: baseURL, configuration: .init(dateTranscoder: FlexibleISO8601Transcoder()),
+           transport: transport, middlewares: [AuthMiddleware(tokens: tokens)])
+}
+
+/// ISO-8601 dates with or without fractional seconds. The backend writes Java `Instant`s, which carry
+/// microseconds when they have them (the Boop brief's `generatedAt`); the runtime's default transcoder
+/// rejects those, and every live brief failed to decode. Encodes without fractions, as before.
+struct FlexibleISO8601Transcoder: DateTranscoder {
+    func encode(_ date: Date) throws -> String { try ISO8601DateTranscoder.iso8601.encode(date) }
+    func decode(_ string: String) throws -> Date {
+        if let date = try? ISO8601DateTranscoder.iso8601WithFractionalSeconds.decode(string) { return date }
+        return try ISO8601DateTranscoder.iso8601.decode(string)
+    }
 }
 
 /// True when the failure is the network (no connection, timeout, DNS…), not the server.

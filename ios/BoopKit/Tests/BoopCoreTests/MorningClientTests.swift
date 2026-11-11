@@ -49,6 +49,19 @@ struct MorningClientTests {
         return cal.date(from: DateComponents(year: y, month: m, day: d, hour: 7))!
     }
 
+    /// The server stamps `generatedAt` with microseconds (Instant truncated to MICROS); the generated client must
+    /// read that, and still read a plain-seconds stamp. Before the fix every live brief failed with "akadt el".
+    @Test func loadReadsFractionalSecondTimestamps() async throws {
+        for stamp in ["2026-11-11T11:07:57.919604Z", "2026-11-10T05:30:00Z"] {
+            try tokens.write("t0")
+            stub.on("getBoopBrief", .json(200, briefJSON().replacingOccurrences(of: "2026-11-10T05:30:00Z", with: stamp)))
+            let s = store()
+            await s.load(date: day(2026, 11, 10))
+            #expect(s.problem == nil, "stamp \(stamp)")
+            #expect(s.brief?.date == "2026-11-10", "stamp \(stamp)")
+        }
+    }
+
     @Test func loadSendsLocalDate() async throws {
         try tokens.write("t0"); stub.on("getBoopBrief", .json(200, briefJSON()))
         let s = store()
