@@ -33,12 +33,13 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 
 - **Standalone, not a port** (2026-11-11). Boop reuses the backend's engines (goal engine, gym progression,
   meal scoring + AI draft, check-in, journal, sleep log, chat platform) and **hides** the web clutter
-  (gamification, quests, titles, habits, needs rings, activity, medication/supplements, life goals, tutorial,
+  (gamification, quests, titles, habits, needs rings, activity, medication (the supplement stack is kept, simplified), life goals, tutorial,
   team wall, Gépterem). Hide = no Boop API/screen; do not delete backend tables. The web app is not developed for
   Boop's sake.
 - **The spine** (2026-11-11): one home **Ma** (Reggel plan → Napközben timeline + proposal cards → Este close
   <60 s), bottom bar **Ma · Terv · Napló · Boop** + global **`+`**; sleep/food/training/energy are identical
-  drill-downs (verdict → level/graph → the days behind it → actions). **Nothing changes without the owner's tap**;
+  rooms opening on one skeleton (verdict → level/graph → the days behind it → actions); **Étel and Edzés are full
+  apps inside the spine** with inner top tabs and the feature lists of spec §3.1. **Nothing changes without the owner's tap**;
   every proposal has **"miért?"**.
 - **One voice: Boop** (2026-11-11). Domain experts (Alvás, Mozgás, Étkezés, Közérzet, Szkeptikus) appear only as
   short labelled lines inside "miért?". No visible team, no expert pages. The companion is **Boop**, never
