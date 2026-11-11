@@ -5561,7 +5561,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Replace the calendar events of each given day (device calendar snapshot) */
+        /**
+         * Sync the calendar events of each given day (device calendar history)
+         * @description For each sent day, events upsert by (externalId, date) and revive if cancelled earlier; live events of that day missing from the payload are soft-deleted (cancelled). Days not in the payload are never touched, so past days stay as history. An empty `events` list cancels the day.
+         */
         put: operations["replaceCalendarDays"];
         post?: never;
         delete?: never;
@@ -29003,7 +29006,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Replaced */
+            /** @description Synced */
             204: {
                 headers: {
                     [name: string]: unknown;

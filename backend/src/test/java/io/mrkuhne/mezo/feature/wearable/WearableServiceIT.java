@@ -111,21 +111,71 @@ class WearableServiceIT extends AbstractIntegrationTest {
             LocalDate.class, user)).isEqualTo(D1);
     }
 
+    private static CalendarEventIn eventId(String id, String title, String start) {
+        OffsetDateTime s = OffsetDateTime.parse(start);
+        return new CalendarEventIn().externalId(id).title(title).startAt(s).endAt(s.plusMinutes(30)).allDay(false).calendarName("Munka");
+    }
+
+    private int live(UUID user, LocalDate d) {
+        return jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ? and is_deleted = false",
+            Integer.class, user, d);
+    }
+
     @Test
-    void calendarReplaceClearsTheDay() {
+    void twoSyncsADayApartKeepYesterday() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        calendar.replace(user, List.of(new CalendarDayIn().date(D1).events(List.of(event("Tegnapi", "2026-11-08T12:00:00+01:00")))));
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of(event("Mai", "2026-11-09T12:00:00+01:00")))));
+        assertThat(live(user, D1)).isEqualTo(1);
+        assertThat(live(user, D2)).isEqualTo(1);
+    }
+
+    @Test
+    void cancelledEventDisappearsFromThatDayOnly() {
         UUID user = databasePopulator.populateUser("a@test.local");
         calendar.replace(user, List.of(
             new CalendarDayIn().date(D2).events(List.of(event("Egyeztetés", "2026-11-09T09:00:00+01:00"),
-                event("Workshop", "2026-11-09T10:30:00+01:00"), event("Hívás", "2026-11-09T17:30:00+01:00"))),
+                event("Workshop", "2026-11-09T10:30:00+01:00"))),
             new CalendarDayIn().date(D1).events(List.of(event("Tegnapi", "2026-11-08T12:00:00+01:00")))));
-        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of(event("Csak ez", "2026-11-09T12:00:00+01:00")))));
-        assertThat(jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ?",
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of(event("Egyeztetés", "2026-11-09T09:00:00+01:00")))));
+        assertThat(live(user, D2)).isEqualTo(1);
+        assertThat(live(user, D1)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ? and is_deleted = true",
             Integer.class, user, D2)).isEqualTo(1);
         calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of())));
-        assertThat(jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ?",
-            Integer.class, user, D2)).isZero();
-        assertThat(jdbc.queryForObject("select count(*) from calendar_event where created_by = ? and date = ?",
-            Integer.class, user, D1)).isEqualTo(1);
+        assertThat(live(user, D2)).isZero();
+        assertThat(live(user, D1)).isEqualTo(1);
+    }
+
+    @Test
+    void multiDayEventLivesUnderTwoDaysAndResendIsIdempotentAndRevives() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        CalendarEventIn trip = eventId("ek-trip", "Konferencia", "2026-11-08T09:00:00+01:00");
+        List<CalendarDayIn> both = List.of(new CalendarDayIn().date(D1).events(List.of(trip)),
+            new CalendarDayIn().date(D2).events(List.of(trip, trip)));
+        calendar.replace(user, both);
+        calendar.replace(user, both);
+        assertThat(count("calendar_event", user)).isEqualTo(2);
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of())));
+        assertThat(live(user, D2)).isZero();
+        calendar.replace(user, List.of(new CalendarDayIn().date(D2).events(List.of(
+            eventId("ek-trip", "Konferencia (új cím)", "2026-11-08T09:00:00+01:00")))));
+        assertThat(live(user, D2)).isEqualTo(1);
+        assertThat(count("calendar_event", user)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select title from calendar_event where created_by = ? and date = ?",
+            String.class, user, D2)).isEqualTo("Konferencia (új cím)");
+    }
+
+    @Test
+    void anotherUsersRowsAreUntouched() {
+        UUID a = databasePopulator.populateUser("a@test.local");
+        UUID b = databasePopulator.populateUser("b@test.local");
+        CalendarEventIn shared = eventId("ek-same", "Közös", "2026-11-09T09:00:00+01:00");
+        calendar.replace(a, List.of(new CalendarDayIn().date(D2).events(List.of(shared))));
+        calendar.replace(b, List.of(new CalendarDayIn().date(D2).events(List.of(shared))));
+        calendar.replace(b, List.of(new CalendarDayIn().date(D2).events(List.of())));
+        assertThat(live(a, D2)).isEqualTo(1);
+        assertThat(live(b, D2)).isZero();
     }
 
     @Test

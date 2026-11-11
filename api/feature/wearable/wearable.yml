@@ -5,8 +5,8 @@ tags:
     description: >
       Boop (native iOS app) ingestion of Apple Health data and the device-calendar snapshot
       (spec 2026-11-09-boop-ios-v1-design §4.4). Every write is idempotent: sleep nights and
-      workouts upsert by the client's `externalId`, daily metrics by date, calendar days replace
-      that day's rows. `created_by` always comes from the JWT.
+      workouts upsert by the client's `externalId`, daily metrics by date, calendar days sync
+      that day's rows (cancelled events are soft-deleted, other days kept). `created_by` always comes from the JWT.
 paths:
   /api/wearable/sleep-nights:
     post:
@@ -90,7 +90,11 @@ paths:
     put:
       tags: [Wearable]
       operationId: replaceCalendarDays
-      summary: Replace the calendar events of each given day (device calendar snapshot)
+      summary: Sync the calendar events of each given day (device calendar history)
+      description: >
+        For each sent day, events upsert by (externalId, date) and revive if cancelled earlier; live
+        events of that day missing from the payload are soft-deleted (cancelled). Days not in the
+        payload are never touched, so past days stay as history. An empty `events` list cancels the day.
       requestBody:
         required: true
         content:
@@ -98,7 +102,7 @@ paths:
             schema: { $ref: '#/components/schemas/CalendarDaysRequest' }
       responses:
         '204':
-          description: Replaced
+          description: Synced
         '400':
           description: Validation failure; WEARABLE_BATCH_TOO_LARGE when a batch exceeds its `mezo.wearable.*` cap
           content:
