@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
@@ -51,6 +52,9 @@ import java.util.UUID;
 class MetricSeriesExpansionIT extends AbstractIntegrationTest {
 
     private static final LocalDate DAY = LocalDate.of(2026, 6, 20);
+
+    @Autowired
+    private SleepLogRepository sleepLogRepository;
 
     @Autowired private MetricSeriesService metricSeriesService;
     @Autowired private UserPopulator userPopulator;
@@ -130,9 +134,13 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testSeries_shouldTakeMaxAwakenings_whenMultipleRowsOnDay() {
+    void testSeries_shouldReadTheLiveNight_whenAnEarlierRowOnTheDayWasDeleted() {
+        // One live night per date since B1 (uq_sleep_log_owner_date_live): a second row on a day
+        // can only exist soft-deleted, and the series must ignore it.
         UUID owner = userPopulator.createUser().getId();
-        sleepLogPopulator.createSleepLog(owner, DAY, "22:00", "06:00", new BigDecimal("7.0"), 4, 1, null);
+        var deleted = sleepLogPopulator.createSleepLog(owner, DAY, "22:00", "06:00", new BigDecimal("7.0"), 4, 9, null);
+        sleepLogRepository.delete(deleted);
+        sleepLogRepository.flush();
         sleepLogPopulator.createSleepLog(owner, DAY, "23:00", "06:30", new BigDecimal("6.0"), 3, 3, null);
 
         assertThat(metricSeriesService.series(owner, MetricKey.SLEEP_AWAKENINGS, DAY, DAY).get(DAY))
