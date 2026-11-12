@@ -126,6 +126,7 @@ final class ChatStoreTests {
         #expect(stub.ops.isEmpty)   // nothing goes out without the net
         #expect(chat.lines.map(\.state) == [.queued, .queued])
         #expect(chat.lines.map(\.who) == [.owner, .owner])
+        #expect(chat.hasQueued)   // the "Nincs net" line shows
         let queued = await outbox.pending
         #expect(queued.map(\.kind) == [.chatQuestion, .chatQuestion])
         #expect(queued.map(\.id) == chat.lines.map(\.id))   // the bubble is the outbox item
@@ -197,6 +198,9 @@ final class ChatStoreTests {
         #expect(queued.first?.id == chat.lines.first?.id)   // same client id, never a second copy
         let payload = try #require(RitmusPayload.decode(ChatQuestionPayload.self, from: queued[0].payload))
         #expect(payload.conversationId == made && payload.text == "Mi legyen a vacsora?")
+        #expect(queued[0].attempts == 1)   // the resend first checks whether the question arrived
+
+        stub.on("listMessages", .json(200, "[]"))
 
         stub.on("sendMessage", .json(200, Self.message("assistant", "Lazac.")))
         stub.on("listMessages", .json(200, "[\(Self.message("user", "Mi legyen a vacsora?")),\(Self.message("assistant", "Lazac."))]"))
@@ -214,5 +218,80 @@ final class ChatStoreTests {
         await chat.ask("x", online: true)
         #expect(chat.lines.map(\.state) == [.failed])
         #expect(await outbox.pending.isEmpty)
+
+        // Újra: asked again, but first the turns are read in case the refused send was stored after all.
+        stub.on("listMessages", .json(200, "[]"))
+        stub.on("sendMessage", .json(200, Self.message("assistant", "Most sikerült.")))
+        let id = try #require(chat.lines.first?.id)
+        await chat.retry(id, online: true)
+        #expect(stub.ops.suffix(2) == ["listMessages", "sendMessage"])
+        #expect(chat.lines.map(\.text) == ["x", "Most sikerült."])
+        #expect(chat.lines.allSatisfy { $0.state == .shown })
+    }
+
+    /// Waits (yielding) until the store shows a line.
+    func firstLine(_ chat: ChatStore) async -> ChatLine? {
+        for _ in 0..<2_000 where chat.lines.isEmpty { try? await Task.sleep(for: .milliseconds(1)) }
+        return chat.lines.first
+    }
+
+    @Test func onlineAskWaitsQuietlyNotAsOffline() async throws {
+        let made = UUID()
+        stub.on("createConversation", .json(201, Self.conversation(made, title: "2026. november 10.")))
+        stub.on("sendMessage", .slowJson(200, Self.message("assistant", "Válasz."), ms: 300))
+        let chat = store()
+        let asking = Task { await chat.ask("Kérdés", online: true) }
+        let line = await firstLine(chat)
+        #expect(line?.state == .sending)
+        #expect(chat.answering)
+        #expect(!chat.hasQueued)   // no "Nincs net" while Boop answers
+        _ = await asking.value
+        #expect(chat.lines.map(\.state) == [.shown, .shown])
+        #expect(!chat.answering)
+    }
+
+    @Test func secondQuestionWhileAnsweringIsNotTakenAndCreatesNothing() async throws {
+        let made = UUID()
+        stub.on("createConversation", .slowJson(201, Self.conversation(made, title: "2026. november 10."), ms: 200))
+        stub.on("sendMessage", .json(200, Self.message("assistant", "Válasz.")))
+        let chat = store()
+        let first = Task { await chat.ask("Egy", online: true) }
+        let second = Task { await chat.ask("Kettő", online: true) }
+        let (a, b) = (await first.value, await second.value)
+        #expect([a, b].filter { $0 }.count == 1)   // the other one tells the caller to keep the text
+        #expect(stub.ops.filter { $0 == "createConversation" }.count == 1)
+        #expect(chat.lines.filter { $0.who == .owner }.count == 1)
+    }
+
+    @Test func refreshDuringAnAskKeepsTheQuestion() async throws {
+        let made = UUID()
+        stub.on("createConversation", .json(201, Self.conversation(made, title: "2026. november 10.")))
+        stub.on("sendMessage", .slowJson(200, Self.message("assistant", "Válasz."), ms: 400))
+        let chat = store()
+        let asking = Task { await chat.ask("Kérdés", online: true) }
+        _ = await firstLine(chat)
+        for _ in 0..<2_000 where chat.conversationId(on: "2026-11-10") == nil { try? await Task.sleep(for: .milliseconds(1)) }
+        stub.on("getDayContext", .json(200, Self.context))
+        stub.on("listMessages", .json(200, "[]"))   // the server has not stored it yet
+        await chat.refresh()
+        #expect(chat.lines.map(\.text) == ["Kérdés"])
+        #expect(chat.lines.first?.state == .sending)
+        _ = await asking.value
+        #expect(chat.lines.map(\.text) == ["Kérdés", "Válasz."])
+    }
+
+    @Test func deliveredWithoutAnAnswerBodyStillShowsTheTurns() async throws {
+        let made = UUID()
+        stub.on("createConversation", .json(201, Self.conversation(made, title: "2026. november 10.")))
+        stub.on("sendMessage", .json(200, Self.message("assistant", "Első válasz.")))
+        let chat = store()
+        await chat.ask("Első", online: true)
+        await chat.ask("Második", online: false)
+        let item = try #require(await outbox.pending.first)
+        await outbox.remove(item.id)
+        stub.on("listMessages", .json(200, "[\(Self.message("user", "Első")),\(Self.message("assistant", "Első válasz.")),\(Self.message("user", "Második")),\(Self.message("assistant", "Második válasz."))]"))
+        await chat.delivered(item, body: nil)
+        #expect(chat.lines.map(\.text) == ["Első", "Első válasz.", "Második", "Második válasz."])
+        #expect(chat.lines.allSatisfy { $0.state == .shown })
     }
 }

@@ -23,7 +23,8 @@ public typealias ServerDay = DayLedger
 /// `.retryLater` (the item is fine, the moment is not; a 401 is an expired session, not a bad item, so the item must
 /// survive until the owner signs in again); every other 4xx → `.failed("HTTP <code>")` and the item waits for the
 /// owner's "Újra". Exceptions: an `addFocus` 409 is the focus cap (`.failed("INTENTION_FOCUS_CAP")`, retrying never
-/// helps), and an `addFocus` 2xx whose body cannot be read is retried (the replay is idempotent and returns the focus id).
+/// helps), an `addFocus` 2xx whose body cannot be read is retried (the replay is idempotent and returns the focus id), and
+/// a chat 5xx is `.failed` (a resend could ask Boop twice; see `sendChatQuestion`).
 public struct RitmusClient: OutboxSender {
     private let client: Client
     private let audioDirectory: URL
@@ -62,7 +63,8 @@ public struct RitmusClient: OutboxSender {
             // An answer whose body would not decode still carries its status; otherwise (no network, a timeout) the
             // write is idempotent, so asking again is safe.
             if let status = (error as? ClientError)?.response?.status.code {
-                return (200..<300).contains(status) ? .sent(nil) : Self.map(status)
+                if (200..<300).contains(status) { return .sent(nil) }
+                return item.kind == .chatQuestion ? Self.chatMap(status) : Self.map(status)
             }
             return .retryLater
         }
@@ -249,18 +251,27 @@ public struct RitmusClient: OutboxSender {
 
     /// A conversation is created on the first question (channel `boop`); once created it is remembered for the retries of
     /// this run, so a failed send does not leave a conversation behind per attempt.
+    ///
+    /// `sendMessage` carries no client ref, so a resend (`attempts > 0`) into a known conversation first reads its turns:
+    /// when the last owner turn is this very question, the earlier send did arrive and the question counts as sent (the
+    /// answer after it is handed back). A 5xx on chat is `.failed` — the bubble offers *Újra* instead of a silent retry
+    /// that could ask twice; no network stays `.retryLater`.
     private func sendChatQuestion(_ item: OutboxItem) async throws -> OutboxSendResult {
         guard let p = RitmusPayload.decode(ChatQuestionPayload.self, from: item.payload) else { return malformed("chat") }
         var conversation = p.conversationId
         if conversation == nil { conversation = await memo.conversation(item.id) }
+        if item.attempts > 0, let id = conversation, let answer = try await alreadyAsked(p.text, in: id) {
+            await memo.forget(item.id)
+            return .sent(RitmusPayload.encode(ChatReply(conversationId: id, content: answer)))
+        }
         if conversation == nil {
             switch try await client.createConversation(body: .json(.init(channel: .boop))) {
             case .created(let ok):
                 guard let made = UUID(uuidString: try ok.body.json.id) else { return .failed("conversation id is not a UUID") }
                 conversation = made
                 await memo.keep(conversation: made, for: item.id)
-            case .unauthorized: return Self.map(401)
-            case .undocumented(let code, _): return Self.map(code)
+            case .unauthorized: return Self.chatMap(401)
+            case .undocumented(let code, _): return Self.chatMap(code)
             }
         }
         guard let id = conversation else { return .retryLater }
@@ -269,11 +280,26 @@ public struct RitmusClient: OutboxSender {
         case .ok(let ok):
             await memo.forget(item.id)
             return .sent(RitmusPayload.encode(ChatReply(conversationId: id, content: try ok.body.json.content)))
-        case .badRequest: return Self.map(400)
-        case .unauthorized: return Self.map(401)
-        case .notFound: return Self.map(404)
-        case .undocumented(let code, _): return Self.map(code)
+        case .badRequest: return Self.chatMap(400)
+        case .unauthorized: return Self.chatMap(401)
+        case .notFound: return Self.chatMap(404)
+        case .undocumented(let code, _): return Self.chatMap(code)
         }
+    }
+
+    /// Chat statuses: like every write, except that a 5xx is not retried silently (the question may have been stored).
+    static func chatMap(_ status: Int) -> OutboxSendResult {
+        (500...599).contains(status) ? .failed("HTTP \(status)") : map(status)
+    }
+
+    /// The answer after `text` when the conversation's last owner turn is `text` (an earlier send arrived); nil = not asked.
+    private func alreadyAsked(_ text: String, in id: UUID) async throws -> String? {
+        guard case .ok(let ok) = try await client.listMessages(path: .init(conversationId: id.uuidString.lowercased())) else {
+            return nil
+        }
+        let turns = try ok.body.json
+        guard let last = turns.lastIndex(where: { $0.role == "user" }), turns[last].content == text else { return nil }
+        return turns[(last + 1)...].first { $0.role != "user" }?.content ?? ""
     }
 
     // MARK: - Fetches

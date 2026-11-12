@@ -2,30 +2,28 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// How one server chip reads in the "Boop látja · most" strip: a glyph, a headline and a quiet second line. The server's
-/// label, value and sub are all kept; only their order differs per kind (as in the approved spike).
+/// How one server chip reads in the "Boop látja · most" strip: a glyph, a headline and a quiet second line. Every word
+/// of the server's chip shows — the label always leads; a short value joins it in the headline ("Alvás 6ó 10p"), a
+/// phrase goes to the second line before the sub ("Naptár" / "még 2 esemény · következő 14:00").
 struct ChipFace: Equatable {
     let glyph: String, title: String, sub: String
 
     init(glyph: String, title: String, sub: String) { self.glyph = glyph; self.title = title; self.sub = sub }
 
     init(_ chip: DayChip) {
+        glyph = switch chip.key {
+        case "sleep": "moon-cream"
+        case "session": chip.label.hasPrefix("Röpi") ? "ball-sun" : "dumbbell-ink"
+        case "checkins": "pen-sun"
+        case "fuel": "bowl-cream"
+        case "goal": "star-sun"
+        case "calendar": "clock-ink"
+        default: "spark-cream"
+        }
         switch chip.key {
-        case "checkins", "fuel":
-            // "3 kitöltés" / "energia 6", "1 240 kcal" / "cél 2 450": the value says what it is
-            glyph = chip.key == "fuel" ? "bowl-cream" : "pen-sun"
-            title = chip.value; sub = chip.sub ?? ""
-        case "goal", "calendar":
-            // "A nap célja" / the goal, "Naptár" / "még 2 esemény · következő 14:00"
-            glyph = chip.key == "goal" ? "star-sun" : "clock-ink"
+        case "checkins", "goal", "calendar":
             title = chip.label; sub = [chip.value, chip.sub].compactMap { $0 }.joined(separator: " · ")
         default:
-            // "Alvás 6ó 10p" / "előző éjjel 7ó 40p", "HRV 41" / "szokott 50", "Röpi 19:00" / "90 perc"
-            glyph = switch chip.key {
-            case "sleep": "moon-cream"
-            case "session": chip.label.hasPrefix("Röpi") ? "ball-sun" : "dumbbell-ink"
-            default: "spark-cream"
-            }
             title = "\(chip.label) \(chip.value)"; sub = chip.sub ?? ""
         }
     }
@@ -76,11 +74,6 @@ struct BoopTabView: View {
         .nkToast($toast)
         .task { await chat?.refresh() }
         .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await chat?.refresh() } } }
-        // The net is back: what waits goes now, and the answers follow.
-        .onChange(of: ritmus?.online) { _, up in
-            guard up == true, let ritmus else { return }
-            Task { await ritmus.outbox.flush(ignoringBackoff: true) }
-        }
     }
 
     private var head: some View {
@@ -124,7 +117,7 @@ struct BoopTabView: View {
         VStack(alignment: .leading, spacing: 10) {
             NKMono("MA KÉRDEZHETED")
             ForEach(questions, id: \.self) { q in
-                Button { ask(q) } label: {
+                Button { Task { await ask(q) } } label: {
                     HStack {
                         Text(q).nkFont(15.5, .medium).foregroundStyle(.white).multilineTextAlignment(.leading)
                         Spacer()
@@ -135,7 +128,7 @@ struct BoopTabView: View {
                     .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .disabled(chat?.answering == true)
+                .disabled(chat?.busy == true)
             }
         }
     }
@@ -182,11 +175,11 @@ struct BoopTabView: View {
 
     // MARK: - Composer
 
-    private var micAvailable: Bool { ritmus.map { $0.goalMicAvailable($0.recorder) } ?? false }
+    private var micAvailable: Bool { ritmus.map { $0.voiceInputAvailable($0.recorder) } ?? false }
 
     private var composer: some View {
         VStack(spacing: 8) {
-            if chat?.lines.contains(where: { $0.state == .queued }) == true { OfflineChip(Self.offlineLine) }
+            if chat?.hasQueued == true { OfflineChip(Self.offlineLine) }
             HStack(spacing: 10) {
                 TextField("", text: $input, prompt: Text(prompt).foregroundStyle(.white.opacity(0.45)))
                     .nkFont(16).foregroundStyle(.white)
@@ -210,7 +203,8 @@ struct BoopTabView: View {
                             .frame(width: 34, height: 34).background(Circle().fill(.white))
                     }
                     .buttonStyle(.plain)
-                    .disabled(chat?.answering == true)
+                    .disabled(chat?.busy == true)
+                    .opacity(chat?.busy == true ? 0.4 : 1)
                     .accessibilityLabel("Küldés")
                 }
             }
@@ -224,16 +218,20 @@ struct BoopTabView: View {
         recording ? "Hallgatlak…" : transcribing ? "Leírom…" : "Kérdezd Boopot…"
     }
 
+    /// While Boop answers the text stays in the field (send is dimmed); it is cleared only once the question is taken.
     private func send() {
         let text = input
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard let chat, !chat.busy, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         input = ""
-        ask(text)
+        Task {
+            if !(await ask(text)), input.isEmpty { input = text }
+        }
     }
 
-    private func ask(_ text: String) {
-        guard let chat, let ritmus else { return }
-        Task { await chat.ask(text, online: ritmus.online) }
+    @discardableResult
+    private func ask(_ text: String) async -> Bool {
+        guard let chat, let ritmus else { return false }
+        return await chat.ask(text, online: ritmus.online)
     }
 
     private func retry(_ line: ChatLine) {
@@ -246,7 +244,7 @@ struct BoopTabView: View {
     private func mic() {
         guard let ritmus, let recorder = ritmus.recorder else { return }
         if !recording {
-            guard micAvailable else { toast = RitmusEnvironment.goalOfflineHint; return }
+            guard micAvailable else { toast = RitmusEnvironment.voiceOfflineHint; return }
             Task {
                 do { try await recorder.start(); recording = true }
                 catch { recording = false; toast = MicCopy.line(for: error) }
@@ -258,7 +256,7 @@ struct BoopTabView: View {
         Task {
             defer { transcribing = false }
             guard let capture = await recorder.stop() else { return }
-            switch await ritmus.heardGoal(capture, speechDenied: recorder.speechDenied) {
+            switch await ritmus.heardSpeech(capture, speechDenied: recorder.speechDenied) {
             case .text(let text): input = text
             case .problem(let line): toast = line
             }
