@@ -145,7 +145,14 @@ final class RitmusClientTests {
     @Test func documentedErrorsMapToo() async {
         stub.on("saveCheckIn", .json(400, #"[{"type":"FIELD","code":"VALIDATION_INVALID_VALUE","fieldName":"date"}]"#))
         stub.on("addFocus", .json(409, #"[{"type":"REQUEST","code":"INTENTION_FOCUS_CAP"}]"#))
+        stub.on("createJournalEntry", .json(409, #"[{"type":"REQUEST","code":"X"}]"#))
         #expect(await ritmus.send(item(.checkIn, CheckInPayload(slot: "10:00", values: [:]))) == .failed("HTTP 400"))
+        #expect(await ritmus.send(item(.goal, GoalPayload(text: "x"))) == .failed("INTENTION_FOCUS_CAP"))
+        #expect(await ritmus.send(item(.journal, JournalPayload(text: "x"))) == .retryLater)   // other 409s retry
+    }
+
+    @Test func goalWithUnreadable2xxBodyIsRetried() async {
+        stub.on("addFocus", .json(200, #"{"nope":true}"#))
         #expect(await ritmus.send(item(.goal, GoalPayload(text: "x"))) == .retryLater)
     }
 

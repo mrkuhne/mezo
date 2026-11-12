@@ -20,8 +20,10 @@ public typealias ServerDay = DayLedger
 /// id as `clientRef`), so a resend after a lost answer never duplicates.
 ///
 /// Status mapping of a write: 2xx → `.sent`; 401, 409, 429, 5xx, no network and anything the transport throws →
-/// `.retryLater` (the item is fine, the moment is not); every other 4xx → `.failed("HTTP <code>")` and the item waits for
-/// the owner's "Újra".
+/// `.retryLater` (the item is fine, the moment is not; a 401 is an expired session, not a bad item, so the item must
+/// survive until the owner signs in again); every other 4xx → `.failed("HTTP <code>")` and the item waits for the
+/// owner's "Újra". Exceptions: an `addFocus` 409 is the focus cap (`.failed("INTENTION_FOCUS_CAP")`, retrying never
+/// helps), and an `addFocus` 2xx whose body cannot be read is retried (the replay is idempotent and returns the focus id).
 public struct RitmusClient: OutboxSender {
     private let client: Client
     private let audioDirectory: URL
@@ -112,12 +114,20 @@ public struct RitmusClient: OutboxSender {
 
     private func sendGoal(_ item: OutboxItem) async throws -> OutboxSendResult {
         guard let p = RitmusPayload.decode(GoalPayload.self, from: item.payload) else { return malformed("goal") }
-        switch try await client.addFocus(body: .json(.init(date: item.date, text: p.text, clientRef: item.id.uuidString))) {
-        case .ok(let ok): return .sent(RitmusPayload.encode(try ok.body.json))
-        case .badRequest: return Self.map(400)
-        case .unauthorized: return Self.map(401)
-        case .conflict: return Self.map(409)
-        case .undocumented(let code, _): return Self.map(code)
+        let focusCap = OutboxSendResult.failed("INTENTION_FOCUS_CAP")
+        do {
+            switch try await client.addFocus(body: .json(.init(date: item.date, text: p.text, clientRef: item.id.uuidString))) {
+            case .ok(let ok): return .sent(RitmusPayload.encode(try ok.body.json))
+            case .badRequest: return Self.map(400)
+            case .unauthorized: return Self.map(401)
+            case .conflict: return focusCap
+            case .undocumented(409, _): return focusCap
+            case .undocumented(let code, _): return Self.map(code)
+            }
+        } catch let error as ClientError {
+            // The focus id lives in the body; a 2xx we cannot read is replayed rather than reported as sent without it.
+            if let status = error.response?.status.code, (200..<300).contains(status) { return .retryLater }
+            throw error
         }
     }
 
@@ -166,8 +176,7 @@ public struct RitmusClient: OutboxSender {
             case .badGateway: return Self.map(502)
             case .undocumented(let code, _): return Self.map(code)
             }
-            guard let heard = text, !heard.isEmpty else { return .failed("no speech in the recording") }
-            await memo.keep(transcript: heard, for: item.id)
+            await memo.keep(transcript: text ?? "", for: item.id)
         }
         guard let transcript = text, !transcript.isEmpty else { return .failed("no speech in the recording") }
         let result = try await createJournal(item, text: transcript)
