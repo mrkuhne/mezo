@@ -6,20 +6,29 @@ import BoopDesign
 
 /// The domain room (B2 Task 7): the day rows of section 3.
 struct MaDrillTests {
-    private func brief(deep: String, hr: String) throws -> Brief {
+    private func brief(deep: String, hr: String, sleep: String = "null") throws -> Brief {
         let metrics = ["forma", "alvas", "mozgas", "fuel", "pulzus"].map {
             #"{"key":"\#($0)","score":70,"display":"70","headline":"h","sentence":"s"}"#
         }.joined(separator: ",")
         let json = #"""
         {"date":"2026-11-10","generatedAt":"2026-11-10T05:30:00Z","state":"okay","nightsKnown":12,
          "metrics":[\#(metrics)],"brief":[],"energy":{"hourly":[],"dipHour":null},"tonightTip":"t","nextMealTip":null,"conflict":null,
-         "day":{"sleep":null,"bedtimeTarget":null,"deepSleepWeek":[\#(deep)],"restingHrWeek":[\#(hr)],
+         "day":{"sleep":\#(sleep),"bedtimeTarget":null,"deepSleepWeek":[\#(deep)],"restingHrWeek":[\#(hr)],
            "steps":null,"stepsGoal":10000,"activeKcal":null,"session":null,"meals":[],
            "kcalSoFar":0,"kcalTarget":2400,"proteinG":0,"proteinTarget":150,"carbsG":0,"fatG":0,
            "checkins":[],"intention":{"creed":null,"foci":[]},"observations":[],
            "calendar":{"count":0,"busySlots":[]},"recovery":null}}
         """#
         return try Brief(json: Data(json.utf8))
+    }
+
+    /// Owner, 2026-11-12: the Alvás room draws the night's stages once (section 1); the path's night card only
+    /// speaks when there are no stages.
+    @Test func theRoomDrawsTheNightOnceOnlyWhenItHasStages() throws {
+        let staged = try brief(deep: "", hr: "", sleep: #"{"bedtime":"23:10","wakeup":"06:40","totalMin":450,"deepMin":80,"remMin":90,"lightMin":250,"awakeMin":30,"hypnogram":[{"stage":1,"minutes":60},{"stage":3,"minutes":40}]}"#)
+        #expect(roomShowsHypnogram(try #require(staged.day.sleep)))
+        let bare = try brief(deep: "", hr: "", sleep: #"{"bedtime":null,"wakeup":null,"totalMin":420,"deepMin":null,"remMin":null,"lightMin":null,"awakeMin":null,"hypnogram":[]}"#)
+        #expect(!roomShowsHypnogram(try #require(bare.day.sleep)))
     }
 
     @Test func alvasDaysFromDeepWeek() throws {

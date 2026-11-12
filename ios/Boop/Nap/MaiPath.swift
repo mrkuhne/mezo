@@ -131,18 +131,12 @@ struct OrbPathCards: View {
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(20)
     }
 
+    /// The night's stages are drawn once, in the room's section 1 (`roomShowsHypnogram`); this card only speaks
+    /// when that chart has nothing to draw.
     @ViewBuilder private func nightCard(_ s: Brief.Sleep?) -> some View {
-        if let s {
-            VStack(alignment: .leading, spacing: 6) {
-                if s.hypnogram.isEmpty {
-                    Text("Az alvásszakaszaidat erről az éjszakáról nem látom.").nkFont(13.5).foregroundStyle(.white.opacity(0.7))
-                } else {
-                    Hypnogram(segments: s.hypnogram.map { (stage: $0.stage, minutes: Double($0.minutes)) }).frame(height: 64)
-                    HStack { Text(s.bedtime ?? "–"); Spacer(); Text(s.wakeup ?? "–") }
-                        .nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.45))
-                }
-            }
-            .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(20)
+        if let s, !roomShowsHypnogram(s) {
+            Text("Az alvásszakaszaidat erről az éjszakáról nem látom.").nkFont(13.5).foregroundStyle(.white.opacity(0.7))
+                .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(20)
         }
     }
 
