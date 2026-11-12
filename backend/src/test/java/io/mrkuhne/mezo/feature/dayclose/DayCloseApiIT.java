@@ -50,9 +50,16 @@ class DayCloseApiIT extends ApiIntegrationTest {
     @Test
     void futureDateIs400() {
         RegisteredUser u = registerUser("dayclose future");
-        String err = putForBody("/api/day-close/" + today.plusDays(1), close("Cél"), u.headers(),
+        String err = putForBody("/api/day-close/" + today.plusDays(2), close("Cél"), u.headers(),
             HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(err, "date", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void ownerTomorrowIsAccepted() {
+        // A phone east of the owner zone already lives in the owner's tomorrow: its close must not be refused forever.
+        RegisteredUser u = registerUser("dayclose east");
+        putForBody("/api/day-close/" + today.plusDays(1), close("Cél"), u.headers(), HttpStatus.OK, String.class);
     }
 
     @Test
@@ -135,7 +142,7 @@ class DayCloseApiIT extends ApiIntegrationTest {
             u.headers(), HttpStatus.BAD_REQUEST, String.class);
         postForBody("/api/day-close/" + today + "/checkin-line", new CheckInLineRequest().slot(""),
             u.headers(), HttpStatus.BAD_REQUEST, String.class);
-        postForBody("/api/day-close/" + today.plusDays(1) + "/checkin-line", new CheckInLineRequest().slot("14:00"),
+        postForBody("/api/day-close/" + today.plusDays(2) + "/checkin-line", new CheckInLineRequest().slot("14:00"),
             u.headers(), HttpStatus.BAD_REQUEST, String.class);
     }
 }

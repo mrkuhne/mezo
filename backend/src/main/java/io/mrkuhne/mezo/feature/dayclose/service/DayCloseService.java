@@ -59,7 +59,8 @@ import org.springframework.transaction.annotation.Transactional;
  * row, {@code ritual_day.closed_at} set) and mark it {@code source = web}; its rating is the 20:00
  * {@code day_rating} ÷ 2 rounded, or null when the web evening had none.
  *
- * <p>Dates: today … today − {@code mezo.dayclose.max-past-days} in the owner zone ({@code mezo.wearable.zone});
+ * <p>Dates: today − {@code mezo.dayclose.max-past-days} … today + 1 in the owner zone ({@code mezo.wearable.zone};
+ * + 1 because a phone east of it dates its day ahead — a capture moment from the real future is still refused);
  * anything else is a 400. "Now" is the application {@link Clock} when one is defined (tests), else the system
  * clock — never {@code LocalDate.now()} in the server's zone.
  *
@@ -72,6 +73,10 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class DayCloseService {
+
+    /** Newest accepted day: owner-today + 1 — a phone east of the owner zone closes its own day, already the
+     *  owner's tomorrow; {@link #MAX_CAPTURED_AHEAD} still blocks a close captured in the real future. */
+    static final int MAX_AHEAD_DAYS = 1;
 
     /** A {@code capturedAt} further than this in the future is a 400 (a phone clock may run slightly ahead). */
     static final Duration MAX_CAPTURED_AHEAD = Duration.ofMinutes(5);
@@ -315,10 +320,11 @@ public class DayCloseService {
         return journalService.findText(owner, entryId).orElse(null);
     }
 
-    /** Today − {@code max-past-days} … today in the owner zone; anything else is the 400 field error on {@code date}. */
+    /** Today − {@code max-past-days} … today + 1 in the owner zone; anything else is the 400 field error on
+     *  {@code date}. */
     private void requireInWindow(LocalDate date) {
         LocalDate today = LocalDate.now(clock().withZone(ownerZone.zoneId()));
-        if (date == null || date.isAfter(today) || date.isBefore(today.minusDays(properties.maxPastDays()))) {
+        if (date == null || date.isAfter(today.plusDays(MAX_AHEAD_DAYS)) || date.isBefore(today.minusDays(properties.maxPastDays()))) {
             throw fieldError("date");
         }
     }

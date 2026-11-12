@@ -145,9 +145,12 @@ class DayCloseServiceIT extends AbstractIntegrationTest {
             .capturedAt(justAfterMidnight.atOffset(ZoneOffset.UTC));
 
         assertThat(service.put(user, yesterday, req).getDate()).isEqualTo(yesterday);
-        // the owner's today is accepted even though UTC has not reached it yet; tomorrow is not
+        // the owner's today is accepted even though UTC has not reached it yet; so is the owner's tomorrow (a phone
+        // east of the owner zone); the day after is not
         assertThat(service.put(user, today, req.clientRef(UUID.randomUUID())).getDate()).isEqualTo(today);
-        assertThatThrownBy(() -> service.put(user, today.plusDays(1), req))
+        assertThat(service.put(user, today.plusDays(1), req.clientRef(UUID.randomUUID())).getDate())
+            .isEqualTo(today.plusDays(1));
+        assertThatThrownBy(() -> service.put(user, today.plusDays(2), req))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
                 e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
