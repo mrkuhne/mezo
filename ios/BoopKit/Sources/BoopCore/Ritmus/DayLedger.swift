@@ -131,18 +131,30 @@ public struct DayLedger: Codable, Equatable, Sendable {
     /// journal lines by id, the goal and the close as a whole); a sent local entry the server day lacks stays only
     /// when it was captured after the fetch left (the fetch could not have seen it); everything else is the
     /// server's. The cached plans stay.
+    ///
+    /// One exception keeps the evening's line: while the server's close carries no journal text yet (its recording or
+    /// relink is still on the way, or failed), the phone's link to the line — and the line — stay on the server's close.
     public func merged(with server: DayLedger, fetchedAt: Date) -> DayLedger {
         let serverSlots = Set(server.checkIns.map(\.slot))
         let serverJournalIds = Set(server.journal.map(\.id))
         let keptCheckIns = checkIns.filter { $0.pending || (!serverSlots.contains($0.slot) && $0.capturedAt > fetchedAt) }
         let keptSlots = Set(keptCheckIns.map(\.slot))
-        let keptJournal = journal.filter { $0.pending || (!serverJournalIds.contains($0.id) && $0.capturedAt > fetchedAt) }
-        let keptJournalIds = Set(keptJournal.map(\.id))
         var out = DayLedger(date: date)
         out.checkIns = (keptCheckIns + server.checkIns.filter { !keptSlots.contains($0.slot) })
             .sorted { $0.capturedAt < $1.capturedAt }
         out.goal = goal.map { $0.pending || (server.goal == nil && $0.setAt > fetchedAt) } == true ? goal : server.goal
-        out.close = close.map { $0.pending || (server.close == nil && $0.capturedAt > fetchedAt) } == true ? close : server.close
+        let keepLocalClose = close.map { $0.pending || (server.close == nil && $0.capturedAt > fetchedAt) } == true
+        out.close = keepLocalClose ? close : server.close
+        if !keepLocalClose, var fresh = server.close, fresh.journalId == nil, (fresh.journalText ?? "").isEmpty,
+           let linked = close?.journalId {
+            fresh.journalId = linked
+            out.close = fresh
+        }
+        let linkedJournal = (out.close?.journalText ?? "").isEmpty ? out.close?.journalId : nil
+        let keptJournal = journal.filter {
+            $0.pending || $0.id == linkedJournal || (!serverJournalIds.contains($0.id) && $0.capturedAt > fetchedAt)
+        }
+        let keptJournalIds = Set(keptJournal.map(\.id))
         out.journal = (server.journal.filter { !keptJournalIds.contains($0.id) } + keptJournal)
             .sorted { $0.capturedAt < $1.capturedAt }
         out.plans = plans.merging(server.plans) { _, fresh in fresh }
