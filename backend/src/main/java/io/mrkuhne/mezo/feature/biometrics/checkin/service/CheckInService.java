@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInSnapshotRepo
 import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInBiomarkerSource.CheckInSnapshotValues;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -54,6 +56,9 @@ public class CheckInService {
     private final OwnerZoneProperties ownerZone;
     private final PlatformTransactionManager transactionManager;
     private final ApplicationEventPublisher eventPublisher;
+    /** "Now" for the date window and the capture moment: the application {@link Clock} when one is defined
+     *  (tests), else the system clock. */
+    private final ObjectProvider<Clock> clock;
 
     public List<CheckInResponse> listForDay(UUID createdBy, LocalDate date) {
         List<CheckInEntity> rows = repository.findByCreatedByAndDateOrderBySlotTime(createdBy, date);
@@ -77,7 +82,7 @@ public class CheckInService {
     public CheckInResponse save(UUID createdBy, SaveCheckInRequest req) {
         requireInWindow(req.getDate());
         Instant savedAt = Optional.ofNullable(req.getCapturedAt()).map(OffsetDateTime::toInstant)
-            .orElseGet(Instant::now);
+            .orElseGet(() -> clock().instant());
         requireNotAhead(savedAt);
         Optional<CheckInSnapshotValues> serverValues = req.getSnapshot() == null
             ? serverValues(createdBy, savedAt) : Optional.empty();
@@ -98,7 +103,7 @@ public class CheckInService {
     public CheckInResponse mergeEvening(UUID owner, LocalDate date, Integer energy, Integer dayRating10,
                                         Instant capturedAt) {
         requireInWindow(date);
-        Instant savedAt = capturedAt == null ? Instant.now() : capturedAt;
+        Instant savedAt = capturedAt == null ? clock().instant() : capturedAt;
         requireNotAhead(savedAt);
         return new TransactionTemplate(transactionManager).execute(status -> {
             boolean created = repository.insertSlotIfAbsent(owner, date, EVENING_SLOT, STATE_DONE) == 1;
@@ -234,7 +239,7 @@ public class CheckInService {
 
     /** Today − 7 … today in the owner zone; anything else is the 400 field error on {@code date}. */
     private void requireInWindow(LocalDate date) {
-        LocalDate today = LocalDate.now(ownerZone.zoneId());
+        LocalDate today = LocalDate.now(clock().withZone(ownerZone.zoneId()));
         if (date == null || date.isAfter(today) || date.isBefore(today.minusDays(MAX_PAST_DAYS))) {
             throw new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_INVALID_VALUE", "date").build(),
                 HttpStatus.BAD_REQUEST);
@@ -242,11 +247,15 @@ public class CheckInService {
     }
 
     /** A capture moment more than {@link #MAX_CAPTURED_AHEAD} in the future: the 400 field error on {@code capturedAt}. */
-    private static void requireNotAhead(Instant capturedAt) {
-        if (capturedAt.isAfter(Instant.now().plus(MAX_CAPTURED_AHEAD))) {
+    private void requireNotAhead(Instant capturedAt) {
+        if (capturedAt.isAfter(clock().instant().plus(MAX_CAPTURED_AHEAD))) {
             throw new SystemRuntimeErrorException(
                 SystemMessage.field("VALIDATION_INVALID_VALUE", "capturedAt").build(), HttpStatus.BAD_REQUEST);
         }
+    }
+
+    private Clock clock() {
+        return clock.getIfAvailable(Clock::systemUTC);
     }
 
     private CheckInResponse toResponse(CheckInEntity row, CheckInSnapshotEntity snapshot) {

@@ -61,7 +61,7 @@ public class DayCloseLineWriter {
 
     /** The day's inputs to Boop's evening sentence — the journal text is deliberately not one of them (it
      *  arrives later and must not invalidate the line). */
-    public record DayInputs(LocalDate date, int dayRating, Integer eveningEnergy, String goalText,
+    public record DayInputs(LocalDate date, Integer dayRating, Integer eveningEnergy, String goalText,
                             String goalOutcome, List<DayClosePlanGoal> planGoals) {}
 
     /** One prompt and the hash of all of it — the cache key. */
@@ -81,8 +81,10 @@ public class DayCloseLineWriter {
     public Prompt dayPrompt(DayInputs in) {
         StringBuilder sb = new StringBuilder();
         sb.append("Nap: ").append(in.date()).append('\n');
-        sb.append("A nap értékelése: ").append(in.dayRating()).append("/5 (")
-            .append(RATING_WORDS[Math.max(1, Math.min(5, in.dayRating())) - 1]).append(")\n");
+        if (in.dayRating() != null) { // a web-closed day may have no rating: then the prompt never mentions one
+            sb.append("A nap értékelése: ").append(in.dayRating()).append("/5 (")
+                .append(RATING_WORDS[Math.max(1, Math.min(5, in.dayRating())) - 1]).append(")\n");
+        }
         sb.append("Esti energia: ").append(in.eveningEnergy() == null ? "nincs megadva" : in.eveningEnergy() + "/10")
             .append('\n');
         if (in.goalText() != null && !in.goalText().isBlank()) {

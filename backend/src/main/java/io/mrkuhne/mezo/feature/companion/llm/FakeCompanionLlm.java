@@ -774,10 +774,11 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger feedSmartCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int feedSmartCallCount() { return feedSmartCalls.get(); }
 
-    /** Boop brief calls (mezo-r36n9.7): ITs assert the brief cache (same input hash → no new LLM call). */
-    private final java.util.concurrent.atomic.AtomicInteger dayCloseLineCalls = new java.util.concurrent.atomic.AtomicInteger();
     /** Boop B3 day-close / check-in line calls that reached the model (the forced failure included). */
+    private final java.util.concurrent.atomic.AtomicInteger dayCloseLineCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int dayCloseLineCallCount() { return dayCloseLineCalls.get(); }
+
+    /** Boop brief calls (mezo-r36n9.7): ITs assert the brief cache (same input hash → no new LLM call). */
     private final java.util.concurrent.atomic.AtomicInteger boopBriefCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int boopBriefCallCount() { return boopBriefCalls.get(); }
     /** Concurrency ITs (mezo-r36n9.7): every Boop brief call waits at this barrier (10 s cap) so

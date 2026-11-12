@@ -56,7 +56,8 @@ import org.springframework.transaction.annotation.Transactional;
  * A {@link DayClosedEvent} is published.
  *
  * <p>{@link #get} / {@link #list} fall back to the legacy stores for a day closed on the web (no {@code day_close}
- * row, {@code ritual_day.closed_at} set) and mark it {@code source = web}.
+ * row, {@code ritual_day.closed_at} set) and mark it {@code source = web}; its rating is the 20:00
+ * {@code day_rating} ÷ 2 rounded, or null when the web evening had none.
  *
  * <p>Dates: today … today − {@code mezo.dayclose.max-past-days} in the owner zone ({@code mezo.wearable.zone});
  * anything else is a 400. "Now" is the application {@link Clock} when one is defined (tests), else the system
@@ -74,9 +75,6 @@ public class DayCloseService {
 
     /** A {@code capturedAt} further than this in the future is a 400 (a phone clock may run slightly ahead). */
     static final Duration MAX_CAPTURED_AHEAD = Duration.ofMinutes(5);
-
-    /** A web-closed day without a 20:00 rating still needs a 1–5 value: the neutral "Rendben". */
-    static final int NEUTRAL_RATING = 3;
 
     private static final String STATE_DONE = "done";
 
@@ -146,7 +144,7 @@ public class DayCloseService {
             row.setBoopLine(null); // the sentence described other inputs
             row.setBoopLineHash(null);
         }
-        row.setUpdatedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        row.setUpdatedAt(clock().instant().truncatedTo(ChronoUnit.MICROS));
         DayCloseEntity saved = repository.saveAndFlush(row);
 
         writeLegacy(owner, date, closedAt, rating, energy, outcome);
@@ -281,7 +279,8 @@ public class DayCloseService {
         }
         Optional<CheckInResponse> evening = eveningCheckIn(owner, date);
         Integer rating10 = evening.map(CheckInResponse::getDayRating).orElse(null);
-        int rating = rating10 == null ? NEUTRAL_RATING : (int) Math.max(1, Math.min(5, Math.round(rating10 / 2.0)));
+        // no evening rating on the web → null, never an invented value (controller ruling, Task 4 fix round)
+        Integer rating = rating10 == null ? null : (int) Math.max(1, Math.min(5, Math.round(rating10 / 2.0)));
         return new DayCloseResponse()
             .date(date)
             .closedAt(day.getClosedAt())
