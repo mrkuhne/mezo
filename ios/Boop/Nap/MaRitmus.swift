@@ -198,6 +198,8 @@ struct MaEnergyCard: View {
     var title = "AZ ENERGIÁD MA"
     /// The outbox item the server refused for a check-in (nil = none); its row offers *Újra* through `onRetry`.
     var refusal: (LedgerCheckIn) -> UUID? = { _ in nil }
+    /// The pending look ("még a telefonon"); a refused check-in shows only its row.
+    private func pending(_ c: LedgerCheckIn) -> Bool { c.pending && refusal(c) == nil }
     var onRetry: (UUID) -> Void = { _ in }
 
     private func hour(_ d: Date) -> Double { EnergyCurveGeometry.hour(of: d, calendar: calendar) }
@@ -206,12 +208,12 @@ struct MaEnergyCard: View {
         VStack(spacing: 12) {
             EnergyCurveCard(title: title, trailing: filledLabel(day), predicted: predicted,
                             dots: day.checkIns.compactMap { c in
-                                c.values["energy"].map { EnergyCurveDot(id: c.id, hour: hour(c.capturedAt), energy: $0, pending: c.pending) }
+                                c.values["energy"].map { EnergyCurveDot(id: c.id, hour: hour(c.capturedAt), energy: $0, pending: pending(c)) }
                             },
                             now: now.map(hour), hue: .mozgas, selected: $selected, height: 130)
             if let c = day.checkIns.first(where: { $0.id == selected }) {
                 CheckInDetail(heading: "\(CheckinDone.slotName(c.slot).uppercased()) · \(CheckinFlow.clock(c.capturedAt, calendar))",
-                              pending: c.pending, answers: CheckinDone.answers(c), note: c.note, snapshot: CheckinDone.figures(c))
+                              pending: pending(c), answers: CheckinDone.answers(c), note: c.note, snapshot: CheckinDone.figures(c))
                     .transition(.opacity)
                 if let refused = refusal(c) {
                     RefusedRow { onRetry(refused) }.padding(.horizontal, 18).padding(.vertical, 12).nkGlass(20)

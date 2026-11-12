@@ -19,8 +19,9 @@ public typealias ServerDay = DayLedger
 /// operation — plus the day, plan and line fetches. Every write is idempotent on the server (natural key or the item
 /// id as `clientRef`), so a resend after a lost answer never duplicates.
 ///
-/// Status mapping of a write: 2xx → `.sent`; no network (a `URLError` from the transport) → `.offline` (not counted as
-/// an attempt); 401, 409, 429, 5xx and anything else the transport throws → `.retryLater` (the item is fine, the moment
+/// Status mapping of a write: 2xx → `.sent`; no connection (not connected, connection lost, host not found or not
+/// reachable, DNS, data / roaming off) → `.offline` (not counted as an attempt); 401, 409, 429, 5xx, a timeout and
+/// anything else the transport throws → `.retryLater` (the item is fine, the moment
 /// is not; a 401 is an expired session, not a bad item, so the item must survive until the owner signs in again); every
 /// other 4xx → `.failed("HTTP <code>")` and the item waits for the
 /// owner's "Újra". Exceptions: an `addFocus` 409 is the focus cap (`.failed("INTENTION_FOCUS_CAP")`, retrying never
@@ -67,10 +68,23 @@ public struct RitmusClient: OutboxSender {
                 if (200..<300).contains(status) { return .sent(nil) }
                 return item.kind == .chatQuestion ? Self.chatMap(status) : Self.map(status)
             }
-            // No network (or it dropped mid-request): not an attempt — a travel day must not burn the cap.
-            return isNetworkFailure(error) ? .offline : .retryLater
+            // No connection (or it dropped mid-request): not an attempt — a travel day must not burn the cap. A timeout
+            // or any other transport error is a real try: it holds only its own chain and counts toward the cap.
+            return Self.isNoConnection(error) ? .offline : .retryLater
         }
     }
+
+    /// The phone has no connection to speak of (the URLError codes of a missing or dropped network path).
+    static func isNoConnection(_ error: Error) -> Bool {
+        let url = (error as? URLError) ?? ((error as? ClientError)?.underlyingError as? URLError)
+        guard let code = url?.code else { return false }
+        return Self.noConnectionCodes.contains(code)
+    }
+
+    private static let noConnectionCodes: Set<URLError.Code> = [
+        .notConnectedToInternet, .networkConnectionLost, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed,
+        .dataNotAllowed, .internationalRoamingOff,
+    ]
 
     /// 2xx is handled by each caller; this is every other status.
     static func map(_ status: Int) -> OutboxSendResult {

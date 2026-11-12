@@ -5,7 +5,7 @@ tags:
     description: >
       Boop B3 (mezo-r36n9.13) — the day-close record, one source of truth for the evening close
       (rating, goal outcome, plan goals, journal link, Boop's sentence). Idempotent upsert by
-      (owner, date); dates accepted today .. today-7 in the owner zone, future -> 400.
+      (owner, date); dates accepted today-7 .. today+1 in the owner zone (+1: a phone east of it), today+2 or later -> 400.
 paths:
   /api/day-close:
     get:
@@ -52,7 +52,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/DayCloseResponse' }
         '400':
-          description: Validation failure or a future / too-old date
+          description: Validation failure, or a date after today+1 / before today-7 (owner zone)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
@@ -130,7 +130,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/DayCloseLineResponse' }
         '400':
-          description: Empty slot, no done check-in in that slot, or a date outside today .. today-7
+          description: Empty slot, no done check-in in that slot, or a date outside today-7 .. today+1 (owner zone)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }

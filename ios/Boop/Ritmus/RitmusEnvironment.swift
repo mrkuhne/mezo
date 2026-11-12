@@ -126,17 +126,21 @@ final class RitmusEnvironment {
     final class Retirement: @unchecked Sendable {
         private let lock = NSLock()
         private var done = false
+        private var pathDown = false
         var retired: Bool { lock.withLock { done } }
         func retire() { lock.withLock { done = true } }
+        /// The path monitor says there is no network: nothing is tried (not an attempt) until it comes back.
+        var offline: Bool { lock.withLock { pathDown } }
+        func set(offline: Bool) { lock.withLock { pathDown = offline } }
     }
 
-    /// The real sender behind a gate: a retired environment answers `offline` (nothing sent, nothing counted, the
-    /// items stay for when that user signs in again).
+    /// The real sender behind a gate: a retired environment, or a phone whose network path is down, answers
+    /// `offline` (nothing sent, nothing counted; the items stay — for when the net is back, or that user signs in again).
     private struct RetiringSender: OutboxSender {
         let inner: OutboxSender
         let retirement: Retirement
         func send(_ item: OutboxItem) async -> OutboxSendResult {
-            retirement.retired ? .offline : await inner.send(item)
+            retirement.retired || retirement.offline ? .offline : await inner.send(item)
         }
     }
 
@@ -164,6 +168,10 @@ final class RitmusEnvironment {
             return p.slot == c.slot
         }?.id
     }
+
+    /// Whether a check-in shows the "még a telefonon" pending look (dashed dot, the glyph in its detail).
+    /// A refused one shows only its "nem sikerült elküldeni" row instead.
+    func showsPending(_ c: LedgerCheckIn, date: String) -> Bool { c.pending && refusal(forCheckIn: c, date: date) == nil }
 
     /// The goal (or its removal) the server did not take, for the goal row's *Újra*.
     func goalRefusal(on date: String) -> UUID? {
@@ -283,7 +291,10 @@ final class RitmusEnvironment {
         try await outbox.enqueue(OutboxItem(id: checkIn.id, kind: kind, date: date, capturedAt: checkIn.capturedAt,
                                             payload: RitmusPayload.encode(payload)))
         guard kind == .checkIn else { return }
-        for item in await outbox.queue where item.date == date && item.id != checkIn.id {
+        // A recording already on its way is left alone: moved, its copy would find the audio deleted after that send.
+        // It lands as it is (its transcript still becomes the slot's note on the phone) and this check-in follows it.
+        let sending = await outbox.inFlight
+        for item in await outbox.queue where item.date == date && item.id != checkIn.id && item.id != sending {
             switch item.kind {
             case .checkIn, .checkInNote:
                 if RitmusPayload.decodeCheckIn(item.payload)?.slot == payload.slot { await outbox.remove(item.id) }
@@ -431,6 +442,7 @@ final class RitmusEnvironment {
     func networkChanged(up: Bool) {
         let cameBack = up && !online
         online = up
+        retirement.set(offline: !up)
         guard cameBack, !retirement.retired else { return }
         lastTriggerFlush = clock()
         let outbox = outbox

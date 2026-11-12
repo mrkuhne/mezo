@@ -364,4 +364,24 @@ final class OutboxTests {
         await box.retry(refused.id)
         #expect(await heard.lists == [[], [refused.id], []])
     }
+
+    /// Re-review item 4: the outbox says which item is out right now, so a redo never moves a recording mid-send.
+    @Test func inFlightNamesTheItemBeingSent() async throws {
+        final class Ref: @unchecked Sendable { var box: Outbox? }
+        actor Seen { var ids: [UUID?] = []; func add(_ i: UUID?) { ids.append(i) } }
+        actor PeekSender: OutboxSender {
+            let ref: Ref, seen: Seen
+            init(_ r: Ref, _ s: Seen) { ref = r; seen = s }
+            func send(_ item: OutboxItem) async -> OutboxSendResult { await seen.add(await ref.box?.inFlight); return .sent(nil) }
+        }
+        let ref = Ref(), seen = Seen()
+        let c = time
+        let box = Outbox(directory: dir, sender: PeekSender(ref, seen), clock: { c.now }, calendar: budapest)
+        ref.box = box
+        let a = item(.checkIn)
+        try await box.enqueue(a)
+        await box.flush()
+        #expect(await seen.ids == [a.id])
+        #expect(await box.inFlight == nil)
+    }
 }

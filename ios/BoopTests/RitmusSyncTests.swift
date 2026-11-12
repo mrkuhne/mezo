@@ -29,6 +29,27 @@ private actor SyncSender: OutboxSender {
     func set(down: Bool) { self.down = down }
 }
 
+/// Holds a recording's send until released; its file is gone after the first delivery (as the real sender deletes it).
+private actor VoiceGateSender: OutboxSender {
+    private(set) var sent: [OutboxItem] = []
+    private(set) var voiceStarted = false
+    private var gate: CheckedContinuation<Void, Never>?
+    private var delivered: Set<UUID> = []
+    func send(_ item: OutboxItem) async -> OutboxSendResult {
+        if item.kind == .voice {
+            if delivered.contains(item.id) { return .failed("audio file missing") }
+            voiceStarted = true
+            await withCheckedContinuation { gate = $0 }
+            delivered.insert(item.id)
+            sent.append(item)
+            return .sent(RitmusPayload.encode(VoiceTranscript(text: "Leeresztettem.")))
+        }
+        sent.append(item)
+        return .sent(nil)
+    }
+    func release() { gate?.resume(); gate = nil }
+}
+
 /// Final review of B3: offline-first must hold end to end — travel offline, everything syncs later, nothing lost, and
 /// what the server refuses is shown with *Újra* instead of a pending dot forever.
 @MainActor
@@ -112,6 +133,7 @@ final class RitmusSyncTests {
         let c = try #require(flow.saved?.checkIn)
         await settle { env.refusal(forCheckIn: c, date: self.date) != nil }
         #expect(!flow.offline)                                             // not "waiting for the net"
+        #expect(!env.showsPending(try #require(env.ledger.ledger(for: date).checkIns.first), date: date))                          // no "még a telefonon" glyph next to the row
         let refused = try #require(env.refusal(forCheckIn: c, date: date))
         await sender.refuse([])
         await env.retry([refused])
@@ -252,6 +274,42 @@ final class RitmusSyncTests {
         #expect(p.values["energy"] == 7)
         let lastCheckIn = await sender.sent.last { $0.kind == .checkIn || $0.kind == .voice }
         #expect(lastCheckIn?.kind == .voice)                              // the note rides on the redo, after it
+    }
+
+    /// Re-review item 4: a recording already on its way when the slot is redone is not moved (its moved copy would find
+    /// the audio gone and end refused); it lands as it is, and the redo follows.
+    @Test func recordingInFlightDuringARedoIsNotMoved() async throws {
+        let gated = VoiceGateSender()
+        let now = Self.at(16, 2)
+        let env = RitmusEnvironment(
+            ledgerDirectory: root.appendingPathComponent("ledger"), outboxDirectory: root.appendingPathComponent("outbox"),
+            sender: gated, line: { _, _ in "Rendben." }, snapshot: { _ in CheckInSnapshotValue() }, plans: nil,
+            clock: { now }, calendar: Self.budapest)
+        let first = await checkInFlow(env)
+        let note = Task { await first.addVoiceNote(fileName: "note.m4a") }
+        await settle { await gated.voiceStarted }
+        let redo = CheckinFlow(env: env)
+        await redo.next(); await redo.quickExit()
+        await gated.release()
+        _ = await note.value
+        await env.outbox.flush(ignoringBackoff: true)
+        #expect(await env.outbox.failed.isEmpty)
+        #expect(await env.outbox.queue.isEmpty)
+        #expect(await gated.sent.filter { $0.kind == .voice }.count == 1)
+        #expect(await gated.sent.last?.kind == .checkIn)                 // the redo has the last word on the values
+    }
+
+    /// Re-review ruling: while the path monitor says the network is down, nothing is tried (and nothing counted).
+    @Test func pathDownSendsNothing() async throws {
+        let env = environment(now: Self.at(16, 2))
+        env.networkChanged(up: false)
+        let flow = await checkInFlow(env)
+        #expect(flow.offline)
+        #expect(await sender.sent.isEmpty)
+        #expect(await env.outbox.pending.first?.attempts == 0)
+        env.networkChanged(up: true)
+        await settle { await env.outbox.pending.isEmpty }
+        #expect(await sender.sent.map(\.kind) == [.checkIn])
     }
 }
 

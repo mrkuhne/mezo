@@ -158,7 +158,14 @@ final class RitmusClientTests {
         struct Boom: Error {}
         let cases: [(StubTransport.Reply, OutboxSendResult)] = [
             (.status(500), .retryLater), (.status(503), .retryLater), (.status(409), .retryLater), (.status(429), .retryLater),
-            (.status(401), .retryLater), (.fail(URLError(.notConnectedToInternet)), .offline), (.fail(URLError(.timedOut)), .offline), (.fail(Boom()), .retryLater),
+            (.status(401), .retryLater), (.fail(Boom()), .retryLater),
+            // only "no connection" is offline (not an attempt); a timeout or any other transport error is a real try
+            (.fail(URLError(.notConnectedToInternet)), .offline), (.fail(URLError(.networkConnectionLost)), .offline),
+            (.fail(URLError(.cannotFindHost)), .offline), (.fail(URLError(.cannotConnectToHost)), .offline),
+            (.fail(URLError(.dnsLookupFailed)), .offline), (.fail(URLError(.dataNotAllowed)), .offline),
+            (.fail(URLError(.internationalRoamingOff)), .offline),
+            (.fail(URLError(.timedOut)), .retryLater), (.fail(URLError(.badServerResponse)), .retryLater),
+            (.fail(URLError(.secureConnectionFailed)), .retryLater),
             (.status(400), .failed("HTTP 400")), (.status(422), .failed("HTTP 422")), (.status(404), .failed("HTTP 404")),
         ]
         for (reply, expected) in cases {
@@ -167,6 +174,20 @@ final class RitmusClientTests {
             let r = RitmusClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: t), audioDirectory: dir)
             #expect(await r.send(item(.journal, JournalPayload(text: "x"))) == expected, "\(reply)")
         }
+    }
+
+    /// Re-review ruling: a timed-out item is an attempt that holds only its own chain — an unrelated later write goes.
+    @Test func timedOutHeadItemDoesNotBlockAnUnrelatedLaterItem() async throws {
+        stub.on("createJournalEntry", .fail(URLError(.timedOut)))
+        stub.on("addFocus", .json(200, Self.focusOK))
+        let box = Outbox(directory: dir.appendingPathComponent("queue"), sender: ritmus, clock: { at(16, 5) }, calendar: budapest)
+        let journal = item(.journal, JournalPayload(text: "x")), goal = item(.goal, GoalPayload(text: "Séta"))
+        try await box.enqueue(journal); try await box.enqueue(goal)
+        await box.flush()
+        #expect(stub.ops.contains("addFocus"))
+        let left = await box.pending
+        #expect(left.map(\.id) == [journal.id])
+        #expect(left.first?.attempts == 1)          // counted toward the cap, unlike "no connection"
     }
 
     @Test func documentedErrorsMapToo() async {
