@@ -43,6 +43,9 @@ final class FakeHealth: HealthReader, @unchecked Sendable {
     }
     func heartRateBuckets(from: Date, to: Date) async throws -> [HeartRateBucket] { bucketFroms.append(from); return buckets }
     func heartRate(during intervals: [DateInterval]) async throws -> HeartRateStats? { hrQueries.append(intervals); return hr }
+    func readSamples(_ metric: HealthMetric, from: Date, to: Date) async throws -> [HealthSampleValue] {
+        (samples[metric] ?? []).filter { $0.start >= from && $0.start <= to }.sorted { $0.start < $1.start }
+    }
 }
 
 final class FakeCalendar: CalendarReader, @unchecked Sendable {
