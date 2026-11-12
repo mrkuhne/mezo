@@ -2,7 +2,7 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-10-11
+updated: 2026-11-12
 tags: [today, habit, growth, intention, proactive, companion, backend, frontend, data-layer, progression, needs, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
@@ -12,10 +12,12 @@ key_files:
   - frontend/src/features/today/pages/NapHubPage.tsx
   - frontend/src/styles/folyadek-nap-rogzites.css
   - docs/design_2.0/prototypes/napzaras.html
-related: [today, habit, growth, intention, proactive, _platform-design-system, needs, companion, journal]
+related: [dayclose, today, habit, growth, intention, proactive, _platform-design-system, needs, companion, journal]
 ---
 
 # Ritual — Napzárás Sleep-Anchored Daily Closing
+
+> **2026-11-12 — Boop B3 Napi ritmus (`mezo-r36n9.13`).** `RitualService.closeOn(owner, date, closedAt)` closes a **past** day (today − 7 … today + 1) for the native app's evening close, which writes `ritual_day.closed_at` through it as part of the day-close dual-write ([`dayclose.md`](dayclose.md)); the web's `reflection_text` is never touched by it (the evening text is a `source = boop` journal entry), and `listClosed` feeds the day close's web-closed fallback. `RitualClosedEvent` listeners (people mentions, reflection embedding) do not assume "today". The six-act web ritual is unchanged.
 
 > **2026-10-11 — reviewed after Folyadék F3 (`mezo-n4wf5.3`).** No change to the ritual in F3; the F2 note below is current.
 

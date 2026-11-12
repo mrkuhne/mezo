@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -62,6 +62,21 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-11-12 — Boop B3 · Napi ritmus — a napi ritmus újra megy, internet nélkül is (`mezo-r36n9.13`).**
+  Az iPhone-app mostantól offline-first: a kitöltés, a nap célja, az esti lezárás és a napló a telefonon mentődik,
+  azonnal látszik, és magától szinkronizál, amikor van net (ami a szerver elutasít, az halk „nem sikerült elküldeni ·
+  Újra” sorban marad, semmi nem vész el). A kitöltés a gömb húzásával megy, mentéskor az óra adatai (pulzus, HRV,
+  lépés, alvás) befagynak mellé, és a nap energiagörbéjén pontként jelenik meg a Boop előrejelzése mellett. Reggel
+  egy mondatban megadható a nap célja, este egyperces lezárás (értékelés, cél, hangos vagy beírt napló) és a Boop
+  egy mondata. A Boop fül tudja, milyen a mai napod (a „Boop látja” csíkkal és kész kérdésekkel), a Napló az utolsó
+  14 napot mutatja, a helyi értesítések koppintásra megnyitják a kitöltést vagy a lezárást. Új szerveroldali
+  `dayclose` funkció (a lezárás egy rekord, a régi esti tárolókba is beleír), a kitöltés pillanatnyi órás
+  pillanatképe, idempotens írások (`clientRef`), `boop` csatorna a beszélgetésben. A widget és az értesítésből
+  válaszolás a fizetős Apple-csapatra vár (`mezo-r36n9.19`); takarítás: `mezo-r36n9.26`; ismert hibák: `mezo-r36n9.30`,
+  `mezo-r36n9.31`. [spec](../superpowers/specs/2026-11-11-boop-b3-napi-ritmus-design.md),
+  [terv](../superpowers/plans/2026-11-11-boop-b3-napi-ritmus.md), [működés](../features/boop-ios.md),
+  [lezárás](../features/dayclose.md).
 
 - **2026-11-11 — Boop B1 · Adatalap — a Boop sokkal többet lát az Egészségből (`mezo-r36n9.11`).**
   Az iPhone-app mostantól 23 féle Apple Egészség-adatot húz be forrásmegjelöléssel (a pulzus 5 perces

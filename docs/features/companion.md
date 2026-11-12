@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-11-11
+updated: 2026-11-12
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -12,10 +12,12 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - frontend/src/data/insights/memoryFeedbackHooks.ts
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
-related: [insights, proactive, today, me, character, _platform-api-backend, _platform-auth-security, _platform-notifications, _platform-language, journal, ritual]
+related: [dayclose, boop-ios, insights, proactive, today, me, character, _platform-api-backend, _platform-auth-security, _platform-notifications, _platform-language, journal, ritual]
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-11-12 — Boop B3 Napi ritmus: the `boop` channel (`mezo-r36n9.13`).** `ai_conversation.channel` (`web` default | `boop`; migration `202611121130_mezo-r36n9.13_conversation_channel.sql`): a conversation started by the native app's Boop tab is `boop`, is **titled with its date**, and sees only **today's turns** as history; every web conversation stays `web`. A `boop` turn gets the pushed **`BoopDayContext`** block (`companion/service`, one deterministic read of today — sleep, HRV/HR against usual, check-ins and their energy, goal, plan and moved session, calendar shape, food and training so far; target under 1 200 tokens) in the prompt, so the owner never re-explains his day; the same `DayBlock` also renders the **`GET /api/companion/day-context`** answer (`CompanionDayContextController`: "Boop látja · most" chips + up to 3 rule-based ready questions, no LLM) so the strip shows exactly what the model sees. New tools in `DayTools`: **`get_wearable`** (the watch's day numbers) and **`get_calendar`** (today's events without titles). The moved gym-session time (Boop's `session_time` override lives in `feature.boop`, which companion must not import) is read through the new port **`SessionTimeOverrideSource`**, implemented by boop. The day-close and check-in lines run on the same cheap tier through the dayclose-owned `DayCloseLlm` port (`DayCloseLlmAdapter`, [`dayclose.md`](dayclose.md)). Tests `BoopDayContextIT`, `BoopChannelChatIT`, `CompanionApiIT`; see [`boop-ios.md`](boop-ios.md).
 
 > **2026-11-11 — Memory repair (Boop B0, `mezo-r36n9.10` / `mezo-lb2yb`).** Root causes found in production logs: (1) every Gemini embed returned **HTTP 402 — prepay credits depleted** from 2026-10-21, and the adapter wrote `error_code = null`, so nothing named it; (2) the lexical/fact retrievers' 200 ms budget started at **submission** on the shared executor, and proactive consumers' 500–2000-char context dumps made trigram scoring cost ~2 s (TIMEOUT in 186/194 runs); (3) `FactMergeJudge` sent an **empty user message**, rejected client-side on the OpenAI path (24/24 ERROR). Fixes: **`OpenAiEmbeddingAdapter`** (`text-embedding-3-small` @768, L2-normalised) behind `EmbeddingPort`, chosen by `mezo.companion.embedding.provider` (default `gemini`; production `openai` with generation `openai-text-embedding-3-small-768-v1`, the re-embedding job hourly with batch 150; the OpenAI client times out after 20 s — rollback = delete the k3s env entries); both adapters record `HTTP_<status>` + the provider text (`EmbeddingFailure`); a legacy `memory_embedding` row never hands its stored (possibly old-model) vector to the serving generation — only a vector computed in the same call is reused for chunk 0; `RetrieverDeadline` measures the run budget from task **start** with a separate `retriever-queue-wait-ms` cap (2000); `MemoryKeywordQuery` shapes a query of more than 8 words AND more than 200 characters (a context dump, never a chat sentence) into ≤ 8 OR-ed content keywords of ≥ 3 letters for the lexical and fact retrievers (short chat queries unchanged); the judge sends the fact list as the user message. New admin alerts: **`embedding_down`** (≥ 3 embed calls in 24 h, > 50 % failed, names the last code; scoped to the configured model so a provider switch does not stay red) and **`memory_stuck`** now also counts source rows dated before today with no up-to-date serving vector (`MemorySourceRepairQuery.changed`, the repair job's own query). Known limit: the legacy `memory_embedding` table keeps old Gemini vectors; only the OLD/SHADOW fallback reads it (production serves NEW). Plan: `docs/superpowers/plans/2026-11-11-boop-b0-javitas.md`.
 

@@ -2,19 +2,18 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-11
-tags: [ios, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
+updated: 2026-11-12
+tags: [ios, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
   - ios/BoopKit/Sources/BoopCore
-  - ios/Boop/Nap
   - backend/src/main/java/io/mrkuhne/mezo/feature/wearable
   - api/feature/wearable/wearable.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/boop
   - api/feature/boop/boop.yml
-  - ios/BoopKit/Sources/BoopCore/Morning
-  - api/feature/device/device.yml
-related: [proactive, _platform-auth-security, _platform-api-backend, me, today]
+  - backend/src/main/java/io/mrkuhne/mezo/feature/dayclose
+  - api/feature/dayclose/dayclose.yml
+related: [dayclose, intention, journal, companion, proactive, _platform-auth-security, _platform-api-backend, me, today]
 ---
 
 # Boop — native iOS app — Feature Documentation
@@ -22,7 +21,7 @@ related: [proactive, _platform-auth-security, _platform-api-backend, me, today]
 > **Re-planned 2026-11-11 (`mezo-r36n9.9`):** S4 is cancelled; Boop continues as a standalone app in slices
 > **B0–B8** (repair → data foundation → new spine Ma · Terv · Napló · Boop → daily loop → food → training + Watch →
 > the Plan → day capacity → one AI) — spec [`2026-11-11-boop-standalone-design.md`](../superpowers/specs/2026-11-11-boop-standalone-design.md),
-> research [`boop-standalone/`](../superpowers/research/boop-standalone/13-synthesis.md). **B2 Gerinc (the new shell) shipped 2026-11-11** (`mezo-r36n9.12`, §2 "The spine"); the older S1–S3 shell text below is superseded where it names the five-domain bar.
+> research [`boop-standalone/`](../superpowers/research/boop-standalone/13-synthesis.md). **B2 Gerinc (the new shell) shipped 2026-11-11** (`mezo-r36n9.12`, §2 "The spine"); **B3 Napi ritmus (the daily loop) shipped 2026-11-12** (`mezo-r36n9.13`, §2 "The daily loop"); the older S1–S3 shell text below is superseded where it names the five-domain bar.
 
 > One-line: the native SwiftUI iPhone app that replaces the web app once complete (epic `mezo-r36n9`).
 > Design canon **Napkelte** since S2.5 (dark glass, painted sky, the orb rising as the sun — spec
@@ -44,7 +43,7 @@ related: [proactive, _platform-auth-security, _platform-api-backend, me, today]
 Boop is built in four slices (spec §, plan "Slice map"): **S1 Alap**, **S2 Adatok** (Apple Health +
 calendar ingestion), **S2.5 Napkelte** (the look) and **S3 Reggel** (the morning brief: five orbs, Boop's voice,
 energy curve, paths) are this doc's base state; **B2 Gerinc** (2026-11-11) then replaced the five-domain shell with the
-spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The web PWA keeps running until Boop covers it.
+spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (2026-11-12) then added the offline-first daily loop (check-in, goal, evening close, journal, Boop chat, reminders); B4–B8 follow. The web PWA keeps running until Boop covers it.
 
 ## 2. User-facing behavior
 
@@ -110,7 +109,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
     - **Reggel:** the plan card (`DayPlan`: the day's rows from the brief) with **"Elfogadom a napot"**, stored per day, and **Boop mondja**
       (tappable phrases, the meetings phrase opens the detail sheet).
     - **Napközben:** the whole day as one quiet path in clock order; proposals hang inline at **MOST** (never a pinned queue).
-    - **Este:** the close-out frame; **"Lezárom" still answers "hamarosan"** until B3 (evening close).
+    - **Este:** the close-out frame; the close is live since B3 (see **The daily loop**).
   - **Proposals** (`BoopCore/Morning/Proposals`, `Boop/Nap/ProposalDesk`, kit `NKProposalCard`): B2's one live source is the brief's
     meeting conflict, which becomes a **move-session** proposal. **Elfogadom** = `moveSession` with an undo toast (the "Vissza ..." button lives on
     the Mozgás room's session card; the settled proposal row just says "Elfogadtad"); **Most nem** hides it for that day only (dismissed keys under `dismissedProposals` in UserDefaults); **miért?** opens a
@@ -124,12 +123,23 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
   - **"+" capture sheet** (`Capture/CaptureSheet`): the frame only — every item (étel, edzés, súly, ...) says "hamarosan" until B3/B4.
   - **Account sheet** (`Shell/AccountSheet`, opened from the avatar on Ma's title row, accessibility label "Fiók"): the account card with the confirmed sign-out
     (the old Én account section, `EnAccountSection`).
-  - **Placeholders:** Terv, Napló and Boop (`Terv/TervView`, `Naplo/NaploView`, `BoopChat/BoopTabView`) are honest frames with their own sky until B6 / B3 / B3+B8.
+  - **Placeholders:** Terv (`Terv/TervView`) is an honest frame until B6; Napló and the Boop tab became real in B3 (see **The daily loop**).
   - **Presentations stay at page level** (§9): the detail sheet and miért? hang outside the room stack, so they reach Ma and every room.
   - **DEBUG flags:** `-previewTab`, `-previewOpen`, `-previewSwitch`, `-previewPhase`, `-previewDrill`, `-previewWhy` — see `ios/README.md`.
   - **Known gaps:** between 00:00 and 04:00 Este still shows on the *day* sky (`isEvening` is hour ≥ 18).
   - **Hypnogram once** (owner, 2026-11-12): the Alvás room draws the night's stages only in section 1
     (`roomShowsHypnogram`); the path's night card appears only when the night has no stages, to say so.
+
+- **The daily loop (B3 Napi ritmus, 2026-11-12, `mezo-r36n9.13`; spec [`2026-11-11-boop-b3-napi-ritmus-design.md`](../superpowers/specs/2026-11-11-boop-b3-napi-ritmus-design.md), plan [`2026-11-11-boop-b3-napi-ritmus.md`](../superpowers/plans/2026-11-11-boop-b3-napi-ritmus.md)).** The owner's reflection loop died in October because there was no internet while travelling, so **everything works offline first**: a capture is saved on the phone, shows at once, and syncs by itself later; only Boop's own sentences and answers wait for the network, with one quiet line. Four moments a day: **reggel, délben, délután** (check-ins) and **este** (the evening close, which *is* the evening check-in).
+  - **Check-in** (`Ritmus/CheckinFlow`, `CheckinView`, `CheckinDone`; five core items every time + ONE question of the day from the plan engine, "Most csak ennyi" after the first answer): each item is answered by **swiping the orb up/down** (soft haptic per step, starting at the last answer of the day, so "unchanged" is one tap), then *Tovább*. The slot (reggel / délben / délután) is decided at the moment of saving. Saving freezes the **watch snapshot** (heart rate, HRV against the 14-day usual, steps, sleep) and the payoff is **a dot on the day's energy curve** next to Boop's dashed prediction, tappable for the answers and the snapshot (`EnergyCurveCard`, `CheckInDetail`); the dots also show in Ma · Napközben. After a check-in Boop adds one line (cheap tier, online only) and the owner may add a spoken or typed note.
+  - **Goal of the day** (Ma · Reggel, `Nap/MaRitmus`): "Mi ma a legfontosabb?" — typed, spoken, or one tap on a suggestion (calendar-derived and earlier overdue goals, `GoalSuggestions`), one personal goal per day; Boop's own plan goals (the day's session, ...) tick **automatically from the data** (`DayPlan.goals` met → the brief's `planGoals`). A missed goal is never marked.
+  - **Esti levezetés** (`Ritmus/EsteFlow`, `EsteView`): a one-minute close — the day's rating (1–5 orbs), the evening energy, *sikerült / részben / nem* for the goal, then **Mesélj**: the journal by voice (on-device Hungarian recognition when available; otherwise the recording waits in the outbox and the server transcribes it later) **or typed**. *Lezárom a napot* writes the day, then Boop answers with one sentence. A close opened before 04:00 belongs to the previous day. Re-closing a day replaces the earlier close.
+  - **Boop tab** (`BoopChat/BoopTabView`, `BoopCore/Ritmus/ChatStore`) **knows today**: a "Boop látja · most" chip strip (the exact facts the model is given) and up to three ready questions ("miért vagyok fáradtabb, mint tegnap?"), then a plain chat; today's conversation is created on the first question (channel `boop`, titled with the date). Offline a question waits as a queued bubble; a refused one shows *Újra*.
+  - **Napló** (`Naplo/NaploView`, `BoopCore/Ritmus/NaploDays`): the last **14 days** — energy line with the check-in dots, the goal and its outcome, the day's close (`Ritmus/ClosedDayCard`), the journal text — a day opens in a sheet; a day closed on the web shows too (no rating when the web evening had none).
+  - **Reminders** (`Ritmus/RitmusReminders`): local notifications at 07:30 / 12:30 / 16:00 for each moment not done yet and the close at bedtime target − 75 min (21:30 without a target), on a rolling 7-day horizon of one-shots re-planned on every save, foreground and background wake; no badge, no guilt copy. **A tap opens the flow** (`RitmusRouter` → the check-in / close cover), also from a cold launch.
+  - **Offline, retry, refused:** a pending write shows a small waiting glyph; a write the server will never take (a 4xx) stays on the phone as a quiet **"nem sikerült elküldeni · Újra"** row (`Ritmus/RefusedRow`) — nothing is ever dropped. The check-in dot, the goal, the close and the journal line each have such a row.
+  - **DEBUG flags:** `-previewOpen checkin|checkinDone|este|esteDone|naploDay|chatAnswer|chatAsk|chatQueued`, `-previewOffline`, `-previewNotify`, `-previewColdTap`, `-previewRefuse` — see `ios/README.md`.
+  - **Gated on the paid Apple team:** the home-screen **widget** and **answering a check-in from the notification** (design only; local notifications need no paid team) — and the real-device checks (cold-launch tap, background wake); see §9.
 
 - **Sign-in** (`SignInView`): e-mail + password; Hungarian problems under each field, cleared on edit;
   server errors in a peach card (wrong password, offline after 20 s, server error). "Van meghívókódom"
@@ -241,6 +251,16 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
     (generated by `ios/tools/genglyphs.mjs` from the Lágy prototype's `G()` table), photos, components,
     page frames (`LagyTabPage`, `LagyFlowFrame`), `BoopFigure` (the Metal orb).
 
+- **B3 · Napi ritmus (shipped 2026-11-12, `mezo-r36n9.13`)** — the offline-first daily loop. Pure logic lives in `BoopKit/Sources/BoopCore/Ritmus/` (testable without a simulator); screens and glue in `ios/Boop/Ritmus/`; the kit in `BoopDesign/Napkelte/Ritmus.swift`.
+  - **Write path:** screen → **ledger first** (`DayLedger` per day, pending) → **`Outbox`** (persisted JSON queue, item id = the `clientRef` the server keys idempotency on, `capturedAt` = the phone's capture instant) → flush → `RitmusClient` (the real `OutboxSender`: each `OutboxKind` — `checkIn`, `checkInNote`, `goal`, `goalRemove`, `journal`, `voice`, `dayClose`, `chatQuestion` — goes to its generated operation). On `sent` the environment clears the ledger's pending flag. `LedgerStore` keeps per-day files (and merges a server fetch without wiping unsent or newer local rows); **ledger, outbox, goal history and chat map live in the signed-in user's own folder** (`RitmusEnvironment`, one per user).
+  - **Verdicts of a send:** `offline` (only genuine no-connection `URLError`s — not an attempt, the drain stops and waits for the next trigger: foreground, back online, background wake); `retryLater` (5xx, 409, 429, a 401 so the item survives a re-login, a timeout; backoff, capped at **8 attempts**, then it becomes a failed row that the net coming back resets); `refused` = `failed` (any other 4xx, and the focus-cap 409 `INTENTION_FOCUS_CAP`) — kept with its values and shown as the **Újra** row; *Újra* re-queues it. Only items of the same date that depend on order wait behind a backed-off one.
+  - **Sync order per day: close → journal → relink.** The close (`putDayClose`) goes first; the typed or transcribed journal line (`createJournalEntry` with its own `clientRef`) second; then the close is sent **again carrying `journalClientRef`** (the *relink*), because the server only resolves a ref whose entry has arrived. A re-close rewrites the relinks still queued, so a stale relink never undoes it; a refused row keeps its journal link until the server has the text.
+  - **`SnapshotBuilder`** reads HealthKit at the moment of saving (HR = mean of the last 15 min else the latest within 60 min; HRV = the latest within 8 h + the 14-day median; steps = today up to now, `stepsIsDayTotal` false; sleep = the night that ended today). Nothing readable → the check-in goes without one and the server fills it from Health data it already has (`computedBy` server).
+  - **`VoiceJournal`** records an m4a into the outbox folder; on-device Hungarian recognition writes the transcript and deletes the audio, otherwise a `voice` item uploads to `POST /api/companion/transcribe` when there is net (the audio goes nowhere else), and the sender then posts the transcript as the journal entry (or as the check-in note). `NSMicrophoneUsageDescription` / `NSSpeechRecognitionUsageDescription` are build settings in the project.
+  - **`ChatStore`** finds today's `boop` conversation by when it started in the phone's day (or its date title), keeps day → conversation id per user, sends the non-stream answer, queues a question as `chatQuestion` when offline (before resending a retried one it skips a question the server already has as the last owner turn — `sendMessage` has no `clientRef`).
+  - **`RitmusRouter`** (shared `@Observable`, no URL scheme is registered — `boop://checkin|este` is only the route name in a notification's userInfo) holds the cover the shell presents at page level; the notification delegate (`ReminderPresenter`, `BoopApp.init`) sets it.
+  - **Backend:** the new `dayclose` feature ([`dayclose.md`](dayclose.md)), the check-in snapshot / window / merge, `clientRef` on goals and journal entries, the `boop` conversation channel with the pushed day block ([`companion.md`](companion.md)); see §4.
+
 ## 4. Data model & API
 
 **S2 — feature `wearable`** (contract tag `Wearable`, `api/feature/wearable/wearable.yml`):
@@ -287,6 +307,10 @@ Tables (changeset `202611101300_mezo-r36n9.7_boop_brief.sql`, both soft-delete, 
 | `workout_time_override` | `created_by`, `date`, `time` | `uq_workout_time_override_user_date (created_by, date)` |
 
 Tunables (`mezo.boop`, `BoopProperties`): `steps-goal` 9000, `regen-per-day` 3, `nights-needed` 14, `llm-timeout` 8s.
+
+### B3 API operations (the generator filter, `ios/BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`)
+
+Added to the `filter.operations` list in B3: `listCheckInsForDay`, `saveCheckIn`, `getCheckInPlan`, `getIntentionDay`, `addFocus`, `removeFocus`, `createJournalEntry`, `transcribeVoiceNote`, `putDayClose`, `getDayClose`, `listDayCloses`, `generateDayCloseLine`, `generateCheckInLine`, `listConversations`, `createConversation`, `listMessages`, `sendMessage`, `getDayContext`. Contract changes behind them (`api/feature/{biometrics,intention,journal,dayclose,companion,boop}`): `CheckInSnapshot`, `capturedAt` on check-ins, `clientRef` on goals and journal entries, the whole `DayClose` tag, conversation `channel`, `GET /api/companion/day-context`, and `BoopSession.done` / `planGoals` on the brief. Write ordering and idempotency are described in §3.
 
 ### Formulas (S3 — product calls; the code is the truth: `BoopScores`, `EnergyCurveModel`)
 
@@ -361,6 +385,9 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 - **S3 app** (`Boop` scheme): `MaiCopyTests`, `MaiBelowTests` (tile mapper, swipe mapping, -ra/-re suffix), `SheetsTests` (routing, magnifier index, weeks),
   `MaiModeTests` (evening, kímélő, sky choice, reminder target), `BedtimeReminderTests` (trigger = target − 30 min, crosses midnight).
   Last recorded counts: app 73, BoopKit 106 + 48. Commands: [`ios/README.md`](../../ios/README.md).
+- **B3 BoopKit** (`BoopKit-Package`): `OutboxTests` (persistence, order, backoff vs order groups, attempt cap, offline not counted, refusal and *Újra*, relaunch), `RitmusClientTests` (status mapping per kind, idempotent resend, the 401/409/timeout rulings, voice upload), `DayLedgerTests`, `SnapshotBuilderTests`, `VoiceJournalTests`, `ChatStoreTests`, `CheckInQuestionsTests`, `CheckInSlotTests`, `GoalSuggestionsTests`, `NaploDaysTests`, `DayPlanGoalsTests`; kit `EnergyCurveGeometryTests`.
+- **B3 app** (`Boop` scheme): `CheckinFlowTests`, `EsteFlowTests`, `MaRitmusTests`, `RitmusRemindersTests` (rolling horizon, done moments left out, tap routing), `RitmusSyncTests` (end-to-end sync order, refused rows, re-close, relink, sign-out), `BoopChatTests`; DEBUG flags in `ios/README.md` for simulator review of every route.
+- **B3 backend** (`-Dmezo.test.use-testcontainers=true`): `DayCloseServiceIT`, `DayCloseApiIT`, `CheckInBoopIT`, `WearableCheckInBiomarkerSourceIT`, `IntentionFocusClientRefIT`, `JournalClientRefIT`, `BoopDayContextIT`, `BoopChannelChatIT`, `BoopSessionDoneIT`, `BoopPromptsTest`, `BiometricsContractIT`, `ArchitectureTest`.
 - Not in CI (`ci.yml` does not build `ios/`); run locally.
 
 ## 9. Decisions, gotchas & deferred
@@ -433,8 +460,15 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
   - `daily_metric` upsert overwrites every column, so the phone must send the full day; a Sleep Cycle rewrite re-builds the 60-day window (budget).
   - Deleting a Health weight does not recompute the goal; body-mass bounds are unvalidated (500 not 400).
   - The merge script is a production write — dry run first, owner OK with counts + rollback; never commit the user ids.
+- **B3 known limits and deferred (2026-11-12).**
+  - **Paid-team gated (`mezo-r36n9.19` family):** the in-place widget and answering a check-in straight from the notification — designed, not built; a notification tap from a cold launch, a sheet-up tap and the cold Health wake (which does not flush; the next foreground does) are only logic-verified, not proven on a device.
+  - **`mezo-r36n9.26`** — migrate the evening readers (ritual, intention, check-in consumers) to `day_close` and retire the legacy dual-writes (see [`dayclose.md`](dayclose.md)).
+  - **`mezo-r36n9.30`** — flaky `DayCloseApiIT.checkInLineIsCachedAndRejectsAnEmptySlot`: the shared fake model's `lastUserMessage` races an asynchronous prompt.
+  - **`mezo-r36n9.31`** — a recorded check-in note still in flight while the owner redoes the same slot reaches the earlier check-in and the redo overwrites it on the server (the phone keeps the note).
+  - **Accepted:** the voice target is `checkInNote(CheckInPayload)` (the sender re-upserts the whole check-in); a timeout counts as `retryLater`, not offline, so a slow-but-reachable server never freezes the queue invisibly (a long upload on a weak link may end as an *Újra* row after 8 tries); an unsent chat question identical to the server's last owner turn is not resent; the day context is not cached offline on a fresh launch (chips hidden).
+  - **Dates:** the phone's local calendar day is the day; the server accepts today − 7 … today + 1 in the owner zone (a phone east of Budapest dates ahead), a capture moment more than 5 minutes in the future is a 400.
 - **Parked minors (bd under `mezo-r36n9`):** payload versioning, `trendUp` on equal values, reload supersedes an in-flight regenerate, swallowed `setActive(false)`, real synthesizer adapter only verified on a device.
-- Deferred (now B3/B4): the five morning steps (check-in, szándék, weigh-in, meal capture, quick food log, "+" sheet, notification list, settings), widgets, Beszélgetés and Rutin tabs.
+- Deferred (now B4+): the five morning steps (check-in, szándék, weigh-in, meal capture, quick food log, "+" sheet, notification list, settings), widgets, Beszélgetés and Rutin tabs.
 
 ## 10. Key files
 
@@ -453,3 +487,5 @@ B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet}.swift` · `ios/Boop/Captu
 `ios/Boop/Nap/{MaPhases,MaDrill,ProposalDesk,RoomSwipeBack}.swift` · `ios/BoopKit/Sources/BoopCore/Morning/{DayPhase,DayPlan,Proposals}.swift` ·
 `ios/BoopKit/Sources/BoopDesign/Napkelte/{SpineBar,Proposal,Drill}.swift` ·
 B1: `ios/BoopKit/Sources/BoopCore/Health/{HealthKitReader,HealthReader,HealthSync,HealthBackground,SleepNightBuilder,WorkoutMapper}.swift` · `…/Push/PushRegistrar.swift` · `ios/Boop/App/{BoopAppDelegate,BackgroundSyncHost}.swift` · `ios/Boop.entitlements` · `ios/Boop-Paid.entitlements` · `backend/…/feature/wearable/service/{HealthSampleService,WearableDeletionService,WorkoutReconciler}.java` · `backend/…/feature/biometrics/sleep/service/SleepNightMerge.java` · `api/feature/device/device.yml` · `scripts/ops/boop-b1-merge-accounts*.sql`
+
+B3: `ios/BoopKit/Sources/BoopCore/Ritmus/{Outbox,DayLedger,RitmusClient,RitmusPayloads,SnapshotBuilder,VoiceJournal,ChatStore,CheckInQuestions,CheckInSlot,GoalSuggestions,NaploDays}.swift` · `ios/Boop/Ritmus/{RitmusEnvironment,RitmusRouter,RitmusReminders,RitmusPreview,CheckinFlow,CheckinView,CheckinDone,EsteFlow,EsteView,ClosedDayCard,RefusedRow}.swift` · `ios/Boop/Nap/MaRitmus.swift` · `ios/Boop/Naplo/NaploView.swift` · `ios/Boop/BoopChat/BoopTabView.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Ritmus.swift` · `ios/BoopKit/Sources/BoopAPI/openapi-generator-config.yaml` · backend `feature/dayclose/**` · `feature/biometrics/checkin/service/{CheckInService,CheckInBiomarkerSource}.java` · `feature/wearable/service/WearableCheckInBiomarkerSource.java` · `feature/companion/service/BoopDayContext.java` · `feature/companion/controller/CompanionDayContextController.java` · `feature/companion/tools/DayTools.java` · `api/feature/dayclose/dayclose.yml` · migrations `202611121100…1130_mezo-r36n9.13_*.sql`.
