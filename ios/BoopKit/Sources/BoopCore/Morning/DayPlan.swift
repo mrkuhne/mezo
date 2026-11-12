@@ -94,18 +94,26 @@ public enum DayPlan {
         return rows
     }
 
-    /// The close-out's goals: protein, today's session, bedtime. Session and bedtime cannot be judged yet (nil).
+    /// The close-out's goals: protein, today's session, bedtime. The session is met once done, else undecided (nil: no missed marks); bedtime stays nil (B3).
     public static func goals(_ brief: Brief) -> [CloseGoal] {
         let day = brief.day
         var goals = [CloseGoal(id: "protein", title: "\(day.proteinTarget) g fehérje", result: "\(day.proteinG) g",
                                met: day.proteinG >= day.proteinTarget)]
         if let s = day.session {
             let t = s.time ?? s.plannedTime
-            goals.append(CloseGoal(id: "session", title: t.map { "\(s.title) · \($0)" } ?? s.title, result: "", met: nil))
+            goals.append(CloseGoal(id: "session", title: t.map { "\(s.title) · \($0)" } ?? s.title,
+                                   result: sessionResult(s), met: s.done ? true : nil))
         }
         if let bed = day.bedtimeTarget {
             goals.append(CloseGoal(id: "bedtime", title: "Lefekvés \(bed)", result: "", met: nil))
         }
         return goals
+    }
+
+    /// "90 perc · pulzus átl. 128" / "90 perc"; empty while the session is not done (or has no minutes).
+    private static func sessionResult(_ s: Brief.Session) -> String {
+        guard s.done, let minutes = s.doneMinutes else { return "" }
+        guard let hr = s.avgHr else { return "\(minutes) perc" }
+        return "\(minutes) perc · pulzus átl. \(hr)"
     }
 }

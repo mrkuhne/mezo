@@ -43,6 +43,7 @@ import io.mrkuhne.mezo.techcore.query.WeightTrendQuery;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -154,7 +155,7 @@ public class BoopDayAssembler {
             today == null ? null : new BoopDay.HrToday(today.getMinHr(), today.getAvgHr(), today.getMaxHr()),
             today == null ? null : today.getSteps(),
             today == null ? null : today.getActiveKcal(),
-            session(user, date),
+            sessionWithDone(user, date, zone),
             yesterdayLoad(user, date, zone),
             meals(fuel, zone),
             toInt(consumed == null ? null : consumed.getKcal()),
@@ -259,6 +260,59 @@ public class BoopDayAssembler {
             .map(o -> o.getTime()).orElse(plannedTime);
         return new BoopDay.Session(template.get().getType(), time, plannedTime,
             template.get().getDurationEst(), lines);
+    }
+
+    /** Minimum wearable workout length that counts as the planned session being done. */
+    private static final int MIN_DONE_MINUTES = 20;
+    /** A wearable workout counts when it overlaps the planned window widened by this much each side. */
+    private static final Duration DONE_WINDOW_SLACK = Duration.ofHours(2);
+    private static final int DEFAULT_SESSION_MINUTES = 60;
+
+    private BoopDay.Session sessionWithDone(UUID user, LocalDate date, ZoneId zone) {
+        BoopDay.Session planned = session(user, date);
+        return planned == null ? null : markDone(planned, user, date, zone);
+    }
+
+    /**
+     * Done = a gym instance finished today or a sport session logged today (the owner's log is the
+     * truth); else a wearable workout of the day of at least {@value #MIN_DONE_MINUTES} minutes
+     * overlapping the planned window ±2 h. Minutes and average HR come from the wearable workout
+     * matched to the log (or the window match) when there is one; otherwise the log's own minutes.
+     */
+    private BoopDay.Session markDone(BoopDay.Session planned, UUID user, LocalDate date, ZoneId zone) {
+        List<LoggedSession> logged = loggedSessions.loggedSessions(user, date, date, zone);
+        List<WearableWorkoutEntity> workouts = wearableWorkouts
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(user, date, date);
+        if (!logged.isEmpty()) {
+            for (WearableWorkoutEntity w : workouts) {
+                boolean matches = reconciler.match(new WorkoutReconciler.HealthWorkout(
+                    w.getActivityType(), w.getStartAt(), w.getEndAt(), w.getKcal(), w.getAvgHr()), logged).isPresent();
+                if (matches && workoutMinutes(w) > 0) {
+                    return planned.withDone(workoutMinutes(w), w.getAvgHr());
+                }
+            }
+            int loggedMinutes = logged.stream().mapToInt(LoggedSession::minutes).max().orElse(0);
+            return planned.withDone(loggedMinutes > 0 ? loggedMinutes : null, null);
+        }
+        if (planned.time() == null) {
+            return planned; // no planned window → nothing to overlap
+        }
+        Instant from = date.atTime(planned.time()).atZone(zone).toInstant().minus(DONE_WINDOW_SLACK);
+        int planMinutes = planned.minutes() == null || planned.minutes() <= 0
+            ? DEFAULT_SESSION_MINUTES : planned.minutes();
+        Instant to = date.atTime(planned.time()).atZone(zone).toInstant()
+            .plus(Duration.ofMinutes(planMinutes)).plus(DONE_WINDOW_SLACK);
+        return workouts.stream()
+            .filter(w -> workoutMinutes(w) >= MIN_DONE_MINUTES
+                && w.getStartAt().isBefore(to) && w.getEndAt().isAfter(from))
+            .max(java.util.Comparator.comparingInt(BoopDayAssembler::workoutMinutes))
+            .map(w -> planned.withDone(workoutMinutes(w), w.getAvgHr()))
+            .orElse(planned);
+    }
+
+    private static int workoutMinutes(WearableWorkoutEntity w) {
+        return w.getStartAt() != null && w.getEndAt() != null && w.getEndAt().isAfter(w.getStartAt())
+            ? (int) Duration.between(w.getStartAt(), w.getEndAt()).toMinutes() : 0;
     }
 
     /**

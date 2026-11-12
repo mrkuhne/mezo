@@ -41,6 +41,11 @@ public struct Brief: Sendable, Equatable {
         public let plannedTime: String?
         public let minutes: Int?
         public let exercises: [Exercise]
+        /// B3: finished today (train/sport log or a wearable workout in the planned window).
+        public var done: Bool = false
+        /// Minutes / average HR of what was actually done (HR nil when the source has none).
+        public var doneMinutes: Int?
+        public var avgHr: Int?
     }
     public struct Meal: Sendable, Equatable { public let time, title: String; public let kcal, proteinG: Int; public let logged: Bool }
     public struct Checkin: Sendable, Equatable {
@@ -130,7 +135,8 @@ extension Brief {
                 steps: d.steps, stepsGoal: d.stepsGoal, activeKcal: d.activeKcal,
                 session: d.session.map { s in
                     Session(title: s.title, time: s.time, plannedTime: s.plannedTime, minutes: s.minutes,
-                            exercises: s.exercises.map { Exercise(name: $0.name, sets: $0.sets) })
+                            exercises: s.exercises.map { Exercise(name: $0.name, sets: $0.sets) },
+                            done: s.done ?? false, doneMinutes: s.doneMinutes, avgHr: s.avgHr)
                 },
                 meals: d.meals.map { Meal(time: $0.time, title: $0.title, kcal: $0.kcal, proteinG: $0.proteinG, logged: $0.logged) },
                 kcalSoFar: d.kcalSoFar, kcalTarget: d.kcalTarget, proteinG: d.proteinG, proteinTarget: d.proteinTarget,
