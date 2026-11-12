@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 
 /// A check-in as the phone knows it: an answered slot of the day, pending until its outbox item is sent.
 public struct LedgerCheckIn: Codable, Equatable, Identifiable, Sendable {
@@ -106,19 +107,23 @@ public struct DayLedger: Codable, Equatable, Sendable {
             .sorted { $0.capturedAt < $1.capturedAt }
     }
 
-    /// The server's day merged in: anything still pending locally wins (check-ins by slot, journal lines by id, the
-    /// goal and the close as a whole); everything else is the server's. The cached plans stay.
-    public func merged(with server: DayLedger) -> DayLedger {
-        let pendingCheckIns = checkIns.filter(\.pending)
-        let pendingSlots = Set(pendingCheckIns.map(\.slot))
-        let pendingJournal = journal.filter(\.pending)
-        let pendingJournalIds = Set(pendingJournal.map(\.id))
+    /// The server's day (fetched at `fetchedAt`) merged in: anything still pending locally wins (check-ins by slot,
+    /// journal lines by id, the goal and the close as a whole); a sent local entry the server day lacks stays only
+    /// when it was captured after the fetch left (the fetch could not have seen it); everything else is the
+    /// server's. The cached plans stay.
+    public func merged(with server: DayLedger, fetchedAt: Date) -> DayLedger {
+        let serverSlots = Set(server.checkIns.map(\.slot))
+        let serverJournalIds = Set(server.journal.map(\.id))
+        let keptCheckIns = checkIns.filter { $0.pending || (!serverSlots.contains($0.slot) && $0.capturedAt > fetchedAt) }
+        let keptSlots = Set(keptCheckIns.map(\.slot))
+        let keptJournal = journal.filter { $0.pending || (!serverJournalIds.contains($0.id) && $0.capturedAt > fetchedAt) }
+        let keptJournalIds = Set(keptJournal.map(\.id))
         var out = DayLedger(date: date)
-        out.checkIns = (pendingCheckIns + server.checkIns.filter { !pendingSlots.contains($0.slot) })
+        out.checkIns = (keptCheckIns + server.checkIns.filter { !keptSlots.contains($0.slot) })
             .sorted { $0.capturedAt < $1.capturedAt }
-        out.goal = goal?.pending == true ? goal : server.goal
-        out.close = close?.pending == true ? close : server.close
-        out.journal = (server.journal.filter { !pendingJournalIds.contains($0.id) } + pendingJournal)
+        out.goal = goal.map { $0.pending || (server.goal == nil && $0.setAt > fetchedAt) } == true ? goal : server.goal
+        out.close = close.map { $0.pending || (server.close == nil && $0.capturedAt > fetchedAt) } == true ? close : server.close
+        out.journal = (server.journal.filter { !keptJournalIds.contains($0.id) } + keptJournal)
             .sorted { $0.capturedAt < $1.capturedAt }
         out.plans = plans.merging(server.plans) { _, fresh in fresh }
         return out
@@ -133,20 +138,28 @@ public struct DayLedger: Codable, Equatable, Sendable {
     }
 }
 
-/// The per-date ledgers, persisted as one JSON file per day in its directory (all loaded at start). Every capture
-/// writes here first (pending), the outbox's delivery clears the flag, and server days merge in by slot / client ref.
+/// The per-date ledgers, persisted as one JSON file per day in its directory (all loaded at start; an unreadable day
+/// file is moved aside as `<date>.corrupt-<ts>.json`, never overwritten). Every capture writes here first (pending)
+/// and throws when the disk write fails, so the capture flow can react; the outbox's delivery clears the flag, and
+/// server days merge in by slot / client ref.
 @MainActor @Observable
 public final class LedgerStore {
     public private(set) var days: [String: DayLedger] = [:]
     @ObservationIgnored private let directory: URL
+    @ObservationIgnored private let log = Logger(subsystem: "io.mrkuhne.boop", category: "ledger")
 
     public init(directory: URL) {
         self.directory = directory
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-        for file in files where file.pathExtension == "json" {
-            if let data = try? Data(contentsOf: file), let day = try? JSONDecoder().decode(DayLedger.self, from: data) {
+        // Day files only: `yyyy-MM-dd.json` (aside copies carry a longer name).
+        for file in files where file.pathExtension == "json" && file.deletingPathExtension().lastPathComponent.count == 10 {
+            guard let data = try? Data(contentsOf: file) else { continue }
+            if let day = try? JSONDecoder().decode(DayLedger.self, from: data) {
                 days[day.date] = day
+            } else {
+                log.error("ledger day file unreadable, moved aside")
+                RitmusFiles.moveAside(file, as: "\(file.deletingPathExtension().lastPathComponent).corrupt", stamp: Date())
             }
         }
     }
@@ -159,42 +172,50 @@ public final class LedgerStore {
     public func ledger(for date: String) -> DayLedger { days[date] ?? DayLedger(date: date) }
 
     /// A check-in replaces whatever its slot held that day (full replace, as on the server).
-    public func saveCheckIn(_ checkIn: LedgerCheckIn, date: String) {
-        update(date) { day in
+    public func saveCheckIn(_ checkIn: LedgerCheckIn, date: String) throws {
+        try update(date) { day in
             day.checkIns.removeAll { $0.slot == checkIn.slot }
             day.checkIns.append(checkIn)
             day.checkIns.sort { $0.capturedAt < $1.capturedAt }
         }
     }
 
-    public func setGoal(_ goal: LedgerGoal?, date: String) { update(date) { $0.goal = goal } }
+    public func setGoal(_ goal: LedgerGoal?, date: String) throws { try update(date) { $0.goal = goal } }
 
-    public func setClose(_ close: LedgerClose?, date: String) { update(date) { $0.close = close } }
+    public func setClose(_ close: LedgerClose?, date: String) throws { try update(date) { $0.close = close } }
 
     /// Adds a journal line, or replaces the one with the same id (e.g. a voice note getting its transcript).
-    public func addJournal(_ entry: LedgerJournal, date: String) {
-        update(date) { day in
+    public func addJournal(_ entry: LedgerJournal, date: String) throws {
+        try update(date) { day in
             if let i = day.journal.firstIndex(where: { $0.id == entry.id }) { day.journal[i] = entry }
             else { day.journal.append(entry) }
             day.journal.sort { $0.capturedAt < $1.capturedAt }
         }
     }
 
+    // Background updates: nobody can react to a write failure here; it is logged and the state stays in memory.
+
     public func cachePlans(_ plans: [CheckInPlanLite], date: String) {
-        update(date) { day in for plan in plans { day.plans[plan.slot] = plan } }
+        try? update(date) { day in for plan in plans { day.plans[plan.slot] = plan } }
     }
 
-    public func markSent(_ id: UUID, date: String) { update(date) { $0.markSent(id) } }
+    public func markSent(_ id: UUID, date: String) { try? update(date) { $0.markSent(id) } }
 
-    public func merge(server: DayLedger) {
-        update(server.date) { day in day = day.merged(with: server) }
+    /// `fetchedAt`: when the server fetch left (see `DayLedger.merged`).
+    public func merge(server: DayLedger, fetchedAt: Date) {
+        try? update(server.date) { day in day = day.merged(with: server, fetchedAt: fetchedAt) }
     }
 
-    private func update(_ date: String, _ change: (inout DayLedger) -> Void) {
+    /// Applies the change in memory, then writes the day (throws when the write fails).
+    private func update(_ date: String, _ change: (inout DayLedger) -> Void) throws {
         var day = ledger(for: date)
         change(&day)
         days[date] = day
-        guard let data = try? JSONEncoder().encode(day) else { return }
-        try? data.write(to: directory.appendingPathComponent("\(date).json"), options: .atomic)
+        do {
+            try RitmusFiles.write(try JSONEncoder().encode(day), to: directory.appendingPathComponent("\(date).json"))
+        } catch {
+            log.error("ledger write failed: \(error.localizedDescription, privacy: .public)")
+            throw error
+        }
     }
 }

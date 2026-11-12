@@ -65,5 +65,7 @@ struct CheckInQuestionsTests {
         #expect(CheckInQuestions.startValue(for: "energy", checkIns: []) == 5)
         let painDay = LedgerCheckIn(id: UUID(), slot: "06:30", capturedAt: at(8, 0), values: [:], pain: true, painIntensity: 3)
         #expect(CheckInQuestions.startValue(for: "pain", checkIns: [painDay]) == 3)
+        let noPainLater = LedgerCheckIn(id: UUID(), slot: "10:00", capturedAt: at(12, 0), values: [:], pain: false)
+        #expect(CheckInQuestions.startValue(for: "pain", checkIns: [painDay, noPainLater]) == 5)
     }
 }
