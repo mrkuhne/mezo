@@ -14,7 +14,7 @@ final class RitmusEnvironment {
     @ObservationIgnored let outbox: Outbox
     @ObservationIgnored let calendar: Calendar
     @ObservationIgnored let clock: @Sendable () -> Date
-    /// The spoken-sentence recorder; nil until Task 10 brings the real one (the mic is dimmed, typing works).
+    /// The voice recorder (`VoiceJournal` in live builds); nil = the mic is dimmed and typing works.
     @ObservationIgnored var recorder: (any VoiceNoteRecorder)?
     @ObservationIgnored private let lineSource: @Sendable (_ date: String, _ slot: String) async throws -> String
     @ObservationIgnored private let snapshotSource: @Sendable (Date) async -> CheckInSnapshotValue
@@ -60,7 +60,9 @@ final class RitmusEnvironment {
         // A delivery clears the pending flag only when no newer version of the same id (a note sent after an
         // in-flight check-in) is still queued — that one clears it when it arrives.
         let queue = OutboxRef()
-        outbox = Outbox(directory: outboxDirectory, sender: sender, clock: clock, calendar: greg) { item, _ in
+        outbox = Outbox(directory: outboxDirectory, sender: sender, clock: clock, calendar: greg) { item, body in
+            // A recording's transcript lands on the day (its journal line or its check-in's note).
+            await ledger.applyDelivered(item, body: body)
             if await queue.outbox?.isQueued(item.id) == true { return }
             await ledger.markSent(item.id, date: item.date)
         }
@@ -83,7 +85,7 @@ final class RitmusEnvironment {
         let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox)
         let snapshots = SnapshotBuilder(reader: health)
         let calendarReader = CalendarKitReader()
-        return RitmusEnvironment(
+        let env = RitmusEnvironment(
             ledgerDirectory: dirs.ledger, outboxDirectory: dirs.outbox, sender: ritmus,
             line: { date, slot in try await ritmus.checkInLine(date, slot: slot) },
             snapshot: { now in await snapshots.snapshot(at: now) },
@@ -92,6 +94,9 @@ final class RitmusEnvironment {
             goals: { dates in try await ritmus.fetchGoals(dates) },
             events: { day in await todaysEvents(calendarReader, day: day) },
             closeLine: { date in try await ritmus.line(date) })
+        // Records into the outbox folder, where the `voice` sender looks for the files.
+        env.recorder = VoiceJournal(directory: dirs.outbox)
+        return env
     }
 
     /// The phone calendar's timed and all-day events of `day`, only when access was already given (never asks here).
@@ -219,6 +224,9 @@ final class RitmusEnvironment {
         ledger.merge(server: server, fetchedAt: fetchedAt)
     }
 
+    /// A close written again (*Módosítom*): the old sentence no longer describes it.
+    func forgetCloseLine(_ date: String) { closeLines[date] = nil }
+
     /// Boop's sentence about the closed day, once the close is on the server (offline or 503: later).
     func refreshCloseLine(_ date: String) async {
         guard let closeLineSource, closeLines[date] == nil, let close = ledger.ledger(for: date).close, !close.pending,
@@ -232,6 +240,22 @@ final class RitmusEnvironment {
         Task { await outbox.flush(ignoringBackoff: true) }
     }
 }
+
+/// Records a spoken sentence (B3 Task 10): one tap starts, the next stops. `VoiceJournal` is the real one.
+@MainActor
+protocol VoiceNoteRecorder: AnyObject {
+    /// A transcript can come back right away (on-device Hungarian recognition); otherwise a stop hands back the kept
+    /// recording for the upload.
+    var transcribesOnDevice: Bool { get }
+    /// Throws when the microphone is not allowed.
+    func start() async throws
+    /// The transcript, or the kept recording (nil: nothing was recorded).
+    func stop() async -> VoiceCapture?
+    /// Throws away a kept recording.
+    func discard(_ capture: VoiceCapture)
+}
+
+extension VoiceJournal: VoiceNoteRecorder {}
 
 /// One goal typed on a past day.
 struct PastGoal: Equatable, Sendable {

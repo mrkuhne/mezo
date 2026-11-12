@@ -47,6 +47,8 @@ struct ShellView: View {
     /// The cover the "+" sheet asked for; it opens once the sheet has gone (two presentations never overlap).
     @State private var coverAfterCapture: RitmusCover?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
+    /// The day's brief: Boop's own goals and the bedtime target for the close.
+    @Environment(MorningStore.self) private var morning: MorningStore?
     @State private var toast: String?
     /// A room is open over the page: the bar is hidden.
     @State private var roomOpen = false
@@ -112,8 +114,11 @@ struct ShellView: View {
                     coverFallback(hue: .mozgas)
                 }
             case .este:
-                // Task 10 brings the one-minute close; until then the cover is a calm placeholder with a way back.
-                coverFallback(hue: .pulzus, line: "Az esti zárás hamarosan itt lesz.")
+                if let ritmus {
+                    EsteView(env: ritmus, brief: morning?.brief) { router.close() }
+                } else {
+                    coverFallback(hue: .pulzus)
+                }
             }
         }
         .onAppear {
@@ -144,14 +149,10 @@ struct ShellView: View {
         #endif
     }
 
-    /// No daily loop yet (signing in or out), or a screen still to come: never an empty cover, always a way back.
-    private func coverFallback(hue: Hue, line: String? = nil) -> some View {
+    /// No daily loop yet (signing in or out): never an empty cover, always a way back.
+    private func coverFallback(hue: Hue) -> some View {
         ZStack(alignment: .topLeading) {
             NKGround(hue: hue)
-            if let line {
-                Text(line).nkFont(28, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center)
-                    .padding(.horizontal, 30).frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
             Button { router.close() } label: {
                 Image(systemName: "chevron.down").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
                     .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)

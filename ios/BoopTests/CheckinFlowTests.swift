@@ -25,6 +25,13 @@ private actor RecordingSender: OutboxSender {
     func goOffline() { offline = true }
 }
 
+/// Delivers everything; a `voice` item comes back with its transcript, as the server's transcription would answer.
+private actor TranscribingSender: OutboxSender {
+    func send(_ item: OutboxItem) async -> OutboxSendResult {
+        item.kind == .voice ? .sent(RitmusPayload.encode(VoiceTranscript(text: "Leeresztettem."))) : .sent(nil)
+    }
+}
+
 /// Holds every send until the test lets it go (one at a time).
 private actor GatedSender: OutboxSender {
     private(set) var started = 0
@@ -245,6 +252,33 @@ final class CheckinFlowTests {
         #expect(p.snapshot?.hrBpm == 78)
         #expect(env.ledger.ledger(for: "2026-11-12").checkIns.first?.note == "A workshop után leeresztettem.")
         #expect(flow.saved?.checkIn.note == "A workshop után leeresztettem.")
+    }
+
+    // B3 Task 10 ruling: a recording the phone could not write down waits as a `voice` item aimed at this check-in's note.
+    @Test func recordedNoteWaitsAsVoiceForTheCheckIn() async throws {
+        let env = environment()
+        let flow = CheckinFlow(env: env)
+        await sender.goOffline()
+        await flow.next(); await flow.quickExit()
+        let saved = try #require(flow.saved)
+        #expect(await flow.addVoiceNote(fileName: "voice-1.m4a") == .waiting)
+        let queued = try #require(await env.outbox.pending.last)
+        #expect(queued.kind == .voice)
+        #expect(queued.id != saved.checkIn.id)                      // the check-in itself stays queued in front
+        #expect(queued.capturedAt == saved.checkIn.capturedAt && queued.date == saved.date)
+        let voice = try JSONDecoder.iso.decode(VoicePayload.self, from: queued.payload)
+        #expect(voice.fileName == "voice-1.m4a")
+        #expect(voice.target == .checkInNote(saved.payload))
+        #expect(await env.outbox.pending.map(\.kind) == [.checkIn, .voice])
+    }
+
+    @Test func recordedNoteOnlineComesBackAsTheNote() async throws {
+        let env = environment(sender: TranscribingSender())
+        let flow = CheckinFlow(env: env)
+        await flow.next(); await flow.quickExit()
+        #expect(await flow.addVoiceNote(fileName: "voice-1.m4a") == .transcribed("Leeresztettem."))
+        #expect(env.ledger.ledger(for: "2026-11-12").checkIns.first?.note == "Leeresztettem.")
+        #expect(flow.saved?.checkIn.note == "Leeresztettem.")
     }
 
     @Test func verdictComparesWithPrediction() {

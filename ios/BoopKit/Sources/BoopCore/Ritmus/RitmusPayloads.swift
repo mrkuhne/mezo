@@ -67,12 +67,30 @@ public struct JournalPayload: Codable, Equatable, Sendable {
     public init(text: String) { self.text = text }
 }
 
+/// Where a recording's transcript goes once it is written.
+public enum VoiceTarget: Codable, Equatable, Sendable {
+    /// A journal line of the day (the evening's *Mesélj*), created with the voice item's id as its client ref.
+    case journal
+    /// The note of a check-in already saved (spec §7.2): the same-slot follow-up upsert carrying all its values plus the
+    /// transcript as `note`. The voice item's date and `capturedAt` are the check-in's own.
+    case checkInNote(CheckInPayload)
+}
+
 /// `voice`: a recording waiting for its transcript. `fileName` lives in the client's audio directory (the outbox
-/// directory by default), so the path survives a container move. After the transcript the journal line is created with
-/// the item's client ref, and the file is deleted only then.
+/// directory by default), so the path survives a container move. After the transcript the target's write is sent (a
+/// journal line, or the check-in carrying its note), and the file is deleted only then. Items queued before the target
+/// existed decode as `journal`.
 public struct VoicePayload: Codable, Equatable, Sendable {
     public var fileName: String
-    public init(fileName: String) { self.fileName = fileName }
+    public var target: VoiceTarget
+    public init(fileName: String, target: VoiceTarget = .journal) { self.fileName = fileName; self.target = target }
+
+    private enum CodingKeys: String, CodingKey { case fileName, target }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        fileName = try c.decode(String.self, forKey: .fileName)
+        target = try c.decodeIfPresent(VoiceTarget.self, forKey: .target) ?? .journal
+    }
 }
 
 /// One of B2's goals as seen at close.
@@ -129,4 +147,5 @@ public struct ChatReply: Codable, Equatable, Sendable {
 /// What a delivered `voice` item hands to `Outbox.onSent` (the transcript to show in the ledger).
 public struct VoiceTranscript: Codable, Equatable, Sendable {
     public var text: String
+    public init(text: String) { self.text = text }
 }

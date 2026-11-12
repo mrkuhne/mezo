@@ -144,4 +144,28 @@ final class DayLedgerTests {
         let c = LedgerStore(directory: dir).ledger(for: date).checkIns.first
         #expect(c?.values["energy"] == 6 && c?.snapshot == nil)
     }
+
+    // B3 Task 10: a delivered recording brings its transcript back to the day.
+    @Test func deliveredVoiceFillsTheJournalLineAndTheCheckInNote() throws {
+        let store = LedgerStore(directory: dir)
+        let journalId = UUID()
+        try store.addJournal(LedgerJournal(id: journalId, capturedAt: at(21, 30), text: nil, pending: true), date: date)
+        try store.saveCheckIn(checkIn("14:00", 16, 2, energy: 5), date: date)
+        let transcript = RitmusPayload.encode(VoiceTranscript(text: "Jó nap volt."))
+        store.applyDelivered(OutboxItem(id: journalId, kind: .voice, date: date, capturedAt: at(21, 30),
+                                        payload: RitmusPayload.encode(VoicePayload(fileName: "a.m4a"))), body: transcript)
+        let note = VoicePayload(fileName: "b.m4a", target: .checkInNote(CheckInPayload(slot: "14:00", values: ["energy": 5])))
+        store.applyDelivered(OutboxItem(id: UUID(), kind: .voice, date: date, capturedAt: at(16, 2),
+                                        payload: RitmusPayload.encode(note)), body: RitmusPayload.encode(VoiceTranscript(text: "Leeresztettem.")))
+        let day = store.ledger(for: date)
+        #expect(day.journal.first?.text == "Jó nap volt." && day.journal.first?.pending == false)
+        #expect(day.checkIns.first?.note == "Leeresztettem.")
+    }
+
+    @Test func closeWithoutTheNewFieldsStillLoads() throws {
+        let old = #"{"date":"2026-11-10","checkIns":[],"close":{"id":"0B6F3C1E-1111-4A2B-9C3D-222233334444","capturedAt":784036800,"eveningEnergy":6,"dayRating":4,"pending":false},"journal":[],"plans":{}}"#
+        try Data(old.utf8).write(to: dir.appendingPathComponent("\(date).json"))
+        let close = LedgerStore(directory: dir).ledger(for: date).close
+        #expect(close?.dayRating == 4 && close?.planGoals == nil && close?.web == nil && close?.journalText == nil)
+    }
 }

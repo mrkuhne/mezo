@@ -90,12 +90,14 @@ func closeReminderTime(_ brief: Brief) -> String {
 struct GoalBlock: View {
     let goal: String?
     let suggestions: [GoalSuggestion]
-    /// The spoken goal arrives with Task 10's recorder; until then the mic is dimmed and typing works.
+    /// The field's text; what the phone heard lands here too.
+    @Binding var draft: String
+    /// The mic works only with on-device recognition (a transcript right away); otherwise it is dimmed and typing works.
     let micEnabled: Bool
+    let recording: Bool
     let onSet: (String) -> Void
     let onCsere: () -> Void
     let onMic: () -> Void
-    @State private var draft = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -120,10 +122,20 @@ struct GoalBlock: View {
                         .nkFont(15).foregroundStyle(.white)
                         .submitLabel(.done)
                         .onSubmit { set(draft) }
-                    Button(action: onMic) { NKGlyph("mic", .white.opacity(micEnabled ? 0.8 : 0.3), size: 20).frame(width: 32, height: 32) }
+                    Button(action: onMic) {
+                        ZStack {
+                            if recording {
+                                Circle().fill(.white)
+                                RoundedRectangle(cornerRadius: 3).fill(NK.ground).frame(width: 11, height: 11)
+                            } else {
+                                NKGlyph("mic", .white.opacity(micEnabled ? 0.8 : 0.3), size: 20)
+                            }
+                        }
+                        .frame(width: 32, height: 32)
+                    }
                         .buttonStyle(.plain)
                         .disabled(!micEnabled)
-                        .accessibilityLabel("Mondd be")
+                        .accessibilityLabel(recording ? "Felvétel leállítása" : "Mondd be")
                 }
                 .padding(.horizontal, 16).frame(height: 48)
                 .background(Capsule().fill(.white.opacity(0.08)))
@@ -211,7 +223,9 @@ struct EsteDoorCard: View {
                 }
             }
             .accessibilityElement(children: .combine)
+            // The close opens only in the evening (before that the card says when Boop calls for it).
             NKPill("Lezárom a napot", glyph: "spark-cream", wide: false, action: onClose)
+                .disabled(!open)
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
