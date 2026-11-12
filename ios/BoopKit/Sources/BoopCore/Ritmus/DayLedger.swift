@@ -149,6 +149,15 @@ public struct DayLedger: Codable, Equatable, Sendable {
         return out
     }
 
+    /// Like `merged(with:)`, but only the check-ins and the close come from the server: the goal and the journal stay as
+    /// they are (a Napló fetch carries neither, so merging them would wipe the synced ones).
+    func mergedCheckInsAndClose(with server: DayLedger, fetchedAt: Date) -> DayLedger {
+        var out = merged(with: server, fetchedAt: fetchedAt)
+        out.goal = goal
+        out.journal = journal
+        return out
+    }
+
     /// Clears the pending flag of whatever carries this client ref.
     mutating func markSent(_ id: UUID) {
         for i in checkIns.indices where checkIns[i].id == id { checkIns[i].pending = false }
@@ -244,6 +253,11 @@ public final class LedgerStore {
     /// `fetchedAt`: when the server fetch left (see `DayLedger.merged`).
     public func merge(server: DayLedger, fetchedAt: Date) {
         try? update(server.date) { day in day = day.merged(with: server, fetchedAt: fetchedAt) }
+    }
+
+    /// A server day that carries only check-ins and a close (the Napló list): the goal and journal already here stay.
+    public func mergeCheckInsAndClose(server: DayLedger, fetchedAt: Date) {
+        try? update(server.date) { day in day = day.mergedCheckInsAndClose(with: server, fetchedAt: fetchedAt) }
     }
 
     /// Applies the change in memory, then writes the day (throws when the write fails).

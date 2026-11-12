@@ -57,13 +57,15 @@ public enum NaploDays {
         return days(from: from, to: to).reversed().compactMap { date in
             let close = closeByDate[date]
             let dayCheckIns = checkIns[date] ?? []
-            guard close != nil || !dayCheckIns.isEmpty else { return nil }
+            let points = DayLedger(date: date, checkIns: dayCheckIns).curvePoints
+            // A day is a row when it has a close or at least one energy answer; check-ins without one add nothing.
+            guard close != nil || !points.isEmpty else { return nil }
             let line = close?.journalText?.split(whereSeparator: \.isNewline)
                 .map { $0.trimmingCharacters(in: .whitespaces) }.first { !$0.isEmpty }
             return NaploDayRow(
                 date: date, ratingWord: ratingWord(close?.dayRating), goalText: close?.goalText.flatMap { $0.isEmpty ? nil : $0 },
                 goalOutcomeLabel: close?.goalOutcome.flatMap { outcomeLabels[$0] },
-                points: DayLedger(date: date, checkIns: dayCheckIns).curvePoints, journalLine: line, web: close?.web ?? false,
+                points: points, journalLine: line, web: close?.web ?? false,
                 pending: close?.pending == true || dayCheckIns.contains { $0.pending })
         }
     }

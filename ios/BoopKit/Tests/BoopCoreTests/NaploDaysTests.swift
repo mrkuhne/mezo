@@ -50,6 +50,11 @@ struct NaploDaysTests {
         #expect(row?.points.map(\.pending) == [false, true])
     }
 
+    @Test func checkInsWithoutEnergyAndNoCloseAreAbsent() {
+        let bare = LedgerCheckIn(id: UUID(), slot: "10:00", capturedAt: Date(), values: ["mood": 6])
+        #expect(NaploDays.rows(closes: [], checkIns: ["2026-11-11": [bare]], from: Self.from, to: Self.to).isEmpty)
+    }
+
     @Test func ratingWords() {
         #expect(NaploDays.ratingWord(1) == "Nehéz")
         #expect(NaploDays.ratingWord(2) == "Inkább nehéz")
@@ -92,5 +97,31 @@ struct NaploDaysTests {
         #expect(closes.first?.pending == true)
         #expect(checkIns["2026-11-11"]?.count == 1)
         #expect(checkIns["2026-11-10"] == nil)
+    }
+}
+
+@MainActor
+final class NaploMergeTests {
+    let dir = temporaryDirectory()
+    deinit { try? FileManager.default.removeItem(at: dir) }
+
+    @Test func syncedGoalAndJournalSurviveANaploMerge() throws {
+        let store = LedgerStore(directory: dir)
+        let date = "2026-11-11"
+        let journalId = UUID()
+        try store.setGoal(LedgerGoal(id: UUID(), text: "Prezentáció", setAt: Date(timeIntervalSince1970: 100), focusId: UUID()), date: date)
+        try store.addJournal(LedgerJournal(id: journalId, capturedAt: Date(timeIntervalSince1970: 100), text: "Jó nap."), date: date)
+        try store.setClose(LedgerClose(id: UUID(), capturedAt: Date(timeIntervalSince1970: 100), eveningEnergy: 4, dayRating: 4,
+                                       journalId: journalId), date: date)
+        let before = store.ledger(for: date)
+        var server = DayLedger(date: date)
+        server.close = LedgerClose(id: UUID(), capturedAt: Date(timeIntervalSince1970: 200), eveningEnergy: 5, dayRating: 5, journalText: "Jó nap.")
+        server.checkIns = [LedgerCheckIn(id: UUID(), slot: "10:00", capturedAt: Date(timeIntervalSince1970: 150), values: ["energy": 6])]
+        store.mergeCheckInsAndClose(server: server, fetchedAt: Date(timeIntervalSince1970: 1000))
+        let after = store.ledger(for: date)
+        #expect(after.goal == before.goal && after.goal != nil)
+        #expect(after.journal == before.journal && after.journal.count == 1)
+        #expect(after.close?.dayRating == 5)
+        #expect(after.checkIns.count == 1)
     }
 }

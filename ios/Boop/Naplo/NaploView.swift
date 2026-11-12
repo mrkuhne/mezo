@@ -168,7 +168,7 @@ struct NaploDayDetail: View {
                     ClosedDayCard(rows: EsteFlow.summaryRows(for: close), quote: EsteFlow.quote(for: close, in: day, voiceFailed: false))
                 }
                 if !day.curvePoints.isEmpty {
-                    MaEnergyCard(day: day, predicted: [], now: env.calendar.startOfDay(for: env.calendar.date(from: dayComponents) ?? Date()),
+                    MaEnergyCard(day: day, predicted: [], now: nil,
                                  calendar: env.calendar, selected: $selected, title: "AZ ENERGIÁD")
                 }
             }
@@ -177,10 +177,5 @@ struct NaploDayDetail: View {
         .scrollIndicators(.hidden)
         .background(NKGround(hue: .alvas))
         .preferredColorScheme(.dark)
-    }
-
-    private var dayComponents: DateComponents {
-        let p = date.split(separator: "-").compactMap { Int($0) }
-        return p.count == 3 ? DateComponents(year: p[0], month: p[1], day: p[2]) : DateComponents()
     }
 }
