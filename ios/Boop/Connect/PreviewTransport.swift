@@ -37,7 +37,7 @@ struct PreviewTransport: ClientTransport {
     private static let ritmusOps: Set<String> = [
         "saveCheckIn", "generateCheckInLine", "getCheckInPlan", "listCheckInsForDay", "addFocus", "removeFocus",
         "createJournalEntry", "transcribeVoiceNote", "putDayClose", "getDayClose", "generateDayCloseLine",
-        "getDayContext", "listConversations", "createConversation", "listMessages", "sendMessage",
+        "getDayContext", "listDayCloses", "listConversations", "createConversation", "listMessages", "sendMessage",
     ]
 
     // MARK: - Boop's chat (invented day: a short night, low HRV, volleyball at 19:00)
@@ -123,6 +123,8 @@ struct PreviewTransport: ClientTransport {
             return json(#"{"text":"Jól ment a prezentáció, a röpi után kellemesen elfáradtam."}"#)
         case "getDayClose":
             return (HTTPResponse(status: .notFound), nil)
+        case "listDayCloses": return json(pastCloses())
+        case "listCheckInsForDay": return json(pastCheckIns(on: queryDate(request)))
         case "generateDayCloseLine":
             return json(#"{"line":"Jó nap volt: a prezentáció sikerült, a fehérje és az edzés is megvolt. Délután leeresztettél, de estére összeszedted magad."}"#)
         case "clearSessionTime":
@@ -134,6 +136,51 @@ struct PreviewTransport: ClientTransport {
             return json(#"{"id":"6f1d7a52-2b7e-4c0e-8a52-7d9d4c1a0001","kind":"statistical","pairKey":"minta","category":"trigger","categoryLabel":"Kiváltó","title":"Minta","evidence":[],"status":"confirmed","lastDetectedAt":"2026-11-10T05:00:00Z","evidenceHits":4,"evidenceMisses":1}"#)
         default: return nil
         }
+    }
+
+    // MARK: - Past days for Napló (invented; offsets from today)
+
+    private static func dayString(offset: Int) -> String {
+        var greg = Calendar(identifier: .gregorian); greg.timeZone = .current
+        let d = greg.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let c = greg.dateComponents([.year, .month, .day], from: d)
+        return String(format: "%04d-%02d-%02d", c.year ?? 2026, c.month ?? 1, c.day ?? 1)
+    }
+
+    /// Closes of the days before today: a phone close with a journal line, a web close without a rating, and a few more.
+    private static func pastCloses() -> String {
+        func close(_ offset: Int, rating: Int?, energy: Int?, goal: String?, outcome: String?, journal: String?, web: Bool = false) -> String {
+            let at = ISO8601DateFormatter().string(from: Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date())
+            func q(_ s: String?) -> String { s.map { String(decoding: (try? JSONEncoder().encode($0)) ?? Data(), as: UTF8.self) } ?? "null" }
+            return #"{"date":"\#(dayString(offset: offset))","closedAt":"\#(at)","eveningEnergy":\#(energy.map(String.init) ?? "null"),"dayRating":\#(rating.map(String.init) ?? "null"),"goalText":\#(q(goal)),"goalOutcome":\#(q(outcome)),"planGoals":[{"id":"protein","title":"150 g fehérje","result":"152 g","met":true}],"journalText":\#(q(journal)),"source":"\#(web ? "web" : "boop")"}"#
+        }
+        return "[" + [
+            close(-1, rating: 4, energy: 4, goal: "Ügyfélprezentáció 14:00", outcome: "done",
+                  journal: "Jól ment a prezentáció, a röpi után kellemesen elfáradtam."),
+            close(-2, rating: nil, energy: nil, goal: "Meal prep a hétre", outcome: "partial",
+                  journal: "Fáradt voltam, a főzés fele kimaradt.\nHolnap folytatom.", web: true),
+            close(-4, rating: 2, energy: 3, goal: "Vállak és hát edzés", outcome: "no", journal: nil),
+            close(-5, rating: 5, energy: 8, goal: nil, outcome: nil, journal: "Hosszú séta, jó nap."),
+            close(-9, rating: 3, energy: 5, goal: "Beadandó vázlata", outcome: "done", journal: nil),
+        ].joined(separator: ",") + "]"
+    }
+
+    private static let pastCheckInDays: [Int: [(slot: String, hour: Int, energy: Int)]] = [
+        -1: [("06:30", 7, 7), ("10:00", 12, 6), ("14:00", 16, 5)],
+        -2: [("06:30", 8, 5), ("14:00", 15, 4)],
+        -3: [("06:30", 7, 6), ("10:00", 11, 7)],
+        -4: [("06:30", 7, 4), ("10:00", 12, 3), ("14:00", 16, 4)],
+        -5: [("06:30", 7, 8), ("10:00", 12, 8)],
+        -9: [("10:00", 12, 5)],
+    ]
+
+    private static func pastCheckIns(on date: String) -> String {
+        guard let offset = pastCheckInDays.keys.first(where: { dayString(offset: $0) == date }), let list = pastCheckInDays[offset] else { return "[]" }
+        let items = list.map { c -> String in
+            let at = Calendar.current.date(bySettingHour: c.hour, minute: 10, second: 0, of: Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()) ?? Date()
+            return #"{"id":"\#(UUID().uuidString.lowercased())","date":"\#(date)","slotTime":"\#(c.slot)","state":"done","energy":\#(c.energy),"savedAt":"\#(ISO8601DateFormatter().string(from: at))"}"#
+        }
+        return "[" + items.joined(separator: ",") + "]"
     }
 
     private static func queryDate(_ request: HTTPRequest) -> String {

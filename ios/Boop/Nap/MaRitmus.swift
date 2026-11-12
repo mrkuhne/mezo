@@ -189,12 +189,14 @@ struct MaEnergyCard: View {
     let now: Date
     let calendar: Calendar
     @Binding var selected: UUID?
+    /// "AZ ENERGIÁD MA" on Ma; a past day (Napló) drops the "MA".
+    var title = "AZ ENERGIÁD MA"
 
     private func hour(_ d: Date) -> Double { EnergyCurveGeometry.hour(of: d, calendar: calendar) }
 
     var body: some View {
         VStack(spacing: 12) {
-            EnergyCurveCard(title: "AZ ENERGIÁD MA", trailing: filledLabel(day), predicted: predicted,
+            EnergyCurveCard(title: title, trailing: filledLabel(day), predicted: predicted,
                             dots: day.checkIns.compactMap { c in
                                 c.values["energy"].map { EnergyCurveDot(id: c.id, hour: hour(c.capturedAt), energy: $0, pending: c.pending) }
                             },

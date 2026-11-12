@@ -34,7 +34,7 @@ final class EsteFlow {
 
     static let offlineLine = "A napod a telefonon van. Amint lesz net, elküldöm, és reggel elmondom, mit tanultam belőle."
     static let waitingLine = "Mindjárt írok egy mondatot a napodról."
-    static let ratingWords = ["Nehéz", "Inkább nehéz", "Rendben", "Jó", "Remek"]
+    static let ratingWords = NaploDays.ratingWords
     static let outcomes: [(id: String, label: String)] = [("done", "Sikerült"), ("partial", "Részben"), ("no", "Nem")]
 
     /// The evening's day: the day the close opened on, or the day before when it opened before 04:00 (the Este phase
@@ -107,11 +107,13 @@ final class EsteFlow {
     }
 
     /// "A MAI NAPOD": értékelés, a nap célja, energia este, Boop céljai n / m (when there were any).
-    var summaryRows: [Row] {
-        guard let c = closed else { return [] }
+    var summaryRows: [Row] { closed.map(Self.summaryRows(for:)) ?? [] }
+
+    /// The same rows for any closed day (Napló opens past days with them).
+    static func summaryRows(for c: LedgerClose) -> [Row] {
         var rows = [
-            Row(label: "Értékelés", value: c.dayRating.flatMap { (1...5).contains($0) ? Self.ratingWords[$0 - 1] : nil } ?? "–"),
-            Row(label: "A nap célja", value: Self.outcomes.first { $0.id == c.goalOutcome }?.label ?? "–"),
+            Row(label: "Értékelés", value: NaploDays.ratingWord(c.dayRating) ?? "–"),
+            Row(label: "A nap célja", value: outcomes.first { $0.id == c.goalOutcome }?.label ?? "–"),
             Row(label: "Energia este", value: c.eveningEnergy.map(String.init) ?? "–"),
         ]
         if let goals = c.planGoals, !goals.isEmpty {
@@ -123,8 +125,12 @@ final class EsteFlow {
     /// The evening's journal line: the server's text, else the phone's line (a recording until its transcript).
     var journalQuote: Quote? {
         guard let c = closed else { return nil }
+        return Self.quote(for: c, in: env.ledger.ledger(for: date), voiceFailed: voiceFailed)
+    }
+
+    static func quote(for c: LedgerClose, in day: DayLedger, voiceFailed: Bool) -> Quote? {
         if let text = c.journalText, !text.isEmpty { return .text(text) }
-        guard let id = c.journalId, let line = env.ledger.ledger(for: date).journal.first(where: { $0.id == id }) else { return nil }
+        guard let id = c.journalId, let line = day.journal.first(where: { $0.id == id }) else { return nil }
         if let text = line.text, !text.isEmpty { return .text(text) }
         return voiceFailed ? .transcriptFailed : .waitingForTranscript
     }

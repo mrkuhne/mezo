@@ -39,6 +39,7 @@ extension RitmusEnvironment {
             },
             closeLine: { date in try await ritmus.line(date) },
             transcribe: { file in try await ritmus.transcribe(file) },
+            naplo: { from, to in try await ritmus.fetchNaplo(from: from, to: to) },
             clock: { start.addingTimeInterval(Date().timeIntervalSince(launched)) })
         env.recorder = PreviewNoteRecorder(directory: root.appendingPathComponent("outbox"))
         // The Boop tab: `-previewOpen chatAnswer` has one answered question, `chatAsk` asks one at launch whose answer
