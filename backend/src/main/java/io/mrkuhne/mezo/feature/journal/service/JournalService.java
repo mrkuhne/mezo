@@ -73,6 +73,12 @@ public class JournalService {
         return repository.findByCreatedByAndClientRefAndDeletedFalse(owner, ref);
     }
 
+    /** The live entry's text, owner-scoped — the Boop day close's journal link (B3, mezo-r36n9.13). */
+    @Transactional(readOnly = true)
+    public Optional<String> findText(UUID owner, UUID entryId) {
+        return repository.findByIdAndCreatedByAndDeletedFalse(entryId, owner).map(JournalEntryEntity::getText);
+    }
+
     @Transactional(readOnly = true)
     public List<JournalEntryResponse> list(UUID userId, LocalDate from, LocalDate to) {
         return repository
