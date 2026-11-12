@@ -23,7 +23,7 @@ Issue `mezo-r36n9.27`, epic `mezo-r36n9`. Date 2026-11-12. Research + recommenda
 4. **What is missing is the *use* of the data**, not the data: body fat % and lean mass are stored but shown
    nowhere and not used by the goal engine (which prefers Katch-McArdle when body fat is known but reads only
    the scalar `profile.body_fat_pct`). Terv shows only "SÚLYOD kg → trend kg" from the brief.
-5. **Recommendation:** a small standalone build slice right after B3 merges — "Testösszetétel": a body
+5. **Owner chose A (2026-11-12, decision #7 in `14-decisions.md`). Recommendation:** a small standalone build slice right after B3 merges — "Testösszetétel": a body
    room/card in Terv (weight trend + fat % + lean mass with the days behind them), the latest Health body fat
    feeding the goal engine's BMR, `bodyFatPercentage` + `leanBodyMass` added to background delivery (paid
    team), BMI shown computed. ~2–3 days. Check the Feelfit export format before deciding on the extra metrics
