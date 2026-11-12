@@ -106,6 +106,29 @@ class WearableCheckInBiomarkerSourceIT extends AbstractIntegrationTest {
         assertThat(v.sleepMinutes()).isEqualTo(450);
     }
 
+    /** An empty server snapshot is not frozen: a re-save after the Health data synced fills it — and a
+     *  server snapshot with readings then stays as it was. */
+    @Test
+    void reSaveRecomputesAnEmptyServerSnapshotOnly() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        LocalDate today = LocalDate.now(ZoneId.of(wearableProperties.zone()));
+        SaveCheckInRequest web = SaveCheckInRequest.builder()
+            .date(today).slotTime("10:00").state("done").energy(6).build();
+
+        assertThat(checkIns.save(user, web).getSnapshot().getHrBpm()).isNull();
+
+        samples.createSample(user, "hr-now", "heart_rate", Instant.now().minus(5, ChronoUnit.MINUTES), 72);
+        CheckInSnapshot filled = checkIns.save(user, web).getSnapshot();
+        assertThat(filled.getHrBpm()).isEqualTo(72);
+        assertThat(filled.getComputedBy()).isEqualTo(CheckInSnapshot.ComputedByEnum.SERVER);
+
+        samples.createSample(user, "hr-now2", "heart_rate", Instant.now().minus(2, ChronoUnit.MINUTES), 120);
+        assertThat(checkIns.save(user, web).getSnapshot().getHrBpm()).isEqualTo(72);
+        assertThat(jdbc.queryForObject(
+            "select count(*) from check_in_snapshot where created_by = ? and is_deleted = false", Integer.class, user))
+            .isEqualTo(1);
+    }
+
     @Test
     void fallbackWithNoSamplesStoresNulls() {
         UUID user = databasePopulator.populateUser("a@test.local");

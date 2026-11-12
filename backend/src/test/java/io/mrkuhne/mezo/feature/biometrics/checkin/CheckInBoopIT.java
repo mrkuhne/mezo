@@ -2,13 +2,17 @@ package io.mrkuhne.mezo.feature.biometrics.checkin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+import io.mrkuhne.mezo.api.dto.CheckInItemId;
 import io.mrkuhne.mezo.api.dto.CheckInResponse;
 import io.mrkuhne.mezo.api.dto.CheckInSnapshot;
 import io.mrkuhne.mezo.api.dto.SaveCheckInRequest;
 import io.mrkuhne.mezo.feature.biometrics.checkin.config.OwnerZoneProperties;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInSnapshotEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInBiomarkerSource;
 import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInService;
 import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInText;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -23,12 +27,21 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** Boop B3 (mezo-r36n9.13, spec §7.2–7.3): captured-at, the date window, the snapshot, the evening merge. */
 @Transactional
@@ -40,6 +53,9 @@ class CheckInBoopIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private EntityManager entityManager;
+    @Autowired private PlatformTransactionManager transactionManager;
+    /** The server fallback's Health reads (wearable) — stubbed here; the real one is WearableCheckInBiomarkerSourceIT. */
+    @MockitoBean private CheckInBiomarkerSource biomarkerSource;
 
     private ZoneId zone;
     private LocalDate today;
@@ -96,6 +112,138 @@ class CheckInBoopIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void rejectsCapturedAtMoreThanFiveMinutesAhead() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+        assertThatThrownBy(() -> service.save(user, request(today, "06:30").capturedAt(now.plusMinutes(10)).build()))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
+                e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+        assertThatThrownBy(() -> service.mergeEvening(user, today, 7, 8, now.plusMinutes(10).toInstant()))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+        // A phone clock a little ahead is tolerated.
+        assertThat(service.save(user, request(today, "06:30").capturedAt(now.plusMinutes(2)).build()).getSavedAt())
+            .isNotNull();
+    }
+
+    /** Spec §7.3: the server fallback must never lose the check-in — a throwing Health read leaves an empty
+     *  server snapshot and the save commits (no rollback-only outer transaction). */
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void fallbackFailureStillSavesWithEmptyServerSnapshot() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        when(biomarkerSource.snapshotAt(any(), any())).thenThrow(new IllegalStateException("health read failed"));
+
+        CheckInResponse saved = service.save(user, request(today, "10:00").build());
+
+        assertThat(saved.getSnapshot().getComputedBy()).isEqualTo(CheckInSnapshot.ComputedByEnum.SERVER);
+        assertThat(saved.getSnapshot().getHrBpm()).isNull();
+        assertThat(count("select count(*) from check_in where created_by = ? and is_deleted = false", user))
+            .isEqualTo(1);
+        assertThat(count("""
+            select count(*) from check_in_snapshot where created_by = ? and is_deleted = false
+              and computed_by = 'server' and hr_bpm is null and hrv_ms is null and hrv_usual_ms is null
+              and steps is null and sleep_minutes is null and source is null
+            """, user)).isEqualTo(1);
+    }
+
+    /** Task 4's day close calls mergeEvening from its own transaction: repeated writes of one slot inside an
+     *  outer transaction still end in one row (no unique violation poisoning the caller). */
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void writesInsideAnOuterTransactionKeepOneRowPerSlot() {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        Instant at = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            service.mergeEvening(user, today, 6, 7, at);
+            service.mergeEvening(user, today, 7, 8, at);
+            service.save(user, request(today, "10:00").snapshot(phoneSnapshot(at)).build());
+            service.save(user, request(today, "10:00").energy(9).snapshot(phoneSnapshot(at)).build());
+        });
+
+        assertThat(count("select count(*) from check_in where created_by = ? and slot_time = '20:00'", user))
+            .isEqualTo(1);
+        assertThat(count("select energy from check_in where created_by = ? and slot_time = '20:00'", user))
+            .isEqualTo(7);
+        assertThat(count("select count(*) from check_in where created_by = ? and slot_time = '10:00'", user))
+            .isEqualTo(1);
+        assertThat(count("select count(*) from check_in_snapshot where created_by = ? and is_deleted = false", user))
+            .isEqualTo(1);
+    }
+
+    /** A real race: B's save of the same slot starts while A's transaction holds its fresh, uncommitted row.
+     *  B waits on the insert, then finds A's row and replaces it — one row, one snapshot, no 500. */
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void concurrentSavesOfOneSlotKeepOneRow() throws Exception {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        Instant at = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        CountDownLatch aWrote = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> a = pool.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(st -> {
+                service.save(user, request(today, "14:00").energy(3).snapshot(phoneSnapshot(at)).build());
+                aWrote.countDown();
+                try {
+                    Thread.sleep(500); // keep A's row uncommitted while B races it
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+            assertThat(aWrote.await(30, TimeUnit.SECONDS)).isTrue();
+            Future<CheckInResponse> b = pool.submit(() ->
+                service.save(user, request(today, "14:00").energy(9).snapshot(phoneSnapshot(at)).build()));
+            a.get(30, TimeUnit.SECONDS);
+            assertThat(b.get(30, TimeUnit.SECONDS).getEnergy()).isEqualTo(9);
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(count("select count(*) from check_in where created_by = ? and slot_time = '14:00'", user))
+            .isEqualTo(1);
+        assertThat(count("select energy from check_in where created_by = ? and slot_time = '14:00'", user))
+            .isEqualTo(9);
+        assertThat(count("select count(*) from check_in_snapshot where created_by = ? and is_deleted = false", user))
+            .isEqualTo(1);
+    }
+
+    /** The day close's case: two closes of the same evening race, EACH inside its caller's transaction. The
+     *  loser must not hit a unique violation (it would poison its caller's transaction); it waits, then merges
+     *  into the winner's row. */
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void concurrentEveningMergesInsideCallerTransactionsKeepOneRow() throws Exception {
+        UUID user = databasePopulator.populateUser("a@test.local");
+        Instant at = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        CountDownLatch aWrote = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> a = pool.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(st -> {
+                service.mergeEvening(user, today, 4, 5, at);
+                aWrote.countDown();
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+            assertThat(aWrote.await(30, TimeUnit.SECONDS)).isTrue();
+            Future<CheckInResponse> b = pool.submit(() -> new TransactionTemplate(transactionManager)
+                .execute(st -> service.mergeEvening(user, today, 8, 9, at)));
+            a.get(30, TimeUnit.SECONDS);
+            assertThat(b.get(30, TimeUnit.SECONDS).getEnergy()).isEqualTo(8);
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(count("select count(*) from check_in where created_by = ? and slot_time = '20:00'", user))
+            .isEqualTo(1);
+        assertThat(count("select day_rating from check_in where created_by = ? and slot_time = '20:00'", user))
+            .isEqualTo(9);
+    }
+
+    @Test
     void storesPhoneSnapshot() {
         UUID user = databasePopulator.populateUser("a@test.local");
         Instant at = Instant.now().truncatedTo(ChronoUnit.SECONDS);
@@ -143,11 +291,13 @@ class CheckInBoopIT extends AbstractIntegrationTest {
     void mergeEveningKeepsOtherFields() {
         UUID user = databasePopulator.populateUser("a@test.local");
         LocalDate yesterday = today.minusDays(1);
-        service.save(user, request(yesterday, "20:00").energy(3).mood(6).dayRating(4).note("web este").build());
+        service.save(user, request(yesterday, "20:00").state("skipped").energy(3).mood(6).dayRating(4)
+            .note("web este").build());
         Instant captured = yesterday.atTime(LocalTime.of(21, 40)).atZone(zone).toInstant();
 
         CheckInResponse merged = service.mergeEvening(user, yesterday, 7, 8, captured);
 
+        assertThat(merged.getState()).isEqualTo("done"); // the close answered a skipped evening
         assertThat(merged.getMood()).isEqualTo(6);
         assertThat(merged.getNote()).isEqualTo("web este");
         assertThat(merged.getEnergy()).isEqualTo(7);
@@ -164,6 +314,7 @@ class CheckInBoopIT extends AbstractIntegrationTest {
         assertThat(created.getDayRating()).isEqualTo(6);
         assertThat(created.getMood()).isNull();
         assertThat(created.getQuickExit()).isFalse();
+        assertThat(created.getAskedItems()).containsExactly(CheckInItemId.ENERGY, CheckInItemId.DAY);
     }
 
     @Test
