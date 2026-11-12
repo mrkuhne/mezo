@@ -180,9 +180,7 @@ public struct RitmusClient: OutboxSender {
         var text = await memo.transcript(item.id)
         if text == nil {
             guard let audio = try? Data(contentsOf: file) else { return .failed("audio file missing") }
-            let part = Operations.transcribeVoiceNote.Input.Body.multipartFormPayload.audio(
-                .init(payload: .init(body: HTTPBody(audio)), filename: file.lastPathComponent))
-            switch try await client.transcribeVoiceNote(body: .multipartForm(MultipartBody([part]))) {
+            switch try await client.transcribeVoiceNote(body: Self.voiceBody(audio, name: file.lastPathComponent)) {
             case .ok(let ok): text = try ok.body.json.text.trimmingCharacters(in: .whitespacesAndNewlines)
             case .badRequest: return Self.map(400)
             case .unauthorized: return Self.map(401)
@@ -208,6 +206,25 @@ public struct RitmusClient: OutboxSender {
         try? FileManager.default.removeItem(at: file)
         await memo.forget(item.id)
         return .sent(RitmusPayload.encode(VoiceTranscript(text: transcript)))
+    }
+
+    private static func voiceBody(_ audio: Data, name: String) -> Operations.transcribeVoiceNote.Input.Body {
+        let part = Operations.transcribeVoiceNote.Input.Body.multipartFormPayload.audio(
+            .init(payload: .init(body: HTTPBody(audio)), filename: name))
+        return .multipartForm(MultipartBody([part]))
+    }
+
+    /// The server's transcript of a recording, asked for directly (the goal field: nothing is queued, the text only fills
+    /// the field). Throws `RitmusFetchError` (`.offline` without net).
+    public func transcribe(_ file: URL) async throws -> String {
+        guard let audio = try? Data(contentsOf: file) else { throw RitmusFetchError.server }
+        do {
+            switch try await client.transcribeVoiceNote(body: Self.voiceBody(audio, name: file.lastPathComponent)) {
+            case .ok(let ok): return try ok.body.json.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            case .unauthorized: throw RitmusFetchError.unauthorized
+            case .badRequest, .notFound, .badGateway, .undocumented: throw RitmusFetchError.server
+            }
+        } catch { throw Self.fetchError(error) }
     }
 
     // MARK: - Day close

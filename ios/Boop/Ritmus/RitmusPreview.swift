@@ -38,6 +38,7 @@ extension RitmusEnvironment {
                         CalendarEventLite(title: "Ügyfélprezentáció", start: at(14, 0), end: at(15, 30), attendees: 5)]
             },
             closeLine: { date in try await ritmus.line(date) },
+            transcribe: { file in try await ritmus.transcribe(file) },
             clock: { start.addingTimeInterval(Date().timeIntervalSince(launched)) })
         env.recorder = PreviewNoteRecorder(directory: root.appendingPathComponent("outbox"))
         guard opening || closing || laterInTheDay else { return env }
@@ -84,6 +85,7 @@ final class PreviewNoteRecorder: VoiceNoteRecorder {
     let directory: URL
     init(directory: URL) { self.directory = directory }
     var transcribesOnDevice: Bool { !UserDefaults.standard.bool(forKey: "previewOffline") }
+    let speechDenied = false
     func start() async throws {}
     func stop() async -> VoiceCapture? {
         try? await Task.sleep(for: .milliseconds(700))

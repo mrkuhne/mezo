@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import Observation
 import BoopAPI
 import BoopCore
@@ -23,6 +24,13 @@ final class RitmusEnvironment {
     @ObservationIgnored private let goalsSource: (@Sendable ([String]) async throws -> [String: [String]])?
     @ObservationIgnored private let eventsSource: (@Sendable (Date) async -> [CalendarEventLite])?
     @ObservationIgnored private let closeLineSource: (@Sendable (String) async throws -> String)?
+    /// The server's transcription, asked for directly (the goal field); nil = not available.
+    @ObservationIgnored private let transcribeSource: (@Sendable (URL) async throws -> String)?
+    /// Where recordings wait (the outbox folder).
+    @ObservationIgnored let outboxDirectory: URL
+    @ObservationIgnored private var pathMonitor: NWPathMonitor?
+    /// The phone has a network path (live builds watch it; tests set it).
+    var online = true
     /// Where the past days' goal texts are kept between launches (next to the ledger folder).
     @ObservationIgnored private let goalHistoryFile: URL
 
@@ -45,6 +53,7 @@ final class RitmusEnvironment {
          goals: (@Sendable ([String]) async throws -> [String: [String]])? = nil,
          events: (@Sendable (Date) async -> [CalendarEventLite])? = nil,
          closeLine: (@Sendable (String) async throws -> String)? = nil,
+         transcribe: (@Sendable (URL) async throws -> String)? = nil,
          clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current) {
         let ledger = LedgerStore(directory: ledgerDirectory)
         self.ledger = ledger
@@ -56,6 +65,8 @@ final class RitmusEnvironment {
         self.clock = clock
         lineSource = line; snapshotSource = snapshot; planSource = plans
         daySource = day; goalsSource = goals; eventsSource = events; closeLineSource = closeLine
+        transcribeSource = transcribe
+        self.outboxDirectory = outboxDirectory
         goalHistoryFile = ledgerDirectory.deletingLastPathComponent().appendingPathComponent("goal-history.json")
         // A delivery clears the pending flag only when no newer version of the same id (a note sent after an
         // in-flight check-in) is still queued — that one clears it when it arrives.
@@ -93,7 +104,9 @@ final class RitmusEnvironment {
             day: { date in try await ritmus.fetchDay(date) },
             goals: { dates in try await ritmus.fetchGoals(dates) },
             events: { day in await todaysEvents(calendarReader, day: day) },
-            closeLine: { date in try await ritmus.line(date) })
+            closeLine: { date in try await ritmus.line(date) },
+            transcribe: { file in try await ritmus.transcribe(file) })
+        env.watchNetwork()
         // Records into the outbox folder, where the `voice` sender looks for the files.
         env.recorder = VoiceJournal(directory: dirs.outbox)
         return env
@@ -224,6 +237,55 @@ final class RitmusEnvironment {
         ledger.merge(server: server, fetchedAt: fetchedAt)
     }
 
+    /// Follows the phone's network path (the goal field's mic needs the net when the phone cannot transcribe itself).
+    private func watchNetwork() {
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] path in
+            let up = path.status == .satisfied
+            Task { @MainActor in self?.online = up }
+        }
+        monitor.start(queue: DispatchQueue(label: "boop.ritmus.path"))
+        pathMonitor = monitor
+    }
+
+    // MARK: - The goal field's voice
+
+    /// What a spoken goal became: text for the field, or a short line for the toast.
+    enum HeardGoal: Equatable {
+        case text(String)
+        case problem(String)
+    }
+
+    static let goalOfflineHint = "Net nélkül most csak beírni tudod."
+    static let speechDenied = "A beszédfelismerés nincs engedélyezve — a Beállításokban kapcsolhatod be, vagy írd be."
+    static let notUnderstood = "Nem értettem — írd be inkább."
+
+    /// The goal field's mic works when the phone writes Hungarian itself, or when it is online and can ask the server.
+    func goalMicAvailable(_ recorder: (any VoiceNoteRecorder)?) -> Bool {
+        guard let recorder else { return false }
+        return recorder.transcribesOnDevice || (online && transcribeSource != nil)
+    }
+
+    /// Turns a goal recording into text for the field: the phone's transcript, else (online) the server's, asked for
+    /// directly — nothing is queued, and the recording is deleted either way.
+    func heardGoal(_ capture: VoiceCapture, speechDenied: Bool) async -> HeardGoal {
+        switch capture {
+        case .transcript(let text): return .text(text)
+        case .recording(let name):
+            let file = outboxDirectory.appendingPathComponent(name)
+            defer { try? FileManager.default.removeItem(at: file) }
+            guard online, let transcribeSource else { return .problem(speechDenied ? Self.speechDenied : Self.goalOfflineHint) }
+            do {
+                let text = try await transcribeSource(file).trimmingCharacters(in: .whitespacesAndNewlines)
+                return text.isEmpty ? .problem(Self.notUnderstood) : .text(text)
+            } catch RitmusFetchError.offline {
+                return .problem(Self.goalOfflineHint)
+            } catch {
+                return .problem(Self.notUnderstood)
+            }
+        }
+    }
+
     /// A close written again (*Módosítom*): the old sentence no longer describes it.
     func forgetCloseLine(_ date: String) { closeLines[date] = nil }
 
@@ -247,7 +309,9 @@ protocol VoiceNoteRecorder: AnyObject {
     /// A transcript can come back right away (on-device Hungarian recognition); otherwise a stop hands back the kept
     /// recording for the upload.
     var transcribesOnDevice: Bool { get }
-    /// Throws when the microphone is not allowed.
+    /// The owner said no to speech recognition at the last stop.
+    var speechDenied: Bool { get }
+    /// Throws `VoiceJournalError.microphoneDenied` when the microphone is not allowed (other errors: it could not start).
     func start() async throws
     /// The transcript, or the kept recording (nil: nothing was recorded).
     func stop() async -> VoiceCapture?
@@ -256,6 +320,13 @@ protocol VoiceNoteRecorder: AnyObject {
 }
 
 extension VoiceJournal: VoiceNoteRecorder {}
+
+/// The mic's error lines.
+enum MicCopy {
+    static let denied = "A mikrofon nincs engedélyezve — a Beállításokban kapcsolhatod be, vagy írd be."
+    static let failed = "Most nem sikerült elindítani a felvételt."
+    static func line(for error: Error) -> String { (error as? VoiceJournalError) == .microphoneDenied ? denied : failed }
+}
 
 /// One goal typed on a past day.
 struct PastGoal: Equatable, Sendable {

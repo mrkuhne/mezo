@@ -95,6 +95,8 @@ struct GoalBlock: View {
     /// The mic works only with on-device recognition (a transcript right away); otherwise it is dimmed and typing works.
     let micEnabled: Bool
     let recording: Bool
+    /// Why the mic is dimmed (no net and no on-device recognition); nil = nothing to say.
+    let micHint: String?
     let onSet: (String) -> Void
     let onCsere: () -> Void
     let onMic: () -> Void
@@ -140,6 +142,9 @@ struct GoalBlock: View {
                 .padding(.horizontal, 16).frame(height: 48)
                 .background(Capsule().fill(.white.opacity(0.08)))
                 .overlay(Capsule().stroke(.white.opacity(0.12)))
+                if let micHint {
+                    Text(micHint).nkFont(12).foregroundStyle(.white.opacity(0.5)).padding(.leading, 16)
+                }
                 if !suggestions.isEmpty {
                     ScrollView(.horizontal) {
                         HStack(spacing: 8) { ForEach(suggestions) { chip($0) } }
@@ -245,7 +250,7 @@ struct EsteClosedCard: View {
 
     private var text: String {
         if close.pending { return "A napod a telefonon van — Boop válasza akkor jön, ha lesz net." }
-        return line ?? "A napod lezárva. Boop mondata mindjárt itt lesz."
+        return line ?? EsteFlow.waitingLine
     }
 
     var body: some View {

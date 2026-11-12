@@ -42,11 +42,16 @@ struct EsteView: View {
         .onDisappear {
             motion.stop()
             if case .recording = voice, let recorder = env.recorder { Task { if let c = await recorder.stop() { recorder.discard(c) } } }
+            // closed without closing the day: a kept recording goes
+            flow.abandon()
         }
         .task { await flow.refresh() }
         .onChange(of: brief?.generatedAt) { flow.use(brief) }
         // the close reached the server (now, or later when the net came back): Boop's sentence can be asked for
-        .task(id: flow.closed?.pending) { if flow.closed?.pending == false { await env.refreshCloseLine(flow.date) } }
+        .task(id: flow.closed?.pending) {
+            if flow.closed?.pending == false { await env.refreshCloseLine(flow.date) }
+            await flow.refreshVoiceState()
+        }
     }
 
     // MARK: - The sky
@@ -241,6 +246,17 @@ struct EsteView: View {
                         Text("„\(t)”").nkFont(16, design: .serif).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
                     case .waitingForTranscript:
                         Text("Hangfelvétel · szöveggé alakítom, amint lesz net").nkFont(14).foregroundStyle(.white.opacity(0.8))
+                    case .transcriptFailed:
+                        HStack {
+                            Text("Hangfelvétel · nem sikerült leírni").nkFont(14).foregroundStyle(.white.opacity(0.8))
+                            Spacer()
+                            Button { Task { await flow.retryVoice() } } label: {
+                                Text("Újra").nkFont(14, .semibold).foregroundStyle(.white)
+                                    .padding(.horizontal, 14).frame(height: 32)
+                                    .background(Capsule().fill(.white.opacity(0.12)))
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }
@@ -249,10 +265,7 @@ struct EsteView: View {
             if let bedtime = flow.bedtimeLine {
                 HStack(spacing: 12) {
                     NKGlyph("bell-cream", .white, size: 18)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(bedtime).nkFont(15, .medium).foregroundStyle(.white)
-                        Text("7 és fél óra alvásért").nkFont(13).foregroundStyle(.white.opacity(0.55))
-                    }
+                    Text(bedtime).nkFont(15, .medium).foregroundStyle(.white)
                     Spacer()
                 }
                 .padding(16).nkGlass(20)
@@ -263,6 +276,7 @@ struct EsteView: View {
                 NKPill("Kész", wide: false, action: onClose)
                 NKPill("Módosítom", primary: false, wide: false) {
                     voice = .idle
+                    micProblem = nil
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { flow.reopen() }
                 }
             }
@@ -273,7 +287,7 @@ struct EsteView: View {
     // MARK: - Mesélj
 
     private func typed(_ text: String) {
-        flow.typed(text)
+        guard flow.typed(text) else { return }
         voice = .saved(text: text.trimmingCharacters(in: .whitespacesAndNewlines), typed: true)
     }
 
@@ -285,7 +299,7 @@ struct EsteView: View {
             micProblem = nil
             Task {
                 do { try await recorder.start(); voice = .recording(seconds: 0); tick() }
-                catch { voice = .idle; micProblem = Self.micDenied }
+                catch { voice = .idle; micProblem = MicCopy.line(for: error) }
             }
         case .recording:
             voice = .transcribing
@@ -314,5 +328,4 @@ struct EsteView: View {
         }
     }
 
-    static let micDenied = "A mikrofon nincs engedélyezve — a Beállításokban kapcsolhatod be, vagy írd be."
 }

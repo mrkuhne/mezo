@@ -21,15 +21,18 @@ private final class FakeRecognizer: SpeechTranscribing, @unchecked Sendable {
     let supportsOnDevice: Bool
     let authorized: Bool
     let answer: Result<String, Error>
+    let delay: Duration
     private let lock = NSLock()
     private var asked: [URL] = []
-    init(onDevice: Bool, authorized: Bool = true, answer: Result<String, Error> = .success("Jól ment a prezentáció.")) {
-        supportsOnDevice = onDevice; self.authorized = authorized; self.answer = answer
+    init(onDevice: Bool, authorized: Bool = true, answer: Result<String, Error> = .success("Jól ment a prezentáció."),
+         delay: Duration = .zero) {
+        supportsOnDevice = onDevice; self.authorized = authorized; self.answer = answer; self.delay = delay
     }
     var calls: [URL] { lock.withLock { asked } }
     func authorize() async -> Bool { authorized }
     func transcribe(_ url: URL) async throws -> String {
         lock.withLock { asked.append(url) }
+        if delay > .zero { try? await Task.sleep(for: delay) }
         return try answer.get()
     }
 }
@@ -91,6 +94,25 @@ final class VoiceJournalTests {
         try await journal.start()
         guard case .recording = await journal.stop() else { Issue.record("expected the recording"); return }
         #expect(recognizer.calls.isEmpty)
+    }
+
+    @Test func slowOnDeviceRecognitionTimesOutToTheUpload() async throws {
+        let audio = FakeAudio()
+        let journal = VoiceJournal(directory: dir, recorder: audio,
+                                   transcriber: FakeRecognizer(onDevice: true, delay: .seconds(5)), timeout: .milliseconds(50))
+        try await journal.start()
+        let name = try #require(audio.recordingTo?.lastPathComponent)
+        let started = ContinuousClock.now
+        #expect(await journal.stop() == .recording(fileName: name))
+        #expect(ContinuousClock.now - started < .seconds(2))
+        #expect(files().contains(name))
+    }
+
+    @Test func speechDenialIsRemembered() async throws {
+        let journal = VoiceJournal(directory: dir, recorder: FakeAudio(), transcriber: FakeRecognizer(onDevice: true, authorized: false))
+        try await journal.start()
+        _ = await journal.stop()
+        #expect(journal.speechDenied)
     }
 
     @Test func deniedMicrophoneThrowsAndRecordsNothing() async {

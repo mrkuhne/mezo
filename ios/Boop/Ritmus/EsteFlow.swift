@@ -23,6 +23,8 @@ final class EsteFlow {
         case text(String)
         /// A recording still on its way to its transcript.
         case waitingForTranscript
+        /// The recording could not be written down (the outbox item failed); *Újra* sends it again.
+        case transcriptFailed
     }
 
     struct Row: Equatable {
@@ -31,11 +33,12 @@ final class EsteFlow {
     }
 
     static let offlineLine = "A napod a telefonon van. Amint lesz net, elküldöm, és reggel elmondom, mit tanultam belőle."
-    static let waitingLine = "A napod lezárva. Boop mondata mindjárt itt lesz."
+    static let waitingLine = "Mindjárt írok egy mondatot a napodról."
     static let ratingWords = ["Nehéz", "Inkább nehéz", "Rendben", "Jó", "Remek"]
     static let outcomes: [(id: String, label: String)] = [("done", "Sikerült"), ("partial", "Részben"), ("no", "Nem")]
 
-    /// The evening's day (the day the close opened on).
+    /// The evening's day: the day the close opened on, or the day before when it opened before 04:00 (the Este phase
+    /// runs 18:00–04:00).
     let date: String
     /// The goal of the day (Ma's), copied into the close.
     let goalText: String?
@@ -53,15 +56,25 @@ final class EsteFlow {
     private(set) var delivering = false
     /// The phone could not keep the close (disk) — shown under the button, nothing is lost silently.
     private(set) var saveProblem: String?
+    /// The evening's recording ended failed in the outbox (shown with *Újra*).
+    private(set) var voiceFailed = false
 
     @ObservationIgnored private let env: RitmusEnvironment
 
     init(env: RitmusEnvironment, brief: Brief?) {
         self.env = env
-        date = env.today
+        let day = Self.eveningDay(at: env.clock(), env: env)
+        date = day
         // Ma's goal; a closed day without one on the phone keeps the goal its close was made with.
-        goalText = env.goal(on: env.today)?.text ?? env.ledger.ledger(for: env.today).close?.goalText
+        goalText = env.goal(on: day)?.text ?? env.ledger.ledger(for: day).close?.goalText
         use(brief)
+    }
+
+    /// Before 04:00 the evening still belongs to the day before.
+    static func eveningDay(at now: Date, env: RitmusEnvironment) -> String {
+        let hour = env.calendar.component(.hour, from: now)
+        guard hour < 4, let before = env.calendar.date(byAdding: .day, value: -1, to: now) else { return env.day(of: now) }
+        return env.day(of: before)
     }
 
     /// The day's brief (it may arrive after the close opened): Boop's own goals for the day and the bedtime target.
@@ -113,7 +126,7 @@ final class EsteFlow {
         if let text = c.journalText, !text.isEmpty { return .text(text) }
         guard let id = c.journalId, let line = env.ledger.ledger(for: date).journal.first(where: { $0.id == id }) else { return nil }
         if let text = line.text, !text.isEmpty { return .text(text) }
-        return .waitingForTranscript
+        return voiceFailed ? .transcriptFailed : .waitingForTranscript
     }
 
     /// "22:15-kor szólok a lefekvés miatt" — the bedtime reminder's ring time (half an hour before the target).
@@ -128,18 +141,36 @@ final class EsteFlow {
     func pickOutcome(_ id: String) { if Self.outcomes.contains(where: { $0.id == id }) { outcome = id } }
     func pickRating(_ value: Int) { rating = max(1, min(5, value)) }
 
-    func typed(_ raw: String) {
+    /// False for an empty line (nothing is kept, *Mesélj* stays open).
+    @discardableResult
+    func typed(_ raw: String) -> Bool {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !text.isEmpty { journal = .typed(text) }
+        guard !text.isEmpty else { return false }
+        replaceJournal(with: .typed(text))
+        return true
     }
 
     func recorded(_ capture: VoiceCapture) {
         switch capture {
         case .transcript(let text):
             let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !t.isEmpty { journal = .heard(t) }
-        case .recording(let name): journal = .recording(fileName: name)
+            if !t.isEmpty { replaceJournal(with: .heard(t)) }
+        case .recording(let name): replaceJournal(with: .recording(fileName: name))
         }
+    }
+
+    /// The cover closes without closing the day: a kept recording is thrown away.
+    func abandon() { discardRecording() }
+
+    /// A new *Mesélj* replaces the old one; a kept recording it replaces is thrown away.
+    private func replaceJournal(with new: Journal) {
+        if journal != new { discardRecording() }
+        journal = new
+    }
+
+    private func discardRecording() {
+        if case .recording(let name) = journal { env.recorder?.discard(.recording(fileName: name)) }
+        if case .recording = journal { journal = nil }
     }
 
     /// *Módosítom*: the steps come back with the day's answers; a new *Mesélj* adds a new line.
@@ -148,6 +179,7 @@ final class EsteFlow {
         energy = c.eveningEnergy
         outcome = c.goalOutcome
         rating = c.dayRating
+        discardRecording()
         journal = nil
         saveProblem = nil
         editing = true
@@ -174,8 +206,11 @@ final class EsteFlow {
         let local = LedgerClose(id: closeId, capturedAt: now, eveningEnergy: energy, dayRating: rating, goalText: goal,
                                 goalOutcome: payload.goalOutcome, journalId: journalId ?? previous?.journalId, pending: true,
                                 planGoals: planGoals, journalText: journalId == nil ? previous?.journalText : nil)
+        // An enqueue that throws has already queued the item for this run: the undo below takes it back out.
+        var enqueued: [UUID] = []
         do {
             try env.ledger.setClose(local, date: date)
+            enqueued.append(closeId)
             try await env.outbox.enqueue(OutboxItem(id: closeId, kind: .dayClose, date: date, capturedAt: now,
                                                     payload: RitmusPayload.encode(payload)))
             if let journalId, let journal {
@@ -184,30 +219,55 @@ final class EsteFlow {
                 case .typed(let t), .heard(let t): (.journal, RitmusPayload.encode(JournalPayload(text: t)))
                 case .recording(let name): (.voice, RitmusPayload.encode(VoicePayload(fileName: name, target: .journal)))
                 }
+                enqueued.append(journalId)
                 try await env.outbox.enqueue(OutboxItem(id: journalId, kind: kind, date: date, capturedAt: now, payload: body))
                 var relink = payload
                 relink.clientRef = closeId
                 relink.journalClientRef = journalId
-                try await env.outbox.enqueue(OutboxItem(kind: .dayClose, date: date, capturedAt: now,
+                let relinkId = UUID()
+                enqueued.append(relinkId)
+                try await env.outbox.enqueue(OutboxItem(id: relinkId, kind: .dayClose, date: date, capturedAt: now,
                                                         payload: RitmusPayload.encode(relink)))
             }
         } catch {
+            // Undo what got kept, so the day is as it was (a half close never shows as closed).
+            try? env.ledger.setClose(previous, date: date)
+            if let journalId { try? env.ledger.removeJournal(journalId, date: date) }
+            // A re-close's own id may have replaced an older queued version in place; that one stays (newer values).
+            for id in enqueued where id != closeId || previous == nil { await env.outbox.remove(id) }
             saveProblem = "Nem sikerült elmenteni a telefonra. Próbáld újra."
+            editing = true
             return
         }
+        // The recording now belongs to the queue (it is not ours to throw away any more).
+        journal = nil
         editing = false
+        voiceFailed = false
+        // A close written again no longer matches the old sentence, whether or not it reaches the server now.
+        env.forgetCloseLine(date)
         delivering = true
-        let sent = await env.deliver(closeId)
-        if sent {
-            env.forgetCloseLine(date)
-            await env.refreshCloseLine(date)
-        }
+        if await env.deliver(closeId) { await env.refreshCloseLine(date) }
         delivering = false
+        await refreshVoiceState()
+    }
+
+    /// Whether the evening's recording ended failed in the outbox.
+    func refreshVoiceState() async {
+        guard let id = closed?.journalId else { voiceFailed = false; return }
+        voiceFailed = await env.outbox.failed.contains { $0.id == id }
+    }
+
+    /// *Újra* on a recording that could not be written down.
+    func retryVoice() async {
+        guard let id = closed?.journalId else { return }
+        await env.outbox.retry(id)
+        await refreshVoiceState()
     }
 
     /// When the summary opens: the server's version of the day (a close made on the web) and Boop's sentence.
     func refresh() async {
         await env.refreshDay(date)
         await env.refreshCloseLine(date)
+        await refreshVoiceState()
     }
 }
