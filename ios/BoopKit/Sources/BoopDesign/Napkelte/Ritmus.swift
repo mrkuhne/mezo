@@ -149,17 +149,20 @@ public struct EnergyCurveCard: View {
 
 // MARK: - Check-in detail
 
-/// One answer in the detail grid; `value` nil = asked but not answered ("—").
+/// One answer in the detail grid; `value` nil = asked but not answered ("—"). `detail` is a small line under the label
+/// (the craving kinds, the pain regions).
 public struct CheckInDetailAnswer: Equatable, Sendable {
     public let label: String
     public let value: String?
-    public init(label: String, value: String?) { self.label = label; self.value = value }
+    public let detail: String?
+    public init(label: String, value: String?, detail: String? = nil) { self.label = label; self.value = value; self.detail = detail }
 }
 
-/// What the watch / phone said at the moment of a check-in; every figure may be missing ("—").
+/// What the watch / phone said at the moment of a check-in; every figure may be missing ("—"). `steps` comes already
+/// grouped by the app ("7 420").
 public struct CheckInSnapshotFigures: Equatable, Sendable {
-    public var hr: Int?, hrv: Double?, hrvUsual: Double?, steps: Int?, sleepMinutes: Int?
-    public init(hr: Int? = nil, hrv: Double? = nil, hrvUsual: Double? = nil, steps: Int? = nil, sleepMinutes: Int? = nil) {
+    public var hr: Int?, hrv: Double?, hrvUsual: Double?, steps: String?, sleepMinutes: Int?
+    public init(hr: Int? = nil, hrv: Double? = nil, hrvUsual: Double? = nil, steps: String? = nil, sleepMinutes: Int? = nil) {
         self.hr = hr; self.hrv = hrv; self.hrvUsual = hrvUsual; self.steps = steps; self.sleepMinutes = sleepMinutes
     }
 }
@@ -200,6 +203,9 @@ public struct CheckInDetail: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(answers[i].value ?? "—").font(.nkNumber(24)).foregroundStyle(.white)
                         Text(answers[i].label).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(1).minimumScaleFactor(0.8)
+                        if let detail = answers[i].detail {
+                            Text(detail).nkFont(12).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                     .accessibilityElement(children: .combine)
                 }
@@ -214,7 +220,7 @@ public struct CheckInDetail: View {
                 cell("heart-cream", snapshot.hr.map(String.init) ?? "—", "pulzus")
                 cell("spark-cream", snapshot.hrv.map { String(Int($0.rounded())) } ?? "—",
                      snapshotHrvLabel(hrv: snapshot.hrv, usual: snapshot.hrvUsual))
-                cell("shoe-cream", snapshot.steps.map { $0.formatted(.number.locale(Locale(identifier: "hu_HU"))) } ?? "—", "lépés")
+                cell("shoe-cream", snapshot.steps ?? "—", "lépés")
                 cell("moon-cream", snapshotSleep(minutes: snapshot.sleepMinutes), "alvás")
             }
         }

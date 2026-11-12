@@ -91,6 +91,10 @@ public actor Outbox {
     /// Items waiting for the owner's "Újra".
     public var failed: [OutboxItem] { items.filter { $0.failure != nil } }
 
+    /// True while an item with this id is still in the queue (pending or failed). Asked from `onSent`, it tells a
+    /// listener that a newer version of the delivered item was enqueued meanwhile and is still on its way.
+    public func isQueued(_ id: UUID) -> Bool { items.contains { $0.id == id } }
+
     /// Appends the item; an item with the same id is replaced in place (its newer values go out, in its old position).
     /// Throws when the queue cannot be written to disk — the item is still queued for this run, but would not survive
     /// a relaunch, so the capture flow can say so.

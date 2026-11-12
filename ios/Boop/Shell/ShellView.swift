@@ -92,7 +92,21 @@ struct ShellView: View {
                 .presentationDragIndicator(.visible)
         }
         .fullScreenCover(isPresented: $checkingIn) {
-            if let ritmus { CheckinView(env: ritmus) { checkingIn = false } }
+            if let ritmus {
+                CheckinView(env: ritmus) { checkingIn = false }
+            } else {
+                // No daily loop yet (signing in or out): never an empty cover, always a way back.
+                ZStack(alignment: .topLeading) {
+                    NKGround(hue: .mozgas)
+                    Button { checkingIn = false } label: {
+                        Image(systemName: "chevron.down").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
+                    }
+                    .buttonStyle(.plain).accessibilityLabel("Bezárom")
+                    .padding(.leading, 16).padding(.top, 8)
+                }
+                .preferredColorScheme(.dark)
+            }
         }
         .onAppear {
             fromTab = tab

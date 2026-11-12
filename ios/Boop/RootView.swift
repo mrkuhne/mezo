@@ -49,7 +49,7 @@ struct RootView: View {
             #endif
             link = HealthLink(client: session.client, userId: me.id)
             morning = MorningStore(client: session.client, onUnauthorized: signOut)
-            ritmus = .live(client: session.client, health: HealthKitReader())
+            ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id)
         }
         if case .ready = state { Task { await link?.syncIfStale() } }
     }

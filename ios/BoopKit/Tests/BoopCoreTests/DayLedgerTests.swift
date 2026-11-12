@@ -128,4 +128,20 @@ final class DayLedgerTests {
         #expect(try Data(contentsOf: dir.appendingPathComponent(aside[0])) == garbage)
         #expect(LedgerStore(directory: dir).ledger(for: date).checkIns.count == 1) // the aside file is not reloaded
     }
+
+    // B3 Task 8 fix: the watch snapshot travels with the check-in, so any dot on the curve can show it.
+    @Test func savedCheckInKeepsItsSnapshot() throws {
+        var c = checkIn("14:00", 16, 2, energy: 5, pending: true)
+        c.snapshot = CheckInSnapshotValue(hrBpm: 78, hrvMs: 38, hrvUsualMs: 50, steps: 7_420, sleepMinutes: 432)
+        try LedgerStore(directory: dir).saveCheckIn(c, date: date)
+        let reloaded = LedgerStore(directory: dir).ledger(for: date).checkIns.first
+        #expect(reloaded?.snapshot?.hrBpm == 78 && reloaded?.snapshot?.steps == 7_420)
+    }
+
+    @Test func dayFileWithoutSnapshotsStillLoads() throws {
+        let old = #"{"date":"2026-11-10","checkIns":[{"id":"0B6F3C1E-1111-4A2B-9C3D-222233334444","slot":"10:00","capturedAt":784036800,"values":{"energy":6},"painRegions":[],"cravingKinds":[],"askedItems":[],"quickExit":false,"pending":false}],"journal":[],"plans":{}}"#
+        try Data(old.utf8).write(to: dir.appendingPathComponent("\(date).json"))
+        let c = LedgerStore(directory: dir).ledger(for: date).checkIns.first
+        #expect(c?.values["energy"] == 6 && c?.snapshot == nil)
+    }
 }
