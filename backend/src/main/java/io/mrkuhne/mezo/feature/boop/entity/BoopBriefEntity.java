@@ -48,4 +48,8 @@ public class BoopBriefEntity extends OwnedEntity {
 
     @Column(name = "generated_at", nullable = false)
     private Instant generatedAt;
+
+    /** True when the payload carries the model's words, false for the rule fallback (mezo-r36n9.24). */
+    @Column(name = "ai_words", nullable = false)
+    private boolean aiWords;
 }

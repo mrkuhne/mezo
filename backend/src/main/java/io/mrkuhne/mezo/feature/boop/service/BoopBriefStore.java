@@ -39,7 +39,7 @@ public class BoopBriefStore {
      */
     @Transactional
     public void upsert(UUID owner, LocalDate date, String inputHash, String payload, Instant generatedAt,
-                       boolean manual, int regenLimit) {
+                       boolean aiWords, boolean manual, int regenLimit) {
         BoopBriefEntity row = briefs.findByCreatedByAndDate(owner, date).orElse(null);
         if (row == null) {
             row = new BoopBriefEntity();
@@ -58,7 +58,14 @@ public class BoopBriefStore {
         row.setInputHash(inputHash);
         row.setPayload(payload);
         row.setGeneratedAt(generatedAt);
+        row.setAiWords(aiWords);
         briefs.saveAndFlush(row);
+    }
+
+    /** The model's late words onto the rule-only row of the same inputs; false = the row moved on. */
+    @Transactional
+    public boolean fillWords(UUID owner, LocalDate date, String inputHash, String payload, Instant generatedAt) {
+        return briefs.fillWords(owner, date, inputHash, payload, generatedAt) == 1;
     }
 
     static SystemRuntimeErrorException limitReached() {
