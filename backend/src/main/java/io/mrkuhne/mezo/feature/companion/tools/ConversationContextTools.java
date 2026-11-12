@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.ConversationHistory;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
+import io.mrkuhne.mezo.feature.companion.service.OwnerToday;
 import io.mrkuhne.mezo.feature.companion.service.PeopleSnapshotBlock;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
@@ -43,6 +44,8 @@ public class ConversationContextTools {
     private final ConversationHistory historyRenderer;
     private final ConversationProperties properties;
     private final CompanionProperties companionProperties;
+    /** Boop B3 (mezo-r36n9.13): scope=today is the owner's day, not the server's. */
+    private final OwnerToday ownerToday;
 
     @Tool(name = "get_personal_context", description = "Személyes háttér rövid, korlátozott összefoglalója; nem a teljes adattár. "
             + "scope=facts (alapértelmezés): megerősített tények — ezek MÁR a kontextusodban vannak "
@@ -58,7 +61,7 @@ public class ConversationContextTools {
             case "people" -> people.render(user, LocalDate.now());
             case "character" -> character.getIfAvailable() == null ? "" : character.getObject().render(user);
             case "reflections" -> reflection.getIfAvailable() == null ? "" : reflection.getObject().render(user);
-            case "today" -> snapshot.render(user, LocalDate.now());
+            case "today" -> snapshot.render(user, ownerToday.today());
             default -> "Ismeretlen scope. Használható: facts, people, character, reflections, today.";
         };
         return result.isBlank() ? ToolText.NO_DATA : result;

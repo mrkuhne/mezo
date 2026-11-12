@@ -24,6 +24,9 @@ import java.util.UUID;
 @SQLRestriction("is_deleted = false")
 public class AiConversationEntity extends OwnedEntity {
 
+    public static final String CHANNEL_WEB = "web";
+    public static final String CHANNEL_BOOP = "boop";
+
     @Id
     @GeneratedValue
     @Column(columnDefinition = "uuid")
@@ -50,4 +53,14 @@ public class AiConversationEntity extends OwnedEntity {
      *  purging the pattern orphans the anchor, it never takes the conversation. */
     @Column(name = "seed_pattern_id", columnDefinition = "uuid")
     private UUID seedPatternId;
+
+    /** Boop B3 (mezo-r36n9.13, spec §7.6): where the conversation was started — {@value #CHANNEL_WEB}
+     *  (default) or {@value #CHANNEL_BOOP}. A Boop conversation carries the pushed "Ma" day block every
+     *  turn and replays only today's turns. */
+    @Column(name = "channel", length = 8, nullable = false)
+    private String channel = CHANNEL_WEB;
+
+    public boolean isBoop() {
+        return CHANNEL_BOOP.equals(channel);
+    }
 }

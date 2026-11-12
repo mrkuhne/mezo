@@ -62,7 +62,9 @@ class ChatServiceCapToRemainingBudgetTest {
         mock(ChatForgetService.class),
         mock(ChatMemoryBlocks.class),
         mock(ObjectProvider.class),
-        new ObjectMapper());
+        new ObjectMapper(),
+        mock(BoopDayContext.class),
+        mock(OwnerToday.class));
 
     private static TurnPlan.PlanStep step(String tool, String why) {
         return new TurnPlan.PlanStep(tool, Map.of(), why);
