@@ -2,15 +2,6 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// Records the optional spoken sentence and hands back its transcript (Task 10 brings the real one: on-device speech,
-/// the upload fallback and the microphone permission). Without a recorder the mic stays dimmed and typing works.
-@MainActor
-protocol VoiceNoteRecorder: AnyObject {
-    func start() throws
-    /// Stops and returns what was said (nil: nothing heard).
-    func stop() async -> String?
-}
-
 /// The payoff after a check-in (spec §5.2, spike `RitmusCheckin.done`): "MENTVE · 16:02 / Ráesett a görbére", the
 /// energy of the day with the new dot selected, its detail with what the watch said, "Mondj hozzá egy mondatot"
 /// (voice or typed — the check-in's note), Boop's one line (online) or the calm line (offline), *Kész*.
@@ -22,6 +13,7 @@ struct CheckinDone: View {
     @Environment(MorningStore.self) private var morning: MorningStore?
     @State private var selected: UUID?
     @State private var voice: VoiceRowPhase = .idle
+    @State private var micProblem: String?
 
     private var day: DayLedger { env.ledger.ledger(for: flow.date) }
     private var savedId: UUID? { flow.saved?.checkIn.id }
@@ -52,7 +44,7 @@ struct CheckinDone: View {
                 VStack(alignment: .leading, spacing: 10) {
                     VoiceRecorderRow(phase: voice, prompt: "Mondj hozzá egy mondatot", micEnabled: env.recorder != nil,
                                      onMic: mic, onTyped: typed)
-                    if let problem = flow.saveProblem {
+                    if let problem = micProblem ?? flow.saveProblem {
                         Text(problem).nkFont(13).foregroundStyle(Color(hex: 0xF7A8C4)).fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -67,6 +59,9 @@ struct CheckinDone: View {
         .scrollDismissesKeyboard(.interactively)
         .background(NKGround(hue: .mozgas))
         .onAppear { selected = savedId }
+        .onDisappear {
+            if case .recording = voice, let recorder = env.recorder { Task { if let c = await recorder.stop() { recorder.discard(c) } } }
+        }
     }
 
     private var heading: some View {
@@ -121,17 +116,31 @@ struct CheckinDone: View {
         Task { if await flow.addNote(text) { voice = .saved(text: text, typed: true) } }
     }
 
+    /// One tap to talk, one to stop. The phone's transcript becomes the note right away; a recording it could not write
+    /// down waits as a `voice` item and becomes the note once the server has written it (spec §7.2, Task 10 ruling).
     private func mic() {
         guard let recorder = env.recorder else { return }
         switch voice {
         case .idle:
-            do { try recorder.start(); voice = .recording(seconds: 0); tick() } catch { voice = .idle }
+            micProblem = nil
+            Task {
+                do { try await recorder.start(); voice = .recording(seconds: 0); tick() }
+                catch { voice = .idle; micProblem = EsteView.micDenied }
+            }
         case .recording:
             voice = .transcribing
             Task {
-                if let text = await recorder.stop()?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
+                switch await recorder.stop() {
+                case .transcript(let raw)?:
+                    let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
                     voice = await flow.addNote(text) ? .saved(text: text, typed: false) : .idle
-                } else {
+                case .recording(let name)?:
+                    switch await flow.addVoiceNote(fileName: name) {
+                    case .transcribed(let text): voice = .saved(text: text.isEmpty ? nil : text, typed: false)
+                    case .waiting: voice = .saved(text: nil, typed: false)
+                    case .failed: voice = .idle
+                    }
+                case nil:
                     voice = .idle
                 }
             }

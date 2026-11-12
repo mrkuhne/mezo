@@ -279,6 +279,40 @@ final class CheckinFlow {
         return true
     }
 
+    /// What became of a recorded sentence the phone could not write down itself.
+    enum VoiceNoteOutcome: Equatable {
+        /// The server wrote it down; it is the check-in's note now.
+        case transcribed(String)
+        /// No net: the recording waits in the outbox and becomes the note later.
+        case waiting
+        /// The phone could not keep it, or the server could not use it (`saveProblem` says so).
+        case failed
+    }
+
+    /// A recording without an on-device transcript (B3 Task 10 ruling): queued as a `voice` item aimed at this check-in's
+    /// note — after the transcript the sender upserts the same slot with every value plus the note. Its own id keeps the
+    /// check-in in front of it in the queue; its date and moment are the check-in's.
+    func addVoiceNote(fileName: String) async -> VoiceNoteOutcome {
+        guard let s = saved else { return .failed }
+        saveProblem = nil
+        let item = OutboxItem(id: UUID(), kind: .voice, date: s.date, capturedAt: s.checkIn.capturedAt,
+                              payload: RitmusPayload.encode(VoicePayload(fileName: fileName, target: .checkInNote(s.payload))))
+        do {
+            try await env.outbox.enqueue(item)
+        } catch {
+            saveProblem = "Nem sikerült elmenteni a felvételt. Próbáld újra."
+            return .failed
+        }
+        if await env.deliver(item.id) {
+            let note = env.ledger.ledger(for: s.date).checkIns.first { $0.slot == s.payload.slot }?.note ?? ""
+            if !note.isEmpty { saved?.checkIn.note = note; saved?.payload.note = note }
+            return .transcribed(note)
+        }
+        if await env.isWaiting(item.id) { offline = true; return .waiting }
+        saveProblem = "Ebből a felvételből nem tudtam szöveget írni. Írd be inkább."
+        return .failed
+    }
+
     #if DEBUG
     /// Simulator review (`-previewOpen checkinDone`): every item answered, then saved.
     func previewSave() async {

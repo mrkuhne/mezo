@@ -127,6 +127,8 @@ struct MaBelow: View {
     /// The dot selected on the energy curve (a past check-in row selects its own).
     @State private var curveSel: UUID?
     @State private var goalRecording = false
+    /// The goal field's text (typed, or what the phone heard — the owner still sends it).
+    @State private var goalDraft = ""
 
     private var key: MetricKey { metricKey(for: ctx.hue) }
 
@@ -274,7 +276,9 @@ struct MaBelow: View {
             }
             if let ritmus {
                 GoalBlock(goal: ritmus.goal(on: today)?.text, suggestions: ritmus.goalSuggestions(brief: brief, date: today),
-                          micEnabled: ritmus.recorder != nil,
+                          draft: $goalDraft,
+                          // only a transcript written on the phone fits a one-line field; without it, typing only
+                          micEnabled: ritmus.recorder?.transcribesOnDevice == true, recording: goalRecording,
                           onSet: { text in Task { await setGoal(text) } },
                           onCsere: { Task { await removeGoal() } },
                           onMic: goalMic)
@@ -373,16 +377,24 @@ struct MaBelow: View {
         do { try await ritmus.removeGoal(date: today) } catch { ctx.toast("A telefon most nem tudta eltenni a célt") }
     }
 
-    /// One tap to talk, one to stop; the sentence becomes the goal.
+    /// One tap to talk, one to stop; what the phone heard fills the field (the owner sends it). A recording the phone
+    /// could not write down is thrown away with a short toast — the goal field has no upload path.
     private func goalMic() {
         guard let recorder = ritmus?.recorder else { return }
         if !goalRecording {
-            do { try recorder.start(); goalRecording = true } catch { goalRecording = false }
+            Task {
+                do { try await recorder.start(); goalRecording = true }
+                catch { goalRecording = false; ctx.toast("A mikrofon nincs engedélyezve") }
+            }
             return
         }
         goalRecording = false
         Task {
-            if let text = await recorder.stop()?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty { await setGoal(text) }
+            switch await recorder.stop() {
+            case .transcript(let text)?: goalDraft = text
+            case let kept?: recorder.discard(kept); ctx.toast("Nem értettem — írd be inkább")
+            case nil: break
+            }
         }
     }
 }

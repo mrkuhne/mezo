@@ -172,8 +172,8 @@ public struct RitmusClient: OutboxSender {
         }
     }
 
-    /// Transcript first (once per run), then the journal line with the item's client ref; the recording is deleted
-    /// only after the line is stored.
+    /// Transcript first (once per run), then the target's write — the journal line with the item's client ref, or the
+    /// check-in's same-slot upsert carrying the transcript as its note; the recording is deleted only after it is stored.
     private func sendVoice(_ item: OutboxItem) async throws -> OutboxSendResult {
         guard let p = RitmusPayload.decode(VoicePayload.self, from: item.payload) else { return malformed("voice") }
         let file = audioDirectory.appendingPathComponent(p.fileName)
@@ -193,7 +193,17 @@ public struct RitmusClient: OutboxSender {
             await memo.keep(transcript: text ?? "", for: item.id)
         }
         guard let transcript = text, !transcript.isEmpty else { return .failed("no speech in the recording") }
-        let result = try await createJournal(item, text: transcript)
+        let result: OutboxSendResult
+        switch p.target {
+        case .journal:
+            result = try await createJournal(item, text: transcript)
+        case .checkInNote(var checkIn):
+            checkIn.note = transcript
+            var followUp = item
+            followUp.kind = .checkInNote
+            followUp.payload = RitmusPayload.encode(checkIn)
+            result = try await sendCheckIn(followUp)
+        }
         guard case .sent = result else { return result }
         try? FileManager.default.removeItem(at: file)
         await memo.forget(item.id)
@@ -273,7 +283,9 @@ public struct RitmusClient: OutboxSender {
             case .ok(let ok):
                 let c = try ok.body.json
                 day.close = LedgerClose(id: Self.stableId("close-\(date)"), capturedAt: c.closedAt, eveningEnergy: c.eveningEnergy,
-                                        dayRating: c.dayRating, goalText: c.goalText, goalOutcome: c.goalOutcome?.rawValue)
+                                        dayRating: c.dayRating, goalText: c.goalText, goalOutcome: c.goalOutcome?.rawValue,
+                                        planGoals: c.planGoals.map { PlanGoalPayload(id: $0.id, title: $0.title, result: $0.result, met: $0.met) },
+                                        journalText: c.journalText, boopLine: c.boopLine, web: c.source == .web)
             case .notFound: break
             case .unauthorized: throw RitmusFetchError.unauthorized
             case .undocumented: throw RitmusFetchError.server

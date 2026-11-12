@@ -221,6 +221,52 @@ final class RitmusClientTests {
         #expect(FileManager.default.fileExists(atPath: dir.appendingPathComponent("quiet.m4a").path))
     }
 
+    @Test func voiceNoteOfACheckInTranscribesThenUpsertsTheSlotWithTheNote() async throws {
+        let audio = dir.appendingPathComponent("note.m4a")
+        try Data("fake-audio".utf8).write(to: audio)
+        stub.on("transcribeVoiceNote", .json(200, #"{"text":" Leeresztettem. "}"#))
+        stub.on("saveCheckIn", .json(200, Self.checkInOK))
+        let checkIn = CheckInPayload(slot: "14:00", values: ["energy": 5, "mood": 6], askedItems: ["energy", "mood"],
+                                     quickExit: true, snapshot: CheckInSnapshotValue(hrBpm: 78))
+        let result = await ritmus.send(item(.voice, VoicePayload(fileName: "note.m4a", target: .checkInNote(checkIn))))
+        guard case .sent(let data?) = result else { Issue.record("expected sent, got \(result)"); return }
+        #expect(RitmusPayload.decode(VoiceTranscript.self, from: data)?.text == "Leeresztettem.")
+        #expect(stub.ops == ["transcribeVoiceNote", "saveCheckIn"])   // no journal line for a check-in's note
+        let b = try body(op: "saveCheckIn")
+        #expect(b["note"] as? String == "Leeresztettem." && b["slotTime"] as? String == "14:00")
+        #expect(b["energy"] as? Int == 5 && b["mood"] as? Int == 6 && b["quickExit"] as? Bool == true)
+        #expect(b["capturedAt"] as? String == "2026-11-10T15:02:00Z" && b["date"] as? String == date)
+        #expect((b["snapshot"] as? [String: Any])?["hrBpm"] as? Int == 78)
+        #expect(!FileManager.default.fileExists(atPath: audio.path))
+    }
+
+    @Test func voiceNoteKeepsAudioWhenTheCheckInUpsertFails() async throws {
+        let audio = dir.appendingPathComponent("note.m4a")
+        try Data("fake-audio".utf8).write(to: audio)
+        stub.on("transcribeVoiceNote", .json(200, #"{"text":"Leeresztettem."}"#))
+        stub.on("saveCheckIn", .status(503))
+        let voice = item(.voice, VoicePayload(fileName: "note.m4a", target: .checkInNote(CheckInPayload(slot: "14:00", values: [:]))))
+        #expect(await ritmus.send(voice) == .retryLater)
+        #expect(FileManager.default.fileExists(atPath: audio.path))
+    }
+
+    @Test func oldVoicePayloadDecodesAsJournal() {
+        let old = Data(#"{"fileName":"memo.m4a"}"#.utf8)
+        #expect(RitmusPayload.decode(VoicePayload.self, from: old) == VoicePayload(fileName: "memo.m4a", target: .journal))
+        let note = VoicePayload(fileName: "n.m4a", target: .checkInNote(CheckInPayload(slot: "10:00", values: ["energy": 4])))
+        #expect(RitmusPayload.decode(VoicePayload.self, from: RitmusPayload.encode(note)) == note)
+    }
+
+    @Test func fetchDayMapsTheCloseSummary() async throws {
+        stub.on("listCheckInsForDay", .json(200, "[]"))
+        stub.on("getIntentionDay", .json(200, #"{"date":"2026-11-10","foci":[],"focusCap":1}"#))
+        stub.on("getDayClose", .json(200, #"{"date":"2026-11-10","closedAt":"2026-11-10T20:30:00Z","dayRating":null,"planGoals":[{"id":"protein","title":"150 g fehérje","result":"146 g","met":false}],"journalText":"Fáradt vagyok.","boopLine":"Szép nap.","source":"web"}"#))
+        let close = try #require(try await ritmus.fetchDay(date).close)
+        #expect(close.dayRating == nil && close.web == true)
+        #expect(close.journalText == "Fáradt vagyok." && close.boopLine == "Szép nap.")
+        #expect(close.planGoals == [PlanGoalPayload(id: "protein", title: "150 g fehérje", result: "146 g", met: false)])
+    }
+
     @Test func chatQuestionCreatesBoopConversationThenSends() async throws {
         let conv = UUID()
         stub.on("createConversation", .json(201, #"{"id":"\#(conv.uuidString)","startedAt":"2026-11-10T15:02:00Z"}"#))

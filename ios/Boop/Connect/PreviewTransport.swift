@@ -55,6 +55,18 @@ struct PreviewTransport: ClientTransport {
             return json(#"{"id":"\#(UUID().uuidString.lowercased())","focusDate":"\#(obj?["date"] as? String ?? queryDate(request))","text":"\#(text)"}"#)
         case "removeFocus":
             return (HTTPResponse(status: .noContent), nil)
+        case "putDayClose":
+            return json(#"{"date":"\#(queryDate(request))","closedAt":"\#(ISO8601DateFormatter().string(from: Date()))","planGoals":[],"source":"boop"}"#)
+        case "createJournalEntry":
+            var h = HTTPFields(); h[.contentType] = "application/json"
+            return (HTTPResponse(status: .created, headerFields: h),
+                    HTTPBody(#"{"id":"\#(UUID().uuidString.lowercased())","occurredOn":"\#(queryDate(request))","text":"x","source":"boop","createdAt":"2026-11-12T20:31:00Z"}"#))
+        case "transcribeVoiceNote":
+            return json(#"{"text":"Jól ment a prezentáció, a röpi után kellemesen elfáradtam."}"#)
+        case "getDayClose":
+            return (HTTPResponse(status: .notFound), nil)
+        case "generateDayCloseLine":
+            return json(#"{"line":"Jó nap volt: a prezentáció sikerült, a fehérje és az edzés is megvolt. Délután leeresztettél, de estére összeszedted magad."}"#)
         case "clearSessionTime":
             movedTime = nil
             return (HTTPResponse(status: .noContent), nil)
@@ -105,7 +117,7 @@ struct PreviewTransport: ClientTransport {
         let sessionTime = evening ? "18:30" : time
         let session = recovering
             ? "null"
-            : #"{"title":"Vállak és hát","time":"\#(sessionTime)","plannedTime":"17:30","minutes":60,"exercises":[{"name":"Húzódzkodás","sets":4},{"name":"Evezés rúddal","sets":4},{"name":"Vállnyomás","sets":3},{"name":"Oldalemelés","sets":3}]}"#
+            : #"{"title":"Vállak és hát","time":"\#(sessionTime)","plannedTime":"17:30","minutes":60,\#(evening ? #""done":true,"doneMinutes":62,"avgHr":128,"# : "")"exercises":[{"name":"Húzódzkodás","sets":4},{"name":"Evezés rúddal","sets":4},{"name":"Vállnyomás","sets":3},{"name":"Oldalemelés","sets":3}]}"#
         let logged = evening ? "true" : "false"
         let meals = #"[{"time":"08:00","title":"Zabkása gyümölccsel","kcal":420,"proteinG":22,"logged":\#(logged)},{"time":"12:30","title":"Csirkés rizs","kcal":650,"proteinG":48,"logged":\#(logged)},{"time":"19:30","title":"Lazac salátával","kcal":450,"proteinG":38,"logged":\#(logged)}]"#
         let checkins = evening
@@ -136,7 +148,7 @@ struct PreviewTransport: ClientTransport {
           "hrToday":{"min":54,"avg":66,"max":92},"steps":\#(steps),"stepsGoal":10000,"activeKcal":210,
           "session":\#(session),
           "meals":\#(meals),
-          "kcalSoFar":0,"kcalTarget":2400,"proteinG":0,"proteinTarget":150,"carbsG":0,"fatG":0,
+          "kcalSoFar":0,"kcalTarget":2400,"proteinG":\#(evening ? 152 : 0),"proteinTarget":150,"carbsG":0,"fatG":0,
           "checkins":\#(checkins),
           "intention":{"creed":"Egyenletesen, nem erőből.","foci":["Nyugodt tempó","Vizet inni"]},
           "observations":[\#(observations)],

@@ -5,16 +5,20 @@ import BoopCore
 
 /// Simulator review only (`-preview shell`): the daily loop on a throwaway ledger and outbox, sent through
 /// `PreviewTransport` (`-previewOffline YES`: no net, everything stays on the phone). With `-previewOpen checkin…` the
-/// clock reads 16:02 today; then, and with `-previewPhase napkozben|este`, the day already has a morning and a noon
+/// clock reads 16:02 today, with `-previewOpen este|esteDone` 21:32 and the day has its goal (esteDone: already closed,
+/// with a journal line); then, and with `-previewPhase napkozben|este`, the day already has a morning and a noon
 /// check-in, as in the approved spike. Invented calendar events and past goals feed the goal chips.
 extension RitmusEnvironment {
     static func preview(client: Client) -> RitmusEnvironment {
         let root = URL.cachesDirectory.appendingPathComponent("boop-preview-ritmus", isDirectory: true)
         try? FileManager.default.removeItem(at: root)
-        let opening = UserDefaults.standard.string(forKey: "previewOpen")?.hasPrefix("checkin") == true
+        let open = UserDefaults.standard.string(forKey: "previewOpen") ?? ""
+        let opening = open.hasPrefix("checkin")
+        let closing = open.hasPrefix("este")
         let laterInTheDay = ["napkozben", "este"].contains(UserDefaults.standard.string(forKey: "previewPhase") ?? "")
         let launched = Date()
-        let start = opening ? Calendar.current.date(bySettingHour: 16, minute: 2, second: 0, of: launched) ?? launched : launched
+        let start = opening ? Calendar.current.date(bySettingHour: 16, minute: 2, second: 0, of: launched) ?? launched
+            : closing ? Calendar.current.date(bySettingHour: 21, minute: 32, second: 0, of: launched) ?? launched : launched
         let ritmus = RitmusClient(client: client, audioDirectory: root.appendingPathComponent("outbox"))
         let env = RitmusEnvironment(
             ledgerDirectory: root.appendingPathComponent("ledger"), outboxDirectory: root.appendingPathComponent("outbox"),
@@ -35,8 +39,8 @@ extension RitmusEnvironment {
             },
             closeLine: { date in try await ritmus.line(date) },
             clock: { start.addingTimeInterval(Date().timeIntervalSince(launched)) })
-        env.recorder = PreviewNoteRecorder()
-        guard opening || laterInTheDay else { return env }
+        env.recorder = PreviewNoteRecorder(directory: root.appendingPathComponent("outbox"))
+        guard opening || closing || laterInTheDay else { return env }
         let today = env.today
         let at = { (h: Int, m: Int) in Calendar.current.date(bySettingHour: h, minute: m, second: 0, of: launched) ?? launched }
         try? env.ledger.saveCheckIn(LedgerCheckIn(
@@ -53,17 +57,46 @@ extension RitmusEnvironment {
         env.ledger.cachePlans([CheckInPlanLite(
             slot: "14:00", adaptiveItem: "motivation",
             adaptiveWhy: "Edzésnap van — azt figyelem, a délutáni kedved megjósolja-e, milyen lesz az edzés.")], date: today)
+        if closing {
+            try? env.ledger.setGoal(LedgerGoal(id: UUID(), text: "Ügyfélprezentáció 14:00", setAt: at(7, 40)), date: today)
+        }
+        if open == "esteDone" {
+            let journalId = UUID()
+            try? env.ledger.addJournal(LedgerJournal(
+                id: journalId, capturedAt: at(21, 33),
+                text: "Jól ment a prezentáció, a röpi után kellemesen elfáradtam. A vacsora kicsit késő lett."), date: today)
+            try? env.ledger.setClose(LedgerClose(
+                id: UUID(), capturedAt: at(21, 33), eveningEnergy: 4, dayRating: 4, goalText: "Ügyfélprezentáció 14:00",
+                goalOutcome: "done", journalId: journalId,
+                pending: UserDefaults.standard.bool(forKey: "previewOffline"),
+                planGoals: [PlanGoalPayload(id: "protein", title: "150 g fehérje", result: "152 g", met: true),
+                            PlanGoalPayload(id: "session", title: "Vállak és hát · 18:30", result: "62 perc · pulzus átl. 128", met: true),
+                            PlanGoalPayload(id: "bedtime", title: "Lefekvés 22:30", result: "", met: nil)]), date: today)
+        }
         return env
     }
 }
 
-/// Pretends to listen for a moment, then "hears" one invented sentence.
+/// Pretends to listen for a moment, then "hears" one invented sentence; with `-previewOffline YES` it keeps a (fake)
+/// recording instead, as a phone without on-device Hungarian would.
 @MainActor
 final class PreviewNoteRecorder: VoiceNoteRecorder {
-    func start() throws {}
-    func stop() async -> String? {
+    let directory: URL
+    init(directory: URL) { self.directory = directory }
+    var transcribesOnDevice: Bool { !UserDefaults.standard.bool(forKey: "previewOffline") }
+    func start() async throws {}
+    func stop() async -> VoiceCapture? {
         try? await Task.sleep(for: .milliseconds(700))
-        return "A második megbeszélés után teljesen leeresztettem."
+        guard transcribesOnDevice else {
+            let name = "voice-preview-\(UUID().uuidString).m4a"
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try? Data("preview".utf8).write(to: directory.appendingPathComponent(name))
+            return .recording(fileName: name)
+        }
+        return .transcript("A második megbeszélés után teljesen leeresztettem.")
+    }
+    func discard(_ capture: VoiceCapture) {
+        if case .recording(let name) = capture { try? FileManager.default.removeItem(at: directory.appendingPathComponent(name)) }
     }
 }
 #endif

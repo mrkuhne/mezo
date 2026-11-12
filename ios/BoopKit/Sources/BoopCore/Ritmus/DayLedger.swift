@@ -62,11 +62,22 @@ public struct LedgerClose: Codable, Equatable, Identifiable, Sendable {
     public var goalOutcome: String?
     public var journalId: UUID?
     public var pending: Bool
+    /// Boop's own goals as seen at close (B2's `DayPlan.goals`, ticked from data). The fields below are absent in day
+    /// files written before B3 Task 10 (decode as nil).
+    public var planGoals: [PlanGoalPayload]?
+    /// The evening's journal text as the server has it (a phone close finds it in `DayLedger.journal` by `journalId`).
+    public var journalText: String?
+    /// Boop's sentence about the day, when the server already has it.
+    public var boopLine: String?
+    /// Closed in the web app (the server's `source: web` — read from the legacy stores; may lack a rating).
+    public var web: Bool?
 
     public init(id: UUID, capturedAt: Date, eveningEnergy: Int?, dayRating: Int?, goalText: String? = nil,
-                goalOutcome: String? = nil, journalId: UUID? = nil, pending: Bool = false) {
+                goalOutcome: String? = nil, journalId: UUID? = nil, pending: Bool = false, planGoals: [PlanGoalPayload]? = nil,
+                journalText: String? = nil, boopLine: String? = nil, web: Bool? = nil) {
         self.id = id; self.capturedAt = capturedAt; self.eveningEnergy = eveningEnergy; self.dayRating = dayRating
         self.goalText = goalText; self.goalOutcome = goalOutcome; self.journalId = journalId; self.pending = pending
+        self.planGoals = planGoals; self.journalText = journalText; self.boopLine = boopLine; self.web = web
     }
 }
 
@@ -209,6 +220,21 @@ public final class LedgerStore {
     }
 
     public func markSent(_ id: UUID, date: String) { try? update(date) { $0.markSent(id) } }
+
+    /// What a delivered item brings back to the day: a `voice` item's transcript lands on its journal line (by the item's
+    /// id) or on the note of its check-in (by slot).
+    public func applyDelivered(_ item: OutboxItem, body: Data?) {
+        guard item.kind == .voice, let body, let text = RitmusPayload.decode(VoiceTranscript.self, from: body)?.text,
+              let voice = RitmusPayload.decode(VoicePayload.self, from: item.payload) else { return }
+        try? update(item.date) { day in
+            switch voice.target {
+            case .journal:
+                if let i = day.journal.firstIndex(where: { $0.id == item.id }) { day.journal[i].text = text; day.journal[i].pending = false }
+            case .checkInNote(let checkIn):
+                if let i = day.checkIns.firstIndex(where: { $0.slot == checkIn.slot }) { day.checkIns[i].note = text }
+            }
+        }
+    }
 
     /// `fetchedAt`: when the server fetch left (see `DayLedger.merged`).
     public func merge(server: DayLedger, fetchedAt: Date) {
