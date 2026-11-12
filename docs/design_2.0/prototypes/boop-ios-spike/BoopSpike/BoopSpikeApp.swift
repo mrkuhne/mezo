@@ -5,7 +5,8 @@ struct BoopSpikeApp: App {
     init() { Lagy.registerFonts() }
     var body: some Scene {
         WindowGroup {
-            if UserDefaults.standard.bool(forKey: "gerinc") { GerincRoot() }
+            if UserDefaults.standard.bool(forKey: "ritmus") { RitmusRoot() }
+            else if UserDefaults.standard.bool(forKey: "gerinc") { GerincRoot() }
             else if UserDefaults.standard.string(forKey: "auraFrame") != nil { AuraFrameRoot() }
             else if UserDefaults.standard.bool(forKey: "aura") { AuraRoot() }
             else if UserDefaults.standard.bool(forKey: "legacy") { RootView() } else { LagyRoot() }
