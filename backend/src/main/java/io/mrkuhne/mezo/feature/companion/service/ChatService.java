@@ -990,7 +990,8 @@ public class ChatService {
 
     private void touchConversation(AiConversationEntity conversation, String userContent) {
         conversation.setLastMessageAt(Instant.now());
-        if (conversation.getTitle() == null) {
+        // Boop B3 (mezo-r36n9.13): a Boop conversation keeps its date title (set at create)
+        if (conversation.getTitle() == null && !conversation.isBoop()) {
             int max = properties.chat().titleMaxChars();
             conversation.setTitle(
                     userContent.length() <= max ? userContent : userContent.substring(0, max));

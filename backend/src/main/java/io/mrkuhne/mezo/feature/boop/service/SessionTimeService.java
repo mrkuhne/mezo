@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.boop.service;
 
 import io.mrkuhne.mezo.api.dto.SessionTime;
+import io.mrkuhne.mezo.feature.companion.SessionTimeOverrideSource;
 import io.mrkuhne.mezo.feature.boop.repository.WorkoutTimeOverrideRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -8,6 +9,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-public class SessionTimeService {
+public class SessionTimeService implements SessionTimeOverrideSource {
 
     static final String NO_SESSION_CODE = "BOOP_NO_PLANNED_SESSION";
 
@@ -51,6 +53,12 @@ public class SessionTimeService {
     public void clear(UUID owner, LocalDate date) {
         briefService.requireNotFuture(date, Instant.now());
         overrides.findByCreatedByAndDate(owner, date).ifPresent(overrides::delete);
+    }
+
+    /** Boop B3 (mezo-r36n9.13): the moved time, read by Boop's chat ("Ma" block, chips, questions). */
+    @Override
+    public Optional<LocalTime> movedTime(UUID owner, LocalDate date) {
+        return overrides.findByCreatedByAndDate(owner, date).map(o -> o.getTime());
     }
 
     /** The pattern lets 25:61 through. */

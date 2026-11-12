@@ -1,13 +1,12 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
+import io.mrkuhne.mezo.feature.companion.service.DayFigures;
 import io.mrkuhne.mezo.feature.companion.service.OwnerToday;
 import io.mrkuhne.mezo.feature.wearable.entity.CalendarEventEntity;
 import io.mrkuhne.mezo.feature.wearable.entity.DailyMetricEntity;
 import io.mrkuhne.mezo.feature.wearable.repository.CalendarEventRepository;
 import io.mrkuhne.mezo.feature.wearable.repository.DailyMetricRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -15,8 +14,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.OptionalDouble;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -38,7 +35,6 @@ import org.springframework.stereotype.Component;
 public class DayTools {
 
     private static final int WEEK = 7;
-    private static final int BASELINE_DAYS = 14;
 
     private final DailyMetricRepository dailyMetrics;
     private final CalendarEventRepository calendarEvents;
@@ -52,7 +48,7 @@ public class DayTools {
         UUID user = ToolContexts.userId(ctx);
         LocalDate today = ownerToday.today();
         Map<LocalDate, DailyMetricEntity> byDate = dailyMetrics
-            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(user, today.minusDays(BASELINE_DAYS), today).stream()
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(user, today.minusDays(DayFigures.BASELINE_DAYS), today).stream()
             .collect(Collectors.toMap(DailyMetricEntity::getDate, Function.identity(), (a, b) -> b));
         if ("week".equals(scope)) {
             List<String> lines = new ArrayList<>();
@@ -69,15 +65,15 @@ public class DayTools {
         if (m == null) {
             return "Óra, ma (" + today + "): " + ToolText.NO_DATA;
         }
-        Double restingUsual = baseline(today, byDate, DailyMetricEntity::getRestingHr);
-        Double hrvUsual = baseline(today, byDate, e -> e.getHrvMs() == null ? null : round(e.getHrvMs()));
+        Double restingUsual = DayFigures.usual(today, byDate, DailyMetricEntity::getRestingHr);
+        Double hrvUsual = DayFigures.usual(today, byDate, DayFigures::hrv);
         List<String> parts = new ArrayList<>();
         parts.add(m.getSteps() == null ? "lépés: " + ToolText.NO_DATA : m.getSteps() + " lépés eddig");
         if (m.getRestingHr() != null) {
-            parts.add("nyugalmi pulzus " + m.getRestingHr() + usual(restingUsual));
+            parts.add("nyugalmi pulzus " + m.getRestingHr() + DayFigures.usualSuffix(restingUsual));
         }
         if (m.getHrvMs() != null) {
-            parts.add("HRV " + round(m.getHrvMs()) + " ms" + usual(hrvUsual));
+            parts.add("HRV " + DayFigures.hrv(m) + " ms" + DayFigures.usualSuffix(hrvUsual));
         }
         if (m.getActiveKcal() != null) {
             parts.add("aktív " + m.getActiveKcal() + " kcal");
@@ -109,7 +105,7 @@ public class DayTools {
             }
             LocalTime start = LocalTime.ofInstant(e.getStartAt(), zone);
             LocalTime end = LocalTime.ofInstant(e.getEndAt(), zone);
-            lines.add(hhmm(start) + "–" + hhmm(end) + " (" + Duration.between(e.getStartAt(), e.getEndAt()).toMinutes()
+            lines.add(DayFigures.hhmm(start) + "–" + DayFigures.hhmm(end) + " (" + Duration.between(e.getStartAt(), e.getEndAt()).toMinutes()
                 + " perc)" + (e.getEndAt().isAfter(now) ? "" : " — elmúlt"));
         }
         return "Naptár, ma (" + today + "), címek nélkül:\n" + String.join("\n", lines);
@@ -127,31 +123,11 @@ public class DayTools {
             parts.add("nyugalmi pulzus " + m.getRestingHr());
         }
         if (m.getHrvMs() != null) {
-            parts.add("HRV " + round(m.getHrvMs()) + " ms");
+            parts.add("HRV " + DayFigures.hrv(m) + " ms");
         }
         if (m.getActiveKcal() != null) {
             parts.add("aktív " + m.getActiveKcal() + " kcal");
         }
         return parts.isEmpty() ? ToolText.NO_DATA : String.join(", ", parts);
-    }
-
-    private static Double baseline(LocalDate date, Map<LocalDate, DailyMetricEntity> byDate,
-                                   Function<DailyMetricEntity, Integer> value) {
-        OptionalDouble avg = date.minusDays(BASELINE_DAYS).datesUntil(date)
-            .map(byDate::get).filter(Objects::nonNull).map(value).filter(Objects::nonNull)
-            .mapToInt(Integer::intValue).average();
-        return avg.isPresent() ? avg.getAsDouble() : null;
-    }
-
-    private static String usual(Double usual) {
-        return usual == null ? "" : " (szokott " + Math.round(usual) + ")";
-    }
-
-    private static Integer round(BigDecimal v) {
-        return v.setScale(0, RoundingMode.HALF_UP).intValue();
-    }
-
-    private static String hhmm(LocalTime t) {
-        return String.format("%02d:%02d", t.getHour(), t.getMinute());
     }
 }

@@ -161,6 +161,19 @@ class BoopChannelChatIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void boopConversationTitledWithDate() {
+        UUID user = databasePopulator.populateUser("boop-chat-title@test.local");
+        clock.set(Instant.parse("2026-11-12T10:00:00Z"));
+        UUID conversation = boopConversation(user);
+
+        chatService.sendMessage(user, conversation, request("Hogy alakul a napom?"));
+
+        // one conversation per day: named after the day, never retitled by its first question
+        assertThat(conversationRepository.findById(conversation)).get()
+            .extracting(AiConversationEntity::getTitle).isEqualTo("2026. november 12.");
+    }
+
+    @Test
     void ownerZoneDecidesToday() {
         UUID user = databasePopulator.populateUser("boop-chat-zone@test.local");
         UUID conversation = boopConversation(user);

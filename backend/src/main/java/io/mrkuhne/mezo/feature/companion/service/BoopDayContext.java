@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.IntentionFocusResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
+import io.mrkuhne.mezo.api.dto.SportEventResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInSnapshotEntity;
@@ -12,6 +13,7 @@ import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInText;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
+import io.mrkuhne.mezo.feature.companion.SessionTimeOverrideSource;
 import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.intention.service.IntentionService;
@@ -29,7 +31,6 @@ import io.mrkuhne.mezo.feature.wearable.repository.CalendarEventRepository;
 import io.mrkuhne.mezo.feature.wearable.repository.DailyMetricRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -42,9 +43,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalDouble;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -62,8 +61,9 @@ import org.springframework.stereotype.Service;
  * <p>Read-only composition of the leaf features (sleep, wearable day metrics, check-ins + their biomarker
  * snapshots, intention foci, gym/sport schedule, fuel day, calendar, sleep anchor, weight goal) — companion
  * depends on them, never the reverse, and never on {@code feature.boop} (boop → companion exists; the
- * ArchUnit cycle rule). The Boop-only workout time override lives in boop and is therefore NOT applied
- * here: a session shows its planned schedule time.
+ * ArchUnit cycle rule). The Boop-only session time override lives in boop and reaches this class through
+ * the {@link SessionTimeOverrideSource} port boop implements. Figures, the 14-day usual and formats come from
+ * {@link DayFigures}, shared with the day tools.
  *
  * <p>Calendar events carry times and durations only — titles are never read into the block, the chips or
  * the tools (B3; B7 decides). The day is always a date passed in; "now" (what is still ahead today) is the
@@ -87,8 +87,11 @@ public class BoopDayContext {
     static final String Q_DEFAULT = "Hogy alakul a napom?";
 
     private static final int MAX_QUESTIONS = 3;
-    private static final int BASELINE_DAYS = 14;
     private static final int MAX_CALENDAR_LINES = 6;
+    /** Goals of the day rendered at most — the intention cap, held here so the token budget is structural. */
+    private static final int MAX_GOALS = 3;
+    /** HRV counts as "below usual" only this far under the 14-day mean (day-to-day noise is a few %). */
+    static final double LOW_HRV_RATIO = 0.95;
     private static final Locale HU = Locale.of("hu");
     private static final String NO_DATA = ToolText.NO_DATA;
 
@@ -107,6 +110,8 @@ public class BoopDayContext {
     private final CalendarEventRepository calendarEvents;
     private final GoalRepository goals;
     private final OwnerToday ownerToday;
+    /** Boop's moved session time; absent bean = no override. */
+    private final ObjectProvider<SessionTimeOverrideSource> sessionTimeOverrides;
 
     // ------------------------------------------------------------------ the block
 
@@ -162,7 +167,8 @@ public class BoopDayContext {
             .collect(Collectors.toMap(SleepLogEntity::getDate, Function.identity(), (newer, older) -> newer));
 
         Map<LocalDate, DailyMetricEntity> metrics = dailyMetrics
-            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(owner, date.minusDays(BASELINE_DAYS), date).stream()
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(owner, date.minusDays(DayFigures.BASELINE_DAYS), date)
+            .stream()
             .collect(Collectors.toMap(DailyMetricEntity::getDate, Function.identity(), (a, b) -> b));
         DailyMetricEntity todayMetric = metrics.get(date);
 
@@ -187,15 +193,17 @@ public class BoopDayContext {
         return new DayBlock(date, nowTime,
             night(nights.get(date)), night(nights.get(date.minusDays(1))),
             todayMetric == null ? null : todayMetric.getRestingHr(),
-            baseline(date, metrics, DailyMetricEntity::getRestingHr),
-            todayMetric == null || todayMetric.getHrvMs() == null ? null : round(todayMetric.getHrvMs()),
-            baseline(date, metrics, m -> m.getHrvMs() == null ? null : round(m.getHrvMs())),
+            DayFigures.usual(date, metrics, DailyMetricEntity::getRestingHr),
+            DayFigures.hrv(todayMetric),
+            DayFigures.usual(date, metrics, DayFigures::hrv),
             todayMetric == null ? null : todayMetric.getSteps(),
             checkIns(owner, date), goals(owner, date),
             today, upcoming, sessions(owner, date.plusDays(1)),
             fuel.getMeals() == null ? 0 : fuel.getMeals().size(),
-            toInt(consumed == null ? null : consumed.getKcal()), toInt(targets == null ? null : targets.getKcal()),
-            toInt(consumed == null ? null : consumed.getP()), toInt(targets == null ? null : targets.getP()),
+            DayFigures.roundOrZero(consumed == null ? null : consumed.getKcal()),
+            DayFigures.roundOrZero(targets == null ? null : targets.getKcal()),
+            DayFigures.roundOrZero(consumed == null ? null : consumed.getP()),
+            DayFigures.roundOrZero(targets == null ? null : targets.getP()),
             remaining, allDay,
             sleepAnchor.resolve(owner).bed(),
             weightGoal(owner));
@@ -230,9 +238,9 @@ public class BoopDayContext {
         b.append(".\n");
 
         b.append("Óra (14 napos szokotthoz): nyugalmi pulzus ")
-            .append(d.restingHr() == null ? NO_DATA : d.restingHr() + usual(d.restingUsual()))
+            .append(d.restingHr() == null ? NO_DATA : d.restingHr() + DayFigures.usualSuffix(d.restingUsual()))
             .append("; HRV ")
-            .append(d.hrvMs() == null ? NO_DATA : d.hrvMs() + " ms" + usual(d.hrvUsual()))
+            .append(d.hrvMs() == null ? NO_DATA : d.hrvMs() + " ms" + DayFigures.usualSuffix(d.hrvUsual()))
             .append(".\n");
         b.append("Lépés ma eddig: ").append(d.steps() == null ? NO_DATA : grouped(d.steps())).append(".\n");
 
@@ -333,13 +341,13 @@ public class BoopDayContext {
     // ------------------------------------------------------------------ ready questions
 
     /**
-     * Deterministic templates (spec §7.6): HRV below usual or a shorter night than the one before → why
+     * Deterministic templates (spec §7.6): HRV at least 5 % below the 14-day usual or a shorter night than the one before → why
      * tired; a session still ahead today → food before it + focus; a session tomorrow → timing for
      * tomorrow; nothing of these → how the day goes. Max {@value #MAX_QUESTIONS}, in that priority.
      */
     public List<String> questions(DayBlock d) {
         List<String> out = new ArrayList<>();
-        boolean lowHrv = d.hrvMs() != null && d.hrvUsual() != null && d.hrvMs() < d.hrvUsual();
+        boolean lowHrv = d.hrvMs() != null && d.hrvUsual() != null && d.hrvMs() <= d.hrvUsual() * LOW_HRV_RATIO;
         boolean shorterNight = d.lastNight() != null && d.nightBefore() != null
             && d.lastNight().minutes() < d.nightBefore().minutes();
         if (lowHrv || shorterNight) {
@@ -366,18 +374,9 @@ public class BoopDayContext {
             return null;
         }
         int minutes = n.getDurationH() != null
-            ? n.getDurationH().multiply(BigDecimal.valueOf(60)).setScale(0, RoundingMode.HALF_UP).intValue()
+            ? DayFigures.round(n.getDurationH().multiply(BigDecimal.valueOf(60)))
             : sum(n.getLightMin(), n.getRemMin(), n.getDeepMin());
         return new Night(minutes, n.getBedtime(), n.getWakeup(), n.getDeepMin());
-    }
-
-    /** Mean over {@code date-14 … date-1} of the non-null values; null when there are none. */
-    private static Double baseline(LocalDate date, Map<LocalDate, DailyMetricEntity> metrics,
-                                   Function<DailyMetricEntity, Integer> value) {
-        OptionalDouble avg = date.minusDays(BASELINE_DAYS).datesUntil(date)
-            .map(metrics::get).filter(Objects::nonNull).map(value).filter(Objects::nonNull)
-            .mapToInt(Integer::intValue).average();
-        return avg.isPresent() ? avg.getAsDouble() : null;
     }
 
     /** Today's done check-ins in slot order, each with its snapshot line ({@link CheckInText#snapshotLine}). */
@@ -403,10 +402,14 @@ public class BoopDayContext {
             return List.of();
         }
         var foci = service.getDay(owner, date).getFoci();
-        return foci == null ? List.of() : foci.stream().map(IntentionFocusResponse::getText).toList();
+        return foci == null ? List.of() : foci.stream().map(IntentionFocusResponse::getText).limit(MAX_GOALS).toList();
     }
 
-    /** The day's planned gym session (non-empty template day) and unskipped sport slots, by time. */
+    /**
+     * The day's sessions by time: the planned gym session (non-empty template day; at the time the owner
+     * moved it to in Boop, else the schedule's), the unskipped weekly sport slots and the dated one-off
+     * sport events (a match / competition included).
+     */
     private List<Session> sessions(UUID owner, LocalDate date) {
         int dow = date.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
         List<Session> out = new ArrayList<>();
@@ -415,10 +418,12 @@ public class BoopDayContext {
             List<ExerciseEntity> planned = exercises.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
                 owner, List.of(template.get().getId()));
             if (!planned.isEmpty()) { // an empty template day is a rest day (ToolText.gymLine's criterion)
-                LocalTime time = gymSchedule.getSchedule(owner).stream()
+                LocalTime scheduled = gymSchedule.getSchedule(owner).stream()
                     .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow && s.getTime() != null)
                     .map(s -> LocalTime.parse(s.getTime()))
                     .sorted().findFirst().orElse(null);
+                SessionTimeOverrideSource overrides = sessionTimeOverrides.getIfAvailable();
+                LocalTime time = overrides == null ? scheduled : overrides.movedTime(owner, date).orElse(scheduled);
                 out.add(new Session("Edzés", "edzés", time, template.get().getDurationEst(),
                     template.get().getDayLabel()));
             }
@@ -431,6 +436,11 @@ public class BoopDayContext {
             String label = sportLabel(s.getSport(), s.getKind() == null ? null : s.getKind().getValue());
             out.add(new Session(label, noun(label), s.getTime() == null ? null : LocalTime.parse(s.getTime()),
                 s.getDurationMin(), null));
+        }
+        for (SportEventResponse e : sportService.listEvents(owner, date, date)) {
+            String label = sportLabel(e.getSport(), e.getKind() == null ? null : e.getKind().getValue());
+            out.add(new Session(label, noun(label), e.getTime() == null ? null : LocalTime.parse(e.getTime()),
+                e.getDurationMin(), null));
         }
         out.sort(Comparator.comparing(Session::time, Comparator.nullsLast(Comparator.naturalOrder())));
         return List.copyOf(out);
@@ -514,10 +524,6 @@ public class BoopDayContext {
         };
     }
 
-    private static String usual(Double usual) {
-        return usual == null ? "" : " (szokott " + Math.round(usual) + ")";
-    }
-
     /** 370 → "6ó 10p"; 420 → "7ó"; 45 → "45p". */
     static String hm(int minutes) {
         int h = minutes / 60;
@@ -529,28 +535,11 @@ public class BoopDayContext {
     }
 
     private static String hhmm(LocalTime t) {
-        return String.format("%02d:%02d", t.getHour(), t.getMinute());
+        return DayFigures.hhmm(t);
     }
 
-    /** Hungarian digit grouping with a plain space: 2450 → "2 450". */
-    static String grouped(int value) {
-        String digits = Integer.toString(Math.abs(value));
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i < digits.length(); i++) {
-            if (i > 0 && (digits.length() - i) % 3 == 0) {
-                out.append(' ');
-            }
-            out.append(digits.charAt(i));
-        }
-        return (value < 0 ? "-" : "") + out;
-    }
-
-    private static Integer round(BigDecimal v) {
-        return v.setScale(0, RoundingMode.HALF_UP).intValue();
-    }
-
-    private static int toInt(BigDecimal v) {
-        return v == null ? 0 : v.setScale(0, RoundingMode.HALF_UP).intValue();
+    private static String grouped(int value) {
+        return DayFigures.grouped(value);
     }
 
     private static int sum(Integer... values) {
