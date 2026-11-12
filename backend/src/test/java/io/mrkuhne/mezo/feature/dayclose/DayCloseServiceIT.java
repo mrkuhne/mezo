@@ -10,8 +10,10 @@ import io.mrkuhne.mezo.api.dto.DayCloseResponse;
 import io.mrkuhne.mezo.feature.biometrics.checkin.config.OwnerZoneProperties;
 import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInService;
 import io.mrkuhne.mezo.feature.dayclose.service.DayCloseService;
+import io.mrkuhne.mezo.feature.dayclose.service.DayClosedEvent;
 import io.mrkuhne.mezo.feature.intention.service.IntentionService;
 import io.mrkuhne.mezo.feature.journal.service.JournalService;
+import io.mrkuhne.mezo.feature.ritual.service.RitualClosedEvent;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -34,14 +36,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Boop B3 (mezo-r36n9.13, spec §7.4): the day-close record, its legacy dual-write and the web fallback. */
 @Transactional
+@RecordApplicationEvents
 @Import(DayCloseServiceIT.OwnerClockConfig.class)
 class DayCloseServiceIT extends AbstractIntegrationTest {
 
-    /** A clock the tests can set to the owner's "just after midnight"; the system clock otherwise. */
+    /** A clock the tests can set to the owner's "just after midnight"; the system clock otherwise. As the
+     *  application {@link Clock} it drives both the day close and the check-in's window / capture checks. */
     static final class MutableClock extends Clock {
         private volatile Clock delegate = Clock.systemUTC();
 
@@ -68,6 +74,7 @@ class DayCloseServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private MutableClock clock;
+    @Autowired private ApplicationEvents events;
 
     private ZoneId zone;
     private LocalDate today;
@@ -123,6 +130,9 @@ class DayCloseServiceIT extends AbstractIntegrationTest {
             "select energy, day_rating from check_in where created_by = ? and date = ? and slot_time = '20:00'", user, today);
         assertThat(evening.get("energy")).isEqualTo(7);
         assertThat(evening.get("day_rating")).isEqualTo(8);
+        // a first Boop close: the ritual's close event (habits, metric series, …) and the day-close event, once each
+        assertThat(events.stream(RitualClosedEvent.class)).hasSize(1);
+        assertThat(events.stream(DayClosedEvent.class)).hasSize(1);
     }
 
     @Test
@@ -207,6 +217,19 @@ class DayCloseServiceIT extends AbstractIntegrationTest {
         assertThat(web.getClosedAt().toInstant()).isEqualTo(day.atTime(21, 30).atZone(zone).toInstant());
         assertThat(web.getPlanGoals()).isEmpty();
         assertThat(service.get(user, today.minusDays(2))).isEmpty();
+    }
+
+    @Test
+    void webClosedDayWithoutEveningRatingHasNoRating() {
+        LocalDate day = today.minusDays(1);
+        jdbc.update("insert into ritual_day (created_by, ritual_date, closed_at) values (?, ?, ?)",
+            user, day, java.sql.Timestamp.from(day.atTime(21, 30).atZone(zone).toInstant()));
+
+        DayCloseResponse web = service.get(user, day).orElseThrow();
+
+        assertThat(web.getSource()).isEqualTo(DayCloseResponse.SourceEnum.WEB);
+        assertThat(web.getDayRating()).isNull();
+        assertThat(web.getEveningEnergy()).isNull();
     }
 
     @Test

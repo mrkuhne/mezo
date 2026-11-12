@@ -14097,19 +14097,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/DayCloseLineResponse'
         '400':
-          description: Unknown slot / bad date
+          description: >-
+            Empty slot, no done check-in in that slot, or a date outside today
+            .. today-7
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-        '404':
-          description: No check-in in that slot
           content:
             application/json:
               schema:
@@ -33264,7 +33260,6 @@ components:
       required:
         - date
         - closedAt
-        - dayRating
         - planGoals
         - source
       properties:
@@ -33279,6 +33274,8 @@ components:
           nullable: true
         dayRating:
           type: integer
+          nullable: true
+          description: 1-5; null only for a day closed on the web without an evening rating
         goalText:
           type: string
           nullable: true

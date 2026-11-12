@@ -13418,7 +13418,8 @@ export interface components {
             /** Format: date-time */
             closedAt: string;
             eveningEnergy?: number | null;
-            dayRating: number;
+            /** @description 1-5; null only for a day closed on the web without an evening rating */
+            dayRating?: number | null;
             goalText?: string | null;
             /** @enum {string|null} */
             goalOutcome?: "done" | "partial" | "no" | null;
@@ -29844,7 +29845,7 @@ export interface operations {
                     "application/json": components["schemas"]["DayCloseLineResponse"];
                 };
             };
-            /** @description Unknown slot / bad date */
+            /** @description Empty slot, no done check-in in that slot, or a date outside today .. today-7 */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -29855,15 +29856,6 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description No check-in in that slot */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

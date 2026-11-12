@@ -130,17 +130,12 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/DayCloseLineResponse' }
         '400':
-          description: Unknown slot / bad date
+          description: Empty slot, no done check-in in that slot, or a date outside today .. today-7
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
         '401':
           description: Missing/invalid token
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SystemMessageList' }
-        '404':
-          description: No check-in in that slot
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
@@ -179,12 +174,15 @@ components:
           description: Client ref of the journal entry holding the evening transcript; resolved server-side.
     DayCloseResponse:
       type: object
-      required: [date, closedAt, dayRating, planGoals, source]
+      required: [date, closedAt, planGoals, source]
       properties:
         date: { type: string, format: date }
         closedAt: { type: string, format: date-time }
         eveningEnergy: { type: integer, nullable: true }
-        dayRating: { type: integer }
+        dayRating:
+          type: integer
+          nullable: true
+          description: 1-5; null only for a day closed on the web without an evening rating
         goalText: { type: string, nullable: true }
         goalOutcome: { type: string, nullable: true, enum: [done, partial, no] }
         planGoals:
