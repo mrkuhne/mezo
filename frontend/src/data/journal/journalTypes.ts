@@ -5,7 +5,7 @@ export interface JournalNote {
   id: string
   occurredOn: string
   text: string
-  source: 'quickinput' | 'ritual'
+  source: 'quickinput' | 'ritual' | 'boop'
   createdAt: string
 }
 

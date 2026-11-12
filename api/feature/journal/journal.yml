@@ -228,7 +228,7 @@ components:
         id: { type: string, format: uuid }
         occurredOn: { type: string, format: date }
         text: { type: string }
-        source: { type: string, enum: [quickinput, ritual] }
+        source: { type: string, enum: [quickinput, ritual, boop] }
         createdAt: { type: string, format: date-time }
     CreateJournalEntryRequest:
       type: object
@@ -239,7 +239,11 @@ components:
           type: string
           format: date
           description: The day the entry is ABOUT; server defaults to today when absent.
-        source: { type: string, pattern: '^(quickinput|ritual)$' }
+        source: { type: string, pattern: '^(quickinput|ritual|boop)$' }
+        clientRef:
+          type: string
+          format: uuid
+          description: Boop B3 — idempotency key (unique per owner); a retried request returns the same entry.
     UpdateJournalEntryRequest:
       type: object
       required: [text]

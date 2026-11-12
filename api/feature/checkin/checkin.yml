@@ -217,6 +217,31 @@ components:
         note:
           type: string
           description: Optional free-form note, without an application character limit.
+        capturedAt:
+          type: string
+          format: date-time
+          description: >-
+            Boop B3 — the phone's instant of capture; stored as the record's moment (saved_at).
+            Absent = now (web behaviour). `date` must be within today .. today-7 in the owner zone.
+        snapshot:
+          $ref: '#/components/schemas/CheckInSnapshot'
+    CheckInSnapshot:
+      type: object
+      nullable: true
+      description: >-
+        Boop B3 — biomarker snapshot frozen at capture (computed on the phone from HealthKit).
+        Every field is nullable; each reading carries its sample time.
+      properties:
+        hrBpm: { type: integer, nullable: true }
+        hrAt: { type: string, format: date-time, nullable: true }
+        hrvMs: { type: number, format: double, nullable: true }
+        hrvAt: { type: string, format: date-time, nullable: true }
+        hrvUsualMs: { type: number, format: double, nullable: true, description: '14-day median HRV' }
+        steps: { type: integer, nullable: true }
+        stepsIsDayTotal: { type: boolean, nullable: true, description: 'True when steps is a day total (server fallback), false/null when cumulative up to capture' }
+        sleepMinutes: { type: integer, nullable: true }
+        source: { type: string, nullable: true, description: Source bundle id }
+        computedBy: { type: string, nullable: true, enum: [phone, server] }
     CheckInResponse:
       type: object
       required:
@@ -305,6 +330,8 @@ components:
         savedAt:
           type: string
           format: date-time
+        snapshot:
+          $ref: '#/components/schemas/CheckInSnapshot'
     CheckInItemId:
       type: string
       description: Check-in 2.0 item ids (core five first)

@@ -95,6 +95,11 @@ tags:
     description: Editable personal context and communication preferences
   - name: Companion
     description: Phase-3 companion chat — conversations + messages (mezo-fnnq)
+  - name: CompanionDayContext
+    description: >-
+      Boop B3 (mezo-r36n9.13) — the "Boop látja" strip: the chips of the day
+      block the chat planner sees, plus ready questions. Own tag so the
+      generated interface stays separate from the conversation CRUD surface.
   - name: CompanionStream
     description: >-
       Phase-3 companion chat — SSE streaming turn (mezo-fnnq.4). PRECEDENT: this
@@ -231,6 +236,12 @@ tags:
       Native (iOS) device registration for push (Boop B1, mezo-r36n9.11). No
       sending yet. `created_by` always comes from the JWT; a device is owned by
       whoever registered it last.
+  - name: DayClose
+    description: >
+      Boop B3 (mezo-r36n9.13) — the day-close record, one source of truth for
+      the evening close (rating, goal outcome, plan goals, journal link, Boop's
+      sentence). Idempotent upsert by (owner, date); dates accepted today ..
+      today-7 in the owner zone, future -> 400.
 paths:
   /api/auth/login:
     post:
@@ -5847,6 +5858,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FlagTraceDayResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/day-context:
+    get:
+      tags:
+        - CompanionDayContext
+      operationId: getDayContext
+      summary: Today's day-context chips (what Boop sees) and ready questions
+      responses:
+        '200':
+          description: The chips and up to 3 ready questions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayContextResponse'
         '401':
           description: Missing or invalid token
           content:
@@ -13891,6 +13921,205 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/day-close:
+    get:
+      tags:
+        - DayClose
+      operationId: listDayCloses
+      summary: Day closes in a date range (Napló list)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Closes in the range, newest first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DayCloseResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/day-close/{date}':
+    put:
+      tags:
+        - DayClose
+      operationId: putDayClose
+      summary: Close (or re-close) a day — idempotent upsert
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DayCloseRequest'
+      responses:
+        '200':
+          description: The stored close
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayCloseResponse'
+        '400':
+          description: Validation failure or a future / too-old date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    get:
+      tags:
+        - DayClose
+      operationId: getDayClose
+      summary: 'One day''s close (falls back to the legacy stores, source=web)'
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The close
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayCloseResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: The day is not closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/day-close/{date}/line':
+    post:
+      tags:
+        - DayClose
+      operationId: generateDayCloseLine
+      summary: >-
+        Boop's one sentence for the closed day (cheap tier, cached by input
+        hash)
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The line
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayCloseLineResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: The day is not closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: LLM port unavailable — the phone retries later
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/day-close/{date}/checkin-line':
+    post:
+      tags:
+        - DayClose
+      operationId: generateCheckInLine
+      summary: 'Boop''s one line after a check-in slot (cheap tier, cached)'
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInLineRequest'
+      responses:
+        '200':
+          description: The line
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayCloseLineResponse'
+        '400':
+          description: Unknown slot / bad date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No check-in in that slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: LLM port unavailable — the phone retries later
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -14406,6 +14635,65 @@ components:
         note:
           type: string
           description: 'Optional free-form note, without an application character limit.'
+        capturedAt:
+          type: string
+          format: date-time
+          description: >-
+            Boop B3 — the phone's instant of capture; stored as the record's
+            moment (saved_at). Absent = now (web behaviour). `date` must be
+            within today .. today-7 in the owner zone.
+        snapshot:
+          $ref: '#/components/schemas/CheckInSnapshot'
+    CheckInSnapshot:
+      type: object
+      nullable: true
+      description: >-
+        Boop B3 — biomarker snapshot frozen at capture (computed on the phone
+        from HealthKit). Every field is nullable; each reading carries its
+        sample time.
+      properties:
+        hrBpm:
+          type: integer
+          nullable: true
+        hrAt:
+          type: string
+          format: date-time
+          nullable: true
+        hrvMs:
+          type: number
+          format: double
+          nullable: true
+        hrvAt:
+          type: string
+          format: date-time
+          nullable: true
+        hrvUsualMs:
+          type: number
+          format: double
+          nullable: true
+          description: 14-day median HRV
+        steps:
+          type: integer
+          nullable: true
+        stepsIsDayTotal:
+          type: boolean
+          nullable: true
+          description: >-
+            True when steps is a day total (server fallback), false/null when
+            cumulative up to capture
+        sleepMinutes:
+          type: integer
+          nullable: true
+        source:
+          type: string
+          nullable: true
+          description: Source bundle id
+        computedBy:
+          type: string
+          nullable: true
+          enum:
+            - phone
+            - server
     CheckInResponse:
       type: object
       required:
@@ -14500,6 +14788,8 @@ components:
         savedAt:
           type: string
           format: date-time
+        snapshot:
+          $ref: '#/components/schemas/CheckInSnapshot'
     CheckInItemId:
       type: string
       description: Check-in 2.0 item ids (core five first)
@@ -22304,6 +22594,14 @@ components:
         mezo-p2tr — anchored conversations: an optional week/day anchor. Absent
         body/context = plain conversation, unchanged behaviour.
       properties:
+        channel:
+          type: string
+          enum:
+            - web
+            - boop
+          description: >-
+            Boop B3 — `boop` conversations get the pushed "Ma" day block; absent
+            = web.
         context:
           type: object
           nullable: true
@@ -22332,6 +22630,41 @@ components:
             about. Every user turn in the thread is recorded as a user_reply
             event on that pattern. 404 when the pattern is missing or owned by
             someone else.
+    DayContextResponse:
+      type: object
+      required:
+        - chips
+        - questions
+        - generatedAt
+      properties:
+        chips:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayContextChip'
+        questions:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+        generatedAt:
+          type: string
+          format: date-time
+    DayContextChip:
+      type: object
+      required:
+        - key
+        - label
+        - value
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+        sub:
+          type: string
+          nullable: true
     ConversationRenameRequest:
       type: object
       required:
@@ -26378,6 +26711,12 @@ components:
           format: date
         text:
           type: string
+        clientRef:
+          type: string
+          format: uuid
+          description: >-
+            Boop B3 — idempotency key (unique per owner); a retried request
+            returns the same focus.
     ReflectRequest:
       type: object
       required:
@@ -27674,6 +28013,7 @@ components:
           enum:
             - quickinput
             - ritual
+            - boop
         createdAt:
           type: string
           format: date-time
@@ -27692,7 +28032,13 @@ components:
           description: The day the entry is ABOUT; server defaults to today when absent.
         source:
           type: string
-          pattern: ^(quickinput|ritual)$
+          pattern: ^(quickinput|ritual|boop)$
+        clientRef:
+          type: string
+          format: uuid
+          description: >-
+            Boop B3 — idempotency key (unique per owner); a retried request
+            returns the same entry.
     UpdateJournalEntryRequest:
       type: object
       required:
@@ -32682,6 +33028,17 @@ components:
         minutes:
           type: integer
           nullable: true
+        done:
+          type: boolean
+          description: >-
+            B3 — the session was finished today (train/sport) or matched a
+            wearable workout
+        doneMinutes:
+          type: integer
+          nullable: true
+        avgHr:
+          type: integer
+          nullable: true
         exercises:
           type: array
           items:
@@ -32841,6 +33198,128 @@ components:
         appVersion:
           type: string
           maxLength: 20
+    DayClosePlanGoal:
+      type: object
+      required:
+        - id
+        - title
+        - result
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        result:
+          type: string
+          description: Short result text shown at close
+        met:
+          type: boolean
+          nullable: true
+    DayCloseRequest:
+      type: object
+      required:
+        - capturedAt
+        - clientRef
+        - dayRating
+        - planGoals
+      properties:
+        capturedAt:
+          type: string
+          format: date-time
+        clientRef:
+          type: string
+          format: uuid
+        eveningEnergy:
+          type: integer
+          minimum: 1
+          maximum: 10
+          nullable: true
+        dayRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        goalText:
+          type: string
+          nullable: true
+        goalOutcome:
+          type: string
+          nullable: true
+          enum:
+            - done
+            - partial
+            - 'no'
+        planGoals:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayClosePlanGoal'
+        journalClientRef:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            Client ref of the journal entry holding the evening transcript;
+            resolved server-side.
+    DayCloseResponse:
+      type: object
+      required:
+        - date
+        - closedAt
+        - dayRating
+        - planGoals
+        - source
+      properties:
+        date:
+          type: string
+          format: date
+        closedAt:
+          type: string
+          format: date-time
+        eveningEnergy:
+          type: integer
+          nullable: true
+        dayRating:
+          type: integer
+        goalText:
+          type: string
+          nullable: true
+        goalOutcome:
+          type: string
+          nullable: true
+          enum:
+            - done
+            - partial
+            - 'no'
+        planGoals:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayClosePlanGoal'
+        journalText:
+          type: string
+          nullable: true
+        boopLine:
+          type: string
+          nullable: true
+        source:
+          type: string
+          enum:
+            - boop
+            - web
+    DayCloseLineResponse:
+      type: object
+      required:
+        - line
+      properties:
+        line:
+          type: string
+    CheckInLineRequest:
+      type: object
+      required:
+        - slot
+      properties:
+        slot:
+          type: string
+          minLength: 1
+          description: 'Check-in slot id, e.g. "14:00"'
   responses:
     AdminMemoryUnauthorized:
       description: Missing/invalid token

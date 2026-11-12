@@ -53,4 +53,5 @@ inputs:
   - inputFile: ../feature/wearable/wearable.yml
   - inputFile: ../feature/boop/boop.yml
   - inputFile: ../feature/device/device.yml
+  - inputFile: ../feature/dayclose/dayclose.yml
 output: ../openapi.yml

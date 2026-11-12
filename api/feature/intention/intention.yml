@@ -158,6 +158,10 @@ components:
       properties:
         date: { type: string, format: date }
         text: { type: string }
+        clientRef:
+          type: string
+          format: uuid
+          description: Boop B3 — idempotency key (unique per owner); a retried request returns the same focus.
     ReflectRequest:
       type: object
       required: [date, value]
