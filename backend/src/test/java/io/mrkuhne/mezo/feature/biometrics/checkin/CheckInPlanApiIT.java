@@ -57,15 +57,18 @@ class CheckInPlanApiIT extends ApiIntegrationTest {
     void testGetCheckInPlan_shouldNotSeeOwnersSavedPick_whenOtherUserAsks() {
         HttpHeaders owner = ownerAuthHeaders();
         // "day" can never be computed for 06:30, so seeing it proves the stored row was read.
+        // A saved check-in must lie inside today − 7 … today (mezo-r36n9.13), so this test uses yesterday.
+        LocalDate day = LocalDate.now().minusDays(1);
+        String plan = "/api/biometrics/checkin/plan?date=" + day + "&slotTime=";
         postForBody("/api/biometrics/checkin", SaveCheckInRequest.builder()
-                .date(LocalDate.parse("2026-06-15")).slotTime("06:30").state("done").energy(6)
+                .date(day).slotTime("06:30").state("done").energy(6)
                 .adaptiveItem(CheckInItemId.DAY).adaptiveReason(AdaptiveReason.RANDOM).build(),
             owner, HttpStatus.OK, CheckInResponse.class);
-        assertThat(getForBody(PLAN + "06:30", owner, HttpStatus.OK, CheckInPlanResponse.class)
+        assertThat(getForBody(plan + "06:30", owner, HttpStatus.OK, CheckInPlanResponse.class)
             .getAdaptive().getId()).isEqualTo(CheckInItemId.DAY);
 
         RegisteredUser other = registerUser("Bea");
-        CheckInPlanResponse otherPlan = getForBody(PLAN + "06:30", other.headers(), HttpStatus.OK,
+        CheckInPlanResponse otherPlan = getForBody(plan + "06:30", other.headers(), HttpStatus.OK,
             CheckInPlanResponse.class);
         assertThat(otherPlan.getAdaptive().getId()).isNotEqualTo(CheckInItemId.DAY);
     }

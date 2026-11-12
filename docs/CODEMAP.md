@@ -204,11 +204,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
   - **entities→tables:** `BiometricProfileEntity`→`biometric_profile`, `CheckInEntity`→`check_in`,
-    `SleepGoalEntity`→`sleep_goal`, `SleepLogEntity`→`sleep_log`, `WeightLogEntity`→`weight_log`
-  - **repositories:** `BiometricProfileRepository`, `CheckInRepository`, `SleepGoalRepository`, `SleepLogRepository`,
-    `WeightLogRepository`
-  - **services:** `AdaptiveItemChooser`, `AllNonCoreNeedSource`, `BiometricProfileService`, `CheckInItem`,
-    `CheckInNeedSource`, `CheckInPlanService`, `CheckInSavedEvent`, `CheckInService`, `CheckInText`,
+    `CheckInSnapshotEntity`→`check_in_snapshot`, `SleepGoalEntity`→`sleep_goal`, `SleepLogEntity`→`sleep_log`,
+    `WeightLogEntity`→`weight_log`
+  - **repositories:** `BiometricProfileRepository`, `CheckInRepository`, `CheckInSnapshotRepository`,
+    `SleepGoalRepository`, `SleepLogRepository`, `WeightLogRepository`
+  - **services:** `AdaptiveItemChooser`, `AllNonCoreNeedSource`, `BiometricProfileService`, `CheckInBiomarkerSource`,
+    `CheckInItem`, `CheckInNeedSource`, `CheckInPlanService`, `CheckInSavedEvent`, `CheckInService`, `CheckInText`,
     `GoalSleepAdequacyAdapter`, `HealthWeightService`, `SleepAnchorPort`, `SleepAnchorResolver`, `SleepGoalService`,
     `SleepLogSavedEvent`, `SleepLogService`, `SleepNightMerge`, `SleepShotDraftValidator`, `SleepShotLlm`,
     `SleepShotService`, `SleepTargetPort`, `TrainAthleteBodyAdapter`, `TrainDayCheckInAdapter`, `WeightLogSavedEvent`,
@@ -217,7 +218,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `SleepGoalController`→`SleepGoalApi`, `SleepLogController`→`SleepApi`, `SleepShotController`→`SleepShotApi`,
     `WeightLogController`→`WeightApi`
   - **mappers:** `BiometricProfileMapper`, `CheckInMapper`, `SleepLogMapper`, `WeightLogMapper`
-  - **config:** `CheckInPlanProperties`, `SleepGoalProperties`, `SleepShotProperties`
+  - **config:** `CheckInPlanProperties`, `OwnerZoneProperties`, `SleepGoalProperties`, `SleepShotProperties`
   - **other:** `CravingKind`, `PainRegion`, `SleepHypnogram`
 - **Contract** `api/feature/biometrics-profile/biometrics-profile.yml` — 2 operations
   - **endpoints:** GET /api/biometrics/profile · PUT /api/biometrics/profile
@@ -231,9 +232,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/biometrics/sleep · POST /api/biometrics/sleep
 - **Contract** `api/feature/weight/weight.yml` — 3 operations
   - **endpoints:** GET /api/biometrics/weight · POST /api/biometrics/weight · GET /api/biometrics/weight/trend
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/biometrics` — 20 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/biometrics` — 21 IT + 8 unit
   - **ITs:** `ActivityLevelMigrationIT`, `BiometricProfileContractIT`, `BiometricProfileServiceIT`,
-    `BiometricsContractIT`, `CheckInPlanApiIT`, `CheckInPlanServiceIT`, `CheckInServiceIT`,
+    `BiometricsContractIT`, `CheckInBoopIT`, `CheckInPlanApiIT`, `CheckInPlanServiceIT`, `CheckInServiceIT`,
     `GoalSleepAdequacyAdapterIT`, `SleepGoalApiIT`, `SleepGoalShiftIT`, `SleepGoalSwitchOffApiIT`,
     `SleepLogDedupMigrationIT`, `SleepLogEnrichedApiIT`, `SleepLogHypnogramIT`, `SleepLogServiceIT`, `SleepShotApiIT`,
     `SleepShotDisabledApiIT`, `SleepShotLlmUnavailableApiIT`, `WeightLogServiceIT`, `WeightTrendServiceIT`
@@ -519,11 +520,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
-- **Contract** `api/feature/companion/companion.yml` — 40 operations
+- **Contract** `api/feature/companion/companion.yml` — 41 operations
   - **endpoints:** GET /api/companion/preferences · PUT /api/companion/preferences ·
-    GET /api/companion/personal-context · GET /api/companion/flags/trace · GET /api/companion/conversation ·
-    POST /api/companion/conversation · PATCH /api/companion/conversation/{conversationId} ·
-    DELETE /api/companion/conversation/{conversationId} · GET /api/companion/conversation/{conversationId}/messages ·
+    GET /api/companion/personal-context · GET /api/companion/flags/trace · GET /api/companion/day-context ·
+    GET /api/companion/conversation · POST /api/companion/conversation ·
+    PATCH /api/companion/conversation/{conversationId} · DELETE /api/companion/conversation/{conversationId} ·
+    GET /api/companion/conversation/{conversationId}/messages ·
     POST /api/companion/conversation/{conversationId}/message ·
     GET /api/companion/conversation/{conversationId}/turn-memory ·
     POST /api/companion/turn-memory/person-fact/{personFactId}/about-me ·
@@ -1737,16 +1739,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **repositories:** `CalendarEventRepository`, `DailyMetricRepository`, `HealthSampleRepository`,
     `WearableWorkoutRepository`
   - **services:** `CalendarSnapshotService`, `DailyMetricService`, `HealthSampleService`, `WearableBatches`,
-    `WearableDeletionService`, `WearableSleepService`, `WearableWorkoutService`, `WorkoutReconciler`
+    `WearableCheckInBiomarkerSource`, `WearableDeletionService`, `WearableSleepService`, `WearableWorkoutService`,
+    `WorkoutReconciler`
   - **controllers→contract:** `WearableController`→`WearableApi`
   - **config:** `WearableProperties`
 - **Contract** `api/feature/wearable/wearable.yml` — 6 operations
   - **endpoints:** POST /api/wearable/sleep-nights · POST /api/wearable/daily-metrics · POST /api/wearable/workouts ·
     PUT /api/wearable/calendar-days · POST /api/wearable/samples · POST /api/wearable/deletions
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/wearable` — 5 IT + 1 unit
-  - **ITs:** `HealthSampleServiceIT`, `HealthSchemaIT`, `WearableContractIT`, `WearableServiceIT`,
-    `WearableSleepServiceIT`
-  - **populators:** `ApnsDevicePopulator`, `DatabasePopulator`, `HealthSamplePopulator`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/wearable` — 6 IT + 1 unit
+  - **ITs:** `HealthSampleServiceIT`, `HealthSchemaIT`, `WearableCheckInBiomarkerSourceIT`, `WearableContractIT`,
+    `WearableServiceIT`, `WearableSleepServiceIT`
+  - **populators:** `ApnsDevicePopulator`, `DailyMetricPopulator`, `DatabasePopulator`, `HealthSamplePopulator`,
+    `SleepLogPopulator`
 
 ## Cross-cutting
 
@@ -1832,6 +1836,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
+- **Contract fragment** `api/feature/dayclose/dayclose.yml` — tags `DayClose`; no backend controller implements the matching `<Tag>Api`
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
 - **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
