@@ -50,12 +50,14 @@ bd close <id>         # Complete work
    node scripts/check-beads-backup.mjs --fix   # then commit the result
    ```
    It cannot be a CI gate — the runner has no Dolt DB — so it belongs here.
-4. Push everything (if push fails, resolve and retry until it succeeds):
+4. **Sync the owner's Notion "Boop" space** if you changed anything about the product (see
+   §The owner's Notion "Boop" space): `node scripts/boop-notion-sync.mjs check` must exit 0.
+5. Push everything (if push fails, resolve and retry until it succeeds):
    ```bash
    git pull --rebase && bd dolt push && git push
    git status  # MUST show "up to date with origin"
    ```
-5. Hand off: short context for the next session
+6. Hand off: short context for the next session
 <!-- END BEADS INTEGRATION -->
 
 ## Communication with the user (MANDATORY, every session)
@@ -84,6 +86,39 @@ result:**
 - **Short.** A decision fits on one screen. Detail belongs in the plan/spec, not in the question.
 - Keep full technical precision in **code, commits, PRs, bd issues and docs** — this rule
   governs what you say *to him*, not what you write for the machine.
+
+## The owner's Notion "Boop" space — his single source of truth (MANDATORY, every session)
+
+> Owner decision 2026-11-12 (`mezo-r36n9.29`): **the Notion "Boop" space is the owner's single source of truth**
+> for the product — what is being built, what is done, what is planned, how and why every feature works, every
+> decision, every release. He reads only that. It applies to **every session**, not only `/boop` ones.
+
+The space (root page id in `docs/boop-handbook/_notion-state.json`) has four parts, all in Hungarian business
+language: **Jegyek** (Jira-like board of every work item), **Kézikönyv** (every section / feature / small feature:
+what it does, how, why, settings, data tables, what comes next, what is left out), **Döntések**, **Kiadások**.
+
+**How it stays true.** Notion is written by the machine from the repo, one way: tickets from **bd** (+ Hungarian
+overlay `docs/boop-handbook/_jegyek.json`, state via `allapot:<slug>` labels), everything else from
+`docs/boop-handbook/` (handbook pages, `_dontesek.json`, `_kiadasok.json`), pushed with
+`scripts/boop-notion-sync.mjs` through the Notion tools. Procedure: the **`boop-notion` skill**. Never hand-edit
+Notion rows — edit the source, then sync (a manual edit is overwritten by the next sync).
+
+**The rule — any session that changes the product** (iPhone/Watch app, the backend or AI it uses, its data, its
+plan, its look) keeps the space true **in the same session**:
+1. **Start:** `node scripts/boop-notion-sync.mjs check`. A lagging Notion is a debt you pay first (sync it before
+   your own work), like a red main.
+2. **Every work item is a bd issue under epic `mezo-r36n9`** with a row in `_jegyek.json` (Hungarian title,
+   *mit kapsz*, your session name) — so it is on the board. Claim → *Épül*; review / waiting for deploy / waiting
+   on the owner → `bd label add <id> allapot:ellenorzes|elesitesre-var|var-rad`.
+3. **Owner decision** → a row in `_dontesek.json` (and, for Boop, `docs/superpowers/research/boop-standalone/14-decisions.md`).
+4. **A feature added, changed or cut** → its page under `docs/boop-handbook/NN-terulet/` (format in that folder's
+   README) — the handbook must describe the product as it is on `main`.
+5. **Merge to main the owner can feel** → a row in `_kiadasok.json` (key = merge commit short sha).
+6. **Before you report:** sync (`plan` → apply → `check` exits 0) and commit `_notion-state.json` with your change.
+   No Notion tools in the session → say so in the report and file a `notion-sync` bd issue under the epic; never
+   skip silently.
+
+Privacy: no personal health values in Notion, ever (examples are invented and marked „például”).
 
 ## Design direction (MANDATORY for any UI design/mockup work)
 
