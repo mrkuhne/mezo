@@ -61,9 +61,10 @@ public struct Trend: View {
 }
 
 /// A Lágy glyph tinted as one colour for the dark look. The four whose artwork relies on white inner detail would
-/// flatten into a blob, so they are drawn as thin outlines on the same 64-unit grid.
+/// flatten into a blob, so they are drawn as thin outlines on the same 64-unit grid — as are the Napkelte-only glyphs
+/// `mic` (voice) and `offline` (a cloud with a slash, "nincs net"; B3, spike `RMicGlyph` / `ROfflineGlyph`).
 public struct NKGlyph: View {
-    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage"]
+    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline"]
     let name: String, color: Color, size: CGFloat
     public init(_ name: String, _ color: Color, size: CGFloat = 18) { self.name = name; self.color = color; self.size = size }
 
@@ -85,6 +86,21 @@ public struct NKGlyph: View {
                         ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 8, y: 18, width: 48, height: 34), cornerSize: CGSize(width: 10, height: 10)) }, with: .color(color), style: st)
                         ctx.stroke(P { $0.addEllipse(in: CGRect(x: 23, y: 26, width: 18, height: 18)) }, with: .color(color), style: st)
                         ctx.fill(P { $0.addRoundedRect(in: CGRect(x: 23, y: 11, width: 18, height: 8), cornerSize: CGSize(width: 4, height: 4)) }, with: .color(color))
+                    case "mic":
+                        ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 23, y: 8, width: 18, height: 32), cornerSize: CGSize(width: 9, height: 9)) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.addArc(center: CGPoint(x: 32, y: 30), radius: 16, startAngle: .degrees(0), endAngle: .degrees(180), clockwise: false) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 32, y: 46)); $0.addLine(to: CGPoint(x: 32, y: 56))
+                            $0.move(to: CGPoint(x: 24, y: 56)); $0.addLine(to: CGPoint(x: 40, y: 56))
+                        }, with: .color(color), style: st)
+                    case "offline":
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 18, y: 48)); $0.addLine(to: CGPoint(x: 46, y: 48))
+                            $0.addArc(center: CGPoint(x: 46, y: 38), radius: 10, startAngle: .degrees(90), endAngle: .degrees(-60), clockwise: true)
+                            $0.addArc(center: CGPoint(x: 32, y: 28), radius: 14, startAngle: .degrees(-20), endAngle: .degrees(-170), clockwise: true)
+                            $0.addArc(center: CGPoint(x: 18, y: 38), radius: 10, startAngle: .degrees(-100), endAngle: .degrees(90), clockwise: true)
+                        }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 10, y: 10)); $0.addLine(to: CGPoint(x: 54, y: 56)) }, with: .color(color), style: st)
                     default:
                         ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 14, y: 10, width: 36, height: 44), cornerSize: CGSize(width: 8, height: 8)) }, with: .color(color), style: st)
                         ctx.stroke(P {

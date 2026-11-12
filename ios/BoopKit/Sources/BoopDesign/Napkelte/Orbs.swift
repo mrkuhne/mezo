@@ -79,14 +79,18 @@ extension View {
 
 /// The living glass orb: marbled liquid filled to `level`, idle waves, slosh on tilt, ripple on tap, surge on speech.
 /// `animated == false` (or reduced motion) renders the end state, still.
+///
+/// A new `level` fills in from empty again (a metric switch); `refills: false` keeps the liquid where it is and lets it
+/// follow the new level smoothly (the check-in orb answering a swipe step by step).
 public struct LivingOrb: View {
-    let palette: [Color], size: CGFloat, level: Double, glow: Bool, motion: OrbMotion, animated: Bool
+    let palette: [Color], size: CGFloat, level: Double, glow: Bool, motion: OrbMotion, animated: Bool, refills: Bool
     @State private var start = Date()
     @State private var taps = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(palette: [Color], size: CGFloat, level: Double, glow: Bool, motion: OrbMotion, animated: Bool = true) {
+    public init(palette: [Color], size: CGFloat, level: Double, glow: Bool, motion: OrbMotion, animated: Bool = true, refills: Bool = true) {
         self.palette = palette; self.size = size; self.level = level; self.glow = glow; self.motion = motion; self.animated = animated
+        self.refills = refills
     }
 
     public var body: some View {
@@ -122,7 +126,7 @@ public struct LivingOrb: View {
             taps += 1
         })
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: taps)
-        .onChange(of: level) { start = Date() }
+        .onChange(of: level) { if refills { start = Date() } }
         .onAppear { if live { motion.start() } }
         .accessibilityHidden(true)
     }

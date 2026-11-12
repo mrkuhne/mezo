@@ -8,6 +8,7 @@ struct RootView: View {
     @Environment(Session.self) private var session
     @State private var link: HealthLink?
     @State private var morning: MorningStore?
+    @State private var ritmus: RitmusEnvironment?
 
     var body: some View {
         Group {
@@ -22,6 +23,7 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.3), value: session.state)
         .environment(link)
         .environment(morning)
+        .environment(ritmus)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
     }
@@ -33,7 +35,7 @@ struct RootView: View {
         case .needsOnboarding(let m), .ready(let m): me = m
         default: me = nil
         }
-        guard let me else { link = nil; morning = nil; return }
+        guard let me else { link = nil; morning = nil; ritmus = nil; return }
         if link?.userId != me.id {
             let signOut: @MainActor () -> Void = { [session] in session.signOut() }
             #if DEBUG
@@ -41,11 +43,13 @@ struct RootView: View {
                 let preview = makeClient(tokens: MemoryTokenStore("preview"), transport: PreviewTransport())
                 link = HealthLink(client: preview, userId: me.id)
                 morning = MorningStore(client: preview, onUnauthorized: signOut)
+                ritmus = .preview(client: preview)
                 return
             }
             #endif
             link = HealthLink(client: session.client, userId: me.id)
             morning = MorningStore(client: session.client, onUnauthorized: signOut)
+            ritmus = .live(client: session.client, health: HealthKitReader())
         }
         if case .ready = state { Task { await link?.syncIfStale() } }
     }
