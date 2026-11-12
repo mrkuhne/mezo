@@ -19,9 +19,10 @@ public typealias ServerDay = DayLedger
 /// operation — plus the day, plan and line fetches. Every write is idempotent on the server (natural key or the item
 /// id as `clientRef`), so a resend after a lost answer never duplicates.
 ///
-/// Status mapping of a write: 2xx → `.sent`; 401, 409, 429, 5xx, no network and anything the transport throws →
-/// `.retryLater` (the item is fine, the moment is not; a 401 is an expired session, not a bad item, so the item must
-/// survive until the owner signs in again); every other 4xx → `.failed("HTTP <code>")` and the item waits for the
+/// Status mapping of a write: 2xx → `.sent`; no network (a `URLError` from the transport) → `.offline` (not counted as
+/// an attempt); 401, 409, 429, 5xx and anything else the transport throws → `.retryLater` (the item is fine, the moment
+/// is not; a 401 is an expired session, not a bad item, so the item must survive until the owner signs in again); every
+/// other 4xx → `.failed("HTTP <code>")` and the item waits for the
 /// owner's "Újra". Exceptions: an `addFocus` 409 is the focus cap (`.failed("INTENTION_FOCUS_CAP")`, retrying never
 /// helps), an `addFocus` 2xx whose body cannot be read is retried (the replay is idempotent and returns the focus id), and
 /// a chat 5xx is `.failed` (a resend could ask Boop twice; see `sendChatQuestion`).
@@ -66,7 +67,8 @@ public struct RitmusClient: OutboxSender {
                 if (200..<300).contains(status) { return .sent(nil) }
                 return item.kind == .chatQuestion ? Self.chatMap(status) : Self.map(status)
             }
-            return .retryLater
+            // No network (or it dropped mid-request): not an attempt — a travel day must not burn the cap.
+            return isNetworkFailure(error) ? .offline : .retryLater
         }
     }
 
@@ -255,7 +257,7 @@ public struct RitmusClient: OutboxSender {
     /// `sendMessage` carries no client ref, so a resend (`attempts > 0`) into a known conversation first reads its turns:
     /// when the last owner turn is this very question, the earlier send did arrive and the question counts as sent (the
     /// answer after it is handed back). A 5xx on chat is `.failed` — the bubble offers *Újra* instead of a silent retry
-    /// that could ask twice; no network stays `.retryLater`.
+    /// that could ask twice; no network stays `.offline` (asked again when the net is back).
     private func sendChatQuestion(_ item: OutboxItem) async throws -> OutboxSendResult {
         guard let p = RitmusPayload.decode(ChatQuestionPayload.self, from: item.payload) else { return malformed("chat") }
         var conversation = p.conversationId
