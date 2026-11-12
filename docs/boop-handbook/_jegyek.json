@@ -289,5 +289,23 @@
     ],
     "mit_kapsz": "Ez a Notion-tér: jegytábla, kézikönyv, döntések és kiadások — minden Boop-munka végén frissül.",
     "munkamenet": "boop-notion"
+  },
+  "mezo-r36n9.30": {
+    "cim": "Ingadozó ellenőrző teszt az esti zárásnál",
+    "tipus": "Hiba",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Napló"
+    ],
+    "mit_kapsz": "Megbízható automatikus ellenőrzés: a napzárás tesztje nem bukik el véletlenszerűen."
+  },
+  "mezo-r36n9.31": {
+    "cim": "Check-in újrakezdésekor el ne vesszen a már felvett jegyzet",
+    "tipus": "Hiba",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Napló"
+    ],
+    "mit_kapsz": "Ha egy check-int újrakezdesz, miközben az előző hangjegyzeted még küldés alatt van, a jegyzet nem íródik felül."
   }
 }

@@ -296,7 +296,8 @@ if (cmd === 'plan' || cmd === 'check') {
     }))));
   } else if (kind === 'updates') {
     // next n full updates not yet recorded since the plan: update_properties(properties, icon) + replace_content(content)
-    const ops = last.ops.filter((o) => o.op === 'update' && o.db === target && state.records[o.key]?.hash !== o.hash).slice(0, Number(n ?? 5));
+    const prefix = args[3] ? `${target}:${args[3]}` : ''; // optional folder filter, e.g. 06-etel, so parallel workers don't overlap
+    const ops = last.ops.filter((o) => o.op === 'update' && o.db === target && o.key.startsWith(prefix) && state.records[o.key]?.hash !== o.hash).slice(0, Number(n ?? 5));
     console.log(JSON.stringify(ops.map((o) => ({ key: o.key, page_id: o.page_id, icon: o.icon, properties: o.properties, content: o.content }))));
   } else { console.error('payload create <db> [n] | payload update <key> | payload updates <db> [n] | payload relations [db]'); process.exit(2); }
 } else if (cmd === 'record') {
