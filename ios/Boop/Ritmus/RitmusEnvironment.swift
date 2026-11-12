@@ -33,6 +33,12 @@ final class RitmusEnvironment {
     var online = true
     /// Where the past days' goal texts are kept between launches (next to the ledger folder).
     @ObservationIgnored private let goalHistoryFile: URL
+    /// The user's own folder (the ledger's parent): the chat keeps its day → conversation file here.
+    @ObservationIgnored private let userDirectory: URL
+    /// Lets the outbox's delivery listener reach the chat attached after it.
+    @ObservationIgnored private let chatRef: ChatRef
+    /// The Boop tab's chat (B3 Task 12); nil until `attachChat` (tests without a server leave it out).
+    private(set) var chat: ChatStore?
 
     /// The goals typed on the last 30 days (server days fetched once, plus the phone's own), for the overdue chips.
     private(set) var pastGoals: [PastGoal] = []
@@ -67,13 +73,18 @@ final class RitmusEnvironment {
         daySource = day; goalsSource = goals; eventsSource = events; closeLineSource = closeLine
         transcribeSource = transcribe
         self.outboxDirectory = outboxDirectory
-        goalHistoryFile = ledgerDirectory.deletingLastPathComponent().appendingPathComponent("goal-history.json")
+        userDirectory = ledgerDirectory.deletingLastPathComponent()
+        goalHistoryFile = userDirectory.appendingPathComponent("goal-history.json")
         // A delivery clears the pending flag only when no newer version of the same id (a note sent after an
         // in-flight check-in) is still queued — that one clears it when it arrives.
         let queue = OutboxRef()
+        let chatRef = ChatRef()
+        self.chatRef = chatRef
         outbox = Outbox(directory: outboxDirectory, sender: sender, clock: clock, calendar: greg) { item, body in
             // A recording's transcript lands on the day (its journal line or its check-in's note).
             await ledger.applyDelivered(item, body: body)
+            // A question asked without the net: the chat keeps the conversation and fetches Boop's answer.
+            if item.kind == .chatQuestion { await chatRef.store?.delivered(item, body: body) }
             if await queue.outbox?.isQueued(item.id) == true { return }
             await ledger.markSent(item.id, date: item.date)
         }
@@ -82,6 +93,16 @@ final class RitmusEnvironment {
 
     /// Lets the outbox's delivery listener ask the outbox itself (set once, right after creation).
     private final class OutboxRef: @unchecked Sendable { var outbox: Outbox? }
+    private final class ChatRef: @unchecked Sendable { weak var store: ChatStore? }
+
+    /// Gives the Boop tab its chat: reads go through `client`, a question goes out through `sender` (the outbox's own
+    /// sender), and an offline one waits in this environment's outbox.
+    func attachChat(client: Client, sender: OutboxSender) {
+        let store = ChatStore(client: client, sender: sender, outbox: outbox, directory: userDirectory, clock: clock,
+                              calendar: calendar)
+        chat = store
+        chatRef.store = store
+    }
 
     /// Each signed-in user keeps their own days and queue: `<base>/boop-ritmus/<userId>/ledger|outbox`.
     static func directories(for userId: UUID, base: URL = .applicationSupportDirectory) -> (ledger: URL, outbox: URL) {
@@ -106,6 +127,7 @@ final class RitmusEnvironment {
             events: { day in await todaysEvents(calendarReader, day: day) },
             closeLine: { date in try await ritmus.line(date) },
             transcribe: { file in try await ritmus.transcribe(file) })
+        env.attachChat(client: client, sender: ritmus)
         env.watchNetwork()
         // Records into the outbox folder, where the `voice` sender looks for the files.
         env.recorder = VoiceJournal(directory: dirs.outbox)

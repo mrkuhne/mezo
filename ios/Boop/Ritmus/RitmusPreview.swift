@@ -41,6 +41,13 @@ extension RitmusEnvironment {
             transcribe: { file in try await ritmus.transcribe(file) },
             clock: { start.addingTimeInterval(Date().timeIntervalSince(launched)) })
         env.recorder = PreviewNoteRecorder(directory: root.appendingPathComponent("outbox"))
+        // The Boop tab: `-previewOpen chatAnswer` has one answered question, `chatQueued` (with `-previewOffline YES`)
+        // one question waiting for the net.
+        env.attachChat(client: client, sender: ritmus)
+        env.online = !UserDefaults.standard.bool(forKey: "previewOffline")
+        if open == "chatQueued", let chat = env.chat {
+            Task { await chat.ask("Mennyit egyek a röpi előtt?", online: env.online) }
+        }
         guard opening || closing || laterInTheDay else { return env }
         let today = env.today
         let at = { (h: Int, m: Int) in Calendar.current.date(bySettingHour: h, minute: m, second: 0, of: launched) ?? launched }
