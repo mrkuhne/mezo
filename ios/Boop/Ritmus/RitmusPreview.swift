@@ -44,7 +44,7 @@ extension RitmusEnvironment {
         env.recorder = PreviewNoteRecorder(directory: root.appendingPathComponent("outbox"))
         // The Boop tab: `-previewOpen chatAnswer` has one answered question, `chatAsk` asks one at launch whose answer
         // takes 8 s (the waiting look), `chatQueued` (with `-previewOffline YES`) one question waiting for the net.
-        env.attachChat(client: client, sender: ritmus)
+        env.attachChat(client: client)
         env.online = !UserDefaults.standard.bool(forKey: "previewOffline")
         if open == "chatQueued" || open == "chatAsk", let chat = env.chat {
             Task { await chat.ask("Mennyit egyek a röpi előtt?", online: env.online) }

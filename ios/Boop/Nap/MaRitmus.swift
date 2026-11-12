@@ -100,6 +100,8 @@ struct GoalBlock: View {
     let onSet: (String) -> Void
     let onCsere: () -> Void
     let onMic: () -> Void
+    /// The server did not take the goal (or its removal): "nem sikerült elküldeni" with this *Újra*; nil = none.
+    var onRetry: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -118,7 +120,9 @@ struct GoalBlock: View {
                 .padding(.horizontal, 16).frame(minHeight: 52)
                 .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.1)))
                 .transition(.opacity)
+                if let onRetry { RefusedRow(onRetry: onRetry).padding(.horizontal, 16) }
             } else {
+                if let onRetry { RefusedRow(text: "A cél törlése · nem sikerült elküldeni", onRetry: onRetry).padding(.horizontal, 16) }
                 HStack(spacing: 10) {
                     TextField("", text: $draft, prompt: Text("Egy dolog, amin ma múlik…").foregroundStyle(.white.opacity(0.45)))
                         .nkFont(15).foregroundStyle(.white)
@@ -192,6 +196,9 @@ struct MaEnergyCard: View {
     @Binding var selected: UUID?
     /// "AZ ENERGIÁD MA" on Ma; a past day (Napló) drops the "MA".
     var title = "AZ ENERGIÁD MA"
+    /// The outbox item the server refused for a check-in (nil = none); its row offers *Újra* through `onRetry`.
+    var refusal: (LedgerCheckIn) -> UUID? = { _ in nil }
+    var onRetry: (UUID) -> Void = { _ in }
 
     private func hour(_ d: Date) -> Double { EnergyCurveGeometry.hour(of: d, calendar: calendar) }
 
@@ -206,6 +213,10 @@ struct MaEnergyCard: View {
                 CheckInDetail(heading: "\(CheckinDone.slotName(c.slot).uppercased()) · \(CheckinFlow.clock(c.capturedAt, calendar))",
                               pending: c.pending, answers: CheckinDone.answers(c), note: c.note, snapshot: CheckinDone.figures(c))
                     .transition(.opacity)
+                if let refused = refusal(c) {
+                    RefusedRow { onRetry(refused) }.padding(.horizontal, 18).padding(.vertical, 12).nkGlass(20)
+                        .transition(.opacity)
+                }
             }
         }
         .animation(.easeInOut(duration: 0.3), value: selected)

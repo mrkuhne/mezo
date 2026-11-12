@@ -22,6 +22,10 @@ struct PreviewTransport: ClientTransport {
         if UserDefaults.standard.bool(forKey: "previewOffline"), Self.ritmusOps.contains(operationID) {
             throw URLError(.notConnectedToInternet)
         }
+        // `-previewRefuse YES`: the server refuses the daily loop's writes (the "nem sikerült elküldeni · Újra" rows).
+        if UserDefaults.standard.bool(forKey: "previewRefuse"), ["saveCheckIn", "addFocus", "putDayClose", "createJournalEntry"].contains(operationID) {
+            return (HTTPResponse(status: .badRequest), nil)
+        }
         var sent = ""
         if ["setSessionTime", "addFocus", "sendMessage"].contains(operationID), let body {
             sent = String(decoding: try await Data(collecting: body, upTo: 1 << 16), as: UTF8.self)

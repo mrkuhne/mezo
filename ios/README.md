@@ -52,6 +52,7 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewRecovery YES` | kímélő mód, day 2 of a cold: calm grey-blue sky, the banner, no session |
 | `-previewScroll 850` | tab pages open scrolled to that offset |
 | `-previewOpen capture\|account` | opens the "+" capture sheet or the account sheet |
+| `-previewRefuse YES` | the server refuses the daily loop's writes (check-in, goal, close, journal line) with 400: the quiet "nem sikerült elküldeni · Újra" rows |
 | `-previewSwitch terv\|naplo\|boop` | switches to that place after 3 s and back to Ma 3 s later (record the backdrop slide + blend without taps) |
 
 Adding an API operation: add its `operationId` to `BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`

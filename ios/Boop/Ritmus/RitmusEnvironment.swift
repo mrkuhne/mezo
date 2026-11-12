@@ -52,6 +52,12 @@ final class RitmusEnvironment {
     private(set) var todayEvents: [CalendarEventLite] = []
     /// Boop's sentence about a closed day, by date (fetched once the close is on the server).
     private(set) var closeLines: [String: String] = [:]
+    /// What stopped in the outbox — refused by the server, or out of tries — by item id: shown as a quiet
+    /// "nem sikerült elküldeni" row with *Újra* where the item lives, never as "waiting for the net".
+    private(set) var refused: [UUID: OutboxItem] = [:]
+    /// The sender every write goes through; it sends nothing once the environment is retired (signed out).
+    @ObservationIgnored let sender: OutboxSender
+    @ObservationIgnored private let retirement: Retirement
 
     /// `line`: Boop's sentence after a check-in (throws `RitmusFetchError`); `snapshot`: the watch at a moment;
     /// `plans`: the day's questions of the day (nil = never fetched, e.g. in tests); `day`: the server's day to merge;
@@ -89,25 +95,129 @@ final class RitmusEnvironment {
         let queue = OutboxRef()
         let chatRef = ChatRef()
         self.chatRef = chatRef
-        outbox = Outbox(directory: outboxDirectory, sender: sender, clock: clock, calendar: greg) { item, body in
+        let retirement = Retirement()
+        self.retirement = retirement
+        let gated = RetiringSender(inner: sender, retirement: retirement)
+        self.sender = gated
+        outbox = Outbox(directory: outboxDirectory, sender: gated, clock: clock, calendar: greg) { item, body in
             // A recording's transcript lands on the day (its journal line or its check-in's note).
             await ledger.applyDelivered(item, body: body)
             // A question asked without the net: the chat keeps the conversation and fetches Boop's answer.
             if item.kind == .chatQuestion { await chatRef.store?.delivered(item, body: body) }
+            // The evening's line arrived after its relink went out (a retried recording): link it again.
+            if let box = queue.outbox { await Self.relinkIfNeeded(item, ledger: ledger, outbox: box) }
             if await queue.outbox?.isQueued(item.id) == true { return }
             await ledger.markSent(item.id, date: item.date)
         }
         queue.outbox = outbox
+        let me = EnvRef()
+        me.env = self
+        let box = outbox
+        Task { await box.observeFailures { failed in await me.env?.useRefused(failed) } }
     }
 
     /// Lets the outbox's delivery listener ask the outbox itself (set once, right after creation).
     private final class OutboxRef: @unchecked Sendable { var outbox: Outbox? }
     private final class ChatRef: @unchecked Sendable { weak var store: ChatStore? }
+    private final class EnvRef: @unchecked Sendable { weak var env: RitmusEnvironment? }
 
-    /// Gives the Boop tab its chat: reads go through `client`, a question goes out through `sender` (the outbox's own
-    /// sender), and an offline one waits in this environment's outbox.
-    func attachChat(client: Client, sender: OutboxSender) {
-        let store = ChatStore(client: client, sender: sender, outbox: outbox, directory: userDirectory, clock: clock,
+    /// Set once when the user signs out (or another signs in): from then on nothing more goes out with this user's
+    /// queue — the session's client already carries someone else's token, or none.
+    final class Retirement: @unchecked Sendable {
+        private let lock = NSLock()
+        private var done = false
+        var retired: Bool { lock.withLock { done } }
+        func retire() { lock.withLock { done = true } }
+    }
+
+    /// The real sender behind a gate: a retired environment answers `offline` (nothing sent, nothing counted, the
+    /// items stay for when that user signs in again).
+    private struct RetiringSender: OutboxSender {
+        let inner: OutboxSender
+        let retirement: Retirement
+        func send(_ item: OutboxItem) async -> OutboxSendResult {
+            retirement.retired ? .offline : await inner.send(item)
+        }
+    }
+
+    /// The user signed out, or another signed in: this environment's queue stops sending (an in-flight request is
+    /// the last), the network watch ends, and the reminders it planned stay as they are.
+    func retire() {
+        retirement.retire()
+        pathMonitor?.cancel()
+        pathMonitor = nil
+    }
+
+    private func useRefused(_ failed: [OutboxItem]) {
+        refused = Dictionary(failed.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+    }
+
+    // MARK: - What the server refused (spec §7.1: a quiet "nem sikerült elküldeni" row with Újra)
+
+    /// The outbox item to retry for a check-in that did not get through: the check-in itself (or its typed note,
+    /// same id), else a recorded note aimed at its slot. nil = nothing refused.
+    func refusal(forCheckIn c: LedgerCheckIn, date: String) -> UUID? {
+        if refused[c.id] != nil { return c.id }
+        return refused.values.first { item in
+            guard item.kind == .voice, item.date == date,
+                  case .checkInNote(let p)? = RitmusPayload.decodeVoice(item.payload)?.target else { return false }
+            return p.slot == c.slot
+        }?.id
+    }
+
+    /// The goal (or its removal) the server did not take, for the goal row's *Újra*.
+    func goalRefusal(on date: String) -> UUID? {
+        guard let g = ledger.ledger(for: date).goal, refused[g.id] != nil else { return nil }
+        return g.id
+    }
+
+    /// Everything of the evening's close that did not get through: the close, its relinks, a typed line (`retry` puts
+    /// them in queue order). A recording has its own row (`Quote.transcriptFailed`).
+    func closeRefusals(on date: String) -> [UUID] {
+        let day = ledger.ledger(for: date)
+        return refused.values.filter { item in
+            guard item.date == date else { return false }
+            switch item.kind {
+            case .dayClose: return true
+            case .journal: return item.id == day.close?.journalId
+            default: return false
+            }
+        }
+        .map(\.id)
+    }
+
+    /// *Újra*: the items get a fresh start, in their queue order.
+    func retry(_ ids: [UUID]) async {
+        let order = await outbox.queue.map(\.id)
+        for id in order where ids.contains(id) { await outbox.retry(id) }
+        useRefused(await outbox.failed)
+    }
+
+    /// The evening's journal line (typed, or a recording's transcript) was just delivered. Its relink normally waits
+    /// right behind it; when none is queued any more — the relink went out while the line was failed or on its way, so
+    /// the server could not resolve it — a fresh one goes out with the close's current values.
+    static func relinkIfNeeded(_ item: OutboxItem, ledger: LedgerStore, outbox: Outbox) async {
+        guard item.kind == .journal || item.kind == .voice else { return }
+        if item.kind == .voice, RitmusPayload.decodeVoice(item.payload)?.target != .journal { return }
+        guard let close = ledger.ledger(for: item.date).close, close.journalId == item.id, let rating = close.dayRating else { return }
+        let waiting = await outbox.queue.contains { queued in
+            queued.kind == .dayClose && queued.date == item.date
+                && RitmusPayload.decodeClose(queued.payload)?.journalClientRef == item.id
+        }
+        guard !waiting else { return }
+        let relink = DayClosePayload(clientRef: close.id, eveningEnergy: close.eveningEnergy, dayRating: rating,
+                                     goalText: close.goalText, goalOutcome: close.goalOutcome,
+                                     planGoals: close.planGoals ?? [], journalClientRef: item.id)
+        try? await outbox.enqueue(OutboxItem(kind: .dayClose, date: item.date, capturedAt: close.capturedAt,
+                                             payload: RitmusPayload.encode(relink)))
+    }
+
+    /// Gives the Boop tab its chat: reads go through `client`, a question goes out through this environment's own
+    /// sender (stopped when it is retired), and an offline one waits in this environment's outbox.
+    /// `direct` replaces the outbox's sender for the direct send (tests); it is gated by retirement all the same.
+    func attachChat(client: Client, direct: OutboxSender? = nil) {
+        let chatSender = direct.map { RetiringSender(inner: $0, retirement: retirement) as OutboxSender } ?? sender
+        let store = ChatStore(client: client, sender: chatSender, outbox: outbox, directory: userDirectory, clock: clock,
                               calendar: calendar)
         chat = store
         chatRef.store = store
@@ -137,7 +247,7 @@ final class RitmusEnvironment {
             closeLine: { date in try await ritmus.line(date) },
             transcribe: { file in try await ritmus.transcribe(file) },
             naplo: { from, to in try await ritmus.fetchNaplo(from: from, to: to) })
-        env.attachChat(client: client, sender: ritmus)
+        env.attachChat(client: client)
         env.watchNetwork()
         // Records into the outbox folder, where the `voice` sender looks for the files.
         env.recorder = VoiceJournal(directory: dirs.outbox)
@@ -162,12 +272,33 @@ final class RitmusEnvironment {
 
     /// Writes the check-in to the day (pending) and queues it. Throws when the phone could not keep it (disk).
     /// `kind` is `.checkInNote` for the follow-up carrying the sentence; it keeps the check-in's id and moment.
+    ///
+    /// A new check-in of a slot already answered today is a full replace (spec §7.2): the slot's older writes still
+    /// queued are dropped (sent later, they would overwrite it), and a recorded note still waiting for the slot moves
+    /// behind it carrying its values — the transcript becomes the new check-in's note, never the old values again.
     func capture(_ checkIn: LedgerCheckIn, payload: CheckInPayload, kind: OutboxKind = .checkIn, date: String) async throws {
         var local = checkIn
         local.pending = true
         try ledger.saveCheckIn(local, date: date)
         try await outbox.enqueue(OutboxItem(id: checkIn.id, kind: kind, date: date, capturedAt: checkIn.capturedAt,
                                             payload: RitmusPayload.encode(payload)))
+        guard kind == .checkIn else { return }
+        for item in await outbox.queue where item.date == date && item.id != checkIn.id {
+            switch item.kind {
+            case .checkIn, .checkInNote:
+                if RitmusPayload.decodeCheckIn(item.payload)?.slot == payload.slot { await outbox.remove(item.id) }
+            case .voice:
+                guard var voice = RitmusPayload.decodeVoice(item.payload), case .checkInNote(let old) = voice.target,
+                      old.slot == payload.slot else { continue }
+                voice.target = .checkInNote(payload)
+                var moved = item
+                moved.payload = RitmusPayload.encode(voice)
+                moved.capturedAt = checkIn.capturedAt
+                await outbox.remove(item.id)
+                try? await outbox.enqueue(moved)
+            default: continue
+            }
+        }
     }
 
     /// Sends what is queued; true when the item went out (false: still waiting for the net, or refused).
@@ -289,16 +420,21 @@ final class RitmusEnvironment {
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
             let up = path.status == .satisfied
-            Task { @MainActor in
-                guard let self else { return }
-                // the net is back: what waited goes out now, backoff or not
-                let cameBack = up && !self.online
-                self.online = up
-                if cameBack { self.flushOnTrigger() }
-            }
+            Task { @MainActor in self?.networkChanged(up: up) }
         }
         monitor.start(queue: DispatchQueue(label: "boop.ritmus.path"))
         pathMonitor = monitor
+    }
+
+    /// The network path changed. When it comes back, what waited goes out now (backoff or not), and what ran out of
+    /// tries while the net was flaky starts afresh — a refusal still waits for *Újra*.
+    func networkChanged(up: Bool) {
+        let cameBack = up && !online
+        online = up
+        guard cameBack, !retirement.retired else { return }
+        lastTriggerFlush = clock()
+        let outbox = outbox
+        Task { await outbox.networkReturned() }
     }
 
     // MARK: - Speaking into a field (the goal, the chat composer)

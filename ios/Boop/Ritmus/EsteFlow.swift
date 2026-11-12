@@ -34,6 +34,8 @@ final class EsteFlow {
 
     static let offlineLine = "A napod a telefonon van. Amint lesz net, elküldöm, és reggel elmondom, mit tanultam belőle."
     static let waitingLine = "Mindjárt írok egy mondatot a napodról."
+    /// The close (or its journal line) was refused by the server: kept on the phone, *Újra* sends it again.
+    static let refusedLine = "A napod a telefonon van, de most nem sikerült elküldeni."
     static let ratingWords = NaploDays.ratingWords
     static let outcomes: [(id: String, label: String)] = [("done", "Sikerült"), ("partial", "Részben"), ("no", "Nem")]
 
@@ -56,8 +58,6 @@ final class EsteFlow {
     private(set) var delivering = false
     /// The phone could not keep the close (disk) — shown under the button, nothing is lost silently.
     private(set) var saveProblem: String?
-    /// The evening's recording ended failed in the outbox (shown with *Újra*).
-    private(set) var voiceFailed = false
 
     @ObservationIgnored private let env: RitmusEnvironment
 
@@ -94,14 +94,22 @@ final class EsteFlow {
     var canClose: Bool { rating != nil && !delivering }
     /// Each numbered step's tick; the goal step has nothing to answer when there is no goal.
     var stepsDone: [Bool] { [energy != nil, outcome != nil || goalText == nil, rating != nil, journal != nil] }
-    /// Saved on the phone, waiting for the net.
-    var offline: Bool { closed?.pending == true && !delivering }
+    /// Saved on the phone, waiting for the net (not refused).
+    var offline: Bool { closed?.pending == true && !delivering && !sendFailed }
+    /// The server refused the close, a relink or the typed line: the summary shows "nem sikerült elküldeni" with *Újra*.
+    var sendFailed: Bool { !env.closeRefusals(on: date).isEmpty }
+    /// The evening's recording stopped in the outbox (refused, or out of tries) — follows the outbox as it changes.
+    var voiceFailed: Bool {
+        guard let id = closed?.journalId, let item = env.refused[id] else { return false }
+        return item.kind == .voice
+    }
 
     /// "LEZÁRVA · 21:33".
     var closedLabel: String? { closed.map { "LEZÁRVA · \(CheckinFlow.clock($0.capturedAt, env.calendar))" } }
 
     /// Boop's sentence about the day: the calm line offline, his sentence once it is here, a short wait line meanwhile.
     var boopText: String {
+        if sendFailed { return Self.refusedLine }
         if offline { return Self.offlineLine }
         return env.closeLines[date] ?? closed?.boopLine ?? Self.waitingLine
     }
@@ -205,6 +213,13 @@ final class EsteFlow {
         let payload = DayClosePayload(eveningEnergy: energy, dayRating: rating, goalText: goal,
                                       goalOutcome: goal == nil ? nil : outcome, planGoals: planGoals)
         let journalId = journal == nil ? nil : UUID()
+        // A re-close replaces its queued close in place and rewrites the relinks still queued for it with the new
+        // values (sent after the close, an old relink would bring the old values back); a rollback restores both.
+        let previousQueued = await env.outbox.queued(closeId)
+        let relinks = await env.outbox.queue.filter { item in
+            item.kind == .dayClose && item.id != closeId && item.date == date
+                && RitmusPayload.decodeClose(item.payload)?.clientRef == closeId
+        }
         let journalText: String? = switch journal {
         case .typed(let t), .heard(let t): t
         case .recording, nil: nil
@@ -214,11 +229,22 @@ final class EsteFlow {
                                 planGoals: planGoals, journalText: journalId == nil ? previous?.journalText : nil)
         // An enqueue that throws has already queued the item for this run: the undo below takes it back out.
         var enqueued: [UUID] = []
+        var rewritten: [OutboxItem] = []
         do {
             try env.ledger.setClose(local, date: date)
             enqueued.append(closeId)
             try await env.outbox.enqueue(OutboxItem(id: closeId, kind: .dayClose, date: date, capturedAt: now,
                                                     payload: RitmusPayload.encode(payload)))
+            for old in relinks {
+                guard let ref = RitmusPayload.decodeClose(old.payload)?.journalClientRef else { continue }
+                var values = payload
+                values.clientRef = closeId
+                values.journalClientRef = ref
+                var updated = old
+                updated.payload = RitmusPayload.encode(values)
+                rewritten.append(old)
+                try await env.outbox.enqueue(updated)
+            }
             if let journalId, let journal {
                 try env.ledger.addJournal(LedgerJournal(id: journalId, capturedAt: now, text: journalText, pending: true), date: date)
                 let (kind, body): (OutboxKind, Data) = switch journal {
@@ -239,8 +265,12 @@ final class EsteFlow {
             // Undo what got kept, so the day is as it was (a half close never shows as closed).
             try? env.ledger.setClose(previous, date: date)
             if let journalId { try? env.ledger.removeJournal(journalId, date: date) }
-            // A re-close's own id may have replaced an older queued version in place; that one stays (newer values).
-            for id in enqueued where id != closeId || previous == nil { await env.outbox.remove(id) }
+            // A re-close replaced its older queued version and relinks in place: those come back as they were.
+            for id in enqueued {
+                if id == closeId, let previousQueued { try? await env.outbox.enqueue(previousQueued) }
+                else { await env.outbox.remove(id) }
+            }
+            for old in rewritten { try? await env.outbox.enqueue(old) }
             saveProblem = "Nem sikerült elmenteni a telefonra. Próbáld újra."
             editing = true
             return
@@ -248,32 +278,28 @@ final class EsteFlow {
         // The recording now belongs to the queue (it is not ours to throw away any more).
         journal = nil
         editing = false
-        voiceFailed = false
         // A close written again no longer matches the old sentence, whether or not it reaches the server now.
         env.forgetCloseLine(date)
         delivering = true
         if await env.deliver(closeId) { await env.refreshCloseLine(date) }
         delivering = false
-        await refreshVoiceState()
-    }
-
-    /// Whether the evening's recording ended failed in the outbox.
-    func refreshVoiceState() async {
-        guard let id = closed?.journalId else { voiceFailed = false; return }
-        voiceFailed = await env.outbox.failed.contains { $0.id == id }
     }
 
     /// *Újra* on a recording that could not be written down.
     func retryVoice() async {
         guard let id = closed?.journalId else { return }
-        await env.outbox.retry(id)
-        await refreshVoiceState()
+        await env.retry([id])
+    }
+
+    /// *Újra* on a close (or its line) the server refused: everything of it goes again, then Boop's sentence.
+    func retrySend() async {
+        await env.retry(env.closeRefusals(on: date))
+        if closed?.pending == false { await env.refreshCloseLine(date) }
     }
 
     /// When the summary opens: the server's version of the day (a close made on the web) and Boop's sentence.
     func refresh() async {
         await env.refreshDay(date)
         await env.refreshCloseLine(date)
-        await refreshVoiceState()
     }
 }
