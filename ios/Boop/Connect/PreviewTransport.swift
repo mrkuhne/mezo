@@ -9,6 +9,10 @@ struct PreviewTransport: ClientTransport {
     /// What the review has changed so far (DEBUG preview only): a moved session and the judged observations.
     nonisolated(unsafe) private static var movedTime: String?
     nonisolated(unsafe) private static var decided: Set<String> = []
+    /// Today's Boop conversation in the review (role, text); `-previewOpen chatAnswer` starts with one answered question.
+    nonisolated(unsafe) private static var chatTurns: [(String, String)] =
+        UserDefaults.standard.string(forKey: "previewOpen") == "chatAnswer" ? [("user", tiredQuestion), ("assistant", answers[tiredQuestion]!)] : []
+    private static let chatId = "7a3c1e52-4b6d-4f0e-9a52-1d9d4c1a0b00"
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         try await Task.sleep(for: .milliseconds(400))
@@ -17,10 +21,11 @@ struct PreviewTransport: ClientTransport {
             throw URLError(.notConnectedToInternet)
         }
         var sent = ""
-        if ["setSessionTime", "addFocus"].contains(operationID), let body {
+        if ["setSessionTime", "addFocus", "sendMessage"].contains(operationID), let body {
             sent = String(decoding: try await Data(collecting: body, upTo: 1 << 16), as: UTF8.self)
         }
         if let reply = Self.morningReply(operationID, request, sent: sent) { return reply }
+        if let reply = Self.chatReply(operationID, sent: sent) { return reply }
         if request.method == .put { return (HTTPResponse(status: .noContent), nil) }
         var h = HTTPFields(); h[.contentType] = "application/json"
         return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(#"{"inserted":0,"updated":0}"#))
@@ -30,7 +35,58 @@ struct PreviewTransport: ClientTransport {
     private static let ritmusOps: Set<String> = [
         "saveCheckIn", "generateCheckInLine", "getCheckInPlan", "listCheckInsForDay", "addFocus", "removeFocus",
         "createJournalEntry", "transcribeVoiceNote", "putDayClose", "getDayClose", "generateDayCloseLine",
+        "getDayContext", "listConversations", "createConversation", "listMessages", "sendMessage",
     ]
+
+    // MARK: - Boop's chat (invented day: a short night, low HRV, volleyball at 19:00)
+
+    private static let tiredQuestion = "Miért vagyok fáradtabb, mint tegnap?"
+    private static let answers: [String: String] = [
+        tiredQuestion: "Három dolog együtt: az éjjel 6ó 10 percet aludtál, tegnap 7ó 40-et, és ebből 38 perccel kevesebb volt a mély. A HRV-d 41, a szokásos 50 alatt. Délben már 6-os energiát mondtál a workshop után. Nem vagy beteg — kevesebb a tartalék, ma este korábban feküdj le.",
+        "Mennyit egyek a röpi előtt?": "A röpi 19:00-kor kezdődik, eddig 1 240 kcal-t ettél a mai 2 450-ből. 17:30 körül egyél 40–60 g szénhidrátot kis fehérjével: egy banán és egy pohár joghurt elég. A vacsora a játék után jöjjön, 21:00 előtt.",
+        "Mire figyeljek ma az edzésen?": "A HRV-d lejjebb van, a délutáni energiád 5. Az első 20 percben ne ugorj maximális erővel, a bemelegítés legyen hosszabb. Ha a második szettnél a pulzusod 165 fölött ragad, vegyél vissza.",
+    ]
+
+    private static func chatReply(_ op: String, sent: String) -> (HTTPResponse, HTTPBody?)? {
+        func quoted(_ t: String) -> String {
+            String(decoding: (try? JSONEncoder().encode(t)) ?? Data(#""""#.utf8), as: UTF8.self)
+        }
+        func message(_ role: String, _ text: String) -> String {
+            #"{"id":"\#(UUID().uuidString.lowercased())","role":"\#(role)","content":\#(quoted(text)),"createdAt":"\#(ISO8601DateFormatter().string(from: Date()))","tools":[],"refs":[],"recalled":[],"degraded":false}"#
+        }
+        let conversation = #"{"id":"\#(chatId)","title":"\#(todayTitle())","startedAt":"\#(ISO8601DateFormatter().string(from: Date()))"}"#
+        switch op {
+        case "getDayContext":
+            return json(#"""
+            {"chips":[{"key":"sleep","label":"Alvás","value":"6ó 10p","sub":"előző éjjel 7ó 40p"},
+             {"key":"hrv","label":"HRV","value":"41","sub":"szokott 50"},
+             {"key":"session","label":"Röpi","value":"19:00","sub":"90 perc"},
+             {"key":"checkins","label":"Kitöltés","value":"2 kitöltés","sub":"energia 6"},
+             {"key":"fuel","label":"Étkezés","value":"1 240 kcal","sub":"cél 2 450"},
+             {"key":"goal","label":"A nap célja","value":"Ügyfélprezentáció","sub":null},
+             {"key":"calendar","label":"Naptár","value":"még 2 esemény","sub":"következő 14:00"}],
+             "questions":["Mennyit egyek a röpi előtt?","Mire figyeljek ma az edzésen?","Miért vagyok fáradtabb, mint tegnap?"],
+             "generatedAt":"2026-11-12T15:00:00Z"}
+            """#)
+        case "listConversations": return json(chatTurns.isEmpty ? "[]" : "[\(conversation)]")
+        case "createConversation":
+            var h = HTTPFields(); h[.contentType] = "application/json"
+            return (HTTPResponse(status: .created, headerFields: h), HTTPBody(conversation))
+        case "listMessages": return json("[" + chatTurns.map { message($0.0, $0.1) }.joined(separator: ",") + "]")
+        case "sendMessage":
+            let question = ((try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any])?["content"] as? String ?? ""
+            let answer = answers[question] ?? "Ezt a mai adataid alapján nézem: az éjjel 6ó 10 percet aludtál, a HRV-d 41, a szokásos 50 alatt. Ma inkább a pihenés felé billenj."
+            chatTurns += [("user", question), ("assistant", answer)]
+            return json(message("assistant", answer))
+        default: return nil
+        }
+    }
+
+    /// "2026. november 12." — how the server titles today's Boop conversation.
+    private static func todayTitle() -> String {
+        let f = DateFormatter(); f.locale = Locale(identifier: "hu"); f.dateFormat = "y. MMMM d."
+        return f.string(from: Date())
+    }
 
     private static func json(_ text: String) -> (HTTPResponse, HTTPBody?) {
         var h = HTTPFields(); h[.contentType] = "application/json"

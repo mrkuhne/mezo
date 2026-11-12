@@ -128,7 +128,7 @@ public struct DayClosePayload: Codable, Equatable, Sendable {
 }
 
 /// `chatQuestion`: a question for Boop. Without a `conversationId` the sender first creates a conversation
-/// (channel `boop`); `title` is the owner's wish for its name and is not sent (the server names it from the first message).
+/// (channel `boop`); `title` is not sent (the server titles a Boop conversation with the owner's date).
 public struct ChatQuestionPayload: Codable, Equatable, Sendable {
     public var conversationId: UUID?
     public var text: String
@@ -142,6 +142,7 @@ public struct ChatQuestionPayload: Codable, Equatable, Sendable {
 public struct ChatReply: Codable, Equatable, Sendable {
     public var conversationId: UUID
     public var content: String
+    public init(conversationId: UUID, content: String) { self.conversationId = conversationId; self.content = content }
 }
 
 /// What a delivered `voice` item hands to `Outbox.onSent` (the transcript to show in the ledger).
