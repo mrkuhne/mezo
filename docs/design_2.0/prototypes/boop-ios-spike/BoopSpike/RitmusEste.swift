@@ -61,7 +61,7 @@ struct RitmusEste: View {
     private var steps: some View {
         VStack(spacing: 12) {
             step(1, "HOGY VAGY MOST?", done: energy != nil) {
-                RLevelRow(palette: SunMetric.all[2].orb, value: energy, size: 26) { k in taps += 1; withAnimation { energy = k } }
+                RLevelRow(palette: SunMetric.all[2].orb, value: energy, size: 26, motion: motion) { k in taps += 1; withAnimation { energy = k } }
             }
             step(2, "A NAP CÉLJA", done: outcome != nil) {
                 VStack(alignment: .leading, spacing: 14) {
@@ -90,7 +90,7 @@ struct RitmusEste: View {
                     ForEach(1...5, id: \.self) { k in
                         let on = k <= rating
                         VStack(spacing: 6) {
-                            StillOrb(colors: palette, size: 38, level: Double(k) / 5)
+                            LivingOrb(mood: .good, size: 38, motion: motion, palette: palette, glow: false, level: Double(k) / 5).allowsHitTesting(false)
                                 .saturation(on ? 1 : 0.15).opacity(on ? 1 : 0.55)
                                 .scaleEffect(k == rating ? 1.14 : 1)
                             Text(["Nehéz", "", "Rendben", "", "Remek"][k - 1]).font(.system(size: 11)).foregroundStyle(.white.opacity(0.55)).frame(height: 12)

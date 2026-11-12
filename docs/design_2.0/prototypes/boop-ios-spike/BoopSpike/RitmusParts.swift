@@ -74,13 +74,14 @@ struct RLevelRow: View {
     var value: Int?
     var count = 10
     var size: CGFloat = 30
+    var motion: OrbMotion? = nil          // living orbs (the default Napkelte look) when given
     var onPick: (Int) -> Void
     var body: some View {
         HStack(spacing: 0) {
             ForEach(1...count, id: \.self) { k in
                 let on = value.map { k <= $0 } ?? false
                 VStack(spacing: 5) {
-                    StillOrb(colors: palette, size: size, level: Double(k) / Double(count))
+                    orb(k)
                         .saturation(on ? 1 : 0.15).opacity(on ? 1 : 0.5)
                         .scaleEffect(value == k ? 1.18 : 1)
                     Text("\(k)").font(.custom("Outfit", size: 13).weight(value == k ? .semibold : .regular))
@@ -94,6 +95,11 @@ struct RLevelRow: View {
             }
         }
         .sensoryFeedback(.selection, trigger: value)
+    }
+    @ViewBuilder private func orb(_ k: Int) -> some View {
+        let lv = Double(k) / Double(count)
+        if let motion { LivingOrb(mood: .good, size: size, motion: motion, palette: palette, glow: false, level: lv).allowsHitTesting(false) }
+        else { StillOrb(colors: palette, size: size, level: lv) }
     }
 }
 
@@ -303,6 +309,8 @@ struct RVoiceRecorder: View {
     @State private var writing = false
     @State private var elapsed = 0
     @State private var typed = ""
+    @State private var draft = ""
+    @FocusState private var typing: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -328,16 +336,36 @@ struct RVoiceRecorder: View {
                     } else if writing {
                         Text("Leírom…").font(.system(size: 15, weight: .medium)).foregroundStyle(.white)
                     } else if text != nil {
-                        Text(offline ? "Felvétel elmentve" : "Leírtam").font(.system(size: 15, weight: .medium)).foregroundStyle(.white)
-                        Text(offline ? "szöveggé alakítom, amint lesz net" : "a nap mellé kerül").font(.system(size: 13)).foregroundStyle(.white.opacity(0.55))
+                        Text(typedByHand ? "Elmentve" : (offline ? "Felvétel elmentve" : "Leírtam")).font(.system(size: 15, weight: .medium)).foregroundStyle(.white)
+                        Text(typedByHand ? "a nap mellé kerül" : (offline ? "szöveggé alakítom, amint lesz net" : "a nap mellé kerül")).font(.system(size: 13)).foregroundStyle(.white.opacity(0.55))
                     } else {
                         Text(prompt).font(.system(size: 16, weight: .medium)).foregroundStyle(.white)
-                        Text("ha van kedved · bemondva").font(.system(size: 13)).foregroundStyle(.white.opacity(0.55))
+                        Text("ha van kedved · mondd be vagy írd le").font(.system(size: 13)).foregroundStyle(.white.opacity(0.55))
                     }
                 }
                 Spacer()
             }
-            if !typed.isEmpty && !offline {
+            if text == nil && !recording && !writing {
+                // typing is as good as talking: the same text lands on the day
+                HStack(spacing: 10) {
+                    TextField("", text: $draft, prompt: Text("Vagy írd be…").foregroundStyle(.white.opacity(0.45)), axis: .vertical)
+                        .lineLimit(1...5).font(.system(size: 15)).foregroundStyle(.white).tint(.white)
+                        .focused($typing).submitLabel(.done)
+                        .onSubmit { commitTyped() }
+                    if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Button { commitTyped() } label: {
+                            Image(systemName: "arrow.up").font(.system(size: 14, weight: .bold)).foregroundStyle(gBase)
+                                .frame(width: 32, height: 32).background(Circle().fill(.white))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.leading, 16).padding(.trailing, 6).padding(.vertical, 8)
+                .frame(minHeight: 46)
+                .background(RoundedRectangle(cornerRadius: 23, style: .continuous).fill(.white.opacity(0.08)))
+                .transition(.opacity)
+            }
+            if !typed.isEmpty {
                 Text("„\(typed)”").font(AuraFont.serif(17)).lineSpacing(3).foregroundStyle(.white.opacity(0.9))
                     .transition(.opacity)
             }
@@ -349,7 +377,14 @@ struct RVoiceRecorder: View {
         .onAppear { if let t = text, !offline { typed = t } }
     }
 
-    private func start() { withAnimation { recording = true; elapsed = 0 } }
+    private func commitTyped() {
+        let t = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty else { return }
+        onTap(); typing = false
+        withAnimation { typed = t; text = t; draft = ""; typedByHand = true }
+    }
+    @State private var typedByHand = false
+    private func start() { withAnimation { recording = true; elapsed = 0; typing = false } }
     private func stop() {
         withAnimation { recording = false }
         if offline { text = sample; return }

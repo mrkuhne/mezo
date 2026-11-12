@@ -189,7 +189,7 @@ behind the cut line and is filed, not built, unless the paid team is active when
 **Files:**
 - Create: `ios/Boop/Ritmus/CheckinView.swift` (from spike `RitmusCheckin.swift`: painted sky per hue, swipe on the orb 26 pt/step, soft haptic, *Kihagyom* / *Tovább*·*Kész*, progress dots, "Most csak ennyi" from item 2 → `quick_exit`, overwrite line "A délit már kitöltötted 12:40-kor — felülírod?", pain/craving variants)
 - Create: `ios/Boop/Ritmus/CheckinDone.swift` ("MENTVE · HH:mm" / "Ráesett a görbére", curve card, detail, optional voice line → check-in `note`, Boop's line online / calm offline line, offline chip)
-- Create: `ios/BoopKit/Sources/BoopDesign/Napkelte/Ritmus.swift` — `EnergyCurveCard` (dashed prediction + soft fill, solid owner line, numbered white dots, "most" line, dashed ring on pending dots, tap to select), `CheckInDetail` (3-column answers + "AZ ÓRÁD EKKOR", "—" for nulls, "lejjebb" when HRV < usual), `LevelRow`, `OfflineChip`, `VoiceRecorderRow`; glyphs `mic` + `offline` into the Napkelte glyph set (spike `RMicGlyph`/`ROfflineGlyph`)
+- Create: `ios/BoopKit/Sources/BoopDesign/Napkelte/Ritmus.swift` — `EnergyCurveCard` (dashed prediction + soft fill, solid owner line, numbered white dots, "most" line, dashed ring on pending dots, tap to select), `CheckInDetail` (3-column answers + "AZ ÓRÁD EKKOR", "—" for nulls, "lejjebb" when HRV < usual), `LevelRow` (living orbs via `LivingOrb` + a shared `OrbMotion`), `OfflineChip`, `VoiceRecorderRow` (mic **and** a "Vagy írd be…" text field; typed text skips transcription); glyphs `mic` + `offline` into the Napkelte glyph set (spike `RMicGlyph`/`ROfflineGlyph`)
 - Test: `ios/BoopTests/CheckinFlowTests.swift` (view-model level), BoopDesign snapshot-free unit tests for the curve geometry (`EnergyCurveGeometryTests`)
 
 - [ ] **Step 1: Failing tests** — `rushedCheckInSavesEnergyOnlyWithQuickExit` (energy, Tovább, Most csak ennyi → asked_items = shown, quick_exit), `unchangedItemNeedsNoSwipe`, `skippedItemNotSent`, `secondCheckInSameMomentAsksBeforeOverwrite`, `painQuestionShowsGateThenRegions`; geometry `dotsMapHoursSixToTwentyFour`.
@@ -211,11 +211,11 @@ behind the cut line and is filed, not built, unless the paid team is active when
 ### Task 10: Este — the one-minute close + voice journal
 
 **Files:**
-- Create: `ios/Boop/Ritmus/EsteView.swift` (from spike `RitmusEste.swift`: four numbered steps, *Lezárom a napot* enabled after the rating, closed view with Boop's sentence, "A MAI NAPOD", bedtime line, offline variants)
+- Create: `ios/Boop/Ritmus/EsteView.swift` (from spike `RitmusEste.swift`: four numbered steps, all orbs living (moving), *Lezárom a napot* enabled after the rating, closed view with Boop's sentence, "A MAI NAPOD", bedtime line, offline variants)
 - Create: `ios/BoopKit/Sources/BoopCore/Ritmus/VoiceJournal.swift` — `public final class VoiceJournal` (record m4a to the outbox dir; on-device `SFSpeechRecognizer(locale: hu-HU)` when `supportsOnDeviceRecognition`, else `voice` outbox item → transcribe online; deletes audio after a transcript)
 - Test: `EsteFlowTests.swift`, `VoiceJournalTests.swift` (fake recognizer)
 
-- [ ] **Step 1: Failing tests** — `closeDisabledUntilRating`, `closeSendsDayCloseThenJournalRelink`, `closeOfflineShowsSavedAndLaterLine`, `planGoalsCopiedWithMet`, `audioDeletedAfterTranscript`, `noOnDeviceFallsBackToUpload`.
+- [ ] **Step 1: Failing tests** — `closeDisabledUntilRating`, `closeSendsDayCloseThenJournalRelink`, `closeOfflineShowsSavedAndLaterLine`, `planGoalsCopiedWithMet`, `typedJournalSentWithoutTranscription`, `audioDeletedAfterTranscript`, `noOnDeviceFallsBackToUpload`.
 - [ ] **Step 2:** Run — FAIL. **Step 3:** Implement to match `ritmus-5-este.png`, `ritmus-6-este-lezarva.png`. **Step 4:** Run — PASS; taps open + 3 + close = 5.
 - [ ] **Step 5:** Commit `feat(ios): one-minute evening close with voice (mezo-r36n9.13)`.
 
@@ -298,7 +298,7 @@ ship without it, and tell the owner.
 - [ ] Check-in: five core items + question of the day, answered by swiping the orb, *Tovább*, "Most csak ennyi" from item 2; starts from the last answer; matches `ritmus-2`, `ritmus-2b`.
 - [ ] After saving: the dot on the energy curve with "AZ ÓRÁD EKKOR" (pulse, HRV, steps, sleep; "—" when missing), optional sentence, Boop's line; matches `ritmus-3`.
 - [ ] Ma · Napközben shows the energy curve with today's dots; matches `ritmus-4`.
-- [ ] Este: four steps, *Lezárom* after the rating, voice "Mesélj", closed summary + bedtime line; 5 taps; matches `ritmus-5`, `ritmus-6`.
+- [ ] Este: four steps with moving orbs, *Lezárom* after the rating, "Mesélj" by voice **or typing**, closed summary + bedtime line; 5 taps; matches `ritmus-5`, `ritmus-6`.
 - [ ] Boop tab: "Boop látja" chips, 3 ready questions, answers that name today's data; matches `ritmus-7`, `ritmus-8`.
 - [ ] Napló: the last 14 days list, tap opens the day.
 - [ ] Reminders at 07:30 / 12:30 / 16:00 (only if not done) and the close at bedtime − 75 min; tapping opens the flow directly.
