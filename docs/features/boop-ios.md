@@ -192,6 +192,13 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
      regenerates, at most 3 per day (`regen_count`, atomic capped UPDATE; the 4th is 409 `BOOP_REGENERATE_LIMIT_REACHED`, refused before the LLM).
      Generation runs outside any transaction; only `BoopBriefStore.upsert` is transactional. Two racing first requests both
      generate, the loser's INSERT hits `uq_boop_brief_user_date`, re-reads and returns the winner's brief (never a 500).
+     **Late model words (`mezo-r36n9.24`, 2026-11-12):** in production the model never once answered inside the 8 s wait, so every
+     brief shipped the rule text and the old `cancel(true)` threw each answer away (no `boop_brief` llm-log row ever existed). Now
+     `BoopVerdictWriter.ask` returns a `CompletableFuture` that is never cancelled; the request waits `llm-timeout`, answers with
+     the rule words (`boop_brief.ai_words = false`) and the late answer is written by `BoopBriefStore.fillWords` — a conditional
+     UPDATE onto the row only while its `input_hash` is unchanged and `ai_words` is still false — so the next open shows Boop's
+     words. A rule-only row older than 10 min (`RULE_RETRY`, its call failed) is regenerated on the next open. The Postgres
+     `23505` line in the logs during a backfill is Hibernate logging the handled race, not a 500. Test: `BoopBriefLateWordsIT`.
   6. A past date is judged as of 23:59 of that day; a date after today in the owner zone is a **400**.
   7. iOS: `MorningClient`/`MorningStore` (`BoopCore/Morning`) loads the brief, with a generation guard so an older load never
      overwrites a newer one; on a 400 for a future date (phone day ahead of the owner zone) it falls back to yesterday. Pure

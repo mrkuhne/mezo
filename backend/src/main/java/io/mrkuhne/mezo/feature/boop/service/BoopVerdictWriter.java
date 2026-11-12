@@ -12,8 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,8 @@ import tools.jackson.databind.ObjectMapper;
  * fallback for the whole answer and for every single field the model left out or broke. The brief
  * never fails because of the LLM: no companion bean, a thrown call, a call slower than
  * {@code mezo.boop.llm-timeout} (8 s; the phone gives up at 20 s), a non-JSON answer or a missing
- * field all degrade to rule text with the same schema.
+ * field all degrade to rule text with the same schema. A call slower than the wait keeps running
+ * ({@link #ask}), so {@link BoopBriefService} can store its late words (mezo-r36n9.24).
  *
  * <p>The model never scores (the prompt hands it the numbers) and never decides the session
  * conflict — that is rule-detected ({@link RuleVerdicts#conflict}) and always comes from the rules.
@@ -79,12 +81,73 @@ public class BoopVerdictWriter {
         this.timeout = props.llmTimeout();
     }
 
+    /** The words within {@code mezo.boop.llm-timeout}: the model's if it answered in time, else the rules. */
     public Verdicts write(BoopDay d, Scores s, LocalTime now) {
-        Verdicts fallback = rules.write(d, s, now);
-        JsonNode answer = ask(d, s, now, fallback.conflict());
-        if (answer == null) {
+        Verdicts fallback = rules(d, s, now);
+        return await(ask(d, s, now, fallback), fallback);
+    }
+
+    /** The rule verdicts alone (no model call). */
+    public Verdicts rules(BoopDay d, Scores s, LocalTime now) {
+        return rules.write(d, s, now);
+    }
+
+    /**
+     * The model's verdicts merged over {@code fallback}, on the pool; completes with null when there is
+     * no model, the call failed or the answer is unusable — never exceptionally. The call is NOT bounded
+     * here: a caller that stops waiting ({@link #await}) leaves it running, so a late answer can still be
+     * stored (mezo-r36n9.24 — in production the model never once answered within the 8 s wait, and the
+     * old cancel threw every answer away). The provider client's own timeouts end a hung call.
+     */
+    public CompletableFuture<Verdicts> ask(BoopDay d, Scores s, LocalTime now, Verdicts fallback) {
+        CompanionLlm llm = companionLlm.getIfAvailable();
+        if (llm == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        String userMessage = prompts.context(d, s, now, fallback.conflict());
+        // The holder and the actor are thread-bound and the call runs on the pool, so both are bound
+        // INSIDE the task (the LlmMemoryReranker pattern, mezo-ozri.1/.7): the llm-log row and the
+        // per-user cap still see the owner.
+        UUID actor = LlmActorContext.capture();
+        try {
+            return CompletableFuture.supplyAsync(() -> LlmActorContext.runAsCaptured(actor,
+                    () -> llmCallContextHolder.runWith(new LlmCallContext(LLM_FEATURE, "verdicts", null, null),
+                        () -> llm.complete(BoopPrompts.SYSTEM_PROMPT, userMessage))), executor)
+                .handle((raw, error) -> {
+                    if (error != null) {
+                        Throwable cause = error instanceof CompletionException && error.getCause() != null
+                            ? error.getCause() : error;
+                        log.warn("Boop brief LLM call failed, using rule verdicts: {}", cause.getMessage());
+                        return null;
+                    }
+                    JsonNode answer = parse(raw);
+                    return answer == null ? null : merge(answer, fallback, s);
+                });
+        } catch (RuntimeException e) { // the pool refused the task
+            log.warn("Boop brief LLM call failed, using rule verdicts: {}", e.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    /** Waits at most {@code mezo.boop.llm-timeout} for {@code words}; null or too late = {@code fallback}.
+     *  Never cancels the call. */
+    public Verdicts await(CompletableFuture<Verdicts> words, Verdicts fallback) {
+        try {
+            Verdicts v = words.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            return v == null ? fallback : v;
+        } catch (TimeoutException e) {
+            log.info("Boop brief LLM call took longer than {}, answering with rule verdicts; the late words are kept",
+                timeout);
+            return fallback;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return fallback;
+        } catch (ExecutionException e) { // ask() never completes exceptionally; defensive
             return fallback;
         }
+    }
+
+    private Verdicts merge(JsonNode answer, Verdicts fallback, Scores s) {
         Verdict forma = verdict(answer.get("forma"), fallback.forma());
         if ("learning".equals(s.state())) {
             forma = new Verdict(RuleVerdicts.LEARNING_HEADLINE, forma.sentence());
@@ -101,43 +164,8 @@ public class BoopVerdictWriter {
             fallback.conflict());
     }
 
-    /** The parsed JSON object, or null on any failure (no LLM bean, thrown call, no JSON object). */
-    private JsonNode ask(BoopDay d, Scores s, LocalTime now, Conflict conflict) {
-        CompanionLlm llm = companionLlm.getIfAvailable();
-        if (llm == null) {
-            return null;
-        }
-        String raw;
-        String userMessage = prompts.context(d, s, now, conflict);
-        // The holder and the actor are thread-bound and the call runs on the pool, so both are bound
-        // INSIDE the task (the LlmMemoryReranker pattern, mezo-ozri.1/.7): the llm-log row and the
-        // per-user cap still see the owner.
-        UUID actor = LlmActorContext.capture();
-        Future<String> call = null;
-        try {
-            call = executor.submit(() -> LlmActorContext.runAsCaptured(actor,
-                () -> llmCallContextHolder.runWith(new LlmCallContext(LLM_FEATURE, "verdicts", null, null),
-                    () -> llm.complete(BoopPrompts.SYSTEM_PROMPT, userMessage))));
-            raw = call.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (TimeoutException e) {
-            call.cancel(true);
-            log.warn("Boop brief LLM call took longer than {}, using rule verdicts", timeout);
-            return null;
-        } catch (InterruptedException e) {
-            if (call != null) {
-                call.cancel(true);
-            }
-            Thread.currentThread().interrupt();
-            log.warn("Boop brief LLM call interrupted, using rule verdicts");
-            return null;
-        } catch (ExecutionException e) {
-            log.warn("Boop brief LLM call failed, using rule verdicts: {}", e.getCause() == null
-                ? e.getClass().getSimpleName() : e.getCause().getMessage());
-            return null;
-        } catch (RuntimeException e) {
-            log.warn("Boop brief LLM call failed, using rule verdicts: {}", e.getMessage());
-            return null;
-        }
+    /** The JSON object inside the answer, or null. */
+    private JsonNode parse(String raw) {
         if (raw == null) {
             return null;
         }

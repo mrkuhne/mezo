@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -22,6 +23,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -50,10 +53,17 @@ import tools.jackson.databind.ObjectMapper;
  * <p>"Now" is the server clock in the owner zone ({@code mezo.wearable.zone}); a past date is judged
  * as of 23:59 of that day; a date after today in that zone is a 400 (the phone asks for today or the
  * past only). No {@code @Transactional} here: generation (the LLM call) runs outside any
- * transaction, only {@link BoopBriefStore#upsert} is one. Two racing first requests of one day both
+ * transaction, only {@link BoopBriefStore#upsert} is one.
+ *
+ * <p>The model's words (mezo-r36n9.24): the request waits at most {@code mezo.boop.llm-timeout} for
+ * them and otherwise answers with the rule words ({@code ai_words = false}); the model call keeps
+ * running and its late words are written onto that row if its inputs have not moved, so the next open
+ * shows them. A rule-only row older than {@link #RULE_RETRY} (its call failed) is regenerated on the
+ * next open. Two racing first requests of one day both
  * generate; the INSERT that loses on the unique index re-reads the row and answers with the
  * winner's brief (never a 500). Everything is keyed by the owner id.
  */
+@Slf4j
 @Service
 public class BoopBriefService {
 
@@ -62,6 +72,8 @@ public class BoopBriefService {
     private static final LocalTime LUNCH_TO = LocalTime.of(15, 0);
     private static final LocalTime NOON = LocalTime.NOON;
     private static final LocalTime EVENING = LocalTime.of(18, 0);
+    /** A rule-only row older than this is regenerated on the next open (its model call failed). */
+    static final Duration RULE_RETRY = Duration.ofMinutes(10);
 
     private final BoopDayAssembler assembler;
     private final BoopVerdictWriter verdictWriter;
@@ -98,7 +110,12 @@ public class BoopBriefService {
         String hash = inputHash(day, localNow(date, now));
         Optional<BoopBriefEntity> existing = briefs.findByCreatedByAndDate(owner, date);
         if (existing.isPresent() && hash.equals(existing.get().getInputHash())) {
-            return read(existing.get());
+            BoopBriefEntity row = existing.get();
+            // A rule-only row is still waiting for its late model words; past RULE_RETRY its call failed
+            // and this open asks the model again.
+            if (row.isAiWords() || row.getGeneratedAt().isAfter(now.minus(RULE_RETRY))) {
+                return read(row);
+            }
         }
         return generateAndStore(owner, day, hash, now, false);
     }
@@ -123,12 +140,16 @@ public class BoopBriefService {
         Scores s = scores.compute(day, localNow);
         LocalTime sessionTime = day.session() == null ? null : day.session().time();
         double[] hourly = EnergyCurveModel.hourly(s.forma(), sessionTime, lunch(day));
-        Verdicts v = verdictWriter.write(day, s, localNow);
+        Verdicts rules = verdictWriter.rules(day, s, localNow);
+        CompletableFuture<Verdicts> words = verdictWriter.ask(day, s, localNow, rules);
+        Verdicts v = verdictWriter.await(words, rules);
+        boolean aiWords = v != rules;
         Instant generatedAt = now.truncatedTo(ChronoUnit.MICROS);
         BoopBrief brief = mapper.toBrief(day, s, v, hourly, props.stepsGoal(), props.nightsNeeded(), generatedAt);
         String payload = objectMapper.writeValueAsString(brief);
+        BoopBrief answer = brief;
         try {
-            store.upsert(owner, day.date(), hash, payload, generatedAt, manual, props.regenPerDay());
+            store.upsert(owner, day.date(), hash, payload, generatedAt, aiWords, manual, props.regenPerDay());
         } catch (DataIntegrityViolationException raced) {
             // Only "a parallel first request won" (uq_boop_brief_user_date) if the row now really
             // exists; any other integrity failure is rethrown, never swallowed.
@@ -136,13 +157,35 @@ public class BoopBriefService {
             if (winner.isEmpty()) {
                 throw raced;
             }
-            if (!manual) {
-                return read(winner.get());
+            if (manual) {
+                // A manual regeneration still has to be counted (and capped) on the winner's row.
+                store.upsert(owner, day.date(), hash, payload, generatedAt, aiWords, true, props.regenPerDay());
+            } else {
+                answer = read(winner.get());
             }
-            // A manual regeneration still has to be counted (and capped) on the winner's row.
-            store.upsert(owner, day.date(), hash, payload, generatedAt, true, props.regenPerDay());
         }
-        return brief;
+        if (!aiWords) {
+            keepLateWords(owner, day, s, hourly, hash, generatedAt, words);
+        }
+        return answer;
+    }
+
+    /** The model answered after the wait: its words go onto the day's row if the inputs are still the
+     *  ones it was asked about and the row has no model words yet (mezo-r36n9.24). Runs on the pool. */
+    private void keepLateWords(UUID owner, BoopDay day, Scores s, double[] hourly, String hash, Instant generatedAt,
+                               CompletableFuture<Verdicts> words) {
+        words.thenAccept(late -> {
+            if (late == null) {
+                return;
+            }
+            try {
+                BoopBrief brief = mapper.toBrief(day, s, late, hourly, props.stepsGoal(), props.nightsNeeded(),
+                    generatedAt);
+                store.fillWords(owner, day.date(), hash, objectMapper.writeValueAsString(brief), generatedAt);
+            } catch (RuntimeException e) {
+                log.warn("Boop brief late words not stored: {}", e.getMessage());
+            }
+        });
     }
 
     /** A pattern-valid but impossible date, or one after today: the same 400 field error the
