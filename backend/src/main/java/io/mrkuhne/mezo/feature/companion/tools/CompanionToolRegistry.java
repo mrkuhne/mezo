@@ -38,6 +38,8 @@ public class CompanionToolRegistry {
     private final ConversationContextTools conversationContextTools;
     private final PersonalRecordTools personalRecordTools;
     private final FeedContextTools feedContextTools;
+    /** Boop B3 (mezo-r36n9.13): get_wearable / get_calendar — conversation-first planner reads. */
+    private final DayTools dayTools;
 
     /** Same owned source readers, without a fabricated current conversation. */
     public List<ToolCallback> feedCallbacks(ToolCallAudit audit) {
@@ -50,7 +52,7 @@ public class CompanionToolRegistry {
     /** Full catalogue available on EVERY conversation-first turn, independent of topic. */
     public List<ToolCallback> conversationCallbacks(ToolCallAudit audit) {
         var all = new java.util.ArrayList<>(callbacks(audit));
-        Arrays.stream(ToolCallbacks.from(conversationContextTools, personalRecordTools))
+        Arrays.stream(ToolCallbacks.from(conversationContextTools, personalRecordTools, dayTools))
                 .map(cb -> new RecordingToolCallback(cb, audit)).forEach(all::add);
         return List.copyOf(all);
     }

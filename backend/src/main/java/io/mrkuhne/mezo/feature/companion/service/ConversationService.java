@@ -57,6 +57,10 @@ public class ConversationService {
         AiConversationEntity conversation = new AiConversationEntity();
         conversation.setCreatedBy(userId);
         var context = request == null ? null : request.getContext();
+        // Boop B3 (mezo-r36n9.13): absent channel = web, the unchanged behaviour
+        if (request != null && request.getChannel() != null) {
+            conversation.setChannel(request.getChannel().getValue());
+        }
         if (context != null) {
             conversation.setContextKind(context.getKind());
             conversation.setContextDate(context.getDate());

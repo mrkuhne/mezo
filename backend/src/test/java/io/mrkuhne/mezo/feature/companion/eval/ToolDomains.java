@@ -41,7 +41,10 @@ final class ToolDomains {
         Map.entry("read_personal_records", "personal"),
         Map.entry("get_medication", "medication"),
         Map.entry("get_protocol", "medication"),
-        Map.entry("get_daily_practice", "practice"));
+        Map.entry("get_daily_practice", "practice"),
+        // Boop B3 (mezo-r36n9.13): the watch's day metrics and today's calendar (times only)
+        Map.entry("get_wearable", "wearable"),
+        Map.entry("get_calendar", "calendar"));
 
     private ToolDomains() {
     }

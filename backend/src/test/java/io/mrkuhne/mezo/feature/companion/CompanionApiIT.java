@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.api.dto.ConversationRenameRequest;
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
+import io.mrkuhne.mezo.api.dto.DayContextResponse;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.RecalledMemory;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
@@ -35,6 +36,27 @@ class CompanionApiIT extends ApiIntegrationTest {
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+    }
+
+    @Test
+    void testGetDayContext_shouldReturnChipsAndReadyQuestions_whenAuthenticated() {
+        // Boop B3 (mezo-r36n9.13): the "Boop látja" strip — the demodata owner has a day, so chips
+        // exist; the questions are deterministic templates, at least the "otherwise" one.
+        DayContextResponse context = getForBody(
+                "/api/companion/day-context", ownerAuthHeaders(), HttpStatus.OK, DayContextResponse.class);
+
+        assertThat(context.getQuestions()).isNotEmpty().hasSizeLessThanOrEqualTo(3);
+        assertThat(context.getChips()).allSatisfy(chip -> {
+            assertThat(chip.getKey()).isNotBlank();
+            assertThat(chip.getLabel()).isNotBlank();
+            assertThat(chip.getValue()).isNotBlank();
+        });
+        assertThat(context.getGeneratedAt()).isNotNull();
+    }
+
+    @Test
+    void testGetDayContext_shouldReturn401_whenNoToken() {
+        getForBody("/api/companion/day-context", null, HttpStatus.UNAUTHORIZED, Void.class);
     }
 
     @Test
