@@ -203,6 +203,9 @@ private struct NullReminderCenter: ReminderCenter {
     func status() async -> ReminderPermission { .notDetermined }
     func request() async -> Bool { false }
     func schedule(id: String, hour: Int, minute: Int, title: String, body: String) async throws {}
+    func scheduleOnce(id: String, on day: DateComponents, hour: Int, minute: Int, title: String, body: String, route: String) async throws {}
     func cancel(id: String) {}
     func isPending(id: String) async -> Bool { false }
+    func pendingIds(withPrefix prefix: String) async -> [String] { [] }
+    func removeDelivered(ids: [String]) {}
 }

@@ -9,6 +9,12 @@ struct BoopApp: App {
     init() {
         Lagy.registerFonts()
         ReminderPresenter.install()     // the bedtime reminder also shows while Boop is open
+        #if DEBUG
+        // Simulator review of a notification tap from a cold launch: the cover is asked for before any view exists.
+        if let cold = UserDefaults.standard.string(forKey: "previewColdTap").flatMap({ RitmusCover(route: "boop://" + $0) }) {
+            RitmusRouter.shared.open(cold)
+        }
+        #endif
     }
     var body: some Scene {
         WindowGroup {
@@ -37,7 +43,7 @@ struct BoopApp: App {
         let c = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: soon)
         let moment = CheckInMoment.moment(at: soon)
         try? await center.scheduleOnce(
-            id: "boop.ritmus.debug", on: DateComponents(year: c.year, month: c.month, day: c.day), hour: c.hour ?? 0, minute: c.minute ?? 0,
+            id: "boop.debug.ritmus", on: DateComponents(year: c.year, month: c.month, day: c.day), hour: c.hour ?? 0, minute: c.minute ?? 0,
             title: route == "este" ? RitmusReminders.closeTitle : RitmusReminders.checkInTitle(moment),
             body: route == "este" ? RitmusReminders.closeBody : RitmusReminders.checkInBody, route: "boop://\(route)")
     }
