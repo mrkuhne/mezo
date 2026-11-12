@@ -114,6 +114,8 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     @State private var toastAction: String?
     @Environment(\.openURL) private var openURL
     @Environment(\.openAccount) private var openAccount
+    /// B3: the hero's check-in pill opens the full-screen check-in (the evening one, the close).
+    @Environment(RitmusRouter.self) private var router: RitmusRouter?
 
     private var copy: MaiCopy { maiCopy(brief, metricKey(for: selected)) }
     private var now: Date { _ = clockTick; return BoopClock.now() }
@@ -266,6 +268,8 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         switch action.kind {
         case .breath: startBreath()
         case .bedtime: toggleReminder()
+        case .checkin: router?.open(.checkin)
+        case .eveningCheckin: router?.open(.este)
         default: show(soonToast(soonName(action.kind)))
         }
     }

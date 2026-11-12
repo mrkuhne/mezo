@@ -5,12 +5,14 @@ import BoopCore
 
 /// Simulator review only (`-preview shell`): the daily loop on a throwaway ledger and outbox, sent through
 /// `PreviewTransport` (`-previewOffline YES`: no net, everything stays on the phone). With `-previewOpen checkin…` the
-/// clock reads 16:02 today and the day already has a morning and a noon check-in, as in the approved spike.
+/// clock reads 16:02 today; then, and with `-previewPhase napkozben|este`, the day already has a morning and a noon
+/// check-in, as in the approved spike. Invented calendar events and past goals feed the goal chips.
 extension RitmusEnvironment {
     static func preview(client: Client) -> RitmusEnvironment {
         let root = URL.cachesDirectory.appendingPathComponent("boop-preview-ritmus", isDirectory: true)
         try? FileManager.default.removeItem(at: root)
         let opening = UserDefaults.standard.string(forKey: "previewOpen")?.hasPrefix("checkin") == true
+        let laterInTheDay = ["napkozben", "este"].contains(UserDefaults.standard.string(forKey: "previewPhase") ?? "")
         let launched = Date()
         let start = opening ? Calendar.current.date(bySettingHour: 16, minute: 2, second: 0, of: launched) ?? launched : launched
         let ritmus = RitmusClient(client: client, audioDirectory: root.appendingPathComponent("outbox"))
@@ -22,9 +24,19 @@ extension RitmusEnvironment {
                 CheckInSnapshotValue(hrBpm: 78, hrvMs: 38, hrvUsualMs: 50, steps: 7_420, sleepMinutes: 432, source: "com.apple.health")
             },
             plans: nil,
+            goals: { dates in
+                // "Meal prep a hétre" typed 8 and 15 days ago → "8 napja nem volt"
+                Dictionary(uniqueKeysWithValues: dates.enumerated().map { k, d in (d, k == 7 || k == 14 ? ["Meal prep a hétre"] : []) })
+            },
+            events: { day in
+                let at = { (h: Int, m: Int) in Calendar.current.date(bySettingHour: h, minute: m, second: 0, of: day) ?? day }
+                return [CalendarEventLite(title: "Heti egyeztetés", start: at(10, 0), end: at(10, 30), attendees: 3),
+                        CalendarEventLite(title: "Ügyfélprezentáció", start: at(14, 0), end: at(15, 30), attendees: 5)]
+            },
+            closeLine: { date in try await ritmus.line(date) },
             clock: { start.addingTimeInterval(Date().timeIntervalSince(launched)) })
         env.recorder = PreviewNoteRecorder()
-        guard opening else { return env }
+        guard opening || laterInTheDay else { return env }
         let today = env.today
         let at = { (h: Int, m: Int) in Calendar.current.date(bySettingHour: h, minute: m, second: 0, of: launched) ?? launched }
         try? env.ledger.saveCheckIn(LedgerCheckIn(

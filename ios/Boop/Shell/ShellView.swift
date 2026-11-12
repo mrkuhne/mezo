@@ -42,8 +42,8 @@ struct ShellView: View {
     @State private var skies: [ShellTab: NKBackdrop] = [:]
     @State private var capturing = false
     @State private var account = false
-    /// The full-screen check-in (B3); Ma's rows, "+" and the notifications open it (Tasks 9, 14).
-    @State private var checkingIn = false
+    /// The daily loop's full-screen covers (B3): Ma's rows, the lens pill, "+" and the notifications ask for them.
+    @State private var router = RitmusRouter.shared
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @State private var toast: String?
     /// A room is open over the page: the bar is hidden.
@@ -65,6 +65,7 @@ struct ShellView: View {
                                             removal: .opacity.animation(.easeIn(duration: 0.22))))
             }
             .environment(\.nkBackdropHosted, true)
+            .environment(router)
             .environment(\.setRoomOpen, { open in withAnimation(.smooth(duration: 0.35)) { roomOpen = open } })
             NKSpineBar(selected: Binding(get: { tab.rawValue }, set: { select(ShellTab(rawValue: $0) ?? .ma) }),
                        onPlus: { capturing = true })
@@ -78,7 +79,15 @@ struct ShellView: View {
         .preferredColorScheme(.dark)
         // page-level presentations (boop-ios.md §9)
         .sheet(isPresented: $capturing) {
-            CaptureSheet { name in capturing = false; toast = soonToast(name) }
+            CaptureSheet { pick in
+                capturing = false
+                switch pick {
+                case .cover(let cover):
+                    // the sheet leaves first, then the cover rises (two presentations never overlap)
+                    Task { try? await Task.sleep(for: .milliseconds(450)); router.open(cover) }
+                case .soon(let name): toast = soonToast(name)
+                }
+            }
                 .presentationDetents([.height(560), .large])
                 .presentationBackground(NK.ground)
                 .presentationCornerRadius(34)
@@ -91,33 +100,31 @@ struct ShellView: View {
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
         }
-        .fullScreenCover(isPresented: $checkingIn) {
-            if let ritmus {
-                CheckinView(env: ritmus) { checkingIn = false }
-            } else {
-                // No daily loop yet (signing in or out): never an empty cover, always a way back.
-                ZStack(alignment: .topLeading) {
-                    NKGround(hue: .mozgas)
-                    Button { checkingIn = false } label: {
-                        Image(systemName: "chevron.down").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
-                            .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
-                    }
-                    .buttonStyle(.plain).accessibilityLabel("Bezárom")
-                    .padding(.leading, 16).padding(.top, 8)
+        // The page reads the router's flag here, so the cover presents when anything below asks for it.
+        .fullScreenCover(item: Binding(get: { [cover = router.cover] in cover }, set: { router.cover = $0 })) { cover in
+            switch cover {
+            case .checkin:
+                if let ritmus {
+                    CheckinView(env: ritmus) { router.close() }
+                } else {
+                    coverFallback(hue: .mozgas)
                 }
-                .preferredColorScheme(.dark)
+            case .este:
+                // Task 10 brings the one-minute close; until then the cover is a calm placeholder with a way back.
+                coverFallback(hue: .pulzus, line: "Az esti zárás hamarosan itt lesz.")
             }
         }
         .onAppear {
             fromTab = tab
             #if DEBUG
             // Simulator review: `-previewTab ma|terv|naplo|boop` opens that place, `-previewOpen capture|account` a sheet,
-            // `-previewOpen checkin|checkinDone` the check-in (its first item / its payoff).
+            // `-previewOpen checkin|checkinDone` the check-in (its first item / its payoff), `-previewOpen este` the close.
             if let t = UserDefaults.standard.string(forKey: "previewTab").flatMap(ShellTab.init(key:)) { tabKey = t.storageKey; fromTab = t }
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
             case "account": account = true
-            case "checkin", "checkinDone": checkingIn = true
+            case "checkin", "checkinDone": router.open(.checkin)
+            case "este", "esteDone": router.open(.este)
             default: break
             }
             #endif
@@ -133,6 +140,24 @@ struct ShellView: View {
             try? await Task.sleep(for: .seconds(3)); select(.ma)
         }
         #endif
+    }
+
+    /// No daily loop yet (signing in or out), or a screen still to come: never an empty cover, always a way back.
+    private func coverFallback(hue: Hue, line: String? = nil) -> some View {
+        ZStack(alignment: .topLeading) {
+            NKGround(hue: hue)
+            if let line {
+                Text(line).nkFont(28, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center)
+                    .padding(.horizontal, 30).frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            Button { router.close() } label: {
+                Image(systemName: "chevron.down").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
+            }
+            .buttonStyle(.plain).accessibilityLabel("Bezárom")
+            .padding(.leading, 16).padding(.top, 8)
+        }
+        .preferredColorScheme(.dark)
     }
 
     @ViewBuilder private func page(_ tab: ShellTab) -> some View {

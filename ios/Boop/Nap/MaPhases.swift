@@ -89,7 +89,6 @@ enum MaText {
     static let emptyDay = "Ma még nincs semmi a napodban. Ha jön egy edzés, egy étkezés vagy egy megbeszélés, itt sorakozik."
     static let dismissed = "Rendben, most nem"
     static let whyClosing = "Mindent összevetve megéri. De te döntesz: semmi nem változik, amíg nem bólintasz rá."
-    static func planAccepted(_ n: Int) -> String { "A nap terve elfogadva · \(n) pont" }
     static func planPast(_ n: Int) -> String { "A reggeli terv · \(n) pont" }
 }
 
@@ -103,7 +102,8 @@ extension View {
 // MARK: - Below the Ma hero
 
 /// The selected orb's lens strip (its tiles + the door to its drill-down), then the day as one scroll: Reggel (the plan
-/// to accept, Boop mondja), Napközben (the whole-day timeline, Boop's proposals at MOST), Este (the close-out).
+/// to accept with the goal of the day, Boop mondja), Napközben (the energy of the day, the whole-day timeline, Boop's
+/// proposals at MOST), Este (the door to the one-minute close, or the closed day).
 /// Nothing changes without a tap: a proposal applies only on *Elfogadom*, *Most nem* hides it for today.
 struct MaBelow: View {
     let brief: Brief
@@ -118,10 +118,15 @@ struct MaBelow: View {
     let onLink: (Brief.Link) -> Void
 
     @AppStorage("planAcceptedDate") private var planAcceptedDate = ""
+    /// When the plan was accepted (seconds since 1970; the collapsed line shows its clock time).
+    @AppStorage("planAcceptedAt") private var planAcceptedAt: Double = 0
     @State private var planOpen = false
-    @State private var rating = 0
-    @State private var closeLine = ""
-    @State private var skipped = false
+    /// B3's daily loop: the day ledger, the goal, the covers (nil only outside the signed-in shell).
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
+    @Environment(RitmusRouter.self) private var router: RitmusRouter?
+    /// The dot selected on the energy curve (a past check-in row selects its own).
+    @State private var curveSel: UUID?
+    @State private var goalRecording = false
 
     private var key: MetricKey { metricKey(for: ctx.hue) }
 
@@ -134,12 +139,23 @@ struct MaBelow: View {
     /// In the morning the proposals sit in the open plan card; otherwise at MOST.
     private var proposalsInPlan: Bool { phase == .reggel && !planCollapsed }
 
+    /// The phone's local day of the page's clock (the goal and the check-ins belong to it).
+    private var today: String { ritmus?.day(of: ctx.now) ?? brief.date }
+    private var ledgerDay: DayLedger? { ritmus?.ledger.ledger(for: today) }
+
     var body: some View {
         VStack(spacing: 34) {
             lensStrip
             reggel.phaseAnchor(.reggel)
             napkozben.phaseAnchor(.napkozben)
             este.phaseAnchor(.este)
+        }
+        .task(id: today) {
+            guard let ritmus else { return }
+            await ritmus.refreshCalendar()
+            await ritmus.refreshDay(today)
+            await ritmus.refreshPastGoals(today: today)
+            await ritmus.refreshCloseLine(today)
         }
     }
 
@@ -200,8 +216,14 @@ struct MaBelow: View {
                             NKGlyph(planAccepted ? "check-ink" : "clock-ink", planAccepted ? NK.ground : .white.opacity(0.8), size: 16)
                         }
                         .frame(width: 38, height: 38)
-                        Text(planAccepted ? MaText.planAccepted(rows.count) : MaText.planPast(rows.count))
-                            .nkFont(16, .medium).foregroundStyle(.white)
+                        let summary = planSummary(accepted: planAccepted, acceptedAt: planAcceptedAt > 0 ? Date(timeIntervalSince1970: planAcceptedAt) : nil,
+                                                  rows: rows.count, goal: ritmus?.goal(on: today)?.text, calendar: ritmus?.calendar ?? .current)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(summary.title).nkFont(16, .medium).foregroundStyle(.white)
+                            if let sub = summary.sub {
+                                Text(sub).nkFont(13.5).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+                            }
+                        }
                         Spacer()
                         Image(systemName: "chevron.down").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
                     }
@@ -250,13 +272,23 @@ struct MaBelow: View {
                 .accessibilityElement(children: .combine)
                 if k < rows.count - 1 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 60) }
             }
+            if let ritmus {
+                GoalBlock(goal: ritmus.goal(on: today)?.text, suggestions: ritmus.goalSuggestions(brief: brief, date: today),
+                          micEnabled: ritmus.recorder != nil,
+                          onSet: { text in Task { await setGoal(text) } },
+                          onCsere: { Task { try? await ritmus.removeGoal(date: today) } },
+                          onMic: goalMic)
+                    .padding(.top, 14)
+            }
             if proposalsInPlan && !shown.isEmpty {
                 proposalCards(compact: true).padding(.top, 12)
             }
             if !planAccepted && phase == .reggel {
                 HStack(spacing: 10) {
                     NKPill("Elfogadom a napot", wide: false) {
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { planAcceptedDate = brief.date; planOpen = false }
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                            planAcceptedDate = brief.date; planAcceptedAt = Date().timeIntervalSince1970; planOpen = false
+                        }
                         ctx.toast("A nap terve elfogadva")
                     }
                     NKPill("Módosítom", primary: false, wide: false) { ctx.toast(soonToast("A terv módosítása")) }
@@ -272,22 +304,36 @@ struct MaBelow: View {
     // MARK: Napközben
 
     private var napkozben: some View {
-        let stations = napkozbenStations(brief, now: ctx.now, evening: ctx.evening, hasProposals: !proposalsInPlan && !shown.isEmpty,
-                                         reminder: ctx.reminder.isOn ? ctx.reminder.time : nil)
+        let base = napkozbenStations(brief, now: ctx.now, evening: ctx.evening, hasProposals: !proposalsInPlan && !shown.isEmpty,
+                                     reminder: ctx.reminder.isOn ? ctx.reminder.time : nil)
+        let stations = ledgerDay.map { ritmusStations(base, day: $0, calendar: ritmus?.calendar ?? .current) } ?? base
         return VStack(alignment: .leading, spacing: 14) {
             phaseHead(.napkozben, range: timelineSpan(stations) ?? "")
+            if let ritmus, let day = ledgerDay {
+                MaEnergyCard(day: day, predicted: brief.date == today ? brief.energy.hourly : [], now: ctx.now,
+                             calendar: ritmus.calendar, selected: $curveSel)
+            }
             if isEmptyDay(stations) {
                 Text(MaText.emptyDay)
                     .nkFont(15).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
                     .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
                 if !proposalsInPlan && !shown.isEmpty { proposalCards(compact: false) }
             } else {
-                DayPath(stations: stations, hue: ctx.hue, onTap: tap) { _ in proposalCards(compact: false) }
+                DayPath(stations: stations, hue: ctx.hue, onTap: tap, onAction: { _ in router?.open(.checkin) }) { _ in
+                    proposalCards(compact: false)
+                }
             }
         }
     }
 
     private func tap(_ st: PathStation) {
+        if let day = ledgerDay, let t = ritmusTap(st, day: day) {
+            switch t {
+            case .selectDot(let id): withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { curveSel = id }
+            case .open(let cover): router?.open(cover)
+            }
+            return
+        }
         switch stationTap(st.id) {
         case .drill(let h)?: onDrill(h)
         case .daySheet?: onLink(.day)
@@ -304,101 +350,33 @@ struct MaBelow: View {
     private var este: some View {
         VStack(alignment: .leading, spacing: 14) {
             phaseHead(.este)
-            if skipped {
-                Button { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { skipped = false } } label: {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            Circle().fill(.white.opacity(0.1))
-                            NKGlyph("moon-cream", .white.opacity(0.8), size: 16)
-                        }
-                        .frame(width: 38, height: 38)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Ma kihagyod a zárást").nkFont(16, .medium).foregroundStyle(.white)
-                            Text("Koppints, ha mégis lezárnád").nkFont(13.5).foregroundStyle(.white.opacity(0.55))
-                        }
-                        Spacer()
-                    }
-                    .padding(16).contentShape(Rectangle()).nkGlass()
-                }
-                .buttonStyle(.plain)
+            if let close = ledgerDay?.close {
+                EsteClosedCard(close: close, line: ritmus?.closeLines[today], calendar: ritmus?.calendar ?? .current,
+                               hue: ctx.hue, motion: ctx.motion) { router?.open(.este) }
             } else {
-                closeCard
+                EsteDoorCard(open: phase == .este, reminder: closeReminderTime(brief)) { router?.open(.este) }
             }
         }
         .padding(.bottom, 10)
     }
 
-    private var closeCard: some View {
-        let open = phase == .este
-        return VStack(alignment: .leading, spacing: 18) {
-            NKMono(open ? "ZÁRD LE A NAPOT · 1 PERC" : "18:00-KOR NYÍLIK · 1 PERC")
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Milyen volt a nap?").nkFont(22, design: .serif).foregroundStyle(.white)
-                HStack(spacing: 0) {
-                    ForEach(1...5, id: \.self) { k in
-                        let on = k <= rating
-                        VStack(spacing: 6) {
-                            StillOrb(palette: ctx.hue.orb, size: 34, level: Double(k) / 5)
-                                .saturation(on ? 1 : 0.15).opacity(on ? 1 : 0.55)
-                                .scaleEffect(k == rating ? 1.12 : 1)
-                            Text(["Nehéz", "", "Rendben", "", "Remek"][k - 1]).nkFont(11).foregroundStyle(.white.opacity(0.55)).frame(height: 12)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .contentShape(Rectangle())
-                        .onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { rating = k } }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(k) az ötből")
-                        .accessibilityAddTraits(k == rating ? [.isButton, .isSelected] : .isButton)
-                    }
-                }
-                .sensoryFeedback(.selection, trigger: rating)
-            }
-            let goals = DayPlan.goals(brief)
-            if !goals.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    NKMono("A REGGELI TERVBŐL")
-                    ForEach(goals) { g in goalRow(g) }
-                }
-            }
-            HStack(spacing: 10) {
-                TextField("", text: $closeLine, prompt: Text("Egy mondat a napról…").foregroundStyle(.white.opacity(0.45)))
-                    .nkFont(15).foregroundStyle(.white)
-                NKGlyph("chat-ink", .white.opacity(0.7), size: 18)
-            }
-            .padding(.horizontal, 18).frame(height: 50)
-            .background(Capsule().fill(.white.opacity(0.08)))
-            .overlay(Capsule().stroke(.white.opacity(0.12)))
-            HStack {
-                NKPill("Lezárom", wide: false) { ctx.toast(soonToast("Esti zárás")) }
-                    .opacity(rating > 0 ? 1 : 0.5)
-                    .disabled(rating == 0)
-                Spacer()
-                Button { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { skipped = true } } label: {
-                    Text("Ma kihagyom").nkFont(14).foregroundStyle(.white.opacity(0.55)).padding(.vertical, 10)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .nkGlass()
-        .opacity(open ? 1 : 0.62)
-        .allowsHitTesting(open)
+    // MARK: The goal of the day
+
+    private func setGoal(_ text: String) async {
+        guard let ritmus else { return }
+        do { try await ritmus.setGoal(text, date: today) } catch { ctx.toast("A telefon most nem tudta eltenni a célt") }
     }
 
-    private func goalRow(_ g: CloseGoal) -> some View {
-        let met = g.met == true
-        return HStack(spacing: 12) {
-            ZStack {
-                Circle().fill(met ? .white : .clear)
-                Circle().stroke(.white.opacity(met ? 0 : 0.35), lineWidth: 1.2)
-                if met { NKGlyph("check-ink", NK.ground, size: 14) }
-            }
-            .frame(width: 24, height: 24)
-            Text(g.title).nkFont(15).foregroundStyle(.white)
-            Spacer()
-            if !g.result.isEmpty { Text(g.result).nkFont(13).foregroundStyle(.white.opacity(0.55)) }
+    /// One tap to talk, one to stop; the sentence becomes the goal.
+    private func goalMic() {
+        guard let recorder = ritmus?.recorder else { return }
+        if !goalRecording {
+            do { try recorder.start(); goalRecording = true } catch { goalRecording = false }
+            return
         }
-        .accessibilityElement(children: .combine)
+        goalRecording = false
+        Task {
+            if let text = await recorder.stop()?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty { await setGoal(text) }
+        }
     }
 }

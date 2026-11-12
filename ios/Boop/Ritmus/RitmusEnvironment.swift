@@ -19,13 +19,32 @@ final class RitmusEnvironment {
     @ObservationIgnored private let lineSource: @Sendable (_ date: String, _ slot: String) async throws -> String
     @ObservationIgnored private let snapshotSource: @Sendable (Date) async -> CheckInSnapshotValue
     @ObservationIgnored private let planSource: (@Sendable (String) async throws -> [String: CheckInPlanLite])?
+    @ObservationIgnored private let daySource: (@Sendable (String) async throws -> ServerDay)?
+    @ObservationIgnored private let goalsSource: (@Sendable ([String]) async throws -> [String: [String]])?
+    @ObservationIgnored private let eventsSource: (@Sendable (Date) async -> [CalendarEventLite])?
+    @ObservationIgnored private let closeLineSource: (@Sendable (String) async throws -> String)?
+    /// Where the past days' goal texts are kept between launches (next to the ledger folder).
+    @ObservationIgnored private let goalHistoryFile: URL
+
+    /// The goals typed on the last 30 days (server days fetched once, plus the phone's own), for the overdue chips.
+    private(set) var pastGoals: [PastGoal] = []
+    /// Today's events from the phone's calendar (read only; titles never leave the phone here).
+    private(set) var todayEvents: [CalendarEventLite] = []
+    /// Boop's sentence about a closed day, by date (fetched once the close is on the server).
+    private(set) var closeLines: [String: String] = [:]
 
     /// `line`: Boop's sentence after a check-in (throws `RitmusFetchError`); `snapshot`: the watch at a moment;
-    /// `plans`: the day's questions of the day (nil = never fetched, e.g. in tests).
+    /// `plans`: the day's questions of the day (nil = never fetched, e.g. in tests); `day`: the server's day to merge;
+    /// `goals`: the focus texts of past days; `events`: the phone calendar's events of a day; `closeLine`: Boop's
+    /// sentence about a closed day.
     init(ledgerDirectory: URL, outboxDirectory: URL, sender: OutboxSender,
          line: @escaping @Sendable (String, String) async throws -> String,
          snapshot: @escaping @Sendable (Date) async -> CheckInSnapshotValue,
          plans: (@Sendable (String) async throws -> [String: CheckInPlanLite])?,
+         day: (@Sendable (String) async throws -> ServerDay)? = nil,
+         goals: (@Sendable ([String]) async throws -> [String: [String]])? = nil,
+         events: (@Sendable (Date) async -> [CalendarEventLite])? = nil,
+         closeLine: (@Sendable (String) async throws -> String)? = nil,
          clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current) {
         let ledger = LedgerStore(directory: ledgerDirectory)
         self.ledger = ledger
@@ -36,6 +55,8 @@ final class RitmusEnvironment {
         self.calendar = greg
         self.clock = clock
         lineSource = line; snapshotSource = snapshot; planSource = plans
+        daySource = day; goalsSource = goals; eventsSource = events; closeLineSource = closeLine
+        goalHistoryFile = ledgerDirectory.deletingLastPathComponent().appendingPathComponent("goal-history.json")
         // A delivery clears the pending flag only when no newer version of the same id (a note sent after an
         // in-flight check-in) is still queued — that one clears it when it arrives.
         let queue = OutboxRef()
@@ -61,11 +82,24 @@ final class RitmusEnvironment {
         let dirs = directories(for: userId)
         let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox)
         let snapshots = SnapshotBuilder(reader: health)
+        let calendarReader = CalendarKitReader()
         return RitmusEnvironment(
             ledgerDirectory: dirs.ledger, outboxDirectory: dirs.outbox, sender: ritmus,
             line: { date, slot in try await ritmus.checkInLine(date, slot: slot) },
             snapshot: { now in await snapshots.snapshot(at: now) },
-            plans: { date in try await ritmus.fetchPlans(date) })
+            plans: { date in try await ritmus.fetchPlans(date) },
+            day: { date in try await ritmus.fetchDay(date) },
+            goals: { dates in try await ritmus.fetchGoals(dates) },
+            events: { day in await todaysEvents(calendarReader, day: day) },
+            closeLine: { date in try await ritmus.line(date) })
+    }
+
+    /// The phone calendar's timed and all-day events of `day`, only when access was already given (never asks here).
+    private static func todaysEvents(_ reader: CalendarReader, day: Date) async -> [CalendarEventLite] {
+        guard await reader.access() == .granted else { return [] }
+        let start = Calendar.current.startOfDay(for: day)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
+        return ((try? await reader.items(from: start, to: end)) ?? []).map(CalendarEventLite.init)
     }
 
     /// The local day of `date` (`yyyy-MM-dd`).
@@ -106,5 +140,116 @@ final class RitmusEnvironment {
     func refreshPlans(_ date: String) async {
         guard let planSource, let plans = try? await planSource(date) else { return }
         ledger.cachePlans(Array(plans.values), date: date)
+    }
+
+    // MARK: - The goal of the day (spec §7.5)
+
+    /// The goal on screen for a day (a removal on its way hides it).
+    func goal(on date: String) -> LedgerGoal? { ledger.ledger(for: date).currentGoal }
+
+    /// Sets the day's goal: the goal shown so far is removed first (one goal per day; "csere" = remove + add), then the
+    /// new one is written to the day (pending) and queued with its own client ref. Throws when the phone could not keep it.
+    func setGoal(_ raw: String, date: String) async throws {
+        let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        if goal(on: date) != nil { try await queueGoalRemoval(date: date) }
+        let now = clock()
+        let new = LedgerGoal(id: UUID(), text: text, setAt: now, pending: true)
+        try ledger.setGoal(new, date: date)
+        try await outbox.enqueue(OutboxItem(id: new.id, kind: .goal, date: date, capturedAt: now,
+                                            payload: RitmusPayload.encode(GoalPayload(text: text))))
+        sendSoon()
+    }
+
+    /// "csere": the goal shown is removed (the field and the chips come back for the new one).
+    func removeGoal(date: String) async throws {
+        guard goal(on: date) != nil else { return }
+        try await queueGoalRemoval(date: date)
+        sendSoon()
+    }
+
+    /// The day keeps a tombstone (pending, `removed`) under the removal's own id, so the server's old goal stays hidden
+    /// until the removal arrives; the removal goes by the focus id when known, else by the goal's client ref.
+    private func queueGoalRemoval(date: String) async throws {
+        guard let old = goal(on: date) else { return }
+        let now = clock()
+        let removal = LedgerGoal(id: UUID(), text: old.text, setAt: now, pending: true, removed: true)
+        let payload = old.focusId.map(GoalRemovePayload.init(focusId:)) ?? GoalRemovePayload(goalRef: old.id, text: old.text)
+        try ledger.setGoal(removal, date: date)
+        try await outbox.enqueue(OutboxItem(id: removal.id, kind: .goalRemove, date: date, capturedAt: now,
+                                            payload: RitmusPayload.encode(payload)))
+    }
+
+    /// Boop's chips for the day's goal: the calendar's biggest event, today's session, an overdue repeated goal.
+    func goalSuggestions(brief: Brief, date: String) -> [GoalSuggestion] {
+        GoalSuggestions.suggest(brief: brief, calendar: todayEvents, pastGoals: pastGoals.map { ($0.date, $0.text) },
+                                today: date, in: calendar)
+    }
+
+    /// Fetches the last 30 days' goals the cache does not have yet (past days, fetched once), then joins the phone's own.
+    func refreshPastGoals(today: String) async {
+        let days = (1...30).compactMap { calendar.date(byAdding: .day, value: -$0, to: clock()) }.map(day(of:))
+        var history = GoalHistory.load(goalHistoryFile)
+        let missing = days.filter { history.days[$0] == nil }
+        if let goalsSource, !missing.isEmpty, let fetched = try? await goalsSource(missing) {
+            history.days.merge(fetched) { _, fresh in fresh }
+            history.days = history.days.filter { days.contains($0.key) }
+            history.save(goalHistoryFile)
+        }
+        var out: [PastGoal] = []
+        for d in days {
+            var texts = history.days[d] ?? []
+            if let own = ledger.ledger(for: d).currentGoal?.text, !texts.contains(own) { texts.append(own) }
+            out += texts.map { PastGoal(date: d, text: $0) }
+        }
+        pastGoals = out
+    }
+
+    /// Reads today's events from the phone's calendar.
+    func refreshCalendar() async {
+        guard let eventsSource else { return }
+        todayEvents = await eventsSource(clock())
+    }
+
+    /// Merges the server's version of the day (anything still pending on the phone wins); quietly nothing offline.
+    func refreshDay(_ date: String) async {
+        guard let daySource else { return }
+        let fetchedAt = clock()
+        guard let server = try? await daySource(date) else { return }
+        ledger.merge(server: server, fetchedAt: fetchedAt)
+    }
+
+    /// Boop's sentence about the closed day, once the close is on the server (offline or 503: later).
+    func refreshCloseLine(_ date: String) async {
+        guard let closeLineSource, closeLines[date] == nil, let close = ledger.ledger(for: date).close, !close.pending,
+              let line = try? await closeLineSource(date) else { return }
+        closeLines[date] = line
+    }
+
+    /// Sends what is queued without holding the caller.
+    private func sendSoon() {
+        let outbox = outbox
+        Task { await outbox.flush(ignoringBackoff: true) }
+    }
+}
+
+/// One goal typed on a past day.
+struct PastGoal: Equatable, Sendable {
+    let date: String
+    let text: String
+}
+
+/// The past days' focus texts as fetched from the server (date → texts), kept in one small JSON file.
+struct GoalHistory: Codable, Equatable {
+    var days: [String: [String]] = [:]
+
+    static func load(_ file: URL) -> GoalHistory {
+        guard let data = try? Data(contentsOf: file), let h = try? JSONDecoder().decode(GoalHistory.self, from: data) else { return GoalHistory() }
+        return h
+    }
+
+    func save(_ file: URL) {
+        guard let data = try? JSONEncoder().encode(self) else { return }
+        try? data.write(to: file, options: .atomic)
     }
 }

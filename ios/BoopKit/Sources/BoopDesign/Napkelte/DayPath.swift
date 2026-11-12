@@ -4,8 +4,12 @@ import SwiftUI
 public struct PathStation: Identifiable, Sendable {
     public let id: String, time: String, glyph: String, title: String, sub: String
     public let done: Bool, isNow: Bool, opens: Bool
-    public init(id: String, time: String, glyph: String, title: String, sub: String, done: Bool, isNow: Bool, opens: Bool = false) {
+    /// A white pill at the row's end (e.g. *Kitöltöm* on the next check-in); nil = none.
+    public let action: String?
+    public init(id: String, time: String, glyph: String, title: String, sub: String, done: Bool, isNow: Bool, opens: Bool = false,
+                action: String? = nil) {
         self.id = id; self.time = time; self.glyph = glyph; self.title = title; self.sub = sub; self.done = done; self.isNow = isNow; self.opens = opens
+        self.action = action
     }
 }
 
@@ -25,9 +29,11 @@ public struct DayPath<Card: View>: View {
     let card: (PathStation) -> Card
     /// A tap on a station's row (MOST excepted, its card has its own buttons); nil = the rows are not tappable.
     let onTap: ((PathStation) -> Void)?
-    public init(stations: [PathStation], hue: Hue, onTap: ((PathStation) -> Void)? = nil,
+    /// A tap on a station's action pill (`PathStation.action`).
+    let onAction: ((PathStation) -> Void)?
+    public init(stations: [PathStation], hue: Hue, onTap: ((PathStation) -> Void)? = nil, onAction: ((PathStation) -> Void)? = nil,
                 @ViewBuilder card: @escaping (PathStation) -> Card) {
-        self.stations = stations; self.hue = hue; self.onTap = onTap; self.card = card
+        self.stations = stations; self.hue = hue; self.onTap = onTap; self.onAction = onAction; self.card = card
     }
 
     public var body: some View {
@@ -61,6 +67,7 @@ public struct DayPath<Card: View>: View {
                 }
             }
             .frame(width: 24)
+            HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 10) {
                 if st.isNow {
                     Text("MOST").nkFont(11, .bold, design: .monospaced).tracking(1.4).foregroundStyle(.white).padding(.top, 4)
@@ -75,11 +82,22 @@ public struct DayPath<Card: View>: View {
                     if st.opens { card(st).padding(.top, 2) }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if let a = st.action, !st.isNow {
+                Button { onAction?(st) } label: {
+                    Text(a).nkFont(13.5, .semibold).foregroundStyle(NK.ground)
+                        .padding(.horizontal, 13).frame(height: 34)
+                        .background(Capsule().fill(.white))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 8)
+            }
+            }
             .padding(.bottom, st.opens ? 18 : 10)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .stationTap(onTap.flatMap { tap in st.isNow ? nil : { tap(st) } })
-        .accessibilityElement(children: st.opens ? .contain : .combine)
+        .accessibilityElement(children: st.opens || st.action != nil ? .contain : .combine)
         .accessibilityAddTraits(onTap != nil && !st.isNow ? .isButton : [])
     }
 

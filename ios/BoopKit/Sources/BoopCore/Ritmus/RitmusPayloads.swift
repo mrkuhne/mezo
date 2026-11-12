@@ -50,10 +50,15 @@ public struct GoalPayload: Codable, Equatable, Sendable {
     public init(text: String) { self.text = text }
 }
 
-/// `goalRemove`: the focus to delete — the server's focus id (the `addFocus` answer), not the client ref.
+/// `goalRemove`: the focus to delete — the server's focus id when the phone knows it (a goal fetched from the server),
+/// else the goal's own client ref and text (a goal set on the phone, maybe still on its way): the sender replays the
+/// idempotent add with that ref to learn the focus id, then removes it.
 public struct GoalRemovePayload: Codable, Equatable, Sendable {
-    public var focusId: UUID
+    public var focusId: UUID?
+    public var goalRef: UUID?
+    public var text: String?
     public init(focusId: UUID) { self.focusId = focusId }
+    public init(goalRef: UUID, text: String) { self.goalRef = goalRef; self.text = text }
 }
 
 /// `journal`: a typed line (source `boop`).
