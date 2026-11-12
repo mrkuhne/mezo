@@ -43,6 +43,11 @@ public struct CheckInPlanLite: Codable, Equatable, Sendable {
 }
 
 /// The check-in item set (spec §5.2): the five core items, then the question of the day from the cached plan.
+///
+/// The copy mirrors the backend: ids, questions, anchors and kinds from
+/// `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/service/CheckInItem.java`, option labels from
+/// `…/checkin/entity/PainRegion.java` and `CravingKind.java` (the core five use the approved spike's shorter labels
+/// and questions). Keep them in step when the backend changes.
 public enum CheckInQuestions {
     struct Copy { let label, question, low, high: String; let kind: QuestionKind }
 
@@ -100,11 +105,15 @@ public enum CheckInQuestions {
     }
 
     /// Where an item's orb starts: the last answer given today (latest capture first), else 5. For pain that is the
-    /// last intensity.
+    /// last intensity — unless the latest pain answer was "Nem", which starts at 5.
     public static func startValue(for key: String, checkIns: [LedgerCheckIn]) -> Int {
         for checkIn in checkIns.sorted(by: { $0.capturedAt > $1.capturedAt }) {
-            if key == "pain", let intensity = checkIn.painIntensity { return intensity }
-            if let value = checkIn.values[key] { return value }
+            if key == "pain" {
+                if checkIn.pain == false { return 5 }
+                if let intensity = checkIn.painIntensity { return intensity }
+            } else if let value = checkIn.values[key] {
+                return value
+            }
         }
         return 5
     }

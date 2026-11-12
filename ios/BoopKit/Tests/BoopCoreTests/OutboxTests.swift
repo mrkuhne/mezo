@@ -15,17 +15,21 @@ final class TestClock: @unchecked Sendable {
 actor FakeSender: OutboxSender {
     private var script: [OutboxSendResult]
     private(set) var sent: [OutboxItem] = []
+    /// Items that always answer `retryLater` (a poison item).
+    private var stuck: Set<UUID> = []
     init(_ script: [OutboxSendResult] = []) { self.script = script }
     func send(_ item: OutboxItem) async -> OutboxSendResult {
         sent.append(item)
+        if stuck.contains(item.id) { return .retryLater }
         return script.isEmpty ? .sent(nil) : script.removeFirst()
     }
-    func push(_ results: [OutboxSendResult]) { script += results }
+    func stick(_ id: UUID) { stuck.insert(id) }
 }
 
-struct OutboxTests {
+final class OutboxTests {
     let dir = temporaryDirectory()
     let time = TestClock(at(16, 2))
+    deinit { try? FileManager.default.removeItem(at: dir) }
 
     func item(_ kind: OutboxKind = .checkIn, date: String = "2026-11-10", text: String = "x") -> OutboxItem {
         OutboxItem(kind: kind, date: date, capturedAt: time.now, payload: Data(text.utf8))
@@ -35,31 +39,31 @@ struct OutboxTests {
         return Outbox(directory: dir, sender: sender, clock: { c.now }, calendar: budapest)
     }
 
-    @Test func survivesRelaunch() async {
+    @Test func survivesRelaunch() async throws {
         let first = outbox(FakeSender())
         let queued = item(text: "energy 6")
-        await first.enqueue(queued)
+        try await first.enqueue(queued)
         let second = outbox(FakeSender())
         let pending = await second.pending
         #expect(pending == [queued])
     }
 
-    @Test func flushSendsInOrder() async {
+    @Test func flushSendsInOrder() async throws {
         let sender = FakeSender()
         let box = outbox(sender)
         let a = item(.journal), b = item(.dayClose), c = item(.goal)
-        await box.enqueue(a); await box.enqueue(b); await box.enqueue(c)
+        try await box.enqueue(a); try await box.enqueue(b); try await box.enqueue(c)
         await box.flush()
         #expect(await sender.sent.map(\.id) == [a.id, b.id, c.id])
         #expect(await box.pending.isEmpty)
         #expect(await outbox(FakeSender()).pending.isEmpty) // sent items leave the persisted queue too
     }
 
-    @Test func retryAfterLostResponseSendsSameClientRef() async {
+    @Test func retryAfterLostResponseSendsSameClientRef() async throws {
         let sender = FakeSender([.retryLater])
         let box = outbox(sender)
         let queued = item()
-        await box.enqueue(queued)
+        try await box.enqueue(queued)
         await box.flush()
         #expect(await box.pending.map(\.id) == [queued.id])
         time.advance(31)
@@ -71,11 +75,11 @@ struct OutboxTests {
         #expect(await box.pending.isEmpty)
     }
 
-    @Test func fourHundredMarksFailedNotDropped() async {
+    @Test func fourHundredMarksFailedNotDropped() async throws {
         let sender = FakeSender([.failed("400 date")])
         let box = outbox(sender)
         let bad = item(text: "bad"), good = item(text: "good")
-        await box.enqueue(bad); await box.enqueue(good)
+        try await box.enqueue(bad); try await box.enqueue(good)
         await box.flush()
         let failed = await box.failed
         #expect(failed.map(\.id) == [bad.id])
@@ -91,11 +95,11 @@ struct OutboxTests {
         #expect(await sender.sent.map(\.id) == [bad.id, good.id, bad.id])
     }
 
-    @Test func conflictAndRateLimitRetryWithBackoff() async {
+    @Test func conflictAndRateLimitRetryWithBackoff() async throws {
         let sender = FakeSender([.retryLater, .retryLater])
         let box = outbox(sender)
-        let first = item(), behind = item()
-        await box.enqueue(first); await box.enqueue(behind)
+        let first = item(.journal), behind = item(.dayClose) // the close relinks the journal: it waits
+        try await box.enqueue(first); try await box.enqueue(behind)
         await box.flush()
         var head = await box.pending.first
         #expect(head?.attempts == 1)
@@ -126,11 +130,11 @@ struct OutboxTests {
         #expect(Outbox.backoff(attempts: 40) == 1800)
     }
 
-    @Test func olderThanSevenDaysMarkedFailed() async {
+    @Test func olderThanSevenDaysMarkedFailed() async throws {
         let sender = FakeSender()
         let box = outbox(sender)
         let old = item(date: "2026-11-02"), edge = item(date: "2026-11-03")
-        await box.enqueue(old); await box.enqueue(edge)
+        try await box.enqueue(old); try await box.enqueue(edge)
         await box.flush()
         let failed = await box.failed
         #expect(failed.map(\.id) == [old.id])
@@ -139,27 +143,103 @@ struct OutboxTests {
         #expect(await sender.sent.map(\.id) == [edge.id]) // today − 7 is still sent
     }
 
-    @Test func enqueueingTheSameIdReplacesInPlace() async {
+    @Test func enqueueingTheSameIdReplacesInPlace() async throws {
         let sender = FakeSender()
         let box = outbox(sender)
         var a = item(text: "v1")
         let b = item()
-        await box.enqueue(a); await box.enqueue(b)
+        try await box.enqueue(a); try await box.enqueue(b)
         a.payload = Data("v2".utf8)
-        await box.enqueue(a)
+        try await box.enqueue(a)
         #expect(await box.pending.map(\.id) == [a.id, b.id])
         #expect(await box.pending.first?.payload == Data("v2".utf8))
     }
 
-    @Test func deliveredItemsAreReported() async {
+    @Test func deliveredItemsAreReported() async throws {
         actor Heard { var ids: [UUID] = []; func add(_ id: UUID) { ids.append(id) } }
         let heard = Heard()
         let c = time
         let box = Outbox(directory: dir, sender: FakeSender([.sent(nil), .failed("400")]), clock: { c.now },
                          calendar: budapest, onSent: { item, _ in await heard.add(item.id) })
         let ok = item(), bad = item()
-        await box.enqueue(ok); await box.enqueue(bad)
+        try await box.enqueue(ok); try await box.enqueue(bad)
         await box.flush()
         #expect(await heard.ids == [ok.id])
+    }
+
+    @Test func waitingItemHoldsOnlyItsDependents() async throws {
+        let sender = FakeSender([.retryLater])
+        let box = outbox(sender)
+        let checkIn = item(.checkIn), note = item(.checkInNote), close = item(.dayClose)
+        let otherSlot = item(.checkIn), goal = item(.goal), chat = item(.chatQuestion)
+        let otherDay = item(.checkInNote, date: "2026-11-09")
+        for i in [checkIn, note, otherSlot, goal, chat, close, otherDay] { try await box.enqueue(i) }
+        await box.flush()
+        #expect(await sender.sent.map(\.id) == [checkIn.id, otherSlot.id, goal.id, chat.id, otherDay.id])
+        #expect(await box.pending.map(\.id) == [checkIn.id, note.id, close.id])
+        time.advance(31)
+        await box.flush()
+        #expect(await sender.sent.map(\.id).suffix(3) == [checkIn.id, note.id, close.id])
+        #expect(await box.pending.isEmpty)
+    }
+
+    @Test func poisonItemFailsAfterEightAttempts() async throws {
+        let sender = FakeSender()
+        let box = outbox(sender)
+        let poison = item(.chatQuestion), unrelated = item(.goal)
+        await sender.stick(poison.id)
+        try await box.enqueue(poison); try await box.enqueue(unrelated)
+        await box.flush()
+        #expect(await sender.sent.map(\.id) == [poison.id, unrelated.id]) // not held behind the poison item
+        for _ in 1..<Outbox.maxAttempts {
+            #expect(await box.failed.isEmpty)
+            time.advance(31 * 60)
+            await box.flush()
+        }
+        let failed = await box.failed
+        #expect(failed.map(\.id) == [poison.id])
+        #expect(failed.first?.attempts == Outbox.maxAttempts)
+        #expect(failed.first?.payload == poison.payload)
+        let sent = await sender.sent.map(\.id)
+        #expect(sent.filter { $0 == poison.id }.count == Outbox.maxAttempts)
+        #expect(sent.contains(unrelated.id))
+    }
+
+    @Test func flushIgnoringBackoffSendsNow() async throws {
+        let sender = FakeSender([.retryLater])
+        let box = outbox(sender)
+        let queued = item()
+        try await box.enqueue(queued)
+        await box.flush()
+        await box.flush()
+        #expect(await sender.sent.count == 1) // in backoff
+        await box.flush(ignoringBackoff: true)
+        #expect(await sender.sent.count == 2)
+        #expect(await box.pending.isEmpty)
+    }
+
+    @Test func unreadableQueueIsMovedAsideNotOverwritten() async throws {
+        let garbage = Data("{ not json".utf8)
+        try garbage.write(to: dir.appendingPathComponent("queue.json"))
+        let box = outbox(FakeSender())
+        #expect(await box.pending.isEmpty)
+        try await box.enqueue(item())
+        let aside = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasPrefix("queue.corrupt-") }
+        #expect(aside.count == 1)
+        #expect(try Data(contentsOf: dir.appendingPathComponent(aside[0])) == garbage)
+        #expect(await outbox(FakeSender()).pending.count == 1)
+    }
+
+    @Test func oneUndecodableItemDoesNotTakeDownTheRest() async throws {
+        let good = item(text: "good")
+        let goodJSON = String(decoding: try JSONEncoder().encode(good), as: UTF8.self)
+        let file = "[\(goodJSON), {\"id\": \"broken\", \"kind\": \"telepathy\"}]"
+        try Data(file.utf8).write(to: dir.appendingPathComponent("queue.json"))
+        let box = outbox(FakeSender())
+        #expect(await box.pending == [good])
+        let aside = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasPrefix("queue.unreadable-") }
+        #expect(aside.count == 1)
+        let kept = try String(contentsOf: dir.appendingPathComponent(aside[0]), encoding: .utf8)
+        #expect(kept.contains("telepathy"))
     }
 }
