@@ -649,7 +649,10 @@ test.each([['ILLNESS', 'Beteg vagy'], ['STOMACH', 'Gyomorrontás']] as const)(
     expect(container.querySelector('.fa-hero')).toBeNull()
     expect(container.querySelector('.fa-mac')).toBeNull()
     expect(container.querySelector('.fa-eql')).toBeNull()
-    expect(container.textContent).not.toMatch(/még belefér|a keret|Miből jön össze|Kihagyom|pótolható/i)
+    expect(container.textContent).not.toMatch(/még belefér|a keret|Miből jön össze|pótolható/i)
+    // The skip button's label, case-sensitive: the learning mark's „…kihagyom a tanulásból" is fine, and the
+    // mock marks today incomplete on one weekday (expenditureLearningSeed L+10), which made this weekday-fragile.
+    expect(container.textContent).not.toMatch(/Kihagyom/)
     expect(container.textContent).not.toMatch(/\d+\s*\/\s*\d+\s*kcal/)
     expect(container.querySelector('.fx-cup .fo-fill')).toBeNull()
     expect(container.textContent).not.toMatch(SHAME_RX)
