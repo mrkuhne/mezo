@@ -104,6 +104,9 @@ public actor Outbox {
     /// listener that a newer version of the delivered item was enqueued meanwhile and is still on its way.
     public func isQueued(_ id: UUID) -> Bool { items.contains { $0.id == id } }
 
+    /// The item whose request is out right now (nil between sends): a capture must not move it mid-send.
+    public private(set) var inFlight: UUID?
+
     /// Every queued item (pending and failed), in order.
     public var queue: [OutboxItem] { items }
 
@@ -207,7 +210,9 @@ public actor Outbox {
             }
             if let next = item.nextAttempt, next > now { held.insert(group.key); index += 1; continue }
 
+            inFlight = item.id
             let result = await sender.send(item)
+            inFlight = nil
             // The queue may have changed while the request was out (an enqueue, a replacement).
             guard let i = items.firstIndex(where: { $0.id == item.id }) else { continue }
             switch result {

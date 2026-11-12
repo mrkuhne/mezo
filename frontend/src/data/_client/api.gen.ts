@@ -6006,7 +6006,7 @@ export interface components {
             note?: string;
             /**
              * Format: date-time
-             * @description Boop B3 — the phone's instant of capture; stored as the record's moment (saved_at). Absent = now (web behaviour). `date` must be within today .. today-7 in the owner zone.
+             * @description Boop B3 — the phone's instant of capture; stored as the record's moment (saved_at). Absent = now (web behaviour). `date` must be within today-7 .. today+1 in the owner zone (+1: a phone east of it); today+2 or later -> 400.
              */
             capturedAt?: string;
             snapshot?: components["schemas"]["CheckInSnapshot"];
@@ -29752,7 +29752,7 @@ export interface operations {
                     "application/json": components["schemas"]["DayCloseResponse"];
                 };
             };
-            /** @description Validation failure or a future / too-old date */
+            /** @description Validation failure, or a date after today+1 / before today-7 (owner zone) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -29845,7 +29845,7 @@ export interface operations {
                     "application/json": components["schemas"]["DayCloseLineResponse"];
                 };
             };
-            /** @description Empty slot, no done check-in in that slot, or a date outside today .. today-7 */
+            /** @description Empty slot, no done check-in in that slot, or a date outside today-7 .. today+1 (owner zone) */
             400: {
                 headers: {
                     [name: string]: unknown;

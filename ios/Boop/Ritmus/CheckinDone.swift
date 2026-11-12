@@ -85,14 +85,14 @@ struct CheckinDone: View {
 
     private var dots: [EnergyCurveDot] {
         day.checkIns.compactMap { c in
-            c.values["energy"].map { EnergyCurveDot(id: c.id, hour: hour(c.capturedAt), energy: $0, pending: c.pending) }
+            c.values["energy"].map { EnergyCurveDot(id: c.id, hour: hour(c.capturedAt), energy: $0, pending: env.showsPending(c, date: flow.date)) }
         }
     }
 
     private func detail(_ c: LedgerCheckIn) -> some View {
         CheckInDetail(
             heading: "\(Self.slotName(c.slot).uppercased()) · \(CheckinFlow.clock(c.capturedAt, env.calendar))",
-            pending: c.pending, answers: Self.answers(c), note: c.note, snapshot: Self.figures(c))
+            pending: env.showsPending(c, date: flow.date), answers: Self.answers(c), note: c.note, snapshot: Self.figures(c))
     }
 
     @ViewBuilder private var boopCard: some View {

@@ -222,7 +222,7 @@ components:
           format: date-time
           description: >-
             Boop B3 — the phone's instant of capture; stored as the record's moment (saved_at).
-            Absent = now (web behaviour). `date` must be within today .. today-7 in the owner zone.
+            Absent = now (web behaviour). `date` must be within today-7 .. today+1 in the owner zone (+1: a phone east of it); today+2 or later -> 400.
         snapshot:
           $ref: '#/components/schemas/CheckInSnapshot'
     CheckInSnapshot:
