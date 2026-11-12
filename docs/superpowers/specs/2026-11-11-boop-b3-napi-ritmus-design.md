@@ -37,7 +37,8 @@ moment. B3 also restarts the calibration data B7 (day capacity) needs.
 | D8 | **Chat must already know everything** ("ne kelljen mindig kontextet adni magamról, célról, edzés, sport, kaja") — questions like "miért vagyok fáradtabb, mint tegnap?", "mire figyeljek ma az edzésen?", "mikor és mit egyek, hogy kimaxoljam a versenyt / röpit / kondit?", "mennyivel egyek edzés előtt?". | Boop's chat gets today's day block pushed into every turn (§7.6), shows what it sees, offers ready questions, and names the data in its answers. |
 | D9 | Push/widget limited until the paid team → **design now, gate it**. | Local notifications ship in B3 (they need no paid team); the in-place widget and answer-from-notification come when the paid team lands (§7.8). |
 
-Spike iteration decisions: swipe instead of tapping (D5); five core items + question of the day (D4).
+Spike iteration decisions: swipe instead of tapping (D5); five core items + question of the day (D4); the close's orbs
+are living orbs and Mesélj takes typing as well as voice (2026-11-12).
 
 ## 3. Goals · non-goals · anti-goals
 
@@ -113,12 +114,14 @@ tapping a dot opens the same detail inline. Past check-in rows on the timeline s
 
 ### 5.4 Este — the close (full screen, dusk sky)
 "ESTI ZÁRÁS · EGY PERC / Zárjuk le a napot" — one page, four numbered steps, each ticks when answered:
-1. **Hogy vagy most?** — energy 1–10 (one tap on ten small level orbs; this is the evening check-in's energy).
+1. **Hogy vagy most?** — energy 1–10 (one tap on ten small **living** level orbs — the same moving orbs as everywhere else, owner 2026-11-12; this is the evening check-in's energy).
 2. **A nap célja** — the goal text + *Sikerült · Részben · Nem*; under it **"BOOP CÉLJAI · MAGUKTÓL"**: B2's
    `DayPlan.goals` (protein, session, bedtime) ticked from data ("146 g", "90 perc · pulzus átl. 128", "még előtted").
    B2 leaves the session's `met = nil` (the brief has no done flag); **B3 adds it** (§7.4a).
-3. **Milyen volt a nap?** — five orbs, *Nehéz … Rendben … Remek*.
-4. **Mesélj** (ha van kedved) — one tap to talk, one to stop; "Leírom…" then the transcript.
+3. **Milyen volt a nap?** — five living orbs, *Nehéz … Rendben … Remek*.
+4. **Mesélj** (ha van kedved) — one tap to talk, one to stop; "Leírom…" then the transcript; **or type it** in the
+   "Vagy írd be…" field under the mic (owner 2026-11-12) — typed text lands in the same journal entry, no transcription.
+   The same voice-or-type row is used for the optional line after a check-in.
 
 *Lezárom a napot* is enabled once step 3 is answered ("A napot az értékelés zárja le, a többi elhagyható").
 After closing: Boop's one sentence about the day, "A MAI NAPOD" summary (értékelés, a nap célja, energia este,
