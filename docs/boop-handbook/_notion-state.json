@@ -1,0 +1,731 @@
+{
+  "notion": {
+    "_leiras": "A tulajdonos Notion 'Boop' terének azonosítói. A szinkron ezekbe ír, mást nem érint.",
+    "pages": {
+      "home": "4168968e-752b-811a-b042-ec6ebe7cd9de",
+      "adatbazisok": "4168968e-752b-81fa-a5dc-e4271a0f7b32",
+      "jegyek": "4168968e-752b-8183-95a0-e06959301180",
+      "kezikonyv": "4168968e-752b-8135-a29d-ebdd7630864c",
+      "dontesek": "4168968e-752b-81bb-b230-c51631f98852",
+      "kiadasok": "4168968e-752b-81ff-afd8-c289898671fb"
+    },
+    "databases": {
+      "jegyek": "d5086984-af05-4b4b-88cf-25c3a7cbfd0d",
+      "kezikonyv": "8372d442-b232-4c87-8c50-b9da819af7e2",
+      "dontesek": "ccaa7a5d-4bf9-426c-806a-2dd4299825a3",
+      "kiadasok": "d8bcc79d-3118-435d-be1c-cea532cbc3cb"
+    },
+    "data_sources": {
+      "jegyek": "d0505f04-a5ea-4760-a175-f2be4bac286d",
+      "kezikonyv": "641c72fe-187c-40dd-b696-9b41871609f8",
+      "dontesek": "c0206fd3-d07d-4224-bb18-6d92913a8566",
+      "kiadasok": "6f4407de-1d94-4ba4-b846-0a1dba28a909"
+    }
+  },
+  "records": {
+    "jegyek:mezo-r36n9": {
+      "page_id": "4168968e-752b-81e6-a383-de42a4b49915",
+      "hash": "7efd207f7741"
+    },
+    "jegyek:mezo-r36n9.25": {
+      "page_id": "4168968e-752b-815d-a9ce-ec6aaaba5e82",
+      "hash": "68dd3e17c370"
+    },
+    "jegyek:mezo-r36n9.19": {
+      "page_id": "4168968e-752b-81c6-ab21-f9b8ff8a42fa",
+      "hash": "b0f0836875cf"
+    },
+    "jegyek:mezo-r36n9.13": {
+      "page_id": "4168968e-752b-8158-850f-d45093d83c69",
+      "hash": "7077527fa2ae"
+    },
+    "jegyek:mezo-r36n9.12": {
+      "page_id": "4168968e-752b-81fb-a1af-d1fdb8f31b8f",
+      "hash": "79e3faba8417"
+    },
+    "jegyek:mezo-r36n9.11": {
+      "page_id": "4168968e-752b-815d-99ad-eac07b96ef36",
+      "hash": "00a943debca3"
+    },
+    "jegyek:mezo-r36n9.10": {
+      "page_id": "4168968e-752b-81b8-8bae-d293ae7a9187",
+      "hash": "aa8816b883d7"
+    },
+    "jegyek:mezo-r36n9.9": {
+      "page_id": "4168968e-752b-81ed-a896-db1b3c017532",
+      "hash": "9d983722d4cd"
+    },
+    "jegyek:mezo-r36n9.7": {
+      "page_id": "4168968e-752b-81ea-883b-ef5dd8463fd3",
+      "hash": "4f7d6fdbd7a8"
+    },
+    "jegyek:mezo-r36n9.3": {
+      "page_id": "4168968e-752b-81b8-965a-c250eb3857a7",
+      "hash": "0e7e4a4d7624"
+    },
+    "jegyek:mezo-r36n9.2": {
+      "page_id": "4168968e-752b-81e3-a62a-ce7f4aaffd06",
+      "hash": "5becc1716129"
+    },
+    "jegyek:mezo-r36n9.29": {
+      "page_id": "4168968e-752b-81ed-ad38-ddfed1855fec",
+      "hash": "c520852a0322"
+    },
+    "jegyek:mezo-r36n9.28": {
+      "page_id": "4168968e-752b-818b-8c42-c169aa6dd5eb",
+      "hash": "fa1c335bf1dc"
+    },
+    "jegyek:mezo-r36n9.27": {
+      "page_id": "4168968e-752b-81d4-9b11-c05c585e207c",
+      "hash": "876d92b040fb"
+    },
+    "jegyek:mezo-r36n9.26": {
+      "page_id": "4168968e-752b-8184-87ee-deabec891c70",
+      "hash": "30b2c75fd73d"
+    },
+    "jegyek:mezo-r36n9.24": {
+      "page_id": "4168968e-752b-8191-8d38-f53edaff4db7",
+      "hash": "27a6fe4865a4"
+    },
+    "jegyek:mezo-r36n9.23": {
+      "page_id": "4168968e-752b-81fc-8bd4-e085b7784707",
+      "hash": "c79488417b77"
+    },
+    "jegyek:mezo-r36n9.22": {
+      "page_id": "4168968e-752b-81e2-a463-c11f9f8d3dc4",
+      "hash": "7ad1d58d0e2a"
+    },
+    "jegyek:mezo-r36n9.18": {
+      "page_id": "4168968e-752b-81a2-adff-e71b81a0e3d3",
+      "hash": "23edcb24f1c6"
+    },
+    "jegyek:mezo-r36n9.17": {
+      "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
+      "hash": "797c3dd62534"
+    },
+    "jegyek:mezo-r36n9.16": {
+      "page_id": "4168968e-752b-81dd-967e-fe6305d85e18",
+      "hash": "1ba613c5bb9a"
+    },
+    "jegyek:mezo-r36n9.15": {
+      "page_id": "4168968e-752b-8161-b864-c3d13fc8e9b4",
+      "hash": "0a28b24c2c13"
+    },
+    "jegyek:mezo-r36n9.14": {
+      "page_id": "4168968e-752b-8126-b650-c1fd3b87c390",
+      "hash": "9e36a227f91f"
+    },
+    "jegyek:mezo-r36n9.5": {
+      "page_id": "4168968e-752b-816c-a28b-d65344fba272",
+      "hash": "867ed3d26ee9"
+    },
+    "jegyek:mezo-r36n9.21": {
+      "page_id": "4168968e-752b-811d-b91c-da7d60fe8b70",
+      "hash": "2d08e024d959"
+    },
+    "jegyek:mezo-r36n9.20": {
+      "page_id": "4168968e-752b-81df-a21a-ded130b1e446",
+      "hash": "d19dc6d5d698"
+    },
+    "jegyek:mezo-r36n9.8": {
+      "page_id": "4168968e-752b-81a4-b2cc-de86023bba6f",
+      "hash": "c1fc4eb1aacf"
+    },
+    "jegyek:mezo-r36n9.6": {
+      "page_id": "4168968e-752b-8101-a66d-cd36bff01a5c",
+      "hash": "f0133ab1022a"
+    },
+    "jegyek:mezo-r36n9.4": {
+      "page_id": "4168968e-752b-81d6-9e0e-e032c7434ec4",
+      "hash": "15db9a2ef860"
+    },
+    "jegyek:mezo-r36n9.1": {
+      "page_id": "4168968e-752b-8198-92be-e06ccc5c1a88",
+      "hash": "930ae8f775c1"
+    },
+    "dontesek:d-2026-11-09-nativ-app": {
+      "page_id": "4168968e-752b-814a-a795-d1873681ffc9",
+      "hash": "37716086b2d9"
+    },
+    "dontesek:d-2026-11-09-boop-nev": {
+      "page_id": "4168968e-752b-8120-a8d0-e6f32b5e0363",
+      "hash": "b68f303b563d"
+    },
+    "dontesek:d-2026-11-09-szimulator": {
+      "page_id": "4168968e-752b-8174-9e28-ffa2ee4df9a5",
+      "hash": "adca2ee25b82"
+    },
+    "dontesek:d-2026-11-09-naptar": {
+      "page_id": "4168968e-752b-8182-b1ce-dcef2edd9abd",
+      "hash": "d4907fb6c266"
+    },
+    "dontesek:d-2026-11-09-60-nap": {
+      "page_id": "4168968e-752b-81cd-b33c-df010ed70115",
+      "hash": "bfbbdb5cadf0"
+    },
+    "dontesek:d-2026-11-10-napkelte": {
+      "page_id": "4168968e-752b-815d-b666-df0aa68b314e",
+      "hash": "dfdaa311e262"
+    },
+    "dontesek:d-2026-11-11-gerinc": {
+      "page_id": "4168968e-752b-8109-8048-c9d4fc663edc",
+      "hash": "20d6486841bf"
+    },
+    "dontesek:d-2026-11-11-onallo": {
+      "page_id": "4168968e-752b-8170-888d-e633db7bc482",
+      "hash": "10107d78fd49"
+    },
+    "dontesek:d-2026-11-11-fiok": {
+      "page_id": "4168968e-752b-818d-bd65-d48b7b6a6dc2",
+      "hash": "e167dedc52a5"
+    },
+    "dontesek:d-2026-11-11-fizetos": {
+      "page_id": "4168968e-752b-81ec-bd09-f948ae29372a",
+      "hash": "0280333a547d"
+    },
+    "dontesek:d-2026-11-11-sorrend": {
+      "page_id": "4168968e-752b-8184-839c-cc514df11834",
+      "hash": "c7b8a1548fb5"
+    },
+    "dontesek:d-2026-11-11-egy-hang": {
+      "page_id": "4168968e-752b-81e6-8a68-df92e2a39a98",
+      "hash": "c38b023dc5a3"
+    },
+    "dontesek:d-2026-11-11-etel-edzes": {
+      "page_id": "4168968e-752b-8143-861a-d29f115a1bdc",
+      "hash": "bd0553e6031c"
+    },
+    "dontesek:d-2026-11-11-semmi-koppintas-nelkul": {
+      "page_id": "4168968e-752b-815a-844c-ce16bafc0897",
+      "hash": "023b296ddc3e"
+    },
+    "dontesek:d-2026-11-11-offline": {
+      "page_id": "4168968e-752b-8192-a393-fa96b96b00b5",
+      "hash": "f00a4d16fd35"
+    },
+    "dontesek:d-2026-11-12-hipnogram": {
+      "page_id": "4168968e-752b-8104-ac61-e17405efc807",
+      "hash": "b94d3f8e5821"
+    },
+    "dontesek:d-2026-11-12-gomb-egy-helyen": {
+      "page_id": "4168968e-752b-8111-b75d-cadb6b1caa97",
+      "hash": "c63432d7d87a"
+    },
+    "dontesek:d-2026-11-12-feelfit": {
+      "page_id": "4168968e-752b-818c-bc09-ffd2cbc72e5a",
+      "hash": "1c9172fb4a6f"
+    },
+    "dontesek:d-2026-11-12-notion": {
+      "page_id": "4168968e-752b-8187-8516-cdbafc9e4457",
+      "hash": "1331b84ac7e0"
+    },
+    "kiadasok:d0d823d39": {
+      "page_id": "4168968e-752b-814e-8a59-e23819c45aff",
+      "hash": "dea23d28d6a9"
+    },
+    "kiadasok:07afe9a0b": {
+      "page_id": "4168968e-752b-8179-97d8-e4430c184e28",
+      "hash": "2523069db55c"
+    },
+    "kiadasok:e2ad5c76a": {
+      "page_id": "4168968e-752b-81c9-80fb-cf5d6dc20a8f",
+      "hash": "afc4b7cafda1"
+    },
+    "kiadasok:f67688f31": {
+      "page_id": "4168968e-752b-815b-9c19-f526270db29f",
+      "hash": "edc465f5ca49"
+    },
+    "kiadasok:0b1f5ff82": {
+      "page_id": "4168968e-752b-81e3-a647-e2a0216f98b2",
+      "hash": "fc591ce6565b"
+    },
+    "kiadasok:d46db9632": {
+      "page_id": "4168968e-752b-8156-b265-f0eaf1a506cb",
+      "hash": "ddcd34ab2995"
+    },
+    "kiadasok:61834ed83": {
+      "page_id": "4168968e-752b-81a1-b488-e118378fc955",
+      "hash": "49303a3e63db"
+    },
+    "kiadasok:98430ce66": {
+      "page_id": "4168968e-752b-81e2-a956-c1f7f32c3792",
+      "hash": "9c9d2c7ce921"
+    },
+    "kiadasok:5aac1e993": {
+      "page_id": "4168968e-752b-81cd-8d38-f42054ffec8b",
+      "hash": "e773f6c1bcc9"
+    },
+    "kiadasok:9b0cfc46f": {
+      "page_id": "4168968e-752b-81d7-a43f-ca980888ad37",
+      "hash": "145d7f73f4e3"
+    },
+    "kiadasok:90c085ebd": {
+      "page_id": "4168968e-752b-81b3-98b6-d70e63541702",
+      "hash": "75080634c9f4"
+    },
+    "kiadasok:19ca92ca6": {
+      "page_id": "4168968e-752b-8114-a883-eaa2c58713ea",
+      "hash": "dc4b530d7e9a"
+    },
+    "kiadasok:aa807c5b2": {
+      "page_id": "4168968e-752b-8169-a237-f3549fa44a0c",
+      "hash": "3b2406ed56f5"
+    },
+    "kiadasok:39c10c6f2": {
+      "page_id": "4168968e-752b-81da-b5d9-f765282ef3cf",
+      "hash": "f2558b6028b2"
+    },
+    "kezikonyv:01-alapok/00-attekintes": {
+      "page_id": "4168968e-752b-81b7-8c0b-f736eeecfc49",
+      "hash": "f58488a2cb03"
+    },
+    "kezikonyv:01-alapok/elso-lepesek": {
+      "page_id": "4168968e-752b-8122-9a3b-f35eb661b68c",
+      "hash": "7bfe1e304c4e"
+    },
+    "kezikonyv:01-alapok/ertesitesek": {
+      "page_id": "4168968e-752b-8165-9906-caa506eee81f",
+      "hash": "7626f32d8ed1"
+    },
+    "kezikonyv:01-alapok/fiok-es-belepes": {
+      "page_id": "4168968e-752b-813a-8bb9-cbce770f5a64",
+      "hash": "b760f526daa3"
+    },
+    "kezikonyv:01-alapok/fiok-lap": {
+      "page_id": "4168968e-752b-819b-b550-d0428e95081e",
+      "hash": "1945645e3024"
+    },
+    "kezikonyv:01-alapok/fizetos-apple-fiok": {
+      "page_id": "4168968e-752b-8155-a95b-cdab453c6b60",
+      "hash": "2d1ea6a6fd34"
+    },
+    "kezikonyv:01-alapok/gyors-rogzites": {
+      "page_id": "4168968e-752b-81eb-833a-d4a89c813fb9",
+      "hash": "7be56f852e94"
+    },
+    "kezikonyv:01-alapok/napkelte-kinezet": {
+      "page_id": "4168968e-752b-812a-9b5f-fd8f477ccda4",
+      "hash": "b033206cc818"
+    },
+    "kezikonyv:01-alapok/navigacio": {
+      "page_id": "4168968e-752b-81f1-a428-f1eff627e50a",
+      "hash": "4b1c85f1ee58"
+    },
+    "kezikonyv:01-alapok/net-nelkul": {
+      "page_id": "4168968e-752b-815c-bee7-c4032ca1468f",
+      "hash": "f3490a93d3ac"
+    },
+    "kezikonyv:01-alapok/telepites-a-telefonra": {
+      "page_id": "4168968e-752b-8185-b34c-c477fe6deb9b",
+      "hash": "7140607abc9f"
+    },
+    "kezikonyv:02-ma/00-attekintes": {
+      "page_id": "4168968e-752b-81e7-9587-d27ec99c8ca4",
+      "hash": "66ce53e1996c"
+    },
+    "kezikonyv:02-ma/boop-elmondja": {
+      "page_id": "4168968e-752b-8123-b8ab-c3e5464f6f97",
+      "hash": "cb7860edb38a"
+    },
+    "kezikonyv:02-ma/boop-eszrevette": {
+      "page_id": "4168968e-752b-818b-be8d-c0965f768985",
+      "hash": "052dcd6e964f"
+    },
+    "kezikonyv:02-ma/este-keret": {
+      "page_id": "4168968e-752b-812a-b752-e42df8ffcbfd",
+      "hash": "12185674d595"
+    },
+    "kezikonyv:02-ma/javaslatkartyak": {
+      "page_id": "4168968e-752b-81df-b838-dc16bc60bb7c",
+      "hash": "412894677570"
+    },
+    "kezikonyv:02-ma/kimelo-mod": {
+      "page_id": "4168968e-752b-812e-a5ee-d402fb66b38e",
+      "hash": "c057b3b82919"
+    },
+    "kezikonyv:02-ma/napkozben-idovonal": {
+      "page_id": "4168968e-752b-81e1-b499-df1b77032226",
+      "hash": "ed173f21b80e"
+    },
+    "kezikonyv:02-ma/reggeli-itelet": {
+      "page_id": "4168968e-752b-8167-8daf-d7efe8c867b5",
+      "hash": "71c5f9f90a28"
+    },
+    "kezikonyv:02-ma/reggeli-terv": {
+      "page_id": "4168968e-752b-81aa-89c9-db4df6156dba",
+      "hash": "c865910db7f3"
+    },
+    "kezikonyv:02-ma/reszletes-lapok": {
+      "page_id": "4168968e-752b-81c5-a750-e28777cbca77",
+      "hash": "e4e678e8fe44"
+    },
+    "kezikonyv:02-ma/szobak": {
+      "page_id": "4168968e-752b-816f-96ea-fccbf8410c7c",
+      "hash": "2aa3590eb2ca"
+    },
+    "kezikonyv:03-naplo/00-attekintes": {
+      "page_id": "4168968e-752b-816a-a192-d4caddbb782e",
+      "hash": "0aa1df1af859"
+    },
+    "kezikonyv:03-naplo/biomarker-pillanatkep": {
+      "page_id": "4168968e-752b-816d-81b5-ca4354675429",
+      "hash": "29c7e04a1311"
+    },
+    "kezikonyv:03-naplo/check-in": {
+      "page_id": "4168968e-752b-816e-88ae-dd50ce4569c1",
+      "hash": "956e40f9bbad"
+    },
+    "kezikonyv:03-naplo/emlekeztetok": {
+      "page_id": "4168968e-752b-8121-9d56-d4b82f42ea46",
+      "hash": "1bb899f28121"
+    },
+    "kezikonyv:03-naplo/energiagorbe-pottyok": {
+      "page_id": "4168968e-752b-814f-9c3c-e9de88bc188a",
+      "hash": "b75a7021105f"
+    },
+    "kezikonyv:03-naplo/esti-zaras": {
+      "page_id": "4168968e-752b-8105-8771-e260f9a71c7e",
+      "hash": "9ad324032530"
+    },
+    "kezikonyv:03-naplo/hangnaplo": {
+      "page_id": "4168968e-752b-81af-99f1-cf2997c051d9",
+      "hash": "4cb1cc6bac73"
+    },
+    "kezikonyv:03-naplo/kerdezd-boopot": {
+      "page_id": "4168968e-752b-81df-88bf-fb1e1215e8cf",
+      "hash": "9906ebc530e0"
+    },
+    "kezikonyv:03-naplo/nap-kerdese": {
+      "page_id": "4168968e-752b-8180-b88c-cf1def50329e",
+      "hash": "2435bdb1fa5d"
+    },
+    "kezikonyv:03-naplo/napi-cel": {
+      "page_id": "4168968e-752b-819e-862a-c0315e71e52f",
+      "hash": "610a7b2014a0"
+    },
+    "kezikonyv:03-naplo/napok-lista": {
+      "page_id": "4168968e-752b-8154-b39e-c2567a928484",
+      "hash": "f345df49898e"
+    },
+    "kezikonyv:03-naplo/widget-es-zarolt-kepernyo": {
+      "page_id": "4168968e-752b-81fc-8eee-d3c3791cb992",
+      "hash": "577bcb87fc0c"
+    },
+    "kezikonyv:04-terv/00-attekintes": {
+      "page_id": "4168968e-752b-81c6-a15f-d115f1a8c6e1",
+      "hash": "32cc80544237"
+    },
+    "kezikonyv:04-terv/01-terv-keret": {
+      "page_id": "4168968e-752b-8197-a22b-c72ced5647ab",
+      "hash": "b60d6214fcdb"
+    },
+    "kezikonyv:04-terv/02-sulycel-celmotor": {
+      "page_id": "4168968e-752b-817c-a592-ecb076252fc5",
+      "hash": "df01f9bac971"
+    },
+    "kezikonyv:04-terv/03-testsuly-trend": {
+      "page_id": "4168968e-752b-819c-8bdf-c007ba2c2ce2",
+      "hash": "740d771eaf00"
+    },
+    "kezikonyv:04-terv/04-test-kartya": {
+      "page_id": "4168968e-752b-81dc-84d2-d1bd345661aa",
+      "hash": "a653c5486f0e"
+    },
+    "kezikonyv:04-terv/05-megtanult-energiaigeny": {
+      "page_id": "4168968e-752b-81e6-99a0-c9ddd8732b49",
+      "hash": "702452843b56"
+    },
+    "kezikonyv:04-terv/06-terv-csomag": {
+      "page_id": "4168968e-752b-81c2-b09d-e11a0ba276cf",
+      "hash": "ece9a972daef"
+    },
+    "kezikonyv:04-terv/07-bevasarlolista": {
+      "page_id": "4168968e-752b-81c4-ab54-c295e5a48d60",
+      "hash": "01ef983de784"
+    },
+    "kezikonyv:04-terv/08-hataskovetes": {
+      "page_id": "4168968e-752b-81f1-938c-eb8dd448db7c",
+      "hash": "bd2576bbca43"
+    },
+    "kezikonyv:05-alvas/00-attekintes": {
+      "page_id": "4168968e-752b-81a9-98ef-c41118a98d20",
+      "hash": "17dbc675af4e"
+    },
+    "kezikonyv:05-alvas/01-ejszakak-apple-healthbol": {
+      "page_id": "4168968e-752b-816a-97f0-f606aa2f3610",
+      "hash": "40a329e6f118"
+    },
+    "kezikonyv:05-alvas/02-egy-datum-egy-ejszaka": {
+      "page_id": "4168968e-752b-8198-bd50-fd208b9595ad",
+      "hash": "e7ef05b2617f"
+    },
+    "kezikonyv:05-alvas/03-alvas-szoba": {
+      "page_id": "4168968e-752b-81cb-beba-cf20c07382ed",
+      "hash": "6c21c5840870"
+    },
+    "kezikonyv:05-alvas/04-hipnogram-egyszer": {
+      "page_id": "4168968e-752b-816a-bc59-ce98decb5d48",
+      "hash": "946c20c8d0d5"
+    },
+    "kezikonyv:05-alvas/05-alvo-pulzus": {
+      "page_id": "4168968e-752b-819a-8eff-ffcc00b5b2b4",
+      "hash": "20f58f24605e"
+    },
+    "kezikonyv:05-alvas/06-lefekvesi-emlekezteto": {
+      "page_id": "4168968e-752b-8173-b13a-c71c9de278d7",
+      "hash": "d48545d082f9"
+    },
+    "kezikonyv:05-alvas/07-alvas-pontszam-es-forma": {
+      "page_id": "4168968e-752b-8120-a533-fd811f2135b0",
+      "hash": "3848961c39a6"
+    },
+    "kezikonyv:06-etel/00-attekintes": {
+      "page_id": "4168968e-752b-81b5-8ed3-eb04ae60d411",
+      "hash": "6171342790c2"
+    },
+    "kezikonyv:06-etel/01-etel-szoba-ma": {
+      "page_id": "4168968e-752b-8195-9564-d1ced1b8d194",
+      "hash": "da2664b9f020"
+    },
+    "kezikonyv:06-etel/02-etkezes-rogzitese": {
+      "page_id": "4168968e-752b-8164-b1d7-d8aa78d82e63",
+      "hash": "a7287207cd35"
+    },
+    "kezikonyv:06-etel/03-etkezes-ertekelese": {
+      "page_id": "4168968e-752b-81ee-b603-ce33a392a527",
+      "hash": "e8757f49e08d"
+    },
+    "kezikonyv:06-etel/04-napi-keret": {
+      "page_id": "4168968e-752b-8109-800f-e787a78acfe6",
+      "hash": "03c3715cc3fb"
+    },
+    "kezikonyv:06-etel/05-receptek": {
+      "page_id": "4168968e-752b-816b-af92-d893e20f59e2",
+      "hash": "82969007c86c"
+    },
+    "kezikonyv:06-etel/06-kamra": {
+      "page_id": "4168968e-752b-81cc-96d5-c3f0fa42540c",
+      "hash": "90894e018289"
+    },
+    "kezikonyv:06-etel/07-allergenek": {
+      "page_id": "4168968e-752b-81eb-8603-dfc38fa7a4e8",
+      "hash": "87769636e0b1"
+    },
+    "kezikonyv:06-etel/08-kihagyas-kimelo": {
+      "page_id": "4168968e-752b-817b-81f9-dc9b999d4f79",
+      "hash": "6833555c97f6"
+    },
+    "kezikonyv:06-etel/09-taplalekkiegeszitok": {
+      "page_id": "4168968e-752b-81ae-8838-d170175672f7",
+      "hash": "9dc50472344e"
+    },
+    "kezikonyv:06-etel/10-ami-kimarad": {
+      "page_id": "4168968e-752b-8181-9f53-ec6b68916517",
+      "hash": "d69f3f746c9f"
+    },
+    "kezikonyv:07-edzes/00-attekintes": {
+      "page_id": "4168968e-752b-8183-8a33-c40bbe3d84e0",
+      "hash": "d9f4344e6150"
+    },
+    "kezikonyv:07-edzes/01-mozgas-szoba-ma": {
+      "page_id": "4168968e-752b-81b1-add3-c4f79e1b44e6",
+      "hash": "58e6107d373c"
+    },
+    "kezikonyv:07-edzes/02-mezociklus-terv": {
+      "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
+      "hash": "a9809a4c17ad"
+    },
+    "kezikonyv:07-edzes/03-edzeslejatszo": {
+      "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
+      "hash": "5338e33da93d"
+    },
+    "kezikonyv:07-edzes/04-progresszio-motor": {
+      "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
+      "hash": "68f3f53a9106"
+    },
+    "kezikonyv:07-edzes/05-heti-volumen": {
+      "page_id": "4168968e-752b-813c-9763-e3bda2691265",
+      "hash": "b5607a1254a5"
+    },
+    "kezikonyv:07-edzes/06-gyakorlatok-elozmenyek": {
+      "page_id": "4168968e-752b-8189-8150-ca1dc31f807c",
+      "hash": "6d0fb13ec7d1"
+    },
+    "kezikonyv:07-edzes/07-apple-watch": {
+      "page_id": "4168968e-752b-8155-ad39-d2a3d6ef07bc",
+      "hash": "61d9245f7099"
+    },
+    "kezikonyv:07-edzes/08-elo-tevekenyseg": {
+      "page_id": "4168968e-752b-815f-b13c-e3bc7bc508b8",
+      "hash": "2f1ced23f253"
+    },
+    "kezikonyv:07-edzes/09-edzesek-a-healthbol": {
+      "page_id": "4168968e-752b-81f7-a4bc-e98727e51d36",
+      "hash": "f8c3f5c1aaff"
+    },
+    "kezikonyv:07-edzes/10-sport-futas": {
+      "page_id": "4168968e-752b-8189-bcd3-caf1aa23fda3",
+      "hash": "0f442c0af6fc"
+    },
+    "kezikonyv:07-edzes/11-kihagyas-kimelo": {
+      "page_id": "4168968e-752b-8119-981d-e24f027f7f4f",
+      "hash": "0ca6c3ace543"
+    },
+    "kezikonyv:07-edzes/12-ami-kimarad": {
+      "page_id": "4168968e-752b-8136-9c1d-ff413ea11f85",
+      "hash": "bf3160d5825e"
+    },
+    "kezikonyv:08-adatok/00-attekintes": {
+      "page_id": "4168968e-752b-81ca-a6fc-d93b606518bc",
+      "hash": "5206ec7de2bf"
+    },
+    "kezikonyv:08-adatok/01-osszekotes-es-visszatoltes": {
+      "page_id": "4168968e-752b-817a-9cf1-ff55d3a49a60",
+      "hash": "0195abb6832d"
+    },
+    "kezikonyv:08-adatok/02-szeles-adatkor": {
+      "page_id": "4168968e-752b-8195-9958-e626372f8fcc",
+      "hash": "c3381b2cc1b3"
+    },
+    "kezikonyv:08-adatok/03-frissites-nyitaskor-es-hatterben": {
+      "page_id": "4168968e-752b-81fd-9515-f2c9851a0523",
+      "hash": "680da6b9af17"
+    },
+    "kezikonyv:08-adatok/04-forrasok-es-eszkozok": {
+      "page_id": "4168968e-752b-8128-bbbb-f91bd8872730",
+      "hash": "bca4f32a5364"
+    },
+    "kezikonyv:08-adatok/05-torlesek-kovetese": {
+      "page_id": "4168968e-752b-819a-ba42-d37589f886ba",
+      "hash": "6523df095f79"
+    },
+    "kezikonyv:08-adatok/06-naptar": {
+      "page_id": "4168968e-752b-8131-9e2f-d77f910167ea",
+      "hash": "bc8bd48d0fa7"
+    },
+    "kezikonyv:08-adatok/07-edzesek-az-egeszsegbol": {
+      "page_id": "4168968e-752b-81b1-bad4-db54f519550e",
+      "hash": "aa7d99d7bf44"
+    },
+    "kezikonyv:08-adatok/08-testsuly-az-egeszsegbol": {
+      "page_id": "4168968e-752b-81c8-87f0-d956bd3ebe35",
+      "hash": "5b449bf07c27"
+    },
+    "kezikonyv:08-adatok/09-feelfit-merleg": {
+      "page_id": "4168968e-752b-81ca-870f-e703bd48c7e2",
+      "hash": "3fcd3937868f"
+    },
+    "kezikonyv:08-adatok/10-fiok-osszevonas": {
+      "page_id": "4168968e-752b-81ea-8d03-e08e91df647b",
+      "hash": "d7b6644c3d81"
+    },
+    "kezikonyv:08-adatok/11-checkin-pillanatkep": {
+      "page_id": "4168968e-752b-8116-b29a-e23b88527b34",
+      "hash": "ba7c07bad7b4"
+    },
+    "kezikonyv:09-boop/00-attekintes": {
+      "page_id": "4168968e-752b-8137-9e58-ecbc630b50e8",
+      "hash": "9c646df8bfac"
+    },
+    "kezikonyv:09-boop/boop-ful-beszelgetes": {
+      "page_id": "4168968e-752b-814b-8914-c73f68d8475a",
+      "hash": "d68f92253b4e"
+    },
+    "kezikonyv:09-boop/boop-latja-es-kesz-kerdesek": {
+      "page_id": "4168968e-752b-8173-b999-d70c4608d5b9",
+      "hash": "2d72aebaad05"
+    },
+    "kezikonyv:09-boop/boop-mindent-lat": {
+      "page_id": "4168968e-752b-8188-b37f-ed235475ede7",
+      "hash": "9bb32f6a77e1"
+    },
+    "kezikonyv:09-boop/egy-hang-boop": {
+      "page_id": "4168968e-752b-817a-81bf-fc676743cc27",
+      "hash": "c154b1db7308"
+    },
+    "kezikonyv:09-boop/gomb-boop-arca": {
+      "page_id": "4168968e-752b-81eb-a3c5-e9a1e2e49eab",
+      "hash": "36179f97240f"
+    },
+    "kezikonyv:09-boop/hangbevitel": {
+      "page_id": "4168968e-752b-8176-9907-fb343273f34e",
+      "hash": "fafd66d14551"
+    },
+    "kezikonyv:09-boop/kerdes-net-nelkul": {
+      "page_id": "4168968e-752b-813d-9402-c070c974049d",
+      "hash": "eca02c88929b"
+    },
+    "kezikonyv:09-boop/mit-tud-a-beszelgetes": {
+      "page_id": "4168968e-752b-8125-a67c-d714e31135b0",
+      "hash": "d85b8f7be937"
+    },
+    "kezikonyv:10-ai/00-attekintes": {
+      "page_id": "4168968e-752b-81bd-be6e-f5cc9ab9e4cd",
+      "hash": "065edef6b62b"
+    },
+    "kezikonyv:10-ai/az-egy-ai-b8": {
+      "page_id": "4168968e-752b-8167-bf3d-fc4cdb96fc7d",
+      "hash": "9ede5f7bbad2"
+    },
+    "kezikonyv:10-ai/beagyazas-openai": {
+      "page_id": "4168968e-752b-8187-9661-c65c3a078143",
+      "hash": "c906035574a2"
+    },
+    "kezikonyv:10-ai/boop-egymondatos-sorai": {
+      "page_id": "4168968e-752b-819f-8ca4-cc17c2f5a8c4",
+      "hash": "dd6aad3ae162"
+    },
+    "kezikonyv:10-ai/csapatfal-kihagyva": {
+      "page_id": "4168968e-752b-81e9-924b-c9c05282a466",
+      "hash": "097a17e2208e"
+    },
+    "kezikonyv:10-ai/ejszakai-konzilium": {
+      "page_id": "4168968e-752b-8153-a6f8-fded87d845ce",
+      "hash": "3e34ac7a79b4"
+    },
+    "kezikonyv:10-ai/emlekezet": {
+      "page_id": "4168968e-752b-81e2-93c5-c28f35524cc0",
+      "hash": "2d892f121343"
+    },
+    "kezikonyv:10-ai/javaslatok-forrasa": {
+      "page_id": "4168968e-752b-81f6-b986-ca7b376754ea",
+      "hash": "0dc69c45b7eb"
+    },
+    "kezikonyv:10-ai/koltsegkeret-es-naplo": {
+      "page_id": "4168968e-752b-8142-80f7-d62b678a9858",
+      "hash": "37cafe5b02f2"
+    },
+    "kezikonyv:10-ai/melyik-ai-mire": {
+      "page_id": "4168968e-752b-817d-bec8-d89cac8ee5a1",
+      "hash": "23eb8dff55d9"
+    },
+    "kezikonyv:10-ai/mintak-es-hipotezisek": {
+      "page_id": "4168968e-752b-814a-8a80-ecea9b41aeab",
+      "hash": "e5c21e7d2d94"
+    },
+    "kezikonyv:10-ai/reggeli-osszefoglalo-szovege": {
+      "page_id": "4168968e-752b-8156-9425-c9ec28064116",
+      "hash": "c0bd9cef05be"
+    },
+    "kezikonyv:10-ai/riasztasok": {
+      "page_id": "4168968e-752b-816f-b528-ded60d5a17d3",
+      "hash": "97b460df1e5f"
+    },
+    "kezikonyv:10-ai/tenyek-rolad": {
+      "page_id": "4168968e-752b-81f5-8d95-e721bb837b87",
+      "hash": "442becbeff38"
+    },
+    "jegyek:mezo-r36n9.30": {
+      "page_id": "4168968e-752b-815e-b4c2-c1d35163f5f8",
+      "hash": "19b1f7d95167"
+    },
+    "jegyek:mezo-r36n9.31": {
+      "page_id": "4168968e-752b-81af-a508-dc9a83b4e5f3",
+      "hash": "59146bd821cc"
+    },
+    "kiadasok:11d01e440": {
+      "page_id": "4168968e-752b-81bc-8c67-fe8fc1cdc88f",
+      "hash": "6d4cc5802683"
+    }
+  }
+}

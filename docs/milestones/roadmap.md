@@ -63,6 +63,12 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-12 — Boop kézikönyv és jegytábla a Notionban (`mezo-r36n9.29`).**
+  A tulajdonos Notionjában külön, magyar „Boop” tér készült: jegytábla (mi készül, mi jön, mi vár rád), kézikönyv
+  minden fő szekcióról, funkcióról és kis funkcióról (mit csinál, hogyan, miért, beállítások, adattáblák), döntési
+  napló és kiadási napló. A tér a fejlesztői nyilvántartás egyirányú tükre: minden Boop-munka végén frissül.
+  [forrás](../boop-handbook/README.md).
+
 - **2026-11-12 — Boop B3 · Napi ritmus — a napi ritmus újra megy, internet nélkül is (`mezo-r36n9.13`).**
   Az iPhone-app mostantól offline-first: a kitöltés, a nap célja, az esti lezárás és a napló a telefonon mentődik,
   azonnal látszik, és magától szinkronizál, amikor van net (ami a szerver elutasít, az halk „nem sikerült elküldeni ·

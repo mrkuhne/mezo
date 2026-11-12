@@ -1,0 +1,311 @@
+{
+  "_leiras": "Magyar réteg a bd jegyekhez (epic mezo-r36n9). Állapot: bd status + `allapot:<slug>` címke (lásd scripts/boop-notion-sync.mjs). Minden új Boop-jegyhez ide kerül egy sor.",
+  "mezo-r36n9": {
+    "cim": "Boop — a natív iPhone-app",
+    "tipus": "Szakasz",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Egy saját iPhone-app (és később Apple Watch), amely a webes appot váltja: alvás, étel, edzés, energia és napi ritmus egy helyen, egyetlen hanggal, a Booppal.",
+    "epic": true,
+    "allapot": "Épül"
+  },
+  "mezo-r36n9.1": {
+    "cim": "S1 apróságok — belépés, telepítés finomítások",
+    "tipus": "Apróságok",
+    "szakasz": "S1 Alap",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Pontosabb hibaüzenetek belépéskor és megbízhatóbb telepítő parancs."
+  },
+  "mezo-r36n9.2": {
+    "cim": "S2 Adatok — Apple Egészség és naptár bekötése",
+    "tipus": "Szakasz",
+    "szakasz": "S2 Adatok",
+    "terulet": [
+      "Apple Health és adatok"
+    ],
+    "mit_kapsz": "A Boop behúzza az elmúlt 60 nap alvását, mozgását, pulzusát és edzéseit, és látja a mai–holnapi naptárat."
+  },
+  "mezo-r36n9.3": {
+    "cim": "S2.5 Napkelte — az app saját kinézete",
+    "tipus": "Szakasz",
+    "szakasz": "S2.5 Napkelte",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Sötét üveg, festett égbolt és a reggel napjaként felkelő Boop-gömb — az egész app ebben a kinézetben."
+  },
+  "mezo-r36n9.4": {
+    "cim": "S2 apróságok — naptár és alvás duplázás elleni védelem",
+    "tipus": "Apróságok",
+    "szakasz": "S2 Adatok",
+    "terulet": [
+      "Apple Health és adatok"
+    ],
+    "mit_kapsz": "Ritka esetekben se duplázódjon egy nap naptára vagy egy éjszaka alvása."
+  },
+  "mezo-r36n9.5": {
+    "cim": "Az Adatok kártya az összes behúzott adatot mutassa",
+    "tipus": "Hiba",
+    "szakasz": "S2 Adatok",
+    "terulet": [
+      "Apple Health és adatok"
+    ],
+    "mit_kapsz": "A „Beérkezett adatok” jelvény az összes szinkronizált éjszakát és napot számolja, nem csak az utolsó frissítést."
+  },
+  "mezo-r36n9.6": {
+    "cim": "S2.5 apróságok — kinézet finomítások",
+    "tipus": "Apróságok",
+    "szakasz": "S2.5 Napkelte",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A felső kivágás körüli térközök és apró animációs hibák javítása."
+  },
+  "mezo-r36n9.7": {
+    "cim": "S3 Reggel — a Boop elmondja a reggeledet",
+    "tipus": "Szakasz",
+    "szakasz": "S3 Reggel",
+    "terulet": [
+      "Ma",
+      "AI és memória"
+    ],
+    "mit_kapsz": "Minden reggel öt gömb (Forma, Alvás, Mozgás, Étel, Pulzus), Boop saját mondata felolvasva, energiagörbe, és edzés-áttolás, ha ütközik egy megbeszéléssel."
+  },
+  "mezo-r36n9.8": {
+    "cim": "S3 apróságok — reggeli lap finomítások",
+    "tipus": "Apróságok",
+    "szakasz": "S3 Reggel",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Áttolás utáni új ütközés jelzése, akadálymentesítés, apró naplózási javítások."
+  },
+  "mezo-r36n9.9": {
+    "cim": "Újratervezés — önálló, letisztult app lesz a Boopból",
+    "tipus": "Kutatás",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Tíz területi felmérés, webes kutatás és hat tulajdonosi döntés alapján az új terv: egy főképernyő napi ritmussal, B0–B8 lépésekben.",
+    "allapot": "Lezárva"
+  },
+  "mezo-r36n9.10": {
+    "cim": "B0 Javítás — újra tanul a memória, újra fut az éjszakai konzílium",
+    "tipus": "Szakasz",
+    "szakasz": "B0 Javítás",
+    "terulet": [
+      "AI és memória"
+    ],
+    "mit_kapsz": "Az AI emlékezete újra működik (átkerült az OpenAI-hoz), az éjszakai konzílium nem bukik el, és figyelmeztetés jelez, ha újra elakadna.",
+    "munkamenet": "boop-b0-javitas"
+  },
+  "mezo-r36n9.11": {
+    "cim": "B1 Adatalap — a Boop sokkal többet lát az Egészségből",
+    "tipus": "Szakasz",
+    "szakasz": "B1 Adatalap",
+    "terulet": [
+      "Apple Health és adatok",
+      "Alapok"
+    ],
+    "mit_kapsz": "23 féle Egészség-adat forrással, egy éjszaka naponta, semmi nem vész el, egy fiók (az eredeti), háttérben ébredés előkészítve.",
+    "munkamenet": "boop-b1-adatalap"
+  },
+  "mezo-r36n9.12": {
+    "cim": "B2 Gerinc — Ma · Terv · Napló · Boop + „+”",
+    "tipus": "Szakasz",
+    "szakasz": "B2 Gerinc",
+    "terulet": [
+      "Ma",
+      "Alapok"
+    ],
+    "mit_kapsz": "Új alsó sáv és egyetlen görgetős Ma: reggeli terv, napközbeni javaslatok „miért?”-tel, esti lezárás kerete, minden gömbnek saját szobája.",
+    "munkamenet": "boop-b2-gerinc"
+  },
+  "mezo-r36n9.13": {
+    "cim": "B3 Napi ritmus — check-in, napi cél, napló, esti zárás",
+    "tipus": "Szakasz",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Ma",
+      "Napló",
+      "Boop"
+    ],
+    "mit_kapsz": "Napi négy rövid check-in a pillanatnyi testi adatokkal, egy saját napi cél, hangos esti napló, 60 másodperc alatti esti zárás, és az első Boop-beszélgetés — internet nélkül is.",
+    "munkamenet": "boop-b3-ritmus"
+  },
+  "mezo-r36n9.14": {
+    "cim": "B4 Étel — natív ételrögzítés, allergének, napi keret",
+    "tipus": "Szakasz",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Fotóból, szövegből, vonalkódból vagy receptből rögzített étel, allergénfigyelés és napi keret a következő étkezés tippjével."
+  },
+  "mezo-r36n9.15": {
+    "cim": "B5 Edzés + Apple Watch — natív edzéslejátszó",
+    "tipus": "Szakasz",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Edzés közben pihenőidő, sorozatok és jegyzetek a telefonon, élő kijelzés a zárolt képernyőn, és saját Apple Watch app élő pulzussal."
+  },
+  "mezo-r36n9.16": {
+    "cim": "B6 A Terv — étrend, edzés és testsúlycél egy tervben",
+    "tipus": "Szakasz",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Hetekre szóló terv testsúlycéllal, engedett receptekkel, edzésblokkal és szabályokkal; bevásárlólista; és annak mérése, mi hatott."
+  },
+  "mezo-r36n9.17": {
+    "cim": "B7 Napi kapacitás — mennyit bír ma a napod",
+    "tipus": "Szakasz",
+    "szakasz": "B7 Napi kapacitás",
+    "terulet": [
+      "Ma",
+      "AI és memória"
+    ],
+    "mit_kapsz": "A naptár terhelése és a tested állapota alapján a Boop megmondja, belefér-e a nap, és napközben javasol, ha változik valami."
+  },
+  "mezo-r36n9.18": {
+    "cim": "B8 Az egy AI — minden adatot ismerő emlékezet",
+    "tipus": "Szakasz",
+    "szakasz": "B8 Az egy AI",
+    "terulet": [
+      "AI és memória",
+      "Boop"
+    ],
+    "mit_kapsz": "A Boop a napi adataidat is emlékezetben tartja, napi kis tanács ad „miért?”-et, és rövid-, közép-, hosszú távú mintákat mutat a Naplóban."
+  },
+  "mezo-r36n9.19": {
+    "cim": "Fizetős Apple-tagság bekapcsolása",
+    "tipus": "Karbantartás",
+    "szakasz": "B1 Adatalap",
+    "terulet": [
+      "Alapok",
+      "Apple Health és adatok"
+    ],
+    "mit_kapsz": "Nincs több heti újratelepítés, a Boop zárolt telefonon is kap új adatot, és küldhet értesítést. Akkor indul, amikor jelzed, hogy előfizettél (kb. november 25.)."
+  },
+  "mezo-r36n9.20": {
+    "cim": "B1 apróságok — szinkron finomítások",
+    "tipus": "Apróságok",
+    "szakasz": "B1 Adatalap",
+    "terulet": [
+      "Apple Health és adatok"
+    ],
+    "mit_kapsz": "Üres alvásablak törlése, háttérfrissítés közbeni haladásjelzés és hasonló finomítások."
+  },
+  "mezo-r36n9.21": {
+    "cim": "B2 apróságok — javaslat- és tervkártya finomítások",
+    "tipus": "Apróságok",
+    "szakasz": "B2 Gerinc",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Időrend, akadálymentes feliratok és apró kártyahibák javítása."
+  },
+  "mezo-r36n9.22": {
+    "cim": "Éjfél és hajnali 4 között melyik napot zárjuk?",
+    "tipus": "Karbantartás",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Az éjfél utáni esti zárás a helyes (előző) napra kerül, és esti égen látszik."
+  },
+  "mezo-r36n9.23": {
+    "cim": "Alvás közbeni pulzus üres maradt",
+    "tipus": "Hiba",
+    "szakasz": "B1 Adatalap",
+    "terulet": [
+      "Alvás"
+    ],
+    "mit_kapsz": "Kivizsgálva: az alvásfigyelő app nem ír alvás közbeni pulzust — nincs mit átvenni, lezárva.",
+    "allapot": "Lezárva"
+  },
+  "mezo-r36n9.24": {
+    "cim": "A reggeli összefoglaló első betöltéskor elakadt",
+    "tipus": "Hiba",
+    "szakasz": "S3 Reggel",
+    "terulet": [
+      "Ma",
+      "AI és memória"
+    ],
+    "mit_kapsz": "Egyszerre érkező kérések nem akasztják el többé, és a Boop késve érkező saját szavai is megmaradnak."
+  },
+  "mezo-r36n9.25": {
+    "cim": "Egyik reggeli összefoglaló sem jelent meg a telefonon",
+    "tipus": "Hiba",
+    "szakasz": "S3 Reggel",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Az időbélyeg-formátum javítva — a reggeli összefoglaló újra megjelenik."
+  },
+  "mezo-r36n9.26": {
+    "cim": "Az esti zárás egy helyre kerüljön",
+    "tipus": "Karbantartás",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Napló"
+    ],
+    "mit_kapsz": "Minden esti adatot egyetlen napzárás-bejegyzésből olvasunk, a régi párhuzamos mentések megszűnnek."
+  },
+  "mezo-r36n9.27": {
+    "cim": "Feelfit okosmérleg — kutatás",
+    "tipus": "Kutatás",
+    "szakasz": "Test",
+    "terulet": [
+      "Terv",
+      "Apple Health és adatok"
+    ],
+    "mit_kapsz": "Kiderült, hogy a mérleg súlyt, testzsírt és sovány tömeget már most az Egészségbe írja — elég ezt felhasználni.",
+    "allapot": "Lezárva"
+  },
+  "mezo-r36n9.28": {
+    "cim": "Test kártya — súly, testzsír, sovány tömeg a Tervben",
+    "tipus": "Funkció",
+    "szakasz": "Test",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "A Tervben egy Test kártya: súlytrend a cél vízvonalával, testzsír és sovány tömeg, a mérési napokkal; a legutóbbi testzsír a célszámításba is bekerül."
+  },
+  "mezo-r36n9.29": {
+    "cim": "Boop kézikönyv és jegytábla a Notionban",
+    "tipus": "Funkció",
+    "szakasz": "Kézikönyv",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Ez a Notion-tér: jegytábla, kézikönyv, döntések és kiadások — minden Boop-munka végén frissül.",
+    "munkamenet": "boop-notion"
+  },
+  "mezo-r36n9.30": {
+    "cim": "Ingadozó ellenőrző teszt az esti zárásnál",
+    "tipus": "Hiba",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Napló"
+    ],
+    "mit_kapsz": "Megbízható automatikus ellenőrzés: a napzárás tesztje nem bukik el véletlenszerűen."
+  },
+  "mezo-r36n9.31": {
+    "cim": "Check-in újrakezdésekor el ne vesszen a már felvett jegyzet",
+    "tipus": "Hiba",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Napló"
+    ],
+    "mit_kapsz": "Ha egy check-int újrakezdesz, miközben az előző hangjegyzeted még küldés alatt van, a jegyzet nem íródik felül."
+  }
+}
