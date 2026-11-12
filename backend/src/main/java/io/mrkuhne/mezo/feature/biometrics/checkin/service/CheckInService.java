@@ -46,6 +46,10 @@ public class CheckInService {
     /** Oldest accepted day: today − 7 in the owner zone (the same window as the day close, spec §7.2). */
     static final int MAX_PAST_DAYS = 7;
 
+    /** Newest accepted day: owner-today + 1. A phone east of the owner zone dates its morning in its own day,
+     *  already the owner's tomorrow; {@link #MAX_CAPTURED_AHEAD} still blocks a capture from the real future. */
+    static final int MAX_AHEAD_DAYS = 1;
+
     /** A {@code capturedAt} further than this in the future is a 400 (a phone clock may run slightly ahead). */
     static final Duration MAX_CAPTURED_AHEAD = Duration.ofMinutes(5);
 
@@ -71,7 +75,7 @@ public class CheckInService {
     /**
      * Upsert on the (createdBy, date, slotTime) slot — one row per slot per day, full replace. Boop B3
      * (mezo-r36n9.13): {@code capturedAt} is the record's moment ({@code saved_at}, default now); the date must
-     * lie within today − 7 … today in the owner zone; the biomarker snapshot (the phone's, else the server's)
+     * lie within today − 7 … today + 1 in the owner zone (+ 1: a phone east of it); the biomarker snapshot (the phone's, else the server's)
      * is written in the same transaction.
      *
      * <p><b>Callers must not hold a transaction</b> (the controller does not): the server fallback's Health
@@ -237,10 +241,10 @@ public class CheckInService {
         }
     }
 
-    /** Today − 7 … today in the owner zone; anything else is the 400 field error on {@code date}. */
+    /** Today − 7 … today + 1 in the owner zone; anything else is the 400 field error on {@code date}. */
     private void requireInWindow(LocalDate date) {
         LocalDate today = LocalDate.now(clock().withZone(ownerZone.zoneId()));
-        if (date == null || date.isAfter(today) || date.isBefore(today.minusDays(MAX_PAST_DAYS))) {
+        if (date == null || date.isAfter(today.plusDays(MAX_AHEAD_DAYS)) || date.isBefore(today.minusDays(MAX_PAST_DAYS))) {
             throw new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_INVALID_VALUE", "date").build(),
                 HttpStatus.BAD_REQUEST);
         }

@@ -99,7 +99,8 @@ class CheckInBoopIT extends AbstractIntegrationTest {
     void rejectsFutureAndOlderThanSevenDays() {
         UUID user = databasePopulator.populateUser("a@test.local");
 
-        assertThatThrownBy(() -> service.save(user, request(today.plusDays(1), "06:30").build()))
+        // Owner-today + 1 is accepted (a phone east of the owner zone dates its morning ahead); + 2 is the future.
+        assertThatThrownBy(() -> service.save(user, request(today.plusDays(2), "06:30").build()))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
                 e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
         assertThatThrownBy(() -> service.save(user, request(today.minusDays(8), "06:30").build()))
@@ -109,6 +110,8 @@ class CheckInBoopIT extends AbstractIntegrationTest {
         assertThat(service.save(user, request(today.minusDays(7), "06:30").build()).getDate())
             .isEqualTo(today.minusDays(7));
         assertThat(service.save(user, request(today, "06:30").build()).getDate()).isEqualTo(today);
+        assertThat(service.save(user, request(today.plusDays(1), "06:30").build()).getDate())
+            .isEqualTo(today.plusDays(1));
     }
 
     @Test
