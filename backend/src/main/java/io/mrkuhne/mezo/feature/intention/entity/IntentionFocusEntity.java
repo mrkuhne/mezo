@@ -32,4 +32,8 @@ public class IntentionFocusEntity extends OwnedEntity {
 
     @Column(nullable = false, length = 200)
     private String text;
+
+    /** Boop outbox idempotency key (unique per owner among live rows); null for web foci. */
+    @Column(name = "client_ref", columnDefinition = "uuid")
+    private UUID clientRef;
 }

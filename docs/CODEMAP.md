@@ -926,8 +926,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/intention`
   - **hooks (via `@/data/hooks`):** `useIntentionActions`, `useIntentionDay`
   - **modules:** intentionApi.ts, intentionHooks.ts, intentionMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/intention` — 4 IT + 0 unit
-  - **ITs:** `IntentionApiIT`, `IntentionDerivedIT`, `IntentionEntityIT`, `IntentionServiceIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/intention` — 5 IT + 0 unit
+  - **ITs:** `IntentionApiIT`, `IntentionDerivedIT`, `IntentionEntityIT`, `IntentionFocusClientRefIT`,
+    `IntentionServiceIT`
   - **populators:** `UserPopulator`
 
 ### journal
@@ -954,11 +955,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useGratitudeEntries`, `useJournalActions`, `useJournalNotes`
   - **modules:** decisionApi.ts, decisionHooks.ts, decisionMock.ts, decisionTypes.ts, gratitudeApi.ts,
     gratitudeHooks.ts, gratitudeMock.ts, journalApi.ts, journalHooks.ts, journalMock.ts, journalTypes.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/journal` — 13 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/journal` — 14 IT + 1 unit
   - **ITs:** `DecisionApiCompanionOffIT`, `DecisionApiIT`, `DecisionEmbeddingEventIT`, `DecisionEntryPersistenceIT`,
     `GratitudeApiIT`, `GratitudeEmbeddingEventIT`, `GratitudeEntryPersistenceIT`, `JournalApiCompanionOffIT`,
-    `JournalApiIT`, `JournalEmbeddingEventIT`, `JournalEntryPersistenceIT`, `JournalMidnightCrossingIT`,
-    `JournalSwitchOffIT`
+    `JournalApiIT`, `JournalClientRefIT`, `JournalEmbeddingEventIT`, `JournalEntryPersistenceIT`,
+    `JournalMidnightCrossingIT`, `JournalSwitchOffIT`
   - **populators:** `JournalPopulator`, `UserPopulator`
 
 ### lifegoal
