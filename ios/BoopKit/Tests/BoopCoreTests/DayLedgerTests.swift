@@ -1,0 +1,193 @@
+import Foundation
+import Testing
+@testable import BoopCore
+
+func temporaryDirectory() -> URL {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("boop-tests-\(UUID().uuidString)")
+    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    return dir
+}
+
+@MainActor
+final class DayLedgerTests {
+    let dir = temporaryDirectory()
+    let date = "2026-11-10"
+    deinit { try? FileManager.default.removeItem(at: dir) }
+
+    func checkIn(_ slot: String, _ h: Int, _ m: Int, energy: Int?, pending: Bool = false) -> LedgerCheckIn {
+        LedgerCheckIn(id: UUID(), slot: slot, capturedAt: at(h, m), values: energy.map { ["energy": $0] } ?? [:],
+                      pending: pending)
+    }
+
+    @Test func pendingLocalCheckInWinsOverServer() throws {
+        let store = LedgerStore(directory: dir)
+        let local = checkIn("10:00", 12, 40, energy: 7, pending: true)
+        try store.saveCheckIn(local, date: date)
+        var server = DayLedger(date: date)
+        server.checkIns = [checkIn("10:00", 11, 0, energy: 3), checkIn("06:30", 8, 0, energy: 5)]
+        store.merge(server: server, fetchedAt: at(23, 0))
+        let merged = store.ledger(for: date)
+        #expect(merged.checkIns.count == 2)
+        #expect(merged.checkIns.first { $0.slot == "10:00" } == local)
+        #expect(merged.checkIns.first { $0.slot == "06:30" }?.values["energy"] == 5)
+    }
+
+    @Test func serverRowReplacesSentLocal() throws {
+        let store = LedgerStore(directory: dir)
+        let local = checkIn("10:00", 12, 40, energy: 7, pending: true)
+        try store.saveCheckIn(local, date: date)
+        store.markSent(local.id, date: date)
+        #expect(store.ledger(for: date).checkIns.first?.pending == false)
+        var server = DayLedger(date: date)
+        let row = checkIn("10:00", 12, 40, energy: 8)
+        server.checkIns = [row]
+        store.merge(server: server, fetchedAt: at(23, 0))
+        #expect(store.ledger(for: date).checkIns == [row])
+    }
+
+    @Test func savingTheSameSlotReplacesIt() throws {
+        let store = LedgerStore(directory: dir)
+        try store.saveCheckIn(checkIn("10:00", 11, 0, energy: 4, pending: true), date: date)
+        let again = checkIn("10:00", 12, 40, energy: 7, pending: true)
+        try store.saveCheckIn(again, date: date)
+        #expect(store.ledger(for: date).checkIns == [again])
+    }
+
+    @Test func pendingGoalCloseAndJournalWinUntilSent() throws {
+        let store = LedgerStore(directory: dir)
+        let goal = LedgerGoal(id: UUID(), text: "Röpi este", setAt: at(7, 30), pending: true)
+        let close = LedgerClose(id: UUID(), capturedAt: at(21, 0), eveningEnergy: 4, dayRating: 4, pending: true)
+        let note = LedgerJournal(id: UUID(), capturedAt: at(21, 1), text: "Jó nap volt.", pending: true)
+        try store.setGoal(goal, date: date)
+        try store.setClose(close, date: date)
+        try store.addJournal(note, date: date)
+        var server = DayLedger(date: date)
+        server.goal = LedgerGoal(id: UUID(), text: "Régi cél", setAt: at(6, 0))
+        let webNote = LedgerJournal(id: UUID(), capturedAt: at(13, 0), text: "Webről.")
+        server.journal = [webNote]
+        store.merge(server: server, fetchedAt: at(23, 0))
+        var day = store.ledger(for: date)
+        #expect(day.goal == goal)
+        #expect(day.close == close)
+        #expect(day.journal.map(\.id) == [webNote.id, note.id])
+
+        store.markSent(goal.id, date: date)
+        store.markSent(close.id, date: date)
+        store.merge(server: server, fetchedAt: at(23, 0))
+        day = store.ledger(for: date)
+        #expect(day.goal?.text == "Régi cél")
+        #expect(day.close == nil)
+        #expect(day.journal.map(\.id) == [webNote.id, note.id]) // the note is still pending
+    }
+
+    @Test func curvePointsSortedByCapturedAt() throws {
+        var day = DayLedger(date: date)
+        day.checkIns = [checkIn("14:00", 16, 2, energy: 4, pending: true),
+                        checkIn("06:30", 8, 0, energy: 6),
+                        checkIn("10:00", 12, 40, energy: nil)]
+        let points = day.curvePoints
+        #expect(points.map(\.energy) == [6, 4])
+        #expect(points.map(\.capturedAt) == [at(8, 0), at(16, 2)])
+        #expect(points.map(\.pending) == [false, true])
+    }
+
+    @Test func survivesRelaunchAndKeepsCachedPlans() throws {
+        let store = LedgerStore(directory: dir)
+        let local = checkIn("06:30", 8, 0, energy: 6, pending: true)
+        try store.saveCheckIn(local, date: date)
+        store.cachePlans([CheckInPlanLite(slot: "10:00", adaptiveItem: "hunger", adaptiveWhy: "Miért")], date: date)
+        var server = DayLedger(date: date)
+        server.checkIns = []
+        store.merge(server: server, fetchedAt: at(23, 0)) // the server day carries no plans; the cache stays
+
+        let reopened = LedgerStore(directory: dir)
+        let day = reopened.ledger(for: date)
+        #expect(day.checkIns == [local])
+        #expect(day.plans["10:00"]?.adaptiveItem == "hunger")
+        #expect(reopened.ledger(for: "2026-11-09") == DayLedger(date: "2026-11-09"))
+    }
+
+    @Test func sentCheckInNewerThanTheFetchStays() throws {
+        let store = LedgerStore(directory: dir)
+        let early = checkIn("06:30", 8, 0, energy: 5, pending: true)
+        let late = checkIn("14:00", 16, 2, energy: 4, pending: true)
+        try store.saveCheckIn(early, date: date); try store.saveCheckIn(late, date: date)
+        store.markSent(early.id, date: date); store.markSent(late.id, date: date)
+        store.merge(server: DayLedger(date: date), fetchedAt: at(16, 0)) // the fetch left before the 16:02 capture
+        #expect(store.ledger(for: date).checkIns.map(\.id) == [late.id])
+    }
+
+    @Test func unreadableDayIsMovedAsideNotOverwritten() throws {
+        let garbage = Data("{ broken".utf8)
+        try garbage.write(to: dir.appendingPathComponent("\(date).json"))
+        let store = LedgerStore(directory: dir)
+        #expect(store.ledger(for: date) == DayLedger(date: date))
+        try store.saveCheckIn(checkIn("06:30", 8, 0, energy: 5, pending: true), date: date)
+        let aside = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasPrefix("\(date).corrupt-") }
+        #expect(aside.count == 1)
+        #expect(try Data(contentsOf: dir.appendingPathComponent(aside[0])) == garbage)
+        #expect(LedgerStore(directory: dir).ledger(for: date).checkIns.count == 1) // the aside file is not reloaded
+    }
+
+    // B3 Task 8 fix: the watch snapshot travels with the check-in, so any dot on the curve can show it.
+    @Test func savedCheckInKeepsItsSnapshot() throws {
+        var c = checkIn("14:00", 16, 2, energy: 5, pending: true)
+        c.snapshot = CheckInSnapshotValue(hrBpm: 78, hrvMs: 38, hrvUsualMs: 50, steps: 7_420, sleepMinutes: 432)
+        try LedgerStore(directory: dir).saveCheckIn(c, date: date)
+        let reloaded = LedgerStore(directory: dir).ledger(for: date).checkIns.first
+        #expect(reloaded?.snapshot?.hrBpm == 78 && reloaded?.snapshot?.steps == 7_420)
+    }
+
+    @Test func dayFileWithoutSnapshotsStillLoads() throws {
+        let old = #"{"date":"2026-11-10","checkIns":[{"id":"0B6F3C1E-1111-4A2B-9C3D-222233334444","slot":"10:00","capturedAt":784036800,"values":{"energy":6},"painRegions":[],"cravingKinds":[],"askedItems":[],"quickExit":false,"pending":false}],"journal":[],"plans":{}}"#
+        try Data(old.utf8).write(to: dir.appendingPathComponent("\(date).json"))
+        let c = LedgerStore(directory: dir).ledger(for: date).checkIns.first
+        #expect(c?.values["energy"] == 6 && c?.snapshot == nil)
+    }
+
+    // B3 Task 10: a delivered recording brings its transcript back to the day.
+    @Test func deliveredVoiceFillsTheJournalLineAndTheCheckInNote() throws {
+        let store = LedgerStore(directory: dir)
+        let journalId = UUID()
+        try store.addJournal(LedgerJournal(id: journalId, capturedAt: at(21, 30), text: nil, pending: true), date: date)
+        try store.saveCheckIn(checkIn("14:00", 16, 2, energy: 5), date: date)
+        let transcript = RitmusPayload.encode(VoiceTranscript(text: "Jó nap volt."))
+        store.applyDelivered(OutboxItem(id: journalId, kind: .voice, date: date, capturedAt: at(21, 30),
+                                        payload: RitmusPayload.encode(VoicePayload(fileName: "a.m4a"))), body: transcript)
+        let note = VoicePayload(fileName: "b.m4a", target: .checkInNote(CheckInPayload(slot: "14:00", values: ["energy": 5])))
+        store.applyDelivered(OutboxItem(id: UUID(), kind: .voice, date: date, capturedAt: at(16, 2),
+                                        payload: RitmusPayload.encode(note)), body: RitmusPayload.encode(VoiceTranscript(text: "Leeresztettem.")))
+        let day = store.ledger(for: date)
+        #expect(day.journal.first?.text == "Jó nap volt." && day.journal.first?.pending == false)
+        #expect(day.checkIns.first?.note == "Leeresztettem.")
+    }
+
+    @Test func closeWithoutTheNewFieldsStillLoads() throws {
+        let old = #"{"date":"2026-11-10","checkIns":[],"close":{"id":"0B6F3C1E-1111-4A2B-9C3D-222233334444","capturedAt":784036800,"eveningEnergy":6,"dayRating":4,"pending":false},"journal":[],"plans":{}}"#
+        try Data(old.utf8).write(to: dir.appendingPathComponent("\(date).json"))
+        let close = LedgerStore(directory: dir).ledger(for: date).close
+        #expect(close?.dayRating == 4 && close?.planGoals == nil && close?.web == nil && close?.journalText == nil)
+    }
+
+    /// Final review I3: the close reached the server while its recording still waits — the server's close carries no
+    /// journal yet, so the refresh keeps the phone's link to the line (and the line itself), and the quote / *Újra* stay.
+    @Test func sentCloseKeepsItsJournalLinkUntilTheServerHasTheText() throws {
+        let store = LedgerStore(directory: dir)
+        let journalId = UUID(), closeId = UUID()
+        try store.addJournal(LedgerJournal(id: journalId, capturedAt: at(21, 30), text: nil, pending: true), date: date)
+        try store.setClose(LedgerClose(id: closeId, capturedAt: at(21, 30), eveningEnergy: 6, dayRating: 4,
+                                       journalId: journalId, pending: true), date: date)
+        store.markSent(closeId, date: date)
+        store.markSent(journalId, date: date)   // e.g. a typed line delivered, its relink still on the way
+        var server = DayLedger(date: date)
+        server.close = LedgerClose(id: UUID(), capturedAt: at(21, 30), eveningEnergy: 6, dayRating: 4)
+        store.merge(server: server, fetchedAt: at(22, 0))
+        let day = store.ledger(for: date)
+        #expect(day.close?.journalId == journalId)
+        #expect(day.journal.map(\.id) == [journalId])
+        // once the server has the text, its version is the whole truth
+        server.close?.journalText = "Jó nap volt."
+        store.merge(server: server, fetchedAt: at(22, 5))
+        #expect(store.ledger(for: date).close?.journalText == "Jó nap volt.")
+    }
+}

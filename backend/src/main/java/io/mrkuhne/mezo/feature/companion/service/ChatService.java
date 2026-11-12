@@ -186,6 +186,11 @@ public class ChatService {
                     + "napjáról (ha van kijelölt nap) vagy a hétről — mi tűnt fel, mi az egy dolog, "
                     + "amiről érdemes beszélni. Kérdéssel zárj.";
 
+    /** The identity opener both voices share ({@link #SYSTEM_PROMPT}, {@link ConversationTurnService#VOICE});
+     *  Boop B3 (mezo-r36n9.13): a Boop conversation swaps it for Boop's. */
+    static final String MEZO_IDENTITY = "Te vagy a mezo,";
+    static final String BOOP_IDENTITY = "Te vagy Boop,";
+
     private final AiConversationRepository conversationRepository;
     private final AiMessageRepository messageRepository;
     private final ConversationService conversationService;
@@ -228,6 +233,10 @@ public class ChatService {
     private final ObjectProvider<PeopleRecall> peopleRecall;
     /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
     private final ObjectMapper objectMapper;
+    /** Boop B3 (mezo-r36n9.13) — the pushed "Ma" block of a {@code channel = boop} conversation. */
+    private final BoopDayContext boopDayContext;
+    /** Boop B3 — a Boop conversation's "today" (block, history window) is the owner's day. */
+    private final OwnerToday ownerToday;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
      *  {@code recalledRefs} (W3.1 Memory refs followed by the W2.4 GraphNode refs) are the ambient
@@ -253,8 +262,8 @@ public class ChatService {
     @Transactional
     public PreparedTurn prepareTurn(UUID userId, UUID conversationId, SendMessageRequest request) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
-        LocalDate today = LocalDate.now();
-        List<Turn> history = historyFor(userId, conversationId);
+        LocalDate today = today(conversation);
+        List<Turn> history = historyFor(userId, conversation);
         List<ChatMemoryItem> forgotten = forgetIfAsked(userId, conversationId, request.getContent());
         RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today, forgotten);
         AiMessageEntity userRow = markForgetRow(persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
@@ -303,9 +312,9 @@ public class ChatService {
 
         // Prompt order: see assembleSystemPrompt. The history travels as real prior messages
         // (mezo-q71s), not a transcript inside the system prompt.
-        LocalDate today = LocalDate.now();
+        LocalDate today = today(conversation);
         // Window BEFORE persisting the new message — the current content travels as the user param.
-        List<Turn> history = historyFor(userId, conversationId);
+        List<Turn> history = historyFor(userId, conversation);
         List<ChatMemoryItem> forgotten = forgetIfAsked(userId, conversationId, request.getContent());
         RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today, forgotten);
         TurnGear gear = routed.gear();
@@ -433,12 +442,11 @@ public class ChatService {
     public void openingTurn(UUID userId, UUID conversationId) {
         try {
             AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
-            String systemPrompt = stableSystemPrompt(userId);
+            String systemPrompt = stableSystemPrompt(userId, conversation);
             String turnCtx = conversationProperties.enabled()
-                    ? conversationContext(userId, conversation, LocalDate.now(), "")
-                    : turnContext(userId, LocalDate.now(),
-                    knowledgeFactService.renderPromptBlock(userId), "", "", "",
-                    conversation.getContextKind(), conversation.getContextDate());
+                    ? conversationContext(userId, conversation, today(conversation), "")
+                    : turnContext(userId, conversation, today(conversation),
+                    knowledgeFactService.renderPromptBlock(userId), "", "", "");
             // mezo-ozri.8: tagged like every other LLM entry point. Without this the turn books as
             // feature='unknown' in the cost reports AND — since mezo-ozri.6 — it is the one chat
             // call that never passes the per-user budget gate, which lives inside runWith. A
@@ -483,8 +491,24 @@ public class ChatService {
      * the adapter builds, so anything volatile placed here would invalidate the tool definitions'
      * cache entry on every single turn and re-bill them at the full input rate.
      */
-    private String stableSystemPrompt(UUID userId) {
-        return promptPersona.render(userId, conversationProperties.enabled() ? ConversationTurnService.VOICE : SYSTEM_PROMPT);
+    private String stableSystemPrompt(UUID userId, AiConversationEntity conversation) {
+        String voice = conversationProperties.enabled() ? ConversationTurnService.VOICE : SYSTEM_PROMPT;
+        // Boop B3 (mezo-r36n9.13): one voice in the native app — Boop, never "Mezo". Only the identity
+        // line differs, so a Boop conversation's stable half is its own (equally cacheable) prompt.
+        return promptPersona.render(userId, conversation.isBoop() ? voice.replace(MEZO_IDENTITY, BOOP_IDENTITY) : voice);
+    }
+
+    /**
+     * Boop B3 (mezo-r36n9.13): a Boop conversation's "today" is the owner's calendar day
+     * ({@code mezo.wearable.zone}); a web conversation keeps the server's date, unchanged.
+     */
+    private LocalDate today(AiConversationEntity conversation) {
+        return conversation.isBoop() ? ownerToday.today() : LocalDate.now();
+    }
+
+    /** Boop B3: the pushed "Ma" block — only on a Boop conversation, "" otherwise. */
+    private String dayBlock(UUID userId, AiConversationEntity conversation, LocalDate today) {
+        return conversation.isBoop() ? boopDayContext.render(boopDayContext.assemble(userId, today)) : "";
     }
 
     /**
@@ -514,7 +538,7 @@ public class ChatService {
         PeopleRecall.Result people = recallPeople(userId, userContent, today);
         String blocks = memoryBlocks(userId, conversation, forgotten, people.block());
         if (conversationProperties.enabled()) {
-            return new RoutedContext(TurnGear.CHAT, ChatMemoryPayload.empty(), stableSystemPrompt(userId),
+            return new RoutedContext(TurnGear.CHAT, ChatMemoryPayload.empty(), stableSystemPrompt(userId, conversation),
                     conversationContext(userId, conversation, today, blocks), people);
         }
         TurnGear gear = turnGearRouter.route(userContent);
@@ -523,11 +547,10 @@ public class ChatService {
                 : chatMemoryContextAdapter.resolve(
                         userId, conversation.getId(), userContent, history, today);
         String turnContext = gear == TurnGear.CHAT
-                ? chatGearContext(userId, today, blocks)
-                : turnContext(userId, today, memory.factsBlock(),
-                        memory.memoriesBlock(), memory.graphBlock(), blocks,
-                        conversation.getContextKind(), conversation.getContextDate());
-        return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext, people);
+                ? chatGearContext(userId, conversation, today, blocks)
+                : turnContext(userId, conversation, today, memory.factsBlock(),
+                        memory.memoriesBlock(), memory.graphBlock(), blocks);
+        return new RoutedContext(gear, memory, stableSystemPrompt(userId, conversation), turnContext, people);
     }
 
     private String conversationContext(UUID userId, AiConversationEntity conversation, LocalDate today,
@@ -535,6 +558,8 @@ public class ChatService {
         return promptPersona.render(userId, "\n\n[Beszélgetés]\nMa: " + today + "\n"
                 + "A beszélgetési előzmény korlátozott ablak; régebbi részlet kérésre lekérhető.\n"
                 + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate()))
+                // Boop B3 (mezo-r36n9.13): the "Ma" block — planner and answerer both read this context
+                + dayBlock(userId, conversation, today)
                 + personalContextAssembler.render(userId, today)
                 // facts-always (mezo-d6ivw.8): confirmed facts are identity, not data lookup —
                 // they join date/preferences as initial background (ADR 0043 amendment); the
@@ -827,15 +852,15 @@ public class ChatService {
      */
     private String turnContext(
             UUID userId,
+            AiConversationEntity conversation,
             LocalDate today,
             String factsBlock,
             String memoriesBlock,
             String graphBlock,
-            String memoryBlocks,
-            String contextKind,
-            LocalDate contextDate) {
+            String memoryBlocks) {
         return promptPersona.render(userId, contextSnapshotAssembler.render(userId, today)
-                + anchoredBlock(userId, contextKind, contextDate)
+                + dayBlock(userId, conversation, today)
+                + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate())
                 + factsBlock
                 + knowledgeFactService.renderNewPatternFactsBlock(userId)
                 + reflectionBlock(userId)
@@ -852,8 +877,10 @@ public class ChatService {
      * only. No snapshot digest, no week, no facts, no reflection, no character, no memories, no
      * graph — a turn that needs none of the user's data should not pay to carry all of it.
      */
-    private String chatGearContext(UUID userId, LocalDate today, String memoryBlocks) {
-        return promptPersona.render(userId, "\n\nMa: " + today + "\n" + memoryBlocks + TONE_REMINDER)
+    private String chatGearContext(UUID userId, AiConversationEntity conversation, LocalDate today,
+            String memoryBlocks) {
+        return promptPersona.render(userId, "\n\nMa: " + today + "\n" + dayBlock(userId, conversation, today)
+                + memoryBlocks + TONE_REMINDER)
                 + personalContextAssembler.render(userId, today);
     }
 
@@ -915,8 +942,15 @@ public class ChatService {
      * stored tool evidence. It is NOT a switch for provenance persistence: both persistence call
      * sites always write the two envelopes built by {@link TurnProvenance}, in either mode.
      */
-    private List<Turn> historyFor(UUID userId, UUID conversationId) {
-        var rows = loadWindow(userId, conversationId);
+    private List<Turn> historyFor(UUID userId, AiConversationEntity conversation) {
+        var rows = loadWindow(userId, conversation.getId());
+        if (conversation.isBoop()) {
+            // Boop B3 (mezo-r36n9.13, spec §7.6): only today's turns — yesterday's facts never mix with
+            // today's pushed "Ma" block. Today = the owner's calendar day.
+            var startOfToday = ownerToday.startOfToday();
+            rows = rows.stream().filter(r -> r.getCreatedAt() != null && !r.getCreatedAt().isBefore(startOfToday))
+                    .toList();
+        }
         return conversationProperties.enabled() ? conversationHistory.turns(rows) : toTurns(rows);
     }
 
@@ -956,7 +990,8 @@ public class ChatService {
 
     private void touchConversation(AiConversationEntity conversation, String userContent) {
         conversation.setLastMessageAt(Instant.now());
-        if (conversation.getTitle() == null) {
+        // Boop B3 (mezo-r36n9.13): a Boop conversation keeps its date title (set at create)
+        if (conversation.getTitle() == null && !conversation.isBoop()) {
             int max = properties.chat().titleMaxChars();
             conversation.setTitle(
                     userContent.length() <= max ? userContent : userContent.substring(0, max));

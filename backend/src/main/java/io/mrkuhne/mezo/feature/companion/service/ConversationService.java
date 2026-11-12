@@ -19,7 +19,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -39,6 +41,11 @@ public class ConversationService {
     private final ObjectProvider<ChatService> chatService;
     /** mezo-eq85.3 — ownership gate for a seeded conversation's hypothesis. */
     private final PatternRepository patternRepository;
+    /** Boop B3 (mezo-r36n9.13) — a Boop conversation is titled with the owner's date. */
+    private final OwnerToday ownerToday;
+
+    /** "2026. november 12." — the title of the day's Boop conversation (spec §7.6). */
+    static final DateTimeFormatter BOOP_TITLE = DateTimeFormatter.ofPattern("yyyy. MMMM d.", Locale.of("hu"));
 
     public List<ConversationResponse> list(UUID userId) {
         return conversationRepository.findAllOwned(userId).stream()
@@ -57,6 +64,14 @@ public class ConversationService {
         AiConversationEntity conversation = new AiConversationEntity();
         conversation.setCreatedBy(userId);
         var context = request == null ? null : request.getContext();
+        // Boop B3 (mezo-r36n9.13): absent channel = web, the unchanged behaviour
+        if (request != null && request.getChannel() != null) {
+            conversation.setChannel(request.getChannel().getValue());
+            if (conversation.isBoop()) {
+                // one conversation per day: named after the day, never after its first question
+                conversation.setTitle(BOOP_TITLE.format(ownerToday.today()));
+            }
+        }
         if (context != null) {
             conversation.setContextKind(context.getKind());
             conversation.setContextDate(context.getDate());

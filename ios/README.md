@@ -37,6 +37,7 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 
 | Flag | What it does |
 |---|---|
+| `-previewNotify checkin\|este` | rings the real check-in / close reminder at the next whole minute (background the app; a tap opens the cover) |
 | `-preview shell` / `-preview onboarding` | signs in a local preview user; the brief and Health endpoints answer from `PreviewTransport` |
 | `-previewEmpty YES` | Nap shows the empty states instead of the brief |
 | `-previewTab ma\|terv\|naplo\|boop` | opens that place of the spine |
@@ -51,6 +52,13 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewRecovery YES` | kímélő mód, day 2 of a cold: calm grey-blue sky, the banner, no session |
 | `-previewScroll 850` | tab pages open scrolled to that offset |
 | `-previewOpen capture\|account` | opens the "+" capture sheet or the account sheet |
+| `-previewOpen checkin\|checkinDone` | opens the check-in (its first item / its payoff after every item is answered and saved), the clock reads 16:02 |
+| `-previewOpen este\|esteDone` | opens the evening close (esteDone: already closed), the clock reads 21:32 and the day has its goal |
+| `-previewOpen naploDay` | Napló opens yesterday's day |
+| `-previewOpen chatAnswer\|chatAsk\|chatQueued` | the Boop tab: one answered question / one asked at launch whose answer takes 8 s / one question waiting for the net (use with `-previewOffline YES`) |
+| `-previewOffline YES` | no network: captures stay pending on the phone (waiting glyph), the mic keeps a recording for later upload |
+| `-previewColdTap checkin\|este` | simulates a notification tap from a cold launch: the cover is asked for before any view exists |
+| `-previewRefuse YES` | the server refuses the daily loop's writes (check-in, goal, close, journal line) with 400: the quiet "nem sikerült elküldeni · Újra" rows |
 | `-previewSwitch terv\|naplo\|boop` | switches to that place after 3 s and back to Ma 3 s later (record the backdrop slide + blend without taps) |
 
 Adding an API operation: add its `operationId` to `BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`

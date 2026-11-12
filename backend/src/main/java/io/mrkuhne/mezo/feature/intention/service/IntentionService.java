@@ -79,11 +79,32 @@ public class IntentionService {
 
     @Transactional
     public IntentionFocusResponse addFocus(UUID userId, LocalDate date, String text) {
+        return addFocus(userId, date, text, null);
+    }
+
+    /**
+     * Adds a focus. With a {@code clientRef} (Boop outbox) the write is idempotent: a live focus already
+     * carrying that ref is returned as-is (no cap check, no duplicate), and a concurrent retry is resolved by
+     * the DB (insert-if-absent, then read back) so the caller's transaction is never aborted.
+     */
+    @Transactional
+    public IntentionFocusResponse addFocus(UUID userId, LocalDate date, String text, UUID clientRef) {
         String t = requireText(text, properties.focusMaxLen());
+        if (clientRef != null) {
+            var existing = focusRepository.findByCreatedByAndClientRefAndDeletedFalse(userId, clientRef);
+            if (existing.isPresent()) {
+                return mapper.toResponse(existing.get());
+            }
+        }
         long count = focusRepository
             .findByCreatedByAndFocusDateAndDeletedFalseOrderByCreatedAtAsc(userId, date).size();
         if (count >= properties.focusCap()) {
             throw conflict("INTENTION_FOCUS_CAP");
+        }
+        if (clientRef != null) {
+            focusRepository.insertIfClientRefAbsent(userId, date, t, clientRef);
+            return mapper.toResponse(focusRepository.findByCreatedByAndClientRefAndDeletedFalse(userId, clientRef)
+                .orElseThrow());
         }
         IntentionFocusEntity e = new IntentionFocusEntity();
         e.setCreatedBy(userId);

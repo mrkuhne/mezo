@@ -7,10 +7,28 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface JournalEntryRepository extends JpaRepository<JournalEntryEntity, UUID> {
 
     Optional<JournalEntryEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
+    Optional<JournalEntryEntity> findByCreatedByAndClientRefAndDeletedFalse(UUID createdBy, UUID clientRef);
+
+    /** Race-safe insert for a Boop retry: a concurrent insert of the same {@code clientRef} makes this one
+     *  wait and then do nothing (no unique violation, so a caller's transaction is never aborted). Returns 1
+     *  when this call created the row; the caller reads it back. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+        insert into journal_entry (created_by, occurred_on, text, source, client_ref)
+        values (:createdBy, :occurredOn, :text, :source, :clientRef)
+        on conflict (created_by, client_ref) where client_ref is not null and is_deleted = false do nothing
+        """, nativeQuery = true)
+    int insertIfClientRefAbsent(@Param("createdBy") UUID createdBy, @Param("occurredOn") LocalDate occurredOn,
+                                @Param("text") String text, @Param("source") String source,
+                                @Param("clientRef") UUID clientRef);
 
     List<JournalEntryEntity> findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnDescCreatedAtDesc(
         UUID createdBy, LocalDate startInclusive, LocalDate endInclusive);

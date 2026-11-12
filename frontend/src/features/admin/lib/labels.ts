@@ -59,6 +59,7 @@ export const FEATURE_LABELS: Record<string, Entry> = {
   lifegoal_propose: { label: 'Életcél-javaslat' },
   meal_coach: { label: 'Étkezési tanácsadó' },
   boop_brief: { label: 'Boop reggeli összefoglaló' },
+  boop_day_close: { label: 'Boop esti és kitöltés utáni mondata' },
   meal_draft: { label: 'Étel-felismerés', hint: 'fotóból/szövegből étkezés-vázlat' },
   // VERIFIED: MesoReviewGenerator — a lezárt mezociklus (edzésblokk) VÉGÉRTÉKELÉSÉNEK
   // AI-narratívája a frissen összeállított kontextusból (deterministikus riport + életmód-adatok).

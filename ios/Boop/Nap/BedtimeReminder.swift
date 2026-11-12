@@ -14,9 +14,17 @@ protocol ReminderCenter: Sendable {
     func request() async -> Bool
     /// A notification every day at hour:minute (replaces the one with the same id).
     func schedule(id: String, hour: Int, minute: Int, title: String, body: String) async throws
+    /// A one-time notification on that calendar day (replaces the one with the same id). `route` is what a tap opens
+    /// (`RitmusCover` route name). The daily loop's reminders use it: a repeating clock time cannot skip a day that is done.
+    /// No default: every centre decides what a dated request means.
+    func scheduleOnce(id: String, on day: DateComponents, hour: Int, minute: Int, title: String, body: String, route: String) async throws
     func cancel(id: String)
     /// Whether a request with this id is still waiting to ring.
     func isPending(id: String) async -> Bool
+    /// The ids of the waiting requests that start with `prefix` (the daily loop clears and re-adds its whole family).
+    func pendingIds(withPrefix prefix: String) async -> [String]
+    /// Takes already delivered notifications with these ids out of the notification centre.
+    func removeDelivered(ids: [String])
 }
 
 /// The real centre: local notifications, no server.
@@ -42,6 +50,19 @@ struct SystemReminderCenter: ReminderCenter {
         try await UNUserNotificationCenter.current().add(request)
     }
 
+    func scheduleOnce(id: String, on day: DateComponents, hour: Int, minute: Int, title: String, body: String, route: String) async throws {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default                // no badge, no category: a quiet nudge
+        content.userInfo = ["route": route]
+        var when = DateComponents(year: day.year, month: day.month, day: day.day, hour: hour, minute: minute)
+        when.calendar = .current
+        let request = UNNotificationRequest(identifier: id, content: content,
+                                            trigger: UNCalendarNotificationTrigger(dateMatching: when, repeats: false))
+        try await UNUserNotificationCenter.current().add(request)
+    }
+
     /// A repeating local clock time: crossing midnight and DST need no date arithmetic, and it holds after a relaunch.
     static func trigger(hour: Int, minute: Int) -> UNCalendarNotificationTrigger {
         UNCalendarNotificationTrigger(dateMatching: DateComponents(hour: hour, minute: minute), repeats: true)
@@ -54,18 +75,44 @@ struct SystemReminderCenter: ReminderCenter {
     func isPending(id: String) async -> Bool {
         await UNUserNotificationCenter.current().pendingNotificationRequests().contains { $0.identifier == id }
     }
+
+    func pendingIds(withPrefix prefix: String) async -> [String] {
+        await UNUserNotificationCenter.current().pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix(prefix) }
+    }
+
+    func removeDelivered(ids: [String]) {
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
+    }
 }
 
-/// Lets Boop's own notifications show while the app is open (by default iOS keeps them silent in the foreground).
-/// Installed once at launch (`BoopApp`); the centre holds its delegate weakly, so this one lives for the process.
+/// Boop's notification delegate, installed once at launch (`BoopApp`; the centre holds it weakly, so this one lives for
+/// the process): the bedtime reminder shows while Boop is open, the daily loop's reminders stay quiet there (Ma already
+/// offers the check-in / the close), and a tap on a daily-loop reminder opens its cover through the shared router.
 final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Sendable {
     static let shared = ReminderPresenter()
     static let foregroundOptions: UNNotificationPresentationOptions = [.banner, .sound]
 
     static func install() { UNUserNotificationCenter.current().delegate = shared }
 
+    /// What to show while the app is open: nothing for the daily loop's reminders, a banner for the rest.
+    static func presentation(for id: String) -> UNNotificationPresentationOptions {
+        id.hasPrefix(RitmusReminders.idPrefix) ? [] : foregroundOptions
+    }
+
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
-        -> UNNotificationPresentationOptions { Self.foregroundOptions }
+        -> UNNotificationPresentationOptions { Self.presentation(for: notification.request.identifier) }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        guard response.actionIdentifier == UNNotificationDefaultActionIdentifier else { return }
+        await handleTap(route: response.notification.request.content.userInfo["route"] as? String)
+    }
+
+    /// A tap on the notification body: a daily-loop route opens its cover. On a cold launch the router holds it until
+    /// the shell appears and presents it.
+    @MainActor func handleTap(route: String?) {
+        guard let route, let cover = RitmusCover(route: route) else { return }
+        RitmusRouter.shared.open(cover)
+    }
 }
 
 // MARK: - When it rings (pure)

@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-11-11
+updated: 2026-11-12
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -13,10 +13,12 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal
   - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics
   - backend/src/main/java/io/mrkuhne/mezo/feature/people
-related: [_platform-data-layer, _platform-design-system, _platform-notifications, today, insights, journal, companion, proactive, lifegoal, goal-engine]
+related: [dayclose, _platform-data-layer, _platform-design-system, _platform-notifications, today, insights, journal, companion, proactive, lifegoal, goal-engine]
 ---
 
 # Me Area — Feature Documentation
+
+> **2026-11-12 — Boop B3 Napi ritmus: check-in (`mezo-r36n9.13`).** The check-in backend (biometrics, §4) grew for the native app: `SaveCheckInRequest.capturedAt` is the record's moment (`saved_at`, default now; more than 5 minutes in the future is a 400), and `date` must lie in **today − 7 … today + 1 in the owner zone** (`OwnerZoneProperties`, `mezo.wearable.zone`) — the web always sends today. New table **`check_in_snapshot`** (1:1 with `check_in`, one live row; HR + time, HRV + time + 14-day usual, steps with `steps_is_day_total`, sleep minutes, `source`, `computed_by` = `phone`/`server`; migration `202611121100_mezo-r36n9.13_check_in_snapshot.sql`): the phone sends the snapshot it read from HealthKit; a check-in that arrives **without one** (the web) gets a **server fallback** through the new `CheckInBiomarkerSource` port (implemented in `wearable` by `WearableCheckInBiomarkerSource` from `health_sample` / `daily_metric` / `sleep_log` — biometrics must not import wearable; a re-save recomputes an empty server snapshot). `CheckInService.mergeEvening` is the entry the day close ([`dayclose.md`](dayclose.md)) uses for the 20:00 slot (energy + `day_rating`; a skipped slot becomes done); the save race is closed with `INSERT … ON CONFLICT DO NOTHING` + read-back. Tests `CheckInBoopIT`, `WearableCheckInBiomarkerSourceIT`. See [`boop-ios.md`](boop-ios.md).
 
 > **2026-10-12 — reviewed after Folyadék F5 · Fuel (`mezo-n4wf5.5`).** The energy-breakdown sheet Én's biometrics lead into (`features/fuel/sheets/EnergyBreakdownSheet`, fed by `features/me/logic/buildTdeeBreakdown.ts`) is a Folyadék sheet now and bilingual; numbers are grouped („Honnan jön a 2 200 kcal?"). `buildTdeeBreakdown`'s movement label comes from the catalog (`m().fuelLogika.energyBreakdown.plannedWeeklyAvg` — „Tervezett mozgás · heti átlag" / "Planned movement · weekly …"), no longer a literal. **The door is `BiometricSheet`'s „Energia-bontás magyarázata" button**, wired by the Settings biometrics editor (`features/settings/pages/MeSettingsPage.tsx`: closes the editor, opens the sheet on `initial="base"`, reopens the editor on close) — so the „no Én-side door" gap noted in §2 / §9 is closed through Settings; the Én hub itself still has no direct entry. Nothing else under `features/me` changed.
 

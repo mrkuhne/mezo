@@ -114,6 +114,9 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     @State private var toastAction: String?
     @Environment(\.openURL) private var openURL
     @Environment(\.openAccount) private var openAccount
+    /// B3: the hero's check-in pill opens the full-screen check-in (the evening one, the close).
+    @Environment(RitmusRouter.self) private var router: RitmusRouter?
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
 
     private var copy: MaiCopy { maiCopy(brief, metricKey(for: selected)) }
     private var now: Date { _ = clockTick; return BoopClock.now() }
@@ -122,7 +125,8 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     /// Evening's dusk or kímélő's calm over the page; nil = the selected orb's own sky.
     private var sky: NKSky? { maiSky(evening: evening, recovery: brief.day.recovery != nil) }
     private var action: LensAction? {
-        let a = Lens.action(for: metricKey(for: selected), brief: brief, now: now, evening: evening)
+        let a = heroAction(Lens.action(for: metricKey(for: selected), brief: brief, now: now, evening: evening),
+                           day: ritmus.map { $0.ledger.ledger(for: $0.day(of: now)) }, now: now, calendar: ritmus?.calendar ?? .current)
         // the reminder is on: the pill says when it rings (a tap turns it off)
         if let a, a.kind == .bedtime, reminder.isOn, let time = reminder.time {
             return LensAction(glyph: a.glyph, title: reminderPillTitle(time), kind: .bedtime)
@@ -266,6 +270,8 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         switch action.kind {
         case .breath: startBreath()
         case .bedtime: toggleReminder()
+        case .checkin: router?.open(.checkin)
+        case .eveningCheckin: router?.open(.este)
         default: show(soonToast(soonName(action.kind)))
         }
     }

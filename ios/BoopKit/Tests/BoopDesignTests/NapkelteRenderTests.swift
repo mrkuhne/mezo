@@ -38,13 +38,13 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
 }
 
 @Test @MainActor func outlinedGlyphsRender() {
-    for n in ["check-ink", "clock-ink", "camera-ink", "book-sage", "sun-ink"] {
+    for n in ["check-ink", "clock-ink", "camera-ink", "book-sage", "sun-ink", "mic", "offline"] {
         #expect(render(NKGlyph(n, .white, size: 22), width: 22, height: 22) != nil, "glyph \(n)")
     }
 }
 
 @Test func outlinedSetCoversTheBlobbingGlyphs() {
-    #expect(NKGlyph.outlined == ["check-ink", "clock-ink", "camera-ink", "book-sage"])
+    #expect(NKGlyph.outlined == ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline"])
 }
 
 @Test @MainActor func pillRendersAtAccessibilitySize() {

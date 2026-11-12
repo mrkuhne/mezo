@@ -12,8 +12,11 @@ public struct CalendarItem: Sendable, Equatable {
     public let end: Date
     public let allDay: Bool
     public let calendar: String
-    public init(externalId: String, title: String, start: Date, end: Date, allDay: Bool, calendar: String) {
+    /// Invited people (EventKit attendees); 0 when none. Stays on the phone (the goal chips read it, the sync does not).
+    public let attendees: Int
+    public init(externalId: String, title: String, start: Date, end: Date, allDay: Bool, calendar: String, attendees: Int = 0) {
         self.externalId = externalId; self.title = title; self.start = start; self.end = end; self.allDay = allDay; self.calendar = calendar
+        self.attendees = attendees
     }
 }
 

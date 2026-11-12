@@ -1,0 +1,203 @@
+openapi: 3.0.3
+info: { title: mezo dayclose fragment, version: 1.0.0 }
+tags:
+  - name: DayClose
+    description: >
+      Boop B3 (mezo-r36n9.13) — the day-close record, one source of truth for the evening close
+      (rating, goal outcome, plan goals, journal link, Boop's sentence). Idempotent upsert by
+      (owner, date); dates accepted today-7 .. today+1 in the owner zone (+1: a phone east of it), today+2 or later -> 400.
+paths:
+  /api/day-close:
+    get:
+      tags: [DayClose]
+      operationId: listDayCloses
+      summary: Day closes in a date range (Napló list)
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Closes in the range, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DayCloseResponse' }
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/day-close/{date}:
+    put:
+      tags: [DayClose]
+      operationId: putDayClose
+      summary: Close (or re-close) a day — idempotent upsert
+      parameters:
+        - { name: date, in: path, required: true, schema: { type: string, format: date } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DayCloseRequest' }
+      responses:
+        '200':
+          description: The stored close
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DayCloseResponse' }
+        '400':
+          description: Validation failure, or a date after today+1 / before today-7 (owner zone)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    get:
+      tags: [DayClose]
+      operationId: getDayClose
+      summary: One day's close (falls back to the legacy stores, source=web)
+      parameters:
+        - { name: date, in: path, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: The close
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DayCloseResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: The day is not closed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/day-close/{date}/line:
+    post:
+      tags: [DayClose]
+      operationId: generateDayCloseLine
+      summary: Boop's one sentence for the closed day (cheap tier, cached by input hash)
+      parameters:
+        - { name: date, in: path, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: The line
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DayCloseLineResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: The day is not closed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '503':
+          description: LLM port unavailable — the phone retries later
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/day-close/{date}/checkin-line:
+    post:
+      tags: [DayClose]
+      operationId: generateCheckInLine
+      summary: Boop's one line after a check-in slot (cheap tier, cached)
+      parameters:
+        - { name: date, in: path, required: true, schema: { type: string, format: date } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CheckInLineRequest' }
+      responses:
+        '200':
+          description: The line
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DayCloseLineResponse' }
+        '400':
+          description: Empty slot, no done check-in in that slot, or a date outside today-7 .. today+1 (owner zone)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '503':
+          description: LLM port unavailable — the phone retries later
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    DayClosePlanGoal:
+      type: object
+      required: [id, title, result]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        result: { type: string, description: 'Short result text shown at close' }
+        met: { type: boolean, nullable: true }
+    DayCloseRequest:
+      type: object
+      required: [capturedAt, clientRef, dayRating, planGoals]
+      properties:
+        capturedAt: { type: string, format: date-time }
+        clientRef: { type: string, format: uuid }
+        eveningEnergy: { type: integer, minimum: 1, maximum: 10, nullable: true }
+        dayRating: { type: integer, minimum: 1, maximum: 5 }
+        goalText: { type: string, nullable: true }
+        goalOutcome: { type: string, nullable: true, enum: [done, partial, no] }
+        planGoals:
+          type: array
+          items: { $ref: '#/components/schemas/DayClosePlanGoal' }
+        journalClientRef:
+          type: string
+          format: uuid
+          nullable: true
+          description: Client ref of the journal entry holding the evening transcript; resolved server-side.
+    DayCloseResponse:
+      type: object
+      required: [date, closedAt, planGoals, source]
+      properties:
+        date: { type: string, format: date }
+        closedAt: { type: string, format: date-time }
+        eveningEnergy: { type: integer, nullable: true }
+        dayRating:
+          type: integer
+          nullable: true
+          description: 1-5; null only for a day closed on the web without an evening rating
+        goalText: { type: string, nullable: true }
+        goalOutcome: { type: string, nullable: true, enum: [done, partial, no] }
+        planGoals:
+          type: array
+          items: { $ref: '#/components/schemas/DayClosePlanGoal' }
+        journalText: { type: string, nullable: true }
+        boopLine: { type: string, nullable: true }
+        source: { type: string, enum: [boop, web] }
+    DayCloseLineResponse:
+      type: object
+      required: [line]
+      properties:
+        line: { type: string }
+    CheckInLineRequest:
+      type: object
+      required: [slot]
+      properties:
+        slot: { type: string, minLength: 1, description: 'Check-in slot id, e.g. "14:00"' }

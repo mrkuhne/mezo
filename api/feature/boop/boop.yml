@@ -266,6 +266,9 @@ components:
         time: { type: string, nullable: true, description: 'HH:mm (moved time if overridden, else the planned slot)' }
         plannedTime: { type: string, nullable: true, description: HH:mm }
         minutes: { type: integer, nullable: true }
+        done: { type: boolean, description: 'B3 — the session was finished today (train/sport) or matched a wearable workout' }
+        doneMinutes: { type: integer, nullable: true }
+        avgHr: { type: integer, nullable: true }
         exercises:
           type: array
           items:

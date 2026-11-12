@@ -72,9 +72,24 @@ public record BoopDay(
     public record HrToday(Integer min, Integer avg, Integer max) {}
 
     /** {@code time} = moved time if overridden, else {@code plannedTime} (the weekday's gym slot);
-     *  both null without a slot. {@code minutes} = the template's estimate, null when unset. */
+     *  both null without a slot. {@code minutes} = the template's estimate, null when unset.
+     *  {@code done}: finished today (train / sport log, else a wearable workout in the planned window);
+     *  {@code doneMinutes} / {@code avgHr} come from the matched wearable workout when there is one
+     *  (Huawei rows carry no HR → null). */
     public record Session(String title, LocalTime time, LocalTime plannedTime, Integer minutes,
-                          List<Exercise> exercises) {}
+                          List<Exercise> exercises, boolean done, Integer doneMinutes, Integer avgHr) {
+
+        /** A planned session not (yet) known to be done. */
+        public Session(String title, LocalTime time, LocalTime plannedTime, Integer minutes,
+                       List<Exercise> exercises) {
+            this(title, time, plannedTime, minutes, exercises, false, null, null);
+        }
+
+        /** The same session, marked done with the minutes / average HR of what was actually done. */
+        Session withDone(Integer doneMinutes, Integer avgHr) {
+            return new Session(title, time, plannedTime, minutes, exercises, true, doneMinutes, avgHr);
+        }
+    }
 
     public record Exercise(String name, int sets) {}
 

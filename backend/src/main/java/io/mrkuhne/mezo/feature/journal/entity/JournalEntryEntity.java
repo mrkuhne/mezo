@@ -32,6 +32,7 @@ public class JournalEntryEntity extends OwnedEntity {
 
     public static final String SOURCE_QUICKINPUT = "quickinput";
     public static final String SOURCE_RITUAL = "ritual";
+    public static final String SOURCE_BOOP = "boop";
 
     @Id
     @GeneratedValue
@@ -50,7 +51,11 @@ public class JournalEntryEntity extends OwnedEntity {
     /** Mirrors ck_journal_entry_source. */
     @NotNull
     @Size(max = 12)
-    @Pattern(regexp = "quickinput|ritual")
+    @Pattern(regexp = "quickinput|ritual|boop")
     @Column(nullable = false, length = 12)
     private String source;
+
+    /** Boop outbox idempotency key (unique per owner among live rows); null for web entries. */
+    @Column(name = "client_ref", columnDefinition = "uuid")
+    private UUID clientRef;
 }

@@ -38,7 +38,8 @@ public class IntentionController implements IntentionApi {
 
     @Override
     public IntentionFocusResponse addFocus(AddFocusRequest request) {
-        return intentionService.addFocus(currentUserId.get(), request.getDate(), request.getText());
+        return intentionService.addFocus(currentUserId.get(), request.getDate(), request.getText(),
+            request.getClientRef());
     }
 
     @Override

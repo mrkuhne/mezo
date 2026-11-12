@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-10-10
+updated: 2026-11-12
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -10,10 +10,12 @@ key_files:
   - frontend/src/features/today/pages/NapHubPage.tsx
   - frontend/src/features/today/sheets/IntentionSheet.tsx
   - api/feature/intention/intention.yml
-related: [today, habit, growth, _platform-data-layer, _platform-api-backend]
+related: [dayclose, boop-ios, today, habit, growth, _platform-data-layer, _platform-api-backend]
 ---
 
 # Intention — Daily Creed, Foci & Evening Reflection
+
+> **2026-11-12 — Boop B3 Napi ritmus (`mezo-r36n9.13`).** `intention_focus` gained a nullable **`client_ref`** (unique per owner among live rows with a ref): `POST /api/intention/focus` accepts an optional `clientRef`, so a retried write from the phone's outbox returns the same focus instead of adding a second (`IntentionService.addFocus(clientRef)`; the 3-foci cap still answers 409, which the phone treats as final). The web sends no ref and is untouched. The goal of the day in Boop is the first focus; the evening outcome reaches `daily_intention.reflection` through the day close (`IntentionService.reflect`, see [`dayclose.md`](dayclose.md)). Migration `202611121110_mezo-r36n9.13_client_refs.sql`; test `IntentionFocusClientRefIT`.
 
 > **2026-10-10 — Folyadék F2 · Nap (`mezo-n4wf5.2`).** `IntentionSheet` („Mi ma a fókuszod?") and `ReflectSheet` („Szándékkal élted a napot?") are light `fo-sheet`s with the shared `FoSheetHead`; they open from the Rutin page's intention rows and its hero button („Leírom" / „Válaszolok"). **Mai no longer opens `IntentionSheet`:** the companion block and its creed line went with the old hub, so the surfaces of this feature are `/nap/rutin` and Napzárás act 4 (the inline `Igen` / `Részben` / `Nem` pills). Data, contract and XP rules are unchanged. See [`today.md`](today.md), [`habit.md`](habit.md).
 

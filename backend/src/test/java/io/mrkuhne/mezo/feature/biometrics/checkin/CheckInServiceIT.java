@@ -24,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class CheckInServiceIT extends AbstractIntegrationTest {
 
-    private static final LocalDate DAY = LocalDate.parse("2026-06-01");
+    /** Inside the save window (today − 7 … today in the owner zone, mezo-r36n9.13). */
+    private static final LocalDate DAY = LocalDate.now().minusDays(1);
 
     @Autowired private CheckInService service;
     @Autowired private CheckInRepository repository;

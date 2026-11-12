@@ -162,6 +162,8 @@
 				CODE_SIGN_ENTITLEMENTS = Boop.entitlements;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "A Boop a naptáradból látja, mennyi időd marad edzésre és evésre.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "A Boop az alvásodból, a mozgásodból, a pulzusodból, a testsúlyodból és a hangulatodból mondja meg, milyen napod lesz.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "A Boop a hangodat csak arra használja, hogy leírja, amit mondasz.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "A Boop a telefonon írja le, amit mondasz, hogy a napod mellé kerüljön.";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -185,6 +187,8 @@
 				CODE_SIGN_ENTITLEMENTS = Boop.entitlements;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "A Boop a naptáradból látja, mennyi időd marad edzésre és evésre.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "A Boop az alvásodból, a mozgásodból, a pulzusodból, a testsúlyodból és a hangulatodból mondja meg, milyen napod lesz.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "A Boop a hangodat csak arra használja, hogy leírja, amit mondasz.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "A Boop a telefonon írja le, amit mondasz, hogy a napod mellé kerüljön.";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;

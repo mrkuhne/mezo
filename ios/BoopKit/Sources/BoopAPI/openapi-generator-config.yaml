@@ -26,3 +26,21 @@ filter:
     - decidePattern
     - registerApnsDevice
     - unregisterApnsDevice
+    - listCheckInsForDay
+    - saveCheckIn
+    - getCheckInPlan
+    - getIntentionDay
+    - addFocus
+    - removeFocus
+    - createJournalEntry
+    - transcribeVoiceNote
+    - putDayClose
+    - getDayClose
+    - listDayCloses
+    - generateDayCloseLine
+    - generateCheckInLine
+    - listConversations
+    - createConversation
+    - listMessages
+    - sendMessage
+    - getDayContext

@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-11
+updated: 2026-11-12
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-11-12 — reviewed after Boop B3 (`mezo-r36n9.13`).** No platform change: B3 only adds contract fragments (`api/feature/dayclose`, widened `checkin` / `intention` / `journal` / `companion` / `boop`, registered in `api/generate/merge.yml`) and `messages_{hu,en}.properties` keys (`DAY_CLOSE_*`). See [`dayclose.md`](dayclose.md).
 
 > **2026-11-10 — Boop S3 · reggel (`mezo-r36n9.7`).** New fragment `api/feature/boop/boop.yml` (tag `Boop`, `/api/boop/brief`, `/api/boop/brief/regenerate`, `/api/boop/session-time`) registered in `api/generate/merge.yml`; feature package `feature/boop` (a leaf — nothing imports it back); error keys **`BOOP_REGENERATE_LIMIT_REACHED`** (409, daily regenerate cap) and **`BOOP_NO_PLANNED_SESSION`** (404, no planned session that day) in both message bundles; Liquibase `1.1.0` gains `boop_brief` and `workout_time_override`. The phone sends its own local date; the server never derives the day. See [`boop-ios.md`](boop-ios.md) §4.
 

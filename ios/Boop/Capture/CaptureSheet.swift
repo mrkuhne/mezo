@@ -1,9 +1,16 @@
 import SwiftUI
 import BoopDesign
 
-/// The global "+": what to record. Every item answers a "hamarosan" toast until its slice (B3 food, B4 training) wires it.
+/// What a tap on the "+" sheet asks for: one of the daily loop's covers, or a "hamarosan" toast naming the item.
+enum CapturePick: Equatable {
+    case cover(RitmusCover)
+    case soon(String)
+}
+
+/// The global "+": what to record. B3 wires the check-in and the journal line (the evening close's voice-or-type row);
+/// every other item answers a "hamarosan" toast until its slice (B4 food, B5 training) wires it.
 struct CaptureSheet: View {
-    let onPick: (String) -> Void
+    let onPick: (CapturePick) -> Void
     @State private var text = ""
 
     var body: some View {
@@ -24,17 +31,17 @@ struct CaptureSheet: View {
             .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                tile("spark-cream", "Check-in", "fél perc")
-                tile("book-sage", "Napló", "egy sor, szóval is")
-                tile("scale-ink", "Súly", "mérés felvétele")
-                tile("dumbbell-ink", "Edzés indítása", "a mai terv szerint")
+                tile("spark-cream", "Check-in", "fél perc", .cover(.checkin))
+                tile("book-sage", "Napló", "egy sor, szóval is", .cover(.este))
+                tile("scale-ink", "Súly", "mérés felvétele", .soon("Súly"))
+                tile("dumbbell-ink", "Edzés indítása", "a mai terv szerint", .soon("Edzés indítása"))
             }
 
             HStack(spacing: 10) {
                 TextField("", text: $text, prompt: Text("Mondd vagy írd: ebéd, csirke rizzsel…").foregroundStyle(.white.opacity(0.45)))
                     .nkFont(15).foregroundStyle(.white)
                     .submitLabel(.send)
-                    .onSubmit { onPick("Szöveges rögzítés") }
+                    .onSubmit { onPick(.soon("Szöveges rögzítés")) }
                 StillOrb(palette: Hue.forma.orb, size: 26, level: 0.8)
             }
             .padding(.horizontal, 18).frame(height: 54)
@@ -44,7 +51,7 @@ struct CaptureSheet: View {
     }
 
     private func chip(_ glyph: String, _ title: String) -> some View {
-        Button { onPick(title) } label: {
+        Button { onPick(.soon(title)) } label: {
             VStack(spacing: 6) {
                 NKGlyph(glyph, .white, size: 18)
                 Text(title).nkFont(12.5, .semibold).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)
@@ -55,8 +62,8 @@ struct CaptureSheet: View {
         .buttonStyle(.plain)
     }
 
-    private func tile(_ glyph: String, _ title: String, _ sub: String) -> some View {
-        Button { onPick(title) } label: {
+    private func tile(_ glyph: String, _ title: String, _ sub: String, _ pick: CapturePick) -> some View {
+        Button { onPick(pick) } label: {
             VStack(alignment: .leading, spacing: 10) {
                 NKGlyph(glyph, .white, size: 22)
                 VStack(alignment: .leading, spacing: 2) {

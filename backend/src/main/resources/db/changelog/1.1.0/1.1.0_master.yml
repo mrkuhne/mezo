@@ -335,3 +335,31 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202611121000_mezo-r36n9.24_boop_brief_ai_words.sql
+  - changeSet:
+      id: "1.1.0:202611121100_mezo-r36n9.13_check_in_snapshot"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611121100_mezo-r36n9.13_check_in_snapshot.sql
+  - changeSet:
+      id: "1.1.0:202611121110_mezo-r36n9.13_client_refs"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611121110_mezo-r36n9.13_client_refs.sql
+  - changeSet:
+      id: "1.1.0:202611121120_mezo-r36n9.13_day_close"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611121120_mezo-r36n9.13_day_close.sql
+  - changeSet:
+      id: "1.1.0:202611121130_mezo-r36n9.13_conversation_channel"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611121130_mezo-r36n9.13_conversation_channel.sql

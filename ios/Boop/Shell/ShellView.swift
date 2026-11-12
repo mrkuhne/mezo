@@ -42,12 +42,24 @@ struct ShellView: View {
     @State private var skies: [ShellTab: NKBackdrop] = [:]
     @State private var capturing = false
     @State private var account = false
+    /// The daily loop's full-screen covers (B3): Ma's rows, the lens pill, "+" and the notifications ask for them.
+    @State private var router = RitmusRouter.shared
+    /// The cover the "+" sheet asked for; it opens once the sheet has gone (two presentations never overlap).
+    @State private var coverAfterCapture: RitmusCover?
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
+    /// The day's brief: Boop's own goals and the bedtime target for the close.
+    @Environment(MorningStore.self) private var morning: MorningStore?
     @State private var toast: String?
     /// A room is open over the page: the bar is hidden.
     @State private var roomOpen = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var tab: ShellTab { ShellTab.restored(tabKey) }
+
+    /// The cover a sheet made wait opens as soon as that sheet is gone.
+    private func openCoverAfterSheet() {
+        if let cover = coverAfterCapture { coverAfterCapture = nil; router.open(cover) }
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -62,6 +74,7 @@ struct ShellView: View {
                                             removal: .opacity.animation(.easeIn(duration: 0.22))))
             }
             .environment(\.nkBackdropHosted, true)
+            .environment(router)
             .environment(\.setRoomOpen, { open in withAnimation(.smooth(duration: 0.35)) { roomOpen = open } })
             NKSpineBar(selected: Binding(get: { tab.rawValue }, set: { select(ShellTab(rawValue: $0) ?? .ma) }),
                        onPlus: { capturing = true })
@@ -74,28 +87,63 @@ struct ShellView: View {
         .nkToast($toast)
         .preferredColorScheme(.dark)
         // page-level presentations (boop-ios.md §9)
-        .sheet(isPresented: $capturing) {
-            CaptureSheet { name in capturing = false; toast = soonToast(name) }
+        .sheet(isPresented: $capturing, onDismiss: openCoverAfterSheet) {
+            CaptureSheet { pick in
+                switch pick {
+                case .cover(let cover): coverAfterCapture = cover
+                case .soon(let name): toast = soonToast(name)
+                }
+                capturing = false
+            }
                 .presentationDetents([.height(560), .large])
                 .presentationBackground(NK.ground)
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $account) {
+        .sheet(isPresented: $account, onDismiss: openCoverAfterSheet) {
             AccountSheet(me: me)
                 .presentationDetents([.medium, .large])
                 .presentationBackground(NK.ground)
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
         }
+        // The page reads the router's flag here, so the cover presents when anything below asks for it.
+        .fullScreenCover(item: Binding(get: { [cover = router.cover] in cover }, set: { router.cover = $0 })) { cover in
+            switch cover {
+            case .checkin:
+                if let ritmus {
+                    CheckinView(env: ritmus) { router.close() }
+                } else {
+                    coverFallback(hue: .mozgas)
+                }
+            case .este:
+                if let ritmus {
+                    EsteView(env: ritmus, brief: morning?.brief) { router.close() }
+                } else {
+                    coverFallback(hue: .pulzus)
+                }
+            }
+        }
+        // A notification tap while the "+" or account sheet is up: the sheet goes first, then the cover (two
+        // presentations never overlap).
+        .onChange(of: router.cover) { _, asked in
+            guard let asked, capturing || account else { return }
+            coverAfterCapture = asked
+            router.cover = nil
+            capturing = false
+            account = false
+        }
         .onAppear {
             fromTab = tab
             #if DEBUG
-            // Simulator review: `-previewTab ma|terv|naplo|boop` opens that place, `-previewOpen capture|account` a sheet.
+            // Simulator review: `-previewTab ma|terv|naplo|boop` opens that place, `-previewOpen capture|account` a sheet,
+            // `-previewOpen checkin|checkinDone` the check-in (its first item / its payoff), `-previewOpen este` the close.
             if let t = UserDefaults.standard.string(forKey: "previewTab").flatMap(ShellTab.init(key:)) { tabKey = t.storageKey; fromTab = t }
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
             case "account": account = true
+            case "checkin", "checkinDone": router.open(.checkin)
+            case "este", "esteDone": router.open(.este)
             default: break
             }
             #endif
@@ -111,6 +159,20 @@ struct ShellView: View {
             try? await Task.sleep(for: .seconds(3)); select(.ma)
         }
         #endif
+    }
+
+    /// No daily loop yet (signing in or out): never an empty cover, always a way back.
+    private func coverFallback(hue: Hue) -> some View {
+        ZStack(alignment: .topLeading) {
+            NKGround(hue: hue)
+            Button { router.close() } label: {
+                Image(systemName: "chevron.down").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
+            }
+            .buttonStyle(.plain).accessibilityLabel("Bezárom")
+            .padding(.leading, 16).padding(.top, 8)
+        }
+        .preferredColorScheme(.dark)
     }
 
     @ViewBuilder private func page(_ tab: ShellTab) -> some View {
