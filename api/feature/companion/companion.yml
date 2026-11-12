@@ -5,6 +5,11 @@ tags:
     description: Editable personal context and communication preferences
   - name: Companion
     description: Phase-3 companion chat — conversations + messages (mezo-fnnq)
+  - name: CompanionDayContext
+    description: >-
+      Boop B3 (mezo-r36n9.13) — the "Boop látja" strip: the chips of the day block the chat
+      planner sees, plus ready questions. Own tag so the generated interface stays separate
+      from the conversation CRUD surface.
   - name: CompanionStream
     description: >-
       Phase-3 companion chat — SSE streaming turn (mezo-fnnq.4). PRECEDENT: this tag's generated
@@ -118,6 +123,22 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/FlagTraceDayResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/day-context:
+    get:
+      tags: [CompanionDayContext]
+      operationId: getDayContext
+      summary: Today's day-context chips (what Boop sees) and ready questions
+      responses:
+        '200':
+          description: The chips and up to 3 ready questions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DayContextResponse' }
         '401':
           description: Missing or invalid token
           content:
@@ -1237,6 +1258,10 @@ components:
         mezo-p2tr — anchored conversations: an optional week/day anchor. Absent body/context =
         plain conversation, unchanged behaviour.
       properties:
+        channel:
+          type: string
+          enum: [web, boop]
+          description: Boop B3 — `boop` conversations get the pushed "Ma" day block; absent = web.
         context:
           type: object
           nullable: true
@@ -1252,6 +1277,26 @@ components:
             Reflexió S3 (mezo-eq85.3) — the hypothesis this conversation is about. Every user turn
             in the thread is recorded as a user_reply event on that pattern. 404 when the pattern
             is missing or owned by someone else.
+    DayContextResponse:
+      type: object
+      required: [chips, questions, generatedAt]
+      properties:
+        chips:
+          type: array
+          items: { $ref: '#/components/schemas/DayContextChip' }
+        questions:
+          type: array
+          maxItems: 3
+          items: { type: string }
+        generatedAt: { type: string, format: date-time }
+    DayContextChip:
+      type: object
+      required: [key, label, value]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        value: { type: string }
+        sub: { type: string, nullable: true }
     ConversationRenameRequest:
       type: object
       required: [title]

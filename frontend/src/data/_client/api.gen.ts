@@ -2229,6 +2229,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/day-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today's day-context chips (what Boop sees) and ready questions */
+        get: operations["getDayContext"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation": {
         parameters: {
             query?: never;
@@ -5693,6 +5710,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/day-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Day closes in a date range (Napló list) */
+        get: operations["listDayCloses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/day-close/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One day's close (falls back to the legacy stores, source=web) */
+        get: operations["getDayClose"];
+        /** Close (or re-close) a day — idempotent upsert */
+        put: operations["putDayClose"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/day-close/{date}/line": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Boop's one sentence for the closed day (cheap tier, cached by input hash) */
+        post: operations["generateDayCloseLine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/day-close/{date}/checkin-line": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Boop's one line after a check-in slot (cheap tier, cached) */
+        post: operations["generateCheckInLine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5918,7 +6004,36 @@ export interface components {
             quickExit?: boolean;
             /** @description Optional free-form note, without an application character limit. */
             note?: string;
+            /**
+             * Format: date-time
+             * @description Boop B3 — the phone's instant of capture; stored as the record's moment (saved_at). Absent = now (web behaviour). `date` must be within today .. today-7 in the owner zone.
+             */
+            capturedAt?: string;
+            snapshot?: components["schemas"]["CheckInSnapshot"];
         };
+        /** @description Boop B3 — biomarker snapshot frozen at capture (computed on the phone from HealthKit). Every field is nullable; each reading carries its sample time. */
+        CheckInSnapshot: {
+            hrBpm?: number | null;
+            /** Format: date-time */
+            hrAt?: string | null;
+            /** Format: double */
+            hrvMs?: number | null;
+            /** Format: date-time */
+            hrvAt?: string | null;
+            /**
+             * Format: double
+             * @description 14-day median HRV
+             */
+            hrvUsualMs?: number | null;
+            steps?: number | null;
+            /** @description True when steps is a day total (server fallback), false/null when cumulative up to capture */
+            stepsIsDayTotal?: boolean | null;
+            sleepMinutes?: number | null;
+            /** @description Source bundle id */
+            source?: string | null;
+            /** @enum {string|null} */
+            computedBy?: "phone" | "server" | null;
+        } | null;
         CheckInResponse: {
             /** Format: uuid */
             id: string;
@@ -5963,6 +6078,7 @@ export interface components {
             note?: string;
             /** Format: date-time */
             savedAt: string;
+            snapshot?: components["schemas"]["CheckInSnapshot"];
         };
         /**
          * @description Check-in 2.0 item ids (core five first)
@@ -8878,6 +8994,11 @@ export interface components {
         };
         /** @description mezo-p2tr — anchored conversations: an optional week/day anchor. Absent body/context = plain conversation, unchanged behaviour. */
         CreateConversationRequest: {
+            /**
+             * @description Boop B3 — `boop` conversations get the pushed "Ma" day block; absent = web.
+             * @enum {string}
+             */
+            channel?: "web" | "boop";
             context?: {
                 /** @description 'week' anchors an ISO-Monday week; 'day' anchors one day inside its week */
                 kind: string;
@@ -8892,6 +9013,18 @@ export interface components {
              * @description Reflexió S3 (mezo-eq85.3) — the hypothesis this conversation is about. Every user turn in the thread is recorded as a user_reply event on that pattern. 404 when the pattern is missing or owned by someone else.
              */
             seedPatternId?: string | null;
+        };
+        DayContextResponse: {
+            chips: components["schemas"]["DayContextChip"][];
+            questions: string[];
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        DayContextChip: {
+            key: string;
+            label: string;
+            value: string;
+            sub?: string | null;
         };
         ConversationRenameRequest: {
             /** @description The new list label — same cap as the auto-title column. */
@@ -10568,6 +10701,11 @@ export interface components {
             /** Format: date */
             date: string;
             text: string;
+            /**
+             * Format: uuid
+             * @description Boop B3 — idempotency key (unique per owner); a retried request returns the same focus.
+             */
+            clientRef?: string;
         };
         ReflectRequest: {
             /** Format: date */
@@ -11133,7 +11271,7 @@ export interface components {
             occurredOn: string;
             text: string;
             /** @enum {string} */
-            source: "quickinput" | "ritual";
+            source: "quickinput" | "ritual" | "boop";
             /** Format: date-time */
             createdAt: string;
         };
@@ -11145,6 +11283,11 @@ export interface components {
              */
             occurredOn?: string;
             source: string;
+            /**
+             * Format: uuid
+             * @description Boop B3 — idempotency key (unique per owner); a retried request returns the same entry.
+             */
+            clientRef?: string;
         };
         UpdateJournalEntryRequest: {
             text: string;
@@ -13180,6 +13323,10 @@ export interface components {
             /** @description HH:mm */
             plannedTime?: string | null;
             minutes?: number | null;
+            /** @description B3 — the session was finished today (train/sport) or matched a wearable workout */
+            done?: boolean;
+            doneMinutes?: number | null;
+            avgHr?: number | null;
             exercises: {
                 name: string;
                 sets: number;
@@ -13240,6 +13387,53 @@ export interface components {
             environment: "sandbox" | "production";
             bundleId: string;
             appVersion?: string;
+        };
+        DayClosePlanGoal: {
+            id: string;
+            title: string;
+            /** @description Short result text shown at close */
+            result: string;
+            met?: boolean | null;
+        };
+        DayCloseRequest: {
+            /** Format: date-time */
+            capturedAt: string;
+            /** Format: uuid */
+            clientRef: string;
+            eveningEnergy?: number | null;
+            dayRating: number;
+            goalText?: string | null;
+            /** @enum {string|null} */
+            goalOutcome?: "done" | "partial" | "no" | null;
+            planGoals: components["schemas"]["DayClosePlanGoal"][];
+            /**
+             * Format: uuid
+             * @description Client ref of the journal entry holding the evening transcript; resolved server-side.
+             */
+            journalClientRef?: string | null;
+        };
+        DayCloseResponse: {
+            /** Format: date */
+            date: string;
+            /** Format: date-time */
+            closedAt: string;
+            eveningEnergy?: number | null;
+            dayRating: number;
+            goalText?: string | null;
+            /** @enum {string|null} */
+            goalOutcome?: "done" | "partial" | "no" | null;
+            planGoals: components["schemas"]["DayClosePlanGoal"][];
+            journalText?: string | null;
+            boopLine?: string | null;
+            /** @enum {string} */
+            source: "boop" | "web";
+        };
+        DayCloseLineResponse: {
+            line: string;
+        };
+        CheckInLineRequest: {
+            /** @description Check-in slot id, e.g. "14:00" */
+            slot: string;
         };
     };
     responses: {
@@ -20187,6 +20381,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FlagTraceDayResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getDayContext: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The chips and up to 3 ready questions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayContextResponse"];
                 };
             };
             /** @description Missing or invalid token */
@@ -29414,6 +29637,242 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listDayCloses: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Closes in the range, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayCloseResponse"][];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getDayClose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The close */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayCloseResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The day is not closed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putDayClose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DayCloseRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored close */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayCloseResponse"];
+                };
+            };
+            /** @description Validation failure or a future / too-old date */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    generateDayCloseLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The line */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayCloseLineResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The day is not closed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM port unavailable — the phone retries later */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    generateCheckInLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInLineRequest"];
+            };
+        };
+        responses: {
+            /** @description The line */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayCloseLineResponse"];
+                };
+            };
+            /** @description Unknown slot / bad date */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No check-in in that slot */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM port unavailable — the phone retries later */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
