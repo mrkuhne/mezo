@@ -8,6 +8,8 @@ struct ClosedDayCard: View {
     let quote: EsteFlow.Quote?
     /// *Újra* on a recording that could not be written down; nil hides the button (a past day's card).
     var onRetry: (() -> Void)?
+    /// The close (or its typed line) was refused by the server: "nem sikerült elküldeni" with this *Újra*; nil = none.
+    var onRetrySend: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -28,19 +30,16 @@ struct ClosedDayCard: View {
                 case .waitingForTranscript:
                     Text("Hangfelvétel · szöveggé alakítom, amint lesz net").nkFont(14).foregroundStyle(.white.opacity(0.8))
                 case .transcriptFailed:
-                    HStack {
+                    if let onRetry {
+                        RefusedRow(text: "Hangfelvétel · nem sikerült leírni", onRetry: onRetry)
+                    } else {
                         Text("Hangfelvétel · nem sikerült leírni").nkFont(14).foregroundStyle(.white.opacity(0.8))
-                        Spacer()
-                        if let onRetry {
-                            Button(action: onRetry) {
-                                Text("Újra").nkFont(14, .semibold).foregroundStyle(.white)
-                                    .padding(.horizontal, 14).frame(height: 32)
-                                    .background(Capsule().fill(.white.opacity(0.12)))
-                            }
-                            .buttonStyle(.plain)
-                        }
                     }
                 }
+            }
+            if let onRetrySend {
+                Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
+                RefusedRow(text: "A zárás · nem sikerült elküldeni", onRetry: onRetrySend)
             }
         }
         .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()

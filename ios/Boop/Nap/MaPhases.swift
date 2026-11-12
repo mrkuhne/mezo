@@ -282,7 +282,8 @@ struct MaBelow: View {
                           micHint: ritmus.recorder != nil && !ritmus.voiceInputAvailable(ritmus.recorder) ? RitmusEnvironment.voiceOfflineHint : nil,
                           onSet: { text in Task { await setGoal(text) } },
                           onCsere: { Task { await removeGoal() } },
-                          onMic: goalMic)
+                          onMic: goalMic,
+                          onRetry: ritmus.goalRefusal(on: today).map { id in { Task { await ritmus.retry([id]) } } })
                     .padding(.top, 14)
             }
             if proposalsInPlan && !shown.isEmpty {
@@ -316,7 +317,9 @@ struct MaBelow: View {
             phaseHead(.napkozben, range: timelineSpan(stations) ?? "")
             if let ritmus, let day = ledgerDay {
                 MaEnergyCard(day: day, predicted: brief.date == today ? brief.energy.hourly : [], now: ctx.now,
-                             calendar: ritmus.calendar, selected: $curveSel)
+                             calendar: ritmus.calendar, selected: $curveSel,
+                             refusal: { ritmus.refusal(forCheckIn: $0, date: today) },
+                             onRetry: { id in Task { await ritmus.retry([id]) } })
             }
             if isEmptyDay(stations) {
                 Text(MaText.emptyDay)

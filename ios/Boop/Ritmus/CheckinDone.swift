@@ -40,6 +40,12 @@ struct CheckinDone: View {
                                 hue: .mozgas, selected: $selected)
                 if let c = day.checkIns.first(where: { $0.id == selected }) {
                     detail(c).transition(.opacity)
+                    // the server did not take it: a quiet row with Újra, not the "waiting for the net" look
+                    if let refused = env.refusal(forCheckIn: c, date: flow.date) {
+                        RefusedRow { Task { await env.retry([refused]) } }
+                            .padding(.horizontal, 18).padding(.vertical, 12).nkGlass(20)
+                            .transition(.opacity)
+                    }
                 }
                 VStack(alignment: .leading, spacing: 10) {
                     VoiceRecorderRow(phase: voice, prompt: "Mondj hozzá egy mondatot", micEnabled: env.recorder != nil,

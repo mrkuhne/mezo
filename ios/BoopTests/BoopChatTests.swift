@@ -38,7 +38,7 @@ final class BoopChatTests {
             ledgerDirectory: root.appendingPathComponent("ledger"), outboxDirectory: root.appendingPathComponent("outbox"),
             sender: sender, line: { _, _ in "" }, snapshot: { _ in CheckInSnapshotValue() }, plans: nil,
             clock: { now }, calendar: Self.budapest)
-        env.attachChat(client: makeClient(tokens: MemoryTokenStore("t"), transport: NoServer()), sender: sender)
+        env.attachChat(client: makeClient(tokens: MemoryTokenStore("t"), transport: NoServer()), direct: sender)
         return env
     }
 

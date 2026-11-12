@@ -36,8 +36,11 @@ struct RootView: View {
         case .needsOnboarding(let m), .ready(let m): me = m
         default: me = nil
         }
-        guard let me else { link = nil; morning = nil; ritmus = nil; BackgroundSyncHost.ritmus = nil; return }
+        // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
+        // the session's client already carries another token, or none).
+        guard let me else { ritmus?.retire(); link = nil; morning = nil; ritmus = nil; BackgroundSyncHost.ritmus = nil; return }
         if link?.userId != me.id {
+            ritmus?.retire()
             let signOut: @MainActor () -> Void = { [session] in session.signOut() }
             #if DEBUG
             if UserDefaults.standard.string(forKey: "preview") != nil {

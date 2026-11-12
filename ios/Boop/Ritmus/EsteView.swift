@@ -50,7 +50,6 @@ struct EsteView: View {
         // the close reached the server (now, or later when the net came back): Boop's sentence can be asked for
         .task(id: flow.closed?.pending) {
             if flow.closed?.pending == false { await env.refreshCloseLine(flow.date) }
-            await flow.refreshVoiceState()
         }
     }
 
@@ -229,7 +228,9 @@ struct EsteView: View {
             .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
             .accessibilityElement(children: .combine)
 
-            ClosedDayCard(rows: flow.summaryRows, quote: flow.journalQuote) { Task { await flow.retryVoice() } }
+            ClosedDayCard(rows: flow.summaryRows, quote: flow.journalQuote,
+                          onRetry: { Task { await flow.retryVoice() } },
+                          onRetrySend: flow.sendFailed ? { Task { await flow.retrySend() } } : nil)
 
             if let bedtime = flow.bedtimeLine {
                 HStack(spacing: 12) {

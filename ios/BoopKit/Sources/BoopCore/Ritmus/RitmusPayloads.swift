@@ -13,6 +13,11 @@ public enum RitmusPayload {
         let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
         return try? d.decode(type, from: data)
     }
+
+    /// A queued item's body read back (nil when it is not that kind's shape).
+    public static func decodeCheckIn(_ data: Data) -> CheckInPayload? { decode(CheckInPayload.self, from: data) }
+    public static func decodeVoice(_ data: Data) -> VoicePayload? { decode(VoicePayload.self, from: data) }
+    public static func decodeClose(_ data: Data) -> DayClosePayload? { decode(DayClosePayload.self, from: data) }
 }
 
 /// `checkIn` and `checkInNote`: the whole slot (a note follow-up is an upsert of the same slot carrying every value
