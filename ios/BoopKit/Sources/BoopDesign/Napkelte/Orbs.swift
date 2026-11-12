@@ -8,11 +8,13 @@ public func orbPalette(_ c: [Color]) -> [Color] {
     return Array((base + Array(repeating: base.last!, count: 4)).prefix(4))
 }
 
-/// How high the hero orb stands over the horizon: 0 = centre on the horizon, 1 = top. nil score = still learning.
-public func riseFraction(score: Int?) -> Double? {
-    guard let s = score else { return nil }
-    return min(1, max(0, (Double(s) - 40) / 60))
-}
+/// Where the hero orb's centre sits in its frame of height `height`: on the horizon, the same spot for every metric
+/// and every score (owner, 2026-11-12: "mindegyik legyen ott ahol a Fuel-nak van" — Fuel at 0 sat there). The
+/// score no longer moves the orb; its fill level still shows it.
+public func heroOrbCenterY(height: CGFloat) -> CGFloat { height - 8 }
+
+/// How far above the orb's centre the number and caption sit, so they stay in the half above the horizon.
+public func heroLabelLift(orbSize: CGFloat) -> CGFloat { orbSize * 0.26 }
 
 /// What VoiceOver says for an orb value: the no-data dash is "nincs adat".
 public func orbSpoken(_ display: String) -> String { display == "–" ? "nincs adat" : display }
@@ -139,8 +141,9 @@ public struct StillOrb: View {
     }
 }
 
-/// The hero: the metric's orb as the morning sun. Good scores stand high, a weak one sinks behind the horizon
-/// (clipped). A nil score is "még tanulom": a calm, half-saturated still orb at mid height, no rise.
+/// The hero: the metric's orb as the morning sun, half risen on the horizon at one fixed spot for every metric
+/// (`heroOrbCenterY`); the number rides in the visible upper half. A nil score is "még tanulom": a calm,
+/// half-saturated still orb at the same spot.
 /// `orbScale` scales the orb alone (Pulzus breathing: 1.22 in, 0.84 out); the number and the glow stay put.
 public struct RisingOrb: View {
     let hue: Hue, score: Int?, display: String, caption: String?, motion: OrbMotion, orbScale: CGFloat
@@ -152,8 +155,7 @@ public struct RisingOrb: View {
     public var body: some View {
         GeometryReader { g in
             let H = g.size.height, size: CGFloat = 156
-            let t = riseFraction(score: score) ?? 0.5
-            let cy = H - 8 - t * (H - 8 - size / 2 - 6)
+            let cy = heroOrbCenterY(height: H)
             ZStack {
                 Circle().fill(hue.glow.opacity(0.18)).frame(width: size * 1.7).blur(radius: 60)
                 if score == nil {
@@ -172,6 +174,7 @@ public struct RisingOrb: View {
                     if let caption { Text(caption).nkFont(12).foregroundStyle(.white.opacity(0.75)) }
                 }
                 .shadow(color: .black.opacity(0.35), radius: 10)
+                .offset(y: -heroLabelLift(orbSize: size))
                 .allowsHitTesting(false)
             }
             .frame(width: g.size.width, height: size * 2)
