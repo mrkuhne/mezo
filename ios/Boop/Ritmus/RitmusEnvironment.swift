@@ -24,7 +24,7 @@ final class RitmusEnvironment {
     @ObservationIgnored private let goalsSource: (@Sendable ([String]) async throws -> [String: [String]])?
     @ObservationIgnored private let eventsSource: (@Sendable (Date) async -> [CalendarEventLite])?
     @ObservationIgnored private let closeLineSource: (@Sendable (String) async throws -> String)?
-    /// The server's transcription, asked for directly (the goal field); nil = not available.
+    /// The server's transcription, asked for directly (the goal field, the chat composer); nil = not available.
     @ObservationIgnored private let transcribeSource: (@Sendable (URL) async throws -> String)?
     /// Where recordings wait (the outbox folder).
     @ObservationIgnored let outboxDirectory: URL
@@ -259,7 +259,7 @@ final class RitmusEnvironment {
         ledger.merge(server: server, fetchedAt: fetchedAt)
     }
 
-    /// Follows the phone's network path (the goal field's mic needs the net when the phone cannot transcribe itself).
+    /// Follows the phone's network path (a field's mic needs the net when the phone cannot transcribe itself).
     private func watchNetwork() {
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
@@ -270,38 +270,38 @@ final class RitmusEnvironment {
         pathMonitor = monitor
     }
 
-    // MARK: - The goal field's voice
+    // MARK: - Speaking into a field (the goal, the chat composer)
 
-    /// What a spoken goal became: text for the field, or a short line for the toast.
-    enum HeardGoal: Equatable {
+    /// What a spoken sentence became: text for the field, or a short line for the toast.
+    enum HeardSpeech: Equatable {
         case text(String)
         case problem(String)
     }
 
-    static let goalOfflineHint = "Net nélkül most csak beírni tudod."
+    static let voiceOfflineHint = "Net nélkül most csak beírni tudod."
     static let speechDenied = "A beszédfelismerés nincs engedélyezve — a Beállításokban kapcsolhatod be, vagy írd be."
     static let notUnderstood = "Nem értettem — írd be inkább."
 
-    /// The goal field's mic works when the phone writes Hungarian itself, or when it is online and can ask the server.
-    func goalMicAvailable(_ recorder: (any VoiceNoteRecorder)?) -> Bool {
+    /// A field's mic works when the phone writes Hungarian itself, or when it is online and can ask the server.
+    func voiceInputAvailable(_ recorder: (any VoiceNoteRecorder)?) -> Bool {
         guard let recorder else { return false }
         return recorder.transcribesOnDevice || (online && transcribeSource != nil)
     }
 
-    /// Turns a goal recording into text for the field: the phone's transcript, else (online) the server's, asked for
+    /// Turns a recording into text for the field: the phone's transcript, else (online) the server's, asked for
     /// directly — nothing is queued, and the recording is deleted either way.
-    func heardGoal(_ capture: VoiceCapture, speechDenied: Bool) async -> HeardGoal {
+    func heardSpeech(_ capture: VoiceCapture, speechDenied: Bool) async -> HeardSpeech {
         switch capture {
         case .transcript(let text): return .text(text)
         case .recording(let name):
             let file = outboxDirectory.appendingPathComponent(name)
             defer { try? FileManager.default.removeItem(at: file) }
-            guard online, let transcribeSource else { return .problem(speechDenied ? Self.speechDenied : Self.goalOfflineHint) }
+            guard online, let transcribeSource else { return .problem(speechDenied ? Self.speechDenied : Self.voiceOfflineHint) }
             do {
                 let text = try await transcribeSource(file).trimmingCharacters(in: .whitespacesAndNewlines)
                 return text.isEmpty ? .problem(Self.notUnderstood) : .text(text)
             } catch RitmusFetchError.offline {
-                return .problem(Self.goalOfflineHint)
+                return .problem(Self.voiceOfflineHint)
             } catch {
                 return .problem(Self.notUnderstood)
             }

@@ -101,15 +101,15 @@ final class MaRitmusTests {
 
     @Test func goalVoiceOnDeviceFillsTheField() async {
         let env = voiceEnvironment(transcribe: nil)
-        #expect(env.goalMicAvailable(GoalRecorder(onDevice: true)))
-        #expect(await env.heardGoal(.transcript("Séta ebéd után"), speechDenied: false) == .text("Séta ebéd után"))
+        #expect(env.voiceInputAvailable(GoalRecorder(onDevice: true)))
+        #expect(await env.heardSpeech(.transcript("Séta ebéd után"), speechDenied: false) == .text("Séta ebéd után"))
     }
 
     @Test func goalVoiceOnlineWithoutOnDeviceAsksTheServerDirectly() async throws {
         let env = voiceEnvironment(transcribe: { _ in " Ügyfélprezentáció " })
-        #expect(env.goalMicAvailable(GoalRecorder(onDevice: false)))
+        #expect(env.voiceInputAvailable(GoalRecorder(onDevice: false)))
         let (capture, url) = try keptRecording(in: env)
-        #expect(await env.heardGoal(capture, speechDenied: false) == .text("Ügyfélprezentáció"))
+        #expect(await env.heardSpeech(capture, speechDenied: false) == .text("Ügyfélprezentáció"))
         #expect(!FileManager.default.fileExists(atPath: url.path))       // nothing kept,
         #expect(await env.outbox.pending.isEmpty)                         // nothing queued
     }
@@ -117,18 +117,18 @@ final class MaRitmusTests {
     @Test func goalVoiceOfflineWithoutOnDeviceIsDimmedWithAHint() async throws {
         let env = voiceEnvironment(transcribe: { _ in throw RitmusFetchError.offline })
         env.online = false
-        #expect(!env.goalMicAvailable(GoalRecorder(onDevice: false)))
-        #expect(env.goalMicAvailable(GoalRecorder(onDevice: true)))
+        #expect(!env.voiceInputAvailable(GoalRecorder(onDevice: false)))
+        #expect(env.voiceInputAvailable(GoalRecorder(onDevice: true)))
         env.online = true                                                 // the path said yes, the request found no net
         let (capture, url) = try keptRecording(in: env)
-        #expect(await env.heardGoal(capture, speechDenied: false) == .problem(RitmusEnvironment.goalOfflineHint))
+        #expect(await env.heardSpeech(capture, speechDenied: false) == .problem(RitmusEnvironment.voiceOfflineHint))
         #expect(!FileManager.default.fileExists(atPath: url.path))
     }
 
     @Test func goalVoiceSpeechDeniedOfflineSaysSo() async throws {
         let env = voiceEnvironment(transcribe: nil)
         let (capture, _) = try keptRecording(in: env)
-        #expect(await env.heardGoal(capture, speechDenied: true) == .problem(RitmusEnvironment.speechDenied))
+        #expect(await env.heardSpeech(capture, speechDenied: true) == .problem(RitmusEnvironment.speechDenied))
     }
 
     @Test func micCopyTellsDenialFromFailure() {

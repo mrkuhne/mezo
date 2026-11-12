@@ -65,7 +65,7 @@ final class BoopChatTests {
         #expect(FileManager.default.fileExists(atPath: root.appendingPathComponent("chat-conversations.json").path))
     }
 
-    @Test func chipsKeepEveryServerWordInTheSpikeOrder() {
+    @Test func chipsShowEveryServerWordLabelFirst() {
         func face(_ key: String, _ label: String, _ value: String, _ sub: String?) -> ChipFace {
             ChipFace(DayChip(key: key, label: label, value: value, sub: sub))
         }
@@ -73,8 +73,8 @@ final class BoopChatTests {
         #expect(face("hrv", "HRV", "41", "szokott 50") == ChipFace(glyph: "spark-cream", title: "HRV 41", sub: "szokott 50"))
         #expect(face("session", "Röpi", "19:00", "90 perc") == ChipFace(glyph: "ball-sun", title: "Röpi 19:00", sub: "90 perc"))
         #expect(face("session", "Edzés", "ma", "60 perc") == ChipFace(glyph: "dumbbell-ink", title: "Edzés ma", sub: "60 perc"))
-        #expect(face("checkins", "Kitöltés", "3 kitöltés", "energia 6") == ChipFace(glyph: "pen-sun", title: "3 kitöltés", sub: "energia 6"))
-        #expect(face("fuel", "Étkezés", "520 kcal", "cél 3 100") == ChipFace(glyph: "bowl-cream", title: "520 kcal", sub: "cél 3 100"))
+        #expect(face("checkins", "Kitöltés", "3 kitöltés", "energia 6") == ChipFace(glyph: "pen-sun", title: "Kitöltés", sub: "3 kitöltés · energia 6"))
+        #expect(face("fuel", "Étkezés", "520 kcal", "cél 3 100") == ChipFace(glyph: "bowl-cream", title: "Étkezés 520 kcal", sub: "cél 3 100"))
         #expect(face("goal", "A nap célja", "Ügyfélprezentáció", nil) == ChipFace(glyph: "star-sun", title: "A nap célja", sub: "Ügyfélprezentáció"))
         #expect(face("calendar", "Naptár", "még 2 esemény", "következő 14:00")
                 == ChipFace(glyph: "clock-ink", title: "Naptár", sub: "még 2 esemény · következő 14:00"))

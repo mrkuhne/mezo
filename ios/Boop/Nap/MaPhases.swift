@@ -278,8 +278,8 @@ struct MaBelow: View {
                 GoalBlock(goal: ritmus.goal(on: today)?.text, suggestions: ritmus.goalSuggestions(brief: brief, date: today),
                           draft: $goalDraft,
                           // only a transcript written on the phone fits a one-line field; without it, typing only
-                          micEnabled: ritmus.goalMicAvailable(ritmus.recorder), recording: goalRecording,
-                          micHint: ritmus.recorder != nil && !ritmus.goalMicAvailable(ritmus.recorder) ? RitmusEnvironment.goalOfflineHint : nil,
+                          micEnabled: ritmus.voiceInputAvailable(ritmus.recorder), recording: goalRecording,
+                          micHint: ritmus.recorder != nil && !ritmus.voiceInputAvailable(ritmus.recorder) ? RitmusEnvironment.voiceOfflineHint : nil,
                           onSet: { text in Task { await setGoal(text) } },
                           onCsere: { Task { await removeGoal() } },
                           onMic: goalMic)
@@ -392,7 +392,7 @@ struct MaBelow: View {
         goalRecording = false
         Task {
             guard let capture = await recorder.stop() else { return }
-            switch await ritmus.heardGoal(capture, speechDenied: recorder.speechDenied) {
+            switch await ritmus.heardSpeech(capture, speechDenied: recorder.speechDenied) {
             case .text(let text): goalDraft = text
             case .problem(let line): ctx.toast(line)
             }

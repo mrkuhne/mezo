@@ -15,7 +15,9 @@ struct PreviewTransport: ClientTransport {
     private static let chatId = "7a3c1e52-4b6d-4f0e-9a52-1d9d4c1a0b00"
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        try await Task.sleep(for: .milliseconds(400))
+        // `-previewOpen chatAsk`: Boop takes his time, so the waiting look can be seen.
+        let slowAnswer = operationID == "sendMessage" && UserDefaults.standard.string(forKey: "previewOpen") == "chatAsk"
+        try await Task.sleep(for: .milliseconds(slowAnswer ? 8_000 : 400))
         // `-previewOffline YES`: the daily loop's writes and Boop's lines find no net (they stay on the phone).
         if UserDefaults.standard.bool(forKey: "previewOffline"), Self.ritmusOps.contains(operationID) {
             throw URLError(.notConnectedToInternet)

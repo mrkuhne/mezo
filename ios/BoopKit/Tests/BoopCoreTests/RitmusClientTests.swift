@@ -297,6 +297,52 @@ final class RitmusClientTests {
         #expect(stub.ops == ["sendMessage"])
     }
 
+    static func chatMessage(_ role: String, _ content: String) -> String {
+        #"{"id":"\#(UUID().uuidString.lowercased())","role":"\#(role)","content":"\#(content)","createdAt":"2026-11-10T15:02:05Z","tools":[],"refs":[],"recalled":[],"degraded":false}"#
+    }
+
+    func resend(_ payload: ChatQuestionPayload) -> OutboxItem {
+        var i = item(.chatQuestion, payload); i.attempts = 1; return i
+    }
+
+    @Test func chatResendAfterLostAnswerDoesNotAskTwice() async throws {
+        let conv = UUID()
+        stub.on("listMessages", .json(200, "[\(Self.chatMessage("user", "Mi a terv?")),\(Self.chatMessage("assistant", "Pihenj."))]"))
+        let result = await ritmus.send(resend(ChatQuestionPayload(conversationId: conv, text: "Mi a terv?")))
+        guard case .sent(let data?) = result else { Issue.record("expected sent, got \(result)"); return }
+        let reply = try #require(RitmusPayload.decode(ChatReply.self, from: data))
+        #expect(reply.conversationId == conv && reply.content == "Pihenj.")
+        #expect(stub.ops == ["listMessages"])   // no second sendMessage
+    }
+
+    @Test func chatResendThatNeverArrivedIsSent() async {
+        let conv = UUID()
+        stub.on("listMessages", .json(200, "[\(Self.chatMessage("user", "Más kérdés")),\(Self.chatMessage("assistant", "Jó."))]"))
+        stub.on("sendMessage", .json(200, Self.chatMessage("assistant", "Pihenj.")))
+        let result = await ritmus.send(resend(ChatQuestionPayload(conversationId: conv, text: "Mi a terv?")))
+        guard case .sent = result else { Issue.record("expected sent, got \(result)"); return }
+        #expect(stub.ops == ["listMessages", "sendMessage"])
+    }
+
+    @Test func chatFirstSendDoesNotReadTheTurns() async {
+        stub.on("sendMessage", .json(200, Self.chatMessage("assistant", "Pihenj.")))
+        _ = await ritmus.send(item(.chatQuestion, ChatQuestionPayload(conversationId: UUID(), text: "Mi a terv?")))
+        #expect(stub.ops == ["sendMessage"])
+    }
+
+    @Test func chatServerErrorFailsInsteadOfRetrying() async {
+        stub.on("sendMessage", .status(503))
+        let result = await ritmus.send(item(.chatQuestion, ChatQuestionPayload(conversationId: UUID(), text: "x")))
+        #expect(result == .failed("HTTP 503"))
+        stub.on("createConversation", .status(500))
+        #expect(await ritmus.send(item(.chatQuestion, ChatQuestionPayload(text: "x"))) == .failed("HTTP 500"))
+    }
+
+    @Test func chatWithoutNetRetriesLater() async {
+        stub.on("sendMessage", .fail(URLError(.notConnectedToInternet)))
+        #expect(await ritmus.send(item(.chatQuestion, ChatQuestionPayload(conversationId: UUID(), text: "x"))) == .retryLater)
+    }
+
     // MARK: fetches
 
     @Test func fetchDayBuildsTheServerLedger() async throws {
