@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.biometrics.checkin.service;
 
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInSnapshotEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CravingKind;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.PainRegion;
 import java.util.ArrayList;
@@ -57,6 +58,44 @@ public final class CheckInText {
             return "";
         }
         return String.join(", ", parts) + (c.isQuickExit() ? QUICK_EXIT_SUFFIX : "");
+    }
+
+    /**
+     * The biomarker snapshot's one line (Boop B3, mezo-r36n9.13, spec §7.3), e.g.
+     * {@code "pulzus 78, HRV 38 (szokott 50), 7 420 lépés"}; {@code ""} when there is no snapshot or it holds
+     * none of these readings. A server-filled day total says so ({@code "(egész nap)"}), so the model never
+     * reads a whole day's steps as the count up to the check-in. Sleep minutes are left out, as in the
+     * spec's line (the sleep log is rendered by its own readers).
+     */
+    public static String snapshotLine(CheckInSnapshotEntity s) {
+        if (s == null) {
+            return "";
+        }
+        List<String> parts = new ArrayList<>();
+        if (s.getHrBpm() != null) {
+            parts.add("pulzus " + s.getHrBpm());
+        }
+        if (s.getHrvMs() != null) {
+            parts.add("HRV " + Math.round(s.getHrvMs())
+                + (s.getHrvUsualMs() == null ? "" : " (szokott " + Math.round(s.getHrvUsualMs()) + ")"));
+        }
+        if (s.getSteps() != null) {
+            parts.add(grouped(s.getSteps()) + " lépés" + (Boolean.TRUE.equals(s.getStepsIsDayTotal()) ? " (egész nap)" : ""));
+        }
+        return String.join(", ", parts);
+    }
+
+    /** Hungarian digit grouping with a plain space: 7420 → "7 420". */
+    private static String grouped(int value) {
+        String digits = Integer.toString(Math.abs(value));
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < digits.length(); i++) {
+            if (i > 0 && (digits.length() - i) % 3 == 0) {
+                out.append(' ');
+            }
+            out.append(digits.charAt(i));
+        }
+        return (value < 0 ? "-" : "") + out;
     }
 
     /** "fáj: térd, derék 5/10" | "nem fáj semmi" | nothing when the pain gate was not answered. */

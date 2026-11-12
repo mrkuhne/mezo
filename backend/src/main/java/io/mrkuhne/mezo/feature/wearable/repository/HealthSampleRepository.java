@@ -37,6 +37,17 @@ public interface HealthSampleRepository extends JpaRepository<HealthSampleEntity
                 @Param("sourceBundle") String sourceBundle, @Param("device") String device,
                 @Param("userEntered") boolean userEntered, @Param("meta") String meta);
 
+    /** The owner's live samples of one metric starting inside {@code [from, to]}, oldest first
+     *  (Boop B3, mezo-r36n9.13: the server-side check-in snapshot). */
+    @Query("""
+        select h from HealthSampleEntity h
+        where h.createdBy = :createdBy and h.metric = :metric and h.deleted = false
+          and h.startAt >= :from and h.startAt <= :to
+        order by h.startAt asc
+        """)
+    List<HealthSampleEntity> findWindow(@Param("createdBy") UUID createdBy, @Param("metric") String metric,
+                                        @Param("from") Instant from, @Param("to") Instant to);
+
     /** Soft-deletes the owner's live rows with these external ids; returns how many were live. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """

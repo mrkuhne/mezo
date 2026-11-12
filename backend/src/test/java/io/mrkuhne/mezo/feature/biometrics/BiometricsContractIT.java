@@ -25,6 +25,9 @@ import org.springframework.http.MediaType;
 /** HTTP round-trips through the GENERATED contract interfaces (api/openapi.yml). */
 class BiometricsContractIT extends ApiIntegrationTest {
 
+    /** A check-in must lie inside today − 7 … today in the owner zone (mezo-r36n9.13). */
+    private static final LocalDate CHECK_IN_DAY = LocalDate.now().minusDays(1);
+
     @Test
     void testLogWeight_shouldRoundTrip_whenPostedViaContract() {
         HttpHeaders headers = ownerAuthHeaders();
@@ -144,17 +147,17 @@ class BiometricsContractIT extends ApiIntegrationTest {
         HttpHeaders headers = ownerAuthHeaders();
         CheckInResponse first = postForBody("/api/biometrics/checkin",
             SaveCheckInRequest.builder()
-                .date(LocalDate.parse("2026-06-11")).slotTime("09:00").state("done").energy(7)
+                .date(CHECK_IN_DAY).slotTime("09:00").state("done").energy(7)
                 .build(),
             headers, HttpStatus.OK, CheckInResponse.class);
         CheckInResponse second = postForBody("/api/biometrics/checkin",
             SaveCheckInRequest.builder()
-                .date(LocalDate.parse("2026-06-11")).slotTime("09:00").state("skipped")
+                .date(CHECK_IN_DAY).slotTime("09:00").state("skipped")
                 .build(),
             headers, HttpStatus.OK, CheckInResponse.class);
         assertThat(second.getId()).isEqualTo(first.getId());
 
-        List<CheckInResponse> day = getForList("/api/biometrics/checkin?date=2026-06-11",
+        List<CheckInResponse> day = getForList("/api/biometrics/checkin?date=" + CHECK_IN_DAY,
             headers, HttpStatus.OK, CheckInResponse.class);
         assertThat(day).hasSize(1);
         assertThat(day.get(0).getState()).isEqualTo("skipped");
@@ -165,12 +168,12 @@ class BiometricsContractIT extends ApiIntegrationTest {
         String note = "Hosszabb gondolat a mai napról. ".repeat(1000);
         CheckInResponse saved = postForBody("/api/biometrics/checkin",
             SaveCheckInRequest.builder()
-                .date(LocalDate.parse("2026-06-11")).slotTime("09:00").state("done")
+                .date(CHECK_IN_DAY).slotTime("09:00").state("done")
                 .note(note).build(),
             headers, HttpStatus.OK, CheckInResponse.class);
         assertThat(saved.getNote()).isEqualTo(note);
 
-        List<CheckInResponse> day = getForList("/api/biometrics/checkin?date=2026-06-11",
+        List<CheckInResponse> day = getForList("/api/biometrics/checkin?date=" + CHECK_IN_DAY,
             headers, HttpStatus.OK, CheckInResponse.class);
         assertThat(day).singleElement().extracting(CheckInResponse::getNote).isEqualTo(note);
     }
@@ -180,7 +183,7 @@ class BiometricsContractIT extends ApiIntegrationTest {
         HttpHeaders headers = ownerAuthHeaders();
         postForBody("/api/biometrics/checkin",
             SaveCheckInRequest.builder()
-                .date(LocalDate.parse("2026-06-11")).slotTime("20:00").state("done")
+                .date(CHECK_IN_DAY).slotTime("20:00").state("done")
                 .energy(6).mood(8).stress(3).body(5).mental(7)
                 .pain(true).painRegions(List.of(PainRegion.TERD, PainRegion.DEREK)).painIntensity(5)
                 .craving(7).cravingKinds(List.of(CravingKind.EDES))
@@ -191,7 +194,7 @@ class BiometricsContractIT extends ApiIntegrationTest {
             headers, HttpStatus.OK, CheckInResponse.class);
 
         // Raw JSON: the wire values are the contract's enum strings.
-        String json = getForBody("/api/biometrics/checkin?date=2026-06-11", headers, HttpStatus.OK, String.class);
+        String json = getForBody("/api/biometrics/checkin?date=" + CHECK_IN_DAY, headers, HttpStatus.OK, String.class);
         assertThat(json).contains("\"painRegions\":[\"TERD\",\"DEREK\"]", "\"cravingKinds\":[\"EDES\"]",
             "\"askedItems\":[\"energy\",\"day\"]", "\"adaptiveItem\":\"motivation\"",
             "\"adaptiveReason\":\"RANDOM\"", "\"dayRating\":7", "\"quickExit\":false");
@@ -202,7 +205,7 @@ class BiometricsContractIT extends ApiIntegrationTest {
         HttpHeaders headers = ownerAuthHeaders();
         String body = postForBody("/api/biometrics/checkin",
             SaveCheckInRequest.builder()
-                .date(LocalDate.parse("2026-06-11")).slotTime("06:30").state("done")
+                .date(CHECK_IN_DAY).slotTime("06:30").state("done")
                 .mood(11).painIntensity(0).dayRating(12).build(),
             headers, HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "mood", "VALIDATION_INVALID_VALUE");
@@ -215,7 +218,7 @@ class BiometricsContractIT extends ApiIntegrationTest {
     void testSaveCheckIn_shouldReturn400NamingTheField_whenBodyEnumUnknown() {
         HttpHeaders headers = ownerAuthHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        String base = "{\"date\":\"2026-06-11\",\"slotTime\":\"20:00\",\"state\":\"done\",";
+        String base = "{\"date\":\"" + CHECK_IN_DAY + "\",\"slotTime\":\"20:00\",\"state\":\"done\",";
 
         assertHasFieldError(postForBody("/api/biometrics/checkin", base + "\"pain\":true,\"painRegions\":[\"TERD\",\"FAROK\"]}",
             headers, HttpStatus.BAD_REQUEST, String.class), "painRegions[1]", "VALIDATION_INVALID_VALUE");
