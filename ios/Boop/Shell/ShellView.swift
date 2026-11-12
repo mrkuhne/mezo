@@ -42,6 +42,9 @@ struct ShellView: View {
     @State private var skies: [ShellTab: NKBackdrop] = [:]
     @State private var capturing = false
     @State private var account = false
+    /// The full-screen check-in (B3); Ma's rows, "+" and the notifications open it (Tasks 9, 14).
+    @State private var checkingIn = false
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @State private var toast: String?
     /// A room is open over the page: the bar is hidden.
     @State private var roomOpen = false
@@ -88,14 +91,19 @@ struct ShellView: View {
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
         }
+        .fullScreenCover(isPresented: $checkingIn) {
+            if let ritmus { CheckinView(env: ritmus) { checkingIn = false } }
+        }
         .onAppear {
             fromTab = tab
             #if DEBUG
-            // Simulator review: `-previewTab ma|terv|naplo|boop` opens that place, `-previewOpen capture|account` a sheet.
+            // Simulator review: `-previewTab ma|terv|naplo|boop` opens that place, `-previewOpen capture|account` a sheet,
+            // `-previewOpen checkin|checkinDone` the check-in (its first item / its payoff).
             if let t = UserDefaults.standard.string(forKey: "previewTab").flatMap(ShellTab.init(key:)) { tabKey = t.storageKey; fromTab = t }
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
             case "account": account = true
+            case "checkin", "checkinDone": checkingIn = true
             default: break
             }
             #endif

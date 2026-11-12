@@ -12,6 +12,10 @@ struct PreviewTransport: ClientTransport {
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         try await Task.sleep(for: .milliseconds(400))
+        // `-previewOffline YES`: the daily loop's writes and Boop's lines find no net (they stay on the phone).
+        if UserDefaults.standard.bool(forKey: "previewOffline"), Self.ritmusOps.contains(operationID) {
+            throw URLError(.notConnectedToInternet)
+        }
         var sent = ""
         if operationID == "setSessionTime", let body { sent = String(decoding: try await Data(collecting: body, upTo: 1 << 16), as: UTF8.self) }
         if let reply = Self.morningReply(operationID, request, sent: sent) { return reply }
@@ -19,6 +23,12 @@ struct PreviewTransport: ClientTransport {
         var h = HTTPFields(); h[.contentType] = "application/json"
         return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(#"{"inserted":0,"updated":0}"#))
     }
+
+    /// The B3 daily-loop operations (`-previewOffline` cuts them off).
+    private static let ritmusOps: Set<String> = [
+        "saveCheckIn", "generateCheckInLine", "getCheckInPlan", "listCheckInsForDay", "addFocus", "removeFocus",
+        "createJournalEntry", "transcribeVoiceNote", "putDayClose", "getDayClose", "generateDayCloseLine",
+    ]
 
     private static func json(_ text: String) -> (HTTPResponse, HTTPBody?) {
         var h = HTTPFields(); h[.contentType] = "application/json"
@@ -34,6 +44,8 @@ struct PreviewTransport: ClientTransport {
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: String]
             movedTime = obj?["time"]
             return json(#"{"date":"\#(obj?["date"] ?? queryDate(request))","time":"\#(obj?["time"] ?? "19:00")","plannedTime":"17:30"}"#)
+        case "generateCheckInLine":
+            return json(#"{"line":"Délben még 6 voltál, most 5, és a HRV-d is a szokott alatt. Egyél 17:00 körül egy banánt joghurttal, hogy az edzésre maradjon erőd."}"#)
         case "clearSessionTime":
             movedTime = nil
             return (HTTPResponse(status: .noContent), nil)
