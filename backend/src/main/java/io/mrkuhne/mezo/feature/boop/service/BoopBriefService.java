@@ -255,7 +255,8 @@ public class BoopBriefService {
         }
         b.append("|session:");
         if (d.session() != null) {
-            b.append(d.session().title()).append(',').append(d.session().time());
+            b.append(d.session().title()).append(',').append(d.session().time()).append(',')
+                .append(d.session().done());
         }
         b.append("|recovery:");
         if (d.recovery() != null) {

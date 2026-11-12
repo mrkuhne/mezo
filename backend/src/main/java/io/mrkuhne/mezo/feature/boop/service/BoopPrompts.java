@@ -103,7 +103,9 @@ final class BoopPrompts {
 
         BoopDay.Session session = d.session();
         b.append("[Edzés] ").append(session == null ? "ma nincs tervezett edzés"
-            : session.title() + (session.time() == null ? "" : " " + RuleVerdicts.hhmm(session.time())))
+            : session.title() + (session.time() == null ? "" : " " + RuleVerdicts.hhmm(session.time()))
+                + (session.done() ? " (megvolt" + (session.doneMinutes() == null ? "" : ", " + session.doneMinutes()
+                    + " perc") + ")" : ""))
             .append('\n');
         b.append("[Naptár] ").append(calendar(d)).append('\n');
         if (conflict != null) {
@@ -117,6 +119,9 @@ final class BoopPrompts {
         BoopDay.Intention intention = d.intention();
         if (intention != null && intention.creed() != null && !intention.creed().isBlank()) {
             b.append("[Szándék] ").append(intention.creed()).append('\n');
+        }
+        if (intention != null && intention.foci() != null && !intention.foci().isEmpty()) {
+            b.append("[Mai fókusz] ").append(String.join("; ", intention.foci())).append('\n');
         }
         return b.toString();
     }

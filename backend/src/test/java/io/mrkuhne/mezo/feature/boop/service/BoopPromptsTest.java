@@ -36,4 +36,20 @@ class BoopPromptsTest {
 
         assertThat(prompt).doesNotContain("null");
     }
+
+    @Test
+    void promptContainsTodaysFoci() {
+        BoopDay base = BoopBriefFixtures.day(BoopBriefFixtures.night("23:00", "06:30"), 4000, List.of());
+        BoopDay d = new BoopDay(base.date(), base.sleep(), base.sleepTargetMin(), base.bedtimeTarget(),
+            base.nightsKnown(), base.deepSleepWeek(), base.restingHrWeek(), base.baselineRestingHr(),
+            base.baselineDeepMin(), base.restingHr(), base.hrToday(), base.steps(), base.activeKcal(),
+            base.session(), base.yesterdayLoad(), base.meals(), base.kcalSoFar(), base.kcalTarget(),
+            base.proteinG(), base.proteinTarget(), base.carbsG(), base.fatG(), base.checkins(),
+            new BoopDay.Intention("Lassan", List.of("Séta ebéd után", "Víz")), base.observations(),
+            base.calendar(), base.weight(), base.recovery());
+
+        String prompt = prompts.context(d, SCORES, LocalTime.of(8, 0), null);
+
+        assertThat(prompt).contains("[Mai fókusz] Séta ebéd után; Víz");
+    }
 }
