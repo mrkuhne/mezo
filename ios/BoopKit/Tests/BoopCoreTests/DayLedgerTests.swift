@@ -168,4 +168,26 @@ final class DayLedgerTests {
         let close = LedgerStore(directory: dir).ledger(for: date).close
         #expect(close?.dayRating == 4 && close?.planGoals == nil && close?.web == nil && close?.journalText == nil)
     }
+
+    /// Final review I3: the close reached the server while its recording still waits — the server's close carries no
+    /// journal yet, so the refresh keeps the phone's link to the line (and the line itself), and the quote / *Újra* stay.
+    @Test func sentCloseKeepsItsJournalLinkUntilTheServerHasTheText() throws {
+        let store = LedgerStore(directory: dir)
+        let journalId = UUID(), closeId = UUID()
+        try store.addJournal(LedgerJournal(id: journalId, capturedAt: at(21, 30), text: nil, pending: true), date: date)
+        try store.setClose(LedgerClose(id: closeId, capturedAt: at(21, 30), eveningEnergy: 6, dayRating: 4,
+                                       journalId: journalId, pending: true), date: date)
+        store.markSent(closeId, date: date)
+        store.markSent(journalId, date: date)   // e.g. a typed line delivered, its relink still on the way
+        var server = DayLedger(date: date)
+        server.close = LedgerClose(id: UUID(), capturedAt: at(21, 30), eveningEnergy: 6, dayRating: 4)
+        store.merge(server: server, fetchedAt: at(22, 0))
+        let day = store.ledger(for: date)
+        #expect(day.close?.journalId == journalId)
+        #expect(day.journal.map(\.id) == [journalId])
+        // once the server has the text, its version is the whole truth
+        server.close?.journalText = "Jó nap volt."
+        store.merge(server: server, fetchedAt: at(22, 5))
+        #expect(store.ledger(for: date).close?.journalText == "Jó nap volt.")
+    }
 }
