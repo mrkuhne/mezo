@@ -18,6 +18,12 @@ related: [dayclose, intention, journal, companion, proactive, _platform-auth-sec
 
 # Boop — native iOS app — Feature Documentation
 
+> **Owner-facing handbook (2026-11-12, `mezo-r36n9.29`):** a Hungarian, business-language handbook of every Boop
+> section / feature / small feature (settings + data tables), the decision and release logs live in
+> [`docs/boop-handbook/`](../boop-handbook/README.md) and are mirrored one-way into the owner's Notion "Boop" space
+> (ticket board from bd) by `scripts/boop-notion-sync.mjs` + the `boop-notion` skill; every Boop slice updates it
+> at report time (boop skill §5).
+
 > **Re-planned 2026-11-11 (`mezo-r36n9.9`):** S4 is cancelled; Boop continues as a standalone app in slices
 > **B0–B8** (repair → data foundation → new spine Ma · Terv · Napló · Boop → daily loop → food → training + Watch →
 > the Plan → day capacity → one AI) — spec [`2026-11-11-boop-standalone-design.md`](../superpowers/specs/2026-11-11-boop-standalone-design.md),

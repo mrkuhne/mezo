@@ -83,3 +83,4 @@ docs/design_2.0/prototypes/**/node_modules
 ios/BoopKit/.build/
 ios/**/.swiftpm/
 ios/**/xcuserdata/
+docs/boop-handbook/.last-plan.json

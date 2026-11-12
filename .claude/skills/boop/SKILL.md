@@ -24,6 +24,7 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
    - **the current-state research** for your slice's area: `docs/superpowers/research/boop-standalone/NN-*.md`
      (the slice issue lists which), synthesis `13-synthesis.md`
    - how the shipped app works: `docs/features/boop-ios.md`; build/test/install: `ios/README.md`
+   - the owner-facing Hungarian handbook of every feature: `docs/boop-handbook/` (mirrored to his Notion, §5)
    - the look: Napkelte spec `docs/superpowers/specs/2026-11-10-boop-napkelte-design.md` (§4 look, §5 screens —
      its five-domain bar/page skeleton is superseded by the spine), kit `ios/BoopKit/Sources/BoopDesign/Napkelte/`,
      executable reference `docs/design_2.0/prototypes/boop-ios-spike/Aura*.swift` (`Lagy*.swift` is dead)
@@ -117,6 +118,16 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 - Final fresh-context review on the most capable model, fix Critical/Important with failing tests first, file minors
   under the epic, update `docs/features/boop-ios.md`, the feature index row, the roadmap row + milestone entry, and
   the §6 block below.
+- **Keep the owner's Notion "Boop" space true (mandatory, every slice and every state change).** It is his
+  Hungarian ticket board + handbook + decision and release log — a one-way mirror of bd and `docs/boop-handbook/`
+  (driver: the `boop-notion` skill). When you **claim** an issue: add/refresh its row in
+  `docs/boop-handbook/_jegyek.json` (Hungarian title, *mit kapsz*, `munkamenet` = your session name) and sync, so
+  the board shows it as *Épül*. When it moves to review / waits for deploy / waits on the owner: `bd label add <id>
+  allapot:ellenorzes|elesitesre-var|var-rad` and sync. **At report time:** close/relabel the issue, add the merge to
+  `_kiadasok.json`, any owner decision to `_dontesek.json`, update the handbook pages of every feature you added,
+  changed or cut (state, how it works, settings, data tables), then `node scripts/boop-notion-sync.mjs plan` →
+  apply → `check` exits 0, and commit `_notion-state.json` with the slice. No Notion tools in the session → file a
+  `notion-sync` bd issue under the epic instead of skipping silently.
 - Report to the owner in Hungarian: what he can now do, what was checked, what is not done.
 
 ## 6. Where things stand (update this block when a slice ships)

@@ -1,0 +1,155 @@
+{
+  "_leiras": "Tulajdonosi döntések magyarul (forrás: docs/superpowers/research/boop-standalone/14-decisions.md + a Boop specek). Új döntés = új sor, a kulcs soha nem változik.",
+  "d-2026-11-09-nativ-app": {
+    "cim": "Saját iPhone-app lesz a Mezóból, a neve Boop",
+    "datum": "2026-11-09", "suly": "Irányváltás", "terulet": ["Alapok"],
+    "valasztas": "Natív iPhone-app (SwiftUI), ugyanazzal a szerverrel; a webes app addig marad, amíg a Boop el nem készül.",
+    "miert": "Az app iPhone-nyelven szóljon, ne egy weboldal legyen telefonkeretben.",
+    "levaltotta": "A webes app mint fő felület (a jövőben kivezetjük).",
+    "kovetkezmeny": "Minden új képernyő a Boopban készül; a webes app nem fejlődik a Boop kedvéért."
+  },
+  "d-2026-11-09-boop-nev": {
+    "cim": "A társ neve Boop, nem Mezo",
+    "datum": "2026-11-09", "suly": "Közepes", "terulet": ["Boop"],
+    "valasztas": "Minden látható szövegben Boop beszél.",
+    "miert": "Egy név, egy személyiség — a gömb a Boop arca.",
+    "levaltotta": "A „Mezo” megszólítás és a Mezo-kártya.",
+    "kovetkezmeny": "Szövegek, értesítések, felolvasás mind Boop néven."
+  },
+  "d-2026-11-09-szimulator": {
+    "cim": "A kinézetet a telefon-szimulátorban próbáljuk ki, nem weboldalon",
+    "datum": "2026-11-09", "suly": "Közepes", "terulet": ["Alapok"],
+    "valasztas": "Minden új képernyő előbb egy eldobható szimulátoros próbaváltozat, a jóváhagyásod után épül meg.",
+    "miert": "Így pontosan azt látod, ami a telefonon lesz.",
+    "levaltotta": "A HTML-prototípusok a Boopnál.",
+    "kovetkezmeny": "Képernyőképek a szimulátorból mennek jóváhagyásra."
+  },
+  "d-2026-11-09-naptar": {
+    "cim": "A naptárat csak olvassuk, soha nem írunk bele",
+    "datum": "2026-11-09", "suly": "Közepes", "terulet": ["Apple Health és adatok", "Ma"],
+    "valasztas": "A Google-naptárat az iPhone naptárán keresztül olvassuk; a gombok csak a Boop saját terveit mozgatják.",
+    "miert": "A naptárad a tiéd — a Boop javasol, de nem nyúl bele.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "Az „Áttolom 18:30-ra” az edzéstervet tolja, nem a megbeszélést."
+  },
+  "d-2026-11-09-60-nap": {
+    "cim": "Első indításkor az elmúlt 60 nap adatait húzzuk be",
+    "datum": "2026-11-09", "suly": "Kicsi", "terulet": ["Apple Health és adatok"],
+    "valasztas": "60 nap alvás, pulzus, lépés, energia és edzés, látható haladással; utána csak a változás.",
+    "miert": "Ennyi elég, hogy a Boopnak legyen viszonyítási alapja a Formához.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "Az első szinkron hosszabb, a többi gyors."
+  },
+  "d-2026-11-10-napkelte": {
+    "cim": "Napkelte lett a kinézet",
+    "datum": "2026-11-10", "suly": "Nagy", "terulet": ["Alapok"],
+    "valasztas": "Sötét üveg, oldalanként festett égbolt, szín csak az égen és a gömbökön, a Boop-gömb a reggel napjaként kel fel.",
+    "miert": "A világos „Lágy” irány nem hatott mobilosnak; az Oura és az Ultrahuman ihletéből egy saját, prémium hatás.",
+    "levaltotta": "A Lágy irány (világos papír, fehér kártyák).",
+    "kovetkezmeny": "Ikon-csak alsó sáv, a „Készenlét” neve Forma, nincs emoji."
+  },
+  "d-2026-11-11-gerinc": {
+    "cim": "Egy főképernyő napi ritmussal: Ma · Terv · Napló · Boop + „+”",
+    "datum": "2026-11-11", "suly": "Irányváltás", "terulet": ["Ma", "Alapok"],
+    "valasztas": "Egy Ma kezdőlap (reggel terv → napközben javaslatkártyák „miért?”-tel → este zárás 60 mp alatt); az alvás, étel, edzés, energia egyforma szobák.",
+    "miert": "Egy helyen legyen a nap, ne öt külön területen kelljen keresgélni.",
+    "levaltotta": "A Napkelte terv öt területes ikonsávja.",
+    "kovetkezmeny": "Új szimulátoros próba készült a navigációra (B2)."
+  },
+  "d-2026-11-11-onallo": {
+    "cim": "Önálló app, nem a webes app átköltöztetése",
+    "datum": "2026-11-11", "suly": "Irányváltás", "terulet": ["Alapok"],
+    "valasztas": "A Boop a szerver meglévő motorjaira épül, de a webes zsúfoltságot elrejti (játékosítás, küldetések, címek, szokások, csapatfal, Gépterem).",
+    "miert": "Letisztult, célzott személyes edző kell, nem minden funkció egyszerre.",
+    "levaltotta": "A „mindent átviszünk” megközelítés.",
+    "kovetkezmeny": "Elrejtés = nincs Boop-képernyő; a szerveren semmit nem törlünk."
+  },
+  "d-2026-11-11-fiok": {
+    "cim": "Egy fiók, egy történet: az eredeti fiók marad",
+    "datum": "2026-11-11", "suly": "Nagy", "terulet": ["Alapok", "Apple Health és adatok"],
+    "valasztas": "A Boop az eredeti (webes) fiókkal lép be; a külön Boop-fiók kevés adatát áttöltjük.",
+    "miert": "Minden korábbi adatod és emléked egy helyen maradjon.",
+    "levaltotta": "Az „új, üres Boop-fiók” döntés (2026-11-09).",
+    "kovetkezmeny": "Az áttöltés éles adatbázis-írás volt, külön jóváhagyással, 2026-11-11-én lefutott."
+  },
+  "d-2026-11-11-fizetos": {
+    "cim": "Fizetős Apple fejlesztői tagság",
+    "datum": "2026-11-11", "suly": "Nagy", "terulet": ["Alapok"],
+    "valasztas": "Évi 99 dollár; az előfizetés kb. 2026-11-25-én indul.",
+    "miert": "Háttérben érkező Egészség-adat, értesítések, Apple Watch app és nincs heti újratelepítés.",
+    "levaltotta": "Az ingyenes Apple ID heti újratelepítéssel (2026-11-09).",
+    "kovetkezmeny": "Addig az ingyenes csapat szabályai élnek; a bekapcsolás teendői külön jegyen."
+  },
+  "d-2026-11-11-sorrend": {
+    "cim": "A javítás és az adatalap után a napi ritmus jön először",
+    "datum": "2026-11-11", "suly": "Nagy", "terulet": ["Ma", "Napló"],
+    "valasztas": "Sorrend: javítás → adatalap → gerinc → napi ritmus → étel / edzés + Watch → a Terv → napi kapacitás → az egy AI.",
+    "miert": "Újraindítja a leállt naplózást, és összegyűjti azt az adatot, amire a Terv és a kapacitás épül.",
+    "levaltotta": "Az S4 „lépések” szakasz (elhagyva, részei a B3/B4-ben).",
+    "kovetkezmeny": "B0–B8 lépések a jegytáblán."
+  },
+  "d-2026-11-11-egy-hang": {
+    "cim": "Egyetlen hang: a Boop",
+    "datum": "2026-11-11", "suly": "Nagy", "terulet": ["Boop", "AI és memória"],
+    "valasztas": "Csak a Boop beszél; a szakértők (Alvás, Mozgás, Étkezés, Közérzet, Szkeptikus) csak a „miért?” nézetben jelennek meg rövid sorokként.",
+    "miert": "Egy személyiség, kevesebb zaj.",
+    "levaltotta": "A csapatfal és a szakértői oldalak.",
+    "kovetkezmeny": "Nincs látható csapat a Boopban."
+  },
+  "d-2026-11-11-etel-edzes": {
+    "cim": "Az Étel és az Edzés teljes appok a gerincen belül",
+    "datum": "2026-11-11", "suly": "Nagy", "terulet": ["Étel", "Edzés"],
+    "valasztas": "Étel: Ma · Receptek · Kamra · Hét. Edzés: Ma · Terv · Gyakorlatok · Előzmények. A megtartott / új / kihagyott funkciólisták jóváhagyva.",
+    "miert": "Ezeket naponta használod — teljes értékű szoba kell, nem csak egy kártya.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "A táplálékkiegészítők listája egyszerűsítve megmarad."
+  },
+  "d-2026-11-11-semmi-koppintas-nelkul": {
+    "cim": "Semmi nem változik a koppintásod nélkül",
+    "datum": "2026-11-11", "suly": "Közepes", "terulet": ["Ma", "AI és memória"],
+    "valasztas": "Minden javaslat kártya „miért?”-tel; elfogadás visszavonható, „Most nem” csak mára rejt. Napi legfeljebb 3 javaslat.",
+    "miert": "A Boop javasol, te döntesz.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "Nincs automatikus terv-, étel- vagy naptárváltozás."
+  },
+  "d-2026-11-11-offline": {
+    "cim": "A napi ritmus internet nélkül is működjön",
+    "datum": "2026-11-11", "suly": "Nagy", "terulet": ["Napló", "Ma"],
+    "valasztas": "Napi 4 check-in pillanat, az esti check-in az esti zárásba olvad; egy saját napi cél; hangos esti napló; a beszélgetés mindent tud magától.",
+    "miert": "Októberben utazás közben internet híján állt le a naplózás.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "A B3 mindent először a telefonon ment, és később küldi fel."
+  },
+  "d-2026-11-12-hipnogram": {
+    "cim": "Az Alvás-szobában az alvásgörbe csak egyszer szerepel",
+    "datum": "2026-11-12", "suly": "Kicsi", "terulet": ["Alvás"],
+    "valasztas": "Egy alvásgörbe a szobában.",
+    "miert": "Kétszer ugyanazt mutatni zavaró.",
+    "levaltotta": "A dupla görbe a B2-ben.",
+    "kovetkezmeny": "Telepítve a telefonra 2026-11-12-én."
+  },
+  "d-2026-11-12-gomb-egy-helyen": {
+    "cim": "A nagy gömb minden mutatónál ugyanott áll",
+    "datum": "2026-11-12", "suly": "Kicsi", "terulet": ["Ma"],
+    "valasztas": "Minden mutató fő gömbje a horizonton ül, ahol az Ételé.",
+    "miert": "Váltáskor ne ugráljon a kép.",
+    "levaltotta": "Mutatónként eltérő gömbhelyzet.",
+    "kovetkezmeny": "Telepítve a telefonra 2026-11-12-én."
+  },
+  "d-2026-11-12-feelfit": {
+    "cim": "Feelfit mérleg: amit az Egészség már hoz, azt használjuk",
+    "datum": "2026-11-12", "suly": "Közepes", "terulet": ["Terv", "Apple Health és adatok"],
+    "valasztas": "Súly, testzsír %, sovány tömeg (és BMI számolva) az Egészségből; Test kártya a Tervben; a legutóbbi testzsír a célszámításba.",
+    "miert": "A mérleg már most az Egészségbe ír — nem kell külön bekötés.",
+    "levaltotta": "A Feelfit export betöltése és a közvetlen Bluetooth-olvasás (elvetve).",
+    "kovetkezmeny": "Kis önálló szakasz a B3 után."
+  },
+  "d-2026-11-12-notion": {
+    "cim": "A Boop kézikönyve és jegytáblája külön Notion-térben",
+    "datum": "2026-11-12", "suly": "Kicsi", "terulet": ["Alapok"],
+    "valasztas": "Új, csak a Boopnak szóló, magyar Notion-tér: jegytábla, kézikönyv, döntések, kiadások.",
+    "miert": "Átlátható, végig magyar, és a gépi frissítés nem nyúl a régi Notion-rendszeredhez.",
+    "levaltotta": "Beköltözés a régi App Building rendszerbe (elvetve).",
+    "kovetkezmeny": "Minden Boop-munka végén frissül a jegytábla és a kiadások."
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "_leiras": "Mi került élesbe és mikor (forrás: docs/milestones/roadmap.md + git merge-ek a main ágra). Új kiadás = új sor; a kulcs a merge commit rövid azonosítója.",
+  "d0d823d39": {
+    "cim": "S1 Alap — elindult a natív iPhone-app",
+    "datum": "2026-11-09", "verzio": "", "tipus": "Új funkció", "hova": ["iPhone app", "Telefonra telepítve"], "szakasz": "S1 Alap", "jegyek": ["mezo-r36n9"],
+    "mi_valtozott": "Belépés és regisztráció meghívókóddal, beállítás (nem, magasság, születési dátum, első mérés), alsó sáv, kijelentkezés, egy paranccsal telepíthető a telefonra."
+  },
+  "07afe9a0b": {
+    "cim": "S2 Adatok — a Boop látja az alvásodat, a mozgásodat és a naptáradat",
+    "datum": "2026-11-10", "verzio": "v2.400.0", "tipus": "Új funkció", "hova": ["iPhone app", "Háttérrendszer", "Telefonra telepítve"], "szakasz": "S2 Adatok", "jegyek": ["mezo-r36n9.2"],
+    "mi_valtozott": "Egészség és naptár bekötése, első alkalommal 60 nap, utána minden megnyitáskor frissít; ha nincs engedély, magyarul megmondja, hol kell bekapcsolni."
+  },
+  "e2ad5c76a": {
+    "cim": "Az Adatok kártya az összes adatot számolja",
+    "datum": "2026-11-10", "verzio": "", "tipus": "Javítás", "hova": ["iPhone app"], "szakasz": "S2 Adatok", "jegyek": ["mezo-r36n9.5"],
+    "mi_valtozott": "A „Beérkezett adatok” jelvény az összes szinkronizált éjszakát és napot mutatja."
+  },
+  "f67688f31": {
+    "cim": "S2.5 Napkelte — új, saját kinézet",
+    "datum": "2026-11-10", "verzio": "", "tipus": "Kinézet", "hova": ["iPhone app", "Telefonra telepítve"], "szakasz": "S2.5 Napkelte", "jegyek": ["mezo-r36n9.3"],
+    "mi_valtozott": "Sötét üveg, festett égbolt, felkelő Boop-gömb; minden meglévő képernyő ebben a kinézetben."
+  },
+  "0b1f5ff82": {
+    "cim": "S3 Reggel — a Boop elmondja a reggeledet",
+    "datum": "2026-11-10", "verzio": "v2.401.0", "tipus": "Új funkció", "hova": ["iPhone app", "Háttérrendszer", "Telefonra telepítve"], "szakasz": "S3 Reggel", "jegyek": ["mezo-r36n9.7"],
+    "mi_valtozott": "Öt gömb, Boop saját mondata felolvasva, energiagörbe, részletlapok, edzés-áttolás ütközéskor, esti és kímélő változat, lefekvés-emlékeztető."
+  },
+  "d46db9632": {
+    "cim": "Újratervezés — önálló, letisztult app lesz a Boopból",
+    "datum": "2026-11-11", "verzio": "", "tipus": "Döntés", "hova": [], "szakasz": "Újratervezés", "jegyek": ["mezo-r36n9.9"],
+    "mi_valtozott": "Hat tulajdonosi döntés és az új terv: egy főképernyő napi ritmussal, B0–B8 lépésekben."
+  },
+  "61834ed83": {
+    "cim": "B0 Javítás — újra tanul a memória, újra fut az éjszakai konzílium",
+    "datum": "2026-11-11", "verzio": "v2.402.0", "tipus": "Javítás", "hova": ["Háttérrendszer"], "szakasz": "B0 Javítás", "jegyek": ["mezo-r36n9.10"],
+    "mi_valtozott": "Az emlékezés átkerült az OpenAI-hoz, a régi bejegyzések újrafeldolgozása elindult, az éjszakai konzílium javítva, két új figyelmeztetés."
+  },
+  "98430ce66": {
+    "cim": "B2 Gerinc — új alsó sáv és egyetlen görgetős Ma",
+    "datum": "2026-11-11", "verzio": "", "tipus": "Új funkció", "hova": ["iPhone app", "Telefonra telepítve"], "szakasz": "B2 Gerinc", "jegyek": ["mezo-r36n9.12"],
+    "mi_valtozott": "Ma · Terv · Napló · Boop + „+”; reggeli terv, napközbeni javaslatok „miért?”-tel, esti lezárás kerete, minden gömbnek saját szobája."
+  },
+  "5aac1e993": {
+    "cim": "B1 Adatalap — sokkal több Egészség-adat, egy fiók",
+    "datum": "2026-11-11", "verzio": "v2.403.0", "tipus": "Alapozás", "hova": ["iPhone app", "Háttérrendszer", "Telefonra telepítve"], "szakasz": "B1 Adatalap", "jegyek": ["mezo-r36n9.11"],
+    "mi_valtozott": "23 féle Egészség-adat forrással, semmi nem vész el, egy éjszaka naponta, a fiókok összevonva, az értesítési regisztráció kész."
+  },
+  "9b0cfc46f": {
+    "cim": "A reggeli összefoglaló újra megjelenik a telefonon",
+    "datum": "2026-11-11", "verzio": "", "tipus": "Javítás", "hova": ["iPhone app", "Telefonra telepítve"], "szakasz": "S3 Reggel", "jegyek": ["mezo-r36n9.25"],
+    "mi_valtozott": "Időbélyeg-formátum javítva — egyik reggeli összefoglaló sem jelent meg előtte."
+  },
+  "90c085ebd": {
+    "cim": "Az Alvás-szoba egyszer mutatja az alvásgörbét",
+    "datum": "2026-11-12", "verzio": "", "tipus": "Kinézet", "hova": ["iPhone app", "Telefonra telepítve"], "szakasz": "B2 Gerinc", "jegyek": ["mezo-r36n9.12"],
+    "mi_valtozott": "A dupla alvásgörbe helyett egy."
+  },
+  "19ca92ca6": {
+    "cim": "A nagy gömb minden mutatónál ugyanott áll",
+    "datum": "2026-11-12", "verzio": "", "tipus": "Kinézet", "hova": ["iPhone app", "Telefonra telepítve"], "szakasz": "B2 Gerinc", "jegyek": ["mezo-r36n9.12"],
+    "mi_valtozott": "Mutatóváltáskor nem ugrál a gömb."
+  },
+  "aa807c5b2": {
+    "cim": "A reggeli összefoglaló nem akad el első betöltéskor",
+    "datum": "2026-11-12", "verzio": "v2.403.1", "tipus": "Javítás", "hova": ["Háttérrendszer"], "szakasz": "S3 Reggel", "jegyek": ["mezo-r36n9.24"],
+    "mi_valtozott": "Egyszerre érkező kérések nem akasztják el, a Boop késve érkező szavai is megmaradnak."
+  },
+  "39c10c6f2": {
+    "cim": "Feelfit mérleg — kutatás és döntés",
+    "datum": "2026-11-12", "verzio": "", "tipus": "Döntés", "hova": [], "szakasz": "Test", "jegyek": ["mezo-r36n9.27", "mezo-r36n9.28"],
+    "mi_valtozott": "A mérleg adatai az Egészségen át jönnek; a Test kártya a B3 után épül."
+  }
+}
