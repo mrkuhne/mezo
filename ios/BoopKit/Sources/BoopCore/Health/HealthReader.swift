@@ -198,4 +198,7 @@ public protocol HealthReader: Sendable {
     func heartRateBuckets(from: Date, to: Date) async throws -> [HeartRateBucket]
     /// Average and maximum heart rate over the union of `intervals` (nil when there are none at all).
     func heartRate(during intervals: [DateInterval]) async throws -> HeartRateStats?
+    /// The raw samples of one metric whose start lies in [from, to], oldest first. Heart rate and the quantity metrics
+    /// only (anything else answers empty) — the watch snapshot's heart-rate mean and HRV median read from here.
+    func readSamples(_ metric: HealthMetric, from: Date, to: Date) async throws -> [HealthSampleValue]
 }

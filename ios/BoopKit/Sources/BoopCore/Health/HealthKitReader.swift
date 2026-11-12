@@ -294,6 +294,15 @@ public final class HealthKitReader: HealthReader, @unchecked Sendable {
                           meta: meta)
     }
 
+    public func readSamples(_ metric: HealthMetric, from: Date, to: Date) async throws -> [HealthSampleValue] {
+        let resolved: (HKQuantityTypeIdentifier, HKUnit)? = metric == .heartRate ? (.heartRate, Self.perMinute) : Self.quantity(metric)
+        guard let (id, unit) = resolved else { return [] }
+        let query = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: HKQuantityType(id), predicate: HKQuery.predicateForSamples(withStart: from, end: to))],
+            sortDescriptors: [SortDescriptor(\.startDate)])
+        return try await query.result(for: store).map { Self.value($0, metric, $0.quantity.doubleValue(for: unit)) }
+    }
+
     // MARK: - Anchored plumbing
 
     private func since(_ from: Date) -> NSPredicate { HKQuery.predicateForSamples(withStart: from, end: nil) }
