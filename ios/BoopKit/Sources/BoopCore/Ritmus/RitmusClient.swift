@@ -133,7 +133,21 @@ public struct RitmusClient: OutboxSender {
 
     private func sendGoalRemove(_ item: OutboxItem) async throws -> OutboxSendResult {
         guard let p = RitmusPayload.decode(GoalRemovePayload.self, from: item.payload) else { return malformed("goal removal") }
-        switch try await client.removeFocus(path: .init(id: p.focusId.uuidString.lowercased())) {
+        var focusId = p.focusId?.uuidString.lowercased()
+        if focusId == nil {
+            // A goal set on the phone: the add is idempotent on its client ref, so replaying it returns the live focus
+            // (no cap check) — or adds it if it never arrived, to be removed right after.
+            guard let ref = p.goalRef, let text = p.text else { return malformed("goal removal") }
+            switch try await client.addFocus(body: .json(.init(date: item.date, text: text, clientRef: ref.uuidString))) {
+            case .ok(let ok): focusId = try ok.body.json.id.lowercased()
+            case .conflict, .undocumented(409, _): return .sent(nil)   // the cap: no live focus carries that ref
+            case .badRequest: return Self.map(400)
+            case .unauthorized: return Self.map(401)
+            case .undocumented(let code, _): return Self.map(code)
+            }
+        }
+        guard let focusId else { return .retryLater }
+        switch try await client.removeFocus(path: .init(id: focusId)) {
         case .noContent, .notFound: return .sent(nil)   // already gone is as good as removed
         case .unauthorized: return Self.map(401)
         case .undocumented(let code, _): return Self.map(code)
@@ -249,7 +263,8 @@ public struct RitmusClient: OutboxSender {
             switch try await client.getIntentionDay(path: .init(date: date)) {
             case .ok(let ok):
                 day.goal = try ok.body.json.foci.first.map {
-                    LedgerGoal(id: UUID(uuidString: $0.id) ?? Self.stableId("focus-\($0.id)"), text: $0.text, setAt: .distantPast)
+                    LedgerGoal(id: UUID(uuidString: $0.id) ?? Self.stableId("focus-\($0.id)"), text: $0.text, setAt: .distantPast,
+                               focusId: UUID(uuidString: $0.id))
                 }
             case .unauthorized: throw RitmusFetchError.unauthorized
             case .undocumented: throw RitmusFetchError.server
@@ -265,6 +280,21 @@ public struct RitmusClient: OutboxSender {
             }
         } catch { throw Self.fetchError(error) }
         return day
+    }
+
+    /// Every focus text of the given days (date → texts in order), for the "N napja nem volt" goal chips.
+    public func fetchGoals(_ dates: [String]) async throws -> [String: [String]] {
+        var out: [String: [String]] = [:]
+        do {
+            for date in dates {
+                switch try await client.getIntentionDay(path: .init(date: date)) {
+                case .ok(let ok): out[date] = try ok.body.json.foci.map(\.text)
+                case .unauthorized: throw RitmusFetchError.unauthorized
+                case .undocumented: throw RitmusFetchError.server
+                }
+            }
+        } catch { throw Self.fetchError(error) }
+        return out
     }
 
     /// The question of the day for each of the three slots (the plan's adaptive item and its "why").

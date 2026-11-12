@@ -28,7 +28,7 @@ public final class CalendarKitReader: CalendarReader, @unchecked Sendable {
                              itemId: $0.calendarItemExternalIdentifier ?? $0.eventIdentifier ?? $0.calendarItemIdentifier,
                              occurrenceStart: $0.startDate),
                          title: $0.title ?? "", start: $0.startDate, end: $0.endDate,
-                         allDay: $0.isAllDay, calendar: $0.calendar?.title ?? "")
+                         allDay: $0.isAllDay, calendar: $0.calendar?.title ?? "", attendees: $0.attendees?.count ?? 0)
         }
     }
 }

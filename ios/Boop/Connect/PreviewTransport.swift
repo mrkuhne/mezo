@@ -17,7 +17,9 @@ struct PreviewTransport: ClientTransport {
             throw URLError(.notConnectedToInternet)
         }
         var sent = ""
-        if operationID == "setSessionTime", let body { sent = String(decoding: try await Data(collecting: body, upTo: 1 << 16), as: UTF8.self) }
+        if ["setSessionTime", "addFocus"].contains(operationID), let body {
+            sent = String(decoding: try await Data(collecting: body, upTo: 1 << 16), as: UTF8.self)
+        }
         if let reply = Self.morningReply(operationID, request, sent: sent) { return reply }
         if request.method == .put { return (HTTPResponse(status: .noContent), nil) }
         var h = HTTPFields(); h[.contentType] = "application/json"
@@ -46,6 +48,13 @@ struct PreviewTransport: ClientTransport {
             return json(#"{"date":"\#(obj?["date"] ?? queryDate(request))","time":"\#(obj?["time"] ?? "19:00")","plannedTime":"17:30"}"#)
         case "generateCheckInLine":
             return json(#"{"line":"Délben még 6 voltál, most 5, és a HRV-d is a szokott alatt. Egyél 17:00 körül egy banánt joghurttal, hogy az edzésre maradjon erőd."}"#)
+        case "addFocus":
+            // The focus as the server would keep it: the sent text, a fresh id.
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            let text = (obj?["text"] as? String ?? "").replacingOccurrences(of: "\"", with: "\\\"")
+            return json(#"{"id":"\#(UUID().uuidString.lowercased())","focusDate":"\#(obj?["date"] as? String ?? queryDate(request))","text":"\#(text)"}"#)
+        case "removeFocus":
+            return (HTTPResponse(status: .noContent), nil)
         case "clearSessionTime":
             movedTime = nil
             return (HTTPResponse(status: .noContent), nil)

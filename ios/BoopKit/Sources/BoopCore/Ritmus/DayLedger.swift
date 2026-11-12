@@ -40,9 +40,13 @@ public struct LedgerGoal: Codable, Equatable, Identifiable, Sendable {
     public var setAt: Date
     public var pending: Bool
     public var removed: Bool
+    /// The server's focus id, when known (a goal fetched from the server); nil for a goal set on the phone (its
+    /// removal then goes by `id`, the client ref). Absent in day files written before B3 Task 9.
+    public var focusId: UUID?
 
-    public init(id: UUID, text: String, setAt: Date, pending: Bool = false, removed: Bool = false) {
+    public init(id: UUID, text: String, setAt: Date, pending: Bool = false, removed: Bool = false, focusId: UUID? = nil) {
         self.id = id; self.text = text; self.setAt = setAt; self.pending = pending; self.removed = removed
+        self.focusId = focusId
     }
 }
 

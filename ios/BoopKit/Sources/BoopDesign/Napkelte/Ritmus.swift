@@ -56,18 +56,25 @@ public struct EnergyCurveDot: Identifiable, Equatable, Sendable {
 /// The energy of the day (spec §5.3): Boop's dashed prediction over a soft fill, the owner's solid line through white
 /// numbered dots, a "most" line, hour ticks and a legend, on a glass card. Tapping a dot selects it (again: clears).
 public struct EnergyCurveCard: View {
-    let title: String, predicted: [Double], dots: [EnergyCurveDot], now: Double?, hue: Hue, height: CGFloat
+    let title: String, trailing: String?, predicted: [Double], dots: [EnergyCurveDot], now: Double?, hue: Hue, height: CGFloat
     @Binding var selected: UUID?
 
-    public init(title: String, predicted: [Double], dots: [EnergyCurveDot], now: Double?, hue: Hue = .mozgas,
+    /// `trailing`: a small mono note at the title's right (Ma: "2 / 3 kitöltés").
+    public init(title: String, trailing: String? = nil, predicted: [Double], dots: [EnergyCurveDot], now: Double?, hue: Hue = .mozgas,
                 selected: Binding<UUID?>, height: CGFloat = 150) {
-        self.title = title; self.predicted = predicted; self.dots = dots; self.now = now; self.hue = hue
+        self.title = title; self.trailing = trailing; self.predicted = predicted; self.dots = dots; self.now = now; self.hue = hue
         self._selected = selected; self.height = height
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            NKMono(title)
+            HStack {
+                NKMono(title)
+                Spacer(minLength: 8)
+                if let trailing {
+                    Text(trailing).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+                }
+            }
             VStack(spacing: 10) {
                 GeometryReader { g in plot(width: g.size.width, plotHeight: g.size.height - 18) }
                     .frame(height: height)

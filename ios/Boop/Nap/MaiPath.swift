@@ -40,6 +40,7 @@ struct OrbPathCards: View {
     let brief: Brief
     let store: MorningStore
     let ctx: MaiContext
+    @Environment(RitmusRouter.self) private var router: RitmusRouter?
 
     private var key: MetricKey { metricKey(for: hue) }
 
@@ -97,7 +98,7 @@ struct OrbPathCards: View {
             StillOrb(palette: Hue.mozgas.orb, size: 40, level: 0.5)
             Text(text).nkFont(14).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
-            pill("Kitöltöm") { ctx.toast(soonToast("Check-in")) }
+            pill("Kitöltöm") { router?.open(.checkin) }
         }
         .padding(14).nkGlass(20)
     }

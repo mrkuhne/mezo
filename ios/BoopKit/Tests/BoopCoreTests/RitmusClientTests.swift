@@ -95,6 +95,32 @@ final class RitmusClientTests {
         #expect(await ritmus.send(item(.goalRemove, GoalRemovePayload(focusId: focus))) == .sent(nil))   // already gone
     }
 
+    @Test func removeOfAGoalWithoutKnownFocusIdResolvesItByItsClientRef() async throws {
+        // The goal was set on the phone; its focus id is not known yet (it may still be on its way): replaying the
+        // idempotent add with the goal's own client ref returns its focus, which is then removed.
+        let goalRef = UUID()
+        stub.on("addFocus", .json(200, Self.focusOK)); stub.on("removeFocus", .status(204))
+        let result = await ritmus.send(item(.goalRemove, GoalRemovePayload(goalRef: goalRef, text: "Séta")))
+        #expect(result == .sent(nil))
+        #expect(stub.ops == ["addFocus", "removeFocus"])
+        let b = try body(op: "addFocus")
+        #expect(b["clientRef"] as? String == goalRef.uuidString && b["text"] as? String == "Séta" && b["date"] as? String == date)
+        #expect(stub.sent[1].path.hasSuffix("/api/intention/focus/0b6f3c1e-1111-4a2b-9c3d-222233334444"))
+    }
+
+    @Test func removeByClientRefWhenTheCapRefusesMeansNothingToRemove() async {
+        // A live focus with that ref would have been returned without a cap check: a 409 means it is not there.
+        stub.on("addFocus", .json(409, #"[{"code":"INTENTION_FOCUS_CAP","type":"REQUEST"}]"#))
+        #expect(await ritmus.send(item(.goalRemove, GoalRemovePayload(goalRef: UUID(), text: "Séta"))) == .sent(nil))
+        #expect(stub.ops == ["addFocus"])
+    }
+
+    @Test func oldRemovePayloadStillDecodes() {
+        let focus = UUID()
+        let old = Data(#"{"focusId":"\#(focus.uuidString)"}"#.utf8)
+        #expect(RitmusPayload.decode(GoalRemovePayload.self, from: old) == GoalRemovePayload(focusId: focus))
+    }
+
     @Test func journalIsSourceBoopWithClientRef() async throws {
         stub.on("createJournalEntry", .json(201, Self.journalOK))
         let id = UUID()
@@ -228,7 +254,21 @@ final class RitmusClientTests {
         #expect(c.slot == "10:00" && c.values == ["energy": 6, "mood": 7, "day": 8] && c.quickExit && c.note == "jó" && !c.pending)
         #expect(c.pain == false && c.askedItems == ["energy", "mood"])
         #expect(day.goal?.text == "Séta" && day.goal?.pending == false)
+        #expect(day.goal?.focusId == UUID(uuidString: "0b6f3c1e-1111-4a2b-9c3d-222233334444"))
         #expect(day.close?.dayRating == 4 && day.close?.goalOutcome == "done" && day.close?.eveningEnergy == 6)
+    }
+
+    @Test func pastGoalsAreEveryFocusOfTheAskedDays() async throws {
+        stub.on("getIntentionDay", .json(200, #"{"date":"2026-11-02","foci":[{"id":"0b6f3c1e-1111-4a2b-9c3d-222233334444","focusDate":"2026-11-02","text":"Meal prep"},{"id":"1b6f3c1e-1111-4a2b-9c3d-222233334444","focusDate":"2026-11-02","text":"Séta"}],"focusCap":3}"#))
+        stub.on("getIntentionDay", .json(200, #"{"date":"2026-11-03","foci":[],"focusCap":3}"#))
+        let goals = try await ritmus.fetchGoals(["2026-11-02", "2026-11-03"])
+        #expect(goals == ["2026-11-02": ["Meal prep", "Séta"], "2026-11-03": []])
+        #expect(stub.sent.map(\.path).allSatisfy { $0.contains("/api/intention/day/") })
+    }
+
+    @Test func pastGoalsOfflineThrows() async {
+        stub.on("getIntentionDay", .fail(URLError(.notConnectedToInternet)))
+        await #expect(throws: RitmusFetchError.offline) { try await self.ritmus.fetchGoals(["2026-11-02"]) }
     }
 
     @Test func fetchDayWithoutCloseIsOpen() async throws {
