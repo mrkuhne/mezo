@@ -224,7 +224,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
     calendar is its own step: its failure sets `calendarFailed` and never undoes the Health upload;
     titles are sent as 1…200 UTF-16 units, blank → "(cím nélkül)".
   - `BoopDesign/Napkelte/` (S2.5) — the live kit: `Tokens` (`NK`, `Hue` ×5: sky, orb, glow), `Landscape`
-    (`PaintedLandscape`, `MirroredLand`), `Orbs` (`orbPalette`, `riseFraction`, `OrbMotion`, `LivingOrb`, `StillOrb`,
+    (`PaintedLandscape`, `MirroredLand`), `Orbs` (`orbPalette`, `heroOrbCenterY` — one horizon spot for every metric since 2026-11-12, `OrbMotion`, `LivingOrb`, `StillOrb`,
     `RisingOrb`, `MiniOrbRow`), `Glass` (`nkGlass`, `NKPill`, `NKMono`, `Trend`, `NKGlyph`, `nkToast`, `NKBoopCard`,
     `NKField`, `NKSkyScreen`, `NKTag`, `NKRow`), `Frames` (`NKTitleRow`, `NKTabStrip`, `NKTabPage`, `NKFlowFrame`,
     `NKSheetFrame`, `FloatingLights`, `NKGround`), `Charts`, `Tiles`, `DayPath`.
