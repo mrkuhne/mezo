@@ -14,6 +14,10 @@ final class RitmusEnvironment {
     let ledger: LedgerStore
     @ObservationIgnored let outbox: Outbox
     @ObservationIgnored let calendar: Calendar
+    /// The check-in / close reminders (local notifications), kept in line with the ledger by the shell.
+    @ObservationIgnored let reminders: RitmusReminders
+    /// When a flush trigger (foreground, back online, a background wake) last went out; they coalesce within a second.
+    @ObservationIgnored private var lastTriggerFlush: Date?
     @ObservationIgnored let clock: @Sendable () -> Date
     /// The voice recorder (`VoiceJournal` in live builds); nil = the mic is dimmed and typing works.
     @ObservationIgnored var recorder: (any VoiceNoteRecorder)?
@@ -63,6 +67,7 @@ final class RitmusEnvironment {
          closeLine: (@Sendable (String) async throws -> String)? = nil,
          transcribe: (@Sendable (URL) async throws -> String)? = nil,
          naplo: (@Sendable (String, String) async throws -> [ServerDay])? = nil,
+         reminderCenter: ReminderCenter = SystemReminderCenter(),
          clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current) {
         let ledger = LedgerStore(directory: ledgerDirectory)
         self.ledger = ledger
@@ -72,6 +77,7 @@ final class RitmusEnvironment {
         greg.locale = Locale(identifier: "en_US_POSIX")
         self.calendar = greg
         self.clock = clock
+        reminders = RitmusReminders(center: reminderCenter, calendar: calendar, clock: clock)
         lineSource = line; snapshotSource = snapshot; planSource = plans
         daySource = day; goalsSource = goals; eventsSource = events; closeLineSource = closeLine
         transcribeSource = transcribe; naploSource = naplo
@@ -283,7 +289,13 @@ final class RitmusEnvironment {
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
             let up = path.status == .satisfied
-            Task { @MainActor in self?.online = up }
+            Task { @MainActor in
+                guard let self else { return }
+                // the net is back: what waited goes out now, backoff or not
+                let cameBack = up && !self.online
+                self.online = up
+                if cameBack { self.flushOnTrigger() }
+            }
         }
         monitor.start(queue: DispatchQueue(label: "boop.ritmus.path"))
         pathMonitor = monitor
@@ -335,6 +347,15 @@ final class RitmusEnvironment {
         guard let closeLineSource, closeLines[date] == nil, let close = ledger.ledger(for: date).close, !close.pending,
               let line = try? await closeLineSource(date) else { return }
         closeLines[date] = line
+    }
+
+    /// The app-wide flush triggers (back to the foreground, the net coming back, a background wake): everything queued goes
+    /// out now, backoff ignored. Triggers arriving within a second of the last one are folded into it.
+    func flushOnTrigger() {
+        let now = clock()
+        if let last = lastTriggerFlush, now.timeIntervalSince(last) < 1, now >= last { return }
+        lastTriggerFlush = now
+        sendSoon()
     }
 
     /// Sends what is queued without holding the caller.

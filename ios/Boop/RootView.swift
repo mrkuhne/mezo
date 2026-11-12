@@ -26,6 +26,7 @@ struct RootView: View {
         .environment(ritmus)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
+        .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
     }
 
     /// One Health link and one morning brief store per signed-in user; refreshed on open once the shell shows.
@@ -35,7 +36,7 @@ struct RootView: View {
         case .needsOnboarding(let m), .ready(let m): me = m
         default: me = nil
         }
-        guard let me else { link = nil; morning = nil; ritmus = nil; return }
+        guard let me else { link = nil; morning = nil; ritmus = nil; BackgroundSyncHost.ritmus = nil; return }
         if link?.userId != me.id {
             let signOut: @MainActor () -> Void = { [session] in session.signOut() }
             #if DEBUG
@@ -44,12 +45,14 @@ struct RootView: View {
                 link = HealthLink(client: preview, userId: me.id)
                 morning = MorningStore(client: preview, onUnauthorized: signOut)
                 ritmus = .preview(client: preview)
+                BackgroundSyncHost.ritmus = ritmus
                 return
             }
             #endif
             link = HealthLink(client: session.client, userId: me.id)
             morning = MorningStore(client: session.client, onUnauthorized: signOut)
             ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id)
+            BackgroundSyncHost.ritmus = ritmus
         }
         if case .ready = state { Task { await link?.syncIfStale() } }
     }
@@ -65,6 +68,40 @@ private struct SyncTriggers: View {
             .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await link.syncIfStale() } } }
             .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
                 Task { await link.calendarChanged() }
+            }
+    }
+}
+
+/// The daily loop's app-wide upkeep, in an invisible view for the same reason as `SyncTriggers`: on return to the
+/// foreground the outbox is flushed (backoff ignored) and the reminders are re-planned; every ledger change (a check-in
+/// or close saved here, or merged from the server), a new bedtime target or a new day re-plans them too. The first
+/// saved check-in of a day is when the notification permission is asked for — never at launch.
+private struct RitmusTriggers: View {
+    let env: RitmusEnvironment
+    let morning: MorningStore?
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var foregrounds = 0
+
+    private struct Plan: Hashable { let done: [String]; let closed: Bool; let target: String?; let saved: Bool; let day: String; let foregrounds: Int }
+
+    private var plan: Plan {
+        let day = env.today
+        let ledger = env.ledger.ledger(for: day)
+        return Plan(done: ledger.checkIns.map(\.slot).sorted(), closed: ledger.close != nil,
+                    target: morning?.brief?.day.bedtimeTarget, saved: !ledger.checkIns.isEmpty, day: day, foregrounds: foregrounds)
+    }
+
+    var body: some View {
+        let p = plan
+        Color.clear
+            .onAppear { env.flushOnTrigger() }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                env.flushOnTrigger()
+                foregrounds += 1
+            }
+            .task(id: p) {
+                await env.reminders.refresh(ledger: env.ledger, bedtimeTarget: p.target, askPermission: p.saved)
             }
     }
 }

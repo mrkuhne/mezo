@@ -22,8 +22,13 @@ enum BackgroundSyncHost {
         return s
     }
 
+    /// The signed-in user's daily-loop environment while the app process holds one (set by the root view): a Health or
+    /// calendar wake also sends what waits in its outbox. A cold background launch has none and skips that.
+    static var ritmus: RitmusEnvironment?
+
     /// The wake-up work: sync as the remembered user with the keychain token, or false when nobody is signed in.
     static func syncIncremental() async -> Bool {
+        ritmus?.flushOnTrigger()
         let tokens = KeychainTokenStore()
         guard tokens.read() != nil, let userId = lastUserId else { return false }
         let sync = sync(userId: userId) {

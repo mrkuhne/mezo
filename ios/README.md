@@ -37,6 +37,7 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 
 | Flag | What it does |
 |---|---|
+| `-previewNotify checkin\|este` | rings the real check-in / close reminder at the next whole minute (background the app; a tap opens the cover) |
 | `-preview shell` / `-preview onboarding` | signs in a local preview user; the brief and Health endpoints answer from `PreviewTransport` |
 | `-previewEmpty YES` | Nap shows the empty states instead of the brief |
 | `-previewTab ma\|terv\|naplo\|boop` | opens that place of the spine |
