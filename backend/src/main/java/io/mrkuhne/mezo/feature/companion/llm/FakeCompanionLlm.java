@@ -607,6 +607,14 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final String BOOP_JUNK = "[fake-boop-junk]";
     /** Boop brief: planted in the creed → a JSON object carrying ONLY {@code alvas} (per-field fallback). */
     public static final String BOOP_PARTIAL = "[fake-boop-partial]";
+    /** Mirrors of DayCloseLineWriter.DAY_MARKER / CHECKIN_MARKER (feature/dayclose) — LITERAL, cycle rule (the
+     *  adapter depends on dayclose's port only). Drift is caught by DayCloseApiIT's call-count assertions. */
+    public static final String DAY_LINE_MARKER_MIRROR = "BOOP_DAY_LINE_V1";
+    public static final String CHECKIN_LINE_MARKER_MIRROR = "BOOP_CHECKIN_LINE_V1";
+    /** Boop's canned one-liners (B3): one sentence, Hungarian, Boop voice. */
+    public static final String DAY_LINE_CANNED_ANSWER = "Részben sikerült a cél, és este is maradt energiád — pihenj jól.";
+    public static final String CHECKIN_LINE_CANNED_ANSWER = "Délutánra feljebb ment az energiád, mint reggel volt.";
+
     /** Default Boop brief answer — valid, complete, Hungarian, Boop voice. */
     public static final String BOOP_CANNED_ANSWER = """
             {"forma":{"headline":"Jó formában vagy","sentence":"Kipihented magad, ma bírni fogod a terhelést."},
@@ -767,6 +775,9 @@ public class FakeCompanionLlm implements CompanionLlm {
     public int feedSmartCallCount() { return feedSmartCalls.get(); }
 
     /** Boop brief calls (mezo-r36n9.7): ITs assert the brief cache (same input hash → no new LLM call). */
+    private final java.util.concurrent.atomic.AtomicInteger dayCloseLineCalls = new java.util.concurrent.atomic.AtomicInteger();
+    /** Boop B3 day-close / check-in line calls that reached the model (the forced failure included). */
+    public int dayCloseLineCallCount() { return dayCloseLineCalls.get(); }
     private final java.util.concurrent.atomic.AtomicInteger boopBriefCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int boopBriefCallCount() { return boopBriefCalls.get(); }
     /** Concurrency ITs (mezo-r36n9.7): every Boop brief call waits at this barrier (10 s cap) so
@@ -852,8 +863,18 @@ public class FakeCompanionLlm implements CompanionLlm {
         // sentinel there), so an IT scripts the failure via the DYNAMIC [Heti adatok] block instead
         // (e.g. a seeded weekly-review summary) — checking the system prompt too is what lets that
         // reach this same forced-failure path.
+        boolean dayLine = systemPrompt.startsWith(DAY_LINE_MARKER_MIRROR);
+        if (dayLine || systemPrompt.startsWith(CHECKIN_LINE_MARKER_MIRROR)) {
+            dayCloseLineCalls.incrementAndGet();
+        }
         if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
+        if (dayLine) {
+            return DAY_LINE_CANNED_ANSWER;
+        }
+        if (systemPrompt.startsWith(CHECKIN_LINE_MARKER_MIRROR)) {
+            return CHECKIN_LINE_CANNED_ANSWER;
         }
         if (systemPrompt.startsWith("KONTEXTUSOS-MEZO-UZENET")) {
             toolEchoes(userMessage, tools, toolContext);

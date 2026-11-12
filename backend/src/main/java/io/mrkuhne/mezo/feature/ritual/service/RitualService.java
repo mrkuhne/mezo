@@ -16,6 +16,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -62,6 +64,41 @@ public class RitualService {
             eventPublisher.publishEvent(new RitualClosedEvent(row.getId()));
         }
         return toResponse(userId, date, row);
+    }
+
+    /**
+     * Boop B3 (mezo-r36n9.13, spec §7.4): stamps {@code date} closed at {@code closedAt} — the day close's
+     * dual-write. Unlike {@link #close} it takes an explicit date (the owner may close yesterday after midnight;
+     * the caller validates the window) and never answers 409. A day already closed (e.g. on the web) keeps its
+     * first stamp. Never touches {@code reflection_text}: the evening text lives in the journal only. Publishes
+     * {@link RitualClosedEvent} once, on the first close, exactly like {@link #close}. Joins the caller's
+     * transaction.
+     */
+    @Transactional
+    public RitualDayResponse closeOn(UUID userId, LocalDate date, Instant closedAt) {
+        RitualDayEntity row = ritualDayRepository.findByCreatedByAndRitualDate(userId, date)
+            .orElseGet(() -> insertOpenRow(userId, date));
+        if (row.getClosedAt() == null) {
+            row.setClosedAt((closedAt == null ? Instant.now() : closedAt).truncatedTo(ChronoUnit.MICROS));
+            row = ritualDayRepository.saveAndFlush(row);
+            eventPublisher.publishEvent(new RitualClosedEvent(row.getId()));
+        }
+        return toResponse(userId, date, row);
+    }
+
+    /** The closed days in {@code from … to} (inclusive), oldest first — Boop's web-closed fallback (B3). */
+    @Transactional(readOnly = true)
+    public List<RitualDayResponse> listClosed(UUID userId, LocalDate from, LocalDate to) {
+        List<RitualDayEntity> rows =
+            ritualDayRepository.findByCreatedByAndRitualDateBetweenAndClosedAtIsNotNull(userId, from, to);
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        RitualWindow window = window(userId);
+        return rows.stream()
+            .sorted(Comparator.comparing(RitualDayEntity::getRitualDate))
+            .map(row -> toResponse(row.getRitualDate(), row, window))
+            .toList();
     }
 
     /**
@@ -118,12 +155,19 @@ public class RitualService {
     }
 
     private RitualDayResponse toResponse(UUID userId, LocalDate date, RitualDayEntity row) {
+        return toResponse(date, row, window(userId));
+    }
+
+    private RitualWindow window(UUID userId) {
         LocalTime bed = sleepAnchorPort.resolve(userId).bed();
-        RitualWindow window = RitualWindow.builder()
+        return RitualWindow.builder()
             .bedTime(bed.format(HHMM))
             .opensAt(bed.minusMinutes(properties.leadMin()).format(HHMM))
             .prepStartsAt(bed.minusMinutes(properties.prepLeadMin()).format(HHMM))
             .build();
+    }
+
+    private RitualDayResponse toResponse(LocalDate date, RitualDayEntity row, RitualWindow window) {
         // a row may exist for a reflection alone (mezo-b3pp.2) — closure is closed_at, not existence
         Instant closedAt = row == null ? null : row.getClosedAt();
         return RitualDayResponse.builder()

@@ -25,6 +25,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [boop](#boop) | ✓ | 1 | · | · | [boop-ios](features/boop-ios.md) |
 | [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md), [insights](features/insights.md) |
 | [companion](#companion) | ✓ | 5 | ✓ | · | [admin-memory-explorer](features/admin-memory-explorer.md), [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [settings](features/settings.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
+| [dayclose](#dayclose) | ✓ | 1 | · | · | · |
 | [feedback](#feedback) | · | · | ✓ | · | [insights](features/insights.md) |
 | [fuel](#fuel) | ✓ | 2 | ✓ | ✓ | [fuel](features/fuel.md), [pantry](features/pantry.md), [recipe](features/recipe.md), [_platform-api-backend](features/_platform-api-backend.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [gamification](#gamification) | ✓ | 1 | ✓ | · | [growth](features/growth.md), [_platform-data-layer](features/_platform-data-layer.md) |
@@ -493,10 +494,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **other:** `ActionClaimCheck`, `AcuteBadDayRule`, `AdvisedAnswer`, `AdvisorRetry`, `AdvisorViolation`,
     `AllHealthyRule`, `BiometricsTools`, `CharacterPromptSource`, `ChatHistory`, `ChatMemoryItem`,
     `CheckInNoteSourceAdapter`, `ClinicalOutputCheck`, `CompanionAdvisorChain`, `CompanionHelloRunner`, `CompanionLlm`,
-    `CompanionToolRegistry`, `ConsumerPolicy`, `ConversationContextTools`, `CravingStreakRule`, `DayReviewJson`,
-    `DayReviewLlmAdapter`, `EmbeddingFailure`, `EmbeddingPort`, `EnergyDipMealTimingRule`, `FactMergeJob`,
-    `FactMergeJudge`, `FactMergePlanner`, `FactMergeService`, `FactOwner`, `FakeCompanionLlm`, `FakeEmbeddingAdapter`,
-    `FakeFactMerge`, `FeedContextTools`, `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`,
+    `CompanionToolRegistry`, `ConsumerPolicy`, `ConversationContextTools`, `CravingStreakRule`, `DayCloseLlmAdapter`,
+    `DayReviewJson`, `DayReviewLlmAdapter`, `EmbeddingFailure`, `EmbeddingPort`, `EnergyDipMealTimingRule`,
+    `FactMergeJob`, `FactMergeJudge`, `FactMergePlanner`, `FactMergeService`, `FactOwner`, `FakeCompanionLlm`,
+    `FakeEmbeddingAdapter`, `FakeFactMerge`, `FeedContextTools`, `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`,
     `ForgottenMemoriesEnvelope`, `FuelModeText`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`,
     `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`, `GrowthTools`,
     `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`,
@@ -657,6 +658,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TextSignalPopulator`,
     `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyScorePopulator`, `WeightLogPopulator`,
     `WorkoutDayAdjustmentPopulator`
+
+### dayclose
+
+*BE + API* · read next: **none — no HOW doc exists for this feature yet**
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
+  - **entities→tables:** `DayCloseEntity`→`day_close`, `DayCloseLineCacheEntity`→`day_close_line_cache`
+  - **repositories:** `DayCloseLineCacheRepository`, `DayCloseRepository`
+  - **services:** `DayCloseLineWriter`, `DayCloseLlm`, `DayCloseService`, `DayClosedEvent`
+  - **controllers→contract:** `DayCloseController`→`DayCloseApi`
+  - **mappers:** `DayCloseMapper`
+  - **config:** `DayCloseProperties`
+- **Contract** `api/feature/dayclose/dayclose.yml` — 5 operations
+  - **endpoints:** GET /api/day-close · PUT /api/day-close/{date} · GET /api/day-close/{date} ·
+    POST /api/day-close/{date}/line · POST /api/day-close/{date}/checkin-line
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/dayclose` — 2 IT + 0 unit
+  - **ITs:** `DayCloseApiIT`, `DayCloseServiceIT`
+  - **populators:** `DatabasePopulator`
 
 ### feedback
 
@@ -1837,7 +1856,6 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
-- **Contract fragment** `api/feature/dayclose/dayclose.yml` — tags `DayClose`; no backend controller implements the matching `<Tag>Api`
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`
+- **Features with no `docs/features/` doc:** `aidraft`, `dayclose`, `medication`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
