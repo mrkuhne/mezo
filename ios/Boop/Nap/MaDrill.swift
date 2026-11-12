@@ -56,6 +56,10 @@ enum DrillText {
 
 // MARK: - The room
 
+/// Alvás's room draws the night's hypnogram once, in section 1 (owner, 2026-11-12); the night card on the path
+/// below then carries no second copy — it only speaks when there are no stages to draw.
+func roomShowsHypnogram(_ sleep: Brief.Sleep) -> Bool { !sleep.hypnogram.isEmpty }
+
 /// An orb's room (the domain drill-down): the orb's own painted head with its verdict, then 1 A szint (the level,
 /// the orb's tiles, Alvás's hypnogram), 2 A hét, 3 A napok mögötte, 4 Mit tehetsz (Boop's proposal for this orb,
 /// then the orb's short path with its cards). The glass back button and the swipe pop back to Ma.
@@ -94,7 +98,7 @@ struct MaDrill: View {
             if let caption = c.orbCaption { Text(caption).nkFont(14).foregroundStyle(.white.opacity(0.65)) }
         }
         .accessibilityElement(children: .combine)
-        if hue == .alvas, let s = brief.day.sleep, !s.hypnogram.isEmpty {
+        if hue == .alvas, let s = brief.day.sleep, roomShowsHypnogram(s) {
             VStack(spacing: 6) {
                 Hypnogram(segments: s.hypnogram.map { (stage: $0.stage, minutes: Double($0.minutes)) }).frame(height: 100)
                 HStack { Text(s.bedtime ?? "–"); Spacer(); Text(s.wakeup ?? "–") }

@@ -127,8 +127,9 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled; B3–B8 follow). The 
   - **Placeholders:** Terv, Napló and Boop (`Terv/TervView`, `Naplo/NaploView`, `BoopChat/BoopTabView`) are honest frames with their own sky until B6 / B3 / B3+B8.
   - **Presentations stay at page level** (§9): the detail sheet and miért? hang outside the room stack, so they reach Ma and every room.
   - **DEBUG flags:** `-previewTab`, `-previewOpen`, `-previewSwitch`, `-previewPhase`, `-previewDrill`, `-previewWhy` — see `ios/README.md`.
-  - **Known gaps:** between 00:00 and 04:00 Este still shows on the *day* sky (`isEvening` is hour ≥ 18); the Alvás room shows the hypnogram
-    twice (section 1 and the night card) pending an owner look decision.
+  - **Known gaps:** between 00:00 and 04:00 Este still shows on the *day* sky (`isEvening` is hour ≥ 18).
+  - **Hypnogram once** (owner, 2026-11-12): the Alvás room draws the night's stages only in section 1
+    (`roomShowsHypnogram`); the path's night card appears only when the night has no stages, to say so.
 
 - **Sign-in** (`SignInView`): e-mail + password; Hungarian problems under each field, cleared on edit;
   server errors in a peach card (wrong password, offline after 20 s, server error). "Van meghívókódom"
