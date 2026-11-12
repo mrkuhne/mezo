@@ -33,9 +33,12 @@ final class ChatStoreTests {
 
     static let context = #"{"chips":[{"key":"sleep","label":"Alvás","value":"6ó 10p","sub":"előző éjjel 7ó 40p"},{"key":"session","label":"Röpi","value":"19:00","sub":"90 perc"},{"key":"goal","label":"A nap célja","value":"Ügyfélprezentáció","sub":null}],"questions":["Mennyit egyek a röpi előtt?","Mire figyeljek ma az edzésen?","Miért vagyok fáradtabb, mint tegnap?"],"generatedAt":"2026-11-10T15:02:00Z"}"#
 
+    /// A conversation as the server lists it; it started on its title's day (08:00 UTC) unless told otherwise.
     static func conversation(_ id: UUID, title: String?) -> String {
         let t = title.map { "\"\($0)\"" } ?? "null"
-        return #"{"id":"\#(id.uuidString.lowercased())","title":\#(t),"startedAt":"2026-11-10T08:00:00Z"}"#
+        let day = title.flatMap { $0.split(separator: " ").last.flatMap { Int($0.dropLast()) } } ?? 10
+        let started = String(format: "2026-11-%02dT08:00:00Z", day)
+        return #"{"id":"\#(id.uuidString.lowercased())","title":\#(t),"startedAt":"\#(started)"}"#
     }
 
     static func message(_ role: String, _ content: String, id: UUID = UUID()) -> String {
@@ -293,5 +296,33 @@ final class ChatStoreTests {
         await chat.delivered(item, body: nil)
         #expect(chat.lines.map(\.text) == ["Első", "Első válasz.", "Második", "Második válasz."])
         #expect(chat.lines.allSatisfy { $0.state == .shown })
+    }
+
+    /// Final review M4: the server titles a Boop conversation with the OWNER's day; a phone east of the owner zone lives
+    /// in the next day already. Today's conversation is the newest one started within the phone's day, whatever its
+    /// title says — so the phone finds it and never makes a second one.
+    @Test func todaysConversationIsFoundByWhenItStartedNotOnlyByTitle() async throws {
+        var tokyo = Calendar(identifier: .gregorian)
+        tokyo.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        let phoneMorning = ISO8601DateFormatter().date(from: "2026-11-11T22:30:00Z")!   // Tokyo: 11-12 07:30
+        let clock = TestClock(phoneMorning)
+        let todays = UUID(), yesterdays = UUID()
+        func conv(_ id: UUID, _ started: String) -> String {
+            #"{"id":"\#(id.uuidString.lowercased())","title":"2026. november 11.","startedAt":"\#(started)"}"#
+        }
+        stub.on("getDayContext", .json(200, Self.context))
+        // both carry the owner's (Budapest) date; only one started on the phone's 12th
+        stub.on("listConversations", .json(200, "[\(conv(yesterdays, "2026-11-11T08:00:00Z")),\(conv(todays, "2026-11-11T22:10:00Z"))]"))
+        stub.on("listMessages", .json(200, "[\(Self.message("user", "Reggeli kérdés")),\(Self.message("assistant", "Válasz."))]"))
+        let c = clock
+        let chat = ChatStore(client: makeClient(tokens: MemoryTokenStore("t"), transport: stub), sender: ritmus, outbox: outbox,
+                             directory: dir, clock: { c.now }, calendar: tokyo)
+        await chat.refresh()
+        #expect(chat.day == "2026-11-12")
+        #expect(chat.conversationId(on: "2026-11-12") == todays)
+        #expect(chat.lines.map(\.text) == ["Reggeli kérdés", "Válasz."])
+        stub.on("sendMessage", .json(200, Self.message("assistant", "Igen.")))
+        await chat.ask("És most?", online: true)
+        #expect(!stub.ops.contains("createConversation"))
     }
 }

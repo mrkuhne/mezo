@@ -36,8 +36,8 @@ public struct ChatLine: Equatable, Sendable, Identifiable {
     }
 }
 
-/// The Boop tab's chat (B3, spec §5.5, §7.6): today's `boop` conversation — found by its date title or created on the
-/// first question, its id kept per date on the phone, so a new day starts a new one — the day-context strip and the
+/// The Boop tab's chat (B3, spec §5.5, §7.6): today's `boop` conversation — found by when it started within the phone's
+/// day (or its date title) or created on the first question, its id kept per date on the phone, so a new day starts a new one — the day-context strip and the
 /// ready questions, and the non-stream answer.
 ///
 /// Online, a question goes straight out and Boop's answer follows; without the net (or when the send loses the net, or
@@ -115,11 +115,38 @@ public final class ChatStore {
         }
     }
 
-    /// The server titles a Boop conversation with the owner's date ("2026. november 12.") and never renames it.
+    /// Today's Boop conversation on the server. The server titles one with the OWNER's date ("2026. november 12.") and
+    /// never renames it, while the phone's day is its own zone's — east of the owner the two differ in the morning. So
+    /// the match is a Boop-titled conversation (any date title) started within the phone's day, else one carrying the
+    /// phone day's own title; the newest wins, so a found one is reused and never made twice.
     private func findConversation(_ date: String) async -> UUID? {
         guard case .ok(let ok)? = try? await client.listConversations(), let list = try? ok.body.json else { return nil }
         let title = Self.title(of: date, calendar)
-        return list.first { $0.title == title }.flatMap { UUID(uuidString: $0.id) }
+        let day = Self.bounds(of: date, calendar)
+        let candidates = list.filter { c in
+            if c.title == title { return true }
+            guard let t = c.title, Self.isBoopTitle(t, calendar), let day else { return false }
+            return day.contains(c.startedAt)
+        }
+        return candidates.max { $0.startedAt < $1.startedAt }.flatMap { UUID(uuidString: $0.id) }
+    }
+
+    /// The phone's day `date` as an instant range.
+    private static func bounds(of date: String, _ calendar: Calendar) -> Range<Date>? {
+        let p = date.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3, let start = calendar.date(from: DateComponents(year: p[0], month: p[1], day: p[2])),
+              let end = calendar.date(byAdding: .day, value: 1, to: start) else { return nil }
+        return start..<end
+    }
+
+    /// A title the server gives a Boop conversation ("2026. november 12."), whatever the day.
+    static func isBoopTitle(_ title: String, _ calendar: Calendar) -> Bool {
+        let f = DateFormatter()
+        f.calendar = calendar
+        f.timeZone = calendar.timeZone
+        f.locale = Locale(identifier: "hu")
+        f.dateFormat = "y. MMMM d."
+        return f.date(from: title) != nil
     }
 
     private func fetchTurns(_ id: UUID) async -> [ChatLine]? {
