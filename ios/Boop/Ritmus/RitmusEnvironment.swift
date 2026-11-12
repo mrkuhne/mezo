@@ -22,6 +22,7 @@ final class RitmusEnvironment {
     @ObservationIgnored private let planSource: (@Sendable (String) async throws -> [String: CheckInPlanLite])?
     @ObservationIgnored private let daySource: (@Sendable (String) async throws -> ServerDay)?
     @ObservationIgnored private let naploSource: (@Sendable (_ from: String, _ to: String) async throws -> [ServerDay])?
+    @ObservationIgnored private var lastNaploRefresh: Date?
     @ObservationIgnored private let goalsSource: (@Sendable ([String]) async throws -> [String: [String]])?
     @ObservationIgnored private let eventsSource: (@Sendable (Date) async -> [CalendarEventLite])?
     @ObservationIgnored private let closeLineSource: (@Sendable (String) async throws -> String)?
@@ -264,14 +265,17 @@ final class RitmusEnvironment {
 
     /// The last days for the Napló list: the server's closes and check-ins merged into the day files (what is pending on
     /// the phone wins), so the list can be drawn again offline from what was seen. Quietly nothing offline.
-    func refreshNaplo() async {
+    /// Asked again within five minutes of the last good fetch it does nothing, unless `force`.
+    func refreshNaplo(force: Bool = false) async {
         guard let naploSource else { return }
+        if !force, let last = lastNaploRefresh, clock().timeIntervalSince(last) < 300 { return }
         let range = NaploDays.range(endingOn: today)
         let fetchedAt = clock()
         guard let days = try? await naploSource(range.from, range.to) else { return }
         for server in days where !server.checkIns.isEmpty || server.close != nil || ledger.days[server.date] != nil {
-            ledger.merge(server: server, fetchedAt: fetchedAt)
+            ledger.mergeCheckInsAndClose(server: server, fetchedAt: fetchedAt)
         }
+        lastNaploRefresh = fetchedAt
     }
 
     /// Follows the phone's network path (a field's mic needs the net when the phone cannot transcribe itself).

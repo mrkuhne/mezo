@@ -186,7 +186,8 @@ struct GoalBlock: View {
 struct MaEnergyCard: View {
     let day: DayLedger
     let predicted: [Double]
-    let now: Date
+    /// nil = no "most" line (a past day).
+    let now: Date?
     let calendar: Calendar
     @Binding var selected: UUID?
     /// "AZ ENERGIÁD MA" on Ma; a past day (Napló) drops the "MA".
@@ -200,7 +201,7 @@ struct MaEnergyCard: View {
                             dots: day.checkIns.compactMap { c in
                                 c.values["energy"].map { EnergyCurveDot(id: c.id, hour: hour(c.capturedAt), energy: $0, pending: c.pending) }
                             },
-                            now: hour(now), hue: .mozgas, selected: $selected, height: 130)
+                            now: now.map(hour), hue: .mozgas, selected: $selected, height: 130)
             if let c = day.checkIns.first(where: { $0.id == selected }) {
                 CheckInDetail(heading: "\(CheckinDone.slotName(c.slot).uppercased()) · \(CheckinFlow.clock(c.capturedAt, calendar))",
                               pending: c.pending, answers: CheckinDone.answers(c), note: c.note, snapshot: CheckinDone.figures(c))
