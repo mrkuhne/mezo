@@ -25,6 +25,7 @@ import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.WorkoutTimeOverridePopulator;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -68,6 +69,7 @@ class BoopDayContextIT extends AbstractIntegrationTest {
     @Autowired private MealPopulator meals;
     @Autowired private CalendarEventPopulator calendar;
     @Autowired private GoalPopulator goals;
+    @Autowired private WorkoutTimeOverridePopulator timeOverrides;
 
     @Test
     void blockUnderTokenBudget() {
@@ -88,7 +90,8 @@ class BoopDayContextIT extends AbstractIntegrationTest {
             .contains("Röpi 19:00, 90 perc")
             .contains("Holnap:")
             .contains("Lefekvési cél: 23:15")
-            .contains("Súlycél");
+            .contains("Súlycél")
+            .doesNotContain("Negyedik cél"); // goals are capped at 3 lines — the budget is structural
     }
 
     @Test
@@ -147,6 +150,51 @@ class BoopDayContextIT extends AbstractIntegrationTest {
         List<String> questions = context.questions(context.assemble(user, DAY, NOON));
 
         assertThat(questions).containsExactly("Miért vagyok fáradtabb, mint tegnap?");
+    }
+
+    @Test
+    void lowHrvNeedsFivePercentBelowUsual() {
+        UUID exactly = databasePopulator.populateUser("boop-day-hrv-5@test.local");
+        seedHrv(exactly, DAY, 40, 38); // exactly 5 % below → counts
+        UUID within = databasePopulator.populateUser("boop-day-hrv-2@test.local");
+        seedHrv(within, DAY, 40, 39); // 2.5 % below → day-to-day noise
+
+        assertThat(context.questions(context.assemble(exactly, DAY, NOON)))
+            .containsExactly("Miért vagyok fáradtabb, mint tegnap?");
+        assertThat(context.questions(context.assemble(within, DAY, NOON))).containsExactly("Hogy alakul a napom?");
+    }
+
+    @Test
+    void datedSportEventsCountAsSessions() {
+        UUID user = databasePopulator.populateUser("boop-day-events@test.local");
+        train.createSportEvent(user, DAY, "19:30", 90);              // a match today (populator: kind=match)
+        train.createSportEvent(user, DAY.plusDays(1), "18:00", 120); // a match tomorrow
+
+        DayBlock day = context.assemble(user, DAY, NOON);
+
+        assertThat(context.render(day)).contains("Edzés ma: Röpimeccs 19:30, 90 perc")
+            .contains("Holnap: Röpimeccs 18:00, 120 perc");
+        assertThat(context.questions(day)).containsExactly("Mennyit egyek a röpimeccs előtt?",
+            "Mire figyeljek ma az edzésen?", "Mikor és mit egyek, hogy holnap jól menjen?");
+    }
+
+    @Test
+    void movedSessionTimeWins() {
+        UUID user = databasePopulator.populateUser("boop-day-moved@test.local");
+        var meso = train.createActiveMeso(user);
+        var csut = train.createWorkoutSession(user, meso.getId(), "Csü", "Legs 1", dow(DAY), "active");
+        train.createExercise(user, csut.getId(), "Guggolás", 0);
+        train.createGymSlot(user, dow(DAY), "17:00");
+        timeOverrides.createOverride(user, DAY, LocalTime.of(18, 30));
+        // 17:30: the planned 17:00 is gone, the moved 18:30 is still ahead
+        Instant halfPastFive = DAY.atTime(17, 30).atZone(ZONE).toInstant();
+
+        DayBlock day = context.assemble(user, DAY, halfPastFive);
+
+        assertThat(context.render(day)).contains("Edzés (Csü) 18:30").doesNotContain("17:00");
+        assertThat(context.chips(day)).filteredOn(c -> c.key().equals("session")).singleElement()
+            .satisfies(c -> assertThat(c.value()).isEqualTo("18:30"));
+        assertThat(context.questions(day)).contains("Mennyit egyek az edzés előtt?", "Mire figyeljek ma az edzésen?");
     }
 
     @Test
@@ -220,6 +268,8 @@ class BoopDayContextIT extends AbstractIntegrationTest {
         }
         intentions.focus(user, day, "Ügyfélprezentáció");
         intentions.focus(user, day, "Korán lefeküdni");
+        intentions.focus(user, day, "Sétálni ebéd után");
+        intentions.focus(user, day, "Negyedik cél"); // past the intention cap: never rendered
         train.createScheduleSlot(user, dow(day), "19:00", 90, "training");
         train.createScheduleSlot(user, dow(day.plusDays(1)), "18:00", 90, "match");
         meals.createMealWithItems(user, day, "breakfast",
