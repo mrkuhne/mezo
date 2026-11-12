@@ -7025,6 +7025,9 @@ paths:
                   description: >-
                     The recorded voice note (wav/webm/ogg/mp4/mpeg, size capped
                     by mezo.companion.transcription.max-audio-bytes)
+            encoding:
+              audio:
+                contentType: audio/mp4
       responses:
         '200':
           description: The transcript — empty text when nothing intelligible was said
