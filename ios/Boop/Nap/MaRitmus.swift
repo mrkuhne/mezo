@@ -26,10 +26,12 @@ func checkinSummary(_ c: LedgerCheckIn) -> String {
 }
 
 /// The timeline with what the phone knows (spec §5.3): a check-in kept on the phone marks its row done with its clock
-/// time and answers; the next check-in still to do offers *Kitöltöm*; the evening row is done once the day is closed.
+/// time and answers; the row of the moment the clock is in (`CheckInMoment.moment(at: now)`, the slot a check-in saved
+/// now would get) offers *Kitöltöm* while that slot is still empty — a missed earlier moment never does; the evening row
+/// is done once the day is closed.
 @MainActor
-func ritmusStations(_ stations: [PathStation], day: DayLedger, calendar: Calendar = .current) -> [PathStation] {
-    var offered = false
+func ritmusStations(_ stations: [PathStation], day: DayLedger, now: Date, calendar: Calendar = .current) -> [PathStation] {
+    let current = CheckInMoment.moment(at: now, calendar: calendar).slotId
     return stations.map { st in
         if st.id == "checkin-evening" {
             return day.close == nil ? st : PathStation(id: st.id, time: st.time, glyph: st.glyph, title: st.title, sub: st.sub,
@@ -40,22 +42,30 @@ func ritmusStations(_ stations: [PathStation], day: DayLedger, calendar: Calenda
             return PathStation(id: st.id, time: CheckinFlow.clock(c.capturedAt, calendar), glyph: st.glyph, title: st.title,
                                sub: checkinSummary(c), done: true, isNow: false, opens: false)
         }
-        if st.done || offered { return st }
-        offered = true
+        guard slot == current, !st.done else { return st }
         return PathStation(id: st.id, time: st.time, glyph: st.glyph, title: st.title, sub: st.sub, done: false, isNow: false,
                            opens: st.opens, action: "Kitöltöm")
     }
 }
 
-/// What a tap on a check-in row does: a past one selects its dot on the curve, one still to do opens the check-in, the
-/// evening row opens the close. nil = not a daily-loop row (the B2 drill-down applies).
+/// What a tap on a check-in row does: a row held on the phone selects its dot on the curve, the current moment's empty
+/// row opens the check-in, the evening row opens the close. nil = anything else (the B2 drill-down applies), including
+/// a missed or later moment's row.
 enum RitmusStationTap: Equatable { case selectDot(UUID), open(RitmusCover) }
 
-func ritmusTap(_ st: PathStation, day: DayLedger) -> RitmusStationTap? {
+func ritmusTap(_ st: PathStation, day: DayLedger, now: Date, calendar: Calendar = .current) -> RitmusStationTap? {
     if st.id == "checkin-evening" { return .open(.este) }
     guard let slot = checkinStationSlots[st.id] else { return nil }
     if let c = day.checkIns.last(where: { $0.slot == slot }) { return .selectDot(c.id) }
-    return st.done ? nil : .open(.checkin)
+    return !st.done && slot == CheckInMoment.moment(at: now, calendar: calendar).slotId ? .open(.checkin) : nil
+}
+
+/// The hero pill with what the phone knows: once the current moment's check-in is on the phone, the Forma pill stops
+/// offering *Kitöltöm* at once (nil = *Boop elmondja*), without waiting for the brief to learn it.
+func heroAction(_ action: LensAction?, day: DayLedger?, now: Date, calendar: Calendar = .current) -> LensAction? {
+    guard let action, action.kind == .checkin, let day else { return action }
+    let current = CheckInMoment.moment(at: now, calendar: calendar).slotId
+    return day.checkIns.contains { $0.slot == current } ? nil : action
 }
 
 /// The day's check-ins among its three moments (the evening close's 20:00 is not one of them).
