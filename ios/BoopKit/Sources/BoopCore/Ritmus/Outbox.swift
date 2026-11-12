@@ -21,18 +21,24 @@ public struct OutboxItem: Codable, Equatable, Identifiable, Sendable {
     public var nextAttempt: Date?
     /// Set when the item will not be sent without the owner's "Újra"; its values stay.
     public var failure: String?
+    /// The failure is the attempt cap (the server kept answering "later"), not a refusal: the net coming back gives
+    /// it a fresh start (`Outbox.networkReturned`). Absent in queues written before (decodes as nil = a refusal).
+    public var exhausted: Bool?
 
     public init(id: UUID = UUID(), kind: OutboxKind, date: String, capturedAt: Date, payload: Data,
-                attempts: Int = 0, nextAttempt: Date? = nil, failure: String? = nil) {
+                attempts: Int = 0, nextAttempt: Date? = nil, failure: String? = nil, exhausted: Bool? = nil) {
         self.id = id; self.kind = kind; self.date = date; self.capturedAt = capturedAt; self.payload = payload
-        self.attempts = attempts; self.nextAttempt = nextAttempt; self.failure = failure
+        self.attempts = attempts; self.nextAttempt = nextAttempt; self.failure = failure; self.exhausted = exhausted
     }
 }
 
-/// The sender's verdict: `sent` (with the response body, if any), `retryLater` (no network, 5xx, 409, 429 — the same
-/// item goes again after a backoff) or `failed` (a 4xx the server will never accept; kept, never dropped).
+/// The sender's verdict: `sent` (with the response body, if any), `offline` (no network — not an attempt: the drain
+/// stops and everything waits for the next trigger), `retryLater` (5xx, most 409s, 429, a 401 — the same item goes again
+/// after a backoff, counted against the attempt cap) or `failed` (a 4xx the server will never accept, or the 409 of
+/// the focus cap; kept, never dropped).
 public enum OutboxSendResult: Equatable, Sendable {
     case sent(Data?)
+    case offline
     case retryLater
     case failed(String)
 }
@@ -45,7 +51,8 @@ public protocol OutboxSender: Sendable {
 /// unlock, so a background flush on a locked phone can still write), survives relaunch, flushed in order.
 ///
 /// - A `retryLater` waits 30 s × 2ⁿ⁻¹ (capped at 30 min); after `maxAttempts` the item is marked failed with its
-///   values, so it gets an "Újra" row instead of retrying forever.
+///   values (`exhausted`), so it gets an "Újra" row instead of retrying forever — and the net coming back
+///   (`networkReturned`) starts it afresh. An `offline` answer is never an attempt: a day without network burns nothing.
 /// - An item waiting on backoff holds back only the later items that depend on its order: for the same date, the
 ///   check-in → note / journal → voice → day-close chain, the goal set/remove pair, and chat questions among
 ///   themselves. Everything else (other dates, other check-in slots, unrelated kinds) keeps flowing.
@@ -66,6 +73,8 @@ public actor Outbox {
     private var items: [OutboxItem]
     private var flushing = false
     private var flushAgain = false
+    private var failureObserver: (@Sendable ([OutboxItem]) async -> Void)?
+    private var heardFailures: [UUID]?
     private static let log = Logger(subsystem: "io.mrkuhne.boop", category: "outbox")
 
     /// `onSent` hears every delivered item (e.g. to clear the ledger's pending flag).
@@ -95,26 +104,61 @@ public actor Outbox {
     /// listener that a newer version of the delivered item was enqueued meanwhile and is still on its way.
     public func isQueued(_ id: UUID) -> Bool { items.contains { $0.id == id } }
 
+    /// Every queued item (pending and failed), in order.
+    public var queue: [OutboxItem] { items }
+
+    /// The queued item with this id (pending or failed).
+    public func queued(_ id: UUID) -> OutboxItem? { items.first { $0.id == id } }
+
     /// Appends the item; an item with the same id is replaced in place (its newer values go out, in its old position).
     /// Throws when the queue cannot be written to disk — the item is still queued for this run, but would not survive
     /// a relaunch, so the capture flow can say so.
     public func enqueue(_ item: OutboxItem) async throws {
         if let i = items.firstIndex(where: { $0.id == item.id }) { items[i] = item } else { items.append(item) }
-        try persist()
+        do { try persist() } catch { await publishFailures(); throw error }
+        await publishFailures()
     }
 
     /// Takes an item back out of the queue (a capture the phone could not keep as a whole is undone).
-    public func remove(_ id: UUID) {
+    public func remove(_ id: UUID) async {
         items.removeAll { $0.id == id }
         save()
+        await publishFailures()
     }
 
     /// "Újra": the failed item gets a fresh start and the queue is flushed.
     public func retry(_ id: UUID) async {
         guard let i = items.firstIndex(where: { $0.id == id && $0.failure != nil }) else { return }
-        items[i].failure = nil; items[i].attempts = 0; items[i].nextAttempt = nil
+        items[i].failure = nil; items[i].exhausted = nil; items[i].attempts = 0; items[i].nextAttempt = nil
         save()
+        await publishFailures()
         await flush()
+    }
+
+    /// The network is back: what ran out of tries while it was flaky starts afresh (a refusal keeps waiting for the
+    /// owner's "Újra"), and everything queued goes out now.
+    public func networkReturned() async {
+        for i in items.indices where items[i].exhausted == true {
+            items[i].failure = nil; items[i].exhausted = nil; items[i].attempts = 0; items[i].nextAttempt = nil
+        }
+        save()
+        await publishFailures()
+        await flush(ignoringBackoff: true)
+    }
+
+    /// `handler` hears the failed items now and whenever that list changes (the UI's "nem sikerült elküldeni" rows).
+    public func observeFailures(_ handler: @escaping @Sendable ([OutboxItem]) async -> Void) async {
+        failureObserver = handler
+        heardFailures = nil
+        await publishFailures()
+    }
+
+    private func publishFailures() async {
+        guard let failureObserver else { return }
+        let now = failed
+        guard now.map(\.id) != heardFailures else { return }
+        heardFailures = now.map(\.id)
+        await failureObserver(now)
     }
 
     /// Sends what is due. `ignoringBackoff` (reconnect, foreground) makes every pending item due now. A flush asked
@@ -159,7 +203,7 @@ public actor Outbox {
             let now = clock()
             if isTooOld(item.date, now: now) {
                 items[index].failure = "Több mint \(Self.maxAgeDays) napos, a szerver már nem fogadja el."
-                save(); index += 1; continue
+                save(); await publishFailures(); index += 1; continue
             }
             if let next = item.nextAttempt, next > now { held.insert(group.key); index += 1; continue }
 
@@ -173,19 +217,30 @@ public actor Outbox {
                 save()
                 await onSent?(item, body)
                 index = items.firstIndex(where: { $0.id == item.id }) ?? i
+            case .offline:
+                // No network: not the item's fault and not an attempt. Nothing else can go either — stop here; the
+                // next trigger (the net coming back, the foreground, a capture) sends it all.
+                return
             case .retryLater:
+                // A newer version enqueued while this one was out was never tried: it starts fresh, due now.
+                guard items[i] == item else { index = i + 1; continue }
                 items[i].attempts += 1
                 if items[i].attempts >= Self.maxAttempts {
                     items[i].failure = "\(Self.maxAttempts) próbálkozás után sem sikerült elküldeni."
+                    items[i].exhausted = true
                 } else {
                     items[i].nextAttempt = clock().addingTimeInterval(Self.backoff(attempts: items[i].attempts))
                     held.insert(group.key)
                 }
                 save()
+                await publishFailures()
                 index = i + 1
             case .failed(let reason):
+                // A newer version enqueued meanwhile was not the one refused: it gets its own try.
+                guard items[i] == item else { index = i + 1; continue }
                 items[i].failure = reason
                 save()
+                await publishFailures()
                 index = i + 1
             }
         }

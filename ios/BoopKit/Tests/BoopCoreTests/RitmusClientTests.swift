@@ -158,7 +158,7 @@ final class RitmusClientTests {
         struct Boom: Error {}
         let cases: [(StubTransport.Reply, OutboxSendResult)] = [
             (.status(500), .retryLater), (.status(503), .retryLater), (.status(409), .retryLater), (.status(429), .retryLater),
-            (.status(401), .retryLater), (.fail(URLError(.notConnectedToInternet)), .retryLater), (.fail(Boom()), .retryLater),
+            (.status(401), .retryLater), (.fail(URLError(.notConnectedToInternet)), .offline), (.fail(URLError(.timedOut)), .offline), (.fail(Boom()), .retryLater),
             (.status(400), .failed("HTTP 400")), (.status(422), .failed("HTTP 422")), (.status(404), .failed("HTTP 404")),
         ]
         for (reply, expected) in cases {
@@ -359,7 +359,7 @@ final class RitmusClientTests {
 
     @Test func chatWithoutNetRetriesLater() async {
         stub.on("sendMessage", .fail(URLError(.notConnectedToInternet)))
-        #expect(await ritmus.send(item(.chatQuestion, ChatQuestionPayload(conversationId: UUID(), text: "x"))) == .retryLater)
+        #expect(await ritmus.send(item(.chatQuestion, ChatQuestionPayload(conversationId: UUID(), text: "x"))) == .offline)
     }
 
     // MARK: fetches

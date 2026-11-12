@@ -20,10 +20,20 @@ actor FakeSender: OutboxSender {
     init(_ script: [OutboxSendResult] = []) { self.script = script }
     func send(_ item: OutboxItem) async -> OutboxSendResult {
         sent.append(item)
+        if noNetwork { return .offline }
         if stuck.contains(item.id) { return .retryLater }
+        if refusedIds.contains(item.id) { return .failed("HTTP 400") }
         return script.isEmpty ? .sent(nil) : script.removeFirst()
     }
+    /// Items that always answer `failed("HTTP 400")`.
+    private var refusedIds: Set<UUID> = []
     func stick(_ id: UUID) { stuck.insert(id) }
+    func unstick(_ id: UUID) { stuck.remove(id) }
+    func refuse(_ id: UUID) { refusedIds.insert(id) }
+    func clear() { sent = [] }
+    /// While set, every send answers `offline` (no network).
+    private var noNetwork = false
+    func setOffline(_ on: Bool) { noNetwork = on }
 }
 
 final class OutboxTests {
@@ -270,5 +280,88 @@ final class OutboxTests {
         await box.flush()
         #expect(await seen.queued == [true, false])
         #expect(await !box.isQueued(first.id))
+    }
+
+    // MARK: - Final review C1: an offline day never burns the attempt cap
+
+    /// A travel day: every flush trigger finds no network. Nothing counts as an attempt, nothing fails, and when the
+    /// net comes back everything goes out.
+    @Test func offlineFlushesNeverBurnTheAttemptCap() async throws {
+        let sender = FakeSender()
+        await sender.setOffline(true)
+        let box = outbox(sender)
+        let checkIn = item(.checkIn), close = item(.dayClose)
+        try await box.enqueue(checkIn); try await box.enqueue(close)
+        for _ in 0..<20 {
+            time.advance(60)
+            await box.flush(ignoringBackoff: true)
+        }
+        #expect(await box.failed.isEmpty)
+        #expect(await box.pending.map(\.attempts) == [0, 0])
+        // no network: the drain stopped at the first item instead of trying the rest
+        #expect(await sender.sent.allSatisfy { $0.id == checkIn.id })
+        await sender.clear()
+        await sender.setOffline(false)
+        await box.networkReturned()
+        #expect(await sender.sent.map(\.id) == [checkIn.id, close.id])
+        #expect(await box.pending.isEmpty)
+    }
+
+    /// The net coming back clears what ran out of tries (a server down for hours), never a refusal (a 4xx).
+    @Test func networkReturnRevivesExhaustedButNotRefused() async throws {
+        let sender = FakeSender()
+        let box = outbox(sender)
+        let poison = item(.goal), refused = item(.checkIn)
+        await sender.stick(poison.id)
+        await sender.refuse(refused.id)
+        try await box.enqueue(poison); try await box.enqueue(refused)
+        for _ in 0..<Outbox.maxAttempts {
+            await box.flush()
+            time.advance(31 * 60)
+        }
+        #expect(Set(await box.failed.map(\.id)) == [poison.id, refused.id])
+        await sender.unstick(poison.id)
+        await box.networkReturned()
+        #expect(await box.failed.map(\.id) == [refused.id])
+        #expect(await box.pending.isEmpty)
+    }
+
+    /// The attempt counts against the version that was sent: a newer version enqueued while it was out starts fresh.
+    @Test func retryLaterOnAReplacedItemDoesNotCountAgainstTheNewVersion() async throws {
+        actor HookSender: OutboxSender {
+            var hook: (@Sendable () async -> Void)?
+            func set(_ h: @escaping @Sendable () async -> Void) { hook = h }
+            func send(_ item: OutboxItem) async -> OutboxSendResult {
+                if let h = hook { hook = nil; await h() }
+                return .retryLater
+            }
+        }
+        let sender = HookSender()
+        let c = time
+        let box = Outbox(directory: dir, sender: sender, clock: { c.now }, calendar: budapest)
+        var first = item(.checkIn, text: "v1")
+        try await box.enqueue(first)
+        first.payload = Data("v2".utf8)
+        let newer = first
+        await sender.set { try? await box.enqueue(newer) }
+        await box.flush()
+        let queued = await box.pending
+        #expect(queued.map(\.payload) == [newer.payload])
+        #expect(queued.first?.attempts == 0)
+        #expect(queued.first?.nextAttempt == nil)
+    }
+
+    /// Final review I1: the UI hears which items stopped (refused or out of tries), and when that changes.
+    @Test func failureObserverHearsChanges() async throws {
+        actor Heard { var lists: [[UUID]] = []; func add(_ l: [UUID]) { lists.append(l) } }
+        let heard = Heard()
+        let sender = FakeSender([.failed("HTTP 400")])
+        let box = outbox(sender)
+        await box.observeFailures { failed in await heard.add(failed.map(\.id)) }
+        let refused = item(.checkIn)
+        try await box.enqueue(refused)
+        await box.flush()
+        await box.retry(refused.id)
+        #expect(await heard.lists == [[], [refused.id], []])
     }
 }

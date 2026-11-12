@@ -206,7 +206,7 @@ public final class ChatStore {
                     lines.insert(ChatLine(id: UUID(), who: .boop, text: reply.content), at: i + 1)
                 }
             }
-        case .retryLater:
+        case .retryLater, .offline:
             // The answer may never come back on this connection; the same item (same id) waits for the net instead, marked
             // as tried, so its resend first checks whether the question arrived.
             item.attempts = max(item.attempts, 1)
