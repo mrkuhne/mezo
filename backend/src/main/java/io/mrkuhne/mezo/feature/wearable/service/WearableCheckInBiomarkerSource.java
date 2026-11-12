@@ -19,7 +19,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The server-side check-in snapshot from B1's Health data (Boop B3, mezo-r36n9.13, spec §7.3) — used when a
@@ -32,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>steps = that owner-zone day's {@code daily_metric} total, flagged as a day total;</li>
  *   <li>sleep = that day's {@code sleep_log} night (the night that ended that morning), in minutes.</li>
  * </ul>
+ * Deliberately not {@code @Transactional}: {@code CheckInService} calls it before its write transaction, and a
+ * failure here must never mark any transaction rollback-only.
  */
 @Service
 public class WearableCheckInBiomarkerSource implements CheckInBiomarkerSource {
@@ -56,7 +57,6 @@ public class WearableCheckInBiomarkerSource implements CheckInBiomarkerSource {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<CheckInSnapshotValues> snapshotAt(UUID owner, Instant at) {
         List<HealthSampleEntity> hr = withValue(samples.findWindow(owner, HEART_RATE,
             at.minus(HR_WINDOW), at.plus(HR_WINDOW)));

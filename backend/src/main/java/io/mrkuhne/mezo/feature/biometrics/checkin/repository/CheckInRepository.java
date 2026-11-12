@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -52,4 +53,19 @@ public interface CheckInRepository extends OwnedRepository<CheckInEntity> {
      * means here (unlike {@link #findNoteCandidates}, this is deliberately NOT length-gated).
      */
     List<CheckInEntity> findByCreatedByAndIdIn(UUID createdBy, Collection<UUID> ids);
+
+    /**
+     * Boop B3 (mezo-r36n9.13): makes sure the slot's row exists without ever raising a unique violation —
+     * a concurrent insert of the same slot makes this one wait for it and then do nothing. Returns 1 when
+     * this call created the row. Works inside a caller's transaction (no retry needed). The caller then
+     * reads the row back with {@link #findByCreatedByAndDateAndSlotTime} and fills it.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+        insert into check_in (created_by, date, slot_time, state)
+        values (:createdBy, :date, :slotTime, :state)
+        on conflict on constraint uq_check_in_created_by_date_slot do nothing
+        """, nativeQuery = true)
+    int insertSlotIfAbsent(@Param("createdBy") UUID createdBy, @Param("date") LocalDate date,
+                           @Param("slotTime") String slotTime, @Param("state") String state);
 }
