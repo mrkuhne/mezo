@@ -276,7 +276,7 @@ struct MaBelow: View {
                 GoalBlock(goal: ritmus.goal(on: today)?.text, suggestions: ritmus.goalSuggestions(brief: brief, date: today),
                           micEnabled: ritmus.recorder != nil,
                           onSet: { text in Task { await setGoal(text) } },
-                          onCsere: { Task { try? await ritmus.removeGoal(date: today) } },
+                          onCsere: { Task { await removeGoal() } },
                           onMic: goalMic)
                     .padding(.top, 14)
             }
@@ -306,7 +306,7 @@ struct MaBelow: View {
     private var napkozben: some View {
         let base = napkozbenStations(brief, now: ctx.now, evening: ctx.evening, hasProposals: !proposalsInPlan && !shown.isEmpty,
                                      reminder: ctx.reminder.isOn ? ctx.reminder.time : nil)
-        let stations = ledgerDay.map { ritmusStations(base, day: $0, calendar: ritmus?.calendar ?? .current) } ?? base
+        let stations = ledgerDay.map { ritmusStations(base, day: $0, now: ctx.now, calendar: ritmus?.calendar ?? .current) } ?? base
         return VStack(alignment: .leading, spacing: 14) {
             phaseHead(.napkozben, range: timelineSpan(stations) ?? "")
             if let ritmus, let day = ledgerDay {
@@ -327,7 +327,7 @@ struct MaBelow: View {
     }
 
     private func tap(_ st: PathStation) {
-        if let day = ledgerDay, let t = ritmusTap(st, day: day) {
+        if let day = ledgerDay, let t = ritmusTap(st, day: day, now: ctx.now, calendar: ritmus?.calendar ?? .current) {
             switch t {
             case .selectDot(let id): withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { curveSel = id }
             case .open(let cover): router?.open(cover)
@@ -365,6 +365,12 @@ struct MaBelow: View {
     private func setGoal(_ text: String) async {
         guard let ritmus else { return }
         do { try await ritmus.setGoal(text, date: today) } catch { ctx.toast("A telefon most nem tudta eltenni a célt") }
+    }
+
+    /// "csere": the shown goal goes; the field and the chips come back.
+    private func removeGoal() async {
+        guard let ritmus else { return }
+        do { try await ritmus.removeGoal(date: today) } catch { ctx.toast("A telefon most nem tudta eltenni a célt") }
     }
 
     /// One tap to talk, one to stop; the sentence becomes the goal.

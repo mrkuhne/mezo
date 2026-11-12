@@ -186,9 +186,13 @@ final class RitmusEnvironment {
                                 today: date, in: calendar)
     }
 
-    /// Fetches the last 30 days' goals the cache does not have yet (past days, fetched once), then joins the phone's own.
+    /// Fetches the 30 days before `today` that the cache does not have yet (past days, fetched once), then lists each
+    /// day's goal — the day's FIRST focus, as Boop shows it (the web's other foci are not Boop's goal); the phone's own
+    /// goal for a day wins over the fetched one.
     func refreshPastGoals(today: String) async {
-        let days = (1...30).compactMap { calendar.date(byAdding: .day, value: -$0, to: clock()) }.map(day(of:))
+        let p = today.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3, let anchor = calendar.date(from: DateComponents(year: p[0], month: p[1], day: p[2], hour: 12)) else { return }
+        let days = (1...30).compactMap { calendar.date(byAdding: .day, value: -$0, to: anchor) }.map(day(of:))
         var history = GoalHistory.load(goalHistoryFile)
         let missing = days.filter { history.days[$0] == nil }
         if let goalsSource, !missing.isEmpty, let fetched = try? await goalsSource(missing) {
@@ -196,13 +200,9 @@ final class RitmusEnvironment {
             history.days = history.days.filter { days.contains($0.key) }
             history.save(goalHistoryFile)
         }
-        var out: [PastGoal] = []
-        for d in days {
-            var texts = history.days[d] ?? []
-            if let own = ledger.ledger(for: d).currentGoal?.text, !texts.contains(own) { texts.append(own) }
-            out += texts.map { PastGoal(date: d, text: $0) }
+        pastGoals = days.compactMap { d in
+            (ledger.ledger(for: d).currentGoal?.text ?? history.days[d]?.first).map { PastGoal(date: d, text: $0) }
         }
-        pastGoals = out
     }
 
     /// Reads today's events from the phone's calendar.

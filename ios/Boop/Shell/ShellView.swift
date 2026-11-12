@@ -44,6 +44,8 @@ struct ShellView: View {
     @State private var account = false
     /// The daily loop's full-screen covers (B3): Ma's rows, the lens pill, "+" and the notifications ask for them.
     @State private var router = RitmusRouter.shared
+    /// The cover the "+" sheet asked for; it opens once the sheet has gone (two presentations never overlap).
+    @State private var coverAfterCapture: RitmusCover?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @State private var toast: String?
     /// A room is open over the page: the bar is hidden.
@@ -78,15 +80,15 @@ struct ShellView: View {
         .nkToast($toast)
         .preferredColorScheme(.dark)
         // page-level presentations (boop-ios.md §9)
-        .sheet(isPresented: $capturing) {
+        .sheet(isPresented: $capturing, onDismiss: {
+            if let cover = coverAfterCapture { coverAfterCapture = nil; router.open(cover) }
+        }) {
             CaptureSheet { pick in
-                capturing = false
                 switch pick {
-                case .cover(let cover):
-                    // the sheet leaves first, then the cover rises (two presentations never overlap)
-                    Task { try? await Task.sleep(for: .milliseconds(450)); router.open(cover) }
+                case .cover(let cover): coverAfterCapture = cover
                 case .soon(let name): toast = soonToast(name)
                 }
+                capturing = false
             }
                 .presentationDetents([.height(560), .large])
                 .presentationBackground(NK.ground)

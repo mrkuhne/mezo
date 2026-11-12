@@ -176,7 +176,7 @@ final class MaRitmusTests {
         let morning = LedgerCheckIn(id: UUID(), slot: "06:30", capturedAt: Self.at(7, 20),
                                     values: ["energy": 7, "mood": 8, "stress": 3, "body": 7])
         day.checkIns = [morning]
-        let st = ritmusStations(try stations(), day: day, calendar: Self.budapest)
+        let st = ritmusStations(try stations(), day: day, now: Self.at(13, 40), calendar: Self.budapest)
         let m = try #require(st.first { $0.id == "checkin-morning" })
         #expect(m.done && m.time == "07:20" && m.sub == "Energia 7 · hangulat 8 · feszültség 3" && m.action == nil)
         #expect(st.first { $0.id == "checkin-midday" }?.action == "Kitöltöm")
@@ -189,12 +189,66 @@ final class MaRitmusTests {
         var day = DayLedger(date: date)
         let morning = LedgerCheckIn(id: UUID(), slot: "06:30", capturedAt: Self.at(7, 20), values: ["energy": 7])
         day.checkIns = [morning]
-        let st = ritmusStations(try stations(), day: day, calendar: Self.budapest)
-        func tap(_ id: String) throws -> RitmusStationTap? { ritmusTap(try #require(st.first { $0.id == id }), day: day) }
+        let st = ritmusStations(try stations(), day: day, now: Self.at(13, 40), calendar: Self.budapest)
+        func tap(_ id: String) throws -> RitmusStationTap? {
+            ritmusTap(try #require(st.first { $0.id == id }), day: day, now: Self.at(13, 40), calendar: Self.budapest)
+        }
         #expect(try tap("checkin-morning") == .selectDot(morning.id))
         #expect(try tap("checkin-midday") == .open(.checkin))
         #expect(try tap("checkin-evening") == .open(.este))
         #expect(try tap("bedtime") == nil)
+        #expect(try tap("checkin-afternoon") == nil)        // a later moment: B2's drill-down
+    }
+
+    private func stations(at now: Date) throws -> [PathStation] {
+        napkozbenStations(try brief(), now: now, evening: false, hasProposals: false, calendar: Self.budapest)
+    }
+
+    @Test func aMissedEarlierMomentNeverOffersKitoltom() throws {
+        let now = Self.at(16)
+        var day = DayLedger(date: date)
+        day.checkIns = [LedgerCheckIn(id: UUID(), slot: "14:00", capturedAt: Self.at(15, 50), values: ["energy": 5])]
+        let st = ritmusStations(try stations(at: now), day: day, now: now, calendar: Self.budapest)
+        #expect(st.allSatisfy { $0.action == nil })         // morning missed, afternoon already in
+        let morning = try #require(st.first { $0.id == "checkin-morning" })
+        #expect(ritmusTap(morning, day: day, now: now, calendar: Self.budapest) == nil)
+    }
+
+    @Test func onlyTheCurrentMomentsRowOffersKitoltom() throws {
+        let now = Self.at(16)
+        let day = DayLedger(date: date)
+        let st = ritmusStations(try stations(at: now), day: day, now: now, calendar: Self.budapest)
+        #expect(st.filter { $0.action != nil }.map(\.id) == ["checkin-afternoon"])
+        let afternoon = try #require(st.first { $0.id == "checkin-afternoon" })
+        #expect(ritmusTap(afternoon, day: day, now: now, calendar: Self.budapest) == .open(.checkin))
+        let midday = try #require(st.first { $0.id == "checkin-midday" })
+        #expect(ritmusTap(midday, day: day, now: now, calendar: Self.budapest) == nil)
+    }
+
+    @Test func heroPillStopsOfferingKitoltomOnceThePhoneHasTheMoment() {
+        let pill = LensAction(glyph: "pen-sun", title: "Kitöltöm", kind: .checkin)
+        var day = DayLedger(date: date)
+        #expect(heroAction(pill, day: day, now: Self.at(8, 10), calendar: Self.budapest) == pill)
+        day.checkIns = [LedgerCheckIn(id: UUID(), slot: "06:30", capturedAt: Self.at(7, 20), values: ["energy": 7])]
+        #expect(heroAction(pill, day: day, now: Self.at(8, 10), calendar: Self.budapest) == nil)
+        #expect(heroAction(pill, day: day, now: Self.at(16), calendar: Self.budapest) == pill)   // the afternoon is still open
+        let walk = LensAction(glyph: "shoe-cream", title: "Séta indítása", kind: .workout)
+        #expect(heroAction(walk, day: day, now: Self.at(8, 10), calendar: Self.budapest) == walk)
+        #expect(heroAction(pill, day: nil, now: Self.at(8, 10), calendar: Self.budapest) == pill)
+    }
+
+    @Test func pastGoalsAreEachDaysFirstFocusOnly() async throws {
+        let source = GoalsSource(["2026-11-02": ["Meal prep a hétre", "Vizet inni"], "2026-10-26": ["Meal prep a hétre", "Vizet inni"]])
+        let env = environment(goals: source)
+        await env.refreshPastGoals(today: date)
+        #expect(env.pastGoals.map(\.text) == ["Meal prep a hétre", "Meal prep a hétre"])
+    }
+
+    @Test func pastGoalsFollowTheAskedDay() async throws {
+        let source = GoalsSource([:])
+        let env = environment(goals: source)
+        await env.refreshPastGoals(today: "2026-11-20")
+        #expect(source.calls.first?.first == "2026-11-19" && source.calls.first?.last == "2026-10-21")
     }
 
     @Test func filledCountIsTheDaysThreeMoments() {
