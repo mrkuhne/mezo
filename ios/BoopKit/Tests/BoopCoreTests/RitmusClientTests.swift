@@ -23,6 +23,7 @@ final class RitmusClientTests {
     }
 
     static let checkInOK = #"{"id":"0b6f3c1e-1111-4a2b-9c3d-222233334444","date":"2026-11-10","slotTime":"10:00","state":"done","savedAt":"2026-11-10T15:02:00Z"}"#
+    static let checkInDone = #"{"id":"0b6f3c1e-1111-4a2b-9c3d-222233334444","date":"2026-11-10","slotTime":"10:00","state":"done","energy":6,"savedAt":"2026-11-10T15:02:00Z"}"#
     static let closeOK = #"{"date":"2026-11-10","closedAt":"2026-11-10T20:30:00Z","planGoals":[],"source":"boop"}"#
     static let journalOK = #"{"id":"0b6f3c1e-1111-4a2b-9c3d-222233334444","occurredOn":"2026-11-10","text":"x","source":"boop","createdAt":"2026-11-10T20:31:00Z"}"#
     static let focusOK = #"{"id":"0b6f3c1e-1111-4a2b-9c3d-222233334444","focusDate":"2026-11-10","text":"Séta"}"#
@@ -275,6 +276,24 @@ final class RitmusClientTests {
         #expect(close.dayRating == nil && close.web == true)
         #expect(close.journalText == "Fáradt vagyok." && close.boopLine == "Szép nap.")
         #expect(close.planGoals == [PlanGoalPayload(id: "protein", title: "150 g fehérje", result: "146 g", met: false)])
+    }
+
+    @Test func fetchNaploReadsTheClosesOnceAndEveryDaysCheckIns() async throws {
+        stub.on("listDayCloses", .json(200, "[" + #"{"date":"2026-11-10","closedAt":"2026-11-10T20:30:00Z","dayRating":null,"planGoals":[],"journalText":"Fáradt vagyok.","source":"web"}"# + "]"))
+        for _ in 0..<3 { stub.on("listCheckInsForDay", .json(200, "[" + Self.checkInDone + "]")) }
+        let days = try await ritmus.fetchNaplo(from: "2026-11-09", to: "2026-11-11")
+        #expect(days.map(\.date) == ["2026-11-09", "2026-11-10", "2026-11-11"])
+        #expect(days[1].close?.web == true && days[1].close?.dayRating == nil)
+        #expect(days[0].close == nil)
+        #expect(days.allSatisfy { $0.checkIns.count == 1 })
+        #expect(stub.ops.filter { $0 == "listDayCloses" }.count == 1 && stub.ops.filter { $0 == "listCheckInsForDay" }.count == 3)
+        let path = try #require(stub.sent.first { $0.op == "listDayCloses" }?.path)
+        #expect(path.contains("from=2026-11-09") && path.contains("to=2026-11-11"))
+    }
+
+    @Test func fetchNaploWithoutNetIsOffline() async {
+        stub.on("listDayCloses", .fail(URLError(.notConnectedToInternet)))
+        await #expect(throws: RitmusFetchError.offline) { try await ritmus.fetchNaplo(from: "2026-11-09", to: "2026-11-11") }
     }
 
     @Test func chatQuestionCreatesBoopConversationThenSends() async throws {

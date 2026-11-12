@@ -229,38 +229,7 @@ struct EsteView: View {
             .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
             .accessibilityElement(children: .combine)
 
-            VStack(alignment: .leading, spacing: 12) {
-                NKMono("A MAI NAPOD")
-                ForEach(flow.summaryRows, id: \.label) { row in
-                    HStack {
-                        Text(row.label).nkFont(15).foregroundStyle(.white.opacity(0.7))
-                        Spacer()
-                        Text(row.value).nkFont(15, .medium).foregroundStyle(.white)
-                    }
-                    .accessibilityElement(children: .combine)
-                }
-                if let quote = flow.journalQuote {
-                    Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
-                    switch quote {
-                    case .text(let t):
-                        Text("„\(t)”").nkFont(16, design: .serif).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
-                    case .waitingForTranscript:
-                        Text("Hangfelvétel · szöveggé alakítom, amint lesz net").nkFont(14).foregroundStyle(.white.opacity(0.8))
-                    case .transcriptFailed:
-                        HStack {
-                            Text("Hangfelvétel · nem sikerült leírni").nkFont(14).foregroundStyle(.white.opacity(0.8))
-                            Spacer()
-                            Button { Task { await flow.retryVoice() } } label: {
-                                Text("Újra").nkFont(14, .semibold).foregroundStyle(.white)
-                                    .padding(.horizontal, 14).frame(height: 32)
-                                    .background(Capsule().fill(.white.opacity(0.12)))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
-            .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
+            ClosedDayCard(rows: flow.summaryRows, quote: flow.journalQuote) { Task { await flow.retryVoice() } }
 
             if let bedtime = flow.bedtimeLine {
                 HStack(spacing: 12) {

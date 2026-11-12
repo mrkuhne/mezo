@@ -21,6 +21,7 @@ final class RitmusEnvironment {
     @ObservationIgnored private let snapshotSource: @Sendable (Date) async -> CheckInSnapshotValue
     @ObservationIgnored private let planSource: (@Sendable (String) async throws -> [String: CheckInPlanLite])?
     @ObservationIgnored private let daySource: (@Sendable (String) async throws -> ServerDay)?
+    @ObservationIgnored private let naploSource: (@Sendable (_ from: String, _ to: String) async throws -> [ServerDay])?
     @ObservationIgnored private let goalsSource: (@Sendable ([String]) async throws -> [String: [String]])?
     @ObservationIgnored private let eventsSource: (@Sendable (Date) async -> [CalendarEventLite])?
     @ObservationIgnored private let closeLineSource: (@Sendable (String) async throws -> String)?
@@ -60,6 +61,7 @@ final class RitmusEnvironment {
          events: (@Sendable (Date) async -> [CalendarEventLite])? = nil,
          closeLine: (@Sendable (String) async throws -> String)? = nil,
          transcribe: (@Sendable (URL) async throws -> String)? = nil,
+         naplo: (@Sendable (String, String) async throws -> [ServerDay])? = nil,
          clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current) {
         let ledger = LedgerStore(directory: ledgerDirectory)
         self.ledger = ledger
@@ -71,7 +73,7 @@ final class RitmusEnvironment {
         self.clock = clock
         lineSource = line; snapshotSource = snapshot; planSource = plans
         daySource = day; goalsSource = goals; eventsSource = events; closeLineSource = closeLine
-        transcribeSource = transcribe
+        transcribeSource = transcribe; naploSource = naplo
         self.outboxDirectory = outboxDirectory
         userDirectory = ledgerDirectory.deletingLastPathComponent()
         goalHistoryFile = userDirectory.appendingPathComponent("goal-history.json")
@@ -126,7 +128,8 @@ final class RitmusEnvironment {
             goals: { dates in try await ritmus.fetchGoals(dates) },
             events: { day in await todaysEvents(calendarReader, day: day) },
             closeLine: { date in try await ritmus.line(date) },
-            transcribe: { file in try await ritmus.transcribe(file) })
+            transcribe: { file in try await ritmus.transcribe(file) },
+            naplo: { from, to in try await ritmus.fetchNaplo(from: from, to: to) })
         env.attachChat(client: client, sender: ritmus)
         env.watchNetwork()
         // Records into the outbox folder, where the `voice` sender looks for the files.
@@ -257,6 +260,18 @@ final class RitmusEnvironment {
         let fetchedAt = clock()
         guard let server = try? await daySource(date) else { return }
         ledger.merge(server: server, fetchedAt: fetchedAt)
+    }
+
+    /// The last days for the Napló list: the server's closes and check-ins merged into the day files (what is pending on
+    /// the phone wins), so the list can be drawn again offline from what was seen. Quietly nothing offline.
+    func refreshNaplo() async {
+        guard let naploSource else { return }
+        let range = NaploDays.range(endingOn: today)
+        let fetchedAt = clock()
+        guard let days = try? await naploSource(range.from, range.to) else { return }
+        for server in days where !server.checkIns.isEmpty || server.close != nil || ledger.days[server.date] != nil {
+            ledger.merge(server: server, fetchedAt: fetchedAt)
+        }
     }
 
     /// Follows the phone's network path (a field's mic needs the net when the phone cannot transcribe itself).

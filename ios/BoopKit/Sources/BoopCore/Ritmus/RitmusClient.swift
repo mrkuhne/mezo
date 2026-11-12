@@ -324,17 +324,43 @@ public struct RitmusClient: OutboxSender {
             }
             switch try await client.getDayClose(path: .init(date: date)) {
             case .ok(let ok):
-                let c = try ok.body.json
-                day.close = LedgerClose(id: Self.stableId("close-\(date)"), capturedAt: c.closedAt, eveningEnergy: c.eveningEnergy,
-                                        dayRating: c.dayRating, goalText: c.goalText, goalOutcome: c.goalOutcome?.rawValue,
-                                        planGoals: c.planGoals.map { PlanGoalPayload(id: $0.id, title: $0.title, result: $0.result, met: $0.met) },
-                                        journalText: c.journalText, boopLine: c.boopLine, web: c.source == .web)
+                day.close = Self.ledgerClose(try ok.body.json, date: date)
             case .notFound: break
             case .unauthorized: throw RitmusFetchError.unauthorized
             case .undocumented: throw RitmusFetchError.server
             }
         } catch { throw Self.fetchError(error) }
         return day
+    }
+
+    /// The days `from…to` as the server has them, for the Napló list: the closes in one call, each day's done check-ins
+    /// in parallel (a day with neither comes back empty). Throws `RitmusFetchError`.
+    public func fetchNaplo(from: String, to: String) async throws -> [ServerDay] {
+        let dates = NaploDays.days(from: from, to: to)
+        do {
+            var closes: [String: LedgerClose] = [:]
+            switch try await client.listDayCloses(query: .init(from: from, to: to)) {
+            case .ok(let ok): for c in try ok.body.json { closes[c.date] = Self.ledgerClose(c, date: c.date) }
+            case .unauthorized: throw RitmusFetchError.unauthorized
+            case .badRequest, .undocumented: throw RitmusFetchError.server
+            }
+            let client = client
+            let checkIns = try await withThrowingTaskGroup(of: (String, [LedgerCheckIn]).self) { group in
+                for date in dates {
+                    group.addTask {
+                        switch try await client.listCheckInsForDay(query: .init(date: date)) {
+                        case .ok(let ok): return (date, try ok.body.json.filter { $0.state == "done" }.map(Self.ledgerCheckIn))
+                        case .unauthorized: throw RitmusFetchError.unauthorized
+                        case .undocumented: throw RitmusFetchError.server
+                        }
+                    }
+                }
+                var out: [String: [LedgerCheckIn]] = [:]
+                for try await (date, list) in group { out[date] = list }
+                return out
+            }
+            return dates.map { ServerDay(date: $0, checkIns: checkIns[$0] ?? [], close: closes[$0]) }
+        } catch { throw Self.fetchError(error) }
     }
 
     /// Every focus text of the given days (date → texts in order), for the "N napja nem volt" goal chips.
@@ -409,6 +435,13 @@ public struct RitmusClient: OutboxSender {
         case nil: break
         }
         return isNetworkFailure(error) ? .offline : .server
+    }
+
+    private static func ledgerClose(_ c: Components.Schemas.DayCloseResponse, date: String) -> LedgerClose {
+        LedgerClose(id: stableId("close-\(date)"), capturedAt: c.closedAt, eveningEnergy: c.eveningEnergy,
+                    dayRating: c.dayRating, goalText: c.goalText, goalOutcome: c.goalOutcome?.rawValue,
+                    planGoals: c.planGoals.map { PlanGoalPayload(id: $0.id, title: $0.title, result: $0.result, met: $0.met) },
+                    journalText: c.journalText, boopLine: c.boopLine, web: c.source == .web)
     }
 
     private static func ledgerCheckIn(_ c: Components.Schemas.CheckInResponse) -> LedgerCheckIn {
