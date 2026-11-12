@@ -7,12 +7,30 @@ import BoopCore
 private actor CloseSender: OutboxSender {
     private(set) var sent: [OutboxItem] = []
     private var offline = false
+    private var voiceFails = false
     func send(_ item: OutboxItem) async -> OutboxSendResult {
         if offline { return .retryLater }
+        if item.kind == .voice {
+            if voiceFails { return .failed("no speech in the recording") }
+            sent.append(item)
+            return .sent(RitmusPayload.encode(VoiceTranscript(text: "Jól ment a nap.")))
+        }
         sent.append(item)
         return .sent(nil)
     }
     func set(offline: Bool) { self.offline = offline }
+    func set(voiceFails: Bool) { self.voiceFails = voiceFails }
+}
+
+/// Remembers which kept recordings were thrown away.
+@MainActor
+private final class DiscardingRecorder: VoiceNoteRecorder {
+    var transcribesOnDevice = false
+    var speechDenied = false
+    private(set) var discarded: [String] = []
+    func start() async throws {}
+    func stop() async -> VoiceCapture? { nil }
+    func discard(_ capture: VoiceCapture) { if case .recording(let n) = capture { discarded.append(n) } }
 }
 
 /// The one-minute evening close (B3 Task 10, spec §5.4, §6, §7.4) at view-model level.
@@ -29,12 +47,12 @@ final class EsteFlowTests {
     private let sender = CloseSender()
     deinit { try? FileManager.default.removeItem(at: root) }
 
-    private func environment(line: String = "Jó nap volt: a prezentáció sikerült.") -> RitmusEnvironment {
-        let now = Self.at(21, 32)
-        return RitmusEnvironment(
+    private func environment(line: String? = "Jó nap volt: a prezentáció sikerült.", now: Date = at(21, 32)) -> RitmusEnvironment {
+        RitmusEnvironment(
             ledgerDirectory: root.appendingPathComponent("ledger"), outboxDirectory: root.appendingPathComponent("outbox"),
             sender: sender, line: { _, _ in "" }, snapshot: { _ in CheckInSnapshotValue() }, plans: nil,
-            closeLine: { _ in line }, clock: { now }, calendar: Self.budapest)
+            closeLine: { _ in guard let line else { throw RitmusFetchError.unavailable }; return line },
+            clock: { now }, calendar: Self.budapest)
     }
 
     private func brief(session: String = "null", bedtime: String = #""22:45""#, protein: Int = 146) throws -> Brief {
@@ -218,6 +236,96 @@ final class EsteFlowTests {
         #expect(f.showsSummary)
         #expect(f.summaryRows.first?.label == "Értékelés" && f.summaryRows.first?.value == "–")
         #expect(f.journalQuote == .text("Fáradt vagyok."))
+    }
+
+    // MARK: - Review round 1
+
+    @Test func closeOpenedAfterMidnightBelongsToTheDayBefore() async throws {
+        let late = Self.budapest.date(from: DateComponents(year: 2026, month: 11, day: 13, hour: 0, minute: 30))!
+        let env = environment(now: late)
+        let f = EsteFlow(env: env, brief: nil)
+        #expect(f.date == "2026-11-12")
+        f.pickRating(3)
+        await f.closeDay()
+        #expect(env.ledger.ledger(for: "2026-11-12").close != nil)
+        #expect(await sender.sent.first { $0.kind == .dayClose }?.date == "2026-11-12")
+        let early = Self.budapest.date(from: DateComponents(year: 2026, month: 11, day: 13, hour: 4, minute: 0))!
+        #expect(EsteFlow(env: environment(now: early), brief: nil).date == "2026-11-13")
+    }
+
+    @Test func failedSaveLeavesTheDayAsItWas() async throws {
+        // the queue file cannot be written (a folder sits where it would go)
+        try FileManager.default.createDirectory(at: root.appendingPathComponent("outbox/queue.json"), withIntermediateDirectories: true)
+        let env = environment()
+        let f = EsteFlow(env: env, brief: nil)
+        f.pickRating(4)
+        f.typed("Fáradt vagyok.")
+        await f.closeDay()
+        let day = env.ledger.ledger(for: date)
+        #expect(day.close == nil && day.journal.isEmpty)
+        #expect(f.saveProblem != nil)
+        #expect(!f.showsSummary)
+        #expect(await env.outbox.pending.isEmpty)
+        #expect(f.journal == .typed("Fáradt vagyok.") && f.rating == 4)   // the answers stay for another try
+    }
+
+    @Test func reCloseForgetsTheOldSentenceEvenOffline() async throws {
+        let env = environment()
+        let f = try await flow(env, goal: nil)
+        f.pickRating(4)
+        await f.closeDay()
+        #expect(env.closeLines[date] != nil)
+        f.reopen()
+        await sender.set(offline: true)
+        f.pickRating(2)
+        await f.closeDay()
+        #expect(env.closeLines[date] == nil)
+        #expect(f.boopText == EsteFlow.offlineLine)
+    }
+
+    @Test func waitingLineIsBoopsOwn() async throws {
+        let f = try await flow(environment(line: nil), goal: nil)
+        f.pickRating(4)
+        await f.closeDay()
+        #expect(f.boopText == "Mindjárt írok egy mondatot a napodról.")
+    }
+
+    @Test func replacedOrAbandonedRecordingIsDiscarded() async throws {
+        let env = environment()
+        let recorder = DiscardingRecorder()
+        env.recorder = recorder
+        let f = EsteFlow(env: env, brief: nil)
+        f.recorded(.recording(fileName: "a.m4a"))
+        f.recorded(.recording(fileName: "b.m4a"))       // re-recorded
+        f.typed("Inkább leírom.")                      // typed instead
+        #expect(recorder.discarded == ["a.m4a", "b.m4a"])
+        f.recorded(.recording(fileName: "c.m4a"))
+        f.abandon()                                    // the cover closed without closing the day
+        #expect(recorder.discarded == ["a.m4a", "b.m4a", "c.m4a"])
+        f.recorded(.recording(fileName: "d.m4a"))
+        f.pickRating(4)
+        await f.closeDay()
+        f.abandon()                                    // now the queue owns it
+        #expect(!recorder.discarded.contains("d.m4a"))
+    }
+
+    @Test func failedRecordingShowsRetry() async throws {
+        let env = environment()
+        let f = EsteFlow(env: env, brief: nil)
+        await sender.set(voiceFails: true)
+        f.pickRating(4)
+        f.recorded(.recording(fileName: "v.m4a"))
+        await f.closeDay()
+        #expect(f.journalQuote == .transcriptFailed)
+        await sender.set(voiceFails: false)
+        await f.retryVoice()
+        #expect(f.journalQuote == .text("Jól ment a nap."))
+    }
+
+    @Test func emptyTypedTextIsNotSaved() async throws {
+        let f = EsteFlow(env: environment(), brief: nil)
+        #expect(!f.typed("   "))
+        #expect(f.journal == nil && !f.stepsDone[3])
     }
 
     @Test func bedtimeLineFollowsTheTarget() async throws {

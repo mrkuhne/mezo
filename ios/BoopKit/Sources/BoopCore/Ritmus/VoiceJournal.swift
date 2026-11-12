@@ -12,6 +12,8 @@ public enum VoiceCapture: Equatable, Sendable {
 public enum VoiceJournalError: Error, Equatable {
     /// The owner said no to the microphone (Settings can change it).
     case microphoneDenied
+    /// The phone's recogniser did not answer in time (the recording then goes the upload way).
+    case timedOut
 }
 
 /// The microphone, behind a seam (tests write a fake file).
@@ -42,17 +44,26 @@ public final class VoiceJournal {
     private let directory: URL
     private let recorder: AudioRecording
     private let transcriber: SpeechTranscribing
+    private let timeout: Duration
     private var current: URL?
+    /// The owner said no to speech recognition at the last stop (the recording was kept instead).
+    public private(set) var speechDenied = false
 
-    public init(directory: URL, recorder: AudioRecording? = nil, transcriber: SpeechTranscribing = OnDeviceSpeech()) {
+    /// `timeout`: how long the on-device recogniser may take before the recording goes the upload way.
+    public init(directory: URL, recorder: AudioRecording? = nil, transcriber: SpeechTranscribing = OnDeviceSpeech(),
+                timeout: Duration = .seconds(30)) {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         self.directory = directory
         self.recorder = recorder ?? SystemAudioRecorder()
         self.transcriber = transcriber
+        self.timeout = timeout
     }
 
     /// True when a transcript can come back right away (no net needed).
     public var transcribesOnDevice: Bool { transcriber.supportsOnDevice }
+
+    /// Where the recordings are (the outbox folder).
+    public var folder: URL { directory }
 
     /// Starts a new recording (asks for the microphone the first time).
     public func start() async throws {
@@ -66,10 +77,20 @@ public final class VoiceJournal {
     /// Stops; the transcript when the phone could write it, else the kept recording (nil: nothing was recorded).
     public func stop() async -> VoiceCapture? {
         guard let url = stopRecorder(), FileManager.default.fileExists(atPath: url.path) else { return nil }
-        if transcriber.supportsOnDevice, await transcriber.authorize(),
-           let text = try? await transcriber.transcribe(url).trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
-            try? FileManager.default.removeItem(at: url)
-            return .transcript(text)
+        speechDenied = false
+        if transcriber.supportsOnDevice {
+            if await transcriber.authorize() {
+                let transcriber = transcriber
+                if let raw = try? await Self.first(within: timeout, { try await transcriber.transcribe(url) }) {
+                    let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !text.isEmpty {
+                        try? FileManager.default.removeItem(at: url)
+                        return .transcript(text)
+                    }
+                }
+            } else {
+                speechDenied = true
+            }
         }
         return .recording(fileName: url.lastPathComponent)
     }
@@ -78,6 +99,27 @@ public final class VoiceJournal {
     public func discard(_ capture: VoiceCapture) {
         guard case .recording(let name) = capture else { return }
         try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
+    }
+
+    /// The operation's answer, or `timedOut` after `limit` (the operation is cancelled and its late answer ignored).
+    static func first<T: Sendable>(within limit: Duration, _ operation: @escaping @Sendable () async throws -> T) async throws -> T {
+        let once = Resumed()
+        return try await withCheckedThrowingContinuation { (c: CheckedContinuation<T, Error>) in
+            let work = Task {
+                do { let v = try await operation(); if once.claim() { c.resume(returning: v) } }
+                catch { if once.claim() { c.resume(throwing: error) } }
+            }
+            Task {
+                try? await Task.sleep(for: limit)
+                if once.claim() { work.cancel(); c.resume(throwing: VoiceJournalError.timedOut) }
+            }
+        }
+    }
+
+    private final class Resumed: @unchecked Sendable {
+        private let lock = NSLock()
+        private var done = false
+        func claim() -> Bool { lock.withLock { defer { done = true }; return !done } }
     }
 
     @discardableResult

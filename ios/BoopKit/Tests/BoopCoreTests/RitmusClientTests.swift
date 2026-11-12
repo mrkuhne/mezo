@@ -250,6 +250,16 @@ final class RitmusClientTests {
         #expect(FileManager.default.fileExists(atPath: audio.path))
     }
 
+    @Test func directTranscriptionReturnsTheTextAndQueuesNothing() async throws {
+        let audio = dir.appendingPathComponent("goal.m4a")
+        try Data("fake-audio".utf8).write(to: audio)
+        stub.on("transcribeVoiceNote", .json(200, #"{"text":" Ügyfélprezentáció "}"#))
+        #expect(try await ritmus.transcribe(audio) == "Ügyfélprezentáció")
+        #expect(stub.ops == ["transcribeVoiceNote"])
+        stub.on("transcribeVoiceNote", .fail(URLError(.notConnectedToInternet)))
+        await #expect(throws: RitmusFetchError.offline) { try await ritmus.transcribe(audio) }
+    }
+
     @Test func oldVoicePayloadDecodesAsJournal() {
         let old = Data(#"{"fileName":"memo.m4a"}"#.utf8)
         #expect(RitmusPayload.decode(VoicePayload.self, from: old) == VoicePayload(fileName: "memo.m4a", target: .journal))

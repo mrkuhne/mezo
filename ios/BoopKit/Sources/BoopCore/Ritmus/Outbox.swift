@@ -103,6 +103,12 @@ public actor Outbox {
         try persist()
     }
 
+    /// Takes an item back out of the queue (a capture the phone could not keep as a whole is undone).
+    public func remove(_ id: UUID) {
+        items.removeAll { $0.id == id }
+        save()
+    }
+
     /// "Újra": the failed item gets a fresh start and the queue is flushed.
     public func retry(_ id: UUID) async {
         guard let i = items.firstIndex(where: { $0.id == id && $0.failure != nil }) else { return }

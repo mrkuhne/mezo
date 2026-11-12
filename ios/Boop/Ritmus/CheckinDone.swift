@@ -125,7 +125,7 @@ struct CheckinDone: View {
             micProblem = nil
             Task {
                 do { try await recorder.start(); voice = .recording(seconds: 0); tick() }
-                catch { voice = .idle; micProblem = EsteView.micDenied }
+                catch { voice = .idle; micProblem = MicCopy.line(for: error) }
             }
         case .recording:
             voice = .transcribing

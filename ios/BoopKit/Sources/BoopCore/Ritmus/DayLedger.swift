@@ -213,6 +213,11 @@ public final class LedgerStore {
         }
     }
 
+    /// Takes a journal line back out (a close the phone could not keep as a whole is undone).
+    public func removeJournal(_ id: UUID, date: String) throws {
+        try update(date) { $0.journal.removeAll { $0.id == id } }
+    }
+
     // Background updates: nobody can react to a write failure here; it is logged and the state stays in memory.
 
     public func cachePlans(_ plans: [CheckInPlanLite], date: String) {

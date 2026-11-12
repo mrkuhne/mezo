@@ -73,6 +73,70 @@ final class MaRitmusTests {
         }
     }
 
+    // MARK: - The goal field's voice (Task 10 review round 1)
+
+    @MainActor private final class GoalRecorder: VoiceNoteRecorder {
+        var transcribesOnDevice: Bool
+        var speechDenied = false
+        init(onDevice: Bool) { transcribesOnDevice = onDevice }
+        func start() async throws {}
+        func stop() async -> VoiceCapture? { nil }
+        func discard(_ capture: VoiceCapture) {}
+    }
+
+    private func voiceEnvironment(transcribe: (@Sendable (URL) async throws -> String)?) -> RitmusEnvironment {
+        let now = Self.at(8, 10)
+        return RitmusEnvironment(
+            ledgerDirectory: root.appendingPathComponent("ledger"), outboxDirectory: root.appendingPathComponent("outbox"),
+            sender: sender, line: { _, _ in "" }, snapshot: { _ in CheckInSnapshotValue() }, plans: nil,
+            transcribe: transcribe, clock: { now }, calendar: Self.budapest)
+    }
+
+    private func keptRecording(in env: RitmusEnvironment) throws -> (VoiceCapture, URL) {
+        try FileManager.default.createDirectory(at: env.outboxDirectory, withIntermediateDirectories: true)
+        let url = env.outboxDirectory.appendingPathComponent("voice-goal.m4a")
+        try Data("audio".utf8).write(to: url)
+        return (.recording(fileName: "voice-goal.m4a"), url)
+    }
+
+    @Test func goalVoiceOnDeviceFillsTheField() async {
+        let env = voiceEnvironment(transcribe: nil)
+        #expect(env.goalMicAvailable(GoalRecorder(onDevice: true)))
+        #expect(await env.heardGoal(.transcript("Séta ebéd után"), speechDenied: false) == .text("Séta ebéd után"))
+    }
+
+    @Test func goalVoiceOnlineWithoutOnDeviceAsksTheServerDirectly() async throws {
+        let env = voiceEnvironment(transcribe: { _ in " Ügyfélprezentáció " })
+        #expect(env.goalMicAvailable(GoalRecorder(onDevice: false)))
+        let (capture, url) = try keptRecording(in: env)
+        #expect(await env.heardGoal(capture, speechDenied: false) == .text("Ügyfélprezentáció"))
+        #expect(!FileManager.default.fileExists(atPath: url.path))       // nothing kept,
+        #expect(await env.outbox.pending.isEmpty)                         // nothing queued
+    }
+
+    @Test func goalVoiceOfflineWithoutOnDeviceIsDimmedWithAHint() async throws {
+        let env = voiceEnvironment(transcribe: { _ in throw RitmusFetchError.offline })
+        env.online = false
+        #expect(!env.goalMicAvailable(GoalRecorder(onDevice: false)))
+        #expect(env.goalMicAvailable(GoalRecorder(onDevice: true)))
+        env.online = true                                                 // the path said yes, the request found no net
+        let (capture, url) = try keptRecording(in: env)
+        #expect(await env.heardGoal(capture, speechDenied: false) == .problem(RitmusEnvironment.goalOfflineHint))
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test func goalVoiceSpeechDeniedOfflineSaysSo() async throws {
+        let env = voiceEnvironment(transcribe: nil)
+        let (capture, _) = try keptRecording(in: env)
+        #expect(await env.heardGoal(capture, speechDenied: true) == .problem(RitmusEnvironment.speechDenied))
+    }
+
+    @Test func micCopyTellsDenialFromFailure() {
+        struct Boom: Error {}
+        #expect(MicCopy.line(for: VoiceJournalError.microphoneDenied) == MicCopy.denied)
+        #expect(MicCopy.line(for: Boom()) == "Most nem sikerült elindítani a felvételt.")
+    }
+
     // MARK: - The goal of the day
 
     @Test func goalIsKeptOnThePhoneAndQueuedWithItsClientRef() async throws {

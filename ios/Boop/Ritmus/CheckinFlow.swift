@@ -300,6 +300,9 @@ final class CheckinFlow {
         do {
             try await env.outbox.enqueue(item)
         } catch {
+            // not kept: the item and its recording go (the row is back to idle for another try)
+            await env.outbox.remove(item.id)
+            env.recorder?.discard(.recording(fileName: fileName))
             saveProblem = "Nem sikerült elmenteni a felvételt. Próbáld újra."
             return .failed
         }

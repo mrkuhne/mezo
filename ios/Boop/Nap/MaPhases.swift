@@ -278,7 +278,8 @@ struct MaBelow: View {
                 GoalBlock(goal: ritmus.goal(on: today)?.text, suggestions: ritmus.goalSuggestions(brief: brief, date: today),
                           draft: $goalDraft,
                           // only a transcript written on the phone fits a one-line field; without it, typing only
-                          micEnabled: ritmus.recorder?.transcribesOnDevice == true, recording: goalRecording,
+                          micEnabled: ritmus.goalMicAvailable(ritmus.recorder), recording: goalRecording,
+                          micHint: ritmus.recorder != nil && !ritmus.goalMicAvailable(ritmus.recorder) ? RitmusEnvironment.goalOfflineHint : nil,
                           onSet: { text in Task { await setGoal(text) } },
                           onCsere: { Task { await removeGoal() } },
                           onMic: goalMic)
@@ -377,23 +378,23 @@ struct MaBelow: View {
         do { try await ritmus.removeGoal(date: today) } catch { ctx.toast("A telefon most nem tudta eltenni a célt") }
     }
 
-    /// One tap to talk, one to stop; what the phone heard fills the field (the owner sends it). A recording the phone
-    /// could not write down is thrown away with a short toast — the goal field has no upload path.
+    /// One tap to talk, one to stop; what was heard fills the field (the owner sends it): the phone's transcript, or —
+    /// online, when the phone cannot write Hungarian itself — the server's, asked for directly (nothing is queued).
     private func goalMic() {
-        guard let recorder = ritmus?.recorder else { return }
+        guard let ritmus, let recorder = ritmus.recorder else { return }
         if !goalRecording {
             Task {
                 do { try await recorder.start(); goalRecording = true }
-                catch { goalRecording = false; ctx.toast("A mikrofon nincs engedélyezve") }
+                catch { goalRecording = false; ctx.toast(MicCopy.line(for: error)) }
             }
             return
         }
         goalRecording = false
         Task {
-            switch await recorder.stop() {
-            case .transcript(let text)?: goalDraft = text
-            case let kept?: recorder.discard(kept); ctx.toast("Nem értettem — írd be inkább")
-            case nil: break
+            guard let capture = await recorder.stop() else { return }
+            switch await ritmus.heardGoal(capture, speechDenied: recorder.speechDenied) {
+            case .text(let text): goalDraft = text
+            case .problem(let line): ctx.toast(line)
             }
         }
     }
