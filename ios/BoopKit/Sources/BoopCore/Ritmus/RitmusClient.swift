@@ -338,7 +338,12 @@ public struct RitmusClient: OutboxSender {
             id: UUID(uuidString: c.id) ?? stableId("checkin-\(c.id)"), slot: c.slotTime, capturedAt: c.savedAt, values: values,
             pain: c.pain, painRegions: (c.painRegions ?? []).map(\.rawValue), painIntensity: c.painIntensity,
             cravingKinds: (c.cravingKinds ?? []).map(\.rawValue), askedItems: (c.askedItems ?? []).map(\.rawValue),
-            quickExit: c.quickExit ?? false, note: c.note)
+            quickExit: c.quickExit ?? false, note: c.note,
+            snapshot: c.snapshot.flatMap { s in
+                let v = CheckInSnapshotValue(hrBpm: s.hrBpm, hrAt: s.hrAt, hrvMs: s.hrvMs, hrvAt: s.hrvAt, hrvUsualMs: s.hrvUsualMs,
+                                             steps: s.steps, sleepMinutes: s.sleepMinutes, source: s.source)
+                return v.isEmpty ? nil : v
+            })
     }
 
     /// A UUID derived from a string, for server rows that carry no id of their own (the close of a day).

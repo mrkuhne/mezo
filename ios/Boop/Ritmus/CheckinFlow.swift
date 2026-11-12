@@ -30,8 +30,10 @@ final class CheckinFlow {
     /// One swipe step on the orb, in points.
     static let stepHeight: Double = 26
 
-    let date: String
-    let moment: CheckInMoment
+    /// The day and the moment shown at open; saving re-decides both from the capture time (spec §7.2), so a check-in
+    /// opened at 14:29 and saved at 14:31 is délután, and one saved after midnight belongs to the new day.
+    private(set) var date: String
+    private(set) var moment: CheckInMoment
     let openedAt: Date
     /// "A délit már kitöltötted 12:40-kor — felülírod?" when this moment's slot is already done today.
     let overwriteNotice: String?
@@ -204,13 +206,16 @@ final class CheckinFlow {
         guard saved == nil, !saving else { return }
         saving = true
         saveProblem = nil
+        let capturedAt = env.clock()
+        // The slot and the day are the capture's (the phone's clock at saving), not the opening's.
+        moment = CheckInMoment.moment(at: capturedAt, calendar: env.calendar)
+        date = env.day(of: capturedAt)
         let shown = Array(questions.prefix(index + 1))
         let asked = shown.map(\.key)
         let painAsked = asked.contains("pain")
         let painIntensity = painAsked && pain == true ? (draft["pain"] ?? answers["pain"] ?? startValues["pain"] ?? 5) : nil
         var values = answers.filter { asked.contains($0.key) }
         values["pain"] = nil
-        let capturedAt = env.clock()
         let snapshot = await env.snapshot(at: capturedAt)
         let payload = CheckInPayload(
             slot: moment.slotId, values: values, pain: painAsked ? pain : nil,
@@ -221,7 +226,7 @@ final class CheckinFlow {
         let checkIn = LedgerCheckIn(
             id: UUID(), slot: payload.slot, capturedAt: capturedAt, values: values, pain: payload.pain,
             painRegions: payload.painRegions, painIntensity: payload.painIntensity, cravingKinds: payload.cravingKinds,
-            askedItems: asked, quickExit: quickExit)
+            askedItems: asked, quickExit: quickExit, snapshot: payload.snapshot)
         do {
             try await env.capture(checkIn, payload: payload, date: date)
         } catch {
@@ -254,20 +259,24 @@ final class CheckinFlow {
     }
 
     /// The optional sentence after saving: the check-in's `note`, sent as a follow-up of the same slot carrying every
-    /// value again (same client ref and moment, so the pending dot clears and does not move).
-    func addNote(_ text: String) async {
+    /// value again (same client ref and moment, so the pending dot clears and does not move). False when the phone
+    /// could not keep it (`saveProblem` says so) — the row must not show it as saved.
+    @discardableResult
+    func addNote(_ text: String) async -> Bool {
         let note = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !note.isEmpty, var s = saved else { return }
+        guard !note.isEmpty, var s = saved else { return false }
+        saveProblem = nil
         s.checkIn.note = note
         s.payload.note = note
         do {
             try await env.capture(s.checkIn, payload: s.payload, kind: .checkInNote, date: s.date)
         } catch {
             saveProblem = "Nem sikerült elmenteni a mondatot. Próbáld újra."
-            return
+            return false
         }
         saved = s
         if !(await env.deliver(s.checkIn.id)), await env.isWaiting(s.checkIn.id) { offline = true }
+        return true
     }
 
     #if DEBUG

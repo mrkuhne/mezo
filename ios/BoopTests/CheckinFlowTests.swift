@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import BoopCore
+import BoopDesign
 @testable import Boop
 
 /// A settable clock the environment reads through its injected closure.
@@ -24,6 +25,18 @@ private actor RecordingSender: OutboxSender {
     func goOffline() { offline = true }
 }
 
+/// Holds every send until the test lets it go (one at a time).
+private actor GatedSender: OutboxSender {
+    private(set) var started = 0
+    private var gates: [CheckedContinuation<Void, Never>] = []
+    func send(_ item: OutboxItem) async -> OutboxSendResult {
+        started += 1
+        await withCheckedContinuation { gates.append($0) }
+        return .sent(nil)
+    }
+    func releaseOne() { if !gates.isEmpty { gates.removeFirst().resume() } }
+}
+
 /// The check-in flow (B3 Task 8, spec §5.2/§6/§7.2) at view-model level: what is asked, what is sent, what is shown.
 @MainActor
 final class CheckinFlowTests {
@@ -39,11 +52,12 @@ final class CheckinFlowTests {
     private let sender = RecordingSender()
     deinit { try? FileManager.default.removeItem(at: root) }
 
-    private func environment(line: String = "Délben még 6 voltál, most 5.") -> RitmusEnvironment {
+    private func environment(line: String = "Délben még 6 voltál, most 5.", sender custom: OutboxSender? = nil,
+                             user: String = "ledger") -> RitmusEnvironment {
         let c = clock
         return RitmusEnvironment(
-            ledgerDirectory: root.appendingPathComponent("ledger"), outboxDirectory: root.appendingPathComponent("outbox"),
-            sender: sender, line: { _, _ in line }, snapshot: { _ in CheckInSnapshotValue(hrBpm: 78, hrvMs: 38, hrvUsualMs: 50) },
+            ledgerDirectory: root.appendingPathComponent(user), outboxDirectory: root.appendingPathComponent("outbox-\(user)"),
+            sender: custom ?? sender, line: { _, _ in line }, snapshot: { _ in CheckInSnapshotValue(hrBpm: 78, hrvMs: 38, hrvUsualMs: 50) },
             plans: nil, clock: { c.now }, calendar: Self.budapest)
     }
 
@@ -241,12 +255,122 @@ final class CheckinFlowTests {
         #expect(CheckinFlow.verdict(energy: 7, hour: 8, predicted: [], moment: .reggel) == nil)
     }
 
+    // MARK: - Review fix round 1
+
+    @Test func savedCheckInKeepsItsSnapshotInTheLedger() async throws {
+        let env = environment()
+        let flow = CheckinFlow(env: env)
+        await flow.next(); await flow.quickExit()
+        await flow.addNote("Fáradt vagyok.")
+        let c = try #require(env.ledger.ledger(for: "2026-11-12").checkIns.first)
+        #expect(c.snapshot?.hrBpm == 78 && c.snapshot?.hrvMs == 38)
+    }
+
+    @Test func olderDotShowsItsWatchFigures() {
+        let older = LedgerCheckIn(id: UUID(), slot: "10:00", capturedAt: Self.at(12, 40), values: ["energy": 6],
+                                  snapshot: CheckInSnapshotValue(hrBpm: 74, hrvMs: 41, hrvUsualMs: 50, steps: 4_860, sleepMinutes: 432))
+        let f = CheckinDone.figures(older)
+        #expect(f.hr == 74 && f.hrv == 41 && f.hrvUsual == 50 && f.sleepMinutes == 432)
+        #expect(f.steps == "4\u{00A0}860")   // always grouped, like everywhere in Boop
+        #expect(CheckinDone.figures(LedgerCheckIn(id: UUID(), slot: "06:30", capturedAt: Self.at(7), values: [:])) == CheckInSnapshotFigures())
+    }
+
+    @Test func detailShowsCravingKindsAndPainRegions() {
+        let craving = LedgerCheckIn(id: UUID(), slot: "14:00", capturedAt: Self.at(16), values: ["energy": 5, "craving": 7],
+                                    cravingKinds: ["EDES", "SOS"], askedItems: ["energy", "craving"])
+        #expect(CheckinDone.answers(craving).last == CheckInDetailAnswer(label: "A nap kérdése", value: "7", detail: "Édes, Sós"))
+        let pain = LedgerCheckIn(id: UUID(), slot: "14:00", capturedAt: Self.at(16), values: ["energy": 5], pain: true,
+                                 painRegions: ["TERD"], painIntensity: 6, askedItems: ["energy", "pain"])
+        #expect(CheckinDone.answers(pain).last == CheckInDetailAnswer(label: "A nap kérdése", value: "6", detail: "Térd"))
+        #expect(CheckinDone.answers(pain).first?.detail == nil)
+    }
+
+    @Test func failedNoteSaveIsNotShownAsSaved() async throws {
+        let env = environment()
+        let flow = CheckinFlow(env: env)
+        await flow.next(); await flow.quickExit()
+        // the phone's disk refuses the next write
+        let ledgerDir = root.appendingPathComponent("ledger")
+        try FileManager.default.removeItem(at: ledgerDir)
+        try Data("x".utf8).write(to: ledgerDir)
+        let ok = await flow.addNote("Ez nem fér el.")
+        #expect(!ok)
+        #expect(flow.saveProblem != nil)
+        #expect(flow.saved?.checkIn.note == nil)
+    }
+
+    @Test func slotIsDecidedAtCapture() async throws {
+        clock.set(Self.at(14, 29))
+        let flow = CheckinFlow(env: environment())
+        #expect(flow.moment == .delben)
+        await flow.next()
+        clock.set(Self.at(14, 31))
+        await flow.quickExit()
+        let p = try #require(await payloads().first)
+        #expect(p.slot == "14:00")
+        #expect(flow.saved?.date == "2026-11-12")
+    }
+
+    @Test func dateIsDecidedAtCapture() async throws {
+        clock.set(Self.at(23, 59))
+        let env = environment()
+        let flow = CheckinFlow(env: env)
+        await flow.next()
+        clock.set(Self.budapest.date(from: DateComponents(year: 2026, month: 11, day: 13, hour: 0, minute: 1))!)
+        await flow.quickExit()
+        #expect(flow.saved?.date == "2026-11-13")
+        #expect(await sender.sent.first?.date == "2026-11-13")
+        #expect(await payloads().first?.slot == "06:30")
+        #expect(env.ledger.ledger(for: "2026-11-13").checkIns.count == 1)
+        #expect(flow.savedTimeLabel == "MENTVE · 00:01")
+    }
+
+    @Test func noteOnAnInFlightCheckInKeepsItPending() async throws {
+        let gated = GatedSender()
+        let env = environment(sender: gated)
+        let flow = CheckinFlow(env: env)
+        await flow.next()
+        let saving = Task { await flow.quickExit() }
+        await until { await gated.started >= 1 }
+        #expect(await flow.addNote("Közben eszembe jutott."))
+        await gated.releaseOne()                    // the old version arrives; the note version is still queued
+        await until { await gated.started >= 2 }
+        #expect(env.ledger.ledger(for: "2026-11-12").checkIns.first?.pending == true)
+        await gated.releaseOne()
+        await saving.value
+        #expect(env.ledger.ledger(for: "2026-11-12").checkIns.first?.pending == false)
+    }
+
+    @Test func storageIsPerUser() throws {
+        let a = UUID(), b = UUID()
+        let dirsA = RitmusEnvironment.directories(for: a, base: root), dirsB = RitmusEnvironment.directories(for: b, base: root)
+        #expect(dirsA.ledger != dirsB.ledger && dirsA.outbox != dirsB.outbox)
+        #expect(dirsA.ledger.path.contains(a.uuidString))
+        let c = clock
+        func env(_ d: (ledger: URL, outbox: URL)) -> RitmusEnvironment {
+            RitmusEnvironment(ledgerDirectory: d.ledger, outboxDirectory: d.outbox, sender: sender, line: { _, _ in "" },
+                              snapshot: { _ in CheckInSnapshotValue() }, plans: nil, clock: { c.now }, calendar: Self.budapest)
+        }
+        try env(dirsA).ledger.saveCheckIn(LedgerCheckIn(id: UUID(), slot: "06:30", capturedAt: Self.at(7), values: ["energy": 7]),
+                                          date: "2026-11-12")
+        #expect(env(dirsB).ledger.ledger(for: "2026-11-12").checkIns.isEmpty)
+        #expect(env(dirsA).ledger.ledger(for: "2026-11-12").checkIns.count == 1)
+    }
+
+    /// Waits (bounded) until the condition holds.
+    private func until(_ condition: () async -> Bool) async {
+        for _ in 0..<2_000 {
+            if await condition() { return }
+            try? await Task.sleep(for: .milliseconds(2))
+        }
+    }
+
     @Test func momentLabelShowsTheClock() {
         let flow = CheckinFlow(env: environment())
         #expect(flow.momentLabel == "Délután · 16:02")
     }
 }
 
-extension JSONDecoder {
+private extension JSONDecoder {
     static var iso: JSONDecoder { let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601; return d }
 }

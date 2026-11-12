@@ -274,4 +274,14 @@ final class RitmusClientTests {
         #expect(try await ritmus.checkInLine(date, slot: "14:00") == "Köszi.")
         #expect(try body(op: "generateCheckInLine")["slot"] as? String == "14:00")
     }
+
+    // B3 Task 8 fix: the server's snapshot of a check-in comes along, so older dots show their watch figures.
+    @Test func fetchDayMapsTheServerSnapshot() async throws {
+        stub.on("listCheckInsForDay", .json(200, #"[{"id":"0b6f3c1e-1111-4a2b-9c3d-222233334444","date":"2026-11-10","slotTime":"10:00","state":"done","energy":6,"savedAt":"2026-11-10T11:40:00Z","snapshot":{"hrBpm":74,"hrvMs":41.0,"hrvUsualMs":50.0,"steps":4860,"stepsIsDayTotal":false,"sleepMinutes":432,"source":"com.apple.health","computedBy":"phone"}}]"#))
+        stub.on("getIntentionDay", .json(200, #"{"date":"2026-11-10","foci":[],"focusCap":1}"#))
+        stub.on("getDayClose", .json(404, #"[{"type":"REQUEST","code":"DAY_CLOSE_NOT_FOUND"}]"#))
+        let s = try #require(try await ritmus.fetchDay(date).checkIns.first?.snapshot)
+        #expect(s.hrBpm == 74 && s.hrvMs == 41 && s.hrvUsualMs == 50 && s.steps == 4_860 && s.sleepMinutes == 432)
+        #expect(s.source == "com.apple.health")
+    }
 }

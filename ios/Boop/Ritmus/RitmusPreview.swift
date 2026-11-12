@@ -30,12 +30,14 @@ extension RitmusEnvironment {
         try? env.ledger.saveCheckIn(LedgerCheckIn(
             id: UUID(), slot: "06:30", capturedAt: at(7, 20),
             values: ["energy": 7, "mood": 8, "stress": 3, "body": 7, "mental": 8, "rested": 7],
-            askedItems: ["energy", "mood", "stress", "body", "mental", "rested"]), date: today)
+            askedItems: ["energy", "mood", "stress", "body", "mental", "rested"],
+            snapshot: CheckInSnapshotValue(hrBpm: 61, hrvMs: 52, hrvUsualMs: 50, steps: 320, sleepMinutes: 432)), date: today)
         try? env.ledger.saveCheckIn(LedgerCheckIn(
             id: UUID(), slot: "10:00", capturedAt: at(12, 40),
             values: ["energy": 6, "mood": 7, "stress": 5, "body": 6, "mental": 6, "hunger": 7],
             askedItems: ["energy", "mood", "stress", "body", "mental", "hunger"],
-            note: "Hosszú volt a workshop, kicsit leeresztettem."), date: today)
+            note: "Hosszú volt a workshop, kicsit leeresztettem.",
+            snapshot: CheckInSnapshotValue(hrBpm: 74, hrvMs: 41, hrvUsualMs: 50, steps: 4_860, sleepMinutes: 432)), date: today)
         env.ledger.cachePlans([CheckInPlanLite(
             slot: "14:00", adaptiveItem: "motivation",
             adaptiveWhy: "Edzésnap van — azt figyelem, a délutáni kedved megjósolja-e, milyen lesz az edzés.")], date: today)

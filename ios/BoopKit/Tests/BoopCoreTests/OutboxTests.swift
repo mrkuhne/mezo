@@ -242,4 +242,33 @@ final class OutboxTests {
         let kept = try String(contentsOf: dir.appendingPathComponent(aside[0]), encoding: .utf8)
         #expect(kept.contains("telepathy"))
     }
+
+    /// B3 Task 8 fix: a delivery whose id was re-queued meanwhile (a note on an in-flight check-in) must not clear
+    /// the ledger's pending flag — `isQueued` tells the listener a newer version is still waiting.
+    @Test func newerVersionStillQueuedAtDelivery() async throws {
+        final class Ref: @unchecked Sendable { var box: Outbox? }
+        actor Seen { var queued: [Bool] = []; func add(_ b: Bool) { queued.append(b) } }
+        actor HookSender: OutboxSender {
+            var hook: (@Sendable () async -> Void)?
+            func set(_ h: @escaping @Sendable () async -> Void) { hook = h }
+            func send(_ item: OutboxItem) async -> OutboxSendResult {
+                if let h = hook { hook = nil; await h() }
+                return .sent(nil)
+            }
+        }
+        let ref = Ref(), seen = Seen(), sender = HookSender()
+        let c = time
+        let box = Outbox(directory: dir, sender: sender, clock: { c.now }, calendar: budapest,
+                         onSent: { item, _ in await seen.add(await ref.box?.isQueued(item.id) ?? false) })
+        ref.box = box
+        var first = item(.checkIn, text: "v1")
+        try await box.enqueue(first)
+        #expect(await box.isQueued(first.id))
+        first.kind = .checkInNote; first.payload = Data("v2".utf8)
+        let newer = first
+        await sender.set { try? await box.enqueue(newer) }
+        await box.flush()
+        #expect(await seen.queued == [true, false])
+        #expect(await !box.isQueued(first.id))
+    }
 }

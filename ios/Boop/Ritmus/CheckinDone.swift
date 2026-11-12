@@ -49,9 +49,14 @@ struct CheckinDone: View {
                 if let c = day.checkIns.first(where: { $0.id == selected }) {
                     detail(c).transition(.opacity)
                 }
-                VoiceRecorderRow(phase: voice, prompt: "Mondj hozzá egy mondatot", micEnabled: env.recorder != nil,
-                                 onMic: mic, onTyped: typed)
-                    .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
+                VStack(alignment: .leading, spacing: 10) {
+                    VoiceRecorderRow(phase: voice, prompt: "Mondj hozzá egy mondatot", micEnabled: env.recorder != nil,
+                                     onMic: mic, onTyped: typed)
+                    if let problem = flow.saveProblem {
+                        Text(problem).nkFont(13).foregroundStyle(Color(hex: 0xF7A8C4)).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
                 boopCard
                 NKPill("Kész", wide: false, action: onClose).padding(.top, 4)
             }
@@ -84,12 +89,9 @@ struct CheckinDone: View {
     }
 
     private func detail(_ c: LedgerCheckIn) -> some View {
-        let snap = c.id == savedId ? flow.saved?.payload.snapshot : nil
-        return CheckInDetail(
+        CheckInDetail(
             heading: "\(Self.slotName(c.slot).uppercased()) · \(CheckinFlow.clock(c.capturedAt, env.calendar))",
-            pending: c.pending, answers: Self.answers(c), note: c.note,
-            snapshot: CheckInSnapshotFigures(hr: snap?.hrBpm, hrv: snap?.hrvMs, hrvUsual: snap?.hrvUsualMs, steps: snap?.steps,
-                                             sleepMinutes: snap?.sleepMinutes))
+            pending: c.pending, answers: Self.answers(c), note: c.note, snapshot: Self.figures(c))
     }
 
     @ViewBuilder private var boopCard: some View {
@@ -114,9 +116,9 @@ struct CheckinDone: View {
 
     // MARK: - The sentence
 
+    /// The row shows "Elmentve" only once the phone has kept the sentence.
     private func typed(_ text: String) {
-        voice = .saved(text: text, typed: true)
-        Task { await flow.addNote(text) }
+        Task { if await flow.addNote(text) { voice = .saved(text: text, typed: true) } }
     }
 
     private func mic() {
@@ -128,8 +130,7 @@ struct CheckinDone: View {
             voice = .transcribing
             Task {
                 if let text = await recorder.stop()?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
-                    voice = .saved(text: text, typed: false)
-                    await flow.addNote(text)
+                    voice = await flow.addNote(text) ? .saved(text: text, typed: false) : .idle
                 } else {
                     voice = .idle
                 }
@@ -165,8 +166,25 @@ struct CheckinDone: View {
             let value: String? = key == "pain"
                 ? (c.pain == false ? "Nem" : c.painIntensity.map(String.init))
                 : c.values[key].map(String.init)
-            return CheckInDetailAnswer(label: coreLabels[key] ?? "A nap kérdése", value: value)
+            let chosen = key == "pain" ? (c.pain == true ? c.painRegions : []) : key == "craving" ? c.cravingKinds : []
+            let labels = optionLabels(key)
+            let detail = chosen.isEmpty ? nil : chosen.map { labels[$0] ?? $0 }.joined(separator: ", ")
+            return CheckInDetailAnswer(label: coreLabels[key] ?? "A nap kérdése", value: value, detail: detail)
         }
+    }
+
+    /// The Hungarian labels of an item's chips (pain regions, craving kinds).
+    private static func optionLabels(_ key: String) -> [String: String] {
+        let q = CheckInQuestions.questions(plan: CheckInPlanLite(slot: "", adaptiveItem: key, adaptiveWhy: nil)).last
+        guard let q, q.key == key else { return [:] }
+        return Dictionary(uniqueKeysWithValues: q.options.map { ($0.id, $0.label) })
+    }
+
+    /// What the watch said at that check-in (any dot: its own snapshot); steps grouped like everywhere in Boop.
+    static func figures(_ c: LedgerCheckIn) -> CheckInSnapshotFigures {
+        guard let s = c.snapshot else { return CheckInSnapshotFigures() }
+        return CheckInSnapshotFigures(hr: s.hrBpm, hrv: s.hrvMs, hrvUsual: s.hrvUsualMs, steps: s.steps.map(grouped),
+                                      sleepMinutes: s.sleepMinutes)
     }
 
     /// The slot's moment name: "Reggel", "Délben", "Délután"; the evening slot "Este".

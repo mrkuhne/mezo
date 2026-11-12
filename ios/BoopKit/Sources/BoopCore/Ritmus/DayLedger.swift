@@ -18,13 +18,18 @@ public struct LedgerCheckIn: Codable, Equatable, Identifiable, Sendable {
     public var quickExit: Bool
     public var note: String?
     public var pending: Bool
+    /// What the watch said at the moment (spec §7.3): frozen on the phone at saving, or the server's for its rows.
+    /// Absent in day files written before B3 Task 8 (decodes as nil).
+    public var snapshot: CheckInSnapshotValue?
 
     public init(id: UUID, slot: String, capturedAt: Date, values: [String: Int], pain: Bool? = nil,
                 painRegions: [String] = [], painIntensity: Int? = nil, cravingKinds: [String] = [],
-                askedItems: [String] = [], quickExit: Bool = false, note: String? = nil, pending: Bool = false) {
+                askedItems: [String] = [], quickExit: Bool = false, note: String? = nil, pending: Bool = false,
+                snapshot: CheckInSnapshotValue? = nil) {
         self.id = id; self.slot = slot; self.capturedAt = capturedAt; self.values = values; self.pain = pain
         self.painRegions = painRegions; self.painIntensity = painIntensity; self.cravingKinds = cravingKinds
         self.askedItems = askedItems; self.quickExit = quickExit; self.note = note; self.pending = pending
+        self.snapshot = snapshot
     }
 }
 

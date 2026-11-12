@@ -36,17 +36,33 @@ final class RitmusEnvironment {
         self.calendar = greg
         self.clock = clock
         lineSource = line; snapshotSource = snapshot; planSource = plans
+        // A delivery clears the pending flag only when no newer version of the same id (a note sent after an
+        // in-flight check-in) is still queued — that one clears it when it arrives.
+        let queue = OutboxRef()
         outbox = Outbox(directory: outboxDirectory, sender: sender, clock: clock, calendar: greg) { item, _ in
+            if await queue.outbox?.isQueued(item.id) == true { return }
             await ledger.markSent(item.id, date: item.date)
         }
+        queue.outbox = outbox
     }
 
-    /// The real wiring: the Boop API client, HealthKit for the snapshot, the default directories.
-    static func live(client: Client, health: HealthReader) -> RitmusEnvironment {
-        let ritmus = RitmusClient(client: client)
+    /// Lets the outbox's delivery listener ask the outbox itself (set once, right after creation).
+    private final class OutboxRef: @unchecked Sendable { var outbox: Outbox? }
+
+    /// Each signed-in user keeps their own days and queue: `<base>/boop-ritmus/<userId>/ledger|outbox`.
+    static func directories(for userId: UUID, base: URL = .applicationSupportDirectory) -> (ledger: URL, outbox: URL) {
+        let root = base.appendingPathComponent("boop-ritmus", isDirectory: true)
+            .appendingPathComponent(userId.uuidString, isDirectory: true)
+        return (root.appendingPathComponent("ledger", isDirectory: true), root.appendingPathComponent("outbox", isDirectory: true))
+    }
+
+    /// The real wiring: the Boop API client, HealthKit for the snapshot, the user's own directories.
+    static func live(client: Client, health: HealthReader, userId: UUID) -> RitmusEnvironment {
+        let dirs = directories(for: userId)
+        let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox)
         let snapshots = SnapshotBuilder(reader: health)
         return RitmusEnvironment(
-            ledgerDirectory: LedgerStore.defaultDirectory(), outboxDirectory: Outbox.defaultDirectory(), sender: ritmus,
+            ledgerDirectory: dirs.ledger, outboxDirectory: dirs.outbox, sender: ritmus,
             line: { date, slot in try await ritmus.checkInLine(date, slot: slot) },
             snapshot: { now in await snapshots.snapshot(at: now) },
             plans: { date in try await ritmus.fetchPlans(date) })
