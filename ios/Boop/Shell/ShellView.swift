@@ -56,6 +56,11 @@ struct ShellView: View {
 
     private var tab: ShellTab { ShellTab.restored(tabKey) }
 
+    /// The cover a sheet made wait opens as soon as that sheet is gone.
+    private func openCoverAfterSheet() {
+        if let cover = coverAfterCapture { coverAfterCapture = nil; router.open(cover) }
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             NKBackdropPanorama(from: sky(fromTab), to: sky(tab), direction: direction, progress: progress,
@@ -82,9 +87,7 @@ struct ShellView: View {
         .nkToast($toast)
         .preferredColorScheme(.dark)
         // page-level presentations (boop-ios.md §9)
-        .sheet(isPresented: $capturing, onDismiss: {
-            if let cover = coverAfterCapture { coverAfterCapture = nil; router.open(cover) }
-        }) {
+        .sheet(isPresented: $capturing, onDismiss: openCoverAfterSheet) {
             CaptureSheet { pick in
                 switch pick {
                 case .cover(let cover): coverAfterCapture = cover
@@ -97,7 +100,7 @@ struct ShellView: View {
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $account) {
+        .sheet(isPresented: $account, onDismiss: openCoverAfterSheet) {
             AccountSheet(me: me)
                 .presentationDetents([.medium, .large])
                 .presentationBackground(NK.ground)
@@ -120,6 +123,15 @@ struct ShellView: View {
                     coverFallback(hue: .pulzus)
                 }
             }
+        }
+        // A notification tap while the "+" or account sheet is up: the sheet goes first, then the cover (two
+        // presentations never overlap).
+        .onChange(of: router.cover) { _, asked in
+            guard let asked, capturing || account else { return }
+            coverAfterCapture = asked
+            router.cover = nil
+            capturing = false
+            account = false
         }
         .onAppear {
             fromTab = tab

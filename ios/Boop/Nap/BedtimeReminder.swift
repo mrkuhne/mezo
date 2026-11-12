@@ -16,17 +16,15 @@ protocol ReminderCenter: Sendable {
     func schedule(id: String, hour: Int, minute: Int, title: String, body: String) async throws
     /// A one-time notification on that calendar day (replaces the one with the same id). `route` is what a tap opens
     /// (`RitmusCover` route name). The daily loop's reminders use it: a repeating clock time cannot skip a day that is done.
+    /// No default: every centre decides what a dated request means.
     func scheduleOnce(id: String, on day: DateComponents, hour: Int, minute: Int, title: String, body: String, route: String) async throws
     func cancel(id: String)
     /// Whether a request with this id is still waiting to ring.
     func isPending(id: String) async -> Bool
-}
-
-extension ReminderCenter {
-    /// Centres without dated requests ring daily at the clock time.
-    func scheduleOnce(id: String, on day: DateComponents, hour: Int, minute: Int, title: String, body: String, route: String) async throws {
-        try await schedule(id: id, hour: hour, minute: minute, title: title, body: body)
-    }
+    /// The ids of the waiting requests that start with `prefix` (the daily loop clears and re-adds its whole family).
+    func pendingIds(withPrefix prefix: String) async -> [String]
+    /// Takes already delivered notifications with these ids out of the notification centre.
+    func removeDelivered(ids: [String])
 }
 
 /// The real centre: local notifications, no server.
@@ -76,6 +74,14 @@ struct SystemReminderCenter: ReminderCenter {
 
     func isPending(id: String) async -> Bool {
         await UNUserNotificationCenter.current().pendingNotificationRequests().contains { $0.identifier == id }
+    }
+
+    func pendingIds(withPrefix prefix: String) async -> [String] {
+        await UNUserNotificationCenter.current().pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix(prefix) }
+    }
+
+    func removeDelivered(ids: [String]) {
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
     }
 }
 

@@ -26,6 +26,11 @@ private final class FakeCenter: ReminderCenter, @unchecked Sendable {
         scheduled.append((id, hour, minute))
         pending.insert(id)
     }
+    func scheduleOnce(id: String, on day: DateComponents, hour: Int, minute: Int, title: String, body: String, route: String) async throws {
+        Issue.record("the bedtime reminder never asks for a dated request")
+    }
+    func pendingIds(withPrefix prefix: String) async -> [String] { pending.filter { $0.hasPrefix(prefix) }.sorted() }
+    func removeDelivered(ids: [String]) {}
     func cancel(id: String) { cancelled.append(id); pending.remove(id) }
     func isPending(id: String) async -> Bool { pending.contains(id) }
 }

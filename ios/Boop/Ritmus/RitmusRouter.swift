@@ -30,4 +30,11 @@ final class RitmusRouter {
 
     func open(_ cover: RitmusCover) { self.cover = cover }
     func close() { cover = nil }
+
+    /// Takes the cover that is asked for but not shown yet (a notification tap that landed before the shell was up, or
+    /// while a sheet was open) and clears it, so the shell can present it once nothing else is in the way.
+    func takePending() -> RitmusCover? {
+        defer { cover = nil }
+        return cover
+    }
 }

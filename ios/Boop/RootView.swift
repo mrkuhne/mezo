@@ -75,7 +75,7 @@ private struct SyncTriggers: View {
 /// The daily loop's app-wide upkeep, in an invisible view for the same reason as `SyncTriggers`: on return to the
 /// foreground the outbox is flushed (backoff ignored) and the reminders are re-planned; every ledger change (a check-in
 /// or close saved here, or merged from the server), a new bedtime target or a new day re-plans them too. The first
-/// saved check-in of a day is when the notification permission is asked for — never at launch.
+/// saved check-in or close of a day is when the notification permission is asked for — never at launch.
 private struct RitmusTriggers: View {
     let env: RitmusEnvironment
     let morning: MorningStore?
@@ -83,12 +83,13 @@ private struct RitmusTriggers: View {
     @State private var foregrounds = 0
 
     private struct Plan: Hashable { let done: [String]; let closed: Bool; let target: String?; let saved: Bool; let day: String; let foregrounds: Int }
+    // saved = a check-in or the close is on the day: the moment the notification permission is first asked for
 
     private var plan: Plan {
         let day = env.today
         let ledger = env.ledger.ledger(for: day)
         return Plan(done: ledger.checkIns.map(\.slot).sorted(), closed: ledger.close != nil,
-                    target: morning?.brief?.day.bedtimeTarget, saved: !ledger.checkIns.isEmpty, day: day, foregrounds: foregrounds)
+                    target: morning?.brief?.day.bedtimeTarget, saved: !ledger.checkIns.isEmpty || ledger.close != nil, day: day, foregrounds: foregrounds)
     }
 
     var body: some View {
