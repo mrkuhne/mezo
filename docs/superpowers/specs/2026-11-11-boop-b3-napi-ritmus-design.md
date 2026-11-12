@@ -1,11 +1,11 @@
 # Boop B3 Napi ritmus — the daily loop (design)
 
-- **Status:** draft for owner review · **Date:** 2026-11-11 · **Issue:** `mezo-r36n9.13` · **Epic:** `mezo-r36n9`
+- **Status:** approved by the owner 2026-11-12 (plan `../plans/2026-11-11-boop-b3-napi-ritmus.md`) · **Date:** 2026-11-11 · **Issue:** `mezo-r36n9.13` · **Epic:** `mezo-r36n9`
 - **Parent spec:** [`2026-11-11-boop-standalone-design.md`](2026-11-11-boop-standalone-design.md) §3 (spine), §4 (reuse map), §5 B3.
 - **Builds on:** B2 Gerinc (`mezo-r36n9.12`, branch `feat/boop-b2-gerinc` — shell, `DayPhase`, `DayPlan.rows/goals`, Ma
   phases, capture sheet, Boop tab placeholder) and B1 Adatalap (`mezo-r36n9.11`, branch `feat/boop-b1-adatalap` —
   `health_sample` with 5-minute HR buckets and `hrv_sdnn`, wider `daily_metric`, background delivery, the original
-  account). **Neither is on main yet; B3's build starts after B2 lands** (B1 for the snapshot read and the account).
+  account). Both are on main since 2026-11-12.
 - **Approved spike:** `docs/design_2.0/prototypes/boop-ios-spike/BoopSpike/Ritmus*.swift`, screenshots
   `ritmus-*.png` (launch `-ritmus YES`, see §11). Look = Napkelte (spec `2026-11-10-boop-napkelte-design.md` §4).
 
