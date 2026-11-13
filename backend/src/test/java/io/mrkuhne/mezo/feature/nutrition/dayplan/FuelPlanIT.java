@@ -2,18 +2,18 @@ package io.mrkuhne.mezo.feature.nutrition.dayplan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelPlanResponse;
 import io.mrkuhne.mezo.api.dto.FuelPlanWindow;
-import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.dayplan.DayPlanService;
 import io.mrkuhne.mezo.feature.nutrition.service.dayplan.DayPlan;
+import io.mrkuhne.mezo.feature.nutrition.service.dayplan.Macros4;
 import io.mrkuhne.mezo.feature.nutrition.service.dayplan.DayPlanWindow;
 import io.mrkuhne.mezo.feature.nutrition.service.dayplan.WindowState;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.PlannedSkipPopulator;
 import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -39,13 +39,19 @@ class FuelPlanIT extends ApiIntegrationTest {
     private static final ZoneId OWNER_ZONE = ZoneId.of("Europe/Budapest");
     /** A Tuesday — schedule {@code dayOfWeek} 1, the gym slot's weekday. */
     private static final LocalDate DAY = LocalDate.parse("2026-11-10");
+    // mezo.nutrition.* — the config fallback targets a user with no goal is served.
+    private static final int TARGET_KCAL = 3100;
+    private static final int TARGET_P = 220;
+    private static final int TARGET_C = 380;
+    private static final int TARGET_F = 95;
+    private static final int SKIPPED_KCAL = 300;
 
     @Autowired private DayPlanService dayPlans;
-    @Autowired private FuelDayService fuelDays;
     @Autowired private MealPopulator meals;
     @Autowired private TrainPopulator train;
     @Autowired private SleepGoalPopulator sleepGoals;
     @Autowired private RecoveryPeriodPopulator recoveries;
+    @Autowired private PlannedSkipPopulator skips;
 
     private static Instant at(int hour, int minute) {
         return DAY.atTime(hour, minute).atZone(OWNER_ZONE).toInstant();
@@ -53,10 +59,34 @@ class FuelPlanIT extends ApiIntegrationTest {
 
     private void seedDay(UUID user) {
         sleepGoals.goal(user, 480, "WAKE", "06:00", 15);
-        meals.createMealWithItems(user, DAY, "breakfast", at(7, 10),
-            List.of(new MealPopulator.Line("Zabkása", "450", "30", "60", "12", (short) 1)));
+        breakfast(user);
         train.createActiveMeso(user);
         train.createGymSlot(user, 1, "18:00");
+    }
+
+    /** 450 kcal / 30 p / 60 c / 12 f at 07:10 owner-local — amount 1 over a per-1 snapshot, so exact. */
+    private void breakfast(UUID user) {
+        meals.createMealWithItems(user, DAY, "breakfast", at(7, 10),
+            List.of(new MealPopulator.Line("Zabkása", "450", "30", "60", "12", (short) 1)));
+    }
+
+    /**
+     * Wake 06:00 / bed 23:00 with no session: the default rhythm lands on 06:45 · 10:26 · 14:08 ·
+     * 17:49 · 21:30 (breakfast · snack · lunch · snack · dinner) — the clock the state cases pin.
+     */
+    private void seedPlainRhythm(UUID user) {
+        sleepGoals.goal(user, 420, "BED", "23:00", 15);
+    }
+
+    private void mealSkip(UUID user, String sessionKey, int plannedKcal) {
+        PlannedSkipEntity skip = new PlannedSkipEntity();
+        skip.setCreatedBy(user);
+        skip.setDate(DAY);
+        skip.setKind(PlannedSkipEntity.Kind.MEAL);
+        skip.setSessionKey(sessionKey);
+        skip.setReasonCategory(PlannedSkipEntity.Reason.NOT_HUNGRY);
+        skip.setPlannedKcal(plannedKcal);
+        skips.save(skip);
     }
 
     @Test
@@ -78,18 +108,94 @@ class FuelPlanIT extends ApiIntegrationTest {
         assertThat(plan.windows().stream().filter(w -> w.state() == WindowState.DONE).findFirst()
             .orElseThrow().loggedMealIds()).hasSize(1);
 
-        FuelDayResponse day = fuelDays.getDay(user, DAY);
-        int expectedKcal = day.getTargets().getKcal().intValue()
-            - day.getConsumed().getKcal().intValue()
-            - (day.getSkippedKcal() == null ? 0 : day.getSkippedKcal());
-        assertThat(plan.remaining()).isNotNull();
-        assertThat(plan.remaining().kcal()).isEqualTo(expectedKcal);
-
         assertThat(plan.tip()).isNotNull();
         assertThat(plan.tip().text()).isNotBlank();
         // Every open window carries an offer — never an empty row (owner decision 16).
         assertThat(plan.windows()).filteredOn(w -> w.state() != WindowState.DONE)
             .allSatisfy(w -> assertThat(w.suggestion()).isNotNull());
+    }
+
+    /**
+     * {@code remaining = targets − consumed − skipped}, against LITERAL numbers rather than a
+     * re-derivation of the same expression: no goal covers this user, so the targets are the
+     * config fallback {@value #TARGET_KCAL}/{@value #TARGET_P}/{@value #TARGET_C}/{@value #TARGET_F}
+     * ({@code mezo.nutrition.*}); the seeded breakfast consumes 450/30/60/12 exactly (amount 1 over
+     * a per-1 snapshot) and the seeded skip takes {@value #SKIPPED_KCAL} kcal off the day.
+     *
+     * <p>The skip is a kcal-only term by design (the planned kcal of a skipped slot is all the
+     * skip row carries), so p/c/f are targets − consumed.
+     */
+    @Test
+    void remainingIsTargetsMinusConsumedMinusSkipped() {
+        UUID user = databasePopulator.populateUser("fuelplan-remaining@test.local");
+        seedPlainRhythm(user);
+        breakfast(user);
+        mealSkip(user, "snack#1", SKIPPED_KCAL);
+
+        DayPlan plan = dayPlans.plan(user, DAY, LocalTime.of(11, 0));
+
+        assertThat(plan.remaining()).isEqualTo(new Macros4(
+            TARGET_KCAL - 450 - SKIPPED_KCAL, TARGET_P - 30, TARGET_C - 60, TARGET_F - 12));
+        assertThat(plan.remaining()).isEqualTo(new Macros4(2350, 190, 320, 83));
+    }
+
+    /**
+     * Kihagyás S3: the budget is split over ALL windows, skipped ones included — a skipped meal's
+     * share stays with it and nobody else is asked to eat more. The decision lives in
+     * {@link DayPlanService} (it owns the skip read); {@code BudgetSplitter} has no skip input at
+     * all, which is why this case is here and not in {@code BudgetSplitterTest}.
+     */
+    @Test
+    void skippedWindowKcalLeaveTheBudget() {
+        UUID withoutSkip = databasePopulator.populateUser("fuelplan-noskip@test.local");
+        seedPlainRhythm(withoutSkip);
+        UUID withSkip = databasePopulator.populateUser("fuelplan-skip@test.local");
+        seedPlainRhythm(withSkip);
+        mealSkip(withSkip, "snack#1", SKIPPED_KCAL);
+
+        DayPlan plain = dayPlans.plan(withoutSkip, DAY, LocalTime.of(11, 0));
+        DayPlan skipped = dayPlans.plan(withSkip, DAY, LocalTime.of(11, 0));
+
+        DayPlanWindow skippedWindow = skipped.windows().get(1); // the 10:26 snack
+        assertThat(skippedWindow.state()).isEqualTo(WindowState.SKIPPED);
+        // It keeps its own share...
+        assertThat(skippedWindow.budget()).isEqualTo(plain.windows().get(1).budget());
+        // ...and nobody else grew to absorb it.
+        assertThat(skipped.windows()).extracting(DayPlanWindow::budget)
+            .containsExactlyElementsOf(plain.windows().stream().map(DayPlanWindow::budget).toList());
+        // A skipped window is also never offered anything.
+        assertThat(skippedWindow.suggestion()).isNull();
+    }
+
+    /**
+     * {@code buildDayPlan.ts} step 6: the focus never falls BACK onto a window the day has already
+     * passed. Breakfast 06:45 unlogged, the 10:26 snack skipped, now 11:00 — the focus lands on the
+     * skipped snack and moves FORWARD to lunch 14:08, leaving breakfast missed.
+     */
+    @Test
+    void focusMovesForwardPastASkippedWindowNeverBackToAnEarlierOne() {
+        UUID user = databasePopulator.populateUser("fuelplan-skipfocus@test.local");
+        seedPlainRhythm(user);
+        mealSkip(user, "snack#1", SKIPPED_KCAL);
+
+        DayPlan plan = dayPlans.plan(user, DAY, LocalTime.of(11, 0));
+
+        assertThat(plan.windows()).extracting(w -> w.from() + " " + w.state())
+            .containsExactly("06:45 MISSED", "09:56 SKIPPED", "13:23 NOW", "17:19 PENDING", "20:45 PENDING");
+        assertThat(plan.tip().text()).startsWith("Következik: Ebéd,");
+    }
+
+    /** Past bedtime the eating day is over: nothing is "now", every unlogged window is missed. */
+    @Test
+    void afterBedtimeNoWindowIsNow() {
+        UUID user = databasePopulator.populateUser("fuelplan-afterbed@test.local");
+        seedPlainRhythm(user); // bed 23:00
+
+        DayPlan plan = dayPlans.plan(user, DAY, LocalTime.of(23, 30));
+
+        assertThat(plan.windows()).extracting(DayPlanWindow::state)
+            .containsOnly(WindowState.MISSED);
+        assertThat(plan.tip()).isNull();
     }
 
     @Test

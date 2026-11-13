@@ -128,8 +128,9 @@ public class DayPlanService {
         FuelDayResponse day = fuelDays.getDay(userId, date);
         boolean budgeted = day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE;
 
+        SleepAnchorPort.SleepAnchor anchor = sleepAnchor.resolve(userId);
         List<TrainingBlock> blocks = blocks(userId, date);
-        List<PlannedWindow> placed = placeWindows(userId, blocks);
+        List<PlannedWindow> placed = placeWindows(userId, anchor, blocks);
         List<Macros4> budgets = BudgetSplitter.split(dayBudget(day), placed, budgeted);
 
         List<String> skipKeys = skipKeys(placed);
@@ -139,7 +140,7 @@ public class DayPlanService {
             .collect(Collectors.toSet());
 
         List<List<UUID>> assigned = assign(placed, loggedMeals(day, zone));
-        List<WindowState> states = classify(placed, assigned, skipKeys, skipped, now);
+        List<WindowState> states = classify(placed, assigned, skipKeys, skipped, now, minuteOf(anchor.bed()));
 
         // The profile and the recipe library are read only when some window can actually be
         // offered something — a done-out or kímélő day pays neither query.
@@ -183,10 +184,10 @@ public class DayPlanService {
     }
 
     /** A saved template for the day's type wins; otherwise the owner's rhythm (decision 21). */
-    private List<PlannedWindow> placeWindows(UUID userId, List<TrainingBlock> blocks) {
-        SleepAnchorPort.SleepAnchor anchor = sleepAnchor.resolve(userId);
-        String wake = WindowPlacer.hhmm(anchor.wake().getHour() * 60 + anchor.wake().getMinute());
-        String bed = WindowPlacer.hhmm(anchor.bed().getHour() * 60 + anchor.bed().getMinute());
+    private List<PlannedWindow> placeWindows(
+            UUID userId, SleepAnchorPort.SleepAnchor anchor, List<TrainingBlock> blocks) {
+        String wake = WindowPlacer.hhmm(minuteOf(anchor.wake()));
+        String bed = WindowPlacer.hhmm(minuteOf(anchor.bed()));
         MealSlotTemplateEntity template = slotTemplates
             .findByCreatedByAndDayTypeAndDeletedFalse(userId, WindowPlacer.dayType(blocks))
             .orElse(null);
@@ -298,7 +299,7 @@ public class DayPlanService {
             if (candidates.isEmpty()) {
                 continue; // no window of that kind today — the meal still counts in `consumed`
             }
-            int minute = meal.at().getHour() * 60 + meal.at().getMinute();
+            int minute = minuteOf(meal.at());
             Integer free = candidates.stream()
                 .filter(i -> !taken.contains(i))
                 .min(Comparator.comparingInt(i -> Math.abs(windows.get(i).timeMin() - minute)))
@@ -321,45 +322,64 @@ public class DayPlanService {
     }
 
     /**
-     * Fixed-plan state (mezo-1oy5): windows stay where they were placed, {@code now} only labels
-     * them. A logged meal beats a skip; a skipped window is never "missed" and never holds the
-     * focus. "Now" is the LAST open window at or before {@code now}, or the first one of the day
-     * when {@code now} precedes them all.
+     * Fixed-plan state (mezo-1oy5) — the port of {@code buildDayPlan.ts} step 6 (:673-696). Windows
+     * stay where they were placed; {@code now} only labels them.
+     *
+     * <p>The focus ("now") is the LAST still-UNLOGGED window at or before {@code now} — skipped
+     * ones included in the scan, because the owner's day moved past them too. If {@code now}
+     * precedes every window the first one takes the focus. If the focus lands on a SKIPPED window
+     * it moves FORWARD to the next non-skipped one (never backward onto a window the day has
+     * already passed), and if there is none the day has no focus at all. Past bedtime the eating
+     * day is over: nothing is "now" and every unlogged window is missed. A logged meal beats a
+     * skip; a skipped window is never re-labelled and never carries an offer.
      */
     private static List<WindowState> classify(List<PlannedWindow> windows, List<List<UUID>> assigned,
-            List<String> skipKeys, Set<String> skipped, LocalTime now) {
-        int nowMin = now.getHour() * 60 + now.getMinute();
+            List<String> skipKeys, Set<String> skipped, LocalTime now, int bedMin) {
+        int nowMin = minuteOf(now);
         List<WindowState> states = new ArrayList<>(windows.size());
+        List<Integer> unlogged = new ArrayList<>();
         for (int i = 0; i < windows.size(); i++) {
             if (!assigned.get(i).isEmpty()) {
                 states.add(WindowState.DONE);
-            } else if (skipped.contains(skipKeys.get(i))) {
-                states.add(WindowState.SKIPPED);
-            } else {
-                states.add(WindowState.PENDING);
+                continue;
             }
+            states.add(skipped.contains(skipKeys.get(i)) ? WindowState.SKIPPED : WindowState.PENDING);
+            unlogged.add(i);
         }
+
         int focus = -1;
-        for (int i = 0; i < windows.size(); i++) {
-            if (states.get(i) == WindowState.PENDING && windows.get(i).timeMin() <= nowMin) {
-                focus = i;
-            }
-        }
-        if (focus == -1) {
-            for (int i = 0; i < windows.size() && focus == -1; i++) {
-                if (states.get(i) == WindowState.PENDING) {
+        if (nowMin <= bedMin && !unlogged.isEmpty()) {
+            for (int i : unlogged) {
+                if (windows.get(i).timeMin() <= nowMin) {
                     focus = i;
                 }
             }
+            if (focus == -1) {
+                focus = unlogged.get(0); // now precedes every window — the first one is current
+            }
+            if (states.get(focus) == WindowState.SKIPPED) {
+                int next = -1;
+                for (int i : unlogged) {
+                    if (i > focus && states.get(i) != WindowState.SKIPPED) {
+                        next = i;
+                        break;
+                    }
+                }
+                focus = next;
+            }
         }
-        for (int i = 0; i < windows.size(); i++) {
-            if (states.get(i) != WindowState.PENDING) {
+
+        // With no focus (past bedtime, or only skipped windows left) `now` itself is the frontier,
+        // so every unlogged window behind it is missed.
+        int frontier = focus >= 0 ? windows.get(focus).timeMin() : nowMin;
+        for (int i : unlogged) {
+            if (states.get(i) == WindowState.SKIPPED) {
                 continue;
             }
             if (i == focus) {
                 states.set(i, WindowState.NOW);
-            } else if (focus >= 0 && windows.get(i).timeMin() < windows.get(focus).timeMin()) {
-                states.set(i, WindowState.MISSED);
+            } else {
+                states.set(i, windows.get(i).timeMin() < frontier ? WindowState.MISSED : WindowState.PENDING);
             }
         }
         return List.copyOf(states);
@@ -417,6 +437,10 @@ public class DayPlanService {
     }
 
     // --- small helpers ---------------------------------------------------------------------------
+
+    private static int minuteOf(LocalTime time) {
+        return time.getHour() * 60 + time.getMinute();
+    }
 
     private static LocalTime time(int minutes) {
         int clamped = Math.max(0, Math.min(1439, minutes));

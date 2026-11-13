@@ -46,21 +46,10 @@ class BudgetSplitterTest {
         assertThat(out.stream().mapToInt(Macros4::f).sum()).isEqualTo(daily.f());
     }
 
-    /**
-     * Kihagyás S3: the budget is split over ALL windows, skipped ones included — a skipped meal's
-     * share is never redistributed, so nobody else is asked to eat more.
-     */
-    @Test
-    void skippedWindowKcalLeaveTheBudget() {
-        Macros4 daily = new Macros4(2150, 163, 226, 66);
-
-        List<Macros4> out = BudgetSplitter.split(daily, FOUR, true);
-
-        int skippedShare = out.get(2).kcal(); // the snack window is the one that got skipped
-        int stillOpen = out.get(0).kcal() + out.get(1).kcal() + out.get(3).kcal();
-        assertThat(skippedShare).isEqualTo(307);
-        assertThat(stillOpen).isEqualTo(daily.kcal() - skippedShare);
-    }
+    // Kihagyás S3 — "a skipped window keeps its share, nobody else grows" — is NOT a BudgetSplitter
+    // behaviour: the splitter has no skip input, it simply splits over every window it is handed.
+    // The component that decides which windows are skipped is DayPlanService, so that case lives in
+    // FuelPlanIT.skippedWindowKcalLeaveTheBudget against a really seeded skip.
 
     /** Kímélő mód (GUIDANCE): the day is not judged on kcal, so no window carries a budget at all. */
     @Test
