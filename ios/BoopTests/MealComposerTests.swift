@@ -267,10 +267,14 @@ struct DraftNoticeTests {
 
     @Test func aFailedLookupAndAnUnknownProductAreDifferentSentences() throws {
         let failed = try #require(draftNotice(draft(lookupFailed: true)))
-        let unknown = try #require(draftNotice(draft(lookupSource: .none)))
+        let unknown = try #require(draftNotice(draft(lookupSource: LookupSource.none)))
         #expect(failed != unknown)
         #expect(failed.contains("nem értem el") || failed.contains("nem azt jelenti"))
         #expect(unknown.contains("nem ismerem"))
+    }
+
+    @Test func aBarcodeNeverLookedUpIsNotCalledUnknown() {
+        #expect(draftNotice(draft(lookupSource: nil)) == nil)
     }
 
     @Test func aFoundProductAndALookupNeverMadeSayNothing() {

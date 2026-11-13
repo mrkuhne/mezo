@@ -65,26 +65,67 @@ struct BarcodeScanner: UIViewControllerRepresentable {
     /// The scanner needs the hardware and the owner's camera permission (`isAvailable` is false when it was denied).
     @MainActor static var isAvailable: Bool { DataScannerViewController.isSupported && DataScannerViewController.isAvailable }
 
-    func makeUIViewController(context: Context) -> DataScannerViewController {
+    func makeUIViewController(context: Context) -> ScannerHost {
         let scanner = DataScannerViewController(
             recognizedDataTypes: [.barcode(symbologies: [.ean13, .ean8, .upce])],
             qualityLevel: .balanced, recognizesMultipleItems: false,
             isHighFrameRateTrackingEnabled: false, isPinchToZoomEnabled: true, isGuidanceEnabled: false, isHighlightingEnabled: true)
         scanner.delegate = context.coordinator
-        return scanner
+        return ScannerHost(scanner)
     }
 
-    func updateUIViewController(_ scanner: DataScannerViewController, context: Context) {
-        context.coordinator.onCode = onCode
-        // Scanning can only start once the controller is in a window; every update retries until it takes.
-        if !scanner.isScanning { try? scanner.startScanning() }
-    }
-
-    static func dismantleUIViewController(_ scanner: DataScannerViewController, coordinator: Coordinator) {
-        scanner.stopScanning()
-    }
-
+    func updateUIViewController(_ host: ScannerHost, context: Context) { context.coordinator.onCode = onCode }
     func makeCoordinator() -> Coordinator { Coordinator(onCode: onCode) }
+
+    /// `DataScannerViewController` cannot be subclassed, so this container holds it as a child and starts it from
+    /// `viewDidAppear`: scanning can only begin once there is a window, and a SwiftUI update may run before that and
+    /// never run again. While the camera permission prompt is up the start fails; it retries a few times, and again
+    /// whenever the app becomes active.
+    final class ScannerHost: UIViewController {
+        private let scanner: DataScannerViewController
+        private var retries = 0
+        private var observer: NSObjectProtocol?
+
+        init(_ scanner: DataScannerViewController) { self.scanner = scanner; super.init(nibName: nil, bundle: nil) }
+        required init?(coder: NSCoder) { nil }
+
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            addChild(scanner)
+            scanner.view.frame = view.bounds
+            scanner.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            view.addSubview(scanner.view)
+            scanner.didMove(toParent: self)
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            retries = 0
+            observer = NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.start() }
+            }
+            start()
+        }
+
+        override func viewDidDisappear(_ animated: Bool) {
+            super.viewDidDisappear(animated)
+            if let observer { NotificationCenter.default.removeObserver(observer) }
+            observer = nil
+            if scanner.isScanning { scanner.stopScanning() }
+        }
+
+        private func start() {
+            guard !scanner.isScanning, view.window != nil else { return }
+            do { try scanner.startScanning() } catch {
+                guard retries < 20 else { return }
+                retries += 1
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(for: .milliseconds(500))
+                    self?.start()
+                }
+            }
+        }
+    }
 
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
         var onCode: (String) -> Void
@@ -126,6 +167,10 @@ struct BarcodeScanView: View {
             case .miss(let code): miss(code)
             case .failed(let code, let offline): failed(code, offline: offline)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // Back from Settings (or the permission prompt): the camera may be allowed now.
+            scannerOn = BarcodeScanner.isAvailable
         }
         .onAppear {
             scannerOn = BarcodeScanner.isAvailable
@@ -228,9 +273,9 @@ struct BarcodeScanView: View {
     }
 
     private func factsLine(_ item: LookupItem) -> String {
-        guard let kcal = item.kcal else { return "Ehhez a termékhez nincs tápérték-adat" }
-        let unit = "\(item.per == item.per.rounded() ? String(Int(item.per)) : String(item.per)) \(item.unit)"
-        return "\(unit): \(Int(kcal.rounded())) kcal · F \(Int((item.proteinG ?? 0).rounded())) g · Sz \(Int((item.carbsG ?? 0).rounded())) g · Zs \(Int((item.fatG ?? 0).rounded())) g"
+        guard item.kcal != nil else { return "Ehhez a termékhez nincs tápérték-adat" }
+        var basis = ServingConfirmation(facts: item); basis.mode = .basis
+        return "\(basis.label(.basis)): \(basis.macroSummary)"
     }
 
     private func badge(_ b: DraftBadge) -> some View {

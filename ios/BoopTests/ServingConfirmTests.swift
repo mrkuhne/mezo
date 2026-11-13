@@ -131,9 +131,45 @@ struct ServingConfirmTests {
         var silent = yogurt(); silent.allergens = [:]
         #expect(scanSensitivityLine(silent, profile: profile)?.contains("nincs allergén-adat") == true)
 
+        // Partial data: the owner's key is absent from a non-empty map. Absent reads "nincs adat", never "free of".
+        var partial = yogurt(); partial.allergens = ["gluten": .contains]
+        let gap = scanSensitivityLine(partial, profile: profile)
+        #expect(gap?.contains("Tej") == true && gap?.contains("nincs adat") == true)
         var clear = yogurt(); clear.allergens = ["gluten": .unknown, "milk": .unknown]
-        #expect(scanSensitivityLine(clear, profile: profile) == nil)
+        #expect(scanSensitivityLine(clear, profile: profile)?.contains("nincs adat") == true)
         #expect(scanSensitivityLine(yogurt(), profile: nil) == nil)
+    }
+
+    @Test func aMissingMacroReadsNincsAdatNeverZero() {
+        var facts = yogurt(); facts.proteinG = nil; facts.fatG = nil
+        let c = ServingConfirmation(facts: facts)
+        #expect(c.macroSummary.contains("F nincs adat") && c.macroSummary.contains("Zs nincs adat"))
+        #expect(c.macroSummary.contains("Sz ") && !c.macroSummary.contains("F 0"))
+        #expect(!ServingConfirmation(facts: yogurt()).macroSummary.contains("nincs adat"))
+    }
+
+    @Test func labelPhotoDraftDoesNotClaimItNeedsTheLabelPhoto() throws {
+        let item = DraftItem(source: .estimate, name: "Szelet", amount: 40, unit: "g", per: 100, basisUnit: "g",
+                             kcal: 400, proteinG: 10, carbsG: 50, fatG: 10)
+        let fromPhoto = MealDraft(date: "2026-11-13", slot: "snack", title: nil, items: [item], barcode: "5998200312458", lookupSource: LookupSource.none)
+        let notice = try #require(draftNotice(fromPhoto))
+        #expect(!notice.contains("Fotózd le"))
+        let empty = MealDraft(date: "2026-11-13", slot: "snack", title: nil, items: [], barcode: "5998200312458", lookupSource: LookupSource.none)
+        #expect(draftNotice(empty)?.contains("Fotózd le") == true)
+    }
+
+    @Test @MainActor func confirmingTheServingBuildsTheDraftWithTheCodeAndSource() {
+        let composer = MealComposerModel(
+            drafter: SeenDrafter(seen: Seen()), saver: { _, _, _ in throw FoodFetchError.server }, outbox: nil, online: { true })
+        composer.showServing(yogurt(servingQuantity: 170), source: .off, code: "5998200312458")
+        #expect(composer.stage == .serving && composer.draft == nil)
+        var c = ServingConfirmation(facts: yogurt(servingQuantity: 170))
+        c.mode = .grams; c.grams = 250
+        composer.confirmServing(c.line())
+        #expect(composer.stage == .draft)
+        #expect(composer.draft?.barcode == "5998200312458" && composer.draft?.lookupSource == .off)
+        #expect(composer.draft?.items.count == 1 && composer.draft?.items.first?.amount == 250)
+        #expect(composer.barcode == nil)
     }
 
     private static func jpeg() -> Data {

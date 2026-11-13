@@ -279,7 +279,13 @@ func draftNotice(_ draft: MealDraft) -> String? {
     if draft.lookupFailed {
         return "A vonalkódot most nem tudtam megkeresni — nem azt jelenti, hogy nincs meg, csak nem értem el. A kódot megjegyeztem, próbáld újra, ha stabil a net."
     }
-    if draft.barcode != nil, draft.lookupSource == .none {
+    // `lookupSource` is optional: a bare `.none` would mean nil (never looked up), not `LookupSource.none` (looked up, unknown).
+    if draft.barcode != nil, draft.lookupSource == LookupSource.none {
+        // Items already here came from the owner's photo or words (the label photo carrying this code): the code is
+        // unknown, the draft is an estimate — say that, don't ask for the photo he just took.
+        if !draft.items.isEmpty {
+            return "Ezt a kódot nem ismerem, ezért a tételeket a képedből és a leírásodból becsültem, nem a termék adataiból. Nézd át őket."
+        }
         return "Ezt a kódot nem ismerem: se nálad, se a nyilvános adatbázisban nincs meg. Fotózd le a tápértéktáblát, vagy írd le, mit ettél."
     }
     if draft.items.isEmpty {

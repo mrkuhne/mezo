@@ -46,6 +46,16 @@ struct ServingConfirmation: Equatable {
     var proteinG: Double { (facts.proteinG ?? 0) * factor }
     var carbsG: Double { (facts.carbsG ?? 0) * factor }
     var fatG: Double { (facts.fatG ?? 0) * factor }
+    /// "73 kcal · F 9 g · Sz 4 g · Zs 2 g" for the chosen amount; a macro the label does not give reads "nincs adat",
+    /// never a made-up zero.
+    var macroSummary: String {
+        func part(_ label: String, _ per: Double?) -> String {
+            per.map { "\(label) \(Int(($0 * factor).rounded())) g" } ?? "\(label) nincs adat"
+        }
+        let kcalPart = facts.kcal.map { "\(Int(($0 * factor).rounded())) kcal" } ?? "kcal nincs adat"
+        return [kcalPart, part("F", facts.proteinG), part("Sz", facts.carbsG), part("Zs", facts.fatG)].joined(separator: " · ")
+    }
+
     /// A product with no calorie figure at all cannot be counted; the line says so ("nézd át") instead of faking a zero.
     var hasNutrition: Bool { facts.kcal != nil }
 
@@ -82,16 +92,22 @@ private func huAmount(_ v: Double) -> String {
 func scanSensitivityLine(_ item: LookupItem, profile: SensitivityProfile?) -> String? {
     guard let profile, profile.items.contains(where: \.isStructured) else { return nil }
     let hits = SensitivityRules.badges(allergens: item.allergens, profile: profile).filter { $0.severity != .noData }
-    if hits.isEmpty {
-        return item.allergens.isEmpty
-            ? "Ennél a terméknél nincs allergén-adat, ezért nem tudok róla semmit mondani — ez nem azt jelenti, hogy nincs benne."
-            : nil
+    if item.allergens.isEmpty {
+        return "Ennél a terméknél nincs allergén-adat, ezért nem tudok róla semmit mondani — ez nem azt jelenti, hogy nincs benne."
     }
-    let names = hits.map { allergenName($0.key ?? "") }.joined(separator: ", ")
-    if hits.contains(where: { $0.severity == .block }) {
-        return "\(names): erre allergiád van, és a termék tartalmazza, vagy nyomokban tartalmazhatja. Rögzíteni tudod, csak szólok."
+    // A key the product does not mention is "no information", not "free of".
+    let gaps = SensitivityRules.badges(allergens: item.allergens, profile: profile).filter { $0.severity == .noData }
+        .map { allergenName($0.key ?? "") }.joined(separator: ", ")
+    let gapLine = gaps.isEmpty ? nil : "\(gaps): nincs adat — ez nem azt jelenti, hogy nincs benne."
+    var lines: [String] = []
+    if !hits.isEmpty {
+        let names = hits.map { allergenName($0.key ?? "") }.joined(separator: ", ")
+        lines.append(hits.contains(where: { $0.severity == .block })
+            ? "\(names): erre allergiád van, és a termék tartalmazza, vagy nyomokban tartalmazhatja. Rögzíteni tudod, csak szólok."
+            : "\(names): a listádon szerepel, és a termék érinti. Rögzíteni tudod, csak szólok.")
     }
-    return "\(names): a listádon szerepel, és a termék érinti. Rögzíteni tudod, csak szólok."
+    if let gapLine { lines.append(gapLine) }
+    return lines.isEmpty ? nil : lines.joined(separator: " ")
 }
 
 struct ServingConfirm: View {
@@ -132,7 +148,7 @@ struct ServingConfirm: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if state.hasNutrition {
-                    Text("\(Int(state.kcal.rounded())) kcal · F \(Int(state.proteinG.rounded())) g · Sz \(Int(state.carbsG.rounded())) g · Zs \(Int(state.fatG.rounded())) g")
+                    Text(state.macroSummary)
                         .nkFont(13.5, design: .monospaced).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
                 } else {
                     Text("Ehhez a termékhez nincs tápérték-adat, ezért a kalóriát nem tudom számolni — a vázlatban kézzel javíthatod.")
