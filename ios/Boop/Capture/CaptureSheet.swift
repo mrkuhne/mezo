@@ -5,10 +5,21 @@ import BoopDesign
 enum CapturePick: Equatable {
     case cover(RitmusCover)
     case soon(String)
+    /// The meal composer, at an entrance (the "+" sheet's food chips and its free-text line).
+    case meal(MealStart.Entrance, text: String)
+}
+
+/// Opens the meal composer from inside a page (Ma's Fuel quick actions); the sheet itself hangs on the shell.
+private struct OpenMealKey: EnvironmentKey { static let defaultValue: @MainActor @Sendable (MealStart) -> Void = { _ in } }
+extension EnvironmentValues {
+    var openMeal: @MainActor @Sendable (MealStart) -> Void {
+        get { self[OpenMealKey.self] }
+        set { self[OpenMealKey.self] = newValue }
+    }
 }
 
 /// The global "+": what to record. B3 wires the check-in and the journal line (the evening close's voice-or-type row);
-/// every other item answers a "hamarosan" toast until its slice (B4 food, B5 training) wires it.
+/// the meal chips open the composer (B4); every other item answers a "hamarosan" toast until its slice (B4 food, B5 training) wires it.
 struct CaptureSheet: View {
     let onPick: (CapturePick) -> Void
     @State private var text = ""
@@ -25,7 +36,9 @@ struct CaptureSheet: View {
                     }
                 }
                 HStack(spacing: 8) {
-                    chip("camera-ink", "Fotó"); chip("pen-sun", "Szöveg"); chip("search-ink", "Vonalkód"); chip("book-sage", "Recept")
+                    chip("camera-ink", "Fotó", .meal(.photo, text: "")); chip("pen-sun", "Szöveg", .meal(.text, text: ""))
+                    chip("search-ink", "Vonalkód", .soon("Vonalkód"))
+                    chip("book-sage", "Recept", .meal(.recipe, text: "")); chip("bowl-sage", "Kamra", .meal(.pantry, text: ""))
                 }
             }
             .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
@@ -41,7 +54,10 @@ struct CaptureSheet: View {
                 TextField("", text: $text, prompt: Text("Mondd vagy írd: ebéd, csirke rizzsel…").foregroundStyle(.white.opacity(0.45)))
                     .nkFont(15).foregroundStyle(.white)
                     .submitLabel(.send)
-                    .onSubmit { onPick(.soon("Szöveges rögzítés")) }
+                    .onSubmit {
+                        let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        onPick(.meal(.text, text: words))
+                    }
                 StillOrb(palette: Hue.forma.orb, size: 26, level: 0.8)
             }
             .padding(.horizontal, 18).frame(height: 54)
@@ -50,8 +66,8 @@ struct CaptureSheet: View {
         }
     }
 
-    private func chip(_ glyph: String, _ title: String) -> some View {
-        Button { onPick(.soon(title)) } label: {
+    private func chip(_ glyph: String, _ title: String, _ pick: CapturePick) -> some View {
+        Button { onPick(pick) } label: {
             VStack(spacing: 6) {
                 NKGlyph(glyph, .white, size: 18)
                 Text(title).nkFont(12.5, .semibold).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)

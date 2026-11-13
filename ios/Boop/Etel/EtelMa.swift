@@ -12,9 +12,14 @@ struct EtelMa: View {
     let onToast: (String) -> Void
     let onRetry: () -> Void
     let onTab: (EtelTab) -> Void
+    /// Opens the composer at an entrance (nil = the picker).
+    let onCapture: (MealStart.Entrance) -> Void
+    let onCard: (PendingCardAction, PendingDraft) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        PendingMealCards(store: store, onSave: { onCard(.save, $0) }, onEdit: { onCard(.edit, $0) },
+                         onRetry: { onCard(.retry, $0) }, onDiscard: { onCard(.discard, $0) })
         NKDrillSection(number: 1, label: "AMI MÉG BELEFÉR") { budget }
         NKDrillSection(number: 2, label: "A MAI TERVED") { windows }
         NKDrillSection(number: 3, label: "MIT EGYÉL LEGKÖZELEBB") { tip }
@@ -111,7 +116,7 @@ struct EtelMa: View {
                             ForEach(meals) { m in
                                 MealCard(meal: m, slotLabel: label, photo: store.photos[m.id], coach: store.coach[m.id], onDimension: onDimension)
                             }
-                        case .open(let w): OpenWindowCard(window: w, onToast: onToast)
+                        case .open(let w): OpenWindowCard(window: w, onToast: onToast, onCapture: onCapture)
                         case .skipped(let w): quietRow(w, "Kihagyva")
                         case .quiet(let w): quietRow(w, "Kész, a részletei nincsenek itt")
                         }
@@ -260,6 +265,7 @@ struct EtelMa: View {
 struct OpenWindowCard: View {
     let window: PlanWindow
     let onToast: (String) -> Void
+    let onCapture: (MealStart.Entrance) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -287,8 +293,8 @@ struct OpenWindowCard: View {
                 }
             }
             HStack(spacing: 8) {
-                // The composer and the skip sheet are the next tasks of this slice; their buttons are here already.
-                Button { onToast(soonToast("Az étkezés rögzítése")) } label: {
+                // The skip sheet is the next task of this slice; its button is here already.
+                Button { onCapture(.pick) } label: {
                     Text("Megeszem").nkFont(14, .semibold).foregroundStyle(NK.ground)
                         .padding(.horizontal, 16).frame(minHeight: 38).background(Capsule().fill(.white.opacity(0.95)))
                 }
@@ -299,7 +305,7 @@ struct OpenWindowCard: View {
                 }
                 .buttonStyle(.plain)
                 Spacer(minLength: 0)
-                Button { onToast(soonToast("A fotó")) } label: {
+                Button { onCapture(.photo) } label: {
                     NKGlyph("camera-ink", .white, size: 18).frame(width: 38, height: 38).background(Circle().fill(.white.opacity(0.1)))
                 }
                 .buttonStyle(.plain).accessibilityLabel("Fotó az étkezésről")
@@ -308,3 +314,6 @@ struct OpenWindowCard: View {
         .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
     }
 }
+
+/// What the owner can do with a capture that is waiting.
+enum PendingCardAction { case save, edit, retry, discard }

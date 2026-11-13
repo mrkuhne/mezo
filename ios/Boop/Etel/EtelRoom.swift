@@ -27,6 +27,9 @@ final class EtelStore {
     private(set) var planProblem: FoodFetchError?
     private(set) var coach: [UUID: MealCoach] = [:]
     private(set) var photos: [UUID: UIImage] = [:]
+    /// Captures still in the owner's hands (B4 Task 10) and their photos, by id.
+    private(set) var pending: [PendingDraft] = []
+    private(set) var pendingPhotos: [UUID: UIImage] = [:]
     private(set) var groups: [SupplementGroup] = []
     private(set) var groupsLoaded = false
     private(set) var groupsProblem: FoodFetchError?
@@ -129,6 +132,35 @@ final class EtelStore {
         }
     }
 
+    // MARK: - Captures waiting for the owner
+
+    func refreshPending(_ box: FoodOutbox?) async {
+        guard let box else { pending = []; return }
+        let cards = await box.pendingDrafts()
+        pending = cards
+        var photos: [UUID: UIImage] = [:]
+        for c in cards { if let ref = c.photoRef, let data = box.photoData(ref), let image = UIImage(data: data) { photos[c.id] = image } }
+        pendingPhotos = photos
+    }
+
+    /// The owner's tap on a confirmation card: the only thing that saves a captured meal. The capture instant and the
+    /// card's id travel with it, so a retry after a lost answer is the same meal.
+    func saveCard(_ card: PendingDraft, box: FoodOutbox) async -> String {
+        guard let food, case .ready(var draft) = card.state else { return "Most nem tudom elmenteni" }
+        draft.photo = card.photoRef.flatMap { box.photoData($0) }
+        do {
+            let meal = try await food.save(draft, clientRef: card.id, capturedAt: card.capturedAt)
+            await box.discard(card.id)
+            await refreshPending(box)
+            await load(food: food, now: now)
+            return "\(draftTitle(draft)) rögzítve · \(huInt(Int(meal.macros.kcal.rounded()))) kcal"
+        } catch FoodFetchError.offline {
+            return "Nincs net — a kártya megvár"
+        } catch {
+            return "Nem sikerült elmenteni — próbáld újra"
+        }
+    }
+
     func isTaken(_ group: SupplementGroup) -> Bool { taken.contains(group.key) }
     func isBusy(_ group: SupplementGroup) -> Bool { busy.contains(group.key) }
 
@@ -178,6 +210,9 @@ struct EtelRoom: View {
     @Environment(\.foodClient) private var food
     @SceneStorage("etel.tab") private var selected: String = EtelTab.ma.rawValue
     @State private var store = EtelStore()
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
+    /// The meal composer, presented at page level (boop-ios.md §9).
+    @State private var composer: MealStart?
     @State private var toast: String?
     /// The dimension whose sheet is open (page level, boop-ios.md §9).
     @State private var dimension: DimensionSelection?
@@ -201,7 +236,8 @@ struct EtelRoom: View {
             switch tab {
             case .ma:
                 EtelMa(store: store, onDimension: { dimension = $0 }, onToast: { toast = $0 },
-                       onRetry: { Task { await reload() } }, onTab: { selected = $0.rawValue })
+                       onRetry: { Task { await reload() } }, onTab: { selected = $0.rawValue },
+                       onCapture: { composer = MealStart(entrance: $0) }, onCard: cardAction)
             case .receptek, .kamra, .het:
                 NKDrillSection(number: 1, label: tab.rawValue.uppercased()) {
                     Text("Ez a lap hamarosan itt lesz.").nkFont(15).foregroundStyle(.white.opacity(0.7))
@@ -216,12 +252,37 @@ struct EtelRoom: View {
         .sheet(item: Binding(get: { [d = dimension] in d }, set: { dimension = $0 })) { d in
             DimensionSheet(selection: d)
         }
+        .sheet(item: Binding(get: { [c = composer] in c }, set: { composer = $0 })) { start in
+            MealComposerSheet(start: start) { toast in
+                composer = nil
+                if let toast { self.toast = toast }
+                Task { await reload() }
+            }
+            .presentationDetents([.large])
+            .presentationBackground(NK.ground)
+            .presentationCornerRadius(34)
+            .presentationDragIndicator(.visible)
+        }
         .task { await reload() }
+        .task(id: ritmus?.mealDraftsTick) { await store.refreshPending(ritmus?.food) }
         .refreshable { await reload() }
     }
 
     private func reload() async {
         guard let food else { return }
+        // Pull to refresh is also "the net is here": what waited on the phone goes out now.
+        await ritmus?.food.flush()
+        await store.refreshPending(ritmus?.food)
         await store.load(food: food, now: BoopClock.now())
+    }
+
+    private func cardAction(_ action: PendingCardAction, _ card: PendingDraft) {
+        guard let box = ritmus?.food else { return }
+        switch action {
+        case .save: Task { toast = await store.saveCard(card, box: box) }
+        case .edit: composer = MealStart(entrance: .pick, card: card)
+        case .retry: Task { await box.retry(card.id); await box.flush(); await store.refreshPending(box) }
+        case .discard: Task { await box.discard(card.id); await store.refreshPending(box) }
+        }
     }
 }

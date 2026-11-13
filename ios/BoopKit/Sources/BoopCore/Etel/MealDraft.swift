@@ -62,3 +62,38 @@ public enum MealPhoto {
         return CGImageDestinationFinalize(dest) ? out as Data : nil
     }
 }
+
+// MARK: - What a draft adds up to
+
+public extension DraftItem {
+    /// The line's own macros: the food's numbers are for `per` of its basis unit, the owner ate `amount`.
+    var contribution: Macros {
+        let k = per > 0 ? amount / per : 0
+        return Macros(kcal: kcal * k, p: proteinG * k, c: carbsG * k, f: fatG * k)
+    }
+
+    /// A shelf row as a draft line, one serving of it (what the row's numbers are for).
+    init?(pantry row: PantryRow) {
+        guard let id = row.id, let per = row.per, per > 0, let unit = row.unit else { return nil }
+        self.init(source: .pantry, pantryItemId: id, name: row.name, amount: per, unit: unit, per: per, basisUnit: unit,
+                  kcal: row.kcal ?? 0, proteinG: row.proteinG ?? 0, carbsG: row.carbsG ?? 0, fatG: row.fatG ?? 0, nova: row.nova,
+                  confidence: 1, needsReview: row.kcal == nil, allergens: row.allergens)
+    }
+
+    /// One serving ("adag") of a saved recipe: the server snapshots the same per-serving numbers (whole rollup ÷ servings).
+    init(recipe: Recipe) {
+        let n = Double(max(recipe.servings, 1))
+        self.init(source: .recipe, recipeId: recipe.id, name: recipe.name, amount: 1, unit: "adag", per: 1, basisUnit: "adag",
+                  kcal: recipe.macros.kcal / n, proteinG: recipe.macros.p / n, carbsG: recipe.macros.c / n, fatG: recipe.macros.f / n,
+                  nova: recipe.nova, confidence: 1, needsReview: false)
+    }
+}
+
+public extension MealDraft {
+    var total: Macros {
+        items.reduce(Macros(kcal: 0, p: 0, c: 0, f: 0)) { acc, i in
+            let c = i.contribution
+            return Macros(kcal: acc.kcal + c.kcal, p: acc.p + c.p, c: acc.c + c.c, f: acc.f + c.f)
+        }
+    }
+}

@@ -470,7 +470,7 @@ public struct FoodClient: Sendable {
     }
 
     /// The meal slot a moment falls in, by the clock (a draft the model did not classify).
-    static func slot(at date: Date, cal: Calendar) -> String {
+    public static func slot(at date: Date, cal: Calendar) -> String {
         switch cal.component(.hour, from: date) {
         case 4..<10: return "breakfast"
         case 10..<11: return "snack"

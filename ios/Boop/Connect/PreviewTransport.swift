@@ -23,6 +23,11 @@ struct PreviewTransport: ClientTransport {
         if UserDefaults.standard.bool(forKey: "previewOffline"), Self.ritmusOps.contains(operationID) {
             throw URLError(.notConnectedToInternet)
         }
+        // `previewFoodOffline` (set it at runtime with `defaults write` to cut the net while the app runs): drafting and
+        // saving a meal find no net, so the capture stays on the phone.
+        if UserDefaults.standard.bool(forKey: "previewFoodOffline"), ["draftMealFromAi", "createMeal", "lookupPantryItem"].contains(operationID) {
+            throw URLError(.notConnectedToInternet)
+        }
         // `-previewRefuse YES`: the server refuses the daily loop's writes (the "nem sikerült elküldeni · Újra" rows).
         if UserDefaults.standard.bool(forKey: "previewRefuse"), ["saveCheckIn", "addFocus", "putDayClose", "createJournalEntry"].contains(operationID) {
             return (HTTPResponse(status: .badRequest), nil)

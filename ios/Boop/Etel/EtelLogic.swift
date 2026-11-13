@@ -230,3 +230,76 @@ func supplementGroups(_ items: [ProtocolItem], names: [UUID: StashRow]) -> [Supp
                                count: rows.count, summary: parts.joined(separator: " · "))
     }
 }
+
+// MARK: - Capturing a meal (B4 Task 10)
+
+/// A small label on a draft line: what the owner should know before the tap.
+struct DraftBadge: Equatable, Identifiable {
+    enum Tone: Equatable { case stop, warn, notice, processed }
+    let text: String
+    let tone: Tone
+    var id: String { text }
+}
+
+/// The sensitivity and processed badges of one draft line. A line with no allergen information (an estimate) gets
+/// no allergen badge — silence is never "free of" — and the draft says so once (`draftHasUnknownAllergens`).
+func draftBadges(for item: DraftItem, profile: SensitivityProfile?) -> [DraftBadge] {
+    var out: [DraftBadge] = []
+    if let profile {
+        for b in SensitivityRules.badges(allergens: item.allergens, profile: profile) where b.severity != .noData {
+            let tone: DraftBadge.Tone = switch b.severity { case .block: .stop; case .warn: .warn; default: .notice }
+            out.append(DraftBadge(text: "\(allergenName(b.key ?? "")) · \(b.text)", tone: tone))
+        }
+    }
+    if let nova = item.nova {
+        if nova >= 4 {
+            out.append(DraftBadge(text: "Ultra-feldolgozott", tone: .processed))
+        } else if let rule = profile?.novaRule, rule.enabled, nova > rule.maxLevel {
+            out.append(DraftBadge(text: "NOVA \(nova) · a határod fölött", tone: .processed))
+        }
+    }
+    return out
+}
+
+/// True when the owner has allergen rules and some line carries no allergen information at all.
+func draftHasUnknownAllergens(_ draft: MealDraft, profile: SensitivityProfile?) -> Bool {
+    guard let profile, profile.items.contains(where: \.isStructured) else { return false }
+    return draft.items.contains { $0.allergens.isEmpty }
+}
+
+func allergenName(_ key: String) -> String {
+    ["gluten": "Glutén", "crustaceans": "Rákfélék", "eggs": "Tojás", "fish": "Hal", "peanuts": "Földimogyoró", "soybeans": "Szója",
+     "milk": "Tej", "nuts": "Diófélék", "celery": "Zeller", "mustard": "Mustár", "sesame": "Szezám", "sulphites": "Szulfitok",
+     "lupin": "Csillagfürt", "molluscs": "Puhatestűek"][key] ?? key.capitalized
+}
+
+/// What the draft honestly says about its barcode lookup (`lookupFailed` and `lookupSource` have no other reader):
+/// "could not look it up" and "looked it up, nobody knows it" are different sentences. nil = nothing to add.
+func draftNotice(_ draft: MealDraft) -> String? {
+    if draft.lookupFailed {
+        return "A vonalkódot most nem tudtam megkeresni — nem azt jelenti, hogy nincs meg, csak nem értem el. A kódot megjegyeztem, próbáld újra, ha stabil a net."
+    }
+    if draft.barcode != nil, draft.lookupSource == .none {
+        return "Ezt a kódot nem ismerem: se nálad, se a nyilvános adatbázisban nincs meg. Fotózd le a tápértéktáblát, vagy írd le, mit ettél."
+    }
+    if draft.items.isEmpty {
+        return "Nem találtam ebben ételt. Írd le szavakkal, vagy fotózd le újra."
+    }
+    return nil
+}
+
+/// What the confirmation card says about itself, by state.
+func pendingCardLine(_ card: PendingDraft) -> String {
+    switch card.state {
+    case .waiting: "A telefonon van. Amint lesz net, kiszámolom, és egy koppintással jóváhagyod — addig semmi nem mentődik el."
+    case .failed: "Ezt nem tudtam elküldeni. Az adataid megvannak, megpróbálom újra, ha kéred."
+    case .ready: "Kiszámoltam. Nézd át, és egy koppintással mentsd — addig semmi nem került a naplódba."
+    }
+}
+
+/// The meal's own title: the draft's, else its first lines, else its slot.
+func draftTitle(_ draft: MealDraft) -> String {
+    if let t = draft.title, !t.isEmpty { return t }
+    let names = draft.items.map(\.name)
+    return names.isEmpty ? etelSlotLabel(draft.slot) : names.prefix(3).joined(separator: ", ")
+}

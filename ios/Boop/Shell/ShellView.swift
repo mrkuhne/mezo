@@ -46,6 +46,9 @@ struct ShellView: View {
     @State private var router = RitmusRouter.shared
     /// The cover the "+" sheet asked for; it opens once the sheet has gone (two presentations never overlap).
     @State private var coverAfterCapture: RitmusCover?
+    /// The meal composer the "+" sheet asked for (opens once the sheet has gone), and the one on screen.
+    @State private var mealAfterCapture: MealStart?
+    @State private var meal: MealStart?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     /// The day's brief: Boop's own goals and the bedtime target for the close.
     @Environment(MorningStore.self) private var morning: MorningStore?
@@ -59,6 +62,7 @@ struct ShellView: View {
     /// The cover a sheet made wait opens as soon as that sheet is gone.
     private func openCoverAfterSheet() {
         if let cover = coverAfterCapture { coverAfterCapture = nil; router.open(cover) }
+        if let start = mealAfterCapture { mealAfterCapture = nil; meal = start }
     }
 
     var body: some View {
@@ -84,6 +88,7 @@ struct ShellView: View {
                 .accessibilityHidden(roomOpen)
         }
         .environment(\.openAccount, { account = true })
+        .environment(\.openMeal, { meal = $0 })
         .nkToast($toast)
         .preferredColorScheme(.dark)
         // page-level presentations (boop-ios.md §9)
@@ -92,6 +97,7 @@ struct ShellView: View {
                 switch pick {
                 case .cover(let cover): coverAfterCapture = cover
                 case .soon(let name): toast = soonToast(name)
+                case .meal(let entrance, let text): mealAfterCapture = MealStart(entrance: entrance, text: text)
                 }
                 capturing = false
             }
@@ -99,6 +105,16 @@ struct ShellView: View {
                 .presentationBackground(NK.ground)
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $meal) { start in
+            MealComposerSheet(start: start) { text in
+                meal = nil
+                if let text { toast = text }
+            }
+            .presentationDetents([.large])
+            .presentationBackground(NK.ground)
+            .presentationCornerRadius(34)
+            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $account, onDismiss: openCoverAfterSheet) {
             AccountSheet(me: me)
@@ -141,6 +157,8 @@ struct ShellView: View {
             if let t = UserDefaults.standard.string(forKey: "previewTab").flatMap(ShellTab.init(key:)) { tabKey = t.storageKey; fromTab = t }
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
+            case "meal": meal = MealStart()
+            case "mealText": meal = MealStart(entrance: .text, text: "csirkemell rizzsel és brokkolival")
             case "account": account = true
             case "checkin", "checkinDone": router.open(.checkin)
             case "este", "esteDone": router.open(.este)

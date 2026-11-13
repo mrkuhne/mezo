@@ -13,6 +13,10 @@ import BoopCore
 final class RitmusEnvironment {
     let ledger: LedgerStore
     @ObservationIgnored let outbox: Outbox
+    /// Meals captured without the net (B4): their photos, the drafts computed when it returns, the confirmation cards.
+    @ObservationIgnored let food: FoodOutbox
+    /// Bumped when a captured meal's draft arrives (or a card goes), so the Étel room re-reads its cards.
+    private(set) var mealDraftsTick = 0
     @ObservationIgnored let calendar: Calendar
     /// The check-in / close reminders (local notifications), kept in line with the ledger by the shell.
     @ObservationIgnored let reminders: RitmusReminders
@@ -97,6 +101,7 @@ final class RitmusEnvironment {
         self.chatRef = chatRef
         let retirement = Retirement()
         self.retirement = retirement
+        let me = EnvRef()
         let gated = RetiringSender(inner: sender, retirement: retirement)
         self.sender = gated
         outbox = Outbox(directory: outboxDirectory, sender: gated, clock: clock, calendar: greg) { item, body in
@@ -104,13 +109,15 @@ final class RitmusEnvironment {
             await ledger.applyDelivered(item, body: body)
             // A question asked without the net: the chat keeps the conversation and fetches Boop's answer.
             if item.kind == .chatQuestion { await chatRef.store?.delivered(item, body: body) }
+            // A captured meal's draft is computed: the room shows its confirmation card (nothing is saved here).
+            if item.kind == .mealDraft { await me.env?.mealDraftsChanged() }
             // The evening's line arrived after its relink went out (a retried recording): link it again.
             if let box = queue.outbox { await Self.relinkIfNeeded(item, ledger: ledger, outbox: box) }
             if await queue.outbox?.isQueued(item.id) == true { return }
             await ledger.markSent(item.id, date: item.date)
         }
         queue.outbox = outbox
-        let me = EnvRef()
+        food = FoodOutbox(outbox: outbox, directory: outboxDirectory, calendar: greg)
         me.env = self
         let box = outbox
         Task { await box.observeFailures { failed in await me.env?.useRefused(failed) } }
@@ -154,7 +161,10 @@ final class RitmusEnvironment {
 
     private func useRefused(_ failed: [OutboxItem]) {
         refused = Dictionary(failed.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+        mealDraftsTick += 1
     }
+
+    func mealDraftsChanged() { mealDraftsTick += 1 }
 
     // MARK: - What the server refused (spec §7.1: a quiet "nem sikerült elküldeni" row with Újra)
 
