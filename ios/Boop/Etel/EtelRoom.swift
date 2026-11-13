@@ -75,7 +75,8 @@ final class EtelStore {
         do { return .success(try await work()) } catch let e as FoodFetchError { return .failure(e) } catch { return .failure(.server) }
     }
 
-    func load(food: FoodClient, now: Date) async {
+    /// `extras: false` is the light read (Ma's timeline rows): the numbers only, no coach words and no photos.
+    func load(food: FoodClient, now: Date, extras: Bool = true) async {
         self.food = food; self.now = now
         loading = true
         tipDismissed = false
@@ -105,6 +106,7 @@ final class EtelStore {
         }
         groupsLoaded = true
         loading = false
+        guard extras else { return }
         // The words and the photos arrive after the numbers; neither is needed to read the day.
         async let words: Void = loadCoach(food)
         async let pics: Void = loadPhotos(food)

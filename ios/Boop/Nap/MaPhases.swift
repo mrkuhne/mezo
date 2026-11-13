@@ -50,6 +50,57 @@ func napkozbenStations(_ brief: Brief, now: Date, evening: Bool, hasProposals: B
     }
 }
 
+// MARK: Food on the timeline (B4 Task 15)
+
+/// The plan's next window still to eat: the first one now or pending with nothing logged in it (a missed or skipped
+/// window is not "next").
+func etelNextWindow(_ plan: FuelPlan?) -> PlanWindow? {
+    plan?.windows.first { ($0.state == .now || $0.state == .pending) && $0.loggedMealIds.isEmpty }
+}
+
+/// Where a supplement daypart sits on the clock when the plan has no window for it (indicative, not a promise).
+private let supplementClock: [String: String] = [
+    "wake": "07:00", "morning": "08:00", "breakfast": "08:00", "pre_workout": "16:00", "midday": "12:00", "lunch": "13:00",
+    "afternoon": "15:00", "post_workout": "18:00", "dinner": "19:00", "evening": "21:00", "bedtime": "22:00",
+]
+
+private func clockOrder(_ t: String) -> Bool {
+    let p = t.split(separator: ":"); return p.count == 2 && p.allSatisfy { $0.count == 2 && Int($0) != nil }
+}
+
+/// A station goes after the last one that is not later than it (stations without a clock time are ignored).
+private func inserting(_ st: PathStation, into list: [PathStation]) -> [PathStation] {
+    var out = list
+    let at = out.lastIndex { clockOrder($0.time) && $0.time <= st.time }.map { $0 + 1 } ?? 0
+    out.insert(st, at: at)
+    return out
+}
+
+/// Pointers into the Étel room on Ma's timeline: the next meal window and the supplement group still to take (or one
+/// done line when all are). These are moments, not photos — the room itself holds the cards. All logic is the
+/// room's own (`FuelPlan`, `SupplementGroup`, the taken set); nothing is re-derived here.
+func etelStations(_ stations: [PathStation], plan: FuelPlan?, groups: [SupplementGroup], taken: Set<String>) -> [PathStation] {
+    var out = stations
+    let next = etelNextWindow(plan)
+    if let w = next {
+        let budget = w.budget.map { " · kb. \(huInt(Int($0.kcal.rounded()))) kcal" } ?? ""
+        out = inserting(PathStation(id: "etel-window-\(w.slot)", time: w.from, glyph: "bowl-cream", title: w.label,
+                                    sub: "\(w.from)–\(w.to)\(budget)", done: false, isNow: false, opens: false), into: out)
+    }
+    func clock(_ key: String) -> String {
+        if let w = plan?.windows.first(where: { $0.slot == key && $0.kind == .meal }) { return w.from }
+        return supplementClock[key] ?? "12:00"
+    }
+    if let g = groups.first(where: { !taken.contains($0.key) }) {
+        out = inserting(PathStation(id: "etel-supplements-\(g.key)", time: clock(g.key), glyph: "spark-cream", title: g.label,
+                                    sub: "\(g.count) tétel · \(g.summary)", done: false, isNow: false, opens: false), into: out)
+    } else if let last = groups.last {
+        out = inserting(PathStation(id: "etel-supplements-done", time: clock(last.key), glyph: "spark-cream", title: "Kiegészítők",
+                                    sub: "Mind bevéve", done: true, isNow: false, opens: false), into: out)
+    }
+    return out
+}
+
 /// Nothing on the day but MOST: the timeline gives way to the "nothing yet" line.
 func isEmptyDay(_ stations: [PathStation]) -> Bool { stations.allSatisfy(\.isNow) }
 
@@ -65,7 +116,7 @@ enum StationTap: Equatable { case drill(Hue), daySheet }
 
 func stationTap(_ id: String) -> StationTap? {
     let base = id.split(separator: "-").first.map(String.init) ?? id
-    if id.hasPrefix("meal-") || base == "water" { return .drill(.fuel) }
+    if id.hasPrefix("meal-") || base == "water" || base == "etel" { return .drill(.fuel) }
     if base == "session" || id.hasPrefix("dip-walk") || id.hasPrefix("easy-walk") { return .drill(.mozgas) }
     if ["sleep", "wake", "bedtime", "wind"].contains(base) { return .drill(.alvas) }
     if ["checkin", "intention", "observations"].contains(base) { return .drill(.forma) }
@@ -129,6 +180,10 @@ struct MaBelow: View {
     @State private var goalRecording = false
     /// The goal field's text (typed, or what the phone heard — the owner still sends it).
     @State private var goalDraft = ""
+    /// B4: the food rows' data — the next window and the supplement group (the Étel room's own store, the light read).
+    @Environment(\.foodClient) private var food
+    @State private var etel = EtelStore()
+    @State private var foodSeen = false
 
     private var key: MetricKey { metricKey(for: ctx.hue) }
 
@@ -159,6 +214,14 @@ struct MaBelow: View {
             await ritmus.refreshPastGoals(today: today)
             await ritmus.refreshCloseLine(today)
         }
+        .task(id: today) { await refreshFood() }
+        // back from the Étel room: a supplement ticked or a meal logged there shows here at once
+        .onAppear { if foodSeen { Task { await refreshFood() } }; foodSeen = true }
+    }
+
+    private func refreshFood() async {
+        guard let food else { return }
+        await etel.load(food: food, now: ctx.now, extras: false)
     }
 
     // MARK: lens strip
@@ -312,7 +375,8 @@ struct MaBelow: View {
     private var napkozben: some View {
         let base = napkozbenStations(brief, now: ctx.now, evening: ctx.evening, hasProposals: !proposalsInPlan && !shown.isEmpty,
                                      reminder: ctx.reminder.isOn ? ctx.reminder.time : nil)
-        let stations = ledgerDay.map { ritmusStations(base, day: $0, now: ctx.now, calendar: ritmus?.calendar ?? .current) } ?? base
+        let ritmic = ledgerDay.map { ritmusStations(base, day: $0, now: ctx.now, calendar: ritmus?.calendar ?? .current) } ?? base
+        let stations = etelStations(ritmic, plan: etel.plan, groups: etel.groups, taken: etel.taken)
         return VStack(alignment: .leading, spacing: 14) {
             phaseHead(.napkozben, range: timelineSpan(stations) ?? "")
             if let ritmus, let day = ledgerDay {

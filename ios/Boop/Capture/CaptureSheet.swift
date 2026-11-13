@@ -36,9 +36,7 @@ struct CaptureSheet: View {
                     }
                 }
                 HStack(spacing: 8) {
-                    chip("camera-ink", "Fotó", .meal(.photo, text: "")); chip("pen-sun", "Szöveg", .meal(.text, text: ""))
-                    chip("search-ink", "Vonalkód", .soon("Vonalkód"))
-                    chip("book-sage", "Recept", .meal(.recipe, text: "")); chip("bowl-sage", "Kamra", .meal(.pantry, text: ""))
+                    ForEach(Self.foodChips, id: \.title) { chip($0.glyph, $0.title, $0.pick) }
                 }
             }
             .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
@@ -65,6 +63,13 @@ struct CaptureSheet: View {
             .overlay(Capsule().stroke(.white.opacity(0.12)))
         }
     }
+
+    /// The meal chips, all real: each opens the composer at its entrance (the barcode one lands on the scanner).
+    static let foodChips: [(glyph: String, title: String, pick: CapturePick)] = [
+        ("camera-ink", "Fotó", .meal(.photo, text: "")), ("pen-sun", "Szöveg", .meal(.text, text: "")),
+        ("search-ink", "Vonalkód", .meal(.barcode, text: "")), ("book-sage", "Recept", .meal(.recipe, text: "")),
+        ("bowl-sage", "Kamra", .meal(.pantry, text: "")),
+    ]
 
     private func chip(_ glyph: String, _ title: String, _ pick: CapturePick) -> some View {
         Button { onPick(pick) } label: {

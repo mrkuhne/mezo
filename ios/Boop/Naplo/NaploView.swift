@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import BoopCore
 import BoopDesign
 
@@ -157,6 +158,9 @@ struct NaploDayDetail: View {
     let env: RitmusEnvironment
     let date: String
     @State private var selected: UUID?
+    /// B4: the day's meal photos (nil food client = no food world, e.g. before sign-in: the section is simply absent).
+    @Environment(\.foodClient) private var food
+    @State private var meals = NaploMeals()
 
     var body: some View {
         let day = env.ledger.ledger(for: date)
@@ -171,11 +175,86 @@ struct NaploDayDetail: View {
                     MaEnergyCard(day: day, predicted: [], now: nil,
                                  calendar: env.calendar, selected: $selected, title: "AZ ENERGIÁD")
                 }
+                NaploMealPhotos(model: meals)
             }
             .padding(.horizontal, 16).padding(.top, 20).padding(.bottom, 40)
         }
         .scrollIndicators(.hidden)
         .background(NKGround(hue: .alvas))
         .preferredColorScheme(.dark)
+        .task { if let food { await meals.load(food: food, date: date, calendar: env.calendar) } }
+    }
+}
+
+// MARK: - The day's meal photos (B4 Task 15)
+
+/// The meals of a day that carry a photo — `hasPhoto` decides, so no meal is ever probed with a GET.
+func naploPhotoMeals(_ day: FoodDay?) -> [BoopCore.Meal] { (day?.meals ?? []).filter(\.hasPhoto) }
+
+/// The day's meals and their photos for one Napló day. Loads once; a failure is said in a line, never a blank card.
+@MainActor @Observable
+final class NaploMeals {
+    private(set) var meals: [BoopCore.Meal] = []
+    private(set) var photos: [UUID: UIImage] = [:]
+    private(set) var loaded = false
+    private(set) var failed = false
+
+    func load(food: FoodClient, date: String, calendar: Calendar) async {
+        let p = date.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3, let noon = calendar.date(from: DateComponents(year: p[0], month: p[1], day: p[2], hour: 12)) else {
+            failed = true; loaded = true; return
+        }
+        do {
+            let day = try await food.day(noon)
+            meals = naploPhotoMeals(day)
+            failed = false
+        } catch { failed = true; loaded = true; return }
+        loaded = true
+        let wanted = meals.map(\.id)
+        let fetched = await withTaskGroup(of: (UUID, Data?).self) { group in
+            for id in wanted { group.addTask { (id, try? await food.photo(mealId: id)) } }
+            var out: [(UUID, Data?)] = []
+            for await r in group { out.append(r) }
+            return out
+        }
+        for (id, data) in fetched { if let data, let image = UIImage(data: data) { photos[id] = image } }
+    }
+}
+
+/// A photo on the card, nothing in between: each photographed meal of the day as one card.
+private struct NaploMealPhotos: View {
+    let model: NaploMeals
+
+    var body: some View {
+        if model.failed {
+            Text("Az étkezéseid képeit most nem látom.").nkFont(14).foregroundStyle(.white.opacity(0.6))
+                .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
+        } else if !model.meals.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                NKMono("A NAP ÉTELEI").padding(.leading, 4)
+                ForEach(model.meals) { meal in
+                    VStack(alignment: .leading, spacing: 0) {
+                        Group {
+                            if let image = model.photos[meal.id] {
+                                Image(uiImage: image).resizable().scaledToFill().nkPhotoTone()
+                            } else {
+                                ZStack { Color.white.opacity(0.08); NKGlyph("camera-ink", .white.opacity(0.5), size: 26) }
+                            }
+                        }
+                        .frame(height: 190).frame(maxWidth: .infinity).clipped()
+                        HStack(spacing: 8) {
+                            Text(meal.title.flatMap { $0.isEmpty ? nil : $0 } ?? etelSlotLabel(meal.slot))
+                                .nkFont(15.5, .medium).foregroundStyle(.white).lineLimit(2)
+                            Spacer(minLength: 8)
+                            Text(etelSlotLabel(meal.slot)).nkFont(12.5).foregroundStyle(.white.opacity(0.55))
+                        }
+                        .padding(14)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .nkGlass(22)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
     }
 }
