@@ -81,6 +81,12 @@ class RecipeServiceIT extends AbstractIntegrationTest {
             req("Melegszendvics", line(cheese.getId(), "50", "g"), line(bread.getId(), "80", "g")));
         assertThat(created.getAllergens()).containsEntry("milk", "contains").containsEntry("gluten", "traces");
 
+        entityManager.flush();
+        // The stored jsonb form is the lowercase wire value (pinned: importers write the same form).
+        Object stored = entityManager.createNativeQuery("select allergens::text from recipe where id = :id")
+            .setParameter("id", created.getId()).getSingleResult();
+        assertThat(stored.toString()).contains("\"contains\"").doesNotContain("CONTAINS");
+
         service.update(owner, created.getId(), req("Melegszendvics", line(bread.getId(), "80", "g")));
         assertThat(service.get(owner, created.getId()).getAllergens())
             .containsOnlyKeys("gluten");

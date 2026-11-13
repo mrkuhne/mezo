@@ -1,5 +1,6 @@
 -- Boop B4 (mezo-r36n9.14, spec §7.1): the food-sensitivity foundation.
---  * pantry_catalog.allergens — EU-14 key -> contains | traces | unknown (empty = nobody declared anything;
+--  * pantry_catalog.allergens — EU-14 key -> contains | traces | unknown, stored LOWERCASE exactly as listed
+--    (AllergenState is serialised through its lowercase wire value; writers must use it) (empty = nobody declared anything;
 --    a missing key is unknown, never free-of). pantry_catalog.barcode — the product's EAN/UPC, one live row
 --    per owner per barcode.
 --  * recipe.allergens — the DERIVED rollup of the ingredients' states (null until first recompute).

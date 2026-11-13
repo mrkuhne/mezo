@@ -53,10 +53,14 @@ public class SensitivityService {
         return toProfile(repository.save(row));
     }
 
+    // The controller calls these, so the transaction boundary lives HERE: self-invoking the
+    // annotated profile()/save() below would bypass the Spring proxy.
+    @Transactional(readOnly = true)
     public SensitivityProfileResponse getResponse(UUID userId) {
         return toResponse(profile(userId));
     }
 
+    @Transactional
     public SensitivityProfileResponse setResponse(UUID userId, SensitivityProfileRequest req) {
         return toResponse(save(userId, fromRequest(req)));
     }
@@ -104,10 +108,15 @@ public class SensitivityService {
 
     private static SensitivityProfile fromRequest(SensitivityProfileRequest req) {
         List<Sensitivity> items = req.getItems().stream()
-            .map(i -> new Sensitivity(i.getKey().strip(), SensitivityLevel.fromWire(i.getLevel().getValue()), i.getNote()))
+            .map(i -> new Sensitivity(normalizeKey(i.getKey()), SensitivityLevel.fromWire(i.getLevel().getValue()), i.getNote()))
             .toList();
         return new SensitivityProfile(items,
             new NovaRule(req.getNovaRule().getEnabled(), req.getNovaRule().getMaxLevel()));
+    }
+
+    /** Keys are stored lowercase so "Milk"/"PEANUTS" match the EU-14 keys instead of silently becoming free text. */
+    static String normalizeKey(String key) {
+        return key.strip().toLowerCase(java.util.Locale.ROOT);
     }
 
     private static SensitivityProfileResponse toResponse(SensitivityProfile p) {

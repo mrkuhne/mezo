@@ -10,10 +10,12 @@ public enum AllergenState {
     CONTAINS, TRACES, UNKNOWN;
 
     /** Wire (lowercase) value of the contract enum. */
+    @com.fasterxml.jackson.annotation.JsonValue
     public String wire() {
         return name().toLowerCase(Locale.ROOT);
     }
 
+    @com.fasterxml.jackson.annotation.JsonCreator
     public static AllergenState fromWire(String wire) {
         return valueOf(wire.trim().toUpperCase(Locale.ROOT));
     }

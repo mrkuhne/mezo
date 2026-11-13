@@ -47,6 +47,21 @@ class SensitivityProfileIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testSetSensitivityProfile_shouldTreatMixedCaseEu14KeyAsStructuredKey() {
+        HttpHeaders auth = ownerAuthHeaders();
+        putForBody("/api/sensitivity", SensitivityProfileRequest.builder()
+            .items(List.of(SensitivityItem.builder().key(" MILK ").level(SensitivityItem.LevelEnum.ALLERGY).build()))
+            .novaRule(SensitivityNovaRule.builder().enabled(true).maxLevel(2).build()).build(),
+            auth, HttpStatus.OK, SensitivityProfileResponse.class);
+
+        SensitivityProfileResponse read =
+            getForBody("/api/sensitivity", auth, HttpStatus.OK, SensitivityProfileResponse.class);
+
+        assertThat(read.getItems()).extracting(SensitivityItem::getKey).containsExactly("milk");
+        assertThat(io.mrkuhne.mezo.feature.nutrition.service.AllergenKeys.isEu14(read.getItems().get(0).getKey())).isTrue();
+    }
+
+    @Test
     void testSetSensitivityProfile_shouldReplaceSingleRow_whenSavedTwice() {
         HttpHeaders auth = ownerAuthHeaders();
         SensitivityNovaRule nova = SensitivityNovaRule.builder().enabled(false).maxLevel(2).build();
