@@ -145,7 +145,8 @@
     "terulet": [
       "Étel"
     ],
-    "mit_kapsz": "Fotóból, szövegből, vonalkódból vagy receptből rögzített étel, allergénfigyelés és napi keret a következő étkezés tippjével."
+    "mit_kapsz": "Fotóból, szövegből, vonalkódból vagy receptből rögzített étel, allergénfigyelés és napi keret a következő étkezés tippjével.",
+    "munkamenet": "boop-b4-etel"
   },
   "mezo-r36n9.15": {
     "cim": "B5 Edzés + Apple Watch — natív edzéslejátszó",
@@ -470,5 +471,27 @@
     "mit_kapsz": "Egy jegy („A főképernyő élő fal lesz\") nem került fel a táblára, mert a Notion-kapcsolat elakadt. Ez pótolja — a táblán nem hiányzik majd semmi.",
     "szulo": "mezo-r36n9.33",
     "allapot": "Később"
+  },
+  "mezo-r36n9.48": {
+    "cim": "Hibajavítás · az alapanyagok nem jelzik, hogy allergént tartalmaznak",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "A hal, a tojás, a tej és a magvak nincsenek allergénként megjelölve a kamrádban, ezért egy halas recept ma „allergénmentesnek” látszik. Javítás után a Boop figyelmeztetni tud.",
+    "munkamenet": "boop-b4-etel",
+    "szulo": "mezo-r36n9.14"
+  },
+  "mezo-r36n9.50": {
+    "cim": "Hibajavítás · a feladatjegyzetek mentése csendben kimaradhat",
+    "tipus": "Hiba",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A jegyzetek biztonsági mentése csak a feladatok számát figyeli, a tartalmukat nem, így egy átírt leírás a gépen kívül nem jelenik meg. Javítás után minden mentés teljes.",
+    "munkamenet": "boop-b4-etel",
+    "szulo": "mezo-r36n9"
   }
 }

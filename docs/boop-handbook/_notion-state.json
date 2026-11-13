@@ -113,7 +113,7 @@
     },
     "jegyek:mezo-r36n9.14": {
       "page_id": "4168968e-752b-8126-b650-c1fd3b87c390",
-      "hash": "9e36a227f91f"
+      "hash": "ffc3a0f1dabf"
     },
     "jegyek:mezo-r36n9.5": {
       "page_id": "4168968e-752b-816c-a28b-d65344fba272",
@@ -850,6 +850,14 @@
     "dontesek:d-2026-11-13-koltes-heti-maradek": {
       "page_id": "4178968e-752b-8144-8cff-eb270cbcd083",
       "hash": "b928cad3458c"
+    },
+    "jegyek:mezo-r36n9.50": {
+      "page_id": "4178968e-752b-81d6-9f71-f355f1fb49c0",
+      "hash": "ee1dc181e410"
+    },
+    "jegyek:mezo-r36n9.48": {
+      "page_id": "4178968e-752b-81b6-b319-f742b605dcd1",
+      "hash": "4344452f3818"
     }
   }
 }
