@@ -437,5 +437,15 @@
     ],
     "mit_kapsz": "Az Edzés, a Közérzet, a Pénz és a Levél is saját, csendes fényképet kap a fejlécébe — addig a festett ég marad, ami szintén jól néz ki.",
     "allapot": "Később"
+  },
+  "mezo-r36n9.45": {
+    "cim": "L0/b · A főképernyő élő fal lesz",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Amikor megnyitod az appot, azt látod, ami éppen számít: legfeljebb három kártya, fölöttük a check-in. Amit elintézel, lecsúszik a „Ma történt” közé. A napirend és a reggeli összefoglaló becsukva marad, a nagy pontszám pedig lekerül a főképernyőről.",
+    "allapot": "Később"
   }
 }
