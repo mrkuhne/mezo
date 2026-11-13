@@ -64,6 +64,22 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 Adding an API operation: add its `operationId` to `BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`
 and run `scripts/sync-openapi.sh` whenever `api/openapi.yml` changes.
 
+## App icon
+
+The icon is generated, not hand-drawn — regenerate it after any change to the Napkelte palette:
+
+```bash
+swift ios/tools/genappicon.swift /tmp/boopicons napkelte
+cp /tmp/boopicons/napkelte-light.png  ios/Boop/Assets.xcassets/AppIcon.appiconset/icon.png
+cp /tmp/boopicons/napkelte-dark.png   ios/Boop/Assets.xcassets/AppIcon.appiconset/icon-dark.png
+cp /tmp/boopicons/napkelte-tinted.png ios/Boop/Assets.xcassets/AppIcon.appiconset/icon-tinted.png
+```
+
+The script also renders the two directions the owner did not pick (`arc`, `horizont`) — drop the last argument
+to get all three. Colours and the ridge algorithm are copied from `BoopDesign/Napkelte/{Tokens,Landscape}.swift`
+(BoopDesign itself is iOS-only, so it cannot be imported into a macOS script). Owner decision: `14-decisions.md` #8.
+watchOS has no icon yet (B5).
+
 ## Signing
 
 - Today: the owner's **free Personal Team** (7-day profiles). **Never commit a team id**; pass it at build time (or `~/.config/boop/team`).

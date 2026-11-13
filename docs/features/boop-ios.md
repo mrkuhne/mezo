@@ -53,6 +53,10 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
 
 ## 2. User-facing behavior
 
+- **The app icon (`mezo-r36n9.34`, 2026-11-13):** the Napkelte scene itself — Forma's painted sky, the four hazy
+  ridges and the orb cresting them — with the iOS 18 dark and tinted variants. It is generated, not hand-drawn:
+  `swift ios/tools/genappicon.swift <out> napkelte` (see `ios/README.md` §App icon); the script also carries the two
+  directions the owner turned down. No watchOS icon yet (B5).
 - **The look (S2.5, Napkelte):** near-black ground that keeps the page's hue all the way down, a painted landscape
   backdrop per page, white type on glass cards, colour only in the sky and the orbs. Bottom bar = five icons, no
   labels. Sign-in/register, offline, onboarding (profile, first weight, "Szia, Boop vagyok"), Health + calendar
