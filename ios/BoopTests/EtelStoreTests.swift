@@ -5,6 +5,13 @@ import Testing
 import BoopCore
 @testable import Boop
 
+/// A request body with the encoder's layout (spaces, line breaks) taken out, keys sorted, so tests can match `"key":"value"`.
+func compactJSON(_ body: String) -> String {
+    guard let data = body.data(using: .utf8), let obj = try? JSONSerialization.jsonObject(with: data),
+          let out = try? JSONSerialization.data(withJSONObject: obj, options: [.sortedKeys, .withoutEscapingSlashes]) else { return body }
+    return String(decoding: out, as: UTF8.self)
+}
+
 /// Answers each operation from a handler, records every request (operation id and body).
 final class ScriptedTransport: ClientTransport, @unchecked Sendable {
     typealias Handler = @Sendable (String) async throws -> (Int, String)
@@ -16,6 +23,8 @@ final class ScriptedTransport: ClientTransport, @unchecked Sendable {
     func on(_ op: String, _ code: Int, _ json: String = "") { on(op) { _ in (code, json) } }
     func count(_ op: String) -> Int { lock.withLock { sent.filter { $0.op == op }.count } }
     func bodies(_ op: String) -> [String] { lock.withLock { sent.filter { $0.op == op }.map(\.body) } }
+    /// A request body with the encoder's layout (spaces, line breaks) taken out, so tests can match `"key":"value"`.
+    func compactBodies(_ op: String) -> [String] { bodies(op).map(compactJSON) }
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         var text = ""

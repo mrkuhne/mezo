@@ -15,6 +15,8 @@ struct EtelMa: View {
     /// Opens the composer at an entrance (nil = the picker).
     let onCapture: (MealStart.Entrance) -> Void
     let onCard: (PendingCardAction, PendingDraft) -> Void
+    /// Opens one of the settings, skip or list sheets (page level).
+    let onSheet: (EtelSheet) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -26,6 +28,7 @@ struct EtelMa: View {
         NKDrillSection(number: 3, label: "MIT EGYÉL LEGKÖZELEBB") { tip }
         NKDrillSection(number: 4, label: "VÍZ") { water }
         NKDrillSection(number: 5, label: "KIEGÉSZÍTŐK") { supplements }
+        NKDrillSection(number: 6, label: "BEÁLLÍTÁSOK") { settings }
     }
 
     // MARK: - Quiet states shared by the sections
@@ -59,6 +62,7 @@ struct EtelMa: View {
                 if day.fuelMode == "GUIDANCE" {
                     Text("Kímélő nap: ma nincs kalóriakeret, csak egyél nyugodtan.").nkFont(15).foregroundStyle(.white.opacity(0.85))
                         .fixedSize(horizontal: false, vertical: true)
+                    pill("Kikapcsolom a kímélő módot", primary: false) { Task { onToast(await store.endKimelo().text) } }
                 } else {
                     let left = remaining.map { Int($0.kcal.rounded()) } ?? Int((day.targets.kcal - day.consumed.kcal - Double(day.skippedKcal)).rounded())
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -117,7 +121,8 @@ struct EtelMa: View {
                             ForEach(meals) { m in
                                 MealCard(meal: m, slotLabel: label, photo: store.photos[m.id], coach: store.coach[m.id], onDimension: onDimension)
                             }
-                        case .open(let w): OpenWindowCard(window: w, onToast: onToast, onCapture: onCapture)
+                        case .open(let w):
+                            OpenWindowCard(window: w, canSkip: store.day?.fuelMode != "GUIDANCE", onSkip: { onSheet(.skip(w)) }, onCapture: onCapture)
                         case .skipped(let w): quietRow(w, "Kihagyva")
                         case .quiet(let w): quietRow(w, "Kész, a részletei nincsenek itt")
                         }
@@ -230,8 +235,11 @@ struct EtelMa: View {
         } else if let problem = store.groupsProblem, store.groups.isEmpty {
             problemLine("A kiegészítőidet most nem látom.", problem)
         } else if store.groups.isEmpty {
-            Text("Még nincs kiegészítő a listádon. A listát a Kamrában állíthatod össze.")
-                .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Még nincs kiegészítő a listádon. Vegyél fel, amit szedsz.")
+                    .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
+                editListPill
+            }
         } else {
             VStack(spacing: 0) {
                 ForEach(Array(store.groups.enumerated()), id: \.element.id) { k, g in
@@ -256,8 +264,48 @@ struct EtelMa: View {
                     .accessibilityElement(children: .contain)
                     if k < store.groups.count - 1 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                 }
+                editListPill.padding(.top, 12)
             }
         }
+    }
+
+    private var editListPill: some View {
+        pill("A lista szerkesztése", primary: false) { onSheet(.supplements) }
+    }
+
+    // MARK: - 6 · settings
+
+    private var settings: some View {
+        VStack(spacing: 0) {
+            settingsRow("Amit kerülök", "Allergia, intolerancia, feldolgozottság", glyph: "leaf-sage") { onSheet(.sensitivity) }
+            divider
+            settingsRow("Étrend-beállítások", "Makró-arány, fehérje-szint, víz és rost", glyph: "chart-deep") { onSheet(.diet) }
+            divider
+            settingsRow("Napi ritmus", "Étkezések száma, koffein-stop", glyph: "clock-sky") { onSheet(.rhythm) }
+            divider
+            settingsRow("Kímélő mód", store.day?.fuelMode == nil ? "Beteg vagy, vagy úton: nincs kalóriacél" : "Be van kapcsolva", glyph: "heart-cream") { onSheet(.kimelo) }
+            divider
+            settingsRow("Kiegészítők listája", "Felvétel, kivétel, adag", glyph: "pen-sun") { onSheet(.supplements) }
+        }
+    }
+
+    private var divider: some View { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+
+    private func settingsRow(_ title: String, _ sub: String, glyph: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                NKThumb(image: nil, glyph: glyph, size: 42)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).nkFont(15.5, .medium).foregroundStyle(.white)
+                    Text(sub).nkFont(12.5).foregroundStyle(.white.opacity(0.55)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").nkFont(13, .semibold).foregroundStyle(.white.opacity(0.4))
+            }
+            .padding(.vertical, 11).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -265,7 +313,9 @@ struct EtelMa: View {
 
 struct OpenWindowCard: View {
     let window: PlanWindow
-    let onToast: (String) -> Void
+    /// A kímélő (GUIDANCE) day has no budget to skip out of: the button is not offered.
+    let canSkip: Bool
+    let onSkip: () -> Void
     let onCapture: (MealStart.Entrance) -> Void
 
     var body: some View {
@@ -294,17 +344,19 @@ struct OpenWindowCard: View {
                 }
             }
             HStack(spacing: 8) {
-                // The skip sheet is the next task of this slice; its button is here already.
                 Button { onCapture(.pick) } label: {
                     Text("Megeszem").nkFont(14, .semibold).foregroundStyle(NK.ground)
                         .padding(.horizontal, 16).frame(minHeight: 38).background(Capsule().fill(.white.opacity(0.95)))
                 }
                 .buttonStyle(.plain)
-                Button { onToast(soonToast("A kihagyás")) } label: {
-                    Text("Kihagyom").nkFont(14).foregroundStyle(.white.opacity(0.8))
-                        .padding(.horizontal, 16).frame(minHeight: 38).background(Capsule().fill(.white.opacity(0.1)))
+                if canSkip {
+                    Button(action: onSkip) {
+                        Text("Kihagyom").nkFont(14).foregroundStyle(.white.opacity(0.8))
+                            .padding(.horizontal, 16).frame(minHeight: 38).background(Capsule().fill(.white.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(window.label) kihagyása")
                 }
-                .buttonStyle(.plain)
                 Spacer(minLength: 0)
                 Button { onCapture(.photo) } label: {
                     NKGlyph("camera-ink", .white, size: 18).frame(width: 38, height: 38).background(Circle().fill(.white.opacity(0.1)))

@@ -111,7 +111,9 @@ struct PreviewTransport: ClientTransport {
 
     private static let foodWriteOps = ["createMeal", "logWater", "upsertPlannedSkip", "setSensitivityProfile", "logIntake",
                                        "importRecipeFromUrl", "importRecipeFromText", "createRecipe", "workshopTurn", "scrapePantryItem", "importPantryItem",
-                                       "createPantryItem", "addPantryItemFromCatalog"]
+                                       "createPantryItem", "addPantryItemFromCatalog",
+                                       "setDietSettings", "previewDietSettings", "setFuelSettings", "addProtocolItem", "patchProtocolItem",
+                                       "upsertRecovery", "recoveryCheckIn"]
     /// Every Étel operation the app can call; one of these falling through unanswered is a bug in this file.
     private static let foodOps: Set<String> = [
         "getFuelDay", "getFuelPlan", "draftMealFromAi", "createMeal", "logWater", "upsertPlannedSkip", "listRecipes", "getRecipe",
@@ -120,7 +122,8 @@ struct PreviewTransport: ClientTransport {
         "getMealPhoto", "putMealPhoto", "deleteMealPhoto", "deleteAllMealPhotos", "getMealCoachForDay", "deleteIntake",
         "createRecipe", "recipeLogs", "getRecipeBreakdown", "workshopTurn", "getRecipeImage", "putRecipeImage", "deleteRecipeImage",
         "getFuelWeek", "getUsualMeals", "scrapePantryItem", "photoExtractPantryItem", "importPantryItem", "createPantryItem",
-        "addPantryItemFromCatalog",
+        "addPantryItemFromCatalog", "setDietSettings", "previewDietSettings", "getFuelSettings", "setFuelSettings", "addProtocolItem",
+        "patchProtocolItem", "deleteProtocolItem", "getRecovery", "upsertRecovery", "deleteRecovery", "recoveryCheckIn",
     ]
     private static let seedMealId = "5b0e8a52-1c3d-4e0e-9a52-7d9d4c1a0b01"
     private static let recipeId = "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03"
@@ -132,6 +135,18 @@ struct PreviewTransport: ClientTransport {
     nonisolated(unsafe) private static var foodSkips: Set<String> = []
     nonisolated(unsafe) private static var foodSensitivity =
         #"{"items":[{"key":"milk","level":"intolerance","note":"laktózmentes"},{"key":"gluten","level":"avoid"}],"novaRule":{"enabled":true,"maxLevel":2}}"#
+    /// The settings, the supplement list and kímélő mode as the review has changed them (Task 14).
+    nonisolated(unsafe) private static var foodDiet = #"{"splitPreset":"balanced","proteinTier":"moderate","waterMl":2500,"fiberG":30,"dayTypeShiftKcal":0,"learningEnabled":true}"#
+    nonisolated(unsafe) private static var foodFuel = #"{"mealsPerDay":5,"caffeineCutoff":"14:00"}"#
+    /// The start date and category of the open kímélő period; nil = none.
+    nonisolated(unsafe) private static var foodKimelo: (start: String, category: String)?
+    /// Protocol rows (JSON) and the supplements the review has made (id, name, dose).
+    nonisolated(unsafe) private static var foodProtocol: [String] = [
+        #"{"id":"dd805c3a-94b5-4080-9c3a-5f7fce9c8d09","pantryItemId":"22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d","slotKey":"morning","pinned":false,"placementSource":"rule"}"#,
+        #"{"id":"ab036d4c-0aa1-4aa1-8c4b-6a8aaed0a00b","pantryItemId":"11a38d6f-c7e8-43b3-8f6d-82a0bfbcb01c","slotKey":"morning","pinned":false,"placementSource":"rule"}"#,
+        #"{"id":"ee916d4b-a5c6-4191-ad4b-608d0fad9e0a","pantryItemId":"ff027e5c-b6d7-42a2-be5c-719e1abeaf0b","slotKey":"evening","dose":"2 db","pinned":true,"placementSource":"user"}"#,
+    ]
+    nonisolated(unsafe) private static var foodStashExtra: [(id: String, name: String, dose: String)] = []
     /// The "photo" of every meal that claims one: a small warm gradient with a plate-like disc, drawn once.
     private static let pixel: Data = UIGraphicsImageRenderer(size: CGSize(width: 480, height: 240)).jpegData(withCompressionQuality: 0.8) { ctx in
         let cg = ctx.cgContext
@@ -196,6 +211,7 @@ struct PreviewTransport: ClientTransport {
     private static func foodPlan(date: String) -> String {
         func window(_ slot: String, _ kind: String, _ label: String, _ from: String, _ to: String, _ key: String, _ budget: String,
                     state: String, logged: String = "", suggestion: String = "") -> String {
+            let budget = foodKimelo == nil ? budget : "null"
             let st = foodSkips.contains(key) ? "skipped" : state
             let sug = (st == "now" || st == "pending") && !suggestion.isEmpty ? #","suggestion":\#(suggestion)"# : ""
             return #"{"slot":"\#(slot)","kind":"\#(kind)","label":"\#(label)","from":"\#(from)","to":"\#(to)","budget":\#(budget),"state":"\#(st)","loggedMealIds":[\#(logged)]\#(sug)}"#
@@ -222,7 +238,8 @@ struct PreviewTransport: ClientTransport {
         switch op {
         case "getFuelDay":
             let meals = ([seedMeal(date: date)] + foodMeals).joined(separator: ",")
-            return json(#"{"date":"\#(date)","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":{"kcal":420,"p":22,"c":62,"f":9,"water":\#(foodWater)},"meals":[\#(meals)],"skippedKcal":\#(foodSkips.count * 200)}"#)
+            let mode = foodKimelo.map { "\"fuelMode\":\"GUIDANCE\",\"recoveryCategory\":\"\($0.category)\",\"recoveryDay\":1," } ?? ""
+            return json(#"{"date":"\#(date)","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":{"kcal":420,"p":22,"c":62,"f":9,"water":\#(foodWater)},"meals":[\#(meals)],\#(mode)"skippedKcal":\#(foodSkips.count * 200)}"#)
         case "getFuelPlan": return json(foodPlan(date: date))
         case "getMealCoachForDay":
             return json(#"{"verdicts":[{"mealId":"\#(seedMealId)","tagline":"Jó kezdés","summary":"Jó kezdés: a fehérje a helyén, a rost viszont elmarad a napi harmadától.","improve":[],"dimensionNotes":{"micro":"Egy evőkanál chiamag vagy egy adag hüvelyes +6 g rostot ad.","nova":"Ez a tányér szinte csupa alapanyag — itt nincs mit javítani."},"glucoseTips":[{"title":"Legközelebb laposabb","body":"Tegyél bele egy evőkanál chiamagot: lassítja a felszívódást."}]}]}"#)
@@ -286,7 +303,7 @@ struct PreviewTransport: ClientTransport {
         case "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto":
             return json(#"{"result":{"name":"Tejszínes gombás tészta","category":"dinner","servings":2,"steps":["Főzd meg a tésztát.","Pirítsd meg a gombát.","Keverd össze a kettőt."],"sourceUrl":null,"structured":true,"needsReview":true,"lines":[{"source":"estimate","name":"tészta","amount":200,"unit":"g","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.9,"needsReview":false},"sourceText":"20 dkg tészta"},{"source":"estimate","name":"Tejszín","amount":2,"unit":"dl","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.5,"needsReview":true},"sourceText":"2 dl főzőtejszín","allergens":{"milk":"contains"}},{"source":"estimate","name":"gomba","amount":250,"unit":"g","match":{"confidence":0.2,"needsReview":true},"sourceText":"25 dkg gomba"}]}}"#)
         case "getPantry":
-            return json(#"{"ingredients":[\#(pantryShelf.joined(separator: ","))],"stash":[\#(stashRow("22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d", "D3-vitamin", "4000 NE")),\#(stashRow("ff027e5c-b6d7-42a2-be5c-719e1abeaf0b", "Magnézium-glicinát", "400 mg")),\#(stashRow("11a38d6f-c7e8-43b3-8f6d-82a0bfbcb01c", "Omega-3", "2 g"))],"imports":[],"suggestions":[]}"#)
+            return json(#"{"ingredients":[\#(pantryShelf.joined(separator: ","))],"stash":[\#(stashRow("22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d", "D3-vitamin", "4000 NE")),\#(stashRow("ff027e5c-b6d7-42a2-be5c-719e1abeaf0b", "Magnézium-glicinát", "400 mg")),\#(stashRow("11a38d6f-c7e8-43b3-8f6d-82a0bfbcb01c", "Omega-3", "2 g"))\#(foodStashExtra.map { "," + stashRow($0.id, $0.name, $0.dose) }.joined())],"imports":[],"suggestions":[]}"#)
         case "searchPantryCatalog":
             return json(#"[{"id":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","kind":"food","name":"Zabpehely","source":"manual","category":"grains","per":100,"unit":"g","kcal":370,"proteinG":13,"carbsG":60,"fatG":7,"fiberG":10,"nova":1,"allergens":{"gluten":"contains"}},{"id":"44460c9f-fa56-46e6-9c9f-b5d24e2e1a30","kind":"food","name":"Zabkása, instant","brand":"Pelda","source":"openfoodfacts","category":"grains","per":100,"unit":"g","kcal":385,"proteinG":11,"carbsG":64,"fatG":7.5,"nova":3,"authorName":"Anna","barcode":"5997001230000","allergens":{"gluten":"contains","milk":"traces"}}]"#)
         case "getFuelWeek": return json(foodWeek(start: pathDate(request)))
@@ -302,18 +319,58 @@ struct PreviewTransport: ClientTransport {
         case "importPantryItem", "createPantryItem":
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
             let name = obj?["name"] as? String ?? "Új étel"
+            let kind = obj?["kind"] as? String ?? "food"
+            let newId = UUID().uuidString.lowercased()
+            if kind == "supplement" { foodStashExtra.append((newId, name, obj?["dose"] as? String ?? "")) }
             let source = op == "createPantryItem" ? "manual" : (obj?["origin"] as? String == "photo" ? "photo" : (obj?["sourceUrl"] != nil ? "web" : "openfoodfacts"))
             let allergens = (obj?["allergens"] as? [String: String]).flatMap { try? JSONSerialization.data(withJSONObject: $0) }.flatMap { String(data: $0, encoding: .utf8) } ?? "null"
-            return created(#"{"id":"\#(UUID().uuidString.lowercased())","catalogId":"\#(UUID().uuidString.lowercased())","kind":"food","name":"\#(name)","source":"\#(source)","allergens":\#(allergens),"barcode":\#(obj?["barcode"].flatMap { $0 as? String }.map { "\"\($0)\"" } ?? "null")}"#)
+            return created(#"{"id":"\#(newId)","catalogId":"\#(newId)","kind":"\#(kind)","name":"\#(name)","source":"\#(source)","allergens":\#(allergens),"barcode":\#(obj?["barcode"].flatMap { $0 as? String }.map { "\"\($0)\"" } ?? "null")}"#)
         case "addPantryItemFromCatalog":
             let catalog = (((try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any])?["catalogId"] as? String) ?? oatsId
             return json(#"{"id":"\#(UUID().uuidString.lowercased())","catalogId":"\#(catalog)","kind":"food","name":"Zabkása, instant"}"#)
         case "getSensitivityProfile": return json(foodSensitivity)
         case "setSensitivityProfile": foodSensitivity = sent; return json(sent)
-        case "getDietSettings":
-            return json(#"{"splitPreset":"balanced","proteinTier":"moderate","waterMl":2500,"fiberG":30,"dayTypeShiftKcal":0,"learningEnabled":true}"#)
+        case "getDietSettings": return json(foodDiet)
+        case "setDietSettings": foodDiet = sent; return json(sent)
+        case "previewDietSettings":
+            // a projection that follows the draft: a higher protein tier and a lower-carb split move the grams
+            let high = sent.contains(#""proteinTier":"high""#), low = sent.contains(#""proteinTier":"low""#)
+            let carbs = sent.contains("low_carb") ? 190 : (sent.contains("high_carb") ? 340 : 280)
+            let fat = sent.contains("low_fat") ? 55 : 75
+            return json(#"{"kcal":2650,"proteinG":\#(high ? 205 : (low ? 150 : 175)),"carbsG":\#(carbs),"fatG":\#(fat),"source":"goal"}"#)
+        case "getFuelSettings": return json(foodFuel)
+        case "setFuelSettings": foodFuel = sent; return json(sent)
         case "getProtocol":
-            return json(#"{"active":{"id":"cc7f5b29-83a4-4f7f-8b29-4e6ebd8b7c08","version":3,"builtAt":"2026-11-01T06:00:00Z","status":"active","items":[{"id":"dd805c3a-94b5-4080-9c3a-5f7fce9c8d09","pantryItemId":"22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d","slotKey":"morning","pinned":false,"placementSource":"rule"},{"id":"ab036d4c-0aa1-4aa1-8c4b-6a8aaed0a00b","pantryItemId":"11a38d6f-c7e8-43b3-8f6d-82a0bfbcb01c","slotKey":"morning","pinned":false,"placementSource":"rule"},{"id":"ee916d4b-a5c6-4191-ad4b-608d0fad9e0a","pantryItemId":"ff027e5c-b6d7-42a2-be5c-719e1abeaf0b","slotKey":"evening","dose":"2 db","pinned":true,"placementSource":"user"}]},"history":[]}"#)
+            return json(#"{"active":{"id":"cc7f5b29-83a4-4f7f-8b29-4e6ebd8b7c08","version":3,"builtAt":"2026-11-01T06:00:00Z","status":"active","items":[\#(foodProtocol.joined(separator: ","))]},"history":[]}"#)
+        case "addProtocolItem":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            let dose = (obj?["dose"] as? String).map { "\"dose\":\"\($0)\"," } ?? ""
+            let row = #"{"id":"\#(UUID().uuidString.lowercased())","pantryItemId":"\#(obj?["pantryItemId"] as? String ?? oatsId)","slotKey":"\#(obj?["slotKey"] as? String ?? "morning")",\#(dose)"pinned":true,"placementSource":"user"}"#
+            foodProtocol.append(row)
+            return created(row)
+        case "patchProtocolItem":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            let id = request.path?.split(separator: "?").first?.split(separator: "/").last.map(String.init) ?? ""
+            guard let k = foodProtocol.firstIndex(where: { $0.contains(id) }),
+                  var row = (try? JSONSerialization.jsonObject(with: Data(foodProtocol[k].utf8))) as? [String: Any] else { return (HTTPResponse(status: .notFound), nil) }
+            if let dose = obj?["dose"] as? String { row["dose"] = dose }
+            let text = String(decoding: (try? JSONSerialization.data(withJSONObject: row)) ?? Data(), as: UTF8.self)
+            foodProtocol[k] = text
+            return json(text)
+        case "deleteProtocolItem":
+            let id = request.path?.split(separator: "?").first?.split(separator: "/").last.map(String.init) ?? ""
+            foodProtocol.removeAll { $0.contains(id) }
+            return (HTTPResponse(status: .noContent), nil)
+        case "getRecovery":
+            guard let k = foodKimelo else { return json(#"{"protectedDates":[]}"#) }
+            return json(#"{"period":{"id":"22249a7e-d8f9-44c4-9a7e-93b03cd0c12e","category":"\#(k.category)","estimate":"TODAY","startDate":"\#(k.start)","dayIndex":1,"estimateExpired":false,"checkedInToday":false,"releasedDates":[],"releasedUnlightened":[]},"protectedDates":["\#(k.start)"]}"#)
+        case "upsertRecovery":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            let category = obj?["category"] as? String ?? "ILLNESS"
+            foodKimelo = (dayString(offset: 0), category)
+            return json(#"{"period":{"id":"22249a7e-d8f9-44c4-9a7e-93b03cd0c12e","category":"\#(category)","estimate":"TODAY","startDate":"\#(dayString(offset: 0))","dayIndex":1,"estimateExpired":false,"checkedInToday":false,"releasedDates":[],"releasedUnlightened":[]},"protectedDates":["\#(dayString(offset: 0))"]}"#)
+        case "deleteRecovery": foodKimelo = nil; return (HTTPResponse(status: .noContent), nil)
+        case "recoveryCheckIn": foodKimelo = nil; return json(#"{"protectedDates":[]}"#)
         case "logIntake":
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
             return created(#"{"id":"\#(UUID().uuidString.lowercased())","pantryItemId":"\#(obj?["pantryItemId"] as? String ?? oatsId)","takenAt":"\#(ISO8601DateFormatter().string(from: Date()))","takenDate":"\#(dayString(offset: 0))"}"#)

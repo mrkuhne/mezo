@@ -562,13 +562,133 @@ public struct FoodClient: Sendable {
     public func dietSettings() async throws -> DietSettings {
         try await call {
             switch try await client.getDietSettings() {
-            case .ok(let ok):
-                let d = try ok.body.json
-                return DietSettings(splitPreset: d.splitPreset.rawValue, proteinTier: d.proteinTier.rawValue, waterMl: d.waterMl,
-                                    fiberG: d.fiberG, dayTypeShiftKcal: d.dayTypeShiftKcal, learningEnabled: d.learningEnabled,
-                                    proteinPctX10: d.proteinPctX10, carbsPctX10: d.carbsPctX10, fatPctX10: d.fatPctX10)
+            case .ok(let ok): return Self.map(try ok.body.json)
             case .unauthorized: throw FoodFetchError.unauthorized
             case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    private static func map(_ d: Components.Schemas.DietSettingsResponse) -> DietSettings {
+        DietSettings(splitPreset: d.splitPreset.rawValue, proteinTier: d.proteinTier.rawValue, waterMl: d.waterMl,
+                     fiberG: d.fiberG, dayTypeShiftKcal: d.dayTypeShiftKcal, learningEnabled: d.learningEnabled,
+                     proteinPctX10: d.proteinPctX10, carbsPctX10: d.carbsPctX10, fatPctX10: d.fatPctX10)
+    }
+
+    private static func request(_ s: DietSettings) -> Components.Schemas.SetDietSettingsRequest {
+        let custom = s.splitPreset == "custom"
+        return .init(splitPreset: .init(rawValue: s.splitPreset) ?? .balanced, proteinPctX10: custom ? s.proteinPctX10 : nil,
+                     carbsPctX10: custom ? s.carbsPctX10 : nil, fatPctX10: custom ? s.fatPctX10 : nil,
+                     proteinTier: .init(rawValue: s.proteinTier) ?? .moderate, waterMl: s.waterMl, fiberG: s.fiberG,
+                     dayTypeShiftKcal: s.dayTypeShiftKcal, learningEnabled: s.learningEnabled)
+    }
+
+    /// Saves the diet settings; the server re-evaluates the active goal. A custom split that does not add up to 100.0%
+    /// is refused (`rejected`).
+    @discardableResult
+    public func setDietSettings(_ settings: DietSettings) async throws -> DietSettings {
+        try await call {
+            switch try await client.setDietSettings(body: .json(Self.request(settings))) {
+            case .ok(let ok): return Self.map(try ok.body.json)
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// The targets today would have under an unsaved draft. Nothing is stored and the goal is not re-evaluated.
+    public func previewDietSettings(_ settings: DietSettings) async throws -> DietPreview {
+        try await call {
+            switch try await client.previewDietSettings(body: .json(Self.request(settings))) {
+            case .ok(let ok):
+                let p = try ok.body.json
+                return DietPreview(kcal: p.kcal, proteinG: p.proteinG, carbsG: p.carbsG, fatG: p.fatG, fromGoal: p.source == .goal)
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    public func fuelSettings() async throws -> FuelSettings {
+        try await call {
+            switch try await client.getFuelSettings() {
+            case .ok(let ok):
+                let f = try ok.body.json
+                return FuelSettings(mealsPerDay: f.mealsPerDay, caffeineCutoff: f.caffeineCutoff)
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    @discardableResult
+    public func setFuelSettings(_ settings: FuelSettings) async throws -> FuelSettings {
+        try await call {
+            switch try await client.setFuelSettings(body: .json(.init(mealsPerDay: settings.mealsPerDay, caffeineCutoff: settings.caffeineCutoff))) {
+            case .ok(let ok):
+                let f = try ok.body.json
+                return FuelSettings(mealsPerDay: f.mealsPerDay, caffeineCutoff: f.caffeineCutoff)
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    // MARK: - Kímélő mode (the recovery period)
+
+    /// The open recovery period (or the one that ended today); nil when there is none.
+    public func recovery() async throws -> KimeloPeriod? {
+        try await call {
+            switch try await client.getRecovery() {
+            case .ok(let ok):
+                guard let wrapped = try ok.body.json.period, wrapped.value1.endedOn == nil else { return nil }
+                let p = wrapped.value1
+                return KimeloPeriod(category: p.category.rawValue, startDate: p.startDate, dayIndex: p.dayIndex)
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Opens a kímélő period from today, for one day (the owner ends it with one tap). `.illness` and `.stomach` stop the
+    /// day being judged (no kcal target); `.injury` keeps a maintenance target; `.travel` estimates.
+    public func startKimelo(_ category: SkipReason) async throws {
+        guard let reason = Components.Schemas.PlannedSkipReason(rawValue: category.rawValue),
+              [.ILLNESS, .STOMACH, .INJURY, .TRAVEL].contains(reason) else { throw FoodFetchError.rejected }
+        try await call {
+            switch try await client.upsertRecovery(body: .json(.init(category: reason, estimate: .TODAY))) {
+            case .ok: return
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Takes the kímélő mode back out. A period that started today is discarded ("Tévedés volt" — the "better" answer
+    /// is refused on the start day); an older one ends today ("Jobban vagyok").
+    public func endKimelo(_ period: KimeloPeriod, today: Date) async throws {
+        if period.startDate == ymd(today) {
+            try await call {
+                switch try await client.deleteRecovery() {
+                case .noContent: return
+                case .notFound: throw FoodFetchError.notFound
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .undocumented: throw FoodFetchError.server
+                }
+            }
+        } else {
+            try await call {
+                switch try await client.recoveryCheckIn(body: .json(.init(answer: .BETTER))) {
+                case .ok: return
+                case .badRequest: throw FoodFetchError.rejected
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .notFound: throw FoodFetchError.notFound
+                case .undocumented: throw FoodFetchError.server
+                }
             }
         }
     }
@@ -580,14 +700,78 @@ public struct FoodClient: Sendable {
             switch try await client.getProtocol() {
             case .ok(let ok):
                 let active = try ok.body.json.active
-                return FoodProtocol(version: active?.version, items: (active?.items ?? []).compactMap { i in
-                    guard let id = UUID(uuidString: i.id), let item = UUID(uuidString: i.pantryItemId) else { return nil }
-                    return ProtocolItem(id: id, pantryItemId: item, slotKey: i.slotKey, dose: i.dose, pinned: i.pinned)
-                })
+                return FoodProtocol(version: active?.version, items: (active?.items ?? []).compactMap(Self.map))
             case .unauthorized: throw FoodFetchError.unauthorized
             case .undocumented: throw FoodFetchError.server
             }
         }
+    }
+
+    private static func map(_ i: Components.Schemas.ProtocolItemResponse) -> ProtocolItem? {
+        guard let id = UUID(uuidString: i.id), let item = UUID(uuidString: i.pantryItemId) else { return nil }
+        return ProtocolItem(id: id, pantryItemId: item, slotKey: i.slotKey, dose: i.dose, pinned: i.pinned)
+    }
+
+    /// Makes a brand-new supplement of the owner's own (a pantry row of kind supplement) and returns its pantry id.
+    public func createSupplement(name: String, dose: String?) async throws -> UUID {
+        let request = Components.Schemas.PantryItemRequest(kind: .supplement, name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                                                           source: .init(value1: .manual), category: .supplement, dose: dose)
+        return try await call(mapsRefusals: true) {
+            switch try await client.createPantryItem(body: .json(request)) {
+            case .created(let ok):
+                guard let id = UUID(uuidString: try ok.body.json.id) else { throw FoodFetchError.server }
+                return id
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Puts a supplement on the living protocol. Without `slotKey` the server's engine places it.
+    @discardableResult
+    public func addProtocolItem(pantryItemId: UUID, slotKey: String? = nil, dose: String? = nil) async throws -> ProtocolItem {
+        try await call(mapsRefusals: true) {
+            switch try await client.addProtocolItem(body: .json(.init(pantryItemId: pantryItemId.wire, slotKey: slotKey, dose: dose))) {
+            case .created(let ok):
+                guard let item = Self.map(try ok.body.json) else { throw FoodFetchError.server }
+                return item
+            case .badRequest, .conflict: throw FoodFetchError.rejected
+            case .notFound: throw FoodFetchError.notFound
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Re-doses one protocol item (the placement is left alone).
+    @discardableResult
+    public func setProtocolDose(_ id: UUID, dose: String) async throws -> ProtocolItem {
+        try await call(mapsRefusals: true) {
+            switch try await client.patchProtocolItem(path: .init(id: id.wire), body: .json(.init(dose: dose))) {
+            case .ok(let ok):
+                guard let item = Self.map(try ok.body.json) else { throw FoodFetchError.server }
+                return item
+            case .badRequest, .conflict: throw FoodFetchError.rejected
+            case .notFound: throw FoodFetchError.notFound
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Takes one supplement off the protocol (a soft delete). A row already gone counts as removed.
+    public func removeProtocolItem(_ id: UUID) async throws {
+        do {
+            try await call {
+                switch try await client.deleteProtocolItem(path: .init(id: id.wire)) {
+                case .noContent: return
+                case .notFound: throw FoodFetchError.notFound
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .undocumented: throw FoodFetchError.server
+                }
+            }
+        } catch FoodFetchError.notFound { return }
     }
 
     /// One tap ticks the whole daypart group: one intake per protocol item of `daypart`. Each item's `clientRef` is derived

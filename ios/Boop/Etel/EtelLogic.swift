@@ -210,8 +210,42 @@ struct SupplementGroup: Equatable, Identifiable {
     var id: String { key }
 }
 
-private let supplementOrder = ["morning", "midday", "afternoon", "evening", "bedtime"]
-private let supplementLabels = ["morning": "Reggel", "midday": "Dél", "afternoon": "Délután", "evening": "Este", "bedtime": "Lefekvés előtt"]
+/// The server's daypart keys (`wake|breakfast|pre_workout|post_workout|lunch|dinner|evening|bedtime`) in the order of the
+/// day, plus the older coarse words, with their Hungarian names.
+let supplementDayparts: [(key: String, label: String)] = [
+    ("wake", "Ébredéskor"), ("morning", "Reggel"), ("breakfast", "Reggeli mellé"), ("pre_workout", "Edzés előtt"),
+    ("midday", "Dél"), ("lunch", "Ebéd mellé"), ("afternoon", "Délután"), ("post_workout", "Edzés után"),
+    ("dinner", "Vacsora mellé"), ("evening", "Este"), ("bedtime", "Lefekvés előtt"),
+]
+/// The dayparts a new supplement can be placed in (the server accepts exactly these).
+let supplementPlacements = ["wake", "breakfast", "pre_workout", "lunch", "post_workout", "dinner", "evening", "bedtime"]
+private let supplementOrder = supplementDayparts.map(\.key)
+private let supplementLabels = Dictionary(uniqueKeysWithValues: supplementDayparts.map { ($0.key, $0.label) })
+
+func supplementDaypartLabel(_ key: String) -> String {
+    supplementLabels[key] ?? (key.prefix(1).uppercased() + key.dropFirst())
+}
+
+/// One supplement of the protocol, named, for the list editor.
+struct SupplementRow: Equatable, Identifiable {
+    let id: UUID
+    let pantryItemId: UUID
+    let name: String
+    let dose: String?
+    let slotKey: String
+}
+
+/// The protocol's rows with their names and doses (the row's own dose wins over the stash's), in the day's order.
+func supplementRows(_ items: [ProtocolItem], names: [UUID: StashRow]) -> [SupplementRow] {
+    let rows = items.map { item -> SupplementRow in
+        let stash = names[item.pantryItemId]
+        let dose = [item.dose, stash?.dose].compactMap { $0 }.first { !$0.isEmpty }
+        return SupplementRow(id: item.id, pantryItemId: item.pantryItemId, name: stash?.name ?? "Kiegészítő", dose: dose, slotKey: item.slotKey)
+    }
+    return rows.enumerated().sorted {
+        (supplementOrder.firstIndex(of: $0.element.slotKey) ?? 99, $0.offset) < (supplementOrder.firstIndex(of: $1.element.slotKey) ?? 99, $1.offset)
+    }.map(\.element)
+}
 
 /// The protocol's rows as the day's groups (morning first, anything unknown last); a group with no item is not shown.
 func supplementGroups(_ items: [ProtocolItem], names: [UUID: StashRow]) -> [SupplementGroup] {
@@ -226,8 +260,7 @@ func supplementGroups(_ items: [ProtocolItem], names: [UUID: StashRow]) -> [Supp
             let dose = [item.dose, stash?.dose].compactMap { $0 }.first { !$0.isEmpty }
             return dose.map { "\(name) \($0)" } ?? name
         }
-        return SupplementGroup(key: key, label: supplementLabels[key] ?? (key.prefix(1).uppercased() + key.dropFirst()),
-                               count: rows.count, summary: parts.joined(separator: " · "))
+        return SupplementGroup(key: key, label: supplementDaypartLabel(key), count: rows.count, summary: parts.joined(separator: " · "))
     }
 }
 

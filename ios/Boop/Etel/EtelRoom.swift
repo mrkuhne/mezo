@@ -47,6 +47,8 @@ final class EtelStore {
     /// Days whose meals could not be read for a score (the tab says so instead of showing a quietly wrong average).
     private(set) var weekScoreFailures: Set<String> = []
     private(set) var groups: [SupplementGroup] = []
+    /// The protocol's rows by name, for the list editor (B4 Task 14).
+    private(set) var protocolRows: [SupplementRow] = []
     private(set) var groupsLoaded = false
     private(set) var groupsProblem: FoodFetchError?
     /// The groups taken today and the intake entries that took them (kept so a mis-tap can be undone).
@@ -97,7 +99,7 @@ final class EtelStore {
         }
         switch await s {
         case .success(let (proto, stash)):
-            groups = supplementGroups(proto.items, names: Dictionary(stash.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a }))
+            applyProtocol(proto, stash: stash)
             groupsProblem = nil
         case .failure(let e): groupsProblem = e
         }
@@ -107,6 +109,12 @@ final class EtelStore {
         async let words: Void = loadCoach(food)
         async let pics: Void = loadPhotos(food)
         _ = await (words, pics)
+    }
+
+    private func applyProtocol(_ proto: FoodProtocol, stash: [StashRow]) {
+        let names = Dictionary(stash.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        groups = supplementGroups(proto.items, names: names)
+        protocolRows = supplementRows(proto.items, names: names)
     }
 
     private func loadCoach(_ food: FoodClient) async {
@@ -314,6 +322,96 @@ final class EtelStore {
         }
     }
 
+    // MARK: - The supplement list on the phone (B4 Task 14, owner decision 18)
+
+    /// Reads the protocol and the stash again after an edit. Returns false when the read failed (the list keeps what it had).
+    private func reloadSupplements(_ food: FoodClient) async -> Bool {
+        switch await Self.attempt({ (try await food.protocol(), try await food.stash()) }) {
+        case .success(let (proto, stash)): applyProtocol(proto, stash: stash); groupsProblem = nil; groupsLoaded = true; return true
+        case .failure: return false
+        }
+    }
+
+    private func supplementProblem(_ e: Error, _ fallback: String) -> String {
+        switch e as? FoodFetchError {
+        case .offline: "Nincs net — ehhez kell"
+        case .unauthorized: "Újra be kell jelentkezned"
+        default: fallback
+        }
+    }
+
+    /// Takes one item off the list. The next one-tap tick reads the protocol fresh, so it ticks only what is left.
+    func removeSupplement(_ id: UUID) async -> String {
+        guard let food else { return "Most nem tudom kivenni" }
+        do { try await food.removeProtocolItem(id) } catch { return supplementProblem(error, "Nem sikerült kivenni — próbáld újra") }
+        _ = await reloadSupplements(food)
+        return "Kivettem a listádról"
+    }
+
+    func setSupplementDose(_ id: UUID, dose: String) async -> String {
+        guard let food else { return "Most nem tudom átírni" }
+        let value = dose.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return "Írd be az adagot" }
+        do { try await food.setProtocolDose(id, dose: value) } catch { return supplementProblem(error, "Nem sikerült átírni — próbáld újra") }
+        _ = await reloadSupplements(food)
+        return "Az adag: \(value)"
+    }
+
+    /// A new supplement: made on the shelf, then put on the protocol in `slotKey`. A name already on the list is not added twice.
+    func addSupplement(name: String, dose: String, slotKey: String) async -> String {
+        guard let food else { return "Most nem tudom felvenni" }
+        let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return "Írd be a kiegészítő nevét" }
+        if let same = protocolRows.first(where: { $0.name.caseInsensitiveCompare(clean) == .orderedSame }) {
+            return "\(same.name) már a listádon van"
+        }
+        let value = dose.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            let pantryId = try await food.createSupplement(name: clean, dose: value.isEmpty ? nil : value)
+            try await food.addProtocolItem(pantryItemId: pantryId, slotKey: slotKey, dose: value.isEmpty ? nil : value)
+        } catch { return supplementProblem(error, "Nem sikerült felvenni — próbáld újra") }
+        _ = await reloadSupplements(food)
+        return "\(clean) a listádon"
+    }
+
+    // MARK: - Kímélő mode (B4 Task 14)
+
+    /// The open recovery period, nil when there is none; throws when it could not be read.
+    func kimelo() async throws -> KimeloPeriod? {
+        guard let food else { throw FoodFetchError.unauthorized }
+        return try await food.recovery()
+    }
+
+    /// Opens kímélő mode for today. An open period of any kind is left alone: a tap never turns an injury into an illness.
+    func startKimelo(_ category: SkipReason) async -> EtelOutcome {
+        guard let food else { return EtelOutcome(ok: false, text: "Most nem tudom bekapcsolni") }
+        do {
+            if try await food.recovery() != nil { return EtelOutcome(ok: false, text: "A kímélő mód már be van kapcsolva") }
+            try await food.startKimelo(category)
+        } catch FoodFetchError.offline { return EtelOutcome(ok: false, text: "Nincs net — ehhez kell")
+        } catch { return EtelOutcome(ok: false, text: "Nem sikerült bekapcsolni — próbáld újra") }
+        await load(food: food, now: now)
+        return EtelOutcome(ok: true, text: "Kímélő mód bekapcsolva — ma nincs kalóriakeret")
+    }
+
+    /// Takes kímélő mode back out, in one tap.
+    func endKimelo() async -> EtelOutcome {
+        guard let food else { return EtelOutcome(ok: false, text: "Most nem tudom kikapcsolni") }
+        do {
+            guard let period = try await food.recovery() else {
+                await load(food: food, now: now)
+                return EtelOutcome(ok: true, text: "A kímélő mód már ki van kapcsolva")
+            }
+            try await food.endKimelo(period, today: now)
+        } catch FoodFetchError.offline { return EtelOutcome(ok: false, text: "Nincs net — ehhez kell")
+        } catch { return EtelOutcome(ok: false, text: "Nem sikerült kikapcsolni — próbáld újra") }
+        await load(food: food, now: now)
+        return EtelOutcome(ok: true, text: "A kímélő mód kikapcsolva — újra számolom a keretet.")
+    }
+
+    /// The owner's rules, as just saved: the badges everywhere read them from here.
+    func profileSaved(_ p: SensitivityProfile) { profile = p }
+
     func isTaken(_ group: SupplementGroup) -> Bool { taken.contains(group.key) }
     func isBusy(_ group: SupplementGroup) -> Bool { busy.contains(group.key) }
 
@@ -352,6 +450,28 @@ final class EtelStore {
     }
 
     func dismissTip() { tipDismissed = true }
+}
+
+/// What an action of the room says back: whether it went through, and the sentence for the owner.
+struct EtelOutcome: Equatable {
+    let ok: Bool
+    let text: String
+}
+
+/// What the Ma tab's settings and skip sheets show (page level, one at a time).
+enum EtelSheet: Identifiable {
+    case sensitivity, diet, rhythm, kimelo, supplements
+    case skip(PlanWindow)
+    var id: String {
+        switch self {
+        case .sensitivity: "sensitivity"
+        case .diet: "diet"
+        case .rhythm: "rhythm"
+        case .kimelo: "kimelo"
+        case .supplements: "supplements"
+        case .skip(let w): "skip-\(w.slot)-\(w.from)"
+        }
+    }
 }
 
 /// What the Receptek tab's sheet shows.
@@ -422,6 +542,8 @@ struct EtelRoom: View {
     /// The Kamra tab's sheet (a food, or an add route) and the Hét tab's opened day (page level, one at a time each).
     @State private var kamraSheet: KamraSheet?
     @State private var hetDay: HetDay?
+    /// The Ma tab's settings, skip and supplement-list sheets (page level, one at a time).
+    @State private var etelSheet: EtelSheet?
 
     init(tab: EtelTab = .ma) {
         #if DEBUG
@@ -443,7 +565,8 @@ struct EtelRoom: View {
             case .ma:
                 EtelMa(store: store, onDimension: { dimension = $0 }, onToast: { toast = $0 },
                        onRetry: { Task { await reload() } }, onTab: { selected = $0.rawValue },
-                       onCapture: { composer = MealStart(entrance: $0) }, onCard: cardAction)
+                       onCapture: { composer = MealStart(entrance: $0) }, onCard: cardAction,
+                       onSheet: { etelSheet = $0 })
             case .receptek:
                 EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },
                              onOpen: { recipeSheet = .detail($0.id) }, onRetry: { Task { await reload() } })
@@ -509,6 +632,25 @@ struct EtelRoom: View {
             .presentationCornerRadius(34)
             .presentationDragIndicator(.visible)
         }
+        .sheet(item: Binding(get: { [s = etelSheet] in s }, set: { etelSheet = $0 })) { sheet in
+            Group {
+                switch sheet {
+                case .sensitivity:
+                    SensitivitySheet(food: food) { profile, text in store.profileSaved(profile); toast = text }
+                case .diet:
+                    DietSettingsSheet(food: food) { text in toast = text; Task { await reload() } }
+                case .rhythm:
+                    RhythmSheet(food: food) { text in toast = text; Task { await reload() } }
+                case .skip(let window):
+                    SkipSheet(window: window, store: store, food: food) { text in toast = text; Task { await reload() } }
+                case .kimelo:
+                    SkipSheet(window: nil, store: store, food: food) { text in toast = text }
+                case .supplements:
+                    SupplementEditSheet(store: store)
+                }
+            }
+            .etelSheetStyle()
+        }
         .sheet(item: Binding(get: { [d = hetDay] in d }, set: { hetDay = $0 })) { day in
             HetDaySheet(day: day, store: store)
                 .presentationDetents([.large])
@@ -535,6 +677,12 @@ struct EtelRoom: View {
             case "add-manual": kamraSheet = .add(.manual)
             case "add-barcode": kamraSheet = .add(.barcode)
             case "usuals": composer = MealStart(entrance: .usual)
+            case "sensitivity": etelSheet = .sensitivity
+            case "diet": etelSheet = .diet
+            case "rhythm": etelSheet = .rhythm
+            case "kimelo": etelSheet = .kimelo
+            case "supplements": etelSheet = .supplements
+            case "skip": if let food, let plan = try? await food.plan(BoopClock.now()), let w = plan.windows.first(where: { $0.state == .now || $0.state == .pending }) { await store.load(food: food, now: BoopClock.now()); etelSheet = .skip(w) }
             case "het-day": if let food { await store.loadWeek(food: food, now: BoopClock.now()); if let w = store.week {
                 hetDay = hetWeek(w, scores: store.weekScores, today: store.ymd).days.dropLast().last } }
             default: break

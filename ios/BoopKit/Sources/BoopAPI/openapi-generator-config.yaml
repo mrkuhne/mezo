@@ -83,3 +83,14 @@ filter:
     - importPantryItem
     - createPantryItem
     - addPantryItemFromCatalog
+    - setDietSettings
+    - previewDietSettings
+    - getFuelSettings
+    - setFuelSettings
+    - addProtocolItem
+    - patchProtocolItem
+    - deleteProtocolItem
+    - getRecovery
+    - upsertRecovery
+    - deleteRecovery
+    - recoveryCheckIn

@@ -667,6 +667,41 @@ public struct DietSettings: Equatable, Sendable {
     public var dayTypeShiftKcal: Int
     public var learningEnabled: Bool
     public var proteinPctX10: Int?, carbsPctX10: Int?, fatPctX10: Int?
+    public init(splitPreset: String = "balanced", proteinTier: String = "moderate", waterMl: Int = 2500, fiberG: Int = 30,
+                dayTypeShiftKcal: Int = 0, learningEnabled: Bool = true, proteinPctX10: Int? = nil, carbsPctX10: Int? = nil,
+                fatPctX10: Int? = nil) {
+        self.splitPreset = splitPreset; self.proteinTier = proteinTier; self.waterMl = waterMl; self.fiberG = fiberG
+        self.dayTypeShiftKcal = dayTypeShiftKcal; self.learningEnabled = learningEnabled
+        self.proteinPctX10 = proteinPctX10; self.carbsPctX10 = carbsPctX10; self.fatPctX10 = fatPctX10
+    }
+}
+
+/// The day targets an UNSAVED diet-settings draft would give (`POST /api/diet/settings/preview`): read-only, nothing is
+/// stored. `fromGoal` is false when the server fell back to the static nutrition config (no active goal or biometric
+/// profile to project from) — the page says so instead of presenting it as his plan.
+public struct DietPreview: Equatable, Sendable {
+    public var kcal: Int, proteinG: Int, carbsG: Int, fatG: Int
+    public var fromGoal: Bool
+    public init(kcal: Int, proteinG: Int, carbsG: Int, fatG: Int, fromGoal: Bool) {
+        self.kcal = kcal; self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG; self.fromGoal = fromGoal
+    }
+}
+
+/// The day's rhythm: eating occasions per day (3…6; the default 5 = 3 meals + 2 snacks) and the last caffeine time.
+public struct FuelSettings: Equatable, Sendable {
+    public var mealsPerDay: Int
+    /// `HH:mm`
+    public var caffeineCutoff: String
+    public init(mealsPerDay: Int, caffeineCutoff: String) { self.mealsPerDay = mealsPerDay; self.caffeineCutoff = caffeineCutoff }
+}
+
+/// The open recovery period ("kímélő mód"): what is wrong, since when, and which day of it today is.
+public struct KimeloPeriod: Equatable, Sendable {
+    /// ILLNESS | STOMACH | INJURY | TRAVEL
+    public var category: String
+    public var startDate: String
+    public var dayIndex: Int
+    public init(category: String, startDate: String, dayIndex: Int) { self.category = category; self.startDate = startDate; self.dayIndex = dayIndex }
 }
 
 public struct ProtocolItem: Equatable, Sendable, Identifiable {
