@@ -409,6 +409,14 @@ final class EtelStore {
         return EtelOutcome(ok: true, text: "A kímélő mód kikapcsolva — újra számolom a keretet.")
     }
 
+    /// Takes a skipped window back and reloads the day (the budget returns). Returns the toast.
+    func unskip(_ window: PlanWindow) async -> String {
+        guard let food, let plan else { return "Most nem tudom visszavonni" }
+        let outcome = await undoSkipWindow(window, in: plan, food: food)
+        if outcome.ok { await load(food: food, now: now) }
+        return outcome.text
+    }
+
     /// The owner's rules, as just saved: the badges everywhere read them from here.
     func profileSaved(_ p: SensitivityProfile) { profile = p }
 
@@ -636,7 +644,7 @@ struct EtelRoom: View {
             Group {
                 switch sheet {
                 case .sensitivity:
-                    SensitivitySheet(food: food) { profile, text in store.profileSaved(profile); toast = text }
+                    SensitivitySheet(food: food) { profile, text in store.profileSaved(profile); toast = text; Task { await reload() } }
                 case .diet:
                     DietSettingsSheet(food: food) { text in toast = text; Task { await reload() } }
                 case .rhythm:

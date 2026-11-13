@@ -32,6 +32,26 @@ func skipWindow(_ window: PlanWindow, in plan: FuelPlan, reason: SkipReason?, te
     return EtelOutcome(ok: true, text: parts.joined(separator: " · "))
 }
 
+/// Takes a skipped window back. The toast is for the owner.
+func undoSkipWindow(_ window: PlanWindow, in plan: FuelPlan, food: FoodClient) async -> EtelOutcome {
+    do { try await food.undoSkip(window: window, in: plan) }
+    catch FoodFetchError.offline { return EtelOutcome(ok: false, text: "Nincs net — ehhez kell") }
+    catch { return EtelOutcome(ok: false, text: "Nem sikerült visszavonni — próbáld újra") }
+    return EtelOutcome(ok: true, text: "\(window.label) újra a tervedben")
+}
+
+/// The kímélő choices the owner can switch on: illness, stomach bug, travel.
+let kimeloChoices: [(reason: SkipReason, label: String)] = [(.illness, "Beteg vagyok"), (.stomach, "Gyomorrontás"), (.travel, "Úton vagyok")]
+
+/// What an open kímélő period does to the day, in the words of its kind (travel estimates; it does not drop the target).
+func kimeloSentence(_ category: String) -> String {
+    switch category {
+    case "INJURY": "A fehérje a legfontosabb; a keretet a szinten tartáshoz igazítom."
+    case "TRAVEL": "Úton vagy: a keretet becsülöm, és a napot nem értékelem szigorúan. Egyél, ami kijön."
+    default: "Ma nincs kalóriacél, és a napot nem értékelem. Egyél, ami jólesik."
+    }
+}
+
 struct SkipSheet: View {
     /// The window to skip; nil opens only the kímélő card (from the settings list).
     let window: PlanWindow?
@@ -107,7 +127,7 @@ struct SkipSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Ha beteg vagy, vagy úton, kapcsold be: nem adok kalóriacélt, és nem értékelem a napot. Egy koppintással kikapcsolod.")
                 .nkFont(13.5).lineSpacing(2).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
-            EtelChoiceChips(options: [(id: SkipReason.illness, label: "Beteg vagyok"), (id: SkipReason.stomach, label: "Gyomorrontás")],
+            EtelChoiceChips(options: kimeloChoices.map { (id: $0.reason, label: $0.label) },
                             selected: kind) { kind = $0 }
             Button { Task { await turnOn() } } label: {
                 Text(busy ? "Bekapcsolom…" : "Bekapcsolom mára").nkFont(14.5, .medium).foregroundStyle(.white)
@@ -121,8 +141,7 @@ struct SkipSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Be van kapcsolva: \(kimeloWord(k.category)) · \(k.dayIndex). nap.").nkFont(15, .medium).foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(k.category == "INJURY" ? "A fehérje a legfontosabb; a keretet a szinten tartáshoz igazítom."
-                                         : "Ma nincs kalóriacél, és a napot nem értékelem. Egyél, ami jólesik.")
+            Text(kimeloSentence(k.category))
                 .nkFont(13.5).lineSpacing(2).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
             Button { Task { await turnOff() } } label: {
                 Text(busy ? "Kikapcsolom…" : "Kikapcsolom").nkFont(14.5, .semibold).foregroundStyle(NK.ground)

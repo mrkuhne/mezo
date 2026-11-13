@@ -167,4 +167,34 @@ struct EtelSettingsTests {
         #expect(!again.ok && again.text.contains("már be van kapcsolva"))
         #expect(transport.count("upsertRecovery") == 0)
     }
+
+    // MARK: travel, and the way back from a skip
+
+    @Test func travelIsOneOfTheKimeloChoicesAndItsSentenceDoesNotClaimThereIsNoTarget() {
+        #expect(kimeloChoices.map(\.reason) == [.illness, .stomach, .travel])
+        #expect(kimeloSentence("TRAVEL").contains("becsülöm") && !kimeloSentence("TRAVEL").contains("nincs kalóriacél"))
+        #expect(kimeloSentence("ILLNESS").contains("nincs kalóriacél"))
+        #expect(kimeloSentence("INJURY").contains("szinten"))
+        #expect(kimeloWord("TRAVEL") == "úton vagy")
+    }
+
+    @Test func aSkippedWindowCanBeTakenBackAndItsBudgetReturns() async throws {
+        let f = food
+        let p = plan()
+        transport.on("listPlannedSkips", 200, #"[{"id":"22249a7e-d8f9-44c4-9a7e-93b03cd0c12e","date":"2026-11-13","kind":"MEAL","sessionKey":"snack#2","reasonCategory":"NONE","source":"USER","serious":false,"freePass":false,"excused":false},{"id":"33349a7e-d8f9-44c4-9a7e-93b03cd0c12e","date":"2026-11-13","kind":"MEAL","sessionKey":"dinner#1","reasonCategory":"NONE","source":"USER","serious":false,"freePass":false,"excused":false}]"#)
+        transport.on("undoPlannedSkip", 204)
+        try await f.undoSkip(window: p.windows[3], in: p)
+        #expect(transport.count("undoPlannedSkip") == 1)
+        // the right row: dinner#1 (33349a7e), not the snack
+        #expect(transport.pathsOf("undoPlannedSkip")[0].hasSuffix("33349a7e-d8f9-44c4-9a7e-93b03cd0c12e"))
+        let out = await undoSkipWindow(p.windows[2], in: p, food: f)
+        #expect(out.ok && out.text == "Uzsonna újra a tervedben")
+        #expect(transport.pathsOf("undoPlannedSkip")[1].hasSuffix("22249a7e-d8f9-44c4-9a7e-93b03cd0c12e"))
+        // a window with no live skip is simply already planned again
+        transport.on("listPlannedSkips", 200, "[]")
+        #expect(await undoSkipWindow(p.windows[0], in: p, food: f).ok)
+        transport.on("listPlannedSkips", 500)
+        let failed = await undoSkipWindow(p.windows[0], in: p, food: f)
+        #expect(!failed.ok && failed.text.contains("Nem sikerült"))
+    }
 }

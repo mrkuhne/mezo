@@ -16,6 +16,7 @@ struct SupplementEditSheet: View {
     @State private var newSlot = "breakfast"
     @State private var message: String?
     @State private var busy = false
+    @State private var confirming: SupplementRow?
 
     var body: some View {
         NKSheetFrame(hue: .fuel, eyebrow: "KIEGÉSZÍTŐK", title: "A listád") {
@@ -23,6 +24,13 @@ struct SupplementEditSheet: View {
             if let message { EtelNote(text: message) }
             list
             addCard
+        }
+        .confirmationDialog(confirming.map { "Kiveszed a \($0.name) nevű kiegészítőt a listádról?" } ?? "", isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
+                            titleVisibility: .visible) {
+            Button("Kiveszem", role: .destructive) { if let row = confirming { confirming = nil; Task { await remove(row) } } }
+            Button("Mégse", role: .cancel) { confirming = nil }
+        } message: {
+            Text("Később a Új kiegészítő gombbal újra felveheted.")
         }
     }
 
@@ -73,7 +81,7 @@ struct SupplementEditSheet: View {
             } else {
                 HStack(spacing: 8) {
                     chip("Adag", primary: false) { editing = row.id; dose = row.dose ?? "" }
-                    chip("Kiveszem", primary: false) { Task { await remove(row) } }
+                    chip("Kiveszem", primary: false) { confirming = row }
                 }
             }
         }

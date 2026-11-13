@@ -532,6 +532,33 @@ public struct FoodClient: Sendable {
         }
     }
 
+    /// Takes a skip back ("Visszavonom"): the window is planned again and its budget returns to the day. A window with no
+    /// live skip is already planned again, which counts as undone.
+    public func undoSkip(window: PlanWindow, in plan: FuelPlan) async throws {
+        let sameSlot = plan.windows.filter { $0.slot == window.slot }
+        guard let index = sameSlot.firstIndex(where: { $0.from == window.from && $0.to == window.to }) else { throw FoodFetchError.rejected }
+        let key = "\(window.slot)#\(index + 1)"
+        let found: String? = try await call {
+            switch try await client.listPlannedSkips(query: .init(from: plan.date, to: plan.date)) {
+            case .ok(let ok): return try ok.body.json.first { $0.kind == .MEAL && $0.sessionKey == key }?.id
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+        guard let id = found else { return }
+        do {
+            try await call {
+                switch try await client.undoPlannedSkip(path: .init(id: id)) {
+                case .noContent: return
+                case .notFound: throw FoodFetchError.notFound
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .undocumented: throw FoodFetchError.server
+                }
+            }
+        } catch FoodFetchError.notFound { return }
+    }
+
     // MARK: - Settings
 
     public func sensitivity() async throws -> SensitivityProfile {

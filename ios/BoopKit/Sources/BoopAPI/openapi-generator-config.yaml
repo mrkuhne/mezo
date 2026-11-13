@@ -94,3 +94,5 @@ filter:
     - upsertRecovery
     - deleteRecovery
     - recoveryCheckIn
+    - listPlannedSkips
+    - undoPlannedSkip

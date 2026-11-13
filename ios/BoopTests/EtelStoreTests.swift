@@ -18,6 +18,8 @@ final class ScriptedTransport: ClientTransport, @unchecked Sendable {
     private let lock = NSLock()
     private var handlers: [String: Handler] = [:]
     private(set) var sent: [(op: String, body: String)] = []
+    private(set) var paths: [(op: String, path: String)] = []
+    func pathsOf(_ op: String) -> [String] { lock.withLock { paths.filter { $0.op == op }.map(\.path) } }
 
     func on(_ op: String, _ h: @escaping Handler) { lock.withLock { handlers[op] = h } }
     func on(_ op: String, _ code: Int, _ json: String = "") { on(op) { _ in (code, json) } }
@@ -29,7 +31,7 @@ final class ScriptedTransport: ClientTransport, @unchecked Sendable {
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         var text = ""
         if let body { text = String(decoding: try await Data(collecting: body, upTo: 1 << 20), as: UTF8.self) }
-        let h = lock.withLock { sent.append((operationID, text)); return handlers[operationID] }
+        let h = lock.withLock { sent.append((operationID, text)); paths.append((operationID, request.path ?? "")); return handlers[operationID] }
         guard let h else { return (HTTPResponse(status: .init(code: 500)), nil) }
         let (code, json) = try await h(text)
         var f = HTTPFields(); f[.contentType] = "application/json"

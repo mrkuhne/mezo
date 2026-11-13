@@ -78,4 +78,17 @@ struct DietSettingsPreviewTests {
         #expect(m.preview == nil && m.previewProblem != nil)   // never the old numbers under a new draft
         #expect(m.canSave)                                     // the save does not depend on the look
     }
+
+    @Test func aDraftChangedAndChangedBackStillGetsItsPreview() async {
+        let m = model()
+        await m.load()
+        await m.refreshPreview()
+        #expect(!m.needsPreview)
+        m.draft?.proteinTier = "high"
+        await m.refreshPreview()
+        m.draft?.proteinTier = "moderate"          // back to what is saved: not dirty, but the card shows the "high" numbers
+        #expect(!m.dirty && !m.previewIsCurrent && m.needsPreview)
+        await m.refreshPreview()
+        #expect(m.previewIsCurrent && m.preview?.proteinG == 170 && !m.needsPreview)
+    }
 }

@@ -124,6 +124,7 @@ struct PreviewTransport: ClientTransport {
         "getFuelWeek", "getUsualMeals", "scrapePantryItem", "photoExtractPantryItem", "importPantryItem", "createPantryItem",
         "addPantryItemFromCatalog", "setDietSettings", "previewDietSettings", "getFuelSettings", "setFuelSettings", "addProtocolItem",
         "patchProtocolItem", "deleteProtocolItem", "getRecovery", "upsertRecovery", "deleteRecovery", "recoveryCheckIn",
+        "listPlannedSkips", "undoPlannedSkip",
     ]
     private static let seedMealId = "5b0e8a52-1c3d-4e0e-9a52-7d9d4c1a0b01"
     private static let recipeId = "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03"
@@ -227,6 +228,12 @@ struct PreviewTransport: ClientTransport {
         ].joined(separator: ",")
         let skipped = foodSkips.count * 200
         return #"{"date":"\#(date)","windows":[\#(windows)],"remaining":\#(macros(Double(1980 - skipped), 128, 218, 56)),"tip":{"text":"Ebédre tegyél fehérjét: a reggeli után még sok hiányzik.","reason":"a fehérje a nap célja alatt jár"}}"#
+    }
+
+    /// A stable id per skipped window key, so the review can undo the right one.
+    private static func skipId(_ key: String) -> String {
+        let hex = key.utf8.suffix(6).map { String(format: "%02x", $0) }.joined()
+        return "5c0a1e00-0000-4000-8000-\(hex)"
     }
 
     private static func foodReply(_ op: String, _ request: HTTPRequest, sent: String) -> (HTTPResponse, HTTPBody?)? {
@@ -369,6 +376,15 @@ struct PreviewTransport: ClientTransport {
             let category = obj?["category"] as? String ?? "ILLNESS"
             foodKimelo = (dayString(offset: 0), category)
             return json(#"{"period":{"id":"22249a7e-d8f9-44c4-9a7e-93b03cd0c12e","category":"\#(category)","estimate":"TODAY","startDate":"\#(dayString(offset: 0))","dayIndex":1,"estimateExpired":false,"checkedInToday":false,"releasedDates":[],"releasedUnlightened":[]},"protectedDates":["\#(dayString(offset: 0))"]}"#)
+        case "listPlannedSkips":
+            let rows = foodSkips.sorted().map { key in
+                #"{"id":"\#(skipId(key))","date":"\#(dayString(offset: 0))","kind":"MEAL","sessionKey":"\#(key)","reasonCategory":"NONE","source":"USER","serious":false,"freePass":false,"excused":false}"#
+            }
+            return json("[\(rows.joined(separator: ","))]")
+        case "undoPlannedSkip":
+            let id = request.path?.split(separator: "?").first?.split(separator: "/").last.map(String.init) ?? ""
+            foodSkips = foodSkips.filter { skipId($0) != id }
+            return (HTTPResponse(status: .noContent), nil)
         case "deleteRecovery": foodKimelo = nil; return (HTTPResponse(status: .noContent), nil)
         case "recoveryCheckIn": foodKimelo = nil; return json(#"{"protectedDates":[]}"#)
         case "logIntake":

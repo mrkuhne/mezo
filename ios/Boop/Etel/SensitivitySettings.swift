@@ -117,6 +117,7 @@ struct SensitivitySheet: View {
     @State private var picked: String?
     @State private var typed = ""
     @State private var message: String?
+    @State private var confirming: String?
 
     var body: some View {
         NKSheetFrame(hue: .fuel, eyebrow: "BEÁLLÍTÁS", title: "Amit kerülök") {
@@ -125,6 +126,13 @@ struct SensitivitySheet: View {
             } else {
                 EtelCard { EtelProblem(text: "A szabályaidat most nem érem el.", detail: .unauthorized) }
             }
+        }
+        .confirmationDialog(confirming.map { "Kiveszed a(z) \(sensitivityName($0)) szót a listádról?" } ?? "",
+                            isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }), titleVisibility: .visible) {
+            Button("Kiveszem", role: .destructive) { if let key = confirming { editor?.setLevel(nil, for: key); confirming = nil } }
+            Button("Mégse", role: .cancel) { confirming = nil }
+        } message: {
+            Text("Csak akkor számít, ha a Mentem gombbal elmented.")
         }
         .task {
             guard editor == nil, let food else { return }
@@ -179,7 +187,7 @@ struct SensitivitySheet: View {
                     Text(sensitivityLevelSentence(item.level, key: item.key)).nkFont(13.5).lineSpacing(2)
                         .foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
                     if !eu14Keys.contains(item.key) {
-                        Button { e.setLevel(nil, for: item.key) } label: {
+                        Button { confirming = item.key } label: {
                             Text("Kiveszem").nkFont(13).foregroundStyle(.white.opacity(0.75))
                                 .padding(.horizontal, 14).frame(minHeight: 34).background(Capsule().fill(.white.opacity(0.1)))
                         }

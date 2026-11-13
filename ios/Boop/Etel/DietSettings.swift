@@ -29,6 +29,8 @@ final class DietSettingsModel {
 
     var dirty: Bool { draft != nil && draft != saved }
     var previewIsCurrent: Bool { preview != nil && previewDraft == draft }
+    /// The card shows numbers for another draft (or none yet): ask again. True after a value is changed and changed back.
+    var needsPreview: Bool { draft != nil && splitProblem == nil && previewDraft != draft }
 
     /// A custom split must add up to exactly 100,0 % (tenths of a percent on the wire).
     var splitProblem: String? {
@@ -124,7 +126,7 @@ struct DietSettingsSheet: View {
             .disabled(!m.dirty || !m.canSave)
             // every change asks for a fresh projection, once the owner stops tapping
             .task(id: m.draft) {
-                guard m.dirty else { return }
+                guard m.needsPreview else { return }
                 try? await Task.sleep(for: .milliseconds(350))
                 guard !Task.isCancelled else { return }
                 await m.refreshPreview()

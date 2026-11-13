@@ -123,7 +123,7 @@ struct EtelMa: View {
                             }
                         case .open(let w):
                             OpenWindowCard(window: w, canSkip: store.day?.fuelMode != "GUIDANCE", onSkip: { onSheet(.skip(w)) }, onCapture: onCapture)
-                        case .skipped(let w): quietRow(w, "Kihagyva")
+                        case .skipped(let w): skippedRow(w)
                         case .quiet(let w): quietRow(w, "Kész, a részletei nincsenek itt")
                         }
                     }
@@ -134,6 +134,22 @@ struct EtelMa: View {
         } else {
             loadingLine("A mai terv betöltése folyamatban")
         }
+    }
+
+    /// A skipped window with the way back: Visszavonom plans it again and the budget returns.
+    private func skippedRow(_ w: PlanWindow) -> some View {
+        HStack(spacing: 8) {
+            Text("\(w.label.uppercased()) · \(w.from)–\(w.to)").nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.55))
+                .lineLimit(1).minimumScaleFactor(0.7)
+            Spacer(minLength: 4)
+            Text("Kihagyva").nkFont(13).foregroundStyle(.white.opacity(0.6))
+            Button { Task { onToast(await store.unskip(w)) } } label: {
+                Text("Visszavonom").nkFont(13, .semibold).foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 12).frame(minHeight: 34).background(Capsule().fill(.white.opacity(0.12)))
+            }
+            .buttonStyle(.plain).accessibilityLabel("\(w.label) kihagyásának visszavonása")
+        }
+        .padding(.horizontal, 18).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
     }
 
     private func quietRow(_ w: PlanWindow, _ text: String) -> some View {
