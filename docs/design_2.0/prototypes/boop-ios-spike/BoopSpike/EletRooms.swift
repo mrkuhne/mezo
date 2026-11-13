@@ -17,6 +17,13 @@ enum EBlock {
     case note(label: String, body: String)
     case mail(label: String, items: [MailItem])
     case ask(String)
+    // Round 11 (owner): the pages were text and nothing else.
+    /// Buttons. Every page gets at least one row of them.
+    case actions([EAction])
+    /// The "hogyan működik" paragraph, folded into one line that opens a sheet.
+    case info(label: String, body: String)
+    /// A news item you can open: the holding it touches, the computed effect, how sure Boop is.
+    case news(label: String, items: [ENews])
 }
 
 struct ETab { let name: String; var badge: Int = 0; let blocks: [EBlock] }
@@ -38,6 +45,8 @@ struct EletAreaPage: View {
     @Environment(\.dismiss) private var dismiss
     @State private var tab = 0
     @State private var motion = OrbMotion()
+    @State private var info: EInfoText?
+    @State private var openNews: ENews?
 
     private var m: EMetric { EMetric.all[min(metric, 7)] }
     private var tabs: [ETab] { EAreaContent.tabs(metric) }
@@ -82,6 +91,21 @@ struct EletAreaPage: View {
         areaBar
         }
         .onDisappear { motion.stop() }
+        // Sheets live at page level (boop-ios.md §9) — anywhere deeper and they never open.
+        .sheet(item: $info) { i in
+            EInfoSheet(title: i.title, text: i.body, hue: m.glow)
+                .presentationDetents([.medium, .large])
+                .presentationBackground(gBase)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $openNews) { n in
+            ENewsSheet(item: n, hue: m.glow, onToast: onToast)
+                .presentationDetents([.large])
+                .presentationBackground(gBase)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
     }
 
     /// Round 9 (owner, 2026-11-13): the area is its own app, so it gets its own masthead —
@@ -238,13 +262,13 @@ struct EletAreaPage: View {
                 .padding(.top, 10)
                 ELevelBar(level: value, hue: m.glow, marker: marker).padding(.top, 10)
                 if !note.isEmpty {
-                    Text(note).font(.system(size: 12.5)).lineSpacing(3).foregroundStyle(.white.opacity(0.55))
-                        .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
+                    // EHueText, not Text — a plain Text prints the *emphasis* markup literally.
+                    EHueText(text: note, hue: m.glow, size: 12.5, opacity: 0.6).padding(.top, 8)
                 }
             }
 
         case let .curve(label, values, labels, target, now, note) where EWarm.on:
-            EBare(label: label, hue: m.glow) {
+            EBare(label: label, hue: m.glow, glyph: EAreaContent.sectionGlyph(label)) {
                 VStack(alignment: .leading, spacing: 12) {
                     ECurve(values: values, labels: labels, hue: m.glow, target: target, nowIndex: now, height: 150)
                     if !note.isEmpty {
@@ -274,7 +298,7 @@ struct EletAreaPage: View {
             }
 
         case let .composition(label, parts, note) where EWarm.on:
-            EBare(label: label, hue: m.glow) {
+            EBare(label: label, hue: m.glow, glyph: EAreaContent.sectionGlyph(label)) {
                 VStack(alignment: .leading, spacing: 12) {
                     EComposition(parts: parts)
                     if !note.isEmpty { EHueText(text: note, hue: m.glow, size: 13, opacity: 0.65) }
@@ -292,7 +316,7 @@ struct EletAreaPage: View {
             }
 
         case let .rowlist(label, rows, more) where EWarm.on:
-            EBare(label: label, hue: m.glow) {
+            EBare(label: label, hue: m.glow, glyph: EAreaContent.sectionGlyph(label)) {
                 VStack(alignment: .leading, spacing: 0) {
                     ERowList(rows: rows, hue: m.glow, warm: true) { onToast($0) }
                     if !more.isEmpty {
@@ -339,7 +363,7 @@ struct EletAreaPage: View {
             }
 
         case let .list(label, items) where EWarm.on:
-            EBare(label: label, hue: m.glow) {
+            EBare(label: label, hue: m.glow, glyph: EAreaContent.sectionGlyph(label)) {
                 VStack(alignment: .leading, spacing: 14) {
                     ForEach(Array(items.enumerated()), id: \.offset) { _, it in
                         HStack(alignment: .top, spacing: 12) {
@@ -374,7 +398,7 @@ struct EletAreaPage: View {
             }
 
         case let .note(label, body) where EWarm.on:
-            EBare(label: label, hue: m.glow) {
+            EBare(label: label, hue: m.glow, glyph: EAreaContent.sectionGlyph(label)) {
                 EHueText(text: body, hue: m.glow, size: 14.5, opacity: 0.8)
             }
 
@@ -393,6 +417,21 @@ struct EletAreaPage: View {
 
         case let .ask(text):
             EAskRow(text: text) { onToast("Új szál nyílik · a terület adataival") }
+
+        case let .actions(list):
+            EActionRow(actions: list, hue: m.glow) { onToast($0) }
+
+        case let .info(label, body):
+            EInfoRow(label: label, hue: m.glow) { info = EInfoText(title: label, body: body) }
+
+        case let .news(label, items):
+            EBare(label: label, hue: m.glow, glyph: EAreaContent.sectionGlyph(label)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(items) { it in
+                        ENewsCard(item: it, hue: m.glow) { openNews = it }
+                    }
+                }
+            }
         }
     }
 
