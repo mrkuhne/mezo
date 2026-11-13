@@ -119,7 +119,7 @@ struct EletMa: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.455 + geo.safeAreaInsets.top)
+                        hero(height: geo.size.height * 0.475 + geo.safeAreaInsets.top)
                         VStack(alignment: .leading, spacing: 22) {
                             feed
                             folds
@@ -196,9 +196,16 @@ struct EletMa: View {
 
                 orbRibbon.padding(.top, 22)
 
+                Rectangle()
+                    .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.16), .white.opacity(0)],
+                                         startPoint: .leading, endPoint: .trailing))
+                    .frame(height: 0.8)
+                    .padding(.horizontal, 30)
+                    .padding(.top, 16)
+
                 EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
                           hue: day.glow, now: 0.47, height: 220)
-                    .padding(.horizontal, 18).padding(.top, 8)
+                    .padding(.horizontal, 18).padding(.top, 12)
 
 
                 Spacer(minLength: 0)
@@ -217,7 +224,9 @@ struct EletMa: View {
                     Button { path.append("m\(i)") } label: {
                         VStack(spacing: 5) {
                             ZStack {
-                                StillOrb(colors: x.orb, size: 36, level: Double(x.value) / 100)
+                                LivingOrb(mood: .good, size: 36, motion: motion, palette: x.orb,
+                                          glow: false, level: Double(x.value) / 100)
+                                    .allowsHitTesting(false)
                                 Text("\(x.value)").font(.custom("Outfit", size: 13).weight(.medium))
                                     .foregroundStyle(.white).shadow(color: .black.opacity(0.55), radius: 3)
                             }

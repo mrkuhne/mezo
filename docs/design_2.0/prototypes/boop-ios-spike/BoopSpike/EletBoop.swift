@@ -198,6 +198,7 @@ struct EThreadView: View {
 struct EletTerv: View {
     var onToast: (String) -> Void
     @Binding var path: [String]
+    @State private var motion = OrbMotion()
     private let m = EMetric.all[0]
 
     /// metric index · what it contributes to the goal · where that stands · progress · today's own verdict
@@ -278,7 +279,9 @@ struct EletTerv: View {
                 HStack(spacing: 0) {
                     ZStack {
                         Circle().fill(a.glow.opacity(0.22)).frame(width: 74, height: 74).blur(radius: 16)
-                        StillOrb(colors: a.orb, size: 62, level: Double(a.value) / 100)
+                        LivingOrb(mood: .good, size: 62, motion: motion, palette: a.orb,
+                                  glow: false, level: Double(a.value) / 100)
+                            .allowsHitTesting(false)
                         Text("\(a.value)").font(.custom("Outfit", size: 21).weight(.medium))
                             .foregroundStyle(.white).shadow(color: .black.opacity(0.45), radius: 4)
                     }
