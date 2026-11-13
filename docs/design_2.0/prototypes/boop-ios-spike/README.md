@@ -1,5 +1,13 @@
 # Boop iOS spike
 
+> **Newest round — "Képek" (B3/b, `mezo-r36n9.32`, 2026-11-13):** photos inside the Napkelte look, judged on the
+> real shipped screens in the simulator (a throwaway `KepekSpike.swift` layer over the app plus the CC0 photos,
+> deleted after the round). Owner's pick: **A fent, B a kártyákon** — a quiet nature photo in every page and room
+> head under the hue's own sky, and a photo of the thing on proposal cards, day stations, Napló days and plan rows;
+> the blurred-photo ground (C) is rejected. Guideline:
+> [`docs/superpowers/specs/2026-11-13-boop-kepek-design.md`](../../../superpowers/specs/2026-11-13-boop-kepek-design.md).
+> Screenshots: `kepek-attekintes.jpg` (the three variants), `kepek-valasztott.jpg` (the chosen combination).
+
 > **Newest round — "Gerinc" (B2, `mezo-r36n9.12`, 2026-11-11):** the standalone spine in the Napkelte look —
 > bottom bar Ma · Terv · Napló · Boop + "+", Ma as one day (Reggel plan → Napközben timeline with proposal cards →
 > Este close), proposal card + "miért?" with labelled expert lines, the domain drill-down template (Alvás),
