@@ -219,5 +219,19 @@
       "mezo-r36n9.13"
     ],
     "mi_valtozott": "Check-in az energiagörbén, a nap célja, egyperces esti zárás hanggal, Boop-beszélgetés, ami ismeri a napodat, Napló napok, emlékeztetők — minden a telefonon mentődik és magától szinkronizál. A telefonra telepítés még hátravan."
+  },
+  "8002eb850": {
+    "cim": "A Boopnak saját ikonja van a kezdőképernyőn",
+    "datum": "2026-11-13",
+    "verzio": "",
+    "tipus": "Kinézet",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B2 Gerinc",
+    "jegyek": [
+      "mezo-r36n9.34"
+    ],
+    "mi_valtozott": "Az üres alapértelmezett négyzet helyett a hajnali kép látszik a hegyekkel és a felkelő gömbbel, sötét módban és színezett kezdőképernyőn is. Fent van a telefonon."
   }
 }
