@@ -281,43 +281,43 @@
     },
     "kezikonyv:01-alapok/elso-lepesek": {
       "page_id": "4168968e-752b-8122-9a3b-f35eb661b68c",
-      "hash": "7bfe1e304c4e"
+      "hash": "88c9c35bdf20"
     },
     "kezikonyv:01-alapok/ertesitesek": {
       "page_id": "4168968e-752b-8165-9906-caa506eee81f",
-      "hash": "7626f32d8ed1"
+      "hash": "2359124103cd"
     },
     "kezikonyv:01-alapok/fiok-es-belepes": {
       "page_id": "4168968e-752b-813a-8bb9-cbce770f5a64",
-      "hash": "b760f526daa3"
+      "hash": "397587b22e0e"
     },
     "kezikonyv:01-alapok/fiok-lap": {
       "page_id": "4168968e-752b-819b-b550-d0428e95081e",
-      "hash": "1945645e3024"
+      "hash": "dc645c4365f8"
     },
     "kezikonyv:01-alapok/fizetos-apple-fiok": {
       "page_id": "4168968e-752b-8155-a95b-cdab453c6b60",
-      "hash": "2d1ea6a6fd34"
+      "hash": "9ccf71e2fc15"
     },
     "kezikonyv:01-alapok/gyors-rogzites": {
       "page_id": "4168968e-752b-81eb-833a-d4a89c813fb9",
-      "hash": "7be56f852e94"
+      "hash": "215d1a97d748"
     },
     "kezikonyv:01-alapok/napkelte-kinezet": {
       "page_id": "4168968e-752b-812a-9b5f-fd8f477ccda4",
-      "hash": "b033206cc818"
+      "hash": "d13b07e2f8d6"
     },
     "kezikonyv:01-alapok/navigacio": {
       "page_id": "4168968e-752b-81f1-a428-f1eff627e50a",
-      "hash": "4b1c85f1ee58"
+      "hash": "f22fca0a5f38"
     },
     "kezikonyv:01-alapok/net-nelkul": {
       "page_id": "4168968e-752b-815c-bee7-c4032ca1468f",
-      "hash": "f3490a93d3ac"
+      "hash": "c57c8ca7be28"
     },
     "kezikonyv:01-alapok/telepites-a-telefonra": {
       "page_id": "4168968e-752b-8185-b34c-c477fe6deb9b",
-      "hash": "7140607abc9f"
+      "hash": "cb43b15dcc6f"
     },
     "kezikonyv:02-ma/00-attekintes": {
       "page_id": "4168968e-752b-81e7-9587-d27ec99c8ca4",
@@ -730,6 +730,26 @@
     "dontesek:d-2026-11-12-notion-egyetlen-igazsag": {
       "page_id": "4168968e-752b-812a-bf67-e4312ad13450",
       "hash": "c79db6a2ec35"
+    },
+    "jegyek:mezo-r36n9.34": {
+      "page_id": "4178968e-752b-815c-a763-c4d496d811e3",
+      "hash": "04d072235a25"
+    },
+    "dontesek:d-2026-11-13-app-ikon": {
+      "page_id": "4178968e-752b-819c-9f5f-e3e9f94c79f6",
+      "hash": "ad87c728e1b3"
+    },
+    "kiadasok:8002eb850": {
+      "page_id": "4178968e-752b-8164-bb54-fc6b7b7c1ff9",
+      "hash": "8e83e4086cf0"
+    },
+    "kezikonyv:01-alapok/app-ikon": {
+      "page_id": "4178968e-752b-818c-b5ad-e922f5258a34",
+      "hash": "a0601475e661"
+    },
+    "jegyek:mezo-r36n9.35": {
+      "page_id": "4178968e-752b-8116-863a-f5051731813b",
+      "hash": "f3445194b8f0"
     }
   }
 }

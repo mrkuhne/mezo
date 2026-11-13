@@ -310,12 +310,22 @@
   },
   "mezo-r36n9.34": {
     "cim": "A Boopnak saját ikonja legyen a kezdőképernyőn",
-    "tipus": "Új funkció",
+    "tipus": "Funkció",
     "szakasz": "B2 Gerinc",
     "terulet": [
       "Alapok"
     ],
     "mit_kapsz": "A telefonod kezdőképernyőjén a Boop a saját hajnali képével jelenik meg az üres négyzet helyett, sötét módban és színezett kezdőképernyőn is.",
+    "munkamenet": "boop-app-icon"
+  },
+  "mezo-r36n9.35": {
+    "cim": "Az Apple Watch appnak is legyen saját ikonja",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Amikor az óra-app elkészül, az órádon is a Boop saját, kerek ikonja jelenik meg, nem az alapértelmezett.",
     "munkamenet": "boop-app-icon"
   }
 }
