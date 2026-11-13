@@ -157,7 +157,8 @@ struct EletMa: View {
                 .overlay {
                     if EWarm.on, let name = EWarm.moodPhoto(0) {
                         photo(name).resizable().scaledToFill()
-                            .saturation(0.8).brightness(-0.06)
+                            .saturation(0.7).brightness(-0.1)
+                            .blur(radius: 22).scaleEffect(1.18)
                             .overlay(LinearGradient(stops: [
                                 .init(color: day.top.opacity(0.52), location: 0),
                                 .init(color: day.top.opacity(0.14), location: 0.26),
