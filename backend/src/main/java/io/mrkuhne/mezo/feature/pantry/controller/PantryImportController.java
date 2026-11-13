@@ -25,7 +25,7 @@ public class PantryImportController implements PantryImportApi {
 
     @Override
     public PantryLookupResponse lookupPantryItem(String q) {
-        return service.lookup(q);
+        return service.lookup(currentUserId.get(), q);
     }
 
     @Override

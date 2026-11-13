@@ -150,6 +150,8 @@ public class PantryCatalogService {
         changed |= fillIfNull(existing::getForm, existing::setForm, candidate.getForm());
         changed |= fillIfNull(existing::getCaffeine, existing::setCaffeine, candidate.getCaffeine());
         changed |= fillMicrosIfEmpty(existing, candidate);
+        changed |= fillIfNull(existing::getBarcode, existing::setBarcode, candidate.getBarcode());
+        changed |= fillAllergensIfEmpty(existing, candidate);
         return changed ? catalogRepository.saveAndFlush(existing) : existing;
     }
 
@@ -169,6 +171,16 @@ public class PantryCatalogService {
             return false;
         }
         existing.setMicros(incoming);
+        return true;
+    }
+
+    /** Allergen states are fill-only too: a row nobody has declared anything for takes the import's map. */
+    private static boolean fillAllergensIfEmpty(PantryCatalogEntity existing, PantryCatalogEntity candidate) {
+        boolean has = existing.getAllergens() != null && !existing.getAllergens().isEmpty();
+        if (has || candidate.getAllergens() == null || candidate.getAllergens().isEmpty()) {
+            return false;
+        }
+        existing.setAllergens(new java.util.HashMap<>(candidate.getAllergens()));
         return true;
     }
 

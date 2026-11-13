@@ -8111,6 +8111,11 @@ export interface components {
         };
         PantryLookupResponse: {
             results: components["schemas"]["PantryLookupResult"][];
+            /**
+             * @description Where the results came from: OFF (OpenFoodFacts), CATALOG (our own row for that barcode — OFF is not called) or NONE (nothing found; results is empty).
+             * @enum {string}
+             */
+            source?: "OFF" | "CATALOG" | "NONE";
         };
         PantryLookupResult: {
             name: string;
@@ -8127,6 +8132,14 @@ export interface components {
             saltG?: number | null;
             saturatedFatG?: number | null;
             nova?: number | null;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
+            /** @description OFF serving_size label, e.g. "40 g" */
+            servingSize?: string | null;
+            /** @description OFF serving_quantity (g or ml) */
+            servingQuantity?: number | null;
         };
         PantryScrapeRequest: {
             url: string;
@@ -8179,6 +8192,10 @@ export interface components {
             origin?: string | null;
             priceHuf?: number | null;
             priceUnit?: string | null;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
         };
         PantryImportEntryResponse: {
             /** Format: uuid */

@@ -20196,6 +20196,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PantryLookupResult'
+        source:
+          type: string
+          enum:
+            - 'OFF'
+            - CATALOG
+            - NONE
+          description: >-
+            Where the results came from: OFF (OpenFoodFacts), CATALOG (our own
+            row for that barcode — OFF is not called) or NONE (nothing found;
+            results is empty).
     PantryLookupResult:
       type: object
       required:
@@ -20244,6 +20254,22 @@ components:
           minimum: 1
           maximum: 4
           nullable: true
+        allergens:
+          type: object
+          nullable: true
+          description: >-
+            Allergen state per EU-14 key: contains | traces | unknown. A missing
+            key is unknown, never free-of.
+          additionalProperties:
+            type: string
+        servingSize:
+          type: string
+          nullable: true
+          description: 'OFF serving_size label, e.g. "40 g"'
+        servingQuantity:
+          type: number
+          nullable: true
+          description: OFF serving_quantity (g or ml)
     PantryScrapeRequest:
       type: object
       required:
@@ -20444,6 +20470,14 @@ components:
         priceUnit:
           type: string
           nullable: true
+        allergens:
+          type: object
+          nullable: true
+          description: >-
+            Allergen state per EU-14 key: contains | traces | unknown. A missing
+            key is unknown, never free-of.
+          additionalProperties:
+            type: string
     PantryImportEntryResponse:
       type: object
       required:
