@@ -95,12 +95,15 @@ struct EletAreaPage: View {
                 VStack(spacing: 0) {
                     ZStack {
                         LivingOrb(mood: .good, size: 92, motion: motion, palette: m.orb,
-                                  glow: true, level: Double(m.value) / 100)
+                                  glow: true, level: m.orbLevel ?? Double(m.value) / 100)
                             .allowsHitTesting(false)
-                        Text("\(m.value)")
-                            .font(.custom("Outfit", size: 30).weight(.light))
-                            .foregroundStyle(.white)
-                            .shadow(color: .black.opacity(0.5), radius: 4)
+                        // Pénz carries no score (owner, 2026-11-13) — the orb fills, but says no number.
+                        if !m.scoreless {
+                            Text("\(m.value)")
+                                .font(.custom("Outfit", size: 30).weight(.light))
+                                .foregroundStyle(.white)
+                                .shadow(color: .black.opacity(0.5), radius: 4)
+                        }
                     }
                     Rectangle()
                         .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.42), .white.opacity(0)],
@@ -133,6 +136,9 @@ struct EletAreaPage: View {
     private static func tabGlyph(_ name: String) -> String {
         switch name {
         case "Ma": return "sun-ink"
+        case "Pénzem": return "e-penz"
+        case "Költés": return "scale-ink"
+        case "Gyakorlás": return "bolt-ink"
         case "Receptek": return "book-sage"
         case "Kamra": return "plate-deep"
         case "Gyakorlatok": return "dumbbell-ink"
