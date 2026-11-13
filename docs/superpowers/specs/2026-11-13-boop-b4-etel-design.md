@@ -155,6 +155,17 @@ intakes; decision 11 is written with that in mind. `docs/features/fuel.md:446` s
 > designed here in words and will be shown in the simulator before any product code. Photos are planned in from
 > the start: the owner's own meal photos and recipe photos are the obvious case.
 
+### 6.0 Photos (Képek guideline, 2026-11-13)
+
+B4 is built **photo-first** per `2026-11-13-boop-kepek-design.md`: a photo in the sky, a photo on the card,
+nothing in between. In this room that means the head carries the Fuel world's mood photo (herbs / kitchen) under
+the hue's own sky gradient; a logged meal's card carries **the owner's own photo** of that meal; recipe cards and
+pantry rows carry a photo of the thing; numbers, the orb, the score tiles and the buttons carry none. Every photo
+is toned (saturation 0.8, brightness −0.06), white type sits only over a gradient, no photo detail sits behind the
+orb, and every screen is correct with no photo at all (the painted landscape is the fallback — the barcode
+scanner uses it). Where the owner has no photo of his own, the CC0 library's food photo stands in; decision 14
+(stored meal photos) is what lets his own pictures take over.
+
 ### 6.1 The room skeleton
 
 The Étel room opens from the Fuel orb's lens, from a timeline meal row, from the `+` sheet or from a "miért?".

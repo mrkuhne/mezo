@@ -1,5 +1,16 @@
 # Boop iOS spike
 
+> **Newest round — "Étel" (B4, `mezo-r36n9.14`, 2026-11-13):** the full food room, built photo-first on the
+> Képek guideline ([`2026-11-13-boop-kepek-design.md`](../../../superpowers/specs/2026-11-13-boop-kepek-design.md)) —
+> room head with the Fuel mood photo under the hue's sky, meal cards with the owner's own meal photo, recipe and
+> pantry rows with thumbnails. Inner tabs `Ma · Receptek · Kamra · Hét`, the remaining budget, the day's meal
+> windows, the next-meal tip, water, supplement groups, all eight score dimensions on every meal card (each one
+> opens its own explanation), the capture composer with its five entrances and its offline state, barcode +
+> serving confirmation, recipe import review, the sensitivity settings, meal skip + kímélő mode.
+> Files `Etel*.swift`; launch `-etel YES` plus `-etelTab 0–3` and
+> `-etelOpen composer|barcode|adag|recept-import|erzekenyseg|kihagyas|kiegeszito|dimenzio`.
+> Screenshots: `etel-*.jpg`.
+
 > **Newest round — "Képek" (B3/b, `mezo-r36n9.32`, 2026-11-13):** photos inside the Napkelte look, judged on the
 > real shipped screens in the simulator (a throwaway `KepekSpike.swift` layer over the app plus the CC0 photos,
 > deleted after the round). Owner's pick: **A fent, B a kártyákon** — a quiet nature photo in every page and room
