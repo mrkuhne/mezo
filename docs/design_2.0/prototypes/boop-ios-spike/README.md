@@ -33,8 +33,11 @@
 > (teendő · történt · készülj · reakció), the check-in pinned while due, acted cards settling into "Ma történt",
 > an honest empty state, the morning briefing and the day's timeline folded into one row each, then the day's
 > energy curve and the cross-area observations. **The big 0–100 score leaves the home** — the orb stays without a
-> number. Amends the B2 "Ma = one timeline" decision. Files `Elet*.swift`; launch `-elet YES` plus
-> `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`, `-eletHideg YES`. Screenshots: `elet-*.png`. Direction write-up:
+> number. Amends the B2 "Ma = one timeline" decision. **Round 7** gives the wall a hierarchy, because five equal
+> cards read as a list: the check-in keeps its own question shape, then **one hero** with a Képek variant-B photo
+> band and 25 pt type, then the quiet ones as **compact rows inside a single card** (52 pt thumbnail, two lines,
+> the number in weight on the right, the action as an inline link). No photo where nothing fits the meaning.
+> Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`, `-eletHideg YES`. Screenshots: `elet-*.png`. Direction write-up:
 > [`docs/superpowers/research/boop-life/03-ui-direction.md`](../../../superpowers/research/boop-life/03-ui-direction.md).
 > **Nothing here is built** — the owner decided on 2026-11-13 that the life dashboard ships after B6.
 

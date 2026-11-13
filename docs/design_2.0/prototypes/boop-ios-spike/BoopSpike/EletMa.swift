@@ -244,16 +244,36 @@ struct EletMa: View {
                 }
                 .padding(18).frame(maxWidth: .infinity, alignment: .leading).gCard(24)
             } else {
-                ForEach(live) { c in
-                    EFeedCardView(c: c) { line in
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
-                            if line == "Rendben, most nem" { dismissed.insert(c.id) } else { acted[c.id] = line }
+                // the check-in is its own shape; then ONE hero with a photo band; then the quiet ones
+                // in a single card — a wall, not five equal boxes
+                if let q = live.first(where: { $0.kind == .checkin }) {
+                    EFeedCardView(c: q) { act(q, $0) }
+                }
+                let rest = live.filter { $0.kind != .checkin }
+                if let hero = rest.first {
+                    EFeedCardView(c: hero) { act(hero, $0) }
+                }
+                if rest.count > 1 {
+                    VStack(spacing: 0) {
+                        ForEach(Array(rest.dropFirst().enumerated()), id: \.element.id) { i, c in
+                            if i > 0 {
+                                Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 65)
+                            }
+                            EFeedRowView(c: c) { act(c, $0) }
                         }
-                        onToast(line)
                     }
+                    .padding(.horizontal, 16)
+                    .gCard(24)
                 }
             }
         }
+    }
+
+    private func act(_ c: EFeedCard, _ line: String) {
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+            if line == "Rendben, most nem" { dismissed.insert(c.id) } else { acted[c.id] = line }
+        }
+        onToast(line)
     }
 
     // MARK: The day, folded away — reviewed in the morning, not stared at all day
