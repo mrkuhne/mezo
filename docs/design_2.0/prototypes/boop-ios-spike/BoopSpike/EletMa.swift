@@ -119,11 +119,10 @@ struct EletMa: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.335 + geo.safeAreaInsets.top)
+                        hero(height: geo.size.height * 0.415 + geo.safeAreaInsets.top)
                         VStack(alignment: .leading, spacing: 22) {
                             feed
                             folds
-                            energy
                             notices
                         }
                         .padding(.horizontal, 16)
@@ -187,15 +186,44 @@ struct EletMa: View {
                 }
                 .padding(.horizontal, 16).padding(.top, 58)
 
+                orbRibbon.padding(.top, 12)
+
                 EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
-                          hue: day.glow, now: 0.47, height: 232)
-                    .padding(.horizontal, 18).padding(.top, 14)
+                          hue: day.glow, now: 0.47, height: 220)
+                    .padding(.horizontal, 18).padding(.top, 8)
 
 
                 Spacer(minLength: 0)
             }
             .frame(height: height)
         }
+    }
+
+    /// A thin ribbon of every area — a readout, not a menu: small, scrollable, and it does not
+    /// compete with the bar below, because Terv stays the home of the areas.
+    private var orbRibbon: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 15) {
+                ForEach(EMetric.all.indices, id: \.self) { i in
+                    let x = EMetric.all[i]
+                    Button { path.append("m\(i)") } label: {
+                        VStack(spacing: 5) {
+                            ZStack {
+                                StillOrb(colors: x.orb, size: 36, level: Double(x.value) / 100)
+                                Text("\(x.value)").font(.custom("Outfit", size: 13).weight(.medium))
+                                    .foregroundStyle(.white).shadow(color: .black.opacity(0.55), radius: 3)
+                            }
+                            Text(x.name).font(.system(size: 10.5)).foregroundStyle(.white.opacity(0.65))
+                                .lineLimit(1)
+                        }
+                        .frame(minWidth: 46)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+        .scrollIndicators(.hidden)
     }
 
     private var compactHeader: some View {
@@ -314,49 +342,49 @@ struct EletMa: View {
         }
     }
 
-    // MARK: The day's energy — forward-looking, which a score is not
-
-    private var energy: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                Capsule().fill(day.glow).frame(width: 3, height: 13)
-                Text("A NAP ENERGIÁJA").font(AuraFont.mono(12)).tracking(1.4).foregroundStyle(.white.opacity(0.7))
-                Spacer()
-            }
-            ECurve(values: [0.5, 0.7, 0.8, 0.72, 0.55, 0.45, 0.6, 0.72, 0.5],
-                   labels: ["6", "8", "10", "12", "14", "16", "18", "20", "22"],
-                   hue: day.glow, target: nil, nowIndex: 4, height: 140)
-                .padding(.top, 14)
-            EHueText(text: "A *14 óra körüli gödör* minden sűrű napodon megjelenik. Egy rövid séta ebéd után át szokta vinni — utána *18:30-ig* stabil maradsz.",
-                     hue: day.glow, size: 13.5, opacity: 0.7)
-                .padding(.top, 12)
-        }
-        .padding(.vertical, 4)
-    }
-
-    // MARK: What Boop noticed — the cross-area observations
+    // MARK: What Boop noticed — the cross-area observations, as cards
 
     private var notices: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                Capsule().fill(day.glow).frame(width: 3, height: 13)
-                Text("AMIT MA ÉSZREVETTEM").font(AuraFont.mono(12)).tracking(1.4).foregroundStyle(.white.opacity(0.7))
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(spacing: 10) {
+                Text("Amit ma észrevettem").font(AuraFont.serif(26)).foregroundStyle(.white)
                 Spacer()
+                Text("\(EMaNotice.all.count)").font(.custom("Outfit", size: 13).weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .frame(minWidth: 22, minHeight: 22)
+                    .background(Circle().fill(.white.opacity(0.12)))
             }
             ForEach(Array(EMaNotice.all.enumerated()), id: \.offset) { _, n in
-                HStack(alignment: .top, spacing: 12) {
-                    HStack(spacing: -6) {
-                        ForEach(n.areas, id: \.self) { a in
-                            StillOrb(colors: EMetric.all[a].orb, size: 20, level: 0.8)
+                let hue = EMetric.all[n.areas[0]].glow
+                HStack(alignment: .top, spacing: 0) {
+                    Capsule().fill(hue).frame(width: 3)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 7) {
+                            HStack(spacing: -7) {
+                                ForEach(n.areas, id: \.self) { a in
+                                    StillOrb(colors: EMetric.all[a].orb, size: 19, level: 0.8)
+                                        .overlay(Circle().stroke(gBase, lineWidth: 1.5))
+                                }
+                            }
+                            Text(n.areas.map { EMetric.all[$0].name }.joined(separator: " · "))
+                                .font(AuraFont.mono(10)).tracking(1.1).foregroundStyle(.white.opacity(0.5))
+                            Spacer(minLength: 0)
                         }
+                        Text(n.title).font(AuraFont.serif(18)).lineSpacing(2).foregroundStyle(.white)
+                            .fixedSize(horizontal: false, vertical: true)
+                        EHueText(text: n.text, hue: hue, size: 13.5, opacity: 0.68)
                     }
-                    .frame(width: CGFloat(n.areas.count) * 14 + 6, alignment: .leading)
-                    EHueText(text: n.text, hue: EMetric.all[n.areas[0]].glow, size: 14, opacity: 0.82)
+                    .padding(.horizontal, 15).padding(.vertical, 14)
+                    Spacer(minLength: 0)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .gCard(20)
             }
+            EAskRow(text: "Kérdezd meg Boopot, mit vett még észre") { onToast("Új szál · a mai mintákkal") }
+                .padding(.top, 2)
         }
-        .padding(.vertical, 4)
     }
+
     private var briefing: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 9) {
@@ -547,11 +575,14 @@ struct EletMa: View {
 
 /// Cross-area observations on the home screen.
 struct EMaNotice {
-    let areas: [Int]; let text: String
+    let areas: [Int]; let title: String; let text: String
     static let all: [EMaNotice] = [
-        EMaNotice(areas: [5, 3], text: "Az étteremre költés a héten *24 000 Ft* — ez a harmadik hét, hogy csütörtökön ugrik meg."),
-        EMaNotice(areas: [1, 3], text: "A késői vacsorák után átlagosan *24 perccel* kevesebbet alszol. Ma 19:45-re terveztem."),
-        EMaNotice(areas: [7], text: "Három hét alatt 612 levélből *36-ot* nyitottál meg — a többit ezentúl csendben szűröm."),
+        EMaNotice(areas: [5, 3], title: "Az éttermek mindig csütörtökön ugranak meg",
+                  text: "Ezen a héten már *24 000 Ft* — harmadik hete ugyanaz a nap. A heti keretből *9 500 Ft* maradt."),
+        EMaNotice(areas: [1, 3], title: "A késői vacsora megrövidíti az éjszakádat",
+                  text: "A 20:30 utáni vacsorák után átlagosan *24 perccel* kevesebbet alszol. Ma ezért tettem a vacsorát *19:45-re*."),
+        EMaNotice(areas: [7], title: "A reklámok 94%-a nem érdekel",
+                  text: "Három hét alatt 612 levélből *36-ot* nyitottál meg, és azok háromnegyede két márkától jött. A többit ezentúl csendben szűröm."),
     ]
 }
 
