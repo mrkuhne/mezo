@@ -173,6 +173,11 @@ components:
         avgScore: { type: number }
         lastLogged: { type: string }
         ingredients: { type: array, items: { $ref: '#/components/schemas/RecipeIngredientResponse' } }
+        allergens:
+          type: object
+          nullable: true
+          description: 'Derived rollup of the ingredients'' allergen states (contains | traces | unknown); unknown propagates upward. null on recipes not yet recomputed.'
+          additionalProperties: { type: string }
     RecipeListResponse:
       type: object
       required: [recipes]

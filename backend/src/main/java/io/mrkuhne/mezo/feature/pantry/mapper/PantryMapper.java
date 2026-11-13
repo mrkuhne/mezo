@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.api.dto.PantrySharedFrom;
 import io.mrkuhne.mezo.api.dto.PantrySource;
 import io.mrkuhne.mezo.api.dto.PantryStock;
 import io.mrkuhne.mezo.api.dto.SupplementStashResponse;
+import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
 import io.mrkuhne.mezo.feature.pantry.entity.MicroFact;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryImportEntity;
@@ -19,7 +20,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.mapstruct.Mapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -269,6 +272,8 @@ public interface PantryMapper {
             .brand(c.getBrand())
             .source(c.getSource())
             .category(c.getCategory())
+            .allergens(allergensToWire(c.getAllergens()))
+            .barcode(c.getBarcode())
             .build();
     }
 
@@ -289,7 +294,17 @@ public interface PantryMapper {
             .form(c.getForm())
             .caffeine(c.getCaffeine())
             .authorName(authorName)
+            .allergens(allergensToWire(c.getAllergens()))
+            .barcode(c.getBarcode())
             .build();
+    }
+
+    /** Domain allergen states as the contract's lowercase map; null stays null (not declared). */
+    static Map<String, String> allergensToWire(Map<String, AllergenState> states) {
+        if (states == null) return null;
+        Map<String, String> wire = new LinkedHashMap<>();
+        states.forEach((key, state) -> wire.put(key, state.wire()));
+        return wire;
     }
 
     /** Import-feed row -> the pinned FE PantryImport shape (P6, mezo-bka). */

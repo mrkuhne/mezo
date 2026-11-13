@@ -54,4 +54,5 @@ inputs:
   - inputFile: ../feature/boop/boop.yml
   - inputFile: ../feature/device/device.yml
   - inputFile: ../feature/dayclose/dayclose.yml
+  - inputFile: ../feature/sensitivity/sensitivity.yml
 output: ../openapi.yml

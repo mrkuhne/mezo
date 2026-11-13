@@ -41,7 +41,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [medication](#medication) | ✓ | 1 | · | · | · |
 | [needs](#needs) | ✓ | 1 | ✓ | · | [needs](features/needs.md) |
 | [notification](#notification) | ✓ | 2 | ✓ | ✓ | [_platform-notifications](features/_platform-notifications.md) |
-| [nutrition](#nutrition) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
+| [nutrition](#nutrition) | ✓ | 2 | · | · | [fuel](features/fuel.md) |
 | [pantry](#pantry) | ✓ | 1 | · | · | [pantry](features/pantry.md) |
 | [people](#people) | ✓ | 1 | · | · | [me](features/me.md) |
 | [proactive](#proactive) | ✓ | 2 | · | · | [contextual-feed-evaluation](features/contextual-feed-evaluation.md), [proactive](features/proactive.md) |
@@ -1233,18 +1233,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-10-12, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
-  - **entities→tables:** `DietSettingsEntity`→`diet_settings`
-  - **repositories:** `DietSettingsRepository`
-  - **services:** `DailyTargets`, `DayContext`, `DayTargetProjector`, `DietPreferencesResolver`, `DietSettingsService`,
-    `EnergyBase`, `MealRole`, `MealScoringService`, `MealWindow`
-  - **controllers→contract:** `DietSettingsController`→`DietSettingsApi`
+  - **entities→tables:** `DietSettingsEntity`→`diet_settings`, `SensitivityProfileEntity`→`sensitivity_profile`
+  - **repositories:** `DietSettingsRepository`, `SensitivityProfileRepository`
+  - **services:** `AllergenKeys`, `AllergenState`, `DailyTargets`, `DayContext`, `DayTargetProjector`,
+    `DietPreferencesResolver`, `DietSettingsService`, `EnergyBase`, `MealRole`, `MealScoringService`, `MealWindow`,
+    `NovaRule`, `Sensitivity`, `SensitivityLevel`, `SensitivityProfile`, `SensitivityService`, `SensitivityVerdict`
+  - **controllers→contract:** `DietSettingsController`→`DietSettingsApi`, `SensitivityController`→`SensitivityApi`
   - **mappers:** `BreakdownDtoMapper`
   - **config:** `DietSettingsProperties`, `MealScoringProperties`, `NutritionTargetsProperties`
   - **other:** `MealBreakdownJson`
 - **Contract** `api/feature/diet-settings/diet-settings.yml` — 3 operations
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 3 unit
-  - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
+- **Contract** `api/feature/sensitivity/sensitivity.yml` — 2 operations
+  - **endpoints:** GET /api/sensitivity · PUT /api/sensitivity
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 4 IT + 4 unit
+  - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`, `SensitivityProfileIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`,
     `TrainPopulator`
 
@@ -1472,15 +1475,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
   - **repositories:** `RecipeIngredientRepository`, `RecipeRepository`
-  - **services:** `RecipeBreakdownLlm`, `RecipeBreakdownProseService`, `RecipeBreakdownService`, `RecipeService`,
-    `RecipeWorkshopLlm`, `RecipeWorkshopService`, `RecipeWorkshopValidator`
+  - **services:** `RecipeAllergenRollup`, `RecipeBreakdownLlm`, `RecipeBreakdownProseService`,
+    `RecipeBreakdownService`, `RecipeService`, `RecipeWorkshopLlm`, `RecipeWorkshopService`, `RecipeWorkshopValidator`
   - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeWorkshopController`→`RecipeWorkshopApi`
   - **mappers:** `RecipeMapper`
   - **config:** `RecipeWorkshopProperties`
 - **Contract** `api/feature/recipe/recipe.yml` — 7 operations
   - **endpoints:** GET /api/recipe · POST /api/recipe · GET /api/recipe/{id} · PUT /api/recipe/{id} ·
     DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown · POST /api/recipe/workshop/turn
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 8 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 8 IT + 6 unit
   - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeRepositoryIT`,
     `RecipeServiceIT`, `RecipeWorkshopApiIT`, `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`
   - **populators:** `DatabasePopulator`, `PantryItemPopulator`, `RecipePopulator`

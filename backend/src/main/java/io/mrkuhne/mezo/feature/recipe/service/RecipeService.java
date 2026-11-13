@@ -200,6 +200,9 @@ public class RecipeService {
             recipe.getLines().add(line);
         }
         recipe.setNovaDominant(deriveNovaDominant(userId, lineReqs));
+        recipe.setAllergens(RecipeAllergenRollup.rollup(recipe.getLines().stream()
+            .map(l -> resolvePantryItem(userId, l.getPantryItemId()).getCatalog().getAllergens())
+            .toList()));
     }
 
     /** Resolves the pantry item owner-scoped, captures the per-basis snapshot, sets created_by + line_order. */

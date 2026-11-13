@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info: { title: mezo sensitivity fragment, version: 1.0.0 }
+tags:
+  - name: Sensitivity
+    description: The owner's food sensitivities (allergy / intolerance / avoid) and the NOVA processing rule (Boop B4)
+paths:
+  /api/sensitivity:
+    get:
+      tags: [Sensitivity]
+      operationId: getSensitivityProfile
+      summary: The sensitivity profile; empty list + default NOVA rule when unset — never 404 (Sensitivity)
+      responses:
+        '200':
+          description: The profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SensitivityProfileResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    put:
+      tags: [Sensitivity]
+      operationId: setSensitivityProfile
+      summary: Replace the sensitivity profile (per-user singleton) (Sensitivity)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SensitivityProfileRequest' }
+      responses:
+        '200':
+          description: Saved profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SensitivityProfileResponse' }
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    SensitivityItem:
+      type: object
+      required: [key, level]
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: >-
+            An EU-14 allergen key (gluten, crustaceans, eggs, fish, peanuts, soybeans, milk, nuts, celery,
+            mustard, sesame, sulphites, lupin, molluscs) or free text. Free text has no structured allergen
+            state and only ever matches by name.
+        level:
+          type: string
+          enum: [allergy, intolerance, avoid]
+          description: allergy blocks on traces and unknown too; intolerance and avoid on contains only
+        note: { type: string, nullable: true, maxLength: 280 }
+    SensitivityNovaRule:
+      type: object
+      required: [enabled, maxLevel]
+      properties:
+        enabled: { type: boolean }
+        maxLevel: { type: integer, minimum: 1, maximum: 4, description: 'Foods above this NOVA level are not suggested (default 2)' }
+    SensitivityProfileResponse:
+      type: object
+      required: [items, novaRule]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/SensitivityItem' } }
+        novaRule: { $ref: '#/components/schemas/SensitivityNovaRule' }
+    SensitivityProfileRequest:
+      type: object
+      required: [items, novaRule]
+      properties:
+        items: { type: array, maxItems: 50, items: { $ref: '#/components/schemas/SensitivityItem' } }
+        novaRule: { $ref: '#/components/schemas/SensitivityNovaRule' }

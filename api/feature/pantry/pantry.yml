@@ -304,6 +304,12 @@ components:
         brand: { type: string, nullable: true }
         source: { type: string, nullable: true }
         category: { type: string, nullable: true }
+        allergens:
+          type: object
+          nullable: true
+          description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
+          additionalProperties: { type: string }
+        barcode: { type: string, nullable: true, description: 'EAN/UPC of the product, when known' }
     PantrySharedFrom:
       type: object
       required: [authorName]
@@ -339,6 +345,12 @@ components:
         caffeine: { type: boolean, nullable: true }
         # null = loader master row; set = the user who authored it
         authorName: { type: string, nullable: true }
+        allergens:
+          type: object
+          nullable: true
+          description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
+          additionalProperties: { type: string }
+        barcode: { type: string, nullable: true, description: 'EAN/UPC of the product, when known' }
     PantryLookupResponse:
       type: object
       required: [results]

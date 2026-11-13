@@ -7,12 +7,14 @@ import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.api.dto.RecipeMezoFit;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -72,7 +74,15 @@ public interface RecipeMapper {
             .avgScore(BigDecimal.ZERO)
             .lastLogged("—")
             .ingredients(lines)
+            .allergens(e.getAllergens() == null ? null : wire(e.getAllergens()))
             .build();
+    }
+
+    /** Domain allergen states as the contract's lowercase map. */
+    private static Map<String, String> wire(Map<String, AllergenState> states) {
+        Map<String, String> out = new LinkedHashMap<>();
+        states.forEach((key, state) -> out.put(key, state.wire()));
+        return out;
     }
 
     default RecipeIngredientResponse toLineResponse(RecipeIngredientEntity l) {

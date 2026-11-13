@@ -5779,6 +5779,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sensitivity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The sensitivity profile; empty list + default NOVA rule when unset — never 404 (Sensitivity) */
+        get: operations["getSensitivityProfile"];
+        /** Replace the sensitivity profile (per-user singleton) (Sensitivity) */
+        put: operations["setSensitivityProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -8047,6 +8065,12 @@ export interface components {
             brand?: string | null;
             source?: string | null;
             category?: string | null;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
+            /** @description EAN/UPC of the product, when known */
+            barcode?: string | null;
         };
         PantrySharedFrom: {
             authorName: string;
@@ -8078,6 +8102,12 @@ export interface components {
             form?: string | null;
             caffeine?: boolean | null;
             authorName?: string | null;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
+            /** @description EAN/UPC of the product, when known */
+            barcode?: string | null;
         };
         PantryLookupResponse: {
             results: components["schemas"]["PantryLookupResult"][];
@@ -8249,6 +8279,10 @@ export interface components {
             avgScore: number;
             lastLogged: string;
             ingredients: components["schemas"]["RecipeIngredientResponse"][];
+            /** @description Derived rollup of the ingredients' allergen states (contains | traces | unknown); unknown propagates upward. null on recipes not yet recomputed. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
         };
         RecipeListResponse: {
             recipes: components["schemas"]["RecipeResponse"][];
@@ -13435,6 +13469,29 @@ export interface components {
         CheckInLineRequest: {
             /** @description Check-in slot id, e.g. "14:00" */
             slot: string;
+        };
+        SensitivityItem: {
+            /** @description An EU-14 allergen key (gluten, crustaceans, eggs, fish, peanuts, soybeans, milk, nuts, celery, mustard, sesame, sulphites, lupin, molluscs) or free text. Free text has no structured allergen state and only ever matches by name. */
+            key: string;
+            /**
+             * @description allergy blocks on traces and unknown too; intolerance and avoid on contains only
+             * @enum {string}
+             */
+            level: "allergy" | "intolerance" | "avoid";
+            note?: string | null;
+        };
+        SensitivityNovaRule: {
+            enabled: boolean;
+            /** @description Foods above this NOVA level are not suggested (default 2) */
+            maxLevel: number;
+        };
+        SensitivityProfileResponse: {
+            items: components["schemas"]["SensitivityItem"][];
+            novaRule: components["schemas"]["SensitivityNovaRule"];
+        };
+        SensitivityProfileRequest: {
+            items: components["schemas"]["SensitivityItem"][];
+            novaRule: components["schemas"]["SensitivityNovaRule"];
         };
     };
     responses: {
@@ -29865,6 +29922,77 @@ export interface operations {
             };
             /** @description LLM port unavailable — the phone retries later */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getSensitivityProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitivityProfileResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setSensitivityProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SensitivityProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitivityProfileResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

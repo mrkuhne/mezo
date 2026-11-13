@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.recipe.entity;
 
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.techcore.persistence.OwnedEntity;
 import jakarta.persistence.CascadeType;
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -107,6 +109,11 @@ public class RecipeEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private MealBreakdownJson breakdown;
+
+    /** Derived rollup of the lines' allergen states (spec §7.1); null until first recomputed. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, AllergenState> allergens;
 
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("lineOrder")
