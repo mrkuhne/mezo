@@ -320,5 +320,65 @@
     "miert": "Egy szám arról, hogy „milyen vagy ma”, nem mond semmit és nem lehet vele mit kezdeni. A napirendet pedig nem akarod egész nap nézegetni — reggel átnézed, utána az érdekel, hogy mi a következő. A pontszám ott marad, ahol jelent valamit: a területen belül, az adat mellett, amiből lett.",
     "levaltotta": "Eddig a Ma a nap idővonala volt, a tetején egész nap a reggeli köszöntővel és egy nagy 0–100-as számmal.",
     "kovetkezmeny": "A napirend nem vész el, csak becsukva kerül lejjebb — anélkül elveszne a nap alakja. A fal szándékosan korlátos (legfeljebb három kártya), hogy ne váljon értesítés-folyammá. A területek napi szintjei lekerülnek a főképernyőről; azok a Terv fülön vannak."
+  },
+  "d-2026-11-13-penz-terulet": {
+    "cim": "A pénzügyek beköltöznek a Boopba — a Pénz lesz az ötödik terület",
+    "datum": "2026-11-13",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "A külön pénzügyi app megszűnik: a logikája és az adataid átkerülnek a Boop rendszerébe, a képernyők natív iPhone-oldalak lesznek. A Pénz területnek öt oldala van: Ma (mi a dolgom ma, a hónap állása, és alul a napi hírösszefoglaló), Pénzem (a vagyon időtávok szerint), Költés (a heti maradék és mire gyűjtök), Gyakorlás (a day trading külön világa) és Boop (beszélgetés a pénzről).",
+    "miert": "Boopnál az a lényeg, hogy egy AI lát mindent — az alvásodat, az edzésedet, az étkezésedet. Ha a pénz egy másik rendszerben marad, Boop sosem tudja összekötni a költésedet a közérzetedtel, és két bejelentkezésed, két appod lesz. A régi app pedig egy bérelt felhős platformon él, ahonnan az adataidat csak kézzel tudod kihozni.",
+    "levaltotta": "A külön pénzügyi app (Finance Tracker), ami egy másik platformon futott, saját bejelentkezéssel.",
+    "kovetkezmeny": "Ez a nagyobb munka — több hét, több szakaszban, és a régi app védelmeit (hogy az AI ne írjon ki hamis összegeket, ne lehessen a hírekbe utasítást csempészni) újra meg kell építeni. A régi app nem megy veszendőbe: pontos leírás lesz belőle."
+  },
+  "d-2026-11-13-penz-hatarok": {
+    "cim": "Boop nem kezel pénzt, nem sürget és soha nem küld eladni",
+    "datum": "2026-11-13",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "Boop soha nem vásárol és nem mozgat pénzt — te intézed, te rögzíted. Soha nem sürget („most kell lépni\", visszaszámláló nincs). Soha nem ígér hozamot. Soha nem mondja, hogy adj el: ha valami esik, elmagyarázza, miért. A „ma nincs dolgod\" teljes értékű válasz, és a legtöbb nap ez lesz. És mindig elmondja, miért javasol valamit, és miben lehet tévedés.",
+    "miert": "Ez nem befektetési tanácsadás, és nem is akar annak látszani: eszköz, ami megmutatja a számokat, a híreket és a logikát, de a döntés mindig a tiéd. A sürgetés és az eladásra küldés pont azt rombolná le, amiért a hosszú távú pénz hosszú távú.",
+    "kovetkezmeny": "Minden Pénz-képernyő szövegét ez szabja meg. Technikailag: az összegeket, százalékokat és eredményeket a rendszer számolja ki, az AI csak elmondja őket — sosem ő találja ki a számot. Amíg az app csak téged szolgál, ez kívül van a szabályozott tanácsadáson; ha bárki máshoz is eljut, az új döntés.",
+    "levaltotta": "A régi pénzügyi appban is ez volt a hangnem, de csak a szövegekben élt; most kimondott szabály, amihez minden Pénz-képernyő igazodik."
+  },
+  "d-2026-11-13-penz-idotavok": {
+    "cim": "Négy időtáv, és a felosztás időtávonként külön",
+    "datum": "2026-11-13",
+    "suly": "Közepes",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "A pénzed négy időtávra van osztva: gyakorlás (day trading), 1–3 év, 5–10 év és 10+ év. Amikor Boop javaslatot tesz, időtávonként külön mondja meg a felosztást, nem egy közös kalapra. A gyakorlás-pénz külön világ: nem része a „Pénzem\" összegének, csak egy halk sor jelzi az oldal alján.",
+    "miert": "Ugyanaz a befektetés mást jelent 2 évre és 15 évre, tehát egy közös „kockázati szint\" félrevezető. A gyakorlás-pénz pedig azért külön, mert a célja a tanulás: ha beszámítana a vagyonodba, minden veszteség bajnak tűnne, pedig a tanulás ára.",
+    "kovetkezmeny": "A Pénzem oldal három rekeszt mutat a komoly pénzre. A hosszú rekesz mérőszáma nem a mai százalék, hanem hogy hány évre elég — így az oldal nem hívogat kapkodásra.",
+    "levaltotta": "A régi appban egy közös „kockázati szint\" döntötte el a felosztást, időtávok nélkül."
+  },
+  "d-2026-11-13-day-trading-proba": {
+    "cim": "A day trading tanulás, nem kereset — havi 20 ezerrel, papír-próbával kezdve",
+    "datum": "2026-11-13",
+    "suly": "Közepes",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "Reggel vagy délután fél óra, havi kb. 20 000 forinttal, azért, hogy megértsd és próbálkozz. A keret kemény: nem vehet el a hosszú távú pénzből. A Gyakorlás oldal három dologból áll: terv mielőtt belépsz (mit, miért, hol lépek ki), egy sor utána egy szűk címkekészletből és egy „hiba\" jelöléssel, és egy heti visszanézés Booptól — mi működött, mi volt a hét leggyakoribb hibája, és mibe került. Az első szakasz valódi árakkal, de valódi pénz nélkül megy.",
+    "miert": "Így a tanulás nem kerül pénzbe, amíg a szokás nem áll össze, a heti visszanézés pedig az, ami naplóból tanulást csinál. A szűk címkekészlet szándékos: nyolc címke, amit tényleg használsz, többet mond, mint húsz, amit nem.",
+    "kovetkezmeny": "Nincs tőzsdei kapcsolat és nincs élő árfolyam-szalag — minden a te beírt belépő, kilépő és kilépési szintedből számol. Ötven kereskedés alatt az oldal kiírja, hogy a számok még zajnak számítanak.",
+    "levaltotta": "Eddig nem volt day trading sem a Boopban, sem a régi appban."
+  },
+  "d-2026-11-13-koltes-heti-maradek": {
+    "cim": "A Költés oldal főszáma a heti maradék",
+    "datum": "2026-11-13",
+    "suly": "Közepes",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "A Költés oldal tetején nagyban az áll, mennyi pénzed maradt a héten, és hogy ez naponta mennyi. A hónap állása, a „honnan jön ez a szám\" levezetés, a kategóriabontás és a „mire gyűjtök\" (megtakarítási célok és nagyobb vásárlások tervezése) alatta, kártyákon. A tételek továbbra is a banki SMS-ekből jönnek, mellé gyors kézi felvitel a készpénzre.",
+    "miert": "Ez az egyetlen szám, ami választ ad a napi kérdésre: megvehetem-e ezt most? A hónap állása szép, de egy konkrét vásárlásnál nem segít. A régi appban is ez volt a főszám, és működött.",
+    "kovetkezmeny": "A heti maradék csak akkor igaz, ha a költéseid bekerülnek — ezért a készpénz felvitele pár másodperc legyen. A levezetés oldal („honnan jön ez a szám\") marad: ez teszi hihetővé a főszámot.",
+    "levaltotta": "Semmit — a régi app főszáma is a heti maradék volt, ezt visszük tovább."
   }
 }

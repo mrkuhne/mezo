@@ -447,5 +447,28 @@
     ],
     "mit_kapsz": "Amikor megnyitod az appot, azt látod, ami éppen számít: legfeljebb három kártya, fölöttük a check-in. Amit elintézel, lecsúszik a „Ma történt” közé. A napirend és a reggeli összefoglaló becsukva marad, a nagy pontszám pedig lekerül a főképernyőről.",
     "allapot": "Később"
+  },
+  "mezo-r36n9.33.1": {
+    "cim": "Pénz terület · a terv: pénzügyek és befektetési kísérő",
+    "tipus": "Kutatás",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A Pénz terület terve: öt oldal (Ma, Pénzem, Költés, Gyakorlás, Boop), négy időtáv, heti maradék a Költés főszámaként, a day trading papír-próbaként, és a régi pénzügyi app beköltöztetése a Boopba. Terv kész, a te jóváhagyásodra vár.",
+    "munkamenet": "boop-life-dashboard",
+    "szulo": "mezo-r36n9.33",
+    "allapot": "Vár rád"
+  },
+  "mezo-r36n9.46": {
+    "cim": "Notion: egy lemaradt jegy felküldése a táblára",
+    "tipus": "Karbantartás",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Egy jegy („A főképernyő élő fal lesz\") nem került fel a táblára, mert a Notion-kapcsolat elakadt. Ez pótolja — a táblán nem hiányzik majd semmi.",
+    "szulo": "mezo-r36n9.33",
+    "allapot": "Később"
   }
 }
