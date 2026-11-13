@@ -26,6 +26,11 @@ struct EMetric {
     let headline: String, sentence: String
     /// true for the two new areas — they get the hand-drawn glyphs below, not the body sprite
     let isNew: Bool
+    /// Owner decision 2026-11-13: Pénz has NO number in its orb — a 0–100 money score would bring back
+    /// exactly the urging the area is built to avoid. The orb still fills, with `orbLevel`.
+    var scoreless: Bool = false
+    /// What the masthead orb fills with when it is not the score (Pénz: how much of the week's money is left).
+    var orbLevel: Double? = nil
 
     static let all: [EMetric] = [
         EMetric(name: "Forma", value: 78, glyph: "spark-cream",
@@ -67,9 +72,9 @@ struct EMetric {
                 top: Color(hex: 0x11351F), glow: Color(hex: 0x5FD08A),
                 orb: [Color(hex: 0x0C2B1A), Color(hex: 0x2E8B57), Color(hex: 0xBFE8A8), Color(hex: 0xF2C94C)],
                 sky: [Color(hex: 0x14532D), Color(hex: 0x4CA06B), Color(hex: 0xEADFA0)],
-                headline: "A kereten belül vagy",
-                sentence: "A hónapból 13 nap telt el, a havi keret 46%-át költötted el. Két nagyobb tétel jön még.",
-                isNew: true),
+                headline: "Ma nincs dolgod",
+                sentence: "A hétből 34 500 Ft-od maradt, a hónap jól áll, és semmi nem jár le. Három hír érinti a befektetéseidet.",
+                isNew: true, scoreless: true, orbLevel: 0.45),
         EMetric(name: "Nap", value: 64, glyph: "clock-ink",
                 top: Color(hex: 0x0E3542), glow: Color(hex: 0x4FC3D9),
                 orb: [Color(hex: 0x0A2C38), Color(hex: 0x1F7A8C), Color(hex: 0x8FD9E8), Color(hex: 0xC9F0E2)],

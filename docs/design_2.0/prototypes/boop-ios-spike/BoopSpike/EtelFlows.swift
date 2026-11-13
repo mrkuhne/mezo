@@ -14,7 +14,7 @@ struct ESheetFrame<C: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 ZStack(alignment: .bottomLeading) {
-                    EPhotoHead(photoName: photoName, height: 170)
+                    EtelPhotoHead(photoName: photoName, height: 170)
                     VStack(alignment: .leading, spacing: 6) {
                         GLabel(eyebrow)
                         Text(title).font(AuraFont.serif(28)).foregroundStyle(.white)
