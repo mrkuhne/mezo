@@ -125,4 +125,22 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
         assertThat(count("habit_def")).isEqualTo(defs);
         assertThat(count("databasechangelog")).isPositive(); // Liquibase history intact
     }
+
+    /** stored_image is referenced by the kept recipe table, so it sits on the kept side and is
+     *  trimmed after the purge: recipe images stay, everything else (meal photos) goes. */
+    @Test
+    void testLiveRun_shouldKeepRecipeImagesAndDropOtherImages() throws IOException {
+        UUID owner = seed();
+        String insert = "INSERT INTO stored_image (created_by, content_type, bytes, byte_size, width, height) "
+            + "VALUES (?, 'image/png', '\\x89'::bytea, 1, 1, 1) RETURNING id";
+        UUID recipeImage = jdbc.queryForObject(insert, UUID.class, owner);
+        jdbc.queryForObject(insert, UUID.class, owner); // an orphan / meal photo
+        jdbc.update("UPDATE recipe SET image_id = ?", recipeImage);
+        long recipes = count("recipe");
+
+        runScript(true);
+
+        assertThat(count("recipe")).isEqualTo(recipes);
+        assertThat(jdbc.queryForList("SELECT id FROM stored_image", UUID.class)).containsExactly(recipeImage);
+    }
 }
