@@ -44,6 +44,7 @@ public interface MealMapper {
             .nutrients(rollupNutrients(items))
             .score(toScore(e))                // real since mezo-yta; NULL rows stay pending on FE
             .items(items)
+            .hasPhoto(e.getPhotoId() != null)
             .build();
     }
 

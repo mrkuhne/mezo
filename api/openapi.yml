@@ -21690,6 +21690,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MealItemResponse'
+        hasPhoto:
+          type: boolean
+          description: >-
+            True when the owner has a photo on this meal (GET
+            /api/meal/{id}/photo); lists never need to probe for 404.
     MealAiDraftResponse:
       type: object
       required:

@@ -70,10 +70,8 @@ public class MealPhotoService {
     /** Every photo of the caller; the meals stay. Recipe images are a different owner of bytes and are not touched. */
     @Transactional
     public void deleteAll(UUID userId) {
-        List<MealEntity> withPhoto = meals.findByCreatedByAndDeletedFalseAndPhotoIdIsNotNull(userId);
-        List<UUID> ids = withPhoto.stream().map(MealEntity::getPhotoId).toList();
-        withPhoto.forEach(m -> m.setPhotoId(null));
-        meals.saveAllAndFlush(withPhoto);
+        List<UUID> ids = meals.findAllPhotoIds(userId); // soft-deleted meals included
+        meals.clearAllPhotoIds(userId);
         images.deleteAll(userId, ids);
     }
 

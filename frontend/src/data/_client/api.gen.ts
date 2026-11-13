@@ -8622,6 +8622,8 @@ export interface components {
             nutrients?: components["schemas"]["Nutrients"];
             score: components["schemas"]["MealScore"];
             items: components["schemas"]["MealItemResponse"][];
+            /** @description True when the owner has a photo on this meal (GET /api/meal/{id}/photo); lists never need to probe for 404. */
+            hasPhoto?: boolean;
         };
         MealAiDraftResponse: {
             /**

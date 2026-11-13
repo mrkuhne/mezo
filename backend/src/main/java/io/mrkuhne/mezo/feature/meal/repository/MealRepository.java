@@ -34,8 +34,18 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
 
     Optional<MealEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
-    /** Every live meal of the owner that carries a photo (bulk photo delete). */
-    List<MealEntity> findByCreatedByAndDeletedFalseAndPhotoIdIsNotNull(UUID createdBy);
+    /**
+     * Photo ids of EVERY meal of the owner, soft-deleted ones included (native: the entity's
+     * soft-delete restriction would hide them) - the bulk "delete all my photos" is the privacy wipe
+     * and must not depend on which paths soft-delete a meal.
+     */
+    @Query(value = "select photo_id from meal where created_by = :owner and photo_id is not null", nativeQuery = true)
+    List<UUID> findAllPhotoIds(@Param("owner") UUID owner);
+
+    /** Clears the photo pointer on every meal of the owner, soft-deleted included. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "update meal set photo_id = null where created_by = :owner and photo_id is not null", nativeQuery = true)
+    int clearAllPhotoIds(@Param("owner") UUID owner);
 
     /** Weekly review {@code stale} probe (mezo-p2tr): the most recently CREATED meal inside the
      *  week — compared against the review's {@code generatedAt}, not its own {@code mealDate}. */

@@ -34,6 +34,7 @@ class MealPhotoIT extends ApiIntegrationTest {
     @Autowired private StoredImageRepository images;
     @Autowired private MealRepository meals;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private static byte[] jpeg(int w, int h) throws Exception {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -150,6 +151,55 @@ class MealPhotoIT extends ApiIntegrationTest {
         assertThat(upload(owner, mealId, jpeg(8, 8), "application/pdf").getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(upload(owner, mealId, "<html></html>".getBytes(), "image/jpeg").getStatusCode())
             .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(images.count()).isZero();
+    }
+
+    @Test
+    void aReplacedPhotoIsServedFreshNotFromCache() throws Exception {
+        HttpHeaders owner = ownerAuthHeaders();
+        UUID mealId = logMeal(owner);
+        upload(owner, mealId, jpeg(8, 8), "image/jpeg");
+
+        ResponseEntity<byte[]> first = fetch(owner, mealId);
+        String etag = first.getHeaders().getETag();
+        assertThat(etag).isNotBlank();
+        assertThat(first.getHeaders().getCacheControl()).contains("no-cache").doesNotContain("max-age");
+
+        HttpHeaders conditional = new HttpHeaders();
+        conditional.putAll(owner);
+        conditional.set(HttpHeaders.IF_NONE_MATCH, etag);
+        assertThat(fetch(conditional, mealId).getStatusCode()).isEqualTo(HttpStatus.NOT_MODIFIED);
+
+        byte[] replacement = jpeg(20, 20);
+        upload(owner, mealId, replacement, "image/jpeg");
+        ResponseEntity<byte[]> after = fetch(conditional, mealId); // the OLD etag no longer matches
+        assertThat(after.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(after.getBody()).isEqualTo(replacement);
+        assertThat(after.getHeaders().getETag()).isNotEqualTo(etag);
+    }
+
+    @Test
+    void mealListsCarryHasPhotoSoNobodyProbesFor404() throws Exception {
+        HttpHeaders owner = ownerAuthHeaders();
+        UUID withPhoto = logMeal(owner);
+        UUID without = logMeal(owner);
+        upload(owner, withPhoto, jpeg(8, 8), "image/jpeg");
+
+        var day = getForBody("/api/fuel/day/2026-06-24", owner, HttpStatus.OK, io.mrkuhne.mezo.api.dto.FuelDayResponse.class);
+        assertThat(day.getMeals()).filteredOn(m -> m.getId().equals(withPhoto)).extracting(MealResponse::getHasPhoto).containsExactly(true);
+        assertThat(day.getMeals()).filteredOn(m -> m.getId().equals(without)).extracting(MealResponse::getHasPhoto).containsExactly(false);
+    }
+
+    @Test
+    void bulkDeleteAlsoClearsASoftDeletedMealsPhoto() throws Exception {
+        HttpHeaders owner = ownerAuthHeaders();
+        UUID mealId = logMeal(owner);
+        upload(owner, mealId, jpeg(8, 8), "image/jpeg");
+        // a soft-delete path that does NOT go through MealService.delete (e.g. a future one)
+        jdbc.update("update meal set is_deleted = true where id = ?", mealId);
+        assertThat(images.count()).isEqualTo(1);
+
+        deleteAndExpect("/api/meal/photos", owner, HttpStatus.NO_CONTENT);
         assertThat(images.count()).isZero();
     }
 }

@@ -1792,7 +1792,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### techcore — `backend/src/main/java/io/mrkuhne/mezo/techcore`
 
 - **configuration:** `AsyncConfiguration`, `FeaturesConfiguration`, `JacksonConfiguration`,
-  `MessageSourceConfiguration`, `SchedulingConfiguration`
+  `MessageSourceConfiguration`, `PhotoEtagConfiguration`, `SchedulingConfiguration`
 - **exception:** `GlobalExceptionHandler`, `Level`, `SystemMessage`, `SystemRuntimeErrorException`, `Type`
 - **message:** `UserMessages`
 - **persistence:** `OwnedEntity`, `OwnedRepository`, `OwnershipGuard`
