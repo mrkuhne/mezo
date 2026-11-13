@@ -125,12 +125,18 @@ final class MealComposerModel {
         stage = .draft
     }
 
-    func show(_ stage: Stage) { problem = nil; if stage == .usuals { usualNote = nil }; self.stage = stage }
+    func show(_ stage: Stage) { problem = nil; if stage == .usuals || stage == .pick { usualNote = nil }; self.stage = stage }
 
     // MARK: Draft
 
     /// Asks Boop for a draft — or, with no net (or no model), keeps the capture on the phone for later.
     func submit() async {
+        // The owner's own submit: whatever a chosen usual meal said about itself no longer applies.
+        usualNote = nil
+        await performSubmit()
+    }
+
+    private func performSubmit() async {
         guard canSubmit, stage == .pick else { return }
         capturedAt = capturedOverride ?? clock(); problem = nil
         let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -229,14 +235,14 @@ final class MealComposerModel {
         if !usual.items.isEmpty {
             capturedAt = clock()
             draft = MealDraft(date: dayString(capturedAt), slot: FoodClient.slot(at: capturedAt, cal: calendar), title: usual.title, items: usual.items)
-            usualNote = "Ezek a legutóbbi „\(usual.title)” tételei, ahogy akkor rögzítetted — nézd át, mielőtt mented."
+            usualNote = "Ezek a legutóbbi „\(usual.title)” tételei. A számok mentéskor a kamrád és a receptjeid mostani adataiból frissülhetnek — nézd át, mielőtt mented."
             show(.draft)
             return
         }
         show(.pick)
         text = usual.title
         usualNote = "Az előző „\(usual.title)” tételeit nem tudtam előhívni, ezért a nevéből becsültem újra — ez nem a korábbi étkezésed másolata. Nézd át a tételeket."
-        await submit()
+        await performSubmit()
     }
 
     func loadLists() async {
@@ -303,9 +309,19 @@ final class MealComposerModel {
             return .failed("Nincs net — a vázlat itt marad, próbáld újra, amint van.")
         } catch FoodFetchError.unauthorized {
             return .failed("Újra be kell jelentkezned, aztán mentsd újra.")
+        } catch FoodFetchError.rejected {
+            return .failed(Self.rejectedSaveLine(d))
         } catch {
             return .failed("Nem sikerült elmenteni — próbáld újra.")
         }
+    }
+
+    /// A refused save of a draft with lines tied to the shelf or the recipes: the likeliest cause is a source deleted since
+    /// (a usual meal from weeks ago). The server does not say which line, so the sentence names the tied ones and what to do.
+    static func rejectedSaveLine(_ d: MealDraft) -> String {
+        let tied = d.items.filter { $0.pantryItemId != nil || $0.recipeId != nil }.map(\.name)
+        guard !tied.isEmpty else { return "A szerver nem fogadta el ezt a vázlatot — nézd át a tételeket." }
+        return "A szerver nem fogadta el a vázlatot. Lehet, hogy az egyik tétel forrását (\(tied.joined(separator: ", "))) törölted azóta a kamrádból vagy a receptjeid közül. Töröld ki a hibásat a \"Töröl\" gombbal, a többit el tudod menteni."
     }
 
     /// The owner sends a confirmation card away.

@@ -189,10 +189,12 @@ struct EtelKamraTests {
 
     // MARK: the composer's fifth entrance
 
-    private func usualsModel(_ list: [UsualMeal], calls: MealCalls = MealCalls()) -> MealComposerModel {
+    private func usualsModel(_ list: [UsualMeal], calls: MealCalls = MealCalls(), saveFails: FoodFetchError? = nil) -> MealComposerModel {
         MealComposerModel(
             drafter: MealDrafter(calls: calls),
-            saver: { d, _, at in BoopCore.Meal(id: UUID(), slot: d.slot, loggedAt: at, mealDate: d.date, title: d.title, macros: d.total, score: nil) },
+            saver: { d, _, at in
+                if let saveFails { throw saveFails }
+                return BoopCore.Meal(id: UUID(), slot: d.slot, loggedAt: at, mealDate: d.date, title: d.title, macros: d.total, score: nil) },
             usuals: { list }, outbox: nil)
     }
 
@@ -230,6 +232,45 @@ struct EtelKamraTests {
         #expect(m.usualNote?.contains("becsült") == false)
         // still nothing saved until the owner's tap
         #expect(await calls.saved.isEmpty)
+    }
+
+    @Test func theUsualNoteSoftensItsClaimAboutTheNumbers() async {
+        let u = usual("Csirke rizzsel", items: [chicken, rice])
+        let m = usualsModel([u])
+        await m.chooseUsual(u)
+        let note = m.usualNote ?? ""
+        #expect(note.contains("legutóbbi"))
+        #expect(note.contains("mostani adataiból frissülhetnek"))
+        #expect(!note.contains("ahogy akkor"))
+    }
+
+    @Test func aStaleUsualNoteNeverSurvivesTheOwnersNextSubmit() async {
+        let u = usual("Csirke rizzsel", items: [chicken, rice])
+        let m = usualsModel([u])
+        await m.chooseUsual(u)
+        #expect(m.usualNote != nil)
+        m.show(.pick)
+        #expect(m.usualNote == nil)
+        m.text = "valami más"
+        await m.submit()
+        #expect(m.usualNote == nil)
+        #expect(m.stage == .draft)
+    }
+
+    @Test func aRefusedSaveOfLinkedLinesNamesThemAndSaysWhatToDo() async {
+        let u = usual("Csirke rizzsel", items: [chicken, rice])
+        let m = usualsModel([u], saveFails: .rejected)
+        await m.chooseUsual(u)
+        guard case .failed(let line) = await m.save() else { Issue.record("expected a failure"); return }
+        #expect(line.contains("Csirkemell"))
+        #expect(line.contains("Rizs"))
+        #expect(line.contains("törölted"))
+        #expect(line.contains("Töröl"))
+        #expect(line != "Nem sikerült elmenteni — próbáld újra.")
+        // a draft with no line tied to the shelf or the recipes has no deleted source to blame
+        let plain = MealDraft(date: "2026-11-13", slot: "lunch", title: nil, items: [
+            DraftItem(source: .estimate, name: "Valami", amount: 1, unit: "db", per: 1, basisUnit: "db", kcal: 10, proteinG: 0, carbsG: 0, fatG: 0)])
+        #expect(!MealComposerModel.rejectedSaveLine(plain).contains("törölted"))
     }
 
     @Test func aUsualWhoseItemsCannotBeReadFallsBackToTheNameAndSaysItIsReEstimated() async {
