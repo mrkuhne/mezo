@@ -312,6 +312,16 @@ public struct LookupItem: Equatable, Sendable {
     public var servingSize: String?
     public var servingQuantity: Double?
 
+    public init(name: String, brand: String? = nil, barcode: String? = nil, per: Double, unit: String,
+                kcal: Double? = nil, proteinG: Double? = nil, carbsG: Double? = nil, fatG: Double? = nil,
+                fiberG: Double? = nil, sugarG: Double? = nil, saltG: Double? = nil, saturatedFatG: Double? = nil,
+                nova: Int? = nil, allergens: [String: AllergenState] = [:], servingSize: String? = nil, servingQuantity: Double? = nil) {
+        self.name = name; self.brand = brand; self.barcode = barcode; self.per = per; self.unit = unit
+        self.kcal = kcal; self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG
+        self.fiberG = fiberG; self.sugarG = sugarG; self.saltG = saltG; self.saturatedFatG = saturatedFatG
+        self.nova = nova; self.allergens = allergens; self.servingSize = servingSize; self.servingQuantity = servingQuantity
+    }
+
     /// What the serving confirmation starts from: the label's serving when there is one, otherwise `per` of the food's
     /// unit (grams) — a catalog hit has no serving fields at all.
     public var defaultServing: FoodAmount {
@@ -323,6 +333,7 @@ public struct LookupItem: Equatable, Sendable {
 public struct LookupResult: Equatable, Sendable {
     public var source: LookupSource
     public var results: [LookupItem]
+    public init(source: LookupSource, results: [LookupItem]) { self.source = source; self.results = results }
 }
 
 // MARK: - Recipes and pantry

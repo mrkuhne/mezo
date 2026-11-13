@@ -9,7 +9,7 @@ import BoopDesign
 
 /// How the composer opens: the entrance the owner chose, words already typed, or a confirmation card to look over.
 struct MealStart: Identifiable {
-    enum Entrance: Equatable { case pick, photo, text, recipe, pantry }
+    enum Entrance: Equatable { case pick, photo, text, recipe, pantry, barcode }
     let id = UUID()
     var entrance: Entrance = .pick
     var text = ""
@@ -19,7 +19,7 @@ struct MealStart: Identifiable {
 /// The composer's state and its decisions, apart from any view.
 @MainActor @Observable
 final class MealComposerModel {
-    enum Stage: Equatable { case pick, working, draft, queued, recipes, pantry }
+    enum Stage: Equatable { case pick, working, draft, queued, recipes, pantry, barcode, serving }
     enum SaveOutcome: Equatable { case saved(String), failed(String) }
 
     private(set) var stage: Stage = .pick
@@ -36,6 +36,10 @@ final class MealComposerModel {
     private(set) var saving = false
     var profile: SensitivityProfile?
     private(set) var cardId: UUID?
+    /// The barcode that rides along with the capture (an unknown code, kept for the label photo's draft).
+    private(set) var barcode: String?
+    /// The scanned product waiting for the owner to say how much he ate (the serving confirmation).
+    private(set) var scanned: (item: LookupItem, source: LookupSource, code: String)?
     /// The capture came from a card the owner is looking over (not made in this sheet).
     private(set) var adopted = false
     /// The old failed card this capture replaces; it goes once the new capture is safe (a draft, or queued).
@@ -89,6 +93,27 @@ final class MealComposerModel {
 
     func clearPhoto() { photo = nil }
 
+    // MARK: Barcode
+
+    /// Keeps an unknown code for the capture: the label photo's draft is asked for with it, and the draft keeps it.
+    func carryCode(_ code: String) { barcode = code }
+    func clearCode() { barcode = nil }
+
+    /// A found product goes to the serving confirmation — never straight into the draft.
+    func showServing(_ item: LookupItem, source: LookupSource, code: String) {
+        scanned = (item, source, code); show(.serving)
+    }
+
+    /// The owner confirmed the amount: the scanned product is now one line of an editable draft (nothing is saved yet).
+    func confirmServing(_ line: DraftItem) {
+        guard let scanned else { return }
+        capturedAt = clock()
+        draft = MealDraft(date: dayString(capturedAt), slot: FoodClient.slot(at: capturedAt, cal: calendar), title: nil,
+                          items: [line], barcode: scanned.code, lookupSource: scanned.source)
+        barcode = nil; self.scanned = nil
+        stage = .draft
+    }
+
     func show(_ stage: Stage) { problem = nil; self.stage = stage }
 
     // MARK: Draft
@@ -101,7 +126,7 @@ final class MealComposerModel {
         guard online() else { return await keep(words: words, why: .offline) }
         stage = .working
         do {
-            let d = try await drafter.draft(date: capturedAt, text: words.isEmpty ? nil : words, photo: photo, barcode: nil)
+            let d = try await drafter.draft(date: capturedAt, text: words.isEmpty ? nil : words, photo: photo, barcode: barcode)
             draft = d; stage = .draft
             await ensureParked()
             await discardReplaced()
@@ -124,7 +149,7 @@ final class MealComposerModel {
         var ref: UUID?
         do {
             ref = try photo.map { try outbox.storePhoto($0, rescale: false) }
-            try await outbox.enqueueMeal(draft: MealCapture(text: words.isEmpty ? nil : words), photoRef: ref, capturedAt: capturedAt)
+            try await outbox.enqueueMeal(draft: MealCapture(text: words.isEmpty ? nil : words, barcode: barcode), photoRef: ref, capturedAt: capturedAt)
             await discardReplaced()
             changed()
             chip = why == .offline ? "Nincs net · a telefonon van, elküldöm, amint lesz"
@@ -274,6 +299,7 @@ private struct MealComposerHost: View {
     @State private var showLibrary = false
     @State private var showCamera = false
     @State private var cardPhoto: UIImage?
+    @State private var scan: BarcodeScanModel
     @FocusState private var typing: Bool
     private let food: FoodClient
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -293,6 +319,7 @@ private struct MealComposerHost: View {
             }
         }
         _model = State(initialValue: m)
+        _scan = State(initialValue: BarcodeScanModel(lookup: { code in try await food.lookup(barcode: code) }))
     }
 
     private var time: String {
@@ -308,6 +335,8 @@ private struct MealComposerHost: View {
         case .queued: "Eltettem"
         case .recipes: "Melyik receptet?"
         case .pantry: "Mit a kamrából?"
+        case .barcode: "Vonalkód"
+        case .serving: "Mennyit ettél belőle?"
         }
     }
 
@@ -319,6 +348,8 @@ private struct MealComposerHost: View {
             case .draft: draftView
             case .queued: queued
             case .recipes, .pantry: list
+            case .barcode: barcodeView
+            case .serving: servingView
             }
         }
         .scrollDismissesKeyboard(.interactively)
@@ -337,6 +368,7 @@ private struct MealComposerHost: View {
             case .text: typing = true
             case .recipe: model.show(.recipes)
             case .pantry: model.show(.pantry)
+            case .barcode: model.show(.barcode)
             case .pick: break
             }
         }
@@ -368,7 +400,7 @@ private struct MealComposerHost: View {
             HStack(spacing: 8) {
                 entrance("camera-ink", "Fotó", primary: model.photo == nil) { choosePhoto() }
                 entrance("pen-sun", "Szöveg") { typing = true }
-                entrance("search-ink", "Vonalkód") { onDone(soonToast("Vonalkód")) }
+                entrance("search-ink", "Vonalkód") { scan.reset(); model.show(.barcode) }
             }
             HStack(spacing: 8) {
                 entrance("book-sage", "Recept") { model.show(.recipes) }
@@ -386,6 +418,15 @@ private struct MealComposerHost: View {
             .padding(.horizontal, 18).padding(.vertical, 14).frame(minHeight: 54)
             .background(Capsule().fill(.white.opacity(0.08)))
             .overlay(Capsule().stroke(.white.opacity(0.12)))
+            if let code = model.barcode {
+                HStack(spacing: 10) {
+                    Text("Vonalkód: \(code) · a vázlathoz teszem").nkFont(12.5, design: .monospaced).foregroundStyle(.white.opacity(0.7))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    Button("Töröl") { model.clearCode() }.nkFont(12.5).foregroundStyle(.white.opacity(0.65)).buttonStyle(.plain)
+                        .frame(minHeight: 28).accessibilityLabel("Vonalkód törlése")
+                }
+            }
             if let p = model.problem { problemLine(p) }
             Button { Task { await model.submit() } } label: {
                 Text(model.isOnline ? "Kiszámolom" : "Eltenem a telefonon").nkFont(16, .semibold).foregroundStyle(NK.ground)
@@ -411,6 +452,23 @@ private struct MealComposerHost: View {
     private func problemLine(_ text: String) -> some View {
         Text(text).nkFont(13.5).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
             .accessibilityLabel("Gond: \(text)")
+    }
+
+    // MARK: Barcode
+
+    private var barcodeView: some View {
+        BarcodeScanView(
+            model: scan, profile: model.profile,
+            onServing: { item, source, code in model.showServing(item, source: source, code: code) },
+            onLabelPhoto: { code in model.carryCode(code); model.show(.pick); choosePhoto() },
+            onWords: { code in model.carryCode(code); model.show(.pick); typing = true },
+            onBack: { model.show(.pick) })
+    }
+
+    @ViewBuilder private var servingView: some View {
+        if let scanned = model.scanned {
+            ServingConfirm(facts: scanned.item, onConfirm: { model.confirmServing($0) }, onBack: { model.show(.barcode) })
+        }
     }
 
     // MARK: Working / queued
