@@ -109,7 +109,7 @@
     },
     "jegyek:mezo-r36n9.15": {
       "page_id": "4168968e-752b-8161-b864-c3d13fc8e9b4",
-      "hash": "0a28b24c2c13"
+      "hash": "b3883b94a871"
     },
     "jegyek:mezo-r36n9.14": {
       "page_id": "4168968e-752b-8126-b650-c1fd3b87c390",
@@ -818,6 +818,38 @@
     "dontesek:d-2026-11-13-elo-uzenofal": {
       "page_id": "4178968e-752b-811b-a1a6-c32a362a89cd",
       "hash": "8863ffb80414"
+    },
+    "jegyek:mezo-r36n9.33.1": {
+      "page_id": "4178968e-752b-81bc-a8b4-c4e11ed21649",
+      "hash": "d38df80ebcee"
+    },
+    "jegyek:mezo-r36n9.46": {
+      "page_id": "4178968e-752b-81a6-8f6c-c5c4325c02bb",
+      "hash": "ead4bf86daec"
+    },
+    "jegyek:mezo-r36n9.45": {
+      "page_id": "4178968e-752b-8199-a40e-c914cf0c34b3",
+      "hash": "181f05728172"
+    },
+    "dontesek:d-2026-11-13-penz-terulet": {
+      "page_id": "4178968e-752b-81e5-a796-fc00a91a7143",
+      "hash": "834ad21c23a8"
+    },
+    "dontesek:d-2026-11-13-penz-hatarok": {
+      "page_id": "4178968e-752b-8135-b225-c099f54a0279",
+      "hash": "8e85ce8aacdc"
+    },
+    "dontesek:d-2026-11-13-penz-idotavok": {
+      "page_id": "4178968e-752b-813f-9ac5-d3c0a71f75e5",
+      "hash": "c8d1f760dcb8"
+    },
+    "dontesek:d-2026-11-13-day-trading-proba": {
+      "page_id": "4178968e-752b-814d-9c53-eb3b625ba3e0",
+      "hash": "61d0a9e0451f"
+    },
+    "dontesek:d-2026-11-13-koltes-heti-maradek": {
+      "page_id": "4178968e-752b-8144-8cff-eb270cbcd083",
+      "hash": "b928cad3458c"
     }
   }
 }
