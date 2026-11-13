@@ -119,10 +119,11 @@ struct EletMa: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.565 + geo.safeAreaInsets.top)
+                        hero(height: geo.size.height * 0.255 + geo.safeAreaInsets.top)
                         VStack(alignment: .leading, spacing: 22) {
                             feed
                             folds
+                            dayCurveCard
                             notices
                         }
                         .padding(.horizontal, 16)
@@ -202,17 +203,6 @@ struct EletMa: View {
                     .frame(height: 0.8)
                     .padding(.horizontal, 30)
                     .padding(.top, 16)
-
-                HStack {
-                    Text("Mai nap").font(AuraFont.serif(27)).foregroundStyle(.white)
-                    Spacer()
-                }
-                .padding(.horizontal, 16).padding(.top, 18)
-
-                EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
-                          hue: day.glow, now: 0.47, height: 220)
-                    .padding(.horizontal, 18).padding(.top, 6)
-
 
                 Spacer(minLength: 0)
             }
@@ -363,6 +353,33 @@ struct EletMa: View {
             .buttonStyle(.plain)
             .gCard(22)
         }
+    }
+
+    // MARK: Mai nap — the shape of the day, on its own card
+
+    private var dayCurveCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Mai nap").font(AuraFont.serif(27)).foregroundStyle(.white)
+                Spacer()
+                Button { path.append("m6") } label: {
+                    HStack(spacing: 5) {
+                        Text("A napod").font(.system(size: 13.5, weight: .semibold))
+                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(day.glow)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.bottom, 10)
+
+            EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
+                      hue: day.glow, now: 0.47, height: 212)
+                .padding(.top, 4)
+        }
+        .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .gCard(24)
     }
 
     // MARK: What Boop noticed — the cross-area observations, as cards

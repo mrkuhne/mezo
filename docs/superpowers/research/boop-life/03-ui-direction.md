@@ -273,6 +273,29 @@ So the wall is now three weights, not one:
 A card whose subject has no fitting photo (the workout reminder) keeps a tinted glyph tile — the same rule as
 the row lists: a near-miss photo is worse than none.
 
+### Round 9 — Ma's order, and the area as a real app (owner, 2026-11-13)
+
+**Ma, in order:** the date row, `boop` centred under it, a faint rule, the orb ribbon, a second rule, then
+**Most**, then **Mai nap** — the scrubbable day curve, now on its own white-glass card with an "A napod ›"
+link — and then **Amit ma észrevettem**. The curve left the hero: the hero is the masthead, the content is cards.
+
+**The area page.** The owner's words: *"nem tetszik, hogy amikor választok egy területet, akkor nincs fent hero,
+nincs ilyen főcím része… viszont így, hogy eltűnik a menüsor alul, igazából mindegyik területnek lehet saját
+5 menüpontos menüsora, ami eléggé egyszerűsíti a navigációt."* So:
+
+1. **Its own masthead** — the area's glyph and its name in the `boop` wordmark treatment, centred at the top of
+   the painted/photo head, exactly where `boop` sits on Ma. The head grew (356 pt warm / 326 pt cold) and the
+   eyebrow over the verdict now names the **open page**, not the area (the masthead already does).
+2. **Its own bottom bar** replaces the spine's while you are inside: the area's pages (icon + label, with the
+   badge on the icon) plus a fixed **Boop** item that asks about this area. Four pages + Boop = the five-item
+   bar the owner asked for; the top chip strip is gone.
+3. The score orb in the head is a **living** orb, like the ribbon's.
+
+Trap found while building: a glass bar placed with `.overlay` on the scrolling page renders but is easy to
+mis-verify — the simulator tool's tap coordinates sit ~70 pt above the screenshot's own point grid, so a tap
+aimed from a screenshot lands short and the bar looks dead. Verify a bottom bar by tapping ~70 pt lower than
+the screenshot suggests, or by a visible side effect (a toast).
+
 ## 4. The honest fork
 
 If the AI truly sees everything, the **conversation** may become the real home and the screens
