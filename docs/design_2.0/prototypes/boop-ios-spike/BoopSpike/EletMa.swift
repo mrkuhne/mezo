@@ -108,13 +108,14 @@ struct EletMa: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.60 + geo.safeAreaInsets.top)
+                        hero(height: geo.size.height * 0.50 + geo.safeAreaInsets.top)
                         VStack(spacing: 30) {
+                            briefing
                             dayScroll
                             areaStack
                         }
                         .padding(.horizontal, 16)
-                        .padding(.top, 8)
+                        .padding(.top, 2)
                         .padding(.bottom, 40)
                         .background(FloatingLights(hue: day.glow).padding(.vertical, -120))
                         MirroredLand(sky: day.sky).padding(.top, -20).padding(.bottom, 60)
@@ -161,7 +162,7 @@ struct EletMa: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 58)
 
-                sun.frame(height: 198).padding(.top, 6).padding(.bottom, 10)
+                sun.frame(height: 176).padding(.top, 2).padding(.bottom, 8)
 
                 Text("A MAI NAPOD").font(.system(size: 13, weight: .semibold)).tracking(2.6)
                     .foregroundStyle(.white.opacity(0.8))
@@ -177,7 +178,7 @@ struct EletMa: View {
 
     private var sun: some View {
         GeometryReader { g in
-            let H = g.size.height, size: CGFloat = 126
+            let H = g.size.height, size: CGFloat = 116
             let cy = H - 8 - 0.63 * (H - 8 - size / 2 - 6)
             ZStack {
                 Circle().fill(day.glow.opacity(0.18)).frame(width: size * 1.7).blur(radius: 60)
@@ -205,6 +206,104 @@ struct EletMa: View {
         .glassEffect(.regular, in: .capsule)
         .padding(.top, 2)
         .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    // MARK: The morning briefing — the long, premium good-morning with a peek into everywhere
+
+    private var briefing: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 9) {
+                LivingOrb(mood: .good, size: 24, motion: motion, palette: day.orb, glow: false, level: 0.78)
+                    .allowsHitTesting(false)
+                GLabel("BOOP MONDJA · 08:10")
+                Spacer()
+                Button { onToast("Boop felolvassa") } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "speaker.wave.2.fill").font(.system(size: 12, weight: .semibold))
+                        Text("Hallgatom").font(.system(size: 12.5, weight: .semibold))
+                    }
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 11).frame(height: 30)
+                    .background(Capsule().fill(.white.opacity(0.12)))
+                }
+                .buttonStyle(.plain)
+            }
+
+            Text("Jó reggelt. Jól aludtál, és ez meg is látszik majd a napon.")
+                .font(AuraFont.serif(23)).lineSpacing(4).foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 14)
+
+            Text("Hét óra tizenkét perc, ebből másfél óra mély — tizennyolc perccel több, mint a heti átlagod. A Formád 78, ami négy ponttal jobb a tegnapinál.")
+                .font(.system(size: 15)).lineSpacing(5).foregroundStyle(.white.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10)
+
+            Text("A naptárad sűrű: hat megbeszélés, a legnehezebb blokk fél tizenegykor. Ezért tettem az edzést fél hétre — így marad fél óra levegő a munka után, és tíz előtt kész a vacsora.")
+                .font(.system(size: 15)).lineSpacing(5).foregroundStyle(.white.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10)
+
+            Text("A postádból harmincnégy levélből kettőt hagytam meg neked, és az egyik tényleg jó hír: a futócipő, amit hetek óta figyelsz, ma a legolcsóbb, amit valaha láttam rá. A pénzed rendben van, csak az éttermek kerete fogyott el.")
+                .font(.system(size: 15)).lineSpacing(5).foregroundStyle(.white.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10)
+
+            // a peek into every area, in one line each
+            FlowRow(spacing: 8, rowSpacing: 8) {
+                EChip(glyph: "moon-cream", text: "Alvás 7ó 12p", orb: EMetric.all[1].orb)
+                EChip(glyph: "e-penz", text: "281 600 Ft", orb: EMetric.all[5].orb)
+                EChip(glyph: "e-level", text: "2 érdekes levél", orb: EMetric.all[6].orb)
+                EChip(glyph: "clock-ink", text: "6 esemény")
+                EChip(glyph: "dumbbell-ink", text: "Edzés 18:30", orb: EMetric.all[2].orb)
+                EChip(glyph: "bowl-cream", text: "165 g fehérje", orb: EMetric.all[3].orb)
+            }
+            .padding(.top, 16)
+
+            Rectangle().fill(.white.opacity(0.09)).frame(height: 0.5).padding(.top, 18)
+
+            Text("A NAP HÁROM DOLGA").font(AuraFont.mono(11, .bold)).tracking(1.5)
+                .foregroundStyle(.white.opacity(0.6)).padding(.top, 16)
+            VStack(alignment: .leading, spacing: 11) {
+                briefRow(1, "Ebédnél legalább 45 g fehérje", "ez a leggyengébb pontod két hete")
+                briefRow(2, "18:30-kor felsőtest, 75 perc", "a fekvenyomásnál 2,5 kg-mal több")
+                briefRow(3, "22:45-kor ágyban", "szólok negyed órával korábban")
+            }
+            .padding(.top, 12)
+
+            HStack(spacing: 8) {
+                EPill(title: "Elfogadom a napot") { onToast("A nap terve elfogadva") }
+                EPill(title: "Módosítom", primary: false) { onToast("Mit változtassunk? — Boop megkérdezi") }
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 18)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(LinearGradient(colors: [.white.opacity(0.11), .white.opacity(0.05)],
+                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .stroke(LinearGradient(colors: [.white.opacity(0.22), .white.opacity(0.04)],
+                                           startPoint: .top, endPoint: .bottom), lineWidth: 1))
+        )
+    }
+
+    private func briefRow(_ n: Int, _ t: String, _ s: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text("\(n)").font(.custom("Outfit", size: 13).weight(.semibold))
+                .foregroundStyle(gBase)
+                .frame(width: 22, height: 22)
+                .background(Circle().fill(.white.opacity(0.9)))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(t).font(.system(size: 15, weight: .medium)).foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(s).font(.system(size: 12.5)).foregroundStyle(.white.opacity(0.55))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
     }
 
     // MARK: The day — one list, the three parts of the day are headings in it

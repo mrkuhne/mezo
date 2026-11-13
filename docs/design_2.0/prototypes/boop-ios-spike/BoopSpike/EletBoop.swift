@@ -202,7 +202,7 @@ struct EletTerv: View {
 
     /// metric index · what it contributes to the goal · where that stands · progress · today's own verdict
     private let legs: [(Int, String, String, Double, String)] = [
-        (2, "Heti három futás", "ezen a héten kettő van meg", 0.66, "Van még benne több · 1 240 lépés"),
+        (2, "Heti három futás", "ezen a héten kettő van meg", 0.66, "Van még benne több · 1 240 lépés"),
         (3, "Napi 165 g fehérje", "14 napból 5-ön jött össze", 0.36, "Jó úton jársz · 38 g eddig"),
         (1, "7,5 óra alvás", "a heti átlagod 7 óra 4 perc", 0.82, "Kipihented magad · 7ó 12p"),
         (5, "Havi 60 000 Ft félretéve", "ebből 38 000 Ft megvan", 0.63, "A kereten belül vagy · 281 600 Ft"),
@@ -236,7 +236,7 @@ struct EletTerv: View {
                         }
                         .padding(.horizontal, 16)
 
-                        VStack(spacing: 10) {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 11), GridItem(.flexible(), spacing: 11)], spacing: 11) {
                             ForEach(Array(legs.enumerated()), id: \.offset) { _, l in
                                 Button { path.append("m\(l.0)") } label: { areaCard(l) }.buttonStyle(.plain)
                             }
@@ -267,32 +267,51 @@ struct EletTerv: View {
         }
     }
 
-    /// One card carries both identities: what the area is doing for the goal, and how it stands today.
+    /// Two per row: a big orb with its number, the area name, today's one-liner, the goal leg,
+    /// and a badge saying how much there is to look at inside.
     private func areaCard(_ l: (Int, String, String, Double, String)) -> some View {
         let a = EMetric.all[l.0]
+        let badge = EAreaContent.badge(l.0)
         return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 11) {
-                StillOrb(colors: a.orb, size: 30, level: Double(a.value) / 100)
-                Text(a.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+            ZStack(alignment: .topTrailing) {
+                HStack(spacing: 0) {
+                    ZStack {
+                        Circle().fill(a.glow.opacity(0.22)).frame(width: 74, height: 74).blur(radius: 16)
+                        StillOrb(colors: a.orb, size: 62, level: Double(a.value) / 100)
+                        Text("\(a.value)").font(.custom("Outfit", size: 21).weight(.medium))
+                            .foregroundStyle(.white).shadow(color: .black.opacity(0.45), radius: 4)
+                    }
+                    Spacer(minLength: 0)
+                }
+                if badge > 0 {
+                    HStack(spacing: 4) {
+                        AuraGlyph("bell-cream", gBase, size: 10)
+                        Text("\(badge)").font(.custom("Outfit", size: 12).weight(.semibold)).foregroundStyle(gBase)
+                    }
+                    .padding(.horizontal, 7).frame(height: 22)
+                    .background(Capsule().fill(a.glow))
+                    .shadow(color: a.glow.opacity(0.55), radius: 7)
+                }
             }
-            Text(l.4).font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.6))
-                .padding(.top, 5).padding(.leading, 41)
-            VStack(alignment: .leading, spacing: 6) {
+            Text(a.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                .padding(.top, 12)
+            Text(l.4).font(.system(size: 12.5)).lineSpacing(2).foregroundStyle(.white.opacity(0.6))
+                .fixedSize(horizontal: false, vertical: true).padding(.top, 3)
+            Spacer(minLength: 10)
+            VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(l.1).font(.system(size: 14.5, weight: .medium)).foregroundStyle(.white.opacity(0.95))
-                    Spacer()
-                    Text("\(Int(l.3 * 100))%").font(AuraFont.mono(12)).foregroundStyle(.white.opacity(0.6))
+                    Text(l.1).font(.system(size: 12.5, weight: .medium)).foregroundStyle(.white.opacity(0.9))
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                    Spacer(minLength: 4)
+                    Text("\(Int(l.3 * 100))%").font(AuraFont.mono(11)).foregroundStyle(.white.opacity(0.55))
                 }
                 ELevelBar(level: l.3, hue: a.glow)
-                Text(l.2).font(.system(size: 12)).foregroundStyle(.white.opacity(0.5))
             }
-            .padding(.top, 14).padding(.leading, 41)
+            .padding(.top, 10)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .gCard(22)
+        .padding(15)
+        .frame(maxWidth: .infinity, minHeight: 232, alignment: .topLeading)
+        .gCard(24)
     }
 }
 
