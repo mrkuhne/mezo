@@ -1,5 +1,15 @@
 # Boop iOS spike
 
+> **Newest round — "Élet" (curiosity spike, `mezo-r36n9.33`, 2026-11-13):** what Boop looks like once it also
+> carries **money** and **mail** (and later life goals), with one AI that keeps **threads**. Four ideas: the orb
+> lens grows from 5 body metrics to **7 life metrics**; Pénz and Levél are rooms on the *same* skeleton as Alvás;
+> the proposal card becomes the cross-area organ ("4 terület szólt hozzá" → "miért?"); the Boop tab becomes a
+> **thread list** with a "kérdezd meg Boopot" door on every card; Terv's top level becomes the **life goal** every
+> area hangs under. Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletMetric 0–6`,
+> `-eletOpen penz|level`. Screenshots: `elet-*.png`. Direction write-up:
+> [`docs/superpowers/research/boop-life/03-ui-direction.md`](../../../superpowers/research/boop-life/03-ui-direction.md).
+> **Nothing here is built** — the owner decided on 2026-11-13 that the life dashboard ships after B6.
+
 > **Newest round — "Gerinc" (B2, `mezo-r36n9.12`, 2026-11-11):** the standalone spine in the Napkelte look —
 > bottom bar Ma · Terv · Napló · Boop + "+", Ma as one day (Reggel plan → Napközben timeline with proposal cards →
 > Este close), proposal card + "miért?" with labelled expert lines, the domain drill-down template (Alvás),
