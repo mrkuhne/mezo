@@ -119,7 +119,7 @@ struct EletMa: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.37 + geo.safeAreaInsets.top)
+                        hero(height: geo.size.height * 0.46 + geo.safeAreaInsets.top)
                         VStack(alignment: .leading, spacing: 22) {
                             feed
                             folds
@@ -188,9 +188,8 @@ struct EletMa: View {
                 .padding(.horizontal, 16).padding(.top, 58)
 
                 EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
-                          hue: day.glow, now: 0.47, height: 182)
-                    .padding(.horizontal, 20).padding(.top, 10)
-                    .onTapGesture { path.append("m6") }
+                          hue: day.glow, now: 0.47, height: 232)
+                    .padding(.horizontal, 18).padding(.top, 14)
 
                 HStack(alignment: .top, spacing: 11) {
                     LivingOrb(mood: .good, size: 34, motion: motion, palette: day.orb, glow: false, level: 0.78)
@@ -698,12 +697,12 @@ enum EDay {
     static let curve: [Double] = [0.45, 0.68, 0.82, 0.78, 0.6, 0.42, 0.5, 0.72, 0.64, 0.38]
     static let hours = ["6", "8", "10", "12", "14", "16", "18", "20", "22", ""]
     static let events: [EDayEvent] = [
-        EDayEvent(at: 0.10, glyph: "sun-ink", label: "ébredés"),
-        EDayEvent(at: 0.21, glyph: "e-level", label: "posta"),
-        EDayEvent(at: 0.30, glyph: "clock-ink", label: "4 hívás"),
-        EDayEvent(at: 0.44, glyph: "bowl-cream", label: "ebéd"),
-        EDayEvent(at: 0.63, glyph: "clock-ink", label: "3 hívás"),
-        EDayEvent(at: 0.78, glyph: "dumbbell-ink", label: "edzés"),
-        EDayEvent(at: 0.93, glyph: "moon-cream", label: "alvás"),
+        EDayEvent(at: 0.10, glyph: "sun-ink", label: "ébredés", detail: "7ó 12p alvás, ebből 1ó 36p mély"),
+        EDayEvent(at: 0.21, glyph: "e-level", label: "posta", detail: "34 levél · 2 megér egy percet"),
+        EDayEvent(at: 0.30, glyph: "clock-ink", label: "4 hívás", detail: "9:00–12:00 · a 10:30-as a legnehezebb"),
+        EDayEvent(at: 0.44, glyph: "bowl-cream", label: "ebéd", detail: "Csirke rizzsel · 46 g fehérje"),
+        EDayEvent(at: 0.63, glyph: "clock-ink", label: "3 hívás", detail: "14:00–17:30 · nincs köztük levegő"),
+        EDayEvent(at: 0.78, glyph: "dumbbell-ink", label: "edzés", detail: "Felsőtest · 75 perc · 5 gyakorlat"),
+        EDayEvent(at: 0.93, glyph: "moon-cream", label: "alvás", detail: "22:45 · emlékeztetlek 22:15-kor"),
     ]
 }
