@@ -349,6 +349,11 @@ shown as *Újra*) is authoritative.
 - **There is no area page in code yet.** `ios/Boop` has `Nap`, `Terv`, `Naplo`, `BoopChat`, `Capture`, `Shell`,
   `Connect`, `Ritmus`. The area-page pattern of §5 lives only in the prototypes and this spec, so Pénz is
   *defining* it. (`L0` in the life-dashboard slice map is the slice that builds the shared area kit.)
+  **But the photo-head treatment already exists in the kit** and must be reused rather than written a third
+  time: `NKPhotoSky`, `NKOrbScrim`, `NKCardPhoto`, `NKThumb`, `NKCapsuleTabs`
+  (`BoopDesign/Napkelte/Etel.swift`) and `NKDrillPage(headPhoto:)` (`Napkelte/Drill.swift:18`), all shipped by
+  B4 with the Képek rules baked in — tone 0.8 / −0.06, the hue's gradient over the photo, the orb scrim, and a
+  correct render when there is no photo at all.
 - **`NKSpineBar` is a hard-coded four-item array and `Hue` is a closed five-case enum** (forma, alvas, mozgas,
   fuel, pulzus) driving every sky, orb and glow palette through array-indexed lookups that **crash on a new case
   if any table is missed** (and the orb shader needs exactly four colours). A per-area bottom bar and a Pénz hue
@@ -365,6 +370,14 @@ need `@ActiveProfiles("companion-fake")`; `node scripts/gen-codemap.mjs --check`
 the final one onto main; `node scripts/lint-docs.mjs` 0/0; `node scripts/boop-notion-sync.mjs check` exits 0.
 **iOS is not built in CI** — its tests run locally only. The Mac's LuLu firewall blocks network calls from the
 simulator app, so live calls are tested on the phone or with the DEBUG `-preview*` flags and `PreviewTransport`.
+
+**A trap the next spike will hit too.** The throwaway spike target
+(`docs/design_2.0/prototypes/boop-ios-spike`) has **no namespacing**: every round's files compile into one
+target, so each `E`-prefixed type in it is a shared global. The Élet round (`mezo-r36n9.33`) and the B4 Étel
+round (`mezo-r36n9.14`) each declared `EArg` and `EPhotoHead`, and the target went red for every session the
+moment both were on main — found and fixed here (`fb40a9f16`: the duplicate `EArg` dropped, the Étel head
+renamed `EtelPhotoHead`). **Prefix new spike types by round**, and build the target once after any merge that
+brings in another round's files.
 
 **Doc staleness found** (flagged, not fixed here): `docs/features/_platform-api-backend.md` §10 still says
 "30 per-feature fragments … of merge.yml's 32 inputFile entries" while the live count is 53 — treat `merge.yml`
