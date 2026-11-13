@@ -352,10 +352,14 @@ struct ESection<C: View>: View {
 /// The quiet badge of a sensitivity or a processed item.
 struct EFlagBadge: View {
     let flag: EFlag
+    /// In a list row only the key is shown ("Laktóz"), so the row's own text keeps its width.
+    var compact = false
     var body: some View {
         HStack(spacing: 5) {
             Circle().fill(flag.strong ? Color(hex: 0xF4C860) : .white.opacity(0.5)).frame(width: 5, height: 5)
-            Text(flag.text).font(.system(size: 11.5, weight: .medium)).foregroundStyle(.white.opacity(flag.strong ? 0.9 : 0.6))
+            Text(compact ? String(flag.text.split(separator: " ·").first ?? "") : flag.text)
+                .font(.system(size: 11.5, weight: .medium)).foregroundStyle(.white.opacity(flag.strong ? 0.9 : 0.6))
+                .fixedSize()
         }
         .padding(.horizontal, 9).padding(.vertical, 4)
         .background(Capsule().fill(.white.opacity(0.08)))

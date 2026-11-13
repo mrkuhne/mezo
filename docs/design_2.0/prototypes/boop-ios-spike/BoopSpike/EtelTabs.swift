@@ -19,12 +19,11 @@ struct EtelReceptek: View {
                 }
             }
             ESection(n: 2, label: "A KÖNYVTÁRAD · 8 RECEPT") {
-                VStack(spacing: 12) {
-                    searchField
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                        ForEach(Array(EData.recipes.enumerated()), id: \.offset) { _, r in
-                            recipeCard(r)
-                        }
+                VStack(spacing: 0) {
+                    searchField.padding(.bottom, 6)
+                    ForEach(Array(EData.recipes.enumerated()), id: \.offset) { k, r in
+                        recipeRow(r)
+                        if k < EData.recipes.count - 1 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                     }
                 }
             }
@@ -62,24 +61,25 @@ struct EtelReceptek: View {
         .buttonStyle(.plain)
     }
 
-    private func recipeCard(_ r: (String, String, Int, Int, Int, [EFlag])) -> some View {
+    /// One recipe = one row (owner, 2026-11-13): the thumbnail, the name, and everything that matters about it
+    /// on one line underneath — more information fits than in a two-column grid of cards.
+    private func recipeRow(_ r: (String, String, Int, Int, Int, [EFlag])) -> some View {
         Button { onToast("Megnyitom: \(r.0)") } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                photo(r.1).resizable().scaledToFill().saturation(0.8).brightness(-0.06)
-                    .frame(height: 96).frame(maxWidth: .infinity).clipped()
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(r.0).font(.system(size: 14.5, weight: .medium)).foregroundStyle(.white)
-                        .lineLimit(2, reservesSpace: true).multilineTextAlignment(.leading)
+            HStack(spacing: 12) {
+                EThumb(name: r.1, glyph: "bowl-sage", size: 44)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        Text(r.0).font(.system(size: 15, weight: .medium)).foregroundStyle(.white).lineLimit(1)
+                        if let f = r.5.first { EFlagBadge(flag: f, compact: true) }
+                        Spacer(minLength: 0)
+                    }
                     Text("\(r.3) kcal · \(r.4) g fehérje · \(r.2) adag")
-                        .font(AuraFont.mono(11)).foregroundStyle(.white.opacity(0.6))
-                    if let f = r.5.first { EFlagBadge(flag: f) }
+                        .font(AuraFont.mono(11.5)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
                 }
-                .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white.opacity(0.07)))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.1)))
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .padding(.vertical, 11).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -126,7 +126,7 @@ struct EtelKamra: View {
                                     }
                                 }
                                 Spacer()
-                                if let f = item.5.first { EFlagBadge(flag: f) }
+                                if let f = item.5.first { EFlagBadge(flag: f, compact: true) }
                                 else { Text("nincs adat").font(.system(size: 11)).foregroundStyle(.white.opacity(0.35)) }
                             }
                             .padding(.vertical, 11).contentShape(Rectangle())
