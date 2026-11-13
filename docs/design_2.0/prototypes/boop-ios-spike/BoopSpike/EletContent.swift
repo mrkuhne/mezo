@@ -25,25 +25,25 @@ enum EAreaContent {
     static let penz: [ETab] = [
         ETab(name: "Ma", badge: 2, blocks: [
             .highlight(label: "AMI MA SZÁMÍT", text: "Az éttermek kerete szinte elfogyott",
-                       sub: "24 000 Ft a 25 000-ből, és még négy nap van a hétből. A ma esti vacsora otthon 14 500 Ft-ot hagyna a keretben."),
+                       sub: "*24 000 Ft* a 25 000-ből, és még négy nap van a hétből. A ma esti vacsora otthon *14 500 Ft-ot* hagyna a keretben."),
             .stats([EStat(value: "281 600", unit: "Ft", label: "elköltve a hónapban"),
                     EStat(value: "328 400", unit: "Ft", label: "ami még maradt", hot: true),
                     EStat(value: "19 300", unit: "Ft/nap", label: "a mostani tempód", trend: 1)]),
             .curve(label: "A HÓNAP MENETE", values: [0.04, 0.09, 0.12, 0.19, 0.23, 0.26, 0.33, 0.35, 0.37, 0.4, 0.43, 0.44, 0.46],
                    labels: ["1", "", "", "4", "", "", "7", "", "", "10", "", "", "13"],
                    target: 0.43, now: 12,
-                   note: "A szaggatott vonal az egyenletes tempó. Három napja fölötte vagy, de még belefér."),
+                   note: "A szaggatott vonal az egyenletes tempó. *Három napja fölötte vagy*, de még belefér."),
             .composition(label: "MIRE MEGY EL", parts: [
                 EPart(name: "Lakás", value: 118_000, color: Color(hex: 0x2E8B57)),
                 EPart(name: "Élelmiszer", value: 96_400, color: Color(hex: 0x4FBF86)),
                 EPart(name: "Minden más", value: 31_200, color: Color(hex: 0x8FDCB4)),
                 EPart(name: "Éttermek", value: 24_000, color: warm),
                 EPart(name: "Sport", value: 12_000, color: Color(hex: 0xC9EFD9))],
-                note: "A lakás fix. A változó részed 63%-a élelmiszer és étterem."),
+                note: "A lakás fix. A változó részed *63%-a* élelmiszer és étterem."),
             .rowlist(label: "A MAI TÉTELEK", rows: [
-                ERow(glyph: "bowl-cream", title: "Spar", sub: "Bevásárlás · 12:06 · a banki üzenetből", right: "8 240", rightSub: "Ft"),
+                ERow(glyph: "bowl-cream", title: "Spar", sub: "Bevásárlás · 12:06 · a banki üzenetből", right: "8 240", rightSub: "Ft", photo: "salata-sq.jpg"),
                 ERow(glyph: "clock-ink", title: "BKK bérlet", sub: "Közlekedés · 08:14 · ismétlődő", right: "9 500", rightSub: "Ft"),
-                ERow(glyph: "honey-sun", title: "Kávézó", sub: "Éttermek · 10:40 · kézzel", right: "1 890", rightSub: "Ft", hot: true)],
+                ERow(glyph: "honey-sun", title: "Kávézó", sub: "Éttermek · 10:40 · kézzel", right: "1 890", rightSub: "Ft", hot: true, photo: "kave-sq.jpg")],
                 more: "A hónap összes tétele · 84 db"),
             .menu(label: "A PÉNZ TERÜLET", items: [
                 EMenuItem(glyph: "plus-ink", name: "Kiadás", sub: "Kézzel, ha nem jött banki üzenet"),
