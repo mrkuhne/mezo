@@ -494,8 +494,8 @@ enum EAreaContent {
                    value: 0.78, marker: 0.74),
             .list(label: "MI HAT RÁ MA", items: [
                 ("Alvás · 84", "7 óra 12 perc, ebből 1 óra 36 perc mély — ez emeli"),
-                ("Közérzet · 69", "A délelőtti feszültség 4 volt — ez húzza le"),
-                ("Mozgás · 62", "1 240 lépés eddig — ez húzza le"),
+                ("Energia · 69", "A délelőtti feszültség 4 volt — ez húzza le"),
+                ("Edzés · 62", "1 240 lépés eddig — ez húzza le"),
                 ("Pénz · 74", "A kereten belül vagy — nem terhel")]),
             .actions(primary: "A nap terve", secondary: "Részletek", ask: "Kérdezd meg Boopot a formádról"),
         ]),

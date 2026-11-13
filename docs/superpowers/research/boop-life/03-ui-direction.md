@@ -2,7 +2,7 @@
 
 Source: owner conversation 2026-11-13 (`mezo-r36n9.33`), explored in a throwaway simulator spike.
 Spike files: `docs/design_2.0/prototypes/boop-ios-spike/BoopSpike/Elet*.swift`, launch `-elet YES`.
-Screenshots: `elet-1-ma.png` … `elet-11-cel.png` in that folder (round 2).
+Screenshots: `elet-1-ma.png` … `elet-12-terv-etel.png` in that folder (round 3).
 
 ## 0. What the owner asked
 
@@ -66,8 +66,8 @@ and seven days as small bars. Three such cards fit the thumb comfortably.
 The areas that are fine today collapse into **one row** — "Ezek ma rendben vannak", with their
 orbs as a row of dots — which expands into thin rows (orb · name · verdict · number · chevron).
 
-- Order is **by what matters today**, not fixed. In the spike Levél, Pénz and Mozgás are loud;
-  Alvás, Fuel and Közérzet are quiet. This keeps the scroll short on a calm day and is what makes
+- Order is **by what matters today**, not fixed. In the spike Levél, Pénz and Edzés are loud;
+  Alvás, Étel and Energia are quiet. This keeps the scroll short on a calm day and is what makes
   a growing number of areas survivable — the open question of round 1 (what happens at eight
   areas?) answers itself.
 - This replaced the seven-orb strip entirely. Compare: a 40 pt orb with a number told you
@@ -87,10 +87,10 @@ seven bespoke screens:
 |---|---|
 | **Pénz** | Ma · Keretek · Előzmények · Tervezett (`elet-4`, `elet-5`) |
 | **Levél** | Ma · Figyelt · Szabályok · Fiókok (`elet-6`, `elet-7`) |
-| **Fuel** | Ma · Receptek · Hét (`elet-8`) |
+| **Étel** | Ma · Receptek · Hét (`elet-8`) |
 | **Alvás** | Ma · Hét · Előzmények |
-| **Mozgás** | Ma · Edzések · Előzmények |
-| **Közérzet** | Ma · Check-inek · Minták |
+| **Edzés** | Ma · Edzések · Előzmények |
+| **Energia** | Ma · Check-inek · Minták |
 | **Forma** | Ma · Mi hat rá |
 
 Inside a tab the page speaks one language — a headline level with an optional white waterline,
@@ -145,15 +145,33 @@ The important half is the **reverse direction**: every room and every card carri
 thread list is therefore not a separate chat app — it is the memory of every question the screens
 provoked.
 
-### 3.6 Terv's top level becomes the life goal
+### 3.6 Terv is the home of the areas (owner decision, 2026-11-13)
 
-`elet-11-cel.png`. A life goal ("Nyárra formába kerülni", 31 weeks left) with **every area hanging
-under it as a progress leg** — including money ("Havi 60 000 Ft félretéve") and mail ("Csak az
-számít, ami a célhoz tartozik"). The existing Terv content (weight goal, diet plan, mesocycle)
-becomes the body legs of that goal rather than the page itself.
+`elet-11-terv-teruletek.png`, `elet-12-terv-etel.png`. The owner's next question after round 2 was
+the one the design still owed an answer to: *"hogy fogunk átmenni a fő domain területekre?"* With
+the orb strip gone, the only doors were a row in the day and a long scroll to the bottom of Ma.
 
-This is what makes "life goals you can tie every area to" concrete: a goal is not a number, it is
-**the thing that makes six areas one story**.
+Three options were put to him — a fifth bar button, keeping the scroll, or **making Terv the home
+of the areas**. He chose Terv, which is also the semantically right answer: **the areas are the
+legs of the goal**, so the page that holds the goal is the page that holds them.
+
+So Terv is now: the life goal in the painted head ("Nyárra formába kerülni · 31 hét van hátra"),
+then **"A területeid"** — one card per area, each carrying *both* identities at once:
+
+- the area's name and orb, and **today's verdict** ("Jó úton jársz · 38 g eddig"),
+- what it contributes **to the goal**, with a progress bar ("Napi 165 g fehérje · 36% · 14 napból
+  5-ön jött össze").
+
+Tapping a card opens that area's own page (§3.3). The bottom bar keeps four items, and now tells
+one clean story: **Ma** = what is happening now · **Terv** = my goal and my areas · **Napló** =
+what happened · **Boop** = I ask.
+
+The other doors stay and are the fast paths: a row in the day (tap lunch → Étel), the loud cards
+at the bottom of Ma, and the `+` when you only want to record something.
+
+**Naming:** the spike also moved to the spine's own vocabulary — Fuel → **Étel**, Mozgás →
+**Edzés**, Közérzet → **Energia**. The owner names the areas that way himself
+("étkezés, edzés, pénz, alvás"), and it matches the B2 room names.
 
 ### 3.7 Napló · Minták becomes cross-area
 
@@ -193,7 +211,7 @@ Nothing before B6 — this is a design, not a build (owner decision 8, `14-decis
 ## 6. Open questions for the owner
 
 1. The loud/quiet split on the home screen — is "three cards + one collapsed row" the right
-   balance, or should every area always show its card?
+   balance, or should every area always show its card? (Terv always shows all six.)
 2. Should the mail digest *notify* (push) when something scores high, or only ever appear in Ma?
    Prior art (`01-mail-digest-research.md` §6, MailGester) says the notification policy is what
    decides whether a digest gets read at all.
