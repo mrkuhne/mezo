@@ -74,7 +74,7 @@ public class FoodDigestionDetector implements CharacterDetector {
                 + (today.lowWith() + today.okWith()) + " alkalomból " + today.lowWith()
                 + " esetben nehéznek jelezted a gyomrod (emésztés 4 vagy alatta). Összesen "
                 + today.lowTotal() + " nehéz és " + today.okTotal()
-                + " rendben lévő jelzésed volt étkezés után. Együttjárás a saját adataidban, nem ételintolerancia-diagnózis.";
+                + " rendben lévő jelzésed volt étkezés után. Együttjárás a saját adataidban, nem orvosi diagnózis.";
         return List.of(new DetectorSignal(key(), "taplalkozo", summary, 3));
     }
 

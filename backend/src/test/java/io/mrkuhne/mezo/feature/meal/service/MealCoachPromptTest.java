@@ -235,6 +235,38 @@ class MealCoachPromptTest {
             .doesNotContain("stressz").doesNotContain("?/10");
     }
 
+    @Test
+    void listsProfileSensitivities() {
+        var profile = new io.mrkuhne.mezo.feature.nutrition.service.SensitivityProfile(List.of(
+            new io.mrkuhne.mezo.feature.nutrition.service.Sensitivity("lactose",
+                io.mrkuhne.mezo.feature.nutrition.service.SensitivityLevel.INTOLERANCE, "tejtermék")),
+            new io.mrkuhne.mezo.feature.nutrition.service.NovaRule(true, 2));
+        var person = MealCoachContextReader.PersonContext.empty().withSensitivity(profile);
+
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)), person);
+
+        assertThat(msg).contains("ÉRZÉKENYSÉGEK").contains("lactose · intolerancia · tejtermék");
+    }
+
+    @Test
+    void sensitivitiesBlockSaysNincsRogzitveWhenTheProfileIsEmpty() {
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)), MealCoachContextReader.PersonContext.empty()
+                .withSensitivity(io.mrkuhne.mezo.feature.nutrition.service.SensitivityProfile.defaults()));
+
+        assertThat(msg).contains("ÉRZÉKENYSÉGEK: nincs rögzítve");
+    }
+
+    @Test
+    void neutralVariantKeepsTheSameRule() {
+        assertThat(MealCoachService.SYSTEM_PROMPT_NEUTRAL)
+            .doesNotContain("Magyarul, tegeződve")
+            .contains("CSAK az ÉRZÉKENYSÉGEK listában szereplő")
+            .contains("ne találj ki újat")
+            .doesNotContain("ne nevezz meg ételérzékenységet");
+    }
+
     private static MealCoachContextReader.CheckIn checkIn(String slot, Integer energy, Integer stress,
                                                           Integer body, Integer mental) {
         CheckInEntity c = new CheckInEntity();

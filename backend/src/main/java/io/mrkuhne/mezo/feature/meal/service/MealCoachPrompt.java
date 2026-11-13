@@ -4,6 +4,9 @@ import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.Dimension;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
+import io.mrkuhne.mezo.feature.nutrition.service.Sensitivity;
+import io.mrkuhne.mezo.feature.nutrition.service.SensitivityLevel;
+import io.mrkuhne.mezo.feature.nutrition.service.SensitivityProfile;
 import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.Window;
 import java.math.BigDecimal;
@@ -107,7 +110,7 @@ final class MealCoachPrompt {
         }
 
         for (MealBlock m : meals) {
-            appendMeal(sb, targets, m, fuel);
+            appendMeal(sb, targets, m, fuel, person == null ? null : person.sensitivity());
             if (person != null) {
                 appendCheckIns(sb, MealCoachContextReader.upTo(person.checkIns(),
                     m.loggedAt().toString().substring(0, 5)));
@@ -142,6 +145,59 @@ final class MealCoachPrompt {
         }
         sb.append("- aktív gyógyszer: ").append(p.medication() == null ? "nincs rögzítve" : p.medication())
           .append('\n');
+        appendSensitivities(sb, p.sensitivity());
+    }
+
+    /**
+     * The owner's recorded food sensitivities (Boop B4, spec §7.1) — the ONLY ones the coach may
+     * name. {@code null} profile = unknown ("nincs adat"), an empty one = none recorded.
+     */
+    private static void appendSensitivities(StringBuilder sb, SensitivityProfile profile) {
+        if (profile == null) {
+            sb.append("- ÉRZÉKENYSÉGEK: nincs adat\n");
+            return;
+        }
+        if (profile.items().isEmpty()) {
+            sb.append("- ÉRZÉKENYSÉGEK: nincs rögzítve\n");
+            return;
+        }
+        sb.append("- ÉRZÉKENYSÉGEK (csak ezeket nevezheted meg):\n");
+        for (Sensitivity s : profile.items()) {
+            sb.append("  - ").append(oneLine(s.key())).append(" · ").append(levelLabel(s.level()));
+            if (s.note() != null && !s.note().isBlank()) {
+                sb.append(" · ").append(oneLine(s.note()));
+            }
+            sb.append('\n');
+        }
+    }
+
+    private static String levelLabel(SensitivityLevel level) {
+        return switch (level) {
+            case ALLERGY -> "allergia";
+            case INTOLERANCE -> "intolerancia";
+            case AVOID -> "kerülöm";
+        };
+    }
+
+    /** Profile text is the owner's own, but it still must not break the prompt's line structure. */
+    private static String oneLine(String v) {
+        return v.replaceAll("\\s+", " ").strip();
+    }
+
+    /**
+     * Decision 17: the quiet processed-food line fires only when NOVA 3-4 carry the LARGER part of
+     * the meal's kcal (the nova dimension's kcal-weighted stack), never per ingredient. Exactly half
+     * is not "the larger part"; no NOVA data, or the owner's NOVA rule off, is silence.
+     */
+    static boolean processedDominates(MealBreakdownJson breakdown, SensitivityProfile profile) {
+        if (profile == null || profile.novaRule() == null || !profile.novaRule().enabled()
+            || breakdown == null || breakdown.dimensions() == null) {
+            return false;
+        }
+        return breakdown.dimensions().stream()
+            .filter(d -> "nova".equals(d.id()) && d.nova() != null && d.nova().stack() != null)
+            .anyMatch(d -> d.nova().stack().stream().filter(r -> r.nova() >= 3)
+                .mapToInt(MealBreakdownJson.NovaStackRow::pct).sum() > 50);
     }
 
     /**
@@ -227,7 +283,8 @@ final class MealCoachPrompt {
         return v == null ? 0 : v.doubleValue();
     }
 
-    private static void appendMeal(StringBuilder sb, DailyTargets targets, MealBlock m, DayFuel fuel) {
+    private static void appendMeal(StringBuilder sb, DailyTargets targets, MealBlock m, DayFuel fuel,
+                                   SensitivityProfile sensitivity) {
         sb.append("\n=== ÉTKEZÉS mealId=").append(m.mealId()).append(" ===\n");
         sb.append("Név: ").append(m.name() == null ? "-" : m.name())
           .append(" | slot: ").append(m.slot() == null ? "-" : m.slot())
@@ -245,6 +302,10 @@ final class MealCoachPrompt {
         sb.append('\n');
 
         appendItems(sb, m.items());
+        if (processedDominates(m.breakdown(), sensitivity)) {
+            sb.append("FELDOLGOZOTTSÁG: ennél az étkezésnél a kalória nagyobb része NOVA 3-4 "
+                + "(feldolgozott) tételekből jön — erről legfeljebb egy halk mondat.\n");
+        }
 
         MealBreakdownJson b = m.breakdown();
         sb.append("DETERMINISZTIKUS BONTÁS (0-1, súlyozott) — érték ").append(b.value())

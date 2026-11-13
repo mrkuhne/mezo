@@ -13,6 +13,8 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
+import io.mrkuhne.mezo.feature.nutrition.service.SensitivityProfile;
+import io.mrkuhne.mezo.feature.nutrition.service.SensitivityService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
@@ -41,11 +43,25 @@ class MealCoachContextReader {
     record PersonContext(String sex, Integer age, BigDecimal heightCm, BigDecimal weightKg,
                          BigDecimal bodyFatPct, String activityLevel,
                          String goalTrajectory, List<String> goalGuards,
-                         Sleep sleep, String medication, List<CheckIn> checkIns) {
+                         Sleep sleep, String medication, List<CheckIn> checkIns,
+                         SensitivityProfile sensitivity) {
+
+        /** The pre-sensitivity shape — {@code sensitivity} null = the profile is not known. */
+        PersonContext(String sex, Integer age, BigDecimal heightCm, BigDecimal weightKg,
+                      BigDecimal bodyFatPct, String activityLevel, String goalTrajectory,
+                      List<String> goalGuards, Sleep sleep, String medication, List<CheckIn> checkIns) {
+            this(sex, age, heightCm, weightKg, bodyFatPct, activityLevel, goalTrajectory, goalGuards,
+                sleep, medication, checkIns, null);
+        }
 
         static PersonContext empty() {
             return new PersonContext(null, null, null, null, null, null, null, List.of(), null, null,
                 List.of());
+        }
+
+        PersonContext withSensitivity(SensitivityProfile profile) {
+            return new PersonContext(sex, age, heightCm, weightKg, bodyFatPct, activityLevel,
+                goalTrajectory, goalGuards, sleep, medication, checkIns, profile);
         }
     }
 
@@ -72,6 +88,7 @@ class MealCoachContextReader {
     private final SleepLogRepository sleeps;
     private final CheckInRepository checkIns;
     private final MedicationRepository medications;
+    private final SensitivityService sensitivityService;
 
     @Transactional(readOnly = true)
     PersonContext read(UUID userId, LocalDate date) {
@@ -103,7 +120,7 @@ class MealCoachContextReader {
             profile == null ? null : profile.getActivityLevel(),
             goal == null ? null : goal.getTrajectory(),
             goal == null || goal.getGuards() == null ? List.of() : List.copyOf(goal.getGuards()),
-            sleep, medication, dayCheckIns);
+            sleep, medication, dayCheckIns, sensitivityService.profile(userId));
     }
 
     private static Sleep toSleep(SleepLogEntity s) {

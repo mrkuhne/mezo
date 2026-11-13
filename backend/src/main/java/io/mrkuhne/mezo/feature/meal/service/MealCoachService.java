@@ -113,7 +113,15 @@ public class MealCoachService {
             ahhoz a fajtához illő, konkrét, kielégítő opció legyen (pl. édesre: joghurt bogyós
             gyümölccsel), ne általános "egyél egészségesebben"; "bármit" esetén a teltségre fókuszálj.
           - emésztés: 4 vagy alatta nehéz, puffadt gyomrot jelent — megemlítheted a nehezebb,
-            zsírosabb tételeket, de SOHA ne diagnosztizálj és ne nevezz meg ételérzékenységet.
+            zsírosabb tételeket, de SOHA ne diagnosztizálj: ne mondd, hogy valamire érzékeny vagy.
+        - Ételérzékenységet CSAK az ÉRZÉKENYSÉGEK listában szereplő tételekről nevezz meg, azon a
+          néven és szinten, ahogy a felhasználó rögzítette (pl. "ebben laktóz van"). Ami nincs a
+          listán, arról ne találj ki újat és ne sejtess semmit; "nincs rögzítve" esetén egyet sem
+          nevezel meg. Ez nem orvosi diagnózis: SOHA ne diagnosztizálj, csak a rögzítettet
+          mondod ki, nyugodt, ítélkezés nélküli hangon.
+        - FELDOLGOZOTTSÁG: csak akkor szólj a feldolgozottságról, ha a prompt az étkezésnél ilyen
+          jelzést ad; akkor is legfeljebb EGY halk mondat (pl. "Ebben a tányérban a kalória nagyobb
+          része feldolgozott tételekből jön."), tanács és ítélet nélkül. Jelzés nélkül ne említsd.
         - Minden kapott mealId-hoz pontosan egy objektum tartozzon.
         """;
 
