@@ -308,6 +308,10 @@ nincs ilyen főcím része… viszont így, hogy eltűnik a menüsor alul, igaz�
 6. **Every head in the app wears it**, not only the area pages: Ma's hero photo is blurred the same way, and
    Napló — which was still on the cold painted head in warm mode — now uses the shared photo head. The owner
    spotted the mismatch the moment two screens sat side by side (*"most nem mindegyik helyen egységes"*).
+7. **The area page's background lives all the way down.** The dissolve alone was not enough: under the head the
+   area page fell into a flat dark field, so the head still read as a separate block. Ma's two background
+   pieces — the drifting `FloatingLights` in the area's hue behind the content, and `MirroredLand` closing the
+   scroll — now run on the area page too. The head is the top of one coloured field, not a lid on a dark box.
 
 Trap found while building: a glass bar placed with `.overlay` on the scrolling page renders but is easy to
 mis-verify — the simulator tool's tap coordinates sit ~70 pt above the screenshot's own point grid, so a tap

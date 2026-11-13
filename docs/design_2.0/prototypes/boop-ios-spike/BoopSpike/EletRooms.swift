@@ -52,9 +52,13 @@ struct EletAreaPage: View {
                         block(b)
                     }
                 }
-                .padding(.horizontal, 16).padding(.top, 22).padding(.bottom, 124)
+                .padding(.horizontal, 16).padding(.top, 22).padding(.bottom, 40)
                 .id(tab)
                 .transition(.opacity)
+                // Round 10: the area page was a head on a flat field — Ma's drifting lights and its
+                // closing landscape are what make the colour live all the way down. Same here.
+                .background(FloatingLights(hue: m.glow).padding(.vertical, -120))
+                MirroredLand(sky: m.sky).padding(.top, -20).padding(.bottom, 110)
             }
         }
         .scrollIndicators(.hidden)
