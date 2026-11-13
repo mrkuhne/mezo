@@ -126,3 +126,46 @@ Run it: open `BoopSpike.xcodeproj` in Xcode 26+ (iOS 26 SDK; the shader needs th
 toolchain: `xcodebuild -downloadComponent MetalToolchain`), pick an iPhone simulator, Run. Launch
 arguments used while verifying: `-variant 0|1|2`, `-mood 0|1|2`, `-crowded YES`, `-scrubAt 15.2`
 (pins the magnifier), `-select 0-19:00` (pre-selects an anchor).
+
+---
+
+## Round "Edzés" (B5, `mezo-r36n9.15`, 2026-11-13) — the training room, phone only
+
+Owner decisions this round: **phone only, no Apple Watch** (he has none; every wearable workout in
+production is a Huawei row with NULL heart rate, and a watch workout session cannot be verified in any
+simulator) · **the full room including the block builder** · **sport in, running out** (0 blocks and 0 logs
+ever). Built photo-first per the Képek guideline.
+
+Files `Edzes*.swift` (throwaway): `EdzesSpike.swift` (args, hue, photo head, fake data, the room frame with
+the four capsule tabs), `EdzesMa.swift`, `EdzesPlayer.swift` (the in-workout player), `EdzesTabs.swift`
+(Terv · Gyakorlatok · Előzmények), `EdzesFlows.swift` (the sheets).
+
+Launch: `-edzes YES` plus
+`[-edzesTab 0–3] [-edzesOffline YES] [-edzesOpen player|csere|kihagyas|kimelo|varazslo|gyakorlat|jelentes|osszehasonlit|terkep|sport] [-edzesPlayerStep 0–4]`.
+
+Screenshots `edzes-1…17-*.png`: the four tabs, the no-signal state, the player (briefing → set → rest →
+debrief → close), and the sheets.
+
+What this round is really about: **the gym has no signal.** The owner's 8-week block is running but only
+three sessions went in over two weeks, and B3 established the cause — no internet while travelling. So the
+offline state is a first-class state here, not a fallback: the room carries a visible net switch, a stale
+plan says *how* stale it is in amber on the face of the prescription (never a grey dash), and the player
+shows a live count of sets waiting on the phone. Agreed with the B4 session as the shape of the shared read
+cache (`mezo-vxjj9`): the cache answers "what did the server last say", `DayLedger` answers "what have I
+done since", and the two never merge.
+
+### Two traps this round hit, for whoever runs the spike next
+
+- **`xcrun simctl launch` only picks up new launch arguments on the FIRST launch after a quiet gap.**
+  Terminate-then-launch inside one shell loop silently reuses the previous launch's arguments, so every
+  screenshot in a batch comes out identical. `--terminate-running-process` does not fix it either. Take one
+  screenshot per shell invocation, or verify with `md5` that the files actually differ — they looked fine
+  individually and were all the same image.
+- **A presentation whose binding is already true on the first render does not fire**, and deferring it to
+  `.task` did not help; `-edzesOpen player` therefore renders the player as the ROOT. Reaching it by tapping
+  "Kezdjük el" in the app works normally — this is a screenshot-harness workaround, not a product shape.
+
+Also fixed in passing: `EtelSpike.swift` and `EletRoot.swift` had both declared `EArg` and `EPhotoHead`, so
+the spike project did not compile at all on main (two sessions picked the same `E` prefix, and each had
+built before the other merged). The Étel copies are renamed `EtArg` / `EtPhotoHead`; the Élet ones are
+untouched.
