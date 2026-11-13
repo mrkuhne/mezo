@@ -24,4 +24,23 @@ class BoopRuleVerdictsTest {
         assertThat(mozgas.headline()).isEqualTo("Még nincs lépésadat");
         assertThat(mozgas.sentence()).doesNotContain("Lépéscél nélkül").doesNotContain("előtted");
     }
+
+    /**
+     * Boop B4 (mezo-r36n9.14): the day now carries the PLANNED-but-unlogged windows too, so the
+     * "next unlogged meal" branch — dead while every meal was a logged one — names the next window
+     * by its own name and time instead of falling through to the protein-gap sentence.
+     */
+    @Test
+    void nextMealTipNamesTheNextWindow() {
+        BoopDay d = BoopBriefFixtures.day(null, 4000, List.of(), List.of(
+            new BoopDay.Meal(LocalTime.of(7, 0), "Reggeli", "breakfast", 450, 25, true),
+            new BoopDay.Meal(LocalTime.of(10, 30), "Tízórai", "snack", 300, 20, false),
+            new BoopDay.Meal(LocalTime.of(14, 0), "Ebéd", "lunch", 700, 45, false)));
+        Scores s = scores.compute(d, LocalTime.of(9, 0));
+
+        String tip = rules.write(d, s, LocalTime.of(9, 0)).nextMealTip();
+
+        assertThat(tip).startsWith("Következik: Tízórai, 10:30.");
+        assertThat(tip).doesNotContain("Ebéd");
+    }
 }

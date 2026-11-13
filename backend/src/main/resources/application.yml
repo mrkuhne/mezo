@@ -3041,7 +3041,7 @@ mezo:
     confidence-threshold: 0.6
   # Fuel-settings ghost defaults (mezo-53su). Binds onto FuelSettingsProperties.
   fuel-settings:
-    default-meals-per-day: 4
+    default-meals-per-day: 5
     default-caffeine-cutoff: "14:00"
   # Diet-settings ghost defaults (Diet Plan slice 1). Binds onto DietSettingsProperties.
   diet-settings:

@@ -37,7 +37,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [lifegoal](#lifegoal) | ✓ | 1 | ✓ | · | [lifegoal](features/lifegoal.md) |
 | [llmlog](#llmlog) | ✓ | 2 | · | · | [admin-hub](features/admin-hub.md), [companion](features/companion.md) |
 | [me](#me) | · | · | ✓ | ✓ | [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [settings](features/settings.md), [today](features/today.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
-| [meal](#meal) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
+| [meal](#meal) | ✓ | 2 | · | · | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · | · | · |
 | [needs](#needs) | ✓ | 1 | ✓ | · | [needs](features/needs.md) |
 | [notification](#notification) | ✓ | 2 | ✓ | ✓ | [_platform-notifications](features/_platform-notifications.md) |
@@ -1129,11 +1129,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MealAiDraftValidator`, `MealCoachContextReader`, `MealCoachEagerListener`, `MealCoachLlm`, `MealCoachPrompt`,
     `MealCoachService`, `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`, `MealSavedEvent`, `MealService`,
     `WaterLogService`
-  - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
+  - **controllers→contract:** `FuelPlanController`→`FuelPlanApi`, `MealAiDraftController`→`MealAiLogApi`,
+    `MealController`→`MealApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
-  - **other:** `MealItemRecipeOverrideJson`, `MealProvenanceJson`, `MealRescoreRunner`,
-    `MealSaturatedFatBackfillRunner`
+  - **other:** `DayPlanService`, `FuelPlanMapper`, `MealItemRecipeOverrideJson`, `MealProvenanceJson`,
+    `MealRescoreRunner`, `MealSaturatedFatBackfillRunner`
+- **Contract** `api/feature/meal/fuel-plan.yml` — 1 operation
+  - **endpoints:** GET /api/fuel/plan/{date}
 - **Contract** `api/feature/meal/meal.yml` — 11 operations
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
@@ -1241,15 +1244,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **controllers→contract:** `DietSettingsController`→`DietSettingsApi`, `SensitivityController`→`SensitivityApi`
   - **mappers:** `BreakdownDtoMapper`
   - **config:** `DietSettingsProperties`, `MealScoringProperties`, `NutritionTargetsProperties`
-  - **other:** `MealBreakdownJson`
+  - **other:** `BudgetSplitter`, `DayPlan`, `DayPlanWindow`, `LoggedMeal`, `Macros4`, `MealBreakdownJson`, `MealSlots`,
+    `PlannedWindow`, `RecipeCandidate`, `SlotKey`, `Suggestion`, `SuggestionPicker`, `TemplateRow`, `Tip`,
+    `TrainingBlock`, `UsualMeal`, `UsualMealRanker`, `WindowKind`, `WindowPlacer`, `WindowRule`, `WindowState`
 - **Contract** `api/feature/diet-settings/diet-settings.yml` — 3 operations
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
 - **Contract** `api/feature/sensitivity/sensitivity.yml` — 2 operations
   - **endpoints:** GET /api/sensitivity · PUT /api/sensitivity
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 4 IT + 4 unit
-  - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`, `SensitivityProfileIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 5 IT + 8 unit
+  - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`, `FuelPlanIT`,
+    `SensitivityProfileIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`,
-    `TrainPopulator`
+    `MealPopulator`, `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `TrainPopulator`
 
 ### pantry
 

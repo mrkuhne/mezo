@@ -1887,6 +1887,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fuel/plan/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The day's meal windows, the remaining budget and the next-meal tip (FuelPlan) */
+        get: operations["getFuelPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/medication": {
         parameters: {
             query?: never;
@@ -8706,6 +8723,50 @@ export interface components {
             date: string;
             amountMl: number;
         };
+        FuelPlanResponse: {
+            /** Format: date */
+            date: string;
+            /** @description Every window of the day in clock order, logged and open alike */
+            windows: components["schemas"]["FuelPlanWindow"][];
+            /** @description Target − consumed − the kcal of the day's skipped windows. Negative when the day went over; null on a kímélő (GUIDANCE) day, which is not judged on kcal at all. */
+            remaining?: components["schemas"]["Macros"] | null;
+            /** @description Absent late in the day, after a skip, and when nothing is left to offer */
+            tip?: components["schemas"]["FuelPlanTip"] | null;
+        };
+        FuelPlanWindow: {
+            /** @enum {string} */
+            slot: "breakfast" | "lunch" | "dinner" | "snack";
+            /** @enum {string} */
+            kind: "meal" | "snack";
+            /** @description The window's Hungarian name (Reggeli, Tízórai, …) */
+            label: string;
+            from: string;
+            to: string;
+            /** @description This window's share of the day; null on a kímélő (GUIDANCE) day */
+            budget?: components["schemas"]["Macros"] | null;
+            /** @enum {string} */
+            state: "done" | "now" | "pending" | "missed" | "skipped";
+            /** @description The meals logged into this window, earliest first; empty while it is open */
+            loggedMealIds: string[];
+            /** @description Only on an open window — never on a done or skipped one */
+            suggestion?: components["schemas"]["FuelPlanSuggestion"] | null;
+        };
+        FuelPlanSuggestion: {
+            /**
+             * @description ingredients is the honest fallback while the recipe library is small (owner decision 16) — a window no recipe fits shows an ingredient-level tip, never an empty row.
+             * @enum {string}
+             */
+            kind: "recipe" | "ingredients";
+            /** Format: uuid */
+            recipeId?: string | null;
+            text: string;
+            /** @description One clause saying why this one — an offer, never a verdict */
+            reason: string;
+        };
+        FuelPlanTip: {
+            text: string;
+            reason: string;
+        };
         MedicationPhase: {
             /** @enum {string} */
             key: "peak" | "stable" | "trough";
@@ -10816,7 +10877,7 @@ export interface components {
             needsReview: boolean;
         };
         FuelSettingsResponse: {
-            /** @description Eating occasions per day — drives the planner's meal windows */
+            /** @description Eating occasions per day — drives the planner's meal windows. The default rhythm is 5 (3 meals + 2 snacks, owner decision 21). */
             mealsPerDay: number;
             /** @description Last caffeine time, HH:mm — the Mai chip, day plan and habit metric all read this */
             caffeineCutoff: string;
@@ -19561,6 +19622,37 @@ export interface operations {
             };
         };
     };
+    getFuelPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelPlanResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getMedicationDay: {
         parameters: {
             query?: never;
@@ -24210,7 +24302,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The settings (ghost 4 / 14:00 before the first save) */
+            /** @description The settings (ghost 5 / 14:00 before the first save — 3 meals + 2 snacks, owner decision 21) */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -17,7 +17,7 @@ class FuelSettingsApiIT extends ApiIntegrationTest {
         FuelSettingsResponse s =
             getForBody("/api/fuel/settings", ownerAuthHeaders(), HttpStatus.OK, FuelSettingsResponse.class);
 
-        assertThat(s.getMealsPerDay()).isEqualTo(4);
+        assertThat(s.getMealsPerDay()).isEqualTo(5); // 3 meals + 2 snacks (owner decision 21)
         assertThat(s.getCaffeineCutoff()).isEqualTo("14:00");
     }
 

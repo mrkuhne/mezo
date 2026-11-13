@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info: { title: mezo fuel-plan fragment, version: 1.0.0 }
+tags:
+  - name: FuelPlan
+    description: >-
+      The server-computed day plan (Boop B4): the day's meal windows with their budgets and state,
+      what is left of the budget, and one next-meal tip. Deterministic — no LLM produces any number
+      or any sentence here.
+paths:
+  /api/fuel/plan/{date}:
+    get:
+      tags: [FuelPlan]
+      operationId: getFuelPlan
+      summary: The day's meal windows, the remaining budget and the next-meal tip (FuelPlan)
+      parameters:
+        - { name: date, in: path, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: The day plan
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FuelPlanResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    FuelPlanResponse:
+      type: object
+      required: [date, windows]
+      properties:
+        date: { type: string, format: date }
+        windows:
+          type: array
+          description: Every window of the day in clock order, logged and open alike
+          items: { $ref: '#/components/schemas/FuelPlanWindow' }
+        remaining:
+          allOf: [{ $ref: '#/components/schemas/Macros' }]
+          nullable: true
+          description: >-
+            Target − consumed − the kcal of the day's skipped windows. Negative when the day went
+            over; null on a kímélő (GUIDANCE) day, which is not judged on kcal at all.
+        tip:
+          allOf: [{ $ref: '#/components/schemas/FuelPlanTip' }]
+          nullable: true
+          description: Absent late in the day, after a skip, and when nothing is left to offer
+    FuelPlanWindow:
+      type: object
+      required: [slot, kind, label, from, to, state, loggedMealIds]
+      properties:
+        slot: { type: string, enum: [breakfast, lunch, dinner, snack] }
+        kind: { type: string, enum: [meal, snack] }
+        label: { type: string, description: 'The window''s Hungarian name (Reggeli, Tízórai, …)' }
+        from: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+        to: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+        budget:
+          allOf: [{ $ref: '#/components/schemas/Macros' }]
+          nullable: true
+          description: This window's share of the day; null on a kímélő (GUIDANCE) day
+        state: { type: string, enum: [done, now, pending, missed, skipped] }
+        loggedMealIds:
+          type: array
+          description: The meals logged into this window, earliest first; empty while it is open
+          items: { type: string, format: uuid }
+        suggestion:
+          allOf: [{ $ref: '#/components/schemas/FuelPlanSuggestion' }]
+          nullable: true
+          description: Only on an open window — never on a done or skipped one
+    FuelPlanSuggestion:
+      type: object
+      required: [kind, text, reason]
+      properties:
+        kind:
+          type: string
+          enum: [recipe, ingredients]
+          description: >-
+            ingredients is the honest fallback while the recipe library is small (owner decision
+            16) — a window no recipe fits shows an ingredient-level tip, never an empty row.
+        recipeId: { type: string, format: uuid, nullable: true }
+        text: { type: string }
+        reason: { type: string, description: 'One clause saying why this one — an offer, never a verdict' }
+    FuelPlanTip:
+      type: object
+      required: [text, reason]
+      properties:
+        text: { type: string }
+        reason: { type: string }
