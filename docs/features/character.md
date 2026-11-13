@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-11-12
+updated: 2026-11-13
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -16,6 +16,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 # Karakter (user character dossier) — Feature Documentation
+
+> **2026-11-13 — Boop B4 Étel (`mezo-r36n9.14`): the digestion disclaimer is softened; no other dossier change.** The `food-digestion` signal now closes with „nem orvosi diagnózis” instead of „nem ételintolerancia-diagnózis” (table in §3, detector list), because the meal coach may now name a sensitivity the owner recorded himself ([`_platform-language.md`](_platform-language.md)); the detector, its guards and thresholds are untouched. The slice's four new `1.1.0` changesets (`pantry_catalog.allergens`/`barcode`, `recipe.allergens`/`steps`/`source_url`, `stored_image`, `client_ref` on `meal`/`water_log`/`supplement_intake`, the `sensitivity_profile` table) add no dossier table; see [`fuel.md`](fuel.md), [`pantry.md`](pantry.md).
 
 > **2026-11-12 — reviewed after Boop B3 (`mezo-r36n9.13`).** No change to the dossier; B3 only adds Liquibase changesets under `1.1.0/script` (check-in snapshot, client refs, `day_close`, conversation channel) — see [`dayclose.md`](dayclose.md) and [`boop-ios.md`](boop-ios.md).
 
@@ -191,7 +193,7 @@ a switch-gated `@Component`, uses the 8-week series and the state-change gate, a
 | `pain-map` | doki | a self-reported pain region on ≥ 3 distinct days of the trailing window; adds one clear-cut context (gym day / day after, weekday vs weekend) — the self-reported twin of `niggle-map` |
 | `sleep-need` | szomnologus | the personal sleep need: 30-min duration buckets of the night before vs morning `rested`; ≥ 14 paired nights, ≥ 5 per bucket, a real spread and a longer bucket above the plateau; salience rises when it suggests updating the sleep goal (never writes it) |
 | `craving-trigger` | taplalkozo | which prior factor (short sleep, previous-day high stress, previous-day low protein vs target) precedes strong-craving days (`craving >= 7`), ≥ 5 days per group |
-| `food-digestion` | taplalkozo | which ingredient / NOVA class recurs in the 1–5 h before a low digestion answer (`<= 4`), ≥ 5 low and ≥ 5 OK paired answers |
+| `food-digestion` | taplalkozo | which ingredient / NOVA class recurs in the 1–5 h before a low digestion answer (`<= 4`), ≥ 5 low and ≥ 5 OK paired answers; **the disclaimer was softened 2026-11-13 (Boop B4, `mezo-r36n9.14`)**: the signal's closing clause is now „Együttjárás a saját adataidban, nem orvosi diagnózis” (it used to say „nem ételintolerancia-diagnózis”), because the owner can now record a known sensitivity himself and the coach may name it — the detector still only reports a co-occurrence in his own data, never a cause, and the wording must not read as either a diagnosis or a denial of one. Paired with the meal coach's prompt rule in [`_platform-language.md`](_platform-language.md) (the coach never attributes a complaint to a sensitivity). |
 | `mood-text-calibration` | pszichologus | check-in `mood` vs the journal/chat `text_signal.mood` (1–5 rescaled to 1–10), ≥ 8 paired days; agreement band + direction |
 | `motivation-follow-through` | drill | morning motivation vs done/planned (planned gym day + habits), ≥ 5 low- and ≥ 5 high-motivation days |
 | `soreness-recovery` | edzo | per session type, days until soreness returns to the user's own baseline, ≥ 5 episodes per type |

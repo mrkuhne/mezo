@@ -2,8 +2,8 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-12
-tags: [platform, frontend, backend, auth, ai]
+updated: 2026-11-13
+tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
   - frontend/src/shared/i18n
   - frontend/src/shared/lib/format.ts
@@ -17,6 +17,8 @@ related: [_platform-auth-security, _platform-design-system, companion, settings,
 ---
 
 # Language — Feature Documentation
+
+> **2026-11-13 — Boop B4 Étel (`mezo-r36n9.14`): the meal coach's wording changed, and some new server sentences are Hungarian-only.** (1) **Prompt wording (`MealCoachService.SYSTEM_PROMPT`).** The old absolute ban — "SOHA ne diagnosztizálj és ne nevezz meg ételérzékenységet" — is gone: the coach may now **name a sensitivity the owner has himself recorded** (`GET/PUT /api/sensitivity`, [`pantry.md`](pantry.md)). The person block carries an "ÉRZÉKENYSÉGEK" list built by `MealCoachPrompt` from `PersonContext.sensitivity` (`key · level · note` lines; "ÉRZÉKENYSÉGEK: nincs rögzítve" when the profile is empty, "nincs adat" when it could not be read), and the naming rule is: only items on that list, under the name and at the level the owner recorded, **never** a guess about composition, never "free of" / "mentes" (the data model cannot say it), and never a diagnosis. The digestion bullet closes the causal door in both directions: the coach may mention heavier, fattier items but "SOHA ne diagnosztizálj, és egy panaszt SOHA ne tulajdoníts egyetlen tételnek vagy érzékenységnek sem" — see [`character.md`](character.md) for the paired disclaimer. A second, optional cue: **FELDOLGOZOTTSÁG** — only when `MealCoachPrompt.processedDominates` says NOVA 3 + NOVA 4 carry more than half the plate's kcal (scaled by the share of the plate the NOVA dimension covers; exactly 50 % is silent; gated on the owner's NOVA rule being on) does the prompt tell the model to write **at most one quiet sentence**, no advice and no verdict, scoped to tagline / summary / improve (the NOVA dimension note is exempt). The numbers are never the model's; the sentence is prose from a cue. `MealCoachService.SYSTEM_PROMPT_NEUTRAL` (the English-account variant) inherits both rules through its `.replace` derivation — pinned by `MealCoachPromptTest.neutralVariantKeepsTheSameRule`. (2) **New message keys** `RECIPE_IMPORT_LLM_UNAVAILABLE`, `RECIPE_IMPORT_EXTRACT_FAILED`, `RECIPE_IMPORT_FETCH_UNAVAILABLE` in both bundles. (3) **Known gap — Hungarian-only server words.** The day plan's window labels (`WindowPlacer`: "Reggeli", "Tízórai", …), the plan's suggestion/tip sentences and the sensitivity verdict's "nincs adat" warning text are Java literals, **not** `UserMessages` keys, so an English account still receives Hungarian from `GET /api/fuel/plan/{date}` and the verdicts; this is acceptable only because the sole consumer is the Hungarian-only native app. A web or English consumer must first move them into the bundles (pattern: *Server-written sentences* below).
 
 > **2026-11-12 — reviewed after Boop B3 (`mezo-r36n9.13`).** No language-switch change; B3 adds two backend message keys (`DAY_CLOSE_NOT_FOUND`, `DAY_CLOSE_LINE_UNAVAILABLE`) to `messages_{hu,en}.properties`. Boop's own copy is Hungarian-only.
 

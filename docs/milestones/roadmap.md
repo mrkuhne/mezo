@@ -23,14 +23,14 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
   [deployment architecture](../infrastructure/deployment-k3s-argocd.md). Goal doubles as hands-on practice
   with the stack Daniel's clients use.
 
-## Epics in flight (state as of 2026-10-11)
+## Epics in flight (state as of 2026-11-13)
 
 The phase list above is the long arc; this is the **current working set** — the epics that own the
 day-to-day slices. Authoritative status is always `bd show <id>`; this table is the index over it.
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); app icon shipped + installed (2026-11-13) | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai. **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); **B4 Étel shipped (2026-11-13) — B5 (edzés) következik** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -63,6 +63,29 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-13 — Boop B4 · Étel — az étkezés kész az iPhone-appban: fotóval, vonalkóddal, internet nélkül is (`mezo-r36n9.14`).**
+  A Fuel gömb mostantól az Étel szobát nyitja: Ma · Receptek · Kamra · Hét. A Ma a nap költségvetését, a nap
+  étkezési ablakait (minden ablakhoz egy javaslat, a rögzített érzékenységeid szerint szűrve), a következő étkezés
+  tippjét, a vizet és a kiegészítők egy koppintásos pipálását mutatja. Étkezést fotóval, szöveggel, vonalkóddal,
+  recepttel, kamrából vagy a „Szokásos”-ból lehet rögzíteni; mindegyik egyetlen szerkeszthető tervezetben végződik,
+  és semmi nem mentődik a te koppintásod nélkül. Net nélkül a rögzítés a telefonon vár (ugyanabban a sorban, mint a
+  B3 írásai), és amikor visszajön a net, „jóváhagyásra vár” kártyaként jelenik meg — a fotó és a rögzítés
+  időpontja megmarad, és kétszer sosem mentődik. A vonalkód mindig adagmegerősítéssel jár. Új: az érzékenységeid
+  (allergia / intolerancia / kerülöm, EU-14 allergének + szabad szöveg, és a feldolgozottsági szabály); ahol nincs
+  adat, ott az áll, hogy „nincs adat”, soha nem az, hogy „mentes”. A Boop mostantól néven nevezheti a **te**
+  rögzített érzékenységedet (a régi tilalom megszűnt, a diagnózis továbbra is tilos), és egy halk mondatban szól, ha
+  az étkezés kalóriáinak több mint fele feldolgozott. Receptet linkből, fotóból vagy beillesztett szövegből is be
+  lehet olvasni, tételenkénti átnézéssel; a receptnek és az étkezésnek saját fotója lehet (a szerveren tárolva). A
+  Kamra allergénekkel, a Hét a célvonallal, a kihagyás és a kímélő mód egy koppintás, a kiegészítők listája
+  szerkeszthető; a Ma idővonalán étkezési sorok, a Naplóban az étkezések fotói jelennek meg. Szerveroldal: a
+  napterv a webes tervezőből a backendre költözött (`GET /api/fuel/plan/{date}`), vonalkód-kulcsú katalógus
+  OpenFoodFacts allergénekkel, `stored_image` tábla ETag-gel, receptimport, idempotens `clientRef` + `capturedAt`
+  az étkezés/víz/bevitel írásokon, a purge-szkript fotó-kímélő lett. **Telefonon még ellenőrizendő:** az élő
+  vonalkód-olvasás, a kamera-engedély kérése és a Fotó gomb kamerája. Ismert hiányok és követő jegyek: a beolvasott
+  vonalkód nem tárolódik az étkezésen, hiányzó utókövetések a `boop-ios.md` §9-ben. Következik: B5 (edzés).
+  [spec](../superpowers/specs/2026-11-13-boop-b4-etel-design.md), [terv](../superpowers/plans/2026-11-13-boop-b4-etel.md),
+  [működés](../features/boop-ios.md), [napterv](../features/fuel.md), [kamra](../features/pantry.md),
+  [receptek](../features/recipe.md).
 - **2026-11-13 — Boop ikon — saját ikon a kezdőképernyőn (`mezo-r36n9.34`).**
   A Boop eddig az üres, alapértelmezett négyzettel állt a telefonon. Három irányt mutattunk meg valódi
   kezdőképernyő-méretben (világos és sötét módban); a tulajdonos a teljes hajnali képet választotta: festett
