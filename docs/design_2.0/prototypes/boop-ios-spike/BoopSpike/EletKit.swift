@@ -410,8 +410,8 @@ struct EDayCurve: View {
                     var fill = line
                     fill.addLine(to: CGPoint(x: s.width, y: s.height - 22))
                     fill.addLine(to: CGPoint(x: 0, y: s.height - 22)); fill.closeSubpath()
-                    ctx.fill(fill, with: .linearGradient(Gradient(colors: [hue.opacity(0.42), hue.opacity(0.02)]),
-                                                        startPoint: .zero, endPoint: CGPoint(x: 0, y: s.height)))
+                    ctx.fill(fill, with: .linearGradient(Gradient(colors: [hue.opacity(0.34), hue.opacity(0.0)]),
+                                                        startPoint: .zero, endPoint: CGPoint(x: 0, y: s.height * 1.1)))
                     ctx.stroke(line, with: .color(hue), style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
 
                     let nx = s.width * CGFloat(pos)
@@ -479,7 +479,7 @@ struct EDayCurve: View {
 
                 HStack(spacing: 0) {
                     ForEach(labels.indices, id: \.self) { i in
-                        Text(labels[i]).font(AuraFont.mono(10)).foregroundStyle(.white.opacity(0.45))
+                        Text(labels[i]).font(AuraFont.mono(9.5)).foregroundStyle(.white.opacity(0.32))
                             .frame(maxWidth: .infinity)
                     }
                 }
