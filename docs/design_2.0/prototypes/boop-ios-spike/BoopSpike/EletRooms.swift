@@ -99,7 +99,7 @@ struct EletAreaPage: View {
                             .shadow(color: .black.opacity(0.5), radius: 4)
                     }
                     Rectangle()
-                        .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.32), .white.opacity(0)],
+                        .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.42), .white.opacity(0)],
                                              startPoint: .leading, endPoint: .trailing))
                         .frame(height: 1)
                         .padding(.horizontal, 30)

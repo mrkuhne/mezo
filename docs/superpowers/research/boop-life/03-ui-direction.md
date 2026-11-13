@@ -292,6 +292,14 @@ nincs ilyen főcím része… viszont így, hogy eltűnik a menüsor alul, igaz�
    badge on the icon) plus a fixed **Boop** item that asks about this area. Four pages + Boop = the five-item
    bar the owner asked for; the top chip strip is gone.
 3. The score orb in the head is a **living** orb, like the ribbon's.
+4. **The photo behind the masthead became weather** (owner: *"a képek viszont mögötte nem szépek így"*).
+   Two treatments were built and compared in the simulator — `-eletHead 1|2`:
+   *pára* (the photo blurred 22 pt and scaled 1.18, saturation 0.7, so it reads as colour and light, not as a
+   picture) and *sáv* (a painted sky where the orb lives, the sharp photo fading in from 30 % down). **Pára
+   won**: on Étel the sharp band put a tomato behind the orb and the verdict, and the area photos are still
+   borrowed (Pénz wears a mountain), so a picture competing with the orb is a picture that is also wrong.
+   The sharp photo keeps its place lower on the page — the hero card's band and the row thumbnails.
+   When the real area photos land (`mezo-r36n9.44`), *sáv* is worth re-testing.
 
 Trap found while building: a glass bar placed with `.overlay` on the scrolling page renders but is easy to
 mis-verify — the simulator tool's tap coordinates sit ~70 pt above the screenshot's own point grid, so a tap
