@@ -56,6 +56,21 @@ public struct FoodClient: Sendable {
         }
     }
 
+    // MARK: - The coach
+
+    /// The coach's verdicts on a day's meals, by meal id. Empty when the coach is off or has nothing cached — never an
+    /// error; the server generates only for today and returns what is cached for an older day.
+    public func coach(_ date: Date) async throws -> [UUID: MealCoach] {
+        try await call {
+            switch try await client.getMealCoachForDay(query: .init(date: ymd(date))) {
+            case .ok(let ok):
+                return try ok.body.json.verdicts.reduce(into: [:]) { acc, v in if let c = Self.map(v) { acc[c.mealId] = c } }
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
     // MARK: - Drafting and saving a meal
 
     /// An editable draft from free text and/or a photo (one model call, nothing stored) and/or a scanned barcode (a lookup;
@@ -214,6 +229,20 @@ public struct FoodClient: Sendable {
             switch try await client.searchPantryCatalog(query: .init(q: q, kind: "food")) {
             case .ok(let ok): return try ok.body.json.map(Self.map)
             case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// The owner's supplement stash — the names behind the protocol's rows.
+    public func stash() async throws -> [StashRow] {
+        try await call {
+            switch try await client.getPantry() {
+            case .ok(let ok):
+                return try ok.body.json.stash.compactMap { r in
+                    UUID(uuidString: r.id).map { StashRow(id: $0, name: r.name, dose: r.dose.isEmpty ? nil : r.dose) }
+                }
             case .unauthorized: throw FoodFetchError.unauthorized
             case .undocumented: throw FoodFetchError.server
             }
@@ -440,7 +469,24 @@ extension FoodClient {
         Meal(id: UUID(uuidString: r.id) ?? UUID(), slot: r.slot, loggedAt: r.loggedAt, mealDate: r.mealDate, title: r.title,
              macros: map(r.macros), score: r.score.value,
              items: r.items.map { MealItem(name: $0.name, source: $0.source, amount: $0.amount, unit: $0.unit, contribution: map($0.contribution), nova: $0.nova) },
-             hasPhoto: r.hasPhoto ?? false)
+             hasPhoto: r.hasPhoto ?? false, breakdown: r.score.breakdown.map { map($0.value1) })
+    }
+
+    static func map(_ b: Components.Schemas.MealBreakdown) -> MealBreakdown {
+        MealBreakdown(value: b.value, confidence: b.confidence, tagline: b.tagline, summary: b.summary,
+                      dimensions: b.dimensions.map { d in
+                          ScoreDimension(id: d.id, label: d.label, weight: d.weight, score: d.score, detail: d.detail,
+                                         coverage: d.coverage, note: d.note)
+                      },
+                      improve: b.improve.map { MealImprove(text: $0.text, impact: $0.impact) })
+    }
+
+    static func map(_ v: Components.Schemas.MealCoachVerdict) -> MealCoach? {
+        guard let id = UUID(uuidString: v.mealId) else { return nil }
+        return MealCoach(mealId: id, tagline: v.tagline, summary: v.summary,
+                         improve: v.improve.map { MealImprove(text: $0.text, impact: $0.impact) },
+                         dimensionNotes: v.dimensionNotes?.additionalProperties ?? [:],
+                         glucoseTips: v.glucoseTips.map { $0.map { GlucoseTip(title: $0.title, body: $0.body) } })
     }
 
     static func map(_ r: Components.Schemas.FuelDayResponse) -> FoodDay {

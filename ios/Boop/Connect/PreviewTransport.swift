@@ -2,6 +2,7 @@
 import Foundation
 import HTTPTypes
 import OpenAPIRuntime
+import UIKit
 
 /// Simulator review only (`-preview shell|onboarding`): the Wearable endpoints and the morning brief answer locally,
 /// so the connect flow can be walked without a server (the Mac's firewall blocks the simulator app).
@@ -110,7 +111,7 @@ struct PreviewTransport: ClientTransport {
         "getFuelDay", "getFuelPlan", "draftMealFromAi", "createMeal", "logWater", "upsertPlannedSkip", "listRecipes", "getRecipe",
         "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto", "getPantry", "searchPantryCatalog",
         "lookupPantryItem", "getSensitivityProfile", "setSensitivityProfile", "getDietSettings", "getProtocol", "logIntake",
-        "getMealPhoto", "putMealPhoto", "deleteMealPhoto", "deleteAllMealPhotos",
+        "getMealPhoto", "putMealPhoto", "deleteMealPhoto", "deleteAllMealPhotos", "getMealCoachForDay",
     ]
     private static let seedMealId = "5b0e8a52-1c3d-4e0e-9a52-7d9d4c1a0b01"
     private static let recipeId = "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03"
@@ -122,8 +123,36 @@ struct PreviewTransport: ClientTransport {
     nonisolated(unsafe) private static var foodSkips: Set<String> = []
     nonisolated(unsafe) private static var foodSensitivity =
         #"{"items":[{"key":"milk","level":"intolerance","note":"laktózmentes"},{"key":"gluten","level":"avoid"}],"novaRule":{"enabled":true,"maxLevel":2}}"#
-    /// A 1x1 PNG, the "photo" of every meal that claims one.
-    private static let pixel = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==") ?? Data()
+    /// The "photo" of every meal that claims one: a small warm gradient with a plate-like disc, drawn once.
+    private static let pixel: Data = UIGraphicsImageRenderer(size: CGSize(width: 480, height: 240)).jpegData(withCompressionQuality: 0.8) { ctx in
+        let cg = ctx.cgContext
+        let colors = [UIColor(red: 0.78, green: 0.62, blue: 0.42, alpha: 1).cgColor, UIColor(red: 0.45, green: 0.30, blue: 0.20, alpha: 1).cgColor]
+        if let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0, 1]) {
+            cg.drawLinearGradient(g, start: .zero, end: CGPoint(x: 480, y: 240), options: [])
+        }
+        UIColor(white: 0.96, alpha: 0.9).setFill(); cg.fillEllipse(in: CGRect(x: 110, y: 20, width: 260, height: 200))
+        UIColor(red: 0.85, green: 0.72, blue: 0.5, alpha: 1).setFill(); cg.fillEllipse(in: CGRect(x: 150, y: 50, width: 180, height: 140))
+    }
+    /// The eight dimensions of a scored plate. `degraded` lists the ids that could not see it (weight 0 = "nincs adat").
+    private static func dimensions(_ scores: [String: Double], degraded: Set<String> = []) -> String {
+        let spec: [(String, String, String)] = [
+            ("macro", "Kcal & makró arány", "A fehérje a helyén, a zsír kicsit kevesebb a keretnél."),
+            ("micro", "Rost & mikro", "A rost a napi cél harmadát hozza."),
+            ("who", "Ajánlások · WHO", "A cukor és a só is az ajánlott sávban marad."),
+            ("fat_quality", "Zsírminőség", "A zsír nagyobb része telítetlen."),
+            ("nova", "Feldolgozottság · NOVA", "A tányér kalóriáinak nagy része nyers vagy minimálisan feldolgozott alapanyagból jön."),
+            ("plant_diversity", "Növényi diverzitás", "Három féle növényi alapanyag van a tányéron."),
+            ("energy_density", "Energia-sűrűség", "Közepes energiasűrűségű étkezés."),
+            ("context", "Időzítés & kontextus", "Ehhez még nincs elég adatom a mai napról."),
+        ]
+        return spec.map { id, label, detail in
+            let off = degraded.contains(id)
+            return #"{"id":"\#(id)","label":"\#(label)","weight":\#(off ? 0 : 0.12),"score":\#(off ? 0 : scores[id] ?? 0.7),"detail":"\#(detail)","coverage":\#(off ? 0 : 0.85)}"#
+        }.joined(separator: ",")
+    }
+    private static func breakdown(_ value: Double, _ scores: [String: Double], degraded: Set<String> = []) -> String {
+        #"{"value":\#(value),"confidence":0.85,"improve":[],"tools":[],"dimensions":[\#(dimensions(scores, degraded: degraded))]}"#
+    }
 
     private static func pathDate(_ request: HTTPRequest) -> String {
         let last = (request.path ?? "").split(separator: "?").first?.split(separator: "/").last.map(String.init) ?? ""
@@ -133,7 +162,7 @@ struct PreviewTransport: ClientTransport {
     private static func macros(_ k: Double, _ p: Double, _ c: Double, _ f: Double) -> String { #"{"kcal":\#(k),"p":\#(p),"c":\#(c),"f":\#(f)}"# }
 
     private static func seedMeal(date: String) -> String {
-        #"{"id":"\#(seedMealId)","slot":"breakfast","loggedAt":"\#(date)T08:10:00+01:00","mealDate":"\#(date)","title":"Zabkása gyümölccsel","macros":\#(macros(420, 22, 62, 9)),"score":{"value":74},"items":[{"source":"pantry","pantryItemId":"\#(oatsId)","amount":60,"unit":"g","lineOrder":0,"name":"Zabpehely","nova":1,"contribution":\#(macros(228, 8, 40, 4))},{"source":"pantry","amount":120,"unit":"g","lineOrder":1,"name":"Banán","nova":1,"contribution":\#(macros(106, 1, 27, 0))}],"hasPhoto":true}"#
+        #"{"id":"\#(seedMealId)","slot":"breakfast","loggedAt":"\#(date)T08:10:00+01:00","mealDate":"\#(date)","title":"Zabkása gyümölccsel","macros":\#(macros(420, 22, 62, 9)),"score":{"value":0.74,"breakdown":\#(breakdown(0.74, ["macro": 0.86, "micro": 0.64, "who": 0.78, "fat_quality": 0.81, "nova": 0.92, "plant_diversity": 0.55, "energy_density": 0.88, "context": 0.9]))},"items":[{"source":"pantry","pantryItemId":"\#(oatsId)","amount":60,"unit":"g","lineOrder":0,"name":"Zabpehely","nova":1,"contribution":\#(macros(228, 8, 40, 4))},{"source":"pantry","amount":120,"unit":"g","lineOrder":1,"name":"Banán","nova":1,"contribution":\#(macros(106, 1, 27, 0))}],"hasPhoto":true}"#
     }
 
     /// A meal as `createMeal` would answer it: the sent title and slot, the sent lines' macros summed.
@@ -152,7 +181,7 @@ struct PreviewTransport: ClientTransport {
             return #"{"source":"estimate","amount":1,"unit":"adag","lineOrder":\#(n),"name":\#(name),"contribution":\#(macros(l.1.rounded(), l.2.rounded(), l.3.rounded(), l.4.rounded()))}"#
         }.joined(separator: ",")
         let at = ISO8601DateFormatter().string(from: Date())
-        return #"{"id":"\#(UUID().uuidString.lowercased())","slot":"\#(obj?["slot"] as? String ?? "snack")","loggedAt":"\#(at)","mealDate":"\#(date)","title":\#(title),"macros":\#(macros(sum.0.rounded(), sum.1.rounded(), sum.2.rounded(), sum.3.rounded())),"score":{"value":68},"items":[\#(jsonItems)],"hasPhoto":false}"#
+        return #"{"id":"\#(UUID().uuidString.lowercased())","slot":"\#(obj?["slot"] as? String ?? "snack")","loggedAt":"\#(at)","mealDate":"\#(date)","title":\#(title),"macros":\#(macros(sum.0.rounded(), sum.1.rounded(), sum.2.rounded(), sum.3.rounded())),"score":{"value":0.68,"breakdown":\#(breakdown(0.68, ["macro": 0.71, "micro": 0.42, "who": 0.6, "fat_quality": 0.55, "nova": 0.38, "plant_diversity": 0.3, "energy_density": 0.74], degraded: ["context"]))},"items":[\#(jsonItems)],"hasPhoto":false}"#
     }
 
     private static func foodPlan(date: String) -> String {
@@ -186,6 +215,8 @@ struct PreviewTransport: ClientTransport {
             let meals = ([seedMeal(date: date)] + foodMeals).joined(separator: ",")
             return json(#"{"date":"\#(date)","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":{"kcal":420,"p":22,"c":62,"f":9,"water":\#(foodWater)},"meals":[\#(meals)],"skippedKcal":\#(foodSkips.count * 200)}"#)
         case "getFuelPlan": return json(foodPlan(date: date))
+        case "getMealCoachForDay":
+            return json(#"{"verdicts":[{"mealId":"\#(seedMealId)","tagline":"Jó kezdés","summary":"Jó kezdés: a fehérje a helyén, a rost viszont elmarad a napi harmadától.","improve":[],"dimensionNotes":{"micro":"Egy evőkanál chiamag vagy egy adag hüvelyes +6 g rostot ad.","nova":"Ez a tányér szinte csupa alapanyag — itt nincs mit javítani."},"glucoseTips":[{"title":"Legközelebb laposabb","body":"Tegyél bele egy evőkanál chiamagot: lassítja a felszívódást."}]}]}"#)
         case "draftMealFromAi":
             return json(#"{"draftId":"\#(UUID().uuidString.lowercased())","slot":"lunch","title":"Csirkés rizs","note":null,"items":[{"source":"pantry","pantryItemId":"\#(oatsId)","name":"Csirkemell","amount":150,"unit":"g","per":100,"basisUnit":"g","kcal":165,"proteinG":31,"carbsG":0,"fatG":3.6,"nova":1,"confidence":0.9,"needsReview":false},{"source":"estimate","name":"Barna rizs","amount":180,"unit":"g","per":100,"basisUnit":"g","kcal":123,"proteinG":2.7,"carbsG":26,"fatG":1,"confidence":0.5,"needsReview":true}]}"#)
         case "createMeal":
@@ -219,7 +250,7 @@ struct PreviewTransport: ClientTransport {
         case "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto":
             return json(#"{"result":{"name":"Tejszínes gombás tészta","category":"dinner","servings":2,"steps":["Főzd meg a tésztát.","Pirítsd meg a gombát.","Keverd össze a kettőt."],"sourceUrl":null,"structured":true,"needsReview":true,"lines":[{"source":"estimate","name":"tészta","amount":200,"unit":"g","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.9,"needsReview":false},"sourceText":"20 dkg tészta"},{"source":"estimate","name":"gomba","amount":250,"unit":"g","match":{"confidence":0.2,"needsReview":true},"sourceText":"25 dkg gomba"}]}}"#)
         case "getPantry":
-            return json(#"{"ingredients":[{"id":"\#(oatsId)","kind":"food","name":"Zabpehely","brand":null,"source":"manual","category":null,"per":100,"unit":"g","macros":{"kcal":370,"p":13,"c":60,"f":7},"price":null,"priceUnit":null,"pkg":null,"micros":[],"nova":1,"lastUsed":"-","usedInRecipes":2,"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","catalogEditable":true}],"stash":[],"imports":[],"suggestions":[]}"#)
+            return json(#"{"ingredients":[{"id":"\#(oatsId)","kind":"food","name":"Zabpehely","brand":null,"source":"manual","category":null,"per":100,"unit":"g","macros":{"kcal":370,"p":13,"c":60,"f":7},"price":null,"priceUnit":null,"pkg":null,"micros":[],"nova":1,"lastUsed":"-","usedInRecipes":2,"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","catalogEditable":true}],"stash":[\#(stashRow("22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d", "D3-vitamin", "4000 NE")),\#(stashRow("ff027e5c-b6d7-42a2-be5c-719e1abeaf0b", "Magnézium-glicinát", "400 mg")),\#(stashRow("11a38d6f-c7e8-43b3-8f6d-82a0bfbcb01c", "Omega-3", "2 g"))],"imports":[],"suggestions":[]}"#)
         case "searchPantryCatalog":
             return json(#"[{"id":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","kind":"food","name":"Zabpehely","source":"manual","per":100,"unit":"g","kcal":370,"proteinG":13,"carbsG":60,"fatG":7,"nova":1,"allergens":{"gluten":"contains"}}]"#)
         case "getSensitivityProfile": return json(foodSensitivity)
@@ -227,12 +258,16 @@ struct PreviewTransport: ClientTransport {
         case "getDietSettings":
             return json(#"{"splitPreset":"balanced","proteinTier":"moderate","waterMl":2500,"fiberG":30,"dayTypeShiftKcal":0,"learningEnabled":true}"#)
         case "getProtocol":
-            return json(#"{"active":{"id":"cc7f5b29-83a4-4f7f-8b29-4e6ebd8b7c08","version":3,"builtAt":"2026-11-01T06:00:00Z","status":"active","items":[{"id":"dd805c3a-94b5-4080-9c3a-5f7fce9c8d09","pantryItemId":"\#(oatsId)","slotKey":"morning","dose":"1 db","pinned":false,"placementSource":"rule"},{"id":"ee916d4b-a5c6-4191-ad4b-608d0fad9e0a","pantryItemId":"ff027e5c-b6d7-42a2-be5c-719e1abeaf0b","slotKey":"evening","dose":"2 db","pinned":true,"placementSource":"user"}]},"history":[]}"#)
+            return json(#"{"active":{"id":"cc7f5b29-83a4-4f7f-8b29-4e6ebd8b7c08","version":3,"builtAt":"2026-11-01T06:00:00Z","status":"active","items":[{"id":"dd805c3a-94b5-4080-9c3a-5f7fce9c8d09","pantryItemId":"22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d","slotKey":"morning","pinned":false,"placementSource":"rule"},{"id":"ab036d4c-0aa1-4aa1-8c4b-6a8aaed0a00b","pantryItemId":"11a38d6f-c7e8-43b3-8f6d-82a0bfbcb01c","slotKey":"morning","pinned":false,"placementSource":"rule"},{"id":"ee916d4b-a5c6-4191-ad4b-608d0fad9e0a","pantryItemId":"ff027e5c-b6d7-42a2-be5c-719e1abeaf0b","slotKey":"evening","dose":"2 db","pinned":true,"placementSource":"user"}]},"history":[]}"#)
         case "logIntake":
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
             return created(#"{"id":"\#(UUID().uuidString.lowercased())","pantryItemId":"\#(obj?["pantryItemId"] as? String ?? oatsId)","takenAt":"\#(ISO8601DateFormatter().string(from: Date()))","takenDate":"\#(dayString(offset: 0))"}"#)
         default: return nil
         }
+    }
+
+    private static func stashRow(_ id: String, _ name: String, _ dose: String) -> String {
+        #"{"id":"\#(id)","name":"\#(name)","brand":null,"type":"supplement","category":null,"dose":"\#(dose)","form":null,"protocol":"","timing":"","taken":false,"macros":\#(macros(0, 0, 0, 0)),"catalogId":"\#(id)","catalogEditable":false}"#
     }
 
     private static func previewRecipe() -> String {

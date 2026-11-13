@@ -70,6 +70,34 @@ struct FoodClientTests {
         #expect(day.fuelMode == nil)
     }
 
+    @Test func dayCarriesTheScoreBreakdownAndCoachWordsDecode() async throws {
+        let meal = #"""
+        {"id":"\#(mealId)","slot":"lunch","loggedAt":"2026-11-13T12:40:00+01:00","mealDate":"2026-11-13","title":"Lazac",
+         "macros":{"kcal":640,"p":42,"c":55,"f":24},
+         "score":{"value":0.82,"breakdown":{"value":0.82,"confidence":0.9,"tagline":"Jó ebéd","improve":[],"tools":[],
+           "dimensions":[
+             {"id":"macro","label":"Kcal & makró arány","weight":0.3,"score":0.86,"detail":"A fehérje a helyén.","coverage":1,"note":"Szép arány."},
+             {"id":"context","label":"Időzítés & kontextus","weight":0,"score":0,"detail":"Ehhez kevés az adat."}]}},
+         "items":[],"hasPhoto":false}
+        """#
+        stub.on("getFuelDay", .json(200, #"{"date":"2026-11-13","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":{"kcal":640,"p":42,"c":55,"f":24,"water":0},"meals":[\#(meal)],"skippedKcal":0}"#))
+        let b = try #require(try await food().day(date(2026, 11, 13)).meals.first?.breakdown)
+        #expect(b.tagline == "Jó ebéd")
+        #expect(b.dimensions.map(\.id) == ["macro", "context"])
+        #expect(b.dimensions[0].points == 86 && b.dimensions[0].note == "Szép arány." && b.dimensions[0].coverage == 1)
+        #expect(b.dimensions[1].points == nil)                      // weight 0 = degraded = "nincs adat", never 0
+
+        stub.on("getMealCoachForDay", .json(200, #"""
+        {"verdicts":[{"mealId":"\#(mealId)","tagline":"t","summary":"Jó kezdés.","improve":[{"text":"több rost","impact":"+6"}],
+          "dimensionNotes":{"macro":"A fehérje jó."},"glucoseTips":[{"title":"Laposabb","body":"Tegyél bele chiamagot."}]}]}
+        """#))
+        let coach = try await food().coach(date(2026, 11, 13))
+        let c = try #require(coach[UUID(uuidString: mealId)!])
+        #expect(c.summary == "Jó kezdés." && c.dimensionNotes["macro"] == "A fehérje jó.")
+        #expect(c.glucoseTips == [GlucoseTip(title: "Laposabb", body: "Tegyél bele chiamagot.")])
+        #expect(stub.sent.last?.path.contains("/api/meal/coach") == true)
+    }
+
     @Test func draftCarriesBarcodeAndPhoto() async throws {
         stub.on("lookupPantryItem", .json(200, #"""
         {"source":"OFF","results":[{"name":"Protein szelet","brand":"Márka","barcode":"5997001234567","per":100,"unit":"g",

@@ -54,7 +54,7 @@ struct FoodPreviewTests {
         #expect(profile.items.count == 2)
         #expect(try await food.setSensitivity(profile) == profile)
         #expect(try await food.dietSettings().waterMl == 2500)
-        #expect(try await food.protocol().items(in: "morning").count == 1)
-        #expect(try await food.tickGroup(daypart: "morning", clientRef: UUID()) == 1)
+        #expect(try await food.protocol().items(in: "morning").count == 2)
+        #expect(try await food.tickGroup(daypart: "morning", clientRef: UUID()) == 2)
     }
 }

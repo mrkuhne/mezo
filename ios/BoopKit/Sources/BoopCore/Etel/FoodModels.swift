@@ -85,6 +85,83 @@ public struct Meal: Equatable, Sendable, Identifiable {
     public var items: [MealItem]
     /// True when a photo hangs on the meal — never probe with a GET per meal.
     public var hasPhoto: Bool
+    /// The deterministic score envelope; nil on a meal scored before the engine existed.
+    public var breakdown: MealBreakdown?
+
+    public init(id: UUID, slot: String, loggedAt: Date, mealDate: String, title: String?, macros: Macros, score: Double?,
+                items: [MealItem] = [], hasPhoto: Bool = false, breakdown: MealBreakdown? = nil) {
+        self.id = id; self.slot = slot; self.loggedAt = loggedAt; self.mealDate = mealDate; self.title = title
+        self.macros = macros; self.score = score; self.items = items; self.hasPhoto = hasPhoto; self.breakdown = breakdown
+    }
+}
+
+// MARK: - The meal's score, dimension by dimension
+
+/// One of the weighted dimensions of a meal's score. `score` is 0…1 as the server writes it; a dimension with weight 0
+/// could not see the plate at all (it degraded) and reads "nincs adat", never 0.
+public struct ScoreDimension: Equatable, Sendable {
+    /// macro | micro | nova | context | who | fat_quality | plant_diversity | energy_density | portion
+    public var id: String
+    public var label: String
+    public var weight: Double
+    public var score: Double
+    /// The deterministic sentence on why this dimension scored what it did.
+    public var detail: String
+    /// Share of the meal's energy this dimension could see, 0…1; nil on an older envelope.
+    public var coverage: Double?
+    /// The coach's one or two sentences on this dimension, when it has written them.
+    public var note: String?
+
+    public init(id: String, label: String, weight: Double, score: Double, detail: String, coverage: Double? = nil, note: String? = nil) {
+        self.id = id; self.label = label; self.weight = weight; self.score = score; self.detail = detail
+        self.coverage = coverage; self.note = note
+    }
+
+    /// 0…100, or nil for a degraded dimension.
+    public var points: Int? { weight > 0 ? Int((score * 100).rounded()) : nil }
+}
+
+public struct MealImprove: Equatable, Sendable {
+    public var text: String
+    public var impact: String
+    public init(text: String, impact: String) { self.text = text; self.impact = impact }
+}
+
+public struct MealBreakdown: Equatable, Sendable {
+    public var value: Double
+    public var confidence: Double
+    public var tagline: String?
+    public var summary: String?
+    public var dimensions: [ScoreDimension]
+    public var improve: [MealImprove]
+    public init(value: Double, confidence: Double, tagline: String? = nil, summary: String? = nil,
+                dimensions: [ScoreDimension], improve: [MealImprove] = []) {
+        self.value = value; self.confidence = confidence; self.tagline = tagline; self.summary = summary
+        self.dimensions = dimensions; self.improve = improve
+    }
+}
+
+public struct GlucoseTip: Equatable, Sendable {
+    public var title: String
+    public var body: String
+    public init(title: String, body: String) { self.title = title; self.body = body }
+}
+
+/// The coach's words on one meal (prose only — every number comes from the deterministic score).
+public struct MealCoach: Equatable, Sendable {
+    public var mealId: UUID
+    public var tagline: String?
+    public var summary: String?
+    public var improve: [MealImprove]
+    /// Dimension id → one or two sentences.
+    public var dimensionNotes: [String: String]
+    /// nil = not generated, empty = the plate already smooths.
+    public var glucoseTips: [GlucoseTip]?
+    public init(mealId: UUID, tagline: String? = nil, summary: String? = nil, improve: [MealImprove] = [],
+                dimensionNotes: [String: String] = [:], glucoseTips: [GlucoseTip]? = nil) {
+        self.mealId = mealId; self.tagline = tagline; self.summary = summary; self.improve = improve
+        self.dimensionNotes = dimensionNotes; self.glucoseTips = glucoseTips
+    }
 }
 
 public struct FoodDay: Equatable, Sendable {
@@ -97,6 +174,12 @@ public struct FoodDay: Equatable, Sendable {
     public var recoveryCategory: String?
     public var recoveryDay: Int?
     public var skippedKcal: Int
+
+    public init(date: String, targets: MacroSet, consumed: MacroSet, meals: [Meal] = [], fuelMode: String? = nil,
+                recoveryCategory: String? = nil, recoveryDay: Int? = nil, skippedKcal: Int = 0) {
+        self.date = date; self.targets = targets; self.consumed = consumed; self.meals = meals; self.fuelMode = fuelMode
+        self.recoveryCategory = recoveryCategory; self.recoveryDay = recoveryDay; self.skippedKcal = skippedKcal
+    }
 }
 
 public enum WindowState: String, Equatable, Sendable { case done, now, pending, missed, skipped }
@@ -108,6 +191,9 @@ public struct PlanSuggestion: Equatable, Sendable {
     public var recipeId: UUID?
     public var text: String
     public var reason: String
+    public init(kind: Kind, recipeId: UUID? = nil, text: String, reason: String) {
+        self.kind = kind; self.recipeId = recipeId; self.text = text; self.reason = reason
+    }
 }
 
 public struct PlanWindow: Equatable, Sendable {
@@ -123,9 +209,19 @@ public struct PlanWindow: Equatable, Sendable {
     public var loggedMealIds: [UUID]
     /// Only on an open window.
     public var suggestion: PlanSuggestion?
+
+    public init(slot: String, kind: WindowKind = .meal, label: String, from: String, to: String, budget: Macros? = nil,
+                state: WindowState, loggedMealIds: [UUID] = [], suggestion: PlanSuggestion? = nil) {
+        self.slot = slot; self.kind = kind; self.label = label; self.from = from; self.to = to; self.budget = budget
+        self.state = state; self.loggedMealIds = loggedMealIds; self.suggestion = suggestion
+    }
 }
 
-public struct PlanTip: Equatable, Sendable { public var text: String; public var reason: String }
+public struct PlanTip: Equatable, Sendable {
+    public var text: String
+    public var reason: String
+    public init(text: String, reason: String) { self.text = text; self.reason = reason }
+}
 
 public struct FuelPlan: Equatable, Sendable {
     public var date: String
@@ -133,6 +229,9 @@ public struct FuelPlan: Equatable, Sendable {
     /// Target − consumed − skipped; negative when over, nil on a GUIDANCE day.
     public var remaining: Macros?
     public var tip: PlanTip?
+    public init(date: String, windows: [PlanWindow], remaining: Macros?, tip: PlanTip? = nil) {
+        self.date = date; self.windows = windows; self.remaining = remaining; self.tip = tip
+    }
 }
 
 // MARK: - Drafting and saving a meal
@@ -297,6 +396,14 @@ public struct PantryRow: Equatable, Sendable {
     public var onShelf: Bool
 }
 
+/// One supplement on the owner's stash: the name the protocol rows carry no text for.
+public struct StashRow: Equatable, Sendable {
+    public var id: UUID
+    public var name: String
+    public var dose: String?
+    public init(id: UUID, name: String, dose: String? = nil) { self.id = id; self.name = name; self.dose = dose }
+}
+
 // MARK: - Settings and protocol
 
 public struct DietSettings: Equatable, Sendable {
@@ -316,11 +423,15 @@ public struct ProtocolItem: Equatable, Sendable, Identifiable {
     public var slotKey: String
     public var dose: String?
     public var pinned: Bool
+    public init(id: UUID, pantryItemId: UUID, slotKey: String, dose: String? = nil, pinned: Bool = false) {
+        self.id = id; self.pantryItemId = pantryItemId; self.slotKey = slotKey; self.dose = dose; self.pinned = pinned
+    }
 }
 
 public struct FoodProtocol: Equatable, Sendable {
     public var version: Int?
     public var items: [ProtocolItem]
+    public init(version: Int? = nil, items: [ProtocolItem]) { self.version = version; self.items = items }
     public func items(in daypart: String) -> [ProtocolItem] { items.filter { $0.slotKey == daypart } }
 }
 

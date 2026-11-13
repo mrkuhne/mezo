@@ -46,6 +46,7 @@ filter:
     - getDayContext
     - getFuelDay
     - getFuelPlan
+    - getMealCoachForDay
     - draftMealFromAi
     - createMeal
     - logWater

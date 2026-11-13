@@ -1,0 +1,185 @@
+import SwiftUI
+import UIKit
+import BoopCore
+import BoopDesign
+
+// MARK: - The food client, handed down the view tree
+
+private struct FoodClientKey: EnvironmentKey { static let defaultValue: FoodClient? = nil }
+
+extension EnvironmentValues {
+    /// The signed-in user's food client (nil before sign-in, and in tests that have no server).
+    var foodClient: FoodClient? {
+        get { self[FoodClientKey.self] }
+        set { self[FoodClientKey.self] = newValue }
+    }
+}
+
+// MARK: - What the room reads
+
+/// The room's data: the day, the plan, the coach's words, the meals' photos and the supplement groups. Each piece
+/// loads and fails on its own, so a missing coach or a slow photo never blanks the room.
+@MainActor @Observable
+final class EtelStore {
+    private(set) var day: FoodDay?
+    private(set) var dayProblem: FoodFetchError?
+    private(set) var plan: FuelPlan?
+    private(set) var planProblem: FoodFetchError?
+    private(set) var coach: [UUID: MealCoach] = [:]
+    private(set) var photos: [UUID: UIImage] = [:]
+    private(set) var groups: [SupplementGroup] = []
+    private(set) var groupsLoaded = false
+    private(set) var groupsProblem: FoodFetchError?
+    private(set) var taken: Set<String> = []
+    private(set) var loading = false
+    /// The tip the owner sent away with *Most nem* (until the next load).
+    private(set) var tipDismissed = false
+
+    @ObservationIgnored private var food: FoodClient?
+    @ObservationIgnored private var now = Date()
+
+    /// The day's `yyyy-MM-dd`, as the server knows it.
+    var ymd: String { food?.ymd(now) ?? day?.date ?? "" }
+
+    private static func attempt<T: Sendable>(_ work: @Sendable () async throws -> T) async -> Result<T, FoodFetchError> {
+        do { return .success(try await work()) } catch let e as FoodFetchError { return .failure(e) } catch { return .failure(.server) }
+    }
+
+    func load(food: FoodClient, now: Date) async {
+        self.food = food; self.now = now
+        loading = true
+        tipDismissed = false
+        taken = Set(UserDefaults.standard.stringArray(forKey: takenKey) ?? [])
+        async let d = Self.attempt { try await food.day(now) }
+        async let p = Self.attempt { try await food.plan(now) }
+        async let s = Self.attempt { (try await food.protocol(), try await food.stash()) }
+        switch await d {
+        case .success(let v): day = v; dayProblem = nil
+        case .failure(let e): dayProblem = e
+        }
+        switch await p {
+        case .success(let v): plan = v; planProblem = nil
+        case .failure(let e): planProblem = e
+        }
+        switch await s {
+        case .success(let (proto, stash)):
+            groups = supplementGroups(proto.items, names: Dictionary(stash.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a }))
+            groupsProblem = nil
+        case .failure(let e): groupsProblem = e
+        }
+        groupsLoaded = true
+        loading = false
+        // The words and the photos arrive after the numbers; neither is needed to read the day.
+        async let words: Void = loadCoach(food)
+        async let pics: Void = loadPhotos(food)
+        _ = await (words, pics)
+    }
+
+    private func loadCoach(_ food: FoodClient) async {
+        if case .success(let verdicts) = await Self.attempt({ try await food.coach(now) }) { coach = verdicts }
+    }
+
+    /// Photos for the meals that say they have one — never a GET per meal to find out.
+    private func loadPhotos(_ food: FoodClient) async {
+        let wanted = (day?.meals ?? []).filter { $0.hasPhoto && photos[$0.id] == nil }.map(\.id)
+        guard !wanted.isEmpty else { return }
+        let fetched = await withTaskGroup(of: (UUID, Data?).self) { group in
+            for id in wanted { group.addTask { (id, try? await food.photo(mealId: id)) } }
+            var out: [(UUID, Data?)] = []
+            for await r in group { out.append(r) }
+            return out
+        }
+        for (id, data) in fetched { if let data, let image = UIImage(data: data) { photos[id] = image } }
+    }
+
+    /// Adds water: shown at once, undone when the server does not take it. Returns the toast to show.
+    func addWater(_ ml: Int) async -> String {
+        guard let food, var d = day else { return "Most nem tudom elküldeni" }
+        d.consumed.water += Double(ml)
+        day = d
+        do {
+            try await food.water(ml: ml, date: now, clientRef: UUID(), capturedAt: Date())
+            return "Víz +\(ml) ml"
+        } catch {
+            if var back = day { back.consumed.water -= Double(ml); day = back }
+            return "Nem sikerült elküldeni — próbáld újra"
+        }
+    }
+
+    func isTaken(_ group: SupplementGroup) -> Bool { taken.contains(group.key) }
+
+    /// One tap takes the whole group. The server cannot un-take, so a taken group stays taken.
+    func take(_ group: SupplementGroup) async -> String {
+        guard let food, !taken.contains(group.key) else { return "" }
+        taken.insert(group.key)
+        do {
+            try await food.tickGroup(daypart: group.key, clientRef: supplementRef(day: ymd, daypart: group.key), capturedAt: Date())
+            UserDefaults.standard.set(Array(taken), forKey: takenKey)
+            return "\(group.label): mind a \(group.count) bevéve"
+        } catch {
+            taken.remove(group.key)
+            return "Nem sikerült elküldeni — próbáld újra"
+        }
+    }
+
+    func dismissTip() { tipDismissed = true }
+
+    private var takenKey: String { "etel.taken.\(ymd)" }
+}
+
+// MARK: - The room
+
+/// The Étel room (B4): the food world's drill-down with its own four tabs — Ma · Receptek · Kamra · Hét. The head is
+/// the Fuel world's mood photo under the hue's sky, with the day's verdict; the last tab is kept across launches.
+struct EtelRoom: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.foodClient) private var food
+    @SceneStorage("etel.tab") private var selected: String = EtelTab.ma.rawValue
+    @State private var store = EtelStore()
+    @State private var toast: String?
+    /// The dimension whose sheet is open (page level, boop-ios.md §9).
+    @State private var dimension: DimensionSelection?
+
+    init(tab: EtelTab = .ma) {
+        #if DEBUG
+        let preview = UserDefaults.standard.string(forKey: "etelTab").flatMap(EtelTab.init(rawValue:))
+        _selected = SceneStorage(wrappedValue: (preview ?? tab).rawValue, "etel.tab")
+        #else
+        _selected = SceneStorage(wrappedValue: tab.rawValue, "etel.tab")
+        #endif
+    }
+
+    private var tab: EtelTab { EtelTab(rawValue: selected) ?? .ma }
+
+    var body: some View {
+        let v = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
+        NKDrillPage(hue: .fuel, crumb: "Ma · Étel", eyebrow: "Étkezés · ma", headline: v.headline, sentence: v.sentence,
+                    level: v.level ?? 0, tabs: EtelTab.allCases.map(\.rawValue), selectedTab: $selected,
+                    headPhoto: NKPhoto.konyha, onBack: { dismiss() }) {
+            switch tab {
+            case .ma:
+                EtelMa(store: store, onDimension: { dimension = $0 }, onToast: { toast = $0 },
+                       onRetry: { Task { await reload() } }, onTab: { selected = $0.rawValue })
+            case .receptek, .kamra, .het:
+                NKDrillSection(number: 1, label: tab.rawValue.uppercased()) {
+                    Text("Ez a lap hamarosan itt lesz.").nkFont(15).foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            Color.clear.frame(height: 20)
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
+        .nkToast($toast)
+        // Read the flag here so the page re-renders when it flips (boop-ios.md §9).
+        .sheet(item: Binding(get: { [d = dimension] in d }, set: { dimension = $0 })) { d in
+            DimensionSheet(selection: d)
+        }
+        .task { await reload() }
+        .refreshable { await reload() }
+    }
+
+    private func reload() async {
+        guard let food else { return }
+        await store.load(food: food, now: BoopClock.now())
+    }
+}

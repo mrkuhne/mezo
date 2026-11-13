@@ -3,19 +3,23 @@ import SwiftUI
 /// A domain drill-down: 360 pt painted head (glass back circle, crumb, orb with the hue's glow, eyebrow, serif headline,
 /// one sentence), numbered glass sections below, floating lights and the mirrored land at the end.
 ///
-/// A room with depth (Étel, Edzés) carries its own inner top tabs: pass `tabs` and `selectedTab` and an `NKTabStrip`
+/// A room with depth (Étel, Edzés) carries its own inner top tabs: pass `tabs` and `selectedTab` and an `NKCapsuleTabs` row
 /// sits under the verdict block; the caller switches `content` on the selected tab. No tabs = a single-page room.
 public struct NKDrillPage<Content: View>: View {
     let hue: Hue, crumb: String, eyebrow: String, headline: String, sentence: String, level: Double?
     let tabs: [String]
     let selectedTab: Binding<String>?
+    let headPhoto: Image?
     let onBack: () -> Void
     let content: Content
+    /// `headPhoto` is the world's mood photo for the sky (Képek guideline): it fills the head under the hue's own
+    /// gradient, with a dark pool behind the orb. nil = the painted landscape.
     public init(hue: Hue, crumb: String, eyebrow: String, headline: String, sentence: String, level: Double?,
-                tabs: [String] = [], selectedTab: Binding<String>? = nil,
+                tabs: [String] = [], selectedTab: Binding<String>? = nil, headPhoto: Image? = nil,
                 onBack: @escaping () -> Void, @ViewBuilder content: () -> Content) {
         self.hue = hue; self.crumb = crumb; self.eyebrow = eyebrow; self.headline = headline; self.sentence = sentence
-        self.level = level; self.tabs = tabs; self.selectedTab = selectedTab; self.onBack = onBack; self.content = content()
+        self.level = level; self.tabs = tabs; self.selectedTab = selectedTab; self.headPhoto = headPhoto
+        self.onBack = onBack; self.content = content()
     }
 
     public var body: some View {
@@ -23,7 +27,7 @@ public struct NKDrillPage<Content: View>: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .top) {
                     Color.clear.frame(height: 360)
-                        .overlay { PaintedLandscape(hue: hue) }
+                        .overlay { NKPhotoSky(hue: hue, photo: headPhoto) }
                         .clipped()
                         .mask(LinearGradient(stops: [.init(color: .black, location: 0.55), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
                     VStack(spacing: 0) {
@@ -41,6 +45,7 @@ public struct NKDrillPage<Content: View>: View {
                         VStack(spacing: 8) {
                             if let level {
                                 StillOrb(palette: hue.orb, size: 64, level: level).shadow(color: hue.glow.opacity(0.6), radius: 20)
+                                    .background { if headPhoto != nil { NKOrbScrim(hue: hue) } }
                             }
                             NKMono(eyebrow.uppercased()).padding(.top, 6)
                             Text(headline).nkFont(38, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center).minimumScaleFactor(0.6)
@@ -49,7 +54,7 @@ public struct NKDrillPage<Content: View>: View {
                         }
                         .padding(.top, level == nil ? 70 : 34)
                         if drillPageShowsTabs(tabs, selected: selectedTab), let selectedTab {
-                            NKTabStrip(tabs: tabs, selected: selectedTab).padding(.top, 22)
+                            NKCapsuleTabs(tabs: tabs, selected: selectedTab).padding(.top, 22)
                         }
                     }
                 }
