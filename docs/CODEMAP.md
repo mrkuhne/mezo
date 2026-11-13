@@ -1135,8 +1135,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **config:** `MealAiLogProperties`
   - **other:** `DayPlanService`, `FuelPlanMapper`, `MealItemRecipeOverrideJson`, `MealProvenanceJson`,
     `MealRescoreRunner`, `MealSaturatedFatBackfillRunner`
-- **Contract** `api/feature/meal/fuel-plan.yml` — 1 operation
-  - **endpoints:** GET /api/fuel/plan/{date}
+- **Contract** `api/feature/meal/fuel-plan.yml` — 2 operations
+  - **endpoints:** GET /api/fuel/plan/{date} · GET /api/fuel/usuals
 - **Contract** `api/feature/meal/meal-photo.yml` — 4 operations
   - **endpoints:** POST /api/meal/{id}/photo · GET /api/meal/{id}/photo · DELETE /api/meal/{id}/photo ·
     DELETE /api/meal/photos
@@ -1254,9 +1254,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
 - **Contract** `api/feature/sensitivity/sensitivity.yml` — 2 operations
   - **endpoints:** GET /api/sensitivity · PUT /api/sensitivity
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 5 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 6 IT + 8 unit
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`, `FuelPlanIT`,
-    `SensitivityProfileIT`
+    `SensitivityProfileIT`, `UsualMealsIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`,
     `MealPopulator`, `PlannedSkipPopulator`, `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `TrainPopulator`
 

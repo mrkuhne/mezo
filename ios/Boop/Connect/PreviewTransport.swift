@@ -110,7 +110,8 @@ struct PreviewTransport: ClientTransport {
     // MARK: - Étel (B4): an invented food day, so the room can be walked without a server
 
     private static let foodWriteOps = ["createMeal", "logWater", "upsertPlannedSkip", "setSensitivityProfile", "logIntake",
-                                       "importRecipeFromUrl", "importRecipeFromText", "createRecipe", "workshopTurn"]
+                                       "importRecipeFromUrl", "importRecipeFromText", "createRecipe", "workshopTurn", "scrapePantryItem", "importPantryItem",
+                                       "createPantryItem", "addPantryItemFromCatalog"]
     /// Every Étel operation the app can call; one of these falling through unanswered is a bug in this file.
     private static let foodOps: Set<String> = [
         "getFuelDay", "getFuelPlan", "draftMealFromAi", "createMeal", "logWater", "upsertPlannedSkip", "listRecipes", "getRecipe",
@@ -118,6 +119,8 @@ struct PreviewTransport: ClientTransport {
         "lookupPantryItem", "getSensitivityProfile", "setSensitivityProfile", "getDietSettings", "getProtocol", "logIntake",
         "getMealPhoto", "putMealPhoto", "deleteMealPhoto", "deleteAllMealPhotos", "getMealCoachForDay", "deleteIntake",
         "createRecipe", "recipeLogs", "getRecipeBreakdown", "workshopTurn", "getRecipeImage", "putRecipeImage", "deleteRecipeImage",
+        "getFuelWeek", "getUsualMeals", "scrapePantryItem", "photoExtractPantryItem", "importPantryItem", "createPantryItem",
+        "addPantryItemFromCatalog",
     ]
     private static let seedMealId = "5b0e8a52-1c3d-4e0e-9a52-7d9d4c1a0b01"
     private static let recipeId = "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03"
@@ -283,9 +286,28 @@ struct PreviewTransport: ClientTransport {
         case "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto":
             return json(#"{"result":{"name":"Tejszínes gombás tészta","category":"dinner","servings":2,"steps":["Főzd meg a tésztát.","Pirítsd meg a gombát.","Keverd össze a kettőt."],"sourceUrl":null,"structured":true,"needsReview":true,"lines":[{"source":"estimate","name":"tészta","amount":200,"unit":"g","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.9,"needsReview":false},"sourceText":"20 dkg tészta"},{"source":"estimate","name":"Tejszín","amount":2,"unit":"dl","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.5,"needsReview":true},"sourceText":"2 dl főzőtejszín","allergens":{"milk":"contains"}},{"source":"estimate","name":"gomba","amount":250,"unit":"g","match":{"confidence":0.2,"needsReview":true},"sourceText":"25 dkg gomba"}]}}"#)
         case "getPantry":
-            return json(#"{"ingredients":[{"id":"\#(oatsId)","kind":"food","name":"Zabpehely","brand":null,"source":"manual","category":null,"per":100,"unit":"g","macros":{"kcal":370,"p":13,"c":60,"f":7},"price":null,"priceUnit":null,"pkg":null,"micros":[],"nova":1,"lastUsed":"-","usedInRecipes":2,"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","catalogEditable":true}],"stash":[\#(stashRow("22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d", "D3-vitamin", "4000 NE")),\#(stashRow("ff027e5c-b6d7-42a2-be5c-719e1abeaf0b", "Magnézium-glicinát", "400 mg")),\#(stashRow("11a38d6f-c7e8-43b3-8f6d-82a0bfbcb01c", "Omega-3", "2 g"))],"imports":[],"suggestions":[]}"#)
+            return json(#"{"ingredients":[\#(pantryShelf.joined(separator: ","))],"stash":[\#(stashRow("22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d", "D3-vitamin", "4000 NE")),\#(stashRow("ff027e5c-b6d7-42a2-be5c-719e1abeaf0b", "Magnézium-glicinát", "400 mg")),\#(stashRow("11a38d6f-c7e8-43b3-8f6d-82a0bfbcb01c", "Omega-3", "2 g"))],"imports":[],"suggestions":[]}"#)
         case "searchPantryCatalog":
-            return json(#"[{"id":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","kind":"food","name":"Zabpehely","source":"manual","per":100,"unit":"g","kcal":370,"proteinG":13,"carbsG":60,"fatG":7,"nova":1,"allergens":{"gluten":"contains"}}]"#)
+            return json(#"[{"id":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","kind":"food","name":"Zabpehely","source":"manual","category":"grains","per":100,"unit":"g","kcal":370,"proteinG":13,"carbsG":60,"fatG":7,"fiberG":10,"nova":1,"allergens":{"gluten":"contains"}},{"id":"44460c9f-fa56-46e6-9c9f-b5d24e2e1a30","kind":"food","name":"Zabkása, instant","brand":"Pelda","source":"openfoodfacts","category":"grains","per":100,"unit":"g","kcal":385,"proteinG":11,"carbsG":64,"fatG":7.5,"nova":3,"authorName":"Anna","barcode":"5997001230000","allergens":{"gluten":"contains","milk":"traces"}}]"#)
+        case "getFuelWeek": return json(foodWeek(start: pathDate(request)))
+        case "getUsualMeals":
+            let now = ISO8601DateFormatter().string(from: Date().addingTimeInterval(-86_400))
+            return json(#"{"usuals":[{"key":"lunch:csirke rizzsel","title":"Csirke rizzsel","slot":"lunch","count":5,"lastLoggedAt":"\#(now)"},{"key":"breakfast:zabkása gyümölccsel","title":"Zabkása gyümölccsel","slot":"breakfast","count":4,"lastLoggedAt":"\#(now)"},{"key":"dinner:tojásrántotta","title":"Tojásrántotta","slot":"dinner","count":2,"lastLoggedAt":"\#(now)"}]}"#)
+        case "scrapePantryItem":
+            let url = ((try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any])?["url"] as? String ?? ""
+            if url.contains("nincs") { return json(#"{"result":null}"#) }
+            return json(#"{"result":{"name":"Skyr natúr","brand":"Mizo","per":100,"unit":"g","kcal":63,"proteinG":11,"carbsG":4,"fatG":0.2,"nova":3,"category":"dairy","source":"web","sourceUrl":"\#(url)","confidence":0.85,"needsReview":false}}"#)
+        case "photoExtractPantryItem":
+            return json(#"{"result":{"name":"Étcsokoládé 85%","per":100,"unit":"g","kcal":590,"proteinG":10,"carbsG":22,"fatG":47,"fiberG":13,"saltG":0.02,"category":"snacks","source":"photo","confidence":0.55,"needsReview":true}}"#)
+        case "importPantryItem", "createPantryItem":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            let name = obj?["name"] as? String ?? "Új étel"
+            let source = op == "createPantryItem" ? "manual" : (obj?["origin"] as? String == "photo" ? "photo" : (obj?["sourceUrl"] != nil ? "web" : "openfoodfacts"))
+            let allergens = (obj?["allergens"] as? [String: String]).flatMap { try? JSONSerialization.data(withJSONObject: $0) }.flatMap { String(data: $0, encoding: .utf8) } ?? "null"
+            return created(#"{"id":"\#(UUID().uuidString.lowercased())","catalogId":"\#(UUID().uuidString.lowercased())","kind":"food","name":"\#(name)","source":"\#(source)","allergens":\#(allergens),"barcode":\#(obj?["barcode"].flatMap { $0 as? String }.map { "\"\($0)\"" } ?? "null")}"#)
+        case "addPantryItemFromCatalog":
+            let catalog = (((try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any])?["catalogId"] as? String) ?? oatsId
+            return json(#"{"id":"\#(UUID().uuidString.lowercased())","catalogId":"\#(catalog)","kind":"food","name":"Zabkása, instant"}"#)
         case "getSensitivityProfile": return json(foodSensitivity)
         case "setSensitivityProfile": foodSensitivity = sent; return json(sent)
         case "getDietSettings":
@@ -297,6 +319,50 @@ struct PreviewTransport: ClientTransport {
             return created(#"{"id":"\#(UUID().uuidString.lowercased())","pantryItemId":"\#(obj?["pantryItemId"] as? String ?? oatsId)","takenAt":"\#(ISO8601DateFormatter().string(from: Date()))","takenDate":"\#(dayString(offset: 0))"}"#)
         default: return nil
         }
+    }
+
+    /// One invented shelf food (the Kamra): honest nulls where the server would have none, allergens only when known.
+    private static func shelfRow(_ id: String, _ name: String, brand: String? = nil, source: String, category: String?, kcal: Double,
+                                 p: Double, c: Double, f: Double, fiber: Double? = nil, nova: Int?, allergens: String? = nil,
+                                 barcode: String? = nil, sharedFrom: String? = nil, catalog: String? = nil) -> String {
+        func q(_ s: String?) -> String { s.map { "\"\($0)\"" } ?? "null" }
+        return #"{"id":"\#(id)","kind":"food","name":"\#(name)","brand":\#(q(brand)),"source":"\#(source)","category":\#(q(category)),"per":100,"unit":"g","macros":{"kcal":\#(kcal),"p":\#(p),"c":\#(c),"f":\#(f)},"price":null,"priceUnit":null,"pkg":null,"micros":[],"nova":\#(nova.map(String.init) ?? "null"),"lastUsed":"-","usedInRecipes":0,"catalogId":"\#(catalog ?? id)","catalogEditable":true,"fiberG":\#(fiber.map { String($0) } ?? "null")\#(allergens.map { ",\"allergens\":\($0)" } ?? "")\#(barcode.map { ",\"barcode\":\"\($0)\"" } ?? "")\#(sharedFrom.map { ",\"sharedFrom\":{\"authorName\":\"\($0)\"}" } ?? "")}"#
+    }
+
+    private static var pantryShelf: [String] {
+        [shelfRow(oatsId, "Zabpehely", source: "manual", category: "grains", kcal: 370, p: 13, c: 60, f: 7, fiber: 10, nova: 1,
+                  allergens: #"{"gluten":"traces"}"#, catalog: "33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f"),
+         shelfRow("0a1b2c3d-0001-4a00-8000-000000000001", "Csirkemell filé", source: "manual", category: "meat", kcal: 110, p: 23, c: 0, f: 1.5, nova: 1),
+         shelfRow("0a1b2c3d-0001-4a00-8000-000000000002", "Görög joghurt 2%", brand: "Pelda", source: "openfoodfacts", category: "dairy", kcal: 73, p: 9.5,
+                  c: 4, f: 2, fiber: 0, nova: 1, allergens: #"{"milk":"contains"}"#, barcode: "5997001234001"),
+         shelfRow("0a1b2c3d-0001-4a00-8000-000000000003", "Lazacfilé", source: "manual", category: "fish", kcal: 208, p: 20, c: 0, f: 13, nova: 1,
+                  allergens: #"{"fish":"contains"}"#),
+         shelfRow("0a1b2c3d-0001-4a00-8000-000000000004", "Proteinszelet · karamell", brand: "Pelda", source: "photo", category: "snacks", kcal: 380, p: 30,
+                  c: 35, f: 12, nova: 4, allergens: #"{"milk":"contains","nuts":"traces","soybeans":"unknown"}"#),
+         shelfRow("0a1b2c3d-0001-4a00-8000-000000000005", "Barna rizs", source: "kifli.hu", category: "grains", kcal: 123, p: 2.7, c: 26, f: 1, fiber: 1.8, nova: 1),
+         shelfRow("0a1b2c3d-0001-4a00-8000-000000000006", "Tojás", source: "manual", category: "eggs", kcal: 143, p: 12.6, c: 0.7, f: 9.5, nova: 1,
+                  allergens: #"{"eggs":"contains"}"#),
+         shelfRow("0a1b2c3d-0001-4a00-8000-000000000007", "Házi lekvár", source: "manual", category: nil, kcal: 250, p: 0.4, c: 62, f: 0.1, nova: nil,
+                  sharedFrom: "Anna")]
+    }
+
+    /// The last seven days from `start`: a training day, a skipped meal, a stomach-bug day, today still going.
+    private static func foodWeek(start: String) -> String {
+        let parts = start.split(separator: "-").compactMap { Int($0) }
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let base = parts.count == 3 ? (cal.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)) ?? Date()) : Date()
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.calendar = cal; f.timeZone = cal.timeZone
+        let kcal: [Double] = [2200, 2620, 2390, 2150, 2410, 2280, 420]
+        let rows = (0..<7).map { i -> String in
+            let d = f.string(from: cal.date(byAdding: .day, value: i, to: base) ?? base)
+            let target = i == 1 ? 2650 : 2350
+            let tail = i == 1 ? #","energy":{"baseKcal":2000,"plannedMovementKcal":300,"extraMovementKcal":0,"balanceKcal":0,"targetKcal":2650}"#
+                : i == 3 ? #","fuelMode":"GUIDANCE","recoveryCategory":"STOMACH","recoveryDay":1"#
+                : i == 2 ? #","skippedKcal":300"# : ""
+            let skipped = i == 2 ? "" : #","skippedKcal":0"#
+            return #"{"date":"\#(d)","targets":{"kcal":\#(target),"p":165,"c":280,"f":70,"water":3000},"consumed":{"kcal":\#(kcal[i]),"p":\#(i == 6 ? 22 : 142),"c":220,"f":70,"water":2000}\#(tail)\#(skipped)}"#
+        }
+        return #"{"start":"\#(start)","days":[\#(rows.joined(separator: ","))],"mealScoreAvg":0.71}"#
     }
 
     private static func stashRow(_ id: String, _ name: String, _ dose: String) -> String {

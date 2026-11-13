@@ -206,6 +206,8 @@ public interface PantryMapper {
             .catalogId(c.getId())
             .sharedFrom(sharedFromName == null ? null : PantrySharedFrom.builder().authorName(sharedFromName).build())
             .catalogEditable(catalogEditable)
+            .allergens(allergensToWire(c.getAllergens()))
+            .barcode(c.getBarcode())
             .build();
     }
 

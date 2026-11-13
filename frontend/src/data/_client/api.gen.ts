@@ -1976,6 +1976,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fuel/usuals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The owner's "szokásosak" — his recurring meals, ranked (UsualMealRanker over the last 28 days)
+         * @description The window asked for first, then how often a meal recurs, then how recently. Rows fold by window and normalised name; each carries its latest occurrence's name. No history is an empty list, never an invented row. A row carries no energy: the history read does not roll items up, and nothing is fabricated here.
+         */
+        get: operations["getUsualMeals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/meal/{id}/photo": {
         parameters: {
             query?: never;
@@ -8110,6 +8130,12 @@ export interface components {
             catalogId: string;
             sharedFrom?: components["schemas"]["PantrySharedFrom"] | null;
             catalogEditable: boolean;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
+            /** @description EAN/UPC of the product, when known */
+            barcode?: string | null;
         };
         SupplementStashResponse: {
             /** Format: uuid */
@@ -8921,6 +8947,23 @@ export interface components {
             /** Format: date */
             date: string;
             amountMl: number;
+        };
+        UsualMealsResponse: {
+            usuals: components["schemas"]["UsualMealResponse"][];
+        };
+        UsualMealResponse: {
+            /** @description Window and normalised name — stable across reads */
+            key: string;
+            /** @description The latest occurrence's own name */
+            title: string;
+            /** @enum {string} */
+            slot: "breakfast" | "lunch" | "dinner" | "snack";
+            /** @description How many times it was logged in the last 28 days */
+            count: number;
+            /** Format: date-time */
+            lastLoggedAt: string;
+            /** @description Always null today: the history read carries no energy */
+            kcal?: number | null;
         };
         FuelPlanResponse: {
             /** Format: date */
@@ -20173,6 +20216,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FuelPlanResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getUsualMeals: {
+        parameters: {
+            query?: {
+                /** @description The window the caller is in now; its rows rank first. Absent or unknown ranks by recurrence alone. */
+                slot?: "breakfast" | "lunch" | "dinner" | "snack";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The ranked usual meals (at most 6) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsualMealsResponse"];
                 };
             };
             /** @description Missing/invalid token */

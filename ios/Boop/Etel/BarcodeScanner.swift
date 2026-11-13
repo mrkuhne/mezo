@@ -158,6 +158,8 @@ struct BarcodeScanView: View {
     let onLabelPhoto: (String) -> Void
     let onWords: (String) -> Void
     let onBack: () -> Void
+    /// The button on a found product: the composer asks how much was eaten; the Kamra's add route confirms the facts.
+    var foundTitle = "Mennyit ettél belőle?"
     @State private var typed = ""
     @State private var scannerOn = false
     @FocusState private var typing: Bool
@@ -264,7 +266,7 @@ struct BarcodeScanView: View {
                 if let line = scanSensitivityLine(item, profile: profile) {
                     Text(line).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
                 }
-                primary("Mennyit ettél belőle?") { onServing(item, lookupSource(), code) }
+                primary(foundTitle) { onServing(item, lookupSource(), code) }
             }
             .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
             secondary("Másik kód") { typed = ""; model.reset() }

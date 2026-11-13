@@ -25,8 +25,51 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/fuel/usuals:
+    get:
+      tags: [FuelPlan]
+      operationId: getUsualMeals
+      summary: The owner's "szokásosak" — his recurring meals, ranked (UsualMealRanker over the last 28 days)
+      description: >-
+        The window asked for first, then how often a meal recurs, then how recently. Rows fold by window and
+        normalised name; each carries its latest occurrence's name. No history is an empty list, never an invented
+        row. A row carries no energy: the history read does not roll items up, and nothing is fabricated here.
+      parameters:
+        - name: slot
+          in: query
+          required: false
+          description: The window the caller is in now; its rows rank first. Absent or unknown ranks by recurrence alone.
+          schema: { type: string, enum: [breakfast, lunch, dinner, snack] }
+      responses:
+        '200':
+          description: The ranked usual meals (at most 6)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsualMealsResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
+    UsualMealsResponse:
+      type: object
+      required: [usuals]
+      properties:
+        usuals:
+          type: array
+          items: { $ref: '#/components/schemas/UsualMealResponse' }
+    UsualMealResponse:
+      type: object
+      required: [key, title, slot, count, lastLoggedAt]
+      properties:
+        key: { type: string, description: 'Window and normalised name — stable across reads' }
+        title: { type: string, description: 'The latest occurrence''s own name' }
+        slot: { type: string, enum: [breakfast, lunch, dinner, snack] }
+        count: { type: integer, description: 'How many times it was logged in the last 28 days' }
+        lastLoggedAt: { type: string, format: date-time }
+        kcal: { type: integer, nullable: true, description: 'Always null today: the history read carries no energy' }
     FuelPlanResponse:
       type: object
       required: [date, windows]

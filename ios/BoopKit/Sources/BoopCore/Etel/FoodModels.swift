@@ -525,9 +525,120 @@ public struct PantryRow: Equatable, Sendable {
     public var per: Double?
     public var unit: String?
     public var kcal: Double?, proteinG: Double?, carbsG: Double?, fatG: Double?
+    public var fiberG: Double?, sugarG: Double?, saltG: Double?, saturatedFatG: Double?
     public var nova: Int?
+    /// What the product says about each allergen (lowercase keys). A key that is absent says nothing: "nincs adat".
     public var allergens: [String: AllergenState]
     public var onShelf: Bool
+    /// Where the facts came from, as the server names it (`openfoodfacts`, `photo`, `manual`, a shop host, `web`).
+    public var source: String?
+    public var category: String?
+    public var barcode: String?
+    /// The owner who first added the shared definition, when it is not the signed-in owner.
+    public var sharedFrom: String?
+
+    /// One stable key for lists: the shelf row, else the catalog row.
+    public var rowKey: String { id?.uuidString ?? catalogId?.uuidString ?? name }
+
+    public init(id: UUID? = nil, catalogId: UUID? = nil, name: String, brand: String? = nil, kind: String = "food", per: Double? = nil,
+                unit: String? = nil, kcal: Double? = nil, proteinG: Double? = nil, carbsG: Double? = nil, fatG: Double? = nil,
+                fiberG: Double? = nil, sugarG: Double? = nil, saltG: Double? = nil, saturatedFatG: Double? = nil, nova: Int? = nil,
+                allergens: [String: AllergenState] = [:], onShelf: Bool = true, source: String? = nil, category: String? = nil,
+                barcode: String? = nil, sharedFrom: String? = nil) {
+        self.id = id; self.catalogId = catalogId; self.name = name; self.brand = brand; self.kind = kind; self.per = per
+        self.unit = unit; self.kcal = kcal; self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG
+        self.fiberG = fiberG; self.sugarG = sugarG; self.saltG = saltG; self.saturatedFatG = saturatedFatG; self.nova = nova
+        self.allergens = allergens; self.onShelf = onShelf; self.source = source; self.category = category
+        self.barcode = barcode; self.sharedFrom = sharedFrom
+    }
+}
+
+// MARK: - The week and the usuals
+
+/// One day of the week read: the day's targets against what was eaten, no meal bodies.
+public struct FuelDayRollup: Equatable, Sendable, Identifiable {
+    public var date: String
+    public var targets: MacroSet
+    public var consumed: MacroSet
+    /// Kímélő mode of the date: `GUIDANCE | MAINTENANCE | ESTIMATE`, nil outside a recovery period.
+    public var fuelMode: String?
+    public var recoveryCategory: String?
+    public var recoveryDay: Int?
+    public var skippedKcal: Int
+    /// The planned training the day's target made room for; nil when the server did not split the target.
+    public var plannedMovementKcal: Int?
+    public var id: String { date }
+    public init(date: String, targets: MacroSet, consumed: MacroSet, fuelMode: String? = nil, recoveryCategory: String? = nil,
+                recoveryDay: Int? = nil, skippedKcal: Int = 0, plannedMovementKcal: Int? = nil) {
+        self.date = date; self.targets = targets; self.consumed = consumed; self.fuelMode = fuelMode
+        self.recoveryCategory = recoveryCategory; self.recoveryDay = recoveryDay; self.skippedKcal = skippedKcal
+        self.plannedMovementKcal = plannedMovementKcal
+    }
+}
+
+public struct FuelWeek: Equatable, Sendable {
+    public var start: String
+    public var days: [FuelDayRollup]
+    /// The mean of the week's scored meals, 0…1; nil when no meal carries a score.
+    public var mealScoreAvg: Double?
+    public init(start: String, days: [FuelDayRollup], mealScoreAvg: Double? = nil) {
+        self.start = start; self.days = days; self.mealScoreAvg = mealScoreAvg
+    }
+}
+
+/// One of the owner's usual meals (the server's `UsualMealRanker`): a name in a window, how often it recurred in the last
+/// 28 days and when it last did. It carries no numbers — logging one goes through Boop's draft, which computes them.
+public struct UsualMeal: Equatable, Sendable, Identifiable {
+    public var key: String
+    public var title: String
+    public var slot: String
+    public var count: Int
+    public var lastLoggedAt: Date
+    public var id: String { key }
+    public init(key: String, title: String, slot: String, count: Int, lastLoggedAt: Date) {
+        self.key = key; self.title = title; self.slot = slot; self.count = count; self.lastLoggedAt = lastLoggedAt
+    }
+}
+
+// MARK: - Adding a food to the shelf
+
+/// A food on its way to the shelf: whatever a route found (a barcode, a page, a label photo) or the owner typed — the
+/// ONE shape every add route ends in, and what the confirm screen edits. Facts are per `per` `unit` (100 g by default).
+public struct NewPantryFood: Equatable, Sendable {
+    public enum Origin: Equatable, Sendable { case barcode, link(String), labelPhoto, manual }
+    public var name: String
+    public var brand: String?
+    public var barcode: String?
+    public var category: String?
+    public var per: Double
+    public var unit: String
+    public var kcal: Double?, proteinG: Double?, carbsG: Double?, fatG: Double?
+    public var fiberG: Double?, sugarG: Double?, saltG: Double?, saturatedFatG: Double?
+    public var nova: Int?
+    public var allergens: [String: AllergenState]
+    public var origin: Origin
+    /// The reading's own confidence (a scraped page, a label photo); nil for a barcode hit or typed facts.
+    public var confidence: Double?
+    public var needsReview: Bool
+
+    public init(name: String = "", brand: String? = nil, barcode: String? = nil, category: String? = nil, per: Double = 100, unit: String = "g",
+                kcal: Double? = nil, proteinG: Double? = nil, carbsG: Double? = nil, fatG: Double? = nil, fiberG: Double? = nil,
+                sugarG: Double? = nil, saltG: Double? = nil, saturatedFatG: Double? = nil, nova: Int? = nil,
+                allergens: [String: AllergenState] = [:], origin: Origin, confidence: Double? = nil, needsReview: Bool = false) {
+        self.name = name; self.brand = brand; self.barcode = barcode; self.category = category; self.per = per; self.unit = unit
+        self.kcal = kcal; self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG; self.fiberG = fiberG
+        self.sugarG = sugarG; self.saltG = saltG; self.saturatedFatG = saturatedFatG; self.nova = nova
+        self.allergens = allergens; self.origin = origin; self.confidence = confidence; self.needsReview = needsReview
+    }
+
+    /// The shelf's category words (the contract's enum), with their Hungarian names for the picker.
+    public static let categories: [(key: String, label: String)] = [
+        ("vegetables", "Zöldség"), ("fruits", "Gyümölcs"), ("meat", "Hús"), ("fish", "Hal"), ("eggs", "Tojás"), ("dairy", "Tejtermék"),
+        ("cheese", "Sajt"), ("legumes", "Hüvelyes"), ("grains", "Gabona"), ("pasta", "Tészta"), ("bakery", "Pékáru"),
+        ("nuts_seeds", "Mag"), ("oils_fats", "Olaj"), ("condiments", "Fűszer, szósz"), ("snacks", "Snack"), ("beverages", "Ital"),
+        ("other", "Egyéb"),
+    ]
+    public static func categoryLabel(_ key: String?) -> String? { categories.first { $0.key == key }?.label }
 }
 
 /// One supplement on the owner's stash: the name the protocol rows carry no text for.

@@ -218,6 +218,12 @@ components:
         catalogId: { type: string, format: uuid }
         sharedFrom: { allOf: [ { $ref: '#/components/schemas/PantrySharedFrom' } ], nullable: true }
         catalogEditable: { type: boolean }
+        allergens:
+          type: object
+          nullable: true
+          description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
+          additionalProperties: { type: string }
+        barcode: { type: string, nullable: true, description: 'EAN/UPC of the product, when known' }
     SupplementStashResponse:
       type: object
       required: [id, name, brand, type, category, dose, form, protocol, timing, taken, macros, catalogId, catalogEditable]

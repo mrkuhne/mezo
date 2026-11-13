@@ -76,3 +76,10 @@ filter:
     - putMealPhoto
     - deleteMealPhoto
     - deleteAllMealPhotos
+    - getFuelWeek
+    - getUsualMeals
+    - scrapePantryItem
+    - photoExtractPantryItem
+    - importPantryItem
+    - createPantryItem
+    - addPantryItemFromCatalog

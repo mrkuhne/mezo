@@ -1,0 +1,227 @@
+import Foundation
+import Testing
+import BoopCore
+@testable import Boop
+
+/// The Étel room's `Kamra` tab (B4 Task 13): the shelf and the catalog, the sensitivity states with "nincs adat", the
+/// one confirm every add route ends in, and the "Szokásos" entrance of the composer.
+@MainActor
+struct EtelKamraTests {
+    private func row(_ name: String, kcal: Double? = 120, nova: Int? = 1, allergens: [String: AllergenState] = [:], category: String? = "dairy",
+                     onShelf: Bool = true) -> PantryRow {
+        PantryRow(id: onShelf ? UUID() : nil, catalogId: UUID(), name: name, per: 100, unit: "g", kcal: kcal, proteinG: 8, carbsG: 4, fatG: 2,
+                  nova: nova, allergens: allergens, onShelf: onShelf, category: category)
+    }
+    private let lactose = SensitivityProfile(items: [SensitivityItem(key: "milk", level: .intolerance, note: nil)],
+                                             novaRule: NovaRule(enabled: true, maxLevel: 2))
+    private let lactoseAndGluten = SensitivityProfile(items: [SensitivityItem(key: "milk", level: .intolerance, note: nil),
+                                                              SensitivityItem(key: "gluten", level: .allergy, note: nil)],
+                                                      novaRule: NovaRule(enabled: false, maxLevel: 4))
+
+    // MARK: search and filter
+
+    @Test func searchIgnoresCaseAndAccentsAndTheCategoryNarrowsIt() {
+        let rows = [row("Túró", category: "dairy"), row("Tojás", category: "eggs"), row("Tejföl 20%", category: "dairy")]
+        #expect(filterShelf(rows, query: "turo", category: nil).map(\.name) == ["Túró"])
+        #expect(filterShelf(rows, query: "", category: "dairy").map(\.name) == ["Túró", "Tejföl 20%"])
+        #expect(filterShelf(rows, query: "t", category: "eggs").map(\.name) == ["Tojás"])
+        #expect(filterShelf(rows, query: "xyz", category: nil).isEmpty)
+    }
+
+    @Test func categoriesListOnlyWhatTheShelfHoldsWithCounts() {
+        let rows = [row("a", category: "dairy"), row("b", category: "dairy"), row("c", category: nil), row("d", category: "meat")]
+        let cats = shelfCategories(rows)
+        #expect(cats.map(\.key) == ["dairy", "meat", "other"])   // an unclassified food is "Egyéb", not hidden
+        #expect(cats.first?.count == 2)
+        #expect(shelfCategories([]).isEmpty)
+    }
+
+    @Test func aCatalogHitAlreadyOnTheShelfIsNotListedTwice() {
+        let shelfRow = row("Zabpehely")
+        var hit = row("Zabpehely", onShelf: false); hit.catalogId = shelfRow.catalogId
+        let other = row("Zabkása", onShelf: false)
+        #expect(catalogOnly([hit, other], shelf: [shelfRow]).map(\.name) == ["Zabkása"])
+    }
+
+    // MARK: sensitivity states
+
+    @Test func aFlaggedFoodShowsItsBadgeAndAMissingWatchedKeyReadsNincsAdat() {
+        let milk = row("Görög joghurt", allergens: ["milk": .contains])
+        guard case .flagged(let b) = pantrySensitivity(milk, profile: lactose) else { Issue.record("not flagged"); return }
+        #expect(b.first?.text.contains("Tej") == true)
+        // no data at all
+        #expect(pantrySensitivity(row("Csirkemell"), profile: lactose) == .noData)
+        // a map that exists but simply lacks the watched key is STILL "nincs adat" (the trap this slice hit twice)
+        #expect(pantrySensitivity(row("Zab", allergens: ["gluten": .traces]), profile: lactose) == .noData)
+        #expect(pantrySensitivity(row("Zab", allergens: ["milk": .unknown]), profile: lactose) == .noData)
+    }
+
+    @Test func aFoodThatSaysNothingWatchedStaysQuietOnlyWhenTheOwnerWatchesNothing() {
+        #expect(pantrySensitivity(row("Csirkemell"), profile: nil) == .nothing)
+        #expect(pantrySensitivity(row("Csirkemell"), profile: SensitivityProfile(items: [], novaRule: NovaRule(enabled: false, maxLevel: 4))) == .nothing)
+        // a free-text sensitivity has no structured state: nothing to read against
+        let free = SensitivityProfile(items: [SensitivityItem(key: "koriander", level: .avoid, note: nil)], novaRule: NovaRule(enabled: false, maxLevel: 4))
+        #expect(pantrySensitivity(row("Csirkemell"), profile: free) == .nothing)
+    }
+
+    @Test func aFlagOnOneKeyDoesNotHideTheOthersGap() {
+        let r = row("Zabkása", allergens: ["milk": .contains])
+        let lines = sensitivityLines(r, profile: lactoseAndGluten)
+        #expect(lines.contains { $0.contains("Tej") && $0.contains("tartalmazza") })
+        #expect(lines.contains { $0.contains("Glutén") && $0.contains("nincs adat") })
+    }
+
+    @Test func theDetailNeverSaysFreeOf() {
+        let lines = sensitivityLines(row("Csirkemell"), profile: lactose)
+        #expect(lines.count == 1)
+        #expect(lines[0].contains("nincs adat"))
+        #expect(lines[0].contains("nem azt jelenti, hogy nincs benne"))
+        for word in ["mentes", "nincs benne tej", "biztonságos"] { #expect(!lines[0].lowercased().contains(word)) }
+        // no rules, no lines
+        #expect(sensitivityLines(row("Csirkemell"), profile: nil).isEmpty)
+    }
+
+    @Test func theDeclaredAllergensAreListedAsTheProductSaysThem() {
+        let r = row("Müzli", allergens: ["gluten": .contains, "nuts": .traces, "milk": .unknown])
+        let declared = declaredAllergens(r)
+        #expect(declared.contains("Glutén: tartalmazza"))
+        #expect(declared.contains("Diófélék: nyomokban"))
+        #expect(!declared.contains { $0.contains("Tej") })   // unknown is not a declaration
+        #expect(declaredAllergens(row("Csirkemell")).isEmpty)
+    }
+
+    // MARK: facts, NOVA, provenance
+
+    @Test func factsPer100gSayNincsAdatForWhatTheServerDoesNotKnow() {
+        var r = row("Skyr", kcal: 63)
+        r.fiberG = nil; r.sugarG = 3.9
+        let facts = factRows(r)
+        #expect(facts.first { $0.name == "Energia" }?.value == "63 kcal")
+        #expect(facts.first { $0.name == "Rost" }?.value == "nincs adat")
+        #expect(facts.first { $0.name == "Cukor" }?.value == "3,9 g")
+        #expect(factRows(row("Üres", kcal: nil)).first { $0.name == "Energia" }?.value == "nincs adat")
+        // basis is per 100 g unless the food says otherwise
+        #expect(factsHeading(r) == "100 G-RA")
+        var piece = row("Tojás"); piece.per = 1; piece.unit = "db"
+        #expect(factsHeading(piece) == "1 DB-RA")
+    }
+
+    @Test func novaIsNamedAndAnUnclassifiedFoodSaysSo() {
+        #expect(novaLine(1) == "NOVA 1 · feldolgozatlan")
+        #expect(novaLine(4) == "NOVA 4 · ultra-feldolgozott")
+        #expect(novaLine(nil) == "NOVA nincs besorolás")
+        #expect(novaLine(3, profile: lactose).contains("a határod fölött"))
+        #expect(!novaLine(2, profile: lactose).contains("a határod fölött"))
+    }
+
+    @Test func provenanceNamesTheRouteAndNeverInventsOne() {
+        var r = row("Skyr")
+        r.source = "openfoodfacts"; r.barcode = "5997001234567"
+        #expect(provenanceLines(r).contains("Forrás: OpenFoodFacts"))
+        #expect(provenanceLines(r).contains("Vonalkód: 5997001234567"))
+        r.source = "photo"; r.barcode = nil
+        #expect(provenanceLines(r).contains("Forrás: címkefotóból olvasva"))
+        r.source = "manual"
+        #expect(provenanceLines(r).contains("Forrás: kézzel felvéve"))
+        r.source = "kifli.hu"
+        #expect(provenanceLines(r).contains("Forrás: kifli.hu"))
+        r.source = nil; r.sharedFrom = "Anna"
+        #expect(provenanceLines(r).contains("Forrás: nincs adat"))
+        #expect(provenanceLines(r).contains("Közös katalógus · Anna vette fel"))
+        // never a price, a stock level or an expiry
+        for line in provenanceLines(r) + factRows(r).map(\.name) { for w in ["Ft", "ár", "készlet", "lejár"] { #expect(!line.contains(w)) } }
+    }
+
+    // MARK: the one confirm
+
+    @Test func theConfirmNeedsANameAndAnEnergyFigureAndNeverFakesTheOthers() {
+        var f = NewPantryFood(name: "", origin: .manual)
+        #expect(!pantryAddReady(f))
+        f.name = "Házi lekvár"
+        #expect(!pantryAddReady(f))            // no kcal yet
+        f.kcal = 250
+        #expect(pantryAddReady(f))
+        #expect(f.proteinG == nil && f.fatG == nil)   // typed nothing = unknown, not 0
+        f.per = 0
+        #expect(!pantryAddReady(f))
+        f.per = 100; f.kcal = -3
+        #expect(!pantryAddReady(f))
+    }
+
+    @Test func aReadingThatDoubtsItselfHoldsTheSaveUntilTheOwnerSaysSo() {
+        let doubtful = NewPantryFood(name: "Müzli", kcal: 380, origin: .labelPhoto, confidence: 0.4, needsReview: true)
+        #expect(pantryAddNeedsLook(doubtful))
+        var checked = doubtful; checked.needsReview = false; checked.confidence = 0.9
+        #expect(!pantryAddNeedsLook(checked))
+        // a barcode hit or typed facts carry no confidence of their own
+        #expect(!pantryAddNeedsLook(NewPantryFood(name: "Skyr", kcal: 63, origin: .barcode)))
+        // a product with a missing macro is said, not zero-filled
+        #expect(pantryAddMissing(NewPantryFood(name: "Skyr", kcal: 63, proteinG: 11, origin: .barcode)) == ["szénhidrát", "zsír"])
+        #expect(pantryAddMissing(NewPantryFood(name: "Skyr", kcal: 63, proteinG: 11, carbsG: 4, fatG: 0, origin: .barcode)).isEmpty)
+    }
+
+    @Test func aScannedProductBecomesTheSameShapeAsATypedOne() {
+        let item = LookupItem(name: "Skyr", brand: "Mizo", barcode: "5997001234567", per: 100, unit: "g", kcal: 63, proteinG: 11, carbsG: 4,
+                              fatG: nil, nova: 3, allergens: ["milk": .contains], servingSize: "150 g", servingQuantity: 150)
+        let f = NewPantryFood(scanned: item)
+        #expect(f.origin == .barcode)
+        #expect(f.barcode == "5997001234567")
+        #expect(f.fatG == nil)
+        #expect(f.allergens == ["milk": .contains])
+        #expect(f.per == 100)
+        // the shelf holds the product, not the serving the label happened to name
+        #expect(f.kcal == 63)
+    }
+
+    // MARK: eating from the shelf reuses the serving confirmation
+
+    @Test func aShelfOrCatalogFoodOpensTheServingConfirmationInGrams() throws {
+        let r = row("Zabpehely", kcal: 370)
+        let facts = try #require(r.servingFacts)
+        #expect(facts.per == 100)
+        #expect(facts.servingQuantity == nil)
+        #expect(ServingConfirmation(facts: facts).mode == .grams)
+        #expect(ServingConfirmation(facts: facts).grams == 100)
+        // a food with no basis cannot be confirmed in grams: it says so rather than guessing
+        var broken = r; broken.per = nil
+        #expect(broken.servingFacts == nil)
+    }
+
+    // MARK: the composer's fifth entrance
+
+    private func usualsModel(_ list: [UsualMeal], outbox: Bool = false) -> MealComposerModel {
+        let calls = MealCalls()
+        return MealComposerModel(
+            drafter: MealDrafter(calls: calls),
+            saver: { d, _, at in BoopCore.Meal(id: UUID(), slot: d.slot, loggedAt: at, mealDate: d.date, title: d.title, macros: d.total, score: nil) },
+            usuals: { list }, outbox: nil)
+    }
+
+    @Test func theUsualsComeRankedFromTheServerAndAChoiceBecomesTheWordsOfADraft() async {
+        let list = [UsualMeal(key: "lunch:csirke rizzsel", title: "Csirke rizzsel", slot: "lunch", count: 3, lastLoggedAt: Date()),
+                    UsualMeal(key: "breakfast:zabkása", title: "Zabkása", slot: "breakfast", count: 2, lastLoggedAt: Date())]
+        let m = usualsModel(list)
+        m.show(.usuals)
+        await m.loadLists()
+        #expect(m.usuals?.map(\.title) == ["Csirke rizzsel", "Zabkása"])
+        await m.chooseUsual(list[0])
+        // the choice is the words of a normal draft: it lands on the editable draft, nothing is saved
+        #expect(m.text == "Csirke rizzsel")
+        #expect(m.stage == .draft)
+        #expect(m.draft?.items.isEmpty == false)
+    }
+
+    @Test func noHistoryIsAnHonestEmptyListNotAnInventedRow() async {
+        let m = usualsModel([])
+        m.show(.usuals)
+        await m.loadLists()
+        #expect(m.usuals == [])
+        #expect(m.listProblem == nil)
+    }
+
+    @Test func usualsRowsSayHowOftenAndInWhichWindow() {
+        let u = UsualMeal(key: "lunch:csirke rizzsel", title: "Csirke rizzsel", slot: "lunch", count: 3, lastLoggedAt: Date())
+        #expect(usualMealLine(u) == "Ebéd · 3× az elmúlt 4 hétben")
+        #expect(usualMealLine(UsualMeal(key: "k", title: "Tojás", slot: "dinner", count: 1, lastLoggedAt: Date())) == "Vacsora · 1× az elmúlt 4 hétben")
+    }
+}

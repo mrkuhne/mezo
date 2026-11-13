@@ -9,17 +9,19 @@ import BoopDesign
 
 /// How the composer opens: the entrance the owner chose, words already typed, or a confirmation card to look over.
 struct MealStart: Identifiable {
-    enum Entrance: Equatable { case pick, photo, text, recipe, pantry, barcode }
+    enum Entrance: Equatable { case pick, photo, text, recipe, pantry, barcode, usual, serving }
     let id = UUID()
     var entrance: Entrance = .pick
     var text = ""
     var card: PendingDraft?
+    /// A shelf or catalog food the owner chose to eat (the Kamra): it opens the serving confirmation, in grams.
+    var serving: LookupItem?
 }
 
 /// The composer's state and its decisions, apart from any view.
 @MainActor @Observable
 final class MealComposerModel {
-    enum Stage: Equatable { case pick, working, draft, queued, recipes, pantry, barcode, serving }
+    enum Stage: Equatable { case pick, working, draft, queued, recipes, pantry, barcode, serving, usuals }
     enum SaveOutcome: Equatable { case saved(String), failed(String) }
 
     private(set) var stage: Stage = .pick
@@ -50,11 +52,14 @@ final class MealComposerModel {
     private var parkedPhotoRef: UUID?
     private(set) var recipes: [Recipe]?
     private(set) var shelf: [PantryRow]?
+    /// The owner's usual meals, ranked by the server (the fifth entrance).
+    private(set) var usuals: [UsualMeal]?
     private(set) var listProblem: String?
 
     private let drafter: any MealDrafting
     private let saver: @Sendable (MealDraft, UUID, Date) async throws -> BoopCore.Meal
     private let lists: (recipes: @Sendable () async throws -> [Recipe], shelf: @Sendable () async throws -> [PantryRow])?
+    private let usualsLoader: (@Sendable () async throws -> [UsualMeal])?
     private let outbox: FoodOutbox?
     private let online: () -> Bool
     private let clock: () -> Date
@@ -64,9 +69,10 @@ final class MealComposerModel {
 
     init(drafter: any MealDrafting, saver: @escaping @Sendable (MealDraft, UUID, Date) async throws -> BoopCore.Meal,
          lists: (recipes: @Sendable () async throws -> [Recipe], shelf: @Sendable () async throws -> [PantryRow])? = nil,
+         usuals: (@Sendable () async throws -> [UsualMeal])? = nil,
          outbox: FoodOutbox?, online: @escaping () -> Bool = { true }, clock: @escaping () -> Date = { Date() },
          calendar: Calendar = .current) {
-        self.drafter = drafter; self.saver = saver; self.lists = lists; self.outbox = outbox; self.online = online
+        self.drafter = drafter; self.saver = saver; self.lists = lists; self.usualsLoader = usuals; self.outbox = outbox; self.online = online
         self.clock = clock; self.calendar = calendar
         capturedAt = clock()
     }
@@ -74,6 +80,7 @@ final class MealComposerModel {
     convenience init(food: FoodClient, outbox: FoodOutbox?, online: @escaping () -> Bool, clock: @escaping () -> Date = { BoopClock.now() }) {
         self.init(drafter: food, saver: { draft, ref, at in try await food.save(draft, clientRef: ref, capturedAt: at) },
                   lists: (recipes: { try await food.recipes() }, shelf: { try await food.pantry() }),
+                  usuals: { try await food.usuals(slot: FoodClient.slot(at: BoopClock.now(), cal: .current)) },
                   outbox: outbox, online: online, clock: clock)
     }
 
@@ -108,8 +115,10 @@ final class MealComposerModel {
     func confirmServing(_ line: DraftItem) {
         guard let scanned else { return }
         capturedAt = clock()
+        // A food chosen from the Kamra has no scanned code: the draft carries none (and no lookup source).
+        let scannedCode = !scanned.code.isEmpty
         draft = MealDraft(date: dayString(capturedAt), slot: FoodClient.slot(at: capturedAt, cal: calendar), title: nil,
-                          items: [line], barcode: scanned.code, lookupSource: scanned.source)
+                          items: [line], barcode: scannedCode ? scanned.code : nil, lookupSource: scannedCode ? scanned.source : nil)
         barcode = nil; self.scanned = nil
         stage = .draft
     }
@@ -211,7 +220,22 @@ final class MealComposerModel {
         stage = .draft
     }
 
+    /// One of the usual meals, as the words of an ordinary draft: Boop computes it (online) or keeps it on the phone
+    /// (offline) exactly like typed words — nothing is saved without the owner's tap on the draft.
+    func chooseUsual(_ usual: UsualMeal) async {
+        show(.pick)
+        text = usual.title
+        await submit()
+    }
+
     func loadLists() async {
+        if stage == .usuals {
+            guard let usualsLoader else { listProblem = "Most nem érem el."; return }
+            listProblem = nil
+            do { usuals = try await usualsLoader() }
+            catch { listProblem = (error as? FoodFetchError) == .offline ? "Nincs net — a listához kell." : "Most nem sikerült betölteni." }
+            return
+        }
         guard let lists else { listProblem = "Most nem érem el."; return }
         listProblem = nil
         do {
@@ -337,6 +361,7 @@ private struct MealComposerHost: View {
         case .pantry: "Mit a kamrából?"
         case .barcode: "Vonalkód"
         case .serving: "Mennyit ettél belőle?"
+        case .usuals: "Szokásos"
         }
     }
 
@@ -347,7 +372,7 @@ private struct MealComposerHost: View {
             case .working: working
             case .draft: draftView
             case .queued: queued
-            case .recipes, .pantry: list
+            case .recipes, .pantry, .usuals: list
             case .barcode: barcodeView
             case .serving: servingView
             }
@@ -369,11 +394,13 @@ private struct MealComposerHost: View {
             case .recipe: model.show(.recipes)
             case .pantry: model.show(.pantry)
             case .barcode: model.show(.barcode)
+            case .usual: model.show(.usuals)
+            case .serving: if let facts = start.serving { model.showServing(facts, source: .catalog, code: "") }
             case .pick: break
             }
         }
         .task { model.profile = try? await food.sensitivity() }
-        .task(id: model.stage) { if model.stage == .recipes || model.stage == .pantry { await model.loadLists() } }
+        .task(id: model.stage) { if model.stage == .recipes || model.stage == .pantry || model.stage == .usuals { await model.loadLists() } }
         .interactiveDismissDisabled(model.stage == .working || model.saving)
     }
 
@@ -405,7 +432,17 @@ private struct MealComposerHost: View {
             HStack(spacing: 8) {
                 entrance("book-sage", "Recept") { model.show(.recipes) }
                 entrance("bowl-sage", "Kamra") { model.show(.pantry) }
-                if PhotoCapture.cameraAvailable { entrance("plus-ink", "Képtár") { showLibrary = true } }
+                entrance("repeat-peach", "Szokásos") { model.show(.usuals) }
+            }
+            if PhotoCapture.cameraAvailable {
+                Button { showLibrary = true } label: {
+                    HStack(spacing: 8) {
+                        NKGlyph("plus-ink", .white, size: 14)
+                        Text("Képet választok a képtárból").nkFont(13, .medium).foregroundStyle(.white.opacity(0.85))
+                    }
+                    .padding(.horizontal, 14).frame(minHeight: 36).background(Capsule().fill(.white.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
             }
             HStack(spacing: 10) {
                 TextField("", text: $model.text, prompt: Text("Mondd vagy írd: vacsora, csirke rizzsel…").foregroundStyle(.white.opacity(0.45)),
@@ -467,7 +504,8 @@ private struct MealComposerHost: View {
 
     @ViewBuilder private var servingView: some View {
         if let scanned = model.scanned {
-            ServingConfirm(facts: scanned.item, onConfirm: { model.confirmServing($0) }, onBack: { model.show(.barcode) })
+            ServingConfirm(facts: scanned.item, onConfirm: { model.confirmServing($0) },
+                           onBack: { scanned.code.isEmpty ? onDone(nil) : model.show(.barcode) })
         }
     }
 
@@ -621,6 +659,13 @@ private struct MealComposerHost: View {
                     if recipes.isEmpty { Text("Még nincs mentett recepted.").nkFont(14).foregroundStyle(.white.opacity(0.7)) }
                     ForEach(recipes) { r in
                         row(r.name, "\(huInt(Int((r.macros.kcal / Double(max(r.servings, 1))).rounded()))) kcal adagonként") { model.use(DraftItem(recipe: r)) }
+                    }
+                } else { loadingRow }
+            } else if model.stage == .usuals {
+                if let usuals = model.usuals {
+                    if usuals.isEmpty { Text("Még nincs elég rögzített étkezésed ahhoz, hogy szokásosat mondjak — pár nap után itt lesznek.").nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true) }
+                    ForEach(usuals) { u in
+                        row(u.title, usualMealLine(u)) { Task { await model.chooseUsual(u) } }
                     }
                 } else { loadingRow }
             } else {

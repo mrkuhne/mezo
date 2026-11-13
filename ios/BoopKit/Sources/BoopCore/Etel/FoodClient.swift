@@ -56,6 +56,34 @@ public struct FoodClient: Sendable {
         }
     }
 
+    /// Seven days from `start` (one read, no meal bodies): each day's targets against what was eaten, its kímélő mode and
+    /// the kcal its skipped meals took off the budget.
+    public func week(from start: Date) async throws -> FuelWeek {
+        try await call {
+            switch try await client.getFuelWeek(path: .init(start: ymd(start))) {
+            case .ok(let ok): return Self.map(try ok.body.json)
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// The owner's usual meals, ranked by the server (`UsualMealRanker`): the window `slot` first, then how often, then how
+    /// recently. Empty with no history.
+    public func usuals(slot: String? = nil) async throws -> [UsualMeal] {
+        try await call {
+            let wanted = slot.flatMap { Operations.getUsualMeals.Input.Query.slotPayload(rawValue: $0) }
+            switch try await client.getUsualMeals(query: .init(slot: wanted)) {
+            case .ok(let ok):
+                return try ok.body.json.usuals.map {
+                    UsualMeal(key: $0.key, title: $0.title, slot: $0.slot.rawValue, count: $0.count, lastLoggedAt: $0.lastLoggedAt)
+                }
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
     // MARK: - The coach
 
     /// The coach's verdicts on a day's meals, by meal id. Empty when the coach is off or has nothing cached — never an
@@ -356,6 +384,104 @@ public struct FoodClient: Sendable {
             case .undocumented: throw FoodFetchError.server
             }
         }
+    }
+
+    // MARK: - Putting a food on the shelf
+
+    /// A product page's facts (nothing is stored); nil when the page carries no nutrition facts.
+    public func scrapeFood(url: String) async throws -> NewPantryFood? {
+        let response: Components.Schemas.PantryScrapeResponse = try await call(mapsRefusals: true) {
+            switch try await client.scrapePantryItem(body: .json(.init(url: url))) {
+            case .ok(let ok): return try ok.body.json
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .badGateway, .serviceUnavailable: throw FoodFetchError.unavailable
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+        return response.result.map { Self.food(from: $0.value1, origin: .link(url)) }
+    }
+
+    /// A nutrition label photo read by the model (nothing is stored); nil when no facts are legible.
+    public func readLabel(_ photo: Data) async throws -> NewPantryFood? {
+        let response: Components.Schemas.PantryScrapeResponse = try await call(mapsRefusals: true) {
+            let part = Operations.photoExtractPantryItem.Input.Body.multipartFormPayload.photo(
+                .init(payload: .init(body: HTTPBody(photo)), filename: "label.jpg"))
+            switch try await client.photoExtractPantryItem(body: .multipartForm(MultipartBody([part]))) {
+            case .ok(let ok): return try ok.body.json
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .badGateway, .serviceUnavailable: throw FoodFetchError.unavailable
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+        return response.result.map { Self.food(from: $0.value1, origin: .labelPhoto) }
+    }
+
+    /// The one save every add route ends in. A typed food goes in as the owner's own (`manual`); a barcode hit, a page and
+    /// a label photo keep their provenance and the allergen states they came with. Returns the shelf row.
+    public func addFood(_ food: NewPantryFood) async throws -> PantryRow {
+        let trimmed = food.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let response: Components.Schemas.PantryItemResponse = try await call(mapsRefusals: true) {
+            switch food.origin {
+            case .manual:
+                let request = Components.Schemas.PantryItemRequest(
+                    kind: .food, name: trimmed, brand: food.brand,
+                    source: .init(value1: .manual),
+                    category: food.category.flatMap { .init(rawValue: $0) },
+                    per: food.per, unit: food.unit, kcal: food.kcal, proteinG: food.proteinG, carbsG: food.carbsG, fatG: food.fatG,
+                    fiberG: food.fiberG, sugarG: food.sugarG, saltG: food.saltG, saturatedFatG: food.saturatedFatG, nova: food.nova)
+                switch try await client.createPantryItem(body: .json(request)) {
+                case .created(let ok): return try ok.body.json
+                case .badRequest: throw FoodFetchError.rejected
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .undocumented: throw FoodFetchError.server
+                }
+            case .barcode, .link, .labelPhoto:
+                var sourceUrl: String?
+                if case .link(let u) = food.origin { sourceUrl = u }
+                let request = Components.Schemas.PantryImportRequest(
+                    name: trimmed, brand: food.brand, barcode: food.barcode,
+                    category: food.category.flatMap { .init(rawValue: $0) },
+                    per: food.per, unit: food.unit, kcal: food.kcal, proteinG: food.proteinG, carbsG: food.carbsG, fatG: food.fatG,
+                    fiberG: food.fiberG, sugarG: food.sugarG, saltG: food.saltG, saturatedFatG: food.saturatedFatG, nova: food.nova,
+                    sourceUrl: sourceUrl, confidence: food.confidence,
+                    origin: food.origin == .labelPhoto ? "photo" : nil,
+                    allergens: food.allergens.isEmpty ? nil : .init(additionalProperties: food.allergens.mapValues(\.rawValue)))
+                switch try await client.importPantryItem(body: .json(request)) {
+                case .created(let ok): return try ok.body.json
+                case .badRequest: throw FoodFetchError.rejected
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .undocumented: throw FoodFetchError.server
+                }
+            }
+        }
+        var row = PantryRow(id: UUID(uuidString: response.id), catalogId: UUID(uuidString: response.catalogId), name: response.name,
+                            brand: response.brand, kind: response.kind.rawValue, per: food.per, unit: food.unit, kcal: food.kcal,
+                            proteinG: food.proteinG, carbsG: food.carbsG, fatG: food.fatG, fiberG: food.fiberG, sugarG: food.sugarG,
+                            saltG: food.saltG, saturatedFatG: food.saturatedFatG, nova: food.nova,
+                            allergens: Self.allergens(response.allergens?.additionalProperties), onShelf: true,
+                            source: response.source, category: response.category, barcode: response.barcode)
+        if row.allergens.isEmpty { row.allergens = food.allergens }
+        return row
+    }
+
+    /// Puts a catalog food on the owner's shelf (idempotent: a row already there comes back as it is).
+    public func addFromCatalog(_ row: PantryRow) async throws -> PantryRow {
+        guard let catalogId = row.catalogId else { throw FoodFetchError.rejected }
+        let response: Components.Schemas.PantryItemResponse = try await call(mapsRefusals: true) {
+            switch try await client.addPantryItemFromCatalog(body: .json(.init(catalogId: catalogId.wire))) {
+            case .ok(let ok): return try ok.body.json
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .notFound: throw FoodFetchError.notFound
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+        var shelf = row
+        shelf.id = UUID(uuidString: response.id); shelf.onShelf = true
+        if let a = response.allergens?.additionalProperties { shelf.allergens = Self.allergens(a) }
+        return shelf
     }
 
     /// The owner's supplement stash — the names behind the protocol's rows.
@@ -724,14 +850,33 @@ extension FoodClient {
 
     static func map(_ i: Components.Schemas.IngredientResponse) -> PantryRow {
         PantryRow(id: UUID(uuidString: i.id), catalogId: UUID(uuidString: i.catalogId), name: i.name, brand: i.brand, kind: i.kind.rawValue,
-                  per: i.per, unit: i.unit, kcal: i.macros.kcal, proteinG: i.macros.p, carbsG: i.macros.c, fatG: i.macros.f, nova: i.nova,
-                  allergens: [:], onShelf: true)
+                  per: i.per, unit: i.unit, kcal: i.macros.kcal, proteinG: i.macros.p, carbsG: i.macros.c, fatG: i.macros.f,
+                  fiberG: i.fiberG, sugarG: i.sugarG, saltG: i.saltG, saturatedFatG: i.saturatedFatG, nova: i.nova,
+                  allergens: allergens(i.allergens?.additionalProperties), onShelf: true, source: i.source.rawValue, category: i.category,
+                  barcode: i.barcode, sharedFrom: i.sharedFrom?.value1.authorName)
+    }
+
+    static func map(_ r: Components.Schemas.FuelWeekResponse) -> FuelWeek {
+        FuelWeek(start: r.start, days: r.days.map { d in
+            FuelDayRollup(date: d.date, targets: map(d.targets), consumed: map(d.consumed), fuelMode: d.fuelMode?.rawValue,
+                          recoveryCategory: d.recoveryCategory?.rawValue, recoveryDay: d.recoveryDay, skippedKcal: d.skippedKcal ?? 0,
+                          plannedMovementKcal: d.energy?.plannedMovementKcal)
+        }, mealScoreAvg: r.mealScoreAvg)
+    }
+
+    /// A scraped page or a read label as the one shape the add routes end in.
+    static func food(from r: Components.Schemas.PantryScrapeResult, origin: NewPantryFood.Origin) -> NewPantryFood {
+        NewPantryFood(name: r.name, brand: r.brand, category: r.category?.rawValue, per: r.per, unit: r.unit, kcal: r.kcal,
+                      proteinG: r.proteinG, carbsG: r.carbsG, fatG: r.fatG, fiberG: r.fiberG, sugarG: r.sugarG, saltG: r.saltG,
+                      saturatedFatG: r.saturatedFatG, nova: r.nova, origin: origin, confidence: r.confidence, needsReview: r.needsReview)
     }
 
     static func map(_ e: Components.Schemas.PantryCatalogEntry) -> PantryRow {
         PantryRow(id: nil, catalogId: UUID(uuidString: e.id), name: e.name, brand: e.brand, kind: e.kind.rawValue, per: e.per, unit: e.unit,
-                  kcal: e.kcal, proteinG: e.proteinG, carbsG: e.carbsG, fatG: e.fatG, nova: e.nova,
-                  allergens: allergens(e.allergens?.additionalProperties), onShelf: false)
+                  kcal: e.kcal, proteinG: e.proteinG, carbsG: e.carbsG, fatG: e.fatG,
+                  fiberG: e.fiberG, sugarG: e.sugarG, saltG: e.saltG, saturatedFatG: e.saturatedFatG, nova: e.nova,
+                  allergens: allergens(e.allergens?.additionalProperties), onShelf: false, source: e.source.rawValue, category: e.category,
+                  barcode: e.barcode, sharedFrom: e.authorName)
     }
 
     static func map(_ r: Components.Schemas.SensitivityProfileResponse) -> SensitivityProfile {

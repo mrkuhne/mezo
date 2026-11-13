@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.meal.service.dayplan;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelPlanResponse;
+import io.mrkuhne.mezo.api.dto.UsualMealResponse;
+import io.mrkuhne.mezo.api.dto.UsualMealsResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.RecipeMacros;
@@ -439,7 +441,35 @@ public class DayPlanService {
      * a fabricated number.
      */
     private UsualMeal usualFor(UUID userId, LocalDate date, ZoneId zone, SlotKey slot) {
-        List<LoggedMeal> history = meals
+        return UsualMealRanker.rank(usualHistory(userId, date, zone), slot, USUAL_LIMIT).stream()
+            .filter(u -> u.slot() == slot)
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
+     * The owner's ranked "szokásosak" as of today (owner zone), the window {@code bucket} first. The same read and the
+     * same ranker the next-meal tip uses — nothing re-implemented here. Empty history is an empty list.
+     */
+    @Transactional(readOnly = true)
+    public UsualMealsResponse usuals(UUID userId, SlotKey bucket) {
+        ZoneId zone = zone();
+        List<UsualMealResponse> rows = UsualMealRanker.rank(usualHistory(userId, LocalDate.now(zone), zone), bucket, USUAL_LIMIT)
+            .stream()
+            .map(u -> UsualMealResponse.builder()
+                .key(u.key()).title(u.title())
+                .slot(UsualMealResponse.SlotEnum.fromValue(u.slot().wire()))
+                .count(u.count())
+                .lastLoggedAt(u.lastLoggedAt().atOffset(java.time.ZoneOffset.UTC))
+                .kcal(u.kcal())
+                .build())
+            .toList();
+        return UsualMealsResponse.builder().usuals(rows).build();
+    }
+
+    /** The last {@value #USUAL_HISTORY_DAYS} days up to yesterday, as the ranker reads them: ONE query, no items. */
+    private List<LoggedMeal> usualHistory(UUID userId, LocalDate date, ZoneId zone) {
+        return meals
             .findByCreatedByAndDeletedFalseAndMealDateBetweenOrderByMealDateAsc(
                 userId, date.minusDays(USUAL_HISTORY_DAYS), date.minusDays(1))
             .stream()
@@ -447,10 +477,6 @@ public class DayPlanService {
             .map(m -> new LoggedMeal(m.getId(), m.getSlot(), m.getTitle(), null, m.getLoggedAt(),
                 m.getLoggedAt().atZone(zone).toLocalTime().truncatedTo(ChronoUnit.MINUTES)))
             .toList();
-        return UsualMealRanker.rank(history, slot, USUAL_LIMIT).stream()
-            .filter(u -> u.slot() == slot)
-            .findFirst()
-            .orElse(null);
     }
 
     // --- small helpers ---------------------------------------------------------------------------

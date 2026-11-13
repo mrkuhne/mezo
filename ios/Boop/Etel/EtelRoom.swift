@@ -36,6 +36,14 @@ final class EtelStore {
     private(set) var recipesProblem: FoodFetchError?
     private(set) var recipeImages: [UUID: UIImage] = [:]
     private(set) var profile: SensitivityProfile?
+    /// The owner's shelf (Kamra), the week (Hét) and each of its days' mean meal score (points, by date).
+    private(set) var shelf: [PantryRow] = []
+    private(set) var shelfLoaded = false
+    private(set) var shelfProblem: FoodFetchError?
+    private(set) var week: FuelWeek?
+    private(set) var weekLoaded = false
+    private(set) var weekProblem: FoodFetchError?
+    private(set) var weekScores: [String: Int] = [:]
     private(set) var groups: [SupplementGroup] = []
     private(set) var groupsLoaded = false
     private(set) var groupsProblem: FoodFetchError?
@@ -114,6 +122,56 @@ final class EtelStore {
             return out
         }
         for (id, data) in fetched { if let data, let image = UIImage(data: data) { photos[id] = image } }
+    }
+
+    // MARK: - Kamra (B4 Task 13)
+
+    /// The shelf and the owner's sensitivity profile (for the row badges). A failed reload keeps what is on screen.
+    func loadShelf(food: FoodClient) async {
+        self.food = food
+        switch await Self.attempt({ try await food.pantry() }) {
+        case .success(let rows): shelf = rows.filter { $0.kind == "food" }; shelfProblem = nil
+        case .failure(let e): shelfProblem = e
+        }
+        shelfLoaded = true
+        if case .success(let p) = await Self.attempt({ try await food.sensitivity() }) { profile = p }
+    }
+
+    /// A food the owner just put on the shelf: at the top of the list at once (the server returned the stored row).
+    func shelfAdded(_ row: PantryRow) {
+        shelf.removeAll { $0.id != nil && $0.id == row.id }
+        shelf.insert(row, at: 0)
+        shelfLoaded = true; shelfProblem = nil
+    }
+
+    // MARK: - Hét (B4 Task 13)
+
+    /// The last seven days ending today: one rollup read, then each logged day's meals for its own mean score.
+    func loadWeek(food: FoodClient, now: Date) async {
+        self.food = food
+        let start = Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now
+        switch await Self.attempt({ try await food.week(from: start) }) {
+        case .success(let w): week = w; weekProblem = nil
+        case .failure(let e): weekProblem = e
+        }
+        weekLoaded = true
+        guard let week else { return }
+        let wanted = week.days.filter { $0.consumed.kcal > 0 && $0.fuelMode == nil }.map(\.date)
+        let scored = await withTaskGroup(of: (String, Int?).self) { group in
+            for date in wanted {
+                group.addTask {
+                    let p = date.split(separator: "-").compactMap { Int($0) }
+                    guard p.count == 3, let at = Calendar.current.date(from: DateComponents(year: p[0], month: p[1], day: p[2], hour: 12)),
+                          let day = try? await food.day(at) else { return (date, nil) }
+                    let scores = day.meals.compactMap(\.score)
+                    return (date, scores.isEmpty ? nil : Int((scores.reduce(0, +) / Double(scores.count) * 100).rounded()))
+                }
+            }
+            var out: [String: Int] = [:]
+            for await (date, points) in group { if let points { out[date] = points } }
+            return out
+        }
+        weekScores = scored
     }
 
     // MARK: - Recipes (B4 Task 12)
@@ -297,6 +355,18 @@ enum RecipeSheet: Identifiable {
     }
 }
 
+/// What the Kamra tab's sheet shows: a food, or one of the four add routes.
+enum KamraSheet: Identifiable {
+    case item(PantryRow)
+    case add(PantryAddRoute)
+    var id: String {
+        switch self {
+        case .item(let r): "item-\(r.rowKey)"
+        case .add(let route): "add-\(route.rawValue)"
+        }
+    }
+}
+
 /// Holds the import model for the life of the sheet (the sheet's content closure re-runs; the model must not).
 struct RecipeImportHost: View {
     @State private var model: RecipeImportModel
@@ -336,6 +406,9 @@ struct EtelRoom: View {
     @State private var dimension: DimensionSelection?
     /// The Receptek tab's sheet: a recipe, an import, or the workshop (one at a time, page level).
     @State private var recipeSheet: RecipeSheet?
+    /// The Kamra tab's sheet (a food, or an add route) and the Hét tab's opened day (page level, one at a time each).
+    @State private var kamraSheet: KamraSheet?
+    @State private var hetDay: HetDay?
 
     init(tab: EtelTab = .ma) {
         #if DEBUG
@@ -361,10 +434,10 @@ struct EtelRoom: View {
             case .receptek:
                 EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },
                              onOpen: { recipeSheet = .detail($0.id) }, onRetry: { Task { await reload() } })
-            case .kamra, .het:
-                NKDrillSection(number: 1, label: tab.rawValue.uppercased()) {
-                    Text("Ez a lap hamarosan itt lesz.").nkFont(15).foregroundStyle(.white.opacity(0.7))
-                }
+            case .kamra:
+                EtelKamra(store: store, onAdd: { kamraSheet = .add($0) }, onOpen: { kamraSheet = .item($0) }, onRetry: { Task { await reload() } })
+            case .het:
+                EtelHet(store: store, onOpen: { hetDay = $0 }, onRetry: { Task { await reload() } })
             }
             Color.clear.frame(height: 20)
         }
@@ -405,6 +478,31 @@ struct EtelRoom: View {
             .presentationCornerRadius(34)
             .presentationDragIndicator(.visible)
         }
+        .sheet(item: Binding(get: { [k = kamraSheet] in k }, set: { kamraSheet = $0 })) { sheet in
+            Group {
+                switch sheet {
+                case .item(let row):
+                    PantryItemDetailSheet(row: row, store: store, onEat: eat, onToast: { toast = $0 })
+                case .add(let route):
+                    PantryAddSheet(route: route, profile: store.profile) { added in
+                        store.shelfAdded(added)
+                        kamraSheet = nil
+                        toast = "\(added.name) a kamrádban"
+                    }
+                }
+            }
+            .presentationDetents([.large])
+            .presentationBackground(NK.ground)
+            .presentationCornerRadius(34)
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(item: Binding(get: { [d = hetDay] in d }, set: { hetDay = $0 })) { day in
+            HetDaySheet(day: day, store: store)
+                .presentationDetents([.large])
+                .presentationBackground(NK.ground)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
         .task { await reload() }
         #if DEBUG
         // Review hooks (`-etelSheet detail|import|text|workshop`): open the Receptek sheets without tapping.
@@ -417,11 +515,28 @@ struct EtelRoom: View {
             case "import": recipeSheet = .importer(.link)
             case "text": recipeSheet = .importer(.text)
             case "workshop": recipeSheet = .workshop
+            case "kamra-item": if let food { await store.loadShelf(food: food); if let r = store.shelf.first { kamraSheet = .item(r) } }
+            case "kamra-catalog": if let food, let r = (try? await food.pantry(query: "zab"))?.first(where: { !$0.onShelf }) { kamraSheet = .item(r) }
+            case "add-link": kamraSheet = .add(.link)
+            case "add-label": kamraSheet = .add(.label)
+            case "add-manual": kamraSheet = .add(.manual)
+            case "add-barcode": kamraSheet = .add(.barcode)
+            case "usuals": composer = MealStart(entrance: .usual)
+            case "het-day": if let food { await store.loadWeek(food: food, now: BoopClock.now()); if let w = store.week {
+                hetDay = hetWeek(w, scores: store.weekScores, today: store.ymd).days.dropLast().last } }
             default: break
             }
         }
         #endif
-        .task(id: tab) { if tab == .receptek, !store.recipesLoaded, let food { await store.loadRecipes(food: food) } }
+        .task(id: tab) {
+            guard let food else { return }
+            switch tab {
+            case .receptek: if !store.recipesLoaded { await store.loadRecipes(food: food) }
+            case .kamra: if !store.shelfLoaded { await store.loadShelf(food: food) }
+            case .het: if !store.weekLoaded { await store.loadWeek(food: food, now: BoopClock.now()) }
+            case .ma: break
+            }
+        }
         .task(id: ritmus?.mealDraftsTick) { await store.refreshPending(ritmus?.food) }
         .refreshable { await reload() }
     }
@@ -433,6 +548,18 @@ struct EtelRoom: View {
         await store.refreshPending(ritmus?.food)
         await store.load(food: food, now: BoopClock.now())
         if store.recipesLoaded || tab == .receptek { await store.loadRecipes(food: food) }
+        if store.shelfLoaded || tab == .kamra { await store.loadShelf(food: food) }
+        if store.weekLoaded || tab == .het { await store.loadWeek(food: food, now: BoopClock.now()) }
+    }
+
+    /// "Megeszem belőle" from a food's page: the sheet closes, then the serving confirmation opens (two sheets never
+    /// swap in one tick).
+    private func eat(_ facts: LookupItem) {
+        kamraSheet = nil
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            composer = MealStart(entrance: .serving, serving: facts)
+        }
     }
 
     /// A recipe the owner just saved: into the library, the sheet closes, the toast says so.

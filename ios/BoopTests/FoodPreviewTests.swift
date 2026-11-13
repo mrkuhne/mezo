@@ -48,7 +48,7 @@ struct FoodPreviewTests {
         #expect(try await food.recipe(recipes[0].id).steps.count == 3)
         #expect(try await food.importRecipe(.url("https://pelda.hu/r"))?.lines.count == 3)
         #expect(try await food.importRecipe(.photo(Data([1, 2, 3])))?.needsReview == true)
-        #expect(try await food.pantry().count == 1)
+        #expect(try await food.pantry().count > 4)
         #expect(try await food.pantry(query: "zab").first?.onShelf == false)
         let profile = try await food.sensitivity()
         #expect(profile.items.count == 2)
