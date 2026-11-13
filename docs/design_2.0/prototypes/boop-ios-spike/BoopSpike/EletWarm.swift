@@ -36,23 +36,41 @@ enum EWarm {
 struct EPhotoHead: View {
     var metric: Int
     var height: CGFloat = 330
+    /// Round 10 (owner, 2026-11-13): "a képek mögötte nem szépek így".
+    /// 0 = the original full-bleed photo · 1 = "pára": the photo blurred into weather behind the orb
+    /// · 2 = "sáv": a painted sky where the orb lives, the sharp photo fading in under the rule.
+    static var style: Int { EArg.int("eletHead", 0, 2, 1) }
     var body: some View {
         let m = EMetric.all[metric]
+        let style = Self.style
         Color.clear.frame(height: height)
             .overlay {
                 if let name = EWarm.moodPhoto(metric) {
-                    photo(name).resizable().scaledToFill()
-                        .saturation(0.8).brightness(-0.06)
+                    ZStack {
+                        if style == 2 { PaintedLandscape(sky: m.sky) }
+                        photo(name).resizable().scaledToFill()
+                            .saturation(style == 1 ? 0.7 : 0.8)
+                            .brightness(style == 1 ? -0.1 : -0.06)
+                            .blur(radius: style == 1 ? 22 : 0)
+                            .scaleEffect(style == 1 ? 1.18 : 1)
+                            .mask(style == 2
+                                  ? AnyView(LinearGradient(stops: [
+                                        .init(color: .clear, location: 0.30),
+                                        .init(color: .white.opacity(0.65), location: 0.52),
+                                        .init(color: .white, location: 0.70),
+                                    ], startPoint: .top, endPoint: .bottom))
+                                  : AnyView(Color.white))
+                    }
                 } else {
-                    PaintedLandscape(sky: EMetric.all[metric].sky)
+                    PaintedLandscape(sky: m.sky)
                 }
             }
             .clipped()
             .overlay(
                 EWarm.moodPhoto(metric) == nil ? nil :
                 LinearGradient(stops: [
-                    .init(color: m.top.opacity(0.88), location: 0),
-                    .init(color: m.top.opacity(0.42), location: 0.34),
+                    .init(color: m.top.opacity(style == 2 ? 0.70 : 0.88), location: 0),
+                    .init(color: m.top.opacity(style == 2 ? 0.30 : 0.42), location: 0.34),
                     .init(color: m.sky[1].opacity(0.22), location: 0.56),
                     .init(color: gBase.opacity(0.72), location: 0.84),
                     .init(color: gBase, location: 1),
