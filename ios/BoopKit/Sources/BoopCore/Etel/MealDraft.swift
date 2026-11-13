@@ -93,7 +93,7 @@ public extension DraftItem {
         guard let id = row.id, let per = row.per, per > 0, let unit = row.unit else { return nil }
         self.init(source: .pantry, pantryItemId: id, name: row.name, amount: per, unit: unit, per: per, basisUnit: unit,
                   kcal: row.kcal ?? 0, proteinG: row.proteinG ?? 0, carbsG: row.carbsG ?? 0, fatG: row.fatG ?? 0, nova: row.nova,
-                  confidence: 1, needsReview: row.kcal == nil, allergens: row.allergens)
+                  confidence: 1, needsReview: row.kcal == nil || row.proteinG == nil || row.carbsG == nil || row.fatG == nil, allergens: row.allergens)
     }
 
     /// One serving ("adag") of a saved recipe: the server snapshots the same per-serving numbers (whole rollup ÷ servings).

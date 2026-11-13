@@ -287,6 +287,18 @@ struct DraftNoticeTests {
         #expect(draftNotice(draft(barcode: nil, items: [])) != nil)
     }
 
+    @Test func partialAllergenMapStillCarriesTheNoDataCaveat() {
+        let profile = SensitivityProfile(items: [SensitivityItem(key: "milk", level: .intolerance, note: nil)],
+                                         novaRule: NovaRule(enabled: false, maxLevel: 4))
+        var line = DraftItem(source: .estimate, name: "kenyér", amount: 100, unit: "g", per: 100, basisUnit: "g",
+                             kcal: 250, proteinG: 8, carbsG: 50, fatG: 2)
+        line.allergens = ["gluten": .contains]
+        #expect(draftBadges(for: line, profile: profile).isEmpty)
+        #expect(draftHasUnknownAllergens(draft(items: [line]), profile: profile))
+        line.allergens = ["gluten": .contains, "milk": .traces]
+        #expect(!draftHasUnknownAllergens(draft(items: [line]), profile: profile))
+    }
+
     @Test func badgesNeverReadSilenceAsSafe() {
         let profile = SensitivityProfile(items: [SensitivityItem(key: "milk", level: .intolerance, note: nil)],
                                          novaRule: NovaRule(enabled: true, maxLevel: 2))

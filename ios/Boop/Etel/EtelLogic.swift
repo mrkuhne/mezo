@@ -294,10 +294,13 @@ func draftBadges(for item: DraftItem, profile: SensitivityProfile?) -> [DraftBad
     return out
 }
 
-/// True when the owner has allergen rules and some line carries no allergen information at all.
+/// True when the owner has allergen rules and some line says nothing (or "unknown") about an allergen the owner watches.
 func draftHasUnknownAllergens(_ draft: MealDraft, profile: SensitivityProfile?) -> Bool {
-    guard let profile, profile.items.contains(where: \.isStructured) else { return false }
-    return draft.items.contains { $0.allergens.isEmpty }
+    guard let profile else { return false }
+    let watched = profile.items.filter(\.isStructured).map { $0.key.lowercased() }
+    guard !watched.isEmpty else { return false }
+    // silent when a line has no map, or its map lacks (or marks unknown) a key the owner watches
+    return draft.items.contains { i in watched.contains { (i.allergens[$0] ?? .unknown) == .unknown } }
 }
 
 func allergenName(_ key: String) -> String {

@@ -30,7 +30,7 @@ func sensitivityLevelSentence(_ level: SensitivityLevel, key: String) -> String 
     switch level {
     case .allergy: return "Szólok, ha benne van, ha nyomokban benne lehet, és akkor is, ha a termékről nincs adat."
     case .intolerance:
-        return key == "milk" ? "Szólok, ha benne van, és megmondom, miben. Nyomokban csak halkan jelzem. Laktózmentes tej rendben."
+        return key == "milk" ? "Szólok, ha benne van, és megmondom, miben. Nyomokban csak halkan jelzem. A laktózmentes tejet nem ismerem fel: ott is szólok, mert tej van benne; ilyenkor a jelzést nyugodtan figyelmen kívül hagyhatod."
                              : "Szólok, ha benne van, és megmondom, miben. Nyomokban csak halkan jelzem."
     case .avoid: return "Szólok, ha benne van. Nyomokban nem jelzek."
     }
