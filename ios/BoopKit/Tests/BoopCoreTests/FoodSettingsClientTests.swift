@@ -5,6 +5,12 @@ import Testing
 private let pantryId = "6c1f9b63-2d4e-4f1f-8b63-8e0e5d2b1c02"
 private let itemId = "dd805c3a-94b5-4080-9c3a-5f7fce9c8d09"
 
+private func compact(_ body: String?) -> String {
+    guard let data = body?.data(using: .utf8), let obj = try? JSONSerialization.jsonObject(with: data),
+          let out = try? JSONSerialization.data(withJSONObject: obj, options: [.sortedKeys, .withoutEscapingSlashes]) else { return body ?? "" }
+    return String(decoding: out, as: UTF8.self)
+}
+
 /// The settings, kímélő and supplement-list operations (B4 Task 14): what goes on the wire for each.
 @MainActor
 struct FoodSettingsClientTests {
@@ -30,7 +36,7 @@ struct FoodSettingsClientTests {
         draft.splitPreset = "custom"
         let config = try await f.previewDietSettings(draft)
         #expect(config.fromGoal == false)
-        #expect(stub.sent[1].body?.contains(#""proteinPctX10":300"#) == true)
+        #expect(compact(stub.sent[1].body).contains(#""proteinPctX10":300"#) == true)
     }
 
     @Test func savingDietAndFuelSettingsReadsBackTheStoredValues() async throws {
@@ -55,7 +61,7 @@ struct FoodSettingsClientTests {
         let f = try food()
         let made = try await f.createSupplement(name: " Cink ", dose: "15 mg")
         #expect(made == UUID(uuidString: pantryId))
-        #expect(stub.sent[0].body?.contains(#""kind":"supplement""#) == true && stub.sent[0].body?.contains(#""name":"Cink""#) == true)
+        #expect(compact(stub.sent[0].body).contains(#""kind":"supplement""#) == true && compact(stub.sent[0].body).contains(#""name":"Cink""#) == true)
         let item = try await f.addProtocolItem(pantryItemId: made, slotKey: "bedtime", dose: "15 mg")
         #expect(item.slotKey == "bedtime" && item.dose == "15 mg")
         #expect(try await f.setProtocolDose(item.id, dose: "30 mg").dose == "30 mg")

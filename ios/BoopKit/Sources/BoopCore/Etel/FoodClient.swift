@@ -587,7 +587,7 @@ public struct FoodClient: Sendable {
     /// is refused (`rejected`).
     @discardableResult
     public func setDietSettings(_ settings: DietSettings) async throws -> DietSettings {
-        try await call {
+        try await call(mapsRefusals: true) {
             switch try await client.setDietSettings(body: .json(Self.request(settings))) {
             case .ok(let ok): return Self.map(try ok.body.json)
             case .badRequest: throw FoodFetchError.rejected
@@ -599,7 +599,7 @@ public struct FoodClient: Sendable {
 
     /// The targets today would have under an unsaved draft. Nothing is stored and the goal is not re-evaluated.
     public func previewDietSettings(_ settings: DietSettings) async throws -> DietPreview {
-        try await call {
+        try await call(mapsRefusals: true) {
             switch try await client.previewDietSettings(body: .json(Self.request(settings))) {
             case .ok(let ok):
                 let p = try ok.body.json
@@ -625,7 +625,7 @@ public struct FoodClient: Sendable {
 
     @discardableResult
     public func setFuelSettings(_ settings: FuelSettings) async throws -> FuelSettings {
-        try await call {
+        try await call(mapsRefusals: true) {
             switch try await client.setFuelSettings(body: .json(.init(mealsPerDay: settings.mealsPerDay, caffeineCutoff: settings.caffeineCutoff))) {
             case .ok(let ok):
                 let f = try ok.body.json
