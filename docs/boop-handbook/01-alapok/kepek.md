@@ -13,7 +13,7 @@ osszefoglalo: Minden lap tetején egy csendes természetfotó, a kártyákon ped
 A Boop eddig teljesen rajzolt volt. Mostantól két helyen kap igazi fényképet:
 
 - **A lapok teteje** (Ma, Terv, Napló, Boop, a szobák, a kitöltés és az esti zárás): a rajzolt táj helyett
-  csendes természetfotó — hajnal, hegy, köd, tó, felhő —, rajta ugyanaz a színes égbolt, ami eddig is volt.
+  csendes, halk kép — hajnal, hegy, köd, tó, felhő, az Ételnél zöldségek egy sötét deszkán —, rajta ugyanaz a színes égbolt, ami eddig is volt.
   Minden területnek egy állandó képe van, hogy a lap mindig ugyanúgy nézzen ki.
 - **A kártyák és sorok**: Boop javaslatán egy fotósáv arról, amit javasol; a nap állomásain, a naplónapokon
   és a terv-kártyáin egy kis bélyegkép arról, amiről a sor szól (étel, edzés, séta, alvás).
