@@ -119,7 +119,7 @@ struct EletMa: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.415 + geo.safeAreaInsets.top)
+                        hero(height: geo.size.height * 0.50 + geo.safeAreaInsets.top)
                         VStack(alignment: .leading, spacing: 22) {
                             feed
                             folds
@@ -158,10 +158,10 @@ struct EletMa: View {
                         photo(name).resizable().scaledToFill()
                             .saturation(0.8).brightness(-0.06)
                             .overlay(LinearGradient(stops: [
-                                .init(color: day.top.opacity(0.8), location: 0),
-                                .init(color: day.top.opacity(0.3), location: 0.3),
-                                .init(color: day.sky[2].opacity(0.16), location: 0.52),
-                                .init(color: gBase.opacity(0.6), location: 0.82),
+                                .init(color: day.top.opacity(0.52), location: 0),
+                                .init(color: day.top.opacity(0.14), location: 0.26),
+                                .init(color: .clear, location: 0.46),
+                                .init(color: gBase.opacity(0.55), location: 0.84),
                                 .init(color: gBase, location: 1),
                             ], startPoint: .top, endPoint: .bottom))
                             .overlay(Rectangle().fill(day.glow).opacity(0.07).blendMode(.color))
@@ -175,18 +175,28 @@ struct EletMa: View {
 
             VStack(spacing: 0) {
                 HStack {
-                    Text("Csütörtök · 13:40").font(AuraFont.mono(12)).foregroundStyle(.white.opacity(0.75))
-                        .frame(width: 130, alignment: .leading)
+                    Text("boop").font(.custom("Outfit", size: 24).weight(.light)).tracking(3)
+                        .foregroundStyle(.white.opacity(0.9))
                     Spacer()
-                    Text("boop").font(.custom("Outfit", size: 26).weight(.light)).tracking(3).foregroundStyle(.white)
-                    Spacer()
-                    AuraGlyph("person-sage", .white, size: 20).frame(width: 44, height: 44)
+                    AuraGlyph("person-sage", .white, size: 20).frame(width: 42, height: 42)
                         .glassEffect(.clear, in: .circle)
-                        .frame(width: 130, alignment: .trailing)
                 }
-                .padding(.horizontal, 16).padding(.top, 58)
+                .padding(.horizontal, 20).padding(.top, 56)
 
-                orbRibbon.padding(.top, 12)
+                // the welcome: Boop is here, it is this part of this day
+                HStack(alignment: .center, spacing: 13) {
+                    LivingOrb(mood: .good, size: 42, motion: motion, palette: day.orb, glow: true, level: 0.78)
+                        .allowsHitTesting(false)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Jó délutánt").font(AuraFont.serif(31)).foregroundStyle(.white)
+                        Text("CSÜTÖRTÖK · NOVEMBER 13.").font(AuraFont.mono(10.5)).tracking(1.8)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 20).padding(.top, 20)
+
+                orbRibbon.padding(.top, 18)
 
                 EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
                           hue: day.glow, now: 0.47, height: 220)
