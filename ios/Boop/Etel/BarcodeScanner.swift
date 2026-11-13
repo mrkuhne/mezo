@@ -84,6 +84,7 @@ struct BarcodeScanner: UIViewControllerRepresentable {
     final class ScannerHost: UIViewController {
         private let scanner: DataScannerViewController
         private var retries = 0
+        private var visible = false
         private var observer: NSObjectProtocol?
 
         init(_ scanner: DataScannerViewController) { self.scanner = scanner; super.init(nibName: nil, bundle: nil) }
@@ -100,6 +101,8 @@ struct BarcodeScanner: UIViewControllerRepresentable {
 
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
+            if let observer { NotificationCenter.default.removeObserver(observer) }
+            visible = true
             retries = 0
             observer = NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.start() }
@@ -109,13 +112,14 @@ struct BarcodeScanner: UIViewControllerRepresentable {
 
         override func viewDidDisappear(_ animated: Bool) {
             super.viewDidDisappear(animated)
+            visible = false
             if let observer { NotificationCenter.default.removeObserver(observer) }
             observer = nil
             if scanner.isScanning { scanner.stopScanning() }
         }
 
         private func start() {
-            guard !scanner.isScanning, view.window != nil else { return }
+            guard visible, !scanner.isScanning, view.window != nil else { return }
             do { try scanner.startScanning() } catch {
                 guard retries < 20 else { return }
                 retries += 1

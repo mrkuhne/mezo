@@ -65,7 +65,8 @@ struct ServingConfirmation: Equatable {
                   per: facts.per, basisUnit: facts.unit,
                   kcal: facts.kcal ?? 0, proteinG: facts.proteinG ?? 0, carbsG: facts.carbsG ?? 0, fatG: facts.fatG ?? 0,
                   nova: facts.nova, fiberG: facts.fiberG, sugarG: facts.sugarG, saltG: facts.saltG,
-                  saturatedFatG: facts.saturatedFatG, confidence: 1, needsReview: facts.kcal == nil, allergens: facts.allergens)
+                  saturatedFatG: facts.saturatedFatG, confidence: 1,
+                  needsReview: facts.kcal == nil || facts.proteinG == nil || facts.carbsG == nil || facts.fatG == nil, allergens: facts.allergens)
     }
 
     func label(_ mode: Mode) -> String {

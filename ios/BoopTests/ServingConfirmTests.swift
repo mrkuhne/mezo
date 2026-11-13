@@ -65,6 +65,12 @@ struct ServingConfirmTests {
         #expect(c.line().needsReview)
     }
 
+    @Test func aMissingMacroMarksTheLineForReview() {
+        var facts = yogurt(); facts.carbsG = nil
+        #expect(ServingConfirmation(facts: facts).line().needsReview)
+        #expect(!ServingConfirmation(facts: yogurt()).line().needsReview)
+    }
+
     @Test func rejectsNonsenseGrams() {
         var c = ServingConfirmation(facts: yogurt())
         c.mode = .grams; c.grams = 0
