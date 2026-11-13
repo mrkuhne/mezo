@@ -284,5 +284,17 @@
     "miert": "A korábbi próbaváltozat valódi fotóktól hatott profinak; a teljesen rajzolt app laposnak tűnt.",
     "levaltotta": "A Napkelte szabály, amely szerint minden háttér rajzolt (a rajzolt táj tartalékként megmarad).",
     "kovetkezmeny": "A hangulatképek ingyenes, jogtiszta gyűjteményből jönnek; ételnél és edzésnél a saját fotóid, ha vannak — ezek megőrzése az Étel szakasz külön döntése. A meglévő képernyők szakaszonként váltanak át."
+  },
+  "d-2026-11-13-teruletek-helye": {
+    "cim": "A Terv fül lesz a területeid otthona",
+    "datum": "2026-11-13",
+    "suly": "Közepes",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "A területekhez (étkezés, edzés, pénz, alvás, közérzet, levél) a Terv gombon át jutsz: ott van az életcélod, és alatta mind a hat terület egy-egy kártyán. Egy kártya megnyitja az adott terület saját, teljes oldalát. Nem lesz ötödik gomb az alsó sorban.",
+    "miert": "A területek a célod lábai, úgyhogy oda tartoznak, ahol a cél van. Így az alsó sáv marad négy gomb, és tiszta történetet mond: Ma, ami most van; Terv, a célom és a területeim; Napló, ami volt; Boop, akitől kérdezek.",
+    "levaltotta": "Az első próbában hét kis gömb volt a főképernyő tetején — ez két menüt jelentett egymás felett, és a tulajdonos elvetette.",
+    "kovetkezmeny": "Gyors útként megmarad a napirend sora (az ebédre koppintva nyílik az Étel), a főképernyő alján a területkártyák, és a plusz gomb a rögzítéshez. A területek nevei a Boop saját szótárához igazodnak: Étel, Edzés, Energia."
   }
 }

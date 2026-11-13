@@ -193,68 +193,106 @@ struct EThreadView: View {
 
 // MARK: - Terv · the life goal everything hangs under
 
+/// Owner decision, 2026-11-13: **Terv is the home of the areas.** No fifth bar button — the goal and the six
+/// areas live on one page, because the areas ARE the legs of the goal. Each card opens that area's own app.
 struct EletTerv: View {
     var onToast: (String) -> Void
+    @Binding var path: [String]
     private let m = EMetric.all[0]
 
-    private let legs: [(Int, String, String, Double)] = [
-        (2, "Heti három futás", "ezen a héten kettő van meg", 0.66),
-        (3, "Napi 165 g fehérje", "14 napból 5-ön jött össze", 0.36),
-        (1, "7,5 óra alvás", "a heti átlagod 7 óra 4 perc", 0.82),
-        (5, "Havi 60 000 Ft félretéve", "ebből 38 000 Ft megvan", 0.63),
-        (6, "Csak az számít, ami a célhoz tartozik", "ma 2 levél ilyen volt a 34-ből", 0.9),
+    /// metric index · what it contributes to the goal · where that stands · progress · today's own verdict
+    private let legs: [(Int, String, String, Double, String)] = [
+        (2, "Heti három futás", "ezen a héten kettő van meg", 0.66, "Van még benne több · 1 240 lépés"),
+        (3, "Napi 165 g fehérje", "14 napból 5-ön jött össze", 0.36, "Jó úton jársz · 38 g eddig"),
+        (1, "7,5 óra alvás", "a heti átlagod 7 óra 4 perc", 0.82, "Kipihented magad · 7ó 12p"),
+        (5, "Havi 60 000 Ft félretéve", "ebből 38 000 Ft megvan", 0.63, "A kereten belül vagy · 281 600 Ft"),
+        (4, "Heti két nyugodt nap", "ezen a héten egy volt", 0.5, "Kicsit feszült vagy · 4/10"),
+        (6, "Csak az számít, ami a célhoz tartozik", "ma 2 levél ilyen volt a 34-ből", 0.9, "Két dolgot nézz meg · 34 levél"),
     ]
 
     var body: some View {
-        ZStack {
-            gPageBackground(m.top).ignoresSafeArea()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    GHead(sky: m.sky, height: 300)
-                        .overlay(alignment: .bottomLeading) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                GLabel("AZ ÉLETCÉLOD · 2027 NYARA")
-                                Text("Nyárra formába kerülni").font(AuraFont.serif(34)).foregroundStyle(.white)
-                                Text("31 hét van hátra. Minden terület ez alatt áll — és mindegyik tud róla, hogy a többi hogy halad.")
-                                    .font(.system(size: 14.5)).lineSpacing(4).foregroundStyle(.white.opacity(0.82))
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .padding(.horizontal, 20).padding(.bottom, 8)
-                        }
-
-                    VStack(alignment: .leading, spacing: 14) {
-                        GLabel("AMI A CÉL FELÉ VISZ")
-                        ForEach(Array(legs.enumerated()), id: \.offset) { _, l in
-                            HStack(alignment: .top, spacing: 13) {
-                                StillOrb(colors: EMetric.all[l.0].orb, size: 30, level: l.3)
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(l.1).font(.system(size: 15.5, weight: .medium)).foregroundStyle(.white)
-                                    ELevelBar(level: l.3, hue: EMetric.all[l.0].glow)
-                                    Text(l.2).font(.system(size: 12.5)).foregroundStyle(.white.opacity(0.55))
+        NavigationStack(path: $path) {
+            ZStack {
+                gPageBackground(m.top).ignoresSafeArea()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        GHead(sky: m.sky, height: 290)
+                            .overlay(alignment: .bottomLeading) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    GLabel("AZ ÉLETCÉLOD · 2027 NYARA")
+                                    Text("Nyárra formába kerülni").font(AuraFont.serif(34)).foregroundStyle(.white)
+                                    Text("31 hét van hátra. A hat területed ennek a célnak a lábai — mindegyik tud róla, hogy a többi hogy halad.")
+                                        .font(.system(size: 14.5)).lineSpacing(4).foregroundStyle(.white.opacity(0.82))
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
+                                .padding(.horizontal, 20).padding(.bottom, 6)
                             }
-                            .padding(.vertical, 4)
-                        }
-                    }
-                    .padding(18).frame(maxWidth: .infinity, alignment: .leading).gCard()
-                    .padding(.horizontal, 16)
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        GLabel("AMI ÖSSZEKÖTI ŐKET")
-                        Text("A pénz is a célhoz tartozik: a futócipő és a nyári út ugyanabból a keretből megy. Ezért szólok, ha egy akció tényleg olcsó — és ezért hallgatok, ha nem az.")
-                            .font(.system(size: 15)).lineSpacing(4).foregroundStyle(.white.opacity(0.85))
-                            .fixedSize(horizontal: false, vertical: true)
-                        EAskRow(text: "Kérdezd meg Boopot a célról") { onToast("Új szál · a céllal a kezében") }
-                            .padding(.top, 6)
+                        HStack(spacing: 10) {
+                            Text("A területeid").font(AuraFont.serif(26)).foregroundStyle(.white)
+                            Text("MINDEGYIK A SAJÁT OLDALÁRA NYÍLIK").font(AuraFont.mono(10)).tracking(1.1)
+                                .foregroundStyle(.white.opacity(0.4)).padding(.top, 8)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+
+                        VStack(spacing: 10) {
+                            ForEach(Array(legs.enumerated()), id: \.offset) { _, l in
+                                Button { path.append("m\(l.0)") } label: { areaCard(l) }.buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            GLabel("AMI ÖSSZEKÖTI ŐKET")
+                            Text("A pénz is a célhoz tartozik: a futócipő és a nyári út ugyanabból a keretből megy. Ezért szólok, ha egy akció tényleg olcsó — és ezért hallgatok, ha nem az.")
+                                .font(.system(size: 15)).lineSpacing(4).foregroundStyle(.white.opacity(0.85))
+                                .fixedSize(horizontal: false, vertical: true)
+                            EAskRow(text: "Kérdezd meg Boopot a célról") { onToast("Új szál · a céllal a kezében") }
+                                .padding(.top, 6)
+                        }
+                        .padding(18).frame(maxWidth: .infinity, alignment: .leading).gCard()
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 110)
                     }
-                    .padding(18).frame(maxWidth: .infinity, alignment: .leading).gCard()
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 110)
                 }
+                .scrollIndicators(.hidden)
+                .ignoresSafeArea(edges: .top)
             }
-            .scrollIndicators(.hidden)
-            .ignoresSafeArea(edges: .top)
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: String.self) { key in
+                EletAreaPage(metric: Int(key.dropFirst()) ?? 0, onToast: onToast)
+            }
         }
+    }
+
+    /// One card carries both identities: what the area is doing for the goal, and how it stands today.
+    private func areaCard(_ l: (Int, String, String, Double, String)) -> some View {
+        let a = EMetric.all[l.0]
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 11) {
+                StillOrb(colors: a.orb, size: 30, level: Double(a.value) / 100)
+                Text(a.name).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+            }
+            Text(l.4).font(.system(size: 13.5)).foregroundStyle(.white.opacity(0.6))
+                .padding(.top, 5).padding(.leading, 41)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(l.1).font(.system(size: 14.5, weight: .medium)).foregroundStyle(.white.opacity(0.95))
+                    Spacer()
+                    Text("\(Int(l.3 * 100))%").font(AuraFont.mono(12)).foregroundStyle(.white.opacity(0.6))
+                }
+                ELevelBar(level: l.3, hue: a.glow)
+                Text(l.2).font(.system(size: 12)).foregroundStyle(.white.opacity(0.5))
+            }
+            .padding(.top, 14).padding(.leading, 41)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .gCard(22)
     }
 }
 

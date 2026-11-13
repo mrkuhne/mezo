@@ -15,7 +15,10 @@
 > one orb; the **areas as wide cards** further down, loud ones first and the calm ones collapsed; **every area has
 > its own full page with its own top tabs**, from one data-driven component; the proposal card as the cross-area
 > organ ("4 terület szólt hozzá" → "miért?"); the Boop tab as a **thread list**; Terv's top level as the **life
-> goal**. Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`. Screenshots: `elet-*.png`. Direction write-up:
+> goal**. Round 3 answers "how do I get into an area?": **Terv is the home of the areas** — the goal plus one
+> card per area (today's verdict + what it contributes to the goal), each opening that area's page; no fifth bar
+> button. Areas renamed to the spine vocabulary (Fuel → Étel, Mozgás → Edzés, Közérzet → Energia).
+> Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`. Screenshots: `elet-*.png`. Direction write-up:
 > [`docs/superpowers/research/boop-life/03-ui-direction.md`](../../../superpowers/research/boop-life/03-ui-direction.md).
 > **Nothing here is built** — the owner decided on 2026-11-13 that the life dashboard ships after B6.
 

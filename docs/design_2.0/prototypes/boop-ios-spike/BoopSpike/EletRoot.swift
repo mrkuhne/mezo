@@ -42,21 +42,21 @@ struct EMetric {
                 headline: "Kipihented magad",
                 sentence: "7 óra 12 perc, ebből 1 óra 36 perc mély. 22:48-kor aludtál el.",
                 isNew: false),
-        EMetric(name: "Mozgás", value: 62, glyph: "shoe-cream",
+        EMetric(name: "Edzés", value: 62, glyph: "shoe-cream",
                 top: Color(hex: 0x4A2810), glow: Color(hex: 0xF29A4A),
                 orb: [Color(hex: 0x6B2A0E), Color(hex: 0xE0702E), Color(hex: 0xF7C27A), Color(hex: 0xF0508C)],
                 sky: PaintedLandscape.skies[2],
                 headline: "Van még benne több",
                 sentence: "1 240 lépésnél tartasz. Egy 20 perces séta ebéd után a napi cél felét hozza.",
                 isNew: false),
-        EMetric(name: "Fuel", value: 71, glyph: "bowl-cream",
+        EMetric(name: "Étel", value: 71, glyph: "bowl-cream",
                 top: Color(hex: 0x123F33), glow: Color(hex: 0x4CC79A),
                 orb: [Color(hex: 0x0E3B2E), Color(hex: 0x2E9C74), Color(hex: 0xA6E8C8), Color(hex: 0xF4C860)],
                 sky: PaintedLandscape.skies[3],
                 headline: "Jó úton jársz",
                 sentence: "A fehérje 38 g-nál tart a 165-ből. Ebédnél egyél legalább 45 grammot.",
                 isNew: false),
-        EMetric(name: "Közérzet", value: 69, glyph: "heart-cream",
+        EMetric(name: "Energia", value: 69, glyph: "heart-cream",
                 top: Color(hex: 0x45277A), glow: Color(hex: 0xD86E9C),
                 orb: [Color(hex: 0x3A1E66), Color(hex: 0xB0529A), Color(hex: 0xF6B8D0), Color(hex: 0xFFD3A8)],
                 sky: PaintedLandscape.skies[4],
@@ -127,6 +127,7 @@ struct EletRoot: View {
     @State private var tab = EArg.int("eletTab", 0, 3)
     @State private var plus = false
     @State private var toast: String?
+    @State private var tervPath: [String] = []
     @State private var maPath: [String] = {
         switch EArg.str("eletOpen") {
         case "penz": return ["m5"]
@@ -140,7 +141,7 @@ struct EletRoot: View {
         ZStack(alignment: .bottom) {
             Group {
                 switch tab {
-                case 1: EletTerv(onToast: show)
+                case 1: EletTerv(onToast: show, path: $tervPath)
                 case 2: EletNaplo()
                 case 3: EletBoopTab(onToast: show)
                 default: EletMa(path: $maPath, onToast: show)
@@ -148,13 +149,14 @@ struct EletRoot: View {
             }
             .transition(.opacity)
 
-            if maPath.isEmpty || tab != 0 {
+            if (tab == 0 && maPath.isEmpty) || (tab == 1 && tervPath.isEmpty) || tab > 1 {
                 GerincTabBar(tab: $tab, onPlus: { plus = true })
                     .padding(.bottom, 4)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: maPath.isEmpty)
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: tervPath.isEmpty)
         .animation(.easeInOut(duration: 0.25), value: tab)
         .preferredColorScheme(.dark)
         .overlay(alignment: .top) {
