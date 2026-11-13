@@ -230,11 +230,14 @@ struct ERow: Identifiable {
     var level: Double? = nil
     var badge: Int = 0
     var hot: Bool = false
+    /// Képek variant B: a photo of the THING this row is about. nil = the glyph stays (a moment, not a thing).
+    var photo: String? = nil
 }
 
 struct ERowList: View {
     var rows: [ERow]
     var hue: Color
+    var warm: Bool = false
     var onTap: ((String) -> Void)? = nil
     var body: some View {
         VStack(spacing: 0) {
@@ -243,10 +246,21 @@ struct ERowList: View {
                 Button { onTap?(r.title) } label: {
                     HStack(spacing: 12) {
                         ZStack {
-                            Circle().fill(r.hot ? hue.opacity(0.22) : .white.opacity(0.08))
-                            EGlyph(r.glyph, r.hot ? hue : .white.opacity(0.9), size: 16)
+                            if warm, let ph = r.photo {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(.white.opacity(0.08))
+                                    .overlay {
+                                        photo(ph).resizable().scaledToFill()
+                                            .saturation(0.8).brightness(-0.06)
+                                    }
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.white.opacity(0.12)))
+                            } else {
+                                Circle().fill(r.hot ? hue.opacity(0.22) : .white.opacity(0.08))
+                                EGlyph(r.glyph, r.hot ? hue : .white.opacity(0.9), size: 16)
+                            }
                         }
-                        .frame(width: 36, height: 36)
+                        .frame(width: warm ? 40 : 36, height: warm ? 40 : 36)
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 7) {
                                 Text(r.title).font(.system(size: 14.5, weight: .medium)).foregroundStyle(.white).lineLimit(1)
@@ -257,7 +271,8 @@ struct ERowList: View {
                         }
                         Spacer(minLength: 6)
                         VStack(alignment: .trailing, spacing: 2) {
-                            Text(r.right).font(.custom("Outfit", size: 16).weight(.medium)).foregroundStyle(.white)
+                            Text(r.right).font(.custom("Outfit", size: warm ? 17 : 16).weight(.medium))
+                                .foregroundStyle(warm && r.hot ? hue : .white)
                             if !r.rightSub.isEmpty {
                                 Text(r.rightSub).font(.system(size: 11)).foregroundStyle(.white.opacity(0.5))
                             }

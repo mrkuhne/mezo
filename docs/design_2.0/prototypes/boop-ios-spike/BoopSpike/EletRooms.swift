@@ -46,7 +46,7 @@ struct EletAreaPage: View {
             VStack(alignment: .leading, spacing: 0) {
                 head
                 tabBar.padding(.top, 14)
-                LazyVStack(alignment: .leading, spacing: 14) {
+                LazyVStack(alignment: .leading, spacing: EWarm.on ? 24 : 14) {
                     ForEach(Array(tabs[min(tab, tabs.count - 1)].blocks.enumerated()), id: \.offset) { _, b in
                         block(b)
                     }
@@ -77,7 +77,10 @@ struct EletAreaPage: View {
     }
 
     private var head: some View {
-        GHead(sky: m.sky, height: 300)
+        Group {
+            if EWarm.on { EPhotoHead(metric: min(metric, 6), height: 330) }
+            else { GHead(sky: m.sky, height: 300) }
+        }
             .overlay(alignment: .bottomLeading) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 10) {
@@ -130,11 +133,32 @@ struct EletAreaPage: View {
 
     @ViewBuilder private func block(_ b: EBlock) -> some View {
         switch b {
+        case let .highlight(label, text, sub) where EWarm.on:
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 9) {
+                    StillOrb(colors: m.orb, size: 22, level: 0.85)
+                    Text(label).font(AuraFont.mono(11, .bold)).tracking(1.5).foregroundStyle(m.glow)
+                    Spacer()
+                }
+                Text(text).font(AuraFont.serif(23)).lineSpacing(3).foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 10)
+                EHueText(text: sub, hue: m.glow, size: 14, opacity: 0.78).padding(.top, 7)
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(LinearGradient(colors: [m.glow.opacity(0.26), m.glow.opacity(0.04)],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(m.glow.opacity(0.4)))
+            )
+
         case let .highlight(label, text, sub):
             EHighlight(label: label, text: text, sub: sub, hue: m.glow, orb: m.orb)
 
         case let .stats(s):
-            EStatRow(stats: s, hue: m.glow)
+            if EWarm.on { EStatRowWarm(stats: s, hue: m.glow).padding(.vertical, 2) }
+            else { EStatRow(stats: s, hue: m.glow) }
 
         case let .level(label, big, unit, right, note, value, marker):
             card {
@@ -150,6 +174,16 @@ struct EletAreaPage: View {
                 if !note.isEmpty {
                     Text(note).font(.system(size: 12.5)).lineSpacing(3).foregroundStyle(.white.opacity(0.55))
                         .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
+                }
+            }
+
+        case let .curve(label, values, labels, target, now, note) where EWarm.on:
+            EBare(label: label, hue: m.glow) {
+                VStack(alignment: .leading, spacing: 12) {
+                    ECurve(values: values, labels: labels, hue: m.glow, target: target, nowIndex: now, height: 150)
+                    if !note.isEmpty {
+                        EHueText(text: note, hue: m.glow, size: 13.5, opacity: 0.7)
+                    }
                 }
             }
 
@@ -173,6 +207,14 @@ struct EletAreaPage: View {
                 }
             }
 
+        case let .composition(label, parts, note) where EWarm.on:
+            EBare(label: label, hue: m.glow) {
+                VStack(alignment: .leading, spacing: 12) {
+                    EComposition(parts: parts)
+                    if !note.isEmpty { EHueText(text: note, hue: m.glow, size: 13, opacity: 0.65) }
+                }
+            }
+
         case let .composition(label, parts, note):
             card {
                 GLabel(label)
@@ -180,6 +222,24 @@ struct EletAreaPage: View {
                 if !note.isEmpty {
                     Text(note).font(.system(size: 12.5)).lineSpacing(3).foregroundStyle(.white.opacity(0.6))
                         .fixedSize(horizontal: false, vertical: true).padding(.top, 12)
+                }
+            }
+
+        case let .rowlist(label, rows, more) where EWarm.on:
+            EBare(label: label, hue: m.glow) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ERowList(rows: rows, hue: m.glow, warm: true) { onToast($0) }
+                    if !more.isEmpty {
+                        Button { onToast(more) } label: {
+                            HStack(spacing: 7) {
+                                Text(more).font(.system(size: 14, weight: .semibold)).foregroundStyle(m.glow)
+                                Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(m.glow)
+                                Spacer()
+                            }
+                            .padding(.top, 14).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
 
@@ -212,6 +272,22 @@ struct EletAreaPage: View {
                 EMenuGrid(items: items, hue: m.glow) { onToast($0 + " · megnyílik") }
             }
 
+        case let .list(label, items) where EWarm.on:
+            EBare(label: label, hue: m.glow) {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(Array(items.enumerated()), id: \.offset) { _, it in
+                        HStack(alignment: .top, spacing: 12) {
+                            Capsule().fill(m.glow).frame(width: 2.5, height: 30)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(it.0).font(.system(size: 14.5, weight: .semibold)).foregroundStyle(.white)
+                                EHueText(text: it.1, hue: m.glow, size: 13, opacity: 0.62)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+            }
+
         case let .list(label, items):
             card {
                 GLabel(label)
@@ -229,6 +305,11 @@ struct EletAreaPage: View {
                     }
                 }
                 .padding(.top, 14)
+            }
+
+        case let .note(label, body) where EWarm.on:
+            EBare(label: label, hue: m.glow) {
+                EHueText(text: body, hue: m.glow, size: 14.5, opacity: 0.8)
             }
 
         case let .note(label, body):
