@@ -125,7 +125,7 @@ struct SkipSheet: View {
 
     private var off: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Ha beteg vagy, vagy úton, kapcsold be: nem adok kalóriacélt, és nem értékelem a napot. Egy koppintással kikapcsolod.")
+            Text("Ha beteg vagy, vagy úton, kapcsold be: nem értékelem a napot, és a keretet a helyzetedhez igazítom. Egy koppintással kikapcsolod.")
                 .nkFont(13.5).lineSpacing(2).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
             EtelChoiceChips(options: kimeloChoices.map { (id: $0.reason, label: $0.label) },
                             selected: kind) { kind = $0 }

@@ -299,7 +299,7 @@ struct EtelMa: View {
             divider
             settingsRow("Napi ritmus", "Étkezések száma, koffein-stop", glyph: "clock-sky") { onSheet(.rhythm) }
             divider
-            settingsRow("Kímélő mód", store.day?.fuelMode == nil ? "Beteg vagy, vagy úton: nincs kalóriacél" : "Be van kapcsolva", glyph: "heart-cream") { onSheet(.kimelo) }
+            settingsRow("Kímélő mód", store.day?.fuelMode == nil ? "Beteg vagy, vagy úton: nem értékelem a napot" : "Be van kapcsolva", glyph: "heart-cream") { onSheet(.kimelo) }
             divider
             settingsRow("Kiegészítők listája", "Felvétel, kivétel, adag", glyph: "pen-sun") { onSheet(.supplements) }
         }

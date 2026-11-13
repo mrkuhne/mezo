@@ -30,7 +30,7 @@ struct SupplementEditSheet: View {
             Button("Kiveszem", role: .destructive) { if let row = confirming { confirming = nil; Task { await remove(row) } } }
             Button("Mégse", role: .cancel) { confirming = nil }
         } message: {
-            Text("Később a Új kiegészítő gombbal újra felveheted.")
+            Text("Később az Új kiegészítő gombbal újra felveheted.")
         }
     }
 
