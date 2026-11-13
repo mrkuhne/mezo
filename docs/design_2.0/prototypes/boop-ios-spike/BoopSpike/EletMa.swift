@@ -203,13 +203,11 @@ struct EletMa: View {
                     .padding(.horizontal, 30)
                     .padding(.top, 16)
 
-                HStack(spacing: 8) {
-                    Capsule().fill(day.glow).frame(width: 3, height: 13)
-                    Text("MAI NAP").font(AuraFont.mono(12)).tracking(1.6)
-                        .foregroundStyle(.white.opacity(0.75))
+                HStack {
+                    Text("Mai nap").font(AuraFont.serif(27)).foregroundStyle(.white)
                     Spacer()
                 }
-                .padding(.horizontal, 20).padding(.top, 16)
+                .padding(.horizontal, 16).padding(.top, 18)
 
                 EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
                           hue: day.glow, now: 0.47, height: 220)
