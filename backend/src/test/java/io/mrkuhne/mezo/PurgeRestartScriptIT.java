@@ -35,6 +35,7 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
     @Autowired private RecipePopulator recipePopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private HabitPopulator habitPopulator;
+    @Autowired private io.mrkuhne.mezo.support.populator.MealPopulator mealPopulator;
 
     private static final Path SCRIPT = Path.of("..", "scripts", "purge-restart.sql");
 
@@ -134,13 +135,18 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
         String insert = "INSERT INTO stored_image (created_by, content_type, bytes, byte_size, width, height) "
             + "VALUES (?, 'image/png', '\\x89'::bytea, 1, 1, 1) RETURNING id";
         UUID recipeImage = jdbc.queryForObject(insert, UUID.class, owner);
-        jdbc.queryForObject(insert, UUID.class, owner); // an orphan / meal photo
+        jdbc.queryForObject(insert, UUID.class, owner); // an orphan
+        UUID mealImage = jdbc.queryForObject(insert, UUID.class, owner);
+        UUID mealId = mealPopulator.createBareMealAt(owner, LocalDate.parse("2026-08-01"), "lunch", java.time.LocalTime.of(12, 0)).getId();
+        jdbc.update("UPDATE meal SET photo_id = ? WHERE id = ?", mealImage, mealId);
         jdbc.update("UPDATE recipe SET image_id = ?", recipeImage);
         long recipes = count("recipe");
 
         runScript(true);
 
         assertThat(count("recipe")).isEqualTo(recipes);
+        assertThat(count("meal")).isZero(); // the meal (and with it its photo pointer) is purged
         assertThat(jdbc.queryForList("SELECT id FROM stored_image", UUID.class)).containsExactly(recipeImage);
+        assertThat(jdbc.queryForList("SELECT image_id FROM recipe", UUID.class)).containsExactly(recipeImage);
     }
 }

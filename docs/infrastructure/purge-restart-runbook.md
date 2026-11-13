@@ -68,6 +68,11 @@ kubectl exec -i -n mezo postgres-0 -- psql -U mezo -d mezo -v ON_ERROR_STOP=1 -f
 Read the `KEEP`/`PURGE` report. The `KEEP` row counts must match expectations
 (pantry items, recipes, catalog rows, habit chains/defs, 1 app_user).
 
+A `TRIM stored_image` sor a képtábla: a receptek képei megmaradnak, **minden más kép
+(az étkezési fotók, az árván maradtak) törlődik** a live futáskor — a sor kiírja, hány maradna
+és hány törlődne. A futás végén a script külön ellenőrzi, hogy csak a receptek által használt
+képek maradtak, és egy recept sem veszítette el a képét.
+
 ## 4. Live run
 
 ```bash

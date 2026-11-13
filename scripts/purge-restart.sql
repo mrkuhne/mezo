@@ -41,6 +41,8 @@ DECLARE
     trimmed constant text[] := ARRAY['stored_image'];
     dry_run  constant boolean := coalesce(current_setting('purge.dry_run', true), 'on') <> 'off';
     kept_counts jsonb := '{}'::jsonb;
+    kept_images bigint;
+    kept_recipe_images bigint;
     t           record;
     n           bigint;
     purge_list  text;
@@ -60,7 +62,12 @@ BEGIN
     FOR t IN SELECT tablename FROM pg_tables
               WHERE schemaname = 'public' ORDER BY tablename LOOP
         EXECUTE format('SELECT count(*) FROM %I.%I', 'public', t.tablename) INTO n;
-        IF t.tablename = ANY (whitelist) THEN
+        IF t.tablename = ANY (trimmed) THEN
+            SELECT count(*) INTO kept_images FROM public.stored_image
+             WHERE id IN (SELECT image_id FROM public.recipe WHERE image_id IS NOT NULL);
+            RAISE NOTICE 'TRIM   % (% rows, % referenced by kept recipes — the other % are DELETED on a live run)',
+                rpad(t.tablename, 40), n, kept_images, n - kept_images;
+        ELSIF t.tablename = ANY (whitelist) THEN
             kept_counts := kept_counts || jsonb_build_object(t.tablename, n);
             RAISE NOTICE 'KEEP   % (% rows)', rpad(t.tablename, 40), n;
         ELSE
@@ -79,12 +86,23 @@ BEGIN
         RETURN;
     END IF;
 
+    SELECT count(*) INTO kept_recipe_images FROM public.recipe WHERE image_id IS NOT NULL;
+
     EXECUTE 'TRUNCATE TABLE ' || purge_list || ' CASCADE';
 
-    -- Assert the CASCADE never reached a kept table: identical row counts or abort.
+    -- Trim: drop every image no kept recipe points at (meal photos, orphans); recipe images stay.
     DELETE FROM public.stored_image
      WHERE id NOT IN (SELECT image_id FROM public.recipe WHERE image_id IS NOT NULL);
 
+    -- The trimmed table is guarded separately: only referenced images remain, and no recipe lost its image.
+    SELECT count(*) INTO n FROM public.stored_image;
+    IF n IS DISTINCT FROM (SELECT count(DISTINCT image_id) FROM public.recipe WHERE image_id IS NOT NULL)
+       OR kept_recipe_images IS DISTINCT FROM (SELECT count(*) FROM public.recipe WHERE image_id IS NOT NULL) THEN
+        RAISE EXCEPTION 'stored_image trim went wrong (% images left, recipes with an image % -> %) — aborting, transaction rolls back',
+            n, kept_recipe_images, (SELECT count(*) FROM public.recipe WHERE image_id IS NOT NULL);
+    END IF;
+
+    -- Assert the CASCADE never reached a kept table: identical row counts or abort.
     FOR t IN SELECT unnest(whitelist) AS tablename LOOP
         CONTINUE WHEN t.tablename = ANY (trimmed);
         EXECUTE format('SELECT count(*) FROM %I.%I', 'public', t.tablename) INTO n;
