@@ -307,5 +307,15 @@
       "Napló"
     ],
     "mit_kapsz": "Ha egy check-int újrakezdesz, miközben az előző hangjegyzeted még küldés alatt van, a jegyzet nem íródik felül."
+  },
+  "mezo-r36n9.32": {
+    "cim": "B3/b Képek — fotók a Boop minden képernyőjén",
+    "tipus": "Szakasz",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Minden meglévő képernyőre 2–3 fotós változat a szimulátorban, ezekből te választasz; a választásaid állandó szabály lesznek: hová kerül fotó, milyen, honnan jön, és hogyan fér össze az éggel és az üveggel.",
+    "munkamenet": "boop-b3b-kepek"
   }
 }
