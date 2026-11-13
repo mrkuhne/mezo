@@ -41,13 +41,13 @@ hogy „nem tartalmazza". Egy allergiánál a „nincs adat" ugyanúgy kizárja 
 
 ## Miért így
 
-- A tulajdonos kérte, és az étkezés-értékelő AI korábbi, ételérzékenységet **tiltó** szabályát a B4
+- Te kérted, és az étkezés-értékelő AI korábbi, ételérzékenységet **tiltó** szabályát a B4
   szándékosan megfordította (B4 spec §7).
 - **Döntés, 2026-11-13** („Kitöltjük, amit biztosan tudunk"): a kamrában minden alapanyagnál üres volt az
   allergén-rovat, ezért a halas és tojásos receptek allergénmentesnek számoltak. A két lehetőség közül — a polc
-  alapján kitölteni, vagy mindenhova „nem tudjuk"-ot írni — a tulajdonos a kitöltést választotta: egy sima
-  tojáson a „nem tudjuk" csak zaj lenne, amit megtanul nem észrevenni. A laktózmentes felismerés ugyanebbe a
-  körbe tartozik, különben a saját reggelije tűnne veszélyesnek.
+  alapján kitölteni, vagy mindenhova „nem tudjuk"-ot írni — a kitöltést választottad: egy sima tojáson a „nem
+  tudjuk" csak zaj lenne, amit megtanulsz nem észrevenni. A laktózmentes felismerés ugyanebbe a körbe tartozik,
+  különben a saját reggelid tűnne veszélyesnek.
 
 ## Beállítások
 

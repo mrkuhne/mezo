@@ -109,7 +109,7 @@
     },
     "jegyek:mezo-r36n9.15": {
       "page_id": "4168968e-752b-8161-b864-c3d13fc8e9b4",
-      "hash": "b3883b94a871"
+      "hash": "31b8b747264c"
     },
     "jegyek:mezo-r36n9.14": {
       "page_id": "4168968e-752b-8126-b650-c1fd3b87c390",
@@ -509,7 +509,7 @@
     },
     "kezikonyv:06-etel/07-allergenek": {
       "page_id": "4168968e-752b-81eb-8603-dfc38fa7a4e8",
-      "hash": "87769636e0b1"
+      "hash": "d46584df050a"
     },
     "kezikonyv:06-etel/08-kihagyas-kimelo": {
       "page_id": "4168968e-752b-817b-81f9-dc9b999d4f79",
@@ -857,7 +857,15 @@
     },
     "jegyek:mezo-r36n9.48": {
       "page_id": "4178968e-752b-81b6-b319-f742b605dcd1",
-      "hash": "4344452f3818"
+      "hash": "fb1a1020a2b2"
+    },
+    "dontesek:d-2026-11-13-allergen-alap": {
+      "page_id": "4178968e-752b-8142-8e91-e8f406cdfc35",
+      "hash": "fbf52a91160a"
+    },
+    "kiadasok:01cc62c6b": {
+      "page_id": "4178968e-752b-817f-89c5-ecfdafffe274",
+      "hash": "58430139447f"
     }
   }
 }

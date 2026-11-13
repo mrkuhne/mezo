@@ -233,5 +233,19 @@
       "mezo-r36n9.34"
     ],
     "mi_valtozott": "Az üres alapértelmezett négyzet helyett a hajnali kép látszik a hegyekkel és a felkelő gömbbel, sötét módban és színezett kezdőképernyőn is. Fent van a telefonon."
+  },
+  "01cc62c6b": {
+    "cim": "A kamra alapanyagai megmondják, mit tartalmaznak",
+    "datum": "2026-11-13",
+    "verzio": "",
+    "tipus": "Javítás",
+    "hova": [
+      "Háttérrendszer"
+    ],
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.48"
+    ],
+    "mi_valtozott": "Eddig egyetlen alapanyagnál sem volt allergén-adat, ezért a halas és tojásos receptek „allergénmentesnek” látszottak. Mostantól az alapanyag a polcából kapja meg, amit biztosan tudni lehet (hal, tojás, tej, magvak), a tejtermékek közé sorolt növényi italok a saját allergénjüket, a kétes magkeverékek pedig „nincs adat”-on maradnak. A már elmentett receptjeid összesítése is újraszámolt. A laktózmentes termékeidet a Boop felismeri, és laktóz-érzékenységnél nem szól rájuk."
   }
 }
