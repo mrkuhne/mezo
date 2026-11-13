@@ -312,7 +312,6 @@ private struct MealComposerHost: View {
                 entrance("book-sage", "Recept") { model.show(.recipes) }
                 entrance("bowl-sage", "Kamra") { model.show(.pantry) }
                 if PhotoCapture.cameraAvailable { entrance("plus-ink", "Képtár") { showLibrary = true } }
-                else { Color.clear.frame(maxWidth: .infinity) }
             }
             HStack(spacing: 10) {
                 TextField("", text: $model.text, prompt: Text("Mondd vagy írd: vacsora, csirke rizzsel…").foregroundStyle(.white.opacity(0.45)),
