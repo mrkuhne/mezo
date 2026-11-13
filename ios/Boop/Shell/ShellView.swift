@@ -158,6 +158,7 @@ struct ShellView: View {
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
             case "meal": meal = MealStart()
+            case "barcode": meal = MealStart(entrance: .barcode)
             case "mealText": meal = MealStart(entrance: .text, text: "csirkemell rizzsel és brokkolival")
             case "account": account = true
             case "checkin", "checkinDone": router.open(.checkin)

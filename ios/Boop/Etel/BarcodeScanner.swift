@@ -127,7 +127,19 @@ struct BarcodeScanView: View {
             case .failed(let code, let offline): failed(code, offline: offline)
             }
         }
-        .onAppear { scannerOn = BarcodeScanner.isAvailable }
+        .onAppear {
+            scannerOn = BarcodeScanner.isAvailable
+            #if DEBUG
+            // Simulator review (no camera): `-previewCode <digits>` looks that code up as if typed; `-previewServing YES`
+            // then goes straight on to the serving confirmation.
+            if let code = UserDefaults.standard.string(forKey: "previewCode"), model.state == .scanning {
+                Task {
+                    await model.submit(code)
+                    if UserDefaults.standard.bool(forKey: "previewServing"), case .found(let item, let source, let c) = model.state { onServing(item, source, c) }
+                }
+            }
+            #endif
+        }
         .onChange(of: model.state) { _, new in if new == .scanning { scannerOn = BarcodeScanner.isAvailable } }
     }
 
