@@ -45,8 +45,9 @@ plus the photos its cards earn; if nothing fits the row's meaning, no photo — 
 
 - **Mood photos = quiet nature** (owner, 2026-11-13): dawn, fog, mountain, lake, cloud, forest. Calm, dark-leaning,
   no crowds, no faces, no gym-poster energy. One fixed photo per colour world, so a page always looks the same:
-  Forma → mountain night · Alvás → dusk · Mozgás → lake/trail · Fuel → herbs/kitchen · Pulzus → cloud ·
-  kímélő mód → fog.
+  Forma → mountain night · Alvás → dusk · Mozgás → lake/trail · Fuel → **vegetables on a dark board** (`deszka.jpg`) ·
+  Pulzus → cloud · kímélő mód → fog. (Fuel was a herb close-up at first; the owner changed it on 2026-11-13 — too
+  loud, and the room's own meal photos already carry the food.)
 - **Thing photos** follow what the row is: a meal, an exercise, a walk, a bed.
 - **Source is mixed** (owner, 2026-11-13): mood photos from the free library; for food and training the **owner's own
   photo** where one exists, the library's where it does not.
