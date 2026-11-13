@@ -83,20 +83,20 @@ func etelStations(_ stations: [PathStation], plan: FuelPlan?, groups: [Supplemen
                                     sub: "\(w.from)–\(w.to)\(budget)", done: false, isNow: false, opens: false), at: w.from, into: out)
     }
     /// The group's clock: the meal window's start for a meal-linked daypart, else the daypart's indicative time; nil when
-    /// the key is unknown. Always shown with a "~": it is a guess, not a schedule.
+    /// the key is unknown. Said as "kb." in the sub line: it is a guess, not a schedule.
     func clock(_ key: String) -> String? {
         if let w = plan?.windows.first(where: { $0.slot == key && $0.kind == .meal }) { return w.from }
         return supplementDayparts.first { $0.key == key }?.clock
     }
-    // "~8:00": the tilde says guess, the dropped zero keeps it inside the 42 pt time column
-    func shown(_ c: String?) -> String { c.map { "~" + ($0.hasPrefix("0") ? String($0.dropFirst()) : $0) } ?? "" }
+    // A guessed clock never goes in the 42 pt time column (six characters would wrap): the sub line says "kb. 8:00".
+    func guess(_ c: String?) -> String { c.map { "kb. " + ($0.hasPrefix("0") ? String($0.dropFirst()) : $0) + " · " } ?? "" }
     if let g = groups.first(where: { !taken.contains($0.key) }) {
-        out = inserting(PathStation(id: "etel-supplements-\(g.key)", time: shown(clock(g.key)), glyph: "spark-cream", title: g.label,
-                                    sub: "\(g.count) tétel · \(g.summary)", done: false, isNow: false, opens: false),
+        out = inserting(PathStation(id: "etel-supplements-\(g.key)", time: "", glyph: "spark-cream", title: g.label,
+                                    sub: "\(guess(clock(g.key)))\(g.count) tétel · \(g.summary)", done: false, isNow: false, opens: false),
                          at: clock(g.key), into: out)
     } else if let last = groups.last {
-        out = inserting(PathStation(id: "etel-supplements-done", time: shown(clock(last.key)), glyph: "spark-cream", title: "Kiegészítők",
-                                    sub: "Mind bevéve", done: true, isNow: false, opens: false), at: clock(last.key), into: out)
+        out = inserting(PathStation(id: "etel-supplements-done", time: "", glyph: "spark-cream", title: "Kiegészítők",
+                                    sub: "\(guess(clock(last.key)))Mind bevéve", done: true, isNow: false, opens: false), at: clock(last.key), into: out)
     }
     return out
 }

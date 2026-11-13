@@ -81,21 +81,29 @@ struct MaFoodRowsTests {
     @Test func aGuessedSupplementClockIsHedgedAndAnUnknownDaypartHasNone() {
         let plan = FuelPlan(date: "2026-11-13", windows: [], remaining: nil)
         let wake = etelStations([], plan: plan, groups: [SupplementGroup(key: "wake", label: "Ébredéskor", count: 1, summary: "D3")], taken: [])
-        #expect(wake[0].time == "~7:00")
+        #expect(wake[0].time == "" && wake[0].sub.hasPrefix("kb. 7:00 · "))
         let odd = etelStations([st("a", "08:00")], plan: plan, groups: [SupplementGroup(key: "zzz", label: "Zzz", count: 1, summary: "x")], taken: [])
         #expect(odd.last?.id == "etel-supplements-zzz" && odd.last?.time == "")
+        let evening = etelStations([], plan: plan, groups: [SupplementGroup(key: "post_workout", label: "Edzés után", count: 1, summary: "x")], taken: [])
+        #expect(evening[0].time == "" && evening[0].sub.hasPrefix("kb. 18:00 · "))   // no clock in the 42 pt column: nothing can wrap
         // a daypart tied to a plan window takes the window's start, still hedged
         let withWindow = FuelPlan(date: "2026-11-13", windows: [window("breakfast", "Reggeli", "07:30", "09:00", .done)], remaining: nil)
         let b = etelStations([], plan: withWindow, groups: [groups[0]], taken: [])
-        #expect(b[0].time == "~7:30")
+        #expect(b[0].time == "" && b[0].sub.hasPrefix("kb. 7:30 · "))
+    }
+
+    @Test func naploDoesNotCallADownloadInFlightAFailure() {
+        // loaded, two photo meals, none downloaded yet: nothing has failed, so nothing is said
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 2, photosMissing: 2, photosDone: false) == nil)
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 2, photosMissing: 2, photosDone: true) == "Egy-két képet most nem tudtam betölteni.")
     }
 
     @Test func naploSaysWhyThereIsNoPhoto() {
-        #expect(naploPhotoNote(loaded: false, failed: false, mealCount: 0, photoMeals: 0, photosMissing: 0) == "Az étkezések betöltése folyamatban")
-        #expect(naploPhotoNote(loaded: true, failed: true, mealCount: 0, photoMeals: 0, photosMissing: 0) == "Az étkezéseid képeit most nem látom.")
-        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 0, photosMissing: 0) == "Erről a napról nincs étkezési fotód.")
-        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 0, photoMeals: 0, photosMissing: 0) == nil)
-        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 2, photosMissing: 1) == "Egy-két képet most nem tudtam betölteni.")
-        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 2, photosMissing: 0) == nil)
+        #expect(naploPhotoNote(loaded: false, failed: false, mealCount: 0, photoMeals: 0, photosMissing: 0, photosDone: true) == "Az étkezések betöltése folyamatban")
+        #expect(naploPhotoNote(loaded: true, failed: true, mealCount: 0, photoMeals: 0, photosMissing: 0, photosDone: true) == "Az étkezéseid képeit most nem látom.")
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 0, photosMissing: 0, photosDone: true) == "Erről a napról nincs étkezési fotód.")
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 0, photoMeals: 0, photosMissing: 0, photosDone: true) == nil)
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 2, photosMissing: 1, photosDone: true) == "Egy-két képet most nem tudtam betölteni.")
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 2, photosMissing: 0, photosDone: true) == nil)
     }
 }

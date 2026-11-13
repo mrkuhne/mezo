@@ -192,12 +192,12 @@ struct NaploDayDetail: View {
 func naploPhotoMeals(_ day: FoodDay?) -> [BoopCore.Meal] { (day?.meals ?? []).filter(\.hasPhoto) }
 
 /// The one quiet line under the meal photos: still loading, could not read, no photo that day, or a photo that did not
-/// come. nil = nothing to say (no meals at all, or every photo is on its card).
-func naploPhotoNote(loaded: Bool, failed: Bool, mealCount: Int, photoMeals: Int, photosMissing: Int) -> String? {
+/// come (only once the downloads are over — in flight, nothing has failed). nil = nothing to say (no meals at all, or every photo is on its card).
+func naploPhotoNote(loaded: Bool, failed: Bool, mealCount: Int, photoMeals: Int, photosMissing: Int, photosDone: Bool) -> String? {
     if failed { return "Az étkezéseid képeit most nem látom." }
     if !loaded { return "Az étkezések betöltése folyamatban" }
     if mealCount > 0 && photoMeals == 0 { return "Erről a napról nincs étkezési fotód." }
-    if photosMissing > 0 { return "Egy-két képet most nem tudtam betölteni." }
+    if photosDone && photosMissing > 0 { return "Egy-két képet most nem tudtam betölteni." }
     return nil
 }
 
@@ -210,6 +210,8 @@ final class NaploMeals {
     private(set) var photos: [UUID: UIImage] = [:]
     private(set) var loaded = false
     private(set) var failed = false
+    /// True once every photo download has finished (a missing photo before that is still on its way).
+    private(set) var photosDone = false
     var photosMissing: Int { meals.filter { photos[$0.id] == nil }.count }
 
     func load(food: FoodClient, date: String, calendar: Calendar) async {
@@ -231,6 +233,7 @@ final class NaploMeals {
             return out
         }
         for (id, data) in fetched { if let data, let image = UIImage(data: data) { photos[id] = image } }
+        photosDone = true
     }
 }
 
@@ -240,7 +243,7 @@ private struct NaploMealPhotos: View {
 
     private var note: String? {
         naploPhotoNote(loaded: model.loaded, failed: model.failed, mealCount: model.mealCount, photoMeals: model.meals.count,
-                       photosMissing: model.photosMissing)
+                       photosMissing: model.photosMissing, photosDone: model.photosDone)
     }
 
     var body: some View {
