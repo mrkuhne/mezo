@@ -2,7 +2,7 @@
 
 Source: owner conversation 2026-11-13 (`mezo-r36n9.33`), explored in a throwaway simulator spike.
 Spike files: `docs/design_2.0/prototypes/boop-ios-spike/BoopSpike/Elet*.swift`, launch `-elet YES`.
-Screenshots: `elet-1-ma.png` … `elet-9-mintak.png` in that folder.
+Screenshots: `elet-1-ma.png` … `elet-11-cel.png` in that folder (round 2).
 
 ## 0. What the owner asked
 
@@ -13,32 +13,92 @@ Screenshots: `elet-1-ma.png` … `elet-9-mintak.png` in that folder.
 Plus his structural decision of the same day: money and mail are **rooms**, the bottom bar stays
 `Ma · Terv · Napló · Boop` + `+`. And the order decision: this is **planned now, built after B6**.
 
-## 1. The trap to avoid
+## 1. Round 1 and what the owner rejected (2026-11-13)
+
+The first spike put the seven areas in an **orb strip at the top of Ma** and kept the
+Reggel/Napközben/Este chips. The owner's verdict, verbatim:
+
+> "zavaros, hogy fent van 7 terület alul meg az 5 gomb, valahogy nem áll így össze és nincs is meg
+> a life dashboard érzet ezzel a reggel napközben este résszel."
+
+Three real faults, and they are worth writing down because they are easy to repeat:
+
+1. **Two menus stacked.** Seven orbs on top are a menu; the five-item bar below is another menu.
+   They are not even the same kind of thing (areas vs. places), so the screen reads as confused.
+2. **A switch for something you scroll anyway.** The phase chips jumped to a part of a page the
+   thumb reaches in one flick. They looked like navigation and did almost nothing.
+3. **Seven dots are not a dashboard.** A 40 pt orb with a number is a status light, not an
+   overview. "Látsz mindent" needs actual content on the surface, not seven indicators.
+
+His own shape, which round 2 implements: *"van egy főképernyő amin rajta van … a teljes reggel
+napközben este görgethetően, ott látsz mindent és valamilyen orb. de … ha valamelyik fő területre
+bemegyek akkor legyen annak már egy saját dashboard oldala … mintha az egy full saját app lenne."*
+
+## 2. The trap to avoid
 
 Six areas becoming six tabs, or six differently-shaped screens. Then Boop is a drawer unit, not a
 dashboard — and the "one AI that sees everything" has nothing coherent to see. Everything below
 exists to prevent that.
 
-## 2. The four ideas
+## 3. The ideas (round 2)
 
-### 2.1 The orb lens grows from the body to the life
+### 3.1 One home screen: the day in a single scroll, one orb
 
-Today the hero orb carries five mini orbs: Forma, Alvás, Mozgás, Fuel, Közérzet. **Pénz** and
-**Levél** join them as two more, after a hairline divider (body | life). One glance at Ma answers
-"how is my whole day", not just "how is my body".
+`elet-1-ma.png`. **One** orb (the day itself, 78), one verdict sentence that spans the whole life
+("Kipihent vagy, a pénzed a kereten belül, és két levél jött, ami megér egy percet"), then the day
+from waking to bedtime as a single uninterrupted list. **Reggel / Napközben / Este are headings
+inside that list, not a control.** The `MOST` marker sits where the clock is, and the proposal
+cards appear there.
 
-- This is the single visual move that makes it a *life* dashboard rather than a health app with
-  bolt-ons. It cost nothing structurally in the spike — seven orbs still fit at 440 pt
-  (40 pt orbs, 11.5 pt labels). See `elet-1-ma.png`.
-- Both new areas score 0–100 like the rest, so the grammar holds: Pénz 74 = "within the month's
-  budget at the expected pace", Levél 58 = "two of today's items want a minute".
-- **Open question for later:** seven is the ceiling. An eighth area (life goals? health markers?)
-  needs a different mechanism — probably a scrollable lens or a grouped second row.
+The mail and money events are rows in that list like any other — `A reggeli posta · 34 levél`,
+`Spar · 8 240 Ft` — with the same glyph circle, the same action pill. Nothing marks them as a
+different *kind* of thing, which is the point.
 
-### 2.2 Money and mail wear the *same* room skeleton as sleep
+Mechanics that mattered: the hero is 60% of the screen height (72% left the day too far down),
+the orb is 126 pt, and a compact glass pill (`Ma · 13:40 · 78`) takes over once you scroll past it.
 
-verdict sentence → the level → the days behind it → what you can do → "kérdezz erről".
-No tables, no inbox list, no spreadsheet. See `elet-4-penz.png`, `elet-5-level.png`.
+### 3.2 The areas are wide cards further down the same scroll — loud ones first
+
+`elet-2-teruletek.png`. Under a **"A területeid"** heading, each area that has something to say
+today is a **full-width card**: its orb + name, its verdict sentence, a big number with a caption,
+and seven days as small bars. Three such cards fit the thumb comfortably.
+
+The areas that are fine today collapse into **one row** — "Ezek ma rendben vannak", with their
+orbs as a row of dots — which expands into thin rows (orb · name · verdict · number · chevron).
+
+- Order is **by what matters today**, not fixed. In the spike Levél, Pénz and Mozgás are loud;
+  Alvás, Fuel and Közérzet are quiet. This keeps the scroll short on a calm day and is what makes
+  a growing number of areas survivable — the open question of round 1 (what happens at eight
+  areas?) answers itself.
+- This replaced the seven-orb strip entirely. Compare: a 40 pt orb with a number told you
+  "Pénz 74"; the card tells you "A kereten belül vagy, de az éttermek elfogytak · 281 600 Ft a
+  havi 610 000-ből, a 13. napon" with a week of bars beside it. That is the difference between a
+  status light and a dashboard.
+
+### 3.3 Money and mail wear the *same* skeleton as sleep — and every area gets its own app
+
+Tapping an area card opens **its own full page with its own top tabs** — the owner's "mintha az
+egy full saját app lenne". The painted head keeps the area's sky, verdict and orb; the tabs below
+it are that area's rooms. All seven are real in the spike, from one data-driven page component
+(`EletAreaPage` + `EAreaContent`), which is the proof that the pattern scales rather than needing
+seven bespoke screens:
+
+| Area | Its own tabs |
+|---|---|
+| **Pénz** | Ma · Keretek · Előzmények · Tervezett (`elet-4`, `elet-5`) |
+| **Levél** | Ma · Figyelt · Szabályok · Fiókok (`elet-6`, `elet-7`) |
+| **Fuel** | Ma · Receptek · Hét (`elet-8`) |
+| **Alvás** | Ma · Hét · Előzmények |
+| **Mozgás** | Ma · Edzések · Előzmények |
+| **Közérzet** | Ma · Check-inek · Minták |
+| **Forma** | Ma · Mi hat rá |
+
+Inside a tab the page speaks one language — a headline level with an optional white waterline,
+week bars, named rows with their own bars, bullet lists, a paragraph, and an actions card that
+always ends in the thread door. Every tab is content the owner can actually read, not a stub:
+*Pénz · Előzmények* shows six months with October lit and three observations; *Levél · Szabályok*
+spells out what never reaches a machine (bank, login codes, medical) and exactly what is stripped
+before anything does.
 
 | | Pénz | Levél |
 |---|---|---|
@@ -54,7 +114,7 @@ ellenőrizni`, the three-level honesty the research in `01-mail-digest-research.
 The other 31 mails collapse into one expandable row, by category, so the day's noise is *visibly*
 absorbed rather than hidden.
 
-### 2.3 The proposal card becomes the cross-area organ
+### 3.4 The proposal card becomes the cross-area organ
 
 A proposal is already the unit of "Boop suggests, you tap". With money and mail in, a proposal can
 finally say something no single-domain app can:
@@ -73,11 +133,11 @@ pattern already does for the body experts:
 This needs no new UI — it is the existing card with two new contributors. **That is the proof the
 spine survives the expansion.**
 
-### 2.4 The Boop tab becomes a thread list
+### 3.5 The Boop tab becomes a thread list
 
-The owner's own reference is Claude/ChatGPT. So: a thread list (`elet-6-szalak.png`), each row
+The owner's own reference is Claude/ChatGPT. So: a thread list (`elet-9-szalak.png`), each row
 carrying its **area orbs** so you see at a glance which parts of your life a thread is about; one
-pinned thread; "Új szál" at the top. Opening one (`elet-7-szal.png`) is an ordinary conversation
+pinned thread; "Új szál" at the top. Opening one (`elet-10-szal.png`) is an ordinary conversation
 that quotes real numbers from several areas at once.
 
 The important half is the **reverse direction**: every room and every card carries a
@@ -85,9 +145,9 @@ The important half is the **reverse direction**: every room and every card carri
 thread list is therefore not a separate chat app — it is the memory of every question the screens
 provoked.
 
-### 2.5 Terv's top level becomes the life goal
+### 3.6 Terv's top level becomes the life goal
 
-`elet-8-cel.png`. A life goal ("Nyárra formába kerülni", 31 weeks left) with **every area hanging
+`elet-11-cel.png`. A life goal ("Nyárra formába kerülni", 31 weeks left) with **every area hanging
 under it as a progress leg** — including money ("Havi 60 000 Ft félretéve") and mail ("Csak az
 számít, ami a célhoz tartozik"). The existing Terv content (weight goal, diet plan, mesocycle)
 becomes the body legs of that goal rather than the page itself.
@@ -95,16 +155,16 @@ becomes the body legs of that goal rather than the page itself.
 This is what makes "life goals you can tie every area to" concrete: a goal is not a number, it is
 **the thing that makes six areas one story**.
 
-### 2.6 Napló · Minták becomes cross-area
+### 3.7 Napló · Minták becomes cross-area
 
-`elet-9-mintak.png`. The patterns only get interesting once money and mail are in the corpus:
+The Napló patterns only get interesting once money and mail are in the corpus:
 
 - "Azokon a heteken, amikor az étteremre költés 80 000 Ft fölé megy, a rá következő héten
   átlagosan 0,4 kg-mal többet mutat a mérleg."
 - "A hat eseménynél zsúfoltabb napok után a mély alvásod 18 perccel rövidebb."
 - "Három hét alatt 612 levélből 36-ot nyitottál meg — a többit ezentúl csendben szűröm."
 
-## 3. The honest fork
+## 4. The honest fork
 
 If the AI truly sees everything, the **conversation** may become the real home and the screens
 become what it shows you mid-answer. The spike deliberately does **not** take that turn: the daily
@@ -112,7 +172,7 @@ rhythm (morning plan → evening close) is the thing that works today, and a cha
 it away. But the thread list + the "kérdezz erről" doors keep the road open: if the owner finds
 himself living in the Boop tab, promoting it costs a bar reorder, not a rebuild.
 
-## 4. What this costs in B-slice terms
+## 5. What this costs in B-slice terms
 
 Nothing before B6 — this is a design, not a build (owner decision 8, `14-decisions.md`). What it
 *does* change in what is being built now, so B8 is not torn up later:
@@ -121,17 +181,19 @@ Nothing before B6 — this is a design, not a build (owner decision 8, `14-decis
    The "miért?" renderer already takes `(area, line)` pairs; keep it that way.
 2. **The memory corpus schema** should admit non-biometric daily facts (a cost, a mail verdict)
    with the same day-scoping as a check-in, so B8's day council needs no second ingestion path.
-3. **The lens is a list, not five hard-coded slots.** Wherever the five metrics are an enum today,
-   B4/B5/B6 should not add a sixth assumption of "exactly five".
+3. **Areas are a list, not five hard-coded slots**, and an area page is **one component driven by
+   data**, not a bespoke screen each. Wherever the five metrics are an enum today, B4/B5/B6 should
+   not add a sixth assumption of "exactly five"; and the Étel/Edzés inner-tab pattern of B2 should
+   be generalised into the shared area-page component rather than written twice.
 4. **Two new glyphs** (coin, envelope) are needed and do not exist in the sprite. They are drawn
    inline in the spike (`EGlyph` in `EletRoot.swift`, 64-unit grid, outlined like the sprite's
    `check-ink` set) and need the owner's OK before they enter the shared sprite — coordinate with
    the icon work in `mezo-r36n9` (session `boop-ikon`).
 
-## 5. Open questions for the owner
+## 6. Open questions for the owner
 
-1. Seven orbs — is the body | life divider the right split, or should money and mail be visually
-   quieter (smaller, no number) until they have something to say?
+1. The loud/quiet split on the home screen — is "three cards + one collapsed row" the right
+   balance, or should every area always show its card?
 2. Should the mail digest *notify* (push) when something scores high, or only ever appear in Ma?
    Prior art (`01-mail-digest-research.md` §6, MailGester) says the notification policy is what
    decides whether a digest gets read at all.

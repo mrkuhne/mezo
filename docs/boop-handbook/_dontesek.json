@@ -260,5 +260,17 @@
     "miert": "A hegyvonulat sziluettje miatt egyetlen másik ikonra sem hasonlít a kezdőképernyőn, és ugyanazt a képet hozza, amit a tulajdonos reggel az appban lát.",
     "levaltotta": "Eddig nem volt ikon: a telefonon az üres, alapértelmezett négyzet látszott.",
     "kovetkezmeny": "Az ikon kódból generálódik, így a kinézet változásával újrarajzolható. Az Apple Watch ikonja a B5 szakaszra marad."
+  },
+  "d-2026-11-13-eletpanel-sorrend": {
+    "cim": "Az életpanel (levél + pénz) most csak terv, építeni A Terv után fogjuk",
+    "datum": "2026-11-13",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "A Boop hosszú távon életpanel lesz: a pénz, a levelezés, a naptár és az egészség egy helyen, és a Boop mindegyikről tud. A mostani sorrend viszont nem változik — az Étel, az Edzés és A Terv marad elöl, az életpanel utánuk épül. Most csak a kutatás és a terv készült el.",
+    "miert": "Az egészség-vonal félbehagyása hónapokkal tolná ki azt, amiért az app készül. A terv viszont most kellett, mert eldöntötte, hol lesz a pénz és a levél a képernyőkön, és így a most épülő részeket nem kell később szétszedni.",
+    "levaltotta": "",
+    "kovetkezmeny": "A pénz és a levél szoba lesz, nem új gomb a képernyő alján: a Ma napirendjén jelenik meg egy kártya, azt megnyitva nyílik a teljes felület. A Boop fül pedig szállistává nő, ahol minden kérdésnek saját, visszakereshető beszélgetése lesz."
   }
 }

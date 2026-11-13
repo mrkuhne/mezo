@@ -131,6 +131,7 @@ struct EletRoot: View {
         switch EArg.str("eletOpen") {
         case "penz": return ["m5"]
         case "level": return ["m6"]
+        case let s? where s.hasPrefix("m"): return [s]
         default: return []
         }
     }()
