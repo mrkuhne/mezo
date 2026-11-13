@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -208,6 +209,10 @@ public class PantryCatalogService {
             return catalogRepository.findByNaturalKey(candidate.getName(), candidate.getBrand())
                 .map(this::revive)
                 .map(existing -> trusted ? mergeIfAuthor(authorId, existing, candidate) : existing)
+                .or(() -> candidate.getBarcode() == null ? Optional.empty()
+                    // Lost a race on uq_pantry_catalog_owner_barcode (a double scan under another
+                    // name/brand): the owner's row for that barcode IS the definition — bind to it.
+                    : catalogRepository.findByCreatedByAndBarcodeAndDeletedFalse(authorId, candidate.getBarcode()))
                 .orElseThrow(() -> raced);
         }
     }

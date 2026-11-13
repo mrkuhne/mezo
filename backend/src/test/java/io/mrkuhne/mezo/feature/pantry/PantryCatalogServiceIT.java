@@ -54,6 +54,23 @@ class PantryCatalogServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testFindOrCreate_shouldBindToExistingRow_whenSameBarcodeRacesUnderADifferentName() {
+        UUID user = databasePopulator.populateUser("cat-barcode@test.local");
+        PantryCatalogEntity first = candidate("Zabkasa", "Melvit");
+        first.setBarcode("5900512300108");
+        PantryCatalogEntity winner = service.findOrCreate(user, first);
+
+        // The loser of a double-scan race: same barcode, different name/brand — the natural-key
+        // lookup misses and the insert trips uq_pantry_catalog_owner_barcode, not the natural key.
+        PantryCatalogEntity second = candidate("Zabkasa extra", "Melvit Bio");
+        second.setBarcode("5900512300108");
+        PantryCatalogEntity got = service.findOrCreate(user, second);
+
+        assertThat(got.getId()).isEqualTo(winner.getId());
+        assertThat(catalogRepository.findAll()).filteredOn(c -> "5900512300108".equals(c.getBarcode())).hasSize(1);
+    }
+
+    @Test
     void testFindOrCreate_shouldReviveSoftDeletedRow_whenNaturalKeyMatches() {
         UUID user = databasePopulator.populateUser("cat-a@test.local");
         PantryCatalogEntity dead = catalogPopulator.createFoodDefinition(user, "Kefir", null);
