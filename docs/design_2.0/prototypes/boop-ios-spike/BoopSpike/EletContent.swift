@@ -23,25 +23,79 @@ enum EAreaContent {
     private static let warm = Color(hex: 0xF2994A)
 
     // ───────────────────────────────────────────── Pénz
+    /// Round 11 (owner): "nincsenek ikonok" — every section head that has a sensible glyph gets one.
+    static func sectionGlyph(_ label: String) -> String? {
+        switch label {
+        case "A MAI HÍREK · AMI TÉGED ÉRINT": return "search-ink"
+        case "A HÁROM REKESZ", "HONNAN JÖN EZ A SZÁM": return "scale-ink"
+        case "MI VAN BENNE", "MIRE MEGY EL", "A JÁTÉKPÉNZ ALAKULÁSA", "A HÓNAP MENETE": return "chart-deep"
+        case "AMI JÖN A KÖVETKEZŐ HÓNAPOKBAN": return "clock-ink"
+        case "GYAKORLÁS", "A HÉT KERESKEDÉSEI": return "bolt-ink"
+        case "A MAI TÉTELEK", "EZEN A HÉTEN": return "e-penz"
+        case "MIRE GYŰJTÖK": return "star-sun"
+        case "AMIT A HÉTEN LÁTOK", "AMIT ÉSZREVETTEM": return "spark-cream"
+        case "A PÉNZ TERÜLET", "A GYAKORLÁS": return "plate-deep"
+        default: return nil
+        }
+    }
+
     static let penz: [ETab] = [
         // ── Ma · "mi a dolgom ma?" — and on most days the answer is nothing.
         ETab(name: "Ma", blocks: [
             .highlight(label: "AMI MA SZÁMÍT", text: "Ma nincs dolgod a pénzeddel",
                        sub: "A hét kerete rendben, a hónap jól áll, és semmi nem jár le. Ha mégis vennél valamit, a *Költés* oldal megmondja, belefér-e."),
+            .actions([EAction(glyph: "plus-ink", title: "Kiadás", primary: true),
+                      EAction(glyph: "star-sun", title: "Befektetnék")]),
             .stats([EStat(value: "34 500", unit: "Ft", label: "ennyi maradt a hétből", hot: true),
                     EStat(value: "95 000", unit: "Ft", label: "a hónapból, 12 napra"),
                     EStat(value: "120 000", unit: "Ft", label: "ennyit tudsz befektetni")]),
-            .list(label: "A MAI HÍREK · AMI TÉGED ÉRINT", items: [
-                ("A jegybank nem változtatott az alapkamaton",
-                 "Az állampapírod kamata ehhez van kötve, tehát a 2,4 millió forintos részed hozama változatlan. *Nincs teendő* — ezt azért írom ki, mert kamatdöntés volt, nem mert lépni kellene. 4 forrás · ma 14:10"),
-                ("A világ-ETF-ed 1,1%-ot esett a héten",
-                 "A te részeden ez *−18 400 Ft* a hosszú rekeszben. Egy héten belüli mozgás a 10+ éves pénznél nem jelent semmit, a rekesz mérőszáma sem változott. 6 forrás · ma 09:30"),
-                ("A forint 0,6%-ot erősödött az euróval szemben",
-                 "A devizában tartott részed forintban ennyivel kevesebbet ér most: *−7 200 Ft*. Ez nem a befektetés mozgása, hanem az árfolyam — ezt a kettőt mindig külön mutatom. 3 forrás · ma 08:05")]),
-            .note(label: "HOGYAN KÉSZÜL EZ AZ ÖSSZEFOGLALÓ", body: "Csak azt hozom ide, ami a te meglévő befektetéseidet érinti, és csak akkor, ha tartósan számít: szabályozás, technológia, iparági szerkezet, vagy a hosszú távú számok. A napon belüli hullámzást kiszűröm. Minden forintösszeget a rendszer számol ki a te adataidból — a szöveget írom, a számokat nem, és mindegyik mellé odaírom, mikori. Soha nincs itt „vedd meg” vagy „add el”."),
+            .news(label: "A MAI HÍREK · AMI TÉGED ÉRINT", items: [
+                ENews(title: "A világ-ETF-ed 1,1%-ot esett a héten",
+                      holding: "Világ-ETF", sleeve: "10+ év", holdingGlyph: "star-sun",
+                      effect: "−18 400 Ft", effectNote: "a te részeden",
+                      confidence: 2,
+                      sources: ["Portfolio · A tengerentúli tőzsdék hete",
+                                "Reuters · Global equities slip on rate outlook",
+                                "Bloomberg · Tech leads the pullback",
+                                "FT · Investors trim risk before the data",
+                                "MNB adatszolgáltatás · árfolyamok",
+                                "Az alapkezelő napi árfolyamközlése"],
+                      when: "Ma 09:30 · 6 forrásból összevonva",
+                      verdict: "Egy héten belüli mozgás a 10+ éves pénznél nem jelent semmit — a rekesz mérőszáma sem változott.",
+                      body: "A hét eleji esés a kamatvárakozások átárazódásából jött, nem egyetlen cégből vagy iparágból. Az alapod a világ nagyjából 1 500 nagyvállalatát tartja, tehát pontosan azt csinálta, amit ilyenkor szokott: együtt mozgott a piaccal.\n\nA te rekeszed mérőszáma — *hány évnyi fix kiadásodat fedezi* — 4 év 8 hónapról 4 év 7 hónapra változott. Ez a fajta ingadozás havonta többször előfordul, és az elmúlt öt évben tizennyolcszor volt ennél nagyobb egyhetes esés ebben az alapban.\n\nAmiért ez egyáltalán felkerült ide: a szabályom szerint akkor szólok, ha a mozgás a *te* pénzedben forintban érzékelhető. 18 400 Ft az.",
+                      uncertainty: "A hír megtörtént és az ár tény; a *miértje* viszont elemzői értelmezés, és a források sem értenek egyet abban, mennyi szól a kamatokról és mennyi a technológiai cégekről. Azt pedig, hogy innen merre megy, senki nem tudja — én sem.",
+                      noAction: "Ez a pénz 10+ évre szól. Egy heti mozgás nem ok a lépésre, és nem is küldelek sehova."),
+                ENews(title: "A jegybank nem változtatott az alapkamaton",
+                      holding: "Állampapír", sleeve: "1–3 év", holdingGlyph: "scale-ink",
+                      effect: "0 Ft", effectNote: "változatlan hozam",
+                      confidence: 2,
+                      sources: ["MNB · Monetáris Tanács közleménye",
+                                "Portfolio · Maradt a kamatszint",
+                                "Reuters · Hungary holds rates",
+                                "Index · Mi lesz az állampapírokkal"],
+                      when: "Ma 14:10 · 4 forrásból összevonva",
+                      verdict: "A 2,4 milliós részed hozama változatlan. Azért írom ki, mert kamatdöntés volt — nem mert lépni kellene.",
+                      body: "A papírod kamata az alapkamathoz van kötve, tehát a döntés közvetlenül érint — csak éppen úgy, hogy *nem történik semmi*. A következő kamatfordulód december 8-án lesz, az akkori szinttel.\n\nEzt a hírt akkor is kiteszem, ha nulla a hatás. Ha csak a mozgásokat mutatnám, azt hinnéd, hallgatásom azt jelenti, hogy nem történt semmi — pedig a „megtörtént, és nem érintett” más dolog, mint a „nem néztem meg”.",
+                      uncertainty: "Itt kevés a bizonytalanság: a döntés hivatalos, a papírod képlete ismert. Amit nem tudok: hogy a következő üléseken mi lesz, és hogy az infláció hogyan alakul — a kettő együtt dönti el, mennyit ér ez a pénz reálisan.",
+                      noAction: "A hozamod változatlan, a papír fut tovább. A következő döntési pontod a február 2-i lejárat."),
+                ENews(title: "A forint 0,6%-ot erősödött az euróval szemben",
+                      holding: "Deviza", sleeve: "5–10 év", holdingGlyph: "repeat-deep",
+                      effect: "−7 200 Ft", effectNote: "forintban mérve",
+                      confidence: 1,
+                      sources: ["MNB · hivatalos középárfolyam",
+                                "Portfolio · Erősödő forint",
+                                "Reuters · Forint firms"],
+                      when: "Ma 08:05 · 3 forrásból összevonva",
+                      verdict: "Ez nem a befektetés mozgása, hanem az árfolyamé — ezt a kettőt mindig külön mutatom.",
+                      body: "A devizában tartott részed ugyanannyi eurót ér, mint tegnap; forintban mérve kevesebbet, mert a forint erősödött. Ha holnap gyengül, ez magától visszajön — befektetési döntésed ettől nem lett se jobb, se rosszabb.\n\nEzért van a Pénzem oldalon két külön szám: *a befektetések mozgása* és *ebből az árfolyam*. Ha egybeolvasztanám őket, olyan teljesítményt mutatnék, amit a befektetés nem csinált.",
+                      uncertainty: "Közepes biztonságra tettem, mert a magyarázat a bizonytalan rész: hogy pontosan mi erősítette a forintot ma, arról a három forrás három dolgot mond. Maga az árfolyam és a te forintértéked viszont tény.",
+                      noAction: "Árfolyammozgás, nem befektetési esemény. Ha holnap gyengül a forint, magától visszajön."),
+            ]),
+            .info(label: "Hogyan készül ez az összefoglaló?",
+                  body: "Csak azt hozom ide, ami a *te meglévő befektetéseidet* érinti, és csak akkor, ha tartósan számít: szabályozás, technológia, iparági szerkezet, vagy a hosszú távú számok. A napon belüli hullámzást kiszűröm.\n\nAz azonos eseményről szóló cikkeket egy hírbe vonom össze, és odaírom, hány forrásból. Minden forintösszeget *a rendszer számol ki* a te adataidból — a szöveget írom, a számokat nem —, és mindegyik mellé odaírom, mikori.\n\nMinden hírnél kiírom, mennyire vagyok biztos benne, és hol tévedhetek. Soha nincs itt „vedd meg” vagy „add el”."),
             .menu(label: "A PÉNZ TERÜLET", items: [
                 EMenuItem(glyph: "plus-ink", name: "Kiadás", sub: "Készpénz, pár másodperc"),
-                EMenuItem(glyph: "star-sun", name: "Van egy nagyobb összegem", sub: "Boop kutat és javasol felosztást"),
+                EMenuItem(glyph: "star-sun", name: "Nagyobb összeg", sub: "Boop kutat és javasol felosztást"),
                 EMenuItem(glyph: "repeat-deep", name: "Havi stratégia", sub: "A fizetésedből és a költésedből"),
                 EMenuItem(glyph: "book-sage", name: "Kimutatás", sub: "Hónapok, évek, letöltés")]),
             .ask("Kérdezd meg Boopot a pénzedről"),
@@ -52,13 +106,17 @@ enum EAreaContent {
             .stats([EStat(value: "6 418 000", unit: "Ft", label: "amid most van"),
                     EStat(value: "+2,1", unit: "%", label: "a befektetések mozgása", trend: 1),
                     EStat(value: "−0,4", unit: "%", label: "ebből az árfolyam", trend: -1)]),
-            .note(label: "MIKORIAK AZ ÁRAK", body: "A tőzsdei árak a tegnapi záróárak, ma 07:00-kor frissültek. Az állampapír nem tőzsdei, azt a kamatból számolom. Napon belüli árat nem használok — a te időtávjaidon nem mond semmit."),
+            .actions([EAction(glyph: "plus-ink", title: "Befektetést rögzítek", primary: true),
+                      EAction(glyph: "star-sun", title: "Felosztást kérek")]),
+            .info(label: "Mikoriak ezek az árak?",
+                  body: "A tőzsdei árak a *tegnapi záróárak*, ma 07:00-kor frissültek. Az állampapír nem tőzsdei, azt a kamatból számolom, a devizát az MNB középárfolyamán.\n\nNapon belüli árat nem használok. A te időtávjaidon — egy évtől tizenötig — egy délelőtti mozgás nem mond semmit, viszont nézegetni csábít, és pont ez az, amit ez az oldal nem akar."),
             .rowlist(label: "A HÁROM REKESZ", rows: [
                 ERow(glyph: "scale-ink", title: "1–3 év", sub: "Biztonság · állampapír, pénzpiac", right: "2 400 000", rightSub: "Ft · 37%", level: 0.37),
                 ERow(glyph: "chart-deep", title: "5–10 év", sub: "Vegyes · ETF és kötvény", right: "1 860 000", rightSub: "Ft · 29%", level: 0.29),
-                ERow(glyph: "star-sun", title: "10+ év", sub: "Növekedés · világ-ETF, részvény", right: "2 158 000", rightSub: "Ft · 34%", level: 0.34)],
-                more: "Befektetés rögzítése"),
-            .note(label: "A HOSSZÚ REKESZ MÉRŐSZÁMA", body: "A 10+ éves rekesznél nem a mai százalékot mutatom, mert az egy tizenöt éves pénznél félrevezető. Helyette ezt: *ahogy most áll, növekedést nem feltételezve, ez a rekesz 4 év 7 hónap fix kiadásodat fedezi.* Növekedést azért nem számolok bele, mert azt nem tudom megígérni."),
+                ERow(glyph: "star-sun", title: "10+ év", sub: "Növekedés · 4 év 7 hónapnyi fix kiadásod", right: "2 158 000", rightSub: "Ft · 34%", level: 0.34)],
+                more: "Egy rekesz megnyitása"),
+            .info(label: "Miért évek a hosszú rekesz mérőszáma?",
+                  body: "A 10+ éves rekesznél nem a mai százalékot mutatom, mert az egy tizenöt éves pénznél félrevezető: egy rossz hét „−1,1%”-ként pánikot kelt, pedig semmit nem jelent.\n\nHelyette ezt: *ahogy most áll, növekedést nem feltételezve, ez a rekesz 4 év 7 hónap fix kiadásodat fedezi.* Növekedést azért nem számolok bele, mert azt nem tudom megígérni — és mert így a szám csak akkor nő, ha tényleg teszel bele."),
             .composition(label: "MI VAN BENNE", parts: [
                 EPart(name: "Állampapír", value: 2_400_000, color: Color(hex: 0x2E8B57)),
                 EPart(name: "Világ-ETF", value: 2_040_000, color: Color(hex: 0x4FBF86)),
@@ -69,7 +127,7 @@ enum EAreaContent {
             .rowlist(label: "AMI JÖN A KÖVETKEZŐ HÓNAPOKBAN", rows: [
                 ERow(glyph: "clock-ink", title: "Állampapír kamatfordulója", sub: "December 8. · 1 200 000 Ft-os rész", right: "+34 200", rightSub: "Ft kamat"),
                 ERow(glyph: "repeat-deep", title: "Világ-ETF osztalékfizetés", sub: "December 19. · a 10+ rekeszből", right: "+8 900", rightSub: "Ft"),
-                ERow(glyph: "scale-ink", title: "Állampapír lejárata", sub: "Február 2. · ekkor el kell dönteni, mi legyen vele", right: "1 200 000", rightSub: "Ft", badge: 1, hot: true)],
+                ERow(glyph: "scale-ink", title: "Állampapír lejárata", sub: "Február 2. · ekkor el kell dönteni, mi legyen vele", right: "1 200 000", rightSub: "Ft", badge: 1)],
                 more: "A teljes időrend"),
             .rowlist(label: "GYAKORLÁS", rows: [
                 ERow(glyph: "bolt-ink", title: "A játékpénz", sub: "Papír-próba · nem számít bele a fentibe", right: "+1 200", rightSub: "Ft a hónapban")],
@@ -81,6 +139,8 @@ enum EAreaContent {
         ETab(name: "Költés", badge: 2, blocks: [
             .level(label: "EZEN A HÉTEN", big: "34 500", unit: "Ft", right: "4 nap van hátra",
                    note: "Napi *8 600 Ft*. A hét eddigi költése 42 500 Ft volt.", value: 0.45, marker: 0.57),
+            .actions([EAction(glyph: "plus-ink", title: "Kiadás", primary: true),
+                      EAction(glyph: "search-ink", title: "2 tétel ellenőrzése")]),
             .rowlist(label: "HONNAN JÖN EZ A SZÁM", rows: [
                 ERow(glyph: "plus-ink", title: "Ami bejön", sub: "Fizetés és egyéb bevétel", right: "+ 980 000", rightSub: "Ft"),
                 ERow(glyph: "clock-ink", title: "Fix kiadások", sub: "Lakás, rezsi, előfizetések, bérletek", right: "− 412 000", rightSub: "Ft"),
@@ -88,7 +148,7 @@ enum EAreaContent {
                 ERow(glyph: "bolt-ink", title: "Gyakorlás", sub: "A havi játékkeret — külön sor, hogy ne a befektetésből menjen", right: "− 20 000", rightSub: "Ft"),
                 ERow(glyph: "scale-ink", title: "Az előző hónap hiánya", sub: "Októberben 14 000 Ft-tal csúsztál el", right: "− 14 000", rightSub: "Ft"),
                 ERow(glyph: "check-ink", title: "Ami szabadon marad", sub: "Ezt osztom szét a hónap hetei között", right: "314 000", rightSub: "Ft", hot: true)],
-                more: "A teljes levezetés"),
+                more: "Egy sor módosítása"),
             .stats([EStat(value: "219 000", unit: "Ft", label: "elköltve a hónapban"),
                     EStat(value: "95 000", unit: "Ft", label: "ami még maradt", hot: true),
                     EStat(value: "7 900", unit: "Ft/nap", label: "a mostani tempód", trend: -1)]),
@@ -109,7 +169,10 @@ enum EAreaContent {
                 ERow(glyph: "leaf-sage", title: "Nyári út", sub: "Júniusra kell · jó tempóban vagy", right: "320 000", rightSub: "a 600 000-ből", level: 0.53),
                 ERow(glyph: "shoe-cream", title: "Futócipő", sub: "Boop szerint januárban a legjobb · három lehetőséggel", right: "30 590", rightSub: "Ft", badge: 1)],
                 more: "Cél vagy vásárlás hozzáadása"),
-            .note(label: "A HÓNAP ZÁRÁSA", body: "30-án lezárom a hónapot, és megkérdezem, mi legyen a maradékkal: átviszed a következő hónapra, átteszed a megtakarításba, vagy hagyod. Semmi nem történik magától."),
+            .actions([EAction(glyph: "check-ink", title: "Hónap lezárása"),
+                      EAction(glyph: "repeat-deep", title: "Keretek")]),
+            .info(label: "Mi történik a hónap végén?",
+                  body: "30-án lezárom a hónapot, és megkérdezem, mi legyen a maradékkal: *átviszed* a következő hónapra, *átteszed* a megtakarításba, vagy *hagyod*. Semmi nem történik magától.\n\nHa mínuszban zártál, a hiány a következő hónap levezetésében külön sorként jelenik meg — nem tüntetem el, és nem is írom felül a múltat."),
             .ask("Kérdezd meg Boopot, belefér-e valami"),
         ]),
 
@@ -117,6 +180,8 @@ enum EAreaContent {
         ETab(name: "Gyakorlás", badge: 1, blocks: [
             .highlight(label: "A HETI VISSZANÉZÉS", text: "A terv nélküli belépések vitték el a hetet",
                        sub: "Négy kereskedésből háromnál előre leírtad, hol lépsz ki — azok átlagban *+0,8R*-t hoztak. A negyediknél nem írtad le, és az *−1,7R* lett. Ez a hét leggyakoribb hibája, és *5 100 Ft-ba* került."),
+            .actions([EAction(glyph: "pen-sun", title: "Új kereskedés", primary: true),
+                      EAction(glyph: "book-sage", title: "A teljes napló")]),
             .stats([EStat(value: "+1 200", unit: "Ft", label: "a hónapban, papíron"),
                     EStat(value: "0,3", unit: "R", label: "az átlagod kereskedésenként"),
                     EStat(value: "12 / 20 000", unit: "Ft", label: "ennyi a keretből elkelt")]),
@@ -127,14 +192,14 @@ enum EAreaContent {
                 ERow(glyph: "check-ink", title: "OTP · kitörés", sub: "Terv megvolt · kilépés a szintnél", right: "+1,9", rightSub: "R"),
                 ERow(glyph: "check-ink", title: "Nasdaq-ETF · visszateszt", sub: "Terv megvolt · stop vitte ki", right: "−1,0", rightSub: "R"),
                 ERow(glyph: "check-ink", title: "Mol · nyitási tartomány", sub: "Terv megvolt · kézzel zártad korábban", right: "+0,5", rightSub: "R"),
-                // No `hot` on a loss — the lit colour is the area's green, and a green −1,7R reads as a win.
                 ERow(glyph: "bolt-ink", title: "Richter · hírre ugrottam", sub: "Nem írtad le, hol lépsz ki · hiba megjelölve", right: "−1,7", rightSub: "R", badge: 1)],
-                more: "Új kereskedés tervezése"),
+                more: "Egy kereskedés megnyitása"),
             .list(label: "AMIT A HÉTEN LÁTOK", items: [
                 ("A terv a döntő", "Amikor előre leírtad a kilépési szintet, az átlagod +0,8R. Amikor nem, −1,7R. Négy kereskedésnél ez még nem bizonyíték, csak feltűnő."),
                 ("A hírre belépés a gyenge pont", "Mind a kettő veszteséges volt, amit friss hír után nyitottál."),
                 ("A nyereséges kereskedéseket korán zárod", "Kettőből kettőt a tervezett szint előtt zártál be.")]),
-            .note(label: "HOGYAN MŰKÖDIK EZ AZ OLDAL", body: "Most *papíron* megy: valódi záróárakkal, de valódi pénz nélkül — ezt te fordítod élesre, amikor készen állsz. Minden adat a te beírt belépő, kilépő és kilépési szintedből számol: élő árfolyamot nem figyelek, és a stopodat sem én őrzöm. Az R azt jelenti, hogy a kockáztatott összeghez képest mennyit hozott egy kereskedés — így a pozíció mérete nem tudja elrejteni az igazságot. Ötven jelölt kereskedés alatt a százalékok még zajnak számítanak, és ezt mindig kiírom."),
+            .info(label: "Mit jelent az R, és miért papíron megy?",
+                  body: "Most *papíron* megy: valódi záróárakkal, de valódi pénz nélkül — ezt te fordítod élesre, amikor készen állsz.\n\nAz *R* azt jelenti, hogy a kockáztatott összeghez képest mennyit hozott egy kereskedés. Ha 2 000 Ft-ot kockáztattál és 3 800-at hozott, az +1,9R. Így a pozíció mérete nem tudja elrejteni az igazságot: egy nagy nyereség kis kockázattal többet ér, mint egy nagy nyereség óriási kockázattal.\n\nMinden adat a te beírt belépő, kilépő és kilépési szintedből számol: *élő árfolyamot nem figyelek, és a stopodat sem én őrzöm.* Ötven jelölt kereskedés alatt a százalékok még zajnak számítanak, és ezt mindig kiírom."),
             .menu(label: "A GYAKORLÁS", items: [
                 EMenuItem(glyph: "pen-sun", name: "Új terv", sub: "Mit, miért, hol lépek ki"),
                 EMenuItem(glyph: "leaf-sage", name: "Címkék", sub: "Nyolc, szándékosan nem húsz"),

@@ -178,11 +178,14 @@ struct EStatRowWarm: View {
 struct EBare<C: View>: View {
     var label: String
     var hue: Color
+    /// Round 11 (owner): "nincsenek ikonok" — a section head may carry its own glyph.
+    var glyph: String? = nil
     @ViewBuilder var content: () -> C
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Capsule().fill(hue).frame(width: 3, height: 13)
+                if let glyph { EGlyph(glyph, hue.opacity(0.9), size: 14) }
                 Text(label).font(AuraFont.mono(12)).tracking(1.4).foregroundStyle(.white.opacity(0.7))
                 Spacer()
             }
