@@ -26,8 +26,10 @@
 > comparing the old Lágy screen ("hideg és dobozolós"): Képek variant A photo heads, the area's hue on the key
 > numbers and marked spans inside the text (`EHueText`, `*…*` markup), photo thumbnails on rows that are things, and
 > the boxes dropped from the stats / curve / composition / row-list blocks (`EletWarm.swift`). Side-by-side:
-> `elet-x1-osszehasonlitas-felso.jpg`, `elet-x2-osszehasonlitas-also.jpg`.
-> Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`, `-eletWarm YES`. Screenshots: `elet-*.png`. Direction write-up:
+> `elet-x1-osszehasonlitas-felso.jpg`, `elet-x2-osszehasonlitas-also.jpg`. **The owner picked warm, so it is now
+> the default** (`-eletHideg YES` still shows the pre-decision version). Only Forma, Alvás, Étel and Pénz have a
+> photo today; the rest keep the painted landscape until `mezo-r36n9.44` adds the missing mood photos.
+> Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`, `-eletHideg YES`. Screenshots: `elet-*.png`. Direction write-up:
 > [`docs/superpowers/research/boop-life/03-ui-direction.md`](../../../superpowers/research/boop-life/03-ui-direction.md).
 > **Nothing here is built** — the owner decided on 2026-11-13 that the life dashboard ships after B6.
 

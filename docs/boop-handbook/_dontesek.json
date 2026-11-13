@@ -296,5 +296,17 @@
     "miert": "A területek a célod lábai, úgyhogy oda tartoznak, ahol a cél van. Így az alsó sáv marad négy gomb, és tiszta történetet mond: Ma, ami most van; Terv, a célom és a területeim; Napló, ami volt; Boop, akitől kérdezek.",
     "levaltotta": "Az első próbában hét kis gömb volt a főképernyő tetején — ez két menüt jelentett egymás felett, és a tulajdonos elvetette.",
     "kovetkezmeny": "Gyors útként megmarad a napirend sora (az ebédre koppintva nyílik az Étel), a főképernyő alján a területkártyák, és a plusz gomb a rögzítéshez. A területek nevei a Boop saját szótárához igazodnak: Étel, Edzés, Energia."
+  },
+  "d-2026-11-13-meleg-valtozat": {
+    "cim": "A területoldalak melegebbek lesznek: fotó, szín a számokon, kevesebb doboz",
+    "datum": "2026-11-13",
+    "suly": "Közepes",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "A területoldalak fejlécébe fénykép kerül, a kulcsszámok és a fontos mondatrészek a terület saját színét kapják, a tételsorok mellé pedig annak a dolognak a képe kerül, amiről szólnak. A számok, a grafikon, az összetétel és a tételek kikerültek a kártyákból — közvetlenül a lapon ülnek.",
+    "miert": "A régi, világos kinézettel összehasonlítva a mostani hidegnek és dobozosnak hatott. Négy dologból kettőt érdemes volt átvenni belőle (a fotót és a színt a szövegben), a dobozosság pedig a prototípus hibája volt, nem a stílusé. A két elvetett dolgot — a világos hátteret és a színes rajzolt ikonokat — nem hoztuk vissza.",
+    "levaltotta": "Az első változatban festett színátmenet volt a fejlécben, minden szám fehér, és minden blokk egyforma lekerekített kártyában ült.",
+    "kovetkezmeny": "Ahol még nincs megfelelő fénykép, ott marad a festett ég — ezt a képszabály is megengedi, és jól néz ki. Négy területhez (Edzés, Közérzet, Pénz, Levél) még keresni kell egy-egy csendes, ember nélküli képet; ez külön jegyen van: mezo-r36n9.44."
   }
 }

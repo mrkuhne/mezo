@@ -10,18 +10,23 @@ import SwiftUI
 // This file is the WARM variant of the area page, switched by `-eletWarm YES`, so the two can be shot side by side.
 
 enum EWarm {
-    static var on: Bool { UserDefaults.standard.bool(forKey: "eletWarm") }
+    /// Owner decision 2026-11-13: the warm variant IS the look. `-eletHideg YES` still shows the
+    /// pre-decision version for comparison.
+    static var on: Bool { !UserDefaults.standard.bool(forKey: "eletHideg") }
 
     /// One fixed mood photo per colour world (Képek §3.2: quiet nature, dark-leaning, no faces).
-    static func moodPhoto(_ metric: Int) -> String {
+    ///
+    /// The spike's photo folder is still the old Lágy library: only three of the seven worlds have a photo that
+    /// satisfies the guideline. Everything else returns nil and keeps the painted landscape — which the guideline
+    /// itself allows ("never load-bearing; the painted landscape stays in the kit as the fallback").
+    /// Gap filed as a follow-up: Edzés, Energia, Pénz and Levél need their own mood photo.
+    static func moodPhoto(_ metric: Int) -> String? {
         switch metric {
-        case 1: return "aura-alkony.jpg"     // Alvás   · dusk
-        case 2: return "aura-futas.jpg"      // Edzés   · trail
-        case 3: return "aura-zold.jpg"       // Étel    · green
-        case 4: return "aura-to.jpg"       // Energia · lake
-        case 5: return "aura-hegy.jpg"     // Pénz    · mountain dusk — the library has no Pénz photo yet
-        case 6: return "aura-alkony.jpg"     // Levél   · dusk
-        default: return "aura-hegy.jpg"      // Forma   · mountain night
+        case 0: return "aura-hegy.jpg"      // Forma · mountain dusk
+        case 1: return "aura-alkony.jpg"    // Alvás · dusk over water
+        case 3: return "konyha.jpg"         // Étel  · vegetables on a board (stands in for the decided deszka.jpg)
+        case 5: return "aura-hegy.jpg"      // Pénz  · borrowed from Forma until it has its own
+        default: return nil                 // Edzés, Energia, Levél · painted landscape until a photo exists
         }
     }
 }
@@ -35,12 +40,16 @@ struct EPhotoHead: View {
         let m = EMetric.all[metric]
         Color.clear.frame(height: height)
             .overlay {
-                photo(EWarm.moodPhoto(metric))
-                    .resizable().scaledToFill()
-                    .saturation(0.8).brightness(-0.06)
+                if let name = EWarm.moodPhoto(metric) {
+                    photo(name).resizable().scaledToFill()
+                        .saturation(0.8).brightness(-0.06)
+                } else {
+                    PaintedLandscape(sky: EMetric.all[metric].sky)
+                }
             }
             .clipped()
             .overlay(
+                EWarm.moodPhoto(metric) == nil ? nil :
                 LinearGradient(stops: [
                     .init(color: m.top.opacity(0.88), location: 0),
                     .init(color: m.top.opacity(0.42), location: 0.34),

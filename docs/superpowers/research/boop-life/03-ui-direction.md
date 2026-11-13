@@ -2,7 +2,7 @@
 
 Source: owner conversation 2026-11-13 (`mezo-r36n9.33`), explored in a throwaway simulator spike.
 Spike files: `docs/design_2.0/prototypes/boop-ios-spike/BoopSpike/Elet*.swift`, launch `-elet YES`.
-Screenshots: `elet-1-ma.png` … `elet-15-miert.png` in that folder (round 4).
+Screenshots: `elet-1-ma.png` … `elet-14-miert.png`, A/B `elet-x1`/`elet-x2` (round 5).
 
 ## 0. What the owner asked
 
@@ -219,6 +219,42 @@ the corner. Pénz has a month curve against the even-pace line, a five-part comp
 day's transactions; Levél has an arrival heat strip and a price history for a watched product;
 Étel has the day's intake curve, a macro composition and the meals; Edzés has today's five
 exercises with the suggested weight bump.
+
+### 3.9 Round 5 — warm: a photo, colour in the text, and the boxes gone
+
+The owner put the old **Lágy** screen next to ours: *"ennek a UI része viszont tetszik, hogy színes, képes,
+jobbak az elemek rajta, amit most építettünk picit ilyen hideg és dobozolós."*
+
+He had **rejected Lágy himself on 2026-11-10** ("not mobile-friendly"), so the question was not whether to go
+back but **what exactly made it warmer**. Four things, and they do not all deserve the same answer:
+
+| What | Verdict |
+|---|---|
+| A real **photograph** in the head | **borrow** — already his decision #10 the same day (Képek variant A); the spike simply had not applied it |
+| **Colour inside the content** (the green numbers) | **borrow** — the canon's "colour only in the sky and the orbs" is what made the cards read grey |
+| Coloured, illustrated **icons** | keep out — rejected, and the new glyph family shipped the same day |
+| **Light paper** | keep out — rejected 2026-11-10, and it gets noisy under eight dense blocks |
+
+And "dobozolós" was the prototype's own fault: six to eight **identical** rounded rectangles stacked.
+
+The warm variant (`EletWarm.swift`, `-eletHideg YES` still shows the old one) therefore does four things:
+
+1. **Photo head** per Képek §3.3 — saturation 0.8, brightness −0.06, the hue's own gradient over it, and the
+   painted landscape as the fallback where no compliant photo exists (the guideline allows exactly this, and the
+   result holds up — see `elet-9-edzes.png`).
+2. **`EHueText`** — a `*…*` markup so key numbers and phrases take the area's hue inside ordinary prose. The
+   morning briefing uses it too.
+3. **Photo thumbnails** on rows that are *things* (Spar → vegetables, Kávézó → coffee); a row that is not a thing
+   keeps its glyph (BKK bérlet), because a near-miss photo is worse than a glyph.
+4. **The cards dropped** from the stats, curve, composition and row-list blocks — they sit on the page under a
+   label with a small hue tick, with more air between them. Only the highlight and the menu grid stay boxed.
+
+Shot side by side before the choice (`elet-x1-osszehasonlitas-felso.jpg`, `elet-x2-osszehasonlitas-also.jpg`);
+the owner picked warm.
+
+**Open gap:** only three of the seven worlds have a guideline-compliant mood photo. Edzés, Energia, Pénz and
+Levél have none — every candidate in the old library contains a person. Filed as `mezo-r36n9.44`; the painted
+fallback carries them until then.
 
 ## 4. The honest fork
 

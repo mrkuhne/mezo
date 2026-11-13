@@ -142,7 +142,22 @@ struct EletMa: View {
     private func hero(height: CGFloat) -> some View {
         ZStack(alignment: .top) {
             Color.clear.frame(height: height)
-                .overlay { PaintedLandscape(sky: day.sky) }
+                .overlay {
+                    if EWarm.on, let name = EWarm.moodPhoto(0) {
+                        photo(name).resizable().scaledToFill()
+                            .saturation(0.8).brightness(-0.06)
+                            .overlay(LinearGradient(stops: [
+                                .init(color: day.top.opacity(0.8), location: 0),
+                                .init(color: day.top.opacity(0.3), location: 0.3),
+                                .init(color: day.sky[2].opacity(0.16), location: 0.52),
+                                .init(color: gBase.opacity(0.6), location: 0.82),
+                                .init(color: gBase, location: 1),
+                            ], startPoint: .top, endPoint: .bottom))
+                            .overlay(Rectangle().fill(day.glow).opacity(0.07).blendMode(.color))
+                    } else {
+                        PaintedLandscape(sky: day.sky)
+                    }
+                }
                 .clipped()
                 .overlay(LinearGradient(stops: [.init(color: .clear, location: 0.68), .init(color: gBase.opacity(0.4), location: 0.88),
                                                 .init(color: gBase.opacity(0), location: 1)], startPoint: .top, endPoint: .bottom))
@@ -234,20 +249,14 @@ struct EletMa: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 14)
 
-            Text("Hét óra tizenkét perc, ebből másfél óra mély — tizennyolc perccel több, mint a heti átlagod. A Formád 78, ami négy ponttal jobb a tegnapinál.")
-                .font(.system(size: 15)).lineSpacing(5).foregroundStyle(.white.opacity(0.85))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 10)
+            EHueText(text: "Hét óra tizenkét perc, ebből *másfél óra mély* — tizennyolc perccel több, mint a heti átlagod. A *Formád 78*, ami négy ponttal jobb a tegnapinál.",
+                     hue: day.glow, size: 15).padding(.top, 10)
 
-            Text("A naptárad sűrű: hat megbeszélés, a legnehezebb blokk fél tizenegykor. Ezért tettem az edzést fél hétre — így marad fél óra levegő a munka után, és tíz előtt kész a vacsora.")
-                .font(.system(size: 15)).lineSpacing(5).foregroundStyle(.white.opacity(0.85))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 10)
+            EHueText(text: "A naptárad sűrű: *hat megbeszélés*, a legnehezebb blokk fél tizenegykor. Ezért tettem az *edzést fél hétre* — így marad fél óra levegő a munka után, és tíz előtt kész a vacsora.",
+                     hue: day.glow, size: 15).padding(.top, 10)
 
-            Text("A postádból harmincnégy levélből kettőt hagytam meg neked, és az egyik tényleg jó hír: a futócipő, amit hetek óta figyelsz, ma a legolcsóbb, amit valaha láttam rá. A pénzed rendben van, csak az éttermek kerete fogyott el.")
-                .font(.system(size: 15)).lineSpacing(5).foregroundStyle(.white.opacity(0.85))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 10)
+            EHueText(text: "A postádból harmincnégy levélből *kettőt* hagytam meg neked, és az egyik tényleg jó hír: a futócipő, amit hetek óta figyelsz, ma *a legolcsóbb, amit valaha láttam rá*. A pénzed rendben van, csak az *éttermek kerete fogyott el*.",
+                     hue: day.glow, size: 15).padding(.top, 10)
 
             // a peek into every area, in one line each
             FlowRow(spacing: 8, rowSpacing: 8) {

@@ -55,7 +55,7 @@ struct EletBoopTab: View {
             gPageBackground(m.top).ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    GHead(sky: m.sky, height: 260)
+                    Group { if EWarm.on { EPhotoHead(metric: 0, height: 290) } else { GHead(sky: m.sky, height: 260) } }
                         .overlay(alignment: .bottomLeading) {
                             VStack(alignment: .leading, spacing: 8) {
                                 GLabel("BOOP")
@@ -216,7 +216,7 @@ struct EletTerv: View {
                 gPageBackground(m.top).ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
-                        GHead(sky: m.sky, height: 290)
+                        Group { if EWarm.on { EPhotoHead(metric: 0, height: 300) } else { GHead(sky: m.sky, height: 290) } }
                             .overlay(alignment: .bottomLeading) {
                                 VStack(alignment: .leading, spacing: 8) {
                                     GLabel("AZ ÉLETCÉLOD · 2027 NYARA")
