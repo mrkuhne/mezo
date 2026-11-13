@@ -97,4 +97,46 @@ class SensitivityServiceTest {
 
         assertThat(SensitivityService.verdict(p, Map.of(), 4).blocksSuggestion()).isFalse();
     }
+
+    // --- lactose-free recognition (mezo-r36n9.48) -------------------------------------------
+
+    @Test
+    void lactoseFreeSilencesAnIntoleranceMilkWarning() {
+        SensitivityVerdict v = SensitivityService.verdict(
+            profile("milk", SensitivityLevel.INTOLERANCE), Map.of("milk", AllergenState.CONTAINS), null, true);
+
+        assertThat(v.warnings()).isEmpty();
+        assertThat(v.blocksSuggestion()).isFalse();
+    }
+
+    @Test
+    void anUnrecognisedProductStillWarnsAnIntolerance() {
+        SensitivityProfile p = profile("milk", SensitivityLevel.INTOLERANCE);
+
+        // false and null both mean "not recognised as lactose-free": silence buys no pass.
+        assertThat(SensitivityService.verdict(p, Map.of("milk", AllergenState.CONTAINS), null, false)
+            .blocksSuggestion()).isTrue();
+        assertThat(SensitivityService.verdict(p, Map.of("milk", AllergenState.CONTAINS), null, null)
+            .blocksSuggestion()).isTrue();
+    }
+
+    @Test
+    void lactoseFreeNeverWeakensAMilkAllergy() {
+        // The EU-14 "milk" key is the protein, which a lactose-free product still carries.
+        SensitivityVerdict v = SensitivityService.verdict(
+            profile("milk", SensitivityLevel.ALLERGY), Map.of("milk", AllergenState.CONTAINS), null, true);
+
+        assertThat(v.blocksSuggestion()).isTrue();
+        assertThat(v.warnings()).hasSize(1);
+    }
+
+    @Test
+    void lactoseFreeNeverWeakensAnAvoidRuleOrAnotherKey() {
+        assertThat(SensitivityService.verdict(
+            profile("milk", SensitivityLevel.AVOID), Map.of("milk", AllergenState.CONTAINS), null, true)
+            .blocksSuggestion()).isTrue();
+        assertThat(SensitivityService.verdict(
+            profile("eggs", SensitivityLevel.INTOLERANCE), Map.of("eggs", AllergenState.CONTAINS), null, true)
+            .blocksSuggestion()).isTrue();
+    }
 }

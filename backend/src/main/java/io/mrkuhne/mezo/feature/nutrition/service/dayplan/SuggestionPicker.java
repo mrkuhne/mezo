@@ -46,7 +46,8 @@ public final class SuggestionPicker {
         RecipeCandidate best = recipes.stream()
             .filter(r -> r.category() == category)
             .filter(r -> Math.abs(r.perServing().kcal() - budget.kcal()) <= tolerance)
-            .filter(r -> !SensitivityService.verdict(profile, r.allergens(), r.nova()).blocksSuggestion())
+            .filter(r -> !SensitivityService.verdict(profile, r.allergens(), r.nova(), r.lactoseFree())
+                .blocksSuggestion())
             .min(Comparator
                 .comparingInt((RecipeCandidate r) -> Math.abs(r.perServing().kcal() - budget.kcal()))
                 .thenComparing(r -> r.starred() ? 0 : 1)

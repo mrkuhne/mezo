@@ -28,6 +28,7 @@ public class SensitivityService {
     static final String CONTAINS_TEXT = "tartalmazza";
     static final String TRACES_TEXT = "nyomokban tartalmazhatja";
     static final String NOVA_KEY = "nova";
+    static final String MILK_KEY = "milk";
 
     private final SensitivityProfileRepository repository;
 
@@ -72,6 +73,18 @@ public class SensitivityService {
     /** {@code nova} is the food's NOVA level (1..4) or null when unclassified. */
     public static SensitivityVerdict verdict(
             SensitivityProfile profile, Map<String, AllergenState> allergens, Integer nova) {
+        return verdict(profile, allergens, nova, null);
+    }
+
+    /**
+     * {@code lactoseFree} is the food's lactose-free marking (mezo-r36n9.48): TRUE when it is
+     * recognised as lactose-free, FALSE when it is not, null when nothing is known. It only ever
+     * silences an INTOLERANCE-level {@code milk} rule, because lactose intolerance is about the
+     * sugar while the EU-14 "milk" key is about the protein — the allergen itself is still there,
+     * so an ALLERGY-level milk rule keeps blocking, and an AVOID ("I'd rather not") keeps warning.
+     */
+    public static SensitivityVerdict verdict(
+            SensitivityProfile profile, Map<String, AllergenState> allergens, Integer nova, Boolean lactoseFree) {
         boolean blocks = false;
         List<SensitivityVerdict.Warning> warnings = new ArrayList<>();
         for (Sensitivity s : profile.items()) {
@@ -85,7 +98,9 @@ public class SensitivityService {
                     case TRACES -> TRACES_TEXT;
                     case UNKNOWN -> UNKNOWN_TEXT; // unknown is never safe for an allergy
                 };
-                case INTOLERANCE, AVOID -> state == AllergenState.CONTAINS ? CONTAINS_TEXT : null;
+                case INTOLERANCE -> state == AllergenState.CONTAINS && !lactoseFreeMilk(s.key(), lactoseFree)
+                    ? CONTAINS_TEXT : null;
+                case AVOID -> state == AllergenState.CONTAINS ? CONTAINS_TEXT : null;
             };
             if (text != null) {
                 blocks = true;
@@ -98,6 +113,14 @@ public class SensitivityService {
             warnings.add(new SensitivityVerdict.Warning(NOVA_KEY, "feldolgozottság: " + nova));
         }
         return new SensitivityVerdict(blocks, List.copyOf(warnings));
+    }
+
+    /**
+     * Whether this rule is the milk rule AND the food is positively recognised as lactose-free.
+     * Null and FALSE both mean "not recognised", so the warning stands — silence never buys a pass.
+     */
+    private static boolean lactoseFreeMilk(String key, Boolean lactoseFree) {
+        return MILK_KEY.equals(key) && Boolean.TRUE.equals(lactoseFree);
     }
 
     private static SensitivityProfile toProfile(SensitivityProfileEntity e) {

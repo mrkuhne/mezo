@@ -247,7 +247,8 @@ public class DayPlanService {
             Map<String, AllergenState> allergens = e.getAllergens() == null ? Map.of() : e.getAllergens();
             out.add(new RecipeCandidate(e.getId(), e.getName(), category,
                 perServing(total, servings), e.isStarred(),
-                e.getNovaDominant() == null ? null : (int) e.getNovaDominant(), allergens));
+                e.getNovaDominant() == null ? null : (int) e.getNovaDominant(), allergens,
+                e.getLactoseFree()));
         }
         return List.copyOf(out);
     }

@@ -479,8 +479,8 @@
     "terulet": [
       "Étel"
     ],
-    "mit_kapsz": "A hal, a tojás, a tej és a magvak nincsenek allergénként megjelölve a kamrádban, ezért egy halas recept ma „allergénmentesnek” látszik. Javítás után a Boop figyelmeztetni tud.",
-    "munkamenet": "boop-b4-etel",
+    "mit_kapsz": "A hal, a tojás, a tej és a magvak nem voltak allergénként megjelölve a kamrádban, ezért egy halas vagy tojásos recept „allergénmentesnek” látszott. Mostantól a polc (és ahol vegyes, a név) kitölti, amit biztosan tudni lehet, a laktózmentes termékeidet pedig a Boop felismeri, és nem szól rájuk.",
+    "munkamenet": "boop-allergen-alap",
     "szulo": "mezo-r36n9.14"
   },
   "mezo-r36n9.50": {

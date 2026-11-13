@@ -17,5 +17,10 @@ public record RecipeCandidate(
         boolean starred,
         /** NOVA 1..4, or null when the recipe is unclassified. */
         Integer nova,
-        Map<String, AllergenState> allergens) {
+        Map<String, AllergenState> allergens,
+        /**
+         * The lactose-free rollup (mezo-r36n9.48): TRUE when every milk-bearing ingredient is
+         * lactose-free, FALSE when one is not, null when no ingredient carries milk.
+         */
+        Boolean lactoseFree) {
 }
