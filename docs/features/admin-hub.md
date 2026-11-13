@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-11-12
+updated: 2026-11-13
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -17,6 +17,8 @@ related: [_platform-auth-security, me, _platform-api-backend, _platform-data-lay
 ---
 
 # Admin hub — Feature Documentation
+
+> **2026-11-13:** the `recipe_import` LLM-call slug (Boop B4 recipe import) is labelled „Recept beolvasás” in `admin/lib/labels.ts` (the completeness test requires every backend slug).
 
 > **2026-11-12 — reviewed after Boop B3 (`mezo-r36n9.13`).** No admin change beyond one label: the usage-log feature `boop_day_close` (Boop's day-close and check-in lines) is named in `frontend/src/features/admin/lib/labels.ts`.
 

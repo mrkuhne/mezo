@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-11-12
+updated: 2026-11-13
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -16,6 +16,8 @@ related: [dayclose, boop-ios, insights, proactive, today, me, character, _platfo
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-11-13 — recipe import port (`mezo-r36n9.14`).** `feature/companion/llm/RecipeImportLlmAdapter` bridges the recipe-owned `RecipeImportLlm` port (text + multi-image) to `CompanionLlm`; `FakeCompanionLlm` answers `[fake-recipe-import:{json}]` in page/pasted text or photo bytes. LLM-call feature slug `recipe_import` (labelled in `admin/lib/labels.ts`).
 
 > **2026-11-12 — Boop B3 Napi ritmus: the `boop` channel (`mezo-r36n9.13`).** `ai_conversation.channel` (`web` default | `boop`; migration `202611121130_mezo-r36n9.13_conversation_channel.sql`): a conversation started by the native app's Boop tab is `boop`, is **titled with its date**, and sees only **today's turns** as history; every web conversation stays `web`. A `boop` turn gets the pushed **`BoopDayContext`** block (`companion/service`, one deterministic read of today — sleep, HRV/HR against usual, check-ins and their energy, goal, plan and moved session, calendar shape, food and training so far; target under 1 200 tokens) in the prompt, so the owner never re-explains his day; the same `DayBlock` also renders the **`GET /api/companion/day-context`** answer (`CompanionDayContextController`: "Boop látja · most" chips + up to 3 rule-based ready questions, no LLM) so the strip shows exactly what the model sees. New tools in `DayTools`: **`get_wearable`** (the watch's day numbers) and **`get_calendar`** (today's events without titles). The moved gym-session time (Boop's `session_time` override lives in `feature.boop`, which companion must not import) is read through the new port **`SessionTimeOverrideSource`**, implemented by boop. The day-close and check-in lines run on the same cheap tier through the dayclose-owned `DayCloseLlm` port (`DayCloseLlmAdapter`, [`dayclose.md`](dayclose.md)). Tests `BoopDayContextIT`, `BoopChannelChatIT`, `CompanionApiIT`; see [`boop-ios.md`](boop-ios.md).
 
