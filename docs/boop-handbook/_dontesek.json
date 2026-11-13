@@ -308,5 +308,17 @@
     "miert": "A régi, világos kinézettel összehasonlítva a mostani hidegnek és dobozosnak hatott. Négy dologból kettőt érdemes volt átvenni belőle (a fotót és a színt a szövegben), a dobozosság pedig a prototípus hibája volt, nem a stílusé. A két elvetett dolgot — a világos hátteret és a színes rajzolt ikonokat — nem hoztuk vissza.",
     "levaltotta": "Az első változatban festett színátmenet volt a fejlécben, minden szám fehér, és minden blokk egyforma lekerekített kártyában ült.",
     "kovetkezmeny": "Ahol még nincs megfelelő fénykép, ott marad a festett ég — ezt a képszabály is megengedi, és jól néz ki. Négy területhez (Edzés, Közérzet, Pénz, Levél) még keresni kell egy-egy csendes, ember nélküli képet; ez külön jegyen van: mezo-r36n9.44."
+  },
+  "d-2026-11-13-elo-uzenofal": {
+    "cim": "A főképernyő élő üzenőfal lesz, nem napirend — és lekerül róla a nagy pontszám",
+    "datum": "2026-11-13",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "Amikor megnyitod az appot, a Boop azt mutatja, ami ÉPP akkor számít: legfeljebb három kártya (teendő, történt, készülj, reakció arra, amit most rögzítettél), és fölöttük a check-in, amíg ki nem töltöd. Amire ráléptél, lecsúszik a „Ma történt” közé, nem tűnik el. Ha nincs semmi, azt is kimondja. A reggeli összefoglaló és a napirend becsukott sorban marad — reggel nyitva, napközben csukva. Alattuk a nap energiája és az aznapi észrevételek. A nagy pontszám lekerül a főképernyőről: a gömb marad, szám nélkül.",
+    "miert": "Egy szám arról, hogy „milyen vagy ma”, nem mond semmit és nem lehet vele mit kezdeni. A napirendet pedig nem akarod egész nap nézegetni — reggel átnézed, utána az érdekel, hogy mi a következő. A pontszám ott marad, ahol jelent valamit: a területen belül, az adat mellett, amiből lett.",
+    "levaltotta": "Eddig a Ma a nap idővonala volt, a tetején egész nap a reggeli köszöntővel és egy nagy 0–100-as számmal.",
+    "kovetkezmeny": "A napirend nem vész el, csak becsukva kerül lejjebb — anélkül elveszne a nap alakja. A fal szándékosan korlátos (legfeljebb három kártya), hogy ne váljon értesítés-folyammá. A területek napi szintjei lekerülnek a főképernyőről; azok a Terv fülön vannak."
   }
 }

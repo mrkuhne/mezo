@@ -90,29 +90,41 @@ struct EProposal {
                 (1, "A késői, nehéz vacsorák után átlagosan 24 perccel kevesebbet alszol.")])
 }
 
-// MARK: - Home
+// MARK: - Home — the living wall
 
 struct EletMa: View {
     @Binding var path: [String]
     var onToast: (String) -> Void
 
     @State private var motion = OrbMotion()
-    @State private var decided: [String: Bool] = [:]
+    @State private var acted: [String: String] = [:]          // card id → the line it left behind
+    @State private var dismissed: Set<String> = []
+    @State private var briefOpen = false
+    @State private var dayOpen = false
+    @State private var pastOpen = false
     @State private var compact = false
-    @State private var quietOpen = false
-    private let day = EMetric.all[0]                 // the day's own orb
+    private let day = EMetric.all[0]
     private let now = 13.67
+
+    /// At most three, plus the check-in pinned while it is due.
+    private var live: [EFeedCard] {
+        let rest = EFeedCard.now.filter { $0.kind != .checkin && acted[$0.id] == nil && !dismissed.contains($0.id) }
+        let head = EFeedCard.now.filter { $0.kind == .checkin && acted[$0.id] == nil }
+        return head + Array(rest.prefix(3))
+    }
+    private var settled: [String] { EFeedCard.now.compactMap { acted[$0.id] } }
 
     var body: some View {
         NavigationStack(path: $path) {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.50 + geo.safeAreaInsets.top)
-                        VStack(spacing: 30) {
-                            briefing
-                            dayScroll
-                            areaStack
+                        hero(height: geo.size.height * 0.37 + geo.safeAreaInsets.top)
+                        VStack(alignment: .leading, spacing: 22) {
+                            feed
+                            folds
+                            energy
+                            notices
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 2)
@@ -124,7 +136,7 @@ struct EletMa: View {
                 .scrollIndicators(.hidden)
                 .ignoresSafeArea(edges: .top)
                 .background(gPageBackground(day.top).ignoresSafeArea())
-                .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y > geo.size.height * 0.5 } action: { _, v in
+                .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y > geo.size.height * 0.36 } action: { _, v in
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { compact = v }
                 }
                 .overlay(alignment: .top) { if compact { compactHeader } }
@@ -137,7 +149,7 @@ struct EletMa: View {
         .onDisappear { motion.stop() }
     }
 
-    // MARK: Hero — one orb, one sentence. No metric strip, no phase chips.
+    // MARK: Hero — the orb and a sentence. No score: a number you cannot act on is not a greeting.
 
     private func hero(height: CGFloat) -> some View {
         ZStack(alignment: .top) {
@@ -159,9 +171,8 @@ struct EletMa: View {
                     }
                 }
                 .clipped()
-                .overlay(LinearGradient(stops: [.init(color: .clear, location: 0.68), .init(color: gBase.opacity(0.4), location: 0.88),
-                                                .init(color: gBase.opacity(0), location: 1)], startPoint: .top, endPoint: .bottom))
-                .mask(LinearGradient(stops: [.init(color: .black, location: 0.82), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
+                .mask(LinearGradient(stops: [.init(color: .black, location: 0.82), .init(color: .clear, location: 1)],
+                                     startPoint: .top, endPoint: .bottom))
 
             VStack(spacing: 0) {
                 HStack {
@@ -174,48 +185,31 @@ struct EletMa: View {
                         .glassEffect(.clear, in: .circle)
                         .frame(width: 130, alignment: .trailing)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 58)
+                .padding(.horizontal, 16).padding(.top, 58)
 
-                sun.frame(height: 176).padding(.top, 2).padding(.bottom, 8)
+                LivingOrb(mood: .good, size: 96, motion: motion, palette: day.orb, glow: true, level: 0.78)
+                    .padding(.top, 10)
+                    .onTapGesture { path.append("m0") }
 
-                Text("A MAI NAPOD").font(.system(size: 13, weight: .semibold)).tracking(2.6)
-                    .foregroundStyle(.white.opacity(0.8))
-                Text("Jó napod lesz").font(AuraFont.serif(38)).foregroundStyle(.white).padding(.top, 8)
-                Text("Kipihent vagy, a pénzed a kereten belül, és két levél jött, ami megér egy percet.")
-                    .font(.system(size: 16.5)).lineSpacing(4).multilineTextAlignment(.center)
-                    .foregroundStyle(.white.opacity(0.85)).padding(.horizontal, 30).padding(.top, 10)
+                Text("Jó napod lesz").font(AuraFont.serif(34)).foregroundStyle(.white).padding(.top, 10)
+                Text("Kipihent vagy, és eddig minden a terv szerint megy.")
+                    .font(.system(size: 16)).lineSpacing(4).multilineTextAlignment(.center)
+                    .foregroundStyle(.white.opacity(0.82)).padding(.horizontal, 36).padding(.top, 8)
                 Spacer(minLength: 0)
             }
             .frame(height: height)
         }
     }
 
-    private var sun: some View {
-        GeometryReader { g in
-            let H = g.size.height, size: CGFloat = 116
-            let cy = H - 8 - 0.63 * (H - 8 - size / 2 - 6)
-            ZStack {
-                Circle().fill(day.glow.opacity(0.18)).frame(width: size * 1.7).blur(radius: 60)
-                LivingOrb(mood: .good, size: size, motion: motion, palette: day.orb, glow: true, level: 0.78)
-                Text("78").font(.custom("Outfit", size: 46).weight(.light)).foregroundStyle(.white)
-                    .monospacedDigit().shadow(color: .black.opacity(0.35), radius: 10).allowsHitTesting(false)
-            }
-            .frame(width: g.size.width, height: size * 2)
-            .position(x: g.size.width / 2, y: cy)
-            .mask(alignment: .top) {
-                LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.93), .init(color: .clear, location: 1)],
-                               startPoint: .top, endPoint: .bottom).frame(height: H - 8 + 14)
-            }
-        }
-    }
-
     private var compactHeader: some View {
         HStack(spacing: 10) {
-            LivingOrb(mood: .good, size: 26, motion: motion, palette: day.orb, glow: false, level: 0.78).allowsHitTesting(false)
+            LivingOrb(mood: .good, size: 26, motion: motion, palette: day.orb, glow: false, level: 0.78)
+                .allowsHitTesting(false)
             Text("Ma").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
             Text("13:40").font(.custom("Outfit", size: 17).weight(.light)).foregroundStyle(.white.opacity(0.8))
-            Text("· 78").font(.system(size: 14)).foregroundStyle(.white.opacity(0.6))
+            if !live.isEmpty {
+                Text("· \(live.count) új").font(.system(size: 14)).foregroundStyle(.white.opacity(0.6))
+            }
         }
         .padding(.leading, 8).padding(.trailing, 16).frame(height: 44)
         .glassEffect(.regular, in: .capsule)
@@ -223,8 +217,113 @@ struct EletMa: View {
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 
-    // MARK: The morning briefing — the long, premium good-morning with a peek into everywhere
+    // MARK: Most — at most three, and an honest empty state
 
+    private var feed: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Text("Most").font(AuraFont.serif(27)).foregroundStyle(.white)
+                if !live.isEmpty {
+                    Text("\(live.count)").font(.custom("Outfit", size: 13).weight(.semibold))
+                        .foregroundStyle(gBase).frame(minWidth: 22, minHeight: 22)
+                        .background(Capsule().fill(.white)).padding(.top, 4)
+                }
+                Spacer()
+            }
+            if live.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 9) {
+                        StillOrb(colors: day.orb, size: 22, level: 0.85)
+                        Text("MINDEN RENDBEN").font(AuraFont.mono(10.5, .bold)).tracking(1.5)
+                            .foregroundStyle(.white.opacity(0.6))
+                        Spacer()
+                    }
+                    Text("Most nincs teendőd.").font(AuraFont.serif(21)).foregroundStyle(.white).padding(.top, 2)
+                    Text("Legközelebb 17:00-kor szólok, az edzés előtti falat miatt.")
+                        .font(.system(size: 14)).foregroundStyle(.white.opacity(0.7))
+                }
+                .padding(18).frame(maxWidth: .infinity, alignment: .leading).gCard(24)
+            } else {
+                ForEach(live) { c in
+                    EFeedCardView(c: c) { line in
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                            if line == "Rendben, most nem" { dismissed.insert(c.id) } else { acted[c.id] = line }
+                        }
+                        onToast(line)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: The day, folded away — reviewed in the morning, not stared at all day
+
+    private var folds: some View {
+        VStack(spacing: 10) {
+            if !settled.isEmpty {
+                EFoldRow(title: "Ma történt", sub: "\(settled.count) elintézve", glyph: "check-ink",
+                         hue: day.glow, open: $pastOpen) {
+                    VStack(alignment: .leading, spacing: 11) {
+                        ForEach(Array(settled.enumerated()), id: \.offset) { _, s in
+                            HStack(spacing: 10) {
+                                AuraGlyph("check-ink", day.glow, size: 14)
+                                Text(s).font(.system(size: 14)).foregroundStyle(.white.opacity(0.8))
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+            }
+            EFoldRow(title: "A reggeli összefoglaló", sub: "08:10 · Boop mondta", glyph: "sun-ink",
+                     hue: day.glow, open: $briefOpen) { briefing }
+            EFoldRow(title: "A napod", sub: "4 megvolt · 3 hátra · edzés 18:30", glyph: "clock-ink",
+                     hue: day.glow, open: $dayOpen) { dayScroll.padding(.top, 4) }
+        }
+    }
+
+    // MARK: The day's energy — forward-looking, which a score is not
+
+    private var energy: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Capsule().fill(day.glow).frame(width: 3, height: 13)
+                Text("A NAP ENERGIÁJA").font(AuraFont.mono(12)).tracking(1.4).foregroundStyle(.white.opacity(0.7))
+                Spacer()
+            }
+            ECurve(values: [0.5, 0.7, 0.8, 0.72, 0.55, 0.45, 0.6, 0.72, 0.5],
+                   labels: ["6", "8", "10", "12", "14", "16", "18", "20", "22"],
+                   hue: day.glow, target: nil, nowIndex: 4, height: 140)
+                .padding(.top, 14)
+            EHueText(text: "A *14 óra körüli gödör* minden sűrű napodon megjelenik. Egy rövid séta ebéd után át szokta vinni — utána *18:30-ig* stabil maradsz.",
+                     hue: day.glow, size: 13.5, opacity: 0.7)
+                .padding(.top, 12)
+        }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: What Boop noticed — the cross-area observations
+
+    private var notices: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Capsule().fill(day.glow).frame(width: 3, height: 13)
+                Text("AMIT MA ÉSZREVETTEM").font(AuraFont.mono(12)).tracking(1.4).foregroundStyle(.white.opacity(0.7))
+                Spacer()
+            }
+            ForEach(Array(EMaNotice.all.enumerated()), id: \.offset) { _, n in
+                HStack(alignment: .top, spacing: 12) {
+                    HStack(spacing: -6) {
+                        ForEach(n.areas, id: \.self) { a in
+                            StillOrb(colors: EMetric.all[a].orb, size: 20, level: 0.8)
+                        }
+                    }
+                    .frame(width: CGFloat(n.areas.count) * 14 + 6, alignment: .leading)
+                    EHueText(text: n.text, hue: EMetric.all[n.areas[0]].glow, size: 14, opacity: 0.82)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
     private var briefing: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 9) {
@@ -325,7 +424,7 @@ struct EletMa: View {
                 VStack(spacing: 0) {
                     let nowIdx = items.firstIndex { $0.t > now }
                     ForEach(Array(items.enumerated()), id: \.element.id) { k, it in
-                        if b == 1, k == nowIdx { nowRow; proposalBlock }
+                        if b == 1, k == nowIdx { nowRow }
                         row(it, past: it.t <= now, first: k == 0, last: k == items.count - 1)
                     }
                 }
@@ -351,23 +450,6 @@ struct EletMa: View {
         }
         .padding(.vertical, 8)
         .background(alignment: .leading) { line(lit: true).padding(.leading, 58) }
-    }
-
-    private var proposalBlock: some View {
-        VStack(spacing: 10) {
-            ForEach([EProposal.shoe, EProposal.dinner], id: \.id) { p in
-                HStack(alignment: .top, spacing: 8) {
-                    Color.clear.frame(width: 14)
-                    line(lit: false).frame(width: 24)
-                    EProposalCard(p: p, decided: decided[p.id]) { ok in
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { decided[p.id] = ok }
-                        onToast(ok ? p.accepted : "Rendben, most nem")
-                    }
-                    .padding(.vertical, 4)
-                }
-                .fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 
     private func line(lit: Bool) -> some View {
@@ -428,87 +510,16 @@ struct EletMa: View {
 
     // MARK: The areas — wide cards for what has something to say, thin rows for the rest
 
-    private var areaStack: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Text("A területeid").font(AuraFont.serif(26)).foregroundStyle(.white)
-                Text("AMI MA SZÁMÍT ELÖL").font(AuraFont.mono(10.5)).tracking(1.2)
-                    .foregroundStyle(.white.opacity(0.4)).padding(.top, 8)
-                Spacer()
-            }
-            ForEach(EArea.all.filter(\.loud)) { a in
-                Button { path.append("m\(a.id)") } label: { bigCard(a) }.buttonStyle(.plain)
-            }
-            VStack(spacing: 0) {
-                Button { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { quietOpen.toggle() } } label: {
-                    HStack(spacing: 10) {
-                        ForEach(EArea.all.filter { !$0.loud }) { a in
-                            StillOrb(colors: a.m.orb, size: 20, level: 0.8)
-                        }
-                        Text("Ezek ma rendben vannak").font(.system(size: 14.5)).foregroundStyle(.white.opacity(0.7))
-                        Spacer()
-                        Image(systemName: quietOpen ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.45))
-                    }
-                    .padding(.horizontal, 16).frame(height: 54).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                if quietOpen {
-                    VStack(spacing: 0) {
-                        ForEach(EArea.all.filter { !$0.loud }) { a in
-                            Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 16)
-                            Button { path.append("m\(a.id)") } label: { thinRow(a) }.buttonStyle(.plain)
-                        }
-                    }
-                    .transition(.opacity.combined(with: .offset(y: -10)))
-                }
-            }
-            .gCard(22)
-        }
-    }
+}
 
-    private func bigCard(_ a: EArea) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                StillOrb(colors: a.m.orb, size: 26, level: Double(a.m.value) / 100)
-                Text(a.m.name.uppercased()).font(AuraFont.mono(11.5, .bold)).tracking(1.6).foregroundStyle(.white.opacity(0.7))
-                Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
-            }
-            Text(a.verdict).font(AuraFont.serif(21)).lineSpacing(3).foregroundStyle(.white)
-                .fixedSize(horizontal: false, vertical: true).padding(.top, 10)
-            HStack(alignment: .bottom, spacing: 14) {
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(a.big).font(.custom("Outfit", size: 30).weight(.light)).foregroundStyle(.white)
-                        Text(a.unit).font(.system(size: 13)).foregroundStyle(.white.opacity(0.65))
-                    }
-                    Text(a.cap).font(.system(size: 12.5)).foregroundStyle(.white.opacity(0.55))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 8)
-                EMiniBars(values: a.bars, hue: a.m.glow).frame(width: 104, height: 42)
-            }
-            .padding(.top, 14)
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .gCard(22)
-    }
-
-    private func thinRow(_ a: EArea) -> some View {
-        HStack(spacing: 12) {
-            StillOrb(colors: a.m.orb, size: 22, level: Double(a.m.value) / 100)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(a.m.name).font(.system(size: 15, weight: .medium)).foregroundStyle(.white)
-                Text(a.verdict).font(.system(size: 12.5)).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
-            }
-            Spacer(minLength: 6)
-            Text(a.big).font(.custom("Outfit", size: 17).weight(.light)).foregroundStyle(.white.opacity(0.9))
-            Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.35))
-        }
-        .padding(.horizontal, 16).frame(height: 58).contentShape(Rectangle())
-    }
+/// Cross-area observations on the home screen.
+struct EMaNotice {
+    let areas: [Int]; let text: String
+    static let all: [EMaNotice] = [
+        EMaNotice(areas: [5, 3], text: "Az étteremre költés a héten *24 000 Ft* — ez a harmadik hét, hogy csütörtökön ugrik meg."),
+        EMaNotice(areas: [1, 3], text: "A késői vacsorák után átlagosan *24 perccel* kevesebbet alszol. Ma 19:45-re terveztem."),
+        EMaNotice(areas: [6], text: "Három hét alatt 612 levélből *36-ot* nyitottál meg — a többit ezentúl csendben szűröm."),
+    ]
 }
 
 /// Seven days as soft bars — the little picture on an area card.

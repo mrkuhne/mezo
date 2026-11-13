@@ -70,11 +70,13 @@ struct EHueText: View {
     var size: CGFloat = 15
     var weight: Font.Weight = .regular
     var opacity: Double = 0.85
+    /// true inside a serif headline, so the lit span does not jump to another family
+    var serif: Bool = false
 
     var body: some View {
         Text(build())
-            .font(.system(size: size, weight: weight))
-            .lineSpacing(5)
+            .font(serif ? AuraFont.serif(size) : .system(size: size, weight: weight))
+            .lineSpacing(serif ? 3 : 5)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -86,7 +88,7 @@ struct EHueText: View {
             var a = AttributedString(part)
             if lit {
                 a.foregroundColor = hue
-                a.font = .system(size: size, weight: .semibold)
+                a.font = serif ? AuraFont.serif(size, .semibold) : .system(size: size, weight: .semibold)
             } else {
                 a.foregroundColor = .white.opacity(opacity)
             }
