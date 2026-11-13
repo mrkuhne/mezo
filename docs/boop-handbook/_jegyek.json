@@ -357,5 +357,75 @@
     ],
     "mit_kapsz": "A már kész képernyők is megkapják a választott fotós megjelenést: fent természetfotó, a kártyákon kis képek.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.37": {
+    "cim": "L0 · A területek otthona",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A Terv fülről egy koppintással eléred mind a hat területed, nagy gömbökkel és jelzéssel, hogy hol van néznivaló — és mindegyik a saját, teljes oldalára nyílik.",
+    "allapot": "Később"
+  },
+  "mezo-r36n9.38": {
+    "cim": "L1 · A postafiókod bekötése",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A Boop reggel 8-kor és délután 3-kor belenéz a Gmail- és iCloud-postádba. A kulcsot te hozod létre és te írod be. Ebben a lépésben még csak megszámolja és kategóriákba rendezi, amit talál.",
+    "allapot": "Később"
+  },
+  "mezo-r36n9.39": {
+    "cim": "L2 · A napi levélösszefoglaló",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Megkapod naponta, hogy mi jött: mit intézett el helyetted, és mi az a kettő-három, ami tényleg megér egy percet — mindegyik 1-10 pontot kap aszerint, mennyire számít neked.",
+    "allapot": "Később"
+  },
+  "mezo-r36n9.40": {
+    "cim": "L3 · Figyelt termékek és árellenőrzés",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Megmondod, mire vagy kíváncsi, és a Boop csak akkor szól, ha az ár tényleg jó — megnézi, mennyiért adják máshol, és kimondja, ha nem tudja ellenőrizni. Közben saját áremlékezetet épít a te termékeidről.",
+    "allapot": "Később"
+  },
+  "mezo-r36n9.41": {
+    "cim": "L4 · A pénzügyeid alapja",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A havi kereted, a kategóriáid és a tételeid bekerülnek a Boopba, a banki üzeneteidből magától rögzül a költés, és beépül egy védelem, ami elkapja, ha az AI nagyobb összeget mondana, mint amennyi van.",
+    "allapot": "Később"
+  },
+  "mezo-r36n9.42": {
+    "cim": "L5 · A Pénz szoba",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Egy képernyőn látod, hol tartasz a havi kerettel, mire megy el, mi jön még, és mennyi marad szabadon — ugyanolyan felületen, mint az alvás vagy az étel.",
+    "allapot": "Később"
+  },
+  "mezo-r36n9.43": {
+    "cim": "L6 · A Boop a pénzedet és a leveleidet is látja",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Bármiről nyithatsz egy beszélgetést, és a Boop egyszerre látja az alvásodat, az étkezésedet, az edzéseidet, a pénzedet és a leveleidet. A beszélgetések megmaradnak, bármikor visszaülhetsz hozzájuk.",
+    "allapot": "Később"
   }
 }

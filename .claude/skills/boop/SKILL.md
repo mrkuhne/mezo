@@ -160,3 +160,26 @@ v2.401.0; `mezo-r36n9.8`). **S4 lépések is cancelled** — its parts live in B
 | B6 A Terv — diet + training + goal plan, effect tracking | `mezo-r36n9.16` | open | after B4 + B5 |
 | B7 Napi kapacitás — calendar scoring, units, live adjust | `mezo-r36n9.17` | open | after B6 (needs weeks of B3 data) |
 | B8 Az egy AI — memory corpus, day council, horizons | `mezo-r36n9.18` | open | after B7 + B0 |
+
+**Életpanel (L-slices, owner 2026-11-13, `mezo-r36n9.33`):** Boop grows into a life dashboard — daily mail digest
+and the owner's finances, with one AI over everything. Spec
+[`2026-11-13-boop-life-dashboard-design.md`](../../../docs/superpowers/specs/2026-11-13-boop-life-dashboard-design.md),
+research `docs/superpowers/research/boop-life/`, executable look: the Élet spike (`-elet YES`, `elet-*.png`).
+**The B order is unchanged — nothing here starts before B6 ships, except L0.**
+Owner decisions: money and mail are rooms, not a fifth bar button · **Terv is the home of the areas** · an area is
+its own app (own top tabs with badges, built from the shared area-page kit) · the morning briefing is long and
+premium · area names are Alvás, Étel, Edzés, Energia, Forma, Pénz, Levél · never ask him for a password.
+
+| Slice | Issue | State | Can start |
+|---|---|---|---|
+| L0 Területek otthona — Terv as the areas home + the shared area-page kit | `mezo-r36n9.37` | open | after B5 |
+| L1 Levél · alap — IMAP intake, redaction, schedule, no AI | `mezo-r36n9.38` | open | after B6 + L0 |
+| L2 Levél · összefoglaló — the daily digest with 1–10 scores | `mezo-r36n9.39` | open | after L1 |
+| L3 Levél · figyelt termékek és árellenőrzés | `mezo-r36n9.40` | open | after L2 |
+| L4 Pénz · adatalap — allowance engine, bank-SMS capture, amount guard | `mezo-r36n9.41` | open | after B6 + L0 |
+| L5 Pénz · a szoba | `mezo-r36n9.42` | open | after L4 |
+| L6 Az egy AI látja a pénzt és a levelet + szálak | `mezo-r36n9.43` | open | after L3 + L5 + B8 |
+
+**B8 must allow for this even though it ships first:** area contributors in "miért?" are an **open set**, not five
+fixed experts; the memory corpus must admit non-biometric daily facts (a cost, a mail verdict) through the same
+day-scoped path as a check-in; areas are a list, not five hard-coded slots.
