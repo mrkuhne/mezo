@@ -119,7 +119,7 @@ struct EletMa: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.46 + geo.safeAreaInsets.top)
+                        hero(height: geo.size.height * 0.335 + geo.safeAreaInsets.top)
                         VStack(alignment: .leading, spacing: 22) {
                             feed
                             folds
@@ -191,14 +191,6 @@ struct EletMa: View {
                           hue: day.glow, now: 0.47, height: 232)
                     .padding(.horizontal, 18).padding(.top, 14)
 
-                HStack(alignment: .top, spacing: 11) {
-                    LivingOrb(mood: .good, size: 34, motion: motion, palette: day.orb, glow: false, level: 0.78)
-                        .allowsHitTesting(false)
-                    EHueText(text: "Most a *délutáni gödörben* vagy. 18:30-ig stabil maradsz, utána jön az edzés.",
-                             hue: day.glow, size: 15.5, opacity: 0.9)
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 20).padding(.top, 10)
 
                 Spacer(minLength: 0)
             }
