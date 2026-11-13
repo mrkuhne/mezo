@@ -7,6 +7,11 @@ enum CapturePick: Equatable {
     case soon(String)
     /// The meal composer, at an entrance (the "+" sheet's food chips and its free-text line).
     case meal(MealStart.Entrance, text: String)
+
+    /// What the shell opens for a pick: the composer's start (nil for the covers and the "hamarosan" items).
+    var mealStart: MealStart? {
+        if case .meal(let entrance, let text) = self { MealStart(entrance: entrance, text: text) } else { nil }
+    }
 }
 
 /// Opens the meal composer from inside a page (Ma's Fuel quick actions); the sheet itself hangs on the shell.

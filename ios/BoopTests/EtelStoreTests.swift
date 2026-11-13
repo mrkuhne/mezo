@@ -77,6 +77,27 @@ struct EtelStoreTests {
         #expect(transport.count("getMealPhoto") == 1)
     }
 
+    @Test func theLightReadSkipsTheDayTheCoachAndThePhotosAndRereadsWhatWasTaken() async {
+        script(meals: [meal(mealA, photo: true)])
+        let food = FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport))
+        let now = Date()
+        let key = "etel.takenIds.\(food.ymd(now))"
+        UserDefaults.standard.removeObject(forKey: key)
+        defer { UserDefaults.standard.removeObject(forKey: key) }
+        let store = EtelStore()
+        await store.load(food: food, now: now, extras: false)
+        #expect(transport.count("getFuelDay") == 0 && transport.count("getMealCoachForDay") == 0 && transport.count("getMealPhoto") == 0)
+        #expect(store.plan != nil && store.groups.count == 1 && store.taken.isEmpty)
+        // the room (another store) ticks the group: it lands in UserDefaults; Ma's next light read must see it
+        UserDefaults.standard.set(["morning": [UUID().uuidString]], forKey: key)
+        await store.load(food: food, now: now, extras: false)
+        #expect(store.taken == ["morning"])
+        // and an untick there
+        UserDefaults.standard.removeObject(forKey: key)
+        await store.load(food: food, now: now, extras: false)
+        #expect(store.taken.isEmpty)
+    }
+
     @Test func waterShowsAtOnceAndRollsBackWhenTheServerDoesNotTakeIt() async {
         let store = await loaded()
         transport.on("logWater", 500)

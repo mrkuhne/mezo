@@ -211,11 +211,11 @@ struct SupplementGroup: Equatable, Identifiable {
 }
 
 /// The server's daypart keys (`wake|breakfast|pre_workout|post_workout|lunch|dinner|evening|bedtime`) in the order of the
-/// day, plus the older coarse words, with their Hungarian names.
-let supplementDayparts: [(key: String, label: String)] = [
-    ("wake", "Ébredéskor"), ("morning", "Reggel"), ("breakfast", "Reggeli mellé"), ("pre_workout", "Edzés előtt"),
-    ("midday", "Dél"), ("lunch", "Ebéd mellé"), ("afternoon", "Délután"), ("post_workout", "Edzés után"),
-    ("dinner", "Vacsora mellé"), ("evening", "Este"), ("bedtime", "Lefekvés előtt"),
+/// day, plus the older coarse words, with their Hungarian names and an indicative clock time (a guess, never shown as exact).
+let supplementDayparts: [(key: String, label: String, clock: String)] = [
+    ("wake", "Ébredéskor", "07:00"), ("morning", "Reggel", "08:00"), ("breakfast", "Reggeli mellé", "08:00"), ("pre_workout", "Edzés előtt", "16:00"),
+    ("midday", "Dél", "12:00"), ("lunch", "Ebéd mellé", "13:00"), ("afternoon", "Délután", "15:00"), ("post_workout", "Edzés után", "18:00"),
+    ("dinner", "Vacsora mellé", "19:00"), ("evening", "Este", "21:00"), ("bedtime", "Lefekvés előtt", "22:00"),
 ]
 /// The dayparts a new supplement can be placed in (the server accepts exactly these).
 let supplementPlacements = ["wake", "breakfast", "pre_workout", "lunch", "post_workout", "dinner", "evening", "bedtime"]

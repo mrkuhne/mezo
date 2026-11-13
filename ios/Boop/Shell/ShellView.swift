@@ -97,7 +97,7 @@ struct ShellView: View {
                 switch pick {
                 case .cover(let cover): coverAfterCapture = cover
                 case .soon(let name): toast = soonToast(name)
-                case .meal(let entrance, let text): mealAfterCapture = MealStart(entrance: entrance, text: text)
+                case .meal: mealAfterCapture = pick.mealStart
                 }
                 capturing = false
             }

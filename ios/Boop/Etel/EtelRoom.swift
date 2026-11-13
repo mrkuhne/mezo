@@ -75,24 +75,22 @@ final class EtelStore {
         do { return .success(try await work()) } catch let e as FoodFetchError { return .failure(e) } catch { return .failure(.server) }
     }
 
-    /// `extras: false` is the light read (Ma's timeline rows): the numbers only, no coach words and no photos.
+    /// `extras: false` is the light read (Ma's timeline rows): the plan and the supplements only — no day, no coach words, no photos.
     func load(food: FoodClient, now: Date, extras: Bool = true) async {
         self.food = food; self.now = now
         loading = true
         tipDismissed = false
-        // The taken state belongs to one day: a store left open past midnight starts the new day clean.
+        // The taken state belongs to one day: a store left open past midnight starts the new day clean. The light read
+        // (Ma's rows) always re-reads it, because the room — another store — may have ticked or unticked a group.
         let today = food.ymd(now)
-        if takenDay != today {
-            let saved = UserDefaults.standard.dictionary(forKey: "etel.takenIds.\(today)") as? [String: [String]] ?? [:]
-            takenIds = saved.mapValues { $0.compactMap(UUID.init(uuidString:)) }
-            takenDay = today
-        }
-        async let d = Self.attempt { try await food.day(now) }
+        if takenDay != today || !extras { syncTaken(day: today) }
+        async let d: Result<FoodDay, FoodFetchError>? = extras ? Self.attempt { try await food.day(now) } : nil
         async let p = Self.attempt { try await food.plan(now) }
         async let s = Self.attempt { (try await food.protocol(), try await food.stash()) }
         switch await d {
-        case .success(let v): day = v; dayVersion += 1; dayProblem = nil
-        case .failure(let e): dayProblem = e
+        case .success(let v)?: day = v; dayVersion += 1; dayProblem = nil
+        case .failure(let e)?: dayProblem = e
+        case nil: break
         }
         switch await p {
         case .success(let v): plan = v; planProblem = nil
@@ -111,6 +109,13 @@ final class EtelStore {
         async let words: Void = loadCoach(food)
         async let pics: Void = loadPhotos(food)
         _ = await (words, pics)
+    }
+
+    /// The taken groups of `day` as the phone last saved them (the room and Ma's rows share this key).
+    private func syncTaken(day today: String) {
+        let saved = UserDefaults.standard.dictionary(forKey: "etel.takenIds.\(today)") as? [String: [String]] ?? [:]
+        takenIds = saved.mapValues { $0.compactMap(UUID.init(uuidString:)) }
+        takenDay = today
     }
 
     private func applyProtocol(_ proto: FoodProtocol, stash: [StashRow]) {

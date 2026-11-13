@@ -65,9 +65,37 @@ struct MaFoodRowsTests {
         #expect(naploPhotoMeals(nil).isEmpty)
     }
 
-    @Test func plusSheetFoodChipsAllOpenTheComposer() {
-        let picks = CaptureSheet.foodChips.map(\.pick)
-        #expect(picks == [.meal(.photo, text: ""), .meal(.text, text: ""), .meal(.barcode, text: ""), .meal(.recipe, text: ""), .meal(.pantry, text: "")])
-        #expect(CaptureSheet.foodChips.map(\.title).prefix(4) == ["Fotó", "Szöveg", "Vonalkód", "Recept"])
+    @Test func everyPlusSheetFoodChipRoutesToItsComposerEntrance() {
+        // pick -> MealStart (what the shell opens) -> the composer's first stage
+        func stage(_ pick: CapturePick) -> MealComposerModel.Stage? { pick.mealStart?.entrance.openingStage }
+        let byTitle = Dictionary(uniqueKeysWithValues: CaptureSheet.foodChips.map { ($0.title, $0.pick) })
+        #expect(CaptureSheet.foodChips.map(\.title) == ["Fotó", "Szöveg", "Vonalkód", "Recept", "Kamra"])
+        #expect(byTitle["Vonalkód"]!.mealStart?.entrance == .barcode)
+        #expect(stage(byTitle["Vonalkód"]!) == .barcode)
+        #expect(stage(byTitle["Recept"]!) == .recipes)
+        #expect(stage(byTitle["Kamra"]!) == .pantry)
+        #expect(byTitle["Fotó"]!.mealStart?.entrance == .photo && byTitle["Szöveg"]!.mealStart?.entrance == .text)
+        #expect(CapturePick.soon("Súly").mealStart == nil && CapturePick.cover(.checkin).mealStart == nil)
+    }
+
+    @Test func aGuessedSupplementClockIsHedgedAndAnUnknownDaypartHasNone() {
+        let plan = FuelPlan(date: "2026-11-13", windows: [], remaining: nil)
+        let wake = etelStations([], plan: plan, groups: [SupplementGroup(key: "wake", label: "Ébredéskor", count: 1, summary: "D3")], taken: [])
+        #expect(wake[0].time == "~07:00")
+        let odd = etelStations([st("a", "08:00")], plan: plan, groups: [SupplementGroup(key: "zzz", label: "Zzz", count: 1, summary: "x")], taken: [])
+        #expect(odd.last?.id == "etel-supplements-zzz" && odd.last?.time == "")
+        // a daypart tied to a plan window takes the window's start, still hedged
+        let withWindow = FuelPlan(date: "2026-11-13", windows: [window("breakfast", "Reggeli", "07:30", "09:00", .done)], remaining: nil)
+        let b = etelStations([], plan: withWindow, groups: [groups[0]], taken: [])
+        #expect(b[0].time == "~07:30")
+    }
+
+    @Test func naploSaysWhyThereIsNoPhoto() {
+        #expect(naploPhotoNote(loaded: false, failed: false, mealCount: 0, photoMeals: 0, photosMissing: 0) == "Az étkezések betöltése folyamatban")
+        #expect(naploPhotoNote(loaded: true, failed: true, mealCount: 0, photoMeals: 0, photosMissing: 0) == "Az étkezéseid képeit most nem látom.")
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 0, photosMissing: 0) == "Erről a napról nincs étkezési fotód.")
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 0, photoMeals: 0, photosMissing: 0) == nil)
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 2, photosMissing: 1) == "Egy-két képet most nem tudtam betölteni.")
+        #expect(naploPhotoNote(loaded: true, failed: false, mealCount: 3, photoMeals: 2, photosMissing: 0) == nil)
     }
 }

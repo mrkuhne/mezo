@@ -191,13 +191,26 @@ struct NaploDayDetail: View {
 /// The meals of a day that carry a photo — `hasPhoto` decides, so no meal is ever probed with a GET.
 func naploPhotoMeals(_ day: FoodDay?) -> [BoopCore.Meal] { (day?.meals ?? []).filter(\.hasPhoto) }
 
+/// The one quiet line under the meal photos: still loading, could not read, no photo that day, or a photo that did not
+/// come. nil = nothing to say (no meals at all, or every photo is on its card).
+func naploPhotoNote(loaded: Bool, failed: Bool, mealCount: Int, photoMeals: Int, photosMissing: Int) -> String? {
+    if failed { return "Az étkezéseid képeit most nem látom." }
+    if !loaded { return "Az étkezések betöltése folyamatban" }
+    if mealCount > 0 && photoMeals == 0 { return "Erről a napról nincs étkezési fotód." }
+    if photosMissing > 0 { return "Egy-két képet most nem tudtam betölteni." }
+    return nil
+}
+
 /// The day's meals and their photos for one Napló day. Loads once; a failure is said in a line, never a blank card.
 @MainActor @Observable
 final class NaploMeals {
     private(set) var meals: [BoopCore.Meal] = []
+    /// All the day's meals (photo or not): "no photos" is only true of a day that has some.
+    private(set) var mealCount = 0
     private(set) var photos: [UUID: UIImage] = [:]
     private(set) var loaded = false
     private(set) var failed = false
+    var photosMissing: Int { meals.filter { photos[$0.id] == nil }.count }
 
     func load(food: FoodClient, date: String, calendar: Calendar) async {
         let p = date.split(separator: "-").compactMap { Int($0) }
@@ -206,7 +219,7 @@ final class NaploMeals {
         }
         do {
             let day = try await food.day(noon)
-            meals = naploPhotoMeals(day)
+            meals = naploPhotoMeals(day); mealCount = day.meals.count
             failed = false
         } catch { failed = true; loaded = true; return }
         loaded = true
@@ -225,10 +238,17 @@ final class NaploMeals {
 private struct NaploMealPhotos: View {
     let model: NaploMeals
 
+    private var note: String? {
+        naploPhotoNote(loaded: model.loaded, failed: model.failed, mealCount: model.mealCount, photoMeals: model.meals.count,
+                       photosMissing: model.photosMissing)
+    }
+
     var body: some View {
-        if model.failed {
-            Text("Az étkezéseid képeit most nem látom.").nkFont(14).foregroundStyle(.white.opacity(0.6))
-                .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
+        if model.failed || model.meals.isEmpty {
+            if let note {
+                Text(note).nkFont(14).foregroundStyle(.white.opacity(0.6))
+                    .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
+            }
         } else if !model.meals.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 NKMono("A NAP ÉTELEI").padding(.leading, 4)
@@ -253,6 +273,9 @@ private struct NaploMealPhotos: View {
                     .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                     .nkGlass(22)
                     .accessibilityElement(children: .combine)
+                }
+                if let note {
+                    Text(note).nkFont(13).foregroundStyle(.white.opacity(0.55)).padding(.leading, 4)
                 }
             }
         }

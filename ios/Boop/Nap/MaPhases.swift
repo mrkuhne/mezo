@@ -58,20 +58,15 @@ func etelNextWindow(_ plan: FuelPlan?) -> PlanWindow? {
     plan?.windows.first { ($0.state == .now || $0.state == .pending) && $0.loggedMealIds.isEmpty }
 }
 
-/// Where a supplement daypart sits on the clock when the plan has no window for it (indicative, not a promise).
-private let supplementClock: [String: String] = [
-    "wake": "07:00", "morning": "08:00", "breakfast": "08:00", "pre_workout": "16:00", "midday": "12:00", "lunch": "13:00",
-    "afternoon": "15:00", "post_workout": "18:00", "dinner": "19:00", "evening": "21:00", "bedtime": "22:00",
-]
-
 private func clockOrder(_ t: String) -> Bool {
     let p = t.split(separator: ":"); return p.count == 2 && p.allSatisfy { $0.count == 2 && Int($0) != nil }
 }
 
 /// A station goes after the last one that is not later than it (stations without a clock time are ignored).
-private func inserting(_ st: PathStation, into list: [PathStation]) -> [PathStation] {
+private func inserting(_ st: PathStation, at clock: String?, into list: [PathStation]) -> [PathStation] {
     var out = list
-    let at = out.lastIndex { clockOrder($0.time) && $0.time <= st.time }.map { $0 + 1 } ?? 0
+    guard let clock else { out.append(st); return out }
+    let at = out.lastIndex { clockOrder($0.time) && $0.time <= clock }.map { $0 + 1 } ?? 0
     out.insert(st, at: at)
     return out
 }
@@ -85,18 +80,22 @@ func etelStations(_ stations: [PathStation], plan: FuelPlan?, groups: [Supplemen
     if let w = next {
         let budget = w.budget.map { " · kb. \(huInt(Int($0.kcal.rounded()))) kcal" } ?? ""
         out = inserting(PathStation(id: "etel-window-\(w.slot)", time: w.from, glyph: "bowl-cream", title: w.label,
-                                    sub: "\(w.from)–\(w.to)\(budget)", done: false, isNow: false, opens: false), into: out)
+                                    sub: "\(w.from)–\(w.to)\(budget)", done: false, isNow: false, opens: false), at: w.from, into: out)
     }
-    func clock(_ key: String) -> String {
+    /// The group's clock: the meal window's start for a meal-linked daypart, else the daypart's indicative time; nil when
+    /// the key is unknown. Always shown with a "~": it is a guess, not a schedule.
+    func clock(_ key: String) -> String? {
         if let w = plan?.windows.first(where: { $0.slot == key && $0.kind == .meal }) { return w.from }
-        return supplementClock[key] ?? "12:00"
+        return supplementDayparts.first { $0.key == key }?.clock
     }
+    func shown(_ c: String?) -> String { c.map { "~" + $0 } ?? "" }
     if let g = groups.first(where: { !taken.contains($0.key) }) {
-        out = inserting(PathStation(id: "etel-supplements-\(g.key)", time: clock(g.key), glyph: "spark-cream", title: g.label,
-                                    sub: "\(g.count) tétel · \(g.summary)", done: false, isNow: false, opens: false), into: out)
+        out = inserting(PathStation(id: "etel-supplements-\(g.key)", time: shown(clock(g.key)), glyph: "spark-cream", title: g.label,
+                                    sub: "\(g.count) tétel · \(g.summary)", done: false, isNow: false, opens: false),
+                         at: clock(g.key), into: out)
     } else if let last = groups.last {
-        out = inserting(PathStation(id: "etel-supplements-done", time: clock(last.key), glyph: "spark-cream", title: "Kiegészítők",
-                                    sub: "Mind bevéve", done: true, isNow: false, opens: false), into: out)
+        out = inserting(PathStation(id: "etel-supplements-done", time: shown(clock(last.key)), glyph: "spark-cream", title: "Kiegészítők",
+                                    sub: "Mind bevéve", done: true, isNow: false, opens: false), at: clock(last.key), into: out)
     }
     return out
 }

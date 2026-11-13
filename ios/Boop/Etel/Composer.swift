@@ -8,6 +8,19 @@ import BoopDesign
 // photo and the words, Boop computes when the net returns, and a card asks for one tap. Nothing is saved without it.
 
 /// How the composer opens: the entrance the owner chose, words already typed, or a confirmation card to look over.
+extension MealStart.Entrance {
+    /// The composer stage an entrance opens straight on; nil for the ones that act (photo, text) or wait (pick, serving).
+    var openingStage: MealComposerModel.Stage? {
+        switch self {
+        case .recipe: .recipes
+        case .pantry: .pantry
+        case .barcode: .barcode
+        case .usual: .usuals
+        case .photo, .text, .serving, .pick: nil
+        }
+    }
+}
+
 struct MealStart: Identifiable {
     enum Entrance: Equatable { case pick, photo, text, recipe, pantry, barcode, usual, serving }
     let id = UUID()
@@ -421,13 +434,11 @@ private struct MealComposerHost: View {
                 .ignoresSafeArea()
         }
         .task {
+            if let stage = start.entrance.openingStage { model.show(stage); return }
             switch start.entrance {
             case .photo: choosePhoto()
             case .text: typing = true
-            case .recipe: model.show(.recipes)
-            case .pantry: model.show(.pantry)
-            case .barcode: model.show(.barcode)
-            case .usual: model.show(.usuals)
+            case .recipe, .pantry, .barcode, .usual: break
             case .serving: if let facts = start.serving { model.showServing(facts, source: .catalog, code: "") }
             case .pick: break
             }
