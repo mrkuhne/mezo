@@ -370,3 +370,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202611131000_mezo-r36n9.14_sensitivity.sql
+  - changeSet:
+      id: "1.1.0:202611131100_mezo-r36n9.14_photo"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611131100_mezo-r36n9.14_photo.sql

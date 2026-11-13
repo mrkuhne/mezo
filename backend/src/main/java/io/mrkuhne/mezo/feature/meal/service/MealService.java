@@ -76,6 +76,7 @@ public class MealService {
 
     private final MealRepository repository;
     private final MealItemRepository mealItemRepository;
+    private final io.mrkuhne.mezo.common.image.ImageStore imageStore;
     private final RecipeRepository recipeRepository;
     private final PantryItemRepository pantryItemRepository;
     private final RecipeMapper recipeMapper; // reused for the recipe whole-macro rollup
@@ -117,6 +118,9 @@ public class MealService {
         // soft-delete (UPDATE, not DELETE) — so bulk-soft-delete the items explicitly first.
         mealItemRepository.softDeleteByMealId(meal.getId());
         repository.delete(meal); // @SQLDelete -> is_deleted = true
+        if (meal.getPhotoId() != null) {
+            imageStore.delete(userId, meal.getPhotoId()); // the photo's bytes go with the meal (Boop B4)
+        }
     }
 
     /**

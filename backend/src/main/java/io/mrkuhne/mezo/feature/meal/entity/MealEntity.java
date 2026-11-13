@@ -93,6 +93,10 @@ public class MealEntity extends OwnedEntity {
     @Column(columnDefinition = "jsonb")
     private MealProvenanceJson provenance;
 
+    /** The owner's photo of this meal ({@code stored_image.id}, Boop B4); null when none. Set only by MealPhotoService. */
+    @Column(name = "photo_id", columnDefinition = "uuid")
+    private UUID photoId;
+
     @OneToMany(mappedBy = "meal", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("lineOrder")
     private List<MealItemEntity> items = new ArrayList<>();

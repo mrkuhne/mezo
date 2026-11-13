@@ -110,6 +110,10 @@ public class RecipeEntity extends OwnedEntity {
     @Column(columnDefinition = "jsonb")
     private MealBreakdownJson breakdown;
 
+    /** The recipe's image ({@code stored_image.id}, Boop B4): the imported one or the owner's own; null when none. */
+    @Column(name = "image_id", columnDefinition = "uuid")
+    private UUID imageId;
+
     /** Derived rollup of the lines' allergen states (spec §7.1); null until first recomputed. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")

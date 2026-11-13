@@ -34,6 +34,9 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
 
     Optional<MealEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
+    /** Every live meal of the owner that carries a photo (bulk photo delete). */
+    List<MealEntity> findByCreatedByAndDeletedFalseAndPhotoIdIsNotNull(UUID createdBy);
+
     /** Weekly review {@code stale} probe (mezo-p2tr): the most recently CREATED meal inside the
      *  week — compared against the review's {@code generatedAt}, not its own {@code mealDate}. */
     Optional<MealEntity> findFirstByCreatedByAndDeletedFalseAndMealDateBetweenOrderByCreatedAtDesc(

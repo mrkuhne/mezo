@@ -37,7 +37,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [lifegoal](#lifegoal) | ✓ | 1 | ✓ | · | [lifegoal](features/lifegoal.md) |
 | [llmlog](#llmlog) | ✓ | 2 | · | · | [admin-hub](features/admin-hub.md), [companion](features/companion.md) |
 | [me](#me) | · | · | ✓ | ✓ | [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [settings](features/settings.md), [today](features/today.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
-| [meal](#meal) | ✓ | 2 | · | · | [fuel](features/fuel.md) |
+| [meal](#meal) | ✓ | 3 | · | · | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · | · | · |
 | [needs](#needs) | ✓ | 1 | ✓ | · | [needs](features/needs.md) |
 | [notification](#notification) | ✓ | 2 | ✓ | ✓ | [_platform-notifications](features/_platform-notifications.md) |
@@ -1127,28 +1127,31 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **repositories:** `MealItemRepository`, `MealRepository`, `WaterLogRepository`
   - **services:** `FuelDayService`, `GoalDailyIntakeAdapter`, `GoalIntakeAdherenceAdapter`, `MealAiDraftService`,
     `MealAiDraftValidator`, `MealCoachContextReader`, `MealCoachEagerListener`, `MealCoachLlm`, `MealCoachPrompt`,
-    `MealCoachService`, `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`, `MealSavedEvent`, `MealService`,
-    `WaterLogService`
+    `MealCoachService`, `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`, `MealPhotoService`, `MealSavedEvent`,
+    `MealService`, `WaterLogService`
   - **controllers→contract:** `FuelPlanController`→`FuelPlanApi`, `MealAiDraftController`→`MealAiLogApi`,
-    `MealController`→`MealApi`
+    `MealController`→`MealApi`, `MealPhotoController`→`MealPhotoApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
   - **other:** `DayPlanService`, `FuelPlanMapper`, `MealItemRecipeOverrideJson`, `MealProvenanceJson`,
     `MealRescoreRunner`, `MealSaturatedFatBackfillRunner`
 - **Contract** `api/feature/meal/fuel-plan.yml` — 1 operation
   - **endpoints:** GET /api/fuel/plan/{date}
+- **Contract** `api/feature/meal/meal-photo.yml` — 4 operations
+  - **endpoints:** POST /api/meal/{id}/photo · GET /api/meal/{id}/photo · DELETE /api/meal/{id}/photo ·
+    DELETE /api/meal/photos
 - **Contract** `api/feature/meal/meal.yml` — 11 operations
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 27 IT + 10 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 28 IT + 10 unit
   - **ITs:** `FuelDayMovementIT`, `FuelDayRecoveryIT`, `FuelDayServiceIT`, `GoalDailyIntakeAdapterIT`,
     `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`,
     `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`,
     `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`,
-    `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealRecipeCompositeScoringIT`, `MealRepositoryIT`,
-    `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`, `MealServiceIT`, `NutritionTargetsPropertiesIT`,
-    `RecipeLogsServiceIT`, `WaterLogApiIT`
+    `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealPhotoIT`, `MealRecipeCompositeScoringIT`,
+    `MealRepositoryIT`, `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`, `MealServiceIT`,
+    `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MealPopulator`,
     `PantryCatalogPopulator`, `PantryItemPopulator`, `PlannedSkipPopulator`, `RecipePopulator`,
     `RecoveryPeriodPopulator`, `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
@@ -1255,7 +1258,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`, `FuelPlanIT`,
     `SensitivityProfileIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`,
-    `MealPopulator`, `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `TrainPopulator`
+    `MealPopulator`, `PlannedSkipPopulator`, `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `TrainPopulator`
 
 ### pantry
 
