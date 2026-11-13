@@ -579,7 +579,8 @@ struct EtelRoom: View {
                 EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },
                              onOpen: { recipeSheet = .detail($0.id) }, onRetry: { Task { await reload() } })
             case .kamra:
-                EtelKamra(store: store, onAdd: { kamraSheet = .add($0) }, onOpen: { kamraSheet = .item($0) }, onRetry: { Task { await reload() } })
+                EtelKamra(store: store, onAdd: { kamraSheet = .add($0) }, onOpen: { kamraSheet = .item($0) }, onRetry: { Task { await reload() } },
+                          onSheet: { etelSheet = $0 })
             case .het:
                 EtelHet(store: store, onOpen: { hetDay = $0 }, onRetry: { Task { await reload() } })
             }

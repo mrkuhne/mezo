@@ -28,7 +28,6 @@ struct EtelMa: View {
         NKDrillSection(number: 3, label: "MIT EGYÉL LEGKÖZELEBB") { tip }
         NKDrillSection(number: 4, label: "VÍZ") { water }
         NKDrillSection(number: 5, label: "KIEGÉSZÍTŐK") { supplements }
-        NKDrillSection(number: 6, label: "BEÁLLÍTÁSOK") { settings }
     }
 
     // MARK: - Quiet states shared by the sections
@@ -287,41 +286,6 @@ struct EtelMa: View {
 
     private var editListPill: some View {
         pill("A lista szerkesztése", primary: false) { onSheet(.supplements) }
-    }
-
-    // MARK: - 6 · settings
-
-    private var settings: some View {
-        VStack(spacing: 0) {
-            settingsRow("Amit kerülök", "Allergia, intolerancia, feldolgozottság", glyph: "leaf-sage") { onSheet(.sensitivity) }
-            divider
-            settingsRow("Étrend-beállítások", "Makró-arány, fehérje-szint, víz és rost", glyph: "chart-deep") { onSheet(.diet) }
-            divider
-            settingsRow("Napi ritmus", "Étkezések száma, koffein-stop", glyph: "clock-sky") { onSheet(.rhythm) }
-            divider
-            settingsRow("Kímélő mód", store.day?.fuelMode == nil ? "Beteg vagy, vagy úton: nem értékelem a napot" : "Be van kapcsolva", glyph: "heart-cream") { onSheet(.kimelo) }
-            divider
-            settingsRow("Kiegészítők listája", "Felvétel, kivétel, adag", glyph: "pen-sun") { onSheet(.supplements) }
-        }
-    }
-
-    private var divider: some View { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-
-    private func settingsRow(_ title: String, _ sub: String, glyph: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                NKThumb(image: nil, glyph: glyph, size: 42)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title).nkFont(15.5, .medium).foregroundStyle(.white)
-                    Text(sub).nkFont(12.5).foregroundStyle(.white.opacity(0.55)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right").nkFont(13, .semibold).foregroundStyle(.white.opacity(0.4))
-            }
-            .padding(.vertical, 11).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
     }
 }
 

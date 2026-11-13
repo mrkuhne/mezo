@@ -211,6 +211,7 @@ struct EtelKamra: View {
     let onAdd: (PantryAddRoute) -> Void
     let onOpen: (PantryRow) -> Void
     let onRetry: () -> Void
+    let onSheet: (EtelSheet) -> Void
     @State private var query = ""
     @State private var category: String?
     @State private var visible = 30
@@ -228,6 +229,7 @@ struct EtelKamra: View {
             }
         }
         NKDrillSection(number: 2, label: "A KAMRÁD" + (store.shelfLoaded && store.shelfProblem == nil ? " · \(store.shelf.count) TÉTEL" : "")) { shelf }
+        NKDrillSection(number: 3, label: "BEÁLLÍTÁSOK") { EtelSettingsList(store: store, onSheet: onSheet) }
     }
 
     private func addChip(_ glyph: String, _ title: String, primary: Bool = false, _ action: @escaping () -> Void) -> some View {

@@ -79,3 +79,43 @@ extension View {
         presentationDetents([.large]).presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
     }
 }
+
+/// The settings block at the foot of the Kamra tab (spike section 3 "BEÁLLÍTÁSOK"): the pages that decide what Boop
+/// says about food. Kept off Ma, the busiest screen of the room.
+struct EtelSettingsList: View {
+    let store: EtelStore
+    let onSheet: (EtelSheet) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            row("Amit kerülök", "Allergia, intolerancia, feldolgozottság", glyph: "leaf-sage") { onSheet(.sensitivity) }
+            divider
+            row("Étrend-beállítások", "Makró-arány, fehérje-szint, víz és rost", glyph: "chart-deep") { onSheet(.diet) }
+            divider
+            row("Napi ritmus", "Étkezések száma, koffein-stop", glyph: "clock-sky") { onSheet(.rhythm) }
+            divider
+            row("Kímélő mód", store.day?.fuelMode == nil ? "Beteg vagy, vagy úton: nem értékelem a napot" : "Be van kapcsolva", glyph: "heart-cream") { onSheet(.kimelo) }
+            divider
+            row("Kiegészítők listája", "Felvétel, kivétel, adag", glyph: "pen-sun") { onSheet(.supplements) }
+        }
+    }
+
+    private var divider: some View { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+
+    private func row(_ title: String, _ sub: String, glyph: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                NKThumb(image: nil, glyph: glyph, size: 42)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).nkFont(15.5, .medium).foregroundStyle(.white)
+                    Text(sub).nkFont(12.5).foregroundStyle(.white.opacity(0.55)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").nkFont(13, .semibold).foregroundStyle(.white.opacity(0.4))
+            }
+            .padding(.vertical, 11).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+    }
+}
