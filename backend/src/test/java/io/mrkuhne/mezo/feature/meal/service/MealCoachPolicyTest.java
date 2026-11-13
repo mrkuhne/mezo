@@ -61,6 +61,32 @@ class MealCoachPolicyTest {
     }
 
     @Test
+    void processedLineStaysSilentWhenOnlyASmallPartOfThePlateIsClassified() {
+        SensitivityProfile profile = new SensitivityProfile(List.of(), new NovaRule(true, 2));
+
+        // the only classified item is NOVA 4 (pct 100) but it is 20% of the plate's kcal
+        assertThat(message(profile, breakdown(0, 0, 0, 100, new BigDecimal("0.20")))).doesNotContain(QUIET_MARKER);
+        // 70% of the plate classified, all NOVA 4 -> 70% of the plate is processed
+        assertThat(message(profile, breakdown(0, 0, 0, 100, new BigDecimal("0.70")))).contains(QUIET_MARKER);
+        // unknown coverage (old envelope) -> silent
+        assertThat(message(profile, breakdown(0, 0, 0, 100, null))).doesNotContain(QUIET_MARKER);
+    }
+
+    @Test
+    void promptNeitherAssertsPresenceNorAbsenceOfAnAllergenAndDoesNotBlameASymptom() {
+        for (String prompt : List.of(MealCoachService.SYSTEM_PROMPT, MealCoachService.SYSTEM_PROMPT_NEUTRAL)) {
+            // the text block wraps lines mid-sentence; compare on single-spaced text
+            assertThat(prompt.replaceAll("\\s+", " "))
+                .contains("A tétel összetételét ne találgasd")
+                .contains("SOHA ne állítsd, hogy valami mentes valamitől")
+                .contains("egy panaszt SOHA ne tulajdoníts egyetlen tételnek vagy érzékenységnek sem")
+                .doesNotContain("ebben laktóz van")
+                .contains("a dimensionNotes")
+                .contains("tagline, summary és improve");
+        }
+    }
+
+    @Test
     void processedLineNeverFiresWithoutNovaData() {
         SensitivityProfile profile = new SensitivityProfile(List.of(
             new Sensitivity("lactose", SensitivityLevel.INTOLERANCE, null)), new NovaRule(true, 2));
@@ -81,11 +107,15 @@ class MealCoachPolicyTest {
 
     /** A breakdown whose nova dimension carries the given kcal shares of NOVA 1..4. */
     static MealBreakdownJson breakdown(int n1, int n2, int n3, int n4) {
+        return breakdown(n1, n2, n3, n4, BigDecimal.ONE);
+    }
+
+    static MealBreakdownJson breakdown(int n1, int n2, int n3, int n4, BigDecimal coverage) {
         NovaDetail nova = new NovaDetail(3, List.of(new NovaStackRow(1, n1, "a"), new NovaStackRow(2, n2, "b"),
             new NovaStackRow(3, n3, "c"), new NovaStackRow(4, n4, "d")), List.of());
         return new MealBreakdownJson(new BigDecimal("0.5"), new BigDecimal("0.8"), null, null,
             List.of(new MealBreakdownJson.Dimension("nova", "Feldolgozottság", new BigDecimal("0.1"),
-                new BigDecimal("0.5"), BigDecimal.ONE, "detail", null, null, nova, null, null, null)),
+                new BigDecimal("0.5"), coverage, "detail", null, null, nova, null, null, null)),
             List.of(), List.of(), MealScoringService.FORMULA_VERSION);
     }
 }

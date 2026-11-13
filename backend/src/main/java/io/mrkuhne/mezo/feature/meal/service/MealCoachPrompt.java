@@ -186,7 +186,7 @@ final class MealCoachPrompt {
 
     /**
      * Decision 17: the quiet processed-food line fires only when NOVA 3-4 carry the LARGER part of
-     * the meal's kcal (the nova dimension's kcal-weighted stack), never per ingredient. Exactly half
+     * the meal's kcal (the nova dimension's kcal-weighted stack, scaled by its coverage of the plate), never per ingredient. Exactly half
      * is not "the larger part"; no NOVA data, or the owner's NOVA rule off, is silence.
      */
     static boolean processedDominates(MealBreakdownJson breakdown, SensitivityProfile profile) {
@@ -194,10 +194,13 @@ final class MealCoachPrompt {
             || breakdown == null || breakdown.dimensions() == null) {
             return false;
         }
+        // The stack's pct is of the CLASSIFIED kcal; the plate is what counts, so scale by coverage.
+        // Unknown coverage (an old envelope) stays silent.
         return breakdown.dimensions().stream()
-            .filter(d -> "nova".equals(d.id()) && d.nova() != null && d.nova().stack() != null)
-            .anyMatch(d -> d.nova().stack().stream().filter(r -> r.nova() >= 3)
-                .mapToInt(MealBreakdownJson.NovaStackRow::pct).sum() > 50);
+            .filter(d -> "nova".equals(d.id()) && d.nova() != null && d.nova().stack() != null
+                && d.coverage() != null)
+            .anyMatch(d -> d.coverage().doubleValue() * d.nova().stack().stream()
+                .filter(r -> r.nova() >= 3).mapToInt(MealBreakdownJson.NovaStackRow::pct).sum() > 50);
     }
 
     /**
