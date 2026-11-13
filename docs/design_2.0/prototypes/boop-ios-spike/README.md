@@ -1,12 +1,13 @@
 # Boop iOS spike
 
-> **Newest round — "Élet" (curiosity spike, `mezo-r36n9.33`, 2026-11-13):** what Boop looks like once it also
-> carries **money** and **mail** (and later life goals), with one AI that keeps **threads**. Four ideas: the orb
-> lens grows from 5 body metrics to **7 life metrics**; Pénz and Levél are rooms on the *same* skeleton as Alvás;
-> the proposal card becomes the cross-area organ ("4 terület szólt hozzá" → "miért?"); the Boop tab becomes a
-> **thread list** with a "kérdezd meg Boopot" door on every card; Terv's top level becomes the **life goal** every
-> area hangs under. Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletMetric 0–6`,
-> `-eletOpen penz|level`. Screenshots: `elet-*.png`. Direction write-up:
+> **Newest round — "Élet" (curiosity spike, `mezo-r36n9.33`, 2026-11-13, round 2 after owner feedback):** what Boop looks like once it also
+> carries **money** and **mail** (and later life goals), with one AI that keeps **threads**. Round 1 (a seven-orb
+> strip on Ma + Reggel/Napközben/Este chips) was **rejected by the owner** — two stacked menus, and seven dots are
+> not a dashboard. Round 2: **one home screen**, the whole day in a single scroll with the phases as headings and
+> one orb; the **areas as wide cards** further down, loud ones first and the calm ones collapsed; **every area has
+> its own full page with its own top tabs**, from one data-driven component; the proposal card as the cross-area
+> organ ("4 terület szólt hozzá" → "miért?"); the Boop tab as a **thread list**; Terv's top level as the **life
+> goal**. Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`. Screenshots: `elet-*.png`. Direction write-up:
 > [`docs/superpowers/research/boop-life/03-ui-direction.md`](../../../superpowers/research/boop-life/03-ui-direction.md).
 > **Nothing here is built** — the owner decided on 2026-11-13 that the life dashboard ships after B6.
 

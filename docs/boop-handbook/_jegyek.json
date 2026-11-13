@@ -327,5 +327,15 @@
     ],
     "mit_kapsz": "Amikor az óra-app elkészül, az órádon is a Boop saját, kerek ikonja jelenik meg, nem az alapértelmezett.",
     "munkamenet": "boop-app-icon"
+  },
+  "mezo-r36n9.33": {
+    "cim": "Boop Élet — életpanel: napi levélösszefoglaló és a pénzügyek",
+    "tipus": "Kutatás",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Terv arról, hogyan lesz a Boopból életpanel: reggelente és délután összefoglalja a leveleidet (mi jött, mi akció, megéri-e, 1–10 pont), a pénzügyeidet pedig beköltözteti a Boopba. Kutatás és terv készült, építés A Terv után.",
+    "allapot": "Épül"
   }
 }
