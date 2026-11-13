@@ -119,7 +119,7 @@ struct EletMa: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.475 + geo.safeAreaInsets.top)
+                        hero(height: geo.size.height * 0.565 + geo.safeAreaInsets.top)
                         VStack(alignment: .leading, spacing: 22) {
                             feed
                             folds
@@ -203,9 +203,17 @@ struct EletMa: View {
                     .padding(.horizontal, 30)
                     .padding(.top, 16)
 
+                HStack(spacing: 8) {
+                    Capsule().fill(day.glow).frame(width: 3, height: 13)
+                    Text("MAI NAP").font(AuraFont.mono(12)).tracking(1.6)
+                        .foregroundStyle(.white.opacity(0.75))
+                    Spacer()
+                }
+                .padding(.horizontal, 20).padding(.top, 16)
+
                 EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
                           hue: day.glow, now: 0.47, height: 220)
-                    .padding(.horizontal, 18).padding(.top, 12)
+                    .padding(.horizontal, 18).padding(.top, 6)
 
 
                 Spacer(minLength: 0)
