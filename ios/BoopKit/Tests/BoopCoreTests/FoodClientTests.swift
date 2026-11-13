@@ -130,6 +130,44 @@ struct FoodClientTests {
         #expect(!stub.ops.contains("putMealPhoto"))
     }
 
+    @Test func saveWithoutCapturedAtStampsTheDraftsDayNeverUtcNow() async throws {
+        stub.on("createMeal", .json(201, mealJSON())); stub.on("createMeal", .json(201, mealJSON()))
+        let f = try food()
+        let item = DraftItem(source: .estimate, name: "Alma", amount: 1, unit: "db", per: 1, basisUnit: "db", kcal: 80, proteinG: 0, carbsG: 20, fatG: 0)
+        _ = try await f.save(MealDraft(date: f.ymd(Date()), slot: "snack", title: nil, items: [item]))
+        let now = try #require(fields(stub.sent[0].body)["capturedAt"] as? String)
+        #expect(now.hasSuffix("+01:00") || now.hasSuffix("+02:00"))
+        // A draft for an earlier day lands on THAT day (noon, Budapest), not on today.
+        _ = try await f.save(MealDraft(date: "2026-11-10", slot: "snack", title: nil, items: [item]))
+        #expect(fields(stub.sent[1].body)["capturedAt"] as? String == "2026-11-10T12:00:00+01:00")
+    }
+
+    @Test func aFailedLookupKeepsTheModelsDraft() async throws {
+        stub.on("draftMealFromAi", .json(200, #"{"draftId":"8e3b1d85-4f60-4b3b-8d85-0a2a7f4d3e04","slot":"snack","items":[{"source":"estimate","name":"Alma","amount":1,"unit":"db","per":1,"basisUnit":"db","kcal":80,"proteinG":0,"carbsG":20,"fatG":0,"confidence":0.6,"needsReview":true}]}"#))
+        stub.on("lookupPantryItem", .status(502))
+        let d = try await food().draft(date: date(2026, 11, 13), text: "alma", photo: nil, barcode: "5997001234567")
+        #expect(d.items.count == 1 && d.barcode == "5997001234567")
+        #expect(d.lookupFailed && d.lookupSource == nil)
+    }
+
+    @Test func aLookupWithNothingFoundIsToldApartFromNeverLooked() async throws {
+        stub.on("lookupPantryItem", .json(200, #"{"source":"NONE","results":[]}"#))
+        let f = try food()
+        let looked = try await f.draft(date: date(2026, 11, 13), text: nil, photo: nil, barcode: "0000000000000")
+        #expect(looked.lookupSource == LookupSource.none && !looked.lookupFailed && looked.items.isEmpty)
+        stub.on("draftMealFromAi", .json(200, #"{"draftId":"8e3b1d85-4f60-4b3b-8d85-0a2a7f4d3e04","slot":"snack","items":[]}"#))
+        let never = try await f.draft(date: date(2026, 11, 13), text: "alma", photo: nil, barcode: nil)
+        #expect(never.lookupSource == nil && !never.lookupFailed)
+    }
+
+    @Test func deletingPhotosHitsTheRightOperations() async throws {
+        stub.on("deleteMealPhoto", .status(204)); stub.on("deleteAllMealPhotos", .status(204))
+        let f = try food()
+        try await f.deletePhoto(mealId: UUID(uuidString: mealId)!)
+        try await f.deleteAllPhotos()
+        #expect(stub.sent[0].path == "/api/meal/\(mealId)/photo" && stub.sent[1].path == "/api/meal/photos")
+    }
+
     @Test func savePutsThePhotoAfterTheMeal() async throws {
         stub.on("createMeal", .json(201, mealJSON()))
         stub.on("putMealPhoto", .json(200, #"{"bytes":9,"width":4,"height":3}"#))

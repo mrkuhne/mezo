@@ -33,6 +33,7 @@ struct PreviewTransport: ClientTransport {
         if let reply = Self.morningReply(operationID, request, sent: sent) { return reply }
         if let reply = Self.chatReply(operationID, sent: sent) { return reply }
         if let reply = Self.foodReply(operationID, request, sent: sent) { return reply }
+        assert(!Self.foodOps.contains(operationID), "PreviewTransport: unanswered op \(operationID)")
         if request.method == .put { return (HTTPResponse(status: .noContent), nil) }
         var h = HTTPFields(); h[.contentType] = "application/json"
         return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(#"{"inserted":0,"updated":0}"#))
@@ -104,6 +105,13 @@ struct PreviewTransport: ClientTransport {
 
     private static let foodWriteOps = ["createMeal", "logWater", "upsertPlannedSkip", "setSensitivityProfile", "logIntake",
                                        "importRecipeFromUrl", "importRecipeFromText"]
+    /// Every Étel operation the app can call; one of these falling through unanswered is a bug in this file.
+    private static let foodOps: Set<String> = [
+        "getFuelDay", "getFuelPlan", "draftMealFromAi", "createMeal", "logWater", "upsertPlannedSkip", "listRecipes", "getRecipe",
+        "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto", "getPantry", "searchPantryCatalog",
+        "lookupPantryItem", "getSensitivityProfile", "setSensitivityProfile", "getDietSettings", "getProtocol", "logIntake",
+        "getMealPhoto", "putMealPhoto", "deleteMealPhoto", "deleteAllMealPhotos",
+    ]
     private static let seedMealId = "5b0e8a52-1c3d-4e0e-9a52-7d9d4c1a0b01"
     private static let recipeId = "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03"
     private static let oatsId = "6c1f9b63-2d4e-4f1f-8b63-8e0e5d2b1c02"

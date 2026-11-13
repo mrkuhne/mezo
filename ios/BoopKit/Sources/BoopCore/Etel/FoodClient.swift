@@ -85,18 +85,28 @@ public struct FoodClient: Sendable {
             draft.items = ai.items.map(Self.map)
         }
         if let barcode, !barcode.isEmpty {
-            let found = try await lookup(barcode: barcode)
-            if let hit = found.results.first { draft.items.append(Self.draftItem(from: hit)) }
+            // A failed lookup must not throw away the model call before it (the owner is standing in a shop).
+            do {
+                let found = try await lookup(barcode: barcode)
+                draft.lookupSource = found.source
+                if let hit = found.results.first { draft.items.append(Self.draftItem(from: hit)) }
+            } catch FoodFetchError.unauthorized {
+                throw FoodFetchError.unauthorized
+            } catch {
+                draft.lookupFailed = true
+            }
         }
         return draft
     }
 
     /// Saves the draft as a meal; a photo on the draft is attached afterwards (a failed upload does not undo the meal —
-    /// `hasPhoto` on the result says whether it landed).
+    /// `hasPhoto` on the result says whether it landed). Without `capturedAt` the meal is stamped now when the draft is for
+    /// today, otherwise at noon of the draft's day — the server would otherwise use UTC "now" and could pick the wrong day.
     public func save(_ draft: MealDraft, clientRef: UUID? = nil, capturedAt: Date? = nil) async throws -> Meal {
+        let moment = capturedAt ?? defaultMoment(for: draft.date)
         let request = Components.Schemas.MealRequest(
             slot: draft.slot, loggedAt: nil, title: draft.title,
-            items: draft.items.map(Self.itemRequest), clientRef: clientRef?.wire, capturedAt: capturedAt)
+            items: draft.items.map(Self.itemRequest), clientRef: clientRef?.wire, capturedAt: moment)
         var meal: Meal = try await call {
             switch try await client.createMeal(body: .json(request)) {
             case .created(let ok): return Self.map(try ok.body.json)
@@ -107,6 +117,13 @@ public struct FoodClient: Sendable {
         }
         if let photo = draft.photo, (try? await putPhoto(photo, mealId: meal.id)) != nil { meal.hasPhoto = true }
         return meal
+    }
+
+    private func defaultMoment(for day: String, now: Date = Date()) -> Date {
+        if day == ymd(now) { return now }
+        let p = day.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3, let noon = cal.date(from: DateComponents(year: p[0], month: p[1], day: p[2], hour: 12)) else { return now }
+        return min(noon, now)
     }
 
     // MARK: - Lookup
@@ -342,6 +359,29 @@ public struct FoodClient: Sendable {
                 }
                 return try await Data(collecting: body, upTo: 8 << 20)
             case .notFound: return nil
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Removes one meal's photo (the meal stays).
+    public func deletePhoto(mealId: UUID) async throws {
+        try await call {
+            switch try await client.deleteMealPhoto(path: .init(id: mealId.wire)) {
+            case .noContent: return
+            case .notFound: throw FoodFetchError.notFound
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Removes EVERY meal photo of the owner. Destructive: the caller asks for confirmation first.
+    public func deleteAllPhotos() async throws {
+        try await call {
+            switch try await client.deleteAllMealPhotos() {
+            case .noContent: return
             case .unauthorized: throw FoodFetchError.unauthorized
             case .undocumented: throw FoodFetchError.server
             }

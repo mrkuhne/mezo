@@ -181,9 +181,15 @@ public struct MealDraft: Equatable, Sendable {
     /// The meal's photo; `FoodClient.save` attaches it after the meal exists.
     public var photo: Data?
     public var draftId: UUID?
+    /// Where the barcode's product came from; nil = no lookup was made, `.none` = looked up and nothing found.
+    public var lookupSource: LookupSource?
+    /// The barcode lookup failed (offline, upstream error): the draft is otherwise intact, the owner can retry the scan.
+    public var lookupFailed: Bool
 
     public init(date: String, slot: String, title: String?, items: [DraftItem], note: String? = nil,
-                barcode: String? = nil, photo: Data? = nil, draftId: UUID? = nil) {
+                barcode: String? = nil, photo: Data? = nil, draftId: UUID? = nil,
+                lookupSource: LookupSource? = nil, lookupFailed: Bool = false) {
+        self.lookupSource = lookupSource; self.lookupFailed = lookupFailed
         self.date = date; self.slot = slot; self.title = title; self.items = items; self.note = note
         self.barcode = barcode; self.photo = photo; self.draftId = draftId
     }
