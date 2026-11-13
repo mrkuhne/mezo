@@ -256,6 +256,23 @@ the owner picked warm.
 Levél have none — every candidate in the old library contains a person. Filed as `mezo-r36n9.44`; the painted
 fallback carries them until then.
 
+### 3.10 Round 7 — the wall gets a hierarchy
+
+*"kicsit ilyen lista felsorolás feeling, nincs meg az a prémium feelingem."* Correct, and for three
+measurable reasons: every card had the same width, radius and structure; **none of them carried a photo**,
+though Képek variant B explicitly allows a photo band on a proposal card; and the type had no range.
+
+So the wall is now three weights, not one:
+
+1. **The check-in** keeps its own shape — a tinted question card, because it is a question, not a notice.
+2. **One hero**: a 136 pt photo band of *the thing*, fading into the glass, 25 pt serif, the contributing
+   areas' orbs, full actions.
+3. **The rest as compact rows inside a single card**: a 52 pt rounded thumbnail, the label and title on two
+   lines, the **number in weight** on the right in the area's hue, and the action as an inline link.
+
+A card whose subject has no fitting photo (the workout reminder) keeps a tinted glyph tile — the same rule as
+the row lists: a near-miss photo is worse than none.
+
 ## 4. The honest fork
 
 If the AI truly sees everything, the **conversation** may become the real home and the screens

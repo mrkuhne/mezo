@@ -43,6 +43,12 @@ struct EFeedCard: Identifiable {
     let primary: String?      // the one action
     let secondary: String?
     let settled: String       // the line it leaves behind in "Ma történt"
+    /// Képek variant B: a photo of the THING. nil where nothing fits — a near-miss photo is worse than none.
+    var photo: String? = nil
+    var photoSq: String? = nil
+    /// When the card IS a number, the number gets the weight instead of hiding inside the sentence.
+    var big: String? = nil
+    var bigUnit: String = ""
     var hue: Color { areas.first.map { EMetric.all[$0].glow } ?? EMetric.all[0].glow }
 
     /// What Boop has to say at 13:40 on this invented day.
@@ -56,12 +62,14 @@ struct EFeedCard: Identifiable {
                   text: "A futócipő, amit figyelsz, ma *32%-kal olcsóbb*",
                   sub: "30 590 Ft. Négy boltban néztem meg — ez az eddigi legjobb ár. A havi keretedbe belefér.",
                   areas: [6, 5, 2], primary: "Megnézem", secondary: "Nem érdekel",
-                  settled: "Futócipő · megnézted"),
+                  settled: "Futócipő · megnézted",
+                  photo: "nap-seta-sq.jpg", photoSq: "nap-seta-sq.jpg", big: "30 590", bigUnit: "Ft"),
         EFeedCard(id: "ebed", kind: .reakcio, when: "12:48",
                   text: "Jó ebéd volt: *46 g fehérje*",
                   sub: "Ezzel 38-nál tartasz a napi 165-ből. Vacsorára 50 g kell — egy csirkés tál pont ennyit hoz.",
                   areas: [3], primary: "Recept", secondary: nil,
-                  settled: "Ebéd · 46 g fehérje"),
+                  settled: "Ebéd · 46 g fehérje",
+                  photo: "csirke-sq.jpg", photoSq: "csirke-sq.jpg", big: "46", bigUnit: "g"),
         EFeedCard(id: "edzes", kind: .keszulj, when: "18:30-kor",
                   text: "Másfél óra múlva edzés",
                   sub: "Felsőtest, 75 perc. Egyél valamit 17:00 körül, különben éhesen kezdesz.",
@@ -71,7 +79,8 @@ struct EFeedCard: Identifiable {
                   text: "Spar · *8 240 Ft*",
                   sub: "A banki üzenetedből, magától. Élelmiszer — a havi kereted 64%-ánál jársz.",
                   areas: [5], primary: nil, secondary: nil,
-                  settled: "Spar · 8 240 Ft"),
+                  settled: "Spar · 8 240 Ft",
+                  photo: "salata-sq.jpg", photoSq: "salata-sq.jpg", big: "8 240", bigUnit: "Ft"),
     ]
 }
 
@@ -83,6 +92,17 @@ struct EFeedCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if let ph = c.photo, c.kind != .checkin {
+                Color.clear.frame(height: 136)
+                    .overlay { photo(ph).resizable().scaledToFill().saturation(0.8).brightness(-0.06) }
+                    .clipped()
+                    .overlay(LinearGradient(stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: gBase.opacity(0.35), location: 0.55),
+                        .init(color: Color(hex: 0x15181E).opacity(0.95), location: 1),
+                    ], startPoint: .top, endPoint: .bottom))
+                    .padding(.horizontal, -18).padding(.top, -18).padding(.bottom, 2)
+            }
             HStack(spacing: 8) {
                 if c.kind == .reakcio {
                     StillOrb(colors: EMetric.all[0].orb, size: 20, level: 0.85)
@@ -95,7 +115,7 @@ struct EFeedCardView: View {
                 Text(c.when).font(AuraFont.mono(11)).foregroundStyle(.white.opacity(0.45))
             }
 
-            EHueText(text: c.text, hue: c.hue, size: 21, opacity: 1, serif: true)
+            EHueText(text: c.text, hue: c.hue, size: c.photo != nil ? 25 : 21, opacity: 1, serif: true)
                 .padding(.top, 10)
 
             Text(c.sub).font(.system(size: 14)).lineSpacing(4).foregroundStyle(.white.opacity(0.7))
@@ -185,4 +205,62 @@ struct EFoldRow<C: View>: View {
         }
         .gCard(22)
     }
+}
+
+
+/// The quiet half of the wall: one hero above, these below — thumbnail, two lines, the number in weight.
+struct EFeedRowView: View {
+    let c: EFeedCard
+    var onAct: (String) -> Void
+
+    var body: some View {
+        HStack(spacing: 13) {
+            ZStack {
+                if let ph = c.photoSq {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.08))
+                        .overlay { photo(ph).resizable().scaledToFill().saturation(0.8).brightness(-0.06) }
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(.white.opacity(0.12)))
+                } else {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(c.hue.opacity(0.18))
+                    EGlyph(c.kind.glyph, c.hue, size: 18)
+                }
+            }
+            .frame(width: 52, height: 52)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 7) {
+                    Text(c.kind.label).font(AuraFont.mono(9.5, .bold)).tracking(1.3)
+                        .foregroundStyle(.white.opacity(0.5))
+                    Text(c.when).font(AuraFont.mono(10)).foregroundStyle(.white.opacity(0.35))
+                    Spacer(minLength: 0)
+                }
+                Text(stripped(c.text)).font(AuraFont.serif(16.5)).foregroundStyle(.white)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                if let p = c.primary {
+                    Button { onAct(c.settled) } label: {
+                        HStack(spacing: 5) {
+                            Text(p).font(.system(size: 13, weight: .semibold)).foregroundStyle(c.hue)
+                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).foregroundStyle(c.hue)
+                        }
+                        .padding(.top, 3).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Spacer(minLength: 6)
+
+            if let b = c.big {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(b).font(.custom("Outfit", size: 22).weight(.medium)).foregroundStyle(c.hue)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                    Text(c.bigUnit).font(.system(size: 11)).foregroundStyle(.white.opacity(0.5))
+                }
+            }
+        }
+        .padding(.vertical, 13)
+    }
+
+    private func stripped(_ t: String) -> String { t.replacingOccurrences(of: "*", with: "") }
 }
