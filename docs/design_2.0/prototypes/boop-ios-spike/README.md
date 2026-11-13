@@ -1,5 +1,13 @@
 # Boop iOS spike
 
+> **Newest round — "Képek" (B3/b, `mezo-r36n9.32`, 2026-11-13):** photos inside the Napkelte look, judged on the
+> real shipped screens in the simulator (a throwaway `KepekSpike.swift` layer over the app plus the CC0 photos,
+> deleted after the round). Owner's pick: **A fent, B a kártyákon** — a quiet nature photo in every page and room
+> head under the hue's own sky, and a photo of the thing on proposal cards, day stations, Napló days and plan rows;
+> the blurred-photo ground (C) is rejected. Guideline:
+> [`docs/superpowers/specs/2026-11-13-boop-kepek-design.md`](../../../superpowers/specs/2026-11-13-boop-kepek-design.md).
+> Screenshots: `kepek-attekintes.jpg` (the three variants), `kepek-valasztott.jpg` (the chosen combination).
+
 > **Newest round — "Élet" (curiosity spike, `mezo-r36n9.33`, 2026-11-13, round 2 after owner feedback):** what Boop looks like once it also
 > carries **money** and **mail** (and later life goals), with one AI that keeps **threads**. Round 1 (a seven-orb
 > strip on Ma + Reggel/Napközben/Este chips) was **rejected by the owner** — two stacked menus, and seven dots are

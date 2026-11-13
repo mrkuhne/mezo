@@ -272,5 +272,17 @@
     "miert": "Az egészség-vonal félbehagyása hónapokkal tolná ki azt, amiért az app készül. A terv viszont most kellett, mert eldöntötte, hol lesz a pénz és a levél a képernyőkön, és így a most épülő részeket nem kell később szétszedni.",
     "levaltotta": "",
     "kovetkezmeny": "A pénz és a levél szoba lesz, nem új gomb a képernyő alján: a Ma napirendjén jelenik meg egy kártya, azt megnyitva nyílik a teljes felület. A Boop fül pedig szállistává nő, ahol minden kérdésnek saját, visszakereshető beszélgetése lesz."
+  },
+  "d-2026-11-13-kepek": {
+    "cim": "Fotók a Boopban: fent az égen, lent a kártyákon",
+    "datum": "2026-11-13",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "A lapok tetejére csendes természetfotó kerül a rajzolt táj helyett, a kártyákra és sorokra pedig kis kép arról, amiről szólnak. Az „elmosott fotó az üveg alatt” változat elvetve.",
+    "miert": "A korábbi próbaváltozat valódi fotóktól hatott profinak; a teljesen rajzolt app laposnak tűnt.",
+    "levaltotta": "A Napkelte szabály, amely szerint minden háttér rajzolt (a rajzolt táj tartalékként megmarad).",
+    "kovetkezmeny": "A hangulatképek ingyenes, jogtiszta gyűjteményből jönnek; ételnél és edzésnél a saját fotóid, ha vannak — ezek megőrzése az Étel szakasz külön döntése. A meglévő képernyők szakaszonként váltanak át."
   }
 }

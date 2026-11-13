@@ -337,5 +337,25 @@
     ],
     "mit_kapsz": "Terv arról, hogyan lesz a Boopból életpanel: reggelente és délután összefoglalja a leveleidet (mi jött, mi akció, megéri-e, 1–10 pont), a pénzügyeidet pedig beköltözteti a Boopba. Kutatás és terv készült, építés A Terv után.",
     "allapot": "Épül"
+  },
+  "mezo-r36n9.32": {
+    "cim": "B3/b Képek — fotók a Boop minden képernyőjén",
+    "tipus": "Szakasz",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Minden meglévő képernyőre 2–3 fotós változat a szimulátorban, ezekből te választasz; a választásaid állandó szabály lesznek: hová kerül fotó, milyen, honnan jön, és hogyan fér össze az éggel és az üveggel.",
+    "munkamenet": "boop-b3b-kepek"
+  },
+  "mezo-r36n9.36": {
+    "cim": "Fotók beépítése a meglévő képernyőkre",
+    "tipus": "Szakasz",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A már kész képernyők is megkapják a választott fotós megjelenést: fent természetfotó, a kártyákon kis képek.",
+    "szulo": "mezo-r36n9"
   }
 }

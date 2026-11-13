@@ -27,7 +27,8 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
    - the owner-facing Hungarian handbook of every feature: `docs/boop-handbook/` (mirrored to his Notion, §5)
    - the look: Napkelte spec `docs/superpowers/specs/2026-11-10-boop-napkelte-design.md` (§4 look, §5 screens —
      its five-domain bar/page skeleton is superseded by the spine), kit `ios/BoopKit/Sources/BoopDesign/Napkelte/`,
-     executable reference `docs/design_2.0/prototypes/boop-ios-spike/Aura*.swift` (`Lagy*.swift` is dead)
+     executable reference `docs/design_2.0/prototypes/boop-ios-spike/Aura*.swift` (`Lagy*.swift` is dead);
+     **photos: `docs/superpowers/specs/2026-11-13-boop-kepek-design.md`** — read it before any screen work
    - data/backend background still valid: `docs/superpowers/specs/2026-11-09-boop-ios-v1-design.md` (data, §4)
 
 ## 2. Owner decisions — do not re-litigate
@@ -54,6 +55,15 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 - **Napkelte is the look** (2026-11-10): dark glass, painted sky per page, colour only in sky + orbs, white type,
   serif headlines / Outfit numbers / mono labels, the orb rising as the sun, mini orbs as a lens, icon-only bottom
   bar, "Készenlét" is called **Forma**. Never emoji; no SF Symbols except chevrons/arrows.
+- **Photos: "a photo in the sky, a photo on the card"** (2026-11-13, round B3/b, spec
+  `docs/superpowers/specs/2026-11-13-boop-kepek-design.md`). Every page and room head carries a quiet nature photo
+  (one fixed photo per hue) under that hue's own sky gradient; proposal cards, day stations, Napló days and plan rows
+  carry a photo of the thing they are about. Nothing in between: no photo on numbers, orbs, charts, tiles, buttons or
+  on a row that is a moment rather than a thing. Tone every photo (saturation 0.8, brightness −0.06), gradient over
+  it before any white type, glass stays over the photo, and every screen must still be right with no photo at all.
+  Mood photos are CC0 library; food/training use the owner's own where they exist (storing his meal photos is a B4
+  decision). The blurred-photo ground ("C") is rejected — do not reintroduce. Applying it to shipped screens:
+  `mezo-r36n9.36`.
 - **Simulator first**: visual iteration in Xcode + the iOS Simulator; no HTML artifacts for Boop. A new screen gets
   a throwaway simulator spike and the owner's OK before it is built.
 - Google Calendar via the iPhone's calendar (EventKit), **read-only**. Action buttons move things in Boop's plans,
