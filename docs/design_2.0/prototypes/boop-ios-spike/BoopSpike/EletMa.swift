@@ -119,7 +119,7 @@ struct EletMa: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {
-                        hero(height: geo.size.height * 0.50 + geo.safeAreaInsets.top)
+                        hero(height: geo.size.height * 0.455 + geo.safeAreaInsets.top)
                         VStack(alignment: .leading, spacing: 22) {
                             feed
                             folds
@@ -175,28 +175,19 @@ struct EletMa: View {
 
             VStack(spacing: 0) {
                 HStack {
-                    Text("boop").font(.custom("Outfit", size: 24).weight(.light)).tracking(3)
-                        .foregroundStyle(.white.opacity(0.9))
+                    Text("Csütörtök · november 13.").font(AuraFont.mono(12))
+                        .foregroundStyle(.white.opacity(0.75))
                     Spacer()
                     AuraGlyph("person-sage", .white, size: 20).frame(width: 42, height: 42)
                         .glassEffect(.clear, in: .circle)
                 }
                 .padding(.horizontal, 20).padding(.top, 56)
 
-                // the welcome: Boop is here, it is this part of this day
-                HStack(alignment: .center, spacing: 13) {
-                    LivingOrb(mood: .good, size: 42, motion: motion, palette: day.orb, glow: true, level: 0.78)
-                        .allowsHitTesting(false)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Jó délutánt").font(AuraFont.serif(31)).foregroundStyle(.white)
-                        Text("CSÜTÖRTÖK · NOVEMBER 13.").font(AuraFont.mono(10.5)).tracking(1.8)
-                            .foregroundStyle(.white.opacity(0.6))
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 20).padding(.top, 20)
+                Text("boop").font(.custom("Outfit", size: 27).weight(.light)).tracking(3.5)
+                    .foregroundStyle(.white)
+                    .padding(.top, 16)
 
-                orbRibbon.padding(.top, 18)
+                orbRibbon.padding(.top, 22)
 
                 EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
                           hue: day.glow, now: 0.47, height: 220)
