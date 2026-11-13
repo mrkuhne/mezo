@@ -2,7 +2,7 @@
 
 Source: owner conversation 2026-11-13 (`mezo-r36n9.33`), explored in a throwaway simulator spike.
 Spike files: `docs/design_2.0/prototypes/boop-ios-spike/BoopSpike/Elet*.swift`, launch `-elet YES`.
-Screenshots: `elet-1-ma.png` … `elet-12-terv-etel.png` in that folder (round 3).
+Screenshots: `elet-1-ma.png` … `elet-15-miert.png` in that folder (round 4).
 
 ## 0. What the owner asked
 
@@ -181,6 +181,44 @@ The Napló patterns only get interesting once money and mail are in the corpus:
   átlagosan 0,4 kg-mal többet mutat a mérleg."
 - "A hat eseménynél zsúfoltabb napok után a mély alvásod 18 perccel rövidebb."
 - "Három hét alatt 612 levélből 36-ot nyitottál meg — a többit ezentúl csendben szűröm."
+
+### 3.8 Round 4 — the briefing, the area grid, and an area that feels like an app
+
+The owner's third pass (2026-11-13): *"a reggeli köszöntő … most nem mond sokat"*, *"a területeknél
+lehet egy sorban két terület és az Orb nagyban … egy számmal és értesítés ikonnal"*, and the
+sharpest one: *"maguk a területek mögötti részek nagyon unalmasak … semmi dashboard feeling …
+most csak listák. pedig nagyon feature-gazdag az étel, az edzés, a pénzügyek, a levelezés."*
+
+**The morning briefing** (`elet-2-reggeli-koszonto.png`) grew from one sentence into a premium
+card: a `BOOP MONDJA · 08:10` header with a **Hallgatom** button, a serif lead line, three short
+paragraphs that each take a glance into a different part of the life (sleep and Forma · calendar
+and why the workout moved · mail and money), a **chip strip** that peeks into all six areas at
+once, a hairline, **"A nap három dolga"** as three numbered rows, and the accept/modify pills.
+It reads like something written for him, not a status line.
+
+**The areas on Terv** (`elet-5-terv-racs.png`) are now **two per row**, each with a **big orb
+carrying its number** and a **bell badge** saying how much there is to look at inside — the badge
+count is derived, not hand-written (`EAreaContent.badge`, the sum of the area's tab badges), so it
+stays true as content changes.
+
+**The area pages** got a real vocabulary instead of lists (`EletKit.swift`):
+
+| Component | What it does |
+|---|---|
+| `EHighlight` | the one thing worth reading, in the area's colour |
+| `EStatRow` | 2–3 stat tiles, one of them lit, with trend arrows |
+| `ECurve` | a smooth curve with gradient fill, a dashed target line, a "now" marker, auto-scaled to its own range |
+| `EComposition` | one bar split into named parts, with a wrapping legend |
+| `ERowList` | detailed rows: glyph medallion, title + badge, sub, optional level bar, right-hand value |
+| `EHeat` | a week/hour heat strip |
+| `EMenuGrid` | a 2-column menu of what else the area can do, with badges — the "menüpontok" |
+| `EBadge`, `EChip`, `FlowRow` | counts, briefing chips, and wrapping that survives 320 pt |
+
+Each area's tabs now carry their own badges, and the page has a search and a settings button in
+the corner. Pénz has a month curve against the even-pace line, a five-part composition and the
+day's transactions; Levél has an arrival heat strip and a price history for a watched product;
+Étel has the day's intake curve, a macro composition and the meals; Edzés has today's five
+exercises with the suggested weight bump.
 
 ## 4. The honest fork
 

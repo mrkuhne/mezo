@@ -42,7 +42,7 @@ struct EMetric {
                 headline: "Kipihented magad",
                 sentence: "7 óra 12 perc, ebből 1 óra 36 perc mély. 22:48-kor aludtál el.",
                 isNew: false),
-        EMetric(name: "Edzés", value: 62, glyph: "shoe-cream",
+        EMetric(name: "Edzés", value: 62, glyph: "dumbbell-ink",
                 top: Color(hex: 0x4A2810), glow: Color(hex: 0xF29A4A),
                 orb: [Color(hex: 0x6B2A0E), Color(hex: 0xE0702E), Color(hex: 0xF7C27A), Color(hex: 0xF0508C)],
                 sky: PaintedLandscape.skies[2],

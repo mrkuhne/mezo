@@ -18,7 +18,11 @@
 > goal**. Round 3 answers "how do I get into an area?": **Terv is the home of the areas** — the goal plus one
 > card per area (today's verdict + what it contributes to the goal), each opening that area's page; no fifth bar
 > button. Areas renamed to the spine vocabulary (Fuel → Étel, Mozgás → Edzés, Közérzet → Energia).
-> Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`. Screenshots: `elet-*.png`. Direction write-up:
+> Round 4 makes it premium: a long **morning briefing** (speak button, three paragraphs, a chip peek into every
+> area, "a nap három dolga"), the Terv areas as a **two-up grid with big orbs and notification badges**, and area
+> pages built from a real component kit (`EletKit.swift`: stat tiles, smooth auto-scaled curves with a target
+> line, composition bars, detailed row lists, heat strips, 2-column menu grids, badges) with content in
+> `EletContent.swift`. Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`. Screenshots: `elet-*.png`. Direction write-up:
 > [`docs/superpowers/research/boop-life/03-ui-direction.md`](../../../superpowers/research/boop-life/03-ui-direction.md).
 > **Nothing here is built** — the owner decided on 2026-11-13 that the life dashboard ships after B6.
 
