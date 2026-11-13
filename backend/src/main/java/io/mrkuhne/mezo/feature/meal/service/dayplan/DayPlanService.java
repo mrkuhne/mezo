@@ -140,7 +140,7 @@ public class DayPlanService {
             .collect(Collectors.toSet());
 
         List<List<UUID>> assigned = assign(placed, loggedMeals(day, zone));
-        List<WindowState> states = classify(placed, assigned, skipKeys, skipped, now, minuteOf(anchor.bed()));
+        List<WindowState> states = classify(placed, assigned, skipKeys, skipped, now, bedtimeGate(anchor));
 
         // The profile and the recipe library are read only when some window can actually be
         // offered something — a done-out or kímélő day pays neither query.
@@ -162,6 +162,22 @@ public class DayPlanService {
 
         return new DayPlan(date, List.copyOf(windows), remaining(day, budgeted),
             tip(userId, date, zone, windows, states, now));
+    }
+
+    /**
+     * The minute after which the eating day is over, or {@code null} when there is no such minute
+     * today. The web planner compares {@code now} against bedtime on the UNWRAPPED day axis; this
+     * service deliberately does not port that axis (see {@link WindowPlacer}), and on a
+     * midnight-crossing anchor the raw minute-of-day comparison is not merely imprecise but
+     * inverted — a bed time of 01:00 is minute 60, so every hour of the owner's waking day would
+     * count as "past bedtime", no window would ever be current and the next-meal tip would go
+     * silent all day. On such a day there is therefore NO gate at all, which is how the plan
+     * behaved before the gate existed.
+     */
+    private static Integer bedtimeGate(SleepAnchorPort.SleepAnchor anchor) {
+        int wakeMin = minuteOf(anchor.wake());
+        int bedMin = minuteOf(anchor.bed());
+        return bedMin <= wakeMin ? null : bedMin;
     }
 
     /** A window still waiting for the owner — the only kind that carries an offer. */
@@ -329,12 +345,13 @@ public class DayPlanService {
      * ones included in the scan, because the owner's day moved past them too. If {@code now}
      * precedes every window the first one takes the focus. If the focus lands on a SKIPPED window
      * it moves FORWARD to the next non-skipped one (never backward onto a window the day has
-     * already passed), and if there is none the day has no focus at all. Past bedtime the eating
-     * day is over: nothing is "now" and every unlogged window is missed. A logged meal beats a
-     * skip; a skipped window is never re-labelled and never carries an offer.
+     * already passed), and if there is none the day has no focus at all. Past {@code bedtimeGate}
+     * the eating day is over: nothing is "now" and every unlogged window is missed; a {@code null}
+     * gate means the day has no such cutoff ({@link #bedtimeGate}). A logged meal beats a skip; a
+     * skipped window is never re-labelled and never carries an offer.
      */
     private static List<WindowState> classify(List<PlannedWindow> windows, List<List<UUID>> assigned,
-            List<String> skipKeys, Set<String> skipped, LocalTime now, int bedMin) {
+            List<String> skipKeys, Set<String> skipped, LocalTime now, Integer bedtimeGate) {
         int nowMin = minuteOf(now);
         List<WindowState> states = new ArrayList<>(windows.size());
         List<Integer> unlogged = new ArrayList<>();
@@ -348,7 +365,7 @@ public class DayPlanService {
         }
 
         int focus = -1;
-        if (nowMin <= bedMin && !unlogged.isEmpty()) {
+        if ((bedtimeGate == null || nowMin <= bedtimeGate) && !unlogged.isEmpty()) {
             for (int i : unlogged) {
                 if (windows.get(i).timeMin() <= nowMin) {
                     focus = i;

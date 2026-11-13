@@ -185,6 +185,29 @@ class FuelPlanIT extends ApiIntegrationTest {
         assertThat(plan.tip().text()).startsWith("Következik: Ebéd,");
     }
 
+    /**
+     * A bed time AFTER midnight must not silence the day. The bedtime gate compares raw
+     * minutes-of-day (the unwrapped axis is deliberately not ported), so bed 01:00 is minute 60 and
+     * a naive gate would read every waking hour as "past bedtime": no window current, everything
+     * missed, no tip — a total, silent failure. On a crossing anchor there is therefore no gate.
+     *
+     * <p>This pins the GATE only. Placement on such a day is still the degenerate case of report
+     * §5.1 (kitchen close lands before the eating start), which stays out of scope here.
+     */
+    @Test
+    void aBedTimeAfterMidnightStillHasACurrentWindowAndATip() {
+        UUID user = databasePopulator.populateUser("fuelplan-crossing@test.local");
+        sleepGoals.goal(user, 360, "BED", "01:00", 15); // bed 01:00, wake 07:00
+
+        DayPlan plan = dayPlans.plan(user, DAY, LocalTime.of(12, 0));
+
+        assertThat(plan.windows()).isNotEmpty();
+        assertThat(plan.windows()).filteredOn(w -> w.state() == WindowState.NOW).hasSize(1);
+        assertThat(plan.windows()).noneMatch(w -> w.state() == WindowState.MISSED);
+        assertThat(plan.tip()).isNotNull();
+        assertThat(plan.tip().text()).isNotBlank();
+    }
+
     /** Past bedtime the eating day is over: nothing is "now", every unlogged window is missed. */
     @Test
     void afterBedtimeNoWindowIsNow() {
