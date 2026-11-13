@@ -50,6 +50,16 @@ public class RecipeWorkshopValidator {
 
     public WorkshopDraft sanitize(RawDraft raw, Function<UUID, Optional<PantryItemEntity>> pantryLookup,
             BiFunction<String, String, Optional<PantryItemEntity>> nameMatch) {
+        return sanitize(raw, pantryLookup, nameMatch, false);
+    }
+
+    /**
+     * {@code keepUnmatched} is the recipe import's mode: a line that matches no pantry row and carries
+     * no macros is KEPT as a macro-less estimate line (never dropped) so the review screen can flag it,
+     * instead of being silently discarded as in the workshop. Everything else is the same sanitation.
+     */
+    public WorkshopDraft sanitize(RawDraft raw, Function<UUID, Optional<PantryItemEntity>> pantryLookup,
+            BiFunction<String, String, Optional<PantryItemEntity>> nameMatch, boolean keepUnmatched) {
         WorkshopDraft out = new WorkshopDraft();
         out.setName(raw.name() == null || raw.name().isBlank() ? messages.text("RECIPE_WORKSHOP_DEFAULT_NAME") : raw.name().strip());
         out.setCategory(raw.category() != null && CATEGORIES.contains(raw.category()) ? raw.category() : "dinner");
@@ -64,7 +74,7 @@ public class RecipeWorkshopValidator {
                 log.warn("Workshop draft truncated at {} lines", props.maxLines());
                 break;
             }
-            WorkshopDraftLine mapped = mapLine(line, pantryLookup, nameMatch);
+            WorkshopDraftLine mapped = mapLine(line, pantryLookup, nameMatch, keepUnmatched);
             if (mapped != null) {
                 lines.add(mapped);
             }
@@ -74,7 +84,7 @@ public class RecipeWorkshopValidator {
     }
 
     private WorkshopDraftLine mapLine(RawLine line, Function<UUID, Optional<PantryItemEntity>> pantryLookup,
-            BiFunction<String, String, Optional<PantryItemEntity>> nameMatch) {
+            BiFunction<String, String, Optional<PantryItemEntity>> nameMatch, boolean keepUnmatched) {
         UUID pantryId = parseUuid(line.pantryItemId());
         if (pantryId != null) {
             PantryItemEntity p = pantryLookup.apply(pantryId).orElse(null);
@@ -98,6 +108,12 @@ public class RecipeWorkshopValidator {
             out.setUnit(byName.getCatalog().getServingUnit() == null || byName.getCatalog().getServingUnit().isBlank()
                 ? "g" : byName.getCatalog().getServingUnit());
             return out; // macros stay null: FE computes from the pantry row
+        }
+        if (keepUnmatched && line.kcal() == null && line.name() != null && !line.name().isBlank()) {
+            WorkshopDraftLine out = base(line);
+            out.setSource("estimate");
+            out.setName(line.name().strip());
+            return out; // no macros invented: the review screen shows it as unmatched
         }
         if (line.kcal() == null || line.name() == null || line.name().isBlank()) {
             log.warn("Workshop draft: dropping macro-less estimate line '{}'", line.name());

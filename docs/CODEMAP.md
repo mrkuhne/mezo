@@ -48,7 +48,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [progression](#progression) | ✓ | 1 | ✓ | ✓ | [growth](features/growth.md) |
 | [quest](#quest) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
 | [quickinput](#quickinput) | · | · | · | ✓ | [today](features/today.md) |
-| [recipe](#recipe) | ✓ | 1 | · | · | [recipe](features/recipe.md) |
+| [recipe](#recipe) | ✓ | 2 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
 | [settings](#settings) | · | · | · | ✓ | [settings](features/settings.md) |
 | [telemetry](#telemetry) | ✓ | 1 | ✓ | · | · |
@@ -514,13 +514,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PersistentPainRule`,
     `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`,
     `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
-    `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`,
-    `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SessionTimeOverrideSource`, `SleepDebtRule`,
-    `SleepDeficitCalculator`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`,
-    `StackPlacementLlmAdapter`, `SustainedStressRule`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`,
-    `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`,
-    `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`,
-    `WeekReviewSource`
+    `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`,
+    `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`,
+    `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`, `SleepShotLlmAdapter`,
+    `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`, `SustainedStressRule`,
+    `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`,
+    `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`,
+    `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -693,7 +693,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-10-12, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-10-12, done) ·
-  [docs/features/recipe.md](features/recipe.md) (updated 2026-10-12, done) ·
+  [docs/features/recipe.md](features/recipe.md) (updated 2026-11-13, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-11-12, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-11, done)
 
@@ -1479,21 +1479,26 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### recipe
 
-*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-10-12, done)
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-11-13, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
   - **repositories:** `RecipeIngredientRepository`, `RecipeRepository`
   - **services:** `RecipeAllergenRollup`, `RecipeBreakdownLlm`, `RecipeBreakdownProseService`,
-    `RecipeBreakdownService`, `RecipeService`, `RecipeWorkshopLlm`, `RecipeWorkshopService`, `RecipeWorkshopValidator`
-  - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeWorkshopController`→`RecipeWorkshopApi`
+    `RecipeBreakdownService`, `RecipeExtractionService`, `RecipeImportLlm`, `RecipeImportService`,
+    `RecipeJsonLdParser`, `RecipeService`, `RecipeWorkshopLlm`, `RecipeWorkshopService`, `RecipeWorkshopValidator`
+  - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeImportController`→`RecipeImportApi`,
+    `RecipeWorkshopController`→`RecipeWorkshopApi`
   - **mappers:** `RecipeMapper`
-  - **config:** `RecipeWorkshopProperties`
+  - **config:** `RecipeImportProperties`, `RecipeWorkshopProperties`
+- **Contract** `api/feature/recipe/recipe-import.yml` — 3 operations
+  - **endpoints:** POST /api/recipe/import/url · POST /api/recipe/import/text · POST /api/recipe/import/photo
 - **Contract** `api/feature/recipe/recipe.yml` — 7 operations
   - **endpoints:** GET /api/recipe · POST /api/recipe · GET /api/recipe/{id} · PUT /api/recipe/{id} ·
     DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown · POST /api/recipe/workshop/turn
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 8 IT + 6 unit
-  - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeRepositoryIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 12 IT + 7 unit
+  - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeImportIT`,
+    `RecipeImportLlmUnavailableApiIT`, `RecipeImportSsrfApiIT`, `RecipeImportSwitchOffApiIT`, `RecipeRepositoryIT`,
     `RecipeServiceIT`, `RecipeWorkshopApiIT`, `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`
   - **populators:** `DatabasePopulator`, `PantryItemPopulator`, `RecipePopulator`
 

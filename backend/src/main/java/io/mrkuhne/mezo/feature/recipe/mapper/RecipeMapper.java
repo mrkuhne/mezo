@@ -38,6 +38,14 @@ public interface RecipeMapper {
         e.setTags(r.getTags() == null ? List.of() : r.getTags());
         e.setStarred(Boolean.TRUE.equals(r.getStarred()));
         e.setRole(fromWireRole(r.getRole()));
+        // Absent = leave as stored (an older editor does not know these fields and must not wipe
+        // them on a full-replace save); an empty steps list clears the method.
+        if (r.getSteps() != null) {
+            e.setSteps(r.getSteps().isEmpty() ? null : List.copyOf(r.getSteps()));
+        }
+        if (r.getSourceUrl() != null) {
+            e.setSourceUrl(r.getSourceUrl().isBlank() ? null : r.getSourceUrl().strip());
+        }
     }
 
     /** Wire (snake_case) -> MealRole. Null/blank means the client omitted it: STANDARD.
@@ -74,6 +82,8 @@ public interface RecipeMapper {
             .avgScore(BigDecimal.ZERO)
             .lastLogged("—")
             .ingredients(lines)
+            .steps(e.getSteps() == null ? List.of() : e.getSteps())
+            .sourceUrl(e.getSourceUrl())
             .allergens(e.getAllergens() == null ? null : wire(e.getAllergens()))
             .build();
     }

@@ -15,6 +15,7 @@ inputs:
   - inputFile: ../feature/biometrics-profile/biometrics-profile.yml
   - inputFile: ../feature/pantry/pantry.yml
   - inputFile: ../feature/recipe/recipe.yml
+  - inputFile: ../feature/recipe/recipe-import.yml
   - inputFile: ../feature/meal/meal.yml
   - inputFile: ../feature/meal/fuel-plan.yml
   - inputFile: ../feature/meal/meal-photo.yml

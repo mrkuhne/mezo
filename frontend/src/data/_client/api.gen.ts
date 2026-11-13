@@ -1716,6 +1716,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipe/import/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read a recipe from a web page (structured recipe first, AI fallback) into a review draft */
+        post: operations["importRecipeFromUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/import/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read a recipe from pasted text into a review draft */
+        post: operations["importRecipeFromText"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/import/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read a recipe from a photo (cookbook page, screenshot) into a review draft; the photo is not kept */
+        post: operations["importRecipeFromPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fuel/day/{date}": {
         parameters: {
             query?: never;
@@ -8326,6 +8377,10 @@ export interface components {
              * @default standard
              */
             role: string;
+            /** @description Method steps. Absent = leave the stored steps as they are; an empty list clears them. */
+            steps?: string[] | null;
+            /** @description Where the recipe was imported from. Absent = leave as it is. */
+            sourceUrl?: string | null;
             ingredients: components["schemas"]["RecipeIngredientRequest"][];
         };
         RecipeResponse: {
@@ -8351,6 +8406,9 @@ export interface components {
             avgScore: number;
             lastLogged: string;
             ingredients: components["schemas"]["RecipeIngredientResponse"][];
+            /** @description Method steps in order; empty when none were saved */
+            steps?: string[];
+            sourceUrl?: string | null;
             /** @description Derived rollup of the ingredients' allergen states (contains | traces | unknown); unknown propagates upward. null on recipes not yet recomputed. */
             allergens?: {
                 [key: string]: string;
@@ -8392,6 +8450,43 @@ export interface components {
         WorkshopTurnResponse: {
             reply: string;
             draft: components["schemas"]["WorkshopDraft"];
+        };
+        RecipeImportUrlRequest: {
+            url: string;
+        };
+        RecipeImportTextRequest: {
+            text: string;
+        };
+        /** @description What an ingredient row matched. pantryItemId is null when it matched nothing; confidence is derived deterministically (never taken from the AI); needsReview is true for every unmatched or low-confidence row. */
+        RecipeImportMatch: {
+            /** Format: uuid */
+            pantryItemId?: string | null;
+            confidence: number;
+            needsReview: boolean;
+        };
+        /** @description A Receptműhely draft line plus what it matched and the text it was read from. */
+        RecipeImportLine: components["schemas"]["WorkshopDraftLine"] & {
+            match: components["schemas"]["RecipeImportMatch"];
+            /** @description The ingredient line as the page, photo or text wrote it */
+            sourceText?: string | null;
+        };
+        RecipeImportDraft: {
+            name: string;
+            category: string;
+            servings: number;
+            steps: string[];
+            lines: components["schemas"]["RecipeImportLine"][];
+            /** @description Where the recipe came from (URL route only) */
+            sourceUrl?: string | null;
+            /** @description Weight of the finished dish when the source states it */
+            cookedWeightG?: number | null;
+            /** @description True when the page carried a machine-readable recipe (no AI read it) */
+            structured?: boolean;
+            /** @description True when any ingredient row needs a look */
+            needsReview?: boolean;
+        };
+        RecipeImportResponse: {
+            result?: components["schemas"]["RecipeImportDraft"] | null;
         };
         Macros: {
             kcal: number;
@@ -19208,6 +19303,189 @@ export interface operations {
                 };
             };
             /** @description LLM port unavailable (companion off) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    importRecipeFromUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeImportUrlRequest"];
+            };
+        };
+        responses: {
+            /** @description The draft; result is null when the page carries no readable recipe */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImportResponse"];
+                };
+            };
+            /** @description Not an http(s) link to a public host */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The page could not be loaded, or the AI answer could not be read */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The page has no structured recipe and the AI is not available */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    importRecipeFromText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeImportTextRequest"];
+            };
+        };
+        responses: {
+            /** @description The draft; result is null when no recipe could be read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImportResponse"];
+                };
+            };
+            /** @description Empty or over-long text */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI answer could not be read */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI is not available */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    importRecipeFromPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The draft; result is null when no recipe could be read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImportResponse"];
+                };
+            };
+            /** @description Not a JPEG, PNG or WebP picture, empty, or over the size cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI answer could not be read */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI is not available */
             503: {
                 headers: {
                     [name: string]: unknown;

@@ -114,6 +114,15 @@ public class RecipeEntity extends OwnedEntity {
     @Column(name = "image_id", columnDefinition = "uuid")
     private UUID imageId;
 
+    /** The method, in order (Boop B4); null = none saved. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<String> steps;
+
+    /** The page an imported recipe was read from (Boop B4); null for a hand-written one. */
+    @Column(name = "source_url")
+    private String sourceUrl;
+
     /** Derived rollup of the lines' allergen states (spec §7.1); null until first recomputed. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
