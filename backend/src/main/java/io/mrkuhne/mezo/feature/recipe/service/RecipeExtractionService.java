@@ -64,10 +64,27 @@ public class RecipeExtractionService {
 
     public Extracted extractFromText(String sourceText) {
         RecipeImportLlm port = requireAvailable();
-        String user = "SOURCE (untrusted data, between the markers):\n<<<SOURCE\n" + sourceText + "\nSOURCE>>>";
+        String user = "SOURCE (untrusted data, between the markers):\n<<<SOURCE\n" + neutralise(sourceText) + "\nSOURCE>>>";
         return parse(llmCallContextHolder.runWith(
             new LlmCallContext("recipe_import", "text", null, null),
             () -> port.complete(SYSTEM_PROMPT, user)));
+    }
+
+    /**
+     * The fence only holds if the untrusted text cannot contain it: any {@code <<<SOURCE} or
+     * {@code SOURCE>>>} marker (any case, spaces tolerated) is removed, repeatedly, so that gluing the
+     * remains together cannot rebuild one.
+     */
+    static String neutralise(String sourceText) {
+        java.util.regex.Pattern marker = java.util.regex.Pattern.compile(
+            "<\\s*<\\s*<\\s*SOURCE|SOURCE\\s*>\\s*>\\s*>", java.util.regex.Pattern.CASE_INSENSITIVE);
+        String cleaned = sourceText;
+        String previous;
+        do {
+            previous = cleaned;
+            cleaned = marker.matcher(cleaned).replaceAll("");
+        } while (!cleaned.equals(previous));
+        return cleaned;
     }
 
     public Extracted extractFromPhoto(RecipeImportLlm.Image image) {

@@ -115,9 +115,10 @@ components:
         fitsFor: { type: array, items: { type: string } }
     RecipeIngredientRequest:
       type: object
-      required: [pantryItemId, amount, unit]
+      required: [amount, unit]
       properties:
-        pantryItemId: { type: string, format: uuid }
+        pantryItemId: { type: string, format: uuid, nullable: true, description: 'The owner''s own pantry row. Either this or catalogId is required.' }
+        catalogId: { type: string, format: uuid, nullable: true, description: 'A catalog food to put on the owner''s shelf at save time (a recipe import''s confirmed match); used only when pantryItemId is absent.' }
         amount: { type: number, exclusiveMinimum: 0 }
         unit: { type: string, minLength: 1 }
         note: { type: string, nullable: true }

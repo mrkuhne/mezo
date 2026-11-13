@@ -71,11 +71,17 @@ components:
     RecipeImportMatch:
       type: object
       description: >-
-        What an ingredient row matched. pantryItemId is null when it matched nothing; confidence is derived
+        What an ingredient row matched (by name). catalogId is null when it matched nothing; confidence is derived
         deterministically (never taken from the AI); needsReview is true for every unmatched or low-confidence row.
       required: [confidence, needsReview]
       properties:
-        pantryItemId: { type: string, format: uuid, nullable: true }
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The catalog food the row's name matched (null = matched nothing). A preview writes nothing: the food
+            reaches the owner's shelf only when the recipe is saved with this id as the ingredient's catalogId.
         confidence: { type: number, minimum: 0, maximum: 1 }
         needsReview: { type: boolean }
     RecipeImportLine:

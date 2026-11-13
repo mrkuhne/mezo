@@ -6,7 +6,9 @@ import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
+import io.mrkuhne.mezo.feature.pantry.service.PantryCatalogService;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
@@ -39,6 +41,8 @@ public class RecipeService {
     private final RecipeMapper mapper;
     private final RecipeIngredientRepository recipeIngredientRepository;
     private final MealScoringService scoringService;
+    private final PantryCatalogRepository pantryCatalogRepository;
+    private final PantryCatalogService pantryCatalogService;
 
     @Transactional
     public RecipeResponse create(UUID userId, RecipeRequest req) {
@@ -195,20 +199,45 @@ public class RecipeService {
      */
     private void rebuildLines(UUID userId, RecipeEntity recipe, List<RecipeIngredientRequest> lineReqs) {
         recipe.getLines().clear(); // orphanRemoval deletes any previously attached lines
+        // Resolve each line's pantry item ONCE (an imported line may name only a catalog food, which
+        // is put on the shelf here — at save, where the owner has committed — never at preview).
+        List<PantryItemEntity> items = lineReqs.stream().map(r -> resolveLineItem(userId, r)).toList();
         for (int i = 0; i < lineReqs.size(); i++) {
-            RecipeIngredientEntity line = buildLine(userId, recipe, lineReqs.get(i), i);
-            recipe.getLines().add(line);
+            recipe.getLines().add(buildLine(userId, recipe, items.get(i), lineReqs.get(i), i));
         }
-        recipe.setNovaDominant(deriveNovaDominant(userId, lineReqs));
-        recipe.setAllergens(RecipeAllergenRollup.rollup(recipe.getLines().stream()
-            .map(l -> resolvePantryItem(userId, l.getPantryItemId()).getCatalog().getAllergens())
+        recipe.setNovaDominant(items.stream()
+            .map(it -> it.getCatalog().getNova())
+            .filter(Objects::nonNull)
+            .max(Short::compareTo)
+            .orElse(null));
+        recipe.setAllergens(RecipeAllergenRollup.rollup(items.stream()
+            .map(it -> it.getCatalog().getAllergens())
             .toList()));
+    }
+
+    /**
+     * The line's pantry item: the owner's own row by {@code pantryItemId}, else the catalog food named by
+     * {@code catalogId} put on the owner's shelf (a recipe import's confirmed match). A catalog entry
+     * is bindable only when live and not somebody else's draft — the same gate as the shelf's
+     * add-from-catalog; anything else is the usual indistinguishable 400.
+     */
+    private PantryItemEntity resolveLineItem(UUID userId, RecipeIngredientRequest req) {
+        if (req.getPantryItemId() != null) {
+            return resolvePantryItem(userId, req.getPantryItemId());
+        }
+        if (req.getCatalogId() == null) {
+            throw invalidIngredients();
+        }
+        var catalog = pantryCatalogRepository.findById(req.getCatalogId())
+            .filter(c -> !c.isDeleted())
+            .filter(c -> !PantryCatalogEntity.STATUS_DRAFT.equals(c.getStatus()) || userId.equals(c.getCreatedBy()))
+            .orElseThrow(this::invalidIngredients);
+        return pantryCatalogService.ensureItem(userId, catalog.getId());
     }
 
     /** Resolves the pantry item owner-scoped, captures the per-basis snapshot, sets created_by + line_order. */
     private RecipeIngredientEntity buildLine(
-            UUID userId, RecipeEntity recipe, RecipeIngredientRequest req, int index) {
-        PantryItemEntity item = resolvePantryItem(userId, req.getPantryItemId());
+            UUID userId, RecipeEntity recipe, PantryItemEntity item, RecipeIngredientRequest req, int index) {
         PantryCatalogEntity c = item.getCatalog();
         RecipeIngredientEntity line = new RecipeIngredientEntity();
         line.setCreatedBy(userId); // owned child — set server-side, never from the client
@@ -242,15 +271,6 @@ public class RecipeService {
         }
         return pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(pantryItemId, userId)
             .orElseThrow(this::invalidIngredients);
-    }
-
-    /** Dominant NOVA = the max source NOVA across the resolved lines; null when no line carries one. */
-    private Short deriveNovaDominant(UUID userId, List<RecipeIngredientRequest> lineReqs) {
-        return lineReqs.stream()
-            .map(l -> resolvePantryItem(userId, l.getPantryItemId()).getCatalog().getNova())
-            .filter(Objects::nonNull)
-            .max(Short::compareTo)
-            .orElse(null);
     }
 
     private SystemRuntimeErrorException invalidIngredients() {

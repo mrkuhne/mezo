@@ -88,6 +88,21 @@ public final class PantryNameIndex {
         return Optional.of(hit);
     }
 
+    /**
+     * Name-only lookup (recipe import review): same normalised full-name key and ambiguity rule as
+     * {@link #match}, but the unit is NOT part of the decision — the caller reports a unit mismatch
+     * itself (see {@link #unitAgrees}) instead of treating it as "no match".
+     */
+    public Optional<PantryCatalogEntity> matchByName(String name) {
+        String key = normalize(name);
+        return key.isEmpty() ? Optional.empty() : Optional.ofNullable(byKey.get(key));
+    }
+
+    /** True when the draft's unit spells the row's serving unit (blank draft unit never agrees). */
+    public static boolean unitAgrees(String draftUnit, String servingUnit) {
+        return unitsAgree(draftUnit, servingUnit);
+    }
+
     private static Set<String> keysOf(PantryCatalogEntity item) {
         String name = item.getName() == null ? "" : item.getName();
         String brand = item.getBrand() == null ? "" : item.getBrand().trim();

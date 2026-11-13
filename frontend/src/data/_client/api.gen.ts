@@ -8343,8 +8343,16 @@ export interface components {
             fitsFor: string[];
         };
         RecipeIngredientRequest: {
-            /** Format: uuid */
-            pantryItemId: string;
+            /**
+             * Format: uuid
+             * @description The owner's own pantry row. Either this or catalogId is required.
+             */
+            pantryItemId?: string | null;
+            /**
+             * Format: uuid
+             * @description A catalog food to put on the owner's shelf at save time (a recipe import's confirmed match); used only when pantryItemId is absent.
+             */
+            catalogId?: string | null;
             amount: number;
             unit: string;
             note?: string | null;
@@ -8457,10 +8465,13 @@ export interface components {
         RecipeImportTextRequest: {
             text: string;
         };
-        /** @description What an ingredient row matched. pantryItemId is null when it matched nothing; confidence is derived deterministically (never taken from the AI); needsReview is true for every unmatched or low-confidence row. */
+        /** @description What an ingredient row matched (by name). catalogId is null when it matched nothing; confidence is derived deterministically (never taken from the AI); needsReview is true for every unmatched or low-confidence row. */
         RecipeImportMatch: {
-            /** Format: uuid */
-            pantryItemId?: string | null;
+            /**
+             * Format: uuid
+             * @description The catalog food the row's name matched (null = matched nothing). A preview writes nothing: the food reaches the owner's shelf only when the recipe is saved with this id as the ingredient's catalogId.
+             */
+            catalogId?: string | null;
             confidence: number;
             needsReview: boolean;
         };

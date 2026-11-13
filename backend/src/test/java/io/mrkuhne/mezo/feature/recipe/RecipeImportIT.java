@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
+import io.mrkuhne.mezo.api.dto.PantryResponse;
 import io.mrkuhne.mezo.api.dto.RecipeImportDraft;
 import io.mrkuhne.mezo.api.dto.RecipeImportLine;
 import io.mrkuhne.mezo.api.dto.RecipeImportResponse;
@@ -78,6 +79,10 @@ class RecipeImportIT extends ApiIntegrationTest {
     }
 
     private UUID createFood(HttpHeaders auth, String name) {
+        return createFoodItem(auth, name).getId();
+    }
+
+    private PantryItemResponse createFoodItem(HttpHeaders auth, String name) {
         PantryItemRequest r = new PantryItemRequest();
         r.setKind(PantryItemRequest.KindEnum.FOOD);
         r.setName(name);
@@ -87,7 +92,7 @@ class RecipeImportIT extends ApiIntegrationTest {
         r.setProteinG(new BigDecimal("23"));
         r.setCarbsG(new BigDecimal("0"));
         r.setFatG(new BigDecimal("1.5"));
-        return postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class).getId();
+        return postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class);
     }
 
     @Test
@@ -118,7 +123,7 @@ class RecipeImportIT extends ApiIntegrationTest {
     @Test
     void unmatchedLinesAreFlaggedNotDropped() {
         HttpHeaders auth = ownerAuthHeaders();
-        UUID chicken = createFood(auth, "Csirkemell");
+        UUID catalogId = createFoodItem(auth, "Csirkemell").getCatalogId();
         page("/mixed", """
             <html><head><script type="application/ld+json">
             {"@type":"Recipe","name":"Vegyes","recipeIngredient":["200 g csirkemell","1 db ismeretlen csoda","bors"],
@@ -130,8 +135,8 @@ class RecipeImportIT extends ApiIntegrationTest {
         assertThat(draft.getLines()).hasSize(3); // nothing dropped
         RecipeImportLine matched = draft.getLines().get(0);
         assertThat(matched.getSource()).isEqualTo("pantry");
-        assertThat(matched.getPantryItemId()).isEqualTo(chicken);
-        assertThat(matched.getMatch().getPantryItemId()).isEqualTo(chicken);
+        assertThat(matched.getPantryItemId()).isNull(); // a preview creates no shelf row
+        assertThat(matched.getMatch().getCatalogId()).isEqualTo(catalogId);
         assertThat(matched.getMatch().getNeedsReview()).isFalse();
         assertThat(matched.getMatch().getConfidence()).isEqualByComparingTo("1");
         assertThat(matched.getSourceText()).isEqualTo("200 g csirkemell");
@@ -139,7 +144,7 @@ class RecipeImportIT extends ApiIntegrationTest {
         RecipeImportLine unmatched = draft.getLines().get(1);
         assertThat(unmatched.getSource()).isEqualTo("estimate");
         assertThat(unmatched.getPantryItemId()).isNull();
-        assertThat(unmatched.getMatch().getPantryItemId()).isNull();
+        assertThat(unmatched.getMatch().getCatalogId()).isNull();
         assertThat(unmatched.getMatch().getNeedsReview()).isTrue();
         assertThat(unmatched.getMatch().getConfidence()).isEqualByComparingTo("0");
         assertThat(unmatched.getName()).isEqualTo("ismeretlen csoda");
@@ -148,6 +153,70 @@ class RecipeImportIT extends ApiIntegrationTest {
         RecipeImportLine noAmount = draft.getLines().get(2);
         assertThat(noAmount.getMatch().getNeedsReview()).isTrue();
         assertThat(draft.getNeedsReview()).isTrue();
+    }
+
+    @Test
+    void nameMatchWithAnAgreeingUnitIsHighConfidence_andAUnitMismatchIsHalfAndKeepsTheSourceAmount() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID catalogId = createFoodItem(auth, "Csirkemell").getCatalogId();
+        page("/units", """
+            <script type="application/ld+json">{"@type":"Recipe","name":"Egységek",
+             "recipeIngredient":["200 g csirkemell","2 ek csirkemell"]}</script>""");
+
+        List<RecipeImportLine> lines = importUrl(SITE.baseUrl() + "/units", auth).getResult().getLines();
+
+        RecipeImportLine agree = lines.get(0);
+        assertThat(agree.getMatch().getCatalogId()).isEqualTo(catalogId);
+        assertThat(agree.getMatch().getConfidence()).isEqualByComparingTo("1");
+        assertThat(agree.getMatch().getNeedsReview()).isFalse();
+        assertThat(agree.getUnit()).isEqualTo("g");
+        assertThat(agree.getAmount()).isEqualByComparingTo("200");
+
+        RecipeImportLine mismatch = lines.get(1); // 2 ek = 30 ml against a gram-based food
+        assertThat(mismatch.getName()).isEqualTo("Csirkemell"); // the matched food is already filled in
+        assertThat(mismatch.getMatch().getCatalogId()).isEqualTo(catalogId);
+        assertThat(mismatch.getMatch().getConfidence()).isEqualByComparingTo("0.5");
+        assertThat(mismatch.getMatch().getNeedsReview()).isTrue();
+        assertThat(mismatch.getUnit()).isEqualTo("ml");              // nothing assumed against the g row
+        assertThat(mismatch.getAmount()).isEqualByComparingTo("30");
+        assertThat(mismatch.getKcal()).isNull();
+    }
+
+    @Test
+    void aPreviewWritesNoPantryRow_andSavingPutsTheMatchedFoodOnTheShelf() {
+        RegisteredUser anna = registerUser("Anna");
+        HttpHeaders bela = registerUser("Béla").headers();
+        UUID catalogId = createFoodItem(anna.headers(), "Kölesgolyó").getCatalogId(); // Anna's shared definition
+        page("/share", """
+            <script type="application/ld+json">{"@type":"Recipe","name":"Golyós",
+             "recipeIngredient":["40 g kölesgolyó"]}</script>""");
+
+        RecipeImportLine line = importUrl(SITE.baseUrl() + "/share", bela).getResult().getLines().get(0);
+        assertThat(line.getMatch().getCatalogId()).isEqualTo(catalogId);
+        assertThat(getForBody("/api/pantry", bela, HttpStatus.OK, PantryResponse.class).getIngredients())
+            .extracting("name").doesNotContain("Kölesgolyó"); // previewing wrote nothing
+
+        RecipeIngredientRequest ing = new RecipeIngredientRequest();
+        ing.setCatalogId(catalogId);
+        ing.setAmount(new BigDecimal("40"));
+        ing.setUnit("g");
+        RecipeRequest req = new RecipeRequest();
+        req.setName("Golyós");
+        req.setCategory("snack");
+        req.setIngredients(List.of(ing));
+        RecipeResponse saved = postForBody("/api/recipe", req, bela, HttpStatus.CREATED, RecipeResponse.class);
+
+        assertThat(saved.getIngredients()).hasSize(1);
+        assertThat(saved.getIngredients().get(0).getName()).isEqualTo("Kölesgolyó");
+        assertThat(getForBody("/api/pantry", bela, HttpStatus.OK, PantryResponse.class).getIngredients())
+            .extracting("name").contains("Kölesgolyó"); // saving created it
+
+        // A line naming neither a pantry row nor a catalog food is the usual 400.
+        RecipeIngredientRequest bare = new RecipeIngredientRequest();
+        bare.setAmount(BigDecimal.ONE);
+        bare.setUnit("g");
+        req.setIngredients(List.of(bare));
+        postForBody("/api/recipe", req, bela, HttpStatus.BAD_REQUEST, String.class);
     }
 
     @Test

@@ -8,7 +8,6 @@ import io.mrkuhne.mezo.api.dto.WorkshopDraftLine;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.service.HtmlNutritionStripper;
-import io.mrkuhne.mezo.feature.pantry.service.PantryCatalogService;
 import io.mrkuhne.mezo.feature.pantry.service.PantryNameIndex;
 import io.mrkuhne.mezo.feature.pantry.service.WebPageClient;
 import io.mrkuhne.mezo.feature.recipe.config.RecipeImportProperties;
@@ -32,8 +31,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -54,8 +51,8 @@ public class RecipeImportService {
 
     /** Confidence of a strict name+unit match whose amount the source actually stated. */
     static final double MATCHED = 1.0;
-    /** A strict match, but the source gave no quantity so the amount is a placeholder to confirm. */
-    static final double MATCHED_NO_AMOUNT = 0.5;
+    /** Name matched, but the unit does not agree with the catalog row (or no quantity was stated): confirm the amount. */
+    static final double MISMATCH = 0.5;
 
     private final ObjectProvider<WebPageClient> pageClient;
     private final HtmlNutritionStripper stripper;
@@ -65,8 +62,6 @@ public class RecipeImportService {
     private final RecipeWorkshopProperties workshopProps;
     private final RecipeImportProperties props;
     private final PantryCatalogRepository pantryCatalogRepository;
-    private final PantryCatalogService pantryCatalogService;
-    private final PlatformTransactionManager transactionManager;
 
     /** The draft, or {@code null} when the page carries no readable recipe (honest empty). */
     public RecipeImportDraft fromUrl(UUID userId, String url) {
@@ -117,7 +112,11 @@ public class RecipeImportService {
         return toDraft(userId, parsed, positive(e.cookedWeightG()), sourceUrl, false);
     }
 
-    /** Matches the lines to the pantry and wraps the shared workshop draft with the review facts. */
+    /**
+     * Matches the lines to the catalog BY NAME and wraps the shared workshop draft with the review facts.
+     * Read-only: nothing reaches the owner's shelf at preview — the match carries the catalog id and the
+     * recipe save puts the food on the shelf (RecipeService), where the owner has committed.
+     */
     private RecipeImportDraft toDraft(UUID userId, ParsedRecipe parsed, BigDecimal cookedWeightG, String sourceUrl,
             boolean structured) {
         List<ParsedIngredient> ingredients = parsed.ingredients().size() <= workshopProps.maxLines()
@@ -130,19 +129,14 @@ public class RecipeImportService {
         PantryNameIndex index = PantryNameIndex.of(
             pantryCatalogRepository.findByDeletedFalseAndStatusOrderByNameAsc(PantryCatalogEntity.STATUS_VERIFIED));
 
-        // One transaction for the match: ensureItem puts a matched food on the user's shelf (the same
-        // convention as the workshop) and the mapped line reads that row's catalog.
-        WorkshopDraft shared = new TransactionTemplate(transactionManager).execute(status -> validator.sanitize(
-            rawDraft, id -> Optional.empty(),
-            (name, unit) -> index.match(name, unit).map(c -> pantryCatalogService.ensureItem(userId, c.getId())),
-            true));
+        // No pantry matching inside the validator (nothing may be written): every line comes back as a
+        // kept, macro-less estimate row and is overlaid with its name match below.
+        WorkshopDraft shared = validator.sanitize(rawDraft, id -> Optional.empty(), (n, u) -> Optional.empty(), true);
 
         List<RecipeImportLine> lines = new ArrayList<>();
         boolean anyReview = false;
         for (int i = 0; i < shared.getLines().size(); i++) {
-            WorkshopDraftLine l = shared.getLines().get(i);
-            ParsedIngredient src = ingredients.get(i);
-            RecipeImportLine line = withMatch(l, src, l.getPantryItemId() != null);
+            RecipeImportLine line = withMatch(shared.getLines().get(i), ingredients.get(i), index);
             anyReview |= line.getMatch().getNeedsReview();
             lines.add(line);
         }
@@ -159,19 +153,37 @@ public class RecipeImportService {
         return draft;
     }
 
-    private RecipeImportLine withMatch(WorkshopDraftLine l, ParsedIngredient src, boolean matched) {
-        double confidence = !matched ? 0.0 : src.amountStated() ? MATCHED : MATCHED_NO_AMOUNT;
+    /**
+     * Name match (normalised full-name equality) fills in the food; the unit decides the confidence:
+     * name + agreeing unit + a stated quantity = high, name + unit that does not agree (or no stated
+     * quantity) = 0.5 and flagged. On a unit mismatch the line keeps the amount and unit exactly as the
+     * source wrote them — nothing is converted or assumed against the catalog row — so the owner must
+     * confirm the amount; the matched food is already named. No match = 0, kept as an estimate row.
+     */
+    private RecipeImportLine withMatch(WorkshopDraftLine l, ParsedIngredient src, PantryNameIndex index) {
+        PantryCatalogEntity hit = index.matchByName(src.name()).orElse(null);
+        double confidence = 0.0;
+        String name = l.getName();
+        String unit = l.getUnit();
+        if (hit != null) {
+            boolean unitOk = PantryNameIndex.unitAgrees(src.unit(), hit.getServingUnit());
+            confidence = unitOk && src.amountStated() ? MATCHED : MISMATCH;
+            name = hit.getName();
+            if (unitOk) {
+                unit = hit.getServingUnit() == null || hit.getServingUnit().isBlank() ? "g" : hit.getServingUnit();
+            }
+        }
         RecipeImportMatch match = new RecipeImportMatch();
-        match.setPantryItemId(matched ? l.getPantryItemId() : null);
+        match.setCatalogId(hit == null ? null : hit.getId());
         match.setConfidence(BigDecimal.valueOf(confidence));
         // Boundary-inclusive like the scrape: at or below the threshold the row is flagged.
         match.setNeedsReview(confidence <= props.confidenceThreshold());
         RecipeImportLine out = new RecipeImportLine();
-        out.setSource(l.getSource());
-        out.setPantryItemId(l.getPantryItemId());
-        out.setName(l.getName());
+        out.setSource(hit == null ? "estimate" : "pantry");
+        out.setPantryItemId(null); // a preview never creates the shelf row; see match.catalogId
+        out.setName(name);
         out.setAmount(l.getAmount());
-        out.setUnit(l.getUnit());
+        out.setUnit(unit);
         out.setKcal(l.getKcal());
         out.setProteinG(l.getProteinG());
         out.setCarbsG(l.getCarbsG());
