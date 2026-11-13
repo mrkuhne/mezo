@@ -67,6 +67,8 @@ class RecipeImportIT extends ApiIntegrationTest {
         {"name":"Az AI gulyása","servings":4,"category":"dinner",
          "ingredients":["500 g marhahús","1 db hagyma"],"steps":["Főzd meg."],"cookedWeightG":1800}""";
 
+    @org.springframework.beans.factory.annotation.Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
     private void page(String path, String html) {
         SITE.stubFor(get(urlPathEqualTo(path)).willReturn(aResponse()
             .withHeader("Content-Type", "text/html; charset=utf-8").withBody(html)));
@@ -153,6 +155,22 @@ class RecipeImportIT extends ApiIntegrationTest {
         RecipeImportLine noAmount = draft.getLines().get(2);
         assertThat(noAmount.getMatch().getNeedsReview()).isTrue();
         assertThat(draft.getNeedsReview()).isTrue();
+    }
+
+    @Test
+    void aMatchedLineCarriesItsFoodsAllergensAndAnUnmatchedOneCarriesNone() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID catalogId = createFoodItem(auth, "Fetasajt").getCatalogId();
+        jdbc.update("update pantry_catalog set allergens = '{\"milk\":\"contains\",\"gluten\":\"unknown\"}'::jsonb where id = ?", catalogId);
+        page("/feta", """
+            <html><head><script type="application/ld+json">
+            {"@type":"Recipe","name":"Feta","recipeIngredient":["100 g fetasajt","1 db ismeretlen csoda"],"recipeInstructions":["Keverd."]}
+            </script></head><body></body></html>""");
+
+        RecipeImportDraft draft = importUrl(SITE.baseUrl() + "/feta", auth).getResult();
+
+        assertThat(draft.getLines().get(0).getAllergens()).containsEntry("milk", "contains").containsEntry("gluten", "unknown");
+        assertThat(draft.getLines().get(1).getAllergens()).isNull(); // matched nothing: no data, never "free of"
     }
 
     @Test

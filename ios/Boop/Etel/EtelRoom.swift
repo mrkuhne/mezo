@@ -301,7 +301,8 @@ enum RecipeSheet: Identifiable {
 struct RecipeImportHost: View {
     @State private var model: RecipeImportModel
     let onSaved: (Recipe) -> Void
-    init(mode: RecipeImportModel.Mode, food: FoodClient?, onSaved: @escaping (Recipe) -> Void) {
+    let profile: SensitivityProfile?
+    init(mode: RecipeImportModel.Mode, food: FoodClient?, profile: SensitivityProfile?, onSaved: @escaping (Recipe) -> Void) {
         _model = State(initialValue: RecipeImportModel(
             mode: mode,
             reader: { source in
@@ -313,8 +314,9 @@ struct RecipeImportHost: View {
                 return try await food.createRecipe(recipe)
             }))
         self.onSaved = onSaved
+        self.profile = profile
     }
-    var body: some View { RecipeImportSheet(model: model, onSaved: onSaved) }
+    var body: some View { RecipeImportSheet(model: model, profile: profile, onSaved: onSaved) }
 }
 
 // MARK: - The room
@@ -393,9 +395,9 @@ struct EtelRoom: View {
                 case .detail(let id):
                     RecipeDetailSheet(recipeId: id, store: store, onToast: { toast = $0 }, onLogged: { Task { await reload() } })
                 case .importer(let mode):
-                    RecipeImportHost(mode: mode, food: food) { saved($0) }
+                    RecipeImportHost(mode: mode, food: food, profile: store.profile) { saved($0) }
                 case .workshop:
-                    RecipeWorkshopSheet(food: food) { saved($0) }
+                    RecipeWorkshopSheet(food: food, profile: store.profile) { saved($0) }
                 }
             }
             .presentationDetents([.large])

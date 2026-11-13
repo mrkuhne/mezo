@@ -21398,6 +21398,16 @@ components:
               type: string
               nullable: true
               description: 'The ingredient line as the page, photo or text wrote it'
+            allergens:
+              type: object
+              nullable: true
+              description: >-
+                The matched catalog food's allergen states (lowercase key ->
+                contains | traces | unknown). null when the row matched nothing:
+                no data, never "free of". A key absent from the map also says
+                nothing.
+              additionalProperties:
+                type: string
     RecipeImportDraft:
       type: object
       required:

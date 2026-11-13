@@ -32,7 +32,6 @@ struct FoodRecipeClientTests {
         #expect(r.hasImage)
         #expect(r.allergens == ["milk": .contains, "gluten": .unknown])
         #expect(r.fit == 0.78)
-        #expect(r.timesLogged == 3)
         #expect(r.ingredients.first?.kcal == 495)
         #expect(r.perServing.kcal == 480)
     }
@@ -109,5 +108,26 @@ struct FoodRecipeClientTests {
         // a recipe with no photo is already "deleted"
         stub.on("deleteRecipeImage", .status(404))
         try await f.deleteRecipeImage(UUID(uuidString: recipeId)!)
+    }
+
+    @Test func aBarcodeProductMissingAnyMacroIsMarkedForReview() async throws {
+        stub.on("lookupPantryItem", .json(200, #"{"source":"OFF","results":[{"name":"Szelet","per":100,"unit":"g","kcal":380,"proteinG":30,"allergens":{}}]}"#))
+        stub.on("lookupPantryItem", .json(200, #"{"source":"OFF","results":[{"name":"Teljes","per":100,"unit":"g","kcal":380,"proteinG":30,"carbsG":35,"fatG":12,"allergens":{}}]}"#))
+        let f = try food()
+        let partial = try await f.draft(date: Date(), text: nil, photo: nil, barcode: "5997001234567")
+        #expect(partial.items.first?.needsReview == true)
+        let full = try await f.draft(date: Date(), text: nil, photo: nil, barcode: "5997001234568")
+        #expect(full.items.first?.needsReview == false)
+    }
+
+    @Test func anImportLineCarriesItsMatchedFoodsAllergens() async throws {
+        stub.on("importRecipeFromUrl", .json(200, #"""
+        {"result":{"name":"Feta","category":"lunch","servings":2,"steps":[],"lines":[
+          {"source":"pantry","name":"Feta","amount":100,"unit":"g","match":{"catalogId":"\#(catalogId)","confidence":1,"needsReview":false},"allergens":{"milk":"contains"}},
+          {"source":"estimate","name":"Kapor","amount":1,"unit":"csokor","match":{"confidence":0,"needsReview":true},"allergens":null}]}}
+        """#))
+        let d = try #require(try await food().importRecipe(.url("https://x.hu/r")))
+        #expect(d.lines[0].allergens == ["milk": .contains])
+        #expect(d.lines[1].allergens == nil)
     }
 }

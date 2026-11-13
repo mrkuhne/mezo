@@ -181,6 +181,8 @@ struct EtelReceptek: View {
                         if let first = badges.first { RecipeBadgeView(badge: first) }
                         Spacer(minLength: 0)
                     }
+                    // every other flag (a recipe can carry an allergen and a processed-food flag at once)
+                    if badges.count > 1 { FlowRow { ForEach(Array(badges.dropFirst())) { RecipeBadgeView(badge: $0) } } }
                     Text(recipeRowFacts(r)).nkFont(11.5, design: .monospaced).foregroundStyle(.white.opacity(0.6))
                         .fixedSize(horizontal: false, vertical: true)
                 }

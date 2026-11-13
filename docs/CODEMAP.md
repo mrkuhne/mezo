@@ -244,7 +244,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### boop
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-12, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-13, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **entities→tables:** `BoopBriefEntity`→`boop_brief`, `WorkoutTimeOverrideEntity`→`workout_time_override`
@@ -664,7 +664,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### dayclose
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-12, in-progress) ·
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-13, in-progress) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-12, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
@@ -1774,7 +1774,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### wearable
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-12, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-13, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,

@@ -61,11 +61,12 @@ func workshopProblemLine(_ e: FoodFetchError) -> String {
 struct RecipeWorkshopSheet: View {
     @State private var model: WorkshopModel
     @State private var reviewing: RecipeImportModel?
+    private let profile: SensitivityProfile?
     private let makeReview: (WorkshopDraft) -> RecipeImportModel
     let onSaved: (Recipe) -> Void
     @FocusState private var typing: Bool
 
-    init(food: FoodClient?, onSaved: @escaping (Recipe) -> Void) {
+    init(food: FoodClient?, profile: SensitivityProfile?, onSaved: @escaping (Recipe) -> Void) {
         _model = State(initialValue: WorkshopModel(turn: { message, history, draft in
             guard let food else { throw FoodFetchError.unauthorized }
             return try await food.workshop(message: message, history: history, draft: draft)
@@ -78,6 +79,7 @@ struct RecipeWorkshopSheet: View {
                               }, review: RecipeReview(workshop: draft), eyebrow: "RECEPTMŰHELY")
         }
         self.onSaved = onSaved
+        self.profile = profile
     }
 
     #if DEBUG
@@ -104,7 +106,7 @@ struct RecipeWorkshopSheet: View {
                         .nkFont(14).foregroundStyle(.white.opacity(0.8)).frame(minHeight: 40)
                 }
                 .buttonStyle(.plain).frame(maxWidth: .infinity, alignment: .leading)
-                ReviewBody(model: reviewing, onSaved: onSaved)
+                ReviewBody(model: reviewing, profile: profile, onSaved: onSaved)
             } else {
                 conversation
             }

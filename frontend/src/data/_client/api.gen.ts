@@ -8503,6 +8503,10 @@ export interface components {
             match: components["schemas"]["RecipeImportMatch"];
             /** @description The ingredient line as the page, photo or text wrote it */
             sourceText?: string | null;
+            /** @description The matched catalog food's allergen states (lowercase key -> contains | traces | unknown). null when the row matched nothing: no data, never "free of". A key absent from the map also says nothing. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
         };
         RecipeImportDraft: {
             name: string;

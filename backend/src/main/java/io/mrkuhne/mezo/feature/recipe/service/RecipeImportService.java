@@ -190,6 +190,12 @@ public class RecipeImportService {
         out.setFatG(l.getFatG());
         out.setMatch(match);
         out.setSourceText(src.sourceText());
+        // What the matched food says about allergens, so the review can warn BEFORE the save; no match = no data (null).
+        if (hit != null) {
+            java.util.Map<String, String> states = new java.util.LinkedHashMap<>();
+            hit.getAllergens().forEach((key, state) -> states.put(key, state.wire()));
+            out.setAllergens(states);
+        }
         return out;
     }
 

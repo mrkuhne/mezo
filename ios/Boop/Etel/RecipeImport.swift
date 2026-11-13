@@ -50,6 +50,8 @@ struct RecipeReview: Equatable {
     var lines: [ReviewLine]
     /// The finished dish's weight when the source stated it.
     private(set) var statedCookedWeightG: Double?
+    /// The owner said he knows a large share of the rows is not in the recipe (see `needsLeftOutAcknowledgement`).
+    private(set) var leftOutAcknowledged = false
 
     init(draft: RecipeImportDraft) {
         name = draft.name; category = draft.category; servings = draft.servings; steps = draft.steps
@@ -69,7 +71,25 @@ struct RecipeReview: Equatable {
 
     // MARK: what the screen shows
 
+    /// Rows carrying a mark (doubtful or unmatched), whatever the owner decided about them.
     var markedCount: Int { lines.filter { $0.isMarked && !$0.removed }.count }
+    /// Rows still waiting for the owner's look — what the header counts; it reaches zero as he goes. An unmatched row
+    /// needs no look (it is left out and says so).
+    var toReviewCount: Int { pendingConfirmation.count }
+    /// Rows that matched nothing and were not taken out by the owner: they are not in the saved recipe.
+    var unmatchedLeftOut: [ReviewLine] { lines.filter { !$0.isMatched && !$0.removed } }
+    /// A large share of the recipe is left out, so its numbers and score would look authoritative and be wrong: the owner
+    /// must say he knows before saving. Large = at least two rows and a quarter of the rows still in play.
+    var needsLeftOutAcknowledgement: Bool {
+        let inPlay = lines.filter { !$0.removed }.count
+        return unmatchedLeftOut.count >= 2 && inPlay > 0 && Double(unmatchedLeftOut.count) / Double(inPlay) >= 0.25
+    }
+    /// The plain warning, e.g. "7 hozzávaló kimarad — a recept számai ennyivel kevesebbet mutatnak."
+    var leftOutWarning: String? {
+        needsLeftOutAcknowledgement
+            ? "\(unmatchedLeftOut.count) hozzávaló kimarad — a recept számai ennyivel kevesebbet mutatnak, mint amit valójában megennél."
+            : nil
+    }
     var pendingConfirmation: [ReviewLine] { lines.filter(\.awaitsConfirmation) }
     /// Rows the saved recipe will not contain: matched nothing, or taken out by the owner.
     var leftOut: [ReviewLine] { lines.filter { !$0.willSave && !$0.awaitsConfirmation } }
@@ -89,6 +109,7 @@ struct RecipeReview: Equatable {
                 : "Nézd át a jelölt hozzávalókat: \(names)\(waiting.count > 3 ? "…" : ""). Ha jók, jelöld meg őket, vagy vedd ki."
         }
         if savedLines.isEmpty { return "Egyik hozzávalót sem tudtam a kamrádhoz kötni, ezért nincs mit elmenteni." }
+        if needsLeftOutAcknowledgement && !leftOutAcknowledged { return (leftOutWarning ?? "") + " Jelöld meg, hogy tudod, ha így is mented." }
         return nil
     }
 
@@ -122,10 +143,13 @@ struct RecipeReview: Equatable {
 
     // MARK: what the owner can do
 
+    mutating func acknowledgeLeftOut(_ on: Bool = true) { leftOutAcknowledged = on }
     mutating func confirm(_ id: UUID) { update(id) { $0.confirmed = true } }
     mutating func remove(_ id: UUID) { update(id) { $0.removed = true } }
     mutating func restore(_ id: UUID) { update(id) { $0.removed = false } }
     mutating func setAmount(_ id: UUID, _ amount: Double) {
+        // The server refuses an amount of zero or less; the field keeps the last good one.
+        guard amount.isFinite, amount > 0 else { return }
         // A changed amount is a new decision: a doubtful row must be looked at again.
         update(id) { $0.line.amount = amount; if $0.mark == .lowConfidence { $0.confirmed = false } }
     }
@@ -142,6 +166,48 @@ struct RecipeReview: Equatable {
                   lines: savedLines.map { NewRecipeLine(catalogId: $0.line.catalogId, pantryItemId: $0.line.catalogId == nil ? $0.pantryItemId : nil,
                                                        amount: $0.line.amount, unit: $0.line.unit) })
     }
+}
+
+// MARK: - Allergens on the review (before the save, not after)
+
+/// One allergen the owner watches that some rows of the draft contain (or may contain).
+struct ReviewAllergenWarning: Equatable, Identifiable {
+    let text: String
+    let severity: SensitivityRules.Badge.Severity
+    let lineNames: [String]
+    var id: String { text }
+}
+
+/// The badges of one row against the owner's profile (silence when the row says nothing; `reviewNoDataLines` names it).
+func reviewLineBadges(_ line: ReviewLine, profile: SensitivityProfile?) -> [DraftBadge] {
+    guard let profile, let map = line.line.allergens, !line.removed else { return [] }
+    return SensitivityRules.badges(allergens: map, profile: profile).filter { $0.severity != .noData }.map {
+        DraftBadge(text: "\(allergenName($0.key ?? "")) · \($0.text)",
+                   tone: $0.severity == .block ? .stop : ($0.severity == .warn ? .warn : .notice))
+    }
+}
+
+/// What the owner's rules find in the rows still in the draft, grouped by what they found.
+func reviewAllergenWarnings(_ review: RecipeReview, profile: SensitivityProfile?) -> [ReviewAllergenWarning] {
+    guard let profile else { return [] }
+    var groups: [String: (severity: SensitivityRules.Badge.Severity, names: [String])] = [:]
+    var order: [String] = []
+    for l in review.lines where !l.removed {
+        guard let map = l.line.allergens else { continue }
+        for b in SensitivityRules.badges(allergens: map, profile: profile) where b.severity != .noData {
+            let text = "\(allergenName(b.key ?? "")) · \(b.text)"
+            if groups[text] == nil { order.append(text); groups[text] = (b.severity, []) }
+            groups[text]?.names.append(l.line.name)
+        }
+    }
+    return order.compactMap { t in groups[t].map { ReviewAllergenWarning(text: t, severity: $0.severity, lineNames: $0.names) } }
+}
+
+/// The rows that tell nothing about allergens (matched nothing, or a food with no declared states) — said out loud, never
+/// read as "free of". Only when the owner has allergen rules at all.
+func reviewNoDataLines(_ review: RecipeReview, profile: SensitivityProfile?) -> [String] {
+    guard let profile, profile.items.contains(where: \.isStructured) else { return [] }
+    return review.lines.filter { !$0.removed && ($0.line.allergens?.isEmpty ?? true) }.map(\.line.name)
 }
 
 // MARK: - The sheet's state
@@ -235,6 +301,7 @@ final class RecipeImportModel {
 
     // MARK: edits (each one routes through the review's own rules)
 
+    func acknowledgeLeftOut(_ on: Bool) { review?.acknowledgeLeftOut(on) }
     func confirm(_ id: UUID) { review?.confirm(id) }
     func remove(_ id: UUID) { review?.remove(id) }
     func restore(_ id: UUID) { review?.restore(id) }
@@ -267,6 +334,8 @@ func importProblemLine(_ e: FoodFetchError, source: RecipeImportSource) -> Strin
 /// what it matched; a doubtful row must be confirmed, an unmatched one is left out and says so.
 struct RecipeImportSheet: View {
     @Bindable var model: RecipeImportModel
+    /// The owner's allergen rules, for the warnings on the review.
+    var profile: SensitivityProfile? = nil
     /// Called with the saved recipe once the owner's tap has saved it.
     let onSaved: (Recipe) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -279,7 +348,7 @@ struct RecipeImportSheet: View {
             switch model.stage {
             case .input: input
             case .working: working
-            case .review: ReviewBody(model: model, onSaved: onSaved)
+            case .review: ReviewBody(model: model, profile: profile, onSaved: onSaved)
             case .empty:
                 notice("Nem találtam ebben receptet.", "Nem hozzávalók és lépések vannak rajta, vagy nem tudtam elolvasni. Próbálj másik oldalt, másold be a szöveget, vagy fotózd le.",
                        action: "Másik forrás") { model.back() }
@@ -382,6 +451,7 @@ struct RecipeImportSheet: View {
 /// The reviewed draft: name, servings, the ingredient rows with their marks, the weight and the one save button.
 struct ReviewBody: View {
     @Bindable var model: RecipeImportModel
+    var profile: SensitivityProfile? = nil
     let onSaved: (Recipe) -> Void
 
     private let categories: [(key: String, label: String)] = [("breakfast", "Reggeli"), ("lunch", "Ebéd"), ("dinner", "Vacsora"), ("snack", "Nasi")]
@@ -391,7 +461,9 @@ struct ReviewBody: View {
             VStack(spacing: 12) {
                 headCard(review)
                 ingredientsCard(review)
+                allergenCard(review)
                 weightCard(review)
+                leftOutCard(review)
                 if let blocker = review.saveBlocker {
                     Text(blocker).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
@@ -439,9 +511,9 @@ struct ReviewBody: View {
 
     private func ingredientsCard(_ review: RecipeReview) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(review.markedCount == 0
+            Text(review.toReviewCount == 0
                  ? "\(review.steps.count) lépés · a hozzávalókat a kamrádhoz párosítottam"
-                 : "\(review.steps.count) lépés · \(review.markedCount) hozzávalót nézz át")
+                 : "\(review.steps.count) lépés · \(review.toReviewCount) hozzávalót nézz át")
                 .nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
             ForEach(review.lines) { l in
                 lineRow(l)
@@ -472,6 +544,8 @@ struct ReviewBody: View {
                             Text("\(huAmount(l.line.amount)) \(l.line.unit)").nkFont(12.5, design: .monospaced).foregroundStyle(.white.opacity(0.55))
                         }
                     }
+                    let badges = reviewLineBadges(l, profile: profile)
+                    if !badges.isEmpty { FlowRow { ForEach(badges) { RecipeBadgeView(badge: $0) } }.padding(.top, 2) }
                     if let src = l.line.sourceText, !src.isEmpty, l.isMarked {
                         Text("Így állt a forrásban: „\(src)”").nkFont(11.5).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
                     }
@@ -512,6 +586,48 @@ struct ReviewBody: View {
         } else if l.mark == .unmatched {
             Text("nincs a kamrádban · kimarad").nkFont(11, .medium).foregroundStyle(.white.opacity(0.65)).multilineTextAlignment(.trailing)
                 .padding(.horizontal, 9).padding(.vertical, 4).background(Capsule().fill(.white.opacity(0.1)))
+        }
+    }
+
+    /// What the owner's rules find in the draft, before he saves; rows with no allergen data say so, never "free of".
+    @ViewBuilder private func allergenCard(_ review: RecipeReview) -> some View {
+        let warnings = reviewAllergenWarnings(review, profile: profile)
+        let silent = reviewNoDataLines(review, profile: profile)
+        if !warnings.isEmpty || !silent.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                NKMono("ALLERGÉNEK")
+                ForEach(warnings) { w in
+                    Text("\(w.text) — \(w.lineNames.joined(separator: ", "))").nkFont(14, .medium).foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if !warnings.isEmpty {
+                    Text("Tedd bele, cseréld, vagy hagyd ki — a recept így is elmentődik.").nkFont(13).foregroundStyle(.white.opacity(0.7))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if !silent.isEmpty {
+                    Text("Nincs allergén-adat: \(silent.joined(separator: ", ")). Ez nem azt jelenti, hogy nincs benne semmi — csak nem tudom.")
+                        .nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
+        }
+    }
+
+    /// A large share of the rows is not in the recipe: say so plainly and make the owner own it.
+    @ViewBuilder private func leftOutCard(_ review: RecipeReview) -> some View {
+        if let warning = review.leftOutWarning {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(warning).nkFont(14, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                Button { model.acknowledgeLeftOut(!review.leftOutAcknowledged) } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: review.leftOutAcknowledged ? "checkmark.circle.fill" : "circle").nkFont(20)
+                        Text("Tudom, így is mentem").nkFont(14, .medium)
+                    }
+                    .foregroundStyle(.white.opacity(review.leftOutAcknowledged ? 1 : 0.8)).frame(minHeight: 44)
+                }
+                .buttonStyle(.plain).accessibilityAddTraits(review.leftOutAcknowledged ? .isSelected : [])
+            }
+            .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
         }
     }
 

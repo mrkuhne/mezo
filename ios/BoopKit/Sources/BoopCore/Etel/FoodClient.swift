@@ -590,6 +590,9 @@ public struct FoodClient: Sendable {
             if let status = (error as? ClientError)?.response?.status.code {
                 if status == 401 { throw FoodFetchError.unauthorized }
                 if status == 404 { throw FoodFetchError.notFound }
+                // A refusal or an unavailable model stays what it is even when its body cannot be read.
+                if status == 400 { throw FoodFetchError.rejected }
+                if status == 502 || status == 503 { throw FoodFetchError.unavailable }
             }
             throw isNetworkFailure(error) ? FoodFetchError.offline : FoodFetchError.server
         }
@@ -675,7 +678,7 @@ extension FoodClient {
                          amount: serving.amount, unit: serving.unit, per: l.per, basisUnit: l.unit,
                          kcal: l.kcal ?? 0, proteinG: l.proteinG ?? 0, carbsG: l.carbsG ?? 0, fatG: l.fatG ?? 0, nova: l.nova,
                          fiberG: l.fiberG, sugarG: l.sugarG, saltG: l.saltG, saturatedFatG: l.saturatedFatG,
-                         confidence: 1, needsReview: l.kcal == nil, allergens: l.allergens)
+                         confidence: 1, needsReview: l.kcal == nil || l.proteinG == nil || l.carbsG == nil || l.fatG == nil, allergens: l.allergens)
     }
 
     static func itemRequest(_ i: DraftItem) -> Components.Schemas.MealItemRequest {
@@ -705,14 +708,15 @@ extension FoodClient {
                        RecipeIngredient(pantryItemId: $0, name: i.name, amount: i.amount, unit: i.unit, note: i.note, kcal: i.contribution.kcal)
                    }
                }, steps: r.steps ?? [], sourceUrl: r.sourceUrl, hasImage: r.hasImage ?? false,
-               allergens: allergens(r.allergens?.additionalProperties), fit: r.mezoFit.score, timesLogged: r.timesLogged)
+               allergens: allergens(r.allergens?.additionalProperties), fit: r.mezoFit.score)
     }
 
     static func map(_ d: Components.Schemas.RecipeImportDraft) -> RecipeImportDraft {
         RecipeImportDraft(name: d.name, category: d.category, servings: d.servings, steps: d.steps, lines: d.lines.map { l in
             ImportedLine(name: l.value1.name, amount: l.value1.amount, unit: l.value1.unit,
                          catalogId: l.value2.match.catalogId.flatMap(UUID.init(uuidString:)),
-                         confidence: l.value2.match.confidence, needsReview: l.value2.match.needsReview, sourceText: l.value2.sourceText)
+                         confidence: l.value2.match.confidence, needsReview: l.value2.match.needsReview, sourceText: l.value2.sourceText,
+                         allergens: l.value2.allergens.map { allergens($0.additionalProperties) })
         }, sourceUrl: d.sourceUrl, needsReview: d.needsReview ?? false, cookedWeightG: d.cookedWeightG)
     }
 

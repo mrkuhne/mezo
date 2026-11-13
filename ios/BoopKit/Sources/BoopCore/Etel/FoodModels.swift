@@ -372,16 +372,15 @@ public struct Recipe: Equatable, Sendable, Identifiable {
     public var allergens: [String: AllergenState]
     /// The deterministic fit, 0…1; nil while the recipe has no kcal to score.
     public var fit: Double?
-    public var timesLogged: Int
 
     public init(id: UUID, name: String, slot: String? = nil, category: String, servings: Int, prepMins: Int? = nil, cookMins: Int? = nil,
                 tags: [String] = [], starred: Bool = false, macros: Macros, nova: Int = 1, ingredients: [RecipeIngredient] = [],
                 steps: [String] = [], sourceUrl: String? = nil, hasImage: Bool = false, allergens: [String: AllergenState] = [:],
-                fit: Double? = nil, timesLogged: Int = 0) {
+                fit: Double? = nil) {
         self.id = id; self.name = name; self.slot = slot; self.category = category; self.servings = servings
         self.prepMins = prepMins; self.cookMins = cookMins; self.tags = tags; self.starred = starred; self.macros = macros
         self.nova = nova; self.ingredients = ingredients; self.steps = steps; self.sourceUrl = sourceUrl
-        self.hasImage = hasImage; self.allergens = allergens; self.fit = fit; self.timesLogged = timesLogged
+        self.hasImage = hasImage; self.allergens = allergens; self.fit = fit
     }
 
     /// Per-serving macros (the library row's numbers).
@@ -488,9 +487,13 @@ public struct ImportedLine: Equatable, Sendable {
     public var confidence: Double
     public var needsReview: Bool
     public var sourceText: String?
-    public init(name: String, amount: Double, unit: String, catalogId: UUID? = nil, confidence: Double, needsReview: Bool, sourceText: String? = nil) {
+    /// The matched food's allergen states (lowercase keys). nil = the row matched nothing, so there is no data at all;
+    /// a key absent from the map says nothing either — neither is ever "free of".
+    public var allergens: [String: AllergenState]?
+    public init(name: String, amount: Double, unit: String, catalogId: UUID? = nil, confidence: Double, needsReview: Bool, sourceText: String? = nil,
+                allergens: [String: AllergenState]? = nil) {
         self.name = name; self.amount = amount; self.unit = unit; self.catalogId = catalogId; self.confidence = confidence
-        self.needsReview = needsReview; self.sourceText = sourceText
+        self.needsReview = needsReview; self.sourceText = sourceText; self.allergens = allergens
     }
 }
 

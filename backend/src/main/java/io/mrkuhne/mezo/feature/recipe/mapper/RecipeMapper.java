@@ -78,7 +78,7 @@ public interface RecipeMapper {
                 .score(e.getFitScore())                       // null -> pending sparkle on FE
                 .fitsFor(e.getFitsFor() == null ? List.of() : e.getFitsFor())
                 .build())
-            .timesLogged(0)        // derived from logging — out of scope this slice
+            .timesLogged(0)        // PRE-EXISTING web-contract placeholder, always 0 (a recipe->meal read would close a slice cycle); Boop does not read it
             .avgScore(BigDecimal.ZERO)
             .lastLogged("—")
             .ingredients(lines)

@@ -140,4 +140,79 @@ struct RecipeImportReviewTests {
         let milk = Recipe(id: UUID(), name: "Túrós", category: "breakfast", servings: 1, macros: Macros(kcal: 1, p: 1, c: 1, f: 1), allergens: ["milk": .contains])
         #expect(recipeBadges(milk, profile: profile).first?.text.contains("Tej") == true)
     }
+
+    // MARK: review follow-ups
+
+    private func milkProfile() -> SensitivityProfile {
+        SensitivityProfile(items: [SensitivityItem(key: "milk", level: .intolerance, note: nil)], novaRule: NovaRule(enabled: false, maxLevel: 4))
+    }
+
+    @Test func theReviewWarnsAboutAnAllergenBeforeTheSave() {
+        let r = RecipeReview(draft: draft([
+            ImportedLine(name: "Feta sajt", amount: 100, unit: "g", catalogId: feta, confidence: 1, needsReview: false, allergens: ["milk": .contains]),
+            line("Csirkemell", 400, catalog: chicken),                     // matched, but its food declares nothing
+            line("Kapor", 1, "csokor", catalog: nil, confidence: 0, review: true)]))
+        let warnings = reviewAllergenWarnings(r, profile: milkProfile())
+        #expect(warnings.count == 1)
+        #expect(warnings[0].text.contains("Tej") && warnings[0].text.contains("tartalmazza"))
+        #expect(warnings[0].lineNames == ["Feta sajt"])
+        #expect(reviewLineBadges(r.lines[0], profile: milkProfile()).count == 1)
+        // no data is said, never read as free: the row with no declared states and the unmatched row
+        #expect(reviewNoDataLines(r, profile: milkProfile()) == ["Csirkemell", "Kapor"])
+        // an owner with no allergen rules sees nothing about allergens
+        #expect(reviewAllergenWarnings(r, profile: nil).isEmpty && reviewNoDataLines(r, profile: nil).isEmpty)
+    }
+
+    @Test func theHeaderCountReachesZeroAndIgnoresUnmatchedRows() {
+        var r = RecipeReview(draft: draft([line("Feta", 100, catalog: feta, confidence: 0.5, review: true),
+                                           line("Kapor", 1, "csokor", catalog: nil, confidence: 0, review: true)]))
+        #expect(r.toReviewCount == 1)
+        r.confirm(r.lines[0].id)
+        #expect(r.toReviewCount == 0)
+    }
+
+    @Test func anAmountOfZeroOrLessIsNotAccepted() {
+        var r = RecipeReview(draft: draft([line("Csirkemell", 400, catalog: chicken)]))
+        let id = r.lines[0].id
+        r.setAmount(id, 0); r.setAmount(id, -5); r.setAmount(id, .nan)
+        #expect(r.lines[0].line.amount == 400)
+        r.setAmount(id, 250)
+        #expect(r.request().lines[0].amount == 250)
+    }
+
+    @Test func aLargeLeftOutShareMustBeOwnedBeforeTheSave() {
+        var lines = [line("Csirke", 400, catalog: chicken), line("Joghurt", 150, catalog: yoghurt), line("Feta", 100, catalog: feta), line("Rizs", 200, catalog: UUID())]
+        for k in 0..<8 { lines.append(line("Ismeretlen \(k)", 1, "db", catalog: nil, confidence: 0, review: true)) }
+        var r = RecipeReview(draft: draft(lines))
+        #expect(r.needsLeftOutAcknowledgement)
+        #expect(r.leftOutWarning?.hasPrefix("8 hozzávaló kimarad — a recept számai ennyivel kevesebbet mutatnak") == true)
+        #expect(!r.canSave)
+        r.acknowledgeLeftOut()
+        #expect(r.canSave)
+        #expect(r.request().lines.count == 4)
+    }
+
+    @Test func aSmallLeftOutShareNeedsNoAcknowledgement() {
+        let r = RecipeReview(draft: draft([line("A", 1, catalog: chicken), line("B", 1, catalog: yoghurt), line("C", 1, catalog: feta), line("D", 1, catalog: UUID()),
+                                           line("E", 1, "db", catalog: nil, confidence: 0, review: true)]))
+        #expect(!r.needsLeftOutAcknowledgement)
+        #expect(r.canSave)
+    }
+
+    @Test func theWorkshopsEstimateLinesFollowTheSameRule() {
+        let shelf = UUID()
+        let w = WorkshopDraft(name: "Tál", category: "lunch", servings: 1, steps: [],
+                              lines: [WorkshopLine(source: "pantry", pantryItemId: shelf, name: "Zab", amount: 60, unit: "g"),
+                                      WorkshopLine(source: "estimate", name: "Túró", amount: 200, unit: "g"),
+                                      WorkshopLine(source: "estimate", name: "Méz", amount: 20, unit: "g")])
+        var r = RecipeReview(workshop: w)
+        #expect(r.needsLeftOutAcknowledgement && !r.canSave)
+        r.acknowledgeLeftOut()
+        #expect(r.canSave)
+    }
+
+    @Test func aRecipeWithAnAllergenAndAProcessedFlagShowsBothOnItsRow() {
+        let r = Recipe(id: UUID(), name: "Túrós szelet", category: "snack", servings: 1, macros: Macros(kcal: 1, p: 1, c: 1, f: 1), nova: 4, allergens: ["milk": .contains])
+        #expect(recipeBadges(r, profile: milkProfile()).count == 2)
+    }
 }
