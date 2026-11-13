@@ -14,7 +14,7 @@ struct EThread: Identifiable {
 
     static let all: [EThread] = [
         EThread(id: "cipo", title: "Megvegyem a futócipőt?", last: "Igen, de a hétvégi étterem helyett.", when: "most",
-                areas: [5, 6, 2, 0], pinned: false,
+                areas: [5, 7, 2, 0], pinned: false,
                 turns: [
                     (false, "Ezt a cipőt érdemes megvenni?"),
                     (true, "Szerintem igen. 30 590 Ft, és négy boltban néztem meg: a szokásos ára 38 400, a legolcsóbb másik 36 900. Ez tényleg a legjobb ár, amit eddig láttam rá."),
@@ -207,7 +207,8 @@ struct EletTerv: View {
         (1, "7,5 óra alvás", "a heti átlagod 7 óra 4 perc", 0.82, "Kipihented magad · 7ó 12p"),
         (5, "Havi 60 000 Ft félretéve", "ebből 38 000 Ft megvan", 0.63, "A kereten belül vagy · 281 600 Ft"),
         (4, "Heti két nyugodt nap", "ezen a héten egy volt", 0.5, "Kicsit feszült vagy · 4/10"),
-        (6, "Csak az számít, ami a célhoz tartozik", "ma 2 levél ilyen volt a 34-ből", 0.9, "Két dolgot nézz meg · 34 levél"),
+        (6, "A naptárad hagyjon helyet", "ma 72%-ban tele", 0.72, "Zsúfolt délután · 6 esemény"),
+        (7, "Csak az számít, ami a célhoz tartozik", "ma 2 levél ilyen volt a 34-ből", 0.9, "Két dolgot nézz meg · 34 levél"),
     ]
 
     var body: some View {
@@ -327,7 +328,7 @@ struct EletNaplo: View {
          [4, 1],
          "A hat eseménynél zsúfoltabb napok után a mély alvásod átlagosan 18 perccel rövidebb. Ezeken a napokon érdemes 22:30 előtt lefeküdni."),
         ("A reklámlevelek 94%-a nem érdekel",
-         [6, 5],
+         [7, 5],
          "Három hét alatt 612 levélből 36-ot nyitottál meg. A megnyitottak háromnegyede két márkától jött — a többit ezentúl csendben szűröm."),
     ]
 

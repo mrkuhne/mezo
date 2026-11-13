@@ -8,7 +8,8 @@ enum EAreaContent {
     static func tabs(_ metric: Int) -> [ETab] {
         switch metric {
         case 5: return penz
-        case 6: return level
+        case 6: return nap
+        case 7: return level
         case 1: return alvas
         case 2: return edzes
         case 3: return etel
@@ -93,6 +94,63 @@ enum EAreaContent {
                 more: "Tétel hozzáadása"),
             .note(label: "HA MEGVESZED A CIPŐT", body: "5 400 Ft marad a hónapból. Ha a hétvégi éttermet kihagyod, az 12 000 Ft, és akkor kényelmes."),
             .ask("Kérdezd meg Boopot, belefér-e"),
+        ]),
+    ]
+
+
+    // ───────────────────────────────────────────── Nap · a nap telítettsége (B7 given a home)
+    static let nap: [ETab] = [
+        ETab(name: "Ma", badge: 1, blocks: [
+            .highlight(label: "AMI MA SZÁMÍT", text: "14 és 17:30 között nincs levegő",
+                       sub: "Három hívás egymás után, köztük tíz perc. Utána viszont tiéd a nap — ezért tettem az edzést 18:30-ra."),
+            .stats([EStat(value: "6", unit: "esemény", label: "ma a naptáradban"),
+                    EStat(value: "72", unit: "%", label: "ennyire van tele a napod", trend: 1, hot: true),
+                    EStat(value: "2ó 10p", unit: "", label: "összefüggő szabad idő")]),
+            .curve(label: "MENNYI ENERGIÁD MARAD", values: [0.45, 0.68, 0.82, 0.78, 0.6, 0.42, 0.5, 0.72, 0.64, 0.38],
+                   labels: ["6", "8", "10", "12", "14", "16", "18", "20", "22", ""], target: 0.5, now: 4,
+                   note: "A szaggatott vonal az, ami alatt már nehéz bármit elkezdeni. Ma kétszer mész alá: 15 körül és este tíz után."),
+            .rowlist(label: "A MAI ESEMÉNYEK", rows: [
+                ERow(glyph: "clock-ink", title: "Heti tervezés", sub: "09:00 · 60 perc · felkészülve", right: "köze pes", rightSub: "terhelés", level: 0.5),
+                ERow(glyph: "person-sage", title: "Ügyfélhívás · Nagy Péter", sub: "10:30 · 90 perc · nincs jegyzeted hozzá", right: "nehéz", rightSub: "terhelés", level: 0.88, badge: 1, hot: true),
+                ERow(glyph: "clock-ink", title: "Csapatmegbeszélés", sub: "14:00 · 45 perc · felkészülve", right: "könnyű", rightSub: "terhelés", level: 0.3),
+                ERow(glyph: "person-sage", title: "Ügyfélhívás · csúszhat", sub: "16:00 · 90 perc · ez szokott elhúzódni", right: "nehéz", rightSub: "terhelés", level: 0.82),
+                ERow(glyph: "dumbbell-ink", title: "Felsőtest edzés", sub: "18:30 · 75 perc · te tetted ide", right: "közepes", rightSub: "terhelés", level: 0.55)],
+                more: "A hét naptára"),
+            .note(label: "HOGYAN PONTOZOM", body: "Minden eseményre megbecsülöm, mennyi fejmunkát, mennyi társas energiát és mennyi fizikai terhelést visz, és hogy mennyire vagy rá felkészülve. Ezt összevetem azzal, mennyi energiád van ma — az alvásodból, a pulzusváltozékonyságodból és az elmúlt napok terheléséből. A becslés az első hetekben tanul: amíg nincs elég check-ined, a számok tájékoztató jellegűek, és ezt ki is írom."),
+            .menu(label: "A NAP TERÜLET", items: [
+                EMenuItem(glyph: "clock-ink", name: "Napirend", sub: "A mai nap percről percre"),
+                EMenuItem(glyph: "repeat-deep", name: "Naptárak", sub: "Melyik naptárt olvassa"),
+                EMenuItem(glyph: "chart-deep", name: "Pontozás", sub: "Mi számít nehéz napnak", badge: 1),
+                EMenuItem(glyph: "pen-sun", name: "Felkészülés", sub: "Amihez jegyzet vagy idő kell"),
+                EMenuItem(glyph: "spark-cream", name: "Mire marad erőd", sub: "Mit bír még el a mai napod"),
+                EMenuItem(glyph: "book-sage", name: "Előzmények", sub: "Hetek, zsúfoltság, kimerülés")]),
+            .ask("Kérdezd meg Boopot a mai napodról"),
+        ]),
+        ETab(name: "Napirend", blocks: [
+            .list(label: "A NAPOD, SORBAN", items: [
+                ("06:53 · Ébredés", "7ó 12p alvás, ebből 1ó 36p mély"),
+                ("07:20 · Reggeli check-in", "Energia 7 · hangulat 8 · feszültség 4"),
+                ("08:00 · A reggeli posta", "34 levél · 31 elintézve · 2 megér egy percet"),
+                ("08:20 · Reggeli", "Zabkása áfonyával · 32 g fehérje"),
+                ("09:00 · Megbeszélések · 4 esemény", "9:00–12:00 · legsűrűbb 10:30-kor"),
+                ("12:06 · Spar · 8 240 Ft", "A banki üzenetből, magától"),
+                ("12:40 · Ebéd", "Csirke rizzsel, salátával · 46 g fehérje"),
+                ("14:00 · Megbeszélések · 3 esemény", "14:00–17:30 · az ügyfélhívás csúszhat"),
+                ("16:00 · Délutáni check-in", "3 kérdés · fél perc"),
+                ("18:30 · Felsőtest edzés", "75 perc · 5 gyakorlat"),
+                ("19:45 · Vacsora", "Boop: legalább 50 g fehérje"),
+                ("21:30 · Esti zárás", "Kevesebb mint egy perc"),
+                ("22:45 · Lefekvés", "Emlékeztetlek 22:15-kor")]),
+            .ask("Kérdezd meg Boopot, hogy fér-e bele még valami"),
+        ]),
+        ETab(name: "Hét", blocks: [
+            .heat(label: "MENNYIRE TELÍTETTEK A NAPJAID", cells: [("H", 0.55), ("K", 0.7), ("Sze", 0.95), ("Cs", 0.72), ("P", 0.6), ("Szo", 0.15), ("V", 0.1)],
+                  note: "Szerda volt a legzsúfoltabb — és aznap aludtál a legkevesebbet. Ez a kettő nálad együtt jár."),
+            .list(label: "AMIT ÉSZREVETTEM", items: [
+                ("A zsúfolt nap másnapja is drága", "A 90% fölötti napok után a Formád átlagosan 9 ponttal alacsonyabb."),
+                ("A hosszú hívások csúsznak", "Az ügyfélhívásaid 60%-a túllép a tervezett időn, átlagosan 18 perccel."),
+                ("A szabad délután ritka", "Két hét alatt egyszer volt két óránál hosszabb összefüggő szabad időd.")]),
+            .ask("Kérdezd meg Boopot a heti terhelésedről"),
         ]),
     ]
 

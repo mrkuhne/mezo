@@ -61,7 +61,7 @@ struct EFeedCard: Identifiable {
         EFeedCard(id: "cipo", kind: .tortent, when: "08:04",
                   text: "A futócipő, amit figyelsz, ma *32%-kal olcsóbb*",
                   sub: "30 590 Ft. Négy boltban néztem meg — ez az eddigi legjobb ár. A havi keretedbe belefér.",
-                  areas: [6, 5, 2], primary: "Megnézem", secondary: "Nem érdekel",
+                  areas: [7, 5, 2], primary: "Megnézem", secondary: "Nem érdekel",
                   settled: "Futócipő · megnézted",
                   photo: "nap-seta-sq.jpg", photoSq: "nap-seta-sq.jpg", big: "30 590", bigUnit: "Ft"),
         EFeedCard(id: "ebed", kind: .reakcio, when: "12:48",

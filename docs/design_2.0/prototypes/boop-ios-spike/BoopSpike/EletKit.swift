@@ -359,3 +359,103 @@ struct EChip: View {
         .overlay(Capsule().stroke(.white.opacity(0.14)))
     }
 }
+
+
+// MARK: - The day's curve with the major events pinned on it (owner, 2026-11-13)
+
+struct EDayEvent: Identifiable {
+    let id = UUID()
+    let at: Double          // 0…1 across the curve
+    let glyph: String
+    let label: String
+}
+
+/// The hero of Ma: the shape of the day with its big moments on it, and where you are right now.
+struct EDayCurve: View {
+    var values: [Double]
+    var labels: [String]
+    var events: [EDayEvent]
+    var hue: Color
+    var now: Double         // 0…1
+    var height: CGFloat = 170
+
+    var body: some View {
+        GeometryReader { g in
+            let w = g.size.width, h = height
+            ZStack(alignment: .topLeading) {
+                Canvas { ctx, s in
+                    guard values.count > 1 else { return }
+                    let peak = max(0.0001, values.max() ?? 1)
+                    let k = 0.86 / peak
+                    func y(_ v: Double) -> CGFloat { s.height - 26 - (s.height - 54) * CGFloat(min(1, v * k)) }
+                    func pt(_ i: Int) -> CGPoint {
+                        CGPoint(x: s.width * CGFloat(i) / CGFloat(values.count - 1), y: y(values[i]))
+                    }
+                    var line = Path(); line.move(to: pt(0))
+                    for i in 1..<values.count {
+                        let a = pt(i - 1), b = pt(i), mx = (a.x + b.x) / 2
+                        line.addCurve(to: b, control1: CGPoint(x: mx, y: a.y), control2: CGPoint(x: mx, y: b.y))
+                    }
+                    var fill = line
+                    fill.addLine(to: CGPoint(x: s.width, y: s.height - 22))
+                    fill.addLine(to: CGPoint(x: 0, y: s.height - 22)); fill.closeSubpath()
+                    ctx.fill(fill, with: .linearGradient(Gradient(colors: [hue.opacity(0.42), hue.opacity(0.02)]),
+                                                        startPoint: .zero, endPoint: CGPoint(x: 0, y: s.height)))
+                    ctx.stroke(line, with: .color(hue), style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
+
+                    // now
+                    let nx = s.width * CGFloat(now)
+                    var v = Path(); v.move(to: CGPoint(x: nx, y: 8)); v.addLine(to: CGPoint(x: nx, y: s.height - 22))
+                    ctx.stroke(v, with: .color(.white.opacity(0.3)), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    let ny = y(sample(now))
+                    ctx.fill(Path(ellipseIn: CGRect(x: nx - 7, y: ny - 7, width: 14, height: 14)), with: .color(hue))
+                    ctx.fill(Path(ellipseIn: CGRect(x: nx - 3.5, y: ny - 3.5, width: 7, height: 7)), with: .color(.white))
+                }
+                .frame(height: h)
+
+                // the big moments, as small pins sitting on the curve.
+                // A label only where there is room for it — crowded pins keep the glyph alone.
+                ForEach(Array(events.enumerated()), id: \.element.id) { i, e in
+                    let room = i == 0 || (e.at - events[i - 1].at) > 0.085
+                    let lift: CGFloat = (i % 2 == 0) ? 0 : 9
+                    let peak = max(0.0001, values.max() ?? 1)
+                    let yy = h - 26 - (h - 54) * CGFloat(min(1, sample(e.at) * 0.86 / peak))
+                    VStack(spacing: 3) {
+                        ZStack {
+                            Circle().fill(gBase.opacity(0.92))
+                            Circle().stroke(hue.opacity(0.9), lineWidth: 1.4)
+                            EGlyph(e.glyph, .white, size: 12)
+                        }
+                        .frame(width: 26, height: 26)
+                        .shadow(color: .black.opacity(0.35), radius: 4)
+                        if room {
+                            Text(e.label).font(AuraFont.mono(9)).foregroundStyle(.white.opacity(0.7))
+                                .fixedSize()
+                                .shadow(color: .black.opacity(0.5), radius: 3)
+                        }
+                    }
+                    .position(x: max(22, min(w - 22, w * CGFloat(e.at))), y: yy - 24 - lift)
+                }
+
+                HStack(spacing: 0) {
+                    ForEach(labels.indices, id: \.self) { i in
+                        Text(labels[i]).font(AuraFont.mono(10)).foregroundStyle(.white.opacity(0.45))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .offset(y: h - 16)
+            }
+        }
+        .frame(height: height)
+        .accessibilityHidden(true)
+    }
+
+    /// value at a 0…1 position, linearly between samples
+    private func sample(_ x: Double) -> Double {
+        guard values.count > 1 else { return values.first ?? 0 }
+        let t = x * Double(values.count - 1)
+        let i = min(values.count - 2, max(0, Int(t)))
+        let f = t - Double(i)
+        return values[i] * (1 - f) + values[i + 1] * f
+    }
+}

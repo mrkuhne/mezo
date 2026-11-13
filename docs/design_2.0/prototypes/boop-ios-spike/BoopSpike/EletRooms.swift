@@ -38,7 +38,7 @@ struct EletAreaPage: View {
     @Environment(\.dismiss) private var dismiss
     @State private var tab = 0
 
-    private var m: EMetric { EMetric.all[min(metric, 6)] }
+    private var m: EMetric { EMetric.all[min(metric, 7)] }
     private var tabs: [ETab] { EAreaContent.tabs(metric) }
 
     var body: some View {
@@ -78,7 +78,7 @@ struct EletAreaPage: View {
 
     private var head: some View {
         Group {
-            if EWarm.on { EPhotoHead(metric: min(metric, 6), height: 330) }
+            if EWarm.on { EPhotoHead(metric: min(metric, 7), height: 330) }
             else { GHead(sky: m.sky, height: 300) }
         }
             .overlay(alignment: .bottomLeading) {

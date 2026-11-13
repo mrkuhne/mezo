@@ -47,7 +47,7 @@ struct EArea: Identifiable {
     var m: EMetric { EMetric.all[id] }
 
     static let all: [EArea] = [
-        EArea(id: 6, verdict: "Két levél megér egy percet", big: "34", unit: "levél", cap: "31-et elintéztem helyetted",
+        EArea(id: 7, verdict: "Két levél megér egy percet", big: "34", unit: "levél", cap: "31-et elintéztem helyetted",
               bars: [0.4, 0.7, 0.5, 0.9, 0.6, 0.3, 0.8], loud: true),
         EArea(id: 5, verdict: "A kereten belül vagy, de az éttermek elfogytak", big: "281 600", unit: "Ft", cap: "a havi 610 000-ből, a 13. napon",
               bars: [0.32, 0.58, 0.21, 0.9, 0.44, 0.76, 0.18], loud: true),
@@ -75,7 +75,7 @@ struct EProposal {
         accepted: "Felvettem a tervezett kiadások közé",
         facts: [("30 590", "Ft", "a mai ár a reggeli levélben"), ("38 400", "Ft", "a szokásos ára, 4 bolt alapján"), ("54 000", "Ft", "ami a hónapból még szabadon van")],
         areas: [(5, "A havi keretedbe belefér, és nincs mellette másik nagy tétel a héten."),
-                (6, "A márka leveleit eddig 11-szer dobtam ki — ez az első, amelyik tényleg olcsóbb."),
+                (7, "A márka leveleit eddig 11-szer dobtam ki — ez az első, amelyik tényleg olcsóbb."),
                 (2, "A mostani cipőd 780 kilométernél jár, a futóidőid három hete lassulnak."),
                 (0, "A nyári célodhoz heti három futás kell. Ehhez a cipő nem luxus, hanem feltétel.")])
 
@@ -187,14 +187,20 @@ struct EletMa: View {
                 }
                 .padding(.horizontal, 16).padding(.top, 58)
 
-                LivingOrb(mood: .good, size: 96, motion: motion, palette: day.orb, glow: true, level: 0.78)
-                    .padding(.top, 10)
-                    .onTapGesture { path.append("m0") }
+                EDayCurve(values: EDay.curve, labels: EDay.hours, events: EDay.events,
+                          hue: day.glow, now: 0.47, height: 182)
+                    .padding(.horizontal, 20).padding(.top, 10)
+                    .onTapGesture { path.append("m6") }
 
-                Text("Jó napod lesz").font(AuraFont.serif(34)).foregroundStyle(.white).padding(.top, 10)
-                Text("Kipihent vagy, és eddig minden a terv szerint megy.")
-                    .font(.system(size: 16)).lineSpacing(4).multilineTextAlignment(.center)
-                    .foregroundStyle(.white.opacity(0.82)).padding(.horizontal, 36).padding(.top, 8)
+                HStack(alignment: .top, spacing: 11) {
+                    LivingOrb(mood: .good, size: 34, motion: motion, palette: day.orb, glow: false, level: 0.78)
+                        .allowsHitTesting(false)
+                    EHueText(text: "Most a *délutáni gödörben* vagy. 18:30-ig stabil maradsz, utána jön az edzés.",
+                             hue: day.glow, size: 15.5, opacity: 0.9)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 20).padding(.top, 10)
+
                 Spacer(minLength: 0)
             }
             .frame(height: height)
@@ -296,8 +302,24 @@ struct EletMa: View {
             }
             EFoldRow(title: "A reggeli összefoglaló", sub: "08:10 · Boop mondta", glyph: "sun-ink",
                      hue: day.glow, open: $briefOpen) { briefing }
-            EFoldRow(title: "A napod", sub: "4 megvolt · 3 hátra · edzés 18:30", glyph: "clock-ink",
-                     hue: day.glow, open: $dayOpen) { dayScroll.padding(.top, 4) }
+            Button { path.append("m6") } label: {
+                HStack(spacing: 13) {
+                    EGlyph("clock-ink", .white.opacity(0.9), size: 17).frame(width: 36, height: 36)
+                        .background(Circle().fill(.white.opacity(0.08)))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("A napod").font(.system(size: 15.5, weight: .medium)).foregroundStyle(.white)
+                        Text("6 esemény · 72%-ban tele · edzés 18:30").font(.system(size: 12.5))
+                            .foregroundStyle(.white.opacity(0.55))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+                .padding(.horizontal, 16).padding(.vertical, 13)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .gCard(22)
         }
     }
 
@@ -381,7 +403,7 @@ struct EletMa: View {
             FlowRow(spacing: 8, rowSpacing: 8) {
                 EChip(glyph: "moon-cream", text: "Alvás 7ó 12p", orb: EMetric.all[1].orb)
                 EChip(glyph: "e-penz", text: "281 600 Ft", orb: EMetric.all[5].orb)
-                EChip(glyph: "e-level", text: "2 érdekes levél", orb: EMetric.all[6].orb)
+                EChip(glyph: "e-level", text: "2 érdekes levél", orb: EMetric.all[7].orb)
                 EChip(glyph: "clock-ink", text: "6 esemény")
                 EChip(glyph: "dumbbell-ink", text: "Edzés 18:30", orb: EMetric.all[2].orb)
                 EChip(glyph: "bowl-cream", text: "165 g fehérje", orb: EMetric.all[3].orb)
@@ -519,7 +541,7 @@ struct EletMa: View {
     private func tap(_ it: EItem) {
         switch it.kind {
         case .money: path.append("m5")
-        case .mail: path.append("m6")
+        case .mail: path.append("m7")
         case .meal: path.append("m3")
         case .train: path.append("m2")
         case .wake, .sleep: path.append("m1")
@@ -538,7 +560,7 @@ struct EMaNotice {
     static let all: [EMaNotice] = [
         EMaNotice(areas: [5, 3], text: "Az étteremre költés a héten *24 000 Ft* — ez a harmadik hét, hogy csütörtökön ugrik meg."),
         EMaNotice(areas: [1, 3], text: "A késői vacsorák után átlagosan *24 perccel* kevesebbet alszol. Ma 19:45-re terveztem."),
-        EMaNotice(areas: [6], text: "Három hét alatt 612 levélből *36-ot* nyitottál meg — a többit ezentúl csendben szűröm."),
+        EMaNotice(areas: [7], text: "Három hét alatt 612 levélből *36-ot* nyitottál meg — a többit ezentúl csendben szűröm."),
     ]
 }
 
@@ -668,4 +690,20 @@ struct EWhySheet: View {
         .background(gPageBackground(EMetric.all[0].top).ignoresSafeArea())
         .ignoresSafeArea(edges: .top)
     }
+}
+
+
+/// The shape of today and its big moments — the hero of Ma and the head of the Nap area.
+enum EDay {
+    static let curve: [Double] = [0.45, 0.68, 0.82, 0.78, 0.6, 0.42, 0.5, 0.72, 0.64, 0.38]
+    static let hours = ["6", "8", "10", "12", "14", "16", "18", "20", "22", ""]
+    static let events: [EDayEvent] = [
+        EDayEvent(at: 0.10, glyph: "sun-ink", label: "ébredés"),
+        EDayEvent(at: 0.21, glyph: "e-level", label: "posta"),
+        EDayEvent(at: 0.30, glyph: "clock-ink", label: "4 hívás"),
+        EDayEvent(at: 0.44, glyph: "bowl-cream", label: "ebéd"),
+        EDayEvent(at: 0.63, glyph: "clock-ink", label: "3 hívás"),
+        EDayEvent(at: 0.78, glyph: "dumbbell-ink", label: "edzés"),
+        EDayEvent(at: 0.93, glyph: "moon-cream", label: "alvás"),
+    ]
 }

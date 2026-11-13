@@ -70,6 +70,13 @@ struct EMetric {
                 headline: "A kereten belül vagy",
                 sentence: "A hónapból 13 nap telt el, a havi keret 46%-át költötted el. Két nagyobb tétel jön még.",
                 isNew: true),
+        EMetric(name: "Nap", value: 64, glyph: "clock-ink",
+                top: Color(hex: 0x0E3542), glow: Color(hex: 0x4FC3D9),
+                orb: [Color(hex: 0x0A2C38), Color(hex: 0x1F7A8C), Color(hex: 0x8FD9E8), Color(hex: 0xC9F0E2)],
+                sky: [Color(hex: 0x10384A), Color(hex: 0x3C8FA8), Color(hex: 0xCFE8E4)],
+                headline: "Zsúfolt délutánod lesz",
+                sentence: "Hat esemény, a naptárad 72%-ban tele. 14 és 17:30 között nincs levegő — utána viszont tiéd a nap.",
+                isNew: true),
         EMetric(name: "Levél", value: 58, glyph: "e-level",
                 top: Color(hex: 0x241F55), glow: Color(hex: 0x8E82F0),
                 orb: [Color(hex: 0x1E1A4A), Color(hex: 0x5B4BC4), Color(hex: 0xB3A8F5), Color(hex: 0x7FD8E8)],
@@ -131,7 +138,7 @@ struct EletRoot: View {
     @State private var maPath: [String] = {
         switch EArg.str("eletOpen") {
         case "penz": return ["m5"]
-        case "level": return ["m6"]
+        case "level": return ["m7"]
         case let s? where s.hasPrefix("m"): return [s]
         default: return []
         }
