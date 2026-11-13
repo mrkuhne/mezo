@@ -44,3 +44,26 @@ filter:
     - listMessages
     - sendMessage
     - getDayContext
+    - getFuelDay
+    - getFuelPlan
+    - draftMealFromAi
+    - createMeal
+    - logWater
+    - upsertPlannedSkip
+    - listRecipes
+    - getRecipe
+    - importRecipeFromUrl
+    - importRecipeFromText
+    - importRecipeFromPhoto
+    - getPantry
+    - searchPantryCatalog
+    - lookupPantryItem
+    - getSensitivityProfile
+    - setSensitivityProfile
+    - getDietSettings
+    - getProtocol
+    - logIntake
+    - getMealPhoto
+    - putMealPhoto
+    - deleteMealPhoto
+    - deleteAllMealPhotos

@@ -27,11 +27,12 @@ struct PreviewTransport: ClientTransport {
             return (HTTPResponse(status: .badRequest), nil)
         }
         var sent = ""
-        if ["setSessionTime", "addFocus", "sendMessage"].contains(operationID), let body {
+        if (["setSessionTime", "addFocus", "sendMessage"] + Self.foodWriteOps).contains(operationID), let body {
             sent = String(decoding: try await Data(collecting: body, upTo: 1 << 16), as: UTF8.self)
         }
         if let reply = Self.morningReply(operationID, request, sent: sent) { return reply }
         if let reply = Self.chatReply(operationID, sent: sent) { return reply }
+        if let reply = Self.foodReply(operationID, request, sent: sent) { return reply }
         if request.method == .put { return (HTTPResponse(status: .noContent), nil) }
         var h = HTTPFields(); h[.contentType] = "application/json"
         return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(#"{"inserted":0,"updated":0}"#))
@@ -97,6 +98,137 @@ struct PreviewTransport: ClientTransport {
     private static func json(_ text: String) -> (HTTPResponse, HTTPBody?) {
         var h = HTTPFields(); h[.contentType] = "application/json"
         return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(text))
+    }
+
+    // MARK: - Étel (B4): an invented food day, so the room can be walked without a server
+
+    private static let foodWriteOps = ["createMeal", "logWater", "upsertPlannedSkip", "setSensitivityProfile", "logIntake",
+                                       "importRecipeFromUrl", "importRecipeFromText"]
+    private static let seedMealId = "5b0e8a52-1c3d-4e0e-9a52-7d9d4c1a0b01"
+    private static let recipeId = "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03"
+    private static let oatsId = "6c1f9b63-2d4e-4f1f-8b63-8e0e5d2b1c02"
+    /// What the review has logged so far: meals added through `createMeal` (JSON), water in ml, skipped slots (`slot#n`),
+    /// and the sensitivity profile as last saved.
+    nonisolated(unsafe) private static var foodMeals: [String] = []
+    nonisolated(unsafe) private static var foodWater = 500
+    nonisolated(unsafe) private static var foodSkips: Set<String> = []
+    nonisolated(unsafe) private static var foodSensitivity =
+        #"{"items":[{"key":"milk","level":"intolerance","note":"laktózmentes"},{"key":"gluten","level":"avoid"}],"novaRule":{"enabled":true,"maxLevel":2}}"#
+    /// A 1x1 PNG, the "photo" of every meal that claims one.
+    private static let pixel = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==") ?? Data()
+
+    private static func pathDate(_ request: HTTPRequest) -> String {
+        let last = (request.path ?? "").split(separator: "?").first?.split(separator: "/").last.map(String.init) ?? ""
+        return last.count == 10 ? last : dayString(offset: 0)
+    }
+
+    private static func macros(_ k: Double, _ p: Double, _ c: Double, _ f: Double) -> String { #"{"kcal":\#(k),"p":\#(p),"c":\#(c),"f":\#(f)}"# }
+
+    private static func seedMeal(date: String) -> String {
+        #"{"id":"\#(seedMealId)","slot":"breakfast","loggedAt":"\#(date)T08:10:00+01:00","mealDate":"\#(date)","title":"Zabkása gyümölccsel","macros":\#(macros(420, 22, 62, 9)),"score":{"value":74},"items":[{"source":"pantry","pantryItemId":"\#(oatsId)","amount":60,"unit":"g","lineOrder":0,"name":"Zabpehely","nova":1,"contribution":\#(macros(228, 8, 40, 4))},{"source":"pantry","amount":120,"unit":"g","lineOrder":1,"name":"Banán","nova":1,"contribution":\#(macros(106, 1, 27, 0))}],"hasPhoto":true}"#
+    }
+
+    /// A meal as `createMeal` would answer it: the sent title and slot, the sent lines' macros summed.
+    private static func createdMeal(from sent: String, date: String) -> String {
+        let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+        let items = obj?["items"] as? [[String: Any]] ?? []
+        func num(_ i: [String: Any], _ k: String) -> Double { (i[k] as? Double) ?? 0 }
+        let lines = items.enumerated().map { n, i -> (String, Double, Double, Double, Double) in
+            let share = num(i, "per") > 0 ? num(i, "amount") / num(i, "per") : 1
+            return ((i["name"] as? String ?? "Étel"), num(i, "kcal") * share, num(i, "proteinG") * share, num(i, "carbsG") * share, num(i, "fatG") * share)
+        }
+        let sum = lines.reduce((0.0, 0.0, 0.0, 0.0)) { ($0.0 + $1.1, $0.1 + $1.2, $0.2 + $1.3, $0.3 + $1.4) }
+        let title = (obj?["title"] as? String).map { String(decoding: (try? JSONEncoder().encode($0)) ?? Data(), as: UTF8.self) } ?? "null"
+        let jsonItems = lines.enumerated().map { n, l in
+            let name = String(decoding: (try? JSONEncoder().encode(l.0)) ?? Data(), as: UTF8.self)
+            return #"{"source":"estimate","amount":1,"unit":"adag","lineOrder":\#(n),"name":\#(name),"contribution":\#(macros(l.1.rounded(), l.2.rounded(), l.3.rounded(), l.4.rounded()))}"#
+        }.joined(separator: ",")
+        let at = ISO8601DateFormatter().string(from: Date())
+        return #"{"id":"\#(UUID().uuidString.lowercased())","slot":"\#(obj?["slot"] as? String ?? "snack")","loggedAt":"\#(at)","mealDate":"\#(date)","title":\#(title),"macros":\#(macros(sum.0.rounded(), sum.1.rounded(), sum.2.rounded(), sum.3.rounded())),"score":{"value":68},"items":[\#(jsonItems)],"hasPhoto":false}"#
+    }
+
+    private static func foodPlan(date: String) -> String {
+        func window(_ slot: String, _ kind: String, _ label: String, _ from: String, _ to: String, _ key: String, _ budget: String,
+                    state: String, logged: String = "", suggestion: String = "") -> String {
+            let st = foodSkips.contains(key) ? "skipped" : state
+            let sug = (st == "now" || st == "pending") && !suggestion.isEmpty ? #","suggestion":\#(suggestion)"# : ""
+            return #"{"slot":"\#(slot)","kind":"\#(kind)","label":"\#(label)","from":"\#(from)","to":"\#(to)","budget":\#(budget),"state":"\#(st)","loggedMealIds":[\#(logged)]\#(sug)}"#
+        }
+        let recipe = #"{"kind":"recipe","recipeId":"\#(recipeId)","text":"Csirkés rizs zöldségekkel","reason":"belefér a fehérjébe, és laktózmentes"}"#
+        let fish = #"{"kind":"ingredients","text":"Lazac, burgonya és saláta","reason":"a nap fehérjéjéből még 38 g hiányzik"}"#
+        let windows = [
+            window("breakfast", "meal", "Reggeli", "07:00", "09:00", "breakfast#1", macros(600, 40, 70, 18), state: "done", logged: #""\#(seedMealId)""#),
+            window("snack", "snack", "Tízórai", "10:00", "11:00", "snack#1", macros(200, 15, 20, 6), state: "missed"),
+            window("lunch", "meal", "Ebéd", "12:00", "14:00", "lunch#1", macros(700, 50, 80, 20), state: "now", suggestion: recipe),
+            window("snack", "snack", "Uzsonna", "16:00", "17:00", "snack#2", macros(200, 15, 20, 6), state: "pending"),
+            window("dinner", "meal", "Vacsora", "19:00", "21:00", "dinner#1", macros(700, 50, 80, 20), state: "pending", suggestion: fish),
+        ].joined(separator: ",")
+        let skipped = foodSkips.count * 200
+        return #"{"date":"\#(date)","windows":[\#(windows)],"remaining":\#(macros(Double(1980 - skipped), 128, 218, 56)),"tip":{"text":"Ebédre tegyél fehérjét: a reggeli után még sok hiányzik.","reason":"a fehérje a nap célja alatt jár"}}"#
+    }
+
+    private static func foodReply(_ op: String, _ request: HTTPRequest, sent: String) -> (HTTPResponse, HTTPBody?)? {
+        func created(_ text: String) -> (HTTPResponse, HTTPBody?) {
+            var h = HTTPFields(); h[.contentType] = "application/json"
+            return (HTTPResponse(status: .created, headerFields: h), HTTPBody(text))
+        }
+        let date = pathDate(request)
+        switch op {
+        case "getFuelDay":
+            let meals = ([seedMeal(date: date)] + foodMeals).joined(separator: ",")
+            return json(#"{"date":"\#(date)","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":{"kcal":420,"p":22,"c":62,"f":9,"water":\#(foodWater)},"meals":[\#(meals)],"skippedKcal":\#(foodSkips.count * 200)}"#)
+        case "getFuelPlan": return json(foodPlan(date: date))
+        case "draftMealFromAi":
+            return json(#"{"draftId":"\#(UUID().uuidString.lowercased())","slot":"lunch","title":"Csirkés rizs","note":null,"items":[{"source":"pantry","pantryItemId":"\#(oatsId)","name":"Csirkemell","amount":150,"unit":"g","per":100,"basisUnit":"g","kcal":165,"proteinG":31,"carbsG":0,"fatG":3.6,"nova":1,"confidence":0.9,"needsReview":false},{"source":"estimate","name":"Barna rizs","amount":180,"unit":"g","per":100,"basisUnit":"g","kcal":123,"proteinG":2.7,"carbsG":26,"fatG":1,"confidence":0.5,"needsReview":true}]}"#)
+        case "createMeal":
+            let meal = createdMeal(from: sent, date: dayString(offset: 0))
+            foodMeals.append(meal)
+            return created(meal)
+        case "putMealPhoto": return json(#"{"bytes":\#(pixel.count),"width":1,"height":1}"#)
+        case "getMealPhoto":
+            var h = HTTPFields(); h[.contentType] = "image/png"
+            return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(pixel))
+        case "deleteMealPhoto", "deleteAllMealPhotos": return (HTTPResponse(status: .noContent), nil)
+        case "logWater":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            let ml = obj?["amountMl"] as? Int ?? 250
+            foodWater += ml
+            return created(#"{"id":"\#(UUID().uuidString.lowercased())","date":"\#(obj?["date"] as? String ?? dayString(offset: 0))","amountMl":\#(ml)}"#)
+        case "upsertPlannedSkip":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            let key = obj?["sessionKey"] as? String ?? ""
+            foodSkips.insert(key)
+            return json(#"{"id":"\#(UUID().uuidString.lowercased())","date":"\#(obj?["date"] as? String ?? dayString(offset: 0))","kind":"MEAL","sessionKey":"\#(key)","reasonCategory":"\#(obj?["reasonCategory"] as? String ?? "NONE")","source":"USER","serious":false,"freePass":false,"excused":false,"plannedKcal":\#(obj?["plannedKcal"] as? Int ?? 0)}"#)
+        case "lookupPantryItem":
+            let q = request.path?.split(separator: "?").last.flatMap { $0.split(separator: "=").last }.map(String.init) ?? ""
+            if q.hasSuffix("0000") { return json(#"{"source":"NONE","results":[]}"#) }
+            if q.hasSuffix("1111") {
+                return json(#"{"source":"CATALOG","results":[{"name":"Zabpehely","per":100,"unit":"g","kcal":370,"proteinG":13,"carbsG":60,"fatG":7,"nova":1,"allergens":{"gluten":"contains"}}]}"#)
+            }
+            return json(#"{"source":"OFF","results":[{"name":"Protein szelet","brand":"Pelda","barcode":"5997001234567","per":100,"unit":"g","kcal":380,"proteinG":30,"carbsG":35,"fatG":12,"nova":4,"allergens":{"milk":"contains","nuts":"traces","soybeans":"unknown"},"servingSize":"40 g","servingQuantity":40}]}"#)
+        case "listRecipes": return json(#"{"recipes":[\#(previewRecipe())]}"#)
+        case "getRecipe": return json(previewRecipe())
+        case "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto":
+            return json(#"{"result":{"name":"Tejszínes gombás tészta","category":"dinner","servings":2,"steps":["Főzd meg a tésztát.","Pirítsd meg a gombát.","Keverd össze a kettőt."],"sourceUrl":null,"structured":true,"needsReview":true,"lines":[{"source":"estimate","name":"tészta","amount":200,"unit":"g","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.9,"needsReview":false},"sourceText":"20 dkg tészta"},{"source":"estimate","name":"gomba","amount":250,"unit":"g","match":{"confidence":0.2,"needsReview":true},"sourceText":"25 dkg gomba"}]}}"#)
+        case "getPantry":
+            return json(#"{"ingredients":[{"id":"\#(oatsId)","kind":"food","name":"Zabpehely","brand":null,"source":"manual","category":null,"per":100,"unit":"g","macros":{"kcal":370,"p":13,"c":60,"f":7},"price":null,"priceUnit":null,"pkg":null,"micros":[],"nova":1,"lastUsed":"-","usedInRecipes":2,"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","catalogEditable":true}],"stash":[],"imports":[],"suggestions":[]}"#)
+        case "searchPantryCatalog":
+            return json(#"[{"id":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","kind":"food","name":"Zabpehely","source":"manual","per":100,"unit":"g","kcal":370,"proteinG":13,"carbsG":60,"fatG":7,"nova":1,"allergens":{"gluten":"contains"}}]"#)
+        case "getSensitivityProfile": return json(foodSensitivity)
+        case "setSensitivityProfile": foodSensitivity = sent; return json(sent)
+        case "getDietSettings":
+            return json(#"{"splitPreset":"balanced","proteinTier":"moderate","waterMl":2500,"fiberG":30,"dayTypeShiftKcal":0,"learningEnabled":true}"#)
+        case "getProtocol":
+            return json(#"{"active":{"id":"cc7f5b29-83a4-4f7f-8b29-4e6ebd8b7c08","version":3,"builtAt":"2026-11-01T06:00:00Z","status":"active","items":[{"id":"dd805c3a-94b5-4080-9c3a-5f7fce9c8d09","pantryItemId":"\#(oatsId)","slotKey":"morning","dose":"1 db","pinned":false,"placementSource":"rule"},{"id":"ee916d4b-a5c6-4191-ad4b-608d0fad9e0a","pantryItemId":"ff027e5c-b6d7-42a2-be5c-719e1abeaf0b","slotKey":"evening","dose":"2 db","pinned":true,"placementSource":"user"}]},"history":[]}"#)
+        case "logIntake":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            return created(#"{"id":"\#(UUID().uuidString.lowercased())","pantryItemId":"\#(obj?["pantryItemId"] as? String ?? oatsId)","takenAt":"\#(ISO8601DateFormatter().string(from: Date()))","takenDate":"\#(dayString(offset: 0))"}"#)
+        default: return nil
+        }
+    }
+
+    private static func previewRecipe() -> String {
+        #"{"id":"\#(recipeId)","name":"Csirkés rizs zöldségekkel","slot":"lunch","category":"lunch","servings":2,"prepMins":15,"cookMins":25,"tags":["laktózmentes"],"starred":true,"role":"standard","createdDate":"2026-10-01","novaDominant":1,"macros":\#(macros(1320, 100, 150, 30)),"mezoFit":{"score":78,"fitsFor":[]},"timesLogged":4,"avgScore":74,"lastLogged":"2026-11-10","ingredients":[{"pantryItemId":"\#(oatsId)","amount":300,"unit":"g","note":null,"lineOrder":0,"name":"Csirkemell","contribution":\#(macros(495, 93, 0, 11))}],"steps":["Süsd meg a csirkét.","Főzd meg a rizst.","Keverd össze."]}"#
     }
 
     /// Canned morning brief (invented numbers) and its session/pattern operations.
