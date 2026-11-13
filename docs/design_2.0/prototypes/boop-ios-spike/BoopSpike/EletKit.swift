@@ -368,9 +368,12 @@ struct EDayEvent: Identifiable {
     let at: Double          // 0…1 across the curve
     let glyph: String
     let label: String
+    /// what the scrubber says when the finger is on this moment
+    var detail: String = ""
 }
 
-/// The hero of Ma: the shape of the day with its big moments on it, and where you are right now.
+/// The hero of Ma: the shape of the day with its big moments on it, where you are right now —
+/// and you can run your finger along it to read any moment (owner, 2026-11-13).
 struct EDayCurve: View {
     var values: [Double]
     var labels: [String]
@@ -378,6 +381,14 @@ struct EDayCurve: View {
     var hue: Color
     var now: Double         // 0…1
     var height: CGFloat = 170
+    /// the day spans these hours, so a finger position can be read as a time
+    var fromHour: Double = 6
+    var toHour: Double = 24
+
+    @State private var scrub: Double? = nil
+    @State private var scrubbing = false
+
+    private var pos: Double { scrub ?? now }
 
     var body: some View {
         GeometryReader { g in
@@ -403,13 +414,14 @@ struct EDayCurve: View {
                                                         startPoint: .zero, endPoint: CGPoint(x: 0, y: s.height)))
                     ctx.stroke(line, with: .color(hue), style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
 
-                    // now
-                    let nx = s.width * CGFloat(now)
+                    let nx = s.width * CGFloat(pos)
                     var v = Path(); v.move(to: CGPoint(x: nx, y: 8)); v.addLine(to: CGPoint(x: nx, y: s.height - 22))
-                    ctx.stroke(v, with: .color(.white.opacity(0.3)), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                    let ny = y(sample(now))
-                    ctx.fill(Path(ellipseIn: CGRect(x: nx - 7, y: ny - 7, width: 14, height: 14)), with: .color(hue))
-                    ctx.fill(Path(ellipseIn: CGRect(x: nx - 3.5, y: ny - 3.5, width: 7, height: 7)), with: .color(.white))
+                    ctx.stroke(v, with: .color(.white.opacity(scrubbing ? 0.6 : 0.3)),
+                               style: StrokeStyle(lineWidth: scrubbing ? 1.4 : 1, dash: scrubbing ? [] : [3, 3]))
+                    let ny = y(sample(pos))
+                    let r: CGFloat = scrubbing ? 9 : 7
+                    ctx.fill(Path(ellipseIn: CGRect(x: nx - r, y: ny - r, width: r * 2, height: r * 2)), with: .color(hue))
+                    ctx.fill(Path(ellipseIn: CGRect(x: nx - r / 2, y: ny - r / 2, width: r, height: r)), with: .color(.white))
                 }
                 .frame(height: h)
 
@@ -418,23 +430,51 @@ struct EDayCurve: View {
                 ForEach(Array(events.enumerated()), id: \.element.id) { i, e in
                     let room = i == 0 || (e.at - events[i - 1].at) > 0.085
                     let lift: CGFloat = (i % 2 == 0) ? 0 : 9
+                    let near = abs(e.at - pos) < 0.035
                     let peak = max(0.0001, values.max() ?? 1)
                     let yy = h - 26 - (h - 54) * CGFloat(min(1, sample(e.at) * 0.86 / peak))
                     VStack(spacing: 3) {
                         ZStack {
                             Circle().fill(gBase.opacity(0.92))
-                            Circle().stroke(hue.opacity(0.9), lineWidth: 1.4)
-                            EGlyph(e.glyph, .white, size: 12)
+                            Circle().stroke(hue.opacity(near ? 1 : 0.9), lineWidth: near ? 2.2 : 1.4)
+                            EGlyph(e.glyph, .white, size: near ? 14 : 12)
                         }
-                        .frame(width: 26, height: 26)
-                        .shadow(color: .black.opacity(0.35), radius: 4)
-                        if room {
+                        .frame(width: near ? 32 : 26, height: near ? 32 : 26)
+                        .shadow(color: near ? hue.opacity(0.7) : .black.opacity(0.35), radius: near ? 9 : 4)
+                        if room && !scrubbing {
                             Text(e.label).font(AuraFont.mono(9)).foregroundStyle(.white.opacity(0.7))
-                                .fixedSize()
-                                .shadow(color: .black.opacity(0.5), radius: 3)
+                                .fixedSize().shadow(color: .black.opacity(0.5), radius: 3)
                         }
                     }
                     .position(x: max(22, min(w - 22, w * CGFloat(e.at))), y: yy - 24 - lift)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.8), value: near)
+                }
+
+                // the readout that follows the finger
+                if scrubbing {
+                    let t = fromHour + pos * (toHour - fromHour)
+                    let hh = Int(t), mm = Int((t - Double(hh)) * 60 / 5) * 5
+                    let hit = events.min(by: { abs($0.at - pos) < abs($1.at - pos) })
+                    let onEvent = hit.map { abs($0.at - pos) < 0.045 } ?? false
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 7) {
+                            Text(String(format: "%02d:%02d", hh % 24, mm))
+                                .font(AuraFont.mono(13, .bold)).foregroundStyle(.white)
+                            Text(level(sample(pos))).font(.system(size: 12, weight: .semibold)).foregroundStyle(hue)
+                        }
+                        if onEvent, let e = hit {
+                            Text(e.detail.isEmpty ? e.label : e.detail)
+                                .font(.system(size: 12)).foregroundStyle(.white.opacity(0.78))
+                                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 9)
+                    .frame(maxWidth: 230, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(gBase.opacity(0.92))
+                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(hue.opacity(0.5))))
+                    .shadow(color: .black.opacity(0.5), radius: 10)
+                    .position(x: max(90, min(w - 90, w * CGFloat(pos))), y: 26)
+                    .allowsHitTesting(false)
                 }
 
                 HStack(spacing: 0) {
@@ -445,9 +485,39 @@ struct EDayCurve: View {
                 }
                 .offset(y: h - 16)
             }
+            .contentShape(Rectangle())
+            // simultaneous, and only when the drag is sideways — a vertical drag still scrolls the page
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 6)
+                    .onChanged { v in
+                        if !scrubbing && abs(v.translation.width) <= abs(v.translation.height) { return }
+                        if !scrubbing { scrubbing = true }
+                        scrub = min(1, max(0, Double(v.location.x / max(1, w))))
+                    }
+                    .onEnded { _ in
+                        scrubbing = false
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { scrub = nil }
+                    }
+            )
+            .sensoryFeedback(.selection, trigger: nearestLabel)
         }
         .frame(height: height)
-        .accessibilityHidden(true)
+    }
+
+    /// which event the finger is nearest — used only to tick the haptic as you pass one
+    private var nearestLabel: String {
+        guard scrubbing else { return "" }
+        guard let e = events.min(by: { abs($0.at - pos) < abs($1.at - pos) }), abs(e.at - pos) < 0.045 else { return "" }
+        return e.label
+    }
+
+    private func level(_ v: Double) -> String {
+        let peak = max(0.0001, values.max() ?? 1)
+        let r = v / peak
+        if r > 0.82 { return "jó forma" }
+        if r > 0.62 { return "stabil" }
+        if r > 0.45 { return "lassul" }
+        return "gödör"
     }
 
     /// value at a 0…1 position, linearly between samples

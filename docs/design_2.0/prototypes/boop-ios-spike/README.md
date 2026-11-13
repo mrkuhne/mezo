@@ -37,7 +37,10 @@
 > cards read as a list: the check-in keeps its own question shape, then **one hero** with a Képek variant-B photo
 > band and 25 pt type, then the quiet ones as **compact rows inside a single card** (52 pt thumbnail, two lines,
 > the number in weight on the right, the action as an inline link). No photo where nothing fits the meaning.
-> Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m6`, `-eletHideg YES`. Screenshots: `elet-*.png`. Direction write-up:
+> **Round 8:** the Ma hero is the **day's curve** (`EDayCurve`) with the big moments pinned on it — 232 pt, scrubbable
+> (sideways drag reads out the time, the state and the moment under the finger; vertical drags still scroll), and
+> **`Nap` is the seventh area** (index 6; Levél moves to 7) — the day's capacity from the calendar given a page.
+> Files `Elet*.swift`; launch `-elet YES` plus `-eletTab 0–3`, `-eletOpen penz|level|m0…m7`, `-eletHideg YES`. Screenshots: `elet-*.png`. Direction write-up:
 > [`docs/superpowers/research/boop-life/03-ui-direction.md`](../../../superpowers/research/boop-life/03-ui-direction.md).
 > **Nothing here is built** — the owner decided on 2026-11-13 that the life dashboard ships after B6.
 
