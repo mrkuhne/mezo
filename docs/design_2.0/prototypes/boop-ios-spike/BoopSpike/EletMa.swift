@@ -183,9 +183,16 @@ struct EletMa: View {
                 }
                 .padding(.horizontal, 20).padding(.top, 56)
 
-                Text("boop").font(.custom("Outfit", size: 27).weight(.light)).tracking(3.5)
-                    .foregroundStyle(.white)
-                    .padding(.top, 16)
+                VStack(spacing: 12) {
+                    Text("boop").font(.custom("Outfit", size: 33).weight(.light)).tracking(4.5)
+                        .foregroundStyle(.white)
+                    Rectangle()
+                        .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.22), .white.opacity(0)],
+                                             startPoint: .leading, endPoint: .trailing))
+                        .frame(height: 0.8)
+                        .padding(.horizontal, 44)
+                }
+                .padding(.top, 16)
 
                 orbRibbon.padding(.top, 22)
 
