@@ -88,7 +88,8 @@ func etelStations(_ stations: [PathStation], plan: FuelPlan?, groups: [Supplemen
         if let w = plan?.windows.first(where: { $0.slot == key && $0.kind == .meal }) { return w.from }
         return supplementDayparts.first { $0.key == key }?.clock
     }
-    func shown(_ c: String?) -> String { c.map { "~" + $0 } ?? "" }
+    // "~8:00": the tilde says guess, the dropped zero keeps it inside the 42 pt time column
+    func shown(_ c: String?) -> String { c.map { "~" + ($0.hasPrefix("0") ? String($0.dropFirst()) : $0) } ?? "" }
     if let g = groups.first(where: { !taken.contains($0.key) }) {
         out = inserting(PathStation(id: "etel-supplements-\(g.key)", time: shown(clock(g.key)), glyph: "spark-cream", title: g.label,
                                     sub: "\(g.count) tétel · \(g.summary)", done: false, isNow: false, opens: false),

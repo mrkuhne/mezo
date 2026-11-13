@@ -81,13 +81,13 @@ struct MaFoodRowsTests {
     @Test func aGuessedSupplementClockIsHedgedAndAnUnknownDaypartHasNone() {
         let plan = FuelPlan(date: "2026-11-13", windows: [], remaining: nil)
         let wake = etelStations([], plan: plan, groups: [SupplementGroup(key: "wake", label: "Ébredéskor", count: 1, summary: "D3")], taken: [])
-        #expect(wake[0].time == "~07:00")
+        #expect(wake[0].time == "~7:00")
         let odd = etelStations([st("a", "08:00")], plan: plan, groups: [SupplementGroup(key: "zzz", label: "Zzz", count: 1, summary: "x")], taken: [])
         #expect(odd.last?.id == "etel-supplements-zzz" && odd.last?.time == "")
         // a daypart tied to a plan window takes the window's start, still hedged
         let withWindow = FuelPlan(date: "2026-11-13", windows: [window("breakfast", "Reggeli", "07:30", "09:00", .done)], remaining: nil)
         let b = etelStations([], plan: withWindow, groups: [groups[0]], taken: [])
-        #expect(b[0].time == "~07:30")
+        #expect(b[0].time == "~7:30")
     }
 
     @Test func naploSaysWhyThereIsNoPhoto() {
