@@ -251,6 +251,36 @@ struct FoodClientTests {
         #expect(FoodClient.derivedRef(ref, "dd805c3a-94b5-4080-9c3a-5f7fce9c8d09").uuidString.lowercased() == refs[0]?.lowercased())
     }
 
+    @Test func tickGroupIntakesReturnTheServersIdsAndDeleteIntakeUndoesOne() async throws {
+        let protocolJSON = #"""
+        {"active":{"id":"cc7f5b29-83a4-4f7f-8b29-4e6ebd8b7c08","version":3,"builtAt":"2026-11-01T06:00:00Z","status":"active","items":[
+          {"id":"dd805c3a-94b5-4080-9c3a-5f7fce9c8d09","pantryItemId":"\#(pantryId)","slotKey":"morning","pinned":false,"placementSource":"rule"}]},"history":[]}
+        """#
+        stub.on("getProtocol", .json(200, protocolJSON))
+        stub.on("logIntake", .json(201, #"{"id":"22249a7e-d8f9-44c4-9a7e-93b03cd0c12e","pantryItemId":"\#(pantryId)","takenAt":"2026-11-13T07:30:00Z","takenDate":"2026-11-13"}"#))
+        let ids = try await food().tickGroupIntakes(daypart: "morning")
+        #expect(ids == [UUID(uuidString: "22249a7e-d8f9-44c4-9a7e-93b03cd0c12e")!])
+        stub.on("deleteIntake", .status(204))
+        try await food().deleteIntake(ids[0])
+        #expect(stub.sent.last?.path == "/api/fuel/intake/entry/22249a7e-d8f9-44c4-9a7e-93b03cd0c12e")
+        stub.on("deleteIntake", .status(404))
+        try await food().deleteIntake(ids[0])                       // already gone counts as undone
+        stub.on("deleteIntake", .status(500))
+        await #expect(throws: FoodFetchError.self) { try await food().deleteIntake(ids[0]) }
+    }
+
+    @Test func stashNamesTheSupplementsTheProtocolRowsPointAt() async throws {
+        let macros = #"{"kcal":0,"p":0,"c":0,"f":0}"#
+        stub.on("getPantry", .json(200, #"""
+        {"ingredients":[],"imports":[],"suggestions":[],"stash":[
+          {"id":"\#(pantryId)","name":"D3-vitamin","brand":null,"type":"supplement","category":null,"dose":"4000 NE","form":null,"protocol":"","timing":"","taken":false,"macros":\#(macros),"catalogId":"\#(pantryId)","catalogEditable":false},
+          {"id":"ff027e5c-b6d7-42a2-be5c-719e1abeaf0b","name":"Magnézium","brand":null,"type":"supplement","category":null,"dose":"","form":null,"protocol":"","timing":"","taken":false,"macros":\#(macros),"catalogId":"\#(pantryId)","catalogEditable":false}]}
+        """#))
+        let rows = try await food().stash()
+        #expect(rows == [StashRow(id: UUID(uuidString: pantryId)!, name: "D3-vitamin", dose: "4000 NE"),
+                         StashRow(id: UUID(uuidString: "ff027e5c-b6d7-42a2-be5c-719e1abeaf0b")!, name: "Magnézium", dose: nil)])
+    }
+
     @Test func photoIsNilWhenTheMealHasNone() async throws {
         stub.on("getMealPhoto", .status(404))
         let none = try await food().photo(mealId: UUID(uuidString: mealId)!)

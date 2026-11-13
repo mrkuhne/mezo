@@ -345,21 +345,43 @@ public struct FoodClient: Sendable {
     /// dedupes. Returns how many items were ticked.
     @discardableResult
     public func tickGroup(daypart: String, clientRef: UUID? = nil, capturedAt: Date? = nil) async throws -> Int {
+        try await tickGroupIntakes(daypart: daypart, clientRef: clientRef, capturedAt: capturedAt).count
+    }
+
+    /// Like `tickGroup`, but returns the ids of the intake entries the server holds — what `deleteIntake` needs to undo
+    /// a mis-tap.
+    public func tickGroupIntakes(daypart: String, clientRef: UUID? = nil, capturedAt: Date? = nil) async throws -> [UUID] {
         let items = try await `protocol`().items(in: daypart)
+        var ids: [UUID] = []
         for item in items {
             let body = Components.Schemas.IntakeRequest(
                 pantryItemId: item.pantryItemId.wire, slotKey: item.slotKey, dose: item.dose,
                 clientRef: clientRef.map { Self.derivedRef($0, item.id.wire).wire }, capturedAt: capturedAt)
-            try await call {
+            let id: UUID? = try await call {
                 switch try await client.logIntake(body: .json(body)) {
-                case .created: return
+                case .created(let ok): return UUID(uuidString: try ok.body.json.id)
                 case .badRequest, .notFound: throw FoodFetchError.rejected
                 case .unauthorized: throw FoodFetchError.unauthorized
                 case .undocumented: throw FoodFetchError.server
                 }
             }
+            if let id { ids.append(id) }
         }
-        return items.count
+        return ids
+    }
+
+    /// Soft-deletes one intake entry (undo a mis-tap). A row already gone counts as undone.
+    public func deleteIntake(_ id: UUID) async throws {
+        do {
+            try await call {
+                switch try await client.deleteIntake(path: .init(id: id.wire)) {
+                case .noContent: return
+                case .notFound: throw FoodFetchError.notFound
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .undocumented: throw FoodFetchError.server
+                }
+            }
+        } catch FoodFetchError.notFound { return }
     }
 
     /// A stable per-item key from the group's key: the same inputs always give the same UUID.

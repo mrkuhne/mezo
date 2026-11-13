@@ -30,13 +30,20 @@ final class EtelStore {
     private(set) var groups: [SupplementGroup] = []
     private(set) var groupsLoaded = false
     private(set) var groupsProblem: FoodFetchError?
-    private(set) var taken: Set<String> = []
+    /// The groups taken today and the intake entries that took them (kept so a mis-tap can be undone).
+    private(set) var takenIds: [String: [UUID]] = [:]
+    private(set) var busy: Set<String> = []
+    var taken: Set<String> { Set(takenIds.keys) }
     private(set) var loading = false
     /// The tip the owner sent away with *Most nem* (until the next load).
     private(set) var tipDismissed = false
 
     @ObservationIgnored private var food: FoodClient?
+    var currentFood: FoodClient? { food }
     @ObservationIgnored private var now = Date()
+    /// Bumped whenever the day is replaced by a fresh read.
+    @ObservationIgnored private var dayVersion = 0
+    @ObservationIgnored private var failedWater: (ml: Int, ref: UUID, at: Date)?
 
     /// The day's `yyyy-MM-dd`, as the server knows it.
     var ymd: String { food?.ymd(now) ?? day?.date ?? "" }
@@ -49,12 +56,15 @@ final class EtelStore {
         self.food = food; self.now = now
         loading = true
         tipDismissed = false
-        taken = Set(UserDefaults.standard.stringArray(forKey: takenKey) ?? [])
+        if takenIds.isEmpty {
+            let saved = UserDefaults.standard.dictionary(forKey: "etel.takenIds.\(food.ymd(now))") as? [String: [String]] ?? [:]
+            takenIds = saved.mapValues { $0.compactMap(UUID.init(uuidString:)) }
+        }
         async let d = Self.attempt { try await food.day(now) }
         async let p = Self.attempt { try await food.plan(now) }
         async let s = Self.attempt { (try await food.protocol(), try await food.stash()) }
         switch await d {
-        case .success(let v): day = v; dayProblem = nil
+        case .success(let v): day = v; dayVersion += 1; dayProblem = nil
         case .failure(let e): dayProblem = e
         }
         switch await p {
@@ -93,38 +103,65 @@ final class EtelStore {
     }
 
     /// Adds water: shown at once, undone when the server does not take it. Returns the toast to show.
+    ///
+    /// A tap that failed keeps its key: tapping the same amount again is the same logical tap, so a server that did
+    /// record the lost one answers the retry with that row instead of counting the water twice.
     func addWater(_ ml: Int) async -> String {
         guard let food, var d = day else { return "Most nem tudom elküldeni" }
+        let tap = failedWater.flatMap { $0.ml == ml ? $0 : nil } ?? (ml: ml, ref: UUID(), at: Date())
+        let version = dayVersion
         d.consumed.water += Double(ml)
         day = d
         do {
-            try await food.water(ml: ml, date: now, clientRef: UUID(), capturedAt: Date())
+            try await food.water(ml: ml, date: now, clientRef: tap.ref, capturedAt: tap.at)
+            failedWater = nil
             return "Víz +\(ml) ml"
         } catch {
-            if var back = day { back.consumed.water -= Double(ml); day = back }
+            failedWater = tap
+            // A refresh that landed meanwhile replaced the day with the server's own count: leave that alone.
+            if version == dayVersion, var back = day { back.consumed.water -= Double(ml); day = back }
             return "Nem sikerült elküldeni — próbáld újra"
         }
     }
 
     func isTaken(_ group: SupplementGroup) -> Bool { taken.contains(group.key) }
+    func isBusy(_ group: SupplementGroup) -> Bool { busy.contains(group.key) }
 
-    /// One tap takes the whole group. The server cannot un-take, so a taken group stays taken.
-    func take(_ group: SupplementGroup) async -> String {
-        guard let food, !taken.contains(group.key) else { return "" }
-        taken.insert(group.key)
+    /// One tap takes the whole group; a second tap on "Bevéve" undoes it (the server soft-deletes the entries).
+    func toggle(_ group: SupplementGroup) async -> String {
+        guard let food, !busy.contains(group.key) else { return "" }
+        let key = group.key, dayKey = ymd
+        busy.insert(key); defer { busy.remove(key) }
+        if let ids = takenIds[key] {
+            takenIds[key] = nil
+            var left = ids
+            do {
+                for id in ids { try await food.deleteIntake(id); left.removeFirst() }
+                persistTaken(dayKey)
+                return "Visszavontam"
+            } catch {
+                takenIds[key] = left
+                persistTaken(dayKey)
+                return "Nem sikerült visszavonni — próbáld újra"
+            }
+        }
+        takenIds[key] = []
         do {
-            try await food.tickGroup(daypart: group.key, clientRef: supplementRef(day: ymd, daypart: group.key), capturedAt: Date())
-            UserDefaults.standard.set(Array(taken), forKey: takenKey)
+            let ids = try await food.tickGroupIntakes(daypart: key, clientRef: supplementRef(day: dayKey, daypart: key), capturedAt: Date())
+            takenIds[key] = ids
+            persistTaken(dayKey)
             return "\(group.label): mind a \(group.count) bevéve"
         } catch {
-            taken.remove(group.key)
+            takenIds[key] = nil
             return "Nem sikerült elküldeni — próbáld újra"
         }
     }
 
-    func dismissTip() { tipDismissed = true }
+    private func persistTaken(_ dayKey: String) {
+        UserDefaults.standard.set(takenIds.mapValues { $0.map(\.uuidString) }, forKey: "etel.takenIds.\(dayKey)")
+    }
 
-    private var takenKey: String { "etel.taken.\(ymd)" }
+    func dismissTip() { tipDismissed = true }
 }
 
 // MARK: - The room

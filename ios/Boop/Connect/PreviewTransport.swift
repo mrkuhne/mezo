@@ -111,7 +111,7 @@ struct PreviewTransport: ClientTransport {
         "getFuelDay", "getFuelPlan", "draftMealFromAi", "createMeal", "logWater", "upsertPlannedSkip", "listRecipes", "getRecipe",
         "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto", "getPantry", "searchPantryCatalog",
         "lookupPantryItem", "getSensitivityProfile", "setSensitivityProfile", "getDietSettings", "getProtocol", "logIntake",
-        "getMealPhoto", "putMealPhoto", "deleteMealPhoto", "deleteAllMealPhotos", "getMealCoachForDay",
+        "getMealPhoto", "putMealPhoto", "deleteMealPhoto", "deleteAllMealPhotos", "getMealCoachForDay", "deleteIntake",
     ]
     private static let seedMealId = "5b0e8a52-1c3d-4e0e-9a52-7d9d4c1a0b01"
     private static let recipeId = "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03"
@@ -227,7 +227,7 @@ struct PreviewTransport: ClientTransport {
         case "getMealPhoto":
             var h = HTTPFields(); h[.contentType] = "image/png"
             return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(pixel))
-        case "deleteMealPhoto", "deleteAllMealPhotos": return (HTTPResponse(status: .noContent), nil)
+        case "deleteMealPhoto", "deleteAllMealPhotos", "deleteIntake": return (HTTPResponse(status: .noContent), nil)
         case "logWater":
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
             let ml = obj?["amountMl"] as? Int ?? 250

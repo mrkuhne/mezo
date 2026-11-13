@@ -64,6 +64,7 @@ filter:
     - getDietSettings
     - getProtocol
     - logIntake
+    - deleteIntake
     - getMealPhoto
     - putMealPhoto
     - deleteMealPhoto

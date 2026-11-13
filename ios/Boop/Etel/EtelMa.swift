@@ -113,7 +113,7 @@ struct EtelMa: View {
                             }
                         case .open(let w): OpenWindowCard(window: w, onToast: onToast)
                         case .skipped(let w): quietRow(w, "Kihagyva")
-                        case .quiet(let w): quietRow(w, "Nincs rögzített étkezés")
+                        case .quiet(let w): quietRow(w, "Kész, a részletei nincsenek itt")
                         }
                     }
                 }
@@ -237,13 +237,14 @@ struct EtelMa: View {
                             Text(g.summary).nkFont(12.5).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
                         }
                         Spacer(minLength: 8)
-                        Button { Task { onToast(await store.take(g)) } } label: {
+                        Button { Task { onToast(await store.toggle(g)) } } label: {
                             Text(done ? "Bevéve" : "Bevettem").nkFont(13.5, .semibold)
                                 .foregroundStyle(done ? .white.opacity(0.7) : NK.ground)
                                 .padding(.horizontal, 14).frame(minHeight: 34)
                                 .background(Capsule().fill(done ? .white.opacity(0.12) : .white.opacity(0.95)))
                         }
-                        .buttonStyle(.plain).disabled(done)
+                        .buttonStyle(.plain).disabled(store.isBusy(g))
+                        .accessibilityHint(done ? "Visszavonja a bevételt" : "")
                     }
                     .padding(.vertical, 11)
                     .accessibilityElement(children: .contain)

@@ -62,7 +62,7 @@ func etelVerdict(day: FoodDay?, plan: FuelPlan?, problem: FoodFetchError?) -> Et
     if day.meals.isEmpty {
         sentence = "Még nem rögzítettél semmit ma — a keret \(huInt(Int(day.targets.kcal.rounded()))) kalória."
     } else if remaining < 0 {
-        sentence = "Ma a keret fölé kerültél — ez csak egy szám, nem ítélet."
+        sentence = "Ma a keret fölött jársz."
     } else if let m = farthestMacro(day) {
         sentence = "A \(m.name) van a legmesszebb: \(m.eaten) g a \(m.target)-ből."
     } else {
