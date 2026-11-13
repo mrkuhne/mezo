@@ -285,7 +285,7 @@
     },
     "kezikonyv:01-alapok/ertesitesek": {
       "page_id": "4168968e-752b-8165-9906-caa506eee81f",
-      "hash": "8aaa73e8032a"
+      "hash": "dbd39fb54f14"
     },
     "kezikonyv:01-alapok/fiok-es-belepes": {
       "page_id": "4168968e-752b-813a-8bb9-cbce770f5a64",
@@ -301,23 +301,23 @@
     },
     "kezikonyv:01-alapok/gyors-rogzites": {
       "page_id": "4168968e-752b-81eb-833a-d4a89c813fb9",
-      "hash": "caa748787313"
+      "hash": "b9023a759888"
     },
     "kezikonyv:01-alapok/napkelte-kinezet": {
       "page_id": "4168968e-752b-812a-9b5f-fd8f477ccda4",
-      "hash": "d13b07e2f8d6"
+      "hash": "1999e6270d2a"
     },
     "kezikonyv:01-alapok/navigacio": {
       "page_id": "4168968e-752b-81f1-a428-f1eff627e50a",
-      "hash": "f22fca0a5f38"
+      "hash": "d77122ec413f"
     },
     "kezikonyv:01-alapok/net-nelkul": {
       "page_id": "4168968e-752b-815c-bee7-c4032ca1468f",
-      "hash": "8ea1e1fbbf01"
+      "hash": "6c93fbbf158d"
     },
     "kezikonyv:01-alapok/telepites-a-telefonra": {
       "page_id": "4168968e-752b-8185-b34c-c477fe6deb9b",
-      "hash": "cb43b15dcc6f"
+      "hash": "3dbd57f88757"
     },
     "kezikonyv:02-ma/00-attekintes": {
       "page_id": "4168968e-752b-81e7-9587-d27ec99c8ca4",
@@ -773,7 +773,7 @@
     },
     "kezikonyv:01-alapok/kepek": {
       "page_id": "4178968e-752b-8106-9d11-eeb4865798e8",
-      "hash": "645edaf29690"
+      "hash": "7c43a04ebccd"
     }
   }
 }
