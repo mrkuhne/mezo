@@ -113,7 +113,7 @@ public class MealCoachService {
             ahhoz a fajtához illő, konkrét, kielégítő opció legyen (pl. édesre: joghurt bogyós
             gyümölccsel), ne általános "egyél egészségesebben"; "bármit" esetén a teltségre fókuszálj.
           - emésztés: 4 vagy alatta nehéz, puffadt gyomrot jelent — megemlítheted a nehezebb,
-            zsírosabb tételeket, de SOHA ne diagnosztizálj: ne mondd, hogy valamire érzékeny vagy.
+            zsírosabb tételeket, de SOHA ne diagnosztizálj: ne állítsd, hogy a panasz valamilyen új érzékenységből jön.
         - Ételérzékenységet CSAK az ÉRZÉKENYSÉGEK listában szereplő tételekről nevezz meg, azon a
           néven és szinten, ahogy a felhasználó rögzítette (pl. "ebben laktóz van"). Ami nincs a
           listán, arról ne találj ki újat és ne sejtess semmit; "nincs rögzítve" esetén egyet sem
