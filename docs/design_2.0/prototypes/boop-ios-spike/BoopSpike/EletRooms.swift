@@ -88,26 +88,32 @@ struct EletAreaPage: View {
             else { GHead(sky: m.sky, height: 326) }
         }
             .overlay(alignment: .top) {
-                VStack(spacing: 7) {
-                    EGlyph(m.glyph, .white.opacity(0.9), size: 19)
-                    Text(m.name.lowercased())
-                        .font(.custom("Outfit", size: 29).weight(.light))
-                        .tracking(4.5)
-                        .foregroundStyle(.white)
+                VStack(spacing: 0) {
+                    ZStack {
+                        LivingOrb(mood: .good, size: 92, motion: motion, palette: m.orb,
+                                  glow: true, level: Double(m.value) / 100)
+                            .allowsHitTesting(false)
+                        Text("\(m.value)")
+                            .font(.custom("Outfit", size: 30).weight(.light))
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.5), radius: 4)
+                    }
+                    Rectangle()
+                        .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.32), .white.opacity(0)],
+                                             startPoint: .leading, endPoint: .trailing))
+                        .frame(height: 1)
+                        .padding(.horizontal, 30)
+                        .padding(.top, 18)
                 }
-                .padding(.top, 126)
+                .padding(.top, 104)
             }
             .overlay(alignment: .bottomLeading) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 10) {
-                        Text(tabs[min(tab, tabs.count - 1)].name.uppercased())
-                            .font(AuraFont.mono(12, .bold)).tracking(2).foregroundStyle(.white.opacity(0.65))
+                        EGlyph(m.glyph, .white.opacity(0.85), size: 18)
+                        Text(m.name.uppercased() + " · " + tabs[min(tab, tabs.count - 1)].name.uppercased())
+                            .font(AuraFont.mono(12, .bold)).tracking(2).foregroundStyle(.white.opacity(0.8))
                         Spacer()
-                        HStack(spacing: 9) {
-                            Text("\(m.value)").font(.custom("Outfit", size: 26).weight(.light)).foregroundStyle(.white)
-                            LivingOrb(mood: .good, size: 34, motion: motion, palette: m.orb,
-                                      glow: false, level: Double(m.value) / 100)
-                        }
                     }
                     Text(m.headline).font(AuraFont.serif(34)).foregroundStyle(.white)
                         .fixedSize(horizontal: false, vertical: true)
