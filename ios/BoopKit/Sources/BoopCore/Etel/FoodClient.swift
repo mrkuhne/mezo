@@ -181,7 +181,7 @@ public struct FoodClient: Sendable {
 
     /// Reads a recipe from a page, pasted text or a photo into a review draft; nil when nothing readable was found.
     public func importRecipe(_ source: RecipeImportSource) async throws -> RecipeImportDraft? {
-        let response: Components.Schemas.RecipeImportResponse = try await call {
+        let response: Components.Schemas.RecipeImportResponse = try await call(mapsRefusals: true) {
             switch source {
             case .url(let url):
                 switch try await client.importRecipeFromUrl(body: .json(.init(url: url))) {
@@ -223,7 +223,7 @@ public struct FoodClient: Sendable {
         let body = Components.Schemas.RecipeRequest(
             name: recipe.name, category: recipe.category, servings: recipe.servings,
             steps: recipe.steps, sourceUrl: recipe.sourceUrl, ingredients: lines)
-        return try await call {
+        return try await call(mapsRefusals: true) {
             switch try await client.createRecipe(body: .json(body)) {
             case .created(let ok): return Self.map(try ok.body.json)
             case .badRequest: throw FoodFetchError.rejected
@@ -272,7 +272,7 @@ public struct FoodClient: Sendable {
                     name: d.name, category: d.category, servings: d.servings, steps: d.steps,
                     lines: d.lines.map { .init(source: $0.source, pantryItemId: $0.pantryItemId?.wire, name: $0.name, amount: $0.amount, unit: $0.unit) }))
             })
-        let r: Components.Schemas.WorkshopTurnResponse = try await call {
+        let r: Components.Schemas.WorkshopTurnResponse = try await call(mapsRefusals: true) {
             switch try await client.workshopTurn(body: .json(body)) {
             case .ok(let ok): return try ok.body.json
             case .badRequest: throw FoodFetchError.rejected
@@ -583,7 +583,9 @@ public struct FoodClient: Sendable {
 
     // MARK: - Plumbing
 
-    private func call<T>(_ work: () async throws -> T) async throws -> T {
+    /// `mapsRefusals`: read an undecodable 400 as a refusal and a 502/503 as "unavailable". Only for calls nobody queues:
+    /// a queued capture must keep retrying through a proxy's HTML 400 (it falls to `.server`, which the outbox retries).
+    private func call<T>(mapsRefusals: Bool = false, _ work: () async throws -> T) async throws -> T {
         do { return try await work() }
         catch let e as FoodFetchError { throw e }
         catch {
@@ -591,8 +593,8 @@ public struct FoodClient: Sendable {
                 if status == 401 { throw FoodFetchError.unauthorized }
                 if status == 404 { throw FoodFetchError.notFound }
                 // A refusal or an unavailable model stays what it is even when its body cannot be read.
-                if status == 400 { throw FoodFetchError.rejected }
-                if status == 502 || status == 503 { throw FoodFetchError.unavailable }
+                if mapsRefusals, status == 400 { throw FoodFetchError.rejected }
+                if mapsRefusals, status == 502 || status == 503 { throw FoodFetchError.unavailable }
             }
             throw isNetworkFailure(error) ? FoodFetchError.offline : FoodFetchError.server
         }

@@ -130,4 +130,13 @@ struct FoodRecipeClientTests {
         #expect(d.lines[0].allergens == ["milk": .contains])
         #expect(d.lines[1].allergens == nil)
     }
+
+    @Test func anUndecodable400OnAMealSaveStaysRetryable() async throws {
+        // a proxy's HTML "Bad Request" must never turn a queued capture into a permanent refusal (the outbox retries .server)
+        stub.on("createMeal", .status(400))
+        await #expect(throws: FoodFetchError.server) {
+            _ = try await food().save(MealDraft(date: "2026-11-13", slot: "lunch", title: "x", items: []), clientRef: UUID(), capturedAt: Date())
+        }
+        // …while a recipe save nobody queues reads the same 400 as a refusal (aRefusedRecipeSaveThrowsRejected)
+    }
 }

@@ -156,7 +156,10 @@ struct RecipeReview: Equatable {
 
     private mutating func update(_ id: UUID, _ change: (inout ReviewLine) -> Void) {
         guard let i = lines.firstIndex(where: { $0.id == id }) else { return }
+        let before = unmatchedLeftOut.map(\.id)
         change(&lines[i])
+        // the owner's "I know" was about those rows: when they change, he is asked again
+        if unmatchedLeftOut.map(\.id) != before { leftOutAcknowledged = false }
     }
 
     /// The one save every route ends in: the rows that will be saved, in order, with the owner's edits.
@@ -206,8 +209,15 @@ func reviewAllergenWarnings(_ review: RecipeReview, profile: SensitivityProfile?
 /// The rows that tell nothing about allergens (matched nothing, or a food with no declared states) — said out loud, never
 /// read as "free of". Only when the owner has allergen rules at all.
 func reviewNoDataLines(_ review: RecipeReview, profile: SensitivityProfile?) -> [String] {
-    guard let profile, profile.items.contains(where: \.isStructured) else { return [] }
-    return review.lines.filter { !$0.removed && ($0.line.allergens?.isEmpty ?? true) }.map(\.line.name)
+    guard let profile else { return [] }
+    let watched = profile.items.filter(\.isStructured).map { $0.key.lowercased() }
+    guard !watched.isEmpty else { return [] }
+    // a row is silent when it has no map at all, or its map lacks (or marks unknown) a key the owner watches
+    return review.lines.filter { l in
+        guard !l.removed else { return false }
+        guard let map = l.line.allergens else { return true }
+        return watched.contains { (map[$0] ?? .unknown) == .unknown }
+    }.map(\.line.name)
 }
 
 // MARK: - The sheet's state

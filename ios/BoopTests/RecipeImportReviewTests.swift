@@ -215,4 +215,28 @@ struct RecipeImportReviewTests {
         let r = Recipe(id: UUID(), name: "Túrós szelet", category: "snack", servings: 1, macros: Macros(kcal: 1, p: 1, c: 1, f: 1), nova: 4, allergens: ["milk": .contains])
         #expect(recipeBadges(r, profile: milkProfile()).count == 2)
     }
+
+    @Test func aPartialAllergenMapIsNotSilence() {
+        // gluten is declared, milk (which the owner watches) is not: the row says nothing about milk, and that must be said
+        let r = RecipeReview(draft: draft([
+            ImportedLine(name: "Kenyér", amount: 100, unit: "g", catalogId: UUID(), confidence: 1, needsReview: false, allergens: ["gluten": .contains]),
+            ImportedLine(name: "Zab", amount: 100, unit: "g", catalogId: UUID(), confidence: 1, needsReview: false, allergens: ["milk": .unknown]),
+            ImportedLine(name: "Víz", amount: 100, unit: "g", catalogId: UUID(), confidence: 1, needsReview: false, allergens: ["milk": .traces]),
+            ImportedLine(name: "Rizs", amount: 100, unit: "g", catalogId: UUID(), confidence: 1, needsReview: false, allergens: ["milk": .contains])]))
+        #expect(reviewNoDataLines(r, profile: milkProfile()) == ["Kenyér", "Zab"])
+    }
+
+    @Test func theLeftOutTickResetsWhenTheUnmatchedRowsChange() {
+        var lines = [line("A", 1, catalog: chicken), line("B", 1, catalog: yoghurt)]
+        for k in 0..<3 { lines.append(line("Ismeretlen \(k)", 1, "db", catalog: nil, confidence: 0, review: true)) }
+        var r = RecipeReview(draft: draft(lines))
+        r.acknowledgeLeftOut()
+        #expect(r.canSave)
+        let gone = r.lines[2].id
+        r.remove(gone)                       // 2 unmatched left: still large, but a different set
+        #expect(!r.leftOutAcknowledged && !r.canSave)
+        r.acknowledgeLeftOut()
+        r.restore(gone)                      // back to 3: the warning must not reappear already ticked
+        #expect(!r.leftOutAcknowledged && !r.canSave)
+    }
 }
