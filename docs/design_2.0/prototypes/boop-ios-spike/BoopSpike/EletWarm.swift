@@ -26,7 +26,7 @@ enum EWarm {
         case 1: return "aura-alkony.jpg"    // Alvás · dusk over water
         case 3: return "konyha.jpg"         // Étel  · vegetables on a board (stands in for the decided deszka.jpg)
         case 5: return "aura-hegy.jpg"      // Pénz  · borrowed from Forma until it has its own
-        default: return nil                 // Edzés, Energia, Levél · painted landscape until a photo exists
+        default: return nil                // Edzés, Energia, Nap, Levél · painted landscape until a photo exists
         }
     }
 }
