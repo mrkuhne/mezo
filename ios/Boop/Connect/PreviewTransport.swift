@@ -110,13 +110,14 @@ struct PreviewTransport: ClientTransport {
     // MARK: - Étel (B4): an invented food day, so the room can be walked without a server
 
     private static let foodWriteOps = ["createMeal", "logWater", "upsertPlannedSkip", "setSensitivityProfile", "logIntake",
-                                       "importRecipeFromUrl", "importRecipeFromText"]
+                                       "importRecipeFromUrl", "importRecipeFromText", "createRecipe", "workshopTurn"]
     /// Every Étel operation the app can call; one of these falling through unanswered is a bug in this file.
     private static let foodOps: Set<String> = [
         "getFuelDay", "getFuelPlan", "draftMealFromAi", "createMeal", "logWater", "upsertPlannedSkip", "listRecipes", "getRecipe",
         "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto", "getPantry", "searchPantryCatalog",
         "lookupPantryItem", "getSensitivityProfile", "setSensitivityProfile", "getDietSettings", "getProtocol", "logIntake",
         "getMealPhoto", "putMealPhoto", "deleteMealPhoto", "deleteAllMealPhotos", "getMealCoachForDay", "deleteIntake",
+        "createRecipe", "recipeLogs", "getRecipeBreakdown", "workshopTurn", "getRecipeImage", "putRecipeImage", "deleteRecipeImage",
     ]
     private static let seedMealId = "5b0e8a52-1c3d-4e0e-9a52-7d9d4c1a0b01"
     private static let recipeId = "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03"
@@ -250,10 +251,37 @@ struct PreviewTransport: ClientTransport {
                 return json(#"{"source":"CATALOG","results":[{"name":"Zabpehely","per":100,"unit":"g","kcal":370,"proteinG":13,"carbsG":60,"fatG":7,"nova":1,"allergens":{"gluten":"contains"}}]}"#)
             }
             return json(#"{"source":"OFF","results":[{"name":"Protein szelet","brand":"Pelda","barcode":"5997001234567","per":100,"unit":"g","kcal":380,"proteinG":30,"carbsG":35,"fatG":12,"nova":4,"allergens":{"milk":"contains","nuts":"traces","soybeans":"unknown"},"servingSize":"40 g","servingQuantity":40}]}"#)
-        case "listRecipes": return json(#"{"recipes":[\#(previewRecipe())]}"#)
-        case "getRecipe": return json(previewRecipe())
+        case "listRecipes":
+            if UserDefaults.standard.string(forKey: "previewRecipes") == "empty" { return json(#"{"recipes":[]}"#) }
+            return json(#"{"recipes":[\#((previewLibrary + foodRecipes).joined(separator: ","))]}"#)
+        case "getRecipe":
+            let id = request.path?.split(separator: "/").last.map(String.init) ?? recipeId
+            let all = previewLibrary + foodRecipes
+            return json(all.first { $0.contains(id) } ?? all[0])
+        case "createRecipe":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            let lines = (obj?["ingredients"] as? [[String: Any]] ?? [])
+            let name = (obj?["name"] as? String ?? "Recept").replacingOccurrences(of: "\"", with: "\\\"")
+            let grams = lines.reduce(0.0) { $0 + ($1["amount"] as? Double ?? 0) }
+            let json = recipeJSON(id: UUID().uuidString.lowercased(), name: name, category: obj?["category"] as? String ?? "lunch",
+                                  servings: obj?["servings"] as? Int ?? 1, kcal: grams * 1.4, p: grams * 0.09, c: grams * 0.15, f: grams * 0.04)
+            foodRecipes.append(json)
+            return created(json)
+        case "recipeLogs":
+            return json(#"{"recentLogs":[{"mealId":"\#(seedMealId)","slot":"lunch","loggedAt":"\#(ISO8601DateFormatter().string(from: Date().addingTimeInterval(-3 * 86400)))","kcal":660,"p":50,"c":75,"f":15,"score":0.78},{"mealId":"\#(UUID().uuidString.lowercased())","slot":"dinner","loggedAt":"\#(ISO8601DateFormatter().string(from: Date().addingTimeInterval(-9 * 86400)))","kcal":640,"p":48,"c":70,"f":16,"score":0.71}]}"#)
+        case "getRecipeBreakdown":
+            return json(#"{"fitsFor":["post_workout"],"breakdown":{"value":0.78,"confidence":0.9,"tagline":"Jó fehérjeforrás, kiegyensúlyozott tányér","summary":"A recept fehérjében erős, a zsír mértékletes, és nincs benne feldolgozott összetevő.","dimensions":[{"id":"macro","label":"Makrók","weight":0.5,"score":0.82,"detail":"A fehérje a recept energiájának 28%-a, a szénhidrát 45%, a zsír 27%.","coverage":1},{"id":"micro","label":"Rost","weight":0.25,"score":0.7,"detail":"Adagonként 7 g rost.","coverage":0.8},{"id":"nova","label":"Feldolgozottság","weight":0.25,"score":0.95,"detail":"Minden összetevő nyers vagy minimálisan feldolgozott.","coverage":1}],"improve":[],"tools":[]}}"#)
+        case "workshopTurn":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
+            let asked = (obj?["message"] as? String ?? "").replacingOccurrences(of: "\"", with: "")
+            return json(#"{"reply":"Ezt találtam ki: \#(asked.isEmpty ? "egy gyors vacsorát" : "„" + asked.prefix(40) + "”") alapján egy túrós-zabos tálat, 32 g fehérjével adagonként. Mondd, ha cserélnél valamit.","draft":{"name":"Túrós-zabos tál","category":"breakfast","servings":1,"steps":["Keverd össze a túrót a zabbal.","Add hozzá a gyümölcsöt."],"lines":[{"source":"pantry","pantryItemId":"\#(oatsId)","name":"Zabpehely","amount":60,"unit":"g"},{"source":"estimate","name":"Tehéntúró","amount":200,"unit":"g"}]}}"#)
+        case "getRecipeImage":
+            var h = HTTPFields(); h[.contentType] = "image/png"
+            return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(pixel))
+        case "putRecipeImage": return json(#"{"bytes":\#(pixel.count),"width":1,"height":1}"#)
+        case "deleteRecipeImage": return (HTTPResponse(status: .noContent), nil)
         case "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto":
-            return json(#"{"result":{"name":"Tejszínes gombás tészta","category":"dinner","servings":2,"steps":["Főzd meg a tésztát.","Pirítsd meg a gombát.","Keverd össze a kettőt."],"sourceUrl":null,"structured":true,"needsReview":true,"lines":[{"source":"estimate","name":"tészta","amount":200,"unit":"g","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.9,"needsReview":false},"sourceText":"20 dkg tészta"},{"source":"estimate","name":"gomba","amount":250,"unit":"g","match":{"confidence":0.2,"needsReview":true},"sourceText":"25 dkg gomba"}]}}"#)
+            return json(#"{"result":{"name":"Tejszínes gombás tészta","category":"dinner","servings":2,"steps":["Főzd meg a tésztát.","Pirítsd meg a gombát.","Keverd össze a kettőt."],"sourceUrl":null,"structured":true,"needsReview":true,"lines":[{"source":"estimate","name":"tészta","amount":200,"unit":"g","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.9,"needsReview":false},"sourceText":"20 dkg tészta"},{"source":"estimate","name":"Tejszín","amount":2,"unit":"dl","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.5,"needsReview":true},"sourceText":"2 dl főzőtejszín"},{"source":"estimate","name":"gomba","amount":250,"unit":"g","match":{"confidence":0.2,"needsReview":true},"sourceText":"25 dkg gomba"}]}}"#)
         case "getPantry":
             return json(#"{"ingredients":[{"id":"\#(oatsId)","kind":"food","name":"Zabpehely","brand":null,"source":"manual","category":null,"per":100,"unit":"g","macros":{"kcal":370,"p":13,"c":60,"f":7},"price":null,"priceUnit":null,"pkg":null,"micros":[],"nova":1,"lastUsed":"-","usedInRecipes":2,"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","catalogEditable":true}],"stash":[\#(stashRow("22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d", "D3-vitamin", "4000 NE")),\#(stashRow("ff027e5c-b6d7-42a2-be5c-719e1abeaf0b", "Magnézium-glicinát", "400 mg")),\#(stashRow("11a38d6f-c7e8-43b3-8f6d-82a0bfbcb01c", "Omega-3", "2 g"))],"imports":[],"suggestions":[]}"#)
         case "searchPantryCatalog":
@@ -275,8 +303,21 @@ struct PreviewTransport: ClientTransport {
         #"{"id":"\#(id)","name":"\#(name)","brand":null,"type":"supplement","category":null,"dose":"\#(dose)","form":null,"protocol":"","timing":"","taken":false,"macros":\#(macros(0, 0, 0, 0)),"catalogId":"\#(id)","catalogEditable":false}"#
     }
 
-    private static func previewRecipe() -> String {
-        #"{"id":"\#(recipeId)","name":"Csirkés rizs zöldségekkel","slot":"lunch","category":"lunch","servings":2,"prepMins":15,"cookMins":25,"tags":["laktózmentes"],"starred":true,"role":"standard","createdDate":"2026-10-01","novaDominant":1,"macros":\#(macros(1320, 100, 150, 30)),"mezoFit":{"score":78,"fitsFor":[]},"timesLogged":4,"avgScore":74,"lastLogged":"2026-11-10","ingredients":[{"pantryItemId":"\#(oatsId)","amount":300,"unit":"g","note":null,"lineOrder":0,"name":"Csirkemell","contribution":\#(macros(495, 93, 0, 11))}],"steps":["Süsd meg a csirkét.","Főzd meg a rizst.","Keverd össze."]}"#
+    /// What the review has saved as recipes so far (JSON).
+    nonisolated(unsafe) private static var foodRecipes: [String] = []
+
+    private static func recipeJSON(id: String, name: String, category: String, servings: Int, kcal: Double, p: Double, c: Double, f: Double,
+                                   allergens: String = "{}", hasImage: Bool = false, steps: String = #"["Süsd meg a csirkét.","Főzd meg a rizst.","Keverd össze."]"#) -> String {
+        #"{"id":"\#(id)","name":"\#(name)","slot":"\#(category)","category":"\#(category)","servings":\#(servings),"prepMins":15,"cookMins":25,"tags":[],"starred":false,"role":"standard","createdDate":"2026-10-01","novaDominant":1,"macros":\#(macros(kcal, p, c, f)),"mezoFit":{"score":0.78,"fitsFor":[]},"timesLogged":2,"avgScore":74,"lastLogged":"2026-11-10","hasImage":\#(hasImage),"allergens":\#(allergens),"ingredients":[{"pantryItemId":"\#(oatsId)","amount":300,"unit":"g","note":null,"lineOrder":0,"name":"Csirkemell","contribution":\#(macros(kcal * 0.6, p * 0.8, c * 0.1, f * 0.4))},{"pantryItemId":"\#(oatsId)","amount":150,"unit":"g","note":null,"lineOrder":1,"name":"Rizs","contribution":\#(macros(kcal * 0.4, p * 0.2, c * 0.9, f * 0.6))}],"steps":\#(steps)}"#
+    }
+
+    private static var previewLibrary: [String] {
+        [recipeJSON(id: recipeId, name: "Görög csirkesaláta", category: "lunch", servings: 2, kcal: 960, p: 92, c: 40, f: 44, hasImage: true),
+         recipeJSON(id: "1e4b7a85-5a10-4c4b-8a85-b1a28a5e4f05", name: "Sült lazac barna rizzsel", category: "dinner", servings: 2, kcal: 1280, p: 84, c: 120, f: 52, hasImage: true),
+         recipeJSON(id: "2f5c8b96-6b21-4d5c-9b96-c2b39b6f5a06", name: "Túrós zabkása áfonyával", category: "breakfast", servings: 1, kcal: 523, p: 25, c: 60, f: 18,
+                    allergens: #"{"milk":"contains","gluten":"contains"}"#),
+         recipeJSON(id: "3a6d9ca7-7c32-4e6d-8ca7-d3c4ac7a6b07", name: "Rántotta avokádóval, egy nagyon hosszú névvel, hogy lássuk, hova törik", category: "breakfast", servings: 1, kcal: 480, p: 28, c: 12, f: 36,
+                    allergens: #"{"egg":"contains"}"#)]
     }
 
     /// Canned morning brief (invented numbers) and its session/pattern operations.

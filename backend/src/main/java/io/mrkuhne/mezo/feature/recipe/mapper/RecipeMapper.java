@@ -84,6 +84,7 @@ public interface RecipeMapper {
             .ingredients(lines)
             .steps(e.getSteps() == null ? List.of() : e.getSteps())
             .sourceUrl(e.getSourceUrl())
+            .hasImage(e.getImageId() != null)
             .allergens(e.getAllergens() == null ? null : wire(e.getAllergens()))
             .build();
     }

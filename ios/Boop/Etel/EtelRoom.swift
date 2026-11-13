@@ -30,6 +30,12 @@ final class EtelStore {
     /// Captures still in the owner's hands (B4 Task 10) and their photos, by id.
     private(set) var pending: [PendingDraft] = []
     private(set) var pendingPhotos: [UUID: UIImage] = [:]
+    /// The owner's recipe library (Receptek), its photos by recipe id, and his sensitivity profile for the badges.
+    private(set) var recipes: [Recipe] = []
+    private(set) var recipesLoaded = false
+    private(set) var recipesProblem: FoodFetchError?
+    private(set) var recipeImages: [UUID: UIImage] = [:]
+    private(set) var profile: SensitivityProfile?
     private(set) var groups: [SupplementGroup] = []
     private(set) var groupsLoaded = false
     private(set) var groupsProblem: FoodFetchError?
@@ -108,6 +114,80 @@ final class EtelStore {
             return out
         }
         for (id, data) in fetched { if let data, let image = UIImage(data: data) { photos[id] = image } }
+    }
+
+    // MARK: - Recipes (B4 Task 12)
+
+    /// The library and its photos. A failed reload keeps what the room already had on screen.
+    func loadRecipes(food: FoodClient) async {
+        self.food = food
+        switch await Self.attempt({ try await food.recipes() }) {
+        case .success(let list): recipes = list; recipesProblem = nil
+        case .failure(let e): recipesProblem = e
+        }
+        recipesLoaded = true
+        if case .success(let p) = await Self.attempt({ try await food.sensitivity() }) { profile = p }
+        let wanted = recipes.filter { $0.hasImage && recipeImages[$0.id] == nil }.map(\.id)
+        recipeImages = recipeImages.filter { id, _ in recipes.contains { $0.id == id && $0.hasImage } }
+        guard !wanted.isEmpty else { return }
+        let fetched = await withTaskGroup(of: (UUID, Data?).self) { group in
+            for id in wanted { group.addTask { (id, try? await food.recipeImage(id)) } }
+            var out: [(UUID, Data?)] = []
+            for await r in group { out.append(r) }
+            return out
+        }
+        for (id, data) in fetched { if let data, let image = UIImage(data: data) { recipeImages[id] = image } }
+    }
+
+    /// A recipe the owner just saved: at the top of the library at once (the server returned the stored row).
+    func recipeSaved(_ recipe: Recipe) {
+        recipes.removeAll { $0.id == recipe.id }
+        recipes.insert(recipe, at: 0)
+        recipesLoaded = true; recipesProblem = nil
+    }
+
+    /// The owner's own photo on a recipe (JPEG, long edge 1600). Returns the toast to show.
+    func setRecipeImage(_ data: Data, recipeId: UUID) async -> String {
+        guard let food else { return "Most nem tudom feltölteni a fotót" }
+        guard let jpeg = MealPhoto.jpeg(from: data), let image = UIImage(data: jpeg) else { return "Ezt a képet nem tudom megnyitni" }
+        do {
+            try await food.setRecipeImage(jpeg, recipeId: recipeId)
+            recipeImages[recipeId] = image
+            if let i = recipes.firstIndex(where: { $0.id == recipeId }) { recipes[i].hasImage = true }
+            return "A recept fotója elmentve"
+        } catch FoodFetchError.offline {
+            return "Nincs net — a fotót most nem tudom feltölteni"
+        } catch {
+            return "A fotót most nem tudom feltölteni"
+        }
+    }
+
+    func removeRecipeImage(_ id: UUID) async -> String {
+        guard let food else { return "Most nem tudom törölni a fotót" }
+        do {
+            try await food.deleteRecipeImage(id)
+            recipeImages[id] = nil
+            if let i = recipes.firstIndex(where: { $0.id == id }) { recipes[i].hasImage = false }
+            return "A fotó törölve"
+        } catch {
+            return "A fotót most nem tudom törölni"
+        }
+    }
+
+    /// Logs one serving of a recipe as a meal (one tap). `clientRef` is kept by the caller until the save worked, so a
+    /// retry after a lost answer is the same meal.
+    func logRecipe(_ recipe: Recipe, clientRef: UUID) async -> (ok: Bool, text: String) {
+        guard let food else { return (false, "Most nem tudom rögzíteni") }
+        let moment = BoopClock.now()
+        let draft = MealDraft(date: food.ymd(moment), slot: recipe.category, title: recipe.name, items: [DraftItem(recipe: recipe)])
+        do {
+            let meal = try await food.save(draft, clientRef: clientRef, capturedAt: moment)
+            return (true, "\(recipe.name) rögzítve · \(huInt(Int(meal.macros.kcal.rounded()))) kcal")
+        } catch FoodFetchError.offline {
+            return (false, "Nincs net — próbáld újra, ha van")
+        } catch {
+            return (false, "Nem sikerült rögzíteni — próbáld újra")
+        }
     }
 
     /// Adds water: shown at once, undone when the server does not take it. Returns the toast to show.
@@ -203,6 +283,40 @@ final class EtelStore {
     func dismissTip() { tipDismissed = true }
 }
 
+/// What the Receptek tab's sheet shows.
+enum RecipeSheet: Identifiable {
+    case detail(UUID)
+    case importer(RecipeImportModel.Mode)
+    case workshop
+    var id: String {
+        switch self {
+        case .detail(let id): "detail-\(id)"
+        case .importer(let m): "import-\(m)"
+        case .workshop: "workshop"
+        }
+    }
+}
+
+/// Holds the import model for the life of the sheet (the sheet's content closure re-runs; the model must not).
+struct RecipeImportHost: View {
+    @State private var model: RecipeImportModel
+    let onSaved: (Recipe) -> Void
+    init(mode: RecipeImportModel.Mode, food: FoodClient?, onSaved: @escaping (Recipe) -> Void) {
+        _model = State(initialValue: RecipeImportModel(
+            mode: mode,
+            reader: { source in
+                guard let food else { throw FoodFetchError.unauthorized }
+                return try await food.importRecipe(source)
+            },
+            saver: { recipe in
+                guard let food else { throw FoodFetchError.unauthorized }
+                return try await food.createRecipe(recipe)
+            }))
+        self.onSaved = onSaved
+    }
+    var body: some View { RecipeImportSheet(model: model, onSaved: onSaved) }
+}
+
 // MARK: - The room
 
 /// The Étel room (B4): the food world's drill-down with its own four tabs — Ma · Receptek · Kamra · Hét. The head is
@@ -218,6 +332,8 @@ struct EtelRoom: View {
     @State private var toast: String?
     /// The dimension whose sheet is open (page level, boop-ios.md §9).
     @State private var dimension: DimensionSelection?
+    /// The Receptek tab's sheet: a recipe, an import, or the workshop (one at a time, page level).
+    @State private var recipeSheet: RecipeSheet?
 
     init(tab: EtelTab = .ma) {
         #if DEBUG
@@ -240,7 +356,10 @@ struct EtelRoom: View {
                 EtelMa(store: store, onDimension: { dimension = $0 }, onToast: { toast = $0 },
                        onRetry: { Task { await reload() } }, onTab: { selected = $0.rawValue },
                        onCapture: { composer = MealStart(entrance: $0) }, onCard: cardAction)
-            case .receptek, .kamra, .het:
+            case .receptek:
+                EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },
+                             onOpen: { recipeSheet = .detail($0.id) }, onRetry: { Task { await reload() } })
+            case .kamra, .het:
                 NKDrillSection(number: 1, label: tab.rawValue.uppercased()) {
                     Text("Ez a lap hamarosan itt lesz.").nkFont(15).foregroundStyle(.white.opacity(0.7))
                 }
@@ -268,7 +387,39 @@ struct EtelRoom: View {
             .presentationCornerRadius(34)
             .presentationDragIndicator(.visible)
         }
+        .sheet(item: Binding(get: { [r = recipeSheet] in r }, set: { recipeSheet = $0 })) { sheet in
+            Group {
+                switch sheet {
+                case .detail(let id):
+                    RecipeDetailSheet(recipeId: id, store: store, onToast: { toast = $0 }, onLogged: { Task { await reload() } })
+                case .importer(let mode):
+                    RecipeImportHost(mode: mode, food: food) { saved($0) }
+                case .workshop:
+                    RecipeWorkshopSheet(food: food) { saved($0) }
+                }
+            }
+            .presentationDetents([.large])
+            .presentationBackground(NK.ground)
+            .presentationCornerRadius(34)
+            .presentationDragIndicator(.visible)
+        }
         .task { await reload() }
+        #if DEBUG
+        // Review hooks (`-etelSheet detail|import|text|workshop`): open the Receptek sheets without tapping.
+        .task {
+            guard let which = UserDefaults.standard.string(forKey: "etelSheet") else { return }
+            try? await Task.sleep(for: .milliseconds(1200))
+            switch which {
+            case "detail": recipeSheet = .detail(UUID(uuidString: "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03")!)
+            case "detail2": recipeSheet = .detail(UUID(uuidString: "2f5c8b96-6b21-4d5c-9b96-c2b39b6f5a06")!)
+            case "import": recipeSheet = .importer(.link)
+            case "text": recipeSheet = .importer(.text)
+            case "workshop": recipeSheet = .workshop
+            default: break
+            }
+        }
+        #endif
+        .task(id: tab) { if tab == .receptek, !store.recipesLoaded, let food { await store.loadRecipes(food: food) } }
         .task(id: ritmus?.mealDraftsTick) { await store.refreshPending(ritmus?.food) }
         .refreshable { await reload() }
     }
@@ -279,6 +430,15 @@ struct EtelRoom: View {
         await ritmus?.food.flush()
         await store.refreshPending(ritmus?.food)
         await store.load(food: food, now: BoopClock.now())
+        if store.recipesLoaded || tab == .receptek { await store.loadRecipes(food: food) }
+    }
+
+    /// A recipe the owner just saved: into the library, the sheet closes, the toast says so.
+    private func saved(_ recipe: Recipe) {
+        store.recipeSaved(recipe)
+        recipeSheet = nil
+        toast = "\(recipe.name) elmentve"
+        Task { if let food { await store.loadRecipes(food: food) } }
     }
 
     private func cardAction(_ action: PendingCardAction, _ card: PendingDraft) {

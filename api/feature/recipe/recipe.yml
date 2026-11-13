@@ -188,6 +188,7 @@ components:
         ingredients: { type: array, items: { $ref: '#/components/schemas/RecipeIngredientResponse' } }
         steps: { type: array, items: { type: string }, description: 'Method steps in order; empty when none were saved' }
         sourceUrl: { type: string, nullable: true }
+        hasImage: { type: boolean, description: 'True when the owner has a photo on this recipe (GET /api/recipe/{id}/image); lists never need to probe for 404.' }
         allergens:
           type: object
           nullable: true

@@ -1767,6 +1767,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipe/{id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** The photo of a recipe (the stored bytes; Content-Type is the stored type) */
+        get: operations["getRecipeImage"];
+        put?: never;
+        /** Attach (or replace) the photo of a recipe */
+        post: operations["putRecipeImage"];
+        /** Delete the photo of a recipe (the bytes go with it; the recipe stays) */
+        delete: operations["deleteRecipeImage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fuel/day/{date}": {
         parameters: {
             query?: never;
@@ -8417,6 +8438,8 @@ export interface components {
             /** @description Method steps in order; empty when none were saved */
             steps?: string[];
             sourceUrl?: string | null;
+            /** @description True when the owner has a photo on this recipe (GET /api/recipe/{id}/image); lists never need to probe for 404. */
+            hasImage?: boolean;
             /** @description Derived rollup of the ingredients' allergen states (contains | traces | unknown); unknown propagates upward. null on recipes not yet recomputed. */
             allergens?: {
                 [key: string]: string;
@@ -8498,6 +8521,12 @@ export interface components {
         };
         RecipeImportResponse: {
             result?: components["schemas"]["RecipeImportDraft"] | null;
+        };
+        RecipeImageResponse: {
+            /** Format: int64 */
+            bytes: number;
+            width: number;
+            height: number;
         };
         Macros: {
             kcal: number;
@@ -19528,6 +19557,141 @@ export interface operations {
             };
             /** @description The AI is not available */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getRecipeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                    "image/png": string;
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such recipe, or it has no photo */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putRecipeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The stored photo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImageResponse"];
+                };
+            };
+            /** @description Not a JPEG/PNG, corrupt, or over the 4 MB cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such recipe (or not the caller's) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteRecipeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such recipe, or it has no photo */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

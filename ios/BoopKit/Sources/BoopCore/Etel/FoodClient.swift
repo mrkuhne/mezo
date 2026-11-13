@@ -214,6 +214,129 @@ public struct FoodClient: Sendable {
         return response.result.map { Self.map($0.value1) }
     }
 
+    /// Saves a reviewed recipe — the one save every import route (and the workshop) ends in. A line carries a
+    /// `catalogId` (put on the shelf by the server now) or a `pantryItemId`; the caller never passes a line with neither.
+    public func createRecipe(_ recipe: NewRecipe) async throws -> Recipe {
+        let lines: [Components.Schemas.RecipeIngredientRequest] = recipe.lines.map {
+            .init(pantryItemId: $0.pantryItemId?.wire, catalogId: $0.catalogId?.wire, amount: $0.amount, unit: $0.unit)
+        }
+        let body = Components.Schemas.RecipeRequest(
+            name: recipe.name, category: recipe.category, servings: recipe.servings,
+            steps: recipe.steps, sourceUrl: recipe.sourceUrl, ingredients: lines)
+        return try await call {
+            switch try await client.createRecipe(body: .json(body)) {
+            case .created(let ok): return Self.map(try ok.body.json)
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// The meals this recipe went into, newest first.
+    public func recipeLogs(_ id: UUID) async throws -> [RecipeLog] {
+        try await call {
+            switch try await client.recipeLogs(path: .init(id: id.wire)) {
+            case .ok(let ok):
+                return try ok.body.json.recentLogs.compactMap { l in
+                    UUID(uuidString: l.mealId).map { RecipeLog(mealId: $0, slot: l.slot, loggedAt: l.loggedAt, kcal: l.kcal, score: l.score) }
+                }
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .notFound: throw FoodFetchError.notFound
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// The recipe's template score (the same envelope as a logged meal's, without the day's context).
+    public func recipeBreakdown(_ id: UUID) async throws -> RecipeBreakdown {
+        try await call {
+            switch try await client.getRecipeBreakdown(path: .init(id: id.wire)) {
+            case .ok(let ok):
+                let b = try ok.body.json
+                return RecipeBreakdown(breakdown: b.breakdown.map { Self.map($0.value1) }, fitsFor: b.fitsFor)
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .notFound: throw FoodFetchError.notFound
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// One turn of Receptműhely: the words so far, the draft so far and what the owner just said; nothing is stored.
+    public func workshop(message: String, history: [WorkshopChatMessage], draft: WorkshopDraft?) async throws -> WorkshopReply {
+        let body = Components.Schemas.WorkshopTurnRequest(
+            message: message,
+            history: history.map { .init(role: $0.fromUser ? "user" : "assistant", text: $0.text) },
+            draft: draft.map { d in
+                .init(value1: .init(
+                    name: d.name, category: d.category, servings: d.servings, steps: d.steps,
+                    lines: d.lines.map { .init(source: $0.source, pantryItemId: $0.pantryItemId?.wire, name: $0.name, amount: $0.amount, unit: $0.unit) }))
+            })
+        let r: Components.Schemas.WorkshopTurnResponse = try await call {
+            switch try await client.workshopTurn(body: .json(body)) {
+            case .ok(let ok): return try ok.body.json
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .badGateway, .serviceUnavailable: throw FoodFetchError.unavailable
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+        return WorkshopReply(reply: r.reply, draft: WorkshopDraft(
+            name: r.draft.name, category: r.draft.category, servings: r.draft.servings, steps: r.draft.steps,
+            lines: r.draft.lines.map { WorkshopLine(source: $0.source, pantryItemId: $0.pantryItemId.flatMap(UUID.init(uuidString:)), name: $0.name, amount: $0.amount, unit: $0.unit) }))
+    }
+
+    // MARK: - Recipe photo
+
+    /// The owner's photo of a recipe, nil when it has none. Ask only for a recipe whose `hasImage` is true.
+    public func recipeImage(_ id: UUID) async throws -> Data? {
+        do {
+            return try await call {
+                switch try await client.getRecipeImage(path: .init(id: id.wire)) {
+                case .ok(let ok):
+                    let body: HTTPBody
+                    switch ok.body {
+                    case .jpeg(let b): body = b
+                    case .png(let b): body = b
+                    }
+                    return try await Data(collecting: body, upTo: 8 << 20)
+                case .notFound: return nil
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .undocumented: throw FoodFetchError.server
+                }
+            }
+        } catch FoodFetchError.notFound { return nil }
+    }
+
+    /// Attaches (or replaces) the recipe's photo; the server deletes the old picture's bytes.
+    public func setRecipeImage(_ data: Data, recipeId: UUID) async throws {
+        try await call {
+            let part = Operations.putRecipeImage.Input.Body.multipartFormPayload.photo(
+                .init(payload: .init(body: HTTPBody(data)), filename: "recipe.jpg"))
+            switch try await client.putRecipeImage(path: .init(id: recipeId.wire), body: .multipartForm(MultipartBody([part]))) {
+            case .ok: return
+            case .badRequest: throw FoodFetchError.rejected
+            case .notFound: throw FoodFetchError.notFound
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Removes the recipe's photo (the recipe stays); a recipe that has none counts as done.
+    public func deleteRecipeImage(_ id: UUID) async throws {
+        do {
+            try await call {
+                switch try await client.deleteRecipeImage(path: .init(id: id.wire)) {
+                case .noContent: return
+                case .notFound: throw FoodFetchError.notFound
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .undocumented: throw FoodFetchError.server
+                }
+            }
+        } catch FoodFetchError.notFound { return }
+    }
+
     /// With no query: the owner's shelf (foods). With one: the shared catalog's foods matching it (a row not on the shelf
     /// has no `id`).
     public func pantry(query: String? = nil) async throws -> [PantryRow] {
@@ -578,8 +701,11 @@ extension FoodClient {
                prepMins: r.prepMins, cookMins: r.cookMins, tags: r.tags, starred: r.starred,
                macros: Macros(kcal: r.macros.kcal, p: r.macros.p, c: r.macros.c, f: r.macros.f), nova: r.novaDominant,
                ingredients: r.ingredients.compactMap { i in
-                   UUID(uuidString: i.pantryItemId).map { RecipeIngredient(pantryItemId: $0, name: i.name, amount: i.amount, unit: i.unit, note: i.note) }
-               }, steps: r.steps ?? [], sourceUrl: r.sourceUrl)
+                   UUID(uuidString: i.pantryItemId).map {
+                       RecipeIngredient(pantryItemId: $0, name: i.name, amount: i.amount, unit: i.unit, note: i.note, kcal: i.contribution.kcal)
+                   }
+               }, steps: r.steps ?? [], sourceUrl: r.sourceUrl, hasImage: r.hasImage ?? false,
+               allergens: allergens(r.allergens?.additionalProperties), fit: r.mezoFit.score, timesLogged: r.timesLogged)
     }
 
     static func map(_ d: Components.Schemas.RecipeImportDraft) -> RecipeImportDraft {
@@ -587,7 +713,7 @@ extension FoodClient {
             ImportedLine(name: l.value1.name, amount: l.value1.amount, unit: l.value1.unit,
                          catalogId: l.value2.match.catalogId.flatMap(UUID.init(uuidString:)),
                          confidence: l.value2.match.confidence, needsReview: l.value2.match.needsReview, sourceText: l.value2.sourceText)
-        }, sourceUrl: d.sourceUrl, needsReview: d.needsReview ?? false)
+        }, sourceUrl: d.sourceUrl, needsReview: d.needsReview ?? false, cookedWeightG: d.cookedWeightG)
     }
 
     static func map(_ i: Components.Schemas.IngredientResponse) -> PantryRow {

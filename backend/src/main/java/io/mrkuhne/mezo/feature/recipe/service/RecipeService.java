@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
 import io.mrkuhne.mezo.api.dto.RecipeListResponse;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.common.image.ImageStore;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
@@ -43,6 +44,7 @@ public class RecipeService {
     private final MealScoringService scoringService;
     private final PantryCatalogRepository pantryCatalogRepository;
     private final PantryCatalogService pantryCatalogService;
+    private final ImageStore images;
 
     @Transactional
     public RecipeResponse create(UUID userId, RecipeRequest req) {
@@ -189,7 +191,13 @@ public class RecipeService {
         // @SQLDelete soft-deletes the recipe, but does NOT cascade to @OneToMany children on a
         // soft-delete (UPDATE, not DELETE) — so bulk-soft-delete the lines explicitly.
         recipeIngredientRepository.softDeleteByRecipeId(recipe.getId());
+        UUID imageId = recipe.getImageId();
         repository.delete(recipe); // @SQLDelete -> is_deleted = true
+        // The owner's photo has no other owner once the recipe is gone: delete its bytes (an unreachable
+        // soft-deleted row would otherwise keep them forever). The FK's SET NULL only unlinks.
+        if (imageId != null) {
+            images.delete(userId, imageId);
+        }
     }
 
     /**

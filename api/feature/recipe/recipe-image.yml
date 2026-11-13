@@ -1,0 +1,64 @@
+openapi: 3.0.3
+info: { title: mezo recipe-image fragment, version: 1.0.0 }
+tags:
+  - name: RecipeImage
+    description: >-
+      The owner's own photo of a recipe (Boop B4, decision 20): the recipe has one, the owner can replace or remove
+      it, and nothing else ever writes it (an import stores no picture). Kept on the server, served back only to
+      the owner. One image per recipe; a new upload replaces the old one and the old bytes are deleted. JPEG or
+      PNG, at most 4 MB, checked by content type and by the actual bytes. Soft-deleting the recipe deletes the bytes.
+paths:
+  /api/recipe/{id}/image:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [RecipeImage]
+      operationId: putRecipeImage
+      summary: Attach (or replace) the photo of a recipe
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo: { type: string, format: binary }
+      responses:
+        '200':
+          description: The stored photo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecipeImageResponse' }
+        '400': { description: 'Not a JPEG/PNG, corrupt, or over the 4 MB cap', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such recipe (or not the caller''s)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    get:
+      tags: [RecipeImage]
+      operationId: getRecipeImage
+      summary: The photo of a recipe (the stored bytes; Content-Type is the stored type)
+      responses:
+        '200':
+          description: The image
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such recipe, or it has no photo', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [RecipeImage]
+      operationId: deleteRecipeImage
+      summary: Delete the photo of a recipe (the bytes go with it; the recipe stays)
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such recipe, or it has no photo', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+components:
+  schemas:
+    RecipeImageResponse:
+      type: object
+      required: [bytes, width, height]
+      properties:
+        bytes: { type: integer, format: int64 }
+        width: { type: integer }
+        height: { type: integer }

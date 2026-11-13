@@ -53,6 +53,13 @@ filter:
     - upsertPlannedSkip
     - listRecipes
     - getRecipe
+    - createRecipe
+    - recipeLogs
+    - getRecipeBreakdown
+    - workshopTurn
+    - getRecipeImage
+    - putRecipeImage
+    - deleteRecipeImage
     - importRecipeFromUrl
     - importRecipeFromText
     - importRecipeFromPhoto

@@ -2,7 +2,7 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-12
+updated: 2026-11-13
 tags: [ios, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
@@ -130,6 +130,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     the orb's tiles, detail-sheet row), **2** the week (deep-sleep / resting-HR bars, Forma's energy line, else an honest "hamarosan" line),
     **3 A napok mögötte** (the days behind the week, today on top), **4 Mit tehetsz** (the orb's proposal plus the S3 orb path cards re-homed). A kept conflict ("Marad így") hides the proposal too, for the rest of the day.
     `NKDrillPage` takes an optional inner tab row (unused in B2; B4 Étel / B5 Edzés will use it). Swipe-back via `Nap/RoomSwipeBack.swift`, scoped to the room: it stands in as the pop gesture's delegate only while a room is on screen and restores the original on exit.
+  - **Étel · Receptek tab (B4 Task 12)** (`Etel/{EtelReceptek,RecipeDetail,RecipeImport,RecipeWorkshop}.swift`): the new-recipe rows (link/text, photo, Receptműhely) and the library, **one recipe per row** (owner, 2026-11-13: a 44 pt thumbnail, the full name with its sensitivity badge beside it, kcal / protein / servings in full underneath — never a card grid). Every route ends in the same review (`RecipeReview`, pure, tested): a doubtful row (server `needsReview` or confidence ≤ 0.6) must be confirmed or taken out before the save is enabled, an unmatched row blocks nothing but is visibly left out of the saved recipe (the server cannot save a line with no food, and it does not enforce that a doubtful row was looked at — the review is the enforcement). A reviewed recipe goes through `FoodClient.createRecipe`; the workshop's estimate lines are left out the same way. The detail sheet shows the owner's own photo (add/replace/delete via `/api/recipe/{id}/image`; `NKThumb`'s glyph stays the fallback), ingredients, steps, the template score, the log history and a one-tap *Megeszem 1 adagot* (a recipe `DraftItem`, idempotent per tap session). An absent allergen key reads "nincs adat", never "mentes".
   - **"+" capture sheet** (`Capture/CaptureSheet`): the frame only — every item (étel, edzés, súly, ...) says "hamarosan" until B3/B4.
   - **Account sheet** (`Shell/AccountSheet`, opened from the avatar on Ma's title row, accessibility label "Fiók"): the account card with the confirmed sign-out
     (the old Én account section, `EnAccountSection`).

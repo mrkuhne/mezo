@@ -44,9 +44,9 @@ struct FoodPreviewTests {
         #expect(try await food.lookup(barcode: "5990001111").source == .catalog)
         #expect(try await food.lookup(barcode: "5990000000").source == .none)
         let recipes = try await food.recipes()
-        #expect(recipes.count == 1)
+        #expect(recipes.count >= 4)
         #expect(try await food.recipe(recipes[0].id).steps.count == 3)
-        #expect(try await food.importRecipe(.url("https://pelda.hu/r"))?.lines.count == 2)
+        #expect(try await food.importRecipe(.url("https://pelda.hu/r"))?.lines.count == 3)
         #expect(try await food.importRecipe(.photo(Data([1, 2, 3])))?.needsReview == true)
         #expect(try await food.pantry().count == 1)
         #expect(try await food.pantry(query: "zab").first?.onShelf == false)
@@ -56,5 +56,22 @@ struct FoodPreviewTests {
         #expect(try await food.dietSettings().waterMl == 2500)
         #expect(try await food.protocol().items(in: "morning").count == 2)
         #expect(try await food.tickGroup(daypart: "morning", clientRef: UUID()) == 2)
+    }
+
+    @Test func theRecipeOperationsAnswerThroughThePreviewToo() async throws {
+        let library = try await food.recipes()
+        #expect(library.filter(\.hasImage).count >= 2)
+        #expect(library.first { $0.allergens["milk"] == .contains } != nil)
+        let first = library[0]
+        #expect(try await food.recipeLogs(first.id).count == 2)
+        #expect(try await food.recipeBreakdown(first.id).breakdown?.dimensions.count == 3)
+        #expect(try await food.recipeImage(first.id) != nil)
+        try await food.setRecipeImage(Data([1, 2, 3]), recipeId: first.id)
+        try await food.deleteRecipeImage(first.id)
+        let turn = try await food.workshop(message: "valami gyors", history: [], draft: nil)
+        #expect(turn.draft.lines.count == 2 && turn.draft.lines[0].pantryItemId != nil)
+        let saved = try await food.createRecipe(NewRecipe(name: "Próba", category: "lunch", servings: 2,
+                                                          lines: [NewRecipeLine(catalogId: UUID(), amount: 200, unit: "g")]))
+        #expect(saved.name == "Próba" && saved.servings == 2)
     }
 }

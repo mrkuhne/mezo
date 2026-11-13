@@ -48,7 +48,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [progression](#progression) | ✓ | 1 | ✓ | ✓ | [growth](features/growth.md) |
 | [quest](#quest) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
 | [quickinput](#quickinput) | · | · | · | ✓ | [today](features/today.md) |
-| [recipe](#recipe) | ✓ | 2 | · | · | [recipe](features/recipe.md) |
+| [recipe](#recipe) | ✓ | 3 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
 | [settings](#settings) | · | · | · | ✓ | [settings](features/settings.md) |
 | [telemetry](#telemetry) | ✓ | 1 | ✓ | · | · |
@@ -1485,19 +1485,22 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
   - **repositories:** `RecipeIngredientRepository`, `RecipeRepository`
   - **services:** `RecipeAllergenRollup`, `RecipeBreakdownLlm`, `RecipeBreakdownProseService`,
-    `RecipeBreakdownService`, `RecipeExtractionService`, `RecipeImportLlm`, `RecipeImportService`,
-    `RecipeJsonLdParser`, `RecipeService`, `RecipeWorkshopLlm`, `RecipeWorkshopService`, `RecipeWorkshopValidator`
-  - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeImportController`→`RecipeImportApi`,
-    `RecipeWorkshopController`→`RecipeWorkshopApi`
+    `RecipeBreakdownService`, `RecipeExtractionService`, `RecipeImageService`, `RecipeImportLlm`,
+    `RecipeImportService`, `RecipeJsonLdParser`, `RecipeService`, `RecipeWorkshopLlm`, `RecipeWorkshopService`,
+    `RecipeWorkshopValidator`
+  - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeImageController`→`RecipeImageApi`,
+    `RecipeImportController`→`RecipeImportApi`, `RecipeWorkshopController`→`RecipeWorkshopApi`
   - **mappers:** `RecipeMapper`
   - **config:** `RecipeImportProperties`, `RecipeWorkshopProperties`
+- **Contract** `api/feature/recipe/recipe-image.yml` — 3 operations
+  - **endpoints:** POST /api/recipe/{id}/image · GET /api/recipe/{id}/image · DELETE /api/recipe/{id}/image
 - **Contract** `api/feature/recipe/recipe-import.yml` — 3 operations
   - **endpoints:** POST /api/recipe/import/url · POST /api/recipe/import/text · POST /api/recipe/import/photo
 - **Contract** `api/feature/recipe/recipe.yml` — 7 operations
   - **endpoints:** GET /api/recipe · POST /api/recipe · GET /api/recipe/{id} · PUT /api/recipe/{id} ·
     DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown · POST /api/recipe/workshop/turn
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 12 IT + 8 unit
-  - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeImportIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 13 IT + 8 unit
+  - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeImageIT`, `RecipeImportIT`,
     `RecipeImportLlmUnavailableApiIT`, `RecipeImportSsrfApiIT`, `RecipeImportSwitchOffApiIT`, `RecipeRepositoryIT`,
     `RecipeServiceIT`, `RecipeWorkshopApiIT`, `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`
   - **populators:** `DatabasePopulator`, `PantryItemPopulator`, `RecipePopulator`

@@ -344,6 +344,10 @@ public struct RecipeIngredient: Equatable, Sendable {
     public var amount: Double
     public var unit: String
     public var note: String?
+    public var kcal: Double
+    public init(pantryItemId: UUID, name: String, amount: Double, unit: String, note: String? = nil, kcal: Double = 0) {
+        self.pantryItemId = pantryItemId; self.name = name; self.amount = amount; self.unit = unit; self.note = note; self.kcal = kcal
+    }
 }
 
 public struct Recipe: Equatable, Sendable, Identifiable {
@@ -362,6 +366,111 @@ public struct Recipe: Equatable, Sendable, Identifiable {
     public var ingredients: [RecipeIngredient]
     public var steps: [String]
     public var sourceUrl: String?
+    /// True when the owner's own photo hangs on the recipe — never probe with a GET per recipe.
+    public var hasImage: Bool
+    /// The rollup of the ingredients' allergen states (lowercase keys). A key that is absent says nothing: "nincs adat".
+    public var allergens: [String: AllergenState]
+    /// The deterministic fit, 0…1; nil while the recipe has no kcal to score.
+    public var fit: Double?
+    public var timesLogged: Int
+
+    public init(id: UUID, name: String, slot: String? = nil, category: String, servings: Int, prepMins: Int? = nil, cookMins: Int? = nil,
+                tags: [String] = [], starred: Bool = false, macros: Macros, nova: Int = 1, ingredients: [RecipeIngredient] = [],
+                steps: [String] = [], sourceUrl: String? = nil, hasImage: Bool = false, allergens: [String: AllergenState] = [:],
+                fit: Double? = nil, timesLogged: Int = 0) {
+        self.id = id; self.name = name; self.slot = slot; self.category = category; self.servings = servings
+        self.prepMins = prepMins; self.cookMins = cookMins; self.tags = tags; self.starred = starred; self.macros = macros
+        self.nova = nova; self.ingredients = ingredients; self.steps = steps; self.sourceUrl = sourceUrl
+        self.hasImage = hasImage; self.allergens = allergens; self.fit = fit; self.timesLogged = timesLogged
+    }
+
+    /// Per-serving macros (the library row's numbers).
+    public var perServing: Macros {
+        let n = Double(max(servings, 1))
+        return Macros(kcal: macros.kcal / n, p: macros.p / n, c: macros.c / n, f: macros.f / n)
+    }
+}
+
+/// One time the recipe went into a logged meal.
+public struct RecipeLog: Equatable, Sendable, Identifiable {
+    public var mealId: UUID
+    public var slot: String
+    public var loggedAt: Date
+    public var kcal: Double
+    public var score: Double?
+    public var id: UUID { mealId }
+    public init(mealId: UUID, slot: String, loggedAt: Date, kcal: Double, score: Double? = nil) {
+        self.mealId = mealId; self.slot = slot; self.loggedAt = loggedAt; self.kcal = kcal; self.score = score
+    }
+}
+
+/// The recipe's template score: the same envelope a logged meal has (three dimensions, no context).
+public struct RecipeBreakdown: Equatable, Sendable {
+    public var breakdown: MealBreakdown?
+    public var fitsFor: [String]
+    public init(breakdown: MealBreakdown?, fitsFor: [String] = []) { self.breakdown = breakdown; self.fitsFor = fitsFor }
+}
+
+/// One ingredient of a recipe about to be saved. Either `catalogId` (a catalog food the server puts on the shelf at save)
+/// or `pantryItemId` (a shelf row) — a line with neither cannot be saved.
+public struct NewRecipeLine: Equatable, Sendable {
+    public var catalogId: UUID?
+    public var pantryItemId: UUID?
+    public var amount: Double
+    public var unit: String
+    public init(catalogId: UUID? = nil, pantryItemId: UUID? = nil, amount: Double, unit: String) {
+        self.catalogId = catalogId; self.pantryItemId = pantryItemId; self.amount = amount; self.unit = unit
+    }
+}
+
+/// A reviewed recipe, ready for the one save every route ends in.
+public struct NewRecipe: Equatable, Sendable {
+    public var name: String
+    public var category: String
+    public var servings: Int
+    public var steps: [String]
+    public var sourceUrl: String?
+    public var lines: [NewRecipeLine]
+    public init(name: String, category: String, servings: Int, steps: [String] = [], sourceUrl: String? = nil, lines: [NewRecipeLine]) {
+        self.name = name; self.category = category; self.servings = servings; self.steps = steps; self.sourceUrl = sourceUrl; self.lines = lines
+    }
+}
+
+// MARK: - Receptműhely (one stateless chat turn)
+
+public struct WorkshopLine: Equatable, Sendable {
+    /// pantry | estimate
+    public var source: String
+    public var pantryItemId: UUID?
+    public var name: String
+    public var amount: Double
+    public var unit: String
+    public init(source: String, pantryItemId: UUID? = nil, name: String, amount: Double, unit: String) {
+        self.source = source; self.pantryItemId = pantryItemId; self.name = name; self.amount = amount; self.unit = unit
+    }
+}
+
+public struct WorkshopDraft: Equatable, Sendable {
+    public var name: String
+    public var category: String
+    public var servings: Int
+    public var steps: [String]
+    public var lines: [WorkshopLine]
+    public init(name: String, category: String, servings: Int, steps: [String], lines: [WorkshopLine]) {
+        self.name = name; self.category = category; self.servings = servings; self.steps = steps; self.lines = lines
+    }
+}
+
+public struct WorkshopChatMessage: Equatable, Sendable {
+    public var fromUser: Bool
+    public var text: String
+    public init(fromUser: Bool, text: String) { self.fromUser = fromUser; self.text = text }
+}
+
+public struct WorkshopReply: Equatable, Sendable {
+    public var reply: String
+    public var draft: WorkshopDraft
+    public init(reply: String, draft: WorkshopDraft) { self.reply = reply; self.draft = draft }
 }
 
 public enum RecipeImportSource: Sendable, Equatable {
@@ -379,6 +488,10 @@ public struct ImportedLine: Equatable, Sendable {
     public var confidence: Double
     public var needsReview: Bool
     public var sourceText: String?
+    public init(name: String, amount: Double, unit: String, catalogId: UUID? = nil, confidence: Double, needsReview: Bool, sourceText: String? = nil) {
+        self.name = name; self.amount = amount; self.unit = unit; self.catalogId = catalogId; self.confidence = confidence
+        self.needsReview = needsReview; self.sourceText = sourceText
+    }
 }
 
 /// A read-only recipe preview: nothing is written until the owner confirms.
@@ -390,6 +503,13 @@ public struct RecipeImportDraft: Equatable, Sendable {
     public var lines: [ImportedLine]
     public var sourceUrl: String?
     public var needsReview: Bool
+    /// The weight of the finished dish when the source states it.
+    public var cookedWeightG: Double?
+    public init(name: String, category: String, servings: Int, steps: [String] = [], lines: [ImportedLine], sourceUrl: String? = nil,
+                needsReview: Bool = false, cookedWeightG: Double? = nil) {
+        self.name = name; self.category = category; self.servings = servings; self.steps = steps; self.lines = lines
+        self.sourceUrl = sourceUrl; self.needsReview = needsReview; self.cookedWeightG = cookedWeightG
+    }
 }
 
 public struct PantryRow: Equatable, Sendable {
