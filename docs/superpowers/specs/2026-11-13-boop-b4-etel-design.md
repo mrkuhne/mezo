@@ -207,7 +207,9 @@ A line whose item carries a sensitivity or a NOVA 3–4 flag shows its quiet bad
 
 ### 6.4 `Receptek`
 
-The library as cards (photo, name, servings, kcal/protein per serving, the fit badge, sensitivity badges). A
+The library is **one recipe per row** (owner, 2026-11-13, after seeing the spike): a thumbnail, the full name with
+its sensitivity badge beside it, and kcal / protein / servings in full underneath. A two-column card grid cut both
+the name and the numbers. A
 recipe page shows its ingredients, its steps (new), its score breakdown and its log history, and logs it in one
 tap. Three ways in, all ending in a reviewed draft: **link**, **fotó** (a recipe photographed from a book or
 screen) and **Receptműhely** (chat; Boop proposes under the owner's rules). Imports show a per-ingredient review
