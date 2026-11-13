@@ -7,12 +7,14 @@ import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.api.dto.RecipeMezoFit;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -36,6 +38,14 @@ public interface RecipeMapper {
         e.setTags(r.getTags() == null ? List.of() : r.getTags());
         e.setStarred(Boolean.TRUE.equals(r.getStarred()));
         e.setRole(fromWireRole(r.getRole()));
+        // Absent = leave as stored (an older editor does not know these fields and must not wipe
+        // them on a full-replace save); an empty steps list clears the method.
+        if (r.getSteps() != null) {
+            e.setSteps(r.getSteps().isEmpty() ? null : List.copyOf(r.getSteps()));
+        }
+        if (r.getSourceUrl() != null) {
+            e.setSourceUrl(r.getSourceUrl().isBlank() ? null : r.getSourceUrl().strip());
+        }
     }
 
     /** Wire (snake_case) -> MealRole. Null/blank means the client omitted it: STANDARD.
@@ -68,11 +78,22 @@ public interface RecipeMapper {
                 .score(e.getFitScore())                       // null -> pending sparkle on FE
                 .fitsFor(e.getFitsFor() == null ? List.of() : e.getFitsFor())
                 .build())
-            .timesLogged(0)        // derived from logging — out of scope this slice
+            .timesLogged(0)        // PRE-EXISTING web-contract placeholder, always 0 (a recipe->meal read would close a slice cycle); Boop does not read it
             .avgScore(BigDecimal.ZERO)
             .lastLogged("—")
             .ingredients(lines)
+            .steps(e.getSteps() == null ? List.of() : e.getSteps())
+            .sourceUrl(e.getSourceUrl())
+            .hasImage(e.getImageId() != null)
+            .allergens(e.getAllergens() == null ? null : wire(e.getAllergens()))
             .build();
+    }
+
+    /** Domain allergen states as the contract's lowercase map. */
+    private static Map<String, String> wire(Map<String, AllergenState> states) {
+        Map<String, String> out = new LinkedHashMap<>();
+        states.forEach((key, state) -> out.put(key, state.wire()));
+        return out;
     }
 
     default RecipeIngredientResponse toLineResponse(RecipeIngredientEntity l) {

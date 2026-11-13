@@ -114,6 +114,8 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     @State private var toastAction: String?
     @Environment(\.openURL) private var openURL
     @Environment(\.openAccount) private var openAccount
+    @Environment(\.openMeal) private var openMeal
+    @Environment(\.foodClient) private var food
     /// B3: the hero's check-in pill opens the full-screen check-in (the evening one, the close).
     @Environment(RitmusRouter.self) private var router: RitmusRouter?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
@@ -248,7 +250,7 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
                 .contentTransition(.opacity)
             LensActionRow(hue: selected, action: action, breathing: breathing, sessionTitle: brief.day.session?.title,
                           motion: motion, muted: voice?.muted ?? false,
-                          onPrimary: primary, onMenu: { show(soonToast($0)) }, onChip: { show(soonToast($0.title)) },
+                          onPrimary: primary, onMenu: { show(soonToast($0)) }, onChip: quick,
                           onSpeak: speak, onToggleMute: { voice?.muted.toggle() })
                 .nkHeroEnd()       // the compact capsule arrives as this row slides under the top bar
                 .padding(.top, 4)
@@ -264,12 +266,31 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         toast = text
     }
 
+    /// Fuel's quick actions: the composer, a coffee to compute, or water straight onto the day.
+    private func quick(_ chip: FuelChip) {
+        switch chip.action {
+        case .compose: openMeal(MealStart())
+        case .coffee: openMeal(MealStart(entrance: .text, text: "kávé"))
+        case .water(let ml):
+            guard let food else { show("Most nem tudom elküldeni"); return }
+            Task { @MainActor in
+                do {
+                    try await food.water(ml: ml, date: BoopClock.now(), clientRef: UUID(), capturedAt: Date())
+                    show("Víz +\(ml) ml")
+                } catch {
+                    show("Nem sikerült elküldeni — próbáld újra")
+                }
+            }
+        }
+    }
+
     private func primary() {
         if breathing { stopBreath(); return }
         guard let action else { speak(); return }
         switch action.kind {
         case .breath: startBreath()
         case .bedtime: toggleReminder()
+        case .photo: openMeal(MealStart(entrance: .photo))
         case .checkin: router?.open(.checkin)
         case .eveningCheckin: router?.open(.este)
         default: show(soonToast(soonName(action.kind)))

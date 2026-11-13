@@ -69,6 +69,30 @@ class RecipeServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testCreateAndUpdate_shouldRollUpIngredientAllergens_whenLinesChange() {
+        PantryItemEntity cheese = food("Sajt");
+        cheese.getCatalog().setAllergens(java.util.Map.of(
+            "milk", io.mrkuhne.mezo.feature.nutrition.service.AllergenState.CONTAINS));
+        PantryItemEntity bread = food("Kenyér");
+        bread.getCatalog().setAllergens(java.util.Map.of(
+            "gluten", io.mrkuhne.mezo.feature.nutrition.service.AllergenState.TRACES));
+
+        RecipeResponse created = service.create(owner,
+            req("Melegszendvics", line(cheese.getId(), "50", "g"), line(bread.getId(), "80", "g")));
+        assertThat(created.getAllergens()).containsEntry("milk", "contains").containsEntry("gluten", "traces");
+
+        entityManager.flush();
+        // The stored jsonb form is the lowercase wire value (pinned: importers write the same form).
+        Object stored = entityManager.createNativeQuery("select allergens::text from recipe where id = :id")
+            .setParameter("id", created.getId()).getSingleResult();
+        assertThat(stored.toString()).contains("\"contains\"").doesNotContain("CONTAINS");
+
+        service.update(owner, created.getId(), req("Melegszendvics", line(bread.getId(), "80", "g")));
+        assertThat(service.get(owner, created.getId()).getAllergens())
+            .containsOnlyKeys("gluten");
+    }
+
+    @Test
     void testCreate_shouldSnapshotAndRollUpMacros_whenValidLines() {
         PantryItemEntity chicken = food("Csirkemell"); // 110 kcal/100g, 23 P, 0 C, 1.5 F, NOVA 1
 

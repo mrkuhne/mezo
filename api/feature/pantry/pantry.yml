@@ -218,6 +218,12 @@ components:
         catalogId: { type: string, format: uuid }
         sharedFrom: { allOf: [ { $ref: '#/components/schemas/PantrySharedFrom' } ], nullable: true }
         catalogEditable: { type: boolean }
+        allergens:
+          type: object
+          nullable: true
+          description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
+          additionalProperties: { type: string }
+        barcode: { type: string, nullable: true, description: 'EAN/UPC of the product, when known' }
     SupplementStashResponse:
       type: object
       required: [id, name, brand, type, category, dose, form, protocol, timing, taken, macros, catalogId, catalogEditable]
@@ -304,6 +310,12 @@ components:
         brand: { type: string, nullable: true }
         source: { type: string, nullable: true }
         category: { type: string, nullable: true }
+        allergens:
+          type: object
+          nullable: true
+          description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
+          additionalProperties: { type: string }
+        barcode: { type: string, nullable: true, description: 'EAN/UPC of the product, when known' }
     PantrySharedFrom:
       type: object
       required: [authorName]
@@ -339,11 +351,21 @@ components:
         caffeine: { type: boolean, nullable: true }
         # null = loader master row; set = the user who authored it
         authorName: { type: string, nullable: true }
+        allergens:
+          type: object
+          nullable: true
+          description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
+          additionalProperties: { type: string }
+        barcode: { type: string, nullable: true, description: 'EAN/UPC of the product, when known' }
     PantryLookupResponse:
       type: object
       required: [results]
       properties:
         results: { type: array, items: { $ref: '#/components/schemas/PantryLookupResult' } }
+        source:
+          type: string
+          enum: [OFF, CATALOG, NONE]
+          description: 'Where the results came from: OFF (OpenFoodFacts), CATALOG (our own row for that barcode — OFF is not called) or NONE (nothing found; results is empty).'
     PantryLookupResult:
       type: object
       required: [name, per, unit]
@@ -364,6 +386,13 @@ components:
         saturatedFatG: { type: number, nullable: true }
         # OFF nova_group passthrough (deterministic — no AI)
         nova: { type: integer, minimum: 1, maximum: 4, nullable: true }
+        allergens:
+          type: object
+          nullable: true
+          description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
+          additionalProperties: { type: string }
+        servingSize: { type: string, nullable: true, description: 'OFF serving_size label, e.g. "40 g"' }
+        servingQuantity: { type: number, nullable: true, description: 'OFF serving_quantity (g or ml)' }
     PantryScrapeRequest:
       type: object
       required: [url]
@@ -421,6 +450,11 @@ components:
         origin: { type: string, nullable: true, pattern: '^photo$' }
         priceHuf: { type: integer, nullable: true }
         priceUnit: { type: string, nullable: true }
+        allergens:
+          type: object
+          nullable: true
+          description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
+          additionalProperties: { type: string }
     PantryImportEntryResponse:
       type: object
       required: [id, source, when, items, status, ofWhat]

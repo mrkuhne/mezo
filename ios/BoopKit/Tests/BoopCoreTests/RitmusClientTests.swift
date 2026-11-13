@@ -41,7 +41,7 @@ final class RitmusClientTests {
         #expect(b["date"] as? String == date)
         #expect(b["slotTime"] as? String == "10:00")
         #expect(b["state"] as? String == "done")
-        #expect(b["capturedAt"] as? String == "2026-11-10T15:02:00Z")
+        #expect(sameInstant(b["capturedAt"], "2026-11-10T15:02:00Z"))
         #expect(b["energy"] as? Int == 6 && b["mood"] as? Int == 7)
         #expect(b["dayRating"] as? Int == 8)   // wire item `day`
         #expect(b["askedItems"] as? [String] == ["energy", "mood", "day"])
@@ -68,7 +68,7 @@ final class RitmusClientTests {
         #expect(result == .sent(nil))
         let b = try body(op: "saveCheckIn")
         #expect(b["slotTime"] as? String == "14:00" && b["energy"] as? Int == 4 && b["note"] as? String == "fáradt")
-        #expect(b["capturedAt"] as? String == "2026-11-10T15:02:00Z")
+        #expect(sameInstant(b["capturedAt"], "2026-11-10T15:02:00Z"))
     }
 
     @Test func evening20NeverSentByCheckIn() async {
@@ -149,7 +149,7 @@ final class RitmusClientTests {
         #expect(second["clientRef"] as? String == closeRef.uuidString)
         #expect(second["journalClientRef"] as? String == journalRef.uuidString)
         #expect(first["dayRating"] as? Int == 4 && first["goalOutcome"] as? String == "done")
-        #expect(first["capturedAt"] as? String == "2026-11-10T15:02:00Z")
+        #expect(sameInstant(first["capturedAt"], "2026-11-10T15:02:00Z"))
         #expect((first["planGoals"] as? [[String: Any]])?.first?["title"] as? String == "Edzés")
         #expect(stub.sent[0].path.hasSuffix("/api/day-close/2026-11-10"))
     }
@@ -257,7 +257,7 @@ final class RitmusClientTests {
         let b = try body(op: "saveCheckIn")
         #expect(b["note"] as? String == "Leeresztettem." && b["slotTime"] as? String == "14:00")
         #expect(b["energy"] as? Int == 5 && b["mood"] as? Int == 6 && b["quickExit"] as? Bool == true)
-        #expect(b["capturedAt"] as? String == "2026-11-10T15:02:00Z" && b["date"] as? String == date)
+        #expect(sameInstant(b["capturedAt"], "2026-11-10T15:02:00Z") && b["date"] as? String == date)
         #expect((b["snapshot"] as? [String: Any])?["hrBpm"] as? Int == 78)
         #expect(!FileManager.default.fileExists(atPath: audio.path))
     }
@@ -466,4 +466,10 @@ final class RitmusClientTests {
         #expect(s.hrBpm == 74 && s.hrvMs == 41 && s.hrvUsualMs == 50 && s.steps == 4_860 && s.sleepMinutes == 432)
         #expect(s.source == "com.apple.health")
     }
+}
+
+/// The wire carries the phone's own UTC offset (`+01:00`, not `Z`) — the same instant either way.
+private func sameInstant(_ wire: Any?, _ iso: String) -> Bool {
+    guard let text = wire as? String, let a = ISO8601DateFormatter().date(from: text), let b = ISO8601DateFormatter().date(from: iso) else { return false }
+    return a == b
 }

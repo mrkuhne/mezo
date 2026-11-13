@@ -397,6 +397,12 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MEAL_SENTINEL =
             Pattern.compile("\\[fake-meal:(\\{.*})]", Pattern.DOTALL);
 
+    /** Scripted recipe import (Boop B4): {@code [fake-recipe-import:{json}]} planted in the page text, the
+     *  pasted text or — decoded from the bytes — a photo; the payload is returned verbatim. Greedy,
+     *  like the workshop: the payload nests arrays and objects. */
+    public static final Pattern RECIPE_IMPORT_SENTINEL =
+            Pattern.compile("\\[fake-recipe-import:(\\{.*})]", Pattern.DOTALL);
+
     /** Scripted workshop turn (mezo-92pb): {@code [fake-workshop:{json}]} payload returned verbatim. */
     private static final Pattern WORKSHOP_SENTINEL =
             Pattern.compile("\\[fake-workshop:(\\{.*})]", Pattern.DOTALL);
@@ -1297,6 +1303,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (mealCoach.find()) {
             return mealCoach.group(1);
         }
+        // Recipe import (Boop B4): sentinel planted in the page / pasted text; no sentinel -> prompt
+        // echo -> unparseable -> 502, as the ITs assert.
+        Matcher recipeImport = RECIPE_IMPORT_SENTINEL.matcher(userMessage);
+        if (recipeImport.find()) {
+            return recipeImport.group(1);
+        }
         // Receptműhely turn (mezo-92pb): sentinel planted in the user message is returned verbatim;
         // no sentinel -> prompt echo -> unparseable -> 502, as the ITs assert.
         Matcher workshop = WORKSHOP_SENTINEL.matcher(userMessage);
@@ -1340,9 +1352,14 @@ public class FakeCompanionLlm implements CompanionLlm {
         // image so the two-photo path is exercised; no sentinel -> prompt echo -> the caller's
         // parse fails -> 502, which is exactly the extraction-failure path ITs assert.
         for (InlineImage img : images) {
-            Matcher m = PHOTO_SENTINEL.matcher(new String(img.bytes(), StandardCharsets.UTF_8));
+            String decoded = new String(img.bytes(), StandardCharsets.UTF_8);
+            Matcher m = PHOTO_SENTINEL.matcher(decoded);
             if (m.find()) {
                 return m.group(1);
+            }
+            Matcher recipe = RECIPE_IMPORT_SENTINEL.matcher(decoded); // Boop B4 recipe photo
+            if (recipe.find()) {
+                return recipe.group(1);
             }
         }
         return complete(systemPrompt, userMessage);

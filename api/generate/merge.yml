@@ -15,7 +15,11 @@ inputs:
   - inputFile: ../feature/biometrics-profile/biometrics-profile.yml
   - inputFile: ../feature/pantry/pantry.yml
   - inputFile: ../feature/recipe/recipe.yml
+  - inputFile: ../feature/recipe/recipe-import.yml
+  - inputFile: ../feature/recipe/recipe-image.yml
   - inputFile: ../feature/meal/meal.yml
+  - inputFile: ../feature/meal/fuel-plan.yml
+  - inputFile: ../feature/meal/meal-photo.yml
   - inputFile: ../feature/medication/medication.yml
   - inputFile: ../feature/progression/progression.yml
   - inputFile: ../feature/fuel/fuel.yml
@@ -54,4 +58,5 @@ inputs:
   - inputFile: ../feature/boop/boop.yml
   - inputFile: ../feature/device/device.yml
   - inputFile: ../feature/dayclose/dayclose.yml
+  - inputFile: ../feature/sensitivity/sensitivity.yml
 output: ../openapi.yml

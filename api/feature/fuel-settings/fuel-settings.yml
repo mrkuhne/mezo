@@ -11,7 +11,7 @@ paths:
       summary: The fuel settings; config-default ghost when unset — never 404 (FuelSettings)
       responses:
         '200':
-          description: The settings (ghost 4 / 14:00 before the first save)
+          description: The settings (ghost 5 / 14:00 before the first save — 3 meals + 2 snacks, owner decision 21)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/FuelSettingsResponse' }
@@ -55,7 +55,9 @@ components:
           type: integer
           minimum: 3
           maximum: 6
-          description: Eating occasions per day — drives the planner's meal windows
+          description: >-
+            Eating occasions per day — drives the planner's meal windows. The default rhythm is 5
+            (3 meals + 2 snacks, owner decision 21).
         caffeineCutoff:
           type: string
           pattern: '^([01]\d|2[0-3]):[0-5]\d$'

@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info: { title: mezo meal-photo fragment, version: 1.0.0 }
+tags:
+  - name: MealPhoto
+    description: >-
+      The owner's own meal photos (Boop B4, decisions 14 and 19): kept on the server, served back only to the
+      owner, never auto-deleted — a delete per meal and one in bulk. One photo per meal; a new upload replaces
+      the old one. JPEG or PNG, at most 4 MB, checked by content type and by the actual bytes.
+paths:
+  /api/meal/{id}/photo:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [MealPhoto]
+      operationId: putMealPhoto
+      summary: Attach (or replace) the photo of a meal
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo: { type: string, format: binary }
+      responses:
+        '200':
+          description: The stored photo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MealPhotoResponse' }
+        '400': { description: 'Not a JPEG/PNG, corrupt, or over the 4 MB cap', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such meal (or not the caller''s)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    get:
+      tags: [MealPhoto]
+      operationId: getMealPhoto
+      summary: The photo of a meal (the stored bytes; Content-Type is the stored type)
+      responses:
+        '200':
+          description: The image
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such meal, or it has no photo', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [MealPhoto]
+      operationId: deleteMealPhoto
+      summary: Delete the photo of a meal (the bytes go with it; the meal stays)
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such meal, or it has no photo', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/meal/photos:
+    delete:
+      tags: [MealPhoto]
+      operationId: deleteAllMealPhotos
+      summary: Delete every meal photo of the caller (the meals stay; recipe images are not touched)
+      responses:
+        '204': { description: Deleted (also when there was nothing to delete) }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+components:
+  schemas:
+    MealPhotoResponse:
+      type: object
+      required: [bytes, width, height]
+      properties:
+        bytes: { type: integer, format: int64 }
+        width: { type: integer }
+        height: { type: integer }

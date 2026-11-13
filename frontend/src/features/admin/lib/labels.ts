@@ -84,6 +84,7 @@ export const FEATURE_LABELS: Record<string, Entry> = {
   // (a metrika/küszöb/XP soha nem változik); a guess iránya helyes volt, pontosítva.
   quest_flavor: { label: 'Küldetés-szöveg átírás', hint: 'napi küldetések szövegének társ-hangvételre igazítása' },
   recipe_breakdown: { label: 'Receptbontás' },
+  recipe_import: { label: 'Recept beolvasás', hint: 'recept kiolvasása weboldalból, fényképből vagy beillesztett szövegből' },
   recipe_workshop: { label: 'Receptműhely' },
   // VERIFIED: SleepShotService — a Sleep Cycle app KÉPERNYŐKÉPÉBŐL olvassa ki az alvás adatait
   // (lefekvés/ébredés/fázisok) egy multimodális hívással, majd vázlatot készít belőle.

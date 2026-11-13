@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.pantry.entity;
 
+import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -8,7 +9,9 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -123,6 +126,16 @@ public class PantryCatalogEntity {
     private String form;
 
     private Boolean caffeine;
+
+    /** EU-14 key -> state (spec §7.1). Empty = nothing declared; a missing key is unknown, never free-of. */
+    @NotNull
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    private Map<String, AllergenState> allergens = new HashMap<>();
+
+    /** The product's EAN/UPC when known — unique per owner among live rows. */
+    @Column(length = 32)
+    private String barcode;
 
     public boolean isMaster() {
         return createdBy == null;

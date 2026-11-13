@@ -4,6 +4,8 @@ import OSLog
 /// What a queued write is; Task 7's sender maps each kind to its API operation.
 public enum OutboxKind: String, Codable, CaseIterable, Sendable {
     case checkIn, checkInNote, goal, goalRemove, journal, voice, dayClose, chatQuestion
+    /// A meal captured without the net (B4): the sender computes the draft, it never saves anything.
+    case mealDraft
 }
 
 /// One pending write. `id` is the client ref the server keys idempotency on, so a resend never duplicates.
@@ -116,9 +118,15 @@ public actor Outbox {
     /// Appends the item; an item with the same id is replaced in place (its newer values go out, in its old position).
     /// Throws when the queue cannot be written to disk — the item is still queued for this run, but would not survive
     /// a relaunch, so the capture flow can say so.
-    public func enqueue(_ item: OutboxItem) async throws {
+    /// `rollbackOnFailure`: a capture that could not be written down is taken back out of memory too, so the caller's
+    /// "could not keep it" is true (a meal capture must not live on in RAM and surface later).
+    public func enqueue(_ item: OutboxItem, rollbackOnFailure: Bool = false) async throws {
+        let before = items
         if let i = items.firstIndex(where: { $0.id == item.id }) { items[i] = item } else { items.append(item) }
-        do { try persist() } catch { await publishFailures(); throw error }
+        do { try persist() } catch {
+            if rollbackOnFailure { items = before }
+            await publishFailures(); throw error
+        }
         await publishFailures()
     }
 
@@ -192,6 +200,8 @@ public actor Outbox {
         case .checkInNote, .journal, .voice, .dayClose: ("chain|\(item.date)", true)
         case .goal, .goalRemove: ("goal|\(item.date)", true)
         case .chatQuestion: ("chat|\(item.date)", true)
+        // Every captured meal stands alone: one waiting never holds another back.
+        case .mealDraft: ("meal|\(item.id.uuidString)", false)
         }
     }
 

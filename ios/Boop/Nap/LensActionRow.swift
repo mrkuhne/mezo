@@ -10,10 +10,16 @@ func lensPill(_ action: LensAction?) -> MaiPill {
     return MaiPill(glyph: action.glyph, title: action.title, speaks: false)
 }
 
-/// Fuel's quick-log chips under the pills (logging itself lands in S4).
-struct FuelChip: Equatable { let title, glyph: String }
-let fuelChips = [FuelChip(title: "Szokásos reggeli", glyph: "bowl-cream"), FuelChip(title: "Kávé", glyph: "drop-sky"),
-                 FuelChip(title: "Víz +250 ml", glyph: "drop-sky")]
+/// Fuel's quick actions under the pills. Each one does its thing (B4): the composer open, the composer with a coffee
+/// already typed, or a glass of water straight onto the day.
+struct FuelChip: Equatable {
+    enum Action: Equatable { case compose, coffee, water(Int) }
+    let title, glyph: String
+    let action: Action
+}
+let fuelChips = [FuelChip(title: "Étel rögzítése", glyph: "bowl-cream", action: .compose),
+                 FuelChip(title: "Kávé", glyph: "drop-sky", action: .coffee),
+                 FuelChip(title: "Víz +250 ml", glyph: "drop-sky", action: .water(250))]
 
 /// Mozgás pill's long-press menu.
 func workoutMenu(sessionTitle: String?) -> [String] {

@@ -9,6 +9,7 @@ struct RootView: View {
     @State private var link: HealthLink?
     @State private var morning: MorningStore?
     @State private var ritmus: RitmusEnvironment?
+    @State private var food: FoodClient?
 
     var body: some View {
         Group {
@@ -24,6 +25,7 @@ struct RootView: View {
         .environment(link)
         .environment(morning)
         .environment(ritmus)
+        .environment(\.foodClient, food)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
@@ -38,7 +40,7 @@ struct RootView: View {
         }
         // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
         // the session's client already carries another token, or none).
-        guard let me else { ritmus?.retire(); link = nil; morning = nil; ritmus = nil; BackgroundSyncHost.ritmus = nil; return }
+        guard let me else { ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; BackgroundSyncHost.ritmus = nil; return }
         if link?.userId != me.id {
             ritmus?.retire()
             let signOut: @MainActor () -> Void = { [session] in session.signOut() }
@@ -48,6 +50,7 @@ struct RootView: View {
                 link = HealthLink(client: preview, userId: me.id)
                 morning = MorningStore(client: preview, onUnauthorized: signOut)
                 ritmus = .preview(client: preview)
+                food = FoodClient(client: preview)
                 BackgroundSyncHost.ritmus = ritmus
                 return
             }
@@ -55,6 +58,7 @@ struct RootView: View {
             link = HealthLink(client: session.client, userId: me.id)
             morning = MorningStore(client: session.client, onUnauthorized: signOut)
             ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id)
+            food = FoodClient(client: session.client)
             BackgroundSyncHost.ritmus = ritmus
         }
         if case .ready = state { Task { await link?.syncIfStale() } }

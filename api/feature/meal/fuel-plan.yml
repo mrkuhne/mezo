@@ -1,0 +1,160 @@
+openapi: 3.0.3
+info: { title: mezo fuel-plan fragment, version: 1.0.0 }
+tags:
+  - name: FuelPlan
+    description: >-
+      The server-computed day plan (Boop B4): the day's meal windows with their budgets and state,
+      what is left of the budget, and one next-meal tip. Deterministic — no LLM produces any number
+      or any sentence here.
+paths:
+  /api/fuel/plan/{date}:
+    get:
+      tags: [FuelPlan]
+      operationId: getFuelPlan
+      summary: The day's meal windows, the remaining budget and the next-meal tip (FuelPlan)
+      parameters:
+        - { name: date, in: path, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: The day plan
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FuelPlanResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/fuel/usuals:
+    get:
+      tags: [FuelPlan]
+      operationId: getUsualMeals
+      summary: The owner's "szokásosak" — his recurring meals, ranked (UsualMealRanker over the last 28 days)
+      description: >-
+        The window asked for first, then how often a meal recurs, then how recently. Rows fold by window and
+        normalised name; each carries its latest occurrence's name. No history is an empty list, never an invented
+        row. A row carries no energy: the history read does not roll items up, and nothing is fabricated here.
+      parameters:
+        - name: slot
+          in: query
+          required: false
+          description: The window the caller is in now; its rows rank first. Absent or unknown ranks by recurrence alone.
+          schema: { type: string, enum: [breakfast, lunch, dinner, snack] }
+      responses:
+        '200':
+          description: The ranked usual meals (at most 6)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsualMealsResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    UsualMealsResponse:
+      type: object
+      required: [usuals]
+      properties:
+        usuals:
+          type: array
+          items: { $ref: '#/components/schemas/UsualMealResponse' }
+    UsualMealResponse:
+      type: object
+      required: [key, title, slot, count, lastLoggedAt]
+      properties:
+        key: { type: string, description: 'Window and normalised name — stable across reads' }
+        title: { type: string, description: 'The latest occurrence''s own name' }
+        slot: { type: string, enum: [breakfast, lunch, dinner, snack] }
+        count: { type: integer, description: 'How many times it was logged in the last 28 days' }
+        lastLoggedAt: { type: string, format: date-time }
+        mealId: { type: string, format: uuid, nullable: true, description: 'The latest occurrence this row stands for (the meal the items below were read from)' }
+        kcal: { type: integer, nullable: true, description: 'The latest occurrence''s energy, summed from its items; null when its items cannot be read' }
+        items:
+          type: array
+          description: >-
+            The latest occurrence's own lines (frozen snapshots), so a usual meal can be logged as it was eaten — no
+            re-estimate. Empty when the meal carried no items; the client then falls back to the name alone and says so.
+          items: { $ref: '#/components/schemas/UsualMealItem' }
+    UsualMealItem:
+      type: object
+      required: [source, amount, unit, name]
+      properties:
+        source: { type: string, enum: [recipe, pantry, estimate] }
+        recipeId: { type: string, format: uuid, nullable: true }
+        pantryItemId: { type: string, format: uuid, nullable: true }
+        amount: { type: number }
+        unit: { type: string }
+        name: { type: string }
+        per: { type: number, nullable: true }
+        basisUnit: { type: string, nullable: true }
+        kcal: { type: number, nullable: true, description: 'Per `per` of `basisUnit`, as snapshotted' }
+        proteinG: { type: number, nullable: true }
+        carbsG: { type: number, nullable: true }
+        fatG: { type: number, nullable: true }
+        fiberG: { type: number, nullable: true }
+        sugarG: { type: number, nullable: true }
+        saltG: { type: number, nullable: true }
+        saturatedFatG: { type: number, nullable: true }
+        nova: { type: integer, nullable: true }
+    FuelPlanResponse:
+      type: object
+      required: [date, windows]
+      properties:
+        date: { type: string, format: date }
+        windows:
+          type: array
+          description: Every window of the day in clock order, logged and open alike
+          items: { $ref: '#/components/schemas/FuelPlanWindow' }
+        remaining:
+          allOf: [{ $ref: '#/components/schemas/Macros' }]
+          nullable: true
+          description: >-
+            Target − consumed − the kcal of the day's skipped windows. Negative when the day went
+            over; null on a kímélő (GUIDANCE) day, which is not judged on kcal at all.
+        tip:
+          allOf: [{ $ref: '#/components/schemas/FuelPlanTip' }]
+          nullable: true
+          description: Absent late in the day, after a skip, and when nothing is left to offer
+    FuelPlanWindow:
+      type: object
+      required: [slot, kind, label, from, to, state, loggedMealIds]
+      properties:
+        slot: { type: string, enum: [breakfast, lunch, dinner, snack] }
+        kind: { type: string, enum: [meal, snack] }
+        label: { type: string, description: 'The window''s Hungarian name (Reggeli, Tízórai, …)' }
+        from: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+        to: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+        budget:
+          allOf: [{ $ref: '#/components/schemas/Macros' }]
+          nullable: true
+          description: This window's share of the day; null on a kímélő (GUIDANCE) day
+        state: { type: string, enum: [done, now, pending, missed, skipped] }
+        loggedMealIds:
+          type: array
+          description: The meals logged into this window, earliest first; empty while it is open
+          items: { type: string, format: uuid }
+        suggestion:
+          allOf: [{ $ref: '#/components/schemas/FuelPlanSuggestion' }]
+          nullable: true
+          description: Only on an open window — never on a done or skipped one
+    FuelPlanSuggestion:
+      type: object
+      required: [kind, text, reason]
+      properties:
+        kind:
+          type: string
+          enum: [recipe, ingredients]
+          description: >-
+            ingredients is the honest fallback while the recipe library is small (owner decision
+            16) — a window no recipe fits shows an ingredient-level tip, never an empty row.
+        recipeId: { type: string, format: uuid, nullable: true }
+        text: { type: string }
+        reason: { type: string, description: 'One clause saying why this one — an offer, never a verdict' }
+    FuelPlanTip:
+      type: object
+      required: [text, reason]
+      properties:
+        text: { type: string }
+        reason: { type: string }

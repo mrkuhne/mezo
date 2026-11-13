@@ -216,7 +216,17 @@ public class RuleVerdicts {
         return "Ma este " + hhmm(bed) + " körül bújj ágyba, hogy meglegyen a " + duration(d.sleepTargetMin()) + " alvás.";
     }
 
+    /**
+     * The next open meal window, named. Boop B4 (mezo-r36n9.14): the day now carries the day
+     * plan's planned-but-unlogged windows as {@code logged = false} rows
+     * ({@code BoopDayAssembler.meals}), so this branch — unreachable while every row was a logged
+     * meal — is what normally fires. A window the owner skipped never reaches the list at all, and
+     * after {@value #LAST_MEAL_TIP} there is no tip: an offer that late would only nag.
+     */
     private static String nextMealTip(BoopDay d, LocalTime now) {
+        if (!now.isBefore(LAST_MEAL_TIP)) {
+            return null;
+        }
         int gap = d.proteinTarget() > 0 ? d.proteinTarget() - d.proteinG() : 0;
         String protein = gap > 0 ? " Még " + gap + " g fehérje hiányzik a mai célból." : "";
         BoopDay.Meal next = (d.meals() == null ? List.<BoopDay.Meal>of() : d.meals()).stream()
@@ -226,7 +236,7 @@ public class RuleVerdicts {
         if (next != null) {
             return "Következik: " + next.title() + ", " + hhmm(next.time()) + "." + protein;
         }
-        if (gap > 0 && now.isBefore(LAST_MEAL_TIP)) {
+        if (gap > 0) {
             return "Még " + gap + " g fehérje hiányzik ma, a következő étkezésnél figyelj rá.";
         }
         return null;

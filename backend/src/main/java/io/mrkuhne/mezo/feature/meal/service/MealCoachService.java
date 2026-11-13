@@ -113,7 +113,19 @@ public class MealCoachService {
             ahhoz a fajtához illő, konkrét, kielégítő opció legyen (pl. édesre: joghurt bogyós
             gyümölccsel), ne általános "egyél egészségesebben"; "bármit" esetén a teltségre fókuszálj.
           - emésztés: 4 vagy alatta nehéz, puffadt gyomrot jelent — megemlítheted a nehezebb,
-            zsírosabb tételeket, de SOHA ne diagnosztizálj és ne nevezz meg ételérzékenységet.
+            zsírosabb tételeket, de SOHA ne diagnosztizálj, és egy panaszt SOHA ne tulajdoníts
+            egyetlen tételnek vagy érzékenységnek sem.
+        - Ételérzékenységet CSAK az ÉRZÉKENYSÉGEK listában szereplő tételekről nevezz meg, azon a
+          néven és szinten, ahogy a felhasználó rögzítette (pl. „a laktózt kerülöd, ezt
+          rögzítetted”). Ami nincs a listán, arról ne találj ki újat és ne sejtess semmit;
+          „nincs rögzítve” esetén egyet sem nevezz meg. A tétel összetételét ne találgasd; azt
+          SOHA ne állítsd, hogy valami mentes valamitől. Ez nem orvosi diagnózis: SOHA ne
+          diagnosztizálj, csak a rögzítettet mondd ki, nyugodt, ítélkezés nélküli hangon.
+        - FELDOLGOZOTTSÁG: a tagline, summary és improve szövegben csak akkor szólj a
+          feldolgozottságról, ha a prompt az étkezésnél ilyen jelzést ad; akkor is legfeljebb EGY
+          halk mondat (pl. „Ebben a tányérban a kalória nagyobb része feldolgozott tételekből
+          jön.”), tanács és ítélet nélkül. Jelzés nélkül ezekben ne említsd; a dimensionNotes
+          "nova" jegyzetét ez a szabály nem érinti.
         - Minden kapott mealId-hoz pontosan egy objektum tartozzon.
         """;
 

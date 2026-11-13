@@ -52,7 +52,12 @@ struct NapView: View {
                     MaiView(brief: brief) { ctx in
                         cards(brief, morning, ctx)
                     } drill: { hue, ctx in
-                        MaDrill(hue: hue, brief: morning.brief ?? brief, store: morning, ctx: ctx, desk: desk) { sheet = DetailSheet($0) }
+                        if hue == .fuel {
+                            // Fuel's room is the food room (B4): its own tabs, its own data.
+                            EtelRoom()
+                        } else {
+                            MaDrill(hue: hue, brief: morning.brief ?? brief, store: morning, ctx: ctx, desk: desk) { sheet = DetailSheet($0) }
+                        }
                     } sheets: { ctx in
                         // Read both flags here so the page re-renders when they flip (a plain binding passed down
                         // left presentations unpresented, see the connect cover below).

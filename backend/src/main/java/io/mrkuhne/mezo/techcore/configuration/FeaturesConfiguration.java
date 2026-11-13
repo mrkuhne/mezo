@@ -128,6 +128,12 @@ public class FeaturesConfiguration {
      *  (the RecipeWorkshopLlm adapter lives there). */
     public static final String RECIPE_WORKSHOP_SWITCH = "mezo.feature.recipe-workshop.enabled";
 
+    /** Recipe import from a URL, photo or pasted text (Boop B4): off => the controller bean is gone
+     *  (404). A page's own structured recipe needs no AI; every AI read additionally needs
+     *  COMPANION_SWITCH (the adapter lives there), and the URL fetch needs PANTRY_SCRAPE_SWITCH
+     *  (the SSRF-guarded WebPageClient) — a missing piece degrades to a clean 503. */
+    public static final String RECIPE_IMPORT_SWITCH = "mezo.feature.recipe-import.enabled";
+
     /** Meal coach verdicts (mezo-mr4n): gates ONLY the LLM prose over a logged meal's score — the
      *  deterministic score and its breakdown stay on regardless. Verdicts additionally need
      *  COMPANION_SWITCH (the MealCoachLlm adapter lives there). */

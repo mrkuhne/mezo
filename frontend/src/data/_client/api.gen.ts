@@ -1716,6 +1716,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipe/import/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read a recipe from a web page (structured recipe first, AI fallback) into a review draft */
+        post: operations["importRecipeFromUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/import/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read a recipe from pasted text into a review draft */
+        post: operations["importRecipeFromText"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/import/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read a recipe from a photo (cookbook page, screenshot) into a review draft; the photo is not kept */
+        post: operations["importRecipeFromPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/{id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** The photo of a recipe (the stored bytes; Content-Type is the stored type) */
+        get: operations["getRecipeImage"];
+        put?: never;
+        /** Attach (or replace) the photo of a recipe */
+        post: operations["putRecipeImage"];
+        /** Delete the photo of a recipe (the bytes go with it; the recipe stays) */
+        delete: operations["deleteRecipeImage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fuel/day/{date}": {
         parameters: {
             query?: never;
@@ -1882,6 +1954,81 @@ export interface paths {
         post?: never;
         /** Soft-delete a water entry (undo) */
         delete: operations["deleteWaterLog"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/plan/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The day's meal windows, the remaining budget and the next-meal tip (FuelPlan) */
+        get: operations["getFuelPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/usuals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The owner's "szokásosak" — his recurring meals, ranked (UsualMealRanker over the last 28 days)
+         * @description The window asked for first, then how often a meal recurs, then how recently. Rows fold by window and normalised name; each carries its latest occurrence's name. No history is an empty list, never an invented row. A row carries no energy: the history read does not roll items up, and nothing is fabricated here.
+         */
+        get: operations["getUsualMeals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal/{id}/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** The photo of a meal (the stored bytes; Content-Type is the stored type) */
+        get: operations["getMealPhoto"];
+        put?: never;
+        /** Attach (or replace) the photo of a meal */
+        post: operations["putMealPhoto"];
+        /** Delete the photo of a meal (the bytes go with it; the meal stays) */
+        delete: operations["deleteMealPhoto"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete every meal photo of the caller (the meals stay; recipe images are not touched) */
+        delete: operations["deleteAllMealPhotos"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5779,6 +5926,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sensitivity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The sensitivity profile; empty list + default NOVA rule when unset — never 404 (Sensitivity) */
+        get: operations["getSensitivityProfile"];
+        /** Replace the sensitivity profile (per-user singleton) (Sensitivity) */
+        put: operations["setSensitivityProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -7965,6 +8130,12 @@ export interface components {
             catalogId: string;
             sharedFrom?: components["schemas"]["PantrySharedFrom"] | null;
             catalogEditable: boolean;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
+            /** @description EAN/UPC of the product, when known */
+            barcode?: string | null;
         };
         SupplementStashResponse: {
             /** Format: uuid */
@@ -8047,6 +8218,12 @@ export interface components {
             brand?: string | null;
             source?: string | null;
             category?: string | null;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
+            /** @description EAN/UPC of the product, when known */
+            barcode?: string | null;
         };
         PantrySharedFrom: {
             authorName: string;
@@ -8078,9 +8255,20 @@ export interface components {
             form?: string | null;
             caffeine?: boolean | null;
             authorName?: string | null;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
+            /** @description EAN/UPC of the product, when known */
+            barcode?: string | null;
         };
         PantryLookupResponse: {
             results: components["schemas"]["PantryLookupResult"][];
+            /**
+             * @description Where the results came from: OFF (OpenFoodFacts), CATALOG (our own row for that barcode — OFF is not called) or NONE (nothing found; results is empty).
+             * @enum {string}
+             */
+            source?: "OFF" | "CATALOG" | "NONE";
         };
         PantryLookupResult: {
             name: string;
@@ -8097,6 +8285,14 @@ export interface components {
             saltG?: number | null;
             saturatedFatG?: number | null;
             nova?: number | null;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
+            /** @description OFF serving_size label, e.g. "40 g" */
+            servingSize?: string | null;
+            /** @description OFF serving_quantity (g or ml) */
+            servingQuantity?: number | null;
         };
         PantryScrapeRequest: {
             url: string;
@@ -8149,6 +8345,10 @@ export interface components {
             origin?: string | null;
             priceHuf?: number | null;
             priceUnit?: string | null;
+            /** @description Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
         };
         PantryImportEntryResponse: {
             /** Format: uuid */
@@ -8190,8 +8390,16 @@ export interface components {
             fitsFor: string[];
         };
         RecipeIngredientRequest: {
-            /** Format: uuid */
-            pantryItemId: string;
+            /**
+             * Format: uuid
+             * @description The owner's own pantry row. Either this or catalogId is required.
+             */
+            pantryItemId?: string | null;
+            /**
+             * Format: uuid
+             * @description A catalog food to put on the owner's shelf at save time (a recipe import's confirmed match); used only when pantryItemId is absent.
+             */
+            catalogId?: string | null;
             amount: number;
             unit: string;
             note?: string | null;
@@ -8224,6 +8432,10 @@ export interface components {
              * @default standard
              */
             role: string;
+            /** @description Method steps. Absent = leave the stored steps as they are; an empty list clears them. */
+            steps?: string[] | null;
+            /** @description Where the recipe was imported from. Absent = leave as it is. */
+            sourceUrl?: string | null;
             ingredients: components["schemas"]["RecipeIngredientRequest"][];
         };
         RecipeResponse: {
@@ -8249,6 +8461,15 @@ export interface components {
             avgScore: number;
             lastLogged: string;
             ingredients: components["schemas"]["RecipeIngredientResponse"][];
+            /** @description Method steps in order; empty when none were saved */
+            steps?: string[];
+            sourceUrl?: string | null;
+            /** @description True when the owner has a photo on this recipe (GET /api/recipe/{id}/image); lists never need to probe for 404. */
+            hasImage?: boolean;
+            /** @description Derived rollup of the ingredients' allergen states (contains | traces | unknown); unknown propagates upward. null on recipes not yet recomputed. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
         };
         RecipeListResponse: {
             recipes: components["schemas"]["RecipeResponse"][];
@@ -8286,6 +8507,56 @@ export interface components {
         WorkshopTurnResponse: {
             reply: string;
             draft: components["schemas"]["WorkshopDraft"];
+        };
+        RecipeImportUrlRequest: {
+            url: string;
+        };
+        RecipeImportTextRequest: {
+            text: string;
+        };
+        /** @description What an ingredient row matched (by name). catalogId is null when it matched nothing; confidence is derived deterministically (never taken from the AI); needsReview is true for every unmatched or low-confidence row. */
+        RecipeImportMatch: {
+            /**
+             * Format: uuid
+             * @description The catalog food the row's name matched (null = matched nothing). A preview writes nothing: the food reaches the owner's shelf only when the recipe is saved with this id as the ingredient's catalogId.
+             */
+            catalogId?: string | null;
+            confidence: number;
+            needsReview: boolean;
+        };
+        /** @description A Receptműhely draft line plus what it matched and the text it was read from. */
+        RecipeImportLine: components["schemas"]["WorkshopDraftLine"] & {
+            match: components["schemas"]["RecipeImportMatch"];
+            /** @description The ingredient line as the page, photo or text wrote it */
+            sourceText?: string | null;
+            /** @description The matched catalog food's allergen states (lowercase key -> contains | traces | unknown). null when the row matched nothing: no data, never "free of". A key absent from the map also says nothing. */
+            allergens?: {
+                [key: string]: string;
+            } | null;
+        };
+        RecipeImportDraft: {
+            name: string;
+            category: string;
+            servings: number;
+            steps: string[];
+            lines: components["schemas"]["RecipeImportLine"][];
+            /** @description Where the recipe came from (URL route only) */
+            sourceUrl?: string | null;
+            /** @description Weight of the finished dish when the source states it */
+            cookedWeightG?: number | null;
+            /** @description True when the page carried a machine-readable recipe (no AI read it) */
+            structured?: boolean;
+            /** @description True when any ingredient row needs a look */
+            needsReview?: boolean;
+        };
+        RecipeImportResponse: {
+            result?: components["schemas"]["RecipeImportDraft"] | null;
+        };
+        RecipeImageResponse: {
+            /** Format: int64 */
+            bytes: number;
+            width: number;
+            height: number;
         };
         Macros: {
             kcal: number;
@@ -8502,6 +8773,16 @@ export interface components {
             title?: string | null;
             items: components["schemas"]["MealItemRequest"][];
             provenance?: components["schemas"]["MealProvenance"] | null;
+            /**
+             * Format: uuid
+             * @description Boop B4 - idempotency key (unique per owner); a retried request returns the existing row, never a second one.
+             */
+            clientRef?: string;
+            /**
+             * Format: date-time
+             * @description Boop B4 - the phone's offset-bearing instant of capture, stored as the record's own moment; its local date is the record's day. Absent = the existing behaviour. At most 7 days back (owner zone) and not in the future (5 min clock tolerance), else 400.
+             */
+            capturedAt?: string | null;
         };
         MealResponse: {
             /** Format: uuid */
@@ -8516,6 +8797,8 @@ export interface components {
             nutrients?: components["schemas"]["Nutrients"];
             score: components["schemas"]["MealScore"];
             items: components["schemas"]["MealItemResponse"][];
+            /** @description True when the owner has a photo on this meal (GET /api/meal/{id}/photo); lists never need to probe for 404. */
+            hasPhoto?: boolean;
         };
         MealAiDraftResponse: {
             /**
@@ -8647,6 +8930,16 @@ export interface components {
              */
             date?: string;
             amountMl: number;
+            /**
+             * Format: uuid
+             * @description Boop B4 - idempotency key (unique per owner); a retried request returns the existing row, never a second one.
+             */
+            clientRef?: string;
+            /**
+             * Format: date-time
+             * @description Boop B4 - the phone's offset-bearing instant of capture, stored as the record's own moment; its local date is the record's day. Absent = the existing behaviour. At most 7 days back (owner zone) and not in the future (5 min clock tolerance), else 400.
+             */
+            capturedAt?: string | null;
         };
         WaterLogResponse: {
             /** Format: uuid */
@@ -8654,6 +8947,103 @@ export interface components {
             /** Format: date */
             date: string;
             amountMl: number;
+        };
+        UsualMealsResponse: {
+            usuals: components["schemas"]["UsualMealResponse"][];
+        };
+        UsualMealResponse: {
+            /** @description Window and normalised name — stable across reads */
+            key: string;
+            /** @description The latest occurrence's own name */
+            title: string;
+            /** @enum {string} */
+            slot: "breakfast" | "lunch" | "dinner" | "snack";
+            /** @description How many times it was logged in the last 28 days */
+            count: number;
+            /** Format: date-time */
+            lastLoggedAt: string;
+            /**
+             * Format: uuid
+             * @description The latest occurrence this row stands for (the meal the items below were read from)
+             */
+            mealId?: string | null;
+            /** @description The latest occurrence's energy, summed from its items; null when its items cannot be read */
+            kcal?: number | null;
+            /** @description The latest occurrence's own lines (frozen snapshots), so a usual meal can be logged as it was eaten — no re-estimate. Empty when the meal carried no items; the client then falls back to the name alone and says so. */
+            items?: components["schemas"]["UsualMealItem"][];
+        };
+        UsualMealItem: {
+            /** @enum {string} */
+            source: "recipe" | "pantry" | "estimate";
+            /** Format: uuid */
+            recipeId?: string | null;
+            /** Format: uuid */
+            pantryItemId?: string | null;
+            amount: number;
+            unit: string;
+            name: string;
+            per?: number | null;
+            basisUnit?: string | null;
+            /** @description Per `per` of `basisUnit`, as snapshotted */
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
+            nova?: number | null;
+        };
+        FuelPlanResponse: {
+            /** Format: date */
+            date: string;
+            /** @description Every window of the day in clock order, logged and open alike */
+            windows: components["schemas"]["FuelPlanWindow"][];
+            /** @description Target − consumed − the kcal of the day's skipped windows. Negative when the day went over; null on a kímélő (GUIDANCE) day, which is not judged on kcal at all. */
+            remaining?: components["schemas"]["Macros"] | null;
+            /** @description Absent late in the day, after a skip, and when nothing is left to offer */
+            tip?: components["schemas"]["FuelPlanTip"] | null;
+        };
+        FuelPlanWindow: {
+            /** @enum {string} */
+            slot: "breakfast" | "lunch" | "dinner" | "snack";
+            /** @enum {string} */
+            kind: "meal" | "snack";
+            /** @description The window's Hungarian name (Reggeli, Tízórai, …) */
+            label: string;
+            from: string;
+            to: string;
+            /** @description This window's share of the day; null on a kímélő (GUIDANCE) day */
+            budget?: components["schemas"]["Macros"] | null;
+            /** @enum {string} */
+            state: "done" | "now" | "pending" | "missed" | "skipped";
+            /** @description The meals logged into this window, earliest first; empty while it is open */
+            loggedMealIds: string[];
+            /** @description Only on an open window — never on a done or skipped one */
+            suggestion?: components["schemas"]["FuelPlanSuggestion"] | null;
+        };
+        FuelPlanSuggestion: {
+            /**
+             * @description ingredients is the honest fallback while the recipe library is small (owner decision 16) — a window no recipe fits shows an ingredient-level tip, never an empty row.
+             * @enum {string}
+             */
+            kind: "recipe" | "ingredients";
+            /** Format: uuid */
+            recipeId?: string | null;
+            text: string;
+            /** @description One clause saying why this one — an offer, never a verdict */
+            reason: string;
+        };
+        FuelPlanTip: {
+            text: string;
+            reason: string;
+        };
+        MealPhotoResponse: {
+            /** Format: int64 */
+            bytes: number;
+            width: number;
+            height: number;
         };
         MedicationPhase: {
             /** @enum {string} */
@@ -8893,6 +9283,16 @@ export interface components {
             /** @description Snapshot; defaults to the pantry item's dose */
             dose?: string;
             note?: string;
+            /**
+             * Format: uuid
+             * @description Boop B4 - idempotency key (unique per owner); a retried request returns the existing row, never a second one.
+             */
+            clientRef?: string;
+            /**
+             * Format: date-time
+             * @description Boop B4 - the phone's offset-bearing instant of capture, stored as the record's own moment; its local date is the record's day. Absent = the existing behaviour. At most 7 days back (owner zone) and not in the future (5 min clock tolerance), else 400.
+             */
+            capturedAt?: string | null;
         };
         IntakeResponse: {
             /** Format: uuid */
@@ -10765,7 +11165,7 @@ export interface components {
             needsReview: boolean;
         };
         FuelSettingsResponse: {
-            /** @description Eating occasions per day — drives the planner's meal windows */
+            /** @description Eating occasions per day — drives the planner's meal windows. The default rhythm is 5 (3 meals + 2 snacks, owner decision 21). */
             mealsPerDay: number;
             /** @description Last caffeine time, HH:mm — the Mai chip, day plan and habit metric all read this */
             caffeineCutoff: string;
@@ -13435,6 +13835,29 @@ export interface components {
         CheckInLineRequest: {
             /** @description Check-in slot id, e.g. "14:00" */
             slot: string;
+        };
+        SensitivityItem: {
+            /** @description An EU-14 allergen key (gluten, crustaceans, eggs, fish, peanuts, soybeans, milk, nuts, celery, mustard, sesame, sulphites, lupin, molluscs) or free text. Free text has no structured allergen state and only ever matches by name. */
+            key: string;
+            /**
+             * @description allergy blocks on traces and unknown too; intolerance and avoid on contains only
+             * @enum {string}
+             */
+            level: "allergy" | "intolerance" | "avoid";
+            note?: string | null;
+        };
+        SensitivityNovaRule: {
+            enabled: boolean;
+            /** @description Foods above this NOVA level are not suggested (default 2) */
+            maxLevel: number;
+        };
+        SensitivityProfileResponse: {
+            items: components["schemas"]["SensitivityItem"][];
+            novaRule: components["schemas"]["SensitivityNovaRule"];
+        };
+        SensitivityProfileRequest: {
+            items: components["schemas"]["SensitivityItem"][];
+            novaRule: components["schemas"]["SensitivityNovaRule"];
         };
     };
     responses: {
@@ -19037,6 +19460,324 @@ export interface operations {
             };
         };
     };
+    importRecipeFromUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeImportUrlRequest"];
+            };
+        };
+        responses: {
+            /** @description The draft; result is null when the page carries no readable recipe */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImportResponse"];
+                };
+            };
+            /** @description Not an http(s) link to a public host */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The page could not be loaded, or the AI answer could not be read */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The page has no structured recipe and the AI is not available */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    importRecipeFromText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeImportTextRequest"];
+            };
+        };
+        responses: {
+            /** @description The draft; result is null when no recipe could be read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImportResponse"];
+                };
+            };
+            /** @description Empty or over-long text */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI answer could not be read */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI is not available */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    importRecipeFromPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The draft; result is null when no recipe could be read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImportResponse"];
+                };
+            };
+            /** @description Not a JPEG, PNG or WebP picture, empty, or over the size cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI answer could not be read */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI is not available */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getRecipeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                    "image/png": string;
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such recipe, or it has no photo */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putRecipeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The stored photo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImageResponse"];
+                };
+            };
+            /** @description Not a JPEG/PNG, corrupt, or over the 4 MB cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such recipe (or not the caller's) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteRecipeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such recipe, or it has no photo */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getFuelDay: {
         parameters: {
             query?: never;
@@ -19478,6 +20219,231 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getFuelPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelPlanResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getUsualMeals: {
+        parameters: {
+            query?: {
+                /** @description The window the caller is in now; its rows rank first. Absent or unknown ranks by recurrence alone. */
+                slot?: "breakfast" | "lunch" | "dinner" | "snack";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The ranked usual meals (at most 6) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsualMealsResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMealPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                    "image/png": string;
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such meal, or it has no photo */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putMealPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The stored photo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealPhotoResponse"];
+                };
+            };
+            /** @description Not a JPEG/PNG, corrupt, or over the 4 MB cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such meal (or not the caller's) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteMealPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such meal, or it has no photo */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteAllMealPhotos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (also when there was nothing to delete) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24136,7 +25102,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The settings (ghost 4 / 14:00 before the first save) */
+            /** @description The settings (ghost 5 / 14:00 before the first save — 3 meals + 2 snacks, owner decision 21) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -29865,6 +30831,77 @@ export interface operations {
             };
             /** @description LLM port unavailable — the phone retries later */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getSensitivityProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitivityProfileResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setSensitivityProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SensitivityProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitivityProfileResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

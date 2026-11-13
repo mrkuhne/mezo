@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import BoopCore
 import BoopDesign
 
@@ -157,6 +158,9 @@ struct NaploDayDetail: View {
     let env: RitmusEnvironment
     let date: String
     @State private var selected: UUID?
+    /// B4: the day's meal photos (nil food client = no food world, e.g. before sign-in: the section is simply absent).
+    @Environment(\.foodClient) private var food
+    @State private var meals = NaploMeals()
 
     var body: some View {
         let day = env.ledger.ledger(for: date)
@@ -171,11 +175,112 @@ struct NaploDayDetail: View {
                     MaEnergyCard(day: day, predicted: [], now: nil,
                                  calendar: env.calendar, selected: $selected, title: "AZ ENERGIÁD")
                 }
+                NaploMealPhotos(model: meals)
             }
             .padding(.horizontal, 16).padding(.top, 20).padding(.bottom, 40)
         }
         .scrollIndicators(.hidden)
         .background(NKGround(hue: .alvas))
         .preferredColorScheme(.dark)
+        .task { if let food { await meals.load(food: food, date: date, calendar: env.calendar) } }
+    }
+}
+
+// MARK: - The day's meal photos (B4 Task 15)
+
+/// The meals of a day that carry a photo — `hasPhoto` decides, so no meal is ever probed with a GET.
+func naploPhotoMeals(_ day: FoodDay?) -> [BoopCore.Meal] { (day?.meals ?? []).filter(\.hasPhoto) }
+
+/// The one quiet line under the meal photos: still loading, could not read, no photo that day, or a photo that did not
+/// come (only once the downloads are over — in flight, nothing has failed). nil = nothing to say (no meals at all, or every photo is on its card).
+func naploPhotoNote(loaded: Bool, failed: Bool, mealCount: Int, photoMeals: Int, photosMissing: Int, photosDone: Bool) -> String? {
+    if failed { return "Az étkezéseid képeit most nem látom." }
+    if !loaded { return "Az étkezések betöltése folyamatban" }
+    if mealCount > 0 && photoMeals == 0 { return "Erről a napról nincs étkezési fotód." }
+    if photosDone && photosMissing > 0 { return "Egy-két képet most nem tudtam betölteni." }
+    return nil
+}
+
+/// The day's meals and their photos for one Napló day. Loads once; a failure is said in a line, never a blank card.
+@MainActor @Observable
+final class NaploMeals {
+    private(set) var meals: [BoopCore.Meal] = []
+    /// All the day's meals (photo or not): "no photos" is only true of a day that has some.
+    private(set) var mealCount = 0
+    private(set) var photos: [UUID: UIImage] = [:]
+    private(set) var loaded = false
+    private(set) var failed = false
+    /// True once every photo download has finished (a missing photo before that is still on its way).
+    private(set) var photosDone = false
+    var photosMissing: Int { meals.filter { photos[$0.id] == nil }.count }
+
+    func load(food: FoodClient, date: String, calendar: Calendar) async {
+        let p = date.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3, let noon = calendar.date(from: DateComponents(year: p[0], month: p[1], day: p[2], hour: 12)) else {
+            failed = true; loaded = true; return
+        }
+        do {
+            let day = try await food.day(noon)
+            meals = naploPhotoMeals(day); mealCount = day.meals.count
+            failed = false
+        } catch { failed = true; loaded = true; return }
+        loaded = true
+        let wanted = meals.map(\.id)
+        let fetched = await withTaskGroup(of: (UUID, Data?).self) { group in
+            for id in wanted { group.addTask { (id, try? await food.photo(mealId: id)) } }
+            var out: [(UUID, Data?)] = []
+            for await r in group { out.append(r) }
+            return out
+        }
+        for (id, data) in fetched { if let data, let image = UIImage(data: data) { photos[id] = image } }
+        photosDone = true
+    }
+}
+
+/// A photo on the card, nothing in between: each photographed meal of the day as one card.
+private struct NaploMealPhotos: View {
+    let model: NaploMeals
+
+    private var note: String? {
+        naploPhotoNote(loaded: model.loaded, failed: model.failed, mealCount: model.mealCount, photoMeals: model.meals.count,
+                       photosMissing: model.photosMissing, photosDone: model.photosDone)
+    }
+
+    var body: some View {
+        if model.failed || model.meals.isEmpty {
+            if let note {
+                Text(note).nkFont(14).foregroundStyle(.white.opacity(0.6))
+                    .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
+            }
+        } else if !model.meals.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                NKMono("A NAP ÉTELEI").padding(.leading, 4)
+                ForEach(model.meals) { meal in
+                    VStack(alignment: .leading, spacing: 0) {
+                        Group {
+                            if let image = model.photos[meal.id] {
+                                Image(uiImage: image).resizable().scaledToFill().nkPhotoTone()
+                            } else {
+                                ZStack { Color.white.opacity(0.08); NKGlyph("camera-ink", .white.opacity(0.5), size: 26) }
+                            }
+                        }
+                        .frame(height: 190).frame(maxWidth: .infinity).clipped()
+                        HStack(spacing: 8) {
+                            Text(meal.title.flatMap { $0.isEmpty ? nil : $0 } ?? etelSlotLabel(meal.slot))
+                                .nkFont(15.5, .medium).foregroundStyle(.white).lineLimit(2)
+                            Spacer(minLength: 8)
+                            Text(etelSlotLabel(meal.slot)).nkFont(12.5).foregroundStyle(.white.opacity(0.55))
+                        }
+                        .padding(14)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .nkGlass(22)
+                    .accessibilityElement(children: .combine)
+                }
+                if let note {
+                    Text(note).nkFont(13).foregroundStyle(.white.opacity(0.55)).padding(.leading, 4)
+                }
+            }
+        }
     }
 }

@@ -4,18 +4,25 @@ import io.mrkuhne.mezo.api.dto.PantryImportRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryLookupResponse;
 import io.mrkuhne.mezo.api.dto.PantryLookupResult;
+import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
 import io.mrkuhne.mezo.feature.pantry.config.PantryScrapeProperties;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryImportEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.mapper.PantryMapper;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryImportRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -41,6 +48,7 @@ public class PantryImportService {
     private final OffClient offClient;
     private final PantryItemRepository itemRepository;
     private final PantryCatalogService catalogService;
+    private final PantryCatalogRepository catalogRepository;
     private final PantryImportRepository importRepository;
     private final PantryMapper mapper;
     /**
@@ -53,18 +61,34 @@ public class PantryImportService {
 
     /**
      * All-digit queries of at least 8 chars are barcodes (EAN-8/UPC/EAN-13), everything else is a
-     * text search. Results without a usable name or kcal are dropped — they cannot become a
-     * valid food draft (kcal is required by the manual create path too).
+     * text search. A barcode the caller already imported is answered from their own catalog row
+     * ({@code CATALOG}, OpenFoodFacts is not called); otherwise OpenFoodFacts answers ({@code OFF}).
+     * Nothing found is {@code NONE} with an empty list — and nothing is created by a lookup. OFF
+     * results without a usable name or kcal are dropped — they cannot become a valid food draft
+     * (kcal is required by the manual create path too).
      */
-    public PantryLookupResponse lookup(String query) {
+    public PantryLookupResponse lookup(UUID userId, String query) {
         String q = query.strip();
-        List<OffClient.OffProduct> products = q.matches("\\d{8,}") ? offClient.byBarcode(q) : offClient.search(q);
+        boolean barcode = q.matches("\\d{8,}");
+        if (barcode) {
+            Optional<PantryLookupResult> own = catalogRepository
+                .findByCreatedByAndBarcodeAndDeletedFalse(userId, q)
+                .filter(c -> c.getServingAmount() != null && c.getServingUnit() != null)
+                .map(this::toResult);
+            if (own.isPresent()) {
+                return PantryLookupResponse.builder()
+                    .results(List.of(own.get())).source(PantryLookupResponse.SourceEnum.CATALOG).build();
+            }
+        }
+        List<OffClient.OffProduct> products = barcode ? offClient.byBarcode(q) : offClient.search(q);
+        List<PantryLookupResult> results = products.stream()
+            .filter(p -> p.productName() != null && !p.productName().isBlank())
+            .filter(p -> p.nutriments() != null && p.nutriments().kcal100g() != null)
+            .map(this::toResult)
+            .toList();
         return PantryLookupResponse.builder()
-            .results(products.stream()
-                .filter(p -> p.productName() != null && !p.productName().isBlank())
-                .filter(p -> p.nutriments() != null && p.nutriments().kcal100g() != null)
-                .map(this::toResult)
-                .toList())
+            .results(results)
+            .source(results.isEmpty() ? PantryLookupResponse.SourceEnum.NONE : PantryLookupResponse.SourceEnum.OFF)
             .build();
     }
 
@@ -102,6 +126,9 @@ public class PantryImportService {
         candidate.setSaltG(req.getSaltG());
         candidate.setSaturatedFatG(req.getSaturatedFatG());
         candidate.setNova(req.getNova() == null ? null : req.getNova().shortValue());
+        String barcode = req.getBarcode() == null || req.getBarcode().isBlank() ? null : req.getBarcode().strip();
+        candidate.setBarcode(barcode);
+        candidate.setAllergens(parseAllergens(req.getAllergens()));
         // A confirmed but not-yet-reviewed draft (low-confidence scrape/photo) must not backfill
         // the shared row's facts before a human confirms them — even when this user IS its author
         // (fix round 1 Important 2c).
@@ -109,7 +136,13 @@ public class PantryImportService {
         // A natural-key hit binds to the shared definition (fill-only merge of NULL fields, author
         // only, master rows never merged — see PantryCatalogService#mergeIfAuthor, review finding
         // h / fix round 1 Important 2); a miss is authored by this user.
-        PantryCatalogEntity catalog = catalogService.findOrCreate(userId, candidate, !manualReview);
+        // A barcode is the product's identity: the owner's own row for it wins over a name match, so a
+        // re-import (or a renamed draft) binds to the same definition instead of tripping the
+        // per-owner barcode unique index.
+        PantryCatalogEntity byBarcode = barcode == null ? null
+            : catalogRepository.findByCreatedByAndBarcodeAndDeletedFalse(userId, barcode).orElse(null);
+        PantryCatalogEntity catalog = byBarcode != null ? byBarcode
+            : catalogService.findOrCreate(userId, candidate, !manualReview);
         // Idempotent shelf row (review finding g): a second import of the same product by the same
         // user must bind to their existing row instead of tripping
         // uq_pantry_item_created_by_catalog_id with an unconditional insert.
@@ -154,6 +187,47 @@ public class PantryImportService {
         return props != null && confidence.doubleValue() <= props.confidenceThreshold();
     }
 
+    /** Contract map -> domain states; a value outside contains|traces|unknown is a 400, never a 500. */
+    private static Map<String, AllergenState> parseAllergens(Map<String, String> wire) {
+        Map<String, AllergenState> states = new HashMap<>();
+        if (wire == null) return states;
+        wire.forEach((key, value) -> {
+            try {
+                states.put(key.strip().toLowerCase(Locale.ROOT), AllergenState.fromWire(value));
+            } catch (IllegalArgumentException | NullPointerException ex) {
+                throw new SystemRuntimeErrorException(
+                    SystemMessage.field("VALIDATION_INVALID_VALUE", "allergens").build(), HttpStatus.BAD_REQUEST);
+            }
+        });
+        return states;
+    }
+
+    private PantryLookupResult toResult(PantryCatalogEntity c) {
+        return PantryLookupResult.builder()
+            .name(c.getName())
+            .brand(c.getBrand())
+            .barcode(c.getBarcode())
+            .per(c.getServingAmount())
+            .unit(c.getServingUnit())
+            .kcal(c.getKcal())
+            .proteinG(c.getProteinG())
+            .carbsG(c.getCarbsG())
+            .fatG(c.getFatG())
+            .fiberG(c.getFiberG())
+            .sugarG(c.getSugarG())
+            .saltG(c.getSaltG())
+            .saturatedFatG(c.getSaturatedFatG())
+            .nova(c.getNova() == null ? null : c.getNova().intValue())
+            .allergens(allergensToWire(c.getAllergens()))
+            .build();
+    }
+
+    private static Map<String, String> allergensToWire(Map<String, AllergenState> states) {
+        Map<String, String> wire = new LinkedHashMap<>();
+        states.forEach((key, state) -> wire.put(key, state.wire()));
+        return wire;
+    }
+
     private PantryLookupResult toResult(OffClient.OffProduct p) {
         OffClient.OffNutriments n = p.nutriments();
         return PantryLookupResult.builder()
@@ -171,6 +245,9 @@ public class PantryImportService {
             .saltG(n.salt100g())
             .saturatedFatG(n.saturatedFat100g())
             .nova(p.novaGroup())
+            .allergens(allergensToWire(p.allergenStates()))
+            .servingSize(p.servingSize())
+            .servingQuantity(p.servingQuantity())
             .build();
     }
 

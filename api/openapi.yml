@@ -62,12 +62,40 @@ tags:
     description: >-
       Recipes (Receptek) — owned recipe + recipe_ingredient aggregate; lines
       reference pantry_item by id with a per-basis macro snapshot
+  - name: RecipeImport
+    description: >-
+      Recipe import (Boop B4, decisions 13 and 16): a web page, a photo of a
+      recipe or pasted text becomes a DRAFT in the Receptműhely draft shape.
+      Stateless — nothing is saved here; every route ends in the review screen,
+      where each ingredient row says what it matched. A page's own
+      machine-readable recipe is read first, the AI reads the page only when
+      there is none. Nothing the page says is ever followed as an instruction.
+  - name: RecipeImage
+    description: >-
+      The owner's own photo of a recipe (Boop B4, decision 20): the recipe has
+      one, the owner can replace or remove it, and nothing else ever writes it
+      (an import stores no picture). Kept on the server, served back only to the
+      owner. One image per recipe; a new upload replaces the old one and the old
+      bytes are deleted. JPEG or PNG, at most 4 MB, checked by content type and
+      by the actual bytes. Soft-deleting the recipe deletes the bytes.
   - name: Meal
     description: >-
       Meal logging (Étkezés-logolás) — owned meal + meal_item aggregate;
       polymorphic items reference a recipe or a pantry_item by id with a
       per-basis macro snapshot. GET /api/fuel/day/{date} aggregates the day for
       the Fuel screen.
+  - name: FuelPlan
+    description: >-
+      The server-computed day plan (Boop B4): the day's meal windows with their
+      budgets and state, what is left of the budget, and one next-meal tip.
+      Deterministic — no LLM produces any number or any sentence here.
+  - name: MealPhoto
+    description: >-
+      The owner's own meal photos (Boop B4, decisions 14 and 19): kept on the
+      server, served back only to the owner, never auto-deleted — a delete per
+      meal and one in bulk. One photo per meal; a new upload replaces the old
+      one. JPEG or PNG, at most 4 MB, checked by content type and by the actual
+      bytes.
   - name: Medication
     description: >-
       Medication (Gyógyszer) — owned medication definition + a dose event-log;
@@ -243,6 +271,10 @@ tags:
       sentence). Idempotent upsert by (owner, date); dates accepted today-7 ..
       today+1 in the owner zone (+1: a phone east of it), today+2 or later ->
       400.
+  - name: Sensitivity
+    description: >-
+      The owner's food sensitivities (allergy / intolerance / avoid) and the
+      NOVA processing rule (Boop B4)
 paths:
   /api/auth/login:
     post:
@@ -4764,6 +4796,246 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/recipe/import/url:
+    post:
+      tags:
+        - RecipeImport
+      operationId: importRecipeFromUrl
+      summary: >-
+        Read a recipe from a web page (structured recipe first, AI fallback)
+        into a review draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeImportUrlRequest'
+      responses:
+        '200':
+          description: The draft; result is null when the page carries no readable recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeImportResponse'
+        '400':
+          description: Not an http(s) link to a public host
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: 'The page could not be loaded, or the AI answer could not be read'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: The page has no structured recipe and the AI is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/recipe/import/text:
+    post:
+      tags:
+        - RecipeImport
+      operationId: importRecipeFromText
+      summary: Read a recipe from pasted text into a review draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeImportTextRequest'
+      responses:
+        '200':
+          description: The draft; result is null when no recipe could be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeImportResponse'
+        '400':
+          description: Empty or over-long text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: The AI answer could not be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: The AI is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/recipe/import/photo:
+    post:
+      tags:
+        - RecipeImport
+      operationId: importRecipeFromPhoto
+      summary: >-
+        Read a recipe from a photo (cookbook page, screenshot) into a review
+        draft; the photo is not kept
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - photo
+              properties:
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The draft; result is null when no recipe could be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeImportResponse'
+        '400':
+          description: 'Not a JPEG, PNG or WebP picture, empty, or over the size cap'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: The AI answer could not be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: The AI is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/recipe/{id}/image':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - RecipeImage
+      operationId: putRecipeImage
+      summary: Attach (or replace) the photo of a recipe
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - photo
+              properties:
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The stored photo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeImageResponse'
+        '400':
+          description: 'Not a JPEG/PNG, corrupt, or over the 4 MB cap'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such recipe (or not the caller's)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    get:
+      tags:
+        - RecipeImage
+      operationId: getRecipeImage
+      summary: >-
+        The photo of a recipe (the stored bytes; Content-Type is the stored
+        type)
+      responses:
+        '200':
+          description: The image
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No such recipe, or it has no photo'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - RecipeImage
+      operationId: deleteRecipeImage
+      summary: Delete the photo of a recipe (the bytes go with it; the recipe stays)
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No such recipe, or it has no photo'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/fuel/day/{date}':
     get:
       tags:
@@ -5133,6 +5405,191 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/fuel/plan/{date}':
+    get:
+      tags:
+        - FuelPlan
+      operationId: getFuelPlan
+      summary: >-
+        The day's meal windows, the remaining budget and the next-meal tip
+        (FuelPlan)
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The day plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FuelPlanResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/fuel/usuals:
+    get:
+      tags:
+        - FuelPlan
+      operationId: getUsualMeals
+      summary: >-
+        The owner's "szokásosak" — his recurring meals, ranked (UsualMealRanker
+        over the last 28 days)
+      description: >-
+        The window asked for first, then how often a meal recurs, then how
+        recently. Rows fold by window and normalised name; each carries its
+        latest occurrence's name. No history is an empty list, never an invented
+        row. A row carries no energy: the history read does not roll items up,
+        and nothing is fabricated here.
+      parameters:
+        - name: slot
+          in: query
+          required: false
+          description: >-
+            The window the caller is in now; its rows rank first. Absent or
+            unknown ranks by recurrence alone.
+          schema:
+            type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - snack
+      responses:
+        '200':
+          description: The ranked usual meals (at most 6)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsualMealsResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/meal/{id}/photo':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - MealPhoto
+      operationId: putMealPhoto
+      summary: Attach (or replace) the photo of a meal
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - photo
+              properties:
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The stored photo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealPhotoResponse'
+        '400':
+          description: 'Not a JPEG/PNG, corrupt, or over the 4 MB cap'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such meal (or not the caller's)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    get:
+      tags:
+        - MealPhoto
+      operationId: getMealPhoto
+      summary: The photo of a meal (the stored bytes; Content-Type is the stored type)
+      responses:
+        '200':
+          description: The image
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No such meal, or it has no photo'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - MealPhoto
+      operationId: deleteMealPhoto
+      summary: Delete the photo of a meal (the bytes go with it; the meal stays)
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No such meal, or it has no photo'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/meal/photos:
+    delete:
+      tags:
+        - MealPhoto
+      operationId: deleteAllMealPhotos
+      summary: >-
+        Delete every meal photo of the caller (the meals stay; recipe images are
+        not touched)
+      responses:
+        '204':
+          description: Deleted (also when there was nothing to delete)
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -9193,7 +9650,9 @@ paths:
         (FuelSettings)
       responses:
         '200':
-          description: 'The settings (ghost 4 / 14:00 before the first save)'
+          description: >-
+            The settings (ghost 5 / 14:00 before the first save — 3 meals + 2
+            snacks, owner decision 21)
           content:
             application/json:
               schema:
@@ -14118,6 +14577,57 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '503':
           description: LLM port unavailable — the phone retries later
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/sensitivity:
+    get:
+      tags:
+        - Sensitivity
+      operationId: getSensitivityProfile
+      summary: >-
+        The sensitivity profile; empty list + default NOVA rule when unset —
+        never 404 (Sensitivity)
+      responses:
+        '200':
+          description: The profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensitivityProfileResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Sensitivity
+      operationId: setSensitivityProfile
+      summary: Replace the sensitivity profile (per-user singleton) (Sensitivity)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SensitivityProfileRequest'
+      responses:
+        '200':
+          description: Saved profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensitivityProfileResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -19758,6 +20268,18 @@ components:
           nullable: true
         catalogEditable:
           type: boolean
+        allergens:
+          type: object
+          nullable: true
+          description: >-
+            Allergen state per EU-14 key: contains | traces | unknown. A missing
+            key is unknown, never free-of.
+          additionalProperties:
+            type: string
+        barcode:
+          type: string
+          nullable: true
+          description: 'EAN/UPC of the product, when known'
     SupplementStashResponse:
       type: object
       required:
@@ -20021,6 +20543,18 @@ components:
         category:
           type: string
           nullable: true
+        allergens:
+          type: object
+          nullable: true
+          description: >-
+            Allergen state per EU-14 key: contains | traces | unknown. A missing
+            key is unknown, never free-of.
+          additionalProperties:
+            type: string
+        barcode:
+          type: string
+          nullable: true
+          description: 'EAN/UPC of the product, when known'
     PantrySharedFrom:
       type: object
       required:
@@ -20108,6 +20642,18 @@ components:
         authorName:
           type: string
           nullable: true
+        allergens:
+          type: object
+          nullable: true
+          description: >-
+            Allergen state per EU-14 key: contains | traces | unknown. A missing
+            key is unknown, never free-of.
+          additionalProperties:
+            type: string
+        barcode:
+          type: string
+          nullable: true
+          description: 'EAN/UPC of the product, when known'
     PantryLookupResponse:
       type: object
       required:
@@ -20117,6 +20663,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PantryLookupResult'
+        source:
+          type: string
+          enum:
+            - 'OFF'
+            - CATALOG
+            - NONE
+          description: >-
+            Where the results came from: OFF (OpenFoodFacts), CATALOG (our own
+            row for that barcode — OFF is not called) or NONE (nothing found;
+            results is empty).
     PantryLookupResult:
       type: object
       required:
@@ -20165,6 +20721,22 @@ components:
           minimum: 1
           maximum: 4
           nullable: true
+        allergens:
+          type: object
+          nullable: true
+          description: >-
+            Allergen state per EU-14 key: contains | traces | unknown. A missing
+            key is unknown, never free-of.
+          additionalProperties:
+            type: string
+        servingSize:
+          type: string
+          nullable: true
+          description: 'OFF serving_size label, e.g. "40 g"'
+        servingQuantity:
+          type: number
+          nullable: true
+          description: OFF serving_quantity (g or ml)
     PantryScrapeRequest:
       type: object
       required:
@@ -20365,6 +20937,14 @@ components:
         priceUnit:
           type: string
           nullable: true
+        allergens:
+          type: object
+          nullable: true
+          description: >-
+            Allergen state per EU-14 key: contains | traces | unknown. A missing
+            key is unknown, never free-of.
+          additionalProperties:
+            type: string
     PantryImportEntryResponse:
       type: object
       required:
@@ -20485,13 +21065,21 @@ components:
     RecipeIngredientRequest:
       type: object
       required:
-        - pantryItemId
         - amount
         - unit
       properties:
         pantryItemId:
           type: string
           format: uuid
+          nullable: true
+          description: The owner's own pantry row. Either this or catalogId is required.
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            A catalog food to put on the owner's shelf at save time (a recipe
+            import's confirmed match); used only when pantryItemId is absent.
         amount:
           type: number
           exclusiveMinimum: 0
@@ -20572,6 +21160,22 @@ components:
           description: >-
             Template meal role — selects the scoring rubric overlay (mezo-uavr).
             Absent ⇒ standard.
+        steps:
+          type: array
+          nullable: true
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 2000
+          description: >-
+            Method steps. Absent = leave the stored steps as they are; an empty
+            list clears them.
+        sourceUrl:
+          type: string
+          nullable: true
+          maxLength: 2048
+          pattern: '^https?://.+'
+          description: Where the recipe was imported from. Absent = leave as it is.
         ingredients:
           type: array
           minItems: 1
@@ -20644,6 +21248,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecipeIngredientResponse'
+        steps:
+          type: array
+          items:
+            type: string
+          description: Method steps in order; empty when none were saved
+        sourceUrl:
+          type: string
+          nullable: true
+        hasImage:
+          type: boolean
+          description: >-
+            True when the owner has a photo on this recipe (GET
+            /api/recipe/{id}/image); lists never need to probe for 404.
+        allergens:
+          type: object
+          nullable: true
+          description: >-
+            Derived rollup of the ingredients' allergen states (contains |
+            traces | unknown); unknown propagates upward. null on recipes not
+            yet recomputed.
+          additionalProperties:
+            type: string
     RecipeListResponse:
       type: object
       required:
@@ -20764,6 +21390,139 @@ components:
           type: string
         draft:
           $ref: '#/components/schemas/WorkshopDraft'
+    RecipeImportUrlRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          minLength: 1
+          maxLength: 2048
+    RecipeImportTextRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 20000
+    RecipeImportMatch:
+      type: object
+      description: >-
+        What an ingredient row matched (by name). catalogId is null when it
+        matched nothing; confidence is derived deterministically (never taken
+        from the AI); needsReview is true for every unmatched or low-confidence
+        row.
+      required:
+        - confidence
+        - needsReview
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The catalog food the row's name matched (null = matched nothing). A
+            preview writes nothing: the food reaches the owner's shelf only when
+            the recipe is saved with this id as the ingredient's catalogId.
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        needsReview:
+          type: boolean
+    RecipeImportLine:
+      description: >-
+        A Receptműhely draft line plus what it matched and the text it was read
+        from.
+      allOf:
+        - $ref: '#/components/schemas/WorkshopDraftLine'
+        - type: object
+          required:
+            - match
+          properties:
+            match:
+              $ref: '#/components/schemas/RecipeImportMatch'
+            sourceText:
+              type: string
+              nullable: true
+              description: 'The ingredient line as the page, photo or text wrote it'
+            allergens:
+              type: object
+              nullable: true
+              description: >-
+                The matched catalog food's allergen states (lowercase key ->
+                contains | traces | unknown). null when the row matched nothing:
+                no data, never "free of". A key absent from the map also says
+                nothing.
+              additionalProperties:
+                type: string
+    RecipeImportDraft:
+      type: object
+      required:
+        - name
+        - category
+        - servings
+        - steps
+        - lines
+      properties:
+        name:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          pattern: ^(breakfast|lunch|dinner|snack)$
+        servings:
+          type: integer
+          minimum: 1
+          maximum: 12
+        steps:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeImportLine'
+          maxItems: 30
+        sourceUrl:
+          type: string
+          nullable: true
+          description: Where the recipe came from (URL route only)
+        cookedWeightG:
+          type: number
+          nullable: true
+          description: Weight of the finished dish when the source states it
+        structured:
+          type: boolean
+          description: True when the page carried a machine-readable recipe (no AI read it)
+        needsReview:
+          type: boolean
+          description: True when any ingredient row needs a look
+    RecipeImportResponse:
+      type: object
+      properties:
+        result:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RecipeImportDraft'
+    RecipeImageResponse:
+      type: object
+      required:
+        - bytes
+        - width
+        - height
+      properties:
+        bytes:
+          type: integer
+          format: int64
+        width:
+          type: integer
+        height:
+          type: integer
     Macros:
       type: object
       required:
@@ -21375,6 +22134,21 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/MealProvenance'
+        clientRef:
+          type: string
+          format: uuid
+          description: >-
+            Boop B4 - idempotency key (unique per owner); a retried request
+            returns the existing row, never a second one.
+        capturedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            Boop B4 - the phone's offset-bearing instant of capture, stored as
+            the record's own moment; its local date is the record's day. Absent
+            = the existing behaviour. At most 7 days back (owner zone) and not
+            in the future (5 min clock tolerance), else 400.
     MealResponse:
       type: object
       required:
@@ -21410,6 +22184,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MealItemResponse'
+        hasPhoto:
+          type: boolean
+          description: >-
+            True when the owner has a photo on this meal (GET
+            /api/meal/{id}/photo); lists never need to probe for 404.
     MealAiDraftResponse:
       type: object
       required:
@@ -21751,6 +22530,21 @@ components:
         amountMl:
           type: integer
           minimum: 1
+        clientRef:
+          type: string
+          format: uuid
+          description: >-
+            Boop B4 - idempotency key (unique per owner); a retried request
+            returns the existing row, never a second one.
+        capturedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            Boop B4 - the phone's offset-bearing instant of capture, stored as
+            the record's own moment; its local date is the record's day. Absent
+            = the existing behaviour. At most 7 days back (owner zone) and not
+            in the future (5 min clock tolerance), else 400.
     WaterLogResponse:
       type: object
       required:
@@ -21765,6 +22559,263 @@ components:
           type: string
           format: date
         amountMl:
+          type: integer
+    UsualMealsResponse:
+      type: object
+      required:
+        - usuals
+      properties:
+        usuals:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsualMealResponse'
+    UsualMealResponse:
+      type: object
+      required:
+        - key
+        - title
+        - slot
+        - count
+        - lastLoggedAt
+      properties:
+        key:
+          type: string
+          description: Window and normalised name — stable across reads
+        title:
+          type: string
+          description: The latest occurrence's own name
+        slot:
+          type: string
+          enum:
+            - breakfast
+            - lunch
+            - dinner
+            - snack
+        count:
+          type: integer
+          description: How many times it was logged in the last 28 days
+        lastLoggedAt:
+          type: string
+          format: date-time
+        mealId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The latest occurrence this row stands for (the meal the items below
+            were read from)
+        kcal:
+          type: integer
+          nullable: true
+          description: >-
+            The latest occurrence's energy, summed from its items; null when its
+            items cannot be read
+        items:
+          type: array
+          description: >-
+            The latest occurrence's own lines (frozen snapshots), so a usual
+            meal can be logged as it was eaten — no re-estimate. Empty when the
+            meal carried no items; the client then falls back to the name alone
+            and says so.
+          items:
+            $ref: '#/components/schemas/UsualMealItem'
+    UsualMealItem:
+      type: object
+      required:
+        - source
+        - amount
+        - unit
+        - name
+      properties:
+        source:
+          type: string
+          enum:
+            - recipe
+            - pantry
+            - estimate
+        recipeId:
+          type: string
+          format: uuid
+          nullable: true
+        pantryItemId:
+          type: string
+          format: uuid
+          nullable: true
+        amount:
+          type: number
+        unit:
+          type: string
+        name:
+          type: string
+        per:
+          type: number
+          nullable: true
+        basisUnit:
+          type: string
+          nullable: true
+        kcal:
+          type: number
+          nullable: true
+          description: 'Per `per` of `basisUnit`, as snapshotted'
+        proteinG:
+          type: number
+          nullable: true
+        carbsG:
+          type: number
+          nullable: true
+        fatG:
+          type: number
+          nullable: true
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
+          type: number
+          nullable: true
+        nova:
+          type: integer
+          nullable: true
+    FuelPlanResponse:
+      type: object
+      required:
+        - date
+        - windows
+      properties:
+        date:
+          type: string
+          format: date
+        windows:
+          type: array
+          description: 'Every window of the day in clock order, logged and open alike'
+          items:
+            $ref: '#/components/schemas/FuelPlanWindow'
+        remaining:
+          allOf:
+            - $ref: '#/components/schemas/Macros'
+          nullable: true
+          description: >-
+            Target − consumed − the kcal of the day's skipped windows. Negative
+            when the day went over; null on a kímélő (GUIDANCE) day, which is
+            not judged on kcal at all.
+        tip:
+          allOf:
+            - $ref: '#/components/schemas/FuelPlanTip'
+          nullable: true
+          description: >-
+            Absent late in the day, after a skip, and when nothing is left to
+            offer
+    FuelPlanWindow:
+      type: object
+      required:
+        - slot
+        - kind
+        - label
+        - from
+        - to
+        - state
+        - loggedMealIds
+      properties:
+        slot:
+          type: string
+          enum:
+            - breakfast
+            - lunch
+            - dinner
+            - snack
+        kind:
+          type: string
+          enum:
+            - meal
+            - snack
+        label:
+          type: string
+          description: 'The window''s Hungarian name (Reggeli, Tízórai, …)'
+        from:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+        to:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+        budget:
+          allOf:
+            - $ref: '#/components/schemas/Macros'
+          nullable: true
+          description: This window's share of the day; null on a kímélő (GUIDANCE) day
+        state:
+          type: string
+          enum:
+            - done
+            - now
+            - pending
+            - missed
+            - skipped
+        loggedMealIds:
+          type: array
+          description: >-
+            The meals logged into this window, earliest first; empty while it is
+            open
+          items:
+            type: string
+            format: uuid
+        suggestion:
+          allOf:
+            - $ref: '#/components/schemas/FuelPlanSuggestion'
+          nullable: true
+          description: Only on an open window — never on a done or skipped one
+    FuelPlanSuggestion:
+      type: object
+      required:
+        - kind
+        - text
+        - reason
+      properties:
+        kind:
+          type: string
+          enum:
+            - recipe
+            - ingredients
+          description: >-
+            ingredients is the honest fallback while the recipe library is small
+            (owner decision 16) — a window no recipe fits shows an
+            ingredient-level tip, never an empty row.
+        recipeId:
+          type: string
+          format: uuid
+          nullable: true
+        text:
+          type: string
+        reason:
+          type: string
+          description: 'One clause saying why this one — an offer, never a verdict'
+    FuelPlanTip:
+      type: object
+      required:
+        - text
+        - reason
+      properties:
+        text:
+          type: string
+        reason:
+          type: string
+    MealPhotoResponse:
+      type: object
+      required:
+        - bytes
+        - width
+        - height
+      properties:
+        bytes:
+          type: integer
+          format: int64
+        width:
+          type: integer
+        height:
           type: integer
     MedicationPhase:
       type: object
@@ -22308,6 +23359,21 @@ components:
           description: Snapshot; defaults to the pantry item's dose
         note:
           type: string
+        clientRef:
+          type: string
+          format: uuid
+          description: >-
+            Boop B4 - idempotency key (unique per owner); a retried request
+            returns the existing row, never a second one.
+        capturedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            Boop B4 - the phone's offset-bearing instant of capture, stored as
+            the record's own moment; its local date is the record's day. Absent
+            = the existing behaviour. At most 7 days back (owner zone) and not
+            in the future (5 min clock tolerance), else 400.
     IntakeResponse:
       type: object
       required:
@@ -26865,7 +27931,9 @@ components:
           type: integer
           minimum: 3
           maximum: 6
-          description: Eating occasions per day — drives the planner's meal windows
+          description: >-
+            Eating occasions per day — drives the planner's meal windows. The
+            default rhythm is 5 (3 meals + 2 snacks, owner decision 21).
         caffeineCutoff:
           type: string
           pattern: '^([01]\d|2[0-3]):[0-5]\d$'
@@ -33319,6 +34387,72 @@ components:
           type: string
           minLength: 1
           description: 'Check-in slot id, e.g. "14:00"'
+    SensitivityItem:
+      type: object
+      required:
+        - key
+        - level
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: >-
+            An EU-14 allergen key (gluten, crustaceans, eggs, fish, peanuts,
+            soybeans, milk, nuts, celery, mustard, sesame, sulphites, lupin,
+            molluscs) or free text. Free text has no structured allergen state
+            and only ever matches by name.
+        level:
+          type: string
+          enum:
+            - allergy
+            - intolerance
+            - avoid
+          description: >-
+            allergy blocks on traces and unknown too; intolerance and avoid on
+            contains only
+        note:
+          type: string
+          nullable: true
+          maxLength: 280
+    SensitivityNovaRule:
+      type: object
+      required:
+        - enabled
+        - maxLevel
+      properties:
+        enabled:
+          type: boolean
+        maxLevel:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: Foods above this NOVA level are not suggested (default 2)
+    SensitivityProfileResponse:
+      type: object
+      required:
+        - items
+        - novaRule
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SensitivityItem'
+        novaRule:
+          $ref: '#/components/schemas/SensitivityNovaRule'
+    SensitivityProfileRequest:
+      type: object
+      required:
+        - items
+        - novaRule
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/SensitivityItem'
+        novaRule:
+          $ref: '#/components/schemas/SensitivityNovaRule'
   responses:
     AdminMemoryUnauthorized:
       description: Missing/invalid token

@@ -176,12 +176,14 @@ class BoopDayAssemblerIT extends AbstractIntegrationTest {
         assertThat(d.session().exercises()).containsExactly(
             new BoopDay.Exercise("Guggolás", 3), new BoopDay.Exercise("Lábtolás", 3));
 
-        // Fuel
-        assertThat(d.meals()).hasSize(1);
-        assertThat(d.meals().get(0).time()).isEqualTo(LocalTime.of(12, 15));
-        assertThat(d.meals().get(0).kcal()).isEqualTo(650);
-        assertThat(d.meals().get(0).proteinG()).isEqualTo(45);
-        assertThat(d.meals().get(0).logged()).isTrue();
+        // Fuel — the logged meal, plus the day plan's still-open windows (Boop B4, mezo-r36n9.14)
+        List<BoopDay.Meal> loggedMeals = d.meals().stream().filter(BoopDay.Meal::logged).toList();
+        assertThat(loggedMeals).hasSize(1);
+        assertThat(loggedMeals.get(0).time()).isEqualTo(LocalTime.of(12, 15));
+        assertThat(loggedMeals.get(0).kcal()).isEqualTo(650);
+        assertThat(loggedMeals.get(0).proteinG()).isEqualTo(45);
+        assertThat(d.meals()).filteredOn(m -> !m.logged()).isNotEmpty()
+            .allSatisfy(m -> assertThat(m.time()).isNotNull());
         assertThat(d.kcalSoFar()).isEqualTo(650);
         assertThat(d.proteinG()).isEqualTo(45);
         assertThat(d.carbsG()).isEqualTo(70);
@@ -288,7 +290,7 @@ class BoopDayAssemblerIT extends AbstractIntegrationTest {
         assertThat(d.steps()).isNull();
         assertThat(d.session()).isNull();
         assertThat(d.yesterdayLoad()).isEqualTo(new BoopDay.WorkoutLoad(0, 0));
-        assertThat(d.meals()).isEmpty();
+        assertThat(d.meals()).noneMatch(BoopDay.Meal::logged);
         assertThat(d.kcalSoFar()).isZero();
         assertThat(d.checkins()).hasSize(4).noneMatch(BoopDay.Checkin::done);
         assertThat(d.intention().foci()).isEmpty();
@@ -333,7 +335,7 @@ class BoopDayAssemblerIT extends AbstractIntegrationTest {
         assertThat(d.deepSleepWeek()).containsOnlyNulls();
         assertThat(d.steps()).isNull();
         assertThat(d.restingHrWeek()).containsOnlyNulls();
-        assertThat(d.meals()).isEmpty();
+        assertThat(d.meals()).noneMatch(BoopDay.Meal::logged);
         assertThat(d.kcalSoFar()).isZero();
         assertThat(d.checkins()).noneMatch(BoopDay.Checkin::done);
         assertThat(d.observations()).isEmpty();

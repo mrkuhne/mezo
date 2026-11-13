@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.recipe.entity;
 
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.techcore.persistence.OwnedEntity;
 import jakarta.persistence.CascadeType;
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -107,6 +109,24 @@ public class RecipeEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private MealBreakdownJson breakdown;
+
+    /** The recipe's image ({@code stored_image.id}, Boop B4): the imported one or the owner's own; null when none. */
+    @Column(name = "image_id", columnDefinition = "uuid")
+    private UUID imageId;
+
+    /** The method, in order (Boop B4); null = none saved. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<String> steps;
+
+    /** The page an imported recipe was read from (Boop B4); null for a hand-written one. */
+    @Column(name = "source_url")
+    private String sourceUrl;
+
+    /** Derived rollup of the lines' allergen states (spec §7.1); null until first recomputed. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, AllergenState> allergens;
 
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("lineOrder")

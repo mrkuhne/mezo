@@ -37,18 +37,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [lifegoal](#lifegoal) | ✓ | 1 | ✓ | · | [lifegoal](features/lifegoal.md) |
 | [llmlog](#llmlog) | ✓ | 2 | · | · | [admin-hub](features/admin-hub.md), [companion](features/companion.md) |
 | [me](#me) | · | · | ✓ | ✓ | [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [settings](features/settings.md), [today](features/today.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
-| [meal](#meal) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
+| [meal](#meal) | ✓ | 3 | · | · | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · | · | · |
 | [needs](#needs) | ✓ | 1 | ✓ | · | [needs](features/needs.md) |
 | [notification](#notification) | ✓ | 2 | ✓ | ✓ | [_platform-notifications](features/_platform-notifications.md) |
-| [nutrition](#nutrition) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
+| [nutrition](#nutrition) | ✓ | 2 | · | · | [fuel](features/fuel.md) |
 | [pantry](#pantry) | ✓ | 1 | · | · | [pantry](features/pantry.md) |
 | [people](#people) | ✓ | 1 | · | · | [me](features/me.md) |
 | [proactive](#proactive) | ✓ | 2 | · | · | [contextual-feed-evaluation](features/contextual-feed-evaluation.md), [proactive](features/proactive.md) |
 | [progression](#progression) | ✓ | 1 | ✓ | ✓ | [growth](features/growth.md) |
 | [quest](#quest) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
 | [quickinput](#quickinput) | · | · | · | ✓ | [today](features/today.md) |
-| [recipe](#recipe) | ✓ | 1 | · | · | [recipe](features/recipe.md) |
+| [recipe](#recipe) | ✓ | 3 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
 | [settings](#settings) | · | · | · | ✓ | [settings](features/settings.md) |
 | [telemetry](#telemetry) | ✓ | 1 | ✓ | · | · |
@@ -84,7 +84,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### admin
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-12, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-13, done) ·
   [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-11, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
@@ -167,9 +167,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### auth
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-12, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-13, done) ·
   [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-10-11, done) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-12, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-13, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
@@ -244,7 +244,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### boop
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-12, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-13, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **entities→tables:** `BoopBriefEntity`→`boop_brief`, `WorkoutTimeOverrideEntity`→`workout_time_override`
@@ -267,7 +267,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-12, shipped) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-13, shipped) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-10-09, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
@@ -393,15 +393,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-11, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-11-12, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-11-12, mixed) ·
-  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-12, done) ·
+  [docs/features/character.md](features/character.md) (updated 2026-11-13, shipped) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-11-13, mixed) ·
+  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-13, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-12, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-12, mixed) ·
   [docs/features/settings.md](features/settings.md) (updated 2026-10-12, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-10-12, mixed) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-12, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-13, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
@@ -514,13 +514,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PersistentPainRule`,
     `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`,
     `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
-    `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`,
-    `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SessionTimeOverrideSource`, `SleepDebtRule`,
-    `SleepDeficitCalculator`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`,
-    `StackPlacementLlmAdapter`, `SustainedStressRule`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`,
-    `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`,
-    `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`,
-    `WeekReviewSource`
+    `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`,
+    `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`,
+    `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`, `SleepShotLlmAdapter`,
+    `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`, `SustainedStressRule`,
+    `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`,
+    `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`,
+    `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -664,8 +664,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### dayclose
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-12, in-progress) ·
-  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-12, done)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-13, in-progress) ·
+  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-13, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
   - **entities→tables:** `DayCloseEntity`→`day_close`, `DayCloseLineCacheEntity`→`day_close_line_cache`
@@ -691,10 +691,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### fuel
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-10-12, done) ·
-  [docs/features/pantry.md](features/pantry.md) (updated 2026-10-12, done) ·
-  [docs/features/recipe.md](features/recipe.md) (updated 2026-10-12, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-11-12, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-13, done) ·
+  [docs/features/pantry.md](features/pantry.md) (updated 2026-11-13, done) ·
+  [docs/features/recipe.md](features/recipe.md) (updated 2026-11-13, done) ·
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-11-13, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-11, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
@@ -880,7 +880,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-11-12, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-11-13, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-10-09, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -1024,8 +1024,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-12, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-11-12, mixed)
+*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-13, done) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-11-13, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -1120,32 +1120,38 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-10-12, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-13, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
   - **repositories:** `MealItemRepository`, `MealRepository`, `WaterLogRepository`
   - **services:** `FuelDayService`, `GoalDailyIntakeAdapter`, `GoalIntakeAdherenceAdapter`, `MealAiDraftService`,
     `MealAiDraftValidator`, `MealCoachContextReader`, `MealCoachEagerListener`, `MealCoachLlm`, `MealCoachPrompt`,
-    `MealCoachService`, `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`, `MealSavedEvent`, `MealService`,
-    `WaterLogService`
-  - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
+    `MealCoachService`, `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`, `MealPhotoService`, `MealSavedEvent`,
+    `MealService`, `WaterLogService`
+  - **controllers→contract:** `FuelPlanController`→`FuelPlanApi`, `MealAiDraftController`→`MealAiLogApi`,
+    `MealController`→`MealApi`, `MealPhotoController`→`MealPhotoApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
-  - **other:** `MealItemRecipeOverrideJson`, `MealProvenanceJson`, `MealRescoreRunner`,
-    `MealSaturatedFatBackfillRunner`
+  - **other:** `DayPlanService`, `FuelPlanMapper`, `MealItemRecipeOverrideJson`, `MealProvenanceJson`,
+    `MealRescoreRunner`, `MealSaturatedFatBackfillRunner`
+- **Contract** `api/feature/meal/fuel-plan.yml` — 2 operations
+  - **endpoints:** GET /api/fuel/plan/{date} · GET /api/fuel/usuals
+- **Contract** `api/feature/meal/meal-photo.yml` — 4 operations
+  - **endpoints:** POST /api/meal/{id}/photo · GET /api/meal/{id}/photo · DELETE /api/meal/{id}/photo ·
+    DELETE /api/meal/photos
 - **Contract** `api/feature/meal/meal.yml` — 11 operations
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 27 IT + 9 unit
-  - **ITs:** `FuelDayMovementIT`, `FuelDayRecoveryIT`, `FuelDayServiceIT`, `GoalDailyIntakeAdapterIT`,
-    `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`,
-    `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`,
-    `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`,
-    `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealRecipeCompositeScoringIT`, `MealRepositoryIT`,
-    `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`, `MealServiceIT`, `NutritionTargetsPropertiesIT`,
-    `RecipeLogsServiceIT`, `WaterLogApiIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 29 IT + 10 unit
+  - **ITs:** `ClientRefIdempotencyIT`, `FuelDayMovementIT`, `FuelDayRecoveryIT`, `FuelDayServiceIT`,
+    `GoalDailyIntakeAdapterIT`, `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`,
+    `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`,
+    `MealCoachServiceIT`, `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`,
+    `MealOverridesIT`, `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealPhotoIT`,
+    `MealRecipeCompositeScoringIT`, `MealRepositoryIT`, `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`,
+    `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MealPopulator`,
     `PantryCatalogPopulator`, `PantryItemPopulator`, `PlannedSkipPopulator`, `RecipePopulator`,
     `RecoveryPeriodPopulator`, `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
@@ -1230,27 +1236,33 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### nutrition
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-10-12, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-13, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
-  - **entities→tables:** `DietSettingsEntity`→`diet_settings`
-  - **repositories:** `DietSettingsRepository`
-  - **services:** `DailyTargets`, `DayContext`, `DayTargetProjector`, `DietPreferencesResolver`, `DietSettingsService`,
-    `EnergyBase`, `MealRole`, `MealScoringService`, `MealWindow`
-  - **controllers→contract:** `DietSettingsController`→`DietSettingsApi`
+  - **entities→tables:** `DietSettingsEntity`→`diet_settings`, `SensitivityProfileEntity`→`sensitivity_profile`
+  - **repositories:** `DietSettingsRepository`, `SensitivityProfileRepository`
+  - **services:** `AllergenKeys`, `AllergenState`, `DailyTargets`, `DayContext`, `DayTargetProjector`,
+    `DietPreferencesResolver`, `DietSettingsService`, `EnergyBase`, `MealRole`, `MealScoringService`, `MealWindow`,
+    `NovaRule`, `Sensitivity`, `SensitivityLevel`, `SensitivityProfile`, `SensitivityService`, `SensitivityVerdict`
+  - **controllers→contract:** `DietSettingsController`→`DietSettingsApi`, `SensitivityController`→`SensitivityApi`
   - **mappers:** `BreakdownDtoMapper`
   - **config:** `DietSettingsProperties`, `MealScoringProperties`, `NutritionTargetsProperties`
-  - **other:** `MealBreakdownJson`
+  - **other:** `BudgetSplitter`, `DayPlan`, `DayPlanWindow`, `LoggedMeal`, `Macros4`, `MealBreakdownJson`, `MealSlots`,
+    `PlannedWindow`, `RecipeCandidate`, `SlotKey`, `Suggestion`, `SuggestionPicker`, `TemplateRow`, `Tip`,
+    `TrainingBlock`, `UsualMeal`, `UsualMealRanker`, `WindowKind`, `WindowPlacer`, `WindowRule`, `WindowState`
 - **Contract** `api/feature/diet-settings/diet-settings.yml` — 3 operations
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 3 unit
-  - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
+- **Contract** `api/feature/sensitivity/sensitivity.yml` — 2 operations
+  - **endpoints:** GET /api/sensitivity · PUT /api/sensitivity
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 6 IT + 8 unit
+  - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`, `FuelPlanIT`,
+    `SensitivityProfileIT`, `UsualMealsIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`,
-    `TrainPopulator`
+    `MealPopulator`, `PlannedSkipPopulator`, `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `TrainPopulator`
 
 ### pantry
 
-*BE + API* · read next: [docs/features/pantry.md](features/pantry.md) (updated 2026-10-12, done)
+*BE + API* · read next: [docs/features/pantry.md](features/pantry.md) (updated 2026-11-13, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
   - **entities→tables:** `PantryCatalogEntity`→`pantry_catalog`, `PantryImportEntity`→`pantry_import`,
@@ -1269,12 +1281,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/pantry · POST /api/pantry · PUT /api/pantry/{id} · DELETE /api/pantry/{id} ·
     GET /api/pantry/catalog · POST /api/pantry/items/from-catalog · GET /api/pantry-import/lookup ·
     POST /api/pantry-import · POST /api/pantry-import/scrape · POST /api/pantry-import/photo
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 18 IT + 6 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 19 IT + 7 unit
   - **ITs:** `PantryApiIT`, `PantryCatalogApiIT`, `PantryCatalogLoaderIT`, `PantryCatalogMigrationIT`,
-    `PantryCatalogServiceIT`, `PantryImportApiIT`, `PantryImportDisabledApiIT`, `PantryItemRepositoryIT`,
-    `PantryPhotoApiIT`, `PantryPhotoDisabledApiIT`, `PantryPhotoLlmUnavailableApiIT`, `PantryPhotoScrapeOffApiIT`,
-    `PantryScrapeApiIT`, `PantryScrapeDisabledApiIT`, `PantryScrapeLlmUnavailableApiIT`, `PantryServiceIT`,
-    `PantryTwinSaturatedFatRunnerIT`, `WebPageClientIT`
+    `PantryCatalogServiceIT`, `PantryImportApiIT`, `PantryImportBarcodeIT`, `PantryImportDisabledApiIT`,
+    `PantryItemRepositoryIT`, `PantryPhotoApiIT`, `PantryPhotoDisabledApiIT`, `PantryPhotoLlmUnavailableApiIT`,
+    `PantryPhotoScrapeOffApiIT`, `PantryScrapeApiIT`, `PantryScrapeDisabledApiIT`, `PantryScrapeLlmUnavailableApiIT`,
+    `PantryServiceIT`, `PantryTwinSaturatedFatRunnerIT`, `WebPageClientIT`
   - **populators:** `DatabasePopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
     `UserPopulator`
 
@@ -1467,21 +1479,29 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### recipe
 
-*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-10-12, done)
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-11-13, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
   - **repositories:** `RecipeIngredientRepository`, `RecipeRepository`
-  - **services:** `RecipeBreakdownLlm`, `RecipeBreakdownProseService`, `RecipeBreakdownService`, `RecipeService`,
-    `RecipeWorkshopLlm`, `RecipeWorkshopService`, `RecipeWorkshopValidator`
-  - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeWorkshopController`→`RecipeWorkshopApi`
+  - **services:** `RecipeAllergenRollup`, `RecipeBreakdownLlm`, `RecipeBreakdownProseService`,
+    `RecipeBreakdownService`, `RecipeExtractionService`, `RecipeImageService`, `RecipeImportLlm`,
+    `RecipeImportService`, `RecipeJsonLdParser`, `RecipeService`, `RecipeWorkshopLlm`, `RecipeWorkshopService`,
+    `RecipeWorkshopValidator`
+  - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeImageController`→`RecipeImageApi`,
+    `RecipeImportController`→`RecipeImportApi`, `RecipeWorkshopController`→`RecipeWorkshopApi`
   - **mappers:** `RecipeMapper`
-  - **config:** `RecipeWorkshopProperties`
+  - **config:** `RecipeImportProperties`, `RecipeWorkshopProperties`
+- **Contract** `api/feature/recipe/recipe-image.yml` — 3 operations
+  - **endpoints:** POST /api/recipe/{id}/image · GET /api/recipe/{id}/image · DELETE /api/recipe/{id}/image
+- **Contract** `api/feature/recipe/recipe-import.yml` — 3 operations
+  - **endpoints:** POST /api/recipe/import/url · POST /api/recipe/import/text · POST /api/recipe/import/photo
 - **Contract** `api/feature/recipe/recipe.yml` — 7 operations
   - **endpoints:** GET /api/recipe · POST /api/recipe · GET /api/recipe/{id} · PUT /api/recipe/{id} ·
     DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown · POST /api/recipe/workshop/turn
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 8 IT + 5 unit
-  - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeRepositoryIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 13 IT + 8 unit
+  - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeImageIT`, `RecipeImportIT`,
+    `RecipeImportLlmUnavailableApiIT`, `RecipeImportSsrfApiIT`, `RecipeImportSwitchOffApiIT`, `RecipeRepositoryIT`,
     `RecipeServiceIT`, `RecipeWorkshopApiIT`, `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`
   - **populators:** `DatabasePopulator`, `PantryItemPopulator`, `RecipePopulator`
 
@@ -1569,7 +1589,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### train
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-10-12, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-13, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-10-07, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-11-11, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-11, done)
@@ -1754,7 +1774,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### wearable
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-12, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-13, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,
@@ -1780,13 +1800,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### techcore — `backend/src/main/java/io/mrkuhne/mezo/techcore`
 
 - **configuration:** `AsyncConfiguration`, `FeaturesConfiguration`, `JacksonConfiguration`,
-  `MessageSourceConfiguration`, `SchedulingConfiguration`
+  `MessageSourceConfiguration`, `PhotoEtagConfiguration`, `SchedulingConfiguration`
 - **exception:** `GlobalExceptionHandler`, `Level`, `SystemMessage`, `SystemRuntimeErrorException`, `Type`
 - **message:** `UserMessages`
 - **persistence:** `OwnedEntity`, `OwnedRepository`, `OwnershipGuard`
 - **query:** `WeightTrendQuery`
 - **security:** `CorsProperties`, `CurrentUserId`, `LlmActorContext`, `SecurityConfig`
 - **text:** `SafeTruncate`, `TextFold`
+- **time:** `CapturedAtWindow`
 - **webpush:** `Aes128GcmEncryptor`, `VapidSigner`, `WebPushClient`, `WebPushProperties`, `WebPushResult`,
   `WebPushSubscriptionKeys`
 

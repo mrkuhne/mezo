@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.Nutrients;
 import io.mrkuhne.mezo.api.dto.RecipeLogResponse;
 import io.mrkuhne.mezo.api.dto.RecipeMacros;
+import io.mrkuhne.mezo.feature.biometrics.checkin.config.OwnerZoneProperties;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemRecipeOverrideJson;
@@ -32,11 +33,13 @@ import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.time.CapturedAtWindow;
 import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -51,6 +54,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,6 +80,7 @@ public class MealService {
 
     private final MealRepository repository;
     private final MealItemRepository mealItemRepository;
+    private final io.mrkuhne.mezo.common.image.ImageStore imageStore;
     private final RecipeRepository recipeRepository;
     private final PantryItemRepository pantryItemRepository;
     private final RecipeMapper recipeMapper; // reused for the recipe whole-macro rollup
@@ -86,9 +91,15 @@ public class MealService {
     private final io.mrkuhne.mezo.feature.nutrition.config.MealScoringProperties scoringProperties;
     /** Fires {@link MealSavedEvent} so the coach can narrate the meal right away (owner, 2026-09-26). */
     private final org.springframework.context.ApplicationEventPublisher events;
+    /** Boop B4: the owner zone dates the {@code capturedAt} window; "now" is the application Clock when one is defined (tests). */
+    private final OwnerZoneProperties ownerZone;
+    private final ObjectProvider<Clock> clock;
 
     @Transactional
     public MealResponse create(UUID userId, MealRequest req) {
+        if (req.getClientRef() != null) {
+            return createIdempotent(userId, req, req.getClientRef());
+        }
         MealEntity meal = new MealEntity();
         meal.setCreatedBy(userId); // server-side ownership — never from the client
         OffsetDateTime loggedAt = applyHeader(meal, req);
@@ -96,6 +107,34 @@ public class MealService {
         rebuildItems(userId, meal, req.getItems());
         applyScore(userId, meal, loggedAt);
         MealResponse saved = mapper.toResponse(repository.save(meal)); // cascade=ALL persists the items
+        events.publishEvent(new MealSavedEvent(userId, saved.getId()));
+        return saved;
+    }
+
+    /**
+     * Boop retry path (B4, same shape as B3's journal create): the meal for a repeated {@code clientRef} is
+     * returned untouched, never duplicated, and only the call that really created it fills the items, scores
+     * and publishes the saved event. The header is claimed with {@code INSERT … ON CONFLICT DO NOTHING}, so a
+     * concurrent request with the same ref waits on the index until this transaction commits (header AND
+     * items together), then reads the finished meal - no unique violation, no half-built row visible.
+     */
+    private MealResponse createIdempotent(UUID userId, MealRequest req, UUID ref) {
+        var existing = repository.findByCreatedByAndClientRefAndDeletedFalse(userId, ref);
+        if (existing.isPresent()) {
+            return mapper.toResponse(existing.get());
+        }
+        OffsetDateTime moment = momentOf(req);
+        int created = repository.insertIfClientRefAbsent(userId, moment.toInstant(), moment.toLocalDate(),
+            req.getSlot(), req.getTitle(), ref);
+        MealEntity meal = repository.findByCreatedByAndClientRefAndDeletedFalse(userId, ref).orElseThrow();
+        if (created == 0) {
+            return mapper.toResponse(meal); // lost the race: the winner's committed meal
+        }
+        OffsetDateTime loggedAt = applyHeader(meal, req);
+        meal.setProvenance(toProvenance(req.getProvenance()));
+        rebuildItems(userId, meal, req.getItems());
+        applyScore(userId, meal, loggedAt);
+        MealResponse saved = mapper.toResponse(repository.save(meal));
         events.publishEvent(new MealSavedEvent(userId, saved.getId()));
         return saved;
     }
@@ -117,6 +156,9 @@ public class MealService {
         // soft-delete (UPDATE, not DELETE) — so bulk-soft-delete the items explicitly first.
         mealItemRepository.softDeleteByMealId(meal.getId());
         repository.delete(meal); // @SQLDelete -> is_deleted = true
+        if (meal.getPhotoId() != null) {
+            imageStore.delete(userId, meal.getPhotoId()); // the photo's bytes go with the meal (Boop B4)
+        }
     }
 
     /**
@@ -210,9 +252,19 @@ public class MealService {
      * @return the offset-bearing request instant — its LOCAL wall-clock time feeds the scoring
      *     context (timing fit), which the UTC-converted {@code Instant} could not reproduce.
      */
+    /**
+     * The meal's moment: Boop's {@code capturedAt} (window-checked in the OWNER zone, its own offset dates the
+     * meal) wins over {@code loggedAt}, which wins over now (UTC) — the web path is unchanged.
+     */
+    private OffsetDateTime momentOf(MealRequest req) {
+        if (req.getCapturedAt() != null) {
+            return CapturedAtWindow.require(req.getCapturedAt(), ownerZone.zoneId(), clock.getIfAvailable(Clock::systemUTC));
+        }
+        return req.getLoggedAt() == null ? OffsetDateTime.now(ZoneOffset.UTC) : req.getLoggedAt();
+    }
+
     private OffsetDateTime applyHeader(MealEntity meal, MealRequest req) {
-        OffsetDateTime loggedAt = req.getLoggedAt() == null
-            ? OffsetDateTime.now(ZoneOffset.UTC) : req.getLoggedAt();
+        OffsetDateTime loggedAt = momentOf(req);
         meal.setLoggedAt(loggedAt.toInstant());
         meal.setMealDate(loggedAt.toLocalDate());
         meal.setSlot(req.getSlot());

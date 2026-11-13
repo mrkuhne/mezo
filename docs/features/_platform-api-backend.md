@@ -2,8 +2,8 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-12
-tags: [platform, backend, data-layer, frontend]
+updated: 2026-11-13
+tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
   - api/generate
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-11-13 — Boop B4 Étel (`mezo-r36n9.14`): five new contract fragments, the client-ref write convention, shared photo plumbing.** Registered in `api/generate/merge.yml`: `meal/fuel-plan.yml` (`GET /api/fuel/plan/{date}`, `GET /api/fuel/usuals`), `meal/meal-photo.yml` (`/api/meal/{id}/photo`, `DELETE /api/meal/photos`), `sensitivity/sensitivity.yml` (`GET/PUT /api/sensitivity`), `recipe/recipe-import.yml` (`POST /api/recipe/import/{url,text,photo}`), `recipe/recipe-image.yml` (`/api/recipe/{id}/image`). What a backend author must know from this slice: (1) **Idempotent client writes** — `createMeal`, `logWater`, `logIntake` accept an optional `clientRef` (uuid) and `capturedAt`; the convention is B3's (partial unique index `(created_by, client_ref)` over live rows, native `INSERT … ON CONFLICT DO NOTHING` then read-back, the loser of a race sees the finished row) and the shared window check is `techcore/time/CapturedAtWindow` (not later than now + 5 min, not older than today − 7 in the owner zone `mezo.wearable.zone`, else a 400 field error on `capturedAt`); the record's date is `capturedAt`'s **own offset's** local day, so a client sends its local offset, never `Z`. (2) **Image bytes** live in the `stored_image` table behind `common/image/ImageStore`; their GETs get a content-hash ETag and `Cache-Control: private, no-cache` from `techcore/configuration/PhotoEtagConfiguration` — a `ShallowEtagHeaderFilter` registered on `/api/meal/*` and `/api/recipe/*` that guards in `shouldNotFilter` (servlet url-patterns cannot wildcard a middle segment; a 304 written in a controller is overwritten by the generated interface's `@ResponseStatus(OK)`, so the filter does it). (3) **A feature switch** `FeaturesConfiguration.RECIPE_IMPORT_SWITCH` (`mezo.feature.recipe-import.enabled`, off ⇒ 404; the AI reads also need `COMPANION_SWITCH`, the URL fetch needs `PANTRY_SCRAPE_SWITCH`; a missing piece degrades to a clean 503). (4) **Error keys** `RECIPE_IMPORT_LLM_UNAVAILABLE`, `RECIPE_IMPORT_EXTRACT_FAILED`, `RECIPE_IMPORT_FETCH_UNAVAILABLE` in both bundles. (5) **Additive-only contract changes** — every new field on an existing schema (`hasPhoto`, `hasImage`, `allergens`, `barcode`, `steps`, `sourceUrl`, lookup `source`) is optional/nullable, so the web client regenerates with no code change; the Swift generator's operation filter is the allow-list for the native app (`ios/BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`). (6) **The meal-photo/ArchUnit placement rule** held again: the day-plan orchestrator lives in `meal`, not `nutrition`, to avoid two new slice cycles (`meal → fuel`, `meal → wearable` are the new edges). (7) **`scripts/purge-restart.sql` trims, not truncates**, `stored_image` (see [`fuel.md`](fuel.md) §4). Feature detail: [`fuel.md`](fuel.md), [`pantry.md`](pantry.md), [`recipe.md`](recipe.md), [`boop-ios.md`](boop-ios.md).
 
 > **2026-11-12 — reviewed after Boop B3 (`mezo-r36n9.13`).** No platform change: B3 only adds contract fragments (`api/feature/dayclose`, widened `checkin` / `intention` / `journal` / `companion` / `boop`, registered in `api/generate/merge.yml`) and `messages_{hu,en}.properties` keys (`DAY_CLOSE_*`). See [`dayclose.md`](dayclose.md).
 

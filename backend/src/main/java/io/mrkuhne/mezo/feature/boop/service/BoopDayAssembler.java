@@ -20,6 +20,9 @@ import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.feature.intention.service.IntentionService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
+import io.mrkuhne.mezo.feature.meal.service.dayplan.DayPlanService;
+import io.mrkuhne.mezo.feature.nutrition.service.dayplan.DayPlanWindow;
+import io.mrkuhne.mezo.feature.nutrition.service.dayplan.WindowState;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
@@ -103,6 +106,7 @@ public class BoopDayAssembler {
     private final GymScheduleService gymSchedule;
     private final WorkoutTimeOverrideRepository timeOverrides;
     private final FuelDayService fuelDays;
+    private final DayPlanService dayPlans;
     private final CheckInPlanProperties checkInPlan;
     private final CheckInService checkIns;
     private final ObjectProvider<IntentionService> intentions;
@@ -157,7 +161,7 @@ public class BoopDayAssembler {
             today == null ? null : today.getActiveKcal(),
             sessionWithDone(user, date, zone),
             yesterdayLoad(user, date, zone),
-            meals(fuel, zone),
+            meals(user, date, fuel, zone),
             toInt(consumed == null ? null : consumed.getKcal()),
             toInt(targets == null ? null : targets.getKcal()),
             toInt(consumed == null ? null : consumed.getP()),
@@ -352,11 +356,27 @@ public class BoopDayAssembler {
 
     // ------------------------------------------------------------------ fuel
 
-    private static List<BoopDay.Meal> meals(FuelDayResponse fuel, ZoneId zone) {
-        if (fuel.getMeals() == null) {
-            return List.of();
+    /**
+     * The day's meals: every LOGGED one, plus the day plan's still-open windows as
+     * {@code logged = false} (Boop B4, mezo-r36n9.14). Before that the list held logged rows only,
+     * which left {@link RuleVerdicts}'s "next unlogged meal" branch unreachable. Clock order, rows
+     * without a time last.
+     */
+    private List<BoopDay.Meal> meals(UUID user, LocalDate date, FuelDayResponse fuel, ZoneId zone) {
+        List<BoopDay.Meal> out = new ArrayList<>();
+        if (fuel.getMeals() != null) {
+            fuel.getMeals().forEach(m -> out.add(meal(m, zone)));
         }
-        return fuel.getMeals().stream().map(m -> meal(m, zone)).toList();
+        for (DayPlanWindow w : dayPlans.plan(user, date).windows()) {
+            if (w.state() == WindowState.DONE || w.state() == WindowState.SKIPPED) {
+                continue;
+            }
+            out.add(new BoopDay.Meal(w.from(), w.label(), w.slot().wire(),
+                w.budget() == null ? 0 : w.budget().kcal(), w.budget() == null ? 0 : w.budget().p(), false));
+        }
+        out.sort(java.util.Comparator.comparing(BoopDay.Meal::time,
+            java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
+        return List.copyOf(out);
     }
 
     private static BoopDay.Meal meal(MealResponse m, ZoneId zone) {

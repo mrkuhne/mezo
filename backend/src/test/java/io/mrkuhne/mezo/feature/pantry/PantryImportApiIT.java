@@ -391,4 +391,32 @@ class PantryImportApiIT extends ApiIntegrationTest {
 
         assertThat(pantry.getImports()).isEmpty();
     }
+
+    /**
+     * The shelf read carries what the product says about allergens and its barcode: without it every shelf row would
+     * read "nincs adat" on the phone, whatever the catalog knows.
+     */
+    @Test
+    void testShelf_shouldCarryAllergenMapAndBarcode_whenImportedWithThem() {
+        HttpHeaders auth = ownerAuthHeaders();
+        PantryImportRequest r = importReq();
+        r.setBarcode("5997001234567");
+        r.setAllergens(java.util.Map.of("milk", "contains", "nuts", "traces"));
+        PantryItemResponse created = postForBody("/api/pantry-import", r, auth, HttpStatus.CREATED, PantryItemResponse.class);
+
+        var row = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class).getIngredients().stream()
+            .filter(i -> i.getId().equals(created.getId())).findFirst().orElseThrow();
+        assertThat(row.getAllergens()).containsEntry("milk", "contains").containsEntry("nuts", "traces").hasSize(2);
+        assertThat(row.getBarcode()).isEqualTo("5997001234567");
+    }
+
+    @Test
+    void testShelf_shouldCarryNoAllergenMap_whenTheProductSaidNothing() {
+        HttpHeaders auth = ownerAuthHeaders();
+        PantryItemResponse created = postForBody("/api/pantry-import", importReq(), auth, HttpStatus.CREATED, PantryItemResponse.class);
+        var row = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class).getIngredients().stream()
+            .filter(i -> i.getId().equals(created.getId())).findFirst().orElseThrow();
+        // no declaration is no map (the phone reads that as "nincs adat"), never an invented "free of"
+        assertThat(row.getAllergens() == null || row.getAllergens().isEmpty()).isTrue();
+    }
 }

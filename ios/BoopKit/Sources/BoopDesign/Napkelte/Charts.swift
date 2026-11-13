@@ -128,12 +128,18 @@ public func weekBarValueLabel(_ value: Double?, unit: String) -> String {
 /// faint dashed stub; with no average (no data at all) the waterline is left out.
 public struct WeekBars: View {
     let values: [Double?], average: Double?, unit: String, labels: [String]
-    public init(values: [Double?], average: Double?, unit: String, labels: [String]) {
+    /// What the waterline is called ("átlag" by default; the food week draws a target: "cél").
+    let lineLabel: String
+    /// Bars drawn as an outline instead of filled: a day the chart must not read as a miss (a kímélő day).
+    let marked: Set<Int>
+    public init(values: [Double?], average: Double?, unit: String, labels: [String], lineLabel: String = "átlag", marked: Set<Int> = []) {
         self.values = values; self.average = average; self.unit = unit; self.labels = labels
+        self.lineLabel = lineLabel; self.marked = marked
     }
     public var body: some View {
         GeometryReader { g in
-            let (lo, hi) = weekBarScale(values: values)
+            // the waterline is part of the scale: a target above the tallest bar must still be on the chart
+            let (lo, hi) = weekBarScale(values: values + [average])
             let H = g.size.height - 22
             let y: (Double) -> CGFloat = { H * (1 - ($0 - lo) / (hi - lo)) }
             ZStack(alignment: .topLeading) {
@@ -143,7 +149,11 @@ public struct WeekBars: View {
                         VStack(spacing: 6) {
                             Spacer(minLength: 0)
                             if last { Text(weekBarValueLabel(values[i], unit: unit)).nkFont(11, .bold, design: .monospaced).foregroundStyle(.white) }
-                            if let v = values[i] {
+                            if let v = values[i], marked.contains(i) {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke(.white.opacity(last ? 0.95 : 0.45), style: StrokeStyle(lineWidth: 1.5))
+                                    .frame(width: 22, height: max(6, H - y(v)))
+                            } else if let v = values[i] {
                                 RoundedRectangle(cornerRadius: 6, style: .continuous).fill(.white.opacity(last ? 0.95 : 0.28))
                                     .frame(width: 22, height: max(6, H - y(v)))
                             } else {
@@ -156,14 +166,14 @@ public struct WeekBars: View {
                         }
                         .frame(maxWidth: .infinity)
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(i < labels.count ? labels[i] : ""): \(values[i] == nil ? "nincs adat" : weekBarValueLabel(values[i], unit: unit))")
+                        .accessibilityLabel("\(i < labels.count ? labels[i] : ""): \(values[i] == nil ? "nincs adat" : weekBarValueLabel(values[i], unit: unit))\(marked.contains(i) ? " · kímélő nap" : "")")
                     }
                 }
                 if let average {
                     Path { p in p.move(to: CGPoint(x: 0, y: y(average))); p.addLine(to: CGPoint(x: g.size.width, y: y(average))) }
                         .stroke(.white.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         .accessibilityHidden(true)
-                    Text("átlag \(Int(average.rounded()))\(unit)").nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.7))
+                    Text("\(lineLabel) \(Int(average.rounded()))\(unit)").nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.7))
                         .offset(y: y(average) - 16)
                 }
             }

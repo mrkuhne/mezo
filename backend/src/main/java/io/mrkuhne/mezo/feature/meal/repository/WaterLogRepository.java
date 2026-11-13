@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.meal.repository;
 
+import org.springframework.data.jpa.repository.Modifying;
 import io.mrkuhne.mezo.feature.meal.entity.WaterLogEntity;
 import java.time.LocalDate;
 import java.util.List;
@@ -28,4 +29,16 @@ public interface WaterLogRepository extends JpaRepository<WaterLogEntity, UUID> 
     List<Object[]> sumsBetween(@Param("userId") UUID userId,
                                @Param("from") LocalDate from,
                                @Param("to") LocalDate to);
+
+    Optional<WaterLogEntity> findByCreatedByAndClientRefAndDeletedFalse(UUID createdBy, UUID clientRef);
+
+    /** Race-safe insert for a Boop retry (see {@code MealRepository#insertIfClientRefAbsent}); 1 = created. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+        insert into water_log (created_by, log_date, amount_ml, client_ref)
+        values (:createdBy, :logDate, :amountMl, :clientRef)
+        on conflict (created_by, client_ref) where client_ref is not null and is_deleted = false do nothing
+        """, nativeQuery = true)
+    int insertIfClientRefAbsent(@Param("createdBy") UUID createdBy, @Param("logDate") LocalDate logDate,
+                                @Param("amountMl") int amountMl, @Param("clientRef") UUID clientRef);
 }

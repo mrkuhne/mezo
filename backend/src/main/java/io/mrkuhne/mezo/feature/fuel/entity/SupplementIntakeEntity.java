@@ -57,4 +57,8 @@ public class SupplementIntakeEntity extends OwnedEntity {
 
     @Column
     private String note;
+
+    /** Boop outbox idempotency key (unique per owner among live rows); null for web rows. */
+    @Column(name = "client_ref", columnDefinition = "uuid")
+    private UUID clientRef;
 }

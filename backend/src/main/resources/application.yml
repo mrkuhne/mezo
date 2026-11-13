@@ -312,6 +312,19 @@ mezo:
     max-lines: 30
     max-steps: 20
     max-history-turns: 20
+  recipe-import:
+    # Recipe import (Boop B4) — a photo/page/pasted text becomes a review draft. Page fetch limits come
+    # from pantry-scrape (the one SSRF-guarded fetcher); this block is the import's own tunables.
+    # The photo is only ever shown to the AI (never stored, never decoded here), so WebP is fine.
+    max-photo-bytes: 5000000
+    allowed-mime-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+    # Prompt budget for page text (chars); pasted text is capped by the contract (20000).
+    max-prompt-chars: 24000
+    # At/below this per-line match confidence a row is flagged for review (boundary-inclusive).
+    confidence-threshold: 0.6
   pantry-suggestion:
     # Deterministic Kamra swap heuristics (Fuel P6) — binds onto PantrySuggestionProperties
     # Max suggestions surfaced on the Kamra
@@ -374,6 +387,10 @@ mezo:
     # Receptműhely AI turn (mezo-92pb) — off: the workshop endpoint is gone; the rest of the
     # recipe surface (CRUD + breakdown) is unaffected. LLM needs the companion switch too.
     recipe-workshop:
+      enabled: true
+    # Recipe import (Boop B4) — URL / photo / pasted text -> review draft. A page's own structured
+    # recipe needs no AI; the AI reads need the companion switch, the URL fetch the pantry-scrape one.
+    recipe-import:
       enabled: true
     # Meal coach verdicts (mezo-mr4n) — LLM prose (tagline/summary/improve) over the deterministic
     # meal score; needs the companion switch too (the MealCoachLlm adapter bean). Off: the coach
@@ -3041,7 +3058,7 @@ mezo:
     confidence-threshold: 0.6
   # Fuel-settings ghost defaults (mezo-53su). Binds onto FuelSettingsProperties.
   fuel-settings:
-    default-meals-per-day: 4
+    default-meals-per-day: 5
     default-caffeine-cutoff: "14:00"
   # Diet-settings ghost defaults (Diet Plan slice 1). Binds onto DietSettingsProperties.
   diet-settings:

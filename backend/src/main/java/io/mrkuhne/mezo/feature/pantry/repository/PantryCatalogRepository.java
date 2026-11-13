@@ -28,6 +28,9 @@ public interface PantryCatalogRepository extends JpaRepository<PantryCatalogEnti
         + "and lower(trim(coalesce(c.brand, ''))) = lower(trim(:brandKey))")
     Optional<PantryCatalogEntity> findByNaturalKeyRaw(@Param("name") String name, @Param("brandKey") String brandKey);
 
+    /** The owner's own live definition for a product barcode (unique per owner, see uq_pantry_catalog_owner_barcode). */
+    Optional<PantryCatalogEntity> findByCreatedByAndBarcodeAndDeletedFalse(UUID createdBy, String barcode);
+
     /**
      * The natural key is {@code (lower(trim(name)), lower(trim(coalesce(brand, ''))))} — the same
      * expression as the unique index {@code uq_pantry_catalog_natural}. Trimming lives in the key

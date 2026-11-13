@@ -25,16 +25,26 @@ public func makeTransport() -> URLSessionTransport {
     return URLSessionTransport(configuration: .init(session: URLSession(configuration: cfg)))
 }
 
-public func makeClient(baseURL: URL = BoopConfig.apiBaseURL, tokens: TokenStore, transport: any ClientTransport = makeTransport()) -> Client {
-    Client(serverURL: baseURL, configuration: .init(dateTranscoder: FlexibleISO8601Transcoder()),
+/// `timeZone`: the zone timestamps are written in (the device's, following it when it changes) — see the transcoder.
+public func makeClient(baseURL: URL = BoopConfig.apiBaseURL, tokens: TokenStore, transport: any ClientTransport = makeTransport(),
+                       timeZone: TimeZone = .autoupdatingCurrent) -> Client {
+    Client(serverURL: baseURL, configuration: .init(dateTranscoder: FlexibleISO8601Transcoder(timeZone: timeZone)),
            transport: transport, middlewares: [AuthMiddleware(tokens: tokens)])
 }
 
 /// ISO-8601 dates with or without fractional seconds. The backend writes Java `Instant`s, which carry
 /// microseconds when they have them (the Boop brief's `generatedAt`); the runtime's default transcoder
-/// rejects those, and every live brief failed to decode. Encodes without fractions, as before.
+/// rejects those, and every live brief failed to decode. Encodes without fractions, carrying the phone's own UTC offset
+/// ("2026-11-13T00:30:00+01:00", never "…Z"): the server takes the local date of a `capturedAt` as the record's day, so a
+/// 00:30 Budapest meal sent as UTC would land on the previous day. The instant is the same either way.
 struct FlexibleISO8601Transcoder: DateTranscoder {
-    func encode(_ date: Date) throws -> String { try ISO8601DateTranscoder.iso8601.encode(date) }
+    var timeZone: TimeZone = .autoupdatingCurrent
+    func encode(_ date: Date) throws -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withColonSeparatorInTimeZone]
+        f.timeZone = timeZone
+        return f.string(from: date)
+    }
     func decode(_ string: String) throws -> Date {
         if let date = try? ISO8601DateTranscoder.iso8601WithFractionalSeconds.decode(string) { return date }
         return try ISO8601DateTranscoder.iso8601.decode(string)
