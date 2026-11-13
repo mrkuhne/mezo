@@ -26,7 +26,7 @@ public struct FoodAmount: Equatable, Sendable {
 
 /// What a product says about one allergen. An ABSENT key is no information at all: it is never "free of" — the UI says
 /// "nincs adat" for it (`SensitivityRules`).
-public enum AllergenState: String, Equatable, Sendable {
+public enum AllergenState: String, Codable, Equatable, Sendable {
     case contains, traces, unknown
     /// Reads the server's lowercase value; anything else (or a different case) is `.unknown`.
     public init(wire: String) { self = AllergenState(rawValue: wire.lowercased()) ?? .unknown }
@@ -236,9 +236,9 @@ public struct FuelPlan: Equatable, Sendable {
 
 // MARK: - Drafting and saving a meal
 
-public enum DraftSource: String, Equatable, Sendable { case recipe, pantry, estimate }
+public enum DraftSource: String, Codable, Equatable, Sendable { case recipe, pantry, estimate }
 
-public struct DraftItem: Equatable, Sendable {
+public struct DraftItem: Codable, Equatable, Sendable {
     public var source: DraftSource
     public var pantryItemId: UUID?
     public var recipeId: UUID?
@@ -269,7 +269,7 @@ public struct DraftItem: Equatable, Sendable {
 }
 
 /// An editable meal, before it is saved. It keeps the photo bytes and the scanned barcode it came from.
-public struct MealDraft: Equatable, Sendable {
+public struct MealDraft: Codable, Equatable, Sendable {
     /// The day it is for, `yyyy-MM-dd`.
     public var date: String
     public var slot: String
@@ -296,7 +296,7 @@ public struct MealDraft: Equatable, Sendable {
 
 // MARK: - Lookup
 
-public enum LookupSource: String, Equatable, Sendable { case off = "OFF", catalog = "CATALOG", none = "NONE" }
+public enum LookupSource: String, Codable, Equatable, Sendable { case off = "OFF", catalog = "CATALOG", none = "NONE" }
 
 public struct LookupItem: Equatable, Sendable {
     public var name: String

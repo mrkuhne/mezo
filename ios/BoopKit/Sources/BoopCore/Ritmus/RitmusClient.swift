@@ -60,6 +60,7 @@ public struct RitmusClient: OutboxSender {
             case .voice: return try await sendVoice(item)
             case .dayClose: return try await sendDayClose(item)
             case .chatQuestion: return try await sendChatQuestion(item)
+            case .mealDraft: return await MealDraftSender(drafter: FoodClient(client: client), directory: audioDirectory).send(item)
             }
         } catch {
             // An answer whose body would not decode still carries its status; otherwise (no network, a timeout) the

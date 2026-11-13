@@ -4,6 +4,8 @@ import OSLog
 /// What a queued write is; Task 7's sender maps each kind to its API operation.
 public enum OutboxKind: String, Codable, CaseIterable, Sendable {
     case checkIn, checkInNote, goal, goalRemove, journal, voice, dayClose, chatQuestion
+    /// A meal captured without the net (B4): the sender computes the draft, it never saves anything.
+    case mealDraft
 }
 
 /// One pending write. `id` is the client ref the server keys idempotency on, so a resend never duplicates.
@@ -192,6 +194,8 @@ public actor Outbox {
         case .checkInNote, .journal, .voice, .dayClose: ("chain|\(item.date)", true)
         case .goal, .goalRemove: ("goal|\(item.date)", true)
         case .chatQuestion: ("chat|\(item.date)", true)
+        // Every captured meal stands alone: one waiting never holds another back.
+        case .mealDraft: ("meal|\(item.id.uuidString)", false)
         }
     }
 
