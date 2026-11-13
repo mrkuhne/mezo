@@ -37,21 +37,22 @@ struct EletAreaPage: View {
     var onToast: (String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var tab = 0
+    @State private var motion = OrbMotion()
 
     private var m: EMetric { EMetric.all[min(metric, 7)] }
     private var tabs: [ETab] { EAreaContent.tabs(metric) }
 
     var body: some View {
+        ZStack(alignment: .bottom) {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 head
-                tabBar.padding(.top, 14)
                 LazyVStack(alignment: .leading, spacing: EWarm.on ? 24 : 14) {
                     ForEach(Array(tabs[min(tab, tabs.count - 1)].blocks.enumerated()), id: \.offset) { _, b in
                         block(b)
                     }
                 }
-                .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 80)
+                .padding(.horizontal, 16).padding(.top, 22).padding(.bottom, 124)
                 .id(tab)
                 .transition(.opacity)
             }
@@ -74,22 +75,38 @@ struct EletAreaPage: View {
             }
             .padding(.trailing, 14).padding(.top, 56)
         }
+        areaBar
+        }
+        .onDisappear { motion.stop() }
     }
 
+    /// Round 9 (owner, 2026-11-13): the area is its own app, so it gets its own masthead —
+    /// the area's name where `boop` sits on Ma — and its own bottom bar in place of the spine's.
     private var head: some View {
         Group {
-            if EWarm.on { EPhotoHead(metric: min(metric, 7), height: 330) }
-            else { GHead(sky: m.sky, height: 300) }
+            if EWarm.on { EPhotoHead(metric: min(metric, 7), height: 356) }
+            else { GHead(sky: m.sky, height: 326) }
         }
+            .overlay(alignment: .top) {
+                VStack(spacing: 7) {
+                    EGlyph(m.glyph, .white.opacity(0.9), size: 19)
+                    Text(m.name.lowercased())
+                        .font(.custom("Outfit", size: 29).weight(.light))
+                        .tracking(4.5)
+                        .foregroundStyle(.white)
+                }
+                .padding(.top, 126)
+            }
             .overlay(alignment: .bottomLeading) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 10) {
-                        EGlyph(m.glyph, .white, size: 20)
-                        Text(m.name.uppercased()).font(AuraFont.mono(12, .bold)).tracking(2).foregroundStyle(.white.opacity(0.8))
+                        Text(tabs[min(tab, tabs.count - 1)].name.uppercased())
+                            .font(AuraFont.mono(12, .bold)).tracking(2).foregroundStyle(.white.opacity(0.65))
                         Spacer()
                         HStack(spacing: 9) {
                             Text("\(m.value)").font(.custom("Outfit", size: 26).weight(.light)).foregroundStyle(.white)
-                            StillOrb(colors: m.orb, size: 34, level: Double(m.value) / 100)
+                            LivingOrb(mood: .good, size: 34, motion: motion, palette: m.orb,
+                                      glow: false, level: Double(m.value) / 100)
                         }
                     }
                     Text(m.headline).font(AuraFont.serif(34)).foregroundStyle(.white)
@@ -101,32 +118,65 @@ struct EletAreaPage: View {
             }
     }
 
-    private var tabBar: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                ForEach(tabs.indices, id: \.self) { i in
-                    let on = i == tab
-                    HStack(spacing: 7) {
-                        Text(tabs[i].name)
-                            .font(.system(size: 14.5, weight: on ? .semibold : .regular))
-                            .foregroundStyle(on ? gBase : .white.opacity(0.75))
-                        if tabs[i].badge > 0 {
-                            Text("\(tabs[i].badge)")
-                                .font(.custom("Outfit", size: 12).weight(.semibold))
-                                .foregroundStyle(on ? gBase.opacity(0.8) : m.glow)
-                                .frame(minWidth: 18, minHeight: 18)
-                                .background(Circle().fill(on ? gBase.opacity(0.13) : m.glow.opacity(0.25)))
-                        }
-                    }
-                    .padding(.horizontal, 15).frame(height: 38)
-                    .background(Capsule().fill(on ? .white : .white.opacity(0.1)))
-                    .contentShape(Capsule())
+    /// Each area's own bottom bar: its pages, plus one fixed way to ask Boop about this area.
+    /// Icon + label, so four- and five-item bars read the same.
+    private static func tabGlyph(_ name: String) -> String {
+        switch name {
+        case "Ma": return "sun-ink"
+        case "Receptek": return "book-sage"
+        case "Kamra": return "plate-deep"
+        case "Gyakorlatok": return "dumbbell-ink"
+        case "Check-inek": return "check-ink"
+        case "Figyelt": return "search-ink"
+        case "Szabályok": return "scale-ink"
+        case "Fiókok": return "repeat-deep"
+        case "Napirend", "Terv", "Tervezett": return "clock-ink"
+        case "Mi hat rá": return "bolt-ink"
+        default: return "chart-deep"
+        }
+    }
+
+    private var areaBar: some View {
+        GlassEffectContainer(spacing: 12) {
+        HStack(spacing: 0) {
+            ForEach(tabs.indices, id: \.self) { i in
+                barItem(glyph: Self.tabGlyph(tabs[i].name), label: tabs[i].name,
+                        badge: tabs[i].badge, on: i == tab)
                     .onTapGesture { withAnimation(.easeInOut(duration: 0.22)) { tab = i } }
+            }
+            barItem(glyph: "chat-ink", label: "Boop", badge: 0, on: false)
+                .onTapGesture { onToast("Boop · " + m.name) }
+        }
+        .padding(.horizontal, 6).padding(.vertical, 7)
+        .glassEffect(.regular, in: .capsule)
+        }
+        .padding(.horizontal, 14).padding(.bottom, 4)
+    }
+
+    private func barItem(glyph: String, label: String, badge: Int, on: Bool) -> some View {
+        VStack(spacing: 4) {
+            ZStack(alignment: .topTrailing) {
+                EGlyph(glyph, on ? m.glow : .white.opacity(0.65), size: 19)
+                if badge > 0 {
+                    Text("\(badge)")
+                        .font(.custom("Outfit", size: 10).weight(.semibold))
+                        .foregroundStyle(gBase)
+                        .frame(minWidth: 14, minHeight: 14)
+                        .background(Circle().fill(m.glow))
+                        .offset(x: 9, y: -6)
                 }
             }
-            .padding(.horizontal, 16)
+            .frame(height: 20)
+            Text(label)
+                .font(.system(size: 10.5, weight: on ? .semibold : .regular))
+                .foregroundStyle(on ? .white : .white.opacity(0.6))
+                .lineLimit(1).minimumScaleFactor(0.8)
         }
-        .scrollIndicators(.hidden)
+        .frame(maxWidth: .infinity).frame(height: 46)
+        .background(
+            Capsule().fill(on ? m.glow.opacity(0.16) : .clear)
+        )
+        .contentShape(Capsule())
     }
 
     // MARK: Blocks
