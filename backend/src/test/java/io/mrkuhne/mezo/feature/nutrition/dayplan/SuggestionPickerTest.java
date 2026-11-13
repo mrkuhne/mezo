@@ -96,6 +96,18 @@ class SuggestionPickerTest {
         assertThat(s.text()).contains("Rántotta");
     }
 
+    /** The fallback staples obey the profile too — a free-text sensitivity naming one drops it. */
+    @Test
+    void leavesAFallbackStapleOutWhenTheProfileNamesIt() {
+        SensitivityProfile avoidsChicken = new SensitivityProfile(
+            List.of(new Sensitivity("csirke", SensitivityLevel.AVOID, null)), new NovaRule(false, 2));
+
+        Suggestion s = SuggestionPicker.pick(SlotKey.LUNCH, new Macros4(620, 45, 60, 20), List.of(), avoidsChicken);
+
+        assertThat(s.kind()).isEqualTo(Suggestion.Kind.INGREDIENTS);
+        assertThat(s.text()).doesNotContain("csirkemell").contains("rizs");
+    }
+
     /** An unclassified recipe (no NOVA level) is not silently treated as processed. */
     @Test
     void suggestsAnUnclassifiedRecipeWhenTheNovaRuleIsOn() {

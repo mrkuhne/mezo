@@ -34,6 +34,8 @@ public final class SuggestionPicker {
     private static final String PROTEIN_STAPLE = "csirkemell";
     private static final String CARB_STAPLE = "rizs";
     private static final int STAPLE_ROUNDING_G = 10;
+    /** Below this a free-text key matches a staple only as a whole word, never as a fragment. */
+    private static final int MIN_NAME_MATCH_LEN = 3;
 
     private SuggestionPicker() {
     }
@@ -84,11 +86,18 @@ public final class SuggestionPicker {
             "Kb. " + budget.kcal() + " kcal és " + budget.p() + " g fehérje fér bele ebbe az ablakba.", reason);
     }
 
-    /** A free-text sensitivity naming the staple rules it out; the staples carry no EU-14 allergen. */
+    /**
+     * A free-text sensitivity naming the staple rules it out ("csirke" rules out "csirkemell", and
+     * so does "csirkemell-filé"). The staples carry no EU-14 allergen of their own, so the
+     * structured keys cannot touch them. A key shorter than {@value #MIN_NAME_MATCH_LEN}
+     * characters only matches whole, never as a fragment — "s" must not rule out "rizs".
+     */
     private static boolean allowed(String staple, SensitivityProfile profile) {
         return profile.items().stream()
-            .map(s -> s.key() == null ? "" : s.key().toLowerCase(Locale.ROOT))
-            .noneMatch(key -> !key.isBlank() && (key.contains(staple) || staple.contains(key)));
+            .map(s -> s.key() == null ? "" : s.key().strip().toLowerCase(Locale.ROOT))
+            .filter(key -> !key.isEmpty())
+            .noneMatch(key -> key.equals(staple)
+                || (key.length() >= MIN_NAME_MATCH_LEN && (key.contains(staple) || staple.contains(key))));
     }
 
     private static int grams(int macroGrams, double per100g) {
