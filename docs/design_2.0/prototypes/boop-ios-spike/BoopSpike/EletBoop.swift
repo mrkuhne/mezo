@@ -340,7 +340,7 @@ struct EletNaplo: View {
             gPageBackground(m.top).ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    GHead(sky: m.sky, height: 270)
+                    Group { if EWarm.on { EPhotoHead(metric: 0, height: 280) } else { GHead(sky: m.sky, height: 270) } }
                         .overlay(alignment: .bottomLeading) {
                             VStack(alignment: .leading, spacing: 8) {
                                 GLabel("NAPLÓ · MINTÁK")

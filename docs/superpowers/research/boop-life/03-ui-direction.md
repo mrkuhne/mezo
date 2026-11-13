@@ -305,6 +305,9 @@ nincs ilyen főcím része… viszont így, hogy eltűnik a menüsor alul, igaz�
    bottom, the colour wash ends in `.clear` instead of a colour, and the whole head carries a final alpha
    mask — so the last pixels of the head *are* the page background, at any head height. The painted fallback
    got the same dissolve; without it the landscape stopped on a hard line.
+6. **Every head in the app wears it**, not only the area pages: Ma's hero photo is blurred the same way, and
+   Napló — which was still on the cold painted head in warm mode — now uses the shared photo head. The owner
+   spotted the mismatch the moment two screens sat side by side (*"most nem mindegyik helyen egységes"*).
 
 Trap found while building: a glass bar placed with `.overlay` on the scrolling page renders but is easy to
 mis-verify — the simulator tool's tap coordinates sit ~70 pt above the screenshot's own point grid, so a tap
