@@ -248,5 +248,17 @@
     "miert": "Több úton is fejlesztesz; csak akkor bízhatsz a Notionban, ha minden munka ugyanígy kerül bele.",
     "levaltotta": "A szabály eddig csak a Boop-útmutatóban élt.",
     "kovetkezmeny": "A projekt fő szabálykönyvébe került: munka elején ellenőrzés, a végén frissítés; ha elmarad, azt jelezni kell."
+  },
+  "d-2026-11-13-app-ikon": {
+    "cim": "A Boop ikonja a hajnali kép a hegyekkel",
+    "datum": "2026-11-13",
+    "suly": "Kicsi",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "Három irány közül (teljes hajnali kép hegyekkel · csak a gömb fekete háttéren · letisztult horizontvonal) a teljes hajnali kép lett az app ikonja, sötét és színezett változattal együtt.",
+    "miert": "A hegyvonulat sziluettje miatt egyetlen másik ikonra sem hasonlít a kezdőképernyőn, és ugyanazt a képet hozza, amit a tulajdonos reggel az appban lát.",
+    "levaltotta": "Eddig nem volt ikon: a telefonon az üres, alapértelmezett négyzet látszott.",
+    "kovetkezmeny": "Az ikon kódból generálódik, így a kinézet változásával újrarajzolható. Az Apple Watch ikonja a B5 szakaszra marad."
   }
 }

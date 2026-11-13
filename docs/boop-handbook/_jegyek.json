@@ -307,5 +307,15 @@
       "Napló"
     ],
     "mit_kapsz": "Ha egy check-int újrakezdesz, miközben az előző hangjegyzeted még küldés alatt van, a jegyzet nem íródik felül."
+  },
+  "mezo-r36n9.34": {
+    "cim": "A Boopnak saját ikonja legyen a kezdőképernyőn",
+    "tipus": "Új funkció",
+    "szakasz": "B2 Gerinc",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A telefonod kezdőképernyőjén a Boop a saját hajnali képével jelenik meg az üres négyzet helyett, sötét módban és színezett kezdőképernyőn is.",
+    "munkamenet": "boop-app-icon"
   }
 }
