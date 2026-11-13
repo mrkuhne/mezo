@@ -2,44 +2,79 @@
 cim: Allergének és érzékenységek
 szint: Funkció
 terulet: Étel
-allapot: Tervezve
+allapot: Élesben
 hol: [iPhone app, Háttérrendszer, AI]
 szulo: 00-attekintes
 szakasz: [B4]
-osszefoglalo: Boop tudni fogja, mire vagy érzékeny, és jelzi az alapanyagokon, a recepteken és az étkezéseken.
+osszefoglalo: Megadod, mire vagy érzékeny, és Boop jelzi az alapanyagokon, a recepteken és a javaslatokban — de csak azt állítja, amit tényleg tud.
 ---
 
 ## Mit csinál
-Új funkció — ma sehol nincs meg a rendszerben. A B4 után:
 
-- a **profilodban** megadod, mire vagy allergiás vagy érzékeny (például laktóz, glutén);
-- a **kamra tételein** jelölés van, mit tartalmaznak;
-- a **recept** a hozzávalókból automatikusan összesíti az allergéneket;
-- Boop az **étkezés-vázlatnál, az értékelésnél és a javaslatoknál** figyelembe veszi és ki is mondja.
+- A **profilodban** megadod, mire vagy érzékeny, és milyen szinten: *allergia*, *intolerancia* vagy
+  *kerülöm*. Ugyanitt állítható, hogy a feldolgozottság meddig mehet el.
+- A **kamra tételein** ott van, mit tartalmaznak a 14 kötelezően jelölt allergénből.
+- A **recept** a hozzávalóiból magától összesíti ezt — kézzel nem kell beírni.
+- Boop a **javaslatoknál** figyelembe veszi: nem ajánl olyat, amit a szabályaid kizárnak.
 
-## Hogyan működik (terv)
-A pontos modellt a B4 indító ötletelése dönti el. A kutatás javaslata:
+**A legfontosabb szabály:** ha egy ételről nincs adatunk, Boop azt mondja, hogy *nincs adat* — soha nem azt,
+hogy „nem tartalmazza". Egy allergiánál a „nincs adat" ugyanúgy kizárja az ételt, mint a „tartalmazza".
 
-1. Allergén-készlet a termékkatalógus soraira (az EU 14 főallergénje plusz érzékenységek, például laktóz).
-2. Recept-szintű összesítés a hozzávalókból, nem kézzel.
-3. Felhasználónkénti érzékenység-profil.
-4. Felhasználás négy helyen: az étkezés-vázlat párosításánál, a pontozásnál és az AI értékelésnél, a későbbi étrendi terv
-   szűrőjénél, és a behúzásoknál (az OpenFoodFacts allergén-adatot ad; az AI-behúzások új mezőt kapnak, átnézés-jelzéssel).
+## Hogyan működik
+
+1. **Az alapanyag.** Egy vonalkódról beolvasott termék a bolti adatbázisból hozza az allergéneket. Ami
+   kézzel került fel, ott a **polca** mondja meg, amit biztosan tudni lehet: a halpolcon halat, a tojáspolcon
+   tojást, a tejtermék- és sajtpolcon tejet, a magvaknál a név szerinti helyes allergént (mogyoróvaj →
+   földimogyoró, szezámmag → szezám, kesu és pekán → csonthéjas).
+2. **Ami vegyes polc, azt a neve dönti el.** A tejtermékek közt ott vannak a növényi italok is: a mandulaital
+   csonthéjas, a szójaital szója, a kókusztej pedig egyik főallergént sem tartalmazza. Ezek sosem kapnak
+   „tejet". A magkeverékek és a chia „nincs adat" maradnak — a „mag" szó nem mondja meg, melyik magról van szó.
+3. **A recept** a hozzávalói közül a legerősebb állítást veszi át minden allergénre: a „tartalmazza" erősebb a
+   „nyomokban"-nál, az pedig a „nincs adat"-nál. Egyetlen bizonytalan hozzávaló is bizonytalanná teszi az
+   egészet — ez szándékos.
+4. **A laktózmentes termékek.** A „Laktózmentes" (vagy „LM") nevű tejtermékeid továbbra is tejterméknek
+   számítanak, mert a kötelező jelölés a tejproteinről szól, nem a laktózról — viszont Boop felismeri őket, és
+   **laktóz-intoleranciánál nem szól rájuk**. Egy allergia-szintű tej-szabályt ez nem lazít fel. Egy recept
+   csak akkor számít laktózmentesnek, ha **minden** tejes hozzávalója laktózmentes.
+5. **Egy valódi címke mindig erősebb** annál, amit a polc sejt: ha egy terméken már van beolvasott vagy kézzel
+   megadott allergén-adat, azt semmi nem írja át.
 
 ## Miért így
-- Ma a recepteken csak szabad szöveges címke van, és az AI étkezés-értékelő kifejezetten **tiltja**, hogy ételérzékenységet
-  nevezzen meg. A B4 ezt a szabályt **szándékosan megfordítja** (spec §7 kockázatok: „Allergén-szabály megfordítása”).
-- A tulajdonos kérte (spec §3.1 „Új”).
+
+- A tulajdonos kérte, és az étkezés-értékelő AI korábbi, ételérzékenységet **tiltó** szabályát a B4
+  szándékosan megfordította (B4 spec §7).
+- **Döntés, 2026-11-13** („Kitöltjük, amit biztosan tudunk"): a kamrában minden alapanyagnál üres volt az
+  allergén-rovat, ezért a halas és tojásos receptek allergénmentesnek számoltak. A két lehetőség közül — a polc
+  alapján kitölteni, vagy mindenhova „nem tudjuk"-ot írni — a tulajdonos a kitöltést választotta: egy sima
+  tojáson a „nem tudjuk" csak zaj lenne, amit megtanul nem észrevenni. A laktózmentes felismerés ugyanebbe a
+  körbe tartozik, különben a saját reggelije tűnne veszélyesnek.
 
 ## Beállítások
-Nincs még — a B4 tervezésekor dől el.
+
+| Beállítás | Mit állít | Alapérték |
+|---|---|---|
+| profil: érzékenységek | Mire és milyen szinten vagy érzékeny | üres lista |
+| profil: feldolgozottsági korlát | Meddig mehet el egy étel feldolgozottsága | be, 2. szintig |
 
 ## Adattáblák
-Nincs még. Ma egyik étel-táblában sincs allergén-oszlop; a B4 hozza létre (a háttérben `pantry_catalog`, `recipe` és a profil bővítése várható).
+
+| Tábla | Mit tárol |
+|---|---|
+| `pantry_catalog.allergens` | Alapanyagonként: melyik allergént *tartalmazza*, melyiket *nyomokban*, melyikről *nincs adat* |
+| `pantry_catalog.lactose_free` | Igaz, ha a termék felismerten laktózmentes (a hamis azt jelenti: nem tudjuk, nem azt, hogy van benne laktóz) |
+| `recipe.allergens` | A recept hozzávalóiból **számolt** összesítés — kézzel nem írható |
+| `recipe.lactose_free` | Igaz, ha minden tejes hozzávaló laktózmentes; üres, ha egyáltalán nincs tejes hozzávaló |
+| `sensitivity_profile` | Felhasználónként egy érzékenység-profil + a feldolgozottsági szabály |
 
 ## Mi jön még
-- B4: a teljes modell és a négy felhasználási hely.
-- B6: az étrendi terv szűrője is használja („ne javasolj laktózt tartalmazó receptet”).
+
+- A vonalkódos termékek saját címkéjéről is olvassuk ki a laktózmentes jelölést, ne csak a névből (`mezo-6ebdi`).
+- B6: az étrendi terv szűrője is használja („ne javasolj laktózt tartalmazó receptet").
+- A boltból behúzott, feldolgozott termékek (snack, szósz) többsége továbbra is „nincs adat" — ezeket csak a
+  vonalkód tudja feltölteni.
 
 ## Mi marad ki
-Nincs.
+
+- **A „nem tartalmazza" állítás.** A rendszer sehol nem tud és nem is fog kimondani, hogy egy étel mentes
+  valamitől — csak azt, hogy tartalmazza, nyomokban tartalmazhatja, vagy nincs róla adat.
+- Allergén kézi szerkesztése a weben: nincs rá felület.

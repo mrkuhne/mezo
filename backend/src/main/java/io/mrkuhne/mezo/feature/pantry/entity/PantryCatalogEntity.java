@@ -137,6 +137,15 @@ public class PantryCatalogEntity {
     @Column(length = 32)
     private String barcode;
 
+    /**
+     * True only when the product is RECOGNISED as lactose-free (mezo-r36n9.48). It does NOT weaken
+     * the {@code milk} allergen above — a lactose-free dairy product still carries milk protein —
+     * it only lets an intolerance-level milk rule stay quiet. False means "not recognised", never
+     * "contains lactose".
+     */
+    @Column(name = "lactose_free", nullable = false)
+    private boolean lactoseFree;
+
     public boolean isMaster() {
         return createdBy == null;
     }

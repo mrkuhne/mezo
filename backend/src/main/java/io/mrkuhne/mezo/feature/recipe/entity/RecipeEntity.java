@@ -128,6 +128,14 @@ public class RecipeEntity extends OwnedEntity {
     @Column(columnDefinition = "jsonb")
     private Map<String, AllergenState> allergens;
 
+    /**
+     * Derived with the rollup above (mezo-r36n9.48): true when every milk-bearing ingredient is
+     * lactose-free, false when at least one is not, null when no ingredient carries milk at all —
+     * there is then nothing to say about lactose.
+     */
+    @Column(name = "lactose_free")
+    private Boolean lactoseFree;
+
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("lineOrder")
     private List<RecipeIngredientEntity> lines = new ArrayList<>();

@@ -1268,25 +1268,27 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `PantryCatalogEntity`→`pantry_catalog`, `PantryImportEntity`→`pantry_import`,
     `PantryItemEntity`→`pantry_item`
   - **repositories:** `PantryCatalogRepository`, `PantryImportRepository`, `PantryItemRepository`
-  - **services:** `HtmlNutritionStripper`, `OffClient`, `PantryCatalogService`, `PantryImportService`,
-    `PantryNameIndex`, `PantryPhotoService`, `PantryScrapeService`, `PantryService`, `PantrySuggestionService`,
-    `PhotoExtractLlm`, `ScrapeDraftValidator`, `ScrapeExtractionService`, `ScrapeLlm`, `WebPageClient`
+  - **services:** `CatalogAllergenDefaults`, `HtmlNutritionStripper`, `OffClient`, `PantryCatalogService`,
+    `PantryImportService`, `PantryNameIndex`, `PantryPhotoService`, `PantryScrapeService`, `PantryService`,
+    `PantrySuggestionService`, `PhotoExtractLlm`, `ScrapeDraftValidator`, `ScrapeExtractionService`, `ScrapeLlm`,
+    `WebPageClient`
   - **controllers→contract:** `PantryController`→`PantryApi`, `PantryImportController`→`PantryImportApi`,
     `PantryPhotoController`→`PantryPhotoApi`, `PantryScrapeController`→`PantryScrapeApi`
   - **mappers:** `PantryMapper`
   - **config:** `PantryImportProperties`, `PantryPhotoProperties`, `PantryScrapeProperties`,
     `PantrySuggestionProperties`
-  - **other:** `MicroFact`, `PantryCatalogLoader`, `PantryTwinSaturatedFatRunner`
+  - **other:** `MicroFact`, `PantryCatalogAllergenBaselineRunner`, `PantryCatalogLoader`,
+    `PantryTwinSaturatedFatRunner`
 - **Contract** `api/feature/pantry/pantry.yml` — 10 operations
   - **endpoints:** GET /api/pantry · POST /api/pantry · PUT /api/pantry/{id} · DELETE /api/pantry/{id} ·
     GET /api/pantry/catalog · POST /api/pantry/items/from-catalog · GET /api/pantry-import/lookup ·
     POST /api/pantry-import · POST /api/pantry-import/scrape · POST /api/pantry-import/photo
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 19 IT + 7 unit
-  - **ITs:** `PantryApiIT`, `PantryCatalogApiIT`, `PantryCatalogLoaderIT`, `PantryCatalogMigrationIT`,
-    `PantryCatalogServiceIT`, `PantryImportApiIT`, `PantryImportBarcodeIT`, `PantryImportDisabledApiIT`,
-    `PantryItemRepositoryIT`, `PantryPhotoApiIT`, `PantryPhotoDisabledApiIT`, `PantryPhotoLlmUnavailableApiIT`,
-    `PantryPhotoScrapeOffApiIT`, `PantryScrapeApiIT`, `PantryScrapeDisabledApiIT`, `PantryScrapeLlmUnavailableApiIT`,
-    `PantryServiceIT`, `PantryTwinSaturatedFatRunnerIT`, `WebPageClientIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 20 IT + 8 unit
+  - **ITs:** `PantryApiIT`, `PantryCatalogAllergenBaselineRunnerIT`, `PantryCatalogApiIT`, `PantryCatalogLoaderIT`,
+    `PantryCatalogMigrationIT`, `PantryCatalogServiceIT`, `PantryImportApiIT`, `PantryImportBarcodeIT`,
+    `PantryImportDisabledApiIT`, `PantryItemRepositoryIT`, `PantryPhotoApiIT`, `PantryPhotoDisabledApiIT`,
+    `PantryPhotoLlmUnavailableApiIT`, `PantryPhotoScrapeOffApiIT`, `PantryScrapeApiIT`, `PantryScrapeDisabledApiIT`,
+    `PantryScrapeLlmUnavailableApiIT`, `PantryServiceIT`, `PantryTwinSaturatedFatRunnerIT`, `WebPageClientIT`
   - **populators:** `DatabasePopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
     `UserPopulator`
 
@@ -1492,6 +1494,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `RecipeImportController`→`RecipeImportApi`, `RecipeWorkshopController`→`RecipeWorkshopApi`
   - **mappers:** `RecipeMapper`
   - **config:** `RecipeImportProperties`, `RecipeWorkshopProperties`
+  - **other:** `RecipeAllergenRecomputeRunner`
 - **Contract** `api/feature/recipe/recipe-image.yml` — 3 operations
   - **endpoints:** POST /api/recipe/{id}/image · GET /api/recipe/{id}/image · DELETE /api/recipe/{id}/image
 - **Contract** `api/feature/recipe/recipe-import.yml` — 3 operations
@@ -1499,10 +1502,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/recipe/recipe.yml` — 7 operations
   - **endpoints:** GET /api/recipe · POST /api/recipe · GET /api/recipe/{id} · PUT /api/recipe/{id} ·
     DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown · POST /api/recipe/workshop/turn
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 13 IT + 8 unit
-  - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeImageIT`, `RecipeImportIT`,
-    `RecipeImportLlmUnavailableApiIT`, `RecipeImportSsrfApiIT`, `RecipeImportSwitchOffApiIT`, `RecipeRepositoryIT`,
-    `RecipeServiceIT`, `RecipeWorkshopApiIT`, `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 14 IT + 8 unit
+  - **ITs:** `RecipeAllergenRecomputeRunnerIT`, `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`,
+    `RecipeImageIT`, `RecipeImportIT`, `RecipeImportLlmUnavailableApiIT`, `RecipeImportSsrfApiIT`,
+    `RecipeImportSwitchOffApiIT`, `RecipeRepositoryIT`, `RecipeServiceIT`, `RecipeWorkshopApiIT`,
+    `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`
   - **populators:** `DatabasePopulator`, `PantryItemPopulator`, `RecipePopulator`
 
 ### ritual

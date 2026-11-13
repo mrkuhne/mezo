@@ -218,9 +218,12 @@ public class RecipeService {
             .filter(Objects::nonNull)
             .max(Short::compareTo)
             .orElse(null));
-        recipe.setAllergens(RecipeAllergenRollup.rollup(items.stream()
-            .map(it -> it.getCatalog().getAllergens())
-            .toList()));
+        List<RecipeAllergenRollup.LineFacts> facts = items.stream()
+            .map(it -> new RecipeAllergenRollup.LineFacts(
+                it.getCatalog().getAllergens(), it.getCatalog().isLactoseFree()))
+            .toList();
+        recipe.setAllergens(RecipeAllergenRollup.rollup(facts));
+        recipe.setLactoseFree(RecipeAllergenRollup.lactoseFree(facts));
     }
 
     /**

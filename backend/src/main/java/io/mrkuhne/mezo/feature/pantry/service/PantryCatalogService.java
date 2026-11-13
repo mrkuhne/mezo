@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.pantry.service;
 import io.mrkuhne.mezo.api.dto.PantryCatalogEntry;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
 import io.mrkuhne.mezo.feature.pantry.entity.MicroFact;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
@@ -185,6 +186,27 @@ public class PantryCatalogService {
         return true;
     }
 
+    /**
+     * What the new row's own shelf states with certainty, when it declares nothing itself
+     * (mezo-r36n9.48). Fill-only, exactly like {@link #fillAllergensIfEmpty}: a row that arrived
+     * with allergen states — from a barcode scan, an import, or the owner typing them — keeps every
+     * one of them, because a real declaration always outranks what the category implies. Without
+     * this, the backfill runner would be a one-off and every food added afterwards would be silent
+     * again.
+     */
+    private static void applyAllergenBaseline(PantryCatalogEntity candidate) {
+        if (candidate.getAllergens() == null || candidate.getAllergens().isEmpty()) {
+            Map<String, AllergenState> derived =
+                CatalogAllergenDefaults.derive(candidate.getCategory(), candidate.getName());
+            if (!derived.isEmpty()) {
+                candidate.setAllergens(new java.util.HashMap<>(derived));
+            }
+        }
+        if (!candidate.isLactoseFree() && CatalogAllergenDefaults.isLactoseFree(candidate.getName())) {
+            candidate.setLactoseFree(true);
+        }
+    }
+
     private PantryCatalogEntity insertOrBind(UUID authorId, PantryCatalogEntity candidate, boolean trusted) {
         TransactionTemplate own = new TransactionTemplate(transactionManager);
         own.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -200,6 +222,7 @@ public class PantryCatalogService {
                 // of everyone else's search and out of the AI name index until they confirm it.
                 candidate.setStatus(trusted
                     ? PantryCatalogEntity.STATUS_VERIFIED : PantryCatalogEntity.STATUS_DRAFT);
+                applyAllergenBaseline(candidate);
                 return catalogRepository.saveAndFlush(candidate).getId();
             });
             return catalogRepository.findById(id).orElseThrow(); // re-read in the caller's session

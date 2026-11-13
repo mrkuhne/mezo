@@ -63,6 +63,19 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-13 — Boop B4 utánjavítás · a kamra alapanyagai megmondják, mit tartalmaznak (`mezo-r36n9.48`).**
+  A kamrában **mind a 448 alapanyagnál üres volt az allergén-rovat**, ezért a halas és tojásos receptek
+  „allergénmentesnek” számoltak — a B4-ben ötször javított „a hallgatás allergénmentesnek olvasása” csapda, most
+  az adatoldalon. A tulajdonos döntése (31.): *kitöltjük, amit biztosan tudunk*. Az alapanyag a **polcából**
+  kapja az alap-allergént (hal → hal, tojás → tojás, tejtermék és sajt → tej, magvak → a név szerinti helyes
+  kulcs), **kizárólag „tartalmazza” formában, „mentes” állítás nélkül**; a két vegyes polcot a név dönti el (a
+  tejtermékek közé sorolt növényi italok közül a mandulaital csonthéjas, a szójaital szója, a kókusztej semmi, a
+  magkeverékek pedig „nincs adat” maradnak). A már elmentett receptek összesítése is újraszámol, ugyanazzal a
+  logikával, amit a mentés használ. Ugyanebben a körben **a laktózmentes termékek felismerése**: megtartják a
+  valóban meglévő tej-allergént (a kötelező jelölés a tejproteinről szól), de laktóz-intoleranciánál a Boop nem
+  szól rájuk — allergia-szintű szabályt ez nem lazít fel. A vonalkódos termékek saját címkéjéről való kiolvasás
+  külön jegy (`mezo-6ebdi`).
+
 - **2026-11-13 — Boop B4 · Étel — az étkezés kész az iPhone-appban: fotóval, vonalkóddal, internet nélkül is (`mezo-r36n9.14`).**
   A Fuel gömb mostantól az Étel szobát nyitja: Ma · Receptek · Kamra · Hét. A Ma a nap költségvetését, a nap
   étkezési ablakait (minden ablakhoz egy javaslat, a rögzített érzékenységeid szerint szűrve), a következő étkezés

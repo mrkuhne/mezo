@@ -30,7 +30,14 @@ class SuggestionPickerTest {
     private static RecipeCandidate recipe(String name, int kcal, int protein, Integer nova,
             Map<String, AllergenState> allergens) {
         return new RecipeCandidate(UUID.nameUUIDFromBytes(name.getBytes()), name, SlotKey.BREAKFAST,
-            new Macros4(kcal, protein, 60, 20), false, nova, allergens);
+            new Macros4(kcal, protein, 60, 20), false, nova, allergens, null);
+    }
+
+    /** Same, for a dish whose milk-bearing ingredients are all recognised as lactose-free. */
+    private static RecipeCandidate lactoseFreeRecipe(String name, int kcal, int protein,
+            Map<String, AllergenState> allergens) {
+        return new RecipeCandidate(UUID.nameUUIDFromBytes(name.getBytes()), name, SlotKey.BREAKFAST,
+            new Macros4(kcal, protein, 60, 20), false, 1, allergens, true);
     }
 
     /** Category match + per-serving kcal within ±20% of the window budget; nearest kcal wins. */
@@ -118,5 +125,24 @@ class SuggestionPickerTest {
 
         assertThat(s.kind()).isEqualTo(Suggestion.Kind.RECIPE);
         assertThat(s.text()).contains("Házi müzli");
+    }
+
+    /**
+     * mezo-r36n9.48: the owner is lactose intolerant and his own laktózmentes breakfast must not be
+     * filtered out of his suggestions, while an ordinary dairy dish still is.
+     */
+    @Test
+    void aLactoseFreeDishSurvivesAMilkIntolerance() {
+        SensitivityProfile milkIntolerance = new SensitivityProfile(
+            List.of(new Sensitivity("milk", SensitivityLevel.INTOLERANCE, null)), new NovaRule(false, 2));
+        Map<String, AllergenState> milk = Map.of("milk", AllergenState.CONTAINS);
+
+        Suggestion lactoseFree = SuggestionPicker.pick(SlotKey.BREAKFAST, BUDGET,
+            List.of(lactoseFreeRecipe("Laktózmentes túrós tál", 600, 45, milk)), milkIntolerance);
+        assertThat(lactoseFree.kind()).isEqualTo(Suggestion.Kind.RECIPE);
+
+        Suggestion ordinary = SuggestionPicker.pick(SlotKey.BREAKFAST, BUDGET,
+            List.of(recipe("Túrós tál", 600, 45, 1, milk)), milkIntolerance);
+        assertThat(ordinary.kind()).isNotEqualTo(Suggestion.Kind.RECIPE);
     }
 }
