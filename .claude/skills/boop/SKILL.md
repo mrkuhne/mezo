@@ -167,12 +167,15 @@ and the owner's finances, with one AI over everything. Spec
 research `docs/superpowers/research/boop-life/`, executable look: the Élet spike (`-elet YES`, `elet-*.png`).
 **The B order is unchanged — nothing here starts before B6 ships, except L0.**
 Owner decisions: money and mail are rooms, not a fifth bar button · **Terv is the home of the areas** · an area is
-its own app (own top tabs with badges, built from the shared area-page kit) · the morning briefing is long and
-premium · area names are Alvás, Étel, Edzés, Energia, Forma, Pénz, Levél · never ask him for a password.
+its own app (own top tabs with badges, built from the shared area-page kit) · **warm is the look** (photo heads,
+the hue on key numbers, no card around stats/curve/composition/rows) · **Ma is a living wall, not a timeline**,
+and the **0–100 score leaves the home** · area names are Alvás, Étel, Edzés, Energia, Forma, Pénz, Levél ·
+never ask him for a password.
 
 | Slice | Issue | State | Can start |
 |---|---|---|---|
 | L0 Területek otthona — Terv as the areas home + the shared area-page kit | `mezo-r36n9.37` | open | after B5 |
+| L0/b Ma · az élő fal — the home becomes what Boop says now (amends the shipped B2 Ma) | `mezo-r36n9.45` | open | after B3; land with L0 |
 | L1 Levél · alap — IMAP intake, redaction, schedule, no AI | `mezo-r36n9.38` | open | after B6 + L0 |
 | L2 Levél · összefoglaló — the daily digest with 1–10 scores | `mezo-r36n9.39` | open | after L1 |
 | L3 Levél · figyelt termékek és árellenőrzés | `mezo-r36n9.40` | open | after L2 |

@@ -32,17 +32,42 @@ már egy saját dashboard oldala … mintha az egy full saját app lenne."*
 5. **The morning briefing is long and premium**, with a glance into every area.
 6. **Area names follow the spine vocabulary:** Alvás, Étel, Edzés, Energia, Forma, Pénz, Levél.
 7. Never ask the owner for a password or token; he creates and enters every credential himself.
+8. **Warm is the look** (#12): photo heads where a compliant mood photo exists (painted landscape as the
+   fallback), the area's hue on key numbers and marked spans inside the text, photo thumbnails on rows that are
+   *things*, and no card around the stats / curve / composition / row-list blocks.
+9. **Ma is a living wall, not a timeline** (#13): what Boop wants to say right now, bounded — and the big 0–100
+   score leaves the home screen.
+10. **The wall has three weights** (#13, round 7): the check-in as a question card · one hero with a photo band ·
+    the rest as compact rows inside a single card, the number in weight.
 
 ## 3. What the owner sees
 
-### 3.1 Ma — one scroll
-Hero (sky, one orb, the day's verdict) → **the morning briefing card** → the whole day as one list
-with `Reggel / Napközben / Este` as headings and a `MOST` marker → proposal cards at now → **the
-areas as wide cards**, the loud ones first, the calm ones collapsed into one row.
+### 3.1 Ma — the living wall
 
-The briefing: `BOOP MONDJA · 08:10` + **Hallgatom**, a serif lead line, three paragraphs that each
-look into a different part of the life, a chip strip peeking into all six areas, and
-**"A nap három dolga"** as three numbered rows, then accept / modify.
+Open the app and it shows **what matters now**, not a plan to read. Hero: the painted/photographed sky, the orb
+**without a number**, and one sentence. Then:
+
+**`Most` — at most three cards**, plus the check-in pinned above them while it is due. Four kinds:
+
+| Kind | Example |
+|---|---|
+| **Teendő** | "Itt a délutáni check-in · fél perc" · "Logold az ebédet" |
+| **Történt** | "Megjött a reggeli posta · 2 érdekes" · "Spar · 8 240 Ft" |
+| **Készülj** | "Másfél óra múlva edzés — egyél valamit 17:00 körül" |
+| **Reakció** | *right after he logs lunch* → "46 g fehérje, jól állsz. Vacsorára 50 kell." |
+
+Three weights so it reads as a wall, not a list: the **check-in** keeps its own tinted question shape; **one
+hero** carries a photo band of the thing and 25 pt serif; **the rest are compact rows inside a single card** —
+thumbnail, two lines, the number in weight on the right, the action as an inline link.
+
+A card he acts on **settles into "Ma történt"** instead of vanishing. When nothing is live the wall says so
+warmly — "Most nincs teendőd. Legközelebb 17:00-kor szólok." An empty wall is good news, not an empty state.
+
+**Below the wall, folded into one row each:** `A reggeli összefoglaló · 08:10` and `A napod · 4 megvolt, 3
+hátra` — open in the morning, closed later. The timeline is not dropped; without it the day loses its shape.
+
+**Then `A nap energiája`** (a curve that looks forward, which a score does not) and **`Amit ma észrevettem`**,
+the cross-area observations. The per-area levels are not on the home at all — Terv is their place.
 
 ### 3.2 Terv — the goal and the areas
 The life goal in the head, then the areas **two per row**: a big orb with its number, a bell badge
@@ -63,6 +88,10 @@ Painted head (glyph, name, score + orb, verdict, sentence) · search and setting
 | heat strip | a week or a day by hour |
 | menu grid | 2-column "what else this area can do", with badges |
 | ask row | opens a Boop thread already holding this area's data |
+
+The page wears the **warm** treatment: a photo head where the world has a compliant mood photo, the hue on key
+numbers and marked spans, photo thumbnails on rows that are things, and only the highlight and the menu grid
+keep a card around them.
 
 ### 3.4 Pénz (the finance app, rebuilt)
 Tabs **Ma · Keretek · Előzmények · Tervezett**. Month curve against the even-pace line, five-part
@@ -149,12 +178,14 @@ comes free with the Boop tab.
 
 ## 5. The slices
 
-Numbered after the existing map. **Earliest start: after B6 ships** (owner decision). `L0` is the
-exception: it changes navigation that B4/B5 build on, so it should land as soon as B5 is done.
+Numbered after the existing map. **Earliest start: after B6 ships** (owner decision). `L0` and `L0/b` are the
+exceptions: they change navigation and the home that B4/B5 build on, so they should land as soon as B5 is done.
+`L0/b` has no new data — every card kind it needs already exists or comes from B3.
 
 | Slice | What | Depends on |
 |---|---|---|
 | **L0** Területek otthona | Terv becomes the areas home (goal + two-up area grid with big orbs and derived badges); the **shared area-page kit** (stat tiles, curve, composition, row list, heat strip, menu grid, badges) in `BoopDesign`; Étel and Edzés move onto it. No new data. | B5 |
+| **L0/b** Ma · az élő fal | Ma becomes the living wall: the feed engine (what to say now, ranked, capped at three + the pinned check-in), the four card kinds, the settle-into-"Ma történt" behaviour, the honest empty state, the folded briefing and timeline, the day's energy curve and the cross-area notices; the score leaves the home. **Amends the shipped B2 Ma.** | B3 (it needs the check-in and the day ledger) |
 | **L1** Levél · alap | Mailbox settings screen (the owner enters his own app passwords), IMAP intake for Gmail + iCloud, raw storage, the **redaction pipeline**, sender deny list, idempotency, the 08:00 + 15:00 schedule, the zero-mail health alert. **No AI yet** — the Levél room shows counts and categories only. | B6, L0 |
 | **L2** Levél · összefoglaló | The rules-then-LLM funnel, the goal-relevance pass, the 1–10 score, the Levél room (Ma · Szabályok · Fiókok) and its card on Ma and Terv. Per-day cost cap and the adversarial/phishing pass. | L1 |
 | **L3** Levél · figyelt termékek | Watched products, the capped and cached market check, the three-level verdict, **our own price log**, the Figyelt tab with price history, and the proposal card when something is genuinely cheap. | L2 |
