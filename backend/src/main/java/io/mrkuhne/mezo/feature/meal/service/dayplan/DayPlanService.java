@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.meal.service.dayplan;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelPlanResponse;
+import io.mrkuhne.mezo.api.dto.UsualMealItem;
 import io.mrkuhne.mezo.api.dto.UsualMealResponse;
 import io.mrkuhne.mezo.api.dto.UsualMealsResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
@@ -14,6 +15,8 @@ import io.mrkuhne.mezo.feature.fuel.entity.MealSlotJson;
 import io.mrkuhne.mezo.feature.fuel.entity.MealSlotTemplateEntity;
 import io.mrkuhne.mezo.feature.fuel.repository.FuelSettingsRepository;
 import io.mrkuhne.mezo.feature.fuel.repository.MealSlotTemplateRepository;
+import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
+import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
@@ -454,17 +457,65 @@ public class DayPlanService {
     @Transactional(readOnly = true)
     public UsualMealsResponse usuals(UUID userId, SlotKey bucket) {
         ZoneId zone = zone();
-        List<UsualMealResponse> rows = UsualMealRanker.rank(usualHistory(userId, LocalDate.now(zone), zone), bucket, USUAL_LIMIT)
-            .stream()
-            .map(u -> UsualMealResponse.builder()
-                .key(u.key()).title(u.title())
-                .slot(UsualMealResponse.SlotEnum.fromValue(u.slot().wire()))
-                .count(u.count())
-                .lastLoggedAt(u.lastLoggedAt().atOffset(java.time.ZoneOffset.UTC))
-                .kcal(u.kcal())
-                .build())
+        LocalDate today = LocalDate.now(zone);
+        // Entities WITH their items (one fetch-joined query): the ranker only needs the window, name and time, but the
+        // answer carries the latest occurrence's own lines so a usual meal is logged as it was eaten.
+        List<MealEntity> history = meals.findWithItemsBetween(userId, today.minusDays(USUAL_HISTORY_DAYS), today.minusDays(1))
+            .stream().filter(m -> m.getLoggedAt() != null).toList();
+        List<LoggedMeal> logged = history.stream()
+            .map(m -> new LoggedMeal(m.getId(), m.getSlot(), m.getTitle(), null, m.getLoggedAt(),
+                m.getLoggedAt().atZone(zone).toLocalTime().truncatedTo(ChronoUnit.MINUTES)))
+            .toList();
+        List<UsualMealResponse> rows = UsualMealRanker.rank(logged, bucket, USUAL_LIMIT).stream()
+            .map(u -> usualRow(u, latestOccurrence(u, history)))
             .toList();
         return UsualMealsResponse.builder().usuals(rows).build();
+    }
+
+    /** The meal a ranked row stands for: its slot, its latest instant and its (stripped) name — the ranker's own fold. */
+    private static MealEntity latestOccurrence(UsualMeal u, List<MealEntity> history) {
+        return history.stream()
+            .filter(m -> u.lastLoggedAt().equals(m.getLoggedAt()) && MealSlots.of(m.getSlot()) == u.slot()
+                && m.getTitle() != null && m.getTitle().strip().equals(u.title()))
+            .findFirst().orElse(null);
+    }
+
+    private static UsualMealResponse usualRow(UsualMeal u, MealEntity meal) {
+        List<UsualMealItem> items = meal == null ? List.of() : meal.getItems().stream()
+            .sorted(java.util.Comparator.comparing(i -> i.getLineOrder() == null ? 0 : i.getLineOrder()))
+            .map(DayPlanService::usualItem).toList();
+        // The energy is the sum of what the lines contributed; any line without an energy figure makes it unknown.
+        Integer kcal = items.isEmpty() || items.stream().anyMatch(i -> contributionKcal(i) == null) ? null
+            : (int) Math.round(items.stream().mapToDouble(i -> contributionKcal(i)).sum());
+        return UsualMealResponse.builder()
+            .key(u.key()).title(u.title())
+            .slot(UsualMealResponse.SlotEnum.fromValue(u.slot().wire()))
+            .count(u.count())
+            .lastLoggedAt(u.lastLoggedAt().atOffset(java.time.ZoneOffset.UTC))
+            .mealId(meal == null ? null : meal.getId())
+            .kcal(kcal)
+            .items(items)
+            .build();
+    }
+
+    private static Double contributionKcal(UsualMealItem i) {
+        if (i.getKcal() == null || i.getPer() == null || i.getPer().signum() <= 0 || i.getAmount() == null) {
+            return null;
+        }
+        return i.getKcal().doubleValue() * i.getAmount().doubleValue() / i.getPer().doubleValue();
+    }
+
+    private static UsualMealItem usualItem(MealItemEntity e) {
+        return UsualMealItem.builder()
+            .source(UsualMealItem.SourceEnum.fromValue(e.getSource()))
+            .recipeId(e.getRecipeId()).pantryItemId(e.getPantryItemId())
+            .amount(e.getAmount()).unit(e.getUnit()).name(e.getSnapshotName())
+            .per(e.getSnapshotPer()).basisUnit(e.getSnapshotBasisUnit())
+            .kcal(e.getSnapshotKcal()).proteinG(e.getSnapshotProteinG()).carbsG(e.getSnapshotCarbsG()).fatG(e.getSnapshotFatG())
+            .fiberG(e.getSnapshotFiberG()).sugarG(e.getSnapshotSugarG()).saltG(e.getSnapshotSaltG())
+            .saturatedFatG(e.getSnapshotSaturatedFatG())
+            .nova(e.getSnapshotNova() == null ? null : e.getSnapshotNova().intValue())
+            .build();
     }
 
     /** The last {@value #USUAL_HISTORY_DAYS} days up to yesterday, as the ranker reads them: ONE query, no items. */

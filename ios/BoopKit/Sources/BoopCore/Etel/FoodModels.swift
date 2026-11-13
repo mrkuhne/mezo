@@ -587,16 +587,24 @@ public struct FuelWeek: Equatable, Sendable {
 }
 
 /// One of the owner's usual meals (the server's `UsualMealRanker`): a name in a window, how often it recurred in the last
-/// 28 days and when it last did. It carries no numbers — logging one goes through Boop's draft, which computes them.
+/// 28 days and when it last did — and the latest occurrence's own lines, so it can be logged as it was eaten (no
+/// re-estimate). `items` is empty when that meal carried none; the composer then falls back to the name and says so.
 public struct UsualMeal: Equatable, Sendable, Identifiable {
     public var key: String
     public var title: String
     public var slot: String
     public var count: Int
     public var lastLoggedAt: Date
+    /// The meal the lines were read from.
+    public var mealId: UUID?
+    /// The latest occurrence's energy, summed from its lines; nil when it cannot be read.
+    public var kcal: Int?
+    public var items: [DraftItem]
     public var id: String { key }
-    public init(key: String, title: String, slot: String, count: Int, lastLoggedAt: Date) {
+    public init(key: String, title: String, slot: String, count: Int, lastLoggedAt: Date, mealId: UUID? = nil, kcal: Int? = nil,
+                items: [DraftItem] = []) {
         self.key = key; self.title = title; self.slot = slot; self.count = count; self.lastLoggedAt = lastLoggedAt
+        self.mealId = mealId; self.kcal = kcal; self.items = items
     }
 }
 

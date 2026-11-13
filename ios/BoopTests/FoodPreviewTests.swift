@@ -78,6 +78,8 @@ struct FoodPreviewTests {
     @Test func theUsualsAndTheWeekDecodeFromThePreviewServer() async throws {
         let usuals = try await food.usuals(slot: "dinner")
         #expect(try await food.usuals().count == 3)
+        #expect(usuals[0].items.count == 2)   // a usual with its latest meal's lines
+        #expect(usuals[2].items.isEmpty)       // and one without (the name-only fallback)
         #expect(usuals.count == 3)
         let week = try await food.week(from: Date().addingTimeInterval(-6 * 86_400))
         #expect(week.days.count == 7)

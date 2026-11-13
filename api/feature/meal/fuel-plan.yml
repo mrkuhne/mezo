@@ -69,7 +69,35 @@ components:
         slot: { type: string, enum: [breakfast, lunch, dinner, snack] }
         count: { type: integer, description: 'How many times it was logged in the last 28 days' }
         lastLoggedAt: { type: string, format: date-time }
-        kcal: { type: integer, nullable: true, description: 'Always null today: the history read carries no energy' }
+        mealId: { type: string, format: uuid, nullable: true, description: 'The latest occurrence this row stands for (the meal the items below were read from)' }
+        kcal: { type: integer, nullable: true, description: 'The latest occurrence''s energy, summed from its items; null when its items cannot be read' }
+        items:
+          type: array
+          description: >-
+            The latest occurrence's own lines (frozen snapshots), so a usual meal can be logged as it was eaten — no
+            re-estimate. Empty when the meal carried no items; the client then falls back to the name alone and says so.
+          items: { $ref: '#/components/schemas/UsualMealItem' }
+    UsualMealItem:
+      type: object
+      required: [source, amount, unit, name]
+      properties:
+        source: { type: string, enum: [recipe, pantry, estimate] }
+        recipeId: { type: string, format: uuid, nullable: true }
+        pantryItemId: { type: string, format: uuid, nullable: true }
+        amount: { type: number }
+        unit: { type: string }
+        name: { type: string }
+        per: { type: number, nullable: true }
+        basisUnit: { type: string, nullable: true }
+        kcal: { type: number, nullable: true, description: 'Per `per` of `basisUnit`, as snapshotted' }
+        proteinG: { type: number, nullable: true }
+        carbsG: { type: number, nullable: true }
+        fatG: { type: number, nullable: true }
+        fiberG: { type: number, nullable: true }
+        sugarG: { type: number, nullable: true }
+        saltG: { type: number, nullable: true }
+        saturatedFatG: { type: number, nullable: true }
+        nova: { type: integer, nullable: true }
     FuelPlanResponse:
       type: object
       required: [date, windows]

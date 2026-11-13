@@ -54,6 +54,8 @@ final class MealComposerModel {
     private(set) var shelf: [PantryRow]?
     /// The owner's usual meals, ranked by the server (the fifth entrance).
     private(set) var usuals: [UsualMeal]?
+    /// What the draft says about where a chosen usual meal came from: its own lines, or only its name (re-estimated).
+    private(set) var usualNote: String?
     private(set) var listProblem: String?
 
     private let drafter: any MealDrafting
@@ -123,7 +125,7 @@ final class MealComposerModel {
         stage = .draft
     }
 
-    func show(_ stage: Stage) { problem = nil; self.stage = stage }
+    func show(_ stage: Stage) { problem = nil; if stage == .usuals { usualNote = nil }; self.stage = stage }
 
     // MARK: Draft
 
@@ -220,11 +222,20 @@ final class MealComposerModel {
         stage = .draft
     }
 
-    /// One of the usual meals, as the words of an ordinary draft: Boop computes it (online) or keeps it on the phone
-    /// (offline) exactly like typed words — nothing is saved without the owner's tap on the draft.
+    /// One of the usual meals. With its latest occurrence's own lines the draft IS that meal (no model call, no re-estimate);
+    /// without them the name goes through the ordinary draft like typed words and the draft says plainly that it is a
+    /// re-estimate, not a copy. Either way nothing is saved without the owner's tap.
     func chooseUsual(_ usual: UsualMeal) async {
+        if !usual.items.isEmpty {
+            capturedAt = clock()
+            draft = MealDraft(date: dayString(capturedAt), slot: FoodClient.slot(at: capturedAt, cal: calendar), title: usual.title, items: usual.items)
+            usualNote = "Ezek a legutóbbi „\(usual.title)” tételei, ahogy akkor rögzítetted — nézd át, mielőtt mented."
+            show(.draft)
+            return
+        }
         show(.pick)
         text = usual.title
+        usualNote = "Az előző „\(usual.title)” tételeit nem tudtam előhívni, ezért a nevéből becsültem újra — ez nem a korábbi étkezésed másolata. Nézd át a tételeket."
         await submit()
     }
 
@@ -532,6 +543,7 @@ private struct MealComposerHost: View {
             }
             Text("\(model.hasPhoto ? "A fotó" : "A leírás") a telefonodon van. Amint lesz net, kiszámolom, és egy koppintással jóváhagyod — addig semmi nem mentődik el.")
                 .nkFont(14.5).lineSpacing(3).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+            if let note = model.usualNote { Text(note).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true) }
             if let chip = model.chip { OfflineChip(chip) }
             Button { onDone("Eltettem a telefonra") } label: {
                 Text("Rendben").nkFont(16, .semibold).foregroundStyle(NK.ground).frame(maxWidth: .infinity).frame(height: 50)
@@ -552,6 +564,7 @@ private struct MealComposerHost: View {
                 }
                 VStack(alignment: .leading, spacing: 12) {
                     if model.redated { Text("Ez a rögzítés több mint egy hete készült, a szerver már nem fogadja el a régi napra — a mai napra kerül.").nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true) }
+                    if let note = model.usualNote { Text(note).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true) }
                     if let notice = draftNotice(draft) { Text(notice).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true) }
                     ForEach(Array(draft.items.enumerated()), id: \.offset) { i, item in line(i, item) }
                     Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5)

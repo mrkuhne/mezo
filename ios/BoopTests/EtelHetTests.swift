@@ -111,4 +111,24 @@ struct EtelHetTests {
         #expect(w.days[0].name == "Szombat")
         #expect(w.days.last?.name == "Ma")
     }
+
+    @Test func aFailedDayReadIsSaidAndNeverLooksLikeADayWithoutAScore() {
+        let w = hetWeek(week(), scores: ["2026-11-07": 71], today: "2026-11-13", scoreFailures: ["2026-11-08", "2026-11-09"])
+        #expect(w.scoreGaps == 2)
+        #expect(w.days[1].note.contains("pontszám most nem jött meg"))
+        #expect(w.days[2].note.contains("pontszám most nem jött meg"))
+        // a day whose read worked but had no scored meal says nothing about a failure
+        #expect(!w.days[0].note.contains("nem jött meg"))
+        #expect(!w.days[4].note.contains("nem jött meg"))
+        // the average is of the days that DID score, and the totals line says how many are missing
+        #expect(w.averageScore == 71)
+        #expect(w.scoreGapLine == "2 nap pontszáma most nem jött meg — az átlag csak a többiből van")
+        #expect(hetWeek(week(), scores: [:], today: "2026-11-13").scoreGapLine == nil)
+    }
+
+    @Test func aKimeloDayHasNoScoreToMissEvenWhenItsReadFailed() {
+        let w = hetWeek(week(mode: ["2026-11-10": "GUIDANCE"]), scores: [:], today: "2026-11-13", scoreFailures: ["2026-11-10"])
+        #expect(w.scoreGaps == 0)
+        #expect(!w.days[3].note.contains("nem jött meg"))
+    }
 }

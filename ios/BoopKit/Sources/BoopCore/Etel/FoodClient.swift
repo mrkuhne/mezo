@@ -76,7 +76,8 @@ public struct FoodClient: Sendable {
             switch try await client.getUsualMeals(query: .init(slot: wanted)) {
             case .ok(let ok):
                 return try ok.body.json.usuals.map {
-                    UsualMeal(key: $0.key, title: $0.title, slot: $0.slot.rawValue, count: $0.count, lastLoggedAt: $0.lastLoggedAt)
+                    UsualMeal(key: $0.key, title: $0.title, slot: $0.slot.rawValue, count: $0.count, lastLoggedAt: $0.lastLoggedAt,
+                              mealId: $0.mealId.flatMap(UUID.init(uuidString:)), kcal: $0.kcal, items: ($0.items ?? []).map(Self.draftItem(from:)))
                 }
             case .unauthorized: throw FoodFetchError.unauthorized
             case .undocumented: throw FoodFetchError.server
@@ -807,6 +808,17 @@ extension FoodClient {
                          kcal: l.kcal ?? 0, proteinG: l.proteinG ?? 0, carbsG: l.carbsG ?? 0, fatG: l.fatG ?? 0, nova: l.nova,
                          fiberG: l.fiberG, sugarG: l.sugarG, saltG: l.saltG, saturatedFatG: l.saturatedFatG,
                          confidence: 1, needsReview: l.kcal == nil || l.proteinG == nil || l.carbsG == nil || l.fatG == nil, allergens: l.allergens)
+    }
+
+    /// A usual meal's line as a draft line: its frozen snapshot, so the macros are what they were when it was eaten. A line
+    /// whose snapshot lacks a basis reads per its own amount; one missing any macro is marked for review, never zero-filled
+    /// silently.
+    static func draftItem(from i: Components.Schemas.UsualMealItem) -> DraftItem {
+        DraftItem(source: DraftSource(rawValue: i.source.rawValue) ?? .estimate, pantryItemId: i.pantryItemId.flatMap(UUID.init(uuidString:)),
+                  recipeId: i.recipeId.flatMap(UUID.init(uuidString:)), name: i.name, amount: i.amount, unit: i.unit,
+                  per: i.per ?? i.amount, basisUnit: i.basisUnit ?? i.unit, kcal: i.kcal ?? 0, proteinG: i.proteinG ?? 0, carbsG: i.carbsG ?? 0,
+                  fatG: i.fatG ?? 0, nova: i.nova, fiberG: i.fiberG, sugarG: i.sugarG, saltG: i.saltG, saturatedFatG: i.saturatedFatG,
+                  confidence: 1, needsReview: i.per == nil || i.kcal == nil || i.proteinG == nil || i.carbsG == nil || i.fatG == nil)
     }
 
     static func itemRequest(_ i: DraftItem) -> Components.Schemas.MealItemRequest {

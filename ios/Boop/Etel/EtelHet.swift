@@ -43,6 +43,8 @@ struct HetWeek: Equatable {
     let skippedDays: Int
     let skippedKcal: Int
     let targetsVary: Bool
+    /// Days whose meals could not be read for their score: said, never mistaken for a day without one.
+    let scoreGaps: Int
 
     var isEmpty: Bool { days.isEmpty }
     var kcalValues: [Double?] { days.map { $0.kcal.map(Double.init) } }
@@ -50,6 +52,11 @@ struct HetWeek: Equatable {
     /// The bars drawn hollow: a kímélő day is never read as a miss.
     var markedIndices: [Int] { days.indices.filter { days[$0].kimelo } }
     var labels: [String] { days.map(\.label) }
+
+    /// The totals' line about days whose score read failed; nil when none did.
+    var scoreGapLine: String? {
+        scoreGaps == 0 ? nil : "\(scoreGaps) nap pontszáma most nem jött meg — az átlag csak a többiből van"
+    }
 
     /// What the line under the chart says it is.
     var waterlineLine: String {
@@ -89,7 +96,7 @@ private func mean(_ values: [Int]) -> Int? {
 /// the server's `yyyy-MM-dd`. Today is still going, so it never joins the averages; a kímélő day (any recovery mode) is
 /// marked and not judged — no verdict words, no score, left out of the averages; a day with nothing logged is a
 /// missing day, never a zero.
-func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String) -> HetWeek {
+func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String, scoreFailures: Set<String> = []) -> HetWeek {
     let days: [HetDay] = week.days.map { r in
         let weekday = hetWeekday(r.date)
         let isToday = r.date == today
@@ -108,6 +115,7 @@ func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String) -> HetWeek 
             if let planned = r.plannedMovementKcal, planned > 0 { parts.append("edzésnap · +\(huInt(planned)) kcal keret") }
         }
         if r.skippedKcal > 0 { parts.append("étkezés kihagyva · −\(huInt(r.skippedKcal)) kcal a keretből") }
+        if !kimelo, scoreFailures.contains(r.date) { parts.append("a pontszám most nem jött meg") }
         return HetDay(date: r.date, label: weekday.flatMap { hetShort[$0] } ?? "", name: isToday ? "Ma" : (weekday.flatMap { hetLong[$0] } ?? r.date),
                       kcal: kcal, target: Int(r.targets.kcal.rounded()), proteinG: logged ? Int(r.consumed.p.rounded()) : nil, isToday: isToday,
                       kimelo: kimelo, judged: judged, skippedKcal: r.skippedKcal, scorePoints: kimelo ? nil : scores[r.date],
@@ -123,7 +131,8 @@ func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String) -> HetWeek 
         averageScore: mean(days.compactMap(\.scorePoints)),
         judgedDays: judged.count, kimeloDays: days.filter(\.kimelo).count,
         skippedDays: skipped.count, skippedKcal: skipped.reduce(0) { $0 + $1.skippedKcal },
-        targetsVary: Set(targets).count > 1)
+        targetsVary: Set(targets).count > 1,
+        scoreGaps: week.days.filter { $0.fuelMode == nil && scoreFailures.contains($0.date) }.count)
 }
 
 // MARK: - The tab
@@ -156,7 +165,7 @@ struct EtelHet: View {
                 }
             }
         } else if let week = store.week {
-            let w = hetWeek(week, scores: store.weekScores, today: store.ymd)
+            let w = hetWeek(week, scores: store.weekScores, today: store.ymd, scoreFailures: store.weekScoreFailures)
             if w.isEmpty {
                 NKDrillSection(number: 1, label: "KALÓRIA · 7 NAP") {
                     Text("Erre a hétre még nincs adat.").nkFont(14).foregroundStyle(.white.opacity(0.7))
@@ -242,7 +251,7 @@ struct EtelHet: View {
                       w.waterline.map { "a cél \(huInt($0)) · \(w.judgedDays) nap alapján" } ?? "\(w.judgedDays) nap alapján")
                 total("Átlagos fehérje", w.averageProtein.map { "\($0) g" } ?? "nincs adat", w.proteinTarget.map { "a cél \($0) g" } ?? "")
                 total("Napi pontszám átlaga", w.averageScore.map { "\($0) / 100" } ?? "nincs adat",
-                      w.averageScore == nil ? "nincs pontozott étkezés" : "a napok saját étkezéseiből")
+                      w.scoreGapLine ?? (w.averageScore == nil ? "nincs pontozott étkezés" : "a napok saját étkezéseiből"))
                 total("Kihagyott étkezés", w.skippedDays == 0 ? "nincs" : "\(w.skippedDays) nap",
                       w.skippedDays == 0 ? "" : "−\(huInt(w.skippedKcal)) kcal a keretből")
                 total("Kímélő nap", w.kimeloDays == 0 ? "nincs" : "\(w.kimeloDays)",

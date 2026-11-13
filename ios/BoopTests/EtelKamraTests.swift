@@ -189,26 +189,62 @@ struct EtelKamraTests {
 
     // MARK: the composer's fifth entrance
 
-    private func usualsModel(_ list: [UsualMeal], outbox: Bool = false) -> MealComposerModel {
-        let calls = MealCalls()
-        return MealComposerModel(
+    private func usualsModel(_ list: [UsualMeal], calls: MealCalls = MealCalls()) -> MealComposerModel {
+        MealComposerModel(
             drafter: MealDrafter(calls: calls),
             saver: { d, _, at in BoopCore.Meal(id: UUID(), slot: d.slot, loggedAt: at, mealDate: d.date, title: d.title, macros: d.total, score: nil) },
             usuals: { list }, outbox: nil)
     }
 
-    @Test func theUsualsComeRankedFromTheServerAndAChoiceBecomesTheWordsOfADraft() async {
-        let list = [UsualMeal(key: "lunch:csirke rizzsel", title: "Csirke rizzsel", slot: "lunch", count: 3, lastLoggedAt: Date()),
-                    UsualMeal(key: "breakfast:zabkása", title: "Zabkása", slot: "breakfast", count: 2, lastLoggedAt: Date())]
+    private func usual(_ title: String, slot: String = "lunch", count: Int = 3, items: [DraftItem] = []) -> UsualMeal {
+        UsualMeal(key: "\(slot):\(title.lowercased())", title: title, slot: slot, count: count, lastLoggedAt: Date(), mealId: items.isEmpty ? nil : UUID(),
+                  kcal: items.isEmpty ? nil : 365, items: items)
+    }
+    private let chicken = DraftItem(source: .pantry, pantryItemId: UUID(), name: "Csirkemell", amount: 150, unit: "g", per: 100, basisUnit: "g",
+                                    kcal: 110, proteinG: 23, carbsG: 0, fatG: 1.5, nova: 1)
+    private let rice = DraftItem(source: .pantry, pantryItemId: UUID(), name: "Rizs", amount: 180, unit: "g", per: 100, basisUnit: "g",
+                                 kcal: 123, proteinG: 2.7, carbsG: 26, fatG: 1, nova: 1)
+
+    @Test func theUsualsComeRankedFromTheServer() async {
+        let list = [usual("Csirke rizzsel"), usual("Zabkása", slot: "breakfast", count: 2)]
         let m = usualsModel(list)
         m.show(.usuals)
         await m.loadLists()
         #expect(m.usuals?.map(\.title) == ["Csirke rizzsel", "Zabkása"])
-        await m.chooseUsual(list[0])
-        // the choice is the words of a normal draft: it lands on the editable draft, nothing is saved
+    }
+
+    @Test func aUsualWithItemsIsLoggedAsItWasEatenWithNoAIEstimate() async {
+        let calls = MealCalls()
+        let u = usual("Csirke rizzsel", items: [chicken, rice])
+        let m = usualsModel([u], calls: calls)
+        m.show(.usuals)
+        await m.loadLists()
+        await m.chooseUsual(u)
+        #expect(m.stage == .draft)
+        // the draft IS the earlier meal's lines — not a model's guess from its name
+        #expect(m.draft?.items == [chicken, rice])
+        #expect(m.draft?.title == "Csirke rizzsel")
+        #expect(await calls.drafted == 0)
+        // and the screen says what it is
+        #expect(m.usualNote?.contains("legutóbbi") == true)
+        #expect(m.usualNote?.contains("becsült") == false)
+        // still nothing saved until the owner's tap
+        #expect(await calls.saved.isEmpty)
+    }
+
+    @Test func aUsualWhoseItemsCannotBeReadFallsBackToTheNameAndSaysItIsReEstimated() async {
+        let calls = MealCalls()
+        let u = usual("Csirke rizzsel")
+        let m = usualsModel([u], calls: calls)
+        m.show(.usuals)
+        await m.loadLists()
+        await m.chooseUsual(u)
+        #expect(await calls.drafted == 1)
         #expect(m.text == "Csirke rizzsel")
         #expect(m.stage == .draft)
-        #expect(m.draft?.items.isEmpty == false)
+        // visible, not a code comment: the name was re-estimated, this is not a copy of the earlier meal
+        #expect(m.usualNote?.contains("nevéből becsültem újra") == true)
+        #expect(m.usualNote?.contains("nem a korábbi") == true)
     }
 
     @Test func noHistoryIsAnHonestEmptyListNotAnInventedRow() async {

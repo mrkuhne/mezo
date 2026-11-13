@@ -292,7 +292,7 @@ struct PreviewTransport: ClientTransport {
         case "getFuelWeek": return json(foodWeek(start: pathDate(request)))
         case "getUsualMeals":
             let now = ISO8601DateFormatter().string(from: Date().addingTimeInterval(-86_400))
-            return json(#"{"usuals":[{"key":"lunch:csirke rizzsel","title":"Csirke rizzsel","slot":"lunch","count":5,"lastLoggedAt":"\#(now)"},{"key":"breakfast:zabkása gyümölccsel","title":"Zabkása gyümölccsel","slot":"breakfast","count":4,"lastLoggedAt":"\#(now)"},{"key":"dinner:tojásrántotta","title":"Tojásrántotta","slot":"dinner","count":2,"lastLoggedAt":"\#(now)"}]}"#)
+            return json(#"{"usuals":[{"key":"lunch:csirke rizzsel","title":"Csirke rizzsel","slot":"lunch","count":5,"lastLoggedAt":"\#(now)","mealId":"\#(seedMealId)","kcal":361,"items":[{"source":"pantry","pantryItemId":"\#(oatsId)","amount":150,"unit":"g","name":"Csirkemell","per":100,"basisUnit":"g","kcal":165,"proteinG":31,"carbsG":0,"fatG":3.6,"nova":1},{"source":"estimate","amount":180,"unit":"g","name":"Barna rizs","per":100,"basisUnit":"g","kcal":123,"proteinG":2.7,"carbsG":26,"fatG":1}]},{"key":"breakfast:zabkása gyümölccsel","title":"Zabkása gyümölccsel","slot":"breakfast","count":4,"lastLoggedAt":"\#(now)"},{"key":"dinner:tojásrántotta","title":"Tojásrántotta","slot":"dinner","count":2,"lastLoggedAt":"\#(now)"}]}"#)
         case "scrapePantryItem":
             let url = ((try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any])?["url"] as? String ?? ""
             if url.contains("nincs") { return json(#"{"result":null}"#) }

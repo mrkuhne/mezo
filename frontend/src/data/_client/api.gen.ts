@@ -8962,8 +8962,38 @@ export interface components {
             count: number;
             /** Format: date-time */
             lastLoggedAt: string;
-            /** @description Always null today: the history read carries no energy */
+            /**
+             * Format: uuid
+             * @description The latest occurrence this row stands for (the meal the items below were read from)
+             */
+            mealId?: string | null;
+            /** @description The latest occurrence's energy, summed from its items; null when its items cannot be read */
             kcal?: number | null;
+            /** @description The latest occurrence's own lines (frozen snapshots), so a usual meal can be logged as it was eaten — no re-estimate. Empty when the meal carried no items; the client then falls back to the name alone and says so. */
+            items?: components["schemas"]["UsualMealItem"][];
+        };
+        UsualMealItem: {
+            /** @enum {string} */
+            source: "recipe" | "pantry" | "estimate";
+            /** Format: uuid */
+            recipeId?: string | null;
+            /** Format: uuid */
+            pantryItemId?: string | null;
+            amount: number;
+            unit: string;
+            name: string;
+            per?: number | null;
+            basisUnit?: string | null;
+            /** @description Per `per` of `basisUnit`, as snapshotted */
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
+            nova?: number | null;
         };
         FuelPlanResponse: {
             /** Format: date */

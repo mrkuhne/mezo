@@ -44,6 +44,8 @@ final class EtelStore {
     private(set) var weekLoaded = false
     private(set) var weekProblem: FoodFetchError?
     private(set) var weekScores: [String: Int] = [:]
+    /// Days whose meals could not be read for a score (the tab says so instead of showing a quietly wrong average).
+    private(set) var weekScoreFailures: Set<String> = []
     private(set) var groups: [SupplementGroup] = []
     private(set) var groupsLoaded = false
     private(set) var groupsProblem: FoodFetchError?
@@ -157,21 +159,32 @@ final class EtelStore {
         weekLoaded = true
         guard let week else { return }
         let wanted = week.days.filter { $0.consumed.kcal > 0 && $0.fuelMode == nil }.map(\.date)
-        let scored = await withTaskGroup(of: (String, Int?).self) { group in
+        let results = await withTaskGroup(of: (String, Result<Int?, Error>).self) { group in
             for date in wanted {
                 group.addTask {
                     let p = date.split(separator: "-").compactMap { Int($0) }
-                    guard p.count == 3, let at = Calendar.current.date(from: DateComponents(year: p[0], month: p[1], day: p[2], hour: 12)),
-                          let day = try? await food.day(at) else { return (date, nil) }
-                    let scores = day.meals.compactMap(\.score)
-                    return (date, scores.isEmpty ? nil : Int((scores.reduce(0, +) / Double(scores.count) * 100).rounded()))
+                    guard p.count == 3, let at = Calendar.current.date(from: DateComponents(year: p[0], month: p[1], day: p[2], hour: 12)) else {
+                        return (date, .failure(FoodFetchError.server))
+                    }
+                    do {
+                        let scores = try await food.day(at).meals.compactMap(\.score)
+                        return (date, .success(scores.isEmpty ? nil : Int((scores.reduce(0, +) / Double(scores.count) * 100).rounded())))
+                    } catch { return (date, .failure(error)) }
                 }
             }
-            var out: [String: Int] = [:]
-            for await (date, points) in group { if let points { out[date] = points } }
+            var out: [(String, Result<Int?, Error>)] = []
+            for await r in group { out.append(r) }
             return out
         }
+        var scored: [String: Int] = [:], failed: Set<String> = []
+        for (date, result) in results {
+            switch result {
+            case .success(let points): if let points { scored[date] = points }
+            case .failure: failed.insert(date)
+            }
+        }
         weekScores = scored
+        weekScoreFailures = failed
     }
 
     // MARK: - Recipes (B4 Task 12)

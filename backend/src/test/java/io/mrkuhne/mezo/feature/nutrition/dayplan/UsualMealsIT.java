@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.api.dto.UsualMealsResponse;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
+import java.util.List;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -24,6 +26,7 @@ class UsualMealsIT extends ApiIntegrationTest {
     private static final ZoneId ZONE = ZoneId.of("Europe/Budapest");
 
     @Autowired private MealRepository meals;
+    @Autowired private MealPopulator mealPopulator;
 
     private void meal(UUID user, int daysAgo, String slot, String title, int hour) {
         LocalDate day = LocalDate.now(ZONE).minusDays(daysAgo);
@@ -85,5 +88,43 @@ class UsualMealsIT extends ApiIntegrationTest {
         meal(other.id(), 1, "lunch", "Valaki más ebédje", 12);
         UsualMealsResponse body = getForBody("/api/fuel/usuals", owner.headers(), HttpStatus.OK, UsualMealsResponse.class);
         assertThat(body.getUsuals()).isEmpty();
+    }
+
+    private MealEntity mealWithItems(UUID user, int daysAgo, String slot, String title, int hour, List<MealPopulator.Line> lines) {
+        LocalDate day = LocalDate.now(ZONE).minusDays(daysAgo);
+        MealEntity m = mealPopulator.createMealWithItems(user, day, slot, day.atTime(hour, 0).atZone(ZONE).toInstant(), lines);
+        m.setTitle(title);
+        return meals.saveAndFlush(m);
+    }
+
+    @Test
+    void aUsualCarriesTheLatestOccurrencesOwnItemsAndTheirEnergy() {
+        RegisteredUser owner = registerUser("Usuals items");
+        mealWithItems(owner.id(), 3, "lunch", "Csirke rizzsel", 12, List.of(new MealPopulator.Line("Rizs", "100", "2", "22", "0", (short) 1)));
+        MealEntity latest = mealWithItems(owner.id(), 1, "lunch", "Csirke rizzsel", 12, List.of(
+            new MealPopulator.Line("Csirkemell", "165", "31", "0", "3.6", (short) 1),
+            new MealPopulator.Line("Rizs", "200", "4", "44", "0", (short) 1)));
+
+        UsualMealResponse usual = getForBody("/api/fuel/usuals", owner.headers(), HttpStatus.OK, UsualMealsResponse.class)
+            .getUsuals().getFirst();
+
+        assertThat(usual.getCount()).isEqualTo(2);
+        assertThat(usual.getMealId()).isEqualTo(latest.getId());
+        // the latest meal's lines, not the older meal's: this is "log the meal I usually eat", not a re-estimate
+        assertThat(usual.getItems()).extracting(i -> i.getName()).containsExactly("Csirkemell", "Rizs");
+        assertThat(usual.getItems().getFirst().getKcal()).isEqualByComparingTo("165");
+        assertThat(usual.getItems().getFirst().getProteinG()).isEqualByComparingTo("31");
+        assertThat(usual.getKcal()).isEqualTo(365);
+    }
+
+    @Test
+    void aUsualWhoseMealHasNoItemsCarriesNoneAndNoEnergy() {
+        RegisteredUser owner = registerUser("Usuals no items");
+        meal(owner.id(), 1, "lunch", "Csirke rizzsel", 12);
+
+        UsualMealResponse usual = getForBody("/api/fuel/usuals", owner.headers(), HttpStatus.OK, UsualMealsResponse.class)
+            .getUsuals().getFirst();
+        assertThat(usual.getItems()).isEmpty();
+        assertThat(usual.getKcal()).isNull();
     }
 }

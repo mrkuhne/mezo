@@ -118,4 +118,21 @@ struct FoodShelfClientTests {
         let body = (try? JSONSerialization.jsonObject(with: Data((stub.sent.last?.body ?? "").utf8))) as? [String: Any]
         #expect(body?["catalogId"] as? String == catalogId)
     }
+
+    @Test func aUsualCarriesItsLatestMealsLinesAsDraftLinesAndAPartialLineIsMarked() async throws {
+        stub.on("getUsualMeals", .json(200, #"{"usuals":[{"key":"lunch:csirke rizzsel","title":"Csirke rizzsel","slot":"lunch","count":3,"lastLoggedAt":"2026-11-12T11:00:00Z","mealId":"\#(pantryId)","kcal":365,"items":[{"source":"pantry","pantryItemId":"\#(pantryId)","amount":150,"unit":"g","name":"Csirkemell","per":100,"basisUnit":"g","kcal":110,"proteinG":23,"carbsG":0,"fatG":1.5,"nova":1},{"source":"estimate","amount":180,"unit":"g","name":"Rizs","per":100,"basisUnit":"g","kcal":123}]},{"key":"dinner:tojás","title":"Tojás","slot":"dinner","count":1,"lastLoggedAt":"2026-11-12T18:00:00Z","items":[]}]}"#))
+        let list = try await food().usuals()
+        let first = try #require(list.first)
+        #expect(first.mealId == UUID(uuidString: pantryId))
+        #expect(first.kcal == 365)
+        #expect(first.items.map(\.name) == ["Csirkemell", "Rizs"])
+        #expect(first.items[0].pantryItemId == UUID(uuidString: pantryId))
+        #expect(first.items[0].contribution.kcal == 165)   // 150 g of a 110 kcal / 100 g line
+        #expect(first.items[0].needsReview == false)
+        // a snapshot that lacks macros is not a clean line
+        #expect(first.items[1].needsReview)
+        // a usual whose meal had no lines carries none: the composer falls back to the name and says so
+        #expect(list[1].items.isEmpty)
+        #expect(list[1].mealId == nil)
+    }
 }
