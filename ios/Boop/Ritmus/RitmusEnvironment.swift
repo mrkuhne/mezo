@@ -117,7 +117,10 @@ final class RitmusEnvironment {
             await ledger.markSent(item.id, date: item.date)
         }
         queue.outbox = outbox
-        food = FoodOutbox(outbox: outbox, directory: outboxDirectory, calendar: greg)
+        let foodBox = FoodOutbox(outbox: outbox, directory: outboxDirectory, calendar: greg)
+        food = foodBox
+        // Photos nothing refers to (a capture that never made it into the queue) are swept at launch.
+        Task { await foodBox.sweepOrphans() }
         me.env = self
         let box = outbox
         Task { await box.observeFailures { failed in await me.env?.useRefused(failed) } }
@@ -251,6 +254,8 @@ final class RitmusEnvironment {
     /// The real wiring: the Boop API client, HealthKit for the snapshot, the user's own directories.
     static func live(client: Client, health: HealthReader, userId: UUID) -> RitmusEnvironment {
         let dirs = directories(for: userId)
+        // The outbox directory doubles as the audio directory AND the meal-photo directory (`MealDraftSender` and
+        // `FoodOutbox` look for `meal-<id>.jpg` there): all of them must stay the same folder.
         let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox)
         let snapshots = SnapshotBuilder(reader: health)
         let calendarReader = CalendarKitReader()

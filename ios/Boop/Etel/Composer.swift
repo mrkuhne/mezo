@@ -36,6 +36,14 @@ final class MealComposerModel {
     private(set) var saving = false
     var profile: SensitivityProfile?
     private(set) var cardId: UUID?
+    /// The capture came from a card the owner is looking over (not made in this sheet).
+    private(set) var adopted = false
+    /// The old failed card this capture replaces; it goes once the new capture is safe (a draft, or queued).
+    private var replacing: UUID?
+    private var capturedOverride: Date?
+    /// The old capture was too old for the server: this one is dated today and the sheet says so.
+    private(set) var redated = false
+    private var parkedPhotoRef: UUID?
     private(set) var recipes: [Recipe]?
     private(set) var shelf: [PantryRow]?
     private(set) var listProblem: String?
@@ -47,6 +55,8 @@ final class MealComposerModel {
     private let online: () -> Bool
     private let clock: () -> Date
     private let calendar: Calendar
+    /// Tells the room its cards changed (a draft was parked, a card went).
+    var changed: () -> Void = {}
 
     init(drafter: any MealDrafting, saver: @escaping @Sendable (MealDraft, UUID, Date) async throws -> BoopCore.Meal,
          lists: (recipes: @Sendable () async throws -> [Recipe], shelf: @Sendable () async throws -> [PantryRow])? = nil,
@@ -86,13 +96,15 @@ final class MealComposerModel {
     /// Asks Boop for a draft — or, with no net (or no model), keeps the capture on the phone for later.
     func submit() async {
         guard canSubmit, stage == .pick else { return }
-        capturedAt = clock(); problem = nil
+        capturedAt = capturedOverride ?? clock(); problem = nil
         let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard online() else { return await keep(words: words, why: .offline) }
         stage = .working
         do {
             let d = try await drafter.draft(date: capturedAt, text: words.isEmpty ? nil : words, photo: photo, barcode: nil)
             draft = d; stage = .draft
+            await ensureParked()
+            await discardReplaced()
         } catch FoodFetchError.offline {
             await keep(words: words, why: .offline)
         } catch FoodFetchError.unavailable {
@@ -109,25 +121,61 @@ final class MealComposerModel {
     private func keep(words: String, why: Why) async {
         guard let outbox else { stage = .pick; problem = "Most nem tudom eltenni a telefonra."; return }
         stage = .working
+        var ref: UUID?
         do {
-            let ref = try photo.map { try outbox.storePhoto($0) }
+            ref = try photo.map { try outbox.storePhoto($0, rescale: false) }
             try await outbox.enqueueMeal(draft: MealCapture(text: words.isEmpty ? nil : words), photoRef: ref, capturedAt: capturedAt)
+            await discardReplaced()
+            changed()
             chip = why == .offline ? "Nincs net · a telefonon van, elküldöm, amint lesz"
                 : "Most nem tudok számolni · a telefonon van, később újra próbálom"
             stage = .queued
         } catch {
+            // The capture was rolled back as a whole: the photo file goes with it, nothing half-kept.
+            if let ref { outbox.deletePhoto(ref) }
             stage = .pick
             problem = "Nem tudtam eltenni a telefonra — ne zárd be, próbáld újra."
         }
+    }
+
+    /// Writes the draft down as a card before any save is tried (see `FoodOutbox.park`). Never blocks the save.
+    private func ensureParked() async {
+        guard let outbox, let d = draft else { return }
+        let id = cardId ?? clientRef
+        if parkedPhotoRef == nil, let photo { parkedPhotoRef = try? outbox.storePhoto(photo, rescale: false) }
+        guard (try? outbox.park(d, id: id, capturedAt: capturedAt, text: text.isEmpty ? nil : text, photoRef: parkedPhotoRef)) != nil else { return }
+        cardId = id
+        changed()
+    }
+
+    private func discardReplaced() async {
+        guard let old = replacing else { return }
+        replacing = nil
+        await outbox?.discard(old)
+        changed()
     }
 
     /// A confirmation card's draft, opened for a last look and the tap.
     func adopt(_ card: PendingDraft, photo: Data?) {
         guard case .ready(var d) = card.state else { return }
         d.photo = photo
+        capturedAt = card.capturedAt
+        // The server refuses a day more than a week back: the meal is dated today, and the sheet says so.
+        if card.isTooOld(now: clock(), calendar: calendar) { capturedAt = clock(); d.date = dayString(capturedAt); redated = true }
         draft = d; self.photo = photo
-        capturedAt = card.capturedAt; clientRef = card.id; cardId = card.id
+        clientRef = card.id; cardId = card.id; adopted = true; parkedPhotoRef = card.photoRef
         stage = .draft
+    }
+
+    /// A capture that failed, looked over: its words and photo come back into the picker, so nothing is retyped.
+    /// It replaces the failed card once the new one is safe.
+    func adoptFailed(_ card: PendingDraft, photo: Data?) {
+        text = card.text ?? ""
+        self.photo = photo
+        replacing = card.id
+        if card.isTooOld(now: clock(), calendar: calendar) { capturedOverride = nil; redated = true }
+        else { capturedOverride = card.capturedAt; capturedAt = card.capturedAt }
+        stage = .pick
     }
 
     /// A recipe's serving or a shelf food as a one-line draft.
@@ -176,11 +224,15 @@ final class MealComposerModel {
         guard var d = draft, !d.items.isEmpty, !saving else { return .failed("Nincs mit menteni.") }
         d.photo = photo ?? d.photo
         saving = true; defer { saving = false }
+        draft = d
+        await ensureParked()
         do {
             let meal = try await saver(d, clientRef, capturedAt)
-            if let cardId { await outbox?.discard(cardId) }
+            if let cardId { await outbox?.finishSave(cardId, meal: meal) }
+            changed()
             let kcal = Int(meal.macros.kcal.rounded())
-            return .saved("\(draftTitle(d)) rögzítve · \(huInt(kcal)) kcal")
+            let stranded = d.photo != nil && !meal.hasPhoto
+            return .saved("\(draftTitle(d)) rögzítve · \(huInt(kcal)) kcal" + (stranded ? " · a fotó még a telefonon vár" : ""))
         } catch FoodFetchError.offline {
             return .failed("Nincs net — a vázlat itt marad, próbáld újra, amint van.")
         } catch FoodFetchError.unauthorized {
@@ -191,7 +243,7 @@ final class MealComposerModel {
     }
 
     /// The owner sends a confirmation card away.
-    func discardCard() async { if let cardId { await outbox?.discard(cardId) } }
+    func discardCard() async { if let cardId { await outbox?.discard(cardId); changed() } }
 }
 
 // MARK: - The sheet
@@ -230,10 +282,15 @@ private struct MealComposerHost: View {
         self.start = start; self.food = food; self.onDone = onDone
         let m = MealComposerModel(food: food, outbox: ritmus?.food, online: { [weak ritmus] in ritmus?.online ?? true })
         m.text = start.text
-        if let card = start.card, case .ready = card.state {
+        m.changed = { [weak ritmus] in ritmus?.mealDraftsChanged() }
+        if let card = start.card {
             let bytes = card.photoRef.flatMap { ritmus?.food.photoData($0) }
-            m.adopt(card, photo: bytes)
-            _cardPhoto = State(initialValue: bytes.flatMap(UIImage.init(data:)))
+            if case .ready = card.state {
+                m.adopt(card, photo: bytes)
+                _cardPhoto = State(initialValue: bytes.flatMap(UIImage.init(data:)))
+            } else if case .failed = card.state {
+                m.adoptFailed(card, photo: bytes)
+            }
         }
         _model = State(initialValue: m)
     }
@@ -247,7 +304,7 @@ private struct MealComposerHost: View {
         switch model.stage {
         case .pick: "Mit ettél?"
         case .working: "Egy pillanat"
-        case .draft: model.cardId == nil ? "Ezt látom" : "Nézd át"
+        case .draft: model.adopted ? "Nézd át" : "Ezt látom"
         case .queued: "Eltettem"
         case .recipes: "Melyik receptet?"
         case .pantry: "Mit a kamrából?"
@@ -265,6 +322,10 @@ private struct MealComposerHost: View {
             }
         }
         .scrollDismissesKeyboard(.interactively)
+        .confirmationDialog("Biztosan elveted? A vázlat és a fotó véglegesen törlődik.", isPresented: $confirmDiscard, titleVisibility: .visible) {
+            Button("Elvetem", role: .destructive) { Task { await model.discardCard(); onDone(model.adopted ? "Elvetettem" : nil) } }
+            Button("Mégsem", role: .cancel) {}
+        }
         .mealPhotoLibrary(isPresented: $showLibrary) { data in Task { await model.setPhoto(data) } }
         .fullScreenCover(isPresented: $showCamera) {
             CameraPicker(onPick: { data in showCamera = false; Task { await model.setPhoto(data) } }, onCancel: { showCamera = false })
@@ -293,6 +354,7 @@ private struct MealComposerHost: View {
     private var pick: some View {
         VStack(alignment: .leading, spacing: 14) {
             if !model.isOnline { OfflineChip() }
+            if model.redated { Text("Ez a rögzítés több mint egy hete készült, a szerver már nem fogadja el a régi napra — a mai napra kerül.").nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true) }
             if let data = model.photo, let image = UIImage(data: data) {
                 ZStack(alignment: .topTrailing) {
                     NKCardPhoto(Image(uiImage: image), hue: .fuel, height: 150).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -387,6 +449,7 @@ private struct MealComposerHost: View {
                     NKCardPhoto(Image(uiImage: photo), hue: .fuel, height: 140)
                 }
                 VStack(alignment: .leading, spacing: 12) {
+                    if model.redated { Text("Ez a rögzítés több mint egy hete készült, a szerver már nem fogadja el a régi napra — a mai napra kerül.").nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true) }
                     if let notice = draftNotice(draft) { Text(notice).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true) }
                     ForEach(Array(draft.items.enumerated()), id: \.offset) { i, item in line(i, item) }
                     Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5)
@@ -417,8 +480,8 @@ private struct MealComposerHost: View {
                         .background(Capsule().fill(.white.opacity(model.canSave ? 0.95 : 0.3)))
                 }
                 .buttonStyle(.plain).disabled(!model.canSave)
-                Button { Task { await model.discardCard(); onDone(model.cardId == nil ? nil : "Elvetettem") } } label: {
-                    Text(model.cardId == nil ? "Mégsem" : "Elvetem").nkFont(15).foregroundStyle(.white.opacity(0.85))
+                Button { confirmDiscard = true } label: {
+                    Text(model.adopted ? "Elvetem" : "Mégsem").nkFont(15).foregroundStyle(.white.opacity(0.85))
                         .padding(.horizontal, 20).frame(height: 50).background(Capsule().fill(.white.opacity(0.1)))
                 }
                 .buttonStyle(.plain)
@@ -427,6 +490,7 @@ private struct MealComposerHost: View {
     }
 
     @State private var savingProblem: String?
+    @State private var confirmDiscard = false
 
     private func save() async {
         savingProblem = nil

@@ -23,6 +23,8 @@ public struct PendingDraft: Identifiable, Equatable, Sendable {
         case failed(String)
         /// Computed: a confirmation card — one tap saves it. The photo stays beside the queue (`photoData`).
         case ready(MealDraft)
+        /// The meal is saved, but its photo did not go up: the phone still holds the only copy.
+        case photoWaiting(mealId: UUID)
     }
     public let id: UUID
     /// The instant of capture, with the phone's own day (never UTC's).
@@ -35,6 +37,20 @@ public struct PendingDraft: Identifiable, Equatable, Sendable {
     public var photoRef: UUID?
     public var state: State
     public var hasPhoto: Bool { photoRef != nil }
+
+    public init(id: UUID, capturedAt: Date, date: String, text: String?, barcode: String?, photoRef: UUID?, state: State) {
+        self.id = id; self.capturedAt = capturedAt; self.date = date; self.text = text; self.barcode = barcode
+        self.photoRef = photoRef; self.state = state
+    }
+
+    /// The server refuses a capture dated more than 7 days back (same rule as `Outbox`).
+    public func isTooOld(now: Date, calendar: Calendar) -> Bool {
+        var greg = Calendar(identifier: .gregorian); greg.timeZone = calendar.timeZone
+        let p = date.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3, let day = greg.date(from: DateComponents(year: p[0], month: p[1], day: p[2])),
+              let age = greg.dateComponents([.day], from: greg.startOfDay(for: day), to: greg.startOfDay(for: now)).day else { return false }
+        return age > Outbox.maxAgeDays
+    }
 }
 
 public enum FoodOutboxError: Error, Equatable, Sendable { case unreadablePhoto }

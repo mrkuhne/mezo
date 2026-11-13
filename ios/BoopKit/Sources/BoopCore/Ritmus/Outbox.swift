@@ -118,9 +118,15 @@ public actor Outbox {
     /// Appends the item; an item with the same id is replaced in place (its newer values go out, in its old position).
     /// Throws when the queue cannot be written to disk — the item is still queued for this run, but would not survive
     /// a relaunch, so the capture flow can say so.
-    public func enqueue(_ item: OutboxItem) async throws {
+    /// `rollbackOnFailure`: a capture that could not be written down is taken back out of memory too, so the caller's
+    /// "could not keep it" is true (a meal capture must not live on in RAM and surface later).
+    public func enqueue(_ item: OutboxItem, rollbackOnFailure: Bool = false) async throws {
+        let before = items
         if let i = items.firstIndex(where: { $0.id == item.id }) { items[i] = item } else { items.append(item) }
-        do { try persist() } catch { await publishFailures(); throw error }
+        do { try persist() } catch {
+            if rollbackOnFailure { items = before }
+            await publishFailures(); throw error
+        }
         await publishFailures()
     }
 

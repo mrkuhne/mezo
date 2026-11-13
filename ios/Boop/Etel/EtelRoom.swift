@@ -150,10 +150,12 @@ final class EtelStore {
         draft.photo = card.photoRef.flatMap { box.photoData($0) }
         do {
             let meal = try await food.save(draft, clientRef: card.id, capturedAt: card.capturedAt)
-            await box.discard(card.id)
+            // The photo goes up with the save on a good day; when it did not, it stays on the phone as a card.
+            await box.finishSave(card.id, meal: meal)
             await refreshPending(box)
             await load(food: food, now: now)
-            return "\(draftTitle(draft)) rögzítve · \(huInt(Int(meal.macros.kcal.rounded()))) kcal"
+            let stranded = draft.photo != nil && !meal.hasPhoto
+            return "\(draftTitle(draft)) rögzítve · \(huInt(Int(meal.macros.kcal.rounded()))) kcal" + (stranded ? " · a fotó még a telefonon vár" : "")
         } catch FoodFetchError.offline {
             return "Nincs net — a kártya megvár"
         } catch {
@@ -252,7 +254,10 @@ struct EtelRoom: View {
         .sheet(item: Binding(get: { [d = dimension] in d }, set: { dimension = $0 })) { d in
             DimensionSheet(selection: d)
         }
-        .sheet(item: Binding(get: { [c = composer] in c }, set: { composer = $0 })) { start in
+        .sheet(item: Binding(get: { [c = composer] in c }, set: { composer = $0 }), onDismiss: {
+            // A swipe-dismissed composer leaves its parked draft as a card: show it.
+            Task { await store.refreshPending(ritmus?.food) }
+        }) { start in
             MealComposerSheet(start: start) { toast in
                 composer = nil
                 if let toast { self.toast = toast }
@@ -280,6 +285,13 @@ struct EtelRoom: View {
         guard let box = ritmus?.food else { return }
         switch action {
         case .save: Task { toast = await store.saveCard(card, box: box) }
+        case .retryPhoto:
+            guard let food else { return }
+            Task {
+                let ok = await box.retryPhoto(card.id, attacher: food)
+                toast = ok ? "A fotó felment" : "A fotót most nem tudom feltölteni"
+                await store.refreshPending(box)
+            }
         case .edit: composer = MealStart(entrance: .pick, card: card)
         case .retry: Task { await box.retry(card.id); await box.flush(); await store.refreshPending(box) }
         case .discard: Task { await box.discard(card.id); await store.refreshPending(box) }

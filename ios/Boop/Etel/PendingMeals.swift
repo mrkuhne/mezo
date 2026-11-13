@@ -12,6 +12,8 @@ struct PendingMealCards: View {
     let onEdit: (PendingDraft) -> Void
     let onRetry: (PendingDraft) -> Void
     let onDiscard: (PendingDraft) -> Void
+    let onRetryPhoto: (PendingDraft) -> Void
+    @State private var discarding: PendingDraft?
 
     var body: some View {
         ForEach(store.pending) { card in
@@ -40,11 +42,16 @@ struct PendingMealCards: View {
             .nkGlass(22)
             .accessibilityElement(children: .contain)
         }
+        .confirmationDialog("Biztosan elveted? A kártya és a fotó véglegesen törlődik.",
+                            isPresented: Binding(get: { discarding != nil }, set: { if !$0 { discarding = nil } }), titleVisibility: .visible) {
+            Button("Elvetem", role: .destructive) { if let c = discarding { onDiscard(c) }; discarding = nil }
+            Button("Mégsem", role: .cancel) { discarding = nil }
+        }
     }
 
     private func header(_ card: PendingDraft) -> some View {
         let f = DateFormatter(); f.dateFormat = "MMM d. HH:mm"; f.locale = Locale(identifier: "hu_HU")
-        let label: String = switch card.state { case .waiting: "A TELEFONON VAN"; case .failed: "NEM SIKERÜLT ELKÜLDENI"; case .ready: "JÓVÁHAGYÁSRA VÁR" }
+        let label: String = switch card.state { case .waiting: "A TELEFONON VAN"; case .failed: "NEM SIKERÜLT ELKÜLDENI"; case .ready: "JÓVÁHAGYÁSRA VÁR"; case .photoWaiting: "A FOTÓ MÉG A TELEFONON VAN" }
         return HStack(spacing: 8) {
             Text("\(label) · \(f.string(from: card.capturedAt))").nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.55))
                 .lineLimit(1).minimumScaleFactor(0.7)
@@ -54,7 +61,7 @@ struct PendingMealCards: View {
     private func headline(_ card: PendingDraft) -> String? {
         switch card.state {
         case .ready(let d): draftTitle(d)
-        case .waiting, .failed:
+        case .waiting, .failed, .photoWaiting:
             if let t = card.text, !t.isEmpty { t } else { card.hasPhoto ? "Fotó az étkezésről" : "Étkezés" }
         }
     }
@@ -63,14 +70,28 @@ struct PendingMealCards: View {
         HStack(spacing: 8) {
             switch card.state {
             case .ready:
-                pill("Mentem", primary: true) { onSave(card) }
-                pill("Átnézem", primary: false) { onEdit(card) }
-                pill("Elvetem", primary: false) { onDiscard(card) }
+                // A card too old for the server cannot be saved by one tap: it opens for a look (dated today).
+                if card.isTooOld(now: BoopClock.now(), calendar: .current) {
+                    pill("Átnézem", primary: true) { onEdit(card) }
+                } else {
+                    pill("Mentem", primary: true) { onSave(card) }
+                    pill("Átnézem", primary: false) { onEdit(card) }
+                }
+                pill("Elvetem", primary: false) { discarding = card }
             case .failed:
-                pill("Újra", primary: true) { onRetry(card) }
-                pill("Elvetem", primary: false) { onDiscard(card) }
+                // "Újra" would be a dead button for a capture older than a week; looking it over always works.
+                if card.isTooOld(now: BoopClock.now(), calendar: .current) {
+                    pill("Átnézem", primary: true) { onEdit(card) }
+                } else {
+                    pill("Újra", primary: true) { onRetry(card) }
+                    pill("Átnézem", primary: false) { onEdit(card) }
+                }
+                pill("Elvetem", primary: false) { discarding = card }
             case .waiting:
-                pill("Elvetem", primary: false) { onDiscard(card) }
+                pill("Elvetem", primary: false) { discarding = card }
+            case .photoWaiting:
+                pill("Újra", primary: true) { onRetryPhoto(card) }
+                pill("Elvetem", primary: false) { discarding = card }
             }
             Spacer(minLength: 0)
         }

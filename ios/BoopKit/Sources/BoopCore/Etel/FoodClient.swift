@@ -442,6 +442,9 @@ public struct FoodClient: Sendable {
         }
     }
 
+    /// Attaches (or replaces) a meal's photo — the retry of an upload that did not go up with the save.
+    public func attachPhoto(_ data: Data, mealId: UUID) async throws { try await putPhoto(data, mealId: mealId) }
+
     private func putPhoto(_ data: Data, mealId: UUID) async throws {
         try await call {
             let part = Operations.putMealPhoto.Input.Body.multipartFormPayload.photo(

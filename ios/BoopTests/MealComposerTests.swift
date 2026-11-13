@@ -10,6 +10,8 @@ import BoopCore
 actor MealCalls {
     var drafted = 0, saved: [(UUID, Date)] = []
     var failDraft: FoodFetchError?, failSave: FoodFetchError?
+    var photoLands = true
+    func setPhotoLands(_ on: Bool) { photoLands = on }
     func setFailDraft(_ e: FoodFetchError?) { failDraft = e }
     func setFailSave(_ e: FoodFetchError?) { failSave = e }
     func draft() throws { drafted += 1; if let failDraft { throw failDraft } }
@@ -42,16 +44,18 @@ struct MealComposerTests {
         return FoodOutbox(outbox: outbox, directory: dir)
     }
 
-    private func model(online: Bool = true, outbox: FoodOutbox? = nil) -> MealComposerModel {
+    private func model(online: Bool = true, outbox: FoodOutbox? = nil, clock: Date? = nil) -> MealComposerModel {
         let c = calls
+        let now = clock ?? moment
         return MealComposerModel(
             drafter: MealDrafter(calls: calls),
             saver: { d, ref, at in
                 try await c.save(ref, at)
+                let lands = await c.photoLands
                 return BoopCore.Meal(id: UUID(), slot: d.slot, loggedAt: at, mealDate: d.date, title: d.title,
-                                     macros: d.total, score: nil)
+                                     macros: d.total, score: nil, hasPhoto: d.photo != nil && lands)
             },
-            outbox: outbox ?? box(), online: { online }, clock: { moment })
+            outbox: outbox ?? box(), online: { online }, clock: { now })
     }
 
     private func png() throws -> Data {
@@ -144,6 +148,88 @@ struct MealComposerTests {
         #expect(await outbox.pendingDrafts().isEmpty)
     }
 
+    private func gradedPhotoModel(_ outbox: FoodOutbox) async throws -> MealComposerModel {
+        let m = model(outbox: outbox)
+        await m.setPhoto(try png())
+        m.text = "vacsora"
+        await m.submit()
+        return m
+    }
+
+    @Test func anOnlineDraftIsOnDiskBeforeAnySaveIsTried() async throws {
+        let outbox = box()
+        _ = try await gradedPhotoModel(outbox)   // the model is dropped: a swipe-dismiss, a kill
+        let card = try #require(await box().pendingDrafts().first)
+        guard case .ready = card.state else { Issue.record("expected a parked card"); return }
+        #expect(card.hasPhoto)
+        #expect(await calls.saved.isEmpty)
+    }
+
+    @Test func aFailedSaveLeavesTheCardWithItsPhoto() async throws {
+        let outbox = box()
+        let m = try await gradedPhotoModel(outbox)
+        await calls.setFailSave(.offline)
+        guard case .failed = await m.save() else { Issue.record("expected failure"); return }
+        let card = try #require(await outbox.pendingDrafts().first)
+        #expect(card.hasPhoto)
+        guard case .ready = card.state else { Issue.record("expected ready"); return }
+    }
+
+    @Test func aSaveWhosePhotoDidNotGoUpKeepsThePhotoAndSaysSo() async throws {
+        await calls.setPhotoLands(false)
+        let outbox = box()
+        let m = try await gradedPhotoModel(outbox)
+        guard case .saved(let toast) = await m.save() else { Issue.record("save failed"); return }
+        #expect(toast.contains("fotó"))
+        let card = try #require(await outbox.pendingDrafts().first)
+        guard case .photoWaiting = card.state else { Issue.record("expected photoWaiting"); return }
+        #expect(outbox.photoData(try #require(card.photoRef)) != nil)
+    }
+
+    @Test func aSaveWithItsPhotoOnTheServerLeavesNothingBehind() async throws {
+        let outbox = box()
+        let m = try await gradedPhotoModel(outbox)
+        _ = await m.save()
+        #expect(await outbox.pendingDrafts().isEmpty)
+    }
+
+    @Test func cancellingAParkedDraftRemovesIt() async throws {
+        let outbox = box()
+        let m = try await gradedPhotoModel(outbox)
+        await m.discardCard()
+        #expect(await outbox.pendingDrafts().isEmpty)
+    }
+
+    @Test func aFailedCaptureOpensWithItsTextAndPhotoAndReplacesItself() async throws {
+        let outbox = box()
+        await calls.setFailDraft(.rejected)
+        let ref = try outbox.storePhoto(try png())
+        let id = try await outbox.enqueueMeal(draft: MealCapture(text: "régi vacsora"), photoRef: ref, capturedAt: moment)
+        await outbox.flush()
+        let card = try #require(await outbox.pendingDrafts().first)
+        await calls.setFailDraft(nil)
+        let m = model(outbox: outbox)
+        m.adoptFailed(card, photo: outbox.photoData(ref))
+        #expect(m.text == "régi vacsora" && m.hasPhoto && m.capturedAt == moment)
+        await m.submit()
+        #expect(m.stage == .draft)
+        #expect(await outbox.pendingDrafts().contains { $0.id == id } == false, "the old failed card is replaced")
+    }
+
+    @Test func aCaptureTooOldForTheServerIsDatedToday() async throws {
+        let outbox = box()
+        let eightDays = moment.addingTimeInterval(8 * 86_400)
+        let id = try await outbox.enqueueMeal(draft: MealCapture(text: "régi"), photoRef: nil, capturedAt: moment)
+        let m = model(outbox: outbox, clock: eightDays)
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: moment)
+        let day = String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        let card = PendingDraft(id: id, capturedAt: moment, date: day, text: "régi", barcode: nil, photoRef: nil, state: .failed("x"))
+        m.adoptFailed(card, photo: nil)
+        #expect(m.redated)
+        await m.submit()
+        #expect(m.capturedAt == eightDays)
+    }
+
     @Test func linesAreEditableAndTheTotalFollows() async {
         let m = model()
         m.text = "rizs"
@@ -210,3 +296,4 @@ struct DraftNoticeTests {
         #expect(texts.contains("Ultra-feldolgozott"))
     }
 }
+

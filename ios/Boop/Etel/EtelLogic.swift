@@ -294,6 +294,7 @@ func pendingCardLine(_ card: PendingDraft) -> String {
     case .waiting: "A telefonon van. Amint lesz net, kiszámolom, és egy koppintással jóváhagyod — addig semmi nem mentődik el."
     case .failed: "Ezt nem tudtam elküldeni. Az adataid megvannak, megpróbálom újra, ha kéred."
     case .ready: "Kiszámoltam. Nézd át, és egy koppintással mentsd — addig semmi nem került a naplódba."
+    case .photoWaiting: "Az étkezés rögzítve, de a fotója még nem ért fel. A telefonodon van; megpróbálom újra, ha kéred."
     }
 }
 

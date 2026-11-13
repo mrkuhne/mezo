@@ -19,7 +19,8 @@ struct EtelMa: View {
 
     var body: some View {
         PendingMealCards(store: store, onSave: { onCard(.save, $0) }, onEdit: { onCard(.edit, $0) },
-                         onRetry: { onCard(.retry, $0) }, onDiscard: { onCard(.discard, $0) })
+                         onRetry: { onCard(.retry, $0) }, onDiscard: { onCard(.discard, $0) },
+                         onRetryPhoto: { onCard(.retryPhoto, $0) })
         NKDrillSection(number: 1, label: "AMI MÉG BELEFÉR") { budget }
         NKDrillSection(number: 2, label: "A MAI TERVED") { windows }
         NKDrillSection(number: 3, label: "MIT EGYÉL LEGKÖZELEBB") { tip }
@@ -316,4 +317,4 @@ struct OpenWindowCard: View {
 }
 
 /// What the owner can do with a capture that is waiting.
-enum PendingCardAction { case save, edit, retry, discard }
+enum PendingCardAction { case save, edit, retry, discard, retryPhoto }

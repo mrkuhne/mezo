@@ -165,4 +165,107 @@ final class FoodOutboxTests {
         await food.retry(id)
         guard case .ready? = await food.pendingDrafts().first?.state else { Issue.record("expected a card after Újra"); return }
     }
+
+    // MARK: - Review round: nothing the phone alone holds is lost
+
+    actor FakeAttacher: PhotoAttaching {
+        var works = false
+        private(set) var attached = 0
+        func setWorks(_ on: Bool) { works = on }
+        func attachPhoto(_ data: Data, mealId: UUID) async throws {
+            if !works { throw FoodFetchError.server }
+            attached += 1
+        }
+    }
+
+    func meal(hasPhoto: Bool) -> Meal {
+        Meal(id: UUID(), slot: "dinner", loggedAt: afterMidnight, mealDate: "2026-11-13", title: nil,
+             macros: Macros(kcal: 300, p: 20, c: 30, f: 10), score: nil, hasPhoto: hasPhoto)
+    }
+
+    func parked(_ food: FoodOutbox, photo: Bool = true) throws -> (id: UUID, ref: UUID?) {
+        let ref = photo ? try food.storePhoto(try bigImage()) : nil
+        let draft = MealDraft(date: "2026-11-13", slot: "dinner", title: "vacsora", items: [])
+        let id = try food.park(draft, id: nil, capturedAt: afterMidnight, text: "vacsora", photoRef: ref)
+        return (id, ref)
+    }
+
+    @Test func aSavedMealWhosePhotoDidNotGoUpKeepsItsPhotoAndCanRetry() async throws {
+        let (food, _) = make()
+        let (id, ref) = try parked(food)
+        await food.finishSave(id, meal: meal(hasPhoto: false))
+        let photoRef = try #require(ref)
+        #expect(food.photoData(photoRef) != nil, "the phone's only copy must survive")
+        let card = try #require(await food.pendingDrafts().first)
+        guard case .photoWaiting = card.state else { Issue.record("expected photoWaiting"); return }
+        let attacher = FakeAttacher()
+        #expect(await food.retryPhoto(id, attacher: attacher) == false)
+        #expect(food.photoData(photoRef) != nil)
+        await attacher.setWorks(true)
+        #expect(await food.retryPhoto(id, attacher: attacher) == true)
+        #expect(food.photoData(photoRef) == nil)
+        #expect(await food.pendingDrafts().isEmpty)
+    }
+
+    @Test func aSavedMealWithItsPhotoOnTheServerCleansUp() async throws {
+        let (food, _) = make()
+        let (id, ref) = try parked(food)
+        await food.finishSave(id, meal: meal(hasPhoto: true))
+        #expect(food.photoData(try #require(ref)) == nil)
+        #expect(await food.pendingDrafts().isEmpty)
+    }
+
+    @Test func aParkedDraftIsACardThatSurvivesRelaunch() async throws {
+        let (food, _) = make()
+        let (id, _) = try parked(food)
+        let (again, _) = make()
+        let card = try #require(await again.pendingDrafts().first)
+        #expect(card.id == id)
+        guard case .ready = card.state else { Issue.record("expected ready"); return }
+    }
+
+    @Test func aFailedPersistRollsTheEnqueueBack() async throws {
+        let (food, box) = make()
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: dir.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path) }
+        await #expect(throws: (any Error).self) {
+            try await food.enqueueMeal(draft: MealCapture(text: "x"), photoRef: nil, capturedAt: afterMidnight)
+        }
+        #expect(await box.queue.isEmpty, "a capture the phone could not keep must not live on in memory")
+    }
+
+    @Test func orphanPhotosAreSweptButReferencedAndFreshOnesStay() async throws {
+        let (food, _) = make()
+        let kept = try food.storePhoto(try bigImage())
+        _ = try await food.enqueueMeal(draft: MealCapture(text: "x"), photoRef: kept, capturedAt: afterMidnight)
+        let orphan = try food.storePhoto(try bigImage())
+        let fresh = try food.storePhoto(try bigImage())
+        let old = Date(timeIntervalSinceNow: -7200)
+        try FileManager.default.setAttributes([.modificationDate: old], ofItemAtPath: dir.appendingPathComponent("meal-\(orphan.uuidString).jpg").path)
+        try FileManager.default.setAttributes([.modificationDate: old], ofItemAtPath: dir.appendingPathComponent("meal-\(kept.uuidString).jpg").path)
+        await food.sweepOrphans()
+        #expect(food.photoData(orphan) == nil)
+        #expect(food.photoData(kept) != nil)
+        #expect(food.photoData(fresh) != nil, "a photo stored a moment ago may still be on its way into the queue")
+    }
+
+    @Test func aDraftAlreadyReadyIsNotComputedAgain() async throws {
+        let (food, _) = make()
+        let id = try await food.enqueueMeal(draft: MealCapture(text: "vacsora"), photoRef: nil, capturedAt: afterMidnight)
+        let draft = MealDraft(date: "2026-11-13", slot: "dinner", title: "kész", items: [])
+        _ = try food.park(draft, id: id, capturedAt: afterMidnight, text: "vacsora", photoRef: nil)
+        await food.flush()
+        #expect(await drafter.asked.isEmpty, "a crash between the ready write and the queue removal must not buy a second draft")
+        guard case .ready(let d)? = await food.pendingDrafts().first?.state else { Issue.record("expected ready"); return }
+        #expect(d.title == "kész")
+    }
+
+    @Test func aCardOlderThanSevenDaysKnowsItCannotBeSaved() async throws {
+        let (food, _) = make()
+        let id = try await food.enqueueMeal(draft: MealCapture(text: "x"), photoRef: nil, capturedAt: afterMidnight)
+        _ = id
+        let card = try #require(await food.pendingDrafts().first)
+        #expect(card.isTooOld(now: afterMidnight.addingTimeInterval(8 * 86_400), calendar: budapest))
+        #expect(!card.isTooOld(now: afterMidnight.addingTimeInterval(3 * 86_400), calendar: budapest))
+    }
 }
