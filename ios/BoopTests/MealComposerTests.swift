@@ -299,6 +299,16 @@ struct DraftNoticeTests {
         #expect(!draftHasUnknownAllergens(draft(items: [line]), profile: profile))
     }
 
+    @Test func reviewFlagReachesTheSourceTagForShelfAndRecipeLines() {
+        var pantry = DraftItem(source: .pantry, name: "müzli", amount: 100, unit: "g", per: 100, basisUnit: "g",
+                               kcal: 380, proteinG: 0, carbsG: 60, fatG: 8, needsReview: true)
+        #expect(draftSourceTag(pantry) == "kamra · nézd át")
+        pantry.needsReview = false
+        #expect(draftSourceTag(pantry) == "kamra")
+        var recipe = pantry; recipe.source = .recipe; recipe.needsReview = true
+        #expect(draftSourceTag(recipe) == "recept · nézd át")
+    }
+
     @Test func badgesNeverReadSilenceAsSafe() {
         let profile = SensitivityProfile(items: [SensitivityItem(key: "milk", level: .intolerance, note: nil)],
                                          novaRule: NovaRule(enabled: true, maxLevel: 2))

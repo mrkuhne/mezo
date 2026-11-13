@@ -346,3 +346,12 @@ func draftTitle(_ draft: MealDraft) -> String {
     let names = draft.items.map(\.name)
     return names.isEmpty ? etelSlotLabel(draft.slot) : names.prefix(3).joined(separator: ", ")
 }
+
+/// The small tag under a draft line; a line flagged for review says so whatever its source.
+func draftSourceTag(_ item: DraftItem) -> String {
+    switch item.source {
+    case .pantry: item.needsReview ? "kamra · nézd át" : "kamra"
+    case .recipe: item.needsReview ? "recept · nézd át" : "recept"
+    case .estimate: item.needsReview || item.confidence < 0.6 ? "becslés · nézd át" : "becslés"
+    }
+}

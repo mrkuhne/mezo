@@ -673,13 +673,7 @@ private struct MealComposerHost: View {
         }
     }
 
-    private func sourceTag(_ item: DraftItem) -> String {
-        switch item.source {
-        case .pantry: "kamra"
-        case .recipe: "recept"
-        case .estimate: item.needsReview || item.confidence < 0.6 ? "becslés · nézd át" : "becslés"
-        }
-    }
+    private func sourceTag(_ item: DraftItem) -> String { draftSourceTag(item) }
 
     private func badge(_ b: DraftBadge) -> some View {
         Text(b.text).nkFont(11.5, .semibold)
