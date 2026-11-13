@@ -283,9 +283,11 @@ link — and then **Amit ma észrevettem**. The curve left the hero: the hero is
 nincs ilyen főcím része… viszont így, hogy eltűnik a menüsor alul, igazából mindegyik területnek lehet saját
 5 menüpontos menüsora, ami eléggé egyszerűsíti a navigációt."* So:
 
-1. **Its own masthead** — the area's glyph and its name in the `boop` wordmark treatment, centred at the top of
-   the painted/photo head, exactly where `boop` sits on Ma. The head grew (356 pt warm / 326 pt cold) and the
-   eyebrow over the verdict now names the **open page**, not the area (the masthead already does).
+1. **Its own masthead** — where `boop` sits on Ma. The first try put the area's name there in lowercase; the
+   owner killed it (*"nagyon béna"*). What stands: the area's **big living orb with the score inside it**
+   (92 pt, the same moving liquid as the ribbon's), and under it the same faint edge-fading rule as under
+   `boop`. The head grew (356 pt warm / 326 pt cold), and the eyebrow over the verdict names the area **and**
+   the open page (`PÉNZ · KERETEK`), so the score is said once, not twice.
 2. **Its own bottom bar** replaces the spine's while you are inside: the area's pages (icon + label, with the
    badge on the icon) plus a fixed **Boop** item that asks about this area. Four pages + Boop = the five-item
    bar the owner asked for; the top chip strip is gone.
