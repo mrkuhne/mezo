@@ -43,6 +43,9 @@ struct EPhotoHead: View {
     var body: some View {
         let m = EMetric.all[metric]
         let style = Self.style
+        // The page under the head is gPageBackground(m.top) — end the head in exactly that colour,
+        // and fade the photo out before it, so the head dissolves instead of stopping.
+        let seam = m.top.mix(with: gBase, by: 0.55)
         Color.clear.frame(height: height)
             .overlay {
                 if let name = EWarm.moodPhoto(metric) {
@@ -53,13 +56,17 @@ struct EPhotoHead: View {
                             .brightness(style == 1 ? -0.1 : -0.06)
                             .blur(radius: style == 1 ? 22 : 0)
                             .scaleEffect(style == 1 ? 1.18 : 1)
-                            .mask(style == 2
-                                  ? AnyView(LinearGradient(stops: [
-                                        .init(color: .clear, location: 0.30),
-                                        .init(color: .white.opacity(0.65), location: 0.52),
-                                        .init(color: .white, location: 0.70),
-                                    ], startPoint: .top, endPoint: .bottom))
-                                  : AnyView(Color.white))
+                            .mask(LinearGradient(stops: style == 2
+                                  ? [.init(color: .clear, location: 0.30),
+                                     .init(color: .white.opacity(0.65), location: 0.52),
+                                     .init(color: .white, location: 0.70),
+                                     .init(color: .white, location: 0.80),
+                                     .init(color: .clear, location: 1)]
+                                  : [.init(color: .white, location: 0),
+                                     .init(color: .white, location: 0.62),
+                                     .init(color: .white.opacity(0.35), location: 0.86),
+                                     .init(color: .clear, location: 1)],
+                                  startPoint: .top, endPoint: .bottom))
                     }
                 } else {
                     PaintedLandscape(sky: m.sky)
@@ -72,11 +79,28 @@ struct EPhotoHead: View {
                     .init(color: m.top.opacity(style == 2 ? 0.70 : 0.88), location: 0),
                     .init(color: m.top.opacity(style == 2 ? 0.30 : 0.42), location: 0.34),
                     .init(color: m.sky[1].opacity(0.22), location: 0.56),
-                    .init(color: gBase.opacity(0.72), location: 0.84),
-                    .init(color: gBase, location: 1),
+                    .init(color: seam.opacity(0.5), location: 0.74),
+                    .init(color: seam.opacity(0.22), location: 0.9),
+                    .init(color: .clear, location: 1),
                 ], startPoint: .top, endPoint: .bottom)
             )
             .overlay(Rectangle().fill(m.glow).opacity(0.07).blendMode(.color))
+            // The painted fallback needs the same dissolve, or the landscape stops on a hard line.
+            .overlay(
+                EWarm.moodPhoto(metric) != nil ? nil :
+                LinearGradient(stops: [
+                    .init(color: .clear, location: 0.52),
+                    .init(color: seam.opacity(0.5), location: 0.8),
+                    .init(color: seam.opacity(0.2), location: 0.93),
+                    .init(color: .clear, location: 1),
+                ], startPoint: .top, endPoint: .bottom)
+            )
+            .mask(LinearGradient(stops: [
+                .init(color: .white, location: 0),
+                .init(color: .white, location: 0.88),
+                .init(color: .white.opacity(0.55), location: 0.97),
+                .init(color: .clear, location: 1),
+            ], startPoint: .top, endPoint: .bottom))
     }
 }
 

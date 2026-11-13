@@ -300,6 +300,11 @@ nincs ilyen főcím része… viszont így, hogy eltűnik a menüsor alul, igaz�
    borrowed (Pénz wears a mountain), so a picture competing with the orb is a picture that is also wrong.
    The sharp photo keeps its place lower on the page — the hero card's band and the row thumbnails.
    When the real area photos land (`mezo-r36n9.44`), *sáv* is worth re-testing.
+5. **The head dissolves, it does not stop.** It used to end on the flat page base while the page itself is a
+   tinted gradient, so a horizontal seam showed under the verdict. Now the photo is masked out before the
+   bottom, the colour wash ends in `.clear` instead of a colour, and the whole head carries a final alpha
+   mask — so the last pixels of the head *are* the page background, at any head height. The painted fallback
+   got the same dissolve; without it the landscape stopped on a hard line.
 
 Trap found while building: a glass bar placed with `.overlay` on the scrolling page renders but is easy to
 mis-verify — the simulator tool's tap coordinates sit ~70 pt above the screenshot's own point grid, so a tap
