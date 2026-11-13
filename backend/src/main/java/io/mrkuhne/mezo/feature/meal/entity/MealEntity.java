@@ -97,6 +97,10 @@ public class MealEntity extends OwnedEntity {
     @Column(name = "photo_id", columnDefinition = "uuid")
     private UUID photoId;
 
+    /** Boop outbox idempotency key (unique per owner among live rows); null for web rows. */
+    @Column(name = "client_ref", columnDefinition = "uuid")
+    private UUID clientRef;
+
     @OneToMany(mappedBy = "meal", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("lineOrder")
     private List<MealItemEntity> items = new ArrayList<>();

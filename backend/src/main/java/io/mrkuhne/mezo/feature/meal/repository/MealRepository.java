@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.meal.repository;
 
+import java.time.Instant;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.techcore.persistence.OwnedRepository;
 import java.math.BigDecimal;
@@ -132,4 +133,22 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
          where id in (:ids) and breakdown is not null
         """, nativeQuery = true)
     int invalidateEnvelopeStamp(@Param("ids") List<UUID> ids);
+
+    Optional<MealEntity> findByCreatedByAndClientRefAndDeletedFalse(UUID createdBy, UUID clientRef);
+
+    /**
+     * Race-safe claim for a Boop retry (same shape as B3's journal insert): writes only the header, and a
+     * concurrent insert of the same {@code clientRef} makes this one wait and then do nothing (no unique
+     * violation, so the caller's transaction is never aborted). Returns 1 when this call created the row; the
+     * caller reads it back, and fills the items and score only when it was the creator.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+        insert into meal (created_by, logged_at, meal_date, slot, title, client_ref)
+        values (:createdBy, :loggedAt, :mealDate, :slot, :title, :clientRef)
+        on conflict (created_by, client_ref) where client_ref is not null and is_deleted = false do nothing
+        """, nativeQuery = true)
+    int insertIfClientRefAbsent(@Param("createdBy") UUID createdBy, @Param("loggedAt") Instant loggedAt,
+                                @Param("mealDate") LocalDate mealDate, @Param("slot") String slot,
+                                @Param("title") String title, @Param("clientRef") UUID clientRef);
 }

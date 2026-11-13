@@ -440,6 +440,18 @@ components:
         provenance:
           nullable: true
           allOf: [ { $ref: '#/components/schemas/MealProvenance' } ]
+        clientRef:
+          type: string
+          format: uuid
+          description: Boop B4 - idempotency key (unique per owner); a retried request returns the existing row, never a second one.
+        capturedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            Boop B4 - the phone's offset-bearing instant of capture, stored as the record's own moment; its
+            local date is the record's day. Absent = the existing behaviour. At most 7 days back (owner zone) and not
+            in the future (5 min clock tolerance), else 400.
     MealResponse:
       type: object
       required: [id, slot, loggedAt, mealDate, macros, score, items]
@@ -636,6 +648,18 @@ components:
       properties:
         date: { type: string, format: date, description: 'Day key; defaults to the server''s today when omitted' }
         amountMl: { type: integer, minimum: 1 }
+        clientRef:
+          type: string
+          format: uuid
+          description: Boop B4 - idempotency key (unique per owner); a retried request returns the existing row, never a second one.
+        capturedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            Boop B4 - the phone's offset-bearing instant of capture, stored as the record's own moment; its
+            local date is the record's day. Absent = the existing behaviour. At most 7 days back (owner zone) and not
+            in the future (5 min clock tolerance), else 400.
     WaterLogResponse:
       type: object
       required: [id, date, amountMl]

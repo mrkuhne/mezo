@@ -8714,6 +8714,16 @@ export interface components {
             title?: string | null;
             items: components["schemas"]["MealItemRequest"][];
             provenance?: components["schemas"]["MealProvenance"] | null;
+            /**
+             * Format: uuid
+             * @description Boop B4 - idempotency key (unique per owner); a retried request returns the existing row, never a second one.
+             */
+            clientRef?: string;
+            /**
+             * Format: date-time
+             * @description Boop B4 - the phone's offset-bearing instant of capture, stored as the record's own moment; its local date is the record's day. Absent = the existing behaviour. At most 7 days back (owner zone) and not in the future (5 min clock tolerance), else 400.
+             */
+            capturedAt?: string | null;
         };
         MealResponse: {
             /** Format: uuid */
@@ -8861,6 +8871,16 @@ export interface components {
              */
             date?: string;
             amountMl: number;
+            /**
+             * Format: uuid
+             * @description Boop B4 - idempotency key (unique per owner); a retried request returns the existing row, never a second one.
+             */
+            clientRef?: string;
+            /**
+             * Format: date-time
+             * @description Boop B4 - the phone's offset-bearing instant of capture, stored as the record's own moment; its local date is the record's day. Absent = the existing behaviour. At most 7 days back (owner zone) and not in the future (5 min clock tolerance), else 400.
+             */
+            capturedAt?: string | null;
         };
         WaterLogResponse: {
             /** Format: uuid */
@@ -9157,6 +9177,16 @@ export interface components {
             /** @description Snapshot; defaults to the pantry item's dose */
             dose?: string;
             note?: string;
+            /**
+             * Format: uuid
+             * @description Boop B4 - idempotency key (unique per owner); a retried request returns the existing row, never a second one.
+             */
+            clientRef?: string;
+            /**
+             * Format: date-time
+             * @description Boop B4 - the phone's offset-bearing instant of capture, stored as the record's own moment; its local date is the record's day. Absent = the existing behaviour. At most 7 days back (owner zone) and not in the future (5 min clock tolerance), else 400.
+             */
+            capturedAt?: string | null;
         };
         IntakeResponse: {
             /** Format: uuid */

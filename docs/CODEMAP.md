@@ -1144,14 +1144,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 28 IT + 10 unit
-  - **ITs:** `FuelDayMovementIT`, `FuelDayRecoveryIT`, `FuelDayServiceIT`, `GoalDailyIntakeAdapterIT`,
-    `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`,
-    `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`,
-    `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`,
-    `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealPhotoIT`, `MealRecipeCompositeScoringIT`,
-    `MealRepositoryIT`, `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`, `MealServiceIT`,
-    `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 29 IT + 10 unit
+  - **ITs:** `ClientRefIdempotencyIT`, `FuelDayMovementIT`, `FuelDayRecoveryIT`, `FuelDayServiceIT`,
+    `GoalDailyIntakeAdapterIT`, `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`,
+    `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`,
+    `MealCoachServiceIT`, `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`,
+    `MealOverridesIT`, `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealPhotoIT`,
+    `MealRecipeCompositeScoringIT`, `MealRepositoryIT`, `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`,
+    `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MealPopulator`,
     `PantryCatalogPopulator`, `PantryItemPopulator`, `PlannedSkipPopulator`, `RecipePopulator`,
     `RecoveryPeriodPopulator`, `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
@@ -1804,6 +1804,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **query:** `WeightTrendQuery`
 - **security:** `CorsProperties`, `CurrentUserId`, `LlmActorContext`, `SecurityConfig`
 - **text:** `SafeTruncate`, `TextFold`
+- **time:** `CapturedAtWindow`
 - **webpush:** `Aes128GcmEncryptor`, `VapidSigner`, `WebPushClient`, `WebPushProperties`, `WebPushResult`,
   `WebPushSubscriptionKeys`
 
