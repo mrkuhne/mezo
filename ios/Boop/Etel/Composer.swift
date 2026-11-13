@@ -232,15 +232,21 @@ final class MealComposerModel {
         if stage == .usuals {
             guard let usualsLoader else { listProblem = "Most nem érem el."; return }
             listProblem = nil
-            do { usuals = try await usualsLoader() }
-            catch { listProblem = (error as? FoodFetchError) == .offline ? "Nincs net — a listához kell." : "Most nem sikerült betölteni." }
+            do { usuals = try await usualsLoader(); listProblem = nil }
+            catch {
+                // A load the view already replaced (the stage changed under it) must not leave its cancellation as a problem.
+                if Task.isCancelled { return }
+                listProblem = (error as? FoodFetchError) == .offline ? "Nincs net — a listához kell." : "Most nem sikerült betölteni."
+            }
             return
         }
         guard let lists else { listProblem = "Most nem érem el."; return }
         listProblem = nil
         do {
             if stage == .recipes { recipes = try await lists.recipes() } else { shelf = try await lists.shelf() }
+            listProblem = nil
         } catch {
+            if Task.isCancelled { return }
             listProblem = (error as? FoodFetchError) == .offline ? "Nincs net — a listához kell." : "Most nem sikerült betölteni."
         }
     }

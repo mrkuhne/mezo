@@ -74,4 +74,19 @@ struct FoodPreviewTests {
                                                           lines: [NewRecipeLine(catalogId: UUID(), amount: 200, unit: "g")]))
         #expect(saved.name == "Próba" && saved.servings == 2)
     }
+
+    @Test func theUsualsAndTheWeekDecodeFromThePreviewServer() async throws {
+        let usuals = try await food.usuals(slot: "dinner")
+        #expect(try await food.usuals().count == 3)
+        #expect(usuals.count == 3)
+        let week = try await food.week(from: Date().addingTimeInterval(-6 * 86_400))
+        #expect(week.days.count == 7)
+        #expect(week.days.contains { $0.fuelMode == "GUIDANCE" })
+        let scraped = try await food.scrapeFood(url: "https://bolt.hu/skyr")
+        #expect(scraped?.name == "Skyr natúr")
+        #expect(try await food.scrapeFood(url: "https://bolt.hu/nincs") == nil)
+        #expect(try await food.readLabel(Data([1]))?.needsReview == true)
+        let saved = try await food.addFood(NewPantryFood(name: "Házi lekvár", kcal: 250, origin: .manual))
+        #expect(saved.source == "manual")
+    }
 }
