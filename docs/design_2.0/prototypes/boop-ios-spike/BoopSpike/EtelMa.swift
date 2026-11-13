@@ -328,7 +328,7 @@ struct EDimensionSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 ZStack(alignment: .bottomLeading) {
-                    EPhotoHead(height: 170)
+                    EtelPhotoHead(height: 170)
                     VStack(alignment: .leading, spacing: 6) {
                         GLabel("EGY SZEMPONT")
                         HStack(alignment: .firstTextBaseline, spacing: 10) {

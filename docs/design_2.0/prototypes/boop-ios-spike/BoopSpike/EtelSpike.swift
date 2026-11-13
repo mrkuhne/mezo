@@ -6,14 +6,7 @@ import SwiftUI
 // Fake data, no networking.
 // Launch: -etel YES [-etelTab 0–3] [-etelOpen composer|barcode|dimension|recept-import|erzekenyseg|kihagyas|kiegeszito]
 
-enum EArg {
-    static let d = UserDefaults.standard
-    static func int(_ k: String, _ lo: Int, _ hi: Int, _ def: Int = 0) -> Int {
-        guard d.object(forKey: k) != nil else { return def }
-        return min(hi, max(lo, d.integer(forKey: k)))
-    }
-    static func str(_ k: String) -> String? { d.string(forKey: k).flatMap { $0.isEmpty ? nil : $0 } }
-}
+// EArg lives in EletRoot.swift — one copy for the whole spike target.
 
 /// The Fuel colour world (Napkelte `Hue.fuel`).
 enum EHue {
@@ -29,7 +22,7 @@ enum EHue {
 /// A room head built from a photo (Képek §3.3): the mood photo fills it, toned down, with the hue's own sky
 /// gradient over it — dark at the top, thinning at the horizon, closing into the page at the bottom.
 /// `photoName == nil` falls back to the painted landscape, so every screen is correct with no photo at all.
-struct EPhotoHead: View {
+struct EtelPhotoHead: View {
     var photoName: String? = EHue.mood
     var height: CGFloat = 360
     var body: some View {
@@ -260,7 +253,7 @@ struct EtelRoom: View {
         ScrollView {
             VStack(spacing: 0) {
                 ZStack(alignment: .top) {
-                    EPhotoHead()
+                    EtelPhotoHead()
                     VStack(spacing: 0) {
                         HStack(spacing: 10) {
                             Button { onToast("Vissza a Ma oldalra") } label: {
