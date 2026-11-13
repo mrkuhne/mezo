@@ -269,6 +269,12 @@ struct FoodClientTests {
         await #expect(throws: FoodFetchError.self) { try await food().deleteIntake(ids[0]) }
     }
 
+    @Test func anIntakeIdThePhoneCannotReadFailsLoudlyInsteadOfKeepingAnEmptyList() async throws {
+        stub.on("getProtocol", .json(200, #"{"active":{"id":"cc7f5b29-83a4-4f7f-8b29-4e6ebd8b7c08","version":1,"builtAt":"2026-11-01T06:00:00Z","status":"active","items":[{"id":"dd805c3a-94b5-4080-9c3a-5f7fce9c8d09","pantryItemId":"\#(pantryId)","slotKey":"morning","pinned":false,"placementSource":"rule"}]},"history":[]}"#))
+        stub.on("logIntake", .json(201, #"{"id":"not-an-id","pantryItemId":"\#(pantryId)","takenAt":"2026-11-13T07:30:00Z","takenDate":"2026-11-13"}"#))
+        await #expect(throws: FoodFetchError.server) { try await food().tickGroupIntakes(daypart: "morning") }
+    }
+
     @Test func stashNamesTheSupplementsTheProtocolRowsPointAt() async throws {
         let macros = #"{"kcal":0,"p":0,"c":0,"f":0}"#
         stub.on("getPantry", .json(200, #"""

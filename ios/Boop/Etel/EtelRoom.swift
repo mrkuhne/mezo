@@ -43,6 +43,8 @@ final class EtelStore {
     @ObservationIgnored private var now = Date()
     /// Bumped whenever the day is replaced by a fresh read.
     @ObservationIgnored private var dayVersion = 0
+    /// The day `takenIds` belongs to.
+    @ObservationIgnored private var takenDay: String?
     @ObservationIgnored private var failedWater: (ml: Int, ref: UUID, at: Date)?
 
     /// The day's `yyyy-MM-dd`, as the server knows it.
@@ -56,9 +58,12 @@ final class EtelStore {
         self.food = food; self.now = now
         loading = true
         tipDismissed = false
-        if takenIds.isEmpty {
-            let saved = UserDefaults.standard.dictionary(forKey: "etel.takenIds.\(food.ymd(now))") as? [String: [String]] ?? [:]
+        // The taken state belongs to one day: a store left open past midnight starts the new day clean.
+        let today = food.ymd(now)
+        if takenDay != today {
+            let saved = UserDefaults.standard.dictionary(forKey: "etel.takenIds.\(today)") as? [String: [String]] ?? [:]
             takenIds = saved.mapValues { $0.compactMap(UUID.init(uuidString:)) }
+            takenDay = today
         }
         async let d = Self.attempt { try await food.day(now) }
         async let p = Self.attempt { try await food.plan(now) }

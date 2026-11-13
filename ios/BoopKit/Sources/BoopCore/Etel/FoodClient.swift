@@ -357,15 +357,18 @@ public struct FoodClient: Sendable {
             let body = Components.Schemas.IntakeRequest(
                 pantryItemId: item.pantryItemId.wire, slotKey: item.slotKey, dose: item.dose,
                 clientRef: clientRef.map { Self.derivedRef($0, item.id.wire).wire }, capturedAt: capturedAt)
-            let id: UUID? = try await call {
+            let id: UUID = try await call {
                 switch try await client.logIntake(body: .json(body)) {
-                case .created(let ok): return UUID(uuidString: try ok.body.json.id)
+                case .created(let ok):
+                    // an id the phone cannot read could never be undone: fail loudly rather than keep an empty list
+                    guard let id = UUID(uuidString: try ok.body.json.id) else { throw FoodFetchError.server }
+                    return id
                 case .badRequest, .notFound: throw FoodFetchError.rejected
                 case .unauthorized: throw FoodFetchError.unauthorized
                 case .undocumented: throw FoodFetchError.server
                 }
             }
-            if let id { ids.append(id) }
+            ids.append(id)
         }
         return ids
     }

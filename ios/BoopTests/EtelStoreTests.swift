@@ -103,6 +103,29 @@ struct EtelStoreTests {
         #expect(store.day?.consumed.water == 750)
     }
 
+    @Test func theTakenStateDoesNotCarryOverMidnight() async {
+        func at(_ day: Int) -> Date {
+            var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+            return cal.date(from: DateComponents(year: 2031, month: 3, day: day, hour: 12))!
+        }
+        for d in 4...5 { UserDefaults.standard.removeObject(forKey: String(format: "etel.takenIds.2031-03-%02d", d)) }
+        script(meals: [])
+        let food = FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport))
+        let store = EtelStore()
+        await store.load(food: food, now: at(4))
+        let group = SupplementGroup(key: "morning", label: "Reggel", count: 1, summary: "D3")
+        transport.on("logIntake", 201, #"{"id":"\#(intake1)","pantryItemId":"\#(pantry)","takenAt":"2031-03-04T07:30:00Z","takenDate":"2031-03-04"}"#)
+        _ = await store.toggle(group)
+        #expect(store.isTaken(group))
+        await store.load(food: food, now: at(4))                 // the same day: still taken
+        #expect(store.isTaken(group))
+        await store.load(food: food, now: at(5))                 // the next day: no entries, nothing taken
+        #expect(!store.isTaken(group))
+        await store.load(food: food, now: at(4))                 // back on the first day its saved ids return
+        #expect(store.isTaken(group))
+        UserDefaults.standard.removeObject(forKey: "etel.takenIds.2031-03-04")
+    }
+
     @Test func takingASupplementGroupRollsBackOnFailureAndUndoesOnSecondTap() async {
         let store = await loaded()
         let group = SupplementGroup(key: "morning", label: "Reggel", count: 1, summary: "D3")
