@@ -427,5 +427,15 @@
     ],
     "mit_kapsz": "Bármiről nyithatsz egy beszélgetést, és a Boop egyszerre látja az alvásodat, az étkezésedet, az edzéseidet, a pénzedet és a leveleidet. A beszélgetések megmaradnak, bármikor visszaülhetsz hozzájuk.",
     "allapot": "Később"
+  },
+  "mezo-r36n9.44": {
+    "cim": "Hangulatképek a hiányzó négy területhez",
+    "tipus": "Apróságok",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Az Edzés, a Közérzet, a Pénz és a Levél is saját, csendes fényképet kap a fejlécébe — addig a festett ég marad, ami szintén jól néz ki.",
+    "allapot": "Később"
   }
 }
