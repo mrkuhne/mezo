@@ -12,6 +12,17 @@ import { buildFuelSettingsMacroPreview, projectDraftTargets } from '@/features/f
 import { onToast } from '@/shared/lib/toastBus'
 import { fmtGrouped } from '@/shared/lib/format'
 
+// mezo-onp3e: the hero's windows must not depend on WHICH weekday the suite happens to run on.
+// The mock running plan prescribes an interval session on Tuesday and Friday; a run far enough
+// from the gym block earns its own „Edzés előtti uzsonna" window, so on a Friday the hero drew
+// FIVE windows and this file's hero tests reddened main. The pre-workout placement is the
+// planner's own contract and is covered where it belongs (buildDayPlan.test.ts „Edzés előtti
+// uzsonna"); here the day has no prescribed run, so the rhythm is the plain one asserted below.
+vi.mock('@/data/train/runningHooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/train/runningHooks')>()
+  return { ...actual, useRunning: () => ({ ...actual.useRunning(), activeRunningBlock: null }) }
+})
+
 // The mock seed's served targets (mezo-32m82 — derived from the mock goal), and the page's own
 // number formatting; expectations are expressions off them, never pasted literals.
 const SEED = fuelDay.targets
