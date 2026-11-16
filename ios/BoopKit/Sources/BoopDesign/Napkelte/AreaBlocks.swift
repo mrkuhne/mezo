@@ -105,14 +105,21 @@ public struct NKHighlight: View {
 /// that matters today.
 public struct NKStat: Identifiable, Equatable, Sendable {
     public let id: String
-    public let value: String, unit: String, label: String
+    /// nil when there is nothing to show: the tile reads "–", never a 0.
+    public let value: String?
+    /// What the value is measured against — most training numbers are "13 / 16", not a bare figure.
+    public let target: String?
+    public let unit: String, label: String
     /// -1 down · 0 flat · 1 up.
     public let trend: Int
     /// The lit one: bigger, in the area's hue.
     public let hot: Bool
-    public init(value: String, unit: String = "", label: String, trend: Int = 0, hot: Bool = false) {
-        self.id = label + value; self.value = value; self.unit = unit; self.label = label
-        self.trend = trend; self.hot = hot
+    /// How fresh this one number is, when the tile is drawn from a cache ("2 napja").
+    public let age: String?
+    public init(value: String?, target: String? = nil, unit: String = "", label: String, trend: Int = 0,
+                hot: Bool = false, age: String? = nil) {
+        self.id = label + (value ?? "–"); self.value = value; self.target = target; self.unit = unit
+        self.label = label; self.trend = trend; self.hot = hot; self.age = age
     }
 }
 
@@ -128,17 +135,25 @@ public struct NKStatRow: View {
                 }
                 VStack(alignment: .leading, spacing: 5) {
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        Text(s.value)
+                        Text(s.value ?? "–")
                             .font(.custom(Lagy.outfitFamily, size: s.hot ? 27 : 23).weight(s.hot ? .medium : .light))
-                            .foregroundStyle(s.hot ? hue.glow : .white)
+                            .foregroundStyle(s.value == nil ? .white.opacity(0.45) : (s.hot ? hue.glow : .white))
                             .monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+                        if let t = s.target, s.value != nil {
+                            Text("/ \(t)").font(.custom(Lagy.outfitFamily, size: s.hot ? 19 : 17).weight(.light))
+                                .foregroundStyle(.white.opacity(0.45)).monospacedDigit()
+                        }
                         if !s.unit.isEmpty { Text(s.unit).nkFont(11).foregroundStyle(.white.opacity(0.6)) }
                         // green up / pink down is the shipped vocabulary for better-or-worse: a direction arrow in the
                         // area hue would lose its valence
-                        if s.trend != 0 { Trend(up: s.trend > 0) }
+                        if s.trend != 0, s.value != nil { Trend(up: s.trend > 0) }
                     }
-                    Text(s.label).nkFont(11).foregroundStyle(.white.opacity(0.55))
+                    Text(s.value == nil ? "nincs friss adat" : s.label).nkFont(11)
+                        .foregroundStyle(.white.opacity(0.55))
                         .fixedSize(horizontal: false, vertical: true)
+                    if let age = s.age, s.value != nil {
+                        Text(age).nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.4))
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 10)
@@ -283,13 +298,33 @@ public struct NKFlowRow: Layout {
 
 /// One row of an area's list — a meal, an exercise, a merchant, a sender. `photo` is Képek variant B: a photo of
 /// the **thing** the row is about; a row that is a moment rather than a thing keeps its glyph.
+/// Where a row stands when a list shows a past, a present and a future at once — the training week's five days
+/// show all three, and a badge alone cannot carry that.
+public enum NKRowState: Sendable {
+    /// The ordinary row.
+    case normal
+    /// Behind him: the medallion is filled, the row reads at full strength.
+    case done
+    /// He skipped it: dimmed, and its reason belongs in a chip.
+    case skipped
+    /// Still to come: dimmed, with an outlined medallion rather than a filled one.
+    case future
+
+    var dim: Double { self == .normal || self == .done ? 1 : 0.55 }
+    var outlined: Bool { self == .future }
+}
+
 public struct NKAreaRow: Identifiable {
     public let id: String
     let glyph: String, title: String, sub: String, value: String, valueSub: String
     let level: Double?
     let ticks: [NKLevelTick]
     let badge: Int
+    let dot: Bool
     let hot: Bool
+    let state: NKRowState
+    /// A second sub-line of small capsules — a skip reason, a tag, a warning.
+    let chips: [String]
     let photo: Image?
     /// What a search should also match besides the title and the sub — an exercise's muscle zone, a merchant's
     /// category. Never shown.
@@ -297,10 +332,12 @@ public struct NKAreaRow: Identifiable {
     let action: (@MainActor @Sendable () -> Void)?
     public init(id: String? = nil, glyph: String, title: String, sub: String = "", value: String = "",
                 valueSub: String = "", level: Double? = nil, ticks: [NKLevelTick] = [], badge: Int = 0,
-                hot: Bool = false, photo: Image? = nil, terms: [String] = [],
+                dot: Bool = false, hot: Bool = false, state: NKRowState = .normal, chips: [String] = [],
+                photo: Image? = nil, terms: [String] = [],
                 action: (@MainActor @Sendable () -> Void)? = nil) {
         self.id = id ?? title; self.glyph = glyph; self.title = title; self.sub = sub; self.value = value
-        self.valueSub = valueSub; self.level = level; self.ticks = ticks; self.badge = badge; self.hot = hot
+        self.valueSub = valueSub; self.level = level; self.ticks = ticks; self.badge = badge; self.dot = dot
+        self.hot = hot; self.state = state; self.chips = chips
         self.photo = photo; self.terms = terms; self.action = action
     }
 
@@ -341,6 +378,9 @@ public struct NKRowList: View {
                         .overlay { photo.resizable().scaledToFill().nkPhotoTone() }
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.white.opacity(0.12)))
+                } else if r.state.outlined {
+                    Circle().stroke(.white.opacity(0.22), lineWidth: 1)
+                    NKGlyph(r.glyph, .white.opacity(0.75), size: 16)
                 } else {
                     Circle().fill(r.hot ? hue.glow.opacity(0.22) : .white.opacity(0.08))
                     NKGlyph(r.glyph, r.hot ? hue.glow : .white.opacity(0.9), size: 16)
@@ -350,10 +390,20 @@ public struct NKRowList: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 7) {
                     Text(r.title).nkFont(14.5, .medium).foregroundStyle(.white).lineLimit(1)
-                    NKBadge(r.badge, hue: hue)
+                    if r.dot { NKBadge(dot: true, hue: hue) } else { NKBadge(r.badge, hue: hue) }
                 }
                 if !r.sub.isEmpty {
                     Text(r.sub).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+                }
+                if !r.chips.isEmpty {
+                    NKFlowRow(spacing: 6, rowSpacing: 5) {
+                        ForEach(r.chips, id: \.self) { c in
+                            Text(c).nkFont(10.5, .medium).foregroundStyle(.white.opacity(0.7))
+                                .padding(.horizontal, 8).padding(.vertical, 3)
+                                .background(Capsule().fill(.white.opacity(0.1)))
+                        }
+                    }
+                    .padding(.top, 2)
                 }
                 if let l = r.level {
                     NKLevelBar(level: l, hue: hue, ticks: r.ticks).padding(.top, 2).padding(.trailing, 6)
@@ -374,6 +424,7 @@ public struct NKRowList: View {
             }
         }
         .padding(.vertical, 11)
+        .opacity(r.state.dim)
         .contentShape(Rectangle())
 
         if let action = r.action {

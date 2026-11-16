@@ -16,7 +16,7 @@ struct KitGallery: View {
             hue: hue, name: "Edzés", eyebrow: "Edzés · ma", score: 62, headline: "Van még benne több",
             sentence: "A héten *két edzés* van mögötted, a harmadik ma este fér bele.",
             photo: nil,
-            tabs: [NKAreaTab("Ma"), NKAreaTab("Terv", badge: 2), NKAreaTab("Gyakorlatok"), NKAreaTab("Előzmények", badge: 11)],
+            tabs: [NKAreaTab("Ma"), NKAreaTab("Terv", dot: true), NKAreaTab("Gyakorlatok"), NKAreaTab("Előzmények", badge: 11)],
             selectedTab: $tab,
             actions: [NKAreaAction(glyph: "search-ink", label: "Keresés") { note = "Keresés" },
                       NKAreaAction(glyph: "scale-ink", label: "Beállítások") { note = "Beállítások" }],
@@ -29,9 +29,9 @@ struct KitGallery: View {
                                   NKHighlightAction("Ma kihagyom", weight: .link) { note = "Kihagyom" }])
 
             NKBare("A hét", hue: hue, trailing: "3-ból 2") {
-                NKStatRow([NKStat(value: "2", unit: "edzés", label: "ezen a héten", hot: true),
-                           NKStat(value: "84", unit: "perc", label: "összesen", trend: 1),
-                           NKStat(value: "18", unit: "sorozat", label: "nyomás", trend: -1)], hue: hue)
+                NKStatRow([NKStat(value: "13", target: "16", unit: "sorozat", label: "ezen a héten", hot: true),
+                           NKStat(value: "84", unit: "perc", label: "összesen", trend: 1, age: "2 napja"),
+                           NKStat(value: nil, label: "tonnázs")], hue: hue)
             }
 
             NKBare("A blokk nyolc hete", hue: hue) {
@@ -66,16 +66,21 @@ struct KitGallery: View {
             }
 
             NKBare("A mai gyakorlatok", hue: hue) {
-                NKRowList([NKAreaRow(glyph: "dumbbell-ink", title: "Fekvenyomás", sub: "4 × 8 · 62,5 kg",
-                                     value: "4", valueSub: "sorozat", level: 0.8, hot: true),
-                           NKAreaRow(glyph: "dumbbell-ink", title: "Evezés", sub: "4 × 10 · 55 kg",
-                                     value: "4", valueSub: "sorozat", level: 0.6, badge: 1),
-                           NKAreaRow(glyph: "dumbbell-ink", title: "Oldalemelés", sub: "3 × 15 · 10 kg",
-                                     value: "3", valueSub: "sorozat", level: 0.35,
-                                     action: { note = "Oldalemelés" })], hue: hue)
+                NKRowList([NKAreaRow(glyph: "dumbbell-ink", title: "Hétfő · Váll és hát", sub: "52 perc",
+                                     value: "4", valueSub: "sorozat", level: 0.8, hot: true, state: .done),
+                           NKAreaRow(glyph: "dumbbell-ink", title: "Szerda · Láb", sub: "elmaradt",
+                                     state: .skipped, chips: ["megfáztam"]),
+                           NKAreaRow(glyph: "dumbbell-ink", title: "Péntek · Mell és kar", sub: "48 perc tervezve",
+                                     value: "6", valueSub: "gyakorlat", state: .future,
+                                     action: { note = "Péntek" })], hue: hue)
             }
 
             NKBare("Nincs mivel dolgoznom", hue: hue) { NKNoFreshData() }
+
+            NKBare("Épp töltöm", hue: hue, state: .loading) { EmptyView() }
+
+            NKBare("Nem sikerült", hue: hue,
+                   state: .failed("Nem értem el a szervert.", { note = "Újra" })) { EmptyView() }
 
             NKBare("A hét napjai", hue: hue) {
                 NKHeatStrip(cells: [("H", 0.8), ("K", 0), ("Sze", 0.55), ("Cs", 0), ("P", 0.9), ("Szo", 0.2), ("V", 0)],

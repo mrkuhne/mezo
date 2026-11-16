@@ -11,12 +11,19 @@ import SwiftUI
 
 // MARK: - Badge
 
-/// How much there is to look at in a tab, a row or a menu item.
+/// How much there is to look at in a tab, a row or a menu item — a count when there is one to give, and a plain
+/// **dot** when the mark means "needs your tap" rather than "there are three of something".
 public struct NKBadge: View {
-    let count: Int, hue: Hue
-    public init(_ count: Int, hue: Hue) { self.count = count; self.hue = hue }
+    let count: Int, dot: Bool, hue: Hue
+    public init(_ count: Int, hue: Hue) { self.count = count; self.dot = false; self.hue = hue }
+    /// A countless mark: something here wants him.
+    public init(dot: Bool, hue: Hue) { self.count = 0; self.dot = dot; self.hue = hue }
     public var body: some View {
-        if count > 0 {
+        if dot {
+            Circle().fill(hue.glow).frame(width: 7, height: 7)
+                .shadow(color: hue.glow.opacity(0.7), radius: 5)
+                .accessibilityLabel("van néznivaló")
+        } else if count > 0 {
             Text("\(count)")
                 .font(.custom(Lagy.outfitFamily, size: 12).weight(.semibold))
                 .foregroundStyle(NK.ground)
@@ -66,11 +73,25 @@ public func nkHueAttributed(_ text: String, hue: Hue, size: CGFloat, serif: Bool
 
 /// What the warm treatment puts in place of a glass card: a hue tick, a mono label, and the content straight on
 /// the page. Used for the stats, the curve, the composition and the row lists.
+/// Where one block's own data is. Every section of a room loads and fails on its own (the Étel room is built that
+/// way on purpose), so the state belongs to the block, never to the page: a page-level spinner would throw that
+/// away.
+public enum NKBlockState {
+    case ready
+    case loading
+    /// Something went wrong, and the way to try again.
+    case failed(String, @MainActor @Sendable () -> Void)
+}
+
+/// What the warm treatment puts in place of a glass card: a hue tick, a mono label, and the content straight on
+/// the page — with that block's own loading and failed states.
 public struct NKBare<Content: View>: View {
     let label: String, hue: Hue, trailing: String?
+    let state: NKBlockState
     let content: Content
-    public init(_ label: String, hue: Hue, trailing: String? = nil, @ViewBuilder content: () -> Content) {
-        self.label = label; self.hue = hue; self.trailing = trailing; self.content = content()
+    public init(_ label: String, hue: Hue, trailing: String? = nil, state: NKBlockState = .ready,
+                @ViewBuilder content: () -> Content) {
+        self.label = label; self.hue = hue; self.trailing = trailing; self.state = state; self.content = content()
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -80,7 +101,29 @@ public struct NKBare<Content: View>: View {
                 Spacer(minLength: 8)
                 if let trailing { Text(trailing).nkFont(12).foregroundStyle(.white.opacity(0.5)) }
             }
-            content
+            switch state {
+            case .ready:
+                content
+            case .loading:
+                HStack(spacing: 10) {
+                    ProgressView().tint(.white.opacity(0.6)).controlSize(.small)
+                    Text("Töltöm…").nkFont(13).foregroundStyle(.white.opacity(0.55))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 10)
+            case .failed(let line, let retry):
+                HStack(spacing: 12) {
+                    Text(line).nkFont(13).foregroundStyle(.white.opacity(0.65))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    Button("Újra", action: retry)
+                        .buttonStyle(.plain)
+                        .nkFont(13, .semibold)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14).frame(height: 34)
+                        .background(Capsule().stroke(.white.opacity(0.4)))
+                }
+                .padding(.vertical, 6)
+            }
         }
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -93,8 +136,12 @@ public struct NKBare<Content: View>: View {
 public struct NKAreaTab: Identifiable, Equatable, Sendable {
     public let name: String
     public let badge: Int
+    /// A countless mark instead of a number: this tab wants his tap, and there is nothing to count.
+    public let dot: Bool
     public var id: String { name }
-    public init(_ name: String, badge: Int = 0) { self.name = name; self.badge = badge }
+    public init(_ name: String, badge: Int = 0, dot: Bool = false) {
+        self.name = name; self.badge = badge; self.dot = dot
+    }
 }
 
 /// The inner tabs of an area, each carrying its own badge. The selected one is a white capsule, as in the rooms
@@ -114,7 +161,7 @@ public struct NKAreaTabs: View {
                         HStack(spacing: 6) {
                             Text(tab.name).nkFont(14, on ? .semibold : .regular).lineLimit(1).minimumScaleFactor(0.7)
                                 .foregroundStyle(on ? NK.ground : .white.opacity(0.85))
-                            NKBadge(tab.badge, hue: hue)
+                            if tab.dot { NKBadge(dot: true, hue: hue) } else { NKBadge(tab.badge, hue: hue) }
                         }
                         .padding(.horizontal, 15).padding(.vertical, 9)
                         .background(Capsule().fill(on ? .white.opacity(0.95) : .white.opacity(0.1)))
