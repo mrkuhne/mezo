@@ -493,5 +493,45 @@
     "mit_kapsz": "A jegyzetek biztonsági mentése csak a feladatok számát figyeli, a tartalmukat nem, így egy átírt leírás a gépen kívül nem jelenik meg. Javítás után minden mentés teljes.",
     "munkamenet": "boop-b4-etel",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.47": {
+    "cim": "Kezdőlap — hét gömb körben",
+    "tipus": "Szakasz",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Ma"
+    ],
+    "mit_kapsz": "Az appot megnyitva hét élő gömb fogad egy körben — Alvás, Étel, Edzés, Energia, Forma, Pénz, Levél —, középen Boop saját gömbjével és a napi mondatával, mögöttük ködös hegyfotóval. Bármelyik gömb a saját területére visz, a közép a mai napodra.",
+    "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.51": {
+    "cim": "Útvonalterv — hol van minden az appban",
+    "tipus": "Döntés",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Egyetlen térkép arról, mi az app bejárata, hol vannak a területek, és mi a Terv dolga — hogy ne három különböző elképzelés éljen egyszerre.",
+    "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.52": {
+    "cim": "Hiba: egy jóváhagyott étel bennragadhat a várakozók közt",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Kivizsgáljuk, hogy egy lefotózott étel a jóváhagyás után tényleg eltűnik-e a várakozó rögzítések közül. Egy automata ellenőrzés szerint nem mindig; még nem tudjuk, a telefonon is így van-e.",
+    "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.49": {
+    "cim": "Élő edzés a zárolt képernyőn és az Apple Watchon",
+    "tipus": "Szakasz",
+    "szakasz": "B5 Edzés",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Edzés közben a zárolt képernyőn és az órán is látod, hol tartasz. Ez kikerült a B5-ből, külön lépésben jön."
   }
 }
