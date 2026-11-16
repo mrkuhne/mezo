@@ -109,15 +109,42 @@ seen, a plan with a *Kész, ha…* list → owner OK → build → gates → rev
 | **B7** | **Napi kapacitás** (day capacity + live adjust) | Calendar events scored by AI (mental load, social drain, physical) — titles sent only with owner OK; **units model** (day demand vs capacity from Forma + HRV + sleep debt), calibrated on B3 check-ins and day ratings; doable-day prediction in the morning; energy curve uses demand; **live re-plan loop** on events (check-in saved, meal logged, workout finished, Health sync, calendar change) → proposal cards (food ±, workout shorter/longer, different movement, time move) with push. | B3 data (weeks), B6 |
 | **B8** | **Az egy AI** (one AI, deep) | Memory corpus gets structured daily data; a small **day-scoped council** feeding "miért?"; short/mid/long conclusions in Napló · Minták; konzílium slimmed to what Boop surfaces; chat sees everything incl. the Plan. | B0, B6, B7 |
 
-### 5.1 The remaining slices against the shipped shell (revised 2026-11-16)
+### 5.1 The remaining slices against the shipped shell (revised 2026-11-16, widened the same day)
+
+> **Second pass, after the shell was finished** (`mezo-r36n9.58`). The first pass measured B6–B8 against the ring
+> and the wall. By the evening of 2026-11-16 three more things had shipped: **the day's page** (the Élet spike's
+> Ma, `.56`), **every area as its own app with its own bottom bar** (`.57`), and the kit those needed. That moves
+> more work out of the remaining slices than the first pass could see, so every slice is re-read below —
+> **B5 and the L-slices included**.
+>
+> The rule for all of them: **a slice fills a tab that already exists; it does not invent a page, a card surface,
+> a notification policy or a second place where Boop explains itself.** Where it needs something the kit lacks,
+> it grows the kit.
+
+**B5 · Edzés + Watch.** *Most affected of all, because its home is already standing.*
+- **No longer B5's to build:** the Edzés page itself. It exists, with the spike's own menu — **Ma · Blokk ·
+  Gyakorlatok · Előzmények** — and today's session, the steps, the minutes and the exercises already on *Ma*.
+  B5 fills **Blokk** (the mesocycle), **Gyakorlatok** (the library with his own weights and records) and
+  **Előzmények** (every past session), each of which currently says it is not built. Also not B5's: the row,
+  stat, curve, stepped-bar and menu blocks; the sub-page frame for one exercise or one block (`NKAreaSubPage`);
+  per-block loading and failure; the area's search and settings corner.
+- **Newly expected of B5:** register a **`WallSource`** (today's session as `.improves`, a session that is about
+  to be missed as `.expires`, a finished session as `.happened`) — the brief's `edzes-keszulj` candidate is a
+  placeholder for it; and feed the day page's curve its own moment (`dayMoments` already pins the session).
+- **Build-twice risk:** *the workout player*. It is a **full-screen cover**, not an area page — the area-page
+  system explicitly does not host one (it must survive the phone locking). B5 keeps its own player and puts only
+  its entrance on the Edzés page's *Indítás* menu tile, which already exists and says "hamarosan".
+
+**B6 · A Terv.**
 
 **B6 · A Terv.** *The collision is gone:* the life-dashboard plan had made Terv the home of the areas, which would
 have left B6's plan editor homeless. The navigation map (#32–#33) gave Terv back to the plan, so B6 has a clean
 page to build on.
-- **No longer B6's to build:** the page frame (it is `NKAreaPage` with inner tabs — a plan, the rules, the
-  shopping list, adherence), the sub-page frame for one plan or one mesocycle (`NKAreaSubPage`), the stat / curve /
-  composition / row-list blocks, and per-block loading and failure (`NKBlockState`). Also **not** the per-area
-  cards the life-dashboard plan once put on Terv: the ring has them.
+- **No longer B6's to build:** the page frame (it is `NKAreaPage` with **its own bottom bar** — a plan, the
+  rules, the shopping list, adherence — `NKAreaBar`, shipped `.57`), the sub-page frame for one plan or one
+  mesocycle (`NKAreaSubPage`), the stat / curve / composition / row-list / list / note / actions blocks, and
+  per-block loading and failure (`NKBlockState`). Also **not** the per-area cards the life-dashboard plan once
+  put on Terv: the ring has them.
 - **Newly expected of B6:** register a **`WallSource`** — a plan waiting for his acceptance and a shopping list
   before a shop run are `.expires`; an effect-tracking result worth knowing is `.happened`. Without this the Plan
   is invisible between visits, which is exactly what the wall exists to fix.
@@ -133,6 +160,10 @@ page to build on.
   **energy curve's placement** (it already sits on Ma above the folded timeline) — B7 feeds it demand.
 - **Newly expected of B7:** a `WallSource` for the live re-plan loop, and a "doable day" line that lands in the
   **morning briefing row** (already folded) plus one wall candidate — not a new section on Ma.
+- **What `.56` took off B7's plate:** the day's page is built (date head · *Mai nap* curve with the day's own
+  moments pinned on it · the wall · the folds · the observations · Este), and the calendar's density is already
+  drawn twice — as pins on that curve and as the heat strip on the Energia page. B7 feeds those two with its
+  demand model and its units; it does not add a third drawing of the day.
 - **The contradiction this pass found is settled, the other way** (decision #41, 2026-11-16): the owner gave the
   day **its own orb**, so the ring is **eight** and #14 stands. The day's page is reached from the ring's top orb
   **and** from the "A napod" folded row on Ma, and is built from `NKAreaSubPage`. B7 builds that page; it does
@@ -147,6 +178,28 @@ page to build on.
 - **Build-twice risk:** *the day council and the wall's ranking*. They answer different questions — the council
   says *why*, the wall decides *what gets said*. B8 must not re-rank what the wall already chose, or the owner
   gets two different ideas of what matters today.
+
+**The L-slices (Levél, Pénz) against what shipped.**
+- **L1/L2 Levél and L4/L5 Pénz no longer build a room.** Both pages exist, with the spike's own menus —
+  **Levél: Ma · Figyelt · Szabályok · Fiókok** and **Pénz: Ma · Pénzem · Költés · Gyakorlás** — in their own
+  colour worlds (`Hue.level`, `Hue.penz`), and every tab says what will be in it. The slices fill tabs.
+  *Two spec lines are now stale and this pass corrects them:* the life-dashboard spec's §3.4 said Pénz would be
+  *Ma · Keretek · Előzmények · Tervezett* and L2 said the Levél room was three tabs — the **spike's sets above
+  are the ones**, because they are what the owner approved on 2026-11-16 in the running build.
+- **Nor do they build:** the mail/news card shapes as page furniture (the wall's hero already is that shape), the
+  price verdict's colours (`NKBadge` + the hue), the search field (`NKSearchableRowList`), or the "what never
+  reaches a machine" page (a `NKNote` + `NKInfoRow` on the Szabályok tab).
+- **Newly expected of each:** a `WallSource` (a digest worth a minute, a watched price that really dropped, a
+  budget about to break) — and **nothing of theirs may ring the phone outside the wall's two-a-day cap** (#35).
+- **Build-twice risk:** *the Pénz "Ma" tab vs the wall*. Both want to say "ma nincs dolgod a pénzeddel". The wall
+  is the one that speaks unprompted; the page says it only when he opens the page.
+- **L6** is unaffected by the look: it is the thread list and the memory corpus, and the "kérdezd meg Boopot"
+  door it needs is already on every area page and under the day's observations.
+
+**What none of them may do, now that the look is finished.** Four rules came out of the three shipped slices and
+they bind every slice after them: no second card surface, no second notification policy, no second place where
+Boop explains itself ("miért?" is the wall's), and **no invented number** — a tab with no data says so
+(`NKNotLiveYet`) rather than showing a placeholder figure.
 
 **Order: unchanged, B6 → B7 → B8 → L1…L6.** B7's units model is calibrated on weeks of B3 check-ins that are
 still accruing, so bringing it forward buys nothing; and B6 gives the wall its first `.improves` source worth

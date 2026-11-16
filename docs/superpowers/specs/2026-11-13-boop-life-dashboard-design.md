@@ -81,8 +81,10 @@ with how much there is to look at, today's one-liner, and what the area contribu
 with a progress bar.
 
 ### 3.3 An area page
-Painted head (glyph, name, score + orb, verdict, sentence) · search and settings in the corner ·
-**its own top tabs, each with its own badge** · then blocks from one shared kit:
+*(Built 2026-11-16, `mezo-r36n9.57`, against the Élet spike's own code — which had moved the tabs since this was
+written.)* Painted head (the orb over a hairline, then **left**: glyph, area · tab, the verdict and its sentence)
+· search and settings in the corner · **its own bottom bar in place of the spine's, each tab with its own badge,
+and a fixed Boop item at its end** (`NKAreaBar`) · then blocks from one shared kit:
 
 | Block | Used for |
 |---|---|
@@ -100,7 +102,9 @@ numbers and marked spans, photo thumbnails on rows that are things, and only the
 keep a card around them.
 
 ### 3.4 Pénz (the finance app, rebuilt)
-Tabs **Ma · Keretek · Előzmények · Tervezett**. Month curve against the even-pace line, five-part
+Tabs **Ma · Pénzem · Költés · Gyakorlás** — the spike's own set, which the owner approved in the running build on
+2026-11-16 and which the shipped page already carries (this line used to say *Ma · Keretek · Előzmények ·
+Tervezett*). Month curve against the even-pace line, five-part
 composition, the day's transactions (bank-message capture), budgets with their own bars, six-month
 history with observations, planned items and what stays free.
 
@@ -192,10 +196,10 @@ exceptions: they change navigation and the home that B4/B5 build on, so they sho
 |---|---|---|
 | ~~**L0** Területek otthona~~ → **the shared area-page kit** | **SHIPPED 2026-11-16** (`mezo-r36n9.37`). Scope changed: the ring took the areas-home job, so L0 is the **kit** — `NKAreaPage` + `NKAreaSubPage` and the blocks (highlight with actions, stat tiles with target/age/no-data, curve, stepped bars, composition, row list with four row states and landmark ticks, searchable list, heat strip, comparison, menu grid, ask row), the warm treatment, per-block loading/failure and staleness. **Étel is moved onto it**; Edzés follows in B5. | — |
 | ~~**L0/b** Ma · az élő fal~~ | **SHIPPED 2026-11-16** (`mezo-r36n9.45`). Three fixed roles decide the three cards (#34), only the first may ring and only twice a day (#35), areas join by registering a `WallSource`, acted cards settle into "Ma történt", the quiet wall is good news, the timeline folds into one row, the score left the home. | — |
-| **L1** Levél · alap | Mailbox settings screen (the owner enters his own app passwords), IMAP intake for Gmail + iCloud, raw storage, the **redaction pipeline**, sender deny list, idempotency, the 08:00 + 15:00 schedule, the zero-mail health alert. **No AI yet** — the Levél room shows counts and categories only. | B6 (L0 shipped) |
-| **L2** Levél · összefoglaló | The rules-then-LLM funnel, the goal-relevance pass, the 1–10 score, the Levél room (Ma · Szabályok · Fiókok), built from the shipped area-page kit, and its presence on Ma **by registering a `WallSource`** (not a card of its own). Per-day cost cap and the adversarial/phishing pass. | L1 |
+| **L1** Levél · alap | Mailbox settings screen (the owner enters his own app passwords), IMAP intake for Gmail + iCloud, raw storage, the **redaction pipeline**, sender deny list, idempotency, the 08:00 + 15:00 schedule, the zero-mail health alert. **No AI yet** — the Levél room shows counts and categories only. **The room is already built** (`.57`): the slice fills its tabs rather than making a page. | B6 (L0 shipped)  |
+| **L2** Levél · összefoglaló | The rules-then-LLM funnel, the goal-relevance pass, the 1–10 score, the Levél room (**Ma · Figyelt · Szabályok · Fiókok** — the shipped page already has the four tabs), built from the shipped area-page kit, and its presence on Ma **by registering a `WallSource`** (not a card of its own). Per-day cost cap and the adversarial/phishing pass. | L1 |
 | **L3** Levél · figyelt termékek | Watched products, the capped and cached market check, the three-level verdict, **our own price log**, the Figyelt tab with price history, and the proposal card when something is genuinely cheap. | L2 |
-| **L4** Pénz · adatalap | Accounts, categories, transactions, budgets, recurring items; the **allowance engine** and month close; the **bank-SMS capture** with its key and Shortcut contract; the **amount guard**. Backend + data only. | B6 (L0 shipped) |
+| **L4** Pénz · adatalap | Accounts, categories, transactions, budgets, recurring items; the **allowance engine** and month close; the **bank-SMS capture** with its key and Shortcut contract; the **amount guard**. Backend + data only. **The room is already built** (`.57`): the slice fills its tabs rather than making a page. | B6 (L0 shipped)  |
 | **L5** Pénz · a szoba | The Pénz room (Ma · Keretek · Előzmények · Tervezett): month curve against the even-pace line, composition, transactions, budgets, six-month history, planned items; its presence on Ma **by registering a `WallSource`** (not a card of its own); manual capture in `+`. | L4 |
 | **L6** Az egy AI látja a pénzt és a levelet | Money and mail facts enter the memory corpus with the same day-scoping as a check-in; they become contributors in "miért?"; the Boop tab becomes a **thread list** with a "kérdezd meg Boopot" door on every card and area. | L3, L5, B8 |
 
