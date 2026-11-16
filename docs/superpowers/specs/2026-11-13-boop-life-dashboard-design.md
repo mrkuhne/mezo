@@ -26,7 +26,7 @@ már egy saját dashboard oldala … mintha az egy full saját app lenne."*
 2. **Money and mail are rooms, not a fifth bottom-bar button** — the bar stays `Ma · Terv · Napló ·
    Boop` + `+`.
 3. ~~**Terv is the home of the areas**~~ — **OVERTURNED 2026-11-16** (`14-decisions.md` #33). The
-   **ring of seven orbs is the app's entrance** and does the job this decision invented the Terv
+   **ring of eight orbs is the app's entrance** and does the job this decision invented the Terv
    grid for; building both would be two menus for one job, which he rejected in the Élet round 1.
    **Terv is his plan** — the life goal, the diet plan, the training plan — and B6 builds it there.
    The areas are still the legs of the goal; they are reached from the ring, and Terv names what
@@ -35,7 +35,8 @@ már egy saját dashboard oldala … mintha az egy full saját app lenne."*
 4. **An area is its own app**: painted head → its own top tabs with badges → a composed dashboard,
    never a list page.
 5. **The morning briefing is long and premium**, with a glance into every area.
-6. **Area names follow the spine vocabulary:** Alvás, Étel, Edzés, Energia, Forma, Pénz, Levél.
+6. **Area names follow the spine vocabulary:** Alvás, Étel, Edzés, Energia, Forma, Pénz, Levél — **plus Nap**,
+   which got its own orb on 2026-11-16 (`14-decisions.md` #41), so the ring is eight.
 7. Never ask the owner for a password or token; he creates and enters every credential himself.
 8. **Warm is the look** (#12): photo heads where a compliant mood photo exists (painted landscape as the
    fallback), the area's hue on key numbers and marked spans inside the text, photo thumbnails on rows that are
@@ -222,7 +223,7 @@ exceptions: they change navigation and the home that B4/B5 build on, so they sho
 | Prompt injection from promo mail | Bodies delimited as data, no write/send tools on the reading model, URLs never followed, a second adversarial pass. |
 | Credential blast radius and silent death | A forwarded mirror mailbox as the read target; a health alert on two empty runs. |
 | Scope creep against the health roadmap | Hard gate: nothing here starts before B6 ships, except L0. |
-| An eighth area | The home shows loud areas as cards and collapses the calm ones; Terv's grid scrolls. The pattern survives growth; a fixed orb strip did not. |
+| A ninth area | The ring took the entrance and is **full at eight** (decision #41, 2026-11-16): the day plus the seven areas. A ninth is a designed decision — a smaller orb with its label inside, two concentric rings, or the ring carrying only the areas he uses — not another point added to the circle. Inside a page the old answer still holds: loud areas as cards, calm ones collapsed. |
 
 ## 8. Open questions for the owner
 

@@ -133,10 +133,10 @@ page to build on.
   **energy curve's placement** (it already sits on Ma above the folded timeline) — B7 feeds it demand.
 - **Newly expected of B7:** a `WallSource` for the live re-plan loop, and a "doable day" line that lands in the
   **morning briefing row** (already folded) plus one wall candidate — not a new section on Ma.
-- **A contradiction to settle in B7, not before:** decision #14 made **"A nap" a seventh area with its own page**,
-  but the ring's seven are Alvás · Étel · Edzés · Energia · Forma · Pénz · Levél (#31) — the day is not among
-  them. The day's page is still wanted; it is reached from the **"A napod" folded row** on Ma, which already
-  exists, and is built from `NKAreaSubPage`. No eighth orb. This is a change to #14 and is recorded as such.
+- **The contradiction this pass found is settled, the other way** (decision #41, 2026-11-16): the owner gave the
+  day **its own orb**, so the ring is **eight** and #14 stands. The day's page is reached from the ring's top orb
+  **and** from the "A napod" folded row on Ma, and is built from `NKAreaSubPage`. B7 builds that page; it does
+  not have to find it a home.
 
 **B8 · Az egy AI.** Least affected, because B8 was already written to expect an open set of contributors.
 - **No longer B8's to build:** the explanation surface. Every wall card already carries a **"miért?"**; B8 fills

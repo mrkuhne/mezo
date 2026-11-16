@@ -36,10 +36,19 @@ for, and the ring's middle leads to the living wall.**
 
 - **The entrance is the ring.** `Ma` is the bar's first place and the ring is that place's first screen;
   tapping `Ma` in the bar while Ma is already open brings the ring back from anywhere.
-- **The seven areas**, clockwise from the top: **Alvás · Étel · Edzés · Energia · Forma · Pénz · Levél**
-  (the life-dashboard vocabulary, decision #6 there). Pénz and Levél are not built yet (L4–L6): they sit
-  faint and say *"még nem él"* on tap.
-- **The middle is Boop's own orb** — a pale luminous pearl, bigger than the seven, no number, with his
+- **The eight areas**, clockwise from the top: **Nap · Alvás · Étel · Edzés · Energia · Forma · Pénz ·
+  Levél** (the life-dashboard vocabulary, decision #6 there, plus the day). Pénz and Levél are not built
+  yet (L4–L6): they sit faint and say *"még nem él"* on tap.
+- **The day leads** (decision #41, 2026-11-16, overruling the earlier "no eighth orb"): the day is the
+  whole day and the other seven are parts of it, so it sits at the top. Its orb carries **no score** —
+  nothing scores a day — and fills with **how full the day is** from the calendar (`dayFullness`), opening
+  the day's own page. The folded **"A napod" row on Ma stays**: an orb is another way in, not a replacement.
+- **The ring is full at eight.** At eight the orbs are already 56 pt and the labels 9 pt apart at 375 pt
+  width, so a ninth area is not a matter of adding one more point. If one ever arrives the answer has to be
+  designed — a smaller orb with its label inside, two concentric rings, or the ring carrying the areas he
+  uses with the rest one level in — and it is the owner's call, not something discovered by adding an enum
+  case.
+- **The middle is Boop's own orb** — a pale luminous pearl, bigger than the eight, no number, with his
   day's verdict in a line under the ring. It opens **Ma**, which is unchanged: the morning brief, the day,
   the proposals. The Nap page was not replaced; it moved one level in.
 - **Terv keeps its bar button and changes its job.** This is the one decision the map overturns
@@ -55,7 +64,7 @@ the screen under the **cool blue** world's own gradient (Képek §3.3 rule 2) �
 the photo, **three bands of drifting fog** (`DriftingFog`), each a pre-blurred strip two screens wide that
 slides one width and starts over, so the loop has no seam; one band drifts against the others.
 
-**The ring** (`NKOrbRing`). Seven orbs of 62 pt on a circle, the first at the top and the rest clockwise;
+**The ring** (`NKOrbRing`). Eight orbs of 56 pt on a circle, the first at the top and the rest clockwise;
 each shows its score inside and its name under it, and breathes on its own phase (`BreathingOrb` — no
 motion manager: they are doors, not the hero). The centre is Boop's `LivingOrb` at 122 pt.
 

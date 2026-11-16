@@ -456,5 +456,18 @@
     "miert": "Két azonos nevű hely lett volna egy koppintásra egymástól; így a „Terv” egy dolgot jelent az appban.",
     "levaltotta": "Az Edzés-minta „Terv” fülét, amit korábban jóváhagytál.",
     "kovetkezmeny": "Egy szó az Edzés szobában; a Terv jelentése nem változik."
+  },
+  "d-2026-11-16-nyolcadik-gomb": {
+    "cim": "A napnak saját gömbje lett — a kör nyolc gömbből áll",
+    "datum": "2026-11-16",
+    "suly": "Közepes",
+    "terulet": [
+      "Kezdőlap",
+      "Nap"
+    ],
+    "valasztas": "A kezdőlap körében a nap is ott van, a legfelső helyen: nyolc gömb, Nap · Alvás · Étel · Edzés · Energia · Forma · Pénz · Levél. A nap gömbje azt mutatja, mennyire van tele a napod a naptárad szerint, és a nap saját oldalát nyitja. A Ma lapon az „A napod” összecsukott sor megmarad.",
+    "miert": "A nap maga az egész nap, a másik hét csak egy-egy szelete belőle — kézenfekvő, hogy a kör tetején legyen. Korábban úgy döntöttünk, hogy a nap csak a Ma lapról érhető el; ezt felülírtad.",
+    "levaltotta": "A hét gömbös kört (2026-11-13) és azt a megoldást, hogy a nap oldala csak a Ma lapról nyílik.",
+    "kovetkezmeny": "Nyolc gömb szebben is kijön, mint hét: a hét soha nem áll szimmetrikusan egy körben, a nyolc igen. Az áruk annyi, hogy a gömbök egy hajszállal kisebbek lettek, hogy a nevek ne érjenek össze a kis telefonon. A kör viszont ezzel betelt: egy kilencedik terület már nem egyszerűen „még egy pont”, azt külön ki kell találni, és az a te döntésed lesz."
   }
 }

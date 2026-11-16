@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (hét gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16) — B5 (edzés) következik** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (nyolc gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16) — B5 (edzés) következik** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -62,6 +62,16 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-11-16 — Boop · a napnak saját gömbje lett — a kör nyolc gömbből áll (`mezo-r36n9.55`).**
+  A tulajdonos felülírta a hét gömbös kört (döntés #41): a **nap** is bekerült, mindjárt a kör **tetejére**, mert a
+  nap maga az egész nap, a másik hét csak egy-egy szelete belőle. A nap gömbjében nincs pontszám — egy napra nincs
+  ilyen —, hanem azt mutatja, **mennyire van tele a napod** a naptárad szerint, és a nap saját oldalát nyitja. A Ma
+  lapon az „A napod” összecsukott sor megmaradt: a gömb csak még egy út ugyanoda. A geometria nyolccal **szebben**
+  jön ki, mint héttel (hét pont soha nem áll szimmetrikusan egy körben, a nyolc igen) — az ára 6 pont a gömbök
+  méretéből, hogy a nevek ne érjenek össze a kis telefonon; ellenőrizve 440 és 375 pont széles készüléken is. A kör
+  ezzel **betelt**: egy kilencedik terület külön döntést kér.
+  [spec](../superpowers/specs/2026-11-13-boop-kezdolap-design.md), döntés #41, [`boop-ios.md`](../features/boop-ios.md) §2.
 
 - **2026-11-16 — Boop · a Ma élő fal lett — Boop azt mondja, ami épp számít (`mezo-r36n9.45`).**
   A kör közepe mögötti oldal nem a nap végiggörgethető menetrendje többé, hanem **legfeljebb három dolog, amit Boop

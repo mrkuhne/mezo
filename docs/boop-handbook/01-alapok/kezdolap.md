@@ -1,20 +1,21 @@
 ---
-cim: Kezdőlap — a hét gömb köre
+cim: Kezdőlap — a nyolc gömb köre
 szint: Funkció
 terulet: Alapok
 allapot: Élesben
 hol: [iPhone app]
 szulo: 00-attekintes
 szakasz: [Kezdőlap]
-osszefoglalo: Az appot megnyitva hét élő gömb fogad egy körben, középen Boop gömbjével és a napi mondatával; bármelyik gömb a saját területére visz, a közép a mai napodra.
+osszefoglalo: Az appot megnyitva nyolc élő gömb fogad egy körben, középen Boop gömbjével és a napi mondatával; bármelyik gömb a saját területére visz, a közép a mai napodra.
 ---
 
 ## Mit csinál
-Az app megnyitásakor ez az első képernyő. Fent a **boop** felirat, középen **hét élő gömb egy körben**, mögöttük
+Az app megnyitásakor ez az első képernyő. Fent a **boop** felirat, középen **nyolc élő gömb egy körben**, mögöttük
 fotózott ködös hegygerinc, előtte lassan szálló köd.
 
 | Gömb (felülről, az óra járása szerint) | Hova visz |
 |---|---|
+| **Nap** | A mai napod saját oldala — mennyire van tele a napod |
 | **Alvás** | Az alvás területe |
 | **Étel** | Az Étel szoba (Ma · Receptek · Kamra · Hét) |
 | **Edzés** | Az edzés területe |
@@ -24,7 +25,8 @@ fotózott ködös hegygerinc, előtte lassan szálló köd.
 | **Levél** | Még nem él — koppintásra megmondja |
 
 Minden gömbben a mai száma áll, és annyira van tele, amennyi a szám (például az alvás 78). Ahol nincs mai adat,
-„–” áll, sosem 0. Középen **Boop saját, halvány gömbje** szám nélkül, alatta a napi mondata (például „Elég jó
+„–” áll, sosem 0. A **Nap gömbje** kivétel: ott nincs pontszám, mert egy napra nincs ilyen — az mutatja, mennyire
+van tele a napod a naptárad szerint. Középen **Boop saját, halvány gömbje** szám nélkül, alatta a napi mondata (például „Elég jó
 reggel”) — erre koppintva nyílik a **mai Nap oldal** a reggeli összefoglalóval és a nap eseményeivel. Az az oldal
 nem tűnt el, csak egy szinttel beljebb került.
 
@@ -32,7 +34,7 @@ Az alsó sáv a megszokott: **Ma · Terv · Napló · Boop** és a plusz. Ha má
 koppintasz, bárhonnan visszahoz a körre.
 
 ## Hogyan működik
-1. Nyitáskor a gömbök **a ködből úsznak elő**, egymás után: először Boop, aztán körbe a hét.
+1. Nyitáskor a gömbök **a ködből úsznak elő**, egymás után: először Boop, aztán körbe a nyolc.
 2. Egy gömbre koppintva a kör **belezoomol abba a gömbbe** és átúszik a terület oldalára; a háttér nem mozdul,
    csak elhalványul.
 3. Visszalépéskor a terület elhalványul, és a kör visszaül a helyére.
@@ -50,4 +52,4 @@ Nincs saját beállítása. A csökkentett mozgást a telefon Kisegítő lehető
 
 ## Mi jön még
 - A Pénz és a Levél gömb akkor élesedik ki, amikor azok a területek megépülnek.
-- A közép mögötti Nap oldal helyére **élő fal** kerül: legfeljebb három dolog, amit Boop épp mondani akar.
+- A kör **betelt nyolccal**. Ha egyszer jön egy kilencedik terület, azt külön ki kell találni (kisebb gömb a névvel benne, két kör egymásban, vagy a körben csak amit tényleg használsz) — az a te döntésed lesz.

@@ -49,7 +49,7 @@ related: [fuel, pantry, recipe, dayclose, intention, journal, companion, proacti
 Boop is built in four slices (spec §, plan "Slice map"): **S1 Alap**, **S2 Adatok** (Apple Health +
 calendar ingestion), **S2.5 Napkelte** (the look) and **S3 Reggel** (the morning brief: five orbs, Boop's voice,
 energy curve, paths) are this doc's base state; **B2 Gerinc** (2026-11-11) then replaced the five-domain shell with the
-spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (2026-11-12) then added the offline-first daily loop (check-in, goal, evening close, journal, Boop chat, reminders); **B4 Étel** (2026-11-13) then added the food room (Ma · Receptek · Kamra · Hét, offline-first meal capture, barcode, photos, sensitivities); and the **home screen + area-page kit** (2026-11-16) put a ring of seven area orbs in front of Ma and gave every area one frame to be built from, with **Ma itself becoming a living wall** of at most three cards; B5–B8 follow. The web PWA keeps running until Boop covers it.
+spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (2026-11-12) then added the offline-first daily loop (check-in, goal, evening close, journal, Boop chat, reminders); **B4 Étel** (2026-11-13) then added the food room (Ma · Receptek · Kamra · Hét, offline-first meal capture, barcode, photos, sensitivities); and the **home screen + area-page kit** (2026-11-16) put a ring of eight area orbs in front of Ma and gave every area one frame to be built from, with **Ma itself becoming a living wall** of at most three cards; B5–B8 follow. The web PWA keeps running until Boop covers it.
 
 ## 2. User-facing behavior
 
@@ -156,12 +156,18 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
 
 - **The home screen (shipped 2026-11-16, `mezo-r36n9.47`; the navigation map `mezo-r36n9.51`; spec
   [`2026-11-13-boop-kezdolap-design.md`](../superpowers/specs/2026-11-13-boop-kezdolap-design.md), decisions #32–#33).**
-  Opening the app now shows **the ring**, not Ma: "boop" at the top, the **seven life areas** as living orbs on a
-  circle (Alvás · Étel · Edzés · Energia · Forma · Pénz · Levél, clockwise from the top), **Boop's own pale orb in
+  Opening the app now shows **the ring**, not Ma: "boop" at the top, the **eight life areas** as living orbs on a
+  circle (Nap · Alvás · Étel · Edzés · Energia · Forma · Pénz · Levél, clockwise from the top), **Boop's own pale orb in
   the middle** with his line for the day under the ring, over a photographed misty ridge (`NKPhoto.hegy`) in the
   cool blue world with three bands of drifting fog (`DriftingFog`). An orb opens its area; the middle opens today's
   Nap page, which was **not replaced — it moved one level in**. Pénz and Levél are not built (L4–L6): they sit faint
-  and say so on tap. `KezdolapView` is the Ma place's root (`Kezdolap/`), and it is where the brief is fetched and
+  and say so on tap. **The day has its own orb at the top** (decision #41, 2026-11-16, `mezo-r36n9.55`): it carries
+  no score — nothing scores a day — but fills with **how full the day is** (`dayFullness`, from the brief's
+  `calendar.busySlots`) and opens the day's own sheet (`KezdolapRoute.day` → `NapView(initialDetail: .day)`). The
+  "A napod" folded row on Ma stays; an orb is another way in. Eight is also the better circle: seven points never
+  sit symmetrically, eight are four cardinal plus four diagonal, at the cost of 6 pt of orb (62 → 56) to keep the
+  labels apart at 375 pt. **The ring is full at eight** — a ninth area needs a designed answer, not another enum
+  case (candidates in the spec §3). `KezdolapView` is the Ma place's root (`Kezdolap/`), and it is where the brief is fetched and
   kept fresh (`MorningTriggers` moved here from `NapView`). Tapping "Ma" in the bar while Ma is open brings the ring
   back from anywhere (`\.kezdolapHomeReset`). **The map it settles:** the ring does the job the Terv area grid was
   invented for, so the bar keeps its four places and **Terv becomes his plan**, not a second area menu — this
