@@ -27,7 +27,8 @@
 - **A ring-opened room has no navigation stack.** Everything the room presents — the player cover, every sheet — must work with `closeRoom` and no stack beneath it, and must be verified that way (`-previewHome edzes` opens the room straight from the ring; `-preview shell` goes through Ma).
 - **The home's motion budget is the room's too** (kezdőlap spec §3, from a pass the owner rejected as stuttery): **no scaled blurred fog canvas, no stack of live shaders.** The room's moving parts are the head photo under its gradient, the kit's own lights, and the player's one orb — nothing else animates continuously, and every motion has a still branch under Reduce Motion.
 - **The ring is the entrance**, and `Terv` in the bottom bar is **his plan**, not an area menu (decision #33). The Edzés room is reached from the ring orb, the `+` sheet and the Mozgás lens — **never** from a Terv grid.
-- **The inner tab label lives in exactly one constant.** The owner is deciding between *Terv* and *Blokk* for it; until the answer is relayed the approved spike's *Terv* stands, and the rename must be a one-line change.
+- **The inner tab is called `Blokk`** (owner, 2026-11-16, relayed by the L0 session): the bottom bar's *Terv* is now his own plan, so an inner tab also called *Terv* would put two different Tervs one tap apart, and *Blokk* is what the thing is — the eight-week training block, his own word from the mesocycle work. The label still lives in **exactly one constant**, so a later rename stays a one-line change.
+- **The room contributes to Ma, it does not write on it.** What Edzés has to say on the living wall is registered as one `WallSource` (L0/b); if the wall's engine or views have to be edited for it, it is being hard-coded and is wrong.
 - Shared hot spots (`openapi-generator-config.yaml`, `api/openapi.yml`, `api/generate/merge.yml`, `1.1.0_master.yml`): one writer at a time; rebase on `origin/main` immediately before touching them.
 
 ## Working on top of the L0 kit — read this before Task 1
@@ -44,7 +45,7 @@ The shared area-page kit landed in L0 (`mezo-r36n9.37`) **after** this plan was 
 
 **One pre-existing red test:** `BoopTests/MealComposerTests.savingAConfirmationCardRemovesIt()` fails on `origin/main` as well (reported by the L0 session, filed as `mezo-r36n9.52`). **Verify that independently at Task 1** before accepting any red run as pre-existing — and never let it mask a failure of ours.
 
-**Open naming question, with the owner:** the bottom bar's **Terv** now means his own plan, so the Edzés room's inner tab called *Terv* (the 8-week block) is two Tervs one tap apart. The L0 session has put **Blokk** to him as the replacement. **Build the tab with the name he gives back**; the approved spike says *Terv*, so until he answers, *Terv* stands.
+**The naming question is answered: `Blokk`.** The owner took it on 2026-11-16 (relayed by the L0 session, recorded in the decisions log). The approved spike and the spec said *Terv*; both were corrected in the same change as this plan, so nothing downstream still says *Terv* for the inner tab.
 
 ## Review Focus
 
@@ -86,7 +87,7 @@ Either way **nothing in this plan assumes it**, and no task may quietly implemen
 | `ios/BoopKit/Sources/BoopCore/RecoveryClient.swift` | lifted out of `Etel/FoodClient.swift` (recovery + kímélő), used by both rooms |
 | `ios/BoopKit/Sources/BoopDesign/Napkelte/Train.swift` | the only genuinely new kit pieces, both player-only: `NKStepper`, `NKRestOrb`. **The volume bar, the stepped week, staleness, the searchable list, the comparison and the sub-page frame all come from the L0 kit — do not re-create them.** |
 | `ios/Boop/Edzes/EdzesRoom.swift` | the room frame: `NKAreaPage` + its four inner tabs |
-| `ios/Boop/Edzes/EdzesMa.swift` · `EdzesTerv.swift` · `EdzesGyakorlatok.swift` · `EdzesElozmenyek.swift` | one file per tab |
+| `ios/Boop/Edzes/EdzesMa.swift` · `EdzesBlokk.swift` · `EdzesGyakorlatok.swift` · `EdzesElozmenyek.swift` | one file per tab |
 | `ios/Boop/Edzes/WorkoutPlayer.swift` | the five player states |
 | `ios/Boop/Edzes/EdzesSheets.swift` | swap, skip-with-reason, kímélő, exercise, block report, compare, muscle map, sport |
 | `ios/Boop/Edzes/MesoWizard.swift` | the four-step block builder |
@@ -253,7 +254,7 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
 - **The way out:** copy the Étel room's seam verbatim — `@Environment(\.closeRoom) private var closeRoom` and `onBack: { if let closeRoom { closeRoom() } else { dismiss() } }`, plus `.toolbar(.hidden, for: .navigationBar)` and `RoomSwipeBack()`. A ring-opened room **is the page, with no navigation stack under it**, so a back button that pops a stack slides the room off sideways — the owner saw that and rejected it.
 
 - [ ] **Step 1: Write the failing tests:**
-  - `fourTabsInOrder` — `["Ma", "Terv", "Gyakorlatok", "Előzmények"]`.
+  - `fourTabsInOrder` — `["Ma", "Blokk", "Gyakorlatok", "Előzmények"]`.
   - `emptyCacheOfflineSaysSoRatherThanRenderingZeroes` — with no cache and no network, `EdzesStore.today == nil` and the room's copy is the "nincs friss adat" line, not a session card with zeroes. *(Review Focus 3.)*
   - `staleCacheProducesALoudAgeString` — a two-day-old cached plan yields „2 napos terv".
   - `briefingLinesComeFromTheServerRationale` — not from a local template.
@@ -263,6 +264,41 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
 - [ ] **Step 5: Run the kit and app tests; expect PASS.**
 - [ ] **Step 6: Verify in the simulator**, both with and without the network, against the two screenshots; check 320 pt width and reduced motion.
 - [ ] **Step 7: Commit.**
+
+### Task 6b: The Edzés area's voice on the living wall
+
+The living wall (L0/b, `mezo-r36n9.45`) chooses what Boop says on Ma from what the **areas** register, and an
+area joins by handing it one `WallSource` — the engine and the view never learn its name. Edzés is the first
+area to join after Étel, and today it is represented only by a thin stand-in derived from the morning brief.
+
+**Files:**
+- Modify: `ios/BoopKit/Sources/BoopCore/Morning/WallSources.swift` — add `edzesWallCandidates(...)` and **move
+  the `edzes-keszulj` block out of `briefWallCandidates`**. Two sources must not both offer a session card: the
+  acted/dismissed set is keyed by candidate id, so a duplicate would reappear after he dismissed it.
+- Modify: `ios/Boop/Nap/MaWall.swift:37-47` — one more `r.register(WallSource(id: WallSources.edzes) { … })`
+  line, fed from the room's own store. Nothing else in the wall changes.
+- Test: `ios/BoopKitTests/EdzesWallSourceTests.swift`
+
+**Interfaces:**
+- Consumes: `WallCandidate(id:role:kind:area:expiresAt:rank:text:sub:primary:secondary:settled:why:)`,
+  `WallSources.edzes`, `WallRegistry.register(_:)`, `buildWall(_:now:…)`; and `EdzesStore` from Task 6.
+- Produces: `edzesWallCandidates(today:now:calendar:)` — a pure function over the room's own session data.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `plannedSessionImprovesTheDay` — a session planned for later today is one `.improves` candidate carrying its
+    title, its length and the engine's own reason in *miért?* (never a locally written sentence).
+  - `aSessionAboutToBeMissedExpires` — within the last hour of its window an unstarted session becomes
+    `.expires` with that moment as `expiresAt`, so the wall drops it by itself once it is gone.
+  - `aDoneSessionSaysNothingNew` — a finished session produces no `.improves` and no `.expires` candidate.
+  - `theBriefNoLongerOffersASessionCard` — `briefWallCandidates` returns no `edzes-keszulj`, so the two sources
+    cannot both put a session on the wall.
+- [ ] **Step 2: Run the kit tests; expect FAIL.**
+- [ ] **Step 3: Implement the source and register it**, with no change to `buildWall`, to `Wall.swift` or to the
+      wall's views — if any of those three needs editing, the contribution is being hard-coded and is wrong.
+- [ ] **Step 4: Run the kit and app tests; expect PASS.**
+- [ ] **Step 5: Verify in the simulator** that Ma shows the session card with its *miért?*, that dismissing it
+      keeps it dismissed for the day, and that `-previewWallEmpty YES` still reaches the quiet wall.
+- [ ] **Step 6: Commit.**
 
 ---
 
@@ -302,13 +338,13 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
 
 ---
 
-## Stage 5 — Terv and the block builder
+## Stage 5 — Blokk and the block builder
 
-### Task 9: The Terv tab
+### Task 9: The Blokk tab
 
 **Files:**
-- Create: `ios/Boop/Edzes/EdzesTerv.swift` **only**. The volume bar is the kit's `NKLevelBar(level:hue:ticks:labelTicks:)` with `NKLevelTick(at:label:)` for MEV/MAV, and the eight weeks are `NKSteppedBars([NKStepBar(label:value:dimmed:note:)], current:)` — a deload week is a `dimmed` step carrying its reason as `note`. **No new kit pieces in this task.**
-- Test: `ios/BoopTests/EdzesTervTests.swift` (the kit's own rendering is the kit's to test; these test **our mapping into it**)
+- Create: `ios/Boop/Edzes/EdzesBlokk.swift` **only**. The volume bar is the kit's `NKLevelBar(level:hue:ticks:labelTicks:)` with `NKLevelTick(at:label:)` for MEV/MAV, and the eight weeks are `NKSteppedBars([NKStepBar(label:value:dimmed:note:)], current:)` — a deload week is a `dimmed` step carrying its reason as `note`. **No new kit pieces in this task.**
+- Test: `ios/BoopTests/EdzesBlokkTests.swift` (the kit's own rendering is the kit's to test; these test **our mapping into it**)
 
 - [ ] **Step 1: Write the failing tests** against the pure mapping functions, not against the kit's views:
   - `ticksSitAtTheirFractionOfMrv` — `volumeTicks(mev:mav:mrv:)` places MEV and MAV at `mev/mrv` and `mav/mrv`.
@@ -330,13 +366,13 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
 **Interfaces:**
 - Produces: `func generatePlan(days: Int, weeks: Int, emphasis: [String]) async throws -> GeneratedPlan`; `func createAndStart(_ plan: GeneratedPlan, startDate: Date) async throws -> UUID`; `func rerun(_ mesocycleId: UUID, startDate: Date) async throws -> UUID`; `func templates() async throws -> [MesoTemplate]`; `func startCustomWorkout() async throws -> UUID`.
 
-This task also covers the other three entries of the Terv tab's **Újat kezdenék** block, which the approved
+This task also covers the other three entries of the Blokk tab's **Újat kezdenék** block, which the approved
 screenshot shows: *Ez a blokk újra* (`rerunMesocycle`), *Saját edzés most* (`createCustomWorkout`, which the
 once-per-week rule does not apply to) and *Elmentett terveim* (`listMesoTemplates` → `startMesoTemplate`).
 
 - [ ] **Step 1: Write the failing tests:** `emphasisIsCappedAtTwo`; `weeksBelowFourAreRejected`; `generatedPlanIsNotPersistedUntilTheOwnerStartsIt` (the server persists nothing on `generateMesoPlan`; assert no create call is made before the final tap); `wizardIsRefusedOfflineWithAReason` (plan generation needs the server — it must say so, not half-work); `customWorkoutIsNotSubjectToTheOncePerWeekRule`; `rerunStartsAFreshRunOfTheSameTemplate`.
 - [ ] **Step 2: Run; expect FAIL.**
-- [ ] **Step 3: Implement the four wizard steps plus the three other entries**, matching `edzes-14-varazslo.png` and the Terv tab's section 5.
+- [ ] **Step 3: Implement the four wizard steps plus the three other entries**, matching `edzes-14-varazslo.png` and the Blokk tab's section 5.
 - [ ] **Step 4: Run both suites; expect PASS.**
 - [ ] **Step 5: Verify in the simulator; commit.**
 
@@ -384,12 +420,13 @@ once-per-week rule does not apply to) and *Elmentett terveim* (`listMesoTemplate
 
 **What the owner sees**
 
-- [ ] The Edzés room opens from **the home ring's Edzés orb** (`-previewHome edzes`, no navigation stack, back fades the ring in), from the `+` sheet's „Edzés indítása” tile and from the Mozgás lens action, with the four tabs `Ma · Terv · Gyakorlatok · Előzmények`, matching the approved screenshots.
+- [ ] The Edzés room opens from **the home ring's Edzés orb** (`-previewHome edzes`, no navigation stack, back fades the ring in), from the `+` sheet's „Edzés indítása” tile and from the Mozgás lens action, with the four tabs `Ma · Blokk · Gyakorlatok · Előzmények`, matching the approved screenshots.
 - [ ] Ma: today's session with its photo, time and counts; **Az eligazítás** showing what the engine changed and why, in Boop's words; the readiness read; the week's five days; a proposal card with *miért?*; sport logging; kímélő.
 - [ ] The player runs briefing → set → rest → debrief → close, with ± steppers for weight, reps and RIR, the engine's rationale, last week's reference and the durable note on the set screen, and a draining orb (no ring) on the rest screen.
 - [ ] Mid-workout: swap an exercise (this session **or** the rest of the block) and skip an exercise.
 - [ ] **With the network off**: the room opens, the session and its prescription are shown from the cache **with their age stated loudly**, every logged set is kept, the player completes, and the close screen says the sets will go up by themselves. With an empty cache it says it has nothing rather than showing zeroes.
-- [ ] Terv: the running block with its eight weeks, per-muscle volume against MEV/MAV/MRV, priorities, the weekly clock, and the four-step block builder that starts a real block.
+- [ ] Ma (the living wall) carries the Edzés session card with its *miért?*, registered as an area source — `buildWall`, `Wall.swift` and the wall's views are untouched, and the brief no longer offers a second session card.
+- [ ] Blokk: the running block with its eight weeks, per-muscle volume against MEV/MAV/MRV, priorities, the weekly clock, and the four-step block builder that starts a real block.
 - [ ] Gyakorlatok: search, the catalog with photos, records, an exercise page with your numbers and your note.
 - [ ] Előzmények: sessions and sport newest first, the four-week load with the excused week explained, the block report with Boop's evaluation, comparing two blocks, the muscle map.
 - [ ] Empty, loading, offline and error states everywhere; 320 pt width; reduced motion; no emoji; no photo on anything that is not a thing; the voice is Boop's.

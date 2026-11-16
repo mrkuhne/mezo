@@ -153,12 +153,12 @@ Internal recon. Anchors are `path:line` at the time of writing.
 ### 5.1 The room
 
 `Edzés` opens from the Mozgás orb, the `+` sheet and a timeline row, on `NKDrillPage` with the hue's photo
-head and four capsule tabs **`Ma · Terv · Gyakorlatok · Előzmények`**, exactly as the approved spike.
+head and four capsule tabs **`Ma · Blokk · Gyakorlatok · Előzmények`**, exactly as the approved spike.
 
 | Tab | Content |
 |---|---|
 | **Ma** | today's session card (photo, time, counts, **Kezdjük el** / Könnyítés / Ma kihagyom); **Az eligazítás** — what the engine changed since the last same-day and why, plus the readiness read; the week's five days with what is done; **Mit tehetsz** — Boop's proposal card with *miért?*, sport logging, kímélő mode. |
-| **Terv** | the running block (8 weeks as a bar row, where you are, what each week asks), per-muscle weekly volume against MEV/MAV/MRV, muscle priorities, the weekly clock, and **Újat kezdenék** — the four-step block builder, rerun, a one-off custom workout, saved templates. |
+| **Blokk** | the running block (8 weeks as a bar row, where you are, what each week asks), per-muscle weekly volume against MEV/MAV/MRV, muscle priorities, the weekly clock, and **Újat kezdenék** — the four-step block builder, rerun, a one-off custom workout, saved templates. |
 | **Gyakorlatok** | records (e1RM, best working weight, most reps), the searchable 166-row catalog with photos, an exercise page (your numbers, the progress arc, your durable note), add a new exercise. |
 | **Előzmények** | what happened (sessions and sport, newest first), the four-week load with the skipped week explained, and the deeper reads: the block report with Boop's evaluation, comparing two blocks, the muscle map. |
 
