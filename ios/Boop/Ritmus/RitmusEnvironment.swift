@@ -245,10 +245,16 @@ final class RitmusEnvironment {
     }
 
     /// Each signed-in user keeps their own days and queue: `<base>/boop-ritmus/<userId>/ledger|outbox`.
-    static func directories(for userId: UUID, base: URL = .applicationSupportDirectory) -> (ledger: URL, outbox: URL) {
+    static func directories(for userId: UUID,
+                            base: URL = .applicationSupportDirectory) -> (ledger: URL, outbox: URL, cache: URL) {
         let root = base.appendingPathComponent("boop-ritmus", isDirectory: true)
             .appendingPathComponent(userId.uuidString, isDirectory: true)
-        return (root.appendingPathComponent("ledger", isDirectory: true), root.appendingPathComponent("outbox", isDirectory: true))
+        // `cache` is the last-known-good READ cache (`ServerCache`) — a third folder, per user like the other two,
+        // and deliberately separate: everything in it is a disposable copy of something the server still has, so
+        // clearing it can never lose one of the owner's own writes the way clearing `outbox` would.
+        return (root.appendingPathComponent("ledger", isDirectory: true),
+                root.appendingPathComponent("outbox", isDirectory: true),
+                root.appendingPathComponent("cache", isDirectory: true))
     }
 
     /// The real wiring: the Boop API client, HealthKit for the snapshot, the user's own directories.
