@@ -11,14 +11,6 @@ func swipeDecision(_ dx: CGFloat) -> Bool? {
     return dx > 0
 }
 
-/// The sentence around the bold phrase, with exactly one space at each seam (none before closing punctuation).
-func observationParts(_ o: Brief.Observation) -> (lead: String, tail: String) {
-    let lead = o.lead.trimmingCharacters(in: .whitespaces)
-    let tail = o.tail.trimmingCharacters(in: .whitespaces)
-    let tight = tail.first.map { ".,;:!?".contains($0) } ?? true
-    return (lead.isEmpty ? "" : lead + " ", tight ? tail : " " + tail)
-}
-
 /// The label that fades in with the drag.
 func swipeLabel(_ dx: CGFloat) -> String? {
     guard abs(dx) > 30 else { return nil }

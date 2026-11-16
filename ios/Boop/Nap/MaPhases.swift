@@ -182,6 +182,10 @@ struct MaBelow: View {
     @State private var goalDraft = ""
     /// B4: the food rows' data — the next window and the supplement group (the Étel room's own store, the light read).
     @Environment(\.foodClient) private var food
+    /// A wall card's "Rögzítem" opens the meal composer at page level (boop-ios.md §9).
+    @Environment(\.openMeal) private var openMeal
+    /// Is the day's timeline open? In the morning it is; later it is one row (owner decision #13).
+    @State private var napodOpen: Bool?
     @State private var etel = EtelStore()
     @State private var foodSeen = false
 
@@ -201,10 +205,15 @@ struct MaBelow: View {
     private var ledgerDay: DayLedger? { ritmus?.ledger.ledger(for: today) }
 
     var body: some View {
-        VStack(spacing: 34) {
-            lensStrip
+        VStack(spacing: 30) {
+            // L0/b: what Boop wants to say right now comes first; the plan and the day fold under it.
+            MaWall(brief: brief, ctx: ctx, etel: etel, ledgerDay: ledgerDay, onDrill: onDrill,
+                   onCheckIn: { router?.open(.checkin) },
+                   onMeal: { openMeal(MealStart()) },
+                   onEtelRoom: { onDrill(.fuel) })
             reggel.phaseAnchor(.reggel)
-            napkozben.phaseAnchor(.napkozben)
+            energyCard
+            napod.phaseAnchor(.napkozben)
             este.phaseAnchor(.este)
         }
         .task(id: today) {
@@ -224,30 +233,11 @@ struct MaBelow: View {
         await etel.load(food: food, now: ctx.now, extras: false)
     }
 
-    // MARK: lens strip
-
-    private var lensStrip: some View {
-        VStack(spacing: 10) {
-            VStack(spacing: 10) {
-                MaiTiles(tiles: maiTiles(key, TileInputs(brief))) { ctx.toast(soonToast("Víz +250 ml")) }
-                Button { onDrill(ctx.hue) } label: {
-                    HStack(spacing: 8) {
-                        Text("\(ctx.hue.name) részletesen").nkFont(15, .medium).foregroundStyle(.white)
-                        Spacer(minLength: 8)
-                        Text("a napok mögötte").nkFont(13).foregroundStyle(.white.opacity(0.5))
-                        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
-                    }
-                    .padding(.horizontal, 18).frame(height: 50)
-                    .contentShape(Rectangle())
-                    .nkGlass(18)
-                }
-                .buttonStyle(.plain)
-            }
-            .id(ctx.hue)
-            .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 28)), removal: .opacity))
-        }
-        .animation(.spring(response: 0.7, dampingFraction: 0.82), value: ctx.hue)
-    }
+    // MARK: lens strip — REMOVED with L0/b
+    //
+    // The per-area tiles and the "Alvás részletesen" door left this page: the ring of seven orbs is the app's
+    // entrance now (decisions #32–#33) and every area is one tap from it, so a second door here was the same
+    // menu twice. Kept in git history, not in the page.
 
     /// `range` nil = the phase's clock range; Napközben passes its timeline's real span ("" hides it).
     private func phaseHead(_ p: DayPhase, range: String? = nil) -> some View {
@@ -372,19 +362,40 @@ struct MaBelow: View {
 
     // MARK: Napközben
 
-    private var napkozben: some View {
+    /// The day's energy, under the wall and above the folded timeline: a curve looks forward, which is exactly
+    /// what the wall does not do.
+    @ViewBuilder private var energyCard: some View {
+        if let ritmus, let day = ledgerDay {
+            MaEnergyCard(day: day, predicted: brief.date == today ? brief.energy.hourly : [], now: ctx.now,
+                         calendar: ritmus.calendar, selected: $curveSel,
+                         refusal: { ritmus.refusal(forCheckIn: $0, date: today) },
+                         onRetry: { id in Task { await ritmus.retry([id]) } })
+        }
+    }
+
+    /// The day's timeline, folded into one row (owner decision #13): open in the morning, closed later, with
+    /// everything still behind it. Nothing was dropped — it moved behind a chevron.
+    private var napod: some View {
+        let stations = timelineStations
+        let done = stations.filter(\.done).count
+        let left = stations.count - done
+        return NKFoldRow("A napod", sub: stations.isEmpty ? "" : "\(done) megvolt, \(left) hátra",
+                         hue: ctx.hue, open: Binding(get: { napodOpen ?? (phase == .reggel) },
+                                                     set: { napodOpen = $0 })) {
+            napkozben
+        }
+    }
+
+    private var timelineStations: [PathStation] {
         let base = napkozbenStations(brief, now: ctx.now, evening: ctx.evening, hasProposals: !proposalsInPlan && !shown.isEmpty,
                                      reminder: ctx.reminder.isOn ? ctx.reminder.time : nil)
         let ritmic = ledgerDay.map { ritmusStations(base, day: $0, now: ctx.now, calendar: ritmus?.calendar ?? .current) } ?? base
-        let stations = etelStations(ritmic, plan: etel.plan, groups: etel.groups, taken: etel.taken)
+        return etelStations(ritmic, plan: etel.plan, groups: etel.groups, taken: etel.taken)
+    }
+
+    private var napkozben: some View {
+        let stations = timelineStations
         return VStack(alignment: .leading, spacing: 14) {
-            phaseHead(.napkozben, range: timelineSpan(stations) ?? "")
-            if let ritmus, let day = ledgerDay {
-                MaEnergyCard(day: day, predicted: brief.date == today ? brief.energy.hourly : [], now: ctx.now,
-                             calendar: ritmus.calendar, selected: $curveSel,
-                             refusal: { ritmus.refusal(forCheckIn: $0, date: today) },
-                             onRetry: { id in Task { await ritmus.retry([id]) } })
-            }
             if isEmptyDay(stations) {
                 Text(MaText.emptyDay)
                     .nkFont(15).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
