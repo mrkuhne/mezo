@@ -543,6 +543,8 @@ struct RecipeImportHost: View {
 /// the Fuel world's mood photo under the hue's sky, with the day's verdict; the last tab is kept across launches.
 struct EtelRoom: View {
     @Environment(\.dismiss) private var dismiss
+    /// Set when the home screen's ring opened this room with no navigation stack around it.
+    @Environment(\.closeRoom) private var closeRoom
     @Environment(\.foodClient) private var food
     @SceneStorage("etel.tab") private var selected: String = EtelTab.ma.rawValue
     @State private var store = EtelStore()
@@ -575,7 +577,7 @@ struct EtelRoom: View {
         let v = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
         NKDrillPage(hue: .fuel, crumb: "Ma · Étel", eyebrow: "Étkezés · ma", headline: v.headline, sentence: v.sentence,
                     level: v.level ?? 0, tabs: EtelTab.allCases.map(\.rawValue), selectedTab: $selected,
-                    headPhoto: NKPhoto.konyha, onBack: { dismiss() }) {
+                    headPhoto: NKPhoto.konyha, onBack: { if let closeRoom { closeRoom() } else { dismiss() } }) {
             switch tab {
             case .ma:
                 EtelMa(store: store, onDimension: { dimension = $0 }, onToast: { toast = $0 },

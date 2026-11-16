@@ -6,6 +6,10 @@ import BoopDesign
 /// still orb and the right state — not connected, syncing, learning (< 14 nights), no calendar, offline, ready — or,
 /// when the brief did not arrive, a calm retry.
 struct NapView: View {
+    /// Opened from the home screen's ring with that area's room already on screen (nil = the plain page).
+    var initialRoom: Hue? = nil
+    /// The way back to the home screen's ring (nil = Ma is the place's own root).
+    var onHome: (@MainActor @Sendable () -> Void)? = nil
     @Environment(\.openURL) private var openURL
     @Environment(\.openAccount) private var openAccount
     @Environment(HealthLink.self) private var link: HealthLink?
@@ -49,7 +53,7 @@ struct NapView: View {
                              problem: morning?.problem, forceBrief: forceBrief) {
             case .mai:
                 if let morning, let brief = morning.brief {
-                    MaiView(brief: brief) { ctx in
+                    MaiView(brief: brief, initialRoom: initialRoom, onHome: onHome) { ctx in
                         cards(brief, morning, ctx)
                     } drill: { hue, ctx in
                         if hue == .fuel {
@@ -83,7 +87,6 @@ struct NapView: View {
             // last night reached the server: fetch the brief again (the server regenerates when its inputs changed)
             if let new, reloadsBriefAfterSync(from: old, to: new) { Task { await morning?.load(date: Date()) } }
         }
-        .background { if let morning { MorningTriggers(store: morning) } }
     }
 
     /// Below the hero: the lens strip and the day's three phases, then the Health row (sync status and "refresh now"
@@ -106,7 +109,8 @@ struct NapView: View {
     private func page(_ s: NapEmptyState, copy: NapCopy, offline: Bool, onAction: @escaping () -> Void) -> some View {
         NKTabPage(hue: .forma, heroHeight: nil, compact: NKCompact(palette: Hue.forma.orb, title: "Forma", value: copy.orb, line: copy.title)) {
             VStack(spacing: 0) {
-                NKTitleRow(bellCount: 0, onBell: { toast = "Az értesítések hamarosan" }, onPlus: nil, onAvatar: openAccount)
+                NKTitleRow(bellCount: 0, onBell: { toast = "Az értesítések hamarosan" }, onPlus: nil,
+                           onAvatar: openAccount, onBack: onHome)
                     .padding(.top, 54)
                 // the phases have nothing to scroll to yet: the strip only says where the day is
                 NKTabStrip(tabs: DayPhase.allCases.map(\.name),
@@ -180,7 +184,9 @@ private struct NapSheets: ViewModifier {
 
 /// Loads the brief of the device's day when the page appears and on every return to the foreground. Its own invisible
 /// view, like the root's sync triggers: reading the scene phase on the page itself can stop presentations.
-private struct MorningTriggers: View {
+/// Loads the day's brief and keeps it fresh (on appear, on return to the foreground, and past midnight). It hangs on
+/// the home screen, which is always on screen behind the Nap page.
+struct MorningTriggers: View {
     let store: MorningStore
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {

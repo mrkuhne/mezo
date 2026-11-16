@@ -6,12 +6,24 @@ import SwiftUI
 public struct NKTitleRow: View {
     let bellCount: Int
     let onBell: () -> Void, onPlus: (() -> Void)?, onAvatar: () -> Void
+    let onBack: (@MainActor @Sendable () -> Void)?
     /// `onPlus == nil` hides the "+" (the spine has its own beside the bar); the wordmark stays centred.
-    public init(bellCount: Int = 0, onBell: @escaping () -> Void, onPlus: (() -> Void)? = nil, onAvatar: @escaping () -> Void) {
+    /// `onBack` turns the left slot into a back button (a page opened from the home screen's ring); the bell then
+    /// moves beside it.
+    public init(bellCount: Int = 0, onBell: @escaping () -> Void, onPlus: (() -> Void)? = nil,
+                onAvatar: @escaping () -> Void, onBack: (@MainActor @Sendable () -> Void)? = nil) {
         self.bellCount = bellCount; self.onBell = onBell; self.onPlus = onPlus; self.onAvatar = onAvatar
+        self.onBack = onBack
     }
     public var body: some View {
         HStack(spacing: 4) {
+            if let onBack {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
+                }
+                .buttonStyle(.plain).accessibilityLabel("Vissza a kezdőlapra")
+            }
             Button(action: onBell) {
                 NKGlyph("bell-cream", .white, size: 21).frame(width: 44, height: 44)
                     .overlay(alignment: .topTrailing) {
@@ -22,7 +34,8 @@ public struct NKTitleRow: View {
                     }
             }
             .buttonStyle(.plain).accessibilityLabel("Értesítések")
-            Color.clear.frame(width: 44, height: 44)
+            // Without a back button the left side needs a second slot, so the wordmark stays centred.
+            if onBack == nil { Color.clear.frame(width: 44, height: 44) }
             Spacer()
             Text("boop").font(.custom(Lagy.outfitFamily, size: 26).weight(.light)).tracking(3).foregroundStyle(.white)
             Spacer()

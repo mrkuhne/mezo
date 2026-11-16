@@ -8,6 +8,8 @@ import SwiftUI
 public enum NKPhoto {
     /// The Fuel world's mood photo (herbs on a kitchen board).
     public static let konyha: Image = Image("p-konyha", bundle: .module)
+    /// The home screen's photo: a misty mountain ridge at dusk, the Forma world's mood photo.
+    public static let hegy: Image = Image("p-hegy", bundle: .module)
 }
 
 public extension View {

@@ -72,13 +72,15 @@ struct MaDrill: View {
     /// The detail sheets (the page level presents them).
     let onLink: (Brief.Link) -> Void
     @Environment(\.dismiss) private var dismiss
+    /// Set when the home screen's ring opened this room with no navigation stack around it.
+    @Environment(\.closeRoom) private var closeRoom
 
     private var key: MetricKey { metricKey(for: hue) }
 
     var body: some View {
         let c = maiCopy(brief, key)
         NKDrillPage(hue: hue, crumb: "Ma · \(hue.name)", eyebrow: drillEyebrow(hue), headline: c.headline, sentence: c.sentence,
-                    level: c.score.map { Double($0) / 100 }, onBack: { dismiss() }) {
+                    level: c.score.map { Double($0) / 100 }, onBack: { if let closeRoom { closeRoom() } else { dismiss() } }) {
             NKDrillSection(number: 1, label: "A SZINT") { level(c) }
             NKDrillSection(number: 2, label: drillWeekLabel(hue)) { week }
             NKDrillSection(number: 3, label: "A NAPOK MÖGÖTTE") { days }

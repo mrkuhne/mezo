@@ -80,6 +80,7 @@ struct ShellView: View {
             .environment(\.nkBackdropHosted, true)
             .environment(router)
             .environment(\.setRoomOpen, { open in withAnimation(.smooth(duration: 0.35)) { roomOpen = open } })
+            .environment(\.kezdolapHomeReset, homeReset)
             NKSpineBar(selected: Binding(get: { tab.rawValue }, set: { select(ShellTab(rawValue: $0) ?? .ma) }),
                        onPlus: { capturing = true })
                 .offset(y: roomOpen ? 140 : 0)
@@ -194,9 +195,12 @@ struct ShellView: View {
         .preferredColorScheme(.dark)
     }
 
+    /// Bumped when the bar's "Ma" is tapped while Ma is already the place: the home screen's ring comes back.
+    @State private var homeReset = 0
+
     @ViewBuilder private func page(_ tab: ShellTab) -> some View {
         switch tab {
-        case .ma: NapView()
+        case .ma: KezdolapView()
         case .terv: TervView()
         case .naplo: NaploView()
         case .boop: BoopTabView()
@@ -207,7 +211,8 @@ struct ShellView: View {
 
     /// The old land starts from where it is now (no jump), then the blend runs to the new one.
     private func select(_ new: ShellTab) {
-        guard new != tab else { return }
+        // "Ma" tapped while Ma is already the place: back to the home screen's ring.
+        guard new != tab else { if new == .ma { homeReset += 1 }; return }
         var still = Transaction(); still.disablesAnimations = true
         withTransaction(still) {
             fromTab = tab

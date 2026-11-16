@@ -1,0 +1,243 @@
+import SwiftUI
+import BoopCore
+import BoopDesign
+
+/// Where the home screen sends you.
+enum KezdolapRoute: Equatable {
+    /// Today's Nap page as it is (the morning brief, the day, the proposals).
+    case nap
+    /// The Nap page with that area's room already open.
+    case room(Hue)
+
+    var room: Hue? { if case .room(let h) = self { h } else { nil } }
+}
+
+/// **The home screen** (owner 2026-11-13): "boop" at the top, the seven life areas as living orbs laid out on a
+/// circle, Boop's own orb in the middle, and behind them a photographed misty mountain ridge with fog drifting
+/// across it (the cool blue world — no lilac here, owner round 2).
+///
+/// The orbs **fade in out of the fog** when the screen opens. Tapping one **zooms into that orb** and cross-fades to
+/// its area; coming back fades the area out and the ring back in. Tapping Boop opens today's Nap page, which is not
+/// replaced — it moves one level in. The two areas that are not built yet (Pénz, Levél) sit faint and say so.
+struct KezdolapView: View {
+    @Environment(MorningStore.self) private var morning: MorningStore?
+    @Environment(\.openAccount) private var openAccount
+    @Environment(\.setRoomOpen) private var setRoomOpen
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.kezdolapHomeReset) private var homeResetTick
+    @State private var route: KezdolapRoute? = KezdolapView.initialRoute
+    /// The ring is zoomed into the tapped orb and faded out; the area page is up over it.
+    @State private var zoomed = false
+    @State private var pageIn = false
+    /// Where the tapped orb sat, as a point of the screen: the zoom grows out of exactly that spot.
+    @State private var anchor: UnitPoint = .center
+    @State private var toast: String?
+    /// Boop's own orb: it slooshes and ripples under a finger like the hero's does.
+    @State private var motion = OrbMotion()
+    /// The screen's own rectangle in global coordinates: a tapped orb's point becomes the zoom's anchor in it.
+    @State private var screen: CGRect = .zero
+
+    /// The home's colour world: the cool blue of the mountain photo.
+    private static let world = Hue.alvas
+
+    private var brief: Brief? { morning?.brief }
+
+    var body: some View {
+        GeometryReader { geo in
+            let box = geo.frame(in: .global)
+            ZStack {
+                home
+                    .allowsHitTesting(route == nil)
+                    .accessibilityHidden(route != nil)
+                if let route {
+                    NapView(initialRoom: route.room, onHome: closeRoute)
+                        .opacity(pageIn ? 1 : 0)
+                }
+            }
+            .onAppear { screen = box }
+            .onChange(of: geo.size) { screen = geo.frame(in: .global) }
+        }
+        .nkToast($toast)
+        // The home is Ma's root now, so the brief is fetched and kept fresh from here.
+        .background { if let morning { MorningTriggers(store: morning) } }
+        // The bottom bar's "Ma" tapped again while a page is open: back to the ring.
+        .onChange(of: homeResetTick) { if route != nil { closeRoute() } }
+    }
+
+    // MARK: - Going in and coming back
+
+    /// Into an area (or the Nap page): the ring grows out of the tapped orb and dissolves, the page arrives over it.
+    private func openRoute(_ new: KezdolapRoute, from point: CGPoint, in screen: CGRect) {
+        guard route == nil else { return }
+        anchor = screen.width > 0 && screen.height > 0
+            ? UnitPoint(x: (point.x - screen.minX) / screen.width, y: (point.y - screen.minY) / screen.height)
+            : .center
+        route = new
+        pageIn = false
+        // One frame for the page to be built before anything moves: starting the zoom in the same pass as the
+        // page's first layout is what made the first half of it stutter.
+        DispatchQueue.main.async {
+            if reduceMotion {
+                withAnimation(.easeInOut(duration: 0.3)) { zoomed = true; pageIn = true }
+            } else {
+                let k = nkMotionScale
+                withAnimation(.easeIn(duration: 0.55 * k)) { zoomed = true }
+                withAnimation(.easeOut(duration: 0.45 * k).delay(0.28 * k)) { pageIn = true }
+            }
+        }
+    }
+
+    /// Back out: the page fades away and the ring settles back out of the fog.
+    private func closeRoute() {
+        setRoomOpen(false)
+        let k = nkMotionScale
+        withAnimation(reduceMotion ? .easeInOut(duration: 0.25) : .easeIn(duration: 0.3 * k)) { pageIn = false }
+        withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .easeOut(duration: 0.6 * k)) { zoomed = false }
+        // The page leaves once it has faded; until then it cross-fades with the ring coming back.
+        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.3 : 0.34 * k)) { route = nil }
+    }
+
+    // MARK: - The ring
+
+    private var home: some View {
+        GeometryReader { geo in
+            let ring = min(geo.size.width - 14, geo.size.height * 0.52)
+            ZStack {
+                // The backdrop never takes part in the zoom: a blurred fog canvas scaled six times over is what the
+                // phone could not keep up with. It only fades, while the ring alone grows out of the tapped orb.
+                // The frame + clip matter: a scaledToFill photo without them inflates the stack and pushes the
+                // title row's bell and avatar off the screen edges.
+                NKPhotoSky(hue: Self.world, photo: NKPhoto.hegy)
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
+                    .ignoresSafeArea()
+                if route == nil || !zoomed {
+                    DriftingFog(hue: Self.world, center: 0.58, height: 0.46)
+                        .transition(.opacity)
+                }
+                VStack(spacing: 0) {
+                    NKTitleRow(bellCount: 0, onBell: { toast = soonToast("Értesítések") }, onPlus: nil,
+                               onAvatar: openAccount)
+                        .padding(.top, 54)
+                    Spacer(minLength: 0)
+                    ringView(side: ring)
+                    boopLine
+                        .padding(.top, 18)
+                    Spacer(minLength: 0)
+                    Color.clear.frame(height: 112)
+                }
+                // Only the ring and its words dive into the orb; everything is frozen first, so the whole layer is
+                // one unchanging picture the phone can simply scale.
+                .scaleEffect(zoomed && !reduceMotion ? 3.4 : 1, anchor: anchor)
+                .opacity(zoomed ? 0 : 1)
+            }
+            .opacity(zoomed && reduceMotion ? 0 : 1)
+            .frame(width: geo.size.width, height: geo.size.height)
+            // The shell paints the shared sky behind the places: here it is the same cool world.
+            .preference(key: NKBackdropKey.self,
+                        value: NKBackdrop(hue: Self.world, heroHeight: geo.size.height + geo.safeAreaInsets.top,
+                                          scrollY: 0))
+        }
+        .ignoresSafeArea(edges: .top)
+    }
+
+    private func ringView(side: CGFloat) -> some View {
+        NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief) }, orbSize: 62, live: route == nil) { item, point in
+            open(item, at: point)
+        } center: {
+            boopCenter
+        }
+        .frame(width: side, height: side)
+        .frame(maxWidth: .infinity)
+    }
+
+    /// Boop's own orb in the middle of the ring: no number, and it opens today's Nap page.
+    private var boopCenter: some View {
+        // The orb's own gestures (slosh, ripple) would eat the tap, so the door is a circle over it.
+        ZStack {
+            LivingOrb(palette: boopOrb, size: 122, level: 0.72, glow: true, motion: motion,
+                      animated: !reduceMotion && route == nil)
+                .allowsHitTesting(false)
+            GeometryReader { g in
+                let c = g.frame(in: .global)
+                Circle().fill(.clear).contentShape(Circle())
+                    .onTapGesture { openRoute(.nap, from: CGPoint(x: c.midX, y: c.midY), in: screen) }
+            }
+        }
+        .frame(width: 122, height: 122)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Boop · \(kezdolapLine(brief)). A napod megnyitása")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    /// Boop's line under the ring: the day in a few words, and the second way into the Nap page.
+    private var boopLine: some View {
+        VStack(spacing: 6) {
+            Text(kezdolapLine(brief))
+                .nkFont(23, design: .serif)
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .lineLimit(2).minimumScaleFactor(0.7)
+                .shadow(color: .black.opacity(0.55), radius: 10)
+            Text("A NAPOD").nkFont(11, .medium, design: .monospaced).tracking(2.2)
+                .foregroundStyle(.white.opacity(0.62))
+        }
+        .padding(.horizontal, 28)
+        .contentShape(Rectangle())
+        .onTapGesture { openRoute(.nap, from: CGPoint(x: screen.midX, y: screen.midY), in: screen) }
+        .accessibilityHidden(true)
+    }
+
+    /// A tap in the ring: an area that is live opens its room, and an area still to be built says so instead of
+    /// opening an empty page.
+    private func open(_ item: NKRingItem, at point: CGPoint) {
+        guard let area = Area(rawValue: Int(item.id) ?? -1) else { return }
+        if let hue = area.hue {
+            openRoute(.room(hue), from: point, in: screen)
+        } else {
+            toast = area.soonLine
+        }
+    }
+
+    /// Simulator review: `-previewHome nap|alvas|etel|edzes|energia|forma` opens the home already moved on.
+    private static var initialRoute: KezdolapRoute? {
+        #if DEBUG
+        switch UserDefaults.standard.string(forKey: "previewHome") {
+        case "nap": return .nap
+        case "alvas": return .room(.alvas)
+        case "etel": return .room(.fuel)
+        case "edzes": return .room(.mozgas)
+        case "energia": return .room(.pulzus)
+        case "forma": return .room(.forma)
+        default: return nil
+        }
+        #else
+        return nil
+        #endif
+    }
+}
+
+/// Boop's own orb in the middle: a pale, luminous pearl — the sun through the mist. Brighter and quieter than the
+/// seven coloured ones, so it reads as Boop and not as an eighth area.
+let boopOrb: [Color] = [Color(hex: 0x264663), Color(hex: 0x8FB8CE), Color(hex: 0xDCEEF8), Color(hex: 0xFFFFFF)]
+
+// MARK: - Environment
+
+private struct CloseRoomKey: EnvironmentKey { static let defaultValue: (@MainActor @Sendable () -> Void)? = nil }
+extension EnvironmentValues {
+    /// The way out of a room the home screen's ring opened: back to the ring, with no navigation pop under it.
+    /// nil means the room sits in a navigation stack and closes itself the usual way.
+    var closeRoom: (@MainActor @Sendable () -> Void)? {
+        get { self[CloseRoomKey.self] }
+        set { self[CloseRoomKey.self] = newValue }
+    }
+}
+
+private struct KezdolapHomeResetKey: EnvironmentKey { static let defaultValue = 0 }
+extension EnvironmentValues {
+    /// Bumped by the shell when the bar's "Ma" is tapped while Ma is already the place: the home screen comes back.
+    var kezdolapHomeReset: Int {
+        get { self[KezdolapHomeResetKey.self] }
+        set { self[KezdolapHomeResetKey.self] = newValue }
+    }
+}
