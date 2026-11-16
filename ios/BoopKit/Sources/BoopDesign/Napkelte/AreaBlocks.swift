@@ -6,27 +6,54 @@ import SwiftUI
 
 // MARK: - The one thing worth reading today
 
-/// The highlight: Boop's line about this area, in a tinted card. One per page, at the top — the only block
-/// besides the menu grid that keeps a card.
+/// What a highlight can offer: a filled primary button, an outlined secondary, or a plain text link.
+public struct NKHighlightAction: Identifiable {
+    public enum Weight: Sendable { case primary, secondary, link }
+    public let id = UUID()
+    let title: String, weight: Weight
+    let action: @MainActor @Sendable () -> Void
+    public init(_ title: String, weight: Weight = .primary, action: @escaping @MainActor @Sendable () -> Void) {
+        self.title = title; self.weight = weight; self.action = action
+    }
+}
+
+/// The highlight: the one thing worth reading in this area today, in a tinted card — and, when the area wants to
+/// be acted on from it (today's training session is the case that forced this), a photo band of the thing and up
+/// to three actions under the words. One per page, at the top; with the menu grid, the only block that keeps a
+/// card.
 public struct NKHighlight: View {
     let hue: Hue, label: String, text: String, sub: String
-    public init(hue: Hue, label: String, text: String, sub: String = "") {
+    let photo: Image?
+    let actions: [NKHighlightAction]
+    public init(hue: Hue, label: String, text: String, sub: String = "", photo: Image? = nil,
+                actions: [NKHighlightAction] = []) {
         self.hue = hue; self.label = label; self.text = text; self.sub = sub
+        self.photo = photo; self.actions = actions
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if let photo {
+                NKCardPhoto(photo, hue: hue, height: 128)
+                    .padding(.bottom, 14)
+            }
             HStack(spacing: 9) {
                 StillOrb(palette: hue.orb, size: 22, level: 0.85)
                 NKMono(label.uppercased())
                 Spacer()
             }
+            .padding(.horizontal, photo == nil ? 0 : 18)
             NKHueText(text, hue: hue, size: 21, serif: true, opacity: 1)
-                .padding(.top, 10)
+                .padding(.top, 10).padding(.horizontal, photo == nil ? 0 : 18)
             if !sub.isEmpty {
-                NKHueText(sub, hue: hue, size: 13.5, opacity: 0.72).padding(.top, 6)
+                NKHueText(sub, hue: hue, size: 13.5, opacity: 0.72)
+                    .padding(.top, 6).padding(.horizontal, photo == nil ? 0 : 18)
+            }
+            if !actions.isEmpty {
+                buttons.padding(.top, 16).padding(.horizontal, photo == nil ? 0 : 18)
             }
         }
-        .padding(18)
+        .padding(photo == nil ? 18 : 0)
+        .padding(.bottom, photo == nil ? 0 : 18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -34,7 +61,41 @@ public struct NKHighlight: View {
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(hue.glow.opacity(0.35)))
         )
-        .accessibilityElement(children: .combine)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+
+    /// The filled and outlined buttons share a row; the text links sit under them, so three actions never crowd a
+    /// small phone.
+    private var buttons: some View {
+        let strong = actions.filter { $0.weight != .link }
+        let links = actions.filter { $0.weight == .link }
+        return VStack(alignment: .leading, spacing: 10) {
+            if !strong.isEmpty {
+                NKFlowRow(spacing: 10, rowSpacing: 10) {
+                    ForEach(strong) { a in
+                        Button(action: a.action) {
+                            Text(a.title).nkFont(15, .semibold)
+                                .foregroundStyle(a.weight == .primary ? NK.ground : .white)
+                                .padding(.horizontal, 20).frame(height: 44)
+                                .background {
+                                    if a.weight == .primary { Capsule().fill(.white.opacity(0.95)) }
+                                    else { Capsule().stroke(.white.opacity(0.45)) }
+                                }
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            ForEach(links) { a in
+                Button(action: a.action) {
+                    Text(a.title).nkFont(14, .medium).foregroundStyle(.white.opacity(0.7))
+                        .underline(true, pattern: .dot)
+                        .frame(minHeight: 34)
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 }
 
@@ -72,7 +133,9 @@ public struct NKStatRow: View {
                             .foregroundStyle(s.hot ? hue.glow : .white)
                             .monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
                         if !s.unit.isEmpty { Text(s.unit).nkFont(11).foregroundStyle(.white.opacity(0.6)) }
-                        if s.trend != 0 { Trend(up: s.trend > 0).foregroundStyle(hue.glow) }
+                        // green up / pink down is the shipped vocabulary for better-or-worse: a direction arrow in the
+                        // area hue would lose its valence
+                        if s.trend != 0 { Trend(up: s.trend > 0) }
                     }
                     Text(s.label).nkFont(11).foregroundStyle(.white.opacity(0.55))
                         .fixedSize(horizontal: false, vertical: true)
@@ -224,16 +287,35 @@ public struct NKAreaRow: Identifiable {
     public let id: String
     let glyph: String, title: String, sub: String, value: String, valueSub: String
     let level: Double?
+    let ticks: [NKLevelTick]
     let badge: Int
     let hot: Bool
     let photo: Image?
+    /// What a search should also match besides the title and the sub — an exercise's muscle zone, a merchant's
+    /// category. Never shown.
+    let terms: [String]
     let action: (@MainActor @Sendable () -> Void)?
     public init(id: String? = nil, glyph: String, title: String, sub: String = "", value: String = "",
-                valueSub: String = "", level: Double? = nil, badge: Int = 0, hot: Bool = false,
-                photo: Image? = nil, action: (@MainActor @Sendable () -> Void)? = nil) {
+                valueSub: String = "", level: Double? = nil, ticks: [NKLevelTick] = [], badge: Int = 0,
+                hot: Bool = false, photo: Image? = nil, terms: [String] = [],
+                action: (@MainActor @Sendable () -> Void)? = nil) {
         self.id = id ?? title; self.glyph = glyph; self.title = title; self.sub = sub; self.value = value
-        self.valueSub = valueSub; self.level = level; self.badge = badge; self.hot = hot
-        self.photo = photo; self.action = action
+        self.valueSub = valueSub; self.level = level; self.ticks = ticks; self.badge = badge; self.hot = hot
+        self.photo = photo; self.terms = terms; self.action = action
+    }
+
+    /// Does this row answer that search? Case- and accent-insensitive over the title, the sub and the extra terms.
+    public func matches(_ query: String) -> Bool { nkRowMatches(self, query) }
+}
+
+/// Apart from the view so it can be unit-tested.
+public func nkRowMatches(_ row: NKAreaRow, _ query: String) -> Bool {
+    let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !q.isEmpty else { return true }
+    let needle = q.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "hu_HU"))
+    return ([row.title, row.sub] + row.terms).contains {
+        $0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "hu_HU"))
+            .contains(needle)
     }
 }
 
@@ -273,7 +355,9 @@ public struct NKRowList: View {
                 if !r.sub.isEmpty {
                     Text(r.sub).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
                 }
-                if let l = r.level { NKLevelBar(level: l, hue: hue).padding(.top, 2).padding(.trailing, 6) }
+                if let l = r.level {
+                    NKLevelBar(level: l, hue: hue, ticks: r.ticks).padding(.top, 2).padding(.trailing, 6)
+                }
             }
             Spacer(minLength: 6)
             VStack(alignment: .trailing, spacing: 2) {
@@ -301,20 +385,263 @@ public struct NKRowList: View {
     }
 }
 
-/// How full one row's own bar is.
+/// A landmark on a level bar: the fraction it sits at and what it is called. Weekly training volume means nothing
+/// without MEV and MAV marked — the number only reads against the two landmarks it sits between.
+public struct NKLevelTick: Identifiable, Sendable {
+    public let id: String
+    public let at: Double, label: String
+    public init(at: Double, label: String) { self.id = label; self.at = at; self.label = label }
+}
+
+/// How full one row's own bar is, with optional landmarks on it. `labelTicks` writes their names under the bar
+/// (a block of its own); inside a row the ticks are marks only, so the row stays one line tall.
 public struct NKLevelBar: View {
-    let level: Double, hue: Hue
-    public init(level: Double, hue: Hue) { self.level = level; self.hue = hue }
+    let level: Double, hue: Hue, ticks: [NKLevelTick], labelTicks: Bool
+    public init(level: Double, hue: Hue, ticks: [NKLevelTick] = [], labelTicks: Bool = false) {
+        self.level = level; self.hue = hue; self.ticks = ticks; self.labelTicks = labelTicks
+    }
     public var body: some View {
-        GeometryReader { g in
-            ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.12))
-                Capsule().fill(hue.glow.opacity(0.85))
-                    .frame(width: max(3, g.size.width * min(1, max(0, level))))
+        VStack(alignment: .leading, spacing: 5) {
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.12))
+                    Capsule().fill(hue.glow.opacity(0.85))
+                        .frame(width: max(3, g.size.width * clamped(level)))
+                    ForEach(ticks) { t in
+                        Rectangle().fill(.white.opacity(0.75)).frame(width: 1.5)
+                            .offset(x: g.size.width * clamped(t.at))
+                    }
+                }
+            }
+            .frame(height: labelTicks ? 8 : 4)
+            if labelTicks, !ticks.isEmpty {
+                GeometryReader { g in
+                    ForEach(ticks) { t in
+                        Text(t.label).nkFont(9.5, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+                            .fixedSize()
+                            .offset(x: max(0, g.size.width * clamped(t.at) - 10))
+                    }
+                }
+                .frame(height: 12)
             }
         }
-        .frame(height: 4)
         .accessibilityHidden(true)
+    }
+    private func clamped(_ v: Double) -> Double { min(1, max(0, v)) }
+}
+
+// MARK: - How old this is
+
+/// What a block says about the age of the data it is drawn from. A read cache is honest about it: `loud` is for a
+/// number you could act on wrongly (a two-day-old training prescription), and is amber on the face of the block.
+public struct NKStale: Equatable, Sendable {
+    public let age: String
+    public let loud: Bool
+    public init(age: String, loud: Bool = false) { self.age = age; self.loud = loud }
+    static let amber = Color(hex: 0xE8A33D)
+}
+
+public extension View {
+    /// Marks a block as drawn from older data. Quiet: a grey mono line under it. Loud: an amber capsule on its
+    /// top-right corner, over the number itself.
+    func nkStale(_ stale: NKStale?) -> some View {
+        modifier(NKStaleBadge(stale: stale))
+    }
+}
+
+struct NKStaleBadge: ViewModifier {
+    let stale: NKStale?
+    func body(content: Content) -> some View {
+        if let stale {
+            VStack(alignment: .leading, spacing: 6) {
+                content
+                    .overlay(alignment: .topTrailing) {
+                        if stale.loud {
+                            HStack(spacing: 5) {
+                                Circle().fill(NKStale.amber).frame(width: 6, height: 6)
+                                Text(stale.age).nkFont(11, .semibold, design: .monospaced)
+                                    .foregroundStyle(NKStale.amber)
+                            }
+                            .padding(.horizontal, 9).padding(.vertical, 5)
+                            .background(Capsule().fill(NKStale.amber.opacity(0.16))
+                                .overlay(Capsule().stroke(NKStale.amber.opacity(0.45))))
+                            .offset(y: -6)
+                        }
+                    }
+                if !stale.loud {
+                    Text(stale.age).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45))
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityHint(stale.loud ? "Régi adat: \(stale.age)" : stale.age)
+        } else {
+            content
+        }
+    }
+}
+
+/// What a block shows instead of a number when there is nothing fresh to show. Visibly not a zero: a dash and a
+/// line, never "0".
+public struct NKNoFreshData: View {
+    let line: String
+    public init(_ line: String = "Nincs friss adat") { self.line = line }
+    public var body: some View {
+        HStack(spacing: 10) {
+            Text("–").font(.custom(Lagy.outfitFamily, size: 27).weight(.medium)).foregroundStyle(.white.opacity(0.5))
+            Text(line).nkFont(13).foregroundStyle(.white.opacity(0.55))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Stepped bars
+
+/// One step of a discrete series: a training week, a planned block, a month.
+public struct NKStepBar: Identifiable, Sendable {
+    public let id: String
+    public let label: String, value: Double
+    /// Drawn faint, with its reason under the strip (a deload week, a week he was ill).
+    public let dimmed: Bool
+    public let note: String?
+    public init(label: String, value: Double, dimmed: Bool = false, note: String? = nil) {
+        self.id = label; self.label = label; self.value = value; self.dimmed = dimmed; self.note = note
+    }
+}
+
+/// A discrete series on one baseline — a training block's weeks, a month's loads — with the current step lit.
+/// Not a curve (these are steps, not a continuum) and not a heat strip (height carries the value, not colour).
+public struct NKSteppedBars: View {
+    let bars: [NKStepBar], hue: Hue, current: Int?, height: CGFloat
+    public init(_ bars: [NKStepBar], hue: Hue, current: Int? = nil, height: CGFloat = 86) {
+        self.bars = bars; self.hue = hue; self.current = current; self.height = height
+    }
+    public var body: some View {
+        let peak = max(0.0001, bars.map(\.value).max() ?? 1)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .bottom, spacing: 6) {
+                ForEach(Array(bars.enumerated()), id: \.element.id) { i, b in
+                    let on = i == current
+                    VStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(on ? AnyShapeStyle(hue.glow)
+                                     : AnyShapeStyle(hue.glow.opacity(b.dimmed ? 0.18 : 0.42)))
+                            .frame(height: max(4, height * b.value / peak))
+                            .overlay(alignment: .top) {
+                                if on {
+                                    Circle().fill(.white).frame(width: 5, height: 5).offset(y: -9)
+                                }
+                            }
+                        Text(b.label).nkFont(10.5, on ? .semibold : .regular, design: .monospaced)
+                            .foregroundStyle(.white.opacity(on ? 0.9 : 0.45))
+                            .lineLimit(1).minimumScaleFactor(0.6)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: height + 20, alignment: .bottom)
+            ForEach(bars.filter { $0.note != nil }) { b in
+                Text("\(b.label) · \(b.note ?? "")").nkFont(11.5).foregroundStyle(.white.opacity(0.55))
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(bars.map { "\($0.label) \(Int(round($0.value)))" }.joined(separator: ", "))
+    }
+}
+
+// MARK: - Comparing two of something
+
+/// One line of a two-column comparison.
+public struct NKCompareLine: Identifiable, Sendable {
+    public let id: String
+    public let label: String, left: String, right: String
+    /// -1 the left one is the better, 1 the right one, 0 neither.
+    public let favours: Int
+    public init(label: String, left: String, right: String, favours: Int = 0) {
+        self.id = label; self.label = label; self.left = left; self.right = right; self.favours = favours
+    }
+}
+
+/// Two of the same kind of thing side by side — two training blocks, two weeks, two months.
+public struct NKCompareColumns: View {
+    let leftTitle: String, rightTitle: String, lines: [NKCompareLine], hue: Hue
+    public init(leftTitle: String, rightTitle: String, lines: [NKCompareLine], hue: Hue) {
+        self.leftTitle = leftTitle; self.rightTitle = rightTitle; self.lines = lines; self.hue = hue
+    }
+    public var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .bottom, spacing: 10) {
+                Color.clear.frame(width: 86, height: 1)
+                Text(leftTitle).nkFont(12.5, .semibold).foregroundStyle(.white.opacity(0.8))
+                    .frame(maxWidth: .infinity).lineLimit(2).multilineTextAlignment(.center)
+                Text(rightTitle).nkFont(12.5, .semibold).foregroundStyle(.white.opacity(0.8))
+                    .frame(maxWidth: .infinity).lineLimit(2).multilineTextAlignment(.center)
+            }
+            .padding(.bottom, 10)
+            ForEach(Array(lines.enumerated()), id: \.element.id) { i, l in
+                if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                HStack(spacing: 10) {
+                    Text(l.label).nkFont(11.5).foregroundStyle(.white.opacity(0.55))
+                        .frame(width: 86, alignment: .leading).fixedSize(horizontal: false, vertical: true)
+                    value(l.left, lit: l.favours < 0)
+                    value(l.right, lit: l.favours > 0)
+                }
+                .padding(.vertical, 9)
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+    private func value(_ text: String, lit: Bool) -> some View {
+        Text(text).font(.custom(Lagy.outfitFamily, size: 16).weight(lit ? .medium : .light))
+            .foregroundStyle(lit ? hue.glow : .white.opacity(0.9))
+            .monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+            .frame(maxWidth: .infinity)
+    }
+}
+
+/// A long list that carries its own search — the exercise catalog is 166 rows, and the head's search box is the
+/// page's, not the block's. Rows render lazily, so the length costs nothing until it is scrolled to.
+public struct NKSearchableRowList: View {
+    let rows: [NKAreaRow], hue: Hue, placeholder: String
+    @State private var query = ""
+    @FocusState private var focused: Bool
+    public init(_ rows: [NKAreaRow], hue: Hue, placeholder: String = "Keresés") {
+        self.rows = rows; self.hue = hue; self.placeholder = placeholder
+    }
+    public var body: some View {
+        let shown = rows.filter { $0.matches(query) }
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                NKGlyph("search-ink", .white.opacity(0.6), size: 15)
+                TextField(placeholder, text: $query)
+                    .nkFont(14.5).foregroundStyle(.white).tint(.white)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .focused($focused)
+                    .submitLabel(.search)
+                if !query.isEmpty {
+                    Button { query = ""; focused = false } label: {
+                        Image(systemName: "xmark.circle.fill").nkFont(15).foregroundStyle(.white.opacity(0.45))
+                    }
+                    .buttonStyle(.plain).accessibilityLabel("Keresés törlése")
+                }
+            }
+            .padding(.horizontal, 14).frame(height: 42)
+            .background(Capsule().fill(.white.opacity(0.08)).overlay(Capsule().stroke(.white.opacity(0.12))))
+            .padding(.bottom, 6)
+
+            if shown.isEmpty {
+                Text("Nincs találat erre: „\(query)”").nkFont(13).foregroundStyle(.white.opacity(0.55))
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 18)
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(shown.enumerated()), id: \.element.id) { i, r in
+                        if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 52) }
+                        NKRowList([r], hue: hue)
+                    }
+                }
+            }
+        }
     }
 }
 

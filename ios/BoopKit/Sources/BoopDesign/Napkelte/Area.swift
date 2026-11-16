@@ -244,3 +244,84 @@ public struct NKAreaPage<Content: View>: View {
         .accessibilityElement(children: .contain)
     }
 }
+
+// MARK: - A sub-page of an area
+
+/// **A page inside an area** — an exercise, a block report, a muscle map, a recipe, a merchant. It is not an area
+/// of its own (no score orb, no inner tabs), but it must look like it belongs to the same world, or every room
+/// invents its own inner page (B5's requirement 7).
+///
+/// The head is the same photographed sky as an area's, shorter: back, crumb, a mono eyebrow and a serif title,
+/// with one optional line under it. The body is the same blocks.
+///
+/// What this is **not** for: a full-screen flow with its own chrome that must survive the phone locking — a
+/// workout player, the check-in, the evening close. Those are page-level covers and stay outside the area-page
+/// system.
+public struct NKAreaSubPage<Content: View>: View {
+    let hue: Hue, crumb: String, eyebrow: String, title: String, sentence: String
+    let photo: Image?
+    let actions: [NKAreaAction]
+    let onBack: (@MainActor @Sendable () -> Void)?
+    let content: Content
+
+    public init(hue: Hue, crumb: String, eyebrow: String, title: String, sentence: String = "",
+                photo: Image? = nil, actions: [NKAreaAction] = [],
+                onBack: (@MainActor @Sendable () -> Void)?, @ViewBuilder content: () -> Content) {
+        self.hue = hue; self.crumb = crumb; self.eyebrow = eyebrow; self.title = title; self.sentence = sentence
+        self.photo = photo; self.actions = actions; self.onBack = onBack; self.content = content()
+    }
+
+    public var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                ZStack(alignment: .top) {
+                    Color.clear.frame(height: 286)
+                        .overlay { NKPhotoSky(hue: hue, photo: photo) }
+                        .clipped()
+                        .mask(LinearGradient(stops: [.init(color: .black, location: 0.55),
+                                                     .init(color: .clear, location: 1)],
+                                             startPoint: .top, endPoint: .bottom))
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(spacing: 10) {
+                            if let onBack {
+                                Button(action: onBack) {
+                                    Image(systemName: "chevron.left").nkFont(17, .semibold).foregroundStyle(.white)
+                                        .frame(width: 44, height: 44)
+                                }
+                                .buttonStyle(.plain).glassEffect(.clear.interactive(), in: .circle)
+                                .accessibilityLabel("Vissza")
+                            }
+                            Text(crumb).nkFont(15, .medium).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
+                            Spacer(minLength: 8)
+                            ForEach(actions) { a in
+                                Button(action: a.action) {
+                                    NKGlyph(a.glyph, .white, size: 17).frame(width: 40, height: 40)
+                                }
+                                .buttonStyle(.plain).glassEffect(.clear.interactive(), in: .circle)
+                                .accessibilityLabel(a.label)
+                            }
+                        }
+                        .padding(.top, 58)
+                        VStack(alignment: .leading, spacing: 8) {
+                            NKMono(eyebrow.uppercased())
+                            Text(title).nkFont(34, design: .serif).foregroundStyle(.white)
+                                .fixedSize(horizontal: false, vertical: true).minimumScaleFactor(0.7)
+                            if !sentence.isEmpty { NKHueText(sentence, hue: hue, size: 15) }
+                        }
+                        .padding(.top, 40)
+                    }
+                    .padding(.horizontal, 18)
+                }
+                VStack(spacing: 22) { content }
+                    .padding(.horizontal, 18).padding(.top, 14).padding(.bottom, 40)
+                    .background(FloatingLights(hue: hue).padding(.vertical, -100))
+                MirroredLand(hue: hue).padding(.top, -20)
+                Color.clear.frame(height: 100)
+            }
+        }
+        .scrollIndicators(.hidden)
+        .ignoresSafeArea(edges: .top)
+        .background(NKGround(hue: hue))
+        .preferredColorScheme(.dark)
+    }
+}

@@ -13,6 +13,21 @@ struct RootView: View {
 
     var body: some View {
         Group {
+            #if DEBUG
+            // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
+            if UserDefaults.standard.bool(forKey: "previewKit") {
+                KitGallery()
+            } else {
+                shell
+            }
+            #else
+            shell
+            #endif
+        }
+    }
+
+    @ViewBuilder private var shell: some View {
+        Group {
             switch session.state {
             case .loading: Splash()
             case .signedOut: AuthFlow()
