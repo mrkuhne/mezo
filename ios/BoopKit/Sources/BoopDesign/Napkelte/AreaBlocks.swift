@@ -412,12 +412,7 @@ public struct NKRowList: View {
                 // A done row carries a tick, so it is not just an ordinary row; it rides the corner, so it works
                 // over a photo as well as over a glyph.
                 .overlay(alignment: .bottomTrailing) {
-                    if r.state.ticked {
-                        NKGlyph("check-ink", hue.glow, size: 15)
-                            .frame(width: 17, height: 17)
-                            .background(Circle().fill(NK.ground))
-                            .offset(x: 4, y: 3)
-                    }
+                    if r.state.ticked { NKDoneTick(hue: hue).offset(x: 4, y: 3) }
                 }
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 7) {
@@ -474,6 +469,27 @@ public struct NKLevelTick: Identifiable, Sendable {
     public let id: String
     public let at: Double, label: String
     public init(at: Double, label: String) { self.id = label; self.at = at; self.label = label }
+}
+
+/// The mark a finished row carries on the corner of its medallion: a bare tick on a filled disc. Not the
+/// `check-ink` glyph — its artwork is a tick inside a circle, which on a disc reads as a ring in a ring.
+public struct NKDoneTick: View {
+    let hue: Hue
+    public init(hue: Hue) { self.hue = hue }
+    public var body: some View {
+        Circle().fill(hue.glow)
+            .frame(width: 17, height: 17)
+            .overlay {
+                Path { p in
+                    p.move(to: CGPoint(x: 4.5, y: 8.8))
+                    p.addLine(to: CGPoint(x: 7.2, y: 11.6))
+                    p.addLine(to: CGPoint(x: 12.5, y: 5.6))
+                }
+                .stroke(NK.ground, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            }
+            .overlay(Circle().stroke(NK.ground.opacity(0.9), lineWidth: 1.5))
+            .accessibilityHidden(true)
+    }
 }
 
 /// How full one row's own bar is, with optional landmarks on it. `labelTicks` writes their names under the bar
