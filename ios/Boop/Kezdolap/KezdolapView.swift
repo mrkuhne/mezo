@@ -58,6 +58,10 @@ struct KezdolapView: View {
             .onChange(of: geo.size) { screen = geo.frame(in: .global) }
         }
         .nkToast($toast)
+        // A route that is already set when the screen first appears (a simulator preview, and tomorrow a
+        // notification opening an area) never ran the transition, so the page sat mounted at zero opacity behind
+        // the ring: arrive already there.
+        .onAppear { if route != nil { zoomed = true; pageIn = true } }
         // The home is Ma's root now, so the brief is fetched and kept fresh from here.
         .background { if let morning { MorningTriggers(store: morning) } }
         // The bottom bar's "Ma" tapped again while a page is open: back to the ring.

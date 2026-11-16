@@ -193,11 +193,16 @@ public struct NKAreaAction: Identifiable {
 /// with the back button and the crumb on it, the corner actions opposite, then the orb with the area's score, the
 /// verdict and one sentence; the inner tabs sit under it. The blocks follow on the page itself.
 ///
-/// `score == nil` means there is nothing to score yet: the orb is still and half full, and no number is shown —
-/// never a 0.
+/// `level == nil` means there is nothing to show yet: the orb is still, half full and half-saturated. `display`
+/// is the number inside it, and an area with a level but no score worth printing simply leaves it out — a 0 is
+/// never shown.
 public struct NKAreaPage<Content: View>: View {
     let hue: Hue, name: String, eyebrow: String
-    let score: Int?, display: String?
+    /// How full the head's orb is, 0–1. nil = there is nothing to show yet: a calm, half-saturated still orb.
+    let level: Double?
+    /// The number inside the orb. nil = no number — some areas have a level without a score worth printing, and a
+    /// 0 is never shown.
+    let display: String?
     let headline: String, sentence: String
     let photo: Image?
     let tabs: [NKAreaTab]
@@ -209,11 +214,11 @@ public struct NKAreaPage<Content: View>: View {
     @State private var scrollY: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(hue: Hue, name: String, eyebrow: String, score: Int?, display: String? = nil,
+    public init(hue: Hue, name: String, eyebrow: String, level: Double?, display: String? = nil,
                 headline: String, sentence: String, photo: Image? = nil,
                 tabs: [NKAreaTab] = [], selectedTab: Binding<String>? = nil, actions: [NKAreaAction] = [],
                 onBack: (@MainActor @Sendable () -> Void)? = nil, @ViewBuilder content: () -> Content) {
-        self.hue = hue; self.name = name; self.eyebrow = eyebrow; self.score = score; self.display = display
+        self.hue = hue; self.name = name; self.eyebrow = eyebrow; self.level = level; self.display = display
         self.headline = headline; self.sentence = sentence; self.photo = photo
         self.tabs = tabs; self.selectedTab = selectedTab; self.actions = actions; self.onBack = onBack
         self.content = content()
@@ -279,13 +284,15 @@ public struct NKAreaPage<Content: View>: View {
                 VStack(spacing: 8) {
                     ZStack {
                         if photo != nil { NKOrbScrim(hue: hue) }
-                        if let score {
-                            StillOrb(palette: hue.orb, size: 70, level: min(1, max(0.06, Double(score) / 100)))
+                        if let level {
+                            StillOrb(palette: hue.orb, size: 70, level: min(1, max(0, level)))
                                 .shadow(color: hue.glow.opacity(0.6), radius: 20)
-                            Text(display ?? "\(score)")
-                                .font(.custom(Lagy.outfitFamily, size: 25).weight(.medium)).foregroundStyle(.white)
-                                .monospacedDigit().shadow(color: .black.opacity(0.45), radius: 5)
-                                .minimumScaleFactor(0.5).lineLimit(1).frame(width: 56)
+                            if let display {
+                                Text(display)
+                                    .font(.custom(Lagy.outfitFamily, size: 25).weight(.medium)).foregroundStyle(.white)
+                                    .monospacedDigit().shadow(color: .black.opacity(0.45), radius: 5)
+                                    .minimumScaleFactor(0.5).lineLimit(1).frame(width: 56)
+                            }
                         } else {
                             StillOrb(palette: hue.orb, size: 70, level: 0.5).saturation(0.6)
                         }
@@ -294,6 +301,7 @@ public struct NKAreaPage<Content: View>: View {
                     NKMono(eyebrow.uppercased()).padding(.top, 8)
                     Text(headline).nkFont(36, design: .serif).foregroundStyle(.white)
                         .multilineTextAlignment(.center).minimumScaleFactor(0.6)
+                        .padding(.horizontal, 20)
                     NKHueText(sentence, hue: hue, size: 15.5)
                         .multilineTextAlignment(.center).padding(.horizontal, 26)
                 }

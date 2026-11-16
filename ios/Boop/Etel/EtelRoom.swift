@@ -575,9 +575,10 @@ struct EtelRoom: View {
 
     var body: some View {
         let v = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
-        NKDrillPage(hue: .fuel, crumb: "Ma · Étel", eyebrow: "Étkezés · ma", headline: v.headline, sentence: v.sentence,
-                    level: v.level ?? 0, tabs: EtelTab.allCases.map(\.rawValue), selectedTab: $selected,
-                    headPhoto: NKPhoto.konyha, onBack: { if let closeRoom { closeRoom() } else { dismiss() } }) {
+        NKAreaPage(hue: .fuel, name: "Étel", eyebrow: "Étkezés · ma", level: v.level ?? 0,
+                   headline: v.headline, sentence: v.sentence, photo: NKPhoto.konyha,
+                   tabs: etelTabs(pending: store.pending.count), selectedTab: $selected,
+                   onBack: { if let closeRoom { closeRoom() } else { dismiss() } }) {
             switch tab {
             case .ma:
                 EtelMa(store: store, onDimension: { dimension = $0 }, onToast: { toast = $0 },

@@ -13,7 +13,7 @@ struct KitGallery: View {
 
     var body: some View {
         NKAreaPage(
-            hue: hue, name: "Edzés", eyebrow: "Edzés · ma", score: 62, headline: "Van még benne több",
+            hue: hue, name: "Edzés", eyebrow: "Edzés · ma", level: 0.62, display: "62", headline: "Van még benne több",
             sentence: "A héten *két edzés* van mögötted, a harmadik ma este fér bele.",
             photo: nil,
             tabs: [NKAreaTab("Ma"), NKAreaTab("Terv", dot: true), NKAreaTab("Gyakorlatok"), NKAreaTab("Előzmények", badge: 11)],

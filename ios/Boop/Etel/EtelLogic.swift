@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import BoopDesign
 import BoopCore
 
 // B4 Étel — what the `Ma` tab says, as plain functions (the views only draw their answers).
@@ -21,6 +22,12 @@ func huInt(_ n: Int) -> String {
 
 enum EtelTab: String, CaseIterable {
     case ma = "Ma", receptek = "Receptek", kamra = "Kamra", het = "Hét"
+}
+
+/// The room's four tabs for the shared area-page frame. Ma carries how many captured meals are still waiting for
+/// his tap, so the badge says something true rather than decorating.
+func etelTabs(pending: Int) -> [NKAreaTab] {
+    EtelTab.allCases.map { NKAreaTab($0.rawValue, badge: $0 == .ma ? pending : 0) }
 }
 
 // MARK: - The verdict (the head of the room)
