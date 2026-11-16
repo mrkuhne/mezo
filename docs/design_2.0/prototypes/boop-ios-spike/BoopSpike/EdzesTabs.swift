@@ -1,11 +1,11 @@
 import SwiftUI
 
-// B5 Edzés spike — the other three tabs: Terv (the block, its weeks, its volume, the builder),
+// B5 Edzés spike — the other three tabs: Blokk (the block, its weeks, its volume, the builder),
 // Gyakorlatok (the catalog and the records), Előzmények (what happened, the block report, comparison).
 
-// MARK: - Terv
+// MARK: - Blokk
 
-struct EdzesTerv: View {
+struct EdzesBlokk: View {
     let onOpen: (String) -> Void
     let onToast: (String) -> Void
 

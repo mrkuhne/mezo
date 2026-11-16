@@ -233,7 +233,7 @@ enum WData {
 // MARK: - Root
 
 struct EdzesRoot: View {
-    @State private var tab = ["Ma", "Terv", "Gyakorlatok", "Előzmények"][WArg.int("edzesTab", 0, 3)]
+    @State private var tab = ["Ma", "Blokk", "Gyakorlatok", "Előzmények"][WArg.int("edzesTab", 0, 3)]
     // "player" opens the full-screen cover; everything else opens a sheet. Never both at once — two
     // presentations racing on one page is the §9 trap, and here it simply showed nothing.
     // Both start closed and are opened from .task: a presentation whose binding is ALREADY true on the
@@ -319,7 +319,7 @@ struct EdzesRoom: View {
     @Binding var offline: Bool
     let onOpen: (String) -> Void
     let onToast: (String) -> Void
-    private let tabs = ["Ma", "Terv", "Gyakorlatok", "Előzmények"]
+    private let tabs = ["Ma", "Blokk", "Gyakorlatok", "Előzmények"]
 
     var body: some View {
         ScrollView {
@@ -367,7 +367,7 @@ struct EdzesRoom: View {
                 }
                 Group {
                     switch tab {
-                    case "Terv": EdzesTerv(onOpen: onOpen, onToast: onToast)
+                    case "Blokk": EdzesBlokk(onOpen: onOpen, onToast: onToast)
                     case "Gyakorlatok": EdzesGyakorlatok(onOpen: onOpen, onToast: onToast)
                     case "Előzmények": EdzesElozmenyek(onOpen: onOpen, onToast: onToast)
                     default: EdzesMa(offline: offline, onOpen: onOpen, onToast: onToast)
