@@ -2,7 +2,7 @@
 title: Day close — the Boop evening close record
 type: feature-domain
 status: done
-updated: 2026-11-13
+updated: 2026-11-16
 tags: [backend, ios, boop, dayclose, biometrics, data-layer]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/dayclose
@@ -16,6 +16,8 @@ related: [boop-ios, ritual, intention, journal, companion, today]
 
 # Day close — the Boop evening close record — Feature Documentation
 
+> **2026-11-16 — Boop B5 Edzés (`mezo-r36n9.15`): eight more tenants of the outbox; no day-close change.** `RitmusClient.send` now also routes the training kinds (`workoutStart`, `workoutSet`, `workoutSetEdit`, `workoutSkipExercise`, `workoutFeedback`, `workoutNote`, `workoutFinish`, `sportSession`) to `TrainClient`. One thing to know when reading the queue's ordering code: `OutboxItem` gained an optional **`groupRef`**, and a workout's writes are grouped by it rather than by the date — the queue's first non-date order group. The close, journal and check-in chain is untouched (still `chain|<date>`), and nothing in it reads `groupRef`.
+>
 > **2026-11-13 — Boop B4 Étel (`mezo-r36n9.14`): a new tenant of the outbox, one transcoder change; no day-close change.** `RitmusClient.send` routes the new `OutboxKind.mealDraft` to `MealDraftSender` (offline meal captures share the same queue, backoff and order-group machinery as the close, journal and check-in; see [`boop-ios.md`](boop-ios.md) §2 *The Étel room*). The generated client's date encoder now writes the **phone's UTC offset instead of `Z`** for every date-time (`FlexibleISO8601Transcoder`); for the close nothing changes — `DayCloseService.put` maps `capturedAt` through `OffsetDateTime::toInstant`, so the instant is identical and the offset never reaches a date decision (the day is the `date` field). The four `RitmusClientTests` that asserted a literal `Z` now compare instants.
 
 > Backend feature, no web route; its only client is **Boop** (the iPhone app, evening close *Esti levezetés*). Backend ✅ done (2026-11-12, `mezo-r36n9.13`) · iOS ✅ done (offline-first, see [`boop-ios.md`](boop-ios.md)) · web FE: none (a day closed on the web still reads through the fallback below).
