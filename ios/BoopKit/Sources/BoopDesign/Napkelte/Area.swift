@@ -205,6 +205,9 @@ public struct NKAreaPage<Content: View>: View {
     let actions: [NKAreaAction]
     let onBack: (@MainActor @Sendable () -> Void)?
     let content: Content
+    @State private var position = ScrollPosition()
+    @State private var scrollY: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(hue: Hue, name: String, eyebrow: String, score: Int?, display: String? = nil,
                 headline: String, sentence: String, photo: Image? = nil,
@@ -215,6 +218,9 @@ public struct NKAreaPage<Content: View>: View {
         self.tabs = tabs; self.selectedTab = selectedTab; self.actions = actions; self.onBack = onBack
         self.content = content()
     }
+
+    /// How far down the tab row sits: the head's height less the row and a little air.
+    private var tabsOffset: CGFloat { (tabs.isEmpty ? 346 : 400) - 112 }
 
     public var body: some View {
         ScrollView {
@@ -228,6 +234,15 @@ public struct NKAreaPage<Content: View>: View {
             }
         }
         .scrollIndicators(.hidden)
+        .scrollPosition($position)
+        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in scrollY = y }
+        // Switching tabs from deep inside a long list would leave the new tab scrolled into the middle of nothing.
+        // The kit does it, so every room behaves the same: come back up to the tab row, but only when the page is
+        // below it — a page already at the top does not jump.
+        .onChange(of: selectedTab?.wrappedValue) { _, _ in
+            guard scrollY > tabsOffset else { return }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { position.scrollTo(y: tabsOffset) }
+        }
         .ignoresSafeArea(edges: .top)
         .background(NKGround(hue: hue))
         .preferredColorScheme(.dark)

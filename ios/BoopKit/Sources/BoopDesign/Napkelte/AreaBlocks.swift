@@ -505,20 +505,20 @@ struct NKStaleBadge: ViewModifier {
     func body(content: Content) -> some View {
         if let stale {
             VStack(alignment: .leading, spacing: 6) {
-                content
-                    .overlay(alignment: .topTrailing) {
-                        if stale.loud {
-                            HStack(spacing: 5) {
-                                Circle().fill(NKStale.amber).frame(width: 6, height: 6)
-                                Text(stale.age).nkFont(11, .semibold, design: .monospaced)
-                                    .foregroundStyle(NKStale.amber)
-                            }
-                            .padding(.horizontal, 9).padding(.vertical, 5)
-                            .background(Capsule().fill(NKStale.amber.opacity(0.16))
-                                .overlay(Capsule().stroke(NKStale.amber.opacity(0.45))))
-                            .offset(y: -6)
-                        }
+                // The loud capsule sits ABOVE the block, never over it: overlaid on the top-right it landed on the
+                // last stat of a three-stat row, which is exactly the row a stale block has.
+                if stale.loud {
+                    HStack(spacing: 5) {
+                        Circle().fill(NKStale.amber).frame(width: 6, height: 6)
+                        Text(stale.age).nkFont(11, .semibold, design: .monospaced)
+                            .foregroundStyle(NKStale.amber)
                     }
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(Capsule().fill(NKStale.amber.opacity(0.16))
+                        .overlay(Capsule().stroke(NKStale.amber.opacity(0.45))))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                content
                 if !stale.loud {
                     Text(stale.age).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45))
                 }
