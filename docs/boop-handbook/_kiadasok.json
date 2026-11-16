@@ -263,5 +263,19 @@
       "mezo-r36n9.37"
     ],
     "mi_valtozott": "Az app megnyitásakor hét élő gömb fogad egy körben, középen Boop gömbjével és a napi mondatával, mögöttük ködös hegyfotóval. Egy gömb a területére visz, a közép a mai napodra. Nyitáskor a gömbök a ködből úsznak elő, koppintásra a kör belezoomol a megkoppintott gömbbe. Elkészült a közös területváz is, amiből mostantól minden terület oldala épül, és az Étel szoba át is költözött rá — változatlan tartalommal."
+  },
+  "656ee0898": {
+    "cim": "A Ma élő fal lett — Boop azt mondja, ami épp számít",
+    "datum": "2026-11-16",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.45"
+    ],
+    "mi_valtozott": "A kör közepe mögötti oldalon legfeljebb három dolog van: ami elromlik, ha most nem csinálod, ami a legtöbbet javít a mai napodon, és ami történt. Fölöttük a check-in kérdése, amíg esedékes. Amit megcsinálsz, leül a „Ma történt” közé. Ha nincs semmi, Boop kimondja, és megmondja, mikor szól legközelebb. A napi idővonal egy sorrá csukódott, a pontszám lekerült a kezdőlapról, és a telefonod csak a lejáró dolog miatt csöröghet, naponta legfeljebb kétszer."
   }
 }

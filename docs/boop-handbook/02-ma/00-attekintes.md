@@ -5,19 +5,21 @@ terulet: Ma
 allapot: Élesben
 hol: [iPhone app, Háttérrendszer, AI]
 szulo:
-szakasz: [S3, B2, B3]
-osszefoglalo: A nap egyetlen görgethető oldalon — reggel Boop ítélete és a nap terve, napközben az idővonal a javaslatokkal, este a zárás.
+szakasz: [S3, B2, B3, Kezdőlap]
+osszefoglalo: Amit Boop épp mondani akar — legfeljebb három dolog —, alatta a reggeli terv és a napod egy-egy sorrá csukva, az energiagörbe és az esti zárás.
 ---
 
 ## Mit csinál
-A Ma a Boop szíve. Felül a **felkelő gömb** Boop ítéletével és öt kis gömbbel (Forma, Alvás, Mozgás, Fuel,
-Pulzus). Alatta egy **szakaszsáv**: Reggel · Napközben · Este — koppintásra az adott részhez görget.
+A Ma oldal a **[kezdőlap](../01-alapok/kezdolap)** körének közepéről nyílik. Felül a **felkelő gömb** Boop
+ítéletével — szám nélkül, mert a számok a kör gömbjeiben vannak. Alatta az **[élő fal](elo-fal)**: legfeljebb
+három dolog, amit Boop épp mondani akar, és fölötte a check-in kérdése, amíg esedékes.
 
-- **Reggel** — a nap terve, amit elfogadhatsz („Elfogadom a napot”), és „Boop mondja” kártya.
-- **Napközben** — az egész nap egy csendes idővonalon, a „MOST” pontnál Boop javaslataival.
-- **Este** — a nap lezárása (B3-ban kész, ellenőrzés alatt).
+- **A reggeli terv** — egy sorrá csukva (reggel nyitva), benne a nap terve és „Boop mondja”.
+- **A napod** — az egész nap egy csendes idővonalon, szintén egy sorrá csukva.
+- **A nap energiája** — a görbe, ami előre néz.
+- **Este** — a nap lezárása.
 
-Egy gömbre koppintva megnyílik annak **szobája** (például az Alvás szoba), ugyanazzal a felépítéssel.
+Egy területre a kör gömbjéről jutsz, nem innen.
 
 ## Hogyan működik
 A telefon a saját helyi dátumával lekéri a szervertől a napi összefoglalót. A szerver kiszámolja az öt pontszámot

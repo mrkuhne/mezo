@@ -333,23 +333,23 @@
     },
     "kezikonyv:02-ma/este-keret": {
       "page_id": "4168968e-752b-812a-b752-e42df8ffcbfd",
-      "hash": "d3b1910fbad6"
+      "hash": "22cd63d61506"
     },
     "kezikonyv:02-ma/javaslatkartyak": {
       "page_id": "4168968e-752b-81df-b838-dc16bc60bb7c",
-      "hash": "412894677570"
+      "hash": "c38e56b0eb77"
     },
     "kezikonyv:02-ma/kimelo-mod": {
       "page_id": "4168968e-752b-812e-a5ee-d402fb66b38e",
-      "hash": "c057b3b82919"
+      "hash": "41984ab03ba4"
     },
     "kezikonyv:02-ma/napkozben-idovonal": {
       "page_id": "4168968e-752b-81e1-b499-df1b77032226",
-      "hash": "3c75722cba09"
+      "hash": "dcbe4e491053"
     },
     "kezikonyv:02-ma/reggeli-itelet": {
       "page_id": "4168968e-752b-8167-8daf-d7efe8c867b5",
-      "hash": "71c5f9f90a28"
+      "hash": "7c72cd23b4ca"
     },
     "kezikonyv:02-ma/reggeli-terv": {
       "page_id": "4168968e-752b-81aa-89c9-db4df6156dba",
@@ -829,7 +829,7 @@
     },
     "jegyek:mezo-r36n9.45": {
       "page_id": "4178968e-752b-8199-a40e-c914cf0c34b3",
-      "hash": "181f05728172"
+      "hash": "4e2e4e818f8c"
     },
     "dontesek:d-2026-11-13-penz-terulet": {
       "page_id": "4178968e-752b-81e5-a796-fc00a91a7143",
@@ -889,7 +889,7 @@
     },
     "jegyek:mezo-r36n9.51": {
       "page_id": "41a8968e-752b-81ab-a9b8-e433885a676c",
-      "hash": "76de7efdba36"
+      "hash": "8184c65c4278"
     },
     "jegyek:mezo-r36n9.49": {
       "page_id": "41a8968e-752b-81f9-bc23-fa29c79da220",
@@ -902,6 +902,22 @@
     "kiadasok:2f3f02ecf": {
       "page_id": "41a8968e-752b-814f-8449-cd6a51d13f0c",
       "hash": "f93a0c86c2e1"
+    },
+    "dontesek:d-2026-11-16-harom-hely": {
+      "page_id": "41a8968e-752b-8171-8fff-dbc30fd21817",
+      "hash": "a7071405d91d"
+    },
+    "dontesek:d-2026-11-16-csak-az-elso-csoroghet": {
+      "page_id": "41a8968e-752b-8150-a5f1-cdf84d3fda48",
+      "hash": "a01be393a1cf"
+    },
+    "kiadasok:656ee0898": {
+      "page_id": "41a8968e-752b-81c7-a366-d66f73bc03bd",
+      "hash": "02bc48d59bec"
+    },
+    "kezikonyv:02-ma/elo-fal": {
+      "page_id": "41a8968e-752b-8171-9ec2-f9a141185bf9",
+      "hash": "d042afbe160e"
     }
   }
 }

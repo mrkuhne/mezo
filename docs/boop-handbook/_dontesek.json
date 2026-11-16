@@ -418,5 +418,30 @@
     "miert": "A kör és a Terv-rács ugyanazt a munkát végezte: mindkettő a területekhez vezetett. Két menü ugyanarra épp az, amit korábban elvetettél.",
     "levaltotta": "Azt a döntést, hogy a Terv legyen a területek otthona.",
     "kovetkezmeny": "Semmi nem lett elérhetetlen. Minden terület oldala egyetlen közös vázból épül, amire az Étel szoba már át is költözött; az Edzés erre épül."
+  },
+  "d-2026-11-16-harom-hely": {
+    "cim": "A fal három rögzített helye dönti el, mit mond Boop",
+    "datum": "2026-11-16",
+    "suly": "Irányváltás",
+    "terulet": [
+      "Ma"
+    ],
+    "valasztas": "Három hely, mindig ebben a sorrendben: ami elromlik, ha most nem csinálod · ami a legtöbbet javít a mai napodon · ami történt és tudnod kell. Helyenként egy kártya, összesen legfeljebb három.",
+    "miert": "Ha csak a sürgősség döntene, a fal órává válna; ha csak az „okosság”, kiszámíthatatlan lenne. A rögzített helyekkel Boop mindig meg tudja mondani, mit tett félre — a másik kettőnél ez nem megy.",
+    "levaltotta": "Azt, hogy a Ma a nap végiggörgethető menetrendje.",
+    "kovetkezmeny": "Ha egy helyre nincs mit tenni, üresen marad — a fal összemegy, nem tölti ki gyengébbel. Amit megcsinálsz, leül a „Ma történt” közé és aznap nem jön vissza."
+  },
+  "d-2026-11-16-csak-az-elso-csoroghet": {
+    "cim": "Csak a lejáró dolog csöröghet, naponta legfeljebb kétszer",
+    "datum": "2026-11-16",
+    "suly": "Közepes",
+    "terulet": [
+      "Ma",
+      "Alapok"
+    ],
+    "valasztas": "A fal első helyéről — „ami elromlik, ha most nem csinálod” — jöhet értesítés, naponta legfeljebb kétszer, a check-inen és a lefekvésen felül. A másik két hely sosem csörög.",
+    "miert": "Pont az első helyről maradsz le, ha nem nyitod meg az appot. A többi megvár.",
+    "levaltotta": "",
+    "kovetkezmeny": "A korlát magában a szabályban van, nem beállítás: egy korlát nélküli szabály ugyanaz, mintha Boopra bíznánk, azt pedig elvetetted."
   }
 }
