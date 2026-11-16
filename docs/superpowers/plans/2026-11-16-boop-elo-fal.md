@@ -4,8 +4,8 @@
 - **Spec:** [`2026-11-13-boop-life-dashboard-design.md`](../specs/2026-11-13-boop-life-dashboard-design.md) §3.1 ·
   look settled in the Élet spike rounds 6–7 (`EletFeed.swift`, `elet-1-ma.png`, `elet-2-most.png`, `elet-3-ma-tortent.png`)
 - **Owner decisions:** #13 (a living wall, not a timeline; the 0–100 score leaves the home), #14 (rounds 3–5),
-  **#34 (2026-11-16: three fixed roles decide the three cards)**, #32–#33 (the ring is the entrance, so this page
-  sits behind the ring's centre)
+  **#34 (2026-11-16: three fixed roles decide the three cards)**, **#35 (2026-11-16: only the first role may ring
+  the phone, once or twice a day)**, #32–#33 (the ring is the entrance, so this page sits behind the ring's centre)
 - **Builds on:** the ring (`mezo-r36n9.47`) and the shared area-page kit (`mezo-r36n9.37`), both on main
 
 ## 1. What changes for the owner
@@ -26,6 +26,11 @@ open in the morning and closed later. Below them the day's energy curve and the 
 A slot with nothing to put in it **stays empty** — the wall shrinks, it does not pad. A card he acts on **settles
 into „Ma történt”** with its own one-liner instead of vanishing. Every card carries a **„miért?”** that can say
 both why Boop is saying this and what it set aside for it.
+
+**And the wall may reach his pocket, but only from the first slot** (decision #35): a candidate in the `.expires`
+role may raise a local notification, **at most one or two a day**, on top of the two Boop already rings (the
+check-in and bedtime, B3). The other two roles never ring. The cap is part of the rule, not a setting — a rule
+without a cap is the same as letting Boop decide, which he turned down.
 
 ## 2. How it is built
 
@@ -50,6 +55,8 @@ Rules, each its own test:
 - **Acted cards** leave the wall and appear in `settledToday`; the slot does not refill from a lower role.
 - **Empty** is a state, not a failure: `emptyLine` plus `nextVoice` (when Boop will next have something).
 - **A card never repeats** once settled or dismissed today.
+- **`notifiable`** is true only for `.expires` candidates; the planner rings at most twice a day and never for a
+  card already settled, dismissed or seen on the wall in this session.
 
 ### 2.2 The sources are a registry, not a list
 
@@ -86,6 +93,8 @@ inline link). „Ma történt” is a folded section under them.
 - [ ] A new area adds itself by registering a source — proven by a test that registers a fake area and sees its
       card on the wall with no change to the engine or the view.
 - [ ] The 0–100 score does not appear on this page (it lives in the areas, next to the data it came from).
+- [ ] Only `.expires` candidates are notifiable, the daily cap holds, and a settled or seen card never rings —
+      each its own test, with the clock injected.
 
 **Kapuk**
 - [ ] `xcodebuild test` for `Boop` and `BoopKit-Package` — green except the known `mezo-r36n9.52` failure.
