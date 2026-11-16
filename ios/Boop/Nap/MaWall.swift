@@ -47,8 +47,20 @@ struct MaWall: View {
     }
 
     private var wall: Wall {
-        buildWall(registry.candidates(WallInput(now: ctx.now, day: ctx.now)),
-                  now: ctx.now, acted: acted, checkIn: checkIn, settled: settled, nextVoice: nextVoice)
+        buildWall(Self.forceEmpty ? [] : registry.candidates(WallInput(now: ctx.now, day: ctx.now)),
+                  now: ctx.now, acted: acted,
+                  checkIn: Self.forceEmpty ? .notDue : checkIn,
+                  settled: settled, nextVoice: nextVoice)
+    }
+
+    /// Simulator review: `-previewWallEmpty YES` shows the quiet wall deliberately. An empty wall is good news
+    /// and it is the state hardest to see by accident, so it has its own switch.
+    private static var forceEmpty: Bool {
+        #if DEBUG
+        UserDefaults.standard.bool(forKey: "previewWallEmpty")
+        #else
+        false
+        #endif
     }
 
     private var checkIn: WallCheckIn {

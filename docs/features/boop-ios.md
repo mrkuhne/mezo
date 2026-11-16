@@ -3,7 +3,7 @@ title: Boop — native iOS app
 type: feature-domain
 status: in-progress
 updated: 2026-11-16
-tags: [ios, kezdolap, area-kit, l0, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
+tags: [ios, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
   - ios/BoopKit/Sources
@@ -27,7 +27,7 @@ related: [fuel, pantry, recipe, dayclose, intention, journal, companion, proacti
 > **Re-planned 2026-11-11 (`mezo-r36n9.9`):** S4 is cancelled; Boop continues as a standalone app in slices
 > **B0–B8** (repair → data foundation → new spine Ma · Terv · Napló · Boop → daily loop → food → training + Watch →
 > the Plan → day capacity → one AI) — spec [`2026-11-11-boop-standalone-design.md`](../superpowers/specs/2026-11-11-boop-standalone-design.md),
-> research [`boop-standalone/`](../superpowers/research/boop-standalone/13-synthesis.md). **B2 Gerinc (the new shell) shipped 2026-11-11** (`mezo-r36n9.12`, §2 "The spine"); **B3 Napi ritmus (the daily loop) shipped 2026-11-12** (`mezo-r36n9.13`, §2 "The daily loop"); **B4 Étel (food) shipped 2026-11-13** (`mezo-r36n9.14`, §2 "The Étel room"); **the home screen + the shared area-page kit shipped 2026-11-16** (`mezo-r36n9.47` / `.51` / `.37`, §2 "The home screen" and "The area-page kit"); the older S1–S3 shell text below is superseded where it names the five-domain bar.
+> research [`boop-standalone/`](../superpowers/research/boop-standalone/13-synthesis.md). **B2 Gerinc (the new shell) shipped 2026-11-11** (`mezo-r36n9.12`, §2 "The spine"); **B3 Napi ritmus (the daily loop) shipped 2026-11-12** (`mezo-r36n9.13`, §2 "The daily loop"); **B4 Étel (food) shipped 2026-11-13** (`mezo-r36n9.14`, §2 "The Étel room"); **the home screen + the shared area-page kit shipped 2026-11-16** (`mezo-r36n9.47` / `.51` / `.37`, §2 "The home screen" and "The area-page kit"); **Ma became the living wall the same day** (`mezo-r36n9.45`, §2 "The living wall"); the older S1–S3 shell text below is superseded where it names the five-domain bar.
 
 > One-line: the native SwiftUI iPhone app that replaces the web app once complete (epic `mezo-r36n9`).
 > Design canon **Napkelte** since S2.5 (dark glass, painted sky, the orb rising as the sun — spec
@@ -49,7 +49,7 @@ related: [fuel, pantry, recipe, dayclose, intention, journal, companion, proacti
 Boop is built in four slices (spec §, plan "Slice map"): **S1 Alap**, **S2 Adatok** (Apple Health +
 calendar ingestion), **S2.5 Napkelte** (the look) and **S3 Reggel** (the morning brief: five orbs, Boop's voice,
 energy curve, paths) are this doc's base state; **B2 Gerinc** (2026-11-11) then replaced the five-domain shell with the
-spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (2026-11-12) then added the offline-first daily loop (check-in, goal, evening close, journal, Boop chat, reminders); **B4 Étel** (2026-11-13) then added the food room (Ma · Receptek · Kamra · Hét, offline-first meal capture, barcode, photos, sensitivities); and the **home screen + area-page kit** (2026-11-16) put a ring of seven area orbs in front of Ma and gave every area one frame to be built from; B5–B8 follow. The web PWA keeps running until Boop covers it.
+spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (2026-11-12) then added the offline-first daily loop (check-in, goal, evening close, journal, Boop chat, reminders); **B4 Étel** (2026-11-13) then added the food room (Ma · Receptek · Kamra · Hét, offline-first meal capture, barcode, photos, sensitivities); and the **home screen + area-page kit** (2026-11-16) put a ring of seven area orbs in front of Ma and gave every area one frame to be built from, with **Ma itself becoming a living wall** of at most three cards; B5–B8 follow. The web PWA keeps running until Boop covers it.
 
 ## 2. User-facing behavior
 
@@ -174,6 +174,35 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   incoming page one run-loop turn before anything moves. A room opened from the ring is **the page itself, with no
   `NavigationStack` under it** (`\.closeRoom` replaces `dismiss()` for its back button), because the stack's own
   back slides the room off sideways first.
+
+- **The living wall (shipped 2026-11-16, `mezo-r36n9.45`, slice L0/b; plan
+  [`2026-11-16-boop-elo-fal.md`](../superpowers/plans/2026-11-16-boop-elo-fal.md), decisions #13, #34, #35).**
+  The page behind the ring's centre is no longer the day's timeline to scroll: it is **what Boop wants to say
+  now** — at most three cards, the check-in pinned above them while it is due, and one warm line when there is
+  nothing ("Most nincs teendőd. Legközelebb 08:00-kor szólok.").
+  **Three fixed roles, always in this order** (#34, and the reason the wall can explain itself): `.expires` what
+  breaks if he doesn't do it now · `.improves` what moves today the most · `.happened` one thing he should know.
+  One card per role, at most three; **an empty slot shrinks the wall rather than padding it from a lower role**;
+  an expired candidate is dropped; a photo decides how the hero looks, never which card wins; ties break on the id
+  so the same day renders the same way twice. A card he acts on **settles into "Ma történt"** with its own line,
+  kept per day in `@AppStorage`, and never returns that day. Every card has a **"miért?"** that also says which
+  slot it is standing in.
+  **Only `.expires` may ring the phone, twice a day** (#35, `wallNotifications`) — never for a card already seen,
+  acted on or rung; the cap is in the function, not a setting.
+  **The areas join by registering a `WallSource`** (`WallRegistry`): Étel hands in the closing window, the
+  supplement group, the server's tip and the last meal; the brief hands in today's session and the strongest
+  observation. B5 Edzés, then Pénz and Levél, add themselves with one line and no change to the engine or the
+  view — there is a test that proves exactly that with a fake area.
+  **What moved on the page:** the day's timeline folded into one row ("A napod · N megvolt, M hátra", open in the
+  morning), the energy curve was hoisted above it so a forward-looking view stays visible, the **0–100 score left
+  the home** (the hero orb keeps its fill and loses its number; the compact capsule carries the day's headline),
+  and the **lens strip is gone** — the ring is the entrance, so a second door to every area here was the same menu
+  twice. Engine `BoopCore/Morning/{Wall,WallSources}.swift` (pure, 25 tests), weights
+  `BoopDesign/Napkelte/Wall.swift`, wiring `ios/Boop/Nap/MaWall.swift`.
+  Review: `-previewWallEmpty YES` shows the quiet wall deliberately — the state that is hardest to catch by
+  accident. **Known gap:** a wall card carries no photo yet; the only photo-worthy thing today is a logged meal,
+  and its picture lives behind the Étel room's heavy day read, which the home should not pay for. The kit and the
+  engine both carry the photo already.
 
 - **The area-page kit (shipped 2026-11-16, `mezo-r36n9.37`, slice L0; spec
   [`2026-11-13-boop-life-dashboard-design.md`](../superpowers/specs/2026-11-13-boop-life-dashboard-design.md) §3.3).**
@@ -567,6 +596,8 @@ B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet}.swift` · `ios/Boop/Captu
 `ios/Boop/Nap/{MaPhases,MaDrill,ProposalDesk,RoomSwipeBack}.swift` · `ios/BoopKit/Sources/BoopCore/Morning/{DayPhase,DayPlan,Proposals}.swift` ·
 `ios/BoopKit/Sources/BoopDesign/Napkelte/{SpineBar,Proposal,Drill}.swift` ·
 B1: `ios/BoopKit/Sources/BoopCore/Health/{HealthKitReader,HealthReader,HealthSync,HealthBackground,SleepNightBuilder,WorkoutMapper}.swift` · `…/Push/PushRegistrar.swift` · `ios/Boop/App/{BoopAppDelegate,BackgroundSyncHost}.swift` · `ios/Boop.entitlements` · `ios/Boop-Paid.entitlements` · `backend/…/feature/wearable/service/{HealthSampleService,WearableDeletionService,WorkoutReconciler}.java` · `backend/…/feature/biometrics/sleep/service/SleepNightMerge.java` · `api/feature/device/device.yml` · `scripts/ops/boop-b1-merge-accounts*.sql`
+
+L0/b (az élő fal): `ios/BoopKit/Sources/BoopCore/Morning/{Wall,WallSources}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Wall.swift` · `ios/Boop/Nap/{MaWall,MaPhases,MaiView}.swift`
 
 Kezdőlap + L0: `ios/Boop/Kezdolap/{KezdolapView,Area,KitGallery}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/{Area,AreaBlocks,OrbRing,Fog}.swift` · `ios/BoopKit/Sources/BoopDesign/Resources/Photos.xcassets/p-hegy.imageset`
 
