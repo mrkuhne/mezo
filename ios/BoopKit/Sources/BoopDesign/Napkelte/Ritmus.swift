@@ -53,37 +53,75 @@ public struct EnergyCurveDot: Identifiable, Equatable, Sendable {
     }
 }
 
+/// One of the day's own moments, sitting on the curve where it happens (the spike's `EDayEvent`): waking, a meal,
+/// the session, bedtime. It is a pin, not a reading — the value under it is still the energy curve's.
+public struct EnergyCurveEvent: Identifiable, Equatable, Sendable {
+    public let id: String
+    /// Fractional hour of the day (12:40 → 12.67).
+    public let hour: Double
+    public let glyph: String
+    /// Two or three words under the pin; dropped when the neighbour is too close.
+    public let label: String
+    /// What the pin says when it is tapped (empty = the label is all there is).
+    public let detail: String
+    public init(id: String, hour: Double, glyph: String, label: String, detail: String = "") {
+        self.id = id; self.hour = hour; self.glyph = glyph; self.label = label; self.detail = detail
+    }
+}
+
 /// The energy of the day (spec §5.3): Boop's dashed prediction over a soft fill, the owner's solid line through white
 /// numbered dots, a "most" line, hour ticks and a legend, on a glass card. Tapping a dot selects it (again: clears).
+///
+/// With `events` (the day page, 2026-11-16) the day's own moments sit on the curve as small pins; a tap on one says
+/// what it was. Napló passes none and is unchanged.
 public struct EnergyCurveCard: View {
     let title: String, trailing: String?, predicted: [Double], dots: [EnergyCurveDot], now: Double?, hue: Hue, height: CGFloat
+    let events: [EnergyCurveEvent]
     @Binding var selected: UUID?
+    @State private var pin: String?
 
     /// `trailing`: a small mono note at the title's right (Ma: "2 / 3 kitöltés").
     public init(title: String, trailing: String? = nil, predicted: [Double], dots: [EnergyCurveDot], now: Double?, hue: Hue = .mozgas,
-                selected: Binding<UUID?>, height: CGFloat = 150) {
+                selected: Binding<UUID?>, height: CGFloat = 150, events: [EnergyCurveEvent] = []) {
         self.title = title; self.trailing = trailing; self.predicted = predicted; self.dots = dots; self.now = now; self.hue = hue
-        self._selected = selected; self.height = height
+        self._selected = selected; self.height = height; self.events = events
     }
+
+    /// The pin the owner tapped, while it is still on the list.
+    private var openPin: EnergyCurveEvent? { events.first { $0.id == pin } }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                NKMono(title)
-                Spacer(minLength: 8)
-                if let trailing {
-                    Text(trailing).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+            // A surface that already names the block (the day page's "Mai nap") passes an empty title: the card
+            // does not say the same thing twice.
+            if !title.isEmpty || trailing != nil {
+                HStack {
+                    if !title.isEmpty { NKMono(title) }
+                    Spacer(minLength: 8)
+                    if let trailing {
+                        Text(trailing).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+                    }
                 }
             }
             VStack(spacing: 10) {
                 GeometryReader { g in plot(width: g.size.width, plotHeight: g.size.height - 18) }
                     .frame(height: height)
+                if let e = openPin {
+                    HStack(spacing: 9) {
+                        NKGlyph(e.glyph, hue.glow, size: 15)
+                        Text(e.detail.isEmpty ? e.label : e.detail).nkFont(13).foregroundStyle(.white.opacity(0.82))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                    .transition(.opacity)
+                }
                 HStack(spacing: 14) {
                     legend(dashed: true, "Boop jóslata")
                     legend(dashed: false, "amit te mondtál")
                     Spacer(minLength: 0)
                 }
             }
+            .animation(.easeInOut(duration: 0.25), value: pin)
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -135,6 +173,42 @@ public struct EnergyCurveCard: View {
                 .accessibilityElement()
                 .accessibilityLabel("energia \(d.energy)\(d.pending ? ", még a telefonon" : "")")
                 .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+            }
+            // The day's own moments, as pins on the curve. Every other one is lifted so neighbours do not touch,
+            // and a label is dropped where the pin before it is closer than 5 % of the width.
+            ForEach(Array(events.enumerated()), id: \.element.id) { i, e in
+                let open = pin == e.id
+                // Room is measured in points, not in hours: the same two moments fit on a big phone and collide
+                // on a small one, and a label that collides is worse than no label (the pin still opens).
+                // Neighbours alternate between two rows, so a label only has to clear the pin TWO along; what it
+                // must clear is measured in points, because the same two moments fit on a big phone and collide
+                // on a small one.
+                let before = i < 2 || x(e.hour) - x(events[i - 2].hour) > 80
+                let after = i >= events.count - 2 || x(events[i + 2].hour) - x(e.hour) > 80
+                let room = before && after
+                // Two clearly separate rows, so a label only has to clear the pin two along, not its neighbour.
+                let lift: CGFloat = (i % 2 == 0) ? 0 : 34
+                let level = predicted.isEmpty ? 0.5 : (EnergyCurveGeometry.predicted(predicted, at: e.hour) ?? 0.5)
+                VStack(spacing: 3) {
+                    ZStack {
+                        Circle().fill(NK.ground.opacity(0.92))
+                        Circle().stroke(hue.glow.opacity(open ? 1 : 0.85), lineWidth: open ? 2.2 : 1.4)
+                        NKGlyph(e.glyph, .white, size: open ? 14 : 12)
+                    }
+                    .frame(width: open ? 32 : 26, height: open ? 32 : 26)
+                    .shadow(color: open ? hue.glow.opacity(0.7) : .black.opacity(0.35), radius: open ? 9 : 4)
+                    if room {
+                        Text(e.label).nkFont(9.5, design: .monospaced).foregroundStyle(.white.opacity(0.7))
+                            .fixedSize().shadow(color: .black.opacity(0.5), radius: 3)
+                    }
+                }
+                .position(x: min(w - 24, max(24, x(e.hour))), y: max(20, y(level) - 26 - lift))
+                .contentShape(Rectangle())
+                .onTapGesture { pin = open ? nil : e.id }
+                .animation(.spring(response: 0.28, dampingFraction: 0.8), value: open)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(e.label)\(e.detail.isEmpty ? "" : ", \(e.detail)")")
+                .accessibilityAddTraits(.isButton)
             }
             ForEach([6, 9, 12, 15, 18, 21, 24], id: \.self) { hr in
                 Text(String(format: "%02d", hr % 24)).nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.4))

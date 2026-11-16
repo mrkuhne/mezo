@@ -64,6 +64,12 @@ func morningProblemCopy(_ p: MorningProblem) -> NapCopy {
                    sentence: MaiText.problemSentence, action: MaiText.retry)
 }
 
+/// "Kedd · november 10." over the day page — the day it is about, said the way the spike says it. An unreadable
+/// date leaves the line out rather than printing a half-date.
+func dayHeadline(_ ymd: String) -> String {
+    dayLine(ymd)?.replacingOccurrences(of: ",", with: " ·") ?? ""
+}
+
 /// "13:40" for the compact capsule.
 func clockLabel(_ date: Date, calendar: Calendar = .current) -> String {
     let c = calendar.dateComponents([.hour, .minute], from: date)
@@ -74,7 +80,7 @@ func clockLabel(_ date: Date, calendar: Calendar = .current) -> String {
 
 /// Ma with the morning brief: title row, the phase strip (Reggel · Napközben · Este), five mini orbs, the selected metric rising as the sun, its verdict
 /// and the lens action row. Tapping a mini orb re-colours the page; tapping a phase scrolls to its section. `below` is what follows the hero; it receives the
-/// selected orb, Boop's voice and the page toast (`MaiContext`).
+/// selected orb and the page toast (`MaiContext`).
 ///
 /// The page sits in a navigation stack: an orb's room (`drill`) is pushed over it from the lens strip's door, the big
 /// orb and the timeline's stations; the shell hides its bar while a room is open. The toast and the page-level sheets
@@ -104,10 +110,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selected: Hue = MaiView.initialOrb
     @State private var motion = OrbMotion()
-    @State private var voice: BoopVoice?
-    @State private var breathing = false
-    @State private var inhale = false
-    @State private var breathTask: Task<Void, Never>?
     @State private var toast: String?
     /// The undo of the toast on screen (nil = a plain toast).
     @State private var undo: (() -> Void)?
@@ -134,18 +136,8 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     private var phase: DayPhase { DayPhase.at(now) }
     /// Evening's dusk or kímélő's calm over the page; nil = the selected orb's own sky.
     private var sky: NKSky? { maiSky(evening: evening, recovery: brief.day.recovery != nil) }
-    private var action: LensAction? {
-        let a = heroAction(Lens.action(for: metricKey(for: selected), brief: brief, now: now, evening: evening),
-                           day: ritmus.map { $0.ledger.ledger(for: $0.day(of: now)) }, now: now, calendar: ritmus?.calendar ?? .current)
-        // the reminder is on: the pill says when it rings (a tap turns it off)
-        if let a, a.kind == .bedtime, reminder.isOn, let time = reminder.time {
-            return LensAction(glyph: a.glyph, title: reminderPillTitle(time), kind: .bedtime)
-        }
-        return a
-    }
-
     private var context: MaiContext {
-        MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
+        MaiContext(hue: selected, motion: motion,
                    toast: { show($0) }, undoToast: { show($0, undo: $1) },
                    now: now, evening: evening, reminder: reminder, toggleReminder: toggleReminder,
                    drill: { openRoom($0) })
@@ -163,18 +155,16 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
                     .onAppear { setRoomOpen(true) }
             } else {
                 NavigationStack(path: $path) {
-                    // The phase strip scrolls the page's own scroll view to a section (ScrollViewReader reaches the
-                    // ScrollView inside NKTabPage; each section carries an invisible anchor above its title).
-                    ScrollViewReader { proxy in
-                        NKTabPage(hue: selected, sky: sky, heroHeight: nil,
-                                  compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
-                                                     // no score in the capsule either: it left the home with
-                                                     // the hero's number (decision #13)
-                                                     line: c.headline)) {
-                            hero(c, proxy: proxy)
-                        } content: {
-                            below(ctx)
-                        }
+                    // A short head, not a screenful: the day's own picture ("Mai nap") has to be visible without
+                    // scrolling, the way the spike shows it.
+                    NKTabPage(hue: selected, sky: sky, heroHeight: 240,
+                              compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
+                                                 // no score in the capsule either: it left the home with
+                                                 // the hero's number (decision #13)
+                                                 line: c.headline)) {
+                        hero(c)
+                    } content: {
+                        below(ctx)
                     }
                     .toolbar(.hidden, for: .navigationBar)
                     // the shell's painted landscape shows through the stack
@@ -188,30 +178,35 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         .onAppear { if initialRoom == nil { setRoomOpen(!path.isEmpty) } }
         .nkToast($toast, action: undo == nil ? nil : (toastAction ?? SessionText.undo)) { undo?(); undo = nil }
         .background { ModeClock { clockTick += 1 } }
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: inhale) { _, _ in breathing }
-        .onAppear { if voice == nil { voice = BoopVoice() } }
-        .onDisappear { motion.stop(); stopBreath(); voice?.stop(); setRoomOpen(false) }
-        .onChange(of: selected) { stopBreath(); voice?.stop() }
+        .onDisappear { motion.stop(); setRoomOpen(false) }
         .onChange(of: phase) { _, p in shownPhase = p }
-        .onChange(of: voice?.isSpeaking ?? false) { _, talking in motion.talking = talking }
-        .onChange(of: voice?.shown ?? "") { _, _ in if voice?.isSpeaking == true { motion.kick() } }
         // a new brief may move the bedtime: the reminder follows (and turns off if notifications were withdrawn)
         .task(id: reminderTarget(brief)) { await reminder.refresh(target: reminderTarget(brief)) }
     }
 
-    /// The title row and the phase strip; the clock's phase carries the dot, a tap scrolls to that section.
-    @ViewBuilder private func header(_ proxy: ScrollViewProxy) -> some View {
+    /// The title row, the day's date and the wordmark (the Élet spike's head, owner 2026-11-16).
+    ///
+    /// The **phase strip is gone**: Reggel · Napközben · Este were a switch for something he scrolls anyway, and
+    /// he chose one scroll with headings instead. The **row of mini orbs is gone too** (L0/b): the ring is the
+    /// app's entrance, so a second menu here would be the same menu twice.
+    @ViewBuilder private var header: some View {
         NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: nil, onAvatar: openAccount,
                    onBack: onHome)
             .padding(.top, 54)
-        NKTabStrip(tabs: DayPhase.allCases.map(\.name),
-                   selected: Binding(get: { shownPhase.name }, set: { name in
-                       guard let p = DayPhase.allCases.first(where: { $0.name == name }) else { return }
-                       shownPhase = p
-                       withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) { proxy.scrollTo(phaseSectionId(p), anchor: .top) }
-                   }),
-                   dot: phase.name)
+        Text(dayHeadline(brief.date))
+            .nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.75))
+            .padding(.top, 14)
+        Text("boop")
+            .font(.custom(Lagy.outfitFamily, size: 33).weight(.light)).tracking(4.5)
+            .foregroundStyle(.white)
             .padding(.top, 10)
+            .accessibilityHidden(true)
+        Rectangle()
+            .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.22), .white.opacity(0)],
+                                 startPoint: .leading, endPoint: .trailing))
+            .frame(height: 0.8)
+            .padding(.horizontal, 44)
+            .padding(.top, 12)
     }
 
     /// Simulator review: `-previewOrb alvas` opens on that orb (Hue name, lower case, no accents).
@@ -234,47 +229,23 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
 
     private func openRoom(_ h: Hue) {
         guard path.isEmpty else { return }
-        stopBreath()
         path.append(h)
     }
 
-    private func hero(_ c: MaiCopy, proxy: ScrollViewProxy) -> some View {
+    /// The day page's head (the Élet spike): the title row, the date, the wordmark — and then the page itself.
+    ///
+    /// Everything else left the head on the owner's call (2026-11-16): the big rising orb with its caps, 42 pt
+    /// verdict and sentence (the orbs are the ring's job; Boop's morning words live in *A reggeli összefoglaló*,
+    /// which reads them aloud too), and then the **lens action row** — he saw it in the build and said it does
+    /// not belong there. The bedtime reminder keeps its switch on Alvás's bedtime card; the one-minute breathing
+    /// exercise lost its door and gets one on the Energia page (`mezo-r36n9.59`).
+    private func hero(_ c: MaiCopy) -> some View {
         VStack(spacing: 0) {
-            header(proxy)
+            header.nkHeroEnd()     // the compact capsule arrives as the wordmark slides under the top bar
             if let r = brief.day.recovery {
                 KimeloBanner(recovery: r) { show(soonToast("Kilépés a kímélő módból")) }
                     .padding(.top, 14)
             }
-            // L0/b: the row of mini orbs left this page — the ring of seven is the app's entrance now
-            // (decisions #32–#33), so every area is one tap from the home and a second strip here was the same
-            // menu twice. The hero orb stays, without its number (decision #13).
-            RisingOrb(hue: selected, score: c.score, display: "", caption: c.orbCaption, motion: motion,
-                      orbScale: breathing && !reduceMotion ? (inhale ? 1.22 : 0.84) : 1)
-                .frame(height: 290).padding(.bottom, 18)
-                // the big orb is a door to its room (the ripple still plays)
-                .simultaneousGesture(TapGesture().onEnded { if !breathing { openRoom(selected) } })
-                .accessibilityElement(children: .combine)
-                .accessibilityHint("\(c.name) részletesen")
-                .accessibilityAddTraits(.isButton)
-                .accessibilityAction { openRoom(selected) }
-            Text(c.caps).nkFont(14, .semibold).tracking(2.6).foregroundStyle(.white.opacity(0.85)).padding(.top, 4)
-                .contentTransition(.opacity)
-            Text(breathing ? (inhale ? MaiText.inhale : MaiText.exhale) : c.headline)
-                .nkFont(42, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center)
-                .lineLimit(2).minimumScaleFactor(0.7).padding(.horizontal, 20).padding(.top, 10)
-                .contentTransition(.opacity)
-                .animation(.easeInOut(duration: 0.6), value: inhale)
-            Text(breathing ? MaiText.breathLine : c.sentence)
-                .nkFont(17).lineSpacing(4).multilineTextAlignment(.center)
-                .foregroundStyle(.white.opacity(0.85)).padding(.horizontal, 30).padding(.top, 10)
-                .frame(minHeight: 96, alignment: .top)
-                .contentTransition(.opacity)
-            LensActionRow(hue: selected, action: action, breathing: breathing, sessionTitle: brief.day.session?.title,
-                          motion: motion, muted: voice?.muted ?? false,
-                          onPrimary: primary, onMenu: { show(soonToast($0)) }, onChip: quick,
-                          onSpeak: speak, onToggleMute: { voice?.muted.toggle() })
-                .nkHeroEnd()       // the compact capsule arrives as this row slides under the top bar
-                .padding(.top, 4)
             Spacer(minLength: 0)
         }
         // Never squeeze the hero (labels would shrink); a tall hero pushes the cards down instead.
@@ -285,37 +256,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         self.undo = undo
         toastAction = action
         toast = text
-    }
-
-    /// Fuel's quick actions: the composer, a coffee to compute, or water straight onto the day.
-    private func quick(_ chip: FuelChip) {
-        switch chip.action {
-        case .compose: openMeal(MealStart())
-        case .coffee: openMeal(MealStart(entrance: .text, text: "kávé"))
-        case .water(let ml):
-            guard let food else { show("Most nem tudom elküldeni"); return }
-            Task { @MainActor in
-                do {
-                    try await food.water(ml: ml, date: BoopClock.now(), clientRef: UUID(), capturedAt: Date())
-                    show("Víz +\(ml) ml")
-                } catch {
-                    show("Nem sikerült elküldeni — próbáld újra")
-                }
-            }
-        }
-    }
-
-    private func primary() {
-        if breathing { stopBreath(); return }
-        guard let action else { speak(); return }
-        switch action.kind {
-        case .breath: startBreath()
-        case .bedtime: toggleReminder()
-        case .photo: openMeal(MealStart(entrance: .photo))
-        case .checkin: router?.open(.checkin)
-        case .eveningCheckin: router?.open(.este)
-        default: show(soonToast(soonName(action.kind)))
-        }
     }
 
     /// First tap asks for notifications and sets the reminder; the next one turns it off.
@@ -330,30 +270,4 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         }
     }
 
-    private func speak() {
-        voice?.speak(segments: brief.brief, reduceMotion: reduceMotion)
-    }
-
-    /// Pulzus: the orb breathes, four seconds in, four out, and stops by itself after a minute.
-    private func startBreath() {
-        breathTask?.cancel()
-        breathing = true
-        inhale = false
-        let anim: Animation? = reduceMotion ? nil : .easeInOut(duration: 4)
-        breathTask = Task { @MainActor in
-            for _ in 0..<15 {
-                withAnimation(anim) { inhale.toggle() }
-                try? await Task.sleep(for: .seconds(4))
-                if Task.isCancelled { return }
-            }
-            show(MaiText.breathEnded)
-            stopBreath()
-        }
-    }
-
-    private func stopBreath() {
-        breathTask?.cancel(); breathTask = nil
-        guard breathing else { return }
-        withAnimation(.easeInOut(duration: 0.8)) { breathing = false; inhale = false }
-    }
 }

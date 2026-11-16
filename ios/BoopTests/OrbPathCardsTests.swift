@@ -175,15 +175,19 @@ struct OrbPathCardsTests {
                          Brief.Line(text: "A nyugalmi pulzusod rendben.", link: .heart),
                          Brief.Line(text: "Ma edzés van.", link: nil)]
 
-    @Test func boopSaysCardReadsExactlyTheSpokenText() {
-        #expect(String(boopSaysText(lines, revealed: nil).characters) == BoopVoice.spokenText(lines))
-        #expect(String(boopSaysText(lines, revealed: nil).characters).contains("elébe. A"))
+    /// The read-aloud left on 2026-11-16, so there is no voice to be in step with any more — but the card still
+    /// joins the brief's lines into one paragraph with exactly one space at each seam, and that is what broke
+    /// before ("elébe.A").
+    @Test func boopSaysCardJoinsTheLinesWithOneSpaceAtEachSeam() {
+        let text = String(boopSaysText(lines, revealed: nil).characters)
+        #expect(text == "Nyugodt napnak nézel elébe. A nyugalmi pulzusod rendben. Ma edzés van.")
+        #expect(!text.contains("  "))
     }
 
-    @Test func theRevealPrefixMatchesTheVoiceAtEveryWordBoundary() {
-        let spoken = BoopVoice.spokenText(lines)
-        for (i, ch) in spoken.enumerated() where ch == " " {
-            #expect(String(boopSaysText(lines, revealed: i).characters) == String(spoken.prefix(i)))
+    @Test func aPrefixOfTheCardIsAPrefixOfTheWholeText() {
+        let whole = String(boopSaysText(lines, revealed: nil).characters)
+        for (i, ch) in whole.enumerated() where ch == " " {
+            #expect(String(boopSaysText(lines, revealed: i).characters) == String(whole.prefix(i)))
         }
     }
 

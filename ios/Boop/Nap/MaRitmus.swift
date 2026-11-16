@@ -201,6 +201,8 @@ struct MaEnergyCard: View {
     /// The pending look ("még a telefonon"); a refused check-in shows only its row.
     private func pending(_ c: LedgerCheckIn) -> Bool { c.pending && refusal(c) == nil }
     var onRetry: (UUID) -> Void = { _ in }
+    /// The day's own moments, pinned on the curve (the day page; Napló passes none).
+    var events: [EnergyCurveEvent] = []
 
     private func hour(_ d: Date) -> Double { EnergyCurveGeometry.hour(of: d, calendar: calendar) }
 
@@ -210,7 +212,8 @@ struct MaEnergyCard: View {
                             dots: day.checkIns.compactMap { c in
                                 c.values["energy"].map { EnergyCurveDot(id: c.id, hour: hour(c.capturedAt), energy: $0, pending: pending(c)) }
                             },
-                            now: now.map(hour), hue: .mozgas, selected: $selected, height: 130)
+                            now: now.map(hour), hue: .mozgas, selected: $selected,
+                            height: events.isEmpty ? 130 : 190, events: events)
             if let c = day.checkIns.first(where: { $0.id == selected }) {
                 CheckInDetail(heading: "\(CheckinDone.slotName(c.slot).uppercased()) · \(CheckinFlow.clock(c.capturedAt, calendar))",
                               pending: pending(c), answers: CheckinDone.answers(c), note: c.note, snapshot: CheckinDone.figures(c))

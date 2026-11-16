@@ -163,8 +163,9 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   Nap page, which was **not replaced — it moved one level in**. Pénz and Levél are not built (L4–L6): they sit faint
   and say so on tap. **The day has its own orb at the top** (decision #41, 2026-11-16, `mezo-r36n9.55`): it carries
   no score — nothing scores a day — but fills with **how full the day is** (`dayFullness`, from the brief's
-  `calendar.busySlots`) and opens the day's own sheet (`KezdolapRoute.day` → `NapView(initialDetail: .day)`). The
-  "A napod" folded row on Ma stays; an orb is another way in. Eight is also the better circle: seven points never
+  `calendar.busySlots`) and opens **the day's page** (`KezdolapRoute.day`) — the same page the ring's centre opens,
+  since the day page itself became the Élet spike's Ma screen (`mezo-r36n9.56`, below). The
+  "A napod" folded row inside it stays; an orb is another way in. Eight is also the better circle: seven points never
   sit symmetrically, eight are four cardinal plus four diagonal, at the cost of 6 pt of orb (62 → 56) to keep the
   labels apart at 375 pt. **The ring is full at eight** — a ninth area needs a designed answer, not another enum
   case (candidates in the spec §3). `KezdolapView` is the Ma place's root (`Kezdolap/`), and it is where the brief is fetched and
@@ -180,6 +181,29 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   incoming page one run-loop turn before anything moves. A room opened from the ring is **the page itself, with no
   `NavigationStack` under it** (`\.closeRoom` replaces `dismiss()` for its back button), because the stack's own
   back slides the room off sideways first.
+
+- **The day's page (shipped 2026-11-16, `mezo-r36n9.56`; plan
+  [`2026-11-16-boop-nap-oldal.md`](../superpowers/plans/2026-11-16-boop-nap-oldal.md)).** The build target was a
+  screen, not a spec: the Élet spike's Ma (`docs/design_2.0/prototypes/boop-ios-spike/elet-1-ma.png`), which the
+  owner pointed at and called finished. Behind **both** doors of the ring — the centre and the new Nap orb — the
+  day is now one scroll: a short head (the date, `boop`, the hairline over the ridge), **Mai nap** (the energy
+  curve with the day's own moments pinned on it and the way into the full list), **Most** (the living wall with
+  its count), the folds (*Ma történt*, the morning plan, *A reggeli összefoglaló* with Boop's voice, *A napod*),
+  **Amit ma észrevettem** (the brief's observations with their igaz / nem igaz verdict) and one row into Boop's
+  place, then **Este**.
+  *What left, by the owner's call the same day:* the **phase tabs** (Reggel · Napközben · Este were a switch for
+  something he scrolls anyway — they are headings now) and the **big rising orb with its 42 pt verdict** (the ring
+  carries the orbs; Boop's morning words live in the fold). The **orb ribbon of the spike screen was not built**:
+  it predates the ring, and a second menu here would be the same menu twice (#32–#33 stand). The **lens action
+  row went too** — the owner saw it in the build and said it does not belong there — and with it, on his next
+  word, **the read-aloud itself**: `BoopVoice` and its tests are deleted, `BoopSaysCard` is text now (all of it
+  at once, no word-by-word reveal, no *Mondd újra* / *Némítás*), and `MaiContext` no longer carries a voice. The
+  bedtime switch lives on Alvás's bedtime card; the one-minute breathing exercise lost its only door and gets one
+  on the Energia page (`mezo-r36n9.59`).
+  *The pins* come from `dayMoments` (`BoopCore/Morning/DayMoments.swift`, pure, tested): waking, the meals, the
+  longest busy stretch of the calendar, today's session, the bedtime target — only what the brief already carries,
+  capped at six, each one tappable for its own line. `EnergyCurveCard` grew `events:`; Napló passes none and is
+  unchanged. A page that already names the block passes `title: ""`, so the card does not say it twice.
 
 - **The living wall (shipped 2026-11-16, `mezo-r36n9.45`, slice L0/b; plan
   [`2026-11-16-boop-elo-fal.md`](../superpowers/plans/2026-11-16-boop-elo-fal.md), decisions #13, #34, #35).**

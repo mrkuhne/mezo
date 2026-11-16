@@ -15,6 +15,9 @@ struct MaWall: View {
     let etel: EtelStore
     /// The day's ledger: whether the check-in is due.
     let ledgerDay: DayLedger?
+    /// The day page puts the wall under a "Most" heading with the number of cards on it; a surface that already
+    /// says what the block is passes false.
+    var heading = false
     let onDrill: (Hue) -> Void
     let onCheckIn: () -> Void
     let onMeal: () -> Void
@@ -70,6 +73,20 @@ struct MaWall: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            if heading {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("Most").nkFont(28, design: .serif).foregroundStyle(.white)
+                    let n = wall.cards.count + (wall.checkIn.isDue ? 1 : 0)
+                    if n > 0 {
+                        Text("\(n)").nkFont(13, .semibold).foregroundStyle(NK.ground)
+                            .frame(minWidth: 22, minHeight: 22)
+                            .background(Capsule().fill(.white))
+                    }
+                    Spacer(minLength: 0)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+            }
             if case .due(let prompt, let sub) = wall.checkIn {
                 NKWallQuestion(hue: .pulzus, prompt: prompt, sub: sub, onAnswer: onCheckIn,
                                onLater: { settle(id: "checkin", line: "Check-in későbbre téve") })

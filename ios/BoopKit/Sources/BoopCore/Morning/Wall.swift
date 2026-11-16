@@ -84,6 +84,9 @@ public struct WallCandidate: Sendable, Identifiable, Equatable {
 public enum WallCheckIn: Sendable, Equatable {
     case due(prompt: String, sub: String)
     case notDue
+
+    /// Is the question on the wall right now? (It is not one of the three cards, so it is counted on its own.)
+    public var isDue: Bool { if case .due = self { true } else { false } }
 }
 
 // MARK: - What the wall is

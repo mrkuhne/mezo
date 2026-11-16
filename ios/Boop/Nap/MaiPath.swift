@@ -11,13 +11,12 @@ func pathStations(_ steps: [PathStep]) -> [PathStation] {
 
 // MARK: - What the hero hands to the content below it
 
-/// The selected orb, Boop's voice and the page's toast, shared by the hero (`MaiView`) with what sits under it.
+/// The selected orb and the page's toast, shared by the hero (`MaiView`) with what sits under it. Boop's spoken
+/// voice left it on 2026-11-16: the owner asked for the read-aloud to go.
 @MainActor
 struct MaiContext {
     let hue: Hue
     let motion: OrbMotion
-    let voice: BoopVoice?
-    let speak: () -> Void
     let toast: (String) -> Void
     /// A toast with an undo action at its end.
     let undoToast: (String, @escaping () -> Void) -> Void
@@ -233,25 +232,24 @@ func trainingSlot(_ s: Brief.Session?) -> Int? {
 
 // MARK: - Boop mondja (spec §5.1a, §9.5, §10.2)
 
-/// The longer brief in serif; linked phrases white semibold with a dotted underline, tappable. While Boop speaks the
-/// text reveals word by word in step with the voice. Replay and mute sit at the bottom.
+/// The longer brief in serif; linked phrases white semibold with a dotted underline, tappable.
+///
+/// It used to read itself aloud, revealing word by word, with replay and mute at the bottom. The owner asked for
+/// the read-aloud to go (2026-11-16), so the card is text now — all of it, at once.
 struct BoopSaysCard: View {
     let lines: [Brief.Line]
     let hue: Hue
     let motion: OrbMotion
-    let voice: BoopVoice?
-    let speak: () -> Void
     let onLink: (Brief.Link) -> Void
 
     var body: some View {
-        let speaking = voice?.isSpeaking ?? false
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 LivingOrb(palette: hue.orb, size: 22, level: 0.85, glow: false, motion: motion).allowsHitTesting(false)
                 NKMono("BOOP MONDJA")
                 Spacer()
             }
-            Text(boopSaysText(lines, revealed: speaking ? voice?.shown.count : nil))
+            Text(boopSaysText(lines, revealed: nil))
                 .nkFont(19, design: .serif).lineSpacing(5).foregroundStyle(.white.opacity(0.75))
                 .tint(.white)
                 .fixedSize(horizontal: false, vertical: true)
@@ -259,25 +257,6 @@ struct BoopSaysCard: View {
                     if let link = url.host().flatMap(Brief.Link.init(rawValue:)) { onLink(link) }
                     return .handled
                 })
-            HStack(spacing: 8) {
-                Button { if voice?.shown.isEmpty ?? true { speak() } else { voice?.replay() } } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.counterclockwise").font(.system(size: 12, weight: .bold))
-                        Text(MaiText.replay)
-                    }
-                    .nkFont(13.5, .semibold).foregroundStyle(.white)
-                    .padding(.horizontal, 13).padding(.vertical, 8)
-                    .background(Capsule().fill(.white.opacity(0.14)))
-                }
-                .buttonStyle(.plain)
-                Button { voice?.muted.toggle() } label: {
-                    Text((voice?.muted ?? false) ? MaiText.unmute : MaiText.mute)
-                        .nkFont(13.5, .semibold).foregroundStyle(.white.opacity(0.8))
-                        .padding(.horizontal, 13).padding(.vertical, 8)
-                        .background(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-            }
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -285,9 +264,9 @@ struct BoopSaysCard: View {
     }
 }
 
-/// The brief as one attributed text, links as `boop://sleep|heart|day`, joined exactly like the spoken text
-/// (`BoopVoice.spokenText`). `revealed` = how many characters of the spoken text are shown while Boop speaks (nil = all);
-/// the joining spaces count, so the card stays in step with `voice.shown`.
+/// The brief as one attributed text, links as `boop://sleep|heart|day`, the lines joined into one paragraph with
+/// exactly one space at each seam. `revealed` = how many characters are shown (nil = all; it was the read-aloud's
+/// cursor until that left on 2026-11-16, and a prefix of the text is still a prefix of the whole).
 func boopSaysText(_ lines: [Brief.Line], revealed: Int?) -> AttributedString {
     var out = AttributedString()
     var left = revealed ?? Int.max

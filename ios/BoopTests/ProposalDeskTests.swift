@@ -88,7 +88,7 @@ struct ProposalDeskTests {
     }
 
     private func context(_ log: ToastLog) -> MaiContext {
-        MaiContext(hue: .mozgas, motion: OrbMotion(), voice: nil, speak: {},
+        MaiContext(hue: .mozgas, motion: OrbMotion(),
                    toast: { log.items.append($0) }, undoToast: { t, _ in log.items.append("undo:" + t) },
                    now: morning, evening: false,
                    reminder: BedtimeReminder(center: NullReminderCenter(),
