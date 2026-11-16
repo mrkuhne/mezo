@@ -876,3 +876,130 @@ public struct NKAskRow: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+// MARK: - The blocks the Élet spike's area pages use that the kit did not carry (2026-11-16, `mezo-r36n9.57`)
+
+/// **A list of named things said in a sentence each** (the spike's `.list`): what affected the week, what Boop
+/// noticed. Not rows — there is no number on the right and nothing to tap; it is prose with titles.
+public struct NKList: View {
+    let items: [(title: String, body: String)], hue: Hue
+    public init(_ items: [(title: String, body: String)], hue: Hue) { self.items = items; self.hue = hue }
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(items.enumerated()), id: \.offset) { i, it in
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(it.title).nkFont(15.5, .medium).foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    NKHueText(it.body, hue: hue, size: 13.5, opacity: 0.68)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 11)
+                .accessibilityElement(children: .combine)
+                if i < items.count - 1 {
+                    Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5)
+                }
+            }
+        }
+    }
+}
+
+/// **A paragraph** (the spike's `.note`): how something is worked out, in Boop's own words. One block, no card.
+public struct NKNote: View {
+    let body_: String, hue: Hue
+    public init(_ body: String, hue: Hue) { self.body_ = body; self.hue = hue }
+    public var body: some View {
+        NKHueText(body_, hue: hue, size: 14.5, opacity: 0.75)
+            .lineSpacing(4)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// One button in an area's action row.
+public struct NKAction: Identifiable {
+    public let id = UUID()
+    let glyph: String?, title: String, primary: Bool
+    let action: @MainActor @Sendable () -> Void
+    public init(glyph: String? = nil, title: String, primary: Bool = false,
+                action: @escaping @MainActor @Sendable () -> Void) {
+        self.glyph = glyph; self.title = title; self.primary = primary; self.action = action
+    }
+}
+
+/// **The row of buttons every area page gets** (the spike's `.actions`, owner round 11: "the pages were text and
+/// nothing else"). The first one is the area's own verb; the rest are quiet.
+public struct NKActions: View {
+    let actions: [NKAction], hue: Hue
+    public init(_ actions: [NKAction], hue: Hue) { self.actions = actions; self.hue = hue }
+    public var body: some View {
+        NKFlowRow(spacing: 10, rowSpacing: 10) {
+            ForEach(actions) { a in
+                Button(action: a.action) {
+                    HStack(spacing: 7) {
+                        if let g = a.glyph { NKGlyph(g, a.primary ? NK.ground : .white, size: 15) }
+                        Text(a.title).nkFont(14.5, .semibold)
+                            .foregroundStyle(a.primary ? NK.ground : .white)
+                    }
+                    .padding(.horizontal, 16).frame(height: 42)
+                    .background {
+                        if a.primary { Capsule().fill(.white) }
+                        else { Capsule().fill(.white.opacity(0.10)).overlay(Capsule().stroke(.white.opacity(0.18))) }
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// **"Hogyan működik" folded into one line** (the spike's `.info`): the explanation is a tap away, not a wall of
+/// text on the page. The page owns the sheet it opens.
+public struct NKInfoRow: View {
+    let label: String, hue: Hue
+    let action: @MainActor @Sendable () -> Void
+    public init(_ label: String, hue: Hue, action: @escaping @MainActor @Sendable () -> Void) {
+        self.label = label; self.hue = hue; self.action = action
+    }
+    public var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                NKGlyph("spark-cream", hue.glow, size: 15)
+                Text(label).nkFont(14).foregroundStyle(.white.opacity(0.85))
+                    .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 6)
+                Image(systemName: "chevron.right").nkFont(12, .semibold).foregroundStyle(.white.opacity(0.4))
+            }
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.05))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.white.opacity(0.10))))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// **What an area says while it has nothing to say yet** — a tab that exists in the design but whose data is not
+/// built. Never a fake number: the line says what will be here and what has to happen first.
+public struct NKNotLiveYet: View {
+    let hue: Hue, title: String, line: String
+    public init(hue: Hue, title: String, line: String) { self.hue = hue; self.title = title; self.line = line }
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 9) {
+                StillOrb(palette: hue.orb, size: 22, level: 0.35)
+                NKMono("MÉG NEM ÉL")
+                Spacer(minLength: 0)
+            }
+            Text(title).nkFont(19, design: .serif).foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(line).nkFont(14).foregroundStyle(.white.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass()
+        .accessibilityElement(children: .combine)
+    }
+}

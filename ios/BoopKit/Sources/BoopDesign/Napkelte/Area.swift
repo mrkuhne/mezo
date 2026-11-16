@@ -198,6 +198,10 @@ public struct NKAreaAction: Identifiable {
 /// never shown.
 public struct NKAreaPage<Content: View>: View {
     let hue: Hue, name: String, eyebrow: String
+    /// The glyph in front of the eyebrow — the area's own mark (the spike's area pages all carry one).
+    let glyph: String?
+    /// What the area's own bottom bar's last item does: ask Boop about this area. nil = no Boop item.
+    let onAsk: (@MainActor @Sendable () -> Void)?
     /// How full the head's orb is, 0–1. nil = there is nothing to show yet: a calm, half-saturated still orb.
     let level: Double?
     /// The number inside the orb. nil = no number — some areas have a level without a score worth printing, and a
@@ -215,17 +219,19 @@ public struct NKAreaPage<Content: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(hue: Hue, name: String, eyebrow: String, level: Double?, display: String? = nil,
-                headline: String, sentence: String, photo: Image? = nil,
+                headline: String, sentence: String, photo: Image? = nil, glyph: String? = nil,
                 tabs: [NKAreaTab] = [], selectedTab: Binding<String>? = nil, actions: [NKAreaAction] = [],
-                onBack: (@MainActor @Sendable () -> Void)? = nil, @ViewBuilder content: () -> Content) {
+                onBack: (@MainActor @Sendable () -> Void)? = nil,
+                onAsk: (@MainActor @Sendable () -> Void)? = nil, @ViewBuilder content: () -> Content) {
         self.hue = hue; self.name = name; self.eyebrow = eyebrow; self.level = level; self.display = display
-        self.headline = headline; self.sentence = sentence; self.photo = photo
+        self.headline = headline; self.sentence = sentence; self.photo = photo; self.glyph = glyph
         self.tabs = tabs; self.selectedTab = selectedTab; self.actions = actions; self.onBack = onBack
+        self.onAsk = onAsk
         self.content = content()
     }
 
-    /// How far down the tab row sits: the head's height less the row and a little air.
-    private var tabsOffset: CGFloat { (tabs.isEmpty ? 346 : 400) - 112 }
+    /// How far down the content starts: the head's height less the top bar and a little air.
+    private var tabsOffset: CGFloat { 346 - 112 }
 
     public var body: some View {
         ScrollView {
@@ -235,7 +241,13 @@ public struct NKAreaPage<Content: View>: View {
                     .padding(.horizontal, 18).padding(.top, 18).padding(.bottom, 40)
                     .background(FloatingLights(hue: hue).padding(.vertical, -100))
                 MirroredLand(hue: hue).padding(.top, -20)
-                Color.clear.frame(height: 100)
+                // room for the area's own bar to float over the page's end
+                Color.clear.frame(height: tabs.isEmpty ? 100 : 150)
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if let selectedTab, !tabs.isEmpty {
+                NKAreaBar(tabs: tabs, hue: hue, selected: selectedTab, onAsk: onAsk)
             }
         }
         .scrollIndicators(.hidden)
@@ -255,7 +267,7 @@ public struct NKAreaPage<Content: View>: View {
 
     private var head: some View {
         ZStack(alignment: .top) {
-            Color.clear.frame(height: tabs.isEmpty ? 346 : 400)
+            Color.clear.frame(height: 346)
                 .overlay { NKPhotoSky(hue: hue, photo: photo) }
                 .clipped()
                 .mask(LinearGradient(stops: [.init(color: .black, location: 0.58), .init(color: .clear, location: 1)],
@@ -281,37 +293,124 @@ public struct NKAreaPage<Content: View>: View {
                     }
                 }
                 .padding(.horizontal, 16).padding(.top, 58)
-                VStack(spacing: 8) {
-                    ZStack {
-                        if photo != nil { NKOrbScrim(hue: hue) }
-                        if let level {
-                            StillOrb(palette: hue.orb, size: 70, level: min(1, max(0, level)))
-                                .shadow(color: hue.glow.opacity(0.6), radius: 20)
-                            if let display {
-                                Text(display)
-                                    .font(.custom(Lagy.outfitFamily, size: 25).weight(.medium)).foregroundStyle(.white)
-                                    .monospacedDigit().shadow(color: .black.opacity(0.45), radius: 5)
-                                    .minimumScaleFactor(0.5).lineLimit(1).frame(width: 56)
-                            }
-                        } else {
-                            StillOrb(palette: hue.orb, size: 70, level: 0.5).saturation(0.6)
+                // The orb over a hairline, then the area's own words — LEFT, the way the spike's area pages
+                // read: a page about one area is a page, not a poster.
+                ZStack {
+                    if photo != nil { NKOrbScrim(hue: hue) }
+                    if let level {
+                        StillOrb(palette: hue.orb, size: 78, level: min(1, max(0, level)))
+                            .shadow(color: hue.glow.opacity(0.6), radius: 20)
+                        if let display {
+                            Text(display)
+                                .font(.custom(Lagy.outfitFamily, size: 27).weight(.light)).foregroundStyle(.white)
+                                .monospacedDigit().shadow(color: .black.opacity(0.45), radius: 5)
+                                .minimumScaleFactor(0.5).lineLimit(1).frame(width: 60)
                         }
+                    } else {
+                        StillOrb(palette: hue.orb, size: 78, level: 0.5).saturation(0.6)
                     }
-                    .frame(height: 70)
-                    NKMono(eyebrow.uppercased()).padding(.top, 8)
-                    Text(headline).nkFont(36, design: .serif).foregroundStyle(.white)
-                        .multilineTextAlignment(.center).minimumScaleFactor(0.6)
-                        .padding(.horizontal, 20)
+                }
+                .frame(height: 78)
+                .padding(.top, 14)
+                Rectangle()
+                    .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.42), .white.opacity(0)],
+                                         startPoint: .leading, endPoint: .trailing))
+                    .frame(height: 1)
+                    .padding(.horizontal, 30).padding(.top, 16)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        if let glyph { NKGlyph(glyph, .white.opacity(0.85), size: 18) }
+                        NKMono(eyebrow.uppercased())
+                        Spacer(minLength: 0)
+                    }
+                    Text(headline).nkFont(34, design: .serif).foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
                     NKHueText(sentence, hue: hue, size: 15.5)
-                        .multilineTextAlignment(.center).padding(.horizontal, 26)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.top, 26)
-                if let selectedTab, !tabs.isEmpty {
-                    NKAreaTabs(tabs: tabs, hue: hue, selected: selectedTab).padding(.top, 20)
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20).padding(.top, 20)
             }
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// **The area's own bottom bar** (the Élet spike's `areaBar`, owner round 9): an area is its own little app, so
+/// its pages sit in its own bar in place of the spine's — icon, label and the tab's badge, plus one fixed way to
+/// ask Boop about this area. The shell hides the spine bar while a room is open, so the two never stack.
+public struct NKAreaBar: View {
+    let tabs: [NKAreaTab], hue: Hue
+    @Binding var selected: String
+    let onAsk: (@MainActor @Sendable () -> Void)?
+    public init(tabs: [NKAreaTab], hue: Hue, selected: Binding<String>,
+                onAsk: (@MainActor @Sendable () -> Void)? = nil) {
+        self.tabs = tabs; self.hue = hue; self._selected = selected; self.onAsk = onAsk
+    }
+
+    /// The glyph a tab wears in the bar. The names are the areas' own (the spike's table); anything else gets
+    /// the chart mark rather than nothing.
+    public static func glyph(_ name: String) -> String {
+        switch name {
+        case "Ma": "sun-ink"
+        case "Pénzem": "star-sun"
+        case "Költés": "scale-ink"
+        case "Gyakorlás": "bolt-ink"
+        case "Receptek": "book-sage"
+        case "Kamra": "plate-deep"
+        case "Gyakorlatok": "dumbbell-ink"
+        case "Check-inek": "check-ink"
+        case "Figyelt": "search-ink"
+        case "Szabályok": "scale-ink"
+        case "Fiókok": "repeat-deep"
+        case "Napirend", "Terv", "Blokk", "Tervezett": "clock-ink"
+        case "Mi hat rá": "bolt-ink"
+        case "Hét", "Előzmények", "Minták": "chart-deep"
+        default: "chart-deep"
+        }
+    }
+
+    public var body: some View {
+        HStack(spacing: 0) {
+            ForEach(tabs) { t in
+                item(glyph: Self.glyph(t.name), label: t.name, badge: t.badge, on: t.name == selected)
+                    .contentShape(Rectangle())
+                    .onTapGesture { withAnimation(.easeInOut(duration: 0.22)) { selected = t.name } }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(t.name == selected ? [.isButton, .isSelected] : .isButton)
+            }
+            if let onAsk {
+                item(glyph: "chat-ink", label: "Boop", badge: 0, on: false)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onAsk)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isButton)
+            }
+        }
+        .padding(.horizontal, 6).padding(.vertical, 7)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(.white.opacity(0.14)))
+        .padding(.horizontal, 14).padding(.bottom, 6)
+    }
+
+    private func item(glyph: String, label: String, badge: Int, on: Bool) -> some View {
+        VStack(spacing: 4) {
+            ZStack(alignment: .topTrailing) {
+                NKGlyph(glyph, on ? hue.glow : .white.opacity(0.65), size: 19)
+                if badge > 0 {
+                    Text("\(badge)").font(.custom(Lagy.outfitFamily, size: 10).weight(.semibold))
+                        .foregroundStyle(NK.ground)
+                        .frame(minWidth: 14, minHeight: 14)
+                        .background(Circle().fill(hue.glow))
+                        .offset(x: 9, y: -6)
+                }
+            }
+            .frame(height: 20)
+            Text(label).nkFont(10.5, on ? .semibold : .regular)
+                .foregroundStyle(on ? .white : .white.opacity(0.6))
+                .lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity).frame(height: 46)
     }
 }
 

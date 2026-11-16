@@ -16,7 +16,9 @@ struct MaiCopyTests {
             #expect(hue(for: k) == h)
             #expect(metricKey(for: h) == k)
         }
-        #expect(MetricKey.allCases.map { hue(for: $0) } == Hue.allCases)
+        // Pénz and Levél are colour worlds without a metric, so the bridge covers `Hue.metrics`, not every case.
+        #expect(MetricKey.allCases.map { hue(for: $0) } == Hue.metrics)
+        #expect(Hue.allCases.count == Hue.metrics.count + 2)
     }
 
     @Test func firstMetricIsCalledForma() {

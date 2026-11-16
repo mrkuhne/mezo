@@ -27,6 +27,16 @@ enum Area: Int, CaseIterable, Identifiable {
         }
     }
 
+    /// The colour world the area's page is painted in. Pénz and Levél have one (the ring already paints their
+    /// orbs) without having a metric, so their pages exist before their data does (`mezo-r36n9.57`).
+    var world: Hue? {
+        switch self {
+        case .penz: .penz
+        case .level: .level
+        default: hue
+        }
+    }
+
     /// The day is live but has no metric room: it opens the day's own page instead of a drill-down.
     var live: Bool { hue != nil || self == .nap }
 
@@ -50,7 +60,7 @@ enum Area: Int, CaseIterable, Identifiable {
         }
     }
 
-    /// What a tap says while the area is still to be built.
+    /// What a tap used to say while an area had no page at all. Kept for the ring's accessibility line.
     var soonLine: String {
         switch self {
         case .penz: "A Pénz még nem él — a költéseid és a kereteid később kerülnek be."

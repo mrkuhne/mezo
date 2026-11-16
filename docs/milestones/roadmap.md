@@ -63,6 +63,20 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-16 — Boop · minden terület a saját oldalát és a saját menüjét kapta (`mezo-r36n9.57`).**
+  Az első nekifutást a tulajdonos elutasította: *„nem úgy néz ki, mint amit a Boop · elet szimulátorban
+  csináltunk… mindegyik saját menüvel”*. Igaza volt — a lényeg nem a közös váz, hanem hogy **minden területnek
+  saját menüje van**. Újraépítve a szimulátor szerint: a terület oldalán alul a **saját menüsora** (a saját
+  füleivel és azok jelzéseivel, plusz egy fix „Boop” gomb), fent az orb egy vékony vonal fölött, alatta balra a
+  terület neve és az ítélete, jobbra fent keresés és beállítások. A fülek területenként a szimulátoréi:
+  Alvás *Ma · Hét · Előzmények*, Energia *Ma · Check-inek · Minták*, Edzés *Ma · Blokk · Gyakorlatok ·
+  Előzmények*, Forma *Ma · Mi hat rá*, Étel *Ma · Receptek · Kamra · Hét*, **Pénz** *Ma · Pénzem · Költés ·
+  Gyakorlás*, **Levél** *Ma · Figyelt · Szabályok · Fiókok*.
+  A **Pénz és a Levél oldala is elkészült**, adat nélkül: minden fülük megvan, és mindegyik megmondja, mi lesz
+  rajta — kitalált szám sehol nincs. A készlet három új elemet kapott (saját menüsor, felsorolás, bekezdés,
+  gombsor, „még nem él” kártya), mert a szimulátor ezeket használja.
+  [`boop-ios.md`](../features/boop-ios.md) §2.
+
 - **2026-11-16 — Boop · a nap oldala a szimulátorban kidolgozott Ma-képernyő lett (`mezo-r36n9.56`).**
   A kör **közepe** és az új **Nap gömb** ugyanoda visz, és az a hely egyetlen görgetés lett: fent a dátum és a
   **boop** felirat, alatta **Mai nap** — a nap görbéje, rajta a nap saját pillanataival (ébredés, étkezések, a

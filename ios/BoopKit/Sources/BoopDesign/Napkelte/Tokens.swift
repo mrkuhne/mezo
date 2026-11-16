@@ -52,8 +52,14 @@ public enum NKSky: Hashable, Sendable {
 /// The five metrics and their colour worlds, in display order. "Készenlét" is called Forma (owner, 2026-11-10).
 public enum Hue: Int, CaseIterable, Sendable {
     case forma, alvas, mozgas, fuel, pulzus
+    /// The two areas of the life dashboard that have no metric behind them yet (L1/L4): they are colour worlds
+    /// first — the ring already paints their orbs — so their pages can be built before their data exists.
+    case penz, level
 
-    public var name: String { ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus"][rawValue] }
+    /// The five metric worlds; `Hue.allCases` includes Pénz and Levél, which have no metric.
+    public static let metrics: [Hue] = [.forma, .alvas, .mozgas, .fuel, .pulzus]
+
+    public var name: String { ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél"][rawValue] }
 
     /// Sky gradient: top, middle, horizon.
     public var sky: [Color] {
@@ -63,6 +69,8 @@ public enum Hue: Int, CaseIterable, Sendable {
         case .mozgas: [Color(hex: 0x2F57B0), Color(hex: 0xF09A55), Color(hex: 0xFFD98C)]
         case .fuel: [Color(hex: 0x15567A), Color(hex: 0x4FB9A2), Color(hex: 0xE9F3B4)]
         case .pulzus: [Color(hex: 0x45277A), Color(hex: 0xD86E9C), Color(hex: 0xFFC6A6)]
+        case .penz: [Color(hex: 0x0C3A24), Color(hex: 0x2E8B57), Color(hex: 0xE4F3B8)]
+        case .level: [Color(hex: 0x1E1A4A), Color(hex: 0x5B4BC4), Color(hex: 0xBFD9F5)]
         }
     }
 
@@ -74,17 +82,21 @@ public enum Hue: Int, CaseIterable, Sendable {
         case .mozgas: [Color(hex: 0x6B2A0E), Color(hex: 0xE0702E), Color(hex: 0xF7C27A), Color(hex: 0xF0508C)]
         case .fuel: [Color(hex: 0x0E3B2E), Color(hex: 0x2E9C74), Color(hex: 0xA6E8C8), Color(hex: 0xF4C860)]
         case .pulzus: [Color(hex: 0x5A0F2E), Color(hex: 0xD8467A), Color(hex: 0xF7A8C4), Color(hex: 0xF7C27A)]
+        case .penz: [Color(hex: 0x0C2B1A), Color(hex: 0x2E8B57), Color(hex: 0xBFE8A8), Color(hex: 0xF2C94C)]
+        case .level: [Color(hex: 0x1E1A4A), Color(hex: 0x5B4BC4), Color(hex: 0xB3A8F5), Color(hex: 0x7FD8E8)]
         }
     }
 
     /// Glow around the orb, the path's lit line, floating lights.
     public var glow: Color {
-        [Color(hex: 0x8B6CF0), Color(hex: 0x4BA8E6), Color(hex: 0xF29A4A), Color(hex: 0x4CC79A), Color(hex: 0xF06A9A)][rawValue]
+        [Color(hex: 0x8B6CF0), Color(hex: 0x4BA8E6), Color(hex: 0xF29A4A), Color(hex: 0x4CC79A), Color(hex: 0xF06A9A),
+         Color(hex: 0x5FD08A), Color(hex: 0x8E82F0)][rawValue]
     }
 
     /// The hue's dark top, the base of the deep ground.
     public var top: Color {
-        [Color(hex: 0x2E2470), Color(hex: 0x0F3552), Color(hex: 0x4A2810), Color(hex: 0x123F33), Color(hex: 0x4A1630)][rawValue]
+        [Color(hex: 0x2E2470), Color(hex: 0x0F3552), Color(hex: 0x4A2810), Color(hex: 0x123F33), Color(hex: 0x4A1630),
+         Color(hex: 0x0C2B1A), Color(hex: 0x1E1A4A)][rawValue]
     }
 }
 

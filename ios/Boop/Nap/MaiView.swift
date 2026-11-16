@@ -14,9 +14,12 @@ func hue(for key: MetricKey) -> Hue {
     }
 }
 
+/// The metric behind a colour world. Pénz and Levél are colour worlds with **no metric** (L1/L4): nothing reads
+/// a score for them, and the pages that paint them never ask for one — they fall back to Forma only so this stays
+/// total, and `Hue.metrics` is the list to iterate when a metric is what you mean.
 func metricKey(for hue: Hue) -> MetricKey {
     switch hue {
-    case .forma: .forma
+    case .forma, .penz, .level: .forma
     case .alvas: .alvas
     case .mozgas: .mozgas
     case .fuel: .fuel
