@@ -194,8 +194,10 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   *What left, by the owner's call the same day:* the **phase tabs** (Reggel · Napközben · Este were a switch for
   something he scrolls anyway — they are headings now) and the **big rising orb with its 42 pt verdict** (the ring
   carries the orbs; Boop's morning words live in the fold). The **orb ribbon of the spike screen was not built**:
-  it predates the ring, and a second menu here would be the same menu twice (#32–#33 stand). The lens action row
-  stayed — it is the only home of the breathing exercise, the bedtime reminder and *Hallgatom*.
+  it predates the ring, and a second menu here would be the same menu twice (#32–#33 stand). The **lens action
+  row went too** — the owner saw it in the build and said it does not belong there; *Hallgatom* lives on the
+  morning card, the bedtime switch on Alvás's bedtime card, and the one-minute breathing exercise lost its only
+  door and gets one on the Energia page (`mezo-r36n9.59`).
   *The pins* come from `dayMoments` (`BoopCore/Morning/DayMoments.swift`, pure, tested): waking, the meals, the
   longest busy stretch of the calendar, today's session, the bedtime target — only what the brief already carries,
   capped at six, each one tappable for its own line. `EnergyCurveCard` grew `events:`; Napló passes none and is

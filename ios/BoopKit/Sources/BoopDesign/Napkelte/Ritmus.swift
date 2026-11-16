@@ -183,10 +183,11 @@ public struct EnergyCurveCard: View {
                 // Neighbours alternate between two rows, so a label only has to clear the pin TWO along; what it
                 // must clear is measured in points, because the same two moments fit on a big phone and collide
                 // on a small one.
-                let before = i < 2 || x(e.hour) - x(events[i - 2].hour) > 74
-                let after = i >= events.count - 2 || x(events[i + 2].hour) - x(e.hour) > 74
+                let before = i < 2 || x(e.hour) - x(events[i - 2].hour) > 80
+                let after = i >= events.count - 2 || x(events[i + 2].hour) - x(e.hour) > 80
                 let room = before && after
-                let lift: CGFloat = (i % 2 == 0) ? 0 : 26
+                // Two clearly separate rows, so a label only has to clear the pin two along, not its neighbour.
+                let lift: CGFloat = (i % 2 == 0) ? 0 : 34
                 let level = predicted.isEmpty ? 0.5 : (EnergyCurveGeometry.predicted(predicted, at: e.hour) ?? 0.5)
                 VStack(spacing: 3) {
                     ZStack {

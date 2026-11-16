@@ -478,9 +478,9 @@
       "Ma",
       "Alapok"
     ],
-    "valasztas": "A nap oldala a szimulátorban kidolgozott mintát követi: egy görgetés, fent csak a dátum és a boop felirat. Nincs rajta gömbsor (a területekhez a kör az egyetlen ajtó), és nincs Reggel/Napközben/Este fül — ezek mostantól csak címek a görgetésben.",
+    "valasztas": "A nap oldala a szimulátorban kidolgozott mintát követi: egy görgetés, fent csak a dátum és a boop felirat. Nincs rajta gömbsor (a területekhez a kör az egyetlen ajtó), és nincs Reggel/Napközben/Este fül — ezek mostantól csak címek a görgetésben. A felirat alatti gombsor („Kitöltöm” + a hang gomb) sincs rajta.",
     "miert": "A gömbsor ugyanaz a menü lett volna másodszor, a fülek pedig olyasmit kapcsolgattak, amit úgyis végiggörgetsz. Így a nap egyben olvasható, és rögtön a nap görbéjével indul.",
     "levaltotta": "A nap oldalának nagy felkelő gömbjét az ítélet-mondattal, és a három szakaszfület.",
-    "kovetkezmeny": "Boop reggeli mondatai nem tűntek el: a „reggeli összefoglaló” sor mögött vannak, és onnan is felolvastathatod."
+    "kovetkezmeny": "Boop reggeli mondatai nem tűntek el: a „reggeli összefoglaló” sor mögött vannak, és onnan is felolvastathatod. A lefekvés-emlékeztetőt az Alvás területén kapcsolod. Egy dolog hely nélkül maradt, a perces légzőgyakorlat — az Energia oldalára kerül, amikor az megépül."
   }
 }
