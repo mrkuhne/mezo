@@ -24,6 +24,10 @@
 - Dates: the phone's local day is the day; `capturedAt` carries the phone's local offset, **never `Z`**.
 - Presentations sit at **page level** and the page reads the flag in its body; a cover whose binding is already true on first render does not fire.
 - Every new operation must be answered in `ios/Boop/Connect/PreviewTransport.swift` — it **asserts** on an unanswered call, and the Mac's firewall means the simulator sees nothing else.
+- **A ring-opened room has no navigation stack.** Everything the room presents — the player cover, every sheet — must work with `closeRoom` and no stack beneath it, and must be verified that way (`-previewHome edzes` opens the room straight from the ring; `-preview shell` goes through Ma).
+- **The home's motion budget is the room's too** (kezdőlap spec §3, from a pass the owner rejected as stuttery): **no scaled blurred fog canvas, no stack of live shaders.** The room's moving parts are the head photo under its gradient, the kit's own lights, and the player's one orb — nothing else animates continuously, and every motion has a still branch under Reduce Motion.
+- **The ring is the entrance**, and `Terv` in the bottom bar is **his plan**, not an area menu (decision #33). The Edzés room is reached from the ring orb, the `+` sheet and the Mozgás lens — **never** from a Terv grid.
+- **The inner tab label lives in exactly one constant.** The owner is deciding between *Terv* and *Blokk* for it; until the answer is relayed the approved spike's *Terv* stands, and the rename must be a one-line change.
 - Shared hot spots (`openapi-generator-config.yaml`, `api/openapi.yml`, `api/generate/merge.yml`, `1.1.0_master.yml`): one writer at a time; rebase on `origin/main` immediately before touching them.
 
 ## Working on top of the L0 kit — read this before Task 1
@@ -239,13 +243,14 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
 
 **Files:**
 - Create: `ios/Boop/Edzes/EdzesRoom.swift`, `EdzesMa.swift`, `EdzesStore.swift`
-- Modify: `ios/Boop/Nap/MaiView.swift` (the Mozgás destination), `ios/Boop/Capture/CaptureSheet.swift:37`, `ios/Boop/Nap/LensActionRow.swift:19`, `ios/Boop/Nap/MaDrill.swift:50,:150`
+- Modify: **`ios/Boop/Nap/NapView.swift:58-66`** — the `drill:` closure is the one seam: it already reads `if hue == .fuel { EtelRoom() } else { MaDrill(…) }`, so Edzés is `hue == .mozgas → EdzesRoom()` beside it. Also `ios/Boop/Capture/CaptureSheet.swift:53` (the `.soon("Edzés indítása")` tile) and `ios/Boop/Nap/LensActionRow.swift:134` (the `.mozgas` lens action). **`MaiView.swift` and `MaDrill.swift` are not touched** — the earlier draft of this plan named them before the shell shipped.
 - Add: the Mozgás mood photo to `BoopDesign/Resources/Photos.xcassets` + its row in `CREDITS.md`
 - Test: `ios/BoopTests/EdzesMaTests.swift`
 
 **Interfaces:**
 - Consumes, from the L0 kit: `NKAreaPage(hue:name:eyebrow:level:display:headline:sentence:photo:tabs:selectedTab:actions:onBack:)` — **`level` is 0…1, not 0…100**, so pass `level: score.map { Double($0) / 100 }, display: score.map(String.init)`, and `level: nil` is the calm half-saturated learning orb; `NKAreaTab(_:badge:dot:)`, `NKHighlight(photo:actions:)` for today's session, `NKBare(label:hue:trailing:state:)` for per-block loading and `.failed(line, retry)`, `NKStatRow`, `NKRowList`, `NKMenuGrid`, `NKAskRow`. Plus `TrainClient`, `ServerCache`.
 - Produces: `EdzesRoom(tab:)`; `@Observable final class EdzesStore` with `func load() async`, `var today: Cached<TodayWorkout>?`, `var ageText: String?`.
+- **The way out:** copy the Étel room's seam verbatim — `@Environment(\.closeRoom) private var closeRoom` and `onBack: { if let closeRoom { closeRoom() } else { dismiss() } }`, plus `.toolbar(.hidden, for: .navigationBar)` and `RoomSwipeBack()`. A ring-opened room **is the page, with no navigation stack under it**, so a back button that pops a stack slides the room off sideways — the owner saw that and rejected it.
 
 - [ ] **Step 1: Write the failing tests:**
   - `fourTabsInOrder` — `["Ma", "Terv", "Gyakorlatok", "Előzmények"]`.
@@ -379,7 +384,7 @@ once-per-week rule does not apply to) and *Elmentett terveim* (`listMesoTemplate
 
 **What the owner sees**
 
-- [ ] The Edzés room opens from the Mozgás orb, the `+` sheet and the Mozgás lens menu, with the four tabs `Ma · Terv · Gyakorlatok · Előzmények`, matching the approved screenshots.
+- [ ] The Edzés room opens from **the home ring's Edzés orb** (`-previewHome edzes`, no navigation stack, back fades the ring in), from the `+` sheet's „Edzés indítása” tile and from the Mozgás lens action, with the four tabs `Ma · Terv · Gyakorlatok · Előzmények`, matching the approved screenshots.
 - [ ] Ma: today's session with its photo, time and counts; **Az eligazítás** showing what the engine changed and why, in Boop's words; the readiness read; the week's five days; a proposal card with *miért?*; sport logging; kímélő.
 - [ ] The player runs briefing → set → rest → debrief → close, with ± steppers for weight, reps and RIR, the engine's rationale, last week's reference and the durable note on the set screen, and a draining orb (no ring) on the rest screen.
 - [ ] Mid-workout: swap an exercise (this session **or** the rest of the block) and skip an exercise.

@@ -165,7 +165,9 @@ done since", and the two never merge.
   `.task` did not help; `-edzesOpen player` therefore renders the player as the ROOT. Reaching it by tapping
   "Kezdjük el" in the app works normally — this is a screenshot-harness workaround, not a product shape.
 
-Also fixed in passing: `EtelSpike.swift` and `EletRoot.swift` had both declared `EArg` and `EPhotoHead`, so
-the spike project did not compile at all on main (two sessions picked the same `E` prefix, and each had
-built before the other merged). The Étel copies are renamed `EtArg` / `EtPhotoHead`; the Élet ones are
-untouched.
+Collision noted in passing: `EtelSpike.swift` and `EletRoot.swift` had both declared `EArg` and
+`EPhotoHead`, so the spike project did not compile at all (two sessions picked the same `E` prefix, and each
+had built before the other merged). **Resolved on main the other way round** — `EArg` and `EPhotoHead` live
+in the Élet files as the single copy for the whole target, and the Étel screens use them. The Edzés files
+carry their own `W` prefix (`WArg`, `WPhotoHead`) and are unaffected either way. The lesson for the next
+spike: **prefix every type with your own screen's letter pair and grep the target before you name one.**
