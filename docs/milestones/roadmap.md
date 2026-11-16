@@ -72,8 +72,9 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   ítélet-mondattal (a gömbök a köré tartoznak; Boop reggeli szavai a „reggeli összefoglaló” mögött vannak,
   felolvastatva is) és a **Reggel/Napközben/Este fül** (ezek mostantól címek a görgetésben); a minta gömbsora
   nem épült meg, mert az a körrel kétszer ugyanaz a menü lenne. A **„Kitöltöm” gombsor** szintén lekerült
-  (a tulajdonos a kész építésen mondta ki): a felolvasás a reggeli kártyán maradt, a lefekvés-emlékeztető az
-  Alvás területén, a légzőgyakorlat pedig az Energia oldalán kap új helyet (`mezo-r36n9.59`).
+  (a tulajdonos a kész építésen mondta ki), és vele együtt **a felolvasás is kikerült az appból**: a reggeli
+  összefoglaló mostantól csak szöveg, „Mondd újra” és némítás nélkül. A lefekvés-emlékeztető az Alvás területén
+  maradt, a légzőgyakorlat pedig az Energia oldalán kap új helyet (`mezo-r36n9.59`).
   [terv](../superpowers/plans/2026-11-16-boop-nap-oldal.md), [`boop-ios.md`](../features/boop-ios.md) §2.
 
 - **2026-11-16 — Boop · a napnak saját gömbje lett — a kör nyolc gömbből áll (`mezo-r36n9.55`).**

@@ -13,7 +13,8 @@ osszefoglalo: A mai napod egy görgetésben: a nap görbéje a pillanataival, am
 A nap oldala a **[kezdőlap](../01-alapok/kezdolap)** körének **közepéről** és a kör tetején ülő **Nap gömbről**
 is ide nyílik — ugyanaz a hely, két ajtóval. Fent csak a dátum és a **boop** felirat áll; a nagy felkelő gömb és
 a Reggel/Napközben/Este fülek lekerültek róla (tulajdonosi döntés, 2026-11-16), mert a gömbök a köré tartoznak,
-a nap pedig egyben olvasható. A felirat alatti gombsor szintén lekerült: a felolvasás a reggeli kártyán van, a
+a nap pedig egyben olvasható. A felirat alatti gombsor szintén lekerült, és
+a **felolvasás** is kikerült az appból: a reggeli összefoglalót olvasni lehet, hallgatni nem. A
 lefekvés-emlékeztetőt az Alvás területén kapcsolod.
 
 Egy görgetésben, ebben a sorrendben:

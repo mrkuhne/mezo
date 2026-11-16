@@ -80,7 +80,7 @@ func clockLabel(_ date: Date, calendar: Calendar = .current) -> String {
 
 /// Ma with the morning brief: title row, the phase strip (Reggel · Napközben · Este), five mini orbs, the selected metric rising as the sun, its verdict
 /// and the lens action row. Tapping a mini orb re-colours the page; tapping a phase scrolls to its section. `below` is what follows the hero; it receives the
-/// selected orb, Boop's voice and the page toast (`MaiContext`).
+/// selected orb and the page toast (`MaiContext`).
 ///
 /// The page sits in a navigation stack: an orb's room (`drill`) is pushed over it from the lens strip's door, the big
 /// orb and the timeline's stations; the shell hides its bar while a room is open. The toast and the page-level sheets
@@ -110,7 +110,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selected: Hue = MaiView.initialOrb
     @State private var motion = OrbMotion()
-    @State private var voice: BoopVoice?
     @State private var toast: String?
     /// The undo of the toast on screen (nil = a plain toast).
     @State private var undo: (() -> Void)?
@@ -138,7 +137,7 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     /// Evening's dusk or kímélő's calm over the page; nil = the selected orb's own sky.
     private var sky: NKSky? { maiSky(evening: evening, recovery: brief.day.recovery != nil) }
     private var context: MaiContext {
-        MaiContext(hue: selected, motion: motion, voice: voice, speak: speak,
+        MaiContext(hue: selected, motion: motion,
                    toast: { show($0) }, undoToast: { show($0, undo: $1) },
                    now: now, evening: evening, reminder: reminder, toggleReminder: toggleReminder,
                    drill: { openRoom($0) })
@@ -179,12 +178,8 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         .onAppear { if initialRoom == nil { setRoomOpen(!path.isEmpty) } }
         .nkToast($toast, action: undo == nil ? nil : (toastAction ?? SessionText.undo)) { undo?(); undo = nil }
         .background { ModeClock { clockTick += 1 } }
-        .onAppear { if voice == nil { voice = BoopVoice() } }
-        .onDisappear { motion.stop(); voice?.stop(); setRoomOpen(false) }
-        .onChange(of: selected) { voice?.stop() }
+        .onDisappear { motion.stop(); setRoomOpen(false) }
         .onChange(of: phase) { _, p in shownPhase = p }
-        .onChange(of: voice?.isSpeaking ?? false) { _, talking in motion.talking = talking }
-        .onChange(of: voice?.shown ?? "") { _, _ in if voice?.isSpeaking == true { motion.kick() } }
         // a new brief may move the bedtime: the reminder follows (and turns off if notifications were withdrawn)
         .task(id: reminderTarget(brief)) { await reminder.refresh(target: reminderTarget(brief)) }
     }
@@ -273,10 +268,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
                 show(reply.text)
             }
         }
-    }
-
-    private func speak() {
-        voice?.speak(segments: brief.brief, reduceMotion: reduceMotion)
     }
 
 }

@@ -482,5 +482,17 @@
     "miert": "A gömbsor ugyanaz a menü lett volna másodszor, a fülek pedig olyasmit kapcsolgattak, amit úgyis végiggörgetsz. Így a nap egyben olvasható, és rögtön a nap görbéjével indul.",
     "levaltotta": "A nap oldalának nagy felkelő gömbjét az ítélet-mondattal, és a három szakaszfület.",
     "kovetkezmeny": "Boop reggeli mondatai nem tűntek el: a „reggeli összefoglaló” sor mögött vannak, és onnan is felolvastathatod. A lefekvés-emlékeztetőt az Alvás területén kapcsolod. Egy dolog hely nélkül maradt, a perces légzőgyakorlat — az Energia oldalára kerül, amikor az megépül."
+  },
+  "d-2026-11-16-felolvasas-ki": {
+    "cim": "A felolvasás kikerült az appból",
+    "datum": "2026-11-16",
+    "suly": "Közepes",
+    "terulet": [
+      "Ma"
+    ],
+    "valasztas": "Boop már nem olvassa fel a reggeli összefoglalót. A „Mondd újra” és a némítás gomb eltűnt, a szöveg nem szavanként jelenik meg, hanem egyben.",
+    "miert": "A nap oldalának átépítésekor kérted, hogy vegyük ki: a reggeli összefoglalót olvasni gyorsabb, mint végighallgatni.",
+    "levaltotta": "A „Boop elmondja” funkciót (S3 óta élt).",
+    "kovetkezmeny": "A hang a telefon sajátja volt, tehát ha valaha mégis kellene, visszahozható. A felolvasott mondatokban lévő koppintható részek megmaradtak — azok szövegként is működnek."
   }
 }

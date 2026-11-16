@@ -300,7 +300,7 @@ struct MaBelow: View {
                 planCard(rows)
             }
             if !brief.brief.isEmpty {
-                BoopSaysCard(lines: brief.brief, hue: ctx.hue, motion: ctx.motion, voice: ctx.voice, speak: ctx.speak, onLink: onLink)
+                BoopSaysCard(lines: brief.brief, hue: ctx.hue, motion: ctx.motion, onLink: onLink)
             }
         }
     }
