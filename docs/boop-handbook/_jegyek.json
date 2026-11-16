@@ -594,7 +594,7 @@
     "terulet": [
       "Alapok"
     ],
-    "mit_kapsz": "Végigvesszük a még hátralévő szakaszokat, és megmondjuk, mi változik meg bennük a kész új felülettől: mi nem kell már, mit építenénk kétszer, és mi jött hozzá.",
+    "mit_kapsz": "Végignéztük a hátralévő szakaszokat a kész felület fényében, és leírtuk, mi esett ki belőlük, mi került hozzájuk, és hol építenénk kétszer ugyanazt. A legnagyobb változás: egy szakasz mostantól egy meglévő fület tölt meg, nem épít új oldalt — és kitalált szám sehol nem kerülhet az appba.",
     "munkamenet": "boop-kezdolap-orbok"
   },
   "mezo-r36n9.59": {

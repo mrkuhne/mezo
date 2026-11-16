@@ -63,6 +63,18 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-16 — Boop · végignéztük, mi változik a hátralévő szakaszokban a kész felülettől (`mezo-r36n9.58`).**
+  A kész kezdőlap, nap-oldal és területoldalak után minden hátralévő szakaszt újraolvastunk. A lényeg: **egy
+  szakasz mostantól egy meglévő fület tölt meg, nem épít új oldalt**. Az **Edzés** szakasza a legnagyobb
+  nyertes: az oldala és a menüje áll, három füle (Blokk, Gyakorlatok, Előzmények) vár a tartalomra — az
+  edzésvezérlő viszont marad külön teljes képernyős felület, mert annak a telefon lezárását is túl kell élnie.
+  A **Terv**, a **napi kapacitás** és az **egy AI** szakaszából kiesett a kártyafelület, az értesítési szabály és
+  a „miért?” — ezek az élő falé. A **Pénz** és a **Levél** szakaszai már csak a füleiket töltik meg, mert az
+  oldaluk megvan; két régi terv-sort ki is javítottunk, mert más füleket írtak, mint amit jóváhagytál.
+  Négy szabály köti az összes hátralévő munkát: nincs második kártyafelület, nincs második értesítési szabály,
+  nincs második hely, ahol Boop magyarázkodik, és **kitalált szám sehol** — ahol nincs adat, azt az app kimondja.
+  [spec §5.1](../superpowers/specs/2026-11-11-boop-standalone-design.md), [életpanel-spec](../superpowers/specs/2026-11-13-boop-life-dashboard-design.md).
+
 - **2026-11-16 — Boop · minden terület a saját oldalát és a saját menüjét kapta (`mezo-r36n9.57`).**
   Az első nekifutást a tulajdonos elutasította: *„nem úgy néz ki, mint amit a Boop · elet szimulátorban
   csináltunk… mindegyik saját menüvel”*. Igaza volt — a lényeg nem a közös váz, hanem hogy **minden területnek
