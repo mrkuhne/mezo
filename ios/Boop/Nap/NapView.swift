@@ -61,7 +61,7 @@ struct NapView: View {
                             // Fuel's room is the food room (B4): its own tabs, its own data.
                             EtelRoom()
                         } else {
-                            MaDrill(hue: hue, brief: morning.brief ?? brief, store: morning, ctx: ctx, desk: desk) { sheet = DetailSheet($0) }
+                            AreaRoom(hue: hue, brief: morning.brief ?? brief, store: morning, ctx: ctx, desk: desk) { sheet = DetailSheet($0) }
                         }
                     } sheets: { ctx in
                         // Read both flags here so the page re-renders when they flip (a plain binding passed down

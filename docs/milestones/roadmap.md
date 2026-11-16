@@ -63,6 +63,19 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-16 — Boop · minden terület a saját oldalát kapta (`mezo-r36n9.57`).**
+  A kör mögött mostantól minden terület úgy néz ki, mint egy saját kis app, ahogy a szimulátorban kidolgoztuk:
+  fent a terület ítélete és pontszáma, alatta a saját fülei, és a közös készlet blokkjai. **Alvás:** az éjszaka a
+  saját számaival, az alvás menete, a lefekvési cél — plusz a hét oszlopai a heti átlaggal és a legjobb nappal,
+  és a hét napja egyenként. **Energia:** a check-in kérdése elöl (ha esedékes), a pulzusszámok, a mai
+  energiagörbe és a mai kérdéskörök. **Edzés:** a mai edzés, a lépések a célhoz képest és a gyakorlatok
+  (az edzésvezérlő és a terv a következő nagy szakaszé). **Forma:** a legerősebb mai összefüggés, a pontszám, a
+  testsúly — és a másik négy terület egy-egy sorban, mindegyik a saját oldalára visz.
+  A közös vázhoz **egyetlen új blokkot sem kellett hozzátenni** — ez volt a próbája annak, hogy jó-e a váz.
+  Három területnek (Alvás, Energia, Edzés) még nincs saját hangulatfotója (`mezo-r36n9.60`); addig festett eget
+  kapnak. A Pénz és a Levél adat híján továbbra is „még nem él”.
+  [`boop-ios.md`](../features/boop-ios.md) §2.
+
 - **2026-11-16 — Boop · a nap oldala a szimulátorban kidolgozott Ma-képernyő lett (`mezo-r36n9.56`).**
   A kör **közepe** és az új **Nap gömb** ugyanoda visz, és az a hely egyetlen görgetés lett: fent a dátum és a
   **boop** felirat, alatta **Mai nap** — a nap görbéje, rajta a nap saját pillanataival (ébredés, étkezések, a
