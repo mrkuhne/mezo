@@ -198,3 +198,64 @@ struct WallTests {
         #expect(buildWall([a, b], now: now).hero?.id == buildWall([b, a], now: now).hero?.id)
     }
 }
+
+/// What each area hands in (L0/b). The sources are pure, so the awkward cases — a window that has already shut,
+/// a day with nothing to say, the Hungarian article — are tests rather than things noticed on the phone.
+struct WallSourceTests {
+    let now = Date(timeIntervalSince1970: 1_763_300_400)
+    var cal: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "Europe/Budapest")!; return c }
+
+    func plan(_ windows: [PlanWindow], tip: PlanTip? = nil) -> FuelPlan {
+        FuelPlan(date: "2026-11-16", windows: windows, remaining: nil, tip: tip)
+    }
+
+    @Test func theOpenWindowIsWhatExpires() {
+        let at = wallTime(now, calendar: cal)
+        _ = at
+        let close = wallTime(now.addingTimeInterval(40 * 60), calendar: cal)
+        let out = etelWallCandidates(plan: plan([
+            PlanWindow(slot: "lunch", label: "Ebéd", from: "12:00", to: close, state: .now),
+        ]), now: now, calendar: cal)
+        let w = out.first { $0.role == .expires }
+        #expect(w != nil)
+        #expect(w?.text.hasPrefix("Az *Ebéd*") == true, "Hungarian article: Az ebéd, not A ebéd")
+        #expect(w?.expiresAt != nil)
+    }
+
+    @Test func aWindowThatHasAlreadyShutIsNotOffered() {
+        let past = wallTime(now.addingTimeInterval(-30 * 60), calendar: cal)
+        let out = etelWallCandidates(plan: plan([
+            PlanWindow(slot: "lunch", label: "Ebéd", from: "11:00", to: past, state: .now),
+        ]), now: now, calendar: cal)
+        #expect(out.filter { $0.role == .expires }.isEmpty)
+    }
+
+    @Test func theServersTipIsWhatImprovesTheDay() {
+        let out = etelWallCandidates(plan: plan([], tip: PlanTip(text: "Vacsorára 50 g fehérje kell",
+                                                                 reason: "A napi 165-ből 115-nél jársz.")),
+                                     now: now, calendar: cal)
+        let tip = out.first { $0.role == .improves }
+        #expect(tip?.text == "Vacsorára 50 g fehérje kell")
+        #expect(tip?.why.contains("165") == true, "the why repeats the server's own reason, not a made-up one")
+    }
+
+    @Test func theLastMealIsWhatHappened() {
+        let out = etelWallCandidates(plan: nil, now: now, calendar: cal,
+                                     lastMeal: ("Csirkés tál", 46, now.addingTimeInterval(-20 * 60), "csirke"))
+        let m = out.first { $0.role == .happened }
+        #expect(m?.big == "46")
+        #expect(m?.photo == "csirke")
+        #expect(m?.kind == .reakcio)
+    }
+
+    @Test func anEmptyDayHandsInNothingRatherThanPlaceholders() {
+        #expect(etelWallCandidates(plan: nil, now: now, calendar: cal).isEmpty)
+    }
+
+    @Test func theArticleIsRightForBothKinds() {
+        #expect(hungarianArticle("Ebéd") == "Az")
+        #expect(hungarianArticle("Vacsora") == "A")
+        #expect(hungarianArticle("Uzsonna") == "Az")
+        #expect(hungarianArticle("") == "A")
+    }
+}

@@ -170,11 +170,15 @@ public struct RisingOrb: View {
                         .scaleEffect(orbScale)
                 }
                 VStack(spacing: 2) {
+                    // L0/b: an empty display is the orb with no number at all — the 0–100 score left the home
+                    // (owner decision #13), and the orb is still the hero.
                     // a display like "7ó 12p" or "3 240" must stay inside the orb
+                    if !display.isEmpty {
                     Text(display).font(.nkNumber(risingDisplaySize(score: score, display: display))).foregroundStyle(.white).monospacedDigit()
                         .fontWeight(display == "–" ? .medium : nil)       // the light dash alone reads as a hairline
                         .lineLimit(1).minimumScaleFactor(0.4).frame(maxWidth: size - 20)
                         .contentTransition(.numericText())
+                    }
                     if let caption { Text(caption).nkFont(12).foregroundStyle(.white.opacity(0.75)) }
                 }
                 .shadow(color: .black.opacity(0.35), radius: 10)
@@ -190,7 +194,7 @@ public struct RisingOrb: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(hue.name): \(orbSpoken(display))")
+        .accessibilityLabel(display.isEmpty ? hue.name : "\(hue.name): \(orbSpoken(display))")
     }
 }
 

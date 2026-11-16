@@ -168,7 +168,9 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
                     ScrollViewReader { proxy in
                         NKTabPage(hue: selected, sky: sky, heroHeight: nil,
                                   compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
-                                                     line: "\(c.name) \(c.miniValue)")) {
+                                                     // no score in the capsule either: it left the home with
+                                                     // the hero's number (decision #13)
+                                                     line: c.headline)) {
                             hero(c, proxy: proxy)
                         } content: {
                             below(ctx)
@@ -243,10 +245,10 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
                 KimeloBanner(recovery: r) { show(soonToast("Kilépés a kímélő módból")) }
                     .padding(.top, 14)
             }
-            MiniOrbRow(items: Hue.allCases.map { ($0, maiCopy(brief, metricKey(for: $0)).miniValue) },
-                       selected: $selected, motion: motion)
-                .padding(.vertical, 8).padding(.top, 10)
-            RisingOrb(hue: selected, score: c.score, display: c.orbDisplay, caption: c.orbCaption, motion: motion,
+            // L0/b: the row of mini orbs left this page — the ring of seven is the app's entrance now
+            // (decisions #32–#33), so every area is one tap from the home and a second strip here was the same
+            // menu twice. The hero orb stays, without its number (decision #13).
+            RisingOrb(hue: selected, score: c.score, display: "", caption: c.orbCaption, motion: motion,
                       orbScale: breathing && !reduceMotion ? (inhale ? 1.22 : 0.84) : 1)
                 .frame(height: 290).padding(.bottom, 18)
                 // the big orb is a door to its room (the ripple still plays)
