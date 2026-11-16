@@ -295,5 +295,14 @@
       "mezo-r36n9.56"
     ],
     "mi_valtozott": "A kör közepe és a Nap gömb ugyanarra az oldalra visz, és az az oldal egy görgetés lett: fent a dátum és a boop felirat, alatta a nap görbéje a nap pillanataival (ébredés, étkezések, a legsűrűbb naptárblokk, az edzés, a lefekvés — egy koppintásra megmondja, mi volt az), utána amit Boop épp mondani akar, a reggeli terv és a napod egy-egy sorrá csukva, a mai észrevételek egy sorral Boophoz, végül az esti zárás. Lekerült a nagy gömb az ítélet-mondattal, a Reggel/Napközben/Este fül, a gombsor — és a felolvasás is kikerült az appból: a reggeli összefoglaló mostantól csak szöveg."
+  },
+  "cb3d9647f": {
+    "cim": "Minden területnek saját oldala és saját menüje lett",
+    "datum": "2026-11-16",
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.57"
+    ],
+    "mi_valtozott": "A kör mögött minden terület külön kis alkalmazás lett, a szimulátorban jóváhagyott minta szerint: alul a terület saját menüsora a saját oldalaival és jelzéseivel, fent a gömb egy vékony vonal fölött, alatta balra a terület ítélete. Alvás: Ma, Hét, Előzmények. Energia: Ma, Check-inek, Minták. Edzés: Ma, Blokk, Gyakorlatok, Előzmények. Forma: Ma, Mi hat rá. Étel: Ma, Receptek, Kamra, Hét. A Pénz (Ma, Pénzem, Költés, Gyakorlás) és a Levél (Ma, Figyelt, Szabályok, Fiókok) oldala is elkészült, adat nélkül: minden fülük megmondja, mi lesz rajta, kitalált szám nélkül."
   }
 }
