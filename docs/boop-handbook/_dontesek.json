@@ -443,5 +443,18 @@
     "miert": "Pont az első helyről maradsz le, ha nem nyitod meg az appot. A többi megvár.",
     "levaltotta": "",
     "kovetkezmeny": "A korlát magában a szabályban van, nem beállítás: egy korlát nélküli szabály ugyanaz, mintha Boopra bíznánk, azt pedig elvetetted."
+  },
+  "d-2026-11-16-blokk": {
+    "cim": "Az edzésen belüli fül neve Blokk lett, nem Terv",
+    "datum": "2026-11-16",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés",
+      "Terv"
+    ],
+    "valasztas": "Az Edzés területen belüli felső fül — a nyolchetes edzésblokk — mostantól Blokk. Az alsó sávban a Terv marad a te terved.",
+    "miert": "Két azonos nevű hely lett volna egy koppintásra egymástól; így a „Terv” egy dolgot jelent az appban.",
+    "levaltotta": "Az Edzés-minta „Terv” fülét, amit korábban jóváhagytál.",
+    "kovetkezmeny": "Egy szó az Edzés szobában; a Terv jelentése nem változik."
   }
 }

@@ -81,7 +81,7 @@
     },
     "jegyek:mezo-r36n9.26": {
       "page_id": "4168968e-752b-8184-87ee-deabec891c70",
-      "hash": "bde549516663"
+      "hash": "d65c1a2a2e60"
     },
     "jegyek:mezo-r36n9.24": {
       "page_id": "4168968e-752b-8191-8d38-f53edaff4db7",
@@ -93,7 +93,7 @@
     },
     "jegyek:mezo-r36n9.22": {
       "page_id": "4168968e-752b-81e2-a463-c11f9f8d3dc4",
-      "hash": "c10285145701"
+      "hash": "e137bb8a9697"
     },
     "jegyek:mezo-r36n9.18": {
       "page_id": "4168968e-752b-81a2-adff-e71b81a0e3d3",
@@ -277,7 +277,7 @@
     },
     "kezikonyv:01-alapok/00-attekintes": {
       "page_id": "4168968e-752b-81b7-8c0b-f736eeecfc49",
-      "hash": "9c1c20a19f6c"
+      "hash": "076153ac3201"
     },
     "kezikonyv:01-alapok/elso-lepesek": {
       "page_id": "4168968e-752b-8122-9a3b-f35eb661b68c",
@@ -285,7 +285,7 @@
     },
     "kezikonyv:01-alapok/ertesitesek": {
       "page_id": "4168968e-752b-8165-9906-caa506eee81f",
-      "hash": "dbd39fb54f14"
+      "hash": "69a610497a4d"
     },
     "kezikonyv:01-alapok/fiok-es-belepes": {
       "page_id": "4168968e-752b-813a-8bb9-cbce770f5a64",
@@ -301,7 +301,7 @@
     },
     "kezikonyv:01-alapok/gyors-rogzites": {
       "page_id": "4168968e-752b-81eb-833a-d4a89c813fb9",
-      "hash": "b9023a759888"
+      "hash": "9c1577c271c9"
     },
     "kezikonyv:01-alapok/napkelte-kinezet": {
       "page_id": "4168968e-752b-812a-9b5f-fd8f477ccda4",
@@ -309,11 +309,11 @@
     },
     "kezikonyv:01-alapok/navigacio": {
       "page_id": "4168968e-752b-81f1-a428-f1eff627e50a",
-      "hash": "6aebb6b43218"
+      "hash": "f7b5281baf05"
     },
     "kezikonyv:01-alapok/net-nelkul": {
       "page_id": "4168968e-752b-815c-bee7-c4032ca1468f",
-      "hash": "3a9f39577b11"
+      "hash": "fee5bc767337"
     },
     "kezikonyv:01-alapok/telepites-a-telefonra": {
       "page_id": "4168968e-752b-8185-b34c-c477fe6deb9b",
@@ -321,7 +321,7 @@
     },
     "kezikonyv:02-ma/00-attekintes": {
       "page_id": "4168968e-752b-81e7-9587-d27ec99c8ca4",
-      "hash": "5a1db43328a6"
+      "hash": "a21061af4dc1"
     },
     "kezikonyv:02-ma/boop-elmondja": {
       "page_id": "4168968e-752b-8123-b8ab-c3e5464f6f97",
@@ -333,7 +333,7 @@
     },
     "kezikonyv:02-ma/este-keret": {
       "page_id": "4168968e-752b-812a-b752-e42df8ffcbfd",
-      "hash": "22cd63d61506"
+      "hash": "8ace11119806"
     },
     "kezikonyv:02-ma/javaslatkartyak": {
       "page_id": "4168968e-752b-81df-b838-dc16bc60bb7c",
@@ -345,7 +345,7 @@
     },
     "kezikonyv:02-ma/napkozben-idovonal": {
       "page_id": "4168968e-752b-81e1-b499-df1b77032226",
-      "hash": "dcbe4e491053"
+      "hash": "c3b4d2c7e494"
     },
     "kezikonyv:02-ma/reggeli-itelet": {
       "page_id": "4168968e-752b-8167-8daf-d7efe8c867b5",
@@ -353,7 +353,7 @@
     },
     "kezikonyv:02-ma/reggeli-terv": {
       "page_id": "4168968e-752b-81aa-89c9-db4df6156dba",
-      "hash": "90aef53720ce"
+      "hash": "e09371a4c16f"
     },
     "kezikonyv:02-ma/reszletes-lapok": {
       "page_id": "4168968e-752b-81c5-a750-e28777cbca77",
@@ -365,51 +365,51 @@
     },
     "kezikonyv:03-naplo/00-attekintes": {
       "page_id": "4168968e-752b-816a-a192-d4caddbb782e",
-      "hash": "3e0521d46fa6"
+      "hash": "f8463d8d6146"
     },
     "kezikonyv:03-naplo/biomarker-pillanatkep": {
       "page_id": "4168968e-752b-816d-81b5-ca4354675429",
-      "hash": "645cbaf2ab43"
+      "hash": "c205dcd1b823"
     },
     "kezikonyv:03-naplo/check-in": {
       "page_id": "4168968e-752b-816e-88ae-dd50ce4569c1",
-      "hash": "abfeb995dd43"
+      "hash": "50fa75db779e"
     },
     "kezikonyv:03-naplo/emlekeztetok": {
       "page_id": "4168968e-752b-8121-9d56-d4b82f42ea46",
-      "hash": "53d2b8805e36"
+      "hash": "d6635487f03e"
     },
     "kezikonyv:03-naplo/energiagorbe-pottyok": {
       "page_id": "4168968e-752b-814f-9c3c-e9de88bc188a",
-      "hash": "060f0032f109"
+      "hash": "2406508eb6b1"
     },
     "kezikonyv:03-naplo/esti-zaras": {
       "page_id": "4168968e-752b-8105-8771-e260f9a71c7e",
-      "hash": "b103fd90058a"
+      "hash": "e06ef9e1a4e1"
     },
     "kezikonyv:03-naplo/hangnaplo": {
       "page_id": "4168968e-752b-81af-99f1-cf2997c051d9",
-      "hash": "df0bcc248e6a"
+      "hash": "d941a3bdbcc9"
     },
     "kezikonyv:03-naplo/kerdezd-boopot": {
       "page_id": "4168968e-752b-81df-88bf-fb1e1215e8cf",
-      "hash": "6288f8210d1a"
+      "hash": "693292761fd4"
     },
     "kezikonyv:03-naplo/nap-kerdese": {
       "page_id": "4168968e-752b-8180-b88c-cf1def50329e",
-      "hash": "e36bc547c1c3"
+      "hash": "583009719162"
     },
     "kezikonyv:03-naplo/napi-cel": {
       "page_id": "4168968e-752b-819e-862a-c0315e71e52f",
-      "hash": "cc02af0ef3da"
+      "hash": "4e01b86b62ee"
     },
     "kezikonyv:03-naplo/napok-lista": {
       "page_id": "4168968e-752b-8154-b39e-c2567a928484",
-      "hash": "23f0711f8c82"
+      "hash": "4ec442262b26"
     },
     "kezikonyv:03-naplo/widget-es-zarolt-kepernyo": {
       "page_id": "4168968e-752b-81fc-8eee-d3c3791cb992",
-      "hash": "a9e0c444e608"
+      "hash": "48872e25654d"
     },
     "kezikonyv:04-terv/00-attekintes": {
       "page_id": "4168968e-752b-81c6-a15f-d115f1a8c6e1",
@@ -525,7 +525,7 @@
     },
     "kezikonyv:07-edzes/00-attekintes": {
       "page_id": "4168968e-752b-8183-8a33-c40bbe3d84e0",
-      "hash": "d9f4344e6150"
+      "hash": "64a9af107709"
     },
     "kezikonyv:07-edzes/01-mozgas-szoba-ma": {
       "page_id": "4168968e-752b-81b1-add3-c4f79e1b44e6",
@@ -533,47 +533,47 @@
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
-      "hash": "a9809a4c17ad"
+      "hash": "6f4b7e523a93"
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
-      "hash": "5338e33da93d"
+      "hash": "c01e15bab428"
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
-      "hash": "68f3f53a9106"
+      "hash": "dd2da096929e"
     },
     "kezikonyv:07-edzes/05-heti-volumen": {
       "page_id": "4168968e-752b-813c-9763-e3bda2691265",
-      "hash": "b5607a1254a5"
+      "hash": "9a036bc49e34"
     },
     "kezikonyv:07-edzes/06-gyakorlatok-elozmenyek": {
       "page_id": "4168968e-752b-8189-8150-ca1dc31f807c",
-      "hash": "6d0fb13ec7d1"
+      "hash": "5a2d621e6487"
     },
     "kezikonyv:07-edzes/07-apple-watch": {
       "page_id": "4168968e-752b-8155-ad39-d2a3d6ef07bc",
-      "hash": "61d9245f7099"
+      "hash": "097d45d01bb1"
     },
     "kezikonyv:07-edzes/08-elo-tevekenyseg": {
       "page_id": "4168968e-752b-815f-b13c-e3bc7bc508b8",
-      "hash": "2f1ced23f253"
+      "hash": "b3c96912f1e2"
     },
     "kezikonyv:07-edzes/09-edzesek-a-healthbol": {
       "page_id": "4168968e-752b-81f7-a4bc-e98727e51d36",
-      "hash": "f8c3f5c1aaff"
+      "hash": "fc59dee30a6f"
     },
     "kezikonyv:07-edzes/10-sport-futas": {
       "page_id": "4168968e-752b-8189-bcd3-caf1aa23fda3",
-      "hash": "0f442c0af6fc"
+      "hash": "c66293a500e8"
     },
     "kezikonyv:07-edzes/11-kihagyas-kimelo": {
       "page_id": "4168968e-752b-8119-981d-e24f027f7f4f",
-      "hash": "0ca6c3ace543"
+      "hash": "3c0dae433d8a"
     },
     "kezikonyv:07-edzes/12-ami-kimarad": {
       "page_id": "4168968e-752b-8136-9c1d-ff413ea11f85",
-      "hash": "bf3160d5825e"
+      "hash": "788df0667ebd"
     },
     "kezikonyv:08-adatok/00-attekintes": {
       "page_id": "4168968e-752b-81ca-a6fc-d93b606518bc",
@@ -621,19 +621,19 @@
     },
     "kezikonyv:08-adatok/11-checkin-pillanatkep": {
       "page_id": "4168968e-752b-8116-b29a-e23b88527b34",
-      "hash": "50f100b5c1d9"
+      "hash": "34179c6756d7"
     },
     "kezikonyv:09-boop/00-attekintes": {
       "page_id": "4168968e-752b-8137-9e58-ecbc630b50e8",
-      "hash": "1b072cbc494d"
+      "hash": "83247ab792b2"
     },
     "kezikonyv:09-boop/boop-ful-beszelgetes": {
       "page_id": "4168968e-752b-814b-8914-c73f68d8475a",
-      "hash": "8869c1c5b57d"
+      "hash": "b48cccd5a630"
     },
     "kezikonyv:09-boop/boop-latja-es-kesz-kerdesek": {
       "page_id": "4168968e-752b-8173-b999-d70c4608d5b9",
-      "hash": "b66d36e6bd9d"
+      "hash": "7a9e9b408b10"
     },
     "kezikonyv:09-boop/boop-mindent-lat": {
       "page_id": "4168968e-752b-8188-b37f-ed235475ede7",
@@ -649,19 +649,19 @@
     },
     "kezikonyv:09-boop/hangbevitel": {
       "page_id": "4168968e-752b-8176-9907-fb343273f34e",
-      "hash": "036d127e2d3b"
+      "hash": "1348c7b34a26"
     },
     "kezikonyv:09-boop/kerdes-net-nelkul": {
       "page_id": "4168968e-752b-813d-9402-c070c974049d",
-      "hash": "78985474288c"
+      "hash": "0aa1905220e3"
     },
     "kezikonyv:09-boop/mit-tud-a-beszelgetes": {
       "page_id": "4168968e-752b-8125-a67c-d714e31135b0",
-      "hash": "4b6c6a6edb09"
+      "hash": "744741f1a96f"
     },
     "kezikonyv:10-ai/00-attekintes": {
       "page_id": "4168968e-752b-81bd-be6e-f5cc9ab9e4cd",
-      "hash": "1837ea1472e1"
+      "hash": "510aca34b68d"
     },
     "kezikonyv:10-ai/az-egy-ai-b8": {
       "page_id": "4168968e-752b-8167-bf3d-fc4cdb96fc7d",
@@ -673,7 +673,7 @@
     },
     "kezikonyv:10-ai/boop-egymondatos-sorai": {
       "page_id": "4168968e-752b-819f-8ca4-cc17c2f5a8c4",
-      "hash": "b30611808ffa"
+      "hash": "04eeb3f8c0b6"
     },
     "kezikonyv:10-ai/csapatfal-kihagyva": {
       "page_id": "4168968e-752b-81e9-924b-c9c05282a466",
@@ -697,7 +697,7 @@
     },
     "kezikonyv:10-ai/melyik-ai-mire": {
       "page_id": "4168968e-752b-817d-bec8-d89cac8ee5a1",
-      "hash": "1e86a53b4148"
+      "hash": "962f7966c5df"
     },
     "kezikonyv:10-ai/mintak-es-hipotezisek": {
       "page_id": "4168968e-752b-814a-8a80-ecea9b41aeab",
@@ -705,7 +705,7 @@
     },
     "kezikonyv:10-ai/reggeli-osszefoglalo-szovege": {
       "page_id": "4168968e-752b-8156-9425-c9ec28064116",
-      "hash": "95021840a18c"
+      "hash": "3af1e749ea1a"
     },
     "kezikonyv:10-ai/riasztasok": {
       "page_id": "4168968e-752b-816f-b528-ded60d5a17d3",
@@ -717,11 +717,11 @@
     },
     "jegyek:mezo-r36n9.30": {
       "page_id": "4168968e-752b-815e-b4c2-c1d35163f5f8",
-      "hash": "807cb764a009"
+      "hash": "2875a258070d"
     },
     "jegyek:mezo-r36n9.31": {
       "page_id": "4168968e-752b-81af-a508-dc9a83b4e5f3",
-      "hash": "736509265c28"
+      "hash": "9e9742843c47"
     },
     "kiadasok:11d01e440": {
       "page_id": "4168968e-752b-81bc-8c67-fe8fc1cdc88f",
@@ -749,7 +749,7 @@
     },
     "jegyek:mezo-r36n9.35": {
       "page_id": "4178968e-752b-8116-863a-f5051731813b",
-      "hash": "f3445194b8f0"
+      "hash": "a07c65ada6e5"
     },
     "jegyek:mezo-r36n9.33": {
       "page_id": "4178968e-752b-81dd-adf5-f3eeb1e95fd6",
@@ -773,7 +773,7 @@
     },
     "kezikonyv:01-alapok/kepek": {
       "page_id": "4178968e-752b-8106-9d11-eeb4865798e8",
-      "hash": "7a565d7c84cf"
+      "hash": "cb820d059514"
     },
     "dontesek:d-2026-11-13-teruletek-helye": {
       "page_id": "4178968e-752b-818e-ba31-c473ccef39a8",
@@ -789,7 +789,7 @@
     },
     "jegyek:mezo-r36n9.37": {
       "page_id": "4178968e-752b-8141-bfb1-ea7b0505e390",
-      "hash": "d97bd2f13811"
+      "hash": "652704c0f9be"
     },
     "jegyek:mezo-r36n9.41": {
       "page_id": "4178968e-752b-813e-b0fe-da10e19925c0",
@@ -881,15 +881,15 @@
     },
     "kezikonyv:01-alapok/kezdolap": {
       "page_id": "41a8968e-752b-812f-87dd-e3a938084198",
-      "hash": "a32c88a065f1"
+      "hash": "23db6476a1a0"
     },
     "kezikonyv:01-alapok/terulet-vaz": {
       "page_id": "41a8968e-752b-8155-94b9-d2ecc92c2f61",
-      "hash": "282a7cebac08"
+      "hash": "a018731176b3"
     },
     "jegyek:mezo-r36n9.51": {
       "page_id": "41a8968e-752b-81ab-a9b8-e433885a676c",
-      "hash": "8184c65c4278"
+      "hash": "76de7efdba36"
     },
     "jegyek:mezo-r36n9.49": {
       "page_id": "41a8968e-752b-81f9-bc23-fa29c79da220",
@@ -917,7 +917,11 @@
     },
     "kezikonyv:02-ma/elo-fal": {
       "page_id": "41a8968e-752b-8171-9ec2-f9a141185bf9",
-      "hash": "d042afbe160e"
+      "hash": "5b4aabf0021b"
+    },
+    "dontesek:d-2026-11-16-blokk": {
+      "page_id": "41a8968e-752b-8124-90f8-eec0ca3c6376",
+      "hash": "23d131406e45"
     }
   }
 }
