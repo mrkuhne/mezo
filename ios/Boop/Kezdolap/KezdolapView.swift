@@ -202,14 +202,17 @@ struct KezdolapView: View {
         guard let area = Area(rawValue: Int(item.id) ?? -1) else { return }
         if area == .nap {
             openRoute(.day, from: point, in: screen)
-        } else if let hue = area.hue {
-            openRoute(.room(hue), from: point, in: screen)
+        } else if let world = area.world {
+            // Pénz and Levél have a page before they have data (`mezo-r36n9.57`): it is the page the owner
+            // approved in the spike, and every tab of it says what will be there instead of a made-up number.
+            openRoute(.room(world), from: point, in: screen)
         } else {
             toast = area.soonLine
         }
     }
 
-    /// Simulator review: `-previewHome nap|alvas|etel|edzes|energia|forma` opens the home already moved on.
+    /// Simulator review: `-previewHome nap|alvas|etel|edzes|energia|forma|penz|level|nap-oldal` opens the home
+    /// already moved on.
     private static var initialRoute: KezdolapRoute? {
         #if DEBUG
         switch UserDefaults.standard.string(forKey: "previewHome") {
@@ -219,6 +222,8 @@ struct KezdolapView: View {
         case "edzes": return .room(.mozgas)
         case "energia": return .room(.pulzus)
         case "forma": return .room(.forma)
+        case "penz": return .room(.penz)
+        case "level": return .room(.level)
         case "nap-oldal": return .day
         default: return nil
         }

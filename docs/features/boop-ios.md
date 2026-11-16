@@ -252,24 +252,27 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   (the workout player, the check-in, the evening close) stays a page-level cover outside this system.
   Review: `-previewKit YES` renders every block and every awkward state on one page (`Kezdolap/KitGallery.swift`).
 
-- **The area pages (shipped 2026-11-16, `mezo-r36n9.57`; the build target is the Élet spike's own area screens,
-  `elet-9-edzes.png`, `elet-10-alvas.png`).** Every area behind the ring is now its own page on the shared kit
-  (`Nap/AreaRoom.swift`, replacing the four numbered `NKDrillPage` sections of `MaDrill`): the head with the
-  area's verdict and score, its own tabs, and under them the kit's blocks — a highlight, a row of numbers, a
-  curve or the night's stages, lists, and *Mit tehetsz* (Boop's proposals for that area, then its short path).
-  - **Alvás** (Ma · Hét · Előzmények): the night in its own numbers with the way into the sleep sheet, total /
-    deep / resting pulse, the hypnogram, tonight's bedtime target · the deep-sleep week as stepped bars with the
-    week's average, best and today · the seven days as rows.
-  - **Energia** (Ma · Hét · Előzmények): the check-in as the highlight (it asks when one is due, otherwise it
-    says what he answered), resting / lowest / highest pulse, the energy curve, today's check-ins as rows ·
-    the resting-pulse week · the days.
-  - **Edzés** (one page, no tabs): today's session as the highlight, steps against the goal, the session's
-    minutes, active kcal, and the exercises as rows. The player, the plan and the exercise library are B5's.
-  - **Forma** (Ma · Hét): the strongest cross-area observation as the highlight over the ridge photo, the score,
-    the weight with its trend, the nights known — and **the other four areas as rows**, each opening its own page.
-  **What the kit needed: nothing.** Four areas went on without one new block — the only thing missing is three
-  mood photos (`mezo-r36n9.60`); until they exist those heads wear the painted sky, which the B3/b rule allows.
-  Pénz and Levél have no data yet (L1/L4), so the ring still says *"még nem él"* rather than opening an empty page.
+- **The area pages (shipped 2026-11-16, `mezo-r36n9.57`; the build target is the Élet spike's own area screens —
+  `BoopSpike/EletRooms.swift` + `EletContent.swift`, run with `-elet YES`, not the older PNGs).** The owner
+  rejected the first attempt against the spike (*"nem úgy néz ki, mint amit a Boop · elet szimulátorban
+  csináltunk… mindegyik saját menüvel"*), and he was right: what makes an area its own app there is **its own
+  menu** — not the shared frame. Rebuilt to the spike:
+  - **The kit grew the three pieces the spike needs** (`BoopDesign/Napkelte/`): `NKAreaBar`, the area's own
+    bottom bar in place of the spine's (icon · label · the tab's badge, plus a fixed *Boop* item); the area head
+    is now the spike's — the orb over a hairline, then the eyebrow (`glyph · AREA · TAB`), the 34 pt headline and
+    the sentence **left-aligned**, with search and settings top right; and the blocks the spike has and the kit
+    did not: `NKList`, `NKNote`, `NKActions`, `NKInfoRow`, plus `NKNotLiveYet` for a tab whose data is not built.
+  - **Every area's tab set is the spike's**: Alvás *Ma · Hét · Előzmények* · Energia *Ma · Check-inek · Minták* ·
+    Edzés *Ma · Blokk · Gyakorlatok · Előzmények* (the spike says "Terv"; the owner renamed it) · Forma
+    *Ma · Mi hat rá* · Étel *Ma · Receptek · Kamra · Hét* (B4's room, now in the same bar) ·
+    **Pénz** *Ma · Pénzem · Költés · Gyakorlás* · **Levél** *Ma · Figyelt · Szabályok · Fiókok*.
+  - **Pénz and Levél have pages before they have data** (L1/L4): `Hue` gained the two colour worlds the ring
+    already painted, so each tab is there and says what will be in it. **No invented number ever reaches them** —
+    the spike's figures were drawn, not measured.
+  - Blocks are filled from the brief, the day ledger and the food store only. Where the spike shows something the
+    app cannot know yet (the mezociklus, exercise records, the six-week sleep curve), the tab says so.
+  The gaps that remain, said out loud: three areas have no mood photo (`mezo-r36n9.60`), Pénz and Levél have no
+  glyph of their own (a scale and a book stand in), and Edzés's three deeper tabs wait for B5.
 
 - **The Étel room (B4 Étel, shipped 2026-11-13, `mezo-r36n9.14`; spec [`2026-11-13-boop-b4-etel-design.md`](../superpowers/specs/2026-11-13-boop-b4-etel-design.md) — owner decisions 8–21, plan [`2026-11-13-boop-b4-etel.md`](../superpowers/plans/2026-11-13-boop-b4-etel.md)).** The Fuel orb on Ma opens `EtelRoom` (`Etel/EtelRoom.swift`, kit `NKDrillPage` in the fuel hue with a food photo head `NKPhoto.konyha`, four capsule tabs **Ma · Receptek · Kamra · Hét**, last tab kept in `@SceneStorage`). One `EtelStore` (`Etel/EtelRoom.swift`, logic in pure `EtelLogic.swift`) loads day / plan / coach / photos / supplement stash independently, so one failing read never blanks the room. All server calls go through `FoodClient` (`BoopCore/Etel/`); the model types in `FoodModels.swift`. The server owns the rules (day plan, scoring, sensitivities); the phone shows them and never recomputes a verdict.
   - **Ma tab** (`EtelMa`, `MealCard`, `DimensionSheet`): five numbered sections — **1** the day's budget (kcal headline + three macro bars; a kímélő GUIDANCE day shows "ma nincs kalóriakeret" and a "Kikapcsolom" button instead), **2** the day's plan (logged meals as photo cards with score and macros; the open windows from `GET /api/fuel/plan/{date}` with the MOST badge, the suggested recipe or ingredient tip, *Megeszem* / *Kihagyom* / camera), **3** the next-meal tip (*Megnézem a receptet* switches to Receptek when the window has a recipe; *Most nem* dismisses it locally), **4** víz (+250 / +500 ml, idempotent writes), **5** kiegészítők (one-tap group tick). A meal card opens the eight-dimension sheet (macro, micro, who, fat quality, NOVA, plant diversity, **energy density**, context — "Adag" is a recipe-only dimension; each shows what it measures, the server's own detail and the coach note). The processed-food line appears only as the coach's one quiet sentence when NOVA 3–4 carry more than half the meal's kcal; the phone adds no NOVA badge of its own. The headline wraps to two lines on long numbers (kit 38 pt); under 230 pt content width the dimension grid goes to two columns.

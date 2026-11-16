@@ -10,7 +10,10 @@ private func rgb(_ c: Color) -> (Int, Int, Int) {
 }
 
 @Test func hueNamesAndOrder() {
-    #expect(Hue.allCases.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus"])
+    // The five metric worlds first, then the two the life dashboard added (Pénz, Levél): they have no metric,
+    // so anything that means "a metric" iterates `Hue.metrics`, not `allCases`.
+    #expect(Hue.metrics.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus"])
+    #expect(Hue.allCases.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél"])
 }
 
 @Test func everyHueHasThreeSkiesAndFourOrbColours() {
