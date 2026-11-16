@@ -12,12 +12,30 @@ osszefoglalo: Minden terület oldala egyetlen közös vázból épül, hogy az �
 ## Mit csinál
 Amikor a körből belépsz egy területre, mindegyik ugyanazt a felépítést kapja:
 
-- **Fotós fejléc**: a terület saját képe, rajta a gömbje, egy cím és egy mondat arról, hogy épp hogy állsz.
-- **Saját felső fülek**, mindegyiken egy kis jelzés, ha van mögötte néznivaló — szám, ha megszámolható
-  (például 11 korábbi edzés), pötty, ha csak annyi, hogy „nézz rá”.
+- **Fejléc**: a terület gömbje egy vékony vonal fölött, alatta **balra** a terület neve, a mai ítélete és egy
+  mondat; jobbra fent keresés és beállítások. Ahol van hozzá saját fotó, az adja a hátteret.
+- **Saját alsó menüsor**: minden területnek megvan a maga néhány oldala — ez teszi külön kis alkalmazássá —,
+  mindegyiken egy kis jelzés, ha van mögötte néznivaló, és a sor végén egy fix gomb, amivel Boopot kérdezheted
+  erről a területről. Amíg egy terület nyitva van, a szokásos alsó sáv félreáll.
 - Alatta **építőelemek** abból a készletből, amit minden terület használhat: a nap egy mondata (akár gombokkal),
   számok, görbe célvonallal, lépcsős oszlopok, összetétel-sáv, soros listák, hőtérkép, összehasonlítás,
   „mit tud még ez a terület” rács, és egy sor, amivel egyenesen Boophoz fordulhatsz az adott területről.
+
+A területek saját menüi (2026-11-16-tól, a szimulátorban jóváhagyott minta szerint):
+
+| Terület | A saját oldalai |
+|---|---|
+| **Alvás** | Ma · Hét · Előzmények |
+| **Energia** | Ma · Check-inek · Minták |
+| **Edzés** | Ma · Blokk · Gyakorlatok · Előzmények |
+| **Forma** | Ma · Mi hat rá |
+| **Étel** | Ma · Receptek · Kamra · Hét |
+| **Pénz** | Ma · Pénzem · Költés · Gyakorlás |
+| **Levél** | Ma · Figyelt · Szabályok · Fiókok |
+
+A **Pénz** és a **Levél** oldala már most megvan, adat nélkül: minden fülük megmondja, mi lesz rajta, és egyetlen
+kitalált számot sem mutat. Ugyanez a szabály a többi területen is: ahol a minta olyat mutat, amit az app még nem
+tud (például a nyolchetes edzésblokk), ott a fül ezt kimondja.
 
 ## Hogyan működik
 1. A számok, a görbe és a listák **nem dobozban** ülnek, hanem közvetlenül a lapon, egy színes vonalkával és egy

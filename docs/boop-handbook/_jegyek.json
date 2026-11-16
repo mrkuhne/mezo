@@ -584,7 +584,7 @@
       "Alapok",
       "Terv"
     ],
-    "mit_kapsz": "Mind a nyolc terület megkapja a saját, app-szerű oldalát úgy, ahogy a szimulátorban kidolgoztuk: fotós fejléc az ítélettel, saját felső fülek, és a közös blokkkészlet. Itt derül ki, mi hiányzik még a vázból.",
+    "mit_kapsz": "Minden terület külön kis alkalmazás lett, a szimulátorban jóváhagyott minta szerint: alul a terület saját menüsora a saját oldalaival és jelzéseivel, fent a gömb, alatta a terület mai ítélete. A Pénz és a Levél oldala is megvan már, adat nélkül — minden fülük megmondja, mi lesz rajta.",
     "munkamenet": "boop-kezdolap-orbok"
   },
   "mezo-r36n9.58": {
@@ -605,6 +605,16 @@
       "Ma"
     ],
     "mit_kapsz": "A nap oldaláról lekerült gombsorral a perces légzőgyakorlat ajtó nélkül maradt. Az Energia területén kap helyet, amikor az megépül.",
+    "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.60": {
+    "cim": "Az Alvás, az Energia és az Edzés területnek nincs saját hangulatfotója",
+    "tipus": "Apróságok",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Ennek a három területnek a fejlécében most festett ég van fotó helyett, mert nincs hozzájuk jogtiszta kép. Egy-egy nyugodt természetfotó kell, a többi területéhez hasonló hangulatban. A Pénznek és a Levélnek a saját jele is hiányzik (most mérleg és könyv áll helyettük).",
     "munkamenet": "boop-kezdolap-orbok"
   }
 }

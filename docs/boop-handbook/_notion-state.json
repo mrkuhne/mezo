@@ -885,7 +885,7 @@
     },
     "kezikonyv:01-alapok/terulet-vaz": {
       "page_id": "41a8968e-752b-8155-94b9-d2ecc92c2f61",
-      "hash": "a7581d824bc6"
+      "hash": "87a028354cc9"
     },
     "jegyek:mezo-r36n9.51": {
       "page_id": "41a8968e-752b-81ab-a9b8-e433885a676c",
@@ -945,7 +945,7 @@
     },
     "jegyek:mezo-r36n9.57": {
       "page_id": "41a8968e-752b-8123-abe2-faae7db25725",
-      "hash": "7aa908658813"
+      "hash": "1c7eaf886a53"
     },
     "jegyek:mezo-r36n9.56": {
       "page_id": "41a8968e-752b-81e9-a6ef-f7d7e2481d7b",
@@ -970,6 +970,14 @@
     "jegyek:mezo-r36n9.59": {
       "page_id": "41a8968e-752b-81be-9a83-f85052a9767f",
       "hash": "0abbbc3def6e"
+    },
+    "jegyek:mezo-r36n9.60": {
+      "page_id": "41a8968e-752b-8121-877a-d3bd5bd2254e",
+      "hash": "f1a9b16c567d"
+    },
+    "kiadasok:cb3d9647f": {
+      "page_id": "41a8968e-752b-81df-bddb-edc5c518a5b6",
+      "hash": "5d4557686933"
     }
   }
 }
