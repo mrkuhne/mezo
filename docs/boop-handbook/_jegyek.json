@@ -575,5 +575,36 @@
     ],
     "mit_kapsz": "A nap oldala (a kör közepe és a Nap gömb is ide visz) egyetlen görgetés lett: fent a dátum és a boop felirat, alatta a nap görbéje a nap pillanataival, utána amit Boop épp mondani akar, majd a reggeli terv és a napod egy-egy sorrá csukva, az észrevételek és az esti zárás. A nagy gömb és a három fül lekerült róla.",
     "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.57": {
+    "cim": "Minden terület saját oldala a szimulátoros minta szerint",
+    "tipus": "Szakasz",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Terv"
+    ],
+    "mit_kapsz": "Mind a nyolc terület megkapja a saját, app-szerű oldalát úgy, ahogy a szimulátorban kidolgoztuk: fotós fejléc az ítélettel, saját felső fülek, és a közös blokkkészlet. Itt derül ki, mi hiányzik még a vázból.",
+    "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.58": {
+    "cim": "A B4-től tervezett lépések újranézése az új felület fényében",
+    "tipus": "Kutatás",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Végigvesszük a még hátralévő szakaszokat, és megmondjuk, mi változik meg bennük a kész új felülettől: mi nem kell már, mit építenénk kétszer, és mi jött hozzá.",
+    "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.59": {
+    "cim": "A perces légzőgyakorlatnak új hely kell az Energia területen",
+    "tipus": "Apróságok",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "A nap oldaláról lekerült gombsorral a perces légzőgyakorlat ajtó nélkül maradt. Az Energia területén kap helyet, amikor az megépül.",
+    "munkamenet": "boop-kezdolap-orbok"
   }
 }

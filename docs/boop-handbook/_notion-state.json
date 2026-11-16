@@ -309,7 +309,7 @@
     },
     "kezikonyv:01-alapok/navigacio": {
       "page_id": "4168968e-752b-81f1-a428-f1eff627e50a",
-      "hash": "ac33280aa35f"
+      "hash": "ed015b7d912e"
     },
     "kezikonyv:01-alapok/net-nelkul": {
       "page_id": "4168968e-752b-815c-bee7-c4032ca1468f",
@@ -321,11 +321,11 @@
     },
     "kezikonyv:02-ma/00-attekintes": {
       "page_id": "4168968e-752b-81e7-9587-d27ec99c8ca4",
-      "hash": "ab819370d8fe"
+      "hash": "97ab93caca13"
     },
     "kezikonyv:02-ma/boop-elmondja": {
       "page_id": "4168968e-752b-8123-b8ab-c3e5464f6f97",
-      "hash": "cb7860edb38a"
+      "hash": "ec045ac812f9"
     },
     "kezikonyv:02-ma/boop-eszrevette": {
       "page_id": "4168968e-752b-818b-be8d-c0965f768985",
@@ -881,11 +881,11 @@
     },
     "kezikonyv:01-alapok/kezdolap": {
       "page_id": "41a8968e-752b-812f-87dd-e3a938084198",
-      "hash": "a73a72528a7a"
+      "hash": "c1cd456e6b2e"
     },
     "kezikonyv:01-alapok/terulet-vaz": {
       "page_id": "41a8968e-752b-8155-94b9-d2ecc92c2f61",
-      "hash": "d865ccc8ce61"
+      "hash": "a7581d824bc6"
     },
     "jegyek:mezo-r36n9.51": {
       "page_id": "41a8968e-752b-81ab-a9b8-e433885a676c",
@@ -917,7 +917,7 @@
     },
     "kezikonyv:02-ma/elo-fal": {
       "page_id": "41a8968e-752b-8171-9ec2-f9a141185bf9",
-      "hash": "19379e2772a1"
+      "hash": "7c79471927c5"
     },
     "dontesek:d-2026-11-16-blokk": {
       "page_id": "41a8968e-752b-8124-90f8-eec0ca3c6376",
@@ -942,6 +942,34 @@
     "kiadasok:350147934": {
       "page_id": "41a8968e-752b-81b0-b564-f0345bf260be",
       "hash": "cd9845abd306"
+    },
+    "jegyek:mezo-r36n9.57": {
+      "page_id": "41a8968e-752b-8123-abe2-faae7db25725",
+      "hash": "7aa908658813"
+    },
+    "jegyek:mezo-r36n9.56": {
+      "page_id": "41a8968e-752b-81e9-a6ef-f7d7e2481d7b",
+      "hash": "24c4dfb0868e"
+    },
+    "jegyek:mezo-r36n9.58": {
+      "page_id": "41a8968e-752b-81bf-8cba-ffc6d1953f40",
+      "hash": "1886a0721635"
+    },
+    "dontesek:d-2026-11-16-nap-oldal": {
+      "page_id": "41a8968e-752b-811a-b2ba-f976920d7ec0",
+      "hash": "bed334c5871d"
+    },
+    "dontesek:d-2026-11-16-felolvasas-ki": {
+      "page_id": "41a8968e-752b-81e9-944b-e835716746ab",
+      "hash": "6e52ad5adefa"
+    },
+    "kiadasok:f9176be4b": {
+      "page_id": "41a8968e-752b-8130-b1bc-edef2b2b41fd",
+      "hash": "90cfec760165"
+    },
+    "jegyek:mezo-r36n9.59": {
+      "page_id": "41a8968e-752b-81be-9a83-f85052a9767f",
+      "hash": "0abbbc3def6e"
     }
   }
 }
