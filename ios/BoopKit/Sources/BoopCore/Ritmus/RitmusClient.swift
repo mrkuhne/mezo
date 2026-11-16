@@ -31,10 +31,14 @@ public struct RitmusClient: OutboxSender {
     private let client: Client
     private let audioDirectory: URL
     private let memo = Memo()
+    /// The training writes are sent by `TrainClient`, built once here: it remembers which server workout each
+    /// queued set belongs to, and a fresh one per send would forget that between two items of the same session.
+    private let train: TrainClient
 
     /// `audioDirectory`: where `VoicePayload.fileName` is resolved (the outbox directory by default).
     public init(client: Client, audioDirectory: URL = Outbox.defaultDirectory()) {
         self.client = client; self.audioDirectory = audioDirectory
+        self.train = TrainClient(client: client)
     }
 
     /// Work a retry must not repeat while the app runs: a transcript already paid for, a conversation already created.
@@ -61,6 +65,9 @@ public struct RitmusClient: OutboxSender {
             case .dayClose: return try await sendDayClose(item)
             case .chatQuestion: return try await sendChatQuestion(item)
             case .mealDraft: return await MealDraftSender(drafter: FoodClient(client: client), directory: audioDirectory).send(item)
+            case .workoutStart, .workoutSet, .workoutSetEdit, .workoutSkipExercise, .workoutFeedback,
+                 .workoutNote, .workoutFinish, .sportSession:
+                return await train.send(item)
             }
         } catch {
             // An answer whose body would not decode still carries its status; otherwise (no network, a timeout) the

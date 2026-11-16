@@ -6,6 +6,10 @@ public enum OutboxKind: String, Codable, CaseIterable, Sendable {
     case checkIn, checkInNote, goal, goalRemove, journal, voice, dayClose, chatQuestion
     /// A meal captured without the net (B4): the sender computes the draft, it never saves anything.
     case mealDraft
+    /// The training writes (B5). **Never rename one of these raw values** — they are persisted in `queue.json`,
+    /// so a rename would make every pending write of an older build unreadable.
+    case workoutStart, workoutSet, workoutSetEdit, workoutSkipExercise, workoutFeedback, workoutNote, workoutFinish
+    case sportSession
 }
 
 /// One pending write. `id` is the client ref the server keys idempotency on, so a resend never duplicates.
@@ -26,11 +30,17 @@ public struct OutboxItem: Codable, Equatable, Identifiable, Sendable {
     /// The failure is the attempt cap (the server kept answering "later"), not a refusal: the net coming back gives
     /// it a fresh start (`Outbox.networkReturned`). Absent in queues written before (decodes as nil = a refusal).
     public var exhausted: Bool?
+    /// What this write belongs to, when several writes must reach the server **in order within one thing** but are
+    /// independent of everything else — a workout and its sets (B5). The first item of the group carries its own
+    /// id here. Absent on every kind that is ordered by date instead (decodes as nil in older queues).
+    public var groupRef: UUID?
 
     public init(id: UUID = UUID(), kind: OutboxKind, date: String, capturedAt: Date, payload: Data,
-                attempts: Int = 0, nextAttempt: Date? = nil, failure: String? = nil, exhausted: Bool? = nil) {
+                attempts: Int = 0, nextAttempt: Date? = nil, failure: String? = nil, exhausted: Bool? = nil,
+                groupRef: UUID? = nil) {
         self.id = id; self.kind = kind; self.date = date; self.capturedAt = capturedAt; self.payload = payload
         self.attempts = attempts; self.nextAttempt = nextAttempt; self.failure = failure; self.exhausted = exhausted
+        self.groupRef = groupRef
     }
 }
 
@@ -194,7 +204,7 @@ public actor Outbox {
 
     /// The order group an item belongs to on its date; a waiting item holds later items of its group.
     /// A check-in starts the chain but does not wait on it (another slot's check-in is independent).
-    private static func group(of item: OutboxItem) -> (key: String, waits: Bool) {
+    static func group(of item: OutboxItem) -> (key: String, waits: Bool) {
         switch item.kind {
         case .checkIn: ("chain|\(item.date)", false)
         case .checkInNote, .journal, .voice, .dayClose: ("chain|\(item.date)", true)
@@ -202,6 +212,16 @@ public actor Outbox {
         case .chatQuestion: ("chat|\(item.date)", true)
         // Every captured meal stands alone: one waiting never holds another back.
         case .mealDraft: ("meal|\(item.id.uuidString)", false)
+        // One workout is one chain: its sets, skips, feedback, notes and finish all address the instance the start
+        // created, so they wait behind it — and behind each other, because a set edit after a set must not overtake
+        // it. The start itself waits on nothing, and a second workout (another day, or a second one today) is a
+        // group of its own, so one stuck session never holds another back. This is the first group keyed by
+        // something other than the date.
+        case .workoutStart: ("workout|\(item.groupRef?.uuidString ?? item.id.uuidString)", false)
+        case .workoutSet, .workoutSetEdit, .workoutSkipExercise, .workoutFeedback, .workoutNote, .workoutFinish:
+            ("workout|\(item.groupRef?.uuidString ?? item.id.uuidString)", true)
+        // A logged sport session is its own write, with nothing before or after it.
+        case .sportSession: ("sport|\(item.id.uuidString)", false)
         }
     }
 
