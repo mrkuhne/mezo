@@ -5,7 +5,7 @@
   area-page kit that follows from it) · **Epic:** `mezo-r36n9`
 - **Amends:** `2026-11-11-boop-standalone-design.md` §3 (the spine's first screen) and
   `2026-11-13-boop-life-dashboard-design.md` §2 decision #3 (*"Terv is the home of the areas"*).
-- **Decisions log:** `docs/superpowers/research/boop-standalone/14-decisions.md` #31, #32.
+- **Decisions log:** `docs/superpowers/research/boop-standalone/14-decisions.md` #32, #33.
 - **Look:** Napkelte (`2026-11-10-boop-napkelte-design.md`) + the photo guideline
   (`2026-11-13-boop-kepek-design.md` §3.3).
 

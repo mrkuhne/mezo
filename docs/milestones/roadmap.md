@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); **B4 Étel shipped (2026-11-13) — B5 (edzés) következik** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (hét gömb körben) + a közös területváz (L0) shipped (2026-11-16) — L0/b (az élő Ma-fal), majd B5 (edzés) következik** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -63,6 +63,23 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-16 — Boop kezdőlap + a területek közös váza — a hét gömb köre lett az app bejárata (`mezo-r36n9.47`, `.51`, `.37`).**
+  Az appot megnyitva mostantól **hét élő gömb** fogad egy körben — Alvás, Étel, Edzés, Energia, Forma, Pénz, Levél —,
+  középen Boop saját halvány gömbjével és a napi mondatával, mögöttük fotózott ködös hegygerinccel és három rétegben
+  úszó köddel. Bármelyik gömb a saját területére visz, a közép a mai Nap oldalra, ami nem tűnt el, csak egy szinttel
+  beljebb került. A Pénz és a Levél halványan ül ott, amíg meg nem épül (L4–L6). Nyitáskor a gömbök a ködből úsznak
+  elő, koppintásra a kör belezoomol a megkoppintott gömbbe és átúszik a területre, visszalépéskor vissza — mindhárom
+  mozgásnak van álló változata csökkentett mozgás mellett.
+  Ezzel együtt eldőlt az **útvonalterv** is (döntések #32–#33): a kör végzi azt, amire a Terv területrácsát kitaláltuk,
+  így az alsó sáv marad négygombos, a **Terv pedig a tulajdonos terve** lesz, nem második területmenü — ez felülírja
+  az életpanel #3-as döntését. És elkészült a **közös területváz** (L0), amiből mostantól minden terület oldala épül:
+  fotós fejléc az ítélettel, saját felső fülek jelzésekkel, és egy készlet blokk (kiemelés gombokkal, számok cél- és
+  koradattal, görbe, lépcsős oszlopok, összetétel, soros listák négyállapotú sorokkal és mércékkel, kereshető lista,
+  hőtérkép, összehasonlítás, menürács, kérdéssor, aloldal-keret) — doboz nélkül, a terület színével a lényeges
+  számokon, blokkonkénti töltés- és hibaállapottal. Az **Étel szoba** át is költözött rá, változatlan tartalommal:
+  ez a bizonyíték, hogy a váz áll. B5 Edzés erre épül.
+  [spec](../superpowers/specs/2026-11-13-boop-kezdolap-design.md), [életpanel-spec §3.3](../superpowers/specs/2026-11-13-boop-life-dashboard-design.md),
+  [`boop-ios.md`](../features/boop-ios.md) §2.
 - **2026-11-13 — Boop B4 utánjavítás · a kamra alapanyagai megmondják, mit tartalmaznak (`mezo-r36n9.48`).**
   A kamrában **mind a 448 alapanyagnál üres volt az allergén-rovat**, ezért a halas és tojásos receptek
   „allergénmentesnek” számoltak — a B4-ben ötször javított „a hallgatás allergénmentesnek olvasása” csapda, most

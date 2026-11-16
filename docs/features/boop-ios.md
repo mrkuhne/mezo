@@ -2,11 +2,11 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-13
-tags: [ios, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
+updated: 2026-11-16
+tags: [ios, kezdolap, area-kit, l0, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
-  - ios/BoopKit/Sources/BoopCore
+  - ios/BoopKit/Sources
   - backend/src/main/java/io/mrkuhne/mezo/feature/wearable
   - api/feature/wearable/wearable.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/boop
@@ -27,7 +27,7 @@ related: [fuel, pantry, recipe, dayclose, intention, journal, companion, proacti
 > **Re-planned 2026-11-11 (`mezo-r36n9.9`):** S4 is cancelled; Boop continues as a standalone app in slices
 > **B0–B8** (repair → data foundation → new spine Ma · Terv · Napló · Boop → daily loop → food → training + Watch →
 > the Plan → day capacity → one AI) — spec [`2026-11-11-boop-standalone-design.md`](../superpowers/specs/2026-11-11-boop-standalone-design.md),
-> research [`boop-standalone/`](../superpowers/research/boop-standalone/13-synthesis.md). **B2 Gerinc (the new shell) shipped 2026-11-11** (`mezo-r36n9.12`, §2 "The spine"); **B3 Napi ritmus (the daily loop) shipped 2026-11-12** (`mezo-r36n9.13`, §2 "The daily loop"); **B4 Étel (food) shipped 2026-11-13** (`mezo-r36n9.14`, §2 "The Étel room"); the older S1–S3 shell text below is superseded where it names the five-domain bar.
+> research [`boop-standalone/`](../superpowers/research/boop-standalone/13-synthesis.md). **B2 Gerinc (the new shell) shipped 2026-11-11** (`mezo-r36n9.12`, §2 "The spine"); **B3 Napi ritmus (the daily loop) shipped 2026-11-12** (`mezo-r36n9.13`, §2 "The daily loop"); **B4 Étel (food) shipped 2026-11-13** (`mezo-r36n9.14`, §2 "The Étel room"); **the home screen + the shared area-page kit shipped 2026-11-16** (`mezo-r36n9.47` / `.51` / `.37`, §2 "The home screen" and "The area-page kit"); the older S1–S3 shell text below is superseded where it names the five-domain bar.
 
 > One-line: the native SwiftUI iPhone app that replaces the web app once complete (epic `mezo-r36n9`).
 > Design canon **Napkelte** since S2.5 (dark glass, painted sky, the orb rising as the sun — spec
@@ -49,7 +49,7 @@ related: [fuel, pantry, recipe, dayclose, intention, journal, companion, proacti
 Boop is built in four slices (spec §, plan "Slice map"): **S1 Alap**, **S2 Adatok** (Apple Health +
 calendar ingestion), **S2.5 Napkelte** (the look) and **S3 Reggel** (the morning brief: five orbs, Boop's voice,
 energy curve, paths) are this doc's base state; **B2 Gerinc** (2026-11-11) then replaced the five-domain shell with the
-spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (2026-11-12) then added the offline-first daily loop (check-in, goal, evening close, journal, Boop chat, reminders); **B4 Étel** (2026-11-13) then added the food room (Ma · Receptek · Kamra · Hét, offline-first meal capture, barcode, photos, sensitivities); B5–B8 follow. The web PWA keeps running until Boop covers it.
+spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (2026-11-12) then added the offline-first daily loop (check-in, goal, evening close, journal, Boop chat, reminders); **B4 Étel** (2026-11-13) then added the food room (Ma · Receptek · Kamra · Hét, offline-first meal capture, barcode, photos, sensitivities); and the **home screen + area-page kit** (2026-11-16) put a ring of seven area orbs in front of Ma and gave every area one frame to be built from; B5–B8 follow. The web PWA keeps running until Boop covers it.
 
 ## 2. User-facing behavior
 
@@ -153,6 +153,45 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **Offline, retry, refused:** a pending write shows a small waiting glyph; a write the server will never take (a 4xx) stays on the phone as a quiet **"nem sikerült elküldeni · Újra"** row (`Ritmus/RefusedRow`) — nothing is ever dropped. The check-in dot, the goal, the close and the journal line each have such a row.
   - **DEBUG flags:** `-previewOpen checkin|checkinDone|este|esteDone|naploDay|chatAnswer|chatAsk|chatQueued`, `-previewOffline`, `-previewNotify`, `-previewColdTap`, `-previewRefuse` — see `ios/README.md`.
   - **Gated on the paid Apple team:** the home-screen **widget** and **answering a check-in from the notification** (design only; local notifications need no paid team) — and the real-device checks (cold-launch tap, background wake); see §9.
+
+- **The home screen (shipped 2026-11-16, `mezo-r36n9.47`; the navigation map `mezo-r36n9.51`; spec
+  [`2026-11-13-boop-kezdolap-design.md`](../superpowers/specs/2026-11-13-boop-kezdolap-design.md), decisions #32–#33).**
+  Opening the app now shows **the ring**, not Ma: "boop" at the top, the **seven life areas** as living orbs on a
+  circle (Alvás · Étel · Edzés · Energia · Forma · Pénz · Levél, clockwise from the top), **Boop's own pale orb in
+  the middle** with his line for the day under the ring, over a photographed misty ridge (`NKPhoto.hegy`) in the
+  cool blue world with three bands of drifting fog (`DriftingFog`). An orb opens its area; the middle opens today's
+  Nap page, which was **not replaced — it moved one level in**. Pénz and Levél are not built (L4–L6): they sit faint
+  and say so on tap. `KezdolapView` is the Ma place's root (`Kezdolap/`), and it is where the brief is fetched and
+  kept fresh (`MorningTriggers` moved here from `NapView`). Tapping "Ma" in the bar while Ma is open brings the ring
+  back from anywhere (`\.kezdolapHomeReset`). **The map it settles:** the ring does the job the Terv area grid was
+  invented for, so the bar keeps its four places and **Terv becomes his plan**, not a second area menu — this
+  overturns life-dashboard decision #3.
+  *Motion, each with a still branch under Reduce Motion:* the orbs **arrive out of the fog** one after the other
+  (`FogArrival`); a tap **zooms the ring into that orb** and cross-fades to the area; coming back fades it out.
+  Four rules were learned by feel and must not be undone: never animate a blur over the live orbs; **never scale
+  the backdrop** (a blurred fog canvas at 6.5× is what stuttered); freeze the orbs for the transition
+  (`NKOrbRing(live:)`, and a paused `TimelineView` holds its last frame so the freeze is seamless); and give the
+  incoming page one run-loop turn before anything moves. A room opened from the ring is **the page itself, with no
+  `NavigationStack` under it** (`\.closeRoom` replaces `dismiss()` for its back button), because the stack's own
+  back slides the room off sideways first.
+
+- **The area-page kit (shipped 2026-11-16, `mezo-r36n9.37`, slice L0; spec
+  [`2026-11-13-boop-life-dashboard-design.md`](../superpowers/specs/2026-11-13-boop-life-dashboard-design.md) §3.3).**
+  One frame every area is built from, in `BoopDesign/Napkelte/{Area,AreaBlocks}.swift`: `NKAreaPage` (photo head
+  under the hue's gradient, back + crumb, corner actions, the orb at the area's level with an optional number, serif
+  verdict, sentence, then `NKAreaTabs` — inner tabs each with a count badge or a plain dot) and the blocks
+  `NKHighlight` (with an optional photo band and up to three actions), `NKStatRow` (`NKStat` carries value/target/
+  age, and a nil value reads "–" + "nincs friss adat", never a 0), `NKCurve`, `NKSteppedBars`, `NKComposition`,
+  `NKRowList` (`NKAreaRow` with a photo thumbnail or a glyph medallion, a four-way `NKRowState`, chips, a level bar
+  with `NKLevelTick` landmarks), `NKSearchableRowList` (owning or caller-owned query), `NKHeatStrip`,
+  `NKCompareColumns`, `NKMenuGrid`, `NKAskRow`, and `NKAreaSubPage` for a page inside an area. It wears the **warm**
+  treatment (decision #12): no card around the stats, the curve, the composition or the rows — `NKBare` gives them a
+  hue tick and a label, and carries that block's own loading and failed-with-"Újra" state (`NKBlockState`), because
+  every section of a room loads and fails on its own. `.nkStale(NKStale(age:loud:))` marks a block drawn from older
+  data. The page returns to the tab row on a tab change, and only when it is below it. **`EtelRoom` is the proof:**
+  it moved onto `NKAreaPage` with every sheet, flow and section unchanged. A full-screen flow with its own chrome
+  (the workout player, the check-in, the evening close) stays a page-level cover outside this system.
+  Review: `-previewKit YES` renders every block and every awkward state on one page (`Kezdolap/KitGallery.swift`).
 
 - **The Étel room (B4 Étel, shipped 2026-11-13, `mezo-r36n9.14`; spec [`2026-11-13-boop-b4-etel-design.md`](../superpowers/specs/2026-11-13-boop-b4-etel-design.md) — owner decisions 8–21, plan [`2026-11-13-boop-b4-etel.md`](../superpowers/plans/2026-11-13-boop-b4-etel.md)).** The Fuel orb on Ma opens `EtelRoom` (`Etel/EtelRoom.swift`, kit `NKDrillPage` in the fuel hue with a food photo head `NKPhoto.konyha`, four capsule tabs **Ma · Receptek · Kamra · Hét**, last tab kept in `@SceneStorage`). One `EtelStore` (`Etel/EtelRoom.swift`, logic in pure `EtelLogic.swift`) loads day / plan / coach / photos / supplement stash independently, so one failing read never blanks the room. All server calls go through `FoodClient` (`BoopCore/Etel/`); the model types in `FoodModels.swift`. The server owns the rules (day plan, scoring, sensitivities); the phone shows them and never recomputes a verdict.
   - **Ma tab** (`EtelMa`, `MealCard`, `DimensionSheet`): five numbered sections — **1** the day's budget (kcal headline + three macro bars; a kímélő GUIDANCE day shows "ma nincs kalóriakeret" and a "Kikapcsolom" button instead), **2** the day's plan (logged meals as photo cards with score and macros; the open windows from `GET /api/fuel/plan/{date}` with the MOST badge, the suggested recipe or ingredient tip, *Megeszem* / *Kihagyom* / camera), **3** the next-meal tip (*Megnézem a receptet* switches to Receptek when the window has a recipe; *Most nem* dismisses it locally), **4** víz (+250 / +500 ml, idempotent writes), **5** kiegészítők (one-tap group tick). A meal card opens the eight-dimension sheet (macro, micro, who, fat quality, NOVA, plant diversity, **energy density**, context — "Adag" is a recipe-only dimension; each shows what it measures, the server's own detail and the coach note). The processed-food line appears only as the coach's one quiet sentence when NOVA 3–4 carry more than half the meal's kcal; the phone adds no NOVA badge of its own. The headline wraps to two lines on long numbers (kit 38 pt); under 230 pt content width the dimension grid goes to two columns.
@@ -528,6 +567,8 @@ B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet}.swift` · `ios/Boop/Captu
 `ios/Boop/Nap/{MaPhases,MaDrill,ProposalDesk,RoomSwipeBack}.swift` · `ios/BoopKit/Sources/BoopCore/Morning/{DayPhase,DayPlan,Proposals}.swift` ·
 `ios/BoopKit/Sources/BoopDesign/Napkelte/{SpineBar,Proposal,Drill}.swift` ·
 B1: `ios/BoopKit/Sources/BoopCore/Health/{HealthKitReader,HealthReader,HealthSync,HealthBackground,SleepNightBuilder,WorkoutMapper}.swift` · `…/Push/PushRegistrar.swift` · `ios/Boop/App/{BoopAppDelegate,BackgroundSyncHost}.swift` · `ios/Boop.entitlements` · `ios/Boop-Paid.entitlements` · `backend/…/feature/wearable/service/{HealthSampleService,WearableDeletionService,WorkoutReconciler}.java` · `backend/…/feature/biometrics/sleep/service/SleepNightMerge.java` · `api/feature/device/device.yml` · `scripts/ops/boop-b1-merge-accounts*.sql`
+
+Kezdőlap + L0: `ios/Boop/Kezdolap/{KezdolapView,Area,KitGallery}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/{Area,AreaBlocks,OrbRing,Fog}.swift` · `ios/BoopKit/Sources/BoopDesign/Resources/Photos.xcassets/p-hegy.imageset`
 
 B4: `ios/Boop/Etel/*` · `ios/BoopKit/Sources/BoopCore/Etel/{FoodClient,FoodModels,MealDraft,FoodOutbox,SensitivityRules}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Etel.swift` · `api/feature/meal/{fuel-plan,meal-photo}.yml` · `api/feature/sensitivity/sensitivity.yml` · `api/feature/recipe/{recipe-import,recipe-image}.yml` · `backend/…/feature/{nutrition/service/dayplan,meal/service/dayplan,nutrition/service/SensitivityService.java,common/image}` · `…/db/changelog/1.1.0/script/20261113*_mezo-r36n9.14_*.sql`
 
