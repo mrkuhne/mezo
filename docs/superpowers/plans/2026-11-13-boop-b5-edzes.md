@@ -171,7 +171,22 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
   `TrainClient.send(_ item: OutboxItem) async -> OutboxSendResult`;
   `func startWorkout(templateSessionId: UUID, clientRef: UUID) async throws -> UUID`.
 
-**Decision this task settles:** `/api/train/*` has no `clientRef`. Use the **natural key** `(templateSessionId, local date)` for `startWorkout` — the server already refuses a second open workout with `409 TRAIN_WORKOUT_OPEN_ELSEWHERE` and a second completion of the same day with `409 TRAIN_DAY_DONE_THIS_WEEK`. Treat those 409s as *success, re-learn the id* (the `sendGoal` trick at `RitmusClient.swift:133`), not as failures. No contract change, no Liquibase.
+**Decision this task settles:** `/api/train/*` has no `clientRef`. Use the **natural key** `(templateSessionId, the open instance)` for `startWorkout`. No contract change, no Liquibase.
+
+> **Corrected while building (2026-11-16), after reading the contract rather than assuming it.** Two things in the
+> paragraph this replaces were wrong, and both would have shipped a bug:
+> 1. **A replayed start needs no 409 handling at all.** `POST /api/train/workouts` answers **201 with the open
+>    instance** when one exists ("Start (or resume) … an open instance is returned, never duplicated"), so the
+>    retry case is already idempotent on the template day.
+> 2. **The 409 body carries no workout id** — it is a `SystemMessageList`, i.e. `[SystemMessage]` with a `code`.
+>    So "treat the 409 as success and re-learn the id from its body" was not implementable. The two 409s
+>    (`TRAIN_WORKOUT_OPEN_ELSEWHERE`, `TRAIN_DAY_DONE_THIS_WEEK`) are **refusals with a meaning**: another
+>    session is open, or this day is already done this week. Neither can be fixed by sending again, so the item
+>    `.failed`s with the server's own code and the room says what happened in his words.
+>
+> Consequence for Task 5 and Task 6: those two codes are states the player must be able to show.
+
+**How a queued set finds its workout** (this replaces the payload relink): a queued write never names a server id — the workout may not exist yet when he logs the set in a basement. It names `workoutRef`, the **id of the outbox item that started the workout**, which is also its order group (`OutboxItem.groupRef`). `TrainClient` resolves that into the server's workout id at send time: what this run learned, else today's `openWorkout`, else today's `completedWorkout` (a note or a finish can arrive after the session closed). `nil` means the start has not landed, so the write answers `.retryLater` — it never invents an id and is never dropped. **No queued payload is ever rewritten**, so `RitmusEnvironment`'s `onSent` relink is not needed for training writes.
 
 - [ ] **Step 1: Write the failing tests:**
   - `setsOfOneWorkoutKeepTheirOrder` — enqueue start, three sets and finish; assert `group(of:)` returns the same key for all five and `waits == true`, and that the sender sees them in enqueue order.
@@ -182,7 +197,7 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
 - [ ] **Step 2: Run the kit tests; expect FAIL.**
 - [ ] **Step 3: Add the `OutboxKind` cases** (append only) and extend `group(of:)` with the workout-id key.
 - [ ] **Step 4: Implement `TrainPayloads` and the write half of `TrainClient`**, including the 409-means-learn-the-id branch and the `isNoConnection` mapping already used by `RitmusClient.map(_:)`.
-- [ ] **Step 5: Wire the relink** in `RitmusEnvironment`'s `onSent` so queued sets pick up the server workout id, mirroring B3's `relinkIfNeeded`.
+- [ ] ~~**Step 5: Wire the relink** in `RitmusEnvironment`'s `onSent`~~ — **dropped**, see the note above: ids are resolved at send time, so nothing has to be rewritten. The branch in `RitmusClient.send` that routes the eight training kinds to `TrainClient` replaces it.
 - [ ] **Step 6: Run the kit and app tests; expect PASS.**
 - [ ] **Step 7: Commit** (`feat(boop): offline workout writes (mezo-r36n9.15)`).
 

@@ -149,13 +149,14 @@
     "munkamenet": "boop-b4-etel"
   },
   "mezo-r36n9.15": {
-    "cim": "B5 Edzés + Apple Watch — natív edzéslejátszó",
+    "cim": "B5 Edzés — a natív edzésszoba a telefonon",
     "tipus": "Szakasz",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Edzés közben pihenőidő, sorozatok és jegyzetek a telefonon, élő kijelzés a zárolt képernyőn, és saját Apple Watch app élő pulzussal."
+    "mit_kapsz": "Edzés közben pihenőidő, sorozatok és jegyzetek a telefonon, a futó blokk nyolc hete, a gyakorlataid és az előzményeid — hálózat nélkül is.",
+    "munkamenet": "boop-b5-edzes"
   },
   "mezo-r36n9.16": {
     "cim": "B6 A Terv — étrend, edzés és testsúlycél egy tervben",
