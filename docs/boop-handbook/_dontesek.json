@@ -469,5 +469,18 @@
     "miert": "A nap maga az egész nap, a másik hét csak egy-egy szelete belőle — kézenfekvő, hogy a kör tetején legyen. Korábban úgy döntöttünk, hogy a nap csak a Ma lapról érhető el; ezt felülírtad.",
     "levaltotta": "A hét gömbös kört (2026-11-13) és azt a megoldást, hogy a nap oldala csak a Ma lapról nyílik.",
     "kovetkezmeny": "Nyolc gömb szebben is kijön, mint hét: a hét soha nem áll szimmetrikusan egy körben, a nyolc igen. Az áruk annyi, hogy a gömbök egy hajszállal kisebbek lettek, hogy a nevek ne érjenek össze a kis telefonon. A kör viszont ezzel betelt: egy kilencedik terület már nem egyszerűen „még egy pont”, azt külön ki kell találni, és az a te döntésed lesz."
+  },
+  "d-2026-11-16-nap-oldal": {
+    "cim": "A nap oldaláról lekerült a nagy gömb és a három fül",
+    "datum": "2026-11-16",
+    "suly": "Közepes",
+    "terulet": [
+      "Ma",
+      "Alapok"
+    ],
+    "valasztas": "A nap oldala a szimulátorban kidolgozott mintát követi: egy görgetés, fent csak a dátum és a boop felirat. Nincs rajta gömbsor (a területekhez a kör az egyetlen ajtó), és nincs Reggel/Napközben/Este fül — ezek mostantól csak címek a görgetésben.",
+    "miert": "A gömbsor ugyanaz a menü lett volna másodszor, a fülek pedig olyasmit kapcsolgattak, amit úgyis végiggörgetsz. Így a nap egyben olvasható, és rögtön a nap görbéjével indul.",
+    "levaltotta": "A nap oldalának nagy felkelő gömbjét az ítélet-mondattal, és a három szakaszfület.",
+    "kovetkezmeny": "Boop reggeli mondatai nem tűntek el: a „reggeli összefoglaló” sor mögött vannak, és onnan is felolvastathatod."
   }
 }

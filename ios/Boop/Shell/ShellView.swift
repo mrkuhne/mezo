@@ -14,6 +14,16 @@ enum ShellTab: Int, CaseIterable {
     var defaultHue: Hue { [.forma, .fuel, .alvas, .forma][rawValue] }
 }
 
+/// Lets a page send the owner to another place of the spine, as if he had tapped the bar (the day page's
+/// "Kérdezd meg Boopot" row goes to Boop).
+private struct OpenPlaceKey: EnvironmentKey { static let defaultValue: @MainActor @Sendable (ShellTab) -> Void = { _ in } }
+extension EnvironmentValues {
+    var openPlace: @MainActor @Sendable (ShellTab) -> Void {
+        get { self[OpenPlaceKey.self] }
+        set { self[OpenPlaceKey.self] = newValue }
+    }
+}
+
 /// Tells the shell that a page has a room (a domain drill-down) open over it: the bar steps aside until it closes.
 private struct SetRoomOpenKey: EnvironmentKey { static let defaultValue: @MainActor @Sendable (Bool) -> Void = { _ in } }
 extension EnvironmentValues {
@@ -89,6 +99,7 @@ struct ShellView: View {
                 .accessibilityHidden(roomOpen)
         }
         .environment(\.openAccount, { account = true })
+        .environment(\.openPlace, { select($0) })
         .environment(\.openMeal, { meal = $0 })
         .nkToast($toast)
         .preferredColorScheme(.dark)

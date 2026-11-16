@@ -8,15 +8,15 @@ enum KezdolapRoute: Equatable {
     case nap
     /// The Nap page with that area's room already open.
     case room(Hue)
-    /// The day's own page — the eighth orb (owner, 2026-11-16, decision #41). It is reached from here AND from
-    /// the folded "A napod" row, because an orb is another way in, not a replacement.
+    /// The day's own page — the eighth orb (owner, 2026-11-16, decision #41). Since the day page itself became
+    /// the Élet spike's Ma screen (`mezo-r36n9.56`), this orb and the ring's centre land on the **same** page;
+    /// the full list of the day is one fold inside it.
     case day
 
     var room: Hue? { if case .room(let h) = self { h } else { nil } }
-    var detail: Brief.Link? { self == .day ? .day : nil }
 }
 
-/// **The home screen** (owner 2026-11-13): "boop" at the top, the seven life areas as living orbs laid out on a
+/// **The home screen** (owner 2026-11-13): "boop" at the top, the eight life areas as living orbs laid out on a
 /// circle, Boop's own orb in the middle, and behind them a photographed misty mountain ridge with fog drifting
 /// across it (the cool blue world — no lilac here, owner round 2).
 ///
@@ -54,7 +54,7 @@ struct KezdolapView: View {
                     .allowsHitTesting(route == nil)
                     .accessibilityHidden(route != nil)
                 if let route {
-                    NapView(initialRoom: route.room, initialDetail: route.detail, onHome: closeRoute)
+                    NapView(initialRoom: route.room, onHome: closeRoute)
                         .opacity(pageIn ? 1 : 0)
                 }
             }

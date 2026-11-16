@@ -101,6 +101,12 @@ func etelStations(_ stations: [PathStation], plan: FuelPlan?, groups: [Supplemen
     return out
 }
 
+/// A moment of the day (BoopCore, pure) as a pin on the curve (BoopDesign). The two cannot see each other, so the
+/// app carries the value across — the same bridge as `MetricKey` ↔ `Hue`.
+func curveEvent(_ m: DayMoment) -> EnergyCurveEvent {
+    EnergyCurveEvent(id: m.id, hour: m.hour, glyph: m.glyph, label: m.label, detail: m.detail)
+}
+
 /// Nothing on the day but MOST: the timeline gives way to the "nothing yet" line.
 func isEmptyDay(_ stations: [PathStation]) -> Bool { stations.allSatisfy(\.isNow) }
 
@@ -184,6 +190,8 @@ struct MaBelow: View {
     @Environment(\.foodClient) private var food
     /// A wall card's "Rögzítem" opens the meal composer at page level (boop-ios.md §9).
     @Environment(\.openMeal) private var openMeal
+    /// The ask row under the observations sends him to Boop's own place.
+    @Environment(\.openPlace) private var openPlace
     /// Is the day's timeline open? In the morning it is; later it is one row (owner decision #13).
     @State private var napodOpen: Bool?
     @State private var etel = EtelStore()
@@ -205,15 +213,17 @@ struct MaBelow: View {
     private var ledgerDay: DayLedger? { ritmus?.ledger.ledger(for: today) }
 
     var body: some View {
+        // The day page is the Élet spike's Ma screen (owner, 2026-11-16, `mezo-r36n9.56`): the shape of the day
+        // first as one picture, then what Boop wants to say now, then everything else folded away.
         VStack(spacing: 30) {
-            // L0/b: what Boop wants to say right now comes first; the plan and the day fold under it.
-            MaWall(brief: brief, ctx: ctx, etel: etel, ledgerDay: ledgerDay, onDrill: onDrill,
+            dayCurveCard.phaseAnchor(.napkozben)
+            MaWall(brief: brief, ctx: ctx, etel: etel, ledgerDay: ledgerDay, heading: true, onDrill: onDrill,
                    onCheckIn: { router?.open(.checkin) },
                    onMeal: { openMeal(MealStart()) },
                    onEtelRoom: { onDrill(.fuel) })
             reggel.phaseAnchor(.reggel)
-            energyCard
-            napod.phaseAnchor(.napkozben)
+            napod
+            notices
             este.phaseAnchor(.este)
         }
         .task(id: today) {
@@ -261,8 +271,9 @@ struct MaBelow: View {
 
     private var reggel: some View {
         let rows = DayPlan.rows(brief)
+        // The morning is a fold now (the day page, 2026-11-16): the heading left with the phase tabs, and what
+        // Boop said in the morning is one row by the afternoon — open by itself only while it is the morning.
         return VStack(alignment: .leading, spacing: 14) {
-            phaseHead(.reggel)
             if planCollapsed {
                 Button { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { planOpen = true } } label: {
                     HStack(spacing: 14) {
@@ -362,14 +373,63 @@ struct MaBelow: View {
 
     // MARK: Napközben
 
-    /// The day's energy, under the wall and above the folded timeline: a curve looks forward, which is exactly
-    /// what the wall does not do.
+    /// **Mai nap** — the shape of the day as one picture: Boop's energy curve with the day's own moments sitting
+    /// on it as pins (`dayMoments`), and the way into the full list. It is the page's first block, because it is
+    /// the one thing that is about the whole day; everything under it is about one piece of it.
+    private var dayCurveCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Mai nap").nkFont(28, design: .serif).foregroundStyle(.white)
+                Spacer()
+                Button { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { napodOpen = true } } label: {
+                    HStack(spacing: 5) {
+                        Text("A napod").nkFont(13.5, .semibold)
+                        Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(ctx.hue.glow)
+                }
+                .buttonStyle(.plain)
+            }
+            .accessibilityElement(children: .contain)
+            energyCard
+        }
+    }
+
+    /// The day's energy, with the day's moments pinned on it. Without the ledger (outside the signed-in shell) the
+    /// curve has nothing of his own on it, so the block stays away rather than showing an empty frame.
     @ViewBuilder private var energyCard: some View {
         if let ritmus, let day = ledgerDay {
             MaEnergyCard(day: day, predicted: brief.date == today ? brief.energy.hourly : [], now: ctx.now,
-                         calendar: ritmus.calendar, selected: $curveSel,
+                         calendar: ritmus.calendar, selected: $curveSel, title: "",
                          refusal: { ritmus.refusal(forCheckIn: $0, date: today) },
-                         onRetry: { id in Task { await ritmus.retry([id]) } })
+                         onRetry: { id in Task { await ritmus.retry([id]) } },
+                         events: brief.date == today ? dayMoments(brief).map(curveEvent) : [])
+        }
+    }
+
+    /// **Amit ma észrevettem** — the cross-area observations as their own block (the spike's `notices`), with the
+    /// *igaz / nem igaz* verdict they already carry, and one row into Boop's chat under them.
+    @ViewBuilder private var notices: some View {
+        if !brief.day.observations.isEmpty {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("Amit ma észrevettem").nkFont(26, design: .serif).foregroundStyle(.white)
+                    Text("\(brief.day.observations.count)").nkFont(13, .semibold)
+                        .foregroundStyle(.white.opacity(0.75))
+                        .frame(minWidth: 22, minHeight: 22)
+                        .background(Circle().fill(.white.opacity(0.12)))
+                    Spacer(minLength: 0)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+                ObservationStack(observations: brief.day.observations, hue: ctx.hue, motion: ctx.motion,
+                                 decide: { id, verdict in
+                                     await store.decide(observation: id, true: verdict)
+                                     return store.problem == nil
+                                 },
+                                 toast: ctx.toast)
+                NKAskRow(hue: ctx.hue, text: "Kérdezd meg Boopot, mit vett még észre") { openPlace(.boop) }
+            }
         }
     }
 

@@ -63,6 +63,17 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-16 — Boop · a nap oldala a szimulátorban kidolgozott Ma-képernyő lett (`mezo-r36n9.56`).**
+  A kör **közepe** és az új **Nap gömb** ugyanoda visz, és az a hely egyetlen görgetés lett: fent a dátum és a
+  **boop** felirat, alatta **Mai nap** — a nap görbéje, rajta a nap saját pillanataival (ébredés, étkezések, a
+  legsűrűbb naptárblokk, az edzés, a lefekvés), egy koppintásra megmondja, mi volt az —, utána **Most** az élő
+  fallal, a **reggeli terv** és **A napod** egy-egy sorrá csukva, **Amit ma észrevettem** a mai összefüggésekkel
+  és egy sorral Boophoz, végül **Este**. A tulajdonos döntésére lekerült róla a **nagy felkelő gömb** az
+  ítélet-mondattal (a gömbök a köré tartoznak; Boop reggeli szavai a „reggeli összefoglaló” mögött vannak,
+  felolvastatva is) és a **Reggel/Napközben/Este fül** (ezek mostantól címek a görgetésben); a minta gömbsora
+  nem épült meg, mert az a körrel kétszer ugyanaz a menü lenne.
+  [terv](../superpowers/plans/2026-11-16-boop-nap-oldal.md), [`boop-ios.md`](../features/boop-ios.md) §2.
+
 - **2026-11-16 — Boop · a napnak saját gömbje lett — a kör nyolc gömbből áll (`mezo-r36n9.55`).**
   A tulajdonos felülírta a hét gömbös kört (döntés #41): a **nap** is bekerült, mindjárt a kör **tetejére**, mert a
   nap maga az egész nap, a másik hét csak egy-egy szelete belőle. A nap gömbjében nincs pontszám — egy napra nincs

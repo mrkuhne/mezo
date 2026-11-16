@@ -64,6 +64,12 @@ func morningProblemCopy(_ p: MorningProblem) -> NapCopy {
                    sentence: MaiText.problemSentence, action: MaiText.retry)
 }
 
+/// "Kedd · november 10." over the day page — the day it is about, said the way the spike says it. An unreadable
+/// date leaves the line out rather than printing a half-date.
+func dayHeadline(_ ymd: String) -> String {
+    dayLine(ymd)?.replacingOccurrences(of: ",", with: " ·") ?? ""
+}
+
 /// "13:40" for the compact capsule.
 func clockLabel(_ date: Date, calendar: Calendar = .current) -> String {
     let c = calendar.dateComponents([.hour, .minute], from: date)
@@ -163,18 +169,16 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
                     .onAppear { setRoomOpen(true) }
             } else {
                 NavigationStack(path: $path) {
-                    // The phase strip scrolls the page's own scroll view to a section (ScrollViewReader reaches the
-                    // ScrollView inside NKTabPage; each section carries an invisible anchor above its title).
-                    ScrollViewReader { proxy in
-                        NKTabPage(hue: selected, sky: sky, heroHeight: nil,
-                                  compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
-                                                     // no score in the capsule either: it left the home with
-                                                     // the hero's number (decision #13)
-                                                     line: c.headline)) {
-                            hero(c, proxy: proxy)
-                        } content: {
-                            below(ctx)
-                        }
+                    // A short head, not a screenful: the day's own picture ("Mai nap") has to be visible without
+                    // scrolling, the way the spike shows it.
+                    NKTabPage(hue: selected, sky: sky, heroHeight: 330,
+                              compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
+                                                 // no score in the capsule either: it left the home with
+                                                 // the hero's number (decision #13)
+                                                 line: c.headline)) {
+                        hero(c)
+                    } content: {
+                        below(ctx)
                     }
                     .toolbar(.hidden, for: .navigationBar)
                     // the shell's painted landscape shows through the stack
@@ -199,19 +203,29 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         .task(id: reminderTarget(brief)) { await reminder.refresh(target: reminderTarget(brief)) }
     }
 
-    /// The title row and the phase strip; the clock's phase carries the dot, a tap scrolls to that section.
-    @ViewBuilder private func header(_ proxy: ScrollViewProxy) -> some View {
+    /// The title row, the day's date and the wordmark (the Élet spike's head, owner 2026-11-16).
+    ///
+    /// The **phase strip is gone**: Reggel · Napközben · Este were a switch for something he scrolls anyway, and
+    /// he chose one scroll with headings instead. The **row of mini orbs is gone too** (L0/b): the ring is the
+    /// app's entrance, so a second menu here would be the same menu twice.
+    @ViewBuilder private var header: some View {
         NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: nil, onAvatar: openAccount,
                    onBack: onHome)
             .padding(.top, 54)
-        NKTabStrip(tabs: DayPhase.allCases.map(\.name),
-                   selected: Binding(get: { shownPhase.name }, set: { name in
-                       guard let p = DayPhase.allCases.first(where: { $0.name == name }) else { return }
-                       shownPhase = p
-                       withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) { proxy.scrollTo(phaseSectionId(p), anchor: .top) }
-                   }),
-                   dot: phase.name)
+        Text(dayHeadline(brief.date))
+            .nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.75))
+            .padding(.top, 14)
+        Text("boop")
+            .font(.custom(Lagy.outfitFamily, size: 33).weight(.light)).tracking(4.5)
+            .foregroundStyle(.white)
             .padding(.top, 10)
+            .accessibilityHidden(true)
+        Rectangle()
+            .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.22), .white.opacity(0)],
+                                 startPoint: .leading, endPoint: .trailing))
+            .frame(height: 0.8)
+            .padding(.horizontal, 44)
+            .padding(.top, 12)
     }
 
     /// Simulator review: `-previewOrb alvas` opens on that orb (Hue name, lower case, no accents).
@@ -238,43 +252,34 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         path.append(h)
     }
 
-    private func hero(_ c: MaiCopy, proxy: ScrollViewProxy) -> some View {
+    /// The day page's head (the Élet spike): the title row, the date, the wordmark — and then the page itself.
+    /// The big rising orb, its caps, the 42 pt verdict and the sentence left with the owner's 2026-11-16 call:
+    /// the orb is the ring's job now, and Boop's morning words live in *A reggeli összefoglaló*.
+    ///
+    /// The **lens action row stays**: it is the only home of the breathing exercise, the bedtime reminder and
+    /// *Hallgatom*. It sits as one quiet row under the wordmark.
+    private func hero(_ c: MaiCopy) -> some View {
         VStack(spacing: 0) {
-            header(proxy)
+            header
             if let r = brief.day.recovery {
                 KimeloBanner(recovery: r) { show(soonToast("Kilépés a kímélő módból")) }
                     .padding(.top, 14)
             }
-            // L0/b: the row of mini orbs left this page — the ring of seven is the app's entrance now
-            // (decisions #32–#33), so every area is one tap from the home and a second strip here was the same
-            // menu twice. The hero orb stays, without its number (decision #13).
-            RisingOrb(hue: selected, score: c.score, display: "", caption: c.orbCaption, motion: motion,
-                      orbScale: breathing && !reduceMotion ? (inhale ? 1.22 : 0.84) : 1)
-                .frame(height: 290).padding(.bottom, 18)
-                // the big orb is a door to its room (the ripple still plays)
-                .simultaneousGesture(TapGesture().onEnded { if !breathing { openRoom(selected) } })
-                .accessibilityElement(children: .combine)
-                .accessibilityHint("\(c.name) részletesen")
-                .accessibilityAddTraits(.isButton)
-                .accessibilityAction { openRoom(selected) }
-            Text(c.caps).nkFont(14, .semibold).tracking(2.6).foregroundStyle(.white.opacity(0.85)).padding(.top, 4)
-                .contentTransition(.opacity)
-            Text(breathing ? (inhale ? MaiText.inhale : MaiText.exhale) : c.headline)
-                .nkFont(42, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center)
-                .lineLimit(2).minimumScaleFactor(0.7).padding(.horizontal, 20).padding(.top, 10)
-                .contentTransition(.opacity)
-                .animation(.easeInOut(duration: 0.6), value: inhale)
-            Text(breathing ? MaiText.breathLine : c.sentence)
-                .nkFont(17).lineSpacing(4).multilineTextAlignment(.center)
-                .foregroundStyle(.white.opacity(0.85)).padding(.horizontal, 30).padding(.top, 10)
-                .frame(minHeight: 96, alignment: .top)
-                .contentTransition(.opacity)
+            if breathing {
+                Text(inhale ? MaiText.inhale : MaiText.exhale)
+                    .nkFont(28, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center)
+                    .padding(.top, 16).contentTransition(.opacity)
+                    .animation(.easeInOut(duration: 0.6), value: inhale)
+                Text(MaiText.breathLine)
+                    .nkFont(15).lineSpacing(4).multilineTextAlignment(.center)
+                    .foregroundStyle(.white.opacity(0.85)).padding(.horizontal, 30).padding(.top, 8)
+            }
             LensActionRow(hue: selected, action: action, breathing: breathing, sessionTitle: brief.day.session?.title,
                           motion: motion, muted: voice?.muted ?? false,
                           onPrimary: primary, onMenu: { show(soonToast($0)) }, onChip: quick,
                           onSpeak: speak, onToggleMute: { voice?.muted.toggle() })
                 .nkHeroEnd()       // the compact capsule arrives as this row slides under the top bar
-                .padding(.top, 4)
+                .padding(.top, 18)
             Spacer(minLength: 0)
         }
         // Never squeeze the hero (labels would shrink); a tall hero pushes the cards down instead.

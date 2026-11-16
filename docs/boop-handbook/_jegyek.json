@@ -564,5 +564,16 @@
     ],
     "mit_kapsz": "A kezdőlap körében a nap is ott van, a legfelső helyen. A gömbje nem pontszámot mutat — egy napra nincs ilyen —, hanem azt, mennyire van tele a napod a naptárad szerint, és a nap saját oldalát nyitja. A Ma lapon az „A napod” sor megmarad: a gömb csak még egy út ugyanoda.",
     "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.56": {
+    "cim": "A nap oldala — a nap görbéje, Most, és minden más összecsukva",
+    "tipus": "Szakasz",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Ma",
+      "Alapok"
+    ],
+    "mit_kapsz": "A nap oldala (a kör közepe és a Nap gömb is ide visz) egyetlen görgetés lett: fent a dátum és a boop felirat, alatta a nap görbéje a nap pillanataival, utána amit Boop épp mondani akar, majd a reggeli terv és a napod egy-egy sorrá csukva, az észrevételek és az esti zárás. A nagy gömb és a három fül lekerült róla.",
+    "munkamenet": "boop-kezdolap-orbok"
   }
 }
