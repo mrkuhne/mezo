@@ -25,8 +25,13 @@ már egy saját dashboard oldala … mintha az egy full saját app lenne."*
    dashboard is **planned now, built after B6** (`14-decisions.md` #9).
 2. **Money and mail are rooms, not a fifth bottom-bar button** — the bar stays `Ma · Terv · Napló ·
    Boop` + `+`.
-3. **Terv is the home of the areas** (`14-decisions.md` #11): the life goal plus one card per area,
-   each opening that area's own page. The areas are the legs of the goal.
+3. ~~**Terv is the home of the areas**~~ — **OVERTURNED 2026-11-16** (`14-decisions.md` #33). The
+   **ring of seven orbs is the app's entrance** and does the job this decision invented the Terv
+   grid for; building both would be two menus for one job, which he rejected in the Élet round 1.
+   **Terv is his plan** — the life goal, the diet plan, the training plan — and B6 builds it there.
+   The areas are still the legs of the goal; they are reached from the ring, and Terv names what
+   each one contributes. Anyone building `L1`–`L6` should read this row as it now stands, not as it
+   was written on 2026-11-13.
 4. **An area is its own app**: painted head → its own top tabs with badges → a composed dashboard,
    never a list page.
 5. **The morning briefing is long and premium**, with a glance into every area.
@@ -184,13 +189,13 @@ exceptions: they change navigation and the home that B4/B5 build on, so they sho
 
 | Slice | What | Depends on |
 |---|---|---|
-| **L0** Területek otthona | Terv becomes the areas home (goal + two-up area grid with big orbs and derived badges); the **shared area-page kit** (stat tiles, curve, composition, row list, heat strip, menu grid, badges) in `BoopDesign`; Étel and Edzés move onto it. No new data. | B5 |
-| **L0/b** Ma · az élő fal | Ma becomes the living wall: the feed engine (what to say now, ranked, capped at three + the pinned check-in), the four card kinds, the settle-into-"Ma történt" behaviour, the honest empty state, the folded briefing and timeline, the day's energy curve and the cross-area notices; the score leaves the home. **Amends the shipped B2 Ma.** | B3 (it needs the check-in and the day ledger) |
-| **L1** Levél · alap | Mailbox settings screen (the owner enters his own app passwords), IMAP intake for Gmail + iCloud, raw storage, the **redaction pipeline**, sender deny list, idempotency, the 08:00 + 15:00 schedule, the zero-mail health alert. **No AI yet** — the Levél room shows counts and categories only. | B6, L0 |
-| **L2** Levél · összefoglaló | The rules-then-LLM funnel, the goal-relevance pass, the 1–10 score, the Levél room (Ma · Szabályok · Fiókok) and its card on Ma and Terv. Per-day cost cap and the adversarial/phishing pass. | L1 |
+| ~~**L0** Területek otthona~~ → **the shared area-page kit** | **SHIPPED 2026-11-16** (`mezo-r36n9.37`). Scope changed: the ring took the areas-home job, so L0 is the **kit** — `NKAreaPage` + `NKAreaSubPage` and the blocks (highlight with actions, stat tiles with target/age/no-data, curve, stepped bars, composition, row list with four row states and landmark ticks, searchable list, heat strip, comparison, menu grid, ask row), the warm treatment, per-block loading/failure and staleness. **Étel is moved onto it**; Edzés follows in B5. | — |
+| ~~**L0/b** Ma · az élő fal~~ | **SHIPPED 2026-11-16** (`mezo-r36n9.45`). Three fixed roles decide the three cards (#34), only the first may ring and only twice a day (#35), areas join by registering a `WallSource`, acted cards settle into "Ma történt", the quiet wall is good news, the timeline folds into one row, the score left the home. | — |
+| **L1** Levél · alap | Mailbox settings screen (the owner enters his own app passwords), IMAP intake for Gmail + iCloud, raw storage, the **redaction pipeline**, sender deny list, idempotency, the 08:00 + 15:00 schedule, the zero-mail health alert. **No AI yet** — the Levél room shows counts and categories only. | B6 (L0 shipped) |
+| **L2** Levél · összefoglaló | The rules-then-LLM funnel, the goal-relevance pass, the 1–10 score, the Levél room (Ma · Szabályok · Fiókok), built from the shipped area-page kit, and its presence on Ma **by registering a `WallSource`** (not a card of its own). Per-day cost cap and the adversarial/phishing pass. | L1 |
 | **L3** Levél · figyelt termékek | Watched products, the capped and cached market check, the three-level verdict, **our own price log**, the Figyelt tab with price history, and the proposal card when something is genuinely cheap. | L2 |
-| **L4** Pénz · adatalap | Accounts, categories, transactions, budgets, recurring items; the **allowance engine** and month close; the **bank-SMS capture** with its key and Shortcut contract; the **amount guard**. Backend + data only. | B6, L0 |
-| **L5** Pénz · a szoba | The Pénz room (Ma · Keretek · Előzmények · Tervezett): month curve against the even-pace line, composition, transactions, budgets, six-month history, planned items; its card on Ma and Terv; manual capture in `+`. | L4 |
+| **L4** Pénz · adatalap | Accounts, categories, transactions, budgets, recurring items; the **allowance engine** and month close; the **bank-SMS capture** with its key and Shortcut contract; the **amount guard**. Backend + data only. | B6 (L0 shipped) |
+| **L5** Pénz · a szoba | The Pénz room (Ma · Keretek · Előzmények · Tervezett): month curve against the even-pace line, composition, transactions, budgets, six-month history, planned items; its presence on Ma **by registering a `WallSource`** (not a card of its own); manual capture in `+`. | L4 |
 | **L6** Az egy AI látja a pénzt és a levelet | Money and mail facts enter the memory corpus with the same day-scoping as a check-in; they become contributors in "miért?"; the Boop tab becomes a **thread list** with a "kérdezd meg Boopot" door on every card and area. | L3, L5, B8 |
 
 ### What B8 must allow for, even though it ships first

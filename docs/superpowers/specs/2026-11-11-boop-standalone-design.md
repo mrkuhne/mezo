@@ -95,9 +95,62 @@ seen, a plan with a *Kész, ha…* list → owner OK → build → gates → rev
 | **B3** | **Napi ritmus** (the daily loop) | Reggel: accept/tweak the day; check-in natively (short sets of the 14-item model) **with a biomarker snapshot** (HR, HRV, steps, sleep at that moment) linked to it; the goal of the day; free-text + voice journal; **Este: <60 s close** with rating vs the day's goals, unified day-close record; bedtime reminder; check-in from widget/notification. Basic Boop chat tab (existing chat API, now seeing wearable + calendar + check-ins). | B2 |
 | **B4** | **Étel** (food, native) | The full **Étel room** of §3.1 (inner tabs Ma · Receptek · Kamra · Hét, every "keep" feature native): meal capture in `+` and the room by photo / text / barcode (OpenFoodFacts) / recipe / ingredient / usuals on the existing AI draft; simplified supplement stack; **allergen & intolerance model** on ingredients, recipes and the profile (coach policy reversed deliberately); server-side day budget + "next meal" tip; recipe URL import. | B3 |
 | **B5** | **Edzés + Watch** | The full **Edzés room** of §3.1 (inner tabs Ma · Terv · Gyakorlatok · Előzmények, every "keep" feature native, incl. meso planning, catalog, reports); native workout player (session model, rest timer, per-exercise debrief, notes); Live Activity; **watchOS app** with HKWorkoutSession (live HR, set logging from the wrist); per-set HR stored; sport + running kept, running with Watch distance/pace. | B1, B3 |
+> **Revised 2026-11-16 against the shipped shell** (the ring `mezo-r36n9.47`, the area-page kit `mezo-r36n9.37`,
+> the living wall `mezo-r36n9.45`). The slice *contents* the owner approved are unchanged; what follows says what
+> each slice no longer has to build, what the shell now expects of it, and where it would otherwise be built
+> twice. **Order unchanged: B6 → B7 → B8 → L1…L6.**
+>
+> **Three things every remaining slice inherits.** (1) A page is built from `NKAreaPage` + the blocks, and a page
+> *inside* an area from `NKAreaSubPage` — no slice invents a frame again. (2) Anything worth saying to him goes on
+> the wall by registering a **`WallSource`**; no slice builds a second card surface. (3) Anything worth *ringing*
+> him for is a `.expires` candidate and obeys the two-a-day cap (#35); no slice adds its own notification policy.
+
 | **B6** | **A Terv** (the Plan) | Plan entity: N weeks, weight goal, **allowed recipes/ingredients**, linked mesocycle / run block, rules; several plans, one active; Terv tab editor; plan rules in every AI context (chat, brief, meal eval, proposals); adherence; shopping list; **effect tracking** (a new item or recipe → biomarker window before/after). Moves plan setup out of the web app. | B4, B5 |
 | **B7** | **Napi kapacitás** (day capacity + live adjust) | Calendar events scored by AI (mental load, social drain, physical) — titles sent only with owner OK; **units model** (day demand vs capacity from Forma + HRV + sleep debt), calibrated on B3 check-ins and day ratings; doable-day prediction in the morning; energy curve uses demand; **live re-plan loop** on events (check-in saved, meal logged, workout finished, Health sync, calendar change) → proposal cards (food ±, workout shorter/longer, different movement, time move) with push. | B3 data (weeks), B6 |
 | **B8** | **Az egy AI** (one AI, deep) | Memory corpus gets structured daily data; a small **day-scoped council** feeding "miért?"; short/mid/long conclusions in Napló · Minták; konzílium slimmed to what Boop surfaces; chat sees everything incl. the Plan. | B0, B6, B7 |
+
+### 5.1 The remaining slices against the shipped shell (revised 2026-11-16)
+
+**B6 · A Terv.** *The collision is gone:* the life-dashboard plan had made Terv the home of the areas, which would
+have left B6's plan editor homeless. The navigation map (#32–#33) gave Terv back to the plan, so B6 has a clean
+page to build on.
+- **No longer B6's to build:** the page frame (it is `NKAreaPage` with inner tabs — a plan, the rules, the
+  shopping list, adherence), the sub-page frame for one plan or one mesocycle (`NKAreaSubPage`), the stat / curve /
+  composition / row-list blocks, and per-block loading and failure (`NKBlockState`). Also **not** the per-area
+  cards the life-dashboard plan once put on Terv: the ring has them.
+- **Newly expected of B6:** register a **`WallSource`** — a plan waiting for his acceptance and a shopping list
+  before a shop run are `.expires`; an effect-tracking result worth knowing is `.happened`. Without this the Plan
+  is invisible between visits, which is exactly what the wall exists to fix.
+- **Build-twice risk:** *adherence*. The Étel room already shows "how am I doing against today's budget" and B6
+  plans a plan-level adherence view. One of them must be the source of truth — the plan's — and the room should
+  read it rather than compute a second number that disagrees.
+
+**B7 · Napi kapacitás.** *The biggest double-build risk of the three, and the reason this pass exists.*
+- **No longer B7's to build:** the **proposal cards and their push**. B7's plan says "proposal cards (food ±,
+  workout shorter/longer, different movement, time move) with push" — that is now the wall's `.improves` and
+  `.expires` roles plus `wallNotifications`. B7 produces *candidates*; it must not build a second card surface or
+  a second notification policy, and the two-a-day cap applies to it like everything else. Also not B7's: the
+  **energy curve's placement** (it already sits on Ma above the folded timeline) — B7 feeds it demand.
+- **Newly expected of B7:** a `WallSource` for the live re-plan loop, and a "doable day" line that lands in the
+  **morning briefing row** (already folded) plus one wall candidate — not a new section on Ma.
+- **A contradiction to settle in B7, not before:** decision #14 made **"A nap" a seventh area with its own page**,
+  but the ring's seven are Alvás · Étel · Edzés · Energia · Forma · Pénz · Levél (#31) — the day is not among
+  them. The day's page is still wanted; it is reached from the **"A napod" folded row** on Ma, which already
+  exists, and is built from `NKAreaSubPage`. No eighth orb. This is a change to #14 and is recorded as such.
+
+**B8 · Az egy AI.** Least affected, because B8 was already written to expect an open set of contributors.
+- **No longer B8's to build:** the explanation surface. Every wall card already carries a **"miért?"**; B8 fills
+  `WallCandidate.why` with the day council's lines instead of adding a second place where Boop explains itself.
+  The open-set assumption it was told to preserve is now real: `WallSource` keys areas by string.
+- **Newly expected of B8:** a `WallSource` of its own for conclusions worth saying today (`.happened`), rather
+  than a separate "Amit ma észrevettem" surface competing with the wall.
+- **Build-twice risk:** *the day council and the wall's ranking*. They answer different questions — the council
+  says *why*, the wall decides *what gets said*. B8 must not re-rank what the wall already chose, or the owner
+  gets two different ideas of what matters today.
+
+**Order: unchanged, B6 → B7 → B8 → L1…L6.** B7's units model is calibrated on weeks of B3 check-ins that are
+still accruing, so bringing it forward buys nothing; and B6 gives the wall its first `.improves` source worth
+having. Nothing in the shell makes a later slice urgent enough to move.
 
 **Parallel tracks:** B0 (backend) ∥ B1 (iOS + wearable backend) ∥ B2 spike. B4 and B5 can run in parallel after B3
 (different files: food vs train/watch), honouring the shared hot-spot rules in the `boop` skill.
