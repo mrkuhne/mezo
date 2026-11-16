@@ -295,6 +295,16 @@ area to join after Étel, and today it is represented only by a thin stand-in de
 - [ ] **Step 2: Run the kit tests; expect FAIL.**
 - [ ] **Step 3: Implement the source and register it**, with no change to `buildWall`, to `Wall.swift` or to the
       wall's views — if any of those three needs editing, the contribution is being hard-coded and is wrong.
+      **Say so to the L0/b session rather than working around it:** that would mean the registry's shape is wrong.
+
+**Two things the wall's own author flagged, both deliberate choices, not defaults to inherit:**
+- **`rank` is the only thing that orders the `.improves` slot**, and it is ours to set. The brief's stand-in used
+  `0.85` within three hours of the session and `0.4` beyond it. Pick our own numbers against what else competes
+  for that slot — the food tip sits at `0.7` — and write the reason into the test, not just the number.
+- **A session about to be missed is a real `.expires`, so it may also ring the phone** (`mayRing`, decision #35:
+  only the first slot, at most twice a day, cap included in the rule and not a setting). It is the first ringing
+  candidate besides the closing meal window, so on a busy day a training reminder and a meal window compete for
+  the same two slots. Decide which wins and test that day, rather than discovering it on his phone.
 - [ ] **Step 4: Run the kit and app tests; expect PASS.**
 - [ ] **Step 5: Verify in the simulator** that Ma shows the session card with its *miért?*, that dismissing it
       keeps it dismissed for the day, and that `-previewWallEmpty YES` still reaches the quiet wall.
