@@ -67,7 +67,12 @@ vi.mock('@/data/fuel/expenditureHooks', async (importOriginal) => {
     ...actual,
     useIntakeDays: (from: string, to: string) => {
       const real = actual.useIntakeDays(from, to)
-      return { ...real, days: real.days.filter((d) => !hoisted.emptyDates.includes(d.date)) }
+      const days = real.days.filter((d) => !hoisted.emptyDates.includes(d.date))
+      // mezo-onp3e: and the other way round — the seed leaves exactly ONE weekday of the viewed
+      // week unlogged (expenditureLearningSeed L+11 = Friday), an unlogged day has no learning
+      // mark at all, so the page's 4th numbered section vanished every Friday and main went red.
+      // A day the test did NOT declare empty is a logged day here, whatever weekday the suite runs on.
+      return { ...real, days: days.map((d) => (d.status === 'unlogged' ? { ...d, status: 'usable' as const, kcal: d.kcal ?? 2500 } : d)) }
     },
   }
 })

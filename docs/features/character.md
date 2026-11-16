@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-11-13
+updated: 2026-11-16
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -17,7 +17,7 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 # Karakter (user character dossier) — Feature Documentation
 
-> **2026-11-13 — Boop B4 Étel (`mezo-r36n9.14`): the digestion disclaimer is softened; no other dossier change.** The `food-digestion` signal now closes with „nem orvosi diagnózis” instead of „nem ételintolerancia-diagnózis” (table in §3, detector list), because the meal coach may now name a sensitivity the owner recorded himself ([`_platform-language.md`](_platform-language.md)); the detector, its guards and thresholds are untouched. The slice's four new `1.1.0` changesets (`pantry_catalog.allergens`/`barcode`, `recipe.allergens`/`steps`/`source_url`, `stored_image`, `client_ref` on `meal`/`water_log`/`supplement_intake`, the `sensitivity_profile` table) add no dossier table; see [`fuel.md`](fuel.md), [`pantry.md`](pantry.md).
+> **2026-11-13 — Boop B4 Étel (`mezo-r36n9.14`): the digestion disclaimer is softened; no other dossier change.** The `food-digestion` signal now closes with „nem orvosi diagnózis” instead of „nem ételintolerancia-diagnózis” (table in §3, detector list), because the meal coach may now name a sensitivity the owner recorded himself ([`_platform-language.md`](_platform-language.md)); the detector, its guards and thresholds are untouched. The slice's four new `1.1.0` changesets (`pantry_catalog.allergens`/`barcode`, `recipe.allergens`/`steps`/`source_url`, `stored_image`, `client_ref` on `meal`/`water_log`/`supplement_intake`, the `sensitivity_profile` table) add no dossier table; see [`fuel.md`](fuel.md), [`pantry.md`](pantry.md). *(2026-11-16: `mezo-r36n9.48` added a fifth `1.1.0` changeset — `pantry_catalog.lactose_free` / `recipe.lactose_free` — which likewise adds no dossier table.)*
 
 > **2026-11-12 — reviewed after Boop B3 (`mezo-r36n9.13`).** No change to the dossier; B3 only adds Liquibase changesets under `1.1.0/script` (check-in snapshot, client refs, `day_close`, conversation channel) — see [`dayclose.md`](dayclose.md) and [`boop-ios.md`](boop-ios.md).
 
