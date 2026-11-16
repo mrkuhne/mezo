@@ -4,7 +4,7 @@
 
 **Goal:** The whole training domain as a native room on the Napkelte spine — four tabs, a set-by-set workout player, and a block builder — that keeps working in a gym with no signal and never hides how stale its numbers are.
 
-**Architecture:** The backend already computes every prescription, the volume ramp, the reports and the skip policy, so the Swift side is a stepper UI, a rest timer, an outbox and a read cache. Writes ride B3's `Outbox` in a new per-workout ordering group; reads go through a new general last-known-good `ServerCache` that is a sibling of `Outbox`/`DayLedger`, never merged into either. The room is `NKDrillPage` with `NKCapsuleTabs`; the player is a full-screen cover at page level.
+**Architecture:** The backend already computes every prescription, the volume ramp, the reports and the skip policy, so the Swift side is a stepper UI, a rest timer, an outbox and a read cache. Writes ride B3's `Outbox` in a new per-workout ordering group; reads go through a new general last-known-good `ServerCache` that is a sibling of `Outbox`/`DayLedger`, never merged into either. The room is built on the **shared area-page kit** delivered by L0 (`NKAreaPage` + `NKAreaTabs`, and the blocks in `AreaBlocks.swift`), which already owns the level bar with landmarks, the stepped week, staleness, the searchable catalog, the two-column comparison and the sub-page frame; the player is a full-screen cover at page level, deliberately outside that system.
 
 **Tech Stack:** Swift 6, SwiftUI (iOS 26), swift-openapi-generator against `/api/train/*`, Swift Testing with `StubTransport`, Spring Boot + Liquibase for the one contract change.
 
@@ -25,6 +25,22 @@
 - Presentations sit at **page level** and the page reads the flag in its body; a cover whose binding is already true on first render does not fire.
 - Every new operation must be answered in `ios/Boop/Connect/PreviewTransport.swift` — it **asserts** on an unanswered call, and the Mac's firewall means the simulator sees nothing else.
 - Shared hot spots (`openapi-generator-config.yaml`, `api/openapi.yml`, `api/generate/merge.yml`, `1.1.0_master.yml`): one writer at a time; rebase on `origin/main` immediately before touching them.
+
+## Working on top of the L0 kit — read this before Task 1
+
+The shared area-page kit landed in L0 (`mezo-r36n9.37`) **after** this plan was written, and it covers seven things this plan would otherwise have built by hand. Re-read `ios/BoopKit/Sources/BoopDesign/Napkelte/Area.swift` + `AreaBlocks.swift` on `main` before Task 1; these facts are settled and must not be re-litigated or worked around:
+
+- **The kit owns scroll position on tab change.** `NKAreaPage` returns to the tab row when the tab changes, and only when the page is below it. **Add none of your own.**
+- **`.nkStale(NKStale(age:loud:))` is safe on any view** — loud sits above the block, not over it. For a single stale number prefer `NKStat(age:)`; for nothing-to-show use `NKStat(value: nil)` or `NKNoFreshData`, **never a 0**.
+- **`NKRowState.normal/.done/.skipped/.future`** plus `chips: [String]` renders the week's three states at once (done carries a tick, skipped is drained with its reason in a chip, future is a dashed medallion). The skip reason goes in a chip, not in the sub.
+- **`NKCurve` is standalone**, no `NKAreaPage` dependency → it belongs on the exercise sub-page (e1RM over time), not on a tab.
+- **`NKAreaSubPage`** is the sanctioned frame for the exercise, the block report and the muscle map. Do not invent an inner page.
+- **`NKSearchableRowList`** has two inits; use the block-owns-the-query one over the 166 local catalog rows (`nkRowMatches` folds accents with `hu_HU`). The caller-owns init is for debounced server search — not needed here.
+- **The player stays outside the kit**: a page-level `fullScreenCover` with its own chrome. A cover whose binding is already true on first render does not fire — mount the destination first and animate on the next run-loop turn.
+
+**One pre-existing red test:** `BoopTests/MealComposerTests.savingAConfirmationCardRemovesIt()` fails on `origin/main` as well (reported by the L0 session, filed as `mezo-r36n9.52`). **Verify that independently at Task 1** before accepting any red run as pre-existing — and never let it mask a failure of ours.
+
+**Open naming question, with the owner:** the bottom bar's **Terv** now means his own plan, so the Edzés room's inner tab called *Terv* (the 8-week block) is two Tervs one tap apart. The L0 session has put **Blokk** to him as the replacement. **Build the tab with the name he gives back**; the approved spike says *Terv*, so until he answers, *Terv* stands.
 
 ## Review Focus
 
@@ -64,8 +80,8 @@ Either way **nothing in this plan assumes it**, and no task may quietly implemen
 | `ios/BoopKit/Sources/BoopCore/Train/TrainPayloads.swift` | outbox payloads for the new kinds |
 | `ios/BoopKit/Sources/BoopCore/ServerCache.swift` | the general last-known-good read cache |
 | `ios/BoopKit/Sources/BoopCore/RecoveryClient.swift` | lifted out of `Etel/FoodClient.swift` (recovery + kímélő), used by both rooms |
-| `ios/BoopKit/Sources/BoopDesign/Napkelte/Train.swift` | new kit pieces: `NKStepper`, `NKRestOrb`, `NKVolumeBar`, `NKWeekDots` |
-| `ios/Boop/Edzes/EdzesRoom.swift` | the room frame: `NKDrillPage` + the four capsule tabs |
+| `ios/BoopKit/Sources/BoopDesign/Napkelte/Train.swift` | the only genuinely new kit pieces, both player-only: `NKStepper`, `NKRestOrb`. **The volume bar, the stepped week, staleness, the searchable list, the comparison and the sub-page frame all come from the L0 kit — do not re-create them.** |
+| `ios/Boop/Edzes/EdzesRoom.swift` | the room frame: `NKAreaPage` + its four inner tabs |
 | `ios/Boop/Edzes/EdzesMa.swift` · `EdzesTerv.swift` · `EdzesGyakorlatok.swift` · `EdzesElozmenyek.swift` | one file per tab |
 | `ios/Boop/Edzes/WorkoutPlayer.swift` | the five player states |
 | `ios/Boop/Edzes/EdzesSheets.swift` | swap, skip-with-reason, kímélő, exercise, block report, compare, muscle map, sport |
@@ -228,7 +244,7 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
 - Test: `ios/BoopTests/EdzesMaTests.swift`
 
 **Interfaces:**
-- Consumes: `NKDrillPage(…tabs:selectedTab:headPhoto:…)`, `NKCapsuleTabs`, `TrainClient`, `ServerCache`.
+- Consumes, from the L0 kit: `NKAreaPage(hue:name:eyebrow:level:display:headline:sentence:photo:tabs:selectedTab:actions:onBack:)` — **`level` is 0…1, not 0…100**, so pass `level: score.map { Double($0) / 100 }, display: score.map(String.init)`, and `level: nil` is the calm half-saturated learning orb; `NKAreaTab(_:badge:dot:)`, `NKHighlight(photo:actions:)` for today's session, `NKBare(label:hue:trailing:state:)` for per-block loading and `.failed(line, retry)`, `NKStatRow`, `NKRowList`, `NKMenuGrid`, `NKAskRow`. Plus `TrainClient`, `ServerCache`.
 - Produces: `EdzesRoom(tab:)`; `@Observable final class EdzesStore` with `func load() async`, `var today: Cached<TodayWorkout>?`, `var ageText: String?`.
 
 - [ ] **Step 1: Write the failing tests:**
@@ -286,10 +302,14 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
 ### Task 9: The Terv tab
 
 **Files:**
-- Create: `ios/Boop/Edzes/EdzesTerv.swift`; add `NKVolumeBar`, `NKWeekDots` to `BoopDesign/Napkelte/Train.swift`
-- Test: `ios/BoopKit/Tests/BoopDesignTests/NapkelteTrainTests.swift`, `ios/BoopTests/EdzesTervTests.swift`
+- Create: `ios/Boop/Edzes/EdzesTerv.swift` **only**. The volume bar is the kit's `NKLevelBar(level:hue:ticks:labelTicks:)` with `NKLevelTick(at:label:)` for MEV/MAV, and the eight weeks are `NKSteppedBars([NKStepBar(label:value:dimmed:note:)], current:)` — a deload week is a `dimmed` step carrying its reason as `note`. **No new kit pieces in this task.**
+- Test: `ios/BoopTests/EdzesTervTests.swift` (the kit's own rendering is the kit's to test; these test **our mapping into it**)
 
-- [ ] **Step 1: Write the failing tests:** `volumeBarPlacesBothLandmarks` (MEV and MAV ticks at their fractions of MRV); `volumeBarClampsAboveMrv`; `weekRowMarksTheCurrentWeekAndItsPhase`; `deloadWeekIsShorterNotMissing`.
+- [ ] **Step 1: Write the failing tests** against the pure mapping functions, not against the kit's views:
+  - `ticksSitAtTheirFractionOfMrv` — `volumeTicks(mev:mav:mrv:)` places MEV and MAV at `mev/mrv` and `mav/mrv`.
+  - `volumeLevelClampsAboveMrv` — sets above MRV give `level == 1`, never a bar past its end.
+  - `weekBarsMarkTheCurrentWeek` — `weekBars(_:)` returns `current` = the running week's index.
+  - `deloadWeekIsDimmedWithItsReason` — the deload week is `dimmed` with a non-nil `note`, **present and shorter, never missing**.
 - [ ] **Step 2: Run; expect FAIL.**
 - [ ] **Step 3: Implement**, matching `edzes-3-terv.png`.
 - [ ] **Step 4: Run both suites; expect PASS.**
