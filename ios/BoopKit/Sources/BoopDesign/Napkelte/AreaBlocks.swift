@@ -310,8 +310,15 @@ public enum NKRowState: Sendable {
     /// Still to come: dimmed, with an outlined medallion rather than a filled one.
     case future
 
+    /// How strongly the whole row reads.
     var dim: Double { self == .normal || self == .done ? 1 : 0.55 }
+    /// Still to come: the medallion is an outline, not a filled shape.
     var outlined: Bool { self == .future }
+    /// He skipped it: the colour drains out of the medallion, so a skipped thing and a thing still to come are
+    /// never the same row at a glance — including when the medallion is a photo.
+    var drained: Bool { self == .skipped }
+    /// Behind him: the medallion carries a tick, so a finished row is not just an ordinary one.
+    var ticked: Bool { self == .done }
 }
 
 public struct NKAreaRow: Identifiable {
@@ -370,23 +377,48 @@ public struct NKRowList: View {
         }
     }
 
+    /// The row's picture: a photo of the thing, or a glyph on a disc. Both carry the row's state — a photo row
+    /// that only dimmed would make "skipped" and "still to come" the same row, and Étel's day plan is photo rows.
+    @ViewBuilder private func medallion(_ r: NKAreaRow) -> some View {
+        ZStack {
+            if let photo = r.photo {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.white.opacity(0.08))
+                    .overlay {
+                        photo.resizable().scaledToFill().nkPhotoTone()
+                            .saturation(r.state.drained ? 0 : 1)
+                            .opacity(r.state.outlined ? 0.45 : 1)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(.white.opacity(r.state.outlined ? 0.3 : 0.12),
+                                style: StrokeStyle(lineWidth: 1, dash: r.state.outlined ? [3, 2] : [])))
+            } else if r.state.outlined {
+                Circle().stroke(.white.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+                NKGlyph(r.glyph, .white.opacity(0.75), size: 16)
+            } else if r.state.drained {
+                Circle().fill(.white.opacity(0.06))
+                NKGlyph(r.glyph, .white.opacity(0.5), size: 16)
+            } else {
+                Circle().fill(r.hot ? hue.glow.opacity(0.22) : .white.opacity(0.08))
+                NKGlyph(r.glyph, r.hot ? hue.glow : .white.opacity(0.9), size: 16)
+            }
+        }
+    }
+
     @ViewBuilder private func row(_ r: NKAreaRow) -> some View {
         let body = HStack(spacing: 12) {
-            ZStack {
-                if let photo = r.photo {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.white.opacity(0.08))
-                        .overlay { photo.resizable().scaledToFill().nkPhotoTone() }
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.white.opacity(0.12)))
-                } else if r.state.outlined {
-                    Circle().stroke(.white.opacity(0.22), lineWidth: 1)
-                    NKGlyph(r.glyph, .white.opacity(0.75), size: 16)
-                } else {
-                    Circle().fill(r.hot ? hue.glow.opacity(0.22) : .white.opacity(0.08))
-                    NKGlyph(r.glyph, r.hot ? hue.glow : .white.opacity(0.9), size: 16)
+            medallion(r)
+                .frame(width: 40, height: 40)
+                // A done row carries a tick, so it is not just an ordinary row; it rides the corner, so it works
+                // over a photo as well as over a glyph.
+                .overlay(alignment: .bottomTrailing) {
+                    if r.state.ticked {
+                        NKGlyph("check-ink", hue.glow, size: 15)
+                            .frame(width: 17, height: 17)
+                            .background(Circle().fill(NK.ground))
+                            .offset(x: 4, y: 3)
+                    }
                 }
-            }
-            .frame(width: 40, height: 40)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 7) {
                     Text(r.title).nkFont(14.5, .medium).foregroundStyle(.white).lineLimit(1)
@@ -655,23 +687,45 @@ public struct NKCompareColumns: View {
 /// page's, not the block's. Rows render lazily, so the length costs nothing until it is scrolled to.
 public struct NKSearchableRowList: View {
     let rows: [NKAreaRow], hue: Hue, placeholder: String
-    @State private var query = ""
+    /// Does the caller own the query? Kamra's one box drives a client-side shelf filter AND a debounced server
+    /// search of the catalog, with its own chips, pagination and second section — so it keeps the text and the
+    /// block only draws the field. Receptek hands over a loaded array and lets the block own it.
+    let external: Binding<String>?
+    /// When the caller owns the query it has already filtered: the block shows what it was handed.
+    let filters: Bool
+    @State private var own = ""
     @FocusState private var focused: Bool
+
+    /// The block owns the query and filters the rows itself.
     public init(_ rows: [NKAreaRow], hue: Hue, placeholder: String = "Keresés") {
         self.rows = rows; self.hue = hue; self.placeholder = placeholder
+        self.external = nil; self.filters = true
     }
+    /// The caller owns the query (its own `.task(id:)`, its own filtering): the block draws the field and the
+    /// rows exactly as handed to it.
+    public init(_ rows: [NKAreaRow], hue: Hue, placeholder: String = "Keresés", query: Binding<String>,
+                emptyLine: String? = nil) {
+        self.rows = rows; self.hue = hue; self.placeholder = placeholder
+        self.external = query; self.filters = false
+        self.noHit = emptyLine
+    }
+    /// What the block says when nothing matches; the caller can give its own wording.
+    private var noHit: String?
+
+    private var query: Binding<String> { external ?? $own }
+
     public var body: some View {
-        let shown = rows.filter { $0.matches(query) }
+        let shown = filters ? rows.filter { $0.matches(query.wrappedValue) } : rows
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 NKGlyph("search-ink", .white.opacity(0.6), size: 15)
-                TextField(placeholder, text: $query)
+                TextField(placeholder, text: query)
                     .nkFont(14.5).foregroundStyle(.white).tint(.white)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                     .focused($focused)
                     .submitLabel(.search)
-                if !query.isEmpty {
-                    Button { query = ""; focused = false } label: {
+                if !query.wrappedValue.isEmpty {
+                    Button { query.wrappedValue = ""; focused = false } label: {
                         Image(systemName: "xmark.circle.fill").nkFont(15).foregroundStyle(.white.opacity(0.45))
                     }
                     .buttonStyle(.plain).accessibilityLabel("Keresés törlése")
@@ -682,7 +736,8 @@ public struct NKSearchableRowList: View {
             .padding(.bottom, 6)
 
             if shown.isEmpty {
-                Text("Nincs találat erre: „\(query)”").nkFont(13).foregroundStyle(.white.opacity(0.55))
+                Text(noHit ?? "Nincs találat erre: „\(query.wrappedValue)”")
+                    .nkFont(13).foregroundStyle(.white.opacity(0.55))
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 18)
             } else {
                 LazyVStack(spacing: 0) {
