@@ -112,7 +112,7 @@ Tests mirror these under `ios/BoopKit/Tests/BoopCoreTests/`, `BoopDesignTests/` 
 
 **Interfaces:**
 - Consumes: `makeClient(baseURL:tokens:transport:)` and `StubTransport` as `MorningClient`/`MorningClientTests` use them.
-- Produces: `TrainClient.init(client:)`; `func todayWorkout() async throws -> TodayWorkout`; `func history(from: Date, to: Date) async throws -> [WorkoutHistoryDay]`; `func blockPlan() async throws -> BlockPlan`; `func catalog() async throws -> [CatalogExercise]`; `func records() async throws -> [ExerciseRecord]`; model types as listed in the File Structure.
+- Produces: `TrainClient.init(client:)`; `func todayWorkout() async throws -> TodayWorkout`; `func history(from: Date, to: Date) async throws -> [WorkoutHistoryDay]`; `func blockPlan() async throws -> BlockPlan?` (**optional**: no running block is a real state the Blokk tab shows, not an error) and `func volumeArc(blockId:) async throws -> [MuscleVolume]`, which `blockPlan()` merges in for the week bars; `func catalog() async throws -> [CatalogExercise]`; `func records() async throws -> [ExerciseRecord]`; model types as listed in the File Structure.
 
 Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorkoutSet`, `updateWorkoutSet`, `deleteWorkoutSet`, `saveWorkoutFeedback`, `skipWorkoutExercise`, `changeWorkoutExercise`, `addPlanWorkingSets`, `saveExerciseNote`, `saveWorkoutNote`, `finishWorkout`, `listWorkouts`, `getWorkoutDetail`, `getExerciseCatalog`, `getExerciseRecords`, `listMesocycles`, `getMesocycleReport`, `getMesocycleVolumeArc`, `generateMesoPlan`, `createMesoTemplate`, `startMesoTemplate`, `listMesoTemplates`, `getGymSchedule`, `getTodayReadiness`, `chooseTodayReadiness`, `listSportSessions`, `logSportSession`, `getSportSchedule`.
 
