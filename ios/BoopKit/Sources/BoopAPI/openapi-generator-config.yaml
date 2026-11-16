@@ -96,3 +96,32 @@ filter:
     - recoveryCheckIn
     - listPlannedSkips
     - undoPlannedSkip
+    - getTodayWorkout
+    - startWorkout
+    - logWorkoutSet
+    - updateWorkoutSet
+    - deleteWorkoutSet
+    - saveWorkoutFeedback
+    - skipWorkoutExercise
+    - changeWorkoutExercise
+    - addPlanWorkingSets
+    - saveExerciseNote
+    - saveWorkoutNote
+    - finishWorkout
+    - listWorkouts
+    - getWorkoutDetail
+    - getExerciseCatalog
+    - getExerciseRecords
+    - listMesocycles
+    - getMesocycleReport
+    - getMesocycleVolumeArc
+    - generateMesoPlan
+    - createMesoTemplate
+    - startMesoTemplate
+    - listMesoTemplates
+    - getGymSchedule
+    - getTodayReadiness
+    - chooseTodayReadiness
+    - listSportSessions
+    - logSportSession
+    - getSportSchedule
