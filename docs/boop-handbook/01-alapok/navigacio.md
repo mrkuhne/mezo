@@ -6,18 +6,18 @@ allapot: Élesben
 hol: [iPhone app]
 szulo: 00-attekintes
 szakasz: [B2, Kezdőlap]
-osszefoglalo: Az app a hét gömb körével nyit; alul négy hely és egy „+”, és a Terv mostantól a te terved, nem területmenü.
+osszefoglalo: Az app a nyolc gömb körével nyit; alul négy hely és egy „+”, és a Terv mostantól a te terved, nem területmenü.
 ---
 
 ## Mit csinál
-Az app a **[kezdőlappal](kezdolap)** nyit: hét élő gömb egy körben, középen Boop gömbjével. Ez a **Ma** hely első
+Az app a **[kezdőlappal](kezdolap)** nyit: nyolc élő gömb egy körben, középen Boop gömbjével. Ez a **Ma** hely első
 képernyője — a mai Nap oldal a közepére koppintva nyílik.
 
 Az alsó üvegsávban négy ikon (felirat nélkül) és mellette egy külön kerek „+” gomb:
 
 | Hely | Mire való |
 |---|---|
-| **Ma** | A hét gömb köre; a közepén a nap egyetlen görgethető oldalon: reggel, napközben, este |
+| **Ma** | A nyolc gömb köre; a közepén a nap egyetlen görgethető oldalon: reggel, napközben, este |
 | **Terv** | **A te terved**: az életcélod, az étrended, az edzésterved — most még keret |
 | **Napló** | A napok története, később Boop következtetései |
 | **Boop** | Beszélgetés Boopkal |

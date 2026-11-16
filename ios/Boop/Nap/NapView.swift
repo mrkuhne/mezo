@@ -8,6 +8,8 @@ import BoopDesign
 struct NapView: View {
     /// Opened from the home screen's ring with that area's room already on screen (nil = the plain page).
     var initialRoom: Hue? = nil
+    /// Opened from the ring's day orb with the day's own sheet already up (nil = no sheet).
+    var initialDetail: Brief.Link? = nil
     /// The way back to the home screen's ring (nil = Ma is the place's own root).
     var onHome: (@MainActor @Sendable () -> Void)? = nil
     @Environment(\.openURL) private var openURL
@@ -19,7 +21,7 @@ struct NapView: View {
     @State private var toast: String?
     @State private var motion = OrbMotion()
     /// The detail sheet behind a tapped Boop mondja phrase.
-    @State private var sheet: DetailSheet? = NapView.initialSheet
+    @State private var sheet: DetailSheet?
     /// Boop's proposals, shared by Ma and the rooms.
     @State private var desk = ProposalDesk()
 
@@ -79,6 +81,7 @@ struct NapView: View {
             }
         }
         .nkToast($toast)
+        .onAppear { if sheet == nil { sheet = initialDetail.map(DetailSheet.init) ?? NapView.initialSheet } }
         // Read the flag here so the page re-renders when it flips (a binding passed down left the cover unpresented).
         .connectCover(link, isPresented: Binding(get: { [showing = connecting] in showing }, set: { connecting = $0 }))
         .onDisappear { motion.stop() }

@@ -533,5 +533,36 @@
       "Edzés"
     ],
     "mit_kapsz": "Edzés közben a zárolt képernyőn és az órán is látod, hol tartasz. Ez kikerült a B5-ből, külön lépésben jön."
+  },
+  "mezo-r36n9.53": {
+    "cim": "A Notion-tükör nem veszi észre, ha elromlik benne valami",
+    "tipus": "Karbantartás",
+    "szakasz": "Kézikönyv",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Ha feltöltéskor elromlik egy betű a kézikönyvedben, azt ma semmi nem veszi észre, és örökre ott marad. Lesz egy ellenőrzés, ami visszaolvassa, ami kint van, és szól, ha eltér attól, aminek lennie kellene.",
+    "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.54": {
+    "cim": "A kézikönyv hivatkozásai sehova nem visznek",
+    "tipus": "Hiba",
+    "szakasz": "Kézikönyv",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Tíz hivatkozás a kézikönyvedben — főleg az edzés-oldalakon — nem nyit meg semmit, mert a feltöltéskor elromlik. Javítva igazi belső hivatkozások lesznek a másik oldalra.",
+    "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.55": {
+    "cim": "Kezdőlap — a napnak saját gömbje, a kör nyolc gömbből áll",
+    "tipus": "Szakasz",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Kezdőlap",
+      "Nap"
+    ],
+    "mit_kapsz": "A kezdőlap körében a nap is ott van, a legfelső helyen. A gömbje nem pontszámot mutat — egy napra nincs ilyen —, hanem azt, mennyire van tele a napod a naptárad szerint, és a nap saját oldalát nyitja. A Ma lapon az „A napod” sor megmarad: a gömb csak még egy út ugyanoda.",
+    "munkamenet": "boop-kezdolap-orbok"
   }
 }

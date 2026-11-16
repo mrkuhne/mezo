@@ -8,8 +8,12 @@ enum KezdolapRoute: Equatable {
     case nap
     /// The Nap page with that area's room already open.
     case room(Hue)
+    /// The day's own page — the eighth orb (owner, 2026-11-16, decision #41). It is reached from here AND from
+    /// the folded "A napod" row, because an orb is another way in, not a replacement.
+    case day
 
     var room: Hue? { if case .room(let h) = self { h } else { nil } }
+    var detail: Brief.Link? { self == .day ? .day : nil }
 }
 
 /// **The home screen** (owner 2026-11-13): "boop" at the top, the seven life areas as living orbs laid out on a
@@ -50,7 +54,7 @@ struct KezdolapView: View {
                     .allowsHitTesting(route == nil)
                     .accessibilityHidden(route != nil)
                 if let route {
-                    NapView(initialRoom: route.room, onHome: closeRoute)
+                    NapView(initialRoom: route.room, initialDetail: route.detail, onHome: closeRoute)
                         .opacity(pageIn ? 1 : 0)
                 }
             }
@@ -105,7 +109,7 @@ struct KezdolapView: View {
 
     private var home: some View {
         GeometryReader { geo in
-            let ring = min(geo.size.width - 14, geo.size.height * 0.52)
+            let ring = min(geo.size.width - 10, geo.size.height * 0.50)
             ZStack {
                 // The backdrop never takes part in the zoom: a blurred fog canvas scaled six times over is what the
                 // phone could not keep up with. It only fades, while the ring alone grows out of the tapped orb.
@@ -126,7 +130,7 @@ struct KezdolapView: View {
                     Spacer(minLength: 0)
                     ringView(side: ring)
                     boopLine
-                        .padding(.top, 18)
+                        .padding(.top, 34)
                     Spacer(minLength: 0)
                     Color.clear.frame(height: 112)
                 }
@@ -146,7 +150,7 @@ struct KezdolapView: View {
     }
 
     private func ringView(side: CGFloat) -> some View {
-        NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief) }, orbSize: 62, live: route == nil) { item, point in
+        NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief) }, orbSize: 56, live: route == nil) { item, point in
             open(item, at: point)
         } center: {
             boopCenter
@@ -196,7 +200,9 @@ struct KezdolapView: View {
     /// opening an empty page.
     private func open(_ item: NKRingItem, at point: CGPoint) {
         guard let area = Area(rawValue: Int(item.id) ?? -1) else { return }
-        if let hue = area.hue {
+        if area == .nap {
+            openRoute(.day, from: point, in: screen)
+        } else if let hue = area.hue {
             openRoute(.room(hue), from: point, in: screen)
         } else {
             toast = area.soonLine
@@ -213,6 +219,7 @@ struct KezdolapView: View {
         case "edzes": return .room(.mozgas)
         case "energia": return .room(.pulzus)
         case "forma": return .room(.forma)
+        case "nap-oldal": return .day
         default: return nil
         }
         #else
