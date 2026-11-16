@@ -81,14 +81,22 @@ func clockLabel(_ date: Date, calendar: Calendar = .current) -> String {
 /// (`sheets`, boop-ios.md §9) hang outside the stack, so they reach Ma and every room.
 struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     let brief: Brief
+    /// Opened from the home screen's ring with that area's room already on screen (nil = the plain page).
+    let initialRoom: Hue?
+    /// The way back to the home screen's ring: the title row's left slot becomes a back button, and closing the
+    /// room the ring opened returns there instead of leaving Ma bare. nil = Ma is the place's own root.
+    let onHome: (@MainActor @Sendable () -> Void)?
     let below: (MaiContext) -> Below
     let drill: (Hue, MaiContext) -> Drill
     let sheets: (MaiContext) -> Sheets
 
-    init(brief: Brief, @ViewBuilder below: @escaping (MaiContext) -> Below,
+    init(brief: Brief, initialRoom: Hue? = nil, onHome: (@MainActor @Sendable () -> Void)? = nil,
+         @ViewBuilder below: @escaping (MaiContext) -> Below,
          @ViewBuilder drill: @escaping (Hue, MaiContext) -> Drill, sheets: @escaping (MaiContext) -> Sheets) {
-        self.brief = brief; self.below = below; self.drill = drill; self.sheets = sheets
+        self.brief = brief; self.initialRoom = initialRoom; self.onHome = onHome
+        self.below = below; self.drill = drill; self.sheets = sheets
     }
+
 
     /// The rooms pushed over Ma (at most one in B2).
     @State private var path: [Hue] = MaiView.initialPath
@@ -146,26 +154,36 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     var body: some View {
         let c = copy
         let ctx = context
-        NavigationStack(path: $path) {
-            // The phase strip scrolls the page's own scroll view to a section (ScrollViewReader reaches the ScrollView
-            // inside NKTabPage; each section carries an invisible anchor above its title, `phaseAnchor`).
-            ScrollViewReader { proxy in
-                NKTabPage(hue: selected, sky: sky, heroHeight: nil,
-                          compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
-                                             line: "\(c.name) \(c.miniValue)")) {
-                    hero(c, proxy: proxy)
-                } content: {
-                    below(ctx)
+        Group {
+            if let initialRoom, let onHome {
+                // Opened straight from the home screen's ring: the room IS the page. No navigation stack, so its back
+                // button cannot slide it off sideways — the ring simply fades back in over it.
+                drill(initialRoom, ctx)
+                    .environment(\.closeRoom, onHome)
+                    .onAppear { setRoomOpen(true) }
+            } else {
+                NavigationStack(path: $path) {
+                    // The phase strip scrolls the page's own scroll view to a section (ScrollViewReader reaches the
+                    // ScrollView inside NKTabPage; each section carries an invisible anchor above its title).
+                    ScrollViewReader { proxy in
+                        NKTabPage(hue: selected, sky: sky, heroHeight: nil,
+                                  compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
+                                                     line: "\(c.name) \(c.miniValue)")) {
+                            hero(c, proxy: proxy)
+                        } content: {
+                            below(ctx)
+                        }
+                    }
+                    .toolbar(.hidden, for: .navigationBar)
+                    // the shell's painted landscape shows through the stack
+                    .containerBackground(.clear, for: .navigation)
+                    .navigationDestination(for: Hue.self) { h in drill(h, ctx) }
                 }
             }
-            .toolbar(.hidden, for: .navigationBar)
-            // the shell's painted landscape shows through the stack
-            .containerBackground(.clear, for: .navigation)
-            .navigationDestination(for: Hue.self) { h in drill(h, ctx) }
         }
         .modifier(sheets(ctx))
         .onChange(of: path.isEmpty) { _, empty in setRoomOpen(!empty) }
-        .onAppear { setRoomOpen(!path.isEmpty) }
+        .onAppear { if initialRoom == nil { setRoomOpen(!path.isEmpty) } }
         .nkToast($toast, action: undo == nil ? nil : (toastAction ?? SessionText.undo)) { undo?(); undo = nil }
         .background { ModeClock { clockTick += 1 } }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: inhale) { _, _ in breathing }
@@ -181,7 +199,8 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
 
     /// The title row and the phase strip; the clock's phase carries the dot, a tap scrolls to that section.
     @ViewBuilder private func header(_ proxy: ScrollViewProxy) -> some View {
-        NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: nil, onAvatar: openAccount)
+        NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: nil, onAvatar: openAccount,
+                   onBack: onHome)
             .padding(.top, 54)
         NKTabStrip(tabs: DayPhase.allCases.map(\.name),
                    selected: Binding(get: { shownPhase.name }, set: { name in
