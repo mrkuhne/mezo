@@ -60,6 +60,10 @@ struct NapView: View {
                         if hue == .fuel {
                             // Fuel's room is the food room (B4): its own tabs, its own data.
                             EtelRoom()
+                        } else if hue == .mozgas {
+                            // Mozgás's room is the training room (B5): the same shared page, fed by the training
+                            // API rather than by the brief alone.
+                            EdzesRoom()
                         } else {
                             AreaRoom(hue: hue, brief: morning.brief ?? brief, store: morning, ctx: ctx, desk: desk) { sheet = DetailSheet($0) }
                         }

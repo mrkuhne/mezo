@@ -39,7 +39,9 @@ struct PreviewTransport: ClientTransport {
         if let reply = Self.morningReply(operationID, request, sent: sent) { return reply }
         if let reply = Self.chatReply(operationID, sent: sent) { return reply }
         if let reply = Self.foodReply(operationID, request, sent: sent) { return reply }
+        if let reply = Self.trainReply(operationID, request) { return reply }
         assert(!Self.foodOps.contains(operationID), "PreviewTransport: unanswered op \(operationID)")
+        assert(!Self.trainOps.contains(operationID), "PreviewTransport: unanswered op \(operationID)")
         if request.method == .put { return (HTTPResponse(status: .noContent), nil) }
         var h = HTTPFields(); h[.contentType] = "application/json"
         return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(#"{"inserted":0,"updated":0}"#))
@@ -503,6 +505,58 @@ struct PreviewTransport: ClientTransport {
     }
 
     // MARK: - Past days for Napló (invented; offsets from today)
+
+    // MARK: - Edzés (B5): an invented training day, so the room can be walked without a server
+
+    /// Every training operation the room can call; one of these falling through unanswered is a bug in this file
+    /// (the simulator's network is blocked, so an unanswered call is silence, not an error the screen could show).
+    private static let trainOps: Set<String> = ["getTodayWorkout", "listWorkouts", "getExerciseCatalog",
+                                                "getExerciseRecords", "listMesocycles", "getMesocycleVolumeArc"]
+
+    /// `-previewEdzesRest YES` makes today a rest day; `-previewEdzesPlain YES` turns the hypertrophy engine off
+    /// (no per-set targets and no reasoning at all), which is the state that must never print an invented weight.
+    private static func trainReply(_ op: String, _ request: HTTPRequest) -> (HTTPResponse, HTTPBody?)? {
+        func json(_ text: String) -> (HTTPResponse, HTTPBody?) {
+            var h = HTTPFields(); h[.contentType] = "application/json"
+            return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(text))
+        }
+        guard trainOps.contains(op) else { return nil }
+        switch op {
+        case "getTodayWorkout":
+            let done = dayString(offset: -2)
+            if UserDefaults.standard.bool(forKey: "previewEdzesRest") {
+                return json(#"{"weekDoneDates":["\#(done)"]}"#)
+            }
+            let plain = UserDefaults.standard.bool(forKey: "previewEdzesPlain")
+            let press = previewExercise(id: previewPressId, name: "Fekvenyomás", muscle: "chest",
+                                        anchor: 77.5, target: 80, plain: plain)
+            let row = previewExercise(id: previewRowId, name: "Hajlott evezés", muscle: "back",
+                                      anchor: 70, target: 70, plain: plain)
+            return json(#"{"templateSessionId":"\#(previewSessionId)","dayLabel":"Hét","title":"Pull Day","durationEst":62,"exercises":[\#(press),\#(row)],"weekDoneDates":["\#(done)"]}"#)
+        case "listWorkouts", "getExerciseCatalog", "getExerciseRecords", "listMesocycles": return json("[]")
+        default: return json("{}")
+        }
+    }
+
+    private static let previewSessionId = "c1c2c3d4-0001-4a2b-9c3d-111122223333"
+    private static let previewPressId = "c1c2c3d4-0002-4a2b-9c3d-111122223333"
+    private static let previewRowId = "c1c2c3d4-0003-4a2b-9c3d-111122223333"
+
+    /// One exercise of the invented day. `plain` is the engine-off case: counts only, **no weights and no
+    /// reasoning**, so the room can be checked against the rule that it never invents a number.
+    private static func previewExercise(id: String, name: String, muscle: String, anchor: Double,
+                                        target: Double, plain: Bool) -> String {
+        let head = #"{"id":"\#(id)","name":"\#(name)","muscle":"\#(muscle)","warmupSets":2,"workingSets":3,"repMin":6,"repMax":10,"targetRIR":2,"type":"compound","planSlot":true"#
+        if plain { return head + "}" }
+        let move = target > anchor ? "+\(nkRound(target - anchor)) kg" : "tartjuk a súlyt"
+        let sets = #"[{"kind":"warmup","targetWeightKg":\#(nkRound(anchor * 0.5)),"targetReps":8},{"kind":"warmup","targetWeightKg":\#(nkRound(anchor * 0.75)),"targetReps":5},{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":8,"targetRIR":2},{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":8,"targetRIR":2},{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":7,"targetRIR":1}]"#
+        return head + #","anchorWeightKg":\#(nkRound(anchor)),"prescribedSets":\#(sets),"lastWeek":{"weightKg":\#(nkRound(anchor)),"reps":8,"rir":3},"rationale":"Múlt hét 8 × \#(nkRound(anchor)) kg (RIR 3) → \#(move)"}"#
+    }
+
+    /// A weight on the wire without a trailing `.0`, so the invented day reads like the server's own numbers.
+    private static func nkRound(_ v: Double) -> String {
+        v.rounded() == v ? String(Int(v)) : String(format: "%.1f", v)
+    }
 
     private static func dayString(offset: Int) -> String {
         var greg = Calendar(identifier: .gregorian); greg.timeZone = .current

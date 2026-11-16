@@ -32,8 +32,10 @@ func areaTabs(_ hue: Hue, brief: Brief) -> AreaTabs {
         AreaTabs(names: ["Ma", "Check-inek", "Minták"],
                  badges: ["Ma": brief.day.checkins.contains { !$0.done } ? 1 : 0])
     case .mozgas:
-        AreaTabs(names: ["Ma", "Blokk", "Gyakorlatok", "Előzmények"],
-                 badges: ["Ma": (brief.day.session != nil && brief.day.session?.done != true) ? 1 : 0])
+        // Edzés has its own room (B5) and its tab labels live in `EdzesTab`, once: „Terv" became **„Blokk"**
+        // (owner, 2026-11-16) and a further rename stays a one-line change.
+        AreaTabs(names: EdzesTab.allCases.map(\.rawValue),
+                 badges: [EdzesTab.ma.rawValue: (brief.day.session != nil && brief.day.session?.done != true) ? 1 : 0])
     case .forma:
         AreaTabs(names: ["Ma", "Mi hat rá"], badges: [:])
     case .fuel:
@@ -162,11 +164,6 @@ struct AreaRoom: View {
         case (.pulzus, "Ma"): energiaMa
         case (.pulzus, "Check-inek"): energiaCheckinek
         case (.pulzus, _): energiaMintak
-
-        case (.mozgas, "Ma"): edzesMa
-        case (.mozgas, "Blokk"): edzesBlokk
-        case (.mozgas, "Gyakorlatok"): edzesGyakorlatok
-        case (.mozgas, _): edzesElozmenyek
 
         case (.forma, "Ma"): formaMa
         case (.forma, _): formaMiHatRa
@@ -361,62 +358,12 @@ struct AreaRoom: View {
     }
 
     // MARK: - Edzés
-
-    @ViewBuilder private var edzesMa: some View {
-        let c = maiCopy(brief, .mozgas)
-        if let s = brief.day.session {
-            NKHighlight(hue: hue, label: s.done ? "megvolt" : "ma", text: s.title,
-                        sub: [s.time ?? s.plannedTime, s.minutes.map { "\($0) perc" },
-                              s.exercises.isEmpty ? nil : "\(s.exercises.count) gyakorlat"]
-                            .compactMap { $0 }.joined(separator: " · "))
-        } else {
-            NKHighlight(hue: hue, label: "ma", text: c.headline, sub: c.sentence)
-        }
-        NKStatRow([
-            NKStat(value: brief.day.steps.map { huInt($0) }, unit: "lépés",
-                   label: "a napi \(huInt(brief.day.stepsGoal))-ből", hot: true),
-            NKStat(value: brief.day.session?.doneMinutes.map { "\($0)" } ?? brief.day.session?.minutes.map { "\($0)" },
-                   unit: "perc", label: brief.day.session?.done == true ? "a mai edzés" : "a tervezett edzés"),
-            NKStat(value: brief.day.activeKcal.map { huInt($0) }, unit: "kcal", label: "aktív égetés"),
-        ], hue: hue)
-        if let s = brief.day.session, !s.exercises.isEmpty {
-            NKBare("A MAI EDZÉS", hue: hue) {
-                NKRowList(s.exercises.map { e in
-                    NKAreaRow(glyph: "dumbbell-ink", title: e.name, sub: "\(e.sets) sorozat",
-                              state: s.done ? .done : .normal)
-                }, hue: hue)
-            }
-        }
-        NKBare("AZ EDZÉS TERÜLET", hue: hue) { edzesMenu }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a mai edzésről") { openPlace(.boop) }
-    }
-
-    private var edzesMenu: some View {
-        NKMenuGrid([
-            NKMenuItem(glyph: "bolt-sun", name: "Indítás", sub: "Sorozatról sorozatra") { ctx.toast(soonToast("Edzés indítása")) },
-            NKMenuItem(glyph: "clock-ink", name: "Blokk", sub: "A heteid egyben") { selected = "Blokk" },
-            NKMenuItem(glyph: "ball-sun", name: "Gyakorlatok", sub: "A saját súlyaiddal") { selected = "Gyakorlatok" },
-            NKMenuItem(glyph: "book-sage", name: "Előzmények", sub: "Minden eddigi edzés") { selected = "Előzmények" },
-        ], hue: hue)
-    }
-
-    @ViewBuilder private var edzesBlokk: some View {
-        NKNotLiveYet(hue: hue, title: "A nyolchetes blokkod",
-                     line: "Itt fog állni, hányadik hetén jársz, mit hoz a hét, és mikor jön a könnyű hét. Az edzés-szakasz építi meg.")
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
-    }
-
-    @ViewBuilder private var edzesGyakorlatok: some View {
-        NKNotLiveYet(hue: hue, title: "A gyakorlataid",
-                     line: "A súlyaid, a rekordjaid és minden gyakorlat egy helyen. Az edzés-szakasz hozza, a Watch-appal együtt.")
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot egy gyakorlatról") { openPlace(.boop) }
-    }
-
-    @ViewBuilder private var edzesElozmenyek: some View {
-        NKNotLiveYet(hue: hue, title: "Az eddigi edzéseid",
-                     line: "A telefon ma csak a mai napot látja az edzésekből. A teljes előzmény az edzés-szakasszal érkezik.")
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a fejlődésedről") { openPlace(.boop) }
-    }
+    //
+    // Edzés is **not** served by this page any more: it has its own room (`ios/Boop/Edzes/EdzesRoom.swift`, B5),
+    // branched beside Étel's in `NapView`, because it has its own data — the engine's per-set targets, its own
+    // reasoning, the week's finished days. Its blocks lived here until 2026-11-16; keeping a second copy would
+    // have left two Edzés pages, and a later reader editing the dead one. Its tab labels are still shared, from
+    // `EdzesTab` above.
 
     // MARK: - Forma
 

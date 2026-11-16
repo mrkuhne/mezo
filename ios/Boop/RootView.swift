@@ -10,6 +10,9 @@ struct RootView: View {
     @State private var morning: MorningStore?
     @State private var ritmus: RitmusEnvironment?
     @State private var food: FoodClient?
+    @State private var train: TrainClient?
+    /// The last-known-good read cache (B5): per user, beside the ledger and the outbox.
+    @State private var cache: ServerCache?
 
     var body: some View {
         Group {
@@ -41,6 +44,8 @@ struct RootView: View {
         .environment(morning)
         .environment(ritmus)
         .environment(\.foodClient, food)
+        .environment(\.trainClient, train)
+        .environment(\.serverCache, cache)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
@@ -55,7 +60,10 @@ struct RootView: View {
         }
         // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
         // the session's client already carries another token, or none).
-        guard let me else { ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; BackgroundSyncHost.ritmus = nil; return }
+        guard let me else {
+            ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil
+            BackgroundSyncHost.ritmus = nil; return
+        }
         if link?.userId != me.id {
             ritmus?.retire()
             let signOut: @MainActor () -> Void = { [session] in session.signOut() }
@@ -66,6 +74,8 @@ struct RootView: View {
                 morning = MorningStore(client: preview, onUnauthorized: signOut)
                 ritmus = .preview(client: preview)
                 food = FoodClient(client: preview)
+                train = TrainClient(client: preview)
+                cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
                 BackgroundSyncHost.ritmus = ritmus
                 return
             }
@@ -74,6 +84,8 @@ struct RootView: View {
             morning = MorningStore(client: session.client, onUnauthorized: signOut)
             ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id)
             food = FoodClient(client: session.client)
+            train = TrainClient(client: session.client)
+            cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
             BackgroundSyncHost.ritmus = ritmus
         }
         if case .ready = state { Task { await link?.syncIfStale() } }

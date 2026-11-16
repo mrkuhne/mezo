@@ -273,6 +273,33 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     app cannot know yet (the mezociklus, exercise records, the six-week sleep curve), the tab says so.
   The gaps that remain, said out loud: three areas have no mood photo (`mezo-r36n9.60`), Pénz and Levél have no
   glyph of their own (a scale and a book stand in), and Edzés's three deeper tabs wait for B5.
+- **The Edzés room (B5 phase 1, `mezo-r36n9.15`)** — the same page, with its own data. Edzés left `AreaRoom`
+  for `ios/Boop/Edzes/EdzesRoom.swift`, branched beside `EtelRoom()` in `NapView`, because the morning brief
+  cannot carry what the training API knows. **The frame is still the kit's** (`NKAreaPage`, the area's own bar,
+  the tab set and its badge are unchanged — the owner has seen that page), and every control it had is still
+  there. What is new on **Ma**:
+  - the exercise rows now carry the **real warmup/working split and the weight the engine asks for**
+    („2 bemelegítő · 3 sorozat · 6–10 ismétlés", „80 kg × 8"), and a row is ticked when the server has a logged
+    set for it. With the hypertrophy engine **off** the server sends only counts, so the rows show counts and
+    **no weight at all** — the plan's anchor weight is its reference, not a per-set target, and printing it as one
+    would be a claim the server never made;
+  - **„Az eligazítás"** — what the engine changed for today and why, **verbatim from the server's own
+    `rationale`**. Nothing is written in the app, and with the engine off the block is simply absent;
+  - **„A heted"** — Monday to Sunday, each day saying whether it has a finished session. A day still to come is
+    drawn plain; nothing is claimed about it;
+  - **offline is an answer, not an error**: reads go through `ServerCache`, and a cached plan is shown **with its
+    age** („8 órás terv", „2 napos terv"). With no cache and no network the block says so (`NKNoFreshData`);
+    a refusal or a server fault is reported as itself and never dressed as an old answer.
+  **Edzés also speaks on the living wall** through one `WallSource` (`edzesWallCandidates`), the only way an area
+  may say anything there: a planned session is `.improves` (rank 0.9 within two hours, ahead of the food tip's
+  0.7; 0.5 beyond), a session **about to be missed** is `.expires` with the end of its grace window as
+  `expiresAt` — so the wall drops it by itself, and it is the one role that may ring the phone under the
+  two-a-day cap — and a finished session is `.happened`. The brief's old thin stand-in (`edzes-keszulj` inside
+  `briefWallCandidates`) was **removed in the same change**: two sources offering a session card would bring back
+  a card he had just dismissed, because `acted` is keyed by candidate id.
+  Still a promise, and said so on the page: the player („Indítás"), Blokk, Gyakorlatok and Előzmények.
+  Simulator switches: `-previewHome edzes` (the room straight from the ring), `-previewEdzesRest YES` (a rest
+  day), `-previewEdzesPlain YES` (the engine off — the state that must never print a weight), `-edzesTab <név>`.
 
 - **The Étel room (B4 Étel, shipped 2026-11-13, `mezo-r36n9.14`; spec [`2026-11-13-boop-b4-etel-design.md`](../superpowers/specs/2026-11-13-boop-b4-etel-design.md) — owner decisions 8–21, plan [`2026-11-13-boop-b4-etel.md`](../superpowers/plans/2026-11-13-boop-b4-etel.md)).** The Fuel orb on Ma opens `EtelRoom` (`Etel/EtelRoom.swift`, kit `NKDrillPage` in the fuel hue with a food photo head `NKPhoto.konyha`, four capsule tabs **Ma · Receptek · Kamra · Hét**, last tab kept in `@SceneStorage`). One `EtelStore` (`Etel/EtelRoom.swift`, logic in pure `EtelLogic.swift`) loads day / plan / coach / photos / supplement stash independently, so one failing read never blanks the room. All server calls go through `FoodClient` (`BoopCore/Etel/`); the model types in `FoodModels.swift`. The server owns the rules (day plan, scoring, sensitivities); the phone shows them and never recomputes a verdict.
   - **Ma tab** (`EtelMa`, `MealCard`, `DimensionSheet`): five numbered sections — **1** the day's budget (kcal headline + three macro bars; a kímélő GUIDANCE day shows "ma nincs kalóriakeret" and a "Kikapcsolom" button instead), **2** the day's plan (logged meals as photo cards with score and macros; the open windows from `GET /api/fuel/plan/{date}` with the MOST badge, the suggested recipe or ingredient tip, *Megeszem* / *Kihagyom* / camera), **3** the next-meal tip (*Megnézem a receptet* switches to Receptek when the window has a recipe; *Most nem* dismisses it locally), **4** víz (+250 / +500 ml, idempotent writes), **5** kiegészítők (one-tap group tick). A meal card opens the eight-dimension sheet (macro, micro, who, fat quality, NOVA, plant diversity, **energy density**, context — "Adag" is a recipe-only dimension; each shows what it measures, the server's own detail and the coach note). The processed-food line appears only as the coach's one quiet sentence when NOVA 3–4 carry more than half the meal's kcal; the phone adds no NOVA badge of its own. The headline wraps to two lines on long numbers (kit 38 pt); under 230 pt content width the dimension grid goes to two columns.

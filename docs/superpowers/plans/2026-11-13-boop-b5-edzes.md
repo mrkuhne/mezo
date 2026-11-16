@@ -203,6 +203,48 @@ Operations to append to the filter: `getTodayWorkout`, `startWorkout`, `logWorko
 
 ---
 
+## Re-scope against what the shell programme already built (2026-11-16, after the pause)
+
+The four steps of the shell programme landed while B5 was paused, and **a good part of this plan's Task 6 is
+already on main.** Building it again would be the exact waste the pause avoided, so the scope below replaces
+Task 6 as written. Verified by reading the running build, not the summaries.
+
+**Already there** (`ios/Boop/Nap/AreaRoom.swift`, step 3, `mezo-r36n9.57`): the Edzés page itself — `NKAreaPage`
+with the area's glyph, head, **its own bottom bar** carrying `Ma · Blokk · Gyakorlatok · Előzmények` with a badge
+on Ma, the back out through `closeRoom`, `onAsk` → Boop, and the search/settings actions. Ma shows today's
+session (title, time, minutes, exercise count), a stat row (steps, planned minutes, active kcal), the exercise
+list **from the morning brief**, the area menu, and the ask row. Blokk, Gyakorlatok and Előzmények are
+`NKNotLiveYet` placeholders. The player's entrance is the menu's „Indítás" tile, which toasts „hamarosan".
+
+**So Task 6 becomes:** give that page its **own data** and move it to its own file, the way Étel already is.
+- **Keep every control and line the page has today** (reverse parity: the highlight, the three stats, the
+  exercise list, the menu, the ask row, the tab set, the badge, the actions). Nothing the owner can see today may
+  disappear or move.
+- **Add what only `TrainClient` can give**, which the brief does not carry: the real **warmup/working split and
+  per-set targets**, **„Az eligazítás"** (the engine's own `rationale` per exercise — server text, never written
+  here), the **open workout**, and **the week's finished days** (`weekDoneDates`).
+- **Own the frame by reusing it**: `EdzesRoom` builds `NKAreaPage` with the same arguments `AreaRoom` gives
+  Edzés, branching at `ios/Boop/Nap/NapView.swift` beside `EtelRoom()`. **No page frame, no head, no tabs of our
+  own.** The Edzés branches are then removed from `AreaRoom.swift`, so there is one source of truth for the page.
+- **Staleness instead of invented numbers**: the room reads through `ServerCache`, and a cached answer carries
+  its age (`NKStat(age:)`, `.nkStale`). No cache and no network shows `NKNoFreshData`, never a zero.
+- Task 6b (the `WallSource`) ships **in this phase**, not later: it is owed, and the four rules below make it the
+  only way Edzés may say anything on Ma.
+
+**Four rules that now bind this slice** (spec §5.1, not negotiable):
+1. **No second card surface.** Anything worth saying goes on the wall by registering a `WallSource`.
+2. **No second notification policy.** Anything worth ringing for is an `.expires` candidate under the two-a-day cap.
+3. **No second place where Boop explains itself.** Fill the card's `why`; invent no other „miért?".
+4. **No invented number ever reaches the app.** Where the data does not exist, the screen says so.
+
+Plus the structural one: **the player stays a full-screen cover outside the area-page system** (it must survive
+the phone locking), and anything the kit is missing is **added to the kit**, not built inside Edzés.
+
+The kit grew in step 3 and now also carries `NKAreaBar`, `NKList`, `NKNote`, `NKActions`, `NKInfoRow`,
+`NKNotLiveYet` and `Hue.penz`/`Hue.level` — check it before writing a component.
+
+---
+
 ## Stage 2 — The player and the Ma tab (the first stage the owner can use)
 
 ### Task 4: `WorkoutSession` — the pure in-workout model

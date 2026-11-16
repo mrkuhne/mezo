@@ -395,7 +395,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-11, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-11-16, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-13, mixed) ·
-  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-13, done) ·
+  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-16, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-12, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-12, mixed) ·
@@ -665,7 +665,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### dayclose
 
 *BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-16, in-progress) ·
-  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-13, done)
+  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-16, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
   - **entities→tables:** `DayCloseEntity`→`day_close`, `DayCloseLineCacheEntity`→`day_close_line_cache`
