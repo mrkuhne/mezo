@@ -360,14 +360,14 @@
     "szulo": "mezo-r36n9"
   },
   "mezo-r36n9.37": {
-    "cim": "L0 · A területek otthona",
-    "tipus": "Funkció",
-    "szakasz": "Életpanel",
+    "cim": "A területek közös váza",
+    "tipus": "Szakasz",
+    "szakasz": "Kezdőlap",
     "terulet": [
       "Alapok"
     ],
-    "mit_kapsz": "A Terv fülről egy koppintással eléred mind a hat területed, nagy gömbökkel és jelzéssel, hogy hol van néznivaló — és mindegyik a saját, teljes oldalára nyílik.",
-    "allapot": "Később"
+    "mit_kapsz": "Minden terület oldala egyetlen közös vázból épül — ugyanaz a fejléc, ugyanazok a fülek, ugyanazok az építőelemek —, így amit az Ételnél megszoksz, az az Edzésnél, a Pénznél és a Levélnél is ugyanúgy működik.",
+    "munkamenet": "boop-kezdolap-orbok"
   },
   "mezo-r36n9.38": {
     "cim": "L1 · A postafiókod bekötése",

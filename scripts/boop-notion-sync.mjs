@@ -53,6 +53,10 @@ const SLICE_CODE = { // Kézikönyv "Szakasz" code → Jegyek "Szakasz" option
   S1: 'S1 Alap', S2: 'S2 Adatok', 'S2.5': 'S2.5 Napkelte', S3: 'S3 Reggel', B0: 'B0 Javítás', B1: 'B1 Adatalap',
   B2: 'B2 Gerinc', B3: 'B3 Napi ritmus', B4: 'B4 Étel', B5: 'B5 Edzés + Watch', B6: 'B6 A Terv',
   B7: 'B7 Napi kapacitás', B8: 'B8 Az egy AI', Test: 'Test',
+  // The shell programme (2026-11-16): the ring, the area-page kit and the living wall. A handbook page whose
+  // `szakasz` is not in this map is silently published with no slice tag and no ticket relation, which is how
+  // the first three of these went up bare.
+  'Kezdőlap': 'Kezdőlap',
 };
 const STATE_COLOR = { 'Élesben': 'green_bg', 'Részben kész': 'yellow_bg', 'Ellenőrzés': 'purple_bg', 'Tervezve': 'blue_bg', 'Kihagyva': 'gray_bg' };
 const STATE_ICON = { 'Élesben': '✅', 'Részben kész': '🟡', 'Ellenőrzés': '🔍', 'Tervezve': '🗺️', 'Kihagyva': '🚫' };
@@ -82,11 +86,13 @@ function buildTickets() {
   const overlay = readJson(join(HB, '_jegyek.json'));
   const missing = [];
   const out = [];
-  const sliceKey = {}; // szakasz option → ticket key of the "Szakasz"-type row
+  // szakasz option → the slice's ticket, for a non-slice ticket's "which slice is this" relation. A slice with
+  // several tickets resolves to the first one; the handbook's own relation (below) links to all of them.
+  const sliceKey = {};
   for (const i of issues) {
     const o = overlay[i.id];
     if (!o) { missing.push(i.id); continue; }
-    if (o.tipus === 'Szakasz' && !o.epic) sliceKey[o.szakasz] = `jegyek:${i.id}`;
+    if (o.tipus === 'Szakasz' && !o.epic) sliceKey[o.szakasz] ??= `jegyek:${i.id}`;
   }
   for (const i of issues) {
     const o = overlay[i.id];
@@ -189,8 +195,13 @@ function decorateBody(body) {
 }
 
 function buildHandbook(ticketRows) {
-  const sliceTicket = {};
-  for (const t of ticketRows) if (t.props['Típus'] === 'Szakasz') sliceTicket[t.props['Szakasz']] = t.key;
+  // A slice can be several work items (the shell programme is three: the ring, the kit, the wall), so a
+  // handbook page links to EVERY ticket of its slice. Keying one ticket per slice silently dropped the others.
+  const sliceTickets = {};
+  for (const t of ticketRows) {
+    if (t.props['Típus'] !== 'Szakasz') continue;
+    (sliceTickets[t.props['Szakasz']] ??= []).push(t.key);
+  }
   const rows = [];
   const dirs = readdirSync(HB).filter((d) => /^\d\d-/.test(d) && statSync(join(HB, d)).isDirectory()).sort();
   for (const dir of dirs) {
@@ -208,7 +219,7 @@ function buildHandbook(ticketRows) {
       };
       const relProps = {
         'Szülő': fm.szulo ? [`kezikonyv:${dir}/${fm.szulo}`] : [],
-        'Jegyek': szakasz.map((s) => sliceTicket[SLICE_CODE[s]]).filter(Boolean),
+        'Jegyek': szakasz.flatMap((s) => sliceTickets[SLICE_CODE[s]] ?? []),
       };
       const head = `<callout icon="${STATE_ICON[allapot] ?? '📘'}" color="${STATE_COLOR[allapot] ?? 'gray_bg'}">\n**${allapot}.** ${escapeTags(fm.osszefoglalo ?? '')}\n</callout>`;
       rows.push({ key: `kezikonyv:${rel}`, db: 'kezikonyv', icon: fm.szint === 'Fő szekció' ? '📘' : fm.szint === 'Kis funkció' ? '🔹' : '📄', props, rel: relProps, content: `${head}\n\n${decorateBody(body)}` });
