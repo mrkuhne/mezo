@@ -559,8 +559,8 @@
     "tipus": "Szakasz",
     "szakasz": "Kezdőlap",
     "terulet": [
-      "Kezdőlap",
-      "Nap"
+      "Alapok",
+      "Ma"
     ],
     "mit_kapsz": "A kezdőlap körében a nap is ott van, a legfelső helyen. A gömbje nem pontszámot mutat — egy napra nincs ilyen —, hanem azt, mennyire van tele a napod a naptárad szerint, és a nap saját oldalát nyitja. A Ma lapon az „A napod” sor megmarad: a gömb csak még egy út ugyanoda.",
     "munkamenet": "boop-kezdolap-orbok"

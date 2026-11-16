@@ -26,6 +26,12 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from '
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// "mezo-r36n9.7" sorts before "mezo-r36n9.51": compare the numeric tail numerically, the rest as text.
+const idOrder = (id) => {
+  const m = /^(.*?)(\d+)$/.exec(id);
+  return m ? `${m[1]}${String(m[2]).padStart(8, '0')}` : id;
+};
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HB = join(ROOT, 'docs/boop-handbook');
 const STATE_FILE = join(HB, '_notion-state.json');
@@ -87,12 +93,16 @@ function buildTickets() {
   const missing = [];
   const out = [];
   // szakasz option → the slice's ticket, for a non-slice ticket's "which slice is this" relation. A slice with
-  // several tickets resolves to the first one; the handbook's own relation (below) links to all of them.
+  // several tickets resolves to the LOWEST id (the slice's own first ticket), so a ticket added to the slice
+  // later never re-parents the ones already there; the handbook's own relation (below) links to all of them.
   const sliceKey = {};
   for (const i of issues) {
     const o = overlay[i.id];
     if (!o) { missing.push(i.id); continue; }
-    if (o.tipus === 'Szakasz' && !o.epic) sliceKey[o.szakasz] ??= `jegyek:${i.id}`;
+    if (o.tipus !== 'Szakasz' || o.epic) continue;
+    const key = `jegyek:${i.id}`;
+    const seen = sliceKey[o.szakasz];
+    if (!seen || idOrder(i.id) < idOrder(seen.slice('jegyek:'.length))) sliceKey[o.szakasz] = key;
   }
   for (const i of issues) {
     const o = overlay[i.id];

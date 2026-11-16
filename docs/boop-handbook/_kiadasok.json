@@ -277,5 +277,14 @@
       "mezo-r36n9.45"
     ],
     "mi_valtozott": "A kör közepe mögötti oldalon legfeljebb három dolog van: ami elromlik, ha most nem csinálod, ami a legtöbbet javít a mai napodon, és ami történt. Fölöttük a check-in kérdése, amíg esedékes. Amit megcsinálsz, leül a „Ma történt” közé. Ha nincs semmi, Boop kimondja, és megmondja, mikor szól legközelebb. A napi idővonal egy sorrá csukódott, a pontszám lekerült a kezdőlapról, és a telefonod csak a lejáró dolog miatt csöröghet, naponta legfeljebb kétszer."
+  },
+  "350147934": {
+    "cim": "A napnak saját gömbje lett — a kezdőlap köre nyolc gömbből áll",
+    "datum": "2026-11-16",
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.55"
+    ],
+    "mi_valtozott": "A kezdőlap körébe bekerült a nap is, mindjárt a kör tetejére. A gömbjében nincs pontszám — egy napra nincs ilyen —, hanem azt mutatja, mennyire van tele a napod a naptárad szerint, és a nap saját oldalát nyitja. A Ma lapon az „A napod” összecsukott sor megmaradt: a gömb csak még egy út ugyanoda. A nyolc gömb szimmetrikusabban áll a körben, mint a hét; az ára annyi, hogy a gömbök egy hajszállal kisebbek, hogy a nevek a kis telefonon se érjenek össze."
   }
 }

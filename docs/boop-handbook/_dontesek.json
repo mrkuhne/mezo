@@ -462,8 +462,8 @@
     "datum": "2026-11-16",
     "suly": "Közepes",
     "terulet": [
-      "Kezdőlap",
-      "Nap"
+      "Alapok",
+      "Ma"
     ],
     "valasztas": "A kezdőlap körében a nap is ott van, a legfelső helyen: nyolc gömb, Nap · Alvás · Étel · Edzés · Energia · Forma · Pénz · Levél. A nap gömbje azt mutatja, mennyire van tele a napod a naptárad szerint, és a nap saját oldalát nyitja. A Ma lapon az „A napod” összecsukott sor megmarad.",
     "miert": "A nap maga az egész nap, a másik hét csak egy-egy szelete belőle — kézenfekvő, hogy a kör tetején legyen. Korábban úgy döntöttünk, hogy a nap csak a Ma lapról érhető el; ezt felülírtad.",
