@@ -109,7 +109,7 @@
     },
     "jegyek:mezo-r36n9.15": {
       "page_id": "4168968e-752b-8161-b864-c3d13fc8e9b4",
-      "hash": "31b8b747264c"
+      "hash": "b3883b94a871"
     },
     "jegyek:mezo-r36n9.14": {
       "page_id": "4168968e-752b-8126-b650-c1fd3b87c390",
@@ -305,19 +305,19 @@
     },
     "kezikonyv:01-alapok/napkelte-kinezet": {
       "page_id": "4168968e-752b-812a-9b5f-fd8f477ccda4",
-      "hash": "1999e6270d2a"
+      "hash": "fe85e3270e55"
     },
     "kezikonyv:01-alapok/navigacio": {
       "page_id": "4168968e-752b-81f1-a428-f1eff627e50a",
-      "hash": "d77122ec413f"
+      "hash": "6aebb6b43218"
     },
     "kezikonyv:01-alapok/net-nelkul": {
       "page_id": "4168968e-752b-815c-bee7-c4032ca1468f",
-      "hash": "6c93fbbf158d"
+      "hash": "3a9f39577b11"
     },
     "kezikonyv:01-alapok/telepites-a-telefonra": {
       "page_id": "4168968e-752b-8185-b34c-c477fe6deb9b",
-      "hash": "3dbd57f88757"
+      "hash": "d104024dfb11"
     },
     "kezikonyv:02-ma/00-attekintes": {
       "page_id": "4168968e-752b-81e7-9587-d27ec99c8ca4",
@@ -866,6 +866,42 @@
     "kiadasok:01cc62c6b": {
       "page_id": "4178968e-752b-817f-89c5-ecfdafffe274",
       "hash": "58430139447f"
+    },
+    "jegyek:mezo-r36n9.52": {
+      "page_id": "41a8968e-752b-8162-a13b-c02026f1c61f",
+      "hash": "35ef46d69041"
+    },
+    "dontesek:d-2026-11-16-kezdolap-kor": {
+      "page_id": "41a8968e-752b-816c-b983-cdbb664d6599",
+      "hash": "613139e06b17"
+    },
+    "dontesek:d-2026-11-16-terv-a-terved": {
+      "page_id": "41a8968e-752b-81d0-9715-fbee075e5e7d",
+      "hash": "e3aa6c4b236a"
+    },
+    "kezikonyv:01-alapok/kezdolap": {
+      "page_id": "41a8968e-752b-812f-87dd-e3a938084198",
+      "hash": "a32c88a065f1"
+    },
+    "kezikonyv:01-alapok/terulet-vaz": {
+      "page_id": "41a8968e-752b-8155-94b9-d2ecc92c2f61",
+      "hash": "282a7cebac08"
+    },
+    "jegyek:mezo-r36n9.51": {
+      "page_id": "41a8968e-752b-81ab-a9b8-e433885a676c",
+      "hash": "76de7efdba36"
+    },
+    "jegyek:mezo-r36n9.49": {
+      "page_id": "41a8968e-752b-81f9-bc23-fa29c79da220",
+      "hash": "f9f56c92a911"
+    },
+    "jegyek:mezo-r36n9.47": {
+      "page_id": "41a8968e-752b-81a9-9b80-fee8dd65919b",
+      "hash": "76109f613f58"
+    },
+    "kiadasok:2f3f02ecf": {
+      "page_id": "41a8968e-752b-814f-8449-cd6a51d13f0c",
+      "hash": "f93a0c86c2e1"
     }
   }
 }
