@@ -269,6 +269,25 @@ class VolumeLedgerIT extends AbstractIntegrationTest {
             .satisfies(r -> assertThat(r.getCurrentSets()).isEqualTo(8));
     }
 
+    @Test
+    void activatingAnArchivedLegacyRunConvertsIt() {
+        UUID user = databasePopulator.populateUser("ledger-archived-legacy@test.local");
+        MesocycleEntity meso = train.createMesocycle(user, "Régi", "archived");
+        meso.setVolumeModel((short) 1);
+        mesocycleRepository.saveAndFlush(meso);
+        WorkoutSessionEntity day = train.createTemplateDay(user, meso.getId(), "Hét");
+        exercise(user, day, "Row", "back-mid", 4);
+        exercise(user, day, "Pulldown", "back-wide", 3);
+
+        trainService.activateMesocycle(user, meso.getId());
+
+        assertThat(mesocycleRepository.findById(meso.getId()).orElseThrow().getVolumeModel()).isEqualTo((short) 2);
+        MuscleGroupVolumeLogEntity back = byMuscle(rows(user, meso.getId()), "back");
+        assertThat(back.getCurrentSets()).isEqualTo(7);
+        assertThat(back.getBandLow()).isNotNull();
+        assertThat(back.getBandHigh()).isNotNull();
+    }
+
     private ExerciseEntity exercise(UUID user, WorkoutSessionEntity day, String name, String muscle, int sets) {
         ExerciseEntity e = train.createExercise(user, day.getId(), name, muscle, "compound");
         e.setWorkingSets(sets);

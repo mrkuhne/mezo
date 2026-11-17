@@ -275,6 +275,15 @@ public class TrainService {
             archiveActiveMesos(createdBy);
             target.setStatus("active");
             target.setCurrentWeek(MesoWeeks.clampWeek(target.getStartDate(), target.getWeeks()));
+            // An archived or planned run that was never converted (volume_model 1; the one-time migration
+            // covers only active and planned runs, and a planned one may have been created before it) was
+            // not being prescribed from the old distribution at the moment of activation — its stored
+            // working_sets ARE its plan, which is exactly the amount model, so no re-distribution is
+            // needed. Without this it would stay model 1 forever and be silently skipped by the weekly
+            // engine and by VolumeLedger.sync.
+            if (target.getVolumeModel() == 1) {
+                target.setVolumeModel((short) 2);
+            }
             // Real activation only — AFTER_COMMIT consumers (Diet Plan slice 4) see it once this
             // transaction lands.
             eventPublisher.publishEvent(new MesocycleActivated(createdBy, id));
