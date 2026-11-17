@@ -616,5 +616,26 @@
     ],
     "mit_kapsz": "Ennek a három területnek a fejlécében most festett ég van fotó helyett, mert nincs hozzájuk jogtiszta kép. Egy-egy nyugodt természetfotó kell, a többi területéhez hasonló hangulatban. A Pénznek és a Levélnek a saját jele is hiányzik (most mérleg és könyv áll helyettük).",
     "munkamenet": "boop-kezdolap-orbok"
+  },
+  "mezo-r36n9.61": {
+    "cim": "Az ételfotók és a napló gyorsabb betöltése",
+    "tipus": "Karbantartás",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel",
+      "Napló"
+    ],
+    "mit_kapsz": "Az ételfotók most minden megnyitáskor újra letöltődnek, a Napló egyetlen frissítéshez tizenöt külön kérést küld, és az étkezési adatokat két képernyő külön-külön kéri le. A javítás után a fotók egyszer töltődnek le, a Napló egy kéréssel frissül, és a képernyők gyorsabban, kevesebb adatforgalommal nyílnak meg.",
+    "munkamenet": "sebesseg-atnezes"
+  },
+  "mezo-r36n9.62": {
+    "cim": "Használaton kívüli maradékok kitakarítása az appból",
+    "tipus": "Karbantartás",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Az előző (Lágy) kinézetből és a kivett elemekből maradt néhány sosem használt darab, köztük egy betűtípus és több jel. Ezek törlése után az app kisebb lesz, és a későbbi munkák nem botlanak beléjük. A felületen semmi nem változik.",
+    "munkamenet": "sebesseg-atnezes"
   }
 }
