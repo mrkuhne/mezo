@@ -532,5 +532,17 @@
     "miert": "A Boop váltja le a webes appot; két felületre építeni dupla munka lenne, és a webes számítások úgyis átkerülnek a szerverre, ahol a Boop is használja őket.",
     "levaltotta": "—",
     "kovetkezmeny": "A webes felület szabályai (pl. a heti zóna és a napi szettkorlát kijelzése) nem javulnak tovább; ami a Boopnak is kell, az a szerverre kerül. A webes app élesben elérhető marad."
+  },
+  "d-2026-11-17-tervajanlo-a-blokkepitobe": {
+    "cim": "A tervajánló a meglévő tervépítőbe kerül, nem külön munkába",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A tervépítő megkérdezi, mennyi időd van egy edzésre és mennyire vagy edzett, és ugyanarra a célra két-három tervet mutat becsült idővel, amik közül te választasz. Ezt az edzésmotort és a tervépítőt most újraépítő munka csinálja meg.",
+    "miert": "Ugyanarról a képernyőről van szó; így csak egyszer építjük meg, és nem kell utána újra hozzányúlni.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az edzésmotor és a tervépítő munkája hosszabb lesz. Elvetve: külön, később induló munka (később érkezne, és a tervépítőt kétszer kellene átírni)."
   }
 }
