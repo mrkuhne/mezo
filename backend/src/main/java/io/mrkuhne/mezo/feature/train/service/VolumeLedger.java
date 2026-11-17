@@ -51,6 +51,9 @@ public class VolumeLedger {
         if (meso == null || !"active".equals(meso.getStatus())) {
             return;
         }
+        if (meso.getVolumeModel() < 2) {
+            return; // the old targets in the ledger are the migration's input — never overwrite them
+        }
         Map<String, Integer> setsByGroup = planSetsByGroup(createdBy, mesocycleId);
         Map<String, MuscleGroupVolumeLogEntity> existing = new TreeMap<>();
         volumeLogRepository.findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(mesocycleId))

@@ -123,11 +123,13 @@ public class VolumeAmountMigrationRunner implements ApplicationRunner {
         boolean stamped = false;
         if (active) {
             changedExercises = writeEffectiveSets(owner, runId);
-            volumeLedger.sync(owner, runId);
             stamped = guardLastRun(run);
         }
-        run.setVolumeModel(AMOUNT_MODEL);
+        run.setVolumeModel(AMOUNT_MODEL); // BEFORE the sync: the ledger skips unconverted runs
         mesocycleRepository.save(run);
+        if (active) {
+            volumeLedger.sync(owner, runId);
+        }
         log.info("volume amount migration: run {} ({}) converted, {} exercise(s) changed, lastRun stamped: {}",
             runId, run.getStatus(), changedExercises, stamped);
         return true;
@@ -159,13 +161,22 @@ public class VolumeAmountMigrationRunner implements ApplicationRunner {
         return changed;
     }
 
-    /** Stamps this calendar week as already rolled when the run's record does not say so. */
+    /**
+     * Only when there is NO trustworthy record (null record, blank or unparsable {@code lastRun}): this
+     * calendar week is taken as rolled — {@code lastRun = "W<calWeek>"} and {@code currentWeek = calWeek}, like
+     * every other writer of {@code lastRun} — so the first open does not make a real step from a week nobody
+     * can vouch for. One step may be skipped once because of that. A VALID {@code lastRun} (equal, ahead or
+     * older) is left exactly as it is, and so is {@code currentWeek}: the new engine takes a pending week's step
+     * itself, from the converted amounts, on the next open.
+     */
     private boolean guardLastRun(MesocycleEntity run) {
-        int calWeek = MesoWeeks.clampWeek(run.getStartDate(), run.getWeeks());
         VolumeRecomputeJson current = run.getVolumeRecompute();
-        if (WeekProposalService.parseLastRunWeek(current) >= calWeek) {
+        if (current != null && current.lastRun() != null && !current.lastRun().isBlank()
+            && WeekProposalService.parseLastRunWeek(current) > 0) {
             return false;
         }
+        int calWeek = MesoWeeks.clampWeek(run.getStartDate(), run.getWeeks());
+        run.setCurrentWeek(calWeek);
         String lastRun = "W" + calWeek;
         run.setVolumeRecompute(current == null
             ? new VolumeRecomputeJson(lastRun, "W" + (calWeek + 1), "weekly-rollover", List.of())

@@ -129,6 +129,20 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void anUnconvertedRunIsNeverGenerated() {
+        Back b = back(2, "emphasize", true);
+        MesocycleEntity legacy = reload(b.meso());
+        legacy.setVolumeModel((short) 1);
+        mesocycleRepository.saveAndFlush(legacy);
+
+        workoutService.getToday(owner, null);
+
+        assertThat(proposalRepository.findWeekly(owner, b.meso().getId(), 2)).isEmpty();
+        assertThat(sets(b.mon2())).isEqualTo(2);
+        assertThat(reload(b.meso()).getVolumeRecompute()).isNull();
+    }
+
+    @Test
     void inADeficitItGainsOne() {
         goals.createGoal(owner, "cut", "active");
         Back b = back(2, "emphasize", true);

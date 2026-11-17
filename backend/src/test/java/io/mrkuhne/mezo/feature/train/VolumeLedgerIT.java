@@ -253,6 +253,22 @@ class VolumeLedgerIT extends AbstractIntegrationTest {
         assertThat(quad.getCurrentSets()).isEqualTo(4);
     }
 
+    @Test
+    void anUnconvertedRunIsNotSynced() {
+        UUID user = databasePopulator.populateUser("ledger-unconverted@test.local");
+        MesocycleEntity meso = train.createActiveMeso(user);
+        meso.setVolumeModel((short) 1);
+        mesocycleRepository.saveAndFlush(meso);
+        WorkoutSessionEntity day = train.createTemplateDay(user, meso.getId(), "Hét");
+        exercise(user, day, "Squat", "quad", 3);
+        train.createVolumeLog(user, meso.getId(), "quad", 8); // the old target the migration reads
+
+        ledger.sync(user, meso.getId());
+
+        assertThat(rows(user, meso.getId())).singleElement()
+            .satisfies(r -> assertThat(r.getCurrentSets()).isEqualTo(8));
+    }
+
     private ExerciseEntity exercise(UUID user, WorkoutSessionEntity day, String name, String muscle, int sets) {
         ExerciseEntity e = train.createExercise(user, day.getId(), name, muscle, "compound");
         e.setWorkingSets(sets);

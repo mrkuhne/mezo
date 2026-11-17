@@ -23,6 +23,7 @@ import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.service.LegacySetDistribution;
 import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.VolumeLedger;
+import io.mrkuhne.mezo.feature.train.service.WorkoutExerciseChangeService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -55,6 +56,7 @@ class VolumeAmountMigrationRunnerIT extends AbstractIntegrationTest {
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired MuscleGroupVolumeLogRepository volumeRepo;
     @Autowired MesoWeekProposalRepository proposalRepository;
+    @Autowired WorkoutExerciseChangeService changeService;
     @MockitoSpyBean VolumeLedger ledger;
 
     @Test
@@ -114,12 +116,13 @@ class VolumeAmountMigrationRunnerIT extends AbstractIntegrationTest {
         for (VolumeRecomputeJson broken : new VolumeRecomputeJson[] {
             null, new VolumeRecomputeJson("Vasárnap", "Vasárnap", "batch", List.of())}) {
             String mail = "migrate-d-" + (broken == null ? "null" : "text") + "@test.local";
-            WeekThree w = weekThree(mail, broken);
+            WeekThree w = weekThree(mail, broken, 1);
 
             runner.run();
 
             VolumeRecomputeJson audit = reload(w.meso()).getVolumeRecompute();
             assertThat(audit.lastRun()).isEqualTo("W3");
+            assertThat(reload(w.meso()).getCurrentWeek()).isEqualTo(3);
             assertThat(audit.nextRun()).isEqualTo(broken == null ? "W4" : "Vasárnap");
             workoutService.getToday(w.owner(), null);
             assertThat(proposalRepository.findWeekly(w.owner(), w.meso().getId(), 3)).isEmpty();
@@ -160,7 +163,7 @@ class VolumeAmountMigrationRunnerIT extends AbstractIntegrationTest {
     @Test
     void archivedRunsAreUntouched() {
         UUID owner = databasePopulator.populateUser("migrate-g@test.local");
-        MesocycleEntity meso = train.createMesocycle(owner, "Régi", "archived");
+        MesocycleEntity meso = legacy(train.createMesocycle(owner, "Régi", "archived"));
         WorkoutSessionEntity day = train.createTemplateDay(owner, meso.getId(), todayLabel());
         ExerciseEntity row = exercise(owner, day, "Leg Press", "quad", 3);
         train.createVolumeLog(owner, meso.getId(), "quad", 8);
@@ -174,7 +177,7 @@ class VolumeAmountMigrationRunnerIT extends AbstractIntegrationTest {
     @Test
     void plannedRunsAreMarkedButKeepTheirSets() {
         UUID owner = databasePopulator.populateUser("migrate-h@test.local");
-        MesocycleEntity meso = train.createMesocycle(owner, "Tervezett", "planned");
+        MesocycleEntity meso = legacy(train.createMesocycle(owner, "Tervezett", "planned"));
         WorkoutSessionEntity day = train.createTemplateDay(owner, meso.getId(), todayLabel());
         ExerciseEntity row = exercise(owner, day, "Leg Press", "quad", 3);
 
@@ -267,6 +270,80 @@ class VolumeAmountMigrationRunnerIT extends AbstractIntegrationTest {
         assertThat(sets(badRow)).isEqualTo(8);
     }
 
+    @Test
+    void aValidOlderLastRunIsLeftForTheNewEngine() {
+        UUID owner = databasePopulator.populateUser("migrate-m@test.local");
+        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(owner, 2, 6, NO_DELOAD);
+        meso.setMusclePriorities(Map.of("back", "emphasize"));
+        meso.setVolumeRecompute(new VolumeRecomputeJson("W2", "W3", "weekly-rollover", List.of()));
+        meso.setCurrentWeek(2);
+        meso = legacy(meso);
+        WorkoutSessionEntity mon = train.createWorkoutSession(owner, meso.getId(), "Hétfő", "gym", 0, "active");
+        WorkoutSessionEntity thu = train.createWorkoutSession(owner, meso.getId(), "Csütörtök", "gym", 3, "active");
+        ExerciseEntity quad = exercise(owner, mon, "Guggolás", "quad", 3);
+        ExerciseEntity row = exercise(owner, mon, "Evezés", "back-mid", 3);
+        ExerciseEntity row2 = exercise(owner, thu, "Húzódzkodás", "back-wide", 3);
+        logWeek(owner, meso, 2, mon, 0, quad, row);
+        logWeek(owner, meso, 2, thu, 3, row2);
+        train.createVolumeLog(owner, meso.getId(), "quad", 8);
+        train.createVolumeLog(owner, meso.getId(), "back", 6); // the old split keeps 3 + 3: week 2 was done in full
+
+        runner.run();
+
+        assertThat(sets(quad)).isEqualTo(8);
+        assertThat(sets(row) + sets(row2)).isEqualTo(6);
+        int backBefore = sets(row) + sets(row2);
+        MesocycleEntity after = reload(meso);
+        assertThat(after.getVolumeRecompute().lastRun()).isEqualTo("W2");
+        assertThat(after.getCurrentWeek()).isEqualTo(2);
+        assertThat(after.getVolumeModel()).isEqualTo((short) 2);
+
+        workoutService.getToday(owner, null);
+
+        assertThat(proposalRepository.findWeekly(owner, meso.getId(), 3)).isPresent();
+        assertThat(sets(quad)).isEqualTo(8); // quad is maintain by default: never steps
+        assertThat(sets(row) + sets(row2)).isEqualTo(backBefore + 2); // emphasize +2 from the CONVERTED amount
+        assertThat(reload(meso).getCurrentWeek()).isEqualTo(3);
+        assertThat(reload(meso).getVolumeRecompute().lastRun()).isEqualTo("W3");
+    }
+
+    @Test
+    void anUnconvertedRunIsNotSteppedBeforeItsConversion() {
+        UUID owner = databasePopulator.populateUser("migrate-n@test.local");
+        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(owner, 2, 6, NO_DELOAD);
+        meso.setVolumeRecompute(new VolumeRecomputeJson("W2", "W3", "weekly-rollover", List.of()));
+        meso.setCurrentWeek(2);
+        meso = legacy(meso);
+        WorkoutSessionEntity day = train.createTemplateDay(owner, meso.getId(), todayLabel());
+        ExerciseEntity quad = exercise(owner, day, "Guggolás", "quad", 3);
+        train.createVolumeLog(owner, meso.getId(), "quad", 8);
+
+        workoutService.getToday(owner, null); // the early open, before the runner reaches the run
+
+        assertThat(proposalRepository.findWeekly(owner, meso.getId(), 3)).isEmpty();
+        assertThat(ledgerRow(owner, meso, "quad").getCurrentSets()).isEqualTo(8);
+        assertThat(reload(meso).getVolumeRecompute().lastRun()).isEqualTo("W2");
+        assertThat(sets(quad)).isEqualTo(3);
+
+        runner.run();
+
+        assertThat(sets(quad)).isEqualTo(8); // the targets survived the early open
+    }
+
+    @Test
+    void aPlanEditBeforeConversionDoesNotDestroyTheTargets() {
+        UUID owner = databasePopulator.populateUser("migrate-o@test.local");
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        WorkoutSessionEntity day = train.createTemplateDay(owner, meso.getId(), todayLabel());
+        ExerciseEntity quad = exercise(owner, day, "Guggolás", "quad", 3);
+        train.createVolumeLog(owner, meso.getId(), "quad", 8);
+        WorkoutSessionEntity instance = train.startInstance(owner, day.getId());
+
+        changeService.addPlanWorkingSets(owner, instance.getId(), quad.getId(), 1);
+
+        assertThat(ledgerRow(owner, meso, "quad").getCurrentSets()).isEqualTo(8);
+    }
+
     // ── fixtures ──────────────────────────────────────────────────────────────────────────────
 
     private record WeekThree(UUID owner, MesocycleEntity meso, List<ExerciseEntity> rows) {
@@ -277,12 +354,16 @@ class VolumeAmountMigrationRunnerIT extends AbstractIntegrationTest {
 
     /** Old-model back run in calendar week 3: Mon 4 + 2, Thu 3 + 2 = 11, emphasized, last week fully logged. */
     private WeekThree weekThree(String email, VolumeRecomputeJson lastRun) {
+        return weekThree(email, lastRun, 3);
+    }
+
+    private WeekThree weekThree(String email, VolumeRecomputeJson lastRun, int currentWeek) {
         UUID owner = databasePopulator.populateUser(email);
         MesocycleEntity meso = train.activeMesoStartedWeeksAgo(owner, 2, 6, NO_DELOAD);
         meso.setMusclePriorities(Map.of("back", "emphasize"));
         meso.setVolumeRecompute(lastRun);
-        meso.setCurrentWeek(3);
-        meso = mesocycleRepository.saveAndFlush(meso);
+        meso.setCurrentWeek(currentWeek);
+        meso = legacy(meso);
         WorkoutSessionEntity mon = train.createWorkoutSession(owner, meso.getId(), "Hétfő", "gym", 0, "active");
         WorkoutSessionEntity thu = train.createWorkoutSession(owner, meso.getId(), "Csütörtök", "gym", 3, "active");
         List<ExerciseEntity> rows = List.of(
@@ -313,6 +394,12 @@ class VolumeAmountMigrationRunnerIT extends AbstractIntegrationTest {
     private MesocycleEntity pinnedActiveMeso(UUID owner) {
         MesocycleEntity meso = train.createActiveMeso(owner);
         meso.setVolumeRecompute(new VolumeRecomputeJson("W999", "W1000", "batch", List.of()));
+        return legacy(meso);
+    }
+
+    /** The populators build amount-model runs; these tests need the run as it was before the deploy. */
+    private MesocycleEntity legacy(MesocycleEntity meso) {
+        meso.setVolumeModel((short) 1);
         return mesocycleRepository.saveAndFlush(meso);
     }
 

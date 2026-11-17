@@ -92,16 +92,16 @@ public class WeekProposalService {
      */
     @Transactional
     public void generateIfDue(UUID createdBy, MesocycleEntity meso) {
-        if (volumeGate.getIfAvailable() == null) {
-            return;
+        if (volumeGate.getIfAvailable() == null || meso.getVolumeModel() < 2) {
+            return; // an unconverted run belongs to VolumeAmountMigrationRunner until it is migrated
         }
         if (MesoWeeks.clampWeek(meso.getStartDate(), meso.getWeeks()) <= parseLastRunWeek(meso.getVolumeRecompute())) {
             return; // cheap pre-check on the caller's copy: this calendar week is already recorded
         }
         MesocycleEntity run = mesocycleRepository
             .findLockedByIdAndCreatedByAndDeletedFalse(meso.getId(), createdBy).orElse(null);
-        if (run == null) {
-            return;
+        if (run == null || run.getVolumeModel() < 2) {
+            return; // re-checked on the locked row: the migration may have just converted — or not yet
         }
         try {
             generateLocked(createdBy, run);

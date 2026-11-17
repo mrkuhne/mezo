@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit;
 
 /**
  * Shared meso-week math (spec DA1/DA2): {@code startDate}-anchored 7-day week buckets, 1-based.
- * Package-visible — shared by {@link TrainService} (calendar-week-on-activate),
+ * Public (the migration runner reads it too) — shared by {@link TrainService} (calendar-week-on-activate),
  * {@link WeekProposalService} (the weekly proposal trigger) and {@link WeeklySignalReader} (the
  * last-week window), so they never drift on what "week n" means. Pure, no Spring/DB.
  */

@@ -83,6 +83,7 @@ public class TrainPopulator {
 
     public MesocycleEntity createMesocycle(UUID createdBy, String title, String status) {
         MesocycleEntity m = new MesocycleEntity();
+        m.setVolumeModel((short) 2); // fixtures exercise the amount model; migration tests flip a run back to 1
         m.setCreatedBy(createdBy);
         m.setTitle(title);
         m.setShortTitle(title);
@@ -107,6 +108,7 @@ public class TrainPopulator {
     public MesocycleEntity createMesocycleWithPhase(
         UUID createdBy, String title, String status, int weeks, String phase) {
         MesocycleEntity m = new MesocycleEntity();
+        m.setVolumeModel((short) 2); // fixtures exercise the amount model; migration tests flip a run back to 1
         m.setCreatedBy(createdBy);
         m.setTitle(title);
         m.setShortTitle(title);
@@ -193,6 +195,7 @@ public class TrainPopulator {
     public MesocycleEntity activeMesoStartedWeeksAgo(
         UUID createdBy, int weeksAgo, int weeks, List<String> phaseCurve) {
         MesocycleEntity m = new MesocycleEntity();
+        m.setVolumeModel((short) 2); // fixtures exercise the amount model; migration tests flip a run back to 1
         m.setCreatedBy(createdBy);
         m.setTitle("Volume rollover meso");
         m.setShortTitle("Volume rollover meso");
