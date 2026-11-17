@@ -1,5 +1,12 @@
 server:
   port: ${MEZO_PORT:8090}        # custom port — 8080 is taken by other local projects
+  # gzip JSON responses over 2 KB (mezo-l5lvh) — the day/feed/catalog payloads went out raw.
+  # The explicit list deliberately omits text/event-stream: a compressed SSE stream is buffered
+  # by the encoder and the chat's token-by-token deltas would arrive in clumps.
+  compression:
+    enabled: true
+    min-response-size: 2KB
+    mime-types: application/json,application/problem+json,text/plain
 spring:
   application:
     name: mezo
