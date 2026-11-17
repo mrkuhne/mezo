@@ -524,12 +524,9 @@
     "datum": "2026-11-17",
     "suly": "Nagy",
     "terulet": [
+      "Alapok",
       "Edzés",
-      "Étel",
-      "Alvás",
-      "Energia",
-      "Forma",
-      "Nap"
+      "Étel"
     ],
     "valasztas": "Minden új fejlesztés az iPhone-os Boopba és a szerverbe megy. A webes app úgy marad, ahogy van: nem kap új képernyőt, és a csak a webet érintő hibák sem kerülnek sorra.",
     "miert": "A Boop váltja le a webes appot; két felületre építeni dupla munka lenne, és a webes számítások úgyis átkerülnek a szerverre, ahol a Boop is használja őket.",
