@@ -10,6 +10,11 @@ struct RootView: View {
     @State private var morning: MorningStore?
     @State private var ritmus: RitmusEnvironment?
     @State private var food: FoodClient?
+    @State private var train: TrainClient?
+    /// The last-known-good read cache (B5): per user, beside the ledger and the outbox.
+    @State private var cache: ServerCache?
+    /// Where a workout in progress is kept — with the outbox, because it is his own unsent work.
+    @State private var workoutFolder: URL?
 
     var body: some View {
         Group {
@@ -41,6 +46,9 @@ struct RootView: View {
         .environment(morning)
         .environment(ritmus)
         .environment(\.foodClient, food)
+        .environment(\.trainClient, train)
+        .environment(\.serverCache, cache)
+        .environment(\.workoutFolder, workoutFolder)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
@@ -55,25 +63,43 @@ struct RootView: View {
         }
         // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
         // the session's client already carries another token, or none).
-        guard let me else { ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; BackgroundSyncHost.ritmus = nil; return }
+        guard let me else {
+            ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil; workoutFolder = nil
+            BackgroundSyncHost.ritmus = nil; return
+        }
         if link?.userId != me.id {
             ritmus?.retire()
             let signOut: @MainActor () -> Void = { [session] in session.signOut() }
             #if DEBUG
             if UserDefaults.standard.string(forKey: "preview") != nil {
                 let preview = makeClient(tokens: MemoryTokenStore("preview"), transport: PreviewTransport())
+                let previewTrain = TrainClient(client: preview)
                 link = HealthLink(client: preview, userId: me.id)
                 morning = MorningStore(client: preview, onUnauthorized: signOut)
-                ritmus = .preview(client: preview)
+                // One training client for the room AND the outbox sender: it is what remembers the server's
+                // workout id, and the player's online calls read that memory.
+                ritmus = .preview(client: preview, train: previewTrain)
                 food = FoodClient(client: preview)
+                train = previewTrain
+                cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
+                let previewFolder = RitmusEnvironment.directories(for: me.id).outbox
+                // A review launch starts the day over. The workout in progress is written to the user's own
+                // folder, not to the preview's scratch root, so without this a workout left running on one
+                // run sent the next one straight into the player — and the briefing could not be seen again.
+                try? FileManager.default.removeItem(at: previewFolder.appendingPathComponent("workout.json"))
+                workoutFolder = previewFolder
                 BackgroundSyncHost.ritmus = ritmus
                 return
             }
             #endif
+            let liveTrain = TrainClient(client: session.client)
             link = HealthLink(client: session.client, userId: me.id)
             morning = MorningStore(client: session.client, onUnauthorized: signOut)
-            ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id)
+            ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id, train: liveTrain)
             food = FoodClient(client: session.client)
+            train = liveTrain
+            cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
+            workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
             BackgroundSyncHost.ritmus = ritmus
         }
         if case .ready = state { Task { await link?.syncIfStale() } }

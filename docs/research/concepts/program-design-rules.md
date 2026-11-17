@@ -1,14 +1,16 @@
 ---
 title: Hypertrophy Program-Design Rules (RP · Helms · Nippard · Ethier)
 type: concept
-updated: 2026-08-03
+updated: 2026-11-17
 tags: [train, technique]
 related:
   - set-volume-landmarks.md
   - ../entities/jeremy-ethier.md
   - ../comparisons/plan-builder-guidance-ux.md
   - ../../features/train.md
-sources: []
+  - ../queries/muscle-ladder-mezo-development-digest.md
+sources:
+  - raw/books/jeff-nippard-muscle-ladder-source.md
 confidence: medium
 contradictions: []
 ---
@@ -35,10 +37,10 @@ should encode. Feeds bd mezo-oyhy (guided building epic).
 
 | Rule | Value |
 |---|---|
-| Frequency per muscle | **≥2×/week** universally; small muscles (delts/arms/calves) tolerate 3–6× |
+| Frequency per muscle | **≥2×/week is a practical way to distribute higher weekly volume**, not a universal hypertrophy requirement. Nippard notes that frequency alone has no clear advantage at equal volume (PDF 384, 398); a sustainable 1× plan can still work. |
 | Distinct exercises per muscle per WEEK | **2–5** (RP; hams/traps 2–3) — few exercises done well beats variety |
 | Same exercise 2×/week | encouraged; rotate only on stalled progression (RP swap criteria) |
-| Rep-zone distribution (RP) | **~25% heavy (5-10) · ~50% moderate (10-20) · ~25% light (20-30)** per muscle per week; side/rear delts skew light, hip-hinge skews heavy |
+| Rep-zone distribution (RP sweep) | **~25% heavy (5-10) · ~50% moderate (10-20) · ~25% light (20-30)** was a prior source-specific heuristic, not a consensus requirement. Nippard's book uses different bins and a 6–15-rep practical majority (PDF 400–410). Reconcile definitions before encoding either distribution. |
 | Rep assignment (Ethier) | compounds 3–8 rep @ 2-4' rest; isolations 10–20 rep @ 60-90" rest |
 | Balance | push:pull sets ≈ **1:1**; ham:quad ≈ **0.6–0.8:1** (structural-balance literature, NOT the three experts); Helms implicit pull-bias (2 mandatory row variants vs 1 press) |
 
@@ -64,6 +66,16 @@ Indirect/synergist volume: **Helms counts 0.5** per synergist set (row = 1.0 bac
 **Ethier counts 1.0** (bench = 1 chest + 1 triceps); RP counts direct only. mezo currently counts
 direct only — adding fractional counting changes every budget number; whichever is chosen must be
 explained in the UI.
+
+## Interpreting the book alongside the earlier sweep
+
+The earlier web sweep used **reviews/mirrors** for Nippard. The owner-supplied original book now
+supports a narrower claim: weekly frequency is mostly a way to spread sufficient quality volume,
+not a universal 2× requirement ([book digest](../queries/muscle-ladder-mezo-development-digest.md),
+PDF 374–385, 398). Its practical rep emphasis is 6–15, with smaller portions below/above; the
+25/50/25 line above belongs to the earlier RP sweep and should not be attributed to Nippard.
+Nippard's Table 8.1 (PDF 360–361) also counts **direct isolation sets** for biceps/triceps, not
+every press/pull as a full arm set. These distinctions matter if mezo changes its set ledger.
 
 ## Sources
 

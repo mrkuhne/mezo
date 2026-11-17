@@ -23,169 +23,29 @@
     }
   },
   "records": {
-    "jegyek:mezo-r36n9": {
-      "page_id": "4168968e-752b-81e6-a383-de42a4b49915",
-      "hash": "7efd207f7741"
-    },
-    "jegyek:mezo-r36n9.25": {
-      "page_id": "4168968e-752b-815d-a9ce-ec6aaaba5e82",
-      "hash": "68dd3e17c370"
-    },
-    "jegyek:mezo-r36n9.19": {
-      "page_id": "4168968e-752b-81c6-ab21-f9b8ff8a42fa",
-      "hash": "b0f0836875cf"
-    },
-    "jegyek:mezo-r36n9.13": {
-      "page_id": "4168968e-752b-8158-850f-d45093d83c69",
-      "hash": "7077527fa2ae"
-    },
-    "jegyek:mezo-r36n9.12": {
-      "page_id": "4168968e-752b-81fb-a1af-d1fdb8f31b8f",
-      "hash": "79e3faba8417"
-    },
-    "jegyek:mezo-r36n9.11": {
-      "page_id": "4168968e-752b-815d-99ad-eac07b96ef36",
-      "hash": "00a943debca3"
-    },
-    "jegyek:mezo-r36n9.10": {
-      "page_id": "4168968e-752b-81b8-8bae-d293ae7a9187",
-      "hash": "aa8816b883d7"
-    },
-    "jegyek:mezo-r36n9.9": {
-      "page_id": "4168968e-752b-81ed-a896-db1b3c017532",
-      "hash": "9d983722d4cd"
-    },
-    "jegyek:mezo-r36n9.7": {
-      "page_id": "4168968e-752b-81ea-883b-ef5dd8463fd3",
-      "hash": "4f7d6fdbd7a8"
-    },
-    "jegyek:mezo-r36n9.3": {
-      "page_id": "4168968e-752b-81b8-965a-c250eb3857a7",
-      "hash": "0e7e4a4d7624"
-    },
-    "jegyek:mezo-r36n9.2": {
-      "page_id": "4168968e-752b-81e3-a62a-ce7f4aaffd06",
-      "hash": "5becc1716129"
-    },
-    "jegyek:mezo-r36n9.29": {
-      "page_id": "4168968e-752b-81ed-ad38-ddfed1855fec",
-      "hash": "c520852a0322"
-    },
-    "jegyek:mezo-r36n9.28": {
-      "page_id": "4168968e-752b-818b-8c42-c169aa6dd5eb",
-      "hash": "fa1c335bf1dc"
-    },
-    "jegyek:mezo-r36n9.27": {
-      "page_id": "4168968e-752b-81d4-9b11-c05c585e207c",
-      "hash": "876d92b040fb"
-    },
-    "jegyek:mezo-r36n9.26": {
-      "page_id": "4168968e-752b-8184-87ee-deabec891c70",
-      "hash": "30b2c75fd73d"
-    },
-    "jegyek:mezo-r36n9.24": {
-      "page_id": "4168968e-752b-8191-8d38-f53edaff4db7",
-      "hash": "27a6fe4865a4"
-    },
-    "jegyek:mezo-r36n9.23": {
-      "page_id": "4168968e-752b-81fc-8bd4-e085b7784707",
-      "hash": "c79488417b77"
-    },
-    "jegyek:mezo-r36n9.22": {
-      "page_id": "4168968e-752b-81e2-a463-c11f9f8d3dc4",
-      "hash": "7ad1d58d0e2a"
-    },
-    "jegyek:mezo-r36n9.18": {
-      "page_id": "4168968e-752b-81a2-adff-e71b81a0e3d3",
-      "hash": "23edcb24f1c6"
-    },
-    "jegyek:mezo-r36n9.17": {
-      "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
-      "hash": "797c3dd62534"
-    },
-    "jegyek:mezo-r36n9.16": {
-      "page_id": "4168968e-752b-81dd-967e-fe6305d85e18",
-      "hash": "1ba613c5bb9a"
-    },
-    "jegyek:mezo-r36n9.15": {
-      "page_id": "4168968e-752b-8161-b864-c3d13fc8e9b4",
-      "hash": "b3883b94a871"
-    },
-    "jegyek:mezo-r36n9.14": {
-      "page_id": "4168968e-752b-8126-b650-c1fd3b87c390",
-      "hash": "ffc3a0f1dabf"
-    },
-    "jegyek:mezo-r36n9.5": {
-      "page_id": "4168968e-752b-816c-a28b-d65344fba272",
-      "hash": "867ed3d26ee9"
-    },
-    "jegyek:mezo-r36n9.21": {
-      "page_id": "4168968e-752b-811d-b91c-da7d60fe8b70",
-      "hash": "2d08e024d959"
-    },
-    "jegyek:mezo-r36n9.20": {
-      "page_id": "4168968e-752b-81df-a21a-ded130b1e446",
-      "hash": "d19dc6d5d698"
-    },
-    "jegyek:mezo-r36n9.8": {
-      "page_id": "4168968e-752b-81a4-b2cc-de86023bba6f",
-      "hash": "c1fc4eb1aacf"
-    },
-    "jegyek:mezo-r36n9.6": {
-      "page_id": "4168968e-752b-8101-a66d-cd36bff01a5c",
-      "hash": "f0133ab1022a"
-    },
-    "jegyek:mezo-r36n9.4": {
-      "page_id": "4168968e-752b-81d6-9e0e-e032c7434ec4",
-      "hash": "15db9a2ef860"
-    },
-    "jegyek:mezo-r36n9.1": {
-      "page_id": "4168968e-752b-8198-92be-e06ccc5c1a88",
-      "hash": "930ae8f775c1"
-    },
-    "dontesek:d-2026-11-09-nativ-app": {
-      "page_id": "4168968e-752b-814a-a795-d1873681ffc9",
-      "hash": "37716086b2d9"
+    "dontesek:d-2026-11-09-60-nap": {
+      "page_id": "4168968e-752b-81cd-b33c-df010ed70115",
+      "hash": "bfbbdb5cadf0"
     },
     "dontesek:d-2026-11-09-boop-nev": {
       "page_id": "4168968e-752b-8120-a8d0-e6f32b5e0363",
       "hash": "b68f303b563d"
     },
-    "dontesek:d-2026-11-09-szimulator": {
-      "page_id": "4168968e-752b-8174-9e28-ffa2ee4df9a5",
-      "hash": "adca2ee25b82"
-    },
     "dontesek:d-2026-11-09-naptar": {
       "page_id": "4168968e-752b-8182-b1ce-dcef2edd9abd",
       "hash": "d4907fb6c266"
     },
-    "dontesek:d-2026-11-09-60-nap": {
-      "page_id": "4168968e-752b-81cd-b33c-df010ed70115",
-      "hash": "bfbbdb5cadf0"
+    "dontesek:d-2026-11-09-nativ-app": {
+      "page_id": "4168968e-752b-814a-a795-d1873681ffc9",
+      "hash": "37716086b2d9"
+    },
+    "dontesek:d-2026-11-09-szimulator": {
+      "page_id": "4168968e-752b-8174-9e28-ffa2ee4df9a5",
+      "hash": "adca2ee25b82"
     },
     "dontesek:d-2026-11-10-napkelte": {
       "page_id": "4168968e-752b-815d-b666-df0aa68b314e",
       "hash": "dfdaa311e262"
-    },
-    "dontesek:d-2026-11-11-gerinc": {
-      "page_id": "4168968e-752b-8109-8048-c9d4fc663edc",
-      "hash": "20d6486841bf"
-    },
-    "dontesek:d-2026-11-11-onallo": {
-      "page_id": "4168968e-752b-8170-888d-e633db7bc482",
-      "hash": "10107d78fd49"
-    },
-    "dontesek:d-2026-11-11-fiok": {
-      "page_id": "4168968e-752b-818d-bd65-d48b7b6a6dc2",
-      "hash": "e167dedc52a5"
-    },
-    "dontesek:d-2026-11-11-fizetos": {
-      "page_id": "4168968e-752b-81ec-bd09-f948ae29372a",
-      "hash": "0280333a547d"
-    },
-    "dontesek:d-2026-11-11-sorrend": {
-      "page_id": "4168968e-752b-8184-839c-cc514df11834",
-      "hash": "c7b8a1548fb5"
     },
     "dontesek:d-2026-11-11-egy-hang": {
       "page_id": "4168968e-752b-81e6-8a68-df92e2a39a98",
@@ -195,89 +55,397 @@
       "page_id": "4168968e-752b-8143-861a-d29f115a1bdc",
       "hash": "bd0553e6031c"
     },
-    "dontesek:d-2026-11-11-semmi-koppintas-nelkul": {
-      "page_id": "4168968e-752b-815a-844c-ce16bafc0897",
-      "hash": "023b296ddc3e"
+    "dontesek:d-2026-11-11-fiok": {
+      "page_id": "4168968e-752b-818d-bd65-d48b7b6a6dc2",
+      "hash": "e167dedc52a5"
+    },
+    "dontesek:d-2026-11-11-fizetos": {
+      "page_id": "4168968e-752b-81ec-bd09-f948ae29372a",
+      "hash": "0280333a547d"
+    },
+    "dontesek:d-2026-11-11-gerinc": {
+      "page_id": "4168968e-752b-8109-8048-c9d4fc663edc",
+      "hash": "20d6486841bf"
     },
     "dontesek:d-2026-11-11-offline": {
       "page_id": "4168968e-752b-8192-a393-fa96b96b00b5",
       "hash": "f00a4d16fd35"
     },
-    "dontesek:d-2026-11-12-hipnogram": {
-      "page_id": "4168968e-752b-8104-ac61-e17405efc807",
-      "hash": "b94d3f8e5821"
+    "dontesek:d-2026-11-11-onallo": {
+      "page_id": "4168968e-752b-8170-888d-e633db7bc482",
+      "hash": "10107d78fd49"
     },
-    "dontesek:d-2026-11-12-gomb-egy-helyen": {
-      "page_id": "4168968e-752b-8111-b75d-cadb6b1caa97",
-      "hash": "c63432d7d87a"
+    "dontesek:d-2026-11-11-semmi-koppintas-nelkul": {
+      "page_id": "4168968e-752b-815a-844c-ce16bafc0897",
+      "hash": "023b296ddc3e"
+    },
+    "dontesek:d-2026-11-11-sorrend": {
+      "page_id": "4168968e-752b-8184-839c-cc514df11834",
+      "hash": "c7b8a1548fb5"
     },
     "dontesek:d-2026-11-12-feelfit": {
       "page_id": "4168968e-752b-818c-bc09-ffd2cbc72e5a",
       "hash": "1c9172fb4a6f"
     },
+    "dontesek:d-2026-11-12-gomb-egy-helyen": {
+      "page_id": "4168968e-752b-8111-b75d-cadb6b1caa97",
+      "hash": "c63432d7d87a"
+    },
+    "dontesek:d-2026-11-12-hipnogram": {
+      "page_id": "4168968e-752b-8104-ac61-e17405efc807",
+      "hash": "b94d3f8e5821"
+    },
     "dontesek:d-2026-11-12-notion": {
       "page_id": "4168968e-752b-8187-8516-cdbafc9e4457",
       "hash": "1331b84ac7e0"
     },
-    "kiadasok:d0d823d39": {
-      "page_id": "4168968e-752b-814e-8a59-e23819c45aff",
-      "hash": "dea23d28d6a9"
+    "dontesek:d-2026-11-12-notion-egyetlen-igazsag": {
+      "page_id": "4168968e-752b-812a-bf67-e4312ad13450",
+      "hash": "c79db6a2ec35"
     },
-    "kiadasok:07afe9a0b": {
-      "page_id": "4168968e-752b-8179-97d8-e4430c184e28",
-      "hash": "2523069db55c"
+    "dontesek:d-2026-11-13-allergen-alap": {
+      "page_id": "4178968e-752b-8142-8e91-e8f406cdfc35",
+      "hash": "fbf52a91160a"
     },
-    "kiadasok:e2ad5c76a": {
-      "page_id": "4168968e-752b-81c9-80fb-cf5d6dc20a8f",
-      "hash": "afc4b7cafda1"
+    "dontesek:d-2026-11-13-app-ikon": {
+      "page_id": "4178968e-752b-819c-9f5f-e3e9f94c79f6",
+      "hash": "ad87c728e1b3"
     },
-    "kiadasok:f67688f31": {
-      "page_id": "4168968e-752b-815b-9c19-f526270db29f",
-      "hash": "edc465f5ca49"
+    "dontesek:d-2026-11-13-day-trading-proba": {
+      "page_id": "4178968e-752b-814d-9c53-eb3b625ba3e0",
+      "hash": "61d0a9e0451f"
     },
-    "kiadasok:0b1f5ff82": {
-      "page_id": "4168968e-752b-81e3-a647-e2a0216f98b2",
-      "hash": "fc591ce6565b"
+    "dontesek:d-2026-11-13-eletpanel-sorrend": {
+      "page_id": "4178968e-752b-81c2-a067-fdada953b3c9",
+      "hash": "6806d0fa3cbf"
     },
-    "kiadasok:d46db9632": {
-      "page_id": "4168968e-752b-8156-b265-f0eaf1a506cb",
-      "hash": "ddcd34ab2995"
+    "dontesek:d-2026-11-13-elo-uzenofal": {
+      "page_id": "4178968e-752b-811b-a1a6-c32a362a89cd",
+      "hash": "8863ffb80414"
     },
-    "kiadasok:61834ed83": {
-      "page_id": "4168968e-752b-81a1-b488-e118378fc955",
-      "hash": "49303a3e63db"
+    "dontesek:d-2026-11-13-kepek": {
+      "page_id": "4178968e-752b-81f8-9dc7-cfb9ed141d6c",
+      "hash": "d3ac6d85a4e0"
     },
-    "kiadasok:98430ce66": {
-      "page_id": "4168968e-752b-81e2-a956-c1f7f32c3792",
-      "hash": "9c9d2c7ce921"
+    "dontesek:d-2026-11-13-koltes-heti-maradek": {
+      "page_id": "4178968e-752b-8144-8cff-eb270cbcd083",
+      "hash": "b928cad3458c"
     },
-    "kiadasok:5aac1e993": {
-      "page_id": "4168968e-752b-81cd-8d38-f42054ffec8b",
-      "hash": "e773f6c1bcc9"
+    "dontesek:d-2026-11-13-meleg-valtozat": {
+      "page_id": "4178968e-752b-8126-9d77-dffcac591946",
+      "hash": "f77816736532"
     },
-    "kiadasok:9b0cfc46f": {
-      "page_id": "4168968e-752b-81d7-a43f-ca980888ad37",
-      "hash": "145d7f73f4e3"
+    "dontesek:d-2026-11-13-penz-hatarok": {
+      "page_id": "4178968e-752b-8135-b225-c099f54a0279",
+      "hash": "8e85ce8aacdc"
     },
-    "kiadasok:90c085ebd": {
-      "page_id": "4168968e-752b-81b3-98b6-d70e63541702",
-      "hash": "75080634c9f4"
+    "dontesek:d-2026-11-13-penz-idotavok": {
+      "page_id": "4178968e-752b-813f-9ac5-d3c0a71f75e5",
+      "hash": "c8d1f760dcb8"
     },
-    "kiadasok:19ca92ca6": {
-      "page_id": "4168968e-752b-8114-a883-eaa2c58713ea",
-      "hash": "dc4b530d7e9a"
+    "dontesek:d-2026-11-13-penz-terulet": {
+      "page_id": "4178968e-752b-81e5-a796-fc00a91a7143",
+      "hash": "834ad21c23a8"
     },
-    "kiadasok:aa807c5b2": {
-      "page_id": "4168968e-752b-8169-a237-f3549fa44a0c",
-      "hash": "3b2406ed56f5"
+    "dontesek:d-2026-11-13-teruletek-helye": {
+      "page_id": "4178968e-752b-818e-ba31-c473ccef39a8",
+      "hash": "5cf7427dafef"
     },
-    "kiadasok:39c10c6f2": {
-      "page_id": "4168968e-752b-81da-b5d9-f765282ef3cf",
-      "hash": "f2558b6028b2"
+    "dontesek:d-2026-11-16-blokk": {
+      "page_id": "41a8968e-752b-8124-90f8-eec0ca3c6376",
+      "hash": "23d131406e45"
+    },
+    "dontesek:d-2026-11-16-csak-az-elso-csoroghet": {
+      "page_id": "41a8968e-752b-8150-a5f1-cdf84d3fda48",
+      "hash": "a01be393a1cf"
+    },
+    "dontesek:d-2026-11-16-felolvasas-ki": {
+      "page_id": "41a8968e-752b-81e9-944b-e835716746ab",
+      "hash": "6e52ad5adefa"
+    },
+    "dontesek:d-2026-11-16-harom-hely": {
+      "page_id": "41a8968e-752b-8171-8fff-dbc30fd21817",
+      "hash": "a7071405d91d"
+    },
+    "dontesek:d-2026-11-16-kezdolap-kor": {
+      "page_id": "41a8968e-752b-816c-b983-cdbb664d6599",
+      "hash": "613139e06b17"
+    },
+    "dontesek:d-2026-11-16-nap-oldal": {
+      "page_id": "41a8968e-752b-811a-b2ba-f976920d7ec0",
+      "hash": "bed334c5871d"
+    },
+    "dontesek:d-2026-11-16-nyolcadik-gomb": {
+      "page_id": "41a8968e-752b-811b-99d0-d12bd73258e9",
+      "hash": "3586601ac874"
+    },
+    "dontesek:d-2026-11-16-terv-a-terved": {
+      "page_id": "41a8968e-752b-81d0-9715-fbee075e5e7d",
+      "hash": "e3aa6c4b236a"
+    },
+    "jegyek:mezo-r36n9": {
+      "page_id": "4168968e-752b-81e6-a383-de42a4b49915",
+      "hash": "7efd207f7741"
+    },
+    "jegyek:mezo-r36n9.1": {
+      "page_id": "4168968e-752b-8198-92be-e06ccc5c1a88",
+      "hash": "930ae8f775c1"
+    },
+    "jegyek:mezo-r36n9.10": {
+      "page_id": "4168968e-752b-81b8-8bae-d293ae7a9187",
+      "hash": "aa8816b883d7"
+    },
+    "jegyek:mezo-r36n9.11": {
+      "page_id": "4168968e-752b-815d-99ad-eac07b96ef36",
+      "hash": "00a943debca3"
+    },
+    "jegyek:mezo-r36n9.12": {
+      "page_id": "4168968e-752b-81fb-a1af-d1fdb8f31b8f",
+      "hash": "79e3faba8417"
+    },
+    "jegyek:mezo-r36n9.13": {
+      "page_id": "4168968e-752b-8158-850f-d45093d83c69",
+      "hash": "7077527fa2ae"
+    },
+    "jegyek:mezo-r36n9.14": {
+      "page_id": "4168968e-752b-8126-b650-c1fd3b87c390",
+      "hash": "ffc3a0f1dabf"
+    },
+    "jegyek:mezo-r36n9.15": {
+      "page_id": "4168968e-752b-8161-b864-c3d13fc8e9b4",
+      "hash": "9d8be9d471ee"
+    },
+    "jegyek:mezo-r36n9.16": {
+      "page_id": "4168968e-752b-81dd-967e-fe6305d85e18",
+      "hash": "1ba613c5bb9a"
+    },
+    "jegyek:mezo-r36n9.17": {
+      "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
+      "hash": "797c3dd62534"
+    },
+    "jegyek:mezo-r36n9.18": {
+      "page_id": "4168968e-752b-81a2-adff-e71b81a0e3d3",
+      "hash": "23edcb24f1c6"
+    },
+    "jegyek:mezo-r36n9.19": {
+      "page_id": "4168968e-752b-81c6-ab21-f9b8ff8a42fa",
+      "hash": "b0f0836875cf"
+    },
+    "jegyek:mezo-r36n9.2": {
+      "page_id": "4168968e-752b-81e3-a62a-ce7f4aaffd06",
+      "hash": "5becc1716129"
+    },
+    "jegyek:mezo-r36n9.20": {
+      "page_id": "4168968e-752b-81df-a21a-ded130b1e446",
+      "hash": "d19dc6d5d698"
+    },
+    "jegyek:mezo-r36n9.21": {
+      "page_id": "4168968e-752b-811d-b91c-da7d60fe8b70",
+      "hash": "2d08e024d959"
+    },
+    "jegyek:mezo-r36n9.22": {
+      "page_id": "4168968e-752b-81e2-a463-c11f9f8d3dc4",
+      "hash": "7ad1d58d0e2a"
+    },
+    "jegyek:mezo-r36n9.23": {
+      "page_id": "4168968e-752b-81fc-8bd4-e085b7784707",
+      "hash": "c79488417b77"
+    },
+    "jegyek:mezo-r36n9.24": {
+      "page_id": "4168968e-752b-8191-8d38-f53edaff4db7",
+      "hash": "27a6fe4865a4"
+    },
+    "jegyek:mezo-r36n9.25": {
+      "page_id": "4168968e-752b-815d-a9ce-ec6aaaba5e82",
+      "hash": "68dd3e17c370"
+    },
+    "jegyek:mezo-r36n9.26": {
+      "page_id": "4168968e-752b-8184-87ee-deabec891c70",
+      "hash": "30b2c75fd73d"
+    },
+    "jegyek:mezo-r36n9.27": {
+      "page_id": "4168968e-752b-81d4-9b11-c05c585e207c",
+      "hash": "876d92b040fb"
+    },
+    "jegyek:mezo-r36n9.28": {
+      "page_id": "4168968e-752b-818b-8c42-c169aa6dd5eb",
+      "hash": "fa1c335bf1dc"
+    },
+    "jegyek:mezo-r36n9.29": {
+      "page_id": "4168968e-752b-81ed-ad38-ddfed1855fec",
+      "hash": "c520852a0322"
+    },
+    "jegyek:mezo-r36n9.3": {
+      "page_id": "4168968e-752b-81b8-965a-c250eb3857a7",
+      "hash": "0e7e4a4d7624"
+    },
+    "jegyek:mezo-r36n9.30": {
+      "page_id": "4168968e-752b-815e-b4c2-c1d35163f5f8",
+      "hash": "19b1f7d95167"
+    },
+    "jegyek:mezo-r36n9.31": {
+      "page_id": "4168968e-752b-81af-a508-dc9a83b4e5f3",
+      "hash": "59146bd821cc"
+    },
+    "jegyek:mezo-r36n9.32": {
+      "page_id": "4178968e-752b-81a1-a606-e0856faa4310",
+      "hash": "1ec35dd3740a"
+    },
+    "jegyek:mezo-r36n9.33": {
+      "page_id": "4178968e-752b-81dd-adf5-f3eeb1e95fd6",
+      "hash": "5d249e7ea8d2"
+    },
+    "jegyek:mezo-r36n9.33.1": {
+      "page_id": "4178968e-752b-81bc-a8b4-c4e11ed21649",
+      "hash": "d38df80ebcee"
+    },
+    "jegyek:mezo-r36n9.34": {
+      "page_id": "4178968e-752b-815c-a763-c4d496d811e3",
+      "hash": "04d072235a25"
+    },
+    "jegyek:mezo-r36n9.35": {
+      "page_id": "4178968e-752b-8116-863a-f5051731813b",
+      "hash": "f3445194b8f0"
+    },
+    "jegyek:mezo-r36n9.36": {
+      "page_id": "4178968e-752b-81f6-bb6e-d095808c0015",
+      "hash": "c183b7709e72"
+    },
+    "jegyek:mezo-r36n9.37": {
+      "page_id": "4178968e-752b-8141-bfb1-ea7b0505e390",
+      "hash": "652704c0f9be"
+    },
+    "jegyek:mezo-r36n9.38": {
+      "page_id": "4178968e-752b-8135-92c1-fa5764c26e31",
+      "hash": "f0bb6942a665"
+    },
+    "jegyek:mezo-r36n9.39": {
+      "page_id": "4178968e-752b-817c-8041-fc4df25a2c6c",
+      "hash": "fea188f07311"
+    },
+    "jegyek:mezo-r36n9.4": {
+      "page_id": "4168968e-752b-81d6-9e0e-e032c7434ec4",
+      "hash": "15db9a2ef860"
+    },
+    "jegyek:mezo-r36n9.40": {
+      "page_id": "4178968e-752b-81e6-b19b-d7f9f2177939",
+      "hash": "7540d9907db9"
+    },
+    "jegyek:mezo-r36n9.41": {
+      "page_id": "4178968e-752b-813e-b0fe-da10e19925c0",
+      "hash": "cba313ec99d5"
+    },
+    "jegyek:mezo-r36n9.42": {
+      "page_id": "4178968e-752b-811b-8dcf-dc61bab11031",
+      "hash": "01a40fa1b6c6"
+    },
+    "jegyek:mezo-r36n9.43": {
+      "page_id": "4178968e-752b-8163-8a1d-f7c8325c6aab",
+      "hash": "732bdc557950"
+    },
+    "jegyek:mezo-r36n9.44": {
+      "page_id": "4178968e-752b-8183-a1c5-d7f87244f20e",
+      "hash": "7e45f44d5ce7"
+    },
+    "jegyek:mezo-r36n9.45": {
+      "page_id": "4178968e-752b-8199-a40e-c914cf0c34b3",
+      "hash": "4e2e4e818f8c"
+    },
+    "jegyek:mezo-r36n9.46": {
+      "page_id": "4178968e-752b-81a6-8f6c-c5c4325c02bb",
+      "hash": "ead4bf86daec"
+    },
+    "jegyek:mezo-r36n9.47": {
+      "page_id": "41a8968e-752b-81a9-9b80-fee8dd65919b",
+      "hash": "76109f613f58"
+    },
+    "jegyek:mezo-r36n9.48": {
+      "page_id": "4178968e-752b-81b6-b319-f742b605dcd1",
+      "hash": "fb1a1020a2b2"
+    },
+    "jegyek:mezo-r36n9.49": {
+      "page_id": "41a8968e-752b-81f9-bc23-fa29c79da220",
+      "hash": "f9f56c92a911"
+    },
+    "jegyek:mezo-r36n9.5": {
+      "page_id": "4168968e-752b-816c-a28b-d65344fba272",
+      "hash": "867ed3d26ee9"
+    },
+    "jegyek:mezo-r36n9.50": {
+      "page_id": "4178968e-752b-81d6-9f71-f355f1fb49c0",
+      "hash": "ee1dc181e410"
+    },
+    "jegyek:mezo-r36n9.51": {
+      "page_id": "41a8968e-752b-81ab-a9b8-e433885a676c",
+      "hash": "255ebf42a840"
+    },
+    "jegyek:mezo-r36n9.52": {
+      "page_id": "41a8968e-752b-8162-a13b-c02026f1c61f",
+      "hash": "35ef46d69041"
+    },
+    "jegyek:mezo-r36n9.53": {
+      "page_id": "41a8968e-752b-819b-b4de-e5b8b29cfe8f",
+      "hash": "d76e00535068"
+    },
+    "jegyek:mezo-r36n9.54": {
+      "page_id": "41a8968e-752b-8199-9f84-f255ed746d4d",
+      "hash": "2e5939eeeac9"
+    },
+    "jegyek:mezo-r36n9.55": {
+      "page_id": "41a8968e-752b-81cb-90d0-d32896303402",
+      "hash": "78189bbe79eb"
+    },
+    "jegyek:mezo-r36n9.56": {
+      "page_id": "41a8968e-752b-81e9-a6ef-f7d7e2481d7b",
+      "hash": "24c4dfb0868e"
+    },
+    "jegyek:mezo-r36n9.57": {
+      "page_id": "41a8968e-752b-8123-abe2-faae7db25725",
+      "hash": "1c7eaf886a53"
+    },
+    "jegyek:mezo-r36n9.58": {
+      "page_id": "41a8968e-752b-81bf-8cba-ffc6d1953f40",
+      "hash": "527a842797df"
+    },
+    "jegyek:mezo-r36n9.59": {
+      "page_id": "41a8968e-752b-81be-9a83-f85052a9767f",
+      "hash": "0abbbc3def6e"
+    },
+    "jegyek:mezo-r36n9.6": {
+      "page_id": "4168968e-752b-8101-a66d-cd36bff01a5c",
+      "hash": "f0133ab1022a"
+    },
+    "jegyek:mezo-r36n9.60": {
+      "page_id": "41a8968e-752b-8121-877a-d3bd5bd2254e",
+      "hash": "f1a9b16c567d"
+    },
+    "jegyek:mezo-r36n9.61": {
+      "page_id": "41b8968e-752b-8166-86da-cc86c86fed5f",
+      "hash": "24a3f805b37a"
+    },
+    "jegyek:mezo-r36n9.62": {
+      "page_id": "41b8968e-752b-813a-85c1-c3f153d2694b",
+      "hash": "96c8d8428d52"
+    },
+    "jegyek:mezo-r36n9.7": {
+      "page_id": "4168968e-752b-81ea-883b-ef5dd8463fd3",
+      "hash": "4f7d6fdbd7a8"
+    },
+    "jegyek:mezo-r36n9.8": {
+      "page_id": "4168968e-752b-81a4-b2cc-de86023bba6f",
+      "hash": "c1fc4eb1aacf"
+    },
+    "jegyek:mezo-r36n9.9": {
+      "page_id": "4168968e-752b-81ed-a896-db1b3c017532",
+      "hash": "9d983722d4cd"
     },
     "kezikonyv:01-alapok/00-attekintes": {
       "page_id": "4168968e-752b-81b7-8c0b-f736eeecfc49",
       "hash": "076153ac3201"
+    },
+    "kezikonyv:01-alapok/app-ikon": {
+      "page_id": "4178968e-752b-818c-b5ad-e922f5258a34",
+      "hash": "a0601475e661"
     },
     "kezikonyv:01-alapok/elso-lepesek": {
       "page_id": "4168968e-752b-8122-9a3b-f35eb661b68c",
@@ -303,6 +471,14 @@
       "page_id": "4168968e-752b-81eb-833a-d4a89c813fb9",
       "hash": "9c1577c271c9"
     },
+    "kezikonyv:01-alapok/kepek": {
+      "page_id": "4178968e-752b-8106-9d11-eeb4865798e8",
+      "hash": "cb820d059514"
+    },
+    "kezikonyv:01-alapok/kezdolap": {
+      "page_id": "41a8968e-752b-812f-87dd-e3a938084198",
+      "hash": "c1cd456e6b2e"
+    },
     "kezikonyv:01-alapok/napkelte-kinezet": {
       "page_id": "4168968e-752b-812a-9b5f-fd8f477ccda4",
       "hash": "fe85e3270e55"
@@ -319,6 +495,10 @@
       "page_id": "4168968e-752b-8185-b34c-c477fe6deb9b",
       "hash": "d104024dfb11"
     },
+    "kezikonyv:01-alapok/terulet-vaz": {
+      "page_id": "41a8968e-752b-8155-94b9-d2ecc92c2f61",
+      "hash": "87a028354cc9"
+    },
     "kezikonyv:02-ma/00-attekintes": {
       "page_id": "4168968e-752b-81e7-9587-d27ec99c8ca4",
       "hash": "97ab93caca13"
@@ -330,6 +510,10 @@
     "kezikonyv:02-ma/boop-eszrevette": {
       "page_id": "4168968e-752b-818b-be8d-c0965f768985",
       "hash": "052dcd6e964f"
+    },
+    "kezikonyv:02-ma/elo-fal": {
+      "page_id": "41a8968e-752b-8171-9ec2-f9a141185bf9",
+      "hash": "7c79471927c5"
     },
     "kezikonyv:02-ma/este-keret": {
       "page_id": "4168968e-752b-812a-b752-e42df8ffcbfd",
@@ -529,15 +713,15 @@
     },
     "kezikonyv:07-edzes/01-mozgas-szoba-ma": {
       "page_id": "4168968e-752b-81b1-add3-c4f79e1b44e6",
-      "hash": "58e6107d373c"
+      "hash": "55423f4ec6d9"
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
-      "hash": "6f4b7e523a93"
+      "hash": "3f815c59e3e6"
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
-      "hash": "c01e15bab428"
+      "hash": "e679ccddc162"
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
@@ -574,6 +758,10 @@
     "kezikonyv:07-edzes/12-ami-kimarad": {
       "page_id": "4168968e-752b-8136-9c1d-ff413ea11f85",
       "hash": "788df0667ebd"
+    },
+    "kezikonyv:07-edzes/13-eligazitas": {
+      "page_id": "41b8968e-752b-817c-82b9-c37e78aa7e22",
+      "hash": "952b0ae56491"
     },
     "kezikonyv:08-adatok/00-attekintes": {
       "page_id": "4168968e-752b-81ca-a6fc-d93b606518bc",
@@ -715,277 +903,97 @@
       "page_id": "4168968e-752b-81f5-8d95-e721bb837b87",
       "hash": "442becbeff38"
     },
-    "jegyek:mezo-r36n9.30": {
-      "page_id": "4168968e-752b-815e-b4c2-c1d35163f5f8",
-      "hash": "19b1f7d95167"
+    "kiadasok:01cc62c6b": {
+      "page_id": "4178968e-752b-817f-89c5-ecfdafffe274",
+      "hash": "58430139447f"
     },
-    "jegyek:mezo-r36n9.31": {
-      "page_id": "4168968e-752b-81af-a508-dc9a83b4e5f3",
-      "hash": "59146bd821cc"
+    "kiadasok:07afe9a0b": {
+      "page_id": "4168968e-752b-8179-97d8-e4430c184e28",
+      "hash": "2523069db55c"
+    },
+    "kiadasok:0b1f5ff82": {
+      "page_id": "4168968e-752b-81e3-a647-e2a0216f98b2",
+      "hash": "fc591ce6565b"
     },
     "kiadasok:11d01e440": {
       "page_id": "4168968e-752b-81bc-8c67-fe8fc1cdc88f",
       "hash": "6d4cc5802683"
     },
-    "dontesek:d-2026-11-12-notion-egyetlen-igazsag": {
-      "page_id": "4168968e-752b-812a-bf67-e4312ad13450",
-      "hash": "c79db6a2ec35"
-    },
-    "jegyek:mezo-r36n9.34": {
-      "page_id": "4178968e-752b-815c-a763-c4d496d811e3",
-      "hash": "04d072235a25"
-    },
-    "dontesek:d-2026-11-13-app-ikon": {
-      "page_id": "4178968e-752b-819c-9f5f-e3e9f94c79f6",
-      "hash": "ad87c728e1b3"
-    },
-    "kiadasok:8002eb850": {
-      "page_id": "4178968e-752b-8164-bb54-fc6b7b7c1ff9",
-      "hash": "8e83e4086cf0"
-    },
-    "kezikonyv:01-alapok/app-ikon": {
-      "page_id": "4178968e-752b-818c-b5ad-e922f5258a34",
-      "hash": "a0601475e661"
-    },
-    "jegyek:mezo-r36n9.35": {
-      "page_id": "4178968e-752b-8116-863a-f5051731813b",
-      "hash": "f3445194b8f0"
-    },
-    "jegyek:mezo-r36n9.33": {
-      "page_id": "4178968e-752b-81dd-adf5-f3eeb1e95fd6",
-      "hash": "5d249e7ea8d2"
-    },
-    "dontesek:d-2026-11-13-eletpanel-sorrend": {
-      "page_id": "4178968e-752b-81c2-a067-fdada953b3c9",
-      "hash": "6806d0fa3cbf"
-    },
-    "jegyek:mezo-r36n9.32": {
-      "page_id": "4178968e-752b-81a1-a606-e0856faa4310",
-      "hash": "1ec35dd3740a"
-    },
-    "jegyek:mezo-r36n9.36": {
-      "page_id": "4178968e-752b-81f6-bb6e-d095808c0015",
-      "hash": "c183b7709e72"
-    },
-    "dontesek:d-2026-11-13-kepek": {
-      "page_id": "4178968e-752b-81f8-9dc7-cfb9ed141d6c",
-      "hash": "d3ac6d85a4e0"
-    },
-    "kezikonyv:01-alapok/kepek": {
-      "page_id": "4178968e-752b-8106-9d11-eeb4865798e8",
-      "hash": "cb820d059514"
-    },
-    "dontesek:d-2026-11-13-teruletek-helye": {
-      "page_id": "4178968e-752b-818e-ba31-c473ccef39a8",
-      "hash": "5cf7427dafef"
-    },
-    "jegyek:mezo-r36n9.43": {
-      "page_id": "4178968e-752b-8163-8a1d-f7c8325c6aab",
-      "hash": "732bdc557950"
-    },
-    "jegyek:mezo-r36n9.42": {
-      "page_id": "4178968e-752b-811b-8dcf-dc61bab11031",
-      "hash": "01a40fa1b6c6"
-    },
-    "jegyek:mezo-r36n9.37": {
-      "page_id": "4178968e-752b-8141-bfb1-ea7b0505e390",
-      "hash": "652704c0f9be"
-    },
-    "jegyek:mezo-r36n9.41": {
-      "page_id": "4178968e-752b-813e-b0fe-da10e19925c0",
-      "hash": "cba313ec99d5"
-    },
-    "jegyek:mezo-r36n9.40": {
-      "page_id": "4178968e-752b-81e6-b19b-d7f9f2177939",
-      "hash": "7540d9907db9"
-    },
-    "jegyek:mezo-r36n9.39": {
-      "page_id": "4178968e-752b-817c-8041-fc4df25a2c6c",
-      "hash": "fea188f07311"
-    },
-    "jegyek:mezo-r36n9.38": {
-      "page_id": "4178968e-752b-8135-92c1-fa5764c26e31",
-      "hash": "f0bb6942a665"
-    },
-    "jegyek:mezo-r36n9.44": {
-      "page_id": "4178968e-752b-8183-a1c5-d7f87244f20e",
-      "hash": "7e45f44d5ce7"
-    },
-    "dontesek:d-2026-11-13-meleg-valtozat": {
-      "page_id": "4178968e-752b-8126-9d77-dffcac591946",
-      "hash": "f77816736532"
-    },
-    "dontesek:d-2026-11-13-elo-uzenofal": {
-      "page_id": "4178968e-752b-811b-a1a6-c32a362a89cd",
-      "hash": "8863ffb80414"
-    },
-    "jegyek:mezo-r36n9.33.1": {
-      "page_id": "4178968e-752b-81bc-a8b4-c4e11ed21649",
-      "hash": "d38df80ebcee"
-    },
-    "jegyek:mezo-r36n9.46": {
-      "page_id": "4178968e-752b-81a6-8f6c-c5c4325c02bb",
-      "hash": "ead4bf86daec"
-    },
-    "jegyek:mezo-r36n9.45": {
-      "page_id": "4178968e-752b-8199-a40e-c914cf0c34b3",
-      "hash": "4e2e4e818f8c"
-    },
-    "dontesek:d-2026-11-13-penz-terulet": {
-      "page_id": "4178968e-752b-81e5-a796-fc00a91a7143",
-      "hash": "834ad21c23a8"
-    },
-    "dontesek:d-2026-11-13-penz-hatarok": {
-      "page_id": "4178968e-752b-8135-b225-c099f54a0279",
-      "hash": "8e85ce8aacdc"
-    },
-    "dontesek:d-2026-11-13-penz-idotavok": {
-      "page_id": "4178968e-752b-813f-9ac5-d3c0a71f75e5",
-      "hash": "c8d1f760dcb8"
-    },
-    "dontesek:d-2026-11-13-day-trading-proba": {
-      "page_id": "4178968e-752b-814d-9c53-eb3b625ba3e0",
-      "hash": "61d0a9e0451f"
-    },
-    "dontesek:d-2026-11-13-koltes-heti-maradek": {
-      "page_id": "4178968e-752b-8144-8cff-eb270cbcd083",
-      "hash": "b928cad3458c"
-    },
-    "jegyek:mezo-r36n9.50": {
-      "page_id": "4178968e-752b-81d6-9f71-f355f1fb49c0",
-      "hash": "ee1dc181e410"
-    },
-    "jegyek:mezo-r36n9.48": {
-      "page_id": "4178968e-752b-81b6-b319-f742b605dcd1",
-      "hash": "fb1a1020a2b2"
-    },
-    "dontesek:d-2026-11-13-allergen-alap": {
-      "page_id": "4178968e-752b-8142-8e91-e8f406cdfc35",
-      "hash": "fbf52a91160a"
-    },
-    "kiadasok:01cc62c6b": {
-      "page_id": "4178968e-752b-817f-89c5-ecfdafffe274",
-      "hash": "58430139447f"
-    },
-    "jegyek:mezo-r36n9.52": {
-      "page_id": "41a8968e-752b-8162-a13b-c02026f1c61f",
-      "hash": "35ef46d69041"
-    },
-    "dontesek:d-2026-11-16-kezdolap-kor": {
-      "page_id": "41a8968e-752b-816c-b983-cdbb664d6599",
-      "hash": "613139e06b17"
-    },
-    "dontesek:d-2026-11-16-terv-a-terved": {
-      "page_id": "41a8968e-752b-81d0-9715-fbee075e5e7d",
-      "hash": "e3aa6c4b236a"
-    },
-    "kezikonyv:01-alapok/kezdolap": {
-      "page_id": "41a8968e-752b-812f-87dd-e3a938084198",
-      "hash": "c1cd456e6b2e"
-    },
-    "kezikonyv:01-alapok/terulet-vaz": {
-      "page_id": "41a8968e-752b-8155-94b9-d2ecc92c2f61",
-      "hash": "87a028354cc9"
-    },
-    "jegyek:mezo-r36n9.51": {
-      "page_id": "41a8968e-752b-81ab-a9b8-e433885a676c",
-      "hash": "255ebf42a840"
-    },
-    "jegyek:mezo-r36n9.49": {
-      "page_id": "41a8968e-752b-81f9-bc23-fa29c79da220",
-      "hash": "f9f56c92a911"
-    },
-    "jegyek:mezo-r36n9.47": {
-      "page_id": "41a8968e-752b-81a9-9b80-fee8dd65919b",
-      "hash": "76109f613f58"
+    "kiadasok:19ca92ca6": {
+      "page_id": "4168968e-752b-8114-a883-eaa2c58713ea",
+      "hash": "dc4b530d7e9a"
     },
     "kiadasok:2f3f02ecf": {
       "page_id": "41a8968e-752b-814f-8449-cd6a51d13f0c",
       "hash": "f93a0c86c2e1"
     },
-    "dontesek:d-2026-11-16-harom-hely": {
-      "page_id": "41a8968e-752b-8171-8fff-dbc30fd21817",
-      "hash": "a7071405d91d"
+    "kiadasok:350147934": {
+      "page_id": "41a8968e-752b-81b0-b564-f0345bf260be",
+      "hash": "cd9845abd306"
     },
-    "dontesek:d-2026-11-16-csak-az-elso-csoroghet": {
-      "page_id": "41a8968e-752b-8150-a5f1-cdf84d3fda48",
-      "hash": "a01be393a1cf"
+    "kiadasok:39c10c6f2": {
+      "page_id": "4168968e-752b-81da-b5d9-f765282ef3cf",
+      "hash": "f2558b6028b2"
+    },
+    "kiadasok:5aac1e993": {
+      "page_id": "4168968e-752b-81cd-8d38-f42054ffec8b",
+      "hash": "e773f6c1bcc9"
+    },
+    "kiadasok:61834ed83": {
+      "page_id": "4168968e-752b-81a1-b488-e118378fc955",
+      "hash": "49303a3e63db"
     },
     "kiadasok:656ee0898": {
       "page_id": "41a8968e-752b-81c7-a366-d66f73bc03bd",
       "hash": "02bc48d59bec"
     },
-    "kezikonyv:02-ma/elo-fal": {
-      "page_id": "41a8968e-752b-8171-9ec2-f9a141185bf9",
-      "hash": "7c79471927c5"
+    "kiadasok:8002eb850": {
+      "page_id": "4178968e-752b-8164-bb54-fc6b7b7c1ff9",
+      "hash": "8e83e4086cf0"
     },
-    "dontesek:d-2026-11-16-blokk": {
-      "page_id": "41a8968e-752b-8124-90f8-eec0ca3c6376",
-      "hash": "23d131406e45"
+    "kiadasok:90c085ebd": {
+      "page_id": "4168968e-752b-81b3-98b6-d70e63541702",
+      "hash": "75080634c9f4"
     },
-    "jegyek:mezo-r36n9.54": {
-      "page_id": "41a8968e-752b-8199-9f84-f255ed746d4d",
-      "hash": "2e5939eeeac9"
+    "kiadasok:98430ce66": {
+      "page_id": "4168968e-752b-81e2-a956-c1f7f32c3792",
+      "hash": "9c9d2c7ce921"
     },
-    "jegyek:mezo-r36n9.53": {
-      "page_id": "41a8968e-752b-819b-b4de-e5b8b29cfe8f",
-      "hash": "d76e00535068"
+    "kiadasok:9b0cfc46f": {
+      "page_id": "4168968e-752b-81d7-a43f-ca980888ad37",
+      "hash": "145d7f73f4e3"
     },
-    "jegyek:mezo-r36n9.55": {
-      "page_id": "41a8968e-752b-81cb-90d0-d32896303402",
-      "hash": "78189bbe79eb"
-    },
-    "dontesek:d-2026-11-16-nyolcadik-gomb": {
-      "page_id": "41a8968e-752b-811b-99d0-d12bd73258e9",
-      "hash": "3586601ac874"
-    },
-    "kiadasok:350147934": {
-      "page_id": "41a8968e-752b-81b0-b564-f0345bf260be",
-      "hash": "cd9845abd306"
-    },
-    "jegyek:mezo-r36n9.57": {
-      "page_id": "41a8968e-752b-8123-abe2-faae7db25725",
-      "hash": "1c7eaf886a53"
-    },
-    "jegyek:mezo-r36n9.56": {
-      "page_id": "41a8968e-752b-81e9-a6ef-f7d7e2481d7b",
-      "hash": "24c4dfb0868e"
-    },
-    "jegyek:mezo-r36n9.58": {
-      "page_id": "41a8968e-752b-81bf-8cba-ffc6d1953f40",
-      "hash": "527a842797df"
-    },
-    "dontesek:d-2026-11-16-nap-oldal": {
-      "page_id": "41a8968e-752b-811a-b2ba-f976920d7ec0",
-      "hash": "bed334c5871d"
-    },
-    "dontesek:d-2026-11-16-felolvasas-ki": {
-      "page_id": "41a8968e-752b-81e9-944b-e835716746ab",
-      "hash": "6e52ad5adefa"
-    },
-    "kiadasok:f9176be4b": {
-      "page_id": "41a8968e-752b-8130-b1bc-edef2b2b41fd",
-      "hash": "90cfec760165"
-    },
-    "jegyek:mezo-r36n9.59": {
-      "page_id": "41a8968e-752b-81be-9a83-f85052a9767f",
-      "hash": "0abbbc3def6e"
-    },
-    "jegyek:mezo-r36n9.60": {
-      "page_id": "41a8968e-752b-8121-877a-d3bd5bd2254e",
-      "hash": "f1a9b16c567d"
+    "kiadasok:aa807c5b2": {
+      "page_id": "4168968e-752b-8169-a237-f3549fa44a0c",
+      "hash": "3b2406ed56f5"
     },
     "kiadasok:cb3d9647f": {
       "page_id": "41a8968e-752b-81df-bddb-edc5c518a5b6",
       "hash": "5d4557686933"
     },
-    "jegyek:mezo-r36n9.61": {
-      "page_id": "41b8968e-752b-8166-86da-cc86c86fed5f",
-      "hash": "24a3f805b37a"
+    "kiadasok:d0d823d39": {
+      "page_id": "4168968e-752b-814e-8a59-e23819c45aff",
+      "hash": "dea23d28d6a9"
     },
-    "jegyek:mezo-r36n9.62": {
-      "page_id": "41b8968e-752b-813a-85c1-c3f153d2694b",
-      "hash": "96c8d8428d52"
+    "kiadasok:d46db9632": {
+      "page_id": "4168968e-752b-8156-b265-f0eaf1a506cb",
+      "hash": "ddcd34ab2995"
+    },
+    "kiadasok:e2ad5c76a": {
+      "page_id": "4168968e-752b-81c9-80fb-cf5d6dc20a8f",
+      "hash": "afc4b7cafda1"
+    },
+    "kiadasok:f67688f31": {
+      "page_id": "4168968e-752b-815b-9c19-f526270db29f",
+      "hash": "edc465f5ca49"
+    },
+    "kiadasok:f9176be4b": {
+      "page_id": "41a8968e-752b-8130-b1bc-edef2b2b41fd",
+      "hash": "90cfec760165"
+    },
+    "kiadasok:ceef35928": {
+      "page_id": "41b8968e-752b-81c5-a90b-c7a3d869722f",
+      "hash": "7b0c198fdc9c"
     }
   }
 }

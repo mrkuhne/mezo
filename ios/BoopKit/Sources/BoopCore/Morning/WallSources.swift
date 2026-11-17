@@ -74,23 +74,14 @@ public func etelWallCandidates(plan: FuelPlan?, now: Date, calendar: Calendar = 
 
 // MARK: - The brief's own areas (Alvás · Energia · Forma) and the day
 
-/// Today's session as something to prepare for, and the strongest observation as something that happened. The
-/// brief already carries both; nothing is re-derived here.
+/// The strongest observation of the day, as something that happened. The brief already carries it; nothing is
+/// re-derived here.
+///
+/// **Training is no longer here.** It had a thin stand-in (`edzes-keszulj`) while nothing spoke for the Edzés
+/// area; `edzesWallCandidates` below replaced it in B5. Two sources must never both offer a session card: `acted`
+/// is keyed by candidate id, so a duplicate would come back the render after he dismissed it.
 public func briefWallCandidates(_ brief: Brief, now: Date, calendar: Calendar = .current) -> [WallCandidate] {
     var out: [WallCandidate] = []
-
-    if let s = brief.day.session, !s.done,
-       let time = (s.time ?? s.plannedTime).flatMap({ wallClock($0, on: now, calendar: calendar) }), time > now {
-        let minutes = Int(time.timeIntervalSince(now) / 60)
-        out.append(WallCandidate(
-            id: "edzes-keszulj", role: .improves, kind: .keszulj, area: WallSources.edzes,
-            rank: minutes <= 180 ? 0.85 : 0.4,
-            text: minutes <= 120 ? "*\(minutes) perc múlva* edzés" : "Ma este edzés",
-            sub: [s.title, s.minutes.map { "\($0) perc" }].compactMap { $0 }.joined(separator: " · "),
-            primary: "Megnézem",
-            settled: "Edzés megnézve",
-            why: "A mai terved szerint ez a nap legnagyobb terhelése; minden más köré rendeződik."))
-    }
 
     if let o = brief.day.observations.max(by: { $0.strength < $1.strength }) {
         let p = observationParts(o)
@@ -102,6 +93,68 @@ public func briefWallCandidates(_ brief: Brief, now: Date, calendar: Calendar = 
             why: "Ez a mai legerősebb összefüggés, amit a számaidban láttam."))
     }
     return out
+}
+
+// MARK: - Edzés
+
+/// The training area's candidates (B5). All three roles, and each is a different thing to say:
+///
+///   • `.improves` — a session planned for later today. `rank` is the only thing that orders that slot, so it is
+///     chosen deliberately: **0.9 within two hours** (by then it is the most movable thing in his day, ahead of
+///     the food tip at 0.7), **0.5 further out** (still worth saying, but the tip beats it).
+///   • `.expires` — the session is about to be missed: inside `grace` of its planned time and still not started.
+///     This role may also **ring the phone** under the two-a-day cap (decision #35), which is exactly what a
+///     session about to be lost deserves. `expiresAt` is the end of that window, so the wall drops the card by
+///     itself once the moment has gone — nothing has to clear it.
+///   • `.happened` — it is done. One line, no button.
+///
+/// `why` is filled here because the wall's own card shows it; the room never writes a second explanation.
+public func edzesWallCandidates(_ brief: Brief, now: Date, calendar: Calendar = .current,
+                                grace: TimeInterval = 90 * 60) -> [WallCandidate] {
+    guard let s = brief.day.session else { return [] }
+    let detail = [s.title, s.minutes.map { "\($0) perc" }].compactMap { $0 }.joined(separator: " · ")
+
+    if s.done {
+        return [WallCandidate(
+            id: "edzes-megvolt", role: .happened, kind: .tortent, area: WallSources.edzes,
+            happenedAt: brief.generatedAt,
+            text: "*\(s.title)* megvolt",
+            sub: [s.doneMinutes.map { "\($0) perc" }, s.avgHr.map { "\($0) bpm átlag" }]
+                .compactMap { $0 }.joined(separator: " · "),
+            settled: "Edzés megvolt",
+            why: "A mai edzésed le van zárva — ez a nap legnagyobb terhelése, és már a hátad mögött van.")]
+    }
+
+    guard let time = (s.time ?? s.plannedTime).flatMap({ wallClock($0, on: now, calendar: calendar) })
+    else {
+        // A session with no time at all: worth saying, but nothing about it can expire.
+        return [WallCandidate(
+            id: "edzes-ma", role: .improves, kind: .keszulj, area: WallSources.edzes, rank: 0.5,
+            text: "Ma *edzés* van", sub: detail, primary: "Megnézem", settled: "Edzés megnézve",
+            why: "A mai terved szerint ez a nap legnagyobb terhelése; minden más köré rendeződik.")]
+    }
+
+    let deadline = time.addingTimeInterval(grace)
+    if now >= time, now < deadline {
+        let minutes = Int(deadline.timeIntervalSince(now) / 60)
+        return [WallCandidate(
+            id: "edzes-lekesed", role: .expires, kind: .teendo, area: WallSources.edzes,
+            expiresAt: deadline,
+            text: "*\(s.title)* ideje elkezdeni",
+            sub: minutes <= 30 ? "Még \(minutes) perc, és ma kimarad." : "A tervezett időpontod már elmúlt.",
+            primary: "Kezdjük el", secondary: "Ma kihagyom",
+            settled: "Edzés elindítva",
+            why: "Ez az egyetlen dolog a falon, ami magától elromlik: a mai edzésed időpontja elmúlt, és ha ma kimarad, a heti terhelésed átrendeződik körülötte.")]
+    }
+    guard time > now else { return [] }   // past the grace window: the day has moved on, not news any more
+
+    let minutes = Int(time.timeIntervalSince(now) / 60)
+    return [WallCandidate(
+        id: "edzes-keszulj", role: .improves, kind: .keszulj, area: WallSources.edzes,
+        rank: minutes <= 120 ? 0.9 : 0.5,
+        text: minutes <= 120 ? "*\(minutes) perc múlva* edzés" : "Ma *\(s.time ?? s.plannedTime ?? "")* edzés",
+        sub: detail, primary: "Megnézem", settled: "Edzés megnézve",
+        why: "A mai terved szerint ez a nap legnagyobb terhelése; minden más köré rendeződik.")]
 }
 
 // MARK: - Small helpers

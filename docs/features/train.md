@@ -12,7 +12,7 @@ key_files:
   - api/feature/train/train-skip.yml
   - api/feature/train/train-recovery.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/train
-related: [_platform-data-layer, _platform-design-system, today, fuel, me, companion]
+related: [_platform-data-layer, _platform-design-system, today, fuel, me, companion, ../research/concepts/personalized-exercise-selection.md]
 ---
 
 > **2026-11-17 — reviewed after `mezo-7ahl8`:** four derived queries with no caller anywhere (main or tests) were removed from `WorkoutSessionRepository`, `RecoveryPeriodRepository`, `ExerciseFeedbackRepository` and `ExerciseSetRepository`. No behaviour changed; the queries `getToday` uses (§9 `completedWorkout`) are untouched.
@@ -1070,6 +1070,8 @@ Both modes and both layers must stay green.
 ---
 
 ## 9. Decisions, gotchas & deferred
+
+- **Exercise-selection research, not approved product behavior.** The [personalized exercise selection digest](../research/concepts/personalized-exercise-selection.md) records Nippard's goal/equipment/comfort/progression criteria and where the current catalog, generator, swap flow and readiness logic could use them. It does not change today's selection rules or promise a specific exercise ranking.
 
 - **Folyadék F4 (`mezo-n4wf5.4`, 2026-10-11) — decisions and traps.** (1) **Focus is view state, the session model is untouched**: the focused-exercise layout differs from the old list only in what is drawn on top; `logic/sessionFocus.ts` maps it onto the unchanged `Session` (every exercise keeps its cursor). A draft typed on the cursor row is dropped when another exercise is brought on top (the hero remounts) — accepted. (2) **The record toast must stay above an open sheet** (a record on an exercise's last set shows over the debrief): it is sticky inside the page with the toast tier's z-index, which works only while nothing between it and `.phone-screen` forms a stacking context — do not put a transform / isolation on the page root. (3) **A pinned title row does not scroll into view on focus**, so a screen swapped in without a route change (the ceremony's two steps, the sport closing screen) resets the scroller itself. (4) **The stars' number is the drawn one**: the stage lights a half star only within a tenth of its fifth (floor to a half), `cerScore.stars` rounds to the nearest half; the overline prints `ratioStars(ratio)` so it never says „4,5" over four lit stars, the verdict ladder still reads `cerScore.stars`. (5) **Labels live at the source**: „Rekord-kísérlet" (`challengeTypeLabel`), „ism." (`MEDAL_UNIT_LABEL`), the step chip without an arrow (`progressionChip` — the tone is the direction); no component keeps a local map. (6) **Mock mode never has an open instance**, so the return button and a failed start / pending quests are test-only in a runtime pass. (7) **Left in place, unused**: the `.ek-medal` / `.pobanner` rules, `WorkoutSummary`'s `closing` mode, `GlassBox`'s `menu` / `confirm` variants — a cleanup issue takes them. (8) **Not converted**: `VoiceField` (F8), `GlassBox`, the level-up overlay.
 
