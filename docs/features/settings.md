@@ -2,7 +2,7 @@
 title: Central settings and personal context
 type: feature-platform
 status: done
-updated: 2026-10-12
+updated: 2026-11-17
 tags: [frontend, platform, ai]
 key_files:
   - frontend/src/features/settings
@@ -148,7 +148,7 @@ personal preview is not the whole system prompt. Context edits apply on the next
 
 ## 10. Key files
 
-- `frontend/src/features/settings/settingsRoutes.tsx`: domain routes; personal pages mounted in app router.
+- `frontend/src/features/settings/settingsRoutes.tsx`: domain routes; personal pages mounted in app router. Every page here is a `lazyPage` chunk (`frontend/src/app/lazyPage.ts`, `mezo-9fcm`), loaded on first open and warmed on idle.
 - `frontend/src/features/settings/components/SettingsFrame.tsx`: common frame and validated origin.
 - `frontend/src/features/settings/components/UnsavedChangesGuard.tsx`: navigation/reload protection.
 - `frontend/src/features/settings/pages/MezoPersonalPage.tsx`: introduction, instructions and preview.
