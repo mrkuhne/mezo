@@ -386,7 +386,12 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     the decision to hide the web app's quests stands, there are no points and no score. `trainMissions` reads
     the progression's own lever (weight up → *Túlterhelés*, reps up → *Több ismétlés*) and, when his records
     are loaded, calls it a *Rekordkísérlet* if today's target would beat anything he has ever done on that
-    exercise. **A deload is never a mission** and nor is a hold. Two things of the Lágy version are deliberately
+    exercise. **A deload is never a mission** and nor is a hold. **The card says where it stands and the
+    button says what the tap does** (owner, 2026-11-17): a taken mission is lit, outlined in the hue and
+    badged *✓ VÁLLALVA* with „Elengedem" under it; a released one has its photo and numbers faded and is
+    badged *— ELENGEDVE*, its „Vállalom" staying at full strength because the action is live even when the
+    mission is not. A filled button reading „Vállalom" had read as a command, so taking a mission on looked
+    like switching it off. Two things of the Lágy version are deliberately
     missing because nothing real stands behind them: the per-mission **confidence percentage** (the engine
     computes nothing of the sort) and the quest vocabulary. **Letting a mission go** takes that exercise back to
     **last week's own numbers** (`TodayWorkout.withReleasedMissions`); with no last week it keeps the plan,

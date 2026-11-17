@@ -38,6 +38,10 @@ eldönthesd, vállalod-e.
 
 Amit a képernyő **nem** mond: hogy hány százalék eséllyel sikerül. Ilyet senki nem számol ki, tehát nem is írunk oda.
 
+**Látszik, mi van bekapcsolva:** a vállalt küldetés kártyája világos, keretes, és **„✓ VÁLLALVA"** áll rajta —
+a gomb ilyenkor azt kínálja, hogy „Elengedem". Az elengedett kártya halvány, **„— ELENGEDVE"** van rajta, a
+gombja pedig „Vállalom". A kártya mindig az állapotot mondja, a gomb azt, hogy mit csinál a koppintás.
+
 **Ha elengedsz egy küldetést,** a gyakorlat marad, csak a **múlt heti saját számaiddal** megy. Ha abból a
 gyakorlatból még nincs múlt heted, akkor marad a terv — nem találunk ki helyette egy könnyebb súlyt.
 
