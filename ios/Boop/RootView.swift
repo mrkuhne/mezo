@@ -22,6 +22,8 @@ struct RootView: View {
             // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
             if UserDefaults.standard.bool(forKey: "previewKit") {
                 KitGallery()
+            } else if UserDefaults.standard.bool(forKey: "previewBlokk") {
+                BlokkDemoRoot()
             } else {
                 shell
             }
