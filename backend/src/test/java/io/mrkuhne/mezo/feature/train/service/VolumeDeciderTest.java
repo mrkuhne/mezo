@@ -1,74 +1,142 @@
 package io.mrkuhne.mezo.feature.train.service;
 
+import static io.mrkuhne.mezo.feature.train.service.PriorityTier.EMPHASIZE;
+import static io.mrkuhne.mezo.feature.train.service.PriorityTier.GROW;
+import static io.mrkuhne.mezo.feature.train.service.PriorityTier.MAINTAIN;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Lever.DELOAD;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Lever.DOWN;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Lever.HOLD;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Lever.NONE;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Lever.UP;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.ALL_SETS_DONE;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.AT_CEILING;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.DEFICIT_PACE;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.GRIND;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.JOINT_PAIN;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.ROOM_IN_BAND;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.SETS_MISSED;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.SORENESS;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.TIER_MAINTAIN;
+import static io.mrkuhne.mezo.feature.train.service.VolumeDecider.Reason.TOO_MUCH;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import io.mrkuhne.mezo.feature.train.service.VolumeBands.Band;
 import io.mrkuhne.mezo.feature.train.service.VolumeDecider.Input;
-import io.mrkuhne.mezo.feature.train.service.VolumeDecider.Lever;
 import io.mrkuhne.mezo.feature.train.service.VolumeDecider.Result;
-import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 class VolumeDeciderTest {
-    private static final BigDecimal HALF = new BigDecimal("0.5");
-    private Input in(int week, int prev, boolean deload, int logged, boolean grind) {
-        return tiered(week, prev, deload, logged, grind, 20); // legacy = emphasize semantics
+
+    /** Fluent test builder: week 3, EMPHASIZE, band 14-22, planned = logged = 15, no flags, steps 2/1/1. */
+    private static final class B {
+        int week = 3;
+        PriorityTier tier = EMPHASIZE;
+        Band band = new Band(14, 22, 22);
+        int planned = 15;
+        int logged = 15;
+        boolean grind;
+        boolean tooMuch;
+        boolean jointPain;
+        boolean sorenessHigh;
+        boolean deficit;
+        boolean deloadPhase;
+
+        B week(int v) { week = v; return this; }
+        B tier(PriorityTier v) { tier = v; return this; }
+        B band(Band v) { band = v; return this; }
+        B planned(int v) { planned = v; logged = v; return this; }
+        B logged(int v) { logged = v; return this; }
+        B grind(boolean v) { grind = v; return this; }
+        B tooMuch(boolean v) { tooMuch = v; return this; }
+        B jointPain(boolean v) { jointPain = v; return this; }
+        B sorenessHigh(boolean v) { sorenessHigh = v; return this; }
+        B deficit(boolean v) { deficit = v; return this; }
+        B deloadPhase(boolean v) { deloadPhase = v; return this; }
+
+        Input build() {
+            return new Input(week, tier, band, planned, logged, grind, tooMuch, jointPain, sorenessHigh,
+                deficit, deloadPhase, 2, 1, 1);
+        }
     }
-    private Input tiered(int week, int prev, boolean deload, int logged, boolean grind, int rampCeiling) {
-        return new Input(week, prev, 8, 14, 20, deload, logged, grind, 2, HALF, rampCeiling);
+
+    private static B in() { return new B(); }
+
+    private static Result decide(B b) { return VolumeDecider.decide(b.build()); }
+
+    @Test void weekOneLeavesThePlanAlone() { assertThat(decide(in().week(1)).lever()).isEqualTo(NONE); }
+    @Test void deloadPhaseIsADeload() { assertThat(decide(in().deloadPhase(true)).lever()).isEqualTo(DELOAD); }
+
+    @Test void maintainNeverMoves() {
+        var r = decide(in().tier(MAINTAIN));
+        assertThat(r.lever()).isEqualTo(HOLD);
+        assertThat(r.reasons()).containsExactly(TIER_MAINTAIN);
     }
-    @Test void week1_startsAtMev() {
-        Result r = VolumeDecider.decide(in(1, 0, false, 0, false));
-        assertThat(r.lever()).isEqualTo(Lever.START); assertThat(r.targetSets()).isEqualTo(8);
+
+    @Test void atTheTopWithAGrindStepsDown() {
+        var r = decide(in().planned(22).grind(true));
+        assertThat(r.delta()).isEqualTo(-1);
+        assertThat(r.lever()).isEqualTo(DOWN);
+        assertThat(r.reasons()).containsExactly(GRIND);
     }
-    @Test void productiveWeek_rampsByStep() {
-        Result r = VolumeDecider.decide(in(3, 14, false, 14, false));  // hit target, no grind, below mrv
-        assertThat(r.lever()).isEqualTo(Lever.RAMP); assertThat(r.targetSets()).isEqualTo(16);
+
+    @Test void atTheTopWithTooMuchStepsDown() {
+        var r = decide(in().planned(22).tooMuch(true));
+        assertThat(r.lever()).isEqualTo(DOWN);
+        assertThat(r.delta()).isEqualTo(-1);
+        assertThat(r.reasons()).containsExactly(TOO_MUCH);
     }
-    @Test void atMrv_holds() {
-        Result r = VolumeDecider.decide(in(5, 20, false, 20, false));
-        assertThat(r.lever()).isEqualTo(Lever.HOLD); assertThat(r.targetSets()).isEqualTo(20);
+
+    @Test void grindBelowTheTopHolds() { assertThat(decide(in().planned(15).grind(true)).lever()).isEqualTo(HOLD); }
+
+    @Test void tooMuchBelowTheTopHolds() {
+        var r = decide(in().planned(15).tooMuch(true));
+        assertThat(r.lever()).isEqualTo(HOLD);
+        assertThat(r.reasons()).contains(TOO_MUCH);
     }
-    @Test void missedTarget_holds() {
-        Result r = VolumeDecider.decide(in(3, 14, false, 10, false)); // logged < prev → not productive
-        assertThat(r.lever()).isEqualTo(Lever.HOLD); assertThat(r.targetSets()).isEqualTo(14);
+
+    @Test void severalHoldReasonsAreAllReported() {
+        var r = decide(in().planned(15).logged(13).grind(true).tooMuch(true).jointPain(true).sorenessHigh(true));
+        assertThat(r.lever()).isEqualTo(HOLD);
+        assertThat(r.delta()).isZero();
+        assertThat(r.reasons()).containsExactlyInAnyOrder(SETS_MISSED, GRIND, TOO_MUCH, JOINT_PAIN, SORENESS);
     }
-    @Test void deloadPhase_cutsToFraction() {
-        Result r = VolumeDecider.decide(in(6, 18, true, 18, false));
-        assertThat(r.lever()).isEqualTo(Lever.DELOAD); assertThat(r.targetSets()).isEqualTo(9); // round(18*0.5)
+
+    @Test void missedSetsHold() {
+        var r = decide(in().planned(15).logged(13));
+        assertThat(r.reasons()).contains(SETS_MISSED);
     }
-    @Test void atMrvAndGrind_earlyDeloads() {
-        Result r = VolumeDecider.decide(in(5, 20, false, 20, true));
-        assertThat(r.lever()).isEqualTo(Lever.DELOAD); assertThat(r.targetSets()).isEqualTo(10);
+
+    @Test void jointPainHolds() { assertThat(decide(in().jointPain(true)).reasons()).contains(JOINT_PAIN); }
+    @Test void sorenessHolds() { assertThat(decide(in().sorenessHigh(true)).reasons()).contains(SORENESS); }
+
+    @Test void emphasizeStepsTwo() {
+        var r = decide(in().tier(EMPHASIZE).planned(15).logged(15));
+        assertThat(r.lever()).isEqualTo(UP);
+        assertThat(r.delta()).isEqualTo(2);
+        assertThat(r.reasons()).containsExactly(ALL_SETS_DONE, ROOM_IN_BAND);
     }
-    @Test void growTier_clampsRampAtItsCeiling() {
-        Result r = VolumeDecider.decide(tiered(3, 13, false, 13, false, 14));
-        assertThat(r.lever()).isEqualTo(Lever.RAMP); assertThat(r.targetSets()).isEqualTo(14); // 13+2 clamped to MAV
+
+    @Test void growStepsOne() {
+        assertThat(decide(in().tier(GROW).band(new Band(10, 16, 22)).planned(12).logged(12)).delta()).isEqualTo(1);
     }
-    @Test void growTier_atCeiling_holds() {
-        Result r = VolumeDecider.decide(tiered(4, 14, false, 14, false, 14));
-        assertThat(r.lever()).isEqualTo(Lever.HOLD); assertThat(r.targetSets()).isEqualTo(14);
+
+    @Test void deficitStepsOneEvenOnEmphasize() {
+        var r = decide(in().tier(EMPHASIZE).planned(15).logged(15).deficit(true));
+        assertThat(r.delta()).isEqualTo(1);
+        assertThat(r.reasons()).contains(DEFICIT_PACE);
     }
-    // Maintain's ceiling IS mev (8 here) — at the ceiling, RAMP's prevSets<rampCeiling guard
-    // is false, so it HOLDs, same as any other tier sitting at its own ceiling.
-    @Test void maintainTier_atCeiling_holds() {
-        Result r = VolumeDecider.decide(tiered(3, 8, false, 8, false, 8));
-        assertThat(r.lever()).isEqualTo(Lever.HOLD); assertThat(r.targetSets()).isEqualTo(8);
+
+    @Test void neverPastTheBandsTop() {
+        assertThat(decide(in().tier(EMPHASIZE).planned(21).logged(21)).delta()).isEqualTo(1);
     }
-    @Test void maintainTier_midCycleSwitch_holdsAboveCeilingWithoutCutting() {
-        Result r = VolumeDecider.decide(tiered(4, 12, false, 12, false, 8));
-        assertThat(r.lever()).isEqualTo(Lever.HOLD); assertThat(r.targetSets()).isEqualTo(12); // AD2 / GD7
+
+    @Test void atTheTopHolds() {
+        var r = decide(in().tier(EMPHASIZE).planned(22).logged(22));
+        assertThat(r.lever()).isEqualTo(HOLD);
+        assertThat(r.reasons()).contains(AT_CEILING);
     }
-    // Below-ceiling maintain (post-deload, e.g. prev=4 after a DELOAD week) recovers back
-    // toward MEV exactly like any other tier ramps toward its own ceiling — RAMP fires
-    // because targetHit && !grind && prevSets(4) < rampCeiling(8); target = min(4+2, 8) = 6.
-    // Ceiling alone encodes maintain semantics — there is no separate rampEnabled gate
-    // (mezo-3m5m final review, fix 3: a maintain muscle deloaded to ~mev/2 must recover to
-    // MEV afterward, not HOLD there forever).
-    @Test void maintainTier_recoversTowardMevAfterDeload() {
-        Result r = VolumeDecider.decide(tiered(4, 4, false, 4, false, 8));
-        assertThat(r.lever()).isEqualTo(Lever.RAMP); assertThat(r.targetSets()).isEqualTo(6); // min(4+2, 8)
-    }
-    @Test void earlyDeload_stillDetectsAtRawMrv_regardlessOfTier() {
-        Result r = VolumeDecider.decide(tiered(4, 20, false, 20, true, 14)); // prev>=mrv && grind
-        assertThat(r.lever()).isEqualTo(Lever.DELOAD);
+
+    @Test void aPlanAboveItsBandIsNotPulledBack() {
+        assertThat(decide(in().tier(GROW).band(new Band(10, 16, 22)).planned(19).logged(19)).delta()).isZero();
     }
 }

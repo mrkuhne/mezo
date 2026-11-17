@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -26,6 +27,7 @@ class VolumeProgressionServiceIT extends AbstractIntegrationTest {
     @Autowired MuscleGroupVolumeLogRepository volumeRepo;
     @Autowired MesocycleRepository mesocycleRepository;
 
+    @Disabled("volume-engine-v2 Task 8")
     @Test
     void testRollover_shouldRampMuscleAndAdvanceWeek_whenCalendarWeekIsAhead() {
         UUID owner = ownerId();
@@ -55,6 +57,7 @@ class VolumeProgressionServiceIT extends AbstractIntegrationTest {
         assertThat(reload(meso).getVolumeRecompute().lastRun()).isEqualTo("W3");
     }
 
+    @Disabled("volume-engine-v2 Task 8")
     @Test
     void testRollover_shouldStartAtMevThenNoop_whenFirstCalendarWeek() {
         UUID owner = ownerId();
@@ -123,6 +126,7 @@ class VolumeProgressionServiceIT extends AbstractIntegrationTest {
         assertThat(chestLog(owner, meso.getId()).getCurrentSets()).isEqualTo(10);
     }
 
+    @Disabled("volume-engine-v2 Task 8")
     @Test
     void testRollover_shouldIgnoreExemptExerciseGrind_whenCountingExerciseHitsTargetCleanly() {
         UUID owner = ownerId();

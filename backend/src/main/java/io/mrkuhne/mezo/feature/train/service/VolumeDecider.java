@@ -1,40 +1,84 @@
 package io.mrkuhne.mezo.feature.train.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import io.mrkuhne.mezo.feature.train.service.VolumeBands.Band;
+import java.util.ArrayList;
+import java.util.List;
 
-/** Pure per-muscle weekly volume-target decision (spec §5.2, DA4). No Spring/DB. */
+/**
+ * Pure weekly per-muscle-group set decision (volume engine v2, spec §6.4 as amended by §11). No Spring/DB.
+ *
+ * <p>Rule order: week 1 → deload → maintain → step down at the top → holds → at the top → step up.
+ */
 public final class VolumeDecider {
     private VolumeDecider() {}
 
-    public enum Lever { START, RAMP, HOLD, DELOAD }
+    public enum Lever { NONE, UP, DOWN, HOLD, DELOAD }
 
-    public record Input(int week, int prevSets, int mev, int mav, int mrv, boolean deloadPhase,
-                        int loggedLastWeek, boolean grind, int step, BigDecimal deloadFraction,
-                        int rampCeiling) {}
-    public record Result(int targetSets, Lever lever, String change) {}
+    /** FELT_EASY, SORENESS_CLEARED and NO_SLOT are produced by later tasks, never by {@link #decide}. */
+    public enum Reason {
+        ALL_SETS_DONE, FELT_EASY, DEFICIT_PACE, ROOM_IN_BAND, SORENESS_CLEARED, GRIND, TOO_MUCH, SETS_MISSED,
+        JOINT_PAIN, SORENESS, TIER_MAINTAIN, DELOAD, NO_SLOT, AT_CEILING
+    }
+
+    public record Input(int week, PriorityTier tier, Band band, int plannedSets, int loggedLastWeek,
+                        boolean grind, boolean tooMuch, boolean jointPain, boolean sorenessHigh,
+                        boolean deficit, boolean deloadPhase,
+                        int stepEmphasize, int stepGrow, int stepDeficit) {}
+
+    /** {@code delta} is the wanted change in the group's weekly sets; DELOAD carries 0 (caller halves per exercise). */
+    public record Result(Lever lever, int delta, List<Reason> reasons) {}
 
     public static Result decide(Input in) {
         if (in.week() <= 1) {
-            return new Result(in.mev(), Lever.START, "MEV start (" + in.mev() + ")");
+            return new Result(Lever.NONE, 0, List.of());
         }
-        boolean earlyDeload = in.prevSets() >= in.mrv() && in.grind();
-        if (in.deloadPhase() || earlyDeload) {
-            int floor = (int) Math.ceil(in.mev() / 2.0);
-            int target = Math.max(floor, round(in.prevSets(), in.deloadFraction()));
-            return new Result(target, Lever.DELOAD,
-                (in.deloadPhase() ? "Deload " : "Korai deload ") + in.prevSets() + " → " + target);
+        if (in.deloadPhase()) {
+            return new Result(Lever.DELOAD, 0, List.of(Reason.DELOAD));
         }
-        boolean targetHit = in.loggedLastWeek() >= in.prevSets();
-        if (targetHit && !in.grind() && in.prevSets() < in.rampCeiling()) {
-            int target = Math.min(in.prevSets() + in.step(), in.rampCeiling());
-            return new Result(target, Lever.RAMP, "+" + (target - in.prevSets())
-                + " (" + in.prevSets() + " → " + target + ")");
+        if (in.tier() == PriorityTier.MAINTAIN) {
+            return new Result(Lever.HOLD, 0, List.of(Reason.TIER_MAINTAIN));
         }
-        return new Result(in.prevSets(), Lever.HOLD, "tart (" + in.prevSets() + ")");
-    }
-
-    private static int round(int prev, BigDecimal frac) {
-        return BigDecimal.valueOf(prev).multiply(frac).setScale(0, RoundingMode.HALF_UP).intValue();
+        int top = in.band().high();
+        boolean atTop = in.plannedSets() >= top;
+        if (atTop && (in.grind() || in.tooMuch())) {
+            List<Reason> why = new ArrayList<>();
+            if (in.grind()) {
+                why.add(Reason.GRIND);
+            }
+            if (in.tooMuch()) {
+                why.add(Reason.TOO_MUCH);
+            }
+            return new Result(Lever.DOWN, -1, why);
+        }
+        List<Reason> holds = new ArrayList<>();
+        if (in.loggedLastWeek() < in.plannedSets()) {
+            holds.add(Reason.SETS_MISSED);
+        }
+        if (in.grind()) {
+            holds.add(Reason.GRIND);
+        }
+        if (in.tooMuch()) {
+            holds.add(Reason.TOO_MUCH);
+        }
+        if (in.jointPain()) {
+            holds.add(Reason.JOINT_PAIN);
+        }
+        if (in.sorenessHigh()) {
+            holds.add(Reason.SORENESS);
+        }
+        if (!holds.isEmpty()) {
+            return new Result(Lever.HOLD, 0, holds);
+        }
+        if (atTop) {
+            return new Result(Lever.HOLD, 0, List.of(Reason.AT_CEILING));
+        }
+        int step = in.deficit() ? in.stepDeficit()
+            : (in.tier() == PriorityTier.EMPHASIZE ? in.stepEmphasize() : in.stepGrow());
+        int delta = Math.min(step, top - in.plannedSets());
+        List<Reason> why = new ArrayList<>(List.of(Reason.ALL_SETS_DONE, Reason.ROOM_IN_BAND));
+        if (in.deficit()) {
+            why.add(Reason.DEFICIT_PACE);
+        }
+        return new Result(Lever.UP, delta, why);
     }
 }
