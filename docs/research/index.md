@@ -48,6 +48,7 @@ ingest.
 
 ## Queries
 
+- [Beginner bodybuilding guidebook → Mezo digest](queries/bodybuilding-beginner-guidebook-mezo-digest.md) — oldalszámos forráskinyerés, jelenlegi Train/Goal átfedés, javasolt kezdő útvonal és Claude-nak átadható döntési kérdések. `confidence: medium`.
 - [Goal engine — grounded numbers (TDEE, activity energy, muscle/strength retention)](queries/2026-06-18-goal-engine-numbers.md) — sport-science constants for the goal engine; consumed by the goal-system spec §6. `confidence: high`.
 - [Warm-up protocol for near-failure sets](queries/2026-08-03-warmup-protocol.md) — 50/70/90% ladder az első gyakorlathoz, feeder/none utána; evidence + app-scheme sweep; feeds the warm-up feature. `confidence: high`.
 - [Free exercise image/video APIs](queries/2026-08-05-exercise-media-apis.md) — free-exercise-db (public domain stills) vs wger (CC-BY-SA) vs ExerciseDB (AGPL/paid GIFs) vs YouTube embeds; why motion stays on YouTube and what an image layer would cost. `confidence: high`.
