@@ -1,7 +1,7 @@
 ---
 title: Research Wiki — Action Log
 type: summary
-updated: 2026-09-10
+updated: 2026-11-17
 tags: [tooling]
 related: [SCHEMA.md, index.md]
 ---
@@ -24,3 +24,4 @@ bottom. Rotate (archive the head) when this passes ~500 lines. Format: `YYYY-MM-
 - 2026-09-07 · MEASURE · tool-selection eval re-baseline indult (mezo-ozri.3): az incumbent gemini-2.5-flash 42 esetes futása raw/measurements alá mentve, comparison lap nyitva a három modellre. Mindhárom modell lemérve (a 429 no-credits blokkoló ugyanaznap elhárult). Mellékleletek: a mérőpad kapuja provider-tudatos lett, és a padot futtatva kiderült, hogy a `Mi vár még ma a teremben?` eset COMPANION_EMPTY_ANSWER-t dob az incumbenten is.
 - 2026-09-07 · MEASURE · a re-baseline lezárva: gpt-5.6-luna (90,5% exact / 0 hiba / p95 5591 ms / $0,00047 per sikeres akció) és gpt-5.6-terra (95,2% / 0 kritikus / p95 8092 ms / $0,0047) raw captures + vak hangnem A/B (2 bíró x 2 jelölt, 42 pár). Döntés: luna a default chat, terra a smart tier. Közben kiderült egy éles hiba: a GPT-5.6 a /v1/chat/completions-ön elutasítja a function toolt reasoning_efforttal együtt — mind a 42 eset elbukott rajta, javítva (reasoning_effort=none csak a tool-úton). Ez kiüti a spec Q1 minőség-karját a chat-úton; S4 (mezo-ozri.4) dolga.
 - 2026-09-10 · INGEST · YAZIO daily-diary screenshot captured as a low-confidence visual reference; distilled into the YAZIO entity and used only for the Titanium Fuel information hierarchy (dominant calorie gauge, compact macro meters, flat meal diary).
+- 2026-11-17 · INGEST/QUERY · Jeff Nippard *The Muscle Ladder* (2024), owner-supplied 664-page PDF: copyrighted file kept outside git, SHA256/page-map source record under raw/books; mezo-specific development digest with page citations and current Train comparison. The existing program-design-rules page gained corrections on frequency and rep-zone interpretation.

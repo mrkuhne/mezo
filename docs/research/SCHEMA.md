@@ -122,6 +122,7 @@ wiki-style `[[pgvector]]` references in prose. **≥1 outbound link per page** (
 - [`raw/articles/`](raw/articles/) — blog posts, docs pages, web articles (as `.md`/`.html`).
 - [`raw/papers/`](raw/papers/) — academic papers (`.pdf`/`.md`).
 - [`raw/transcripts/`](raw/transcripts/) — talk/video/podcast transcripts.
+- [`raw/books/`](raw/books/) — source records for user-provided, copyrighted books. The book itself stays outside git; the record identifies the local copy, its whole-file SHA256, edition/ISBN, and physical PDF page convention. Summaries cite that copy by page. A source record is a provenance pointer, **not** a claim that the full book text is captured in the repo.
 - [`raw/assets/`](raw/assets/) — figures, diagrams, screenshots a source references.
 
 Each ingested source carries a **provenance header** (front of the file, or a sidecar for binaries):
@@ -134,6 +135,8 @@ sha256: <hex>        # hash of the captured content at ingest time — drives so
 
 The SHA256 is the anchor: re-hash on LINT; a mismatch means the upstream (or the captured copy)
 changed, so every page listing this file in `sources` is flagged for re-review.
+
+For `raw/books/` source records, `sha256` instead identifies the external local PDF named in the record; do not hash the record itself or commit a copyrighted full book. Recheck the PDF hash before trusting its page citations.
 
 ---
 
