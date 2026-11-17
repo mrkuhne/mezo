@@ -394,13 +394,21 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **The lifting screen's furniture is his** — the „2. szett / 6 · 1. gyakorlat / 2" counter and the
     „legutóbb…" line are **gone** (the strip above and the set list below say both), the **reserve is a third
     stepper directly under the weight and the reps**, all three a couple of points smaller, the sets are a
-    **list** with the mark of how each went against the plan on its right (`NKSetRow`), and **everything else
-    lives behind one „…"**: the note, the swap, the records, the technique, a set more or fewer, the order,
-    later, skip. No row of buttons under the numbers.
+    **table** (`NKSetTable` + `NKSetRow`) — a header line and one row per set, each value in **its own cell**
+    with the mark of how it went against the plan on the right, so the columns line up down the whole list
+    (owner's second pass: *„ne csak odaírva"*) — and **everything else lives behind one „…"**: the note, the
+    swap, the records, the technique, a set more or fewer, doing another exercise now, later, skip, and
+    finishing the workout. There is exactly **one „…" on the screen**, beside the exercise; the header's was
+    removed in the same pass, and `NKInlineStepper` put the reserve on one slim line instead of a third tall
+    card.
   - **Typing, not only tapping**: weight, reps and reserve are fields (`NKStepper`'s `onSet`), because a stepper
     alone cannot enter 62,5 kg on a machine he has never used.
-  - **Reordering** (`WorkoutSession.move`) with ▲▼ rather than a drag — one hand, a bar in the other — and it is
-    local to the day: the plan does not change.
+  - **„Most másik gyakorlatot csinálok"** (`WorkoutSession.switchTo`) — the machine is taken, so he picks
+    another exercise off today's list and carries on with it. The owner asked for exactly this instead of the
+    reorder the round first shipped (*„ne is sorrend legyen, hanem simán lehessen másik gyakorlatot választani,
+    ha épp foglalt a gép"*), and it is **not** a reorder: the plan's order stands, and when the chosen exercise
+    is done the session returns to the first unfinished one after it. The rest is cleared on the switch —
+    walking to another machine *is* the rest.
   - **The swap is live** (`TrainClient.changeExercise` → `POST /api/train/workouts/{id}/exercises`, scope
     `TODAY`). It is **the one write in the player that asks for a connection**, and it says so: the server mints
     the replacement row's id and every later set is addressed by it, so queueing it would mean queueing writes

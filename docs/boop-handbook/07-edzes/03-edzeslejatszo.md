@@ -16,23 +16,25 @@ osszefoglalo: Edzés közben a telefon sorozatról sorozatra vezet — előírt 
 - **A lejátszó sötét**, egyetlen élénk színnel. Az arany **csak a rekordoké**.
 - **Emelés közben:** a gyakorlat **fényképe**, fölötte az izomcsoport, a neve, **a jegyzeted végig a képernyőn**
   (nem egy gomb mögött), **súly és ismétlés egymás mellett, a tartalék közvetlenül alattuk** — mindhárom
-  léptethető **és beírható** (62,5 kg-ot egy gombbal nem lehet) —, alattuk a sorozatok **listája**, és minden
-  sorozat mellett jobbra, hogy **a tervhez képest** hogyan sikerült: rekord · a terv fölött · a terv szerint ·
-  a terv alatt. Legalul egy nagy gomb: amíg nem nyúlsz a számokhoz, az áll rajta „Kész · a terv szerint".
-- **Minden más egyetlen „…" mögött van** a gyakorlat mellett: jegyzet, **csere**, rekordok, technika, egy
-  szettel több vagy kevesebb, **sorrend**, későbbre teszem, kihagyom.
+  léptethető **és beírható** (62,5 kg-ot egy gombbal nem lehet) —, a tartalék egyetlen vékony soron —, alattuk a sorozatok **táblázata**: minden sorozatnak saját sora,
+  külön oszlopban a súly, az ismétlés és a tartalék, jobb szélen pedig hogy **a tervhez képest** hogyan
+  sikerült: rekord · terv fölött · terv szerint · terv alatt. Legalul egy nagy gomb: amíg nem nyúlsz a
+  számokhoz, az áll rajta „Kész · a terv szerint".
+- **Minden más egyetlen „…" mögött van** a gyakorlat mellett — a képernyőn **csak egy ilyen gomb van**:
+  jegyzet, **csere**, rekordok, technika, egy szettel több vagy kevesebb, **most másik gyakorlatot csinálok**,
+  későbbre teszem, kihagyom, és az edzés befejezése.
 - **Pihenő:** nagy visszaszámláló és egy **csík**, ami fogy (nem kör), fölötte pedig a legfontosabb: **az előbbi
   sorozat értékelése** — rekord · a terv fölött · pontosan a terv · a terv alatt —, mellé egy mondat. Alatta, hogy mi
   következik, és a „+30 mp" és a „Tovább".
 - **A három kérdés** (Pumpa · érzed? / Ízületi fájdalom / Akarunk még?) **gyakorlatonként egyszer**, az utolsó
   sorozat után — **soha nem sorozatok között**. Két sorozat közt csak a pihenő van.
 - **Edzés közben megteheted:** sorozatot hozzáadsz vagy elveszel, egy kész sorozatot javítasz, gyakorlatot kihagysz
-  (az összegzés nem büntet érte), későbbre teszel, **másik gyakorlatra cserélsz**, **átrendezed a sorrendet**,
-  jegyzetet írsz, vagy korábban befejezed.
+  (az összegzés nem büntet érte), későbbre teszel, **másik gyakorlatra cserélsz**, jegyzetet írsz, vagy korábban befejezed.
 - **A csere internetet kér.** Ez az egyetlen ilyen a lejátszóban: a cserélt gyakorlatnak a szerver ad azonosítót,
   és minden utána rögzített sorozat ahhoz tartozik. Ha nincs net, a lap ott helyben meg is mondja, miért nem ment,
   és addig marad nyitva.
-- **A sorrend csak a mai napra szól** — a terved nem változik tőle.
+- **Ha foglalt a gép:** a „…" menüből kiválasztod, melyik gyakorlatot csinálod most. Ez **nem rendezi át a
+  tervet** — ha azzal megvagy, ott folytatod, ahol tartottál.
 - **„Kis méretre":** a lejátszó becsukódik, de **az edzés tovább fut** — a menüben „Folytatom" áll.
 - **Semmi nem vész el:** amit rögzítesz, az azonnal a telefonra kerül és sorban megy fel a szerverre. Ha a pince
   közepén vagy térerő nélkül, akkor is. Ha az app összeomlik vagy lezárod a telefont, az edzés ott folytatódik.

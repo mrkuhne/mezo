@@ -273,14 +273,22 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
         exercise.note = nil
     }
 
-    /// Reorder: the exercise moves to another place in **his** order. Everything logged travels with it, and the
-    /// one he is on stays the one he is on — the order is a list of ids precisely so this is safe.
-    public mutating func move(_ id: UUID, to index: Int) {
-        guard let at = order.firstIndex(of: id), order.count > 1 else { return }
-        var next = order
-        next.remove(at: at)
-        next.insert(id, at: Swift.max(0, Swift.min(index, next.count)))
-        order = next
+    /// **Do this one now** — the machine he wanted is taken, so he picks another exercise off the list and
+    /// carries on (owner, 2026-11-17: *„simán lehessen másik gyakorlatot választani amit csinálsz, ha mondjuk
+    /// épp foglalt a gép"*).
+    ///
+    /// It is deliberately **not** a reorder: the plan's order stands, and when this exercise is finished the
+    /// session goes back to the first unfinished one after it, exactly as it would have. A finished or skipped
+    /// exercise cannot be jumped to, and neither can one he is already on.
+    @discardableResult
+    public mutating func switchTo(_ id: UUID, now: Date = Date()) -> WorkoutStep {
+        guard let target = exercises[id], !target.isDone, id != currentExerciseId else { return step }
+        currentExerciseId = id
+        currentSetIndex = target.logged.count
+        // The rest belonged to the set he just did on the other exercise; walking to another machine is the
+        // rest. Leaving it running would start him on a countdown he has already spent.
+        restEndsAt = nil
+        return .set
     }
 
     /// The server performed the swap and sent the replacement row back: it takes the old row's place and its

@@ -222,7 +222,7 @@ struct WorkoutSessionTests {
     }
 }
 
-/// Round 4's two additions to the session: reordering, and the swap the **server** performs.
+/// Round 4's two additions to the session: doing another exercise now, and the swap the **server** performs.
 struct WorkoutSessionOrderTests {
     let a = UUID(uuidString: "f1f2f3f4-0001-4a2b-9c3d-111122223333")!
     let b = UUID(uuidString: "f1f2f3f4-0002-4a2b-9c3d-111122223333")!
@@ -239,21 +239,31 @@ struct WorkoutSessionOrderTests {
         WorkoutSession(TodayWorkout(title: "Pull", exercises: [exercise(a, "A"), exercise(b, "B"), exercise(c, "C")]))
     }
 
-    @Test func movingAnExerciseChangesOnlyTheOrder() {
+    @Test func switchingToAnotherExerciseLeavesThePlansOrderAlone() {
+        // The machine is taken: he does C now. The list does not get rearranged — when C is done the session
+        // goes back to the first unfinished one after it, as it always would.
         var s = session()
         _ = s.log(kg: 80, reps: 8, rir: 2)        // one set on A
-        s.move(c, to: 0)
-        #expect(s.all.map(\.id) == [c, a, b])
-        #expect(s.exercises[a]?.logged.count == 1)   // what he did travels with the row
-        #expect(s.currentExerciseId == a)            // and he is still on the one he was on
+        #expect(s.switchTo(c) == .set)
+        #expect(s.currentExerciseId == c)
+        #expect(s.all.map(\.id) == [a, b, c])
+        #expect(s.exercises[a]?.logged.count == 1)   // what he did on A stays on A
+        #expect(s.currentSetIndex == 0)
     }
 
-    @Test func movingPastTheEndsIsClamped() {
+    @Test func switchingClearsTheRestBecauseWalkingToAnotherMachineIsTheRest() {
         var s = session()
-        s.move(a, to: 99)
-        #expect(s.all.map(\.id) == [b, c, a])
-        s.move(a, to: -5)
-        #expect(s.all.map(\.id) == [a, b, c])
+        _ = s.log(kg: 80, reps: 8, rir: 2)
+        guard case .rest = s.step else { Issue.record("expected a rest"); return }
+        _ = s.switchTo(c)
+        #expect(s.step == .set)
+    }
+
+    @Test func aFinishedOrSkippedExerciseCannotBeJumpedTo() {
+        var s = session()
+        s.skip(b)
+        _ = s.switchTo(b)
+        #expect(s.currentExerciseId == a)
     }
 
     @Test func theServersSwapKeepsThePlaceAndTheSetsButTakesTheNewPlan() {

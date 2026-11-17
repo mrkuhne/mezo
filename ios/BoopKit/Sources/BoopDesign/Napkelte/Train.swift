@@ -405,8 +405,43 @@ public struct NKSetStrip: View {
 
 // MARK: - The briefing and the set list (owner round 4, 2026-11-17)
 
-/// How one set turned out, as the player's set list marks it on the right. It is the kit's own small vocabulary
-/// rather than `BoopCore`'s `SetVerdict`, because the design package knows nothing about the training models.
+/// The player's set table: a header line and one row per set, the values **in their own cells** rather than
+/// written into a sentence (owner, 2026-11-17 — *„a szett jelző sorok legyenek már designolva […] szépen
+/// legyenek boxolva, tagolva"*). Four columns he can read without stopping: which set, the weight, the reps,
+/// the reserve — and on the right how it went **against what the plan asked**.
+public struct NKSetTable<Row: View>: View {
+    let hue: Hue
+    let rows: Row
+    public init(hue: Hue, @ViewBuilder rows: () -> Row) { self.hue = hue; self.rows = rows() }
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                head("#", width: NKSetRow.indexWidth, align: .center)
+                head("KG")
+                head("ISM.", width: NKSetRow.repsWidth)
+                head("TART.", width: NKSetRow.reserveWidth)
+                head("", width: NKSetRow.verdictWidth, align: .trailing)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 7)
+            VStack(spacing: 6) { rows }
+        }
+    }
+
+    private func head(_ text: String, width: CGFloat? = nil,
+                      align: Alignment = .leading) -> some View {
+        Text(text)
+            .nkFont(9, .medium, design: .monospaced).tracking(1.1)
+            .foregroundStyle(.white.opacity(0.35))
+            .frame(width: width, alignment: align)
+            .frame(maxWidth: width == nil ? .infinity : nil, alignment: align)
+            .accessibilityHidden(true)
+    }
+}
+
+/// How one set turned out, as the set table marks it on the right. It is the kit's own small vocabulary rather
+/// than `BoopCore`'s `SetVerdict`, because the design package knows nothing about the training models.
 public enum NKSetMark: Equatable, Sendable {
     /// Beat his own best — the one place gold is allowed.
     case record
@@ -426,7 +461,19 @@ public enum NKSetMark: Equatable, Sendable {
         }
     }
 
+    /// Short enough for the column; the full sentence is the row's accessibility label.
     var word: String {
+        switch self {
+        case .record: "rekord"
+        case .above: "terv fölött"
+        case .onTarget: "terv szerint"
+        case .below: "terv alatt"
+        case .planned: "hátra"
+        case .now: "most"
+        }
+    }
+
+    var spoken: String {
         switch self {
         case .record: "rekord"
         case .above: "a terv fölött"
@@ -438,66 +485,155 @@ public enum NKSetMark: Equatable, Sendable {
     }
 }
 
-/// One line of the player's set list: which set it is, what was lifted, the reserve, and **on the right how it
-/// went against what the plan asked** (owner, 2026-11-17: *„a szett mellett jobb oldalon mutassuk, hogy az
-/// elvárthoz képest alá logoltunk, fölé logoltunk vagy medált kaptunk"*).
+/// One row of `NKSetTable`. Every cell is its own box-width, so the columns line up down the whole list even
+/// when a weight is „77,5" and the next is „10".
 public struct NKSetRow: View {
+    static let indexWidth: CGFloat = 26
+    static let repsWidth: CGFloat = 46
+    static let reserveWidth: CGFloat = 50
+    static let verdictWidth: CGFloat = 96
+
     let index: Int
-    let text: String
-    let reserve: String?
+    let kg: String
+    let reps: String
+    let reserve: String
     let mark: NKSetMark
     let hue: Hue
     let onTap: (@MainActor @Sendable () -> Void)?
 
-    public init(index: Int, text: String, reserve: String? = nil, mark: NKSetMark, hue: Hue,
+    public init(index: Int, kg: String, reps: String, reserve: String = "–", mark: NKSetMark, hue: Hue,
                 onTap: (@MainActor @Sendable () -> Void)? = nil) {
-        self.index = index; self.text = text; self.reserve = reserve; self.mark = mark
-        self.hue = hue; self.onTap = onTap
-    }
-
-    public var body: some View {
-        let row = HStack(spacing: 12) {
-            Text("\(index).")
-                .nkFont(12, .medium, design: .monospaced)
-                .foregroundStyle(mark == .now ? hue.glow : .white.opacity(0.4))
-                .frame(width: 20, alignment: .leading)
-            Text(text)
-                .nkFont(15, .medium)
-                .foregroundStyle(.white.opacity(waiting ? 0.45 : 0.95))
-            if let reserve {
-                Text(reserve).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.4))
-            }
-            Spacer(minLength: 6)
-            if let glyph = mark.glyph {
-                HStack(spacing: 5) {
-                    NKGlyph(glyph, mark == .record ? NK.gold : .white.opacity(0.75), size: 14)
-                    Text(mark.word)
-                        .nkFont(11, design: .monospaced)
-                        .foregroundStyle(mark == .record ? NK.gold : .white.opacity(0.55))
-                }
-            } else {
-                Text(mark.word)
-                    .nkFont(11, design: .monospaced)
-                    .foregroundStyle(mark == .now ? hue.glow : .white.opacity(0.3))
-            }
-        }
-        .padding(.horizontal, 13)
-        .frame(minHeight: 42)
-        .frame(maxWidth: .infinity)
-        .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
-            .fill(.white.opacity(mark == .now ? 0.13 : waiting ? 0.04 : 0.08)))
-        .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-
-        if let onTap {
-            Button(action: onTap) { row }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(index). szett, \(text), \(mark.word) — szerkesztem")
-        } else {
-            row.accessibilityElement(children: .combine)
-        }
+        self.index = index; self.kg = kg; self.reps = reps; self.reserve = reserve
+        self.mark = mark; self.hue = hue; self.onTap = onTap
     }
 
     private var waiting: Bool { mark == .planned }
+    private var live: Bool { mark == .now }
+
+    public var body: some View {
+        let row = HStack(spacing: 0) {
+            Text("\(index)")
+                .nkFont(12, .medium, design: .monospaced)
+                .foregroundStyle(live ? NK.ground : .white.opacity(waiting ? 0.35 : 0.55))
+                .frame(width: Self.indexWidth - 8, height: 24)
+                .background(Capsule().fill(live ? hue.glow : .white.opacity(0.08)))
+                .frame(width: Self.indexWidth)
+            cell(kg, size: 16, weight: .medium)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            divider
+            cell(reps, size: 15).frame(width: Self.repsWidth, alignment: .center)
+            divider
+            cell(reserve, size: 13, dim: true).frame(width: Self.reserveWidth, alignment: .center)
+            verdict.frame(width: Self.verdictWidth, alignment: .trailing)
+        }
+        .padding(.horizontal, 12)
+        .frame(minHeight: 46)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.white.opacity(live ? 0.13 : waiting ? 0.035 : 0.075))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(live ? hue.glow.opacity(0.55) : .white.opacity(0.07), lineWidth: 1)
+                }
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+        Group {
+            if let onTap {
+                Button(action: onTap) { row }.buttonStyle(.plain)
+            } else {
+                row
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(index). szett, \(kg) kiló, \(reps) ismétlés, \(reserve) tartalék, \(mark.spoken)")
+        .accessibilityAddTraits(onTap == nil ? [] : .isButton)
+        .accessibilityHint(onTap == nil ? "" : "Javítom")
+    }
+
+    private var divider: some View {
+        Rectangle().fill(.white.opacity(0.07)).frame(width: 1, height: 20).padding(.horizontal, 2)
+    }
+
+    private func cell(_ text: String, size: CGFloat, weight: Font.Weight = .regular,
+                      dim: Bool = false) -> some View {
+        Text(text)
+            .nkFont(size, weight)
+            .foregroundStyle(.white.opacity(waiting ? 0.4 : dim ? 0.55 : 0.95))
+            .lineLimit(1).minimumScaleFactor(0.7)
+    }
+
+    @ViewBuilder private var verdict: some View {
+        if let glyph = mark.glyph {
+            HStack(spacing: 5) {
+                NKGlyph(glyph, mark == .record ? NK.gold : .white.opacity(0.7), size: 13)
+                Text(mark.word)
+                    .nkFont(10, .medium, design: .monospaced)
+                    .foregroundStyle(mark == .record ? NK.gold : .white.opacity(0.5))
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+        } else {
+            Text(mark.word)
+                .nkFont(10, .medium, design: .monospaced)
+                .foregroundStyle(live ? hue.glow : .white.opacity(0.28))
+        }
+    }
+}
+
+/// A stepper on **one line** — a label, minus, the number, plus. The tall card is right for the weight and the
+/// reps, which he looks at while the bar is on his back; the reserve is a small answer afterwards and was
+/// taking a third of the screen for it (owner, 2026-11-17).
+public struct NKInlineStepper: View {
+    let label: String
+    let value: String
+    let hue: Hue
+    let onDown: @MainActor @Sendable () -> Void
+    let onUp: @MainActor @Sendable () -> Void
+
+    public init(label: String, value: String, hue: Hue,
+                onDown: @escaping @MainActor @Sendable () -> Void,
+                onUp: @escaping @MainActor @Sendable () -> Void) {
+        self.label = label; self.value = value; self.hue = hue; self.onDown = onDown; self.onUp = onUp
+    }
+
+    public var body: some View {
+        HStack(spacing: 10) {
+            Text(label.uppercased())
+                .nkFont(10, .medium, design: .monospaced).tracking(1.2)
+                .foregroundStyle(.white.opacity(0.5))
+            Spacer(minLength: 8)
+            button("minus", action: onDown)
+            Text(value)
+                .nkFont(22, .medium).foregroundStyle(hue.glow)
+                .contentTransition(.numericText())
+                .frame(minWidth: 42)
+            button("plus", action: onUp)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 9)
+        .nkGlass()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label): \(value)")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: onUp()
+            case .decrement: onDown()
+            default: break
+            }
+        }
+    }
+
+    private func button(_ symbol: String, action: @escaping @MainActor @Sendable () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.9))
+                .frame(width: 44, height: 34)
+                .background(Capsule().fill(.white.opacity(0.1)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHidden(true)
+    }
 }
 
 /// „70–85 perc" against a 0–90 minute axis: the one number the briefing leads with. The estimate is the
