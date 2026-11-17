@@ -306,11 +306,14 @@ struct WorkoutPlayer: View {
     // MARK: - Rest
 
     @ViewBuilder private var resting: some View {
-        if let e = session.current, let last = e.logged.last {
+        if let current = session.current {
             NKRestBar(remaining: remaining, total: WorkoutSession.restSeconds, hue: hue)
                 .padding(.vertical, 6)
-            verdictCard(last, exercise: e)
-            setList(e)
+            // **The set just done, wherever it was.** Answering the three questions moves the session to the
+            // next exercise while the rest runs on, so asking the *current* exercise for its last set left
+            // this screen with nothing on it — a black screen he could not get out of.
+            if let done = session.lastLogged { verdictCard(done.set, exercise: done.exercise) }
+            setList(current)
             if let next = nextUp { nextRow(next) }
             HStack(spacing: 10) {
                 Button { session.addRest() } label: {
@@ -333,20 +336,32 @@ struct WorkoutPlayer: View {
         }
     }
 
+    /// Read from the rest's own end instant, not from `step`: during the three questions the step is
+    /// `.debrief` while the clock is still running behind them, and asking `step` showed a frozen 0:00.
     private var remaining: TimeInterval {
-        guard case .rest(let seconds) = session.step else { return 0 }
         _ = now     // the view redraws every second through this
-        return max(0, seconds)
+        guard let ends = session.restEndsAt else { return 0 }
+        return max(0, ends.timeIntervalSince(now))
     }
 
     /// **The verdict of the set just done** — the reason the rest screen exists at all.
     private func verdictCard(_ set: SessionSet, exercise: SessionExercise) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            NKGlyph(set.verdict == .record ? "medal-sun" : "check-ink",
-                    set.verdict == .record ? NK.gold : hue.glow, size: 20)
+            // The same mark as the set table's, so the card and the row agree at a glance.
+            Group {
+                switch set.verdict {
+                case .record: NKGlyph("medal-sun", NK.gold, size: 26)
+                case .below: Image(systemName: "arrow.down.right")
+                        .font(.system(size: 20, weight: .bold)).foregroundStyle(NK.under)
+                default: Image(systemName: "arrow.up.right")
+                        .font(.system(size: 20, weight: .bold)).foregroundStyle(NK.good)
+                }
+            }
+            .frame(width: 26)
             VStack(alignment: .leading, spacing: 3) {
-                Text("\(exercise.logged.count). szett · \(setText(set))")
+                Text(verdictEyebrow(set, exercise))
                     .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1).minimumScaleFactor(0.8)
                 Text(set.verdict.hungarian).nkFont(19, design: .serif).foregroundStyle(.white)
                 Text(verdictLine(set, exercise))
                     .nkFont(13).foregroundStyle(.white.opacity(0.7))
@@ -358,13 +373,20 @@ struct WorkoutPlayer: View {
         .nkGlass()
     }
 
+    /// „3. szett · 80 × 8", and the exercise's name too when the set belongs to the one he has just finished
+    /// rather than the one in front of him.
+    private func verdictEyebrow(_ set: SessionSet, _ e: SessionExercise) -> String {
+        let index = (e.logged.firstIndex { $0.id == set.id } ?? e.logged.count - 1) + 1
+        let head = e.id == session.currentExerciseId ? "" : "\(e.name) · "
+        return "\(head)\(index). szett · \(setText(set))"
+    }
+
     private func verdictLine(_ set: SessionSet, _ e: SessionExercise) -> String {
         if set.verdict == .record, let bestKg = e.bestKg, let bestReps = e.bestReps {
             return "Az eddigi legjobb \(nkKg(bestKg)) × \(bestReps) volt."
         }
-        guard let plan = e.plan(at: max(0, e.logged.count - 1)), let target = plan.targetReps else {
-            return "Rögzítve."
-        }
+        let index = e.logged.firstIndex { $0.id == set.id } ?? max(0, e.logged.count - 1)
+        guard let plan = e.plan(at: index), let target = plan.targetReps else { return "Rögzítve." }
         let diff = set.reps - target
         if diff > 0 { return "\(diff) ismétléssel több, mint amit a terv kért." }
         if diff < 0 { return "\(-diff) ismétléssel kevesebb, mint amit a terv kért." }

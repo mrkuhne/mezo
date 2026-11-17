@@ -166,6 +166,17 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
 
     public var loggedSets: [SessionSet] { all.flatMap(\.logged) }
 
+    /// The most recent set anywhere in the session, with the exercise it belongs to.
+    ///
+    /// The rest screen needs **this**, not the current exercise's last set. The last set of an exercise sends
+    /// him to the three questions, and answering them moves the session on to the *next* exercise while the
+    /// rest keeps running — so at that moment the current exercise has no logged set at all, and a rest screen
+    /// that asked it for one rendered nothing: a black screen he could not get out of.
+    public var lastLogged: (exercise: SessionExercise, set: SessionSet)? {
+        all.compactMap { e in e.logged.last.map { (exercise: e, set: $0) } }
+            .max { $0.set.at < $1.set.at }
+    }
+
     /// Sets done and sets planned across the whole session — the „14 / 16" of the top bar.
     public var progress: (done: Int, total: Int) {
         let live = all.filter { !$0.skipped }

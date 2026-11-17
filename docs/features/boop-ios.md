@@ -365,6 +365,15 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   („Erős nap." → „Rögzítve."). The sunrise is behind the head only; the numbers sit on the dark ground. Left out
   of the Lágy version on purpose: the five stars, the score, the points and the quests — Boop hides gamification
   (2026-11-11), and a workout is not graded out of five here.
+  **Two bugs of round 4, found by the owner and fixed the same day:**
+  - **A black screen after „Mentés · tovább".** The rest screen asked the **current** exercise for its last
+    set — but answering the three questions moves the session to the *next* exercise while the rest runs on,
+    so at that moment the current exercise had no logged set and the whole screen rendered nothing, with no
+    way out of it. It now reads `WorkoutSession.lastLogged` — the most recent set **anywhere** in the session
+    — and names the exercise when it is not the one in front of him. Three tests pin it.
+  - **The rest clock froze at 0:00 behind the three questions**, because `remaining` read `step`, which is
+    `.debrief` there. It reads the rest's own end instant now.
+
   **Round 4 (owner, 2026-11-17 — „hiányzik az indítás előtti rész", with the Lágy briefing beside it):**
   - **„Eligazítás" — the screen before the first set** (`Edzes/WorkoutBriefing.swift`), the Lágy briefing in
     Napkelte: the day's own title big, a sentence counting the exercises, working sets and muscles, the
@@ -396,7 +405,11 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     stepper directly under the weight and the reps**, all three a couple of points smaller, the sets are a
     **table** (`NKSetTable` + `NKSetRow`) — a header line and one row per set, each value in **its own cell**
     with the mark of how it went against the plan on the right, so the columns line up down the whole list
-    (owner's second pass: *„ne csak odaírva"*) — and **everything else lives behind one „…"**: the note, the
+    (owner's second pass: *„ne csak odaírva"*). The weight is **centred** in its column, and the mark is a
+    **tilted arrow**: green and up for a set that met the plan or beat it, red and down for one that fell
+    short (`NK.good` / `NK.under`), with the gold medal, bigger than both, for a record. Arrows are the one
+    SF family the Napkelte canon allows beside chevrons, and the rest screen's verdict card carries the same
+    three marks so the card and the row agree at a glance — and **everything else lives behind one „…"**: the note, the
     swap, the records, the technique, a set more or fewer, doing another exercise because the machine is taken, later, skip, and
     finishing the workout. There is exactly **one „…" on the screen**, beside the exercise; the header's was
     removed in the same pass, and `NKInlineStepper` put the reserve on one slim line instead of a third tall

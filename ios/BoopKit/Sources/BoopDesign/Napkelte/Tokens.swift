@@ -7,6 +7,12 @@ public enum NK {
     /// thing it stops meaning "you have never done this before".
     public static let gold = Color(hex: 0xF2C94C)
 
+    /// The two verdict colours of the set table: a set that met the plan or beat it, and one that fell short
+    /// (owner, 2026-11-17). They say only how a set went **against what was asked** — never whether the day
+    /// was good — so they are the warm green and the warm red of this world, not a traffic light.
+    public static let good = Color(hex: 0x7FC08A)
+    public static let under = Color(hex: 0xE2695C)
+
     public static let ground = Color(hex: 0x0D1218)
 
     /// The page never goes black: the deepest shade of the hue, as a soft vertical gradient (top, middle, bottom).

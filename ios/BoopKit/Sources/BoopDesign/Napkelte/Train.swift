@@ -418,7 +418,7 @@ public struct NKSetTable<Row: View>: View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 head("#", width: NKSetRow.indexWidth, align: .center)
-                head("KG")
+                head("KG", align: .center)
                 head("ISM.", width: NKSetRow.repsWidth)
                 head("TART.", width: NKSetRow.reserveWidth)
                 head("", width: NKSetRow.verdictWidth, align: .trailing)
@@ -451,13 +451,25 @@ public enum NKSetMark: Equatable, Sendable {
     /// The set he is on.
     case now
 
-    var glyph: String? {
+    /// The mark's own colour. Gold is the record's, and the other two say only how the set went **against
+    /// what the plan asked**.
+    var tint: Color {
         switch self {
-        case .record: "medal-sun"
-        case .above: "chart-deep"
-        case .onTarget: "check-ink"
-        case .below: "back-cream"
-        case .planned, .now: nil
+        case .record: NK.gold
+        case .above, .onTarget: NK.good
+        case .below: NK.under
+        case .planned, .now: .white.opacity(0.3)
+        }
+    }
+
+    /// A tilted arrow, up for a set that met the plan or beat it and down for one that fell short (owner,
+    /// 2026-11-17). Arrows are the one SF family the Napkelte canon allows beside chevrons; the record keeps
+    /// the kit's own medal.
+    var arrow: String? {
+        switch self {
+        case .above, .onTarget: "arrow.up.right"
+        case .below: "arrow.down.right"
+        case .record, .planned, .now: nil
         }
     }
 
@@ -518,8 +530,10 @@ public struct NKSetRow: View {
                 .frame(width: Self.indexWidth - 8, height: 24)
                 .background(Capsule().fill(live ? hue.glow : .white.opacity(0.08)))
                 .frame(width: Self.indexWidth)
+            // The weight reads centred in its column, so the numbers line up under one another even when one
+            // is „77,5" and the next „10" (owner, 2026-11-17).
             cell(kg, size: 16, weight: .medium)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
             divider
             cell(reps, size: 15).frame(width: Self.repsWidth, alignment: .center)
             divider
@@ -565,18 +579,19 @@ public struct NKSetRow: View {
     }
 
     @ViewBuilder private var verdict: some View {
-        if let glyph = mark.glyph {
-            HStack(spacing: 5) {
-                NKGlyph(glyph, mark == .record ? NK.gold : .white.opacity(0.7), size: 13)
-                Text(mark.word)
-                    .nkFont(10, .medium, design: .monospaced)
-                    .foregroundStyle(mark == .record ? NK.gold : .white.opacity(0.5))
-                    .lineLimit(1).minimumScaleFactor(0.8)
+        HStack(spacing: 5) {
+            if mark == .record {
+                NKGlyph("medal-sun", NK.gold, size: 20)
+            } else if let arrow = mark.arrow {
+                Image(systemName: arrow)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(mark.tint)
             }
-        } else {
             Text(mark.word)
                 .nkFont(10, .medium, design: .monospaced)
-                .foregroundStyle(live ? hue.glow : .white.opacity(0.28))
+                .foregroundStyle(mark == .planned ? .white.opacity(0.28)
+                                 : mark == .now ? hue.glow : mark.tint.opacity(0.95))
+                .lineLimit(1).minimumScaleFactor(0.8)
         }
     }
 }

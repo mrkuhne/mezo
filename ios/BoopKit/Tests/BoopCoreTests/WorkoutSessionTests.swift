@@ -287,3 +287,48 @@ struct WorkoutSessionOrderTests {
         #expect(s.exercises[a] == nil)
     }
 }
+
+/// The rest screen's own question: **which set was just done?** Getting this wrong left the player with
+/// nothing on screen after the three questions — a black screen he could not get out of.
+struct WorkoutSessionLastLoggedTests {
+    let a = UUID(uuidString: "a9a9a9a9-0001-4a2b-9c3d-111122223333")!
+    let b = UUID(uuidString: "a9a9a9a9-0002-4a2b-9c3d-111122223333")!
+
+    func exercise(_ id: UUID, _ name: String, sets: Int) -> PlannedExercise {
+        PlannedExercise(id: id, name: name, muscle: "back", type: .compound,
+                        sets: (0..<sets).map { _ in PrescribedSet(kind: .working, targetKg: 80, targetReps: 8) },
+                        warmupCount: 0, workingCount: sets, repMin: 6, repMax: 10, targetRIR: 2)
+    }
+
+    @Test func nothingLoggedYetMeansNoLastSet() {
+        let s = WorkoutSession(TodayWorkout(exercises: [exercise(a, "A", sets: 2)]))
+        #expect(s.lastLogged == nil)
+    }
+
+    @Test func afterTheQuestionsTheRestStillKnowsTheSetItIsAbout() {
+        // A has one set; logging it goes to the debrief, and answering moves to B — while the rest runs on.
+        // At that moment the CURRENT exercise has no logged set, so the rest screen must read the session's
+        // last set, not the current exercise's.
+        var s = WorkoutSession(TodayWorkout(exercises: [exercise(a, "A", sets: 1), exercise(b, "B", sets: 2)]))
+        _ = s.log(kg: 80, reps: 9, rir: 1)
+        #expect(s.step == .debrief(exercise: a))
+        let next = s.finishExercise(ExerciseFeedback())
+        guard case .rest = next else { Issue.record("expected the rest to be running, got \(next)"); return }
+
+        #expect(s.currentExerciseId == b)
+        #expect(s.exercises[b]?.logged.isEmpty == true)     // the current exercise has nothing yet
+        let done = try! #require(s.lastLogged)
+        #expect(done.exercise.id == a)
+        #expect(done.set.reps == 9)
+    }
+
+    @Test func theLastSetIsTheLatestOneAnywhereNotTheLastInTheOrder() {
+        var s = WorkoutSession(TodayWorkout(exercises: [exercise(a, "A", sets: 2), exercise(b, "B", sets: 2)]))
+        _ = s.log(kg: 80, reps: 8, rir: 2)          // A, set 1
+        s.skipRest()
+        _ = s.switchTo(b)
+        _ = s.log(kg: 60, reps: 12, rir: 1)         // B, set 1 — later in time, earlier in nothing
+        #expect(s.lastLogged?.exercise.id == b)
+        #expect(s.lastLogged?.set.reps == 12)
+    }
+}
