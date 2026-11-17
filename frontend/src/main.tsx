@@ -6,6 +6,7 @@ import { routes } from '@/app/router'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { installAutoGrow } from '@/shared/lib/autoGrow'
 import { m } from '@/shared/i18n'
+import { warmLazyPages } from '@/app/lazyPage'
 import '@/index.css'
 
 const router = createBrowserRouter(routes)
@@ -49,3 +50,6 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>,
 )
+
+// Fetch the remaining page chunks once the first screen is up (mezo-9fcm).
+warmLazyPages()

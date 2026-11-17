@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BottomBar } from '@/app/BottomBar'
 import { CircadianTheme } from '@/app/CircadianTheme'
@@ -98,7 +99,14 @@ export function AppLayout() {
       {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
           (BottomBar) stays usable and navigating away (resetKey) recovers. */}
       <ErrorBoundary resetKey={location.pathname}>
-        <Outlet />
+        {/* Pages are lazy chunks (mezo-9fcm). This boundary keeps a cold page's wait INSIDE the
+            frame: the title bar and the bottom bar stand while the chunk arrives, instead of
+            the app-root fallback replacing the whole shell (a cold deep link under the startup
+            splash would otherwise fade onto an empty frame). An empty body, not a loading
+            line: the wait is a few milliseconds and warmed pages never suspend at all. */}
+        <Suspense fallback={null}>
+          <Outlet />
+        </Suspense>
       </ErrorBoundary>
     </ScreenContent>
     </FrameProvider>

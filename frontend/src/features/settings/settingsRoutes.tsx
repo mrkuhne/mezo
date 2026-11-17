@@ -1,14 +1,16 @@
 import type { RouteObject } from 'react-router-dom'
-import { SettingsPage } from '@/features/settings/pages/SettingsPage'
-import { TrainSettingsPage } from '@/features/settings/pages/TrainSettingsPage'
-import { MeSettingsPage } from '@/features/settings/pages/MeSettingsPage'
-import { MezoSettingsPage } from '@/features/settings/pages/MezoSettingsPage'
-import { NapSettingsPage } from '@/features/settings/pages/NapSettingsPage'
-import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
-import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
-import { FuelSettingsPage } from '@/features/fuel/pages/FuelSettingsPage'
-import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
-import { GoalSettingsPage } from '@/features/me/pages/GoalSettingsPage'
+import { lazyPage } from '@/app/lazyPage'
+
+const SettingsPage = lazyPage(() => import('@/features/settings/pages/SettingsPage'), 'SettingsPage')
+const TrainSettingsPage = lazyPage(() => import('@/features/settings/pages/TrainSettingsPage'), 'TrainSettingsPage')
+const MeSettingsPage = lazyPage(() => import('@/features/settings/pages/MeSettingsPage'), 'MeSettingsPage')
+const MezoSettingsPage = lazyPage(() => import('@/features/settings/pages/MezoSettingsPage'), 'MezoSettingsPage')
+const NapSettingsPage = lazyPage(() => import('@/features/settings/pages/NapSettingsPage'), 'NapSettingsPage')
+const BeallitasokPage = lazyPage(() => import('@/features/me/pages/BeallitasokPage'), 'BeallitasokPage')
+const NotificationsPage = lazyPage(() => import('@/features/me/pages/NotificationsPage'), 'NotificationsPage')
+const FuelSettingsPage = lazyPage(() => import('@/features/fuel/pages/FuelSettingsPage'), 'FuelSettingsPage')
+const FuelSlotsPage = lazyPage(() => import('@/features/fuel/pages/FuelSlotsPage'), 'FuelSlotsPage')
+const GoalSettingsPage = lazyPage(() => import('@/features/me/pages/GoalSettingsPage'), 'GoalSettingsPage')
 
 /** Mounted under the authenticated app shell; personal-context editor routes join in router.tsx. */
 export const settingsRoutes: RouteObject[] = [

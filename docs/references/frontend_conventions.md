@@ -72,7 +72,7 @@ Only folders with content exist. A non-routed full-screen overlay provider (e.g.
 
 **Add a routed page under an existing tab:**
 1. Create `features/<domain>/pages/<Name>Page.tsx` (+ `<Name>Page.test.tsx`).
-2. Register it in `app/router.tsx` — as a child of the domain's `*Section` (shows the sub-nav) or as a top-level sibling route (full-screen, no sub-nav, like `train/session`).
+2. Register it in `app/router.tsx` — as a child of the domain's `*Section` (shows the sub-nav) or as a top-level sibling route (full-screen, no sub-nav, like `train/session`). Import the page with **`lazyPage(() => import('@/features/<domain>/pages/XPage'), 'XPage')`** (`app/lazyPage.ts`, mezo-9fcm), never a static `import` — every page outside the landing domain (Nap) is its own chunk; `main.tsx` warms them all on idle, and a warmed page renders synchronously, so tests need no extra awaits (`src/test/setup.ts` preloads them).
 3. If it has a sub-nav entry, add it to the domain's `pages/tabs.ts` list — that's the only file to touch; the list is rendered by the shared `@/shared/ui/SubNavDropdown` inside the section's `AppHero` `utilities` prop (no per-domain `*SubNav` component).
 4. Data via `useXxx()` from `@/data/hooks`; loading via a colocated `<Name>Skeleton`.
 
