@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ public class VolumeLedger {
     private final ExerciseRepository exerciseRepository;
     private final VolumeProperties props;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
+    private final EntityManager entityManager;
 
     /** Idempotent. Gate off or run not active: touches nothing. */
     @Transactional
@@ -91,8 +93,12 @@ public class VolumeLedger {
         if (!existing.isEmpty()) {
             // Physical delete: a soft-deleted tombstone would collide with the (mesocycle, muscle)
             // unique constraint when the group is trained again. Done BEFORE the upserts below.
-            volumeLogRepository.hardDeleteByIds(
-                existing.values().stream().map(MuscleGroupVolumeLogEntity::getId).toList());
+            // Only the deleted rows leave the persistence context (detached first, so no pending
+            // state of theirs is flushed and no stale managed copy outlives the DELETE); the
+            // caller's other managed entities stay managed — the query never clears.
+            List<UUID> gone = existing.values().stream().map(MuscleGroupVolumeLogEntity::getId).toList();
+            existing.values().forEach(entityManager::detach);
+            volumeLogRepository.hardDeleteByIds(gone);
         }
         if (!toSave.isEmpty()) {
             volumeLogRepository.saveAll(toSave);

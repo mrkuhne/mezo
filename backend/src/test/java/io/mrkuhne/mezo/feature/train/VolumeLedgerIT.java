@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * The volume log is derived from the plan (volume engine v2, spec §6.1): one row per trained
@@ -45,6 +47,7 @@ class VolumeLedgerIT extends AbstractIntegrationTest {
     @Autowired MesocycleRepository mesocycleRepository;
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired DatabasePopulator databasePopulator;
+    @Autowired PlatformTransactionManager transactionManager;
 
     @Test
     void rowsAreTheSumOfThePlan() {
@@ -140,6 +143,33 @@ class VolumeLedgerIT extends AbstractIntegrationTest {
         List<MuscleGroupVolumeLogEntity> rows = rows(user, meso.getId());
         assertThat(rows).filteredOn(r -> r.getMuscle().equals("chest")).hasSize(1);
         assertThat(byMuscle(rows, "chest").getCurrentSets()).isEqualTo(5);
+    }
+
+    /**
+     * A caller that changes a managed entity AFTER {@code sync} inside its own transaction keeps
+     * that write: the removal of an untrained group's row must not clear the caller's persistence
+     * context (which would detach the meso and silently drop the change at commit).
+     */
+    @Test
+    void aCallersManagedEntitySurvivesTheRowRemoval() {
+        UUID user = databasePopulator.populateUser("ledger-k@test.local");
+        MesocycleEntity created = train.createActiveMeso(user);
+        WorkoutSessionEntity day = train.createTemplateDay(user, created.getId(), "Hét");
+        ExerciseEntity bench = exercise(user, day, "Bench", "chest-mid", 3);
+        exercise(user, day, "Row", "back-mid", 3);
+        ledger.sync(user, created.getId());
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            MesocycleEntity meso = mesocycleRepository.findById(created.getId()).orElseThrow();
+            exerciseRepository.delete(exerciseRepository.findById(bench.getId()).orElseThrow());
+            ledger.sync(user, meso.getId());
+            meso.setNotes("a hívó írása megmarad"); // managed: no explicit save
+        });
+
+        assertThat(mesocycleRepository.findById(created.getId()).orElseThrow().getNotes())
+            .isEqualTo("a hívó írása megmarad");
+        assertThat(rows(user, created.getId())).extracting(MuscleGroupVolumeLogEntity::getMuscle)
+            .containsExactly("back");
     }
 
     @Test

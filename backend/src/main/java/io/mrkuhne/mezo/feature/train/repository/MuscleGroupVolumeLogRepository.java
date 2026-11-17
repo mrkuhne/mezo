@@ -22,8 +22,12 @@ public interface MuscleGroupVolumeLogRepository extends JpaRepository<MuscleGrou
     /**
      * Physical delete (not the entity's soft delete): the (mesocycle, muscle) unique constraint is
      * not partial on is_deleted, so a tombstone would block the group coming back (VolumeLedger).
+     *
+     * <p>Flushes first but never clears the persistence context: clearing would detach every
+     * entity of the CALLER's transaction (the run, its exercises) and silently drop a write made
+     * after this call. The caller evicts the deleted rows itself ({@code EntityManager#detach}).
      */
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query(value = "delete from muscle_group_volume_log where id in (:ids)", nativeQuery = true)
     void hardDeleteByIds(@Param("ids") Collection<UUID> ids);
 }
