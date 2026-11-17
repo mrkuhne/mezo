@@ -46,13 +46,12 @@ telefonodon, az egész azonnal a kész állapotában jelenik meg.
 játékosít, és egy edzés itt nincs leosztályozva ötből.
 
 **A régi leírás (ami ebből még nem él):**
-1. **Eligazítás:** mi vár ma, és miért (az előírás indoklása, például „+1 ismétlés”, „terhelés-csökkentő hét”).
-2. **Sorozatonként:** a léptető előre kitöltve az előírt súllyal, ismétléssel és tartalékkal (RIR); súlytalan gyakorlatnál csak ismétlés.
-3. **Pihenőidő-számláló** sorozatok között.
-4. **Gyakorlatcsere vagy -hozzáadás** edzés közben — csak erre az alkalomra, vagy az egész mezociklusra.
-5. **Gyakorlat utáni visszajelzés:** pumpa (1–4), ízületi fájdalom (1–3), munka mennyisége (1–3) — kihagyható.
-6. **Gyakorlat-megjegyzés**, amit legközelebb előre betölt.
-7. **Befejezés** záró megjegyzéssel, majd összegzés.
+1. **Sorozatonként:** a léptető előre kitöltve az előírt súllyal, ismétléssel és tartalékkal (RIR); súlytalan gyakorlatnál csak ismétlés.
+2. **Pihenőidő-számláló** sorozatok között.
+3. **Gyakorlat-hozzáadás** edzés közben, és a csere **az egész mezociklusra** (a mai napra szóló csere már él).
+4. **Gyakorlat utáni visszajelzés:** pumpa (1–4), ízületi fájdalom (1–3), munka mennyisége (1–3) — kihagyható.
+5. **Gyakorlat-megjegyzés**, amit legközelebb előre betölt.
+6. **Befejezés** záró megjegyzéssel, majd összegzés.
 
 ## Hogyan működik
 1. A telefon lekéri a mai edzést: a háttérrendszer kiszámolja minden gyakorlat előírt sorozatait (bemelegítés + munkasorozatok),
@@ -89,7 +88,7 @@ A háttér minden számot kiszámol, ezért a telefonos lejátszó egyszerű mar
 | `workout_timing_profile` | Megtanult időzítés (sorozat, pihenő, átállás) |
 
 ## Mi jön még
-- **A gyakorlatcsere** edzés közben (ma megmondja, hogy még nem él), és a mezociklusra szóló csere.
+- A csere **az egész mezociklusra** (a mai napra szóló már él), és gyakorlat hozzáadása edzés közben.
 - B5: Élő tevékenység (lásd [Élő tevékenység](08-elo-tevekenyseg.md)); az óra (lásd [Apple Watch-app](07-apple-watch.md)).
 - Nyitott kérdés a tulajdonosnak: a visszajelzés (például erős ízületi fájdalom) befolyásolja-e a terhelést.
 
