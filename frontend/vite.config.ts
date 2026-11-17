@@ -39,11 +39,10 @@ export default defineConfig({
         // intact (switching to injectManifest would mean owning the whole worker for two
         // event listeners) — bd mezo-h4wp.6.1.
         importScripts: ['push-sw.js'],
-        // Entry chunk outgrew the 2 MiB default precache limit (bd mezo-xkz6; the header-aurora
-        // work, mezo-8az6, tipped it further). Raised to 3 MiB as an immediate unblock; proper
-        // follow-up is route-level code splitting (manualChunks / mezo-9fcm) to bring the entry
-        // chunk back under the default limit.
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        // No `maximumFileSizeToCacheInBytes` override: the 3 MiB stop-gap (mezo-xkz6) is gone now
+        // that pages are route-level chunks (`app/lazyPage.ts`, mezo-9fcm). Workbox's default
+        // 2 MiB ceiling is the ratchet — a build that trips it means something heavy slipped
+        // back into the entry chunk; split it, don't raise the limit.
       },
       manifest: {
         name: 'Boop',
