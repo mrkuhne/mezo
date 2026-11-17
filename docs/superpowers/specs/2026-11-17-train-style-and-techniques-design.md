@@ -103,14 +103,16 @@ techniques automatically — they are manual set types.
 - `lengthened_friendly` (boolean): the stretched position is loaded and safe to repeat (calf raises, leg curl, leg
   extension, preacher / incline curl, pulldown, pec deck / fly, cable overhead extension).
 
-The ~170 master rows are classified in a Liquibase data changeset (a reviewed, explicit slug list — not inferred at
-runtime). User-authored exercises default to `other / free / false` and are editable; the create/update request
+The 166 master rows are classified in `content/exercise-catalog.json` (a reviewed, explicit list — not inferred at
+runtime): the master catalog is upserted from that file on every startup (`ExerciseCatalogLoader`), Liquibase owns
+only the three new columns. User-authored exercises default to `other / free / false` and are editable; the create/update request
 gains the three optional fields.
 
 ### 6.2 Style
 
-`style` on `meso_template` and `mesocycle` (the block's default) and, nullable, on an exercise (template json and
-run row): `balanced | volume | heavy | allout`. Hungarian: **Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két
+`trainingStyle` on `meso_template` and `mesocycle` (the block's default) and, nullable, on an exercise (template
+json and run row): `balanced | volume | heavy | allout`. (**Not** `style` — that name is already a free-text label
+on both tables and on the wire, e.g. "RP · 6 hét"; it stays as it is.) Hungarian: **Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két
 sorozat bukásig**.
 
 A style is a **default-giver**: when an exercise is added or the style changes, it stamps rep range, working sets,
@@ -232,8 +234,8 @@ first; in range → +1 rep; hold on a real grind; down when below range at effor
 2. **Effort ramps across the block.** The stored reserve is the base; the prescription lowers it as the block
    advances — base in the first third, base − 1 in the middle, 0–1 in the last loading week, base + 2 in the
    deload — as a read-time overlay (the plan row is not edited). Never below 1 on a `free` exercise.
-3. **The overshoot threshold is explicit and per style** (`overshoot-reps`, today a fixed +3): past it the weight
-   goes up even when the jump is large.
+3. **The overshoot threshold becomes per style.** It is already config (`StepPolicy.repOverflow`, +3); only the
+   per-style value is new: past it the weight goes up even when the jump is large.
 4. **Per-muscle judgement.** Each week, per muscle group: how many of its exercises moved (reps or weight). A
    muscle whose every exercise held for two consecutive weeks is **stalled**; the weekly proposal then offers, in
    this order and only if eligible: a technique on its last exercise, a rep-range change (the other style's range
@@ -246,8 +248,10 @@ first; in range → +1 rep; hold on a real grind; down when below range at effor
 ### 6.8 Contract (all additive, `train.yml`)
 
 - `ExerciseCatalogItem`, create / update request: `equipment`, `stability`, `lengthenedFriendly`.
-- `MesoTemplateUpsertRequest` / responses, `MesocycleResponse`: `style`, `techniquesEnabled`.
-- `GymExerciseInput`, `TodayExercise`: `style`, `technique`, `techniqueSource`, `challenge`.
+- `MesoTemplateUpsertRequest` / responses, `MesocycleResponse`: `trainingStyle`, `techniquesEnabled`.
+- `GymExerciseInput`, `TodayExercise`: `trainingStyle`, `restSec`, `overrides[]`, `technique`, `techniqueSource`,
+  `challenge`. (`exercise` gains `training_style`, `rest_sec`, `overrides`, `technique`, `technique_source`,
+  `challenge` columns; the template json the same fields.)
 - `PrescribedSet`: `technique`, `restSec`, `legs[]`, and on the exercise `challengeBest`.
 - `SetLogRequest`, `SetUpdateRequest`, `ExerciseSetResponse`: `technique`, `legs[]`.
 - v2's evaluate response: per week `techniques[]` and `challenges[]`, plus `techniqueWarnings[]`.
@@ -366,3 +370,55 @@ config. No source gives a volume-credit standard for technique sets.
 - The exact thirds of the effort ramp for blocks of 4, 5, 6, 8 weeks.
 - Java names, the `overrides` representation on the exercise row.
 - Whether `TechniquePlanner` output is cached per week or recomputed.
+
+## 11. Builder-check resolutions (2026-11-17) — these amend the text above where they differ
+
+An independent read against the code raised six questions and nine factual corrections. The corrections are folded
+in above (`trainingStyle`, the catalog JSON, the overshoot config, the wire fields) or listed here; the six
+questions are settled as the author's calls, flagged to the owner in the hand-over.
+
+**Questions**
+
+1. **"Két sorozat bukásig" and the bands.** An all-out exercise has **2 sets, and the weekly proposal never adds
+   sets to it** — in this style progress is load, not volume. A muscle whose exercises are all-out is judged against
+   a **halved band** (`mezo.volume.bands.allout-factor: 0.5` on `low` and `high`), because the evidence says one or
+   two all-out sets capture most of the effect of several. Sets stay an overridable field like the rest.
+2. **A technique on an exercise already at a cap.** Techniques are time-savers, so the planner's line **replaces one
+   straight set**: sets − 1, plus the technique on the new last set. If the exercise has a single set, or the swap
+   still breaks a cap, the exercise is not eligible that week.
+3. **Who gets the progression changes.** The style table, the effort ramp and prescribed rest apply only to a block
+   that **has a `trainingStyle`** (set by the Boop builder). A block without one — every web-built block, the run in
+   flight at deploy, generated web plans with their own `MesoPlanProperties` — is prescribed exactly as today. The
+   one change everyone gets is the rep-range-aware reference (§6.7.1), which is a bug fix.
+   The grind signal: it is judged against the **effective** (ramped) target; when that target is 0–1 a reserve can
+   no longer show a grind, so there it is "logged reps at least 2 below the prescribed reps". v2 §6.4 keeps its
+   signal late in the block.
+4. **Owner picks.** His technique runs in **every loading week, including 1–2**, and not in the deload. The server
+   **rejects** a technique (and a challenge) on an exercise that is not `stable` — from any source, on template
+   save and on the mid-run PUT — and `partials` on one that is not `lengthened_friendly`. He can mark his own
+   exercise stable; the master rows are classified once. (§2's "at least warn" is superseded.)
+5. **The stall rule.** "Moved" = the **logged** top set improved in reps or weight against the previous week. The
+   range change moves the exercise one step along *Nagyobb súly ↔ Kiegyensúlyozott ↔ Sok ismétlés*, away from where
+   it stalled (a heavy exercise goes lighter, a high-rep one heavier; from the middle, towards higher reps). It is
+   its own line kind, `rep_range` (`from`/`to` = the ranges). The one-week reduction is restored afterwards exactly
+   like v2's deload, and is never offered for a Tartás muscle (v2: no set line there) — Tartás gets only the
+   technique and range options.
+6. **Challenge and technique on one exercise.** The challenge wins: that exercise carries `partials` as the
+   challenge and no other technique; the planner looks for its technique slot elsewhere in the day or leaves it
+   empty. The challenge weighs 2 against the caps like any technique, is counted **first**, and is never the thing
+   removed to satisfy a cap.
+
+**Corrections not visible above**
+
+- **Range snapshot.** `exercise_set` snapshots only target weight and reps today; it gains `target_rep_min` /
+  `target_rep_max` so §6.7.1 can match on the range a set was trained in. History without it falls back to the
+  exercise row's current range.
+- **`SetUpdateRequest` is a full replacement** where an absent field clears. For `legs` an **absent** value means
+  untouched (an explicit empty list clears) — otherwise any web edit of a set would wipe its legs.
+- **Web saves replace the template document** and re-mint exercise ids. `MesoTemplateService.applyUpsert` therefore
+  **carries over** the new optional fields (training style, rest, overrides, technique, challenge) from the stored
+  exercise with the same catalog id (else name) on the same day when the request omits them.
+- **The evaluator is read-only, not stateless.** Sport days come from the owner's sport schedule (`dayOfWeek`
+  against the plan day's weekday label) and the deficit from the goal port, so `POST …/evaluate` reads per-user
+  state; it still writes nothing.
+- **Dependencies.** Nothing of v2 is built yet; T2–T4 need all of v2 S1–S3, T1 needs v2 S1.
