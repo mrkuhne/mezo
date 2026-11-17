@@ -1,11 +1,4 @@
-import { BoopMemoriesPage } from '@/features/insights/pages/BoopMemoriesPage'
-import { MemoryDayPage } from '@/features/insights/pages/MemoryDayPage'
-import { KnowledgeNodePage } from '@/features/insights/pages/KnowledgeNodePage'
-import { PredictionDetailPage } from '@/features/insights/pages/PredictionDetailPage'
-import { ExperimentDetailPage } from '@/features/insights/pages/ExperimentDetailPage'
 import { settingsRoutes } from '@/features/settings/settingsRoutes'
-import { MezoPersonalPage } from '@/features/settings/pages/MezoPersonalPage'
-import { AccountSettingsPage } from '@/features/settings/pages/AccountSettingsPage'
 import type { ReactNode } from 'react'
 import { Navigate, type RouteObject, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
@@ -19,128 +12,137 @@ import { NapCheckinPage } from '@/features/today/pages/NapCheckinPage'
 import { NapGyorsPage } from '@/features/today/pages/NapGyorsPage'
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
 import { NapomPage } from '@/features/today/pages/NapomPage'
-import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
-import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
-import { TrainWeekMapPage } from '@/features/train/pages/TrainWeekMapPage'
-import { TrainWeekJelekPage } from '@/features/train/pages/TrainWeekJelekPage'
-import { TrainWeekMozgasPage } from '@/features/train/pages/TrainWeekMozgasPage'
-import { GymPage } from '@/features/train/pages/GymPage'
-import { SportPage } from '@/features/train/pages/SportPage'
-import { SportLogPage } from '@/features/train/pages/SportLogPage'
-import { RunningPage } from '@/features/train/pages/RunningPage'
-import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
-import { ExerciseStoryPage } from '@/features/train/pages/ExerciseStoryPage'
-import { MedalsPage } from '@/features/train/pages/MedalsPage'
-import { MesoTervPage } from '@/features/train/pages/MesoTervPage'
-import { MesoKonyvtarPage } from '@/features/train/pages/MesoKonyvtarPage'
-import { MesoFutamokPage } from '@/features/train/pages/MesoFutamokPage'
-import { MesoTemplatesPage } from '@/features/train/pages/MesoTemplatesPage'
-import { MesoTemplateStoryPage } from '@/features/train/pages/MesoTemplateStoryPage'
-import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
-import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
-import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
-import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPage'
-import { MesoWeekPage } from '@/features/train/pages/MesoWeekPage'
-import { MesoMusclePage } from '@/features/train/pages/MesoMusclePage'
-import { MesoDayPage } from '@/features/train/pages/MesoDayPage'
-import { MesoDayEditPage } from '@/features/train/pages/MesoDayEditPage'
-import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
-import { MesoComparePage } from '@/features/train/pages/MesoComparePage'
-import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEditorPage'
-import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
-import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
-import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
-import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
-import { FuelMealDetailPage } from '@/features/fuel/pages/FuelMealDetailPage'
-import { FuelMealScorePage } from '@/features/fuel/pages/FuelMealScorePage'
-import { FuelTrendekPage } from '@/features/fuel/pages/FuelTrendekPage'
-import { LearningPage } from '@/features/fuel/pages/LearningPage'
-import { FuelKonyhaPage } from '@/features/fuel/pages/FuelKonyhaPage'
-import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
-import { FuelStackProtocolPage } from '@/features/fuel/pages/FuelStackProtocolPage'
-import { FuelStackAddPage } from '@/features/fuel/pages/FuelStackAddPage'
-import { FuelRecipesPage } from '@/features/fuel/pages/FuelRecipesPage'
-import { FuelKamraPage } from '@/features/fuel/pages/FuelKamraPage'
-import { KamraItemDetailPage } from '@/features/fuel/pages/KamraItemDetailPage'
-import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
-import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
-import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
-import { RecipeWorkshopPage } from '@/features/fuel/pages/RecipeWorkshopPage'
-import { TeamFeedPage } from '@/features/insights/pages/TeamFeedPage'
-import { TeamPage } from '@/features/insights/pages/TeamPage'
-import { CharacterRoomPage } from '@/features/insights/pages/CharacterRoomPage'
-import { TeamChatPage } from '@/features/insights/pages/TeamChatPage'
-import { BoopMenuPage } from '@/features/insights/pages/BoopMenuPage'
 import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
-import { BoopAboutPage } from '@/features/insights/pages/BoopAboutPage'
-import { RoladLifeEventsPage } from '@/features/insights/pages/RoladLifeEventsPage'
-import { PatternsPage } from '@/features/insights/pages/PatternsPage'
-import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
-import { MemoirPage } from '@/features/insights/pages/MemoirPage'
-import { MemoirArchivePage } from '@/features/insights/pages/MemoirArchivePage'
-import { MemoirChapterPage } from '@/features/insights/pages/MemoirChapterPage'
-import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
-import { ChatPage } from '@/features/insights/pages/ChatPage'
-import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
-import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
-import { DiagnosisListPage } from '@/features/insights/pages/DiagnosisListPage'
-import { DiagnosisDetailPage } from '@/features/insights/pages/DiagnosisDetailPage'
-import { CoachingHubPage } from '@/features/insights/pages/CoachingHubPage'
-import { CoachingObserverPage } from '@/features/insights/pages/CoachingObserverPage'
-import { CoachingCardPage } from '@/features/insights/pages/CoachingCardPage'
-import { MemoryPage } from '@/features/insights/pages/MemoryPage'
-import { EnHubPage } from '@/features/me/pages/EnHubPage'
-import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
-import { NightPage } from '@/features/me/pages/NightPage'
-import { GrowthHubPage } from '@/features/me/pages/GrowthHubPage'
-import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
-import { HabitPage } from '@/features/me/pages/HabitPage'
-import { HabitEditPage } from '@/features/me/pages/HabitEditPage'
-import { ChainPage } from '@/features/me/pages/ChainPage'
-import { SzokasaidPage } from '@/features/me/pages/SzokasaidPage'
-import { RoutineWizardPage } from '@/features/me/pages/RoutineWizardPage'
-import { RutinHubPage } from '@/features/me/pages/RutinHubPage'
-import { GrowthNaploPage } from '@/features/me/pages/GrowthNaploPage'
-import { GrowthAwardsPage } from '@/features/me/pages/GrowthAwardsPage'
-import { JournalPage } from '@/features/me/pages/JournalPage'
-import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
-import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
-import { WeekDaysPage } from '@/features/me/pages/WeekDaysPage'
-import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
-import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
-import { GoalsPage } from '@/features/me/pages/GoalsPage'
-import { GoalDietPage } from '@/features/me/pages/GoalDietPage'
-import { GoalSegmentPage } from '@/features/me/pages/GoalSegmentPage'
-import { GoalPlansPage } from '@/features/me/pages/GoalPlansPage'
-import { GoalGuardsPage } from '@/features/me/pages/GoalGuardsPage'
-import { GoalSuggestionPage } from '@/features/me/pages/GoalSuggestionPage'
-import { CelokPage } from '@/features/me/pages/CelokPage'
-import { CelPage } from '@/features/me/pages/CelPage'
-import { CelWizardPage } from '@/features/me/pages/CelWizardPage'
-import JelekPage from '@/features/me/pages/JelekPage'
-import { WeightPage } from '@/features/me/pages/WeightPage'
-import { SleepPage } from '@/features/me/pages/SleepPage'
-import { PeoplePage } from '@/features/me/pages/PeoplePage'
-import { PeopleJeloltekPage } from '@/features/me/pages/PeopleJeloltekPage'
-import { PeopleKorPage } from '@/features/me/pages/PeopleKorPage'
-import { PeopleEmlitesekPage } from '@/features/me/pages/PeopleEmlitesekPage'
-import { PeopleHetiPage } from '@/features/me/pages/PeopleHetiPage'
-import { PersonDetailPage } from '@/features/me/pages/PersonDetailPage'
-import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
-import { RitualPage } from '@/features/ritual/pages/RitualPage'
-import MindenOldalPage from '@/app/MindenOldalPage'
-import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
-import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
-import { DimensionPage } from '@/features/character/pages/DimensionPage'
-import { CharacterFeedPage } from '@/features/character/pages/CharacterFeedPage'
-import { KonziliumPage } from '@/features/character/pages/KonziliumPage'
-import { GeptermPage } from '@/features/character/pages/GeptermPage'
-import { FutasokPage } from '@/features/character/pages/FutasokPage'
-import { RunPage } from '@/features/character/pages/RunPage'
-import { AdatforrasokPage } from '@/features/character/pages/AdatforrasokPage'
-import { KorPage } from '@/features/character/pages/KorPage'
-import { DetektorokPage } from '@/features/character/pages/DetektorokPage'
-import { FuelRecipeScorePage } from '@/features/fuel/pages/FuelRecipeScorePage'
+import { lazyPage } from '@/app/lazyPage'
+
+const BoopMemoriesPage = lazyPage(() => import('@/features/insights/pages/BoopMemoriesPage'), 'BoopMemoriesPage')
+const MemoryDayPage = lazyPage(() => import('@/features/insights/pages/MemoryDayPage'), 'MemoryDayPage')
+const KnowledgeNodePage = lazyPage(() => import('@/features/insights/pages/KnowledgeNodePage'), 'KnowledgeNodePage')
+const PredictionDetailPage = lazyPage(() => import('@/features/insights/pages/PredictionDetailPage'), 'PredictionDetailPage')
+const ExperimentDetailPage = lazyPage(() => import('@/features/insights/pages/ExperimentDetailPage'), 'ExperimentDetailPage')
+const MezoPersonalPage = lazyPage(() => import('@/features/settings/pages/MezoPersonalPage'), 'MezoPersonalPage')
+const AccountSettingsPage = lazyPage(() => import('@/features/settings/pages/AccountSettingsPage'), 'AccountSettingsPage')
+const TrainTodayPage = lazyPage(() => import('@/features/train/pages/TrainTodayPage'), 'TrainTodayPage')
+const TrainWeekPage = lazyPage(() => import('@/features/train/pages/TrainWeekPage'), 'TrainWeekPage')
+const TrainWeekMapPage = lazyPage(() => import('@/features/train/pages/TrainWeekMapPage'), 'TrainWeekMapPage')
+const TrainWeekJelekPage = lazyPage(() => import('@/features/train/pages/TrainWeekJelekPage'), 'TrainWeekJelekPage')
+const TrainWeekMozgasPage = lazyPage(() => import('@/features/train/pages/TrainWeekMozgasPage'), 'TrainWeekMozgasPage')
+const GymPage = lazyPage(() => import('@/features/train/pages/GymPage'), 'GymPage')
+const SportPage = lazyPage(() => import('@/features/train/pages/SportPage'), 'SportPage')
+const SportLogPage = lazyPage(() => import('@/features/train/pages/SportLogPage'), 'SportLogPage')
+const RunningPage = lazyPage(() => import('@/features/train/pages/RunningPage'), 'RunningPage')
+const ExercisesPage = lazyPage(() => import('@/features/train/pages/ExercisesPage'), 'ExercisesPage')
+const ExerciseStoryPage = lazyPage(() => import('@/features/train/pages/ExerciseStoryPage'), 'ExerciseStoryPage')
+const MedalsPage = lazyPage(() => import('@/features/train/pages/MedalsPage'), 'MedalsPage')
+const MesoTervPage = lazyPage(() => import('@/features/train/pages/MesoTervPage'), 'MesoTervPage')
+const MesoKonyvtarPage = lazyPage(() => import('@/features/train/pages/MesoKonyvtarPage'), 'MesoKonyvtarPage')
+const MesoFutamokPage = lazyPage(() => import('@/features/train/pages/MesoFutamokPage'), 'MesoFutamokPage')
+const MesoTemplatesPage = lazyPage(() => import('@/features/train/pages/MesoTemplatesPage'), 'MesoTemplatesPage')
+const MesoTemplateStoryPage = lazyPage(() => import('@/features/train/pages/MesoTemplateStoryPage'), 'MesoTemplateStoryPage')
+const ActiveWorkoutPage = lazyPage(() => import('@/features/train/pages/ActiveWorkoutPage'), 'ActiveWorkoutPage')
+const WorkoutReviewPage = lazyPage(() => import('@/features/train/pages/WorkoutReviewPage'), 'WorkoutReviewPage')
+const MesocyclePlannerPage = lazyPage(() => import('@/features/train/pages/MesocyclePlannerPage'), 'MesocyclePlannerPage')
+const MesocycleBuilderPage = lazyPage(() => import('@/features/train/pages/MesocycleBuilderPage'), 'MesocycleBuilderPage')
+const MesoWeekPage = lazyPage(() => import('@/features/train/pages/MesoWeekPage'), 'MesoWeekPage')
+const MesoMusclePage = lazyPage(() => import('@/features/train/pages/MesoMusclePage'), 'MesoMusclePage')
+const MesoDayPage = lazyPage(() => import('@/features/train/pages/MesoDayPage'), 'MesoDayPage')
+const MesoDayEditPage = lazyPage(() => import('@/features/train/pages/MesoDayEditPage'), 'MesoDayEditPage')
+const MesoReportPage = lazyPage(() => import('@/features/train/pages/MesoReportPage'), 'MesoReportPage')
+const MesoComparePage = lazyPage(() => import('@/features/train/pages/MesoComparePage'), 'MesoComparePage')
+const MesoTemplateEditorPage = lazyPage(() => import('@/features/train/pages/MesoTemplateEditorPage'), 'MesoTemplateEditorPage')
+const RunningBlockBuilderPage = lazyPage(() => import('@/features/train/pages/RunningBlockBuilderPage'), 'RunningBlockBuilderPage')
+const CustomWorkoutBuilderPage = lazyPage(() => import('@/features/train/pages/CustomWorkoutBuilderPage'), 'CustomWorkoutBuilderPage')
+const FuelMaiPage = lazyPage(() => import('@/features/fuel/pages/FuelMaiPage'), 'FuelMaiPage')
+const FuelLogNewPage = lazyPage(() => import('@/features/fuel/pages/FuelLogNewPage'), 'FuelLogNewPage')
+const FuelMealDetailPage = lazyPage(() => import('@/features/fuel/pages/FuelMealDetailPage'), 'FuelMealDetailPage')
+const FuelMealScorePage = lazyPage(() => import('@/features/fuel/pages/FuelMealScorePage'), 'FuelMealScorePage')
+const FuelTrendekPage = lazyPage(() => import('@/features/fuel/pages/FuelTrendekPage'), 'FuelTrendekPage')
+const LearningPage = lazyPage(() => import('@/features/fuel/pages/LearningPage'), 'LearningPage')
+const FuelKonyhaPage = lazyPage(() => import('@/features/fuel/pages/FuelKonyhaPage'), 'FuelKonyhaPage')
+const FuelStackPage = lazyPage(() => import('@/features/fuel/pages/FuelStackPage'), 'FuelStackPage')
+const FuelStackProtocolPage = lazyPage(() => import('@/features/fuel/pages/FuelStackProtocolPage'), 'FuelStackProtocolPage')
+const FuelStackAddPage = lazyPage(() => import('@/features/fuel/pages/FuelStackAddPage'), 'FuelStackAddPage')
+const FuelRecipesPage = lazyPage(() => import('@/features/fuel/pages/FuelRecipesPage'), 'FuelRecipesPage')
+const FuelKamraPage = lazyPage(() => import('@/features/fuel/pages/FuelKamraPage'), 'FuelKamraPage')
+const KamraItemDetailPage = lazyPage(() => import('@/features/fuel/pages/KamraItemDetailPage'), 'KamraItemDetailPage')
+const FuelMedicationPage = lazyPage(() => import('@/features/fuel/pages/FuelMedicationPage'), 'FuelMedicationPage')
+const RecipeDetailPage = lazyPage(() => import('@/features/fuel/pages/RecipeDetailPage'), 'RecipeDetailPage')
+const RecipeEditorPage = lazyPage(() => import('@/features/fuel/pages/RecipeEditorPage'), 'RecipeEditorPage')
+const RecipeWorkshopPage = lazyPage(() => import('@/features/fuel/pages/RecipeWorkshopPage'), 'RecipeWorkshopPage')
+const TeamFeedPage = lazyPage(() => import('@/features/insights/pages/TeamFeedPage'), 'TeamFeedPage')
+const TeamPage = lazyPage(() => import('@/features/insights/pages/TeamPage'), 'TeamPage')
+const CharacterRoomPage = lazyPage(() => import('@/features/insights/pages/CharacterRoomPage'), 'CharacterRoomPage')
+const TeamChatPage = lazyPage(() => import('@/features/insights/pages/TeamChatPage'), 'TeamChatPage')
+const BoopMenuPage = lazyPage(() => import('@/features/insights/pages/BoopMenuPage'), 'BoopMenuPage')
+const BoopAboutPage = lazyPage(() => import('@/features/insights/pages/BoopAboutPage'), 'BoopAboutPage')
+const RoladLifeEventsPage = lazyPage(() => import('@/features/insights/pages/RoladLifeEventsPage'), 'RoladLifeEventsPage')
+const PatternsPage = lazyPage(() => import('@/features/insights/pages/PatternsPage'), 'PatternsPage')
+const PatternDetailPage = lazyPage(() => import('@/features/insights/pages/PatternDetailPage'), 'PatternDetailPage')
+const MemoirPage = lazyPage(() => import('@/features/insights/pages/MemoirPage'), 'MemoirPage')
+const MemoirArchivePage = lazyPage(() => import('@/features/insights/pages/MemoirArchivePage'), 'MemoirArchivePage')
+const MemoirChapterPage = lazyPage(() => import('@/features/insights/pages/MemoirChapterPage'), 'MemoirChapterPage')
+const KnowledgeListPage = lazyPage(() => import('@/features/insights/pages/KnowledgeListPage'), 'KnowledgeListPage')
+const ChatPage = lazyPage(() => import('@/features/insights/pages/ChatPage'), 'ChatPage')
+const PredictionsPage = lazyPage(() => import('@/features/insights/pages/PredictionsPage'), 'PredictionsPage')
+const ExperimentsPage = lazyPage(() => import('@/features/insights/pages/ExperimentsPage'), 'ExperimentsPage')
+const DiagnosisListPage = lazyPage(() => import('@/features/insights/pages/DiagnosisListPage'), 'DiagnosisListPage')
+const DiagnosisDetailPage = lazyPage(() => import('@/features/insights/pages/DiagnosisDetailPage'), 'DiagnosisDetailPage')
+const CoachingHubPage = lazyPage(() => import('@/features/insights/pages/CoachingHubPage'), 'CoachingHubPage')
+const CoachingObserverPage = lazyPage(() => import('@/features/insights/pages/CoachingObserverPage'), 'CoachingObserverPage')
+const CoachingCardPage = lazyPage(() => import('@/features/insights/pages/CoachingCardPage'), 'CoachingCardPage')
+const MemoryPage = lazyPage(() => import('@/features/insights/pages/MemoryPage'), 'MemoryPage')
+const EnHubPage = lazyPage(() => import('@/features/me/pages/EnHubPage'), 'EnHubPage')
+const GoalPlannerPage = lazyPage(() => import('@/features/me/pages/GoalPlannerPage'), 'GoalPlannerPage')
+const NightPage = lazyPage(() => import('@/features/me/pages/NightPage'), 'NightPage')
+const GrowthHubPage = lazyPage(() => import('@/features/me/pages/GrowthHubPage'), 'GrowthHubPage')
+const GrowthSkillsPage = lazyPage(() => import('@/features/me/pages/GrowthSkillsPage'), 'GrowthSkillsPage')
+const HabitPage = lazyPage(() => import('@/features/me/pages/HabitPage'), 'HabitPage')
+const HabitEditPage = lazyPage(() => import('@/features/me/pages/HabitEditPage'), 'HabitEditPage')
+const ChainPage = lazyPage(() => import('@/features/me/pages/ChainPage'), 'ChainPage')
+const SzokasaidPage = lazyPage(() => import('@/features/me/pages/SzokasaidPage'), 'SzokasaidPage')
+const RoutineWizardPage = lazyPage(() => import('@/features/me/pages/RoutineWizardPage'), 'RoutineWizardPage')
+const RutinHubPage = lazyPage(() => import('@/features/me/pages/RutinHubPage'), 'RutinHubPage')
+const GrowthNaploPage = lazyPage(() => import('@/features/me/pages/GrowthNaploPage'), 'GrowthNaploPage')
+const GrowthAwardsPage = lazyPage(() => import('@/features/me/pages/GrowthAwardsPage'), 'GrowthAwardsPage')
+const JournalPage = lazyPage(() => import('@/features/me/pages/JournalPage'), 'JournalPage')
+const WeekHubPage = lazyPage(() => import('@/features/me/pages/WeekHubPage'), 'WeekHubPage')
+const WeekAnalysisPage = lazyPage(() => import('@/features/me/pages/WeekAnalysisPage'), 'WeekAnalysisPage')
+const WeekDaysPage = lazyPage(() => import('@/features/me/pages/WeekDaysPage'), 'WeekDaysPage')
+const WeekLessonsPage = lazyPage(() => import('@/features/me/pages/WeekLessonsPage'), 'WeekLessonsPage')
+const WeekDiscoveriesPage = lazyPage(() => import('@/features/me/pages/WeekDiscoveriesPage'), 'WeekDiscoveriesPage')
+const GoalsPage = lazyPage(() => import('@/features/me/pages/GoalsPage'), 'GoalsPage')
+const GoalDietPage = lazyPage(() => import('@/features/me/pages/GoalDietPage'), 'GoalDietPage')
+const GoalSegmentPage = lazyPage(() => import('@/features/me/pages/GoalSegmentPage'), 'GoalSegmentPage')
+const GoalPlansPage = lazyPage(() => import('@/features/me/pages/GoalPlansPage'), 'GoalPlansPage')
+const GoalGuardsPage = lazyPage(() => import('@/features/me/pages/GoalGuardsPage'), 'GoalGuardsPage')
+const GoalSuggestionPage = lazyPage(() => import('@/features/me/pages/GoalSuggestionPage'), 'GoalSuggestionPage')
+const CelokPage = lazyPage(() => import('@/features/me/pages/CelokPage'), 'CelokPage')
+const CelPage = lazyPage(() => import('@/features/me/pages/CelPage'), 'CelPage')
+const CelWizardPage = lazyPage(() => import('@/features/me/pages/CelWizardPage'), 'CelWizardPage')
+const JelekPage = lazyPage(() => import('@/features/me/pages/JelekPage'), 'default')
+const WeightPage = lazyPage(() => import('@/features/me/pages/WeightPage'), 'WeightPage')
+const SleepPage = lazyPage(() => import('@/features/me/pages/SleepPage'), 'SleepPage')
+const PeoplePage = lazyPage(() => import('@/features/me/pages/PeoplePage'), 'PeoplePage')
+const PeopleJeloltekPage = lazyPage(() => import('@/features/me/pages/PeopleJeloltekPage'), 'PeopleJeloltekPage')
+const PeopleKorPage = lazyPage(() => import('@/features/me/pages/PeopleKorPage'), 'PeopleKorPage')
+const PeopleEmlitesekPage = lazyPage(() => import('@/features/me/pages/PeopleEmlitesekPage'), 'PeopleEmlitesekPage')
+const PeopleHetiPage = lazyPage(() => import('@/features/me/pages/PeopleHetiPage'), 'PeopleHetiPage')
+const PersonDetailPage = lazyPage(() => import('@/features/me/pages/PersonDetailPage'), 'PersonDetailPage')
+const NotificationFeedPage = lazyPage(() => import('@/features/me/pages/NotificationFeedPage'), 'NotificationFeedPage')
+const RitualPage = lazyPage(() => import('@/features/ritual/pages/RitualPage'), 'RitualPage')
+const MindenOldalPage = lazyPage(() => import('@/app/MindenOldalPage'), 'default')
+const KarakterHubPage = lazyPage(() => import('@/features/character/pages/KarakterHubPage'), 'KarakterHubPage')
+const DimensionsPage = lazyPage(() => import('@/features/character/pages/DimensionsPage'), 'DimensionsPage')
+const DimensionPage = lazyPage(() => import('@/features/character/pages/DimensionPage'), 'DimensionPage')
+const CharacterFeedPage = lazyPage(() => import('@/features/character/pages/CharacterFeedPage'), 'CharacterFeedPage')
+const KonziliumPage = lazyPage(() => import('@/features/character/pages/KonziliumPage'), 'KonziliumPage')
+const GeptermPage = lazyPage(() => import('@/features/character/pages/GeptermPage'), 'GeptermPage')
+const FutasokPage = lazyPage(() => import('@/features/character/pages/FutasokPage'), 'FutasokPage')
+const RunPage = lazyPage(() => import('@/features/character/pages/RunPage'), 'RunPage')
+const AdatforrasokPage = lazyPage(() => import('@/features/character/pages/AdatforrasokPage'), 'AdatforrasokPage')
+const KorPage = lazyPage(() => import('@/features/character/pages/KorPage'), 'KorPage')
+const DetektorokPage = lazyPage(() => import('@/features/character/pages/DetektorokPage'), 'DetektorokPage')
+const FuelRecipeScorePage = lazyPage(() => import('@/features/fuel/pages/FuelRecipeScorePage'), 'FuelRecipeScorePage')
 
 // Design 2.0 shell (mezo-d20.1.1): /today → /nap and /insights → /mezo renames. The legacy
 // paths survive as redirects (PWA bookmarks, in-app navigate() calls not yet migrated).

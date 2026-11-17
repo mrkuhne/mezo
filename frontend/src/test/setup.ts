@@ -5,6 +5,7 @@ import { server } from '@/test/msw/server'
 import { resetMemoryRetrievalFeedbackState, resetTutorialProgressState } from '@/test/msw/handlers'
 import { setCurrentUserId } from '@/shared/lib/userScope'
 import { setLang } from '@/shared/i18n'
+import { preloadLazyPages } from '@/app/lazyPage'
 
 // The other half of the mezo-0121 load-flake policy (see vite.config.ts): findBy*/waitFor
 // default to 1s, which under whole-suite contention is the "Unable to find an element"
@@ -44,6 +45,11 @@ if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
 // request (and all mock-mode hooks, which never fetch) untouched, so the
 // existing suite is unaffected.
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
+// Route-level code splitting (mezo-9fcm): pages are `lazyPage` chunks. A test file that imports
+// the route table has registered its loaders by the time this hook runs (module evaluation comes
+// first), so resolving them here makes every page render synchronously — the state the app is in
+// after its idle warm-up. A file that never imports the router has nothing registered: a no-op.
+beforeAll(() => preloadLazyPages())
 afterEach(() => server.resetHandlers())
 // `server.resetHandlers()` only re-registers the handler list — it doesn't clear module-level
 // in-memory state a handler closes over (e.g. the tutorial-progress seen-store), so that state
