@@ -10,9 +10,6 @@ import java.util.UUID;
 
 public interface DailySummaryRepository extends JpaRepository<DailySummaryEntity, UUID> {
 
-    /** The nightly job's idempotence probe — soft-deleted rows don't count (regenerable). */
-    boolean existsByCreatedByAndSummaryDate(UUID createdBy, LocalDate summaryDate);
-
     Optional<DailySummaryEntity> findByCreatedByAndSummaryDate(UUID createdBy, LocalDate summaryDate);
 
     /** The weekly hypothesis pipeline's context window (V3.2) — the last 7 narratives. */

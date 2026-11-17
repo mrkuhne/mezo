@@ -15,9 +15,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface ExerciseFeedbackRepository extends JpaRepository<ExerciseFeedbackEntity, UUID> {
 
-    Optional<ExerciseFeedbackEntity> findByCreatedByAndWorkoutSessionIdAndExerciseId(
-        UUID createdBy, UUID workoutSessionId, UUID exerciseId);
-
     List<ExerciseFeedbackEntity> findByCreatedByAndWorkoutSessionId(UUID createdBy, UUID workoutSessionId);
 
     /** Batch feedback lookup across many instances — {@code CharacterSignalReads}' gym-day read. */
