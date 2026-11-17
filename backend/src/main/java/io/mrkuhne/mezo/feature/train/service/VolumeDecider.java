@@ -14,10 +14,13 @@ public final class VolumeDecider {
 
     public enum Lever { NONE, UP, DOWN, HOLD, DELOAD }
 
-    /** FELT_EASY, SORENESS_CLEARED and NO_SLOT are produced by later tasks, never by {@link #decide}. */
+    /**
+     * The one reason vocabulary. FELT_EASY, SORENESS_CLEARED, NO_SLOT and DELOAD_RESTORE are produced
+     * outside {@link #decide} (later tasks, or the weekly proposal itself), never by it.
+     */
     public enum Reason {
         ALL_SETS_DONE, FELT_EASY, DEFICIT_PACE, ROOM_IN_BAND, SORENESS_CLEARED, GRIND, TOO_MUCH, SETS_MISSED,
-        JOINT_PAIN, SORENESS, TIER_MAINTAIN, DELOAD, NO_SLOT, AT_CEILING
+        JOINT_PAIN, SORENESS, TIER_MAINTAIN, DELOAD, NO_SLOT, AT_CEILING, DELOAD_RESTORE
     }
 
     public record Input(int week, PriorityTier tier, Band band, int plannedSets, int loggedLastWeek,

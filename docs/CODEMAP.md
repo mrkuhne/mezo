@@ -1636,9 +1636,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **events/listeners:** `MesocycleClosed`
   - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `GymSignalCalculator`,
     `HypertrophyDriveGate`, `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`,
-    `ProvenanceEnvelope`, `RunSignalCalculator`, `RunningBlockStructure`, `RunningSeedData`, `SportSignalCalculator`,
-    `TrainSeedData`, `TrainingCommitmentCalculator`, `TrainingStreakCalculator`, `VolumeBaselineJson`,
-    `VolumeProgressionGate`, `VolumeRecomputeJson`, `WeekProposalLineJson`
+    `ProvenanceEnvelope`, `RestoreEntryJson`, `RunSignalCalculator`, `RunningBlockStructure`, `RunningSeedData`,
+    `SportSignalCalculator`, `TrainSeedData`, `TrainingCommitmentCalculator`, `TrainingStreakCalculator`,
+    `VolumeBaselineJson`, `VolumeProgressionGate`, `VolumeRecomputeJson`, `WeekProposalLineJson`
 - **Contract** `api/feature/train/train-readiness.yml` — 3 operations
   - **endpoints:** GET /api/train/readiness/today · POST /api/train/readiness/today ·
     DELETE /api/train/readiness/today

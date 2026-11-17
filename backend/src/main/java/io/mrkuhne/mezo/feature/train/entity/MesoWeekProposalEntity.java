@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.train.entity;
 
+import io.mrkuhne.mezo.feature.train.entity.json.RestoreEntryJson;
 import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalLineJson;
 import io.mrkuhne.mezo.techcore.persistence.OwnedEntity;
 import jakarta.persistence.Column;
@@ -21,8 +22,8 @@ import org.hibernate.type.SqlTypes;
 
 /**
  * The weekly change to a run's set counts as a first-class record (volume engine v2, spec §6.4):
- * one {@link WeekProposalLineJson} per changed exercise. {@code planAfter} / {@code restore} map an
- * exercise row id (string) to its sets.
+ * one {@link WeekProposalLineJson} per changed exercise. {@code planAfter} maps an exercise row id
+ * (string) to its sets; {@code restore} lists what a deload halved ({@link RestoreEntryJson}).
  *
  * <p>{@code createdBy}, {@code is_deleted} and {@code created_at} come from {@link OwnedEntity}.
  */
@@ -75,9 +76,10 @@ public class MesoWeekProposalEntity extends OwnedEntity {
     @Column(name = "plan_after", columnDefinition = "jsonb")
     private Map<String, Integer> planAfter;
 
+    /** What a deload week gave up, to be given back the week after; emptied once that happened. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Map<String, Integer> restore;
+    private List<RestoreEntryJson> restore;
 
     @Column(name = "decided_at")
     private Instant decidedAt;

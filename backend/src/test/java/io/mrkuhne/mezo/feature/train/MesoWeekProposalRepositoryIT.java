@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.json.RestoreEntryJson;
 import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalLineJson;
 import io.mrkuhne.mezo.feature.train.repository.MesoWeekProposalRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
@@ -56,14 +57,15 @@ class MesoWeekProposalRepositoryIT extends AbstractIntegrationTest {
         p.setLines(List.of(new WeekProposalLineJson(
             "l1", exerciseId, "Row", 1, "back", "sets", 3, 4, List.of("under-band", "progress"), "accepted")));
         p.setPlanAfter(Map.of(exerciseId.toString(), 4));
-        p.setRestore(Map.of(exerciseId.toString(), 3));
+        UUID catalogId = UUID.randomUUID();
+        p.setRestore(List.of(new RestoreEntryJson(exerciseId, catalogId, "Row", 1, 4, 2)));
         repository.saveAndFlush(p);
 
         MesoWeekProposalEntity read = repository.findWeekly(user, meso.getId(), 3).orElseThrow();
         assertThat(read.getLines()).containsExactly(new WeekProposalLineJson(
             "l1", exerciseId, "Row", 1, "back", "sets", 3, 4, List.of("under-band", "progress"), "accepted"));
         assertThat(read.getPlanAfter()).containsEntry(exerciseId.toString(), 4);
-        assertThat(read.getRestore()).containsEntry(exerciseId.toString(), 3);
+        assertThat(read.getRestore()).containsExactly(new RestoreEntryJson(exerciseId, catalogId, "Row", 1, 4, 2));
         assertThat(read.getDecidedAt()).isNull();
     }
 

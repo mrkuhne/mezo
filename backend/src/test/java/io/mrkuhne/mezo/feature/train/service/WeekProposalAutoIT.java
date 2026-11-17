@@ -2,13 +2,16 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.tuple;
 
+import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.json.RestoreEntryJson;
 import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalLineJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesoWeekProposalRepository;
@@ -42,6 +45,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
 
     @Autowired WorkoutService workoutService;
     @Autowired WeekProposalService proposals;
+    @Autowired TrainService trainService;
     @Autowired TrainPopulator train;
     @Autowired GoalPopulator goals;
     @Autowired DatabasePopulator databasePopulator;
@@ -208,23 +212,180 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
             assertThat(l.to()).isEqualTo(2);
             assertThat(l.reasons()).containsExactly("deload");
         });
-        assertThat(deload.getRestore()).containsExactly(Map.entry(squat.getId().toString(), 4));
+        assertThat(deload.getRestore()).containsExactly(
+            new RestoreEntryJson(squat.getId(), null, "Guggolás", 0, 4, 2));
         assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c -> {
             assertThat(c.change()).isEqualTo("Deload 5 → 3");
             assertThat(c.warning()).isTrue();
         });
 
-        // a week later: the run started one more week ago
-        MesocycleEntity later = reload(meso);
-        later.setStartDate(later.getStartDate().minusWeeks(1));
-        later.setEndDate(later.getEndDate().minusWeeks(1));
-        mesocycleRepository.saveAndFlush(later);
+        nextWeek(meso);
         workoutService.getToday(owner, null);
 
         assertThat(sets(squat)).isEqualTo(4);
         assertThat(sets(lunge)).isEqualTo(1);
-        assertThat(weekly(meso, 4).getLines()).isEmpty();
+        assertThat(weekly(meso, 4).getLines()).singleElement().satisfies(l -> {
+            assertThat(l.exerciseId()).isEqualTo(squat.getId());
+            assertThat(l.from()).isEqualTo(2);
+            assertThat(l.to()).isEqualTo(4);
+            assertThat(l.reasons()).containsExactly("deload_restore");
+            assertThat(l.decision()).isEqualTo("accepted");
+        });
         assertThat(reload(meso).getVolumeRecompute().lastRun()).isEqualTo("W4");
+        assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c ->
+            assertThat(c.change()).isEqualTo("visszaállt a könnyített hét után (3 → 5)"));
+    }
+
+    /** The owner lowered a halved exercise during the deload week: his number stands. */
+    @Test
+    void aDeloadWeekEditSurvivesTheRestore() {
+        MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        ExerciseEntity squat = exercise(mon, "Guggolás", "quad", 4);
+        ExerciseEntity ext = exercise(mon, "Lábnyújtás", "quad", 4);
+        workoutService.getToday(owner, null);
+        assertThat(sets(squat)).isEqualTo(2);
+        setSets(squat, 1); // sore knee
+
+        nextWeek(meso);
+        workoutService.getToday(owner, null);
+
+        assertThat(sets(squat)).isEqualTo(1);
+        assertThat(sets(ext)).isEqualTo(4);
+        assertThat(weekly(meso, 4).getLines()).extracting(WeekProposalLineJson::exerciseId)
+            .containsExactly(ext.getId());
+        assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c -> {
+            assertThat(c.change()).isEqualTo("visszaállt a könnyített hét után (3 → 5)");
+            assertThat(c.reason()).contains("saját számod maradt");
+        });
+    }
+
+    /** A day re-saved during the deload week re-mints its rows: they are found by identity and restored. */
+    @Test
+    void aDayEditedDuringTheDeloadIsStillRestored() {
+        MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        ExerciseEntity squat = exercise(mon, "Guggolás", "quad", 4);
+        ExerciseEntity ext = exercise(mon, "Lábnyújtás", "quad", 3);
+        workoutService.getToday(owner, null);
+        // the same two exercises re-saved through the real day edit: new rows, halved sets
+        trainService.replaceDayExercises(owner, meso.getId(), mon.getId(), List.of(
+            input("Guggolás", sets(squat)), input("Lábnyújtás", sets(ext))));
+        List<ExerciseEntity> reminted = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(owner, List.of(mon.getId()));
+        assertThat(reminted).extracting(ExerciseEntity::getId).doesNotContain(squat.getId(), ext.getId());
+        assertThat(reminted).extracting(ExerciseEntity::getWorkingSets).containsExactly(2, 2);
+
+        nextWeek(meso);
+        workoutService.getToday(owner, null);
+
+        List<ExerciseEntity> after = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(owner, List.of(mon.getId()));
+        assertThat(after).extracting(ExerciseEntity::getName, ExerciseEntity::getWorkingSets)
+            .containsExactly(tuple("Guggolás", 4), tuple("Lábnyújtás", 3));
+        assertThat(weekly(meso, 4).getLines())
+            .extracting(WeekProposalLineJson::exerciseId, WeekProposalLineJson::from, WeekProposalLineJson::to)
+            .containsExactly(tuple(after.get(0).getId(), 2, 4), tuple(after.get(1).getId(), 2, 3));
+        assertThat(weekly(meso, 4).getLines()).allSatisfy(l -> assertThat(l.reasons()).containsExactly("deload_restore"));
+    }
+
+    /** A same-group exercise added during the deload week: the restore stops at the 8-set session cap. */
+    @Test
+    void theRestoreNeverBreaksTheSessionCap() {
+        MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        ExerciseEntity squat = exercise(mon, "Guggolás", "quad", 4);
+        ExerciseEntity ext = exercise(mon, "Lábnyújtás", "quad", 4);
+        workoutService.getToday(owner, null);
+        ExerciseEntity lunge = exercise(mon, "Kitörés", "quad", 3); // day: 2 + 2 + 3 = 7
+
+        nextWeek(meso);
+        workoutService.getToday(owner, null);
+
+        assertThat(sets(squat) + sets(ext) + sets(lunge)).isEqualTo(8);
+        assertThat(sets(squat)).isEqualTo(3);
+        assertThat(sets(ext)).isEqualTo(2);
+        assertThat(sets(lunge)).isEqualTo(3);
+    }
+
+    /** A deload's restore is consumed by the first applied week after it — never given twice. */
+    @Test
+    void aRestoreIsAppliedOnlyOnce() {
+        MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        ExerciseEntity squat = exercise(mon, "Guggolás", "quad", 4);
+        workoutService.getToday(owner, null);
+        nextWeek(meso);
+        workoutService.getToday(owner, null);
+        assertThat(sets(squat)).isEqualTo(4);
+        assertThat(weekly(meso, 3).getRestore()).isEmpty();
+
+        // even if week 4 had stayed undecided (manual mode), the deload is no longer restorable
+        MesoWeekProposalEntity week4 = weekly(meso, 4);
+        week4.setStatus(MesoWeekProposalEntity.STATUS_PENDING);
+        proposalRepository.saveAndFlush(week4);
+        setSets(squat, 2);
+        nextWeek(meso);
+        workoutService.getToday(owner, null);
+
+        assertThat(sets(squat)).isEqualTo(2);
+        assertThat(weekly(meso, 5).getLines()).isEmpty();
+    }
+
+    /** Week 2 → week 4 with week 3 never opened and nothing logged: one proposal, nothing moves. */
+    @Test
+    void aSkippedWeekStepsOnceAndHolds() {
+        Back b = back(4, "emphasize", false);
+        stampLastRun(b.meso(), 2);
+
+        workoutService.getToday(owner, null);
+
+        assertThat(proposalRepository.findAll()).extracting(MesoWeekProposalEntity::getWeek).containsExactly(4);
+        assertThat(weekly(b.meso(), 4).getLines()).isEmpty();
+        assertThat(ledger(b.meso(), "back").getCurrentSets()).isEqualTo(11);
+    }
+
+    /** The deload week passed unopened: the next week neither halves nor restores. */
+    @Test
+    void aDeloadWeekThatWasNeverOpenedLeavesNoHalving() {
+        MesocycleEntity meso = run(4, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        ExerciseEntity squat = exercise(mon, "Guggolás", "quad", 4);
+        stampLastRun(meso, 2);
+
+        workoutService.getToday(owner, null);
+
+        assertThat(sets(squat)).isEqualTo(4);
+        assertThat(proposalRepository.findAll()).extracting(MesoWeekProposalEntity::getWeek).containsExactly(4);
+        assertThat(weekly(meso, 4).getLines()).isEmpty();
+    }
+
+    /** Ruling 7: two openers of the same new week (one transaction, then two) — one proposal, no
+     *  error, and each caller's run object shows the stamped week. */
+    @Test
+    void twoOpenersOfTheSameWeekGenerateOnce() {
+        Back b = back(2, "emphasize", true);
+        MesocycleEntity first = reload(b.meso());
+        MesocycleEntity second = reload(b.meso());
+
+        assertThatCode(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            proposals.generateIfDue(owner, first);
+            proposals.generateIfDue(owner, second);
+        })).doesNotThrowAnyException();
+
+        assertThat(proposalRepository.findAll()).hasSize(1);
+        assertThat(second.getCurrentWeek()).isEqualTo(2);
+        assertThat(second.getVolumeRecompute().lastRun()).isEqualTo("W2");
+        assertThat(sets(b.mon2()) + sets(b.thu2())).isEqualTo(6);
+
+        MesocycleEntity third = reload(b.meso());
+        third.setVolumeRecompute(null); // a stale copy, as a concurrent request would hold
+        third.setCurrentWeek(1);
+        assertThatCode(() -> proposals.generateIfDue(owner, third)).doesNotThrowAnyException();
+        assertThat(proposalRepository.findAll()).hasSize(1);
+        assertThat(third.getCurrentWeek()).isEqualTo(2);
+        assertThat(third.getVolumeRecompute().lastRun()).isEqualTo("W2");
+        assertThat(sets(b.mon2()) + sets(b.thu2())).isEqualTo(6);
     }
 
     @Test
@@ -340,6 +501,32 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
                 train.createLoggedSet(owner, e.getId(), instance.getId(), i++, "60", 8, 0);
             }
         }
+    }
+
+    /** "A week later": the run started one more week ago. */
+    private void nextWeek(MesocycleEntity meso) {
+        MesocycleEntity later = reload(meso);
+        later.setStartDate(later.getStartDate().minusWeeks(1));
+        later.setEndDate(later.getEndDate().minusWeeks(1));
+        mesocycleRepository.saveAndFlush(later);
+    }
+
+    private void stampLastRun(MesocycleEntity meso, int week) {
+        MesocycleEntity m = reload(meso);
+        m.setVolumeRecompute(new VolumeRecomputeJson("W" + week, "W" + (week + 1), "weekly-rollover", List.of()));
+        m.setCurrentWeek(week);
+        mesocycleRepository.saveAndFlush(m);
+    }
+
+    private void setSets(ExerciseEntity e, int sets) {
+        ExerciseEntity row = exerciseRepository.findById(e.getId()).orElseThrow();
+        row.setWorkingSets(sets);
+        exerciseRepository.saveAndFlush(row);
+    }
+
+    private static GymExerciseInput input(String name, int sets) {
+        return GymExerciseInput.builder().name(name).muscle("quad").warmupSets(2).workingSets(sets)
+            .repMin(6).repMax(8).targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND).build();
     }
 
     private int sets(ExerciseEntity e) {

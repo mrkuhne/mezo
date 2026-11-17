@@ -4,7 +4,9 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 
 /**
  * Repository for {@link MesocycleEntity}. Extends {@link JpaRepository} directly rather than the
@@ -17,6 +19,10 @@ public interface MesocycleRepository extends JpaRepository<MesocycleEntity, UUID
 
     /** Owned-by-id lookup — the goal-plan link service validates the referenced plan (read-only). */
     Optional<MesocycleEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
+    /** Owned-by-id lookup holding a row lock to commit — serialises the weekly proposal per run. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<MesocycleEntity> findLockedByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
     /** All owned mesocycles in one status — the activate flow archives the previous active ones. */
     List<MesocycleEntity> findByCreatedByAndStatusAndDeletedFalse(UUID createdBy, String status);

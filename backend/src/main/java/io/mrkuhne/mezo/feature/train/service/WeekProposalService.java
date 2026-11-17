@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
+import io.mrkuhne.mezo.feature.train.entity.json.RestoreEntryJson;
 import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalLineJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesoWeekProposalRepository;
@@ -23,11 +24,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -67,8 +70,13 @@ public class WeekProposalService {
     private final VolumeProperties props;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
 
-    /** What happened to one muscle group this week: the audit's {@code Change} is built from it. */
-    record GroupOutcome(String group, int before, int after, VolumeDecider.Result result, boolean noSlot) {
+    /**
+     * What happened to one muscle group this week: the audit's {@code Change} is built from it.
+     * {@code before} is the plan as found, {@code restored} after the post-deload restore,
+     * {@code after} after the week's decision; {@code keptOwn} = a deload-week edit of the owner's stood.
+     */
+    record GroupOutcome(String group, int before, int restored, int after, VolumeDecider.Result result,
+                        boolean noSlot, boolean keptOwn) {
         boolean changed() {
             return after != before;
         }
@@ -77,34 +85,55 @@ public class WeekProposalService {
     /** A built (persisted, not yet applied) proposal and the per-group outcomes behind it. */
     record Draft(MesoWeekProposalEntity proposal, Map<String, GroupOutcome> outcomes) {}
 
-    /** Mutates {@code meso} in place ({@code currentWeek}, {@code volumeRecompute}) and saves it. */
+    /**
+     * Serialised per run: the run row is locked ({@code SELECT … FOR UPDATE}) and the week re-checked
+     * on the locked row, so a second opener of the same new week waits and then sees it stamped. The
+     * caller's {@code meso} object gets the resulting {@code currentWeek} / {@code volumeRecompute}.
+     */
     @Transactional
     public void generateIfDue(UUID createdBy, MesocycleEntity meso) {
         if (volumeGate.getIfAvailable() == null) {
             return;
         }
-        int calWeek = MesoWeeks.clampWeek(meso.getStartDate(), meso.getWeeks());
-        if (calWeek <= parseLastRunWeek(meso.getVolumeRecompute())) {
-            return; // this calendar week is already recorded
+        if (MesoWeeks.clampWeek(meso.getStartDate(), meso.getWeeks()) <= parseLastRunWeek(meso.getVolumeRecompute())) {
+            return; // cheap pre-check on the caller's copy: this calendar week is already recorded
+        }
+        MesocycleEntity run = mesocycleRepository
+            .findLockedByIdAndCreatedByAndDeletedFalse(meso.getId(), createdBy).orElse(null);
+        if (run == null) {
+            return;
+        }
+        try {
+            generateLocked(createdBy, run);
+        } finally {
+            if (run != meso) {
+                meso.setCurrentWeek(run.getCurrentWeek());
+                meso.setVolumeRecompute(run.getVolumeRecompute());
+            }
+        }
+    }
+
+    private void generateLocked(UUID createdBy, MesocycleEntity run) {
+        int calWeek = MesoWeeks.clampWeek(run.getStartDate(), run.getWeeks());
+        if (calWeek <= parseLastRunWeek(run.getVolumeRecompute())) {
+            return; // a concurrent opener recorded it while we waited for the lock
         }
         if (calWeek <= 1) {
             // Week 1: the plan stands. Recorded once, nothing generated.
-            stamp(meso, calWeek, List.of());
+            stamp(run, calWeek, List.of());
             return;
         }
-        if (proposalRepository.findWeekly(createdBy, meso.getId(), calWeek).isPresent()) {
-            return;
+        if (proposalRepository.findWeekly(createdBy, run.getId(), calWeek).isPresent()) {
+            return; // backstop; the unique index is the last one
         }
-        restoreAfterDeload(createdBy, meso.getId(), calWeek);
-
-        Draft draft = build(createdBy, meso, calWeek);
+        Draft draft = build(createdBy, run, calWeek);
         if (MODE_AUTO.equals(props.weeklyReview().mode())) {
             apply(draft.proposal());
         } // manual mode is a later slice: the proposal stays pending and nothing is applied
 
-        volumeLedger.sync(createdBy, meso.getId());
-        appendAdjustments(createdBy, meso.getId(), calWeek, draft.outcomes());
-        stamp(meso, calWeek, draft.outcomes().values().stream().map(WeekProposalService::change).toList());
+        volumeLedger.sync(createdBy, run.getId());
+        appendAdjustments(createdBy, run.getId(), calWeek, draft.outcomes());
+        stamp(run, calWeek, draft.outcomes().values().stream().map(WeekProposalService::change).toList());
     }
 
     /**
@@ -125,17 +154,22 @@ public class WeekProposalService {
         plan.forEach(r -> working.put(r.exercise().getId(), r.exercise().getWorkingSets()));
         Map<UUID, Integer> fromSets = new LinkedHashMap<>(); // insertion order = line order
         Map<UUID, List<String>> lineReasons = new HashMap<>();
-        Map<String, Integer> restore = new LinkedHashMap<>();
+        List<RestoreEntryJson> restore = new ArrayList<>();
         Map<String, GroupOutcome> outcomes = new LinkedHashMap<>();
 
+        Map<String, Integer> beforeByGroup = new HashMap<>();
+        byGroup.forEach((group, rows) -> beforeByGroup.put(group, sum(rows, working)));
+        Set<String> keptOwn = restoreAfterDeload(createdBy, meso.getId(), calWeek, plan, working, fromSets, lineReasons);
+
         byGroup.forEach((group, rows) -> {
-            int before = sum(rows, working);
+            int before = beforeByGroup.get(group);
+            int restored = sum(rows, working);
             GroupSignals s = signals.getOrDefault(group, new GroupSignals(0, false, false, false, false));
             VolumeDecider.Result result = VolumeDecider.decide(new VolumeDecider.Input(
                 calWeek, PriorityTier.of(meso.getMusclePriorities(), group),
                 VolumeBands.band(props.baselines().get(group),
                     PriorityTier.of(meso.getMusclePriorities(), group), props.bands()),
-                before, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
+                restored, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
                 deficit, deloadPhase, props.stepEmphasize(), props.stepGrow(), props.stepDeficit()));
             List<String> reasons = result.reasons().stream().map(WeekProposalService::code).toList();
             boolean noSlot = false;
@@ -164,12 +198,14 @@ public class WeekProposalService {
                         fromSets.putIfAbsent(id, sets);
                         lineReasons.put(id, reasons);
                         working.put(id, halved);
-                        restore.put(id.toString(), sets);
+                        restore.add(new RestoreEntryJson(id, r.exercise().getCatalogId(), r.exercise().getName(),
+                            r.dayIndex(), sets, halved));
                     }
                 });
                 default -> { } // HOLD / NONE: no line
             }
-            outcomes.put(group, new GroupOutcome(group, before, sum(rows, working), result, noSlot));
+            outcomes.put(group, new GroupOutcome(group, before, restored, sum(rows, working), result, noSlot,
+                keptOwn.contains(group)));
         });
 
         Map<UUID, PlanRow> rowById = plan.stream()
@@ -228,25 +264,71 @@ public class WeekProposalService {
         proposal.setStatus(MesoWeekProposalEntity.STATUS_AUTO_APPLIED);
         proposal.setDecidedAt(Instant.now());
         proposalRepository.save(proposal);
+
+        // The deload this week gave back from is consumed: no later week can restore it again.
+        deloadToRestore(createdBy, proposal.getMesocycleId(), proposal.getWeek()).ifPresent(deload -> {
+            deload.setRestore(List.of());
+            proposalRepository.save(deload);
+        });
     }
 
     // ── steps ─────────────────────────────────────────────────────────────────────────────────
 
-    /** The week after a deload starts from the pre-deload amounts (rows that no longer exist are skipped). */
-    private void restoreAfterDeload(UUID createdBy, UUID mesoId, int calWeek) {
-        Map<String, Integer> restore = proposalRepository.findLatestApplied(createdBy, mesoId, calWeek)
-            .map(MesoWeekProposalEntity::getRestore).orElse(null);
-        if (restore == null || restore.isEmpty()) {
-            return;
+    /** The latest applied weekly proposal before {@code week}, when it still carries a restore. */
+    private Optional<MesoWeekProposalEntity> deloadToRestore(UUID createdBy, UUID mesoId, int week) {
+        return proposalRepository.findLatestApplied(createdBy, mesoId, week)
+            .filter(p -> p.getRestore() != null && !p.getRestore().isEmpty());
+    }
+
+    /**
+     * The week after a deload starts from the pre-deload amounts (spec §6.4 rule 2) — as LINES of
+     * this week's proposal, on the working copy, before the weekly decisions. Each entry finds its
+     * current row by id, else by identity on the same template day (a day edit re-mints rows). A row
+     * the owner changed since the deload keeps his number; a restore never breaks the exercise or the
+     * session cap (as much as fits, never below the current amount).
+     *
+     * @return the groups where an owner's deload-week edit stood
+     */
+    private Set<String> restoreAfterDeload(UUID createdBy, UUID mesoId, int calWeek, List<PlanRow> plan,
+                                           Map<UUID, Integer> working, Map<UUID, Integer> fromSets,
+                                           Map<UUID, List<String>> lineReasons) {
+        List<RestoreEntryJson> entries = deloadToRestore(createdBy, mesoId, calWeek)
+            .map(MesoWeekProposalEntity::getRestore).orElse(List.of());
+        Set<String> keptOwn = new HashSet<>();
+        Set<UUID> matched = new HashSet<>();
+        for (RestoreEntryJson entry : entries) {
+            String key = ExerciseHistoryResolver.identityKey(entry.catalogId(), entry.exerciseName());
+            PlanRow row = plan.stream()
+                .filter(r -> r.group() != null && r.exercise().getId().equals(entry.exerciseId()))
+                .findFirst()
+                .or(() -> plan.stream()
+                    .filter(r -> r.group() != null && r.dayIndex() == entry.dayIndex()
+                        && !matched.contains(r.exercise().getId())
+                        && key.equals(ExerciseHistoryResolver.identityKey(r.exercise())))
+                    .findFirst())
+                .orElse(null);
+            if (row == null || !matched.add(row.exercise().getId())) {
+                continue; // nothing left of it to restore
+            }
+            UUID id = row.exercise().getId();
+            int current = working.get(id);
+            if (current != entry.deloadSets()) {
+                keptOwn.add(row.group()); // the owner changed it during the deload week: his number stands
+                continue;
+            }
+            int dayTotal = plan.stream()
+                .filter(r -> row.group().equals(r.group()) && r.dayIndex() == row.dayIndex())
+                .mapToInt(r -> working.get(r.exercise().getId())).sum();
+            int fits = Math.min(Math.min(entry.sets(), props.bands().exerciseCap()),
+                current + Math.max(0, props.bands().sessionCap() - dayTotal));
+            int to = Math.max(current, fits);
+            if (to > current) {
+                fromSets.putIfAbsent(id, current);
+                lineReasons.put(id, List.of(code(Reason.DELOAD_RESTORE)));
+                working.put(id, to);
+            }
         }
-        List<ExerciseEntity> rows = new ArrayList<>();
-        restore.forEach((id, sets) -> exerciseRepository.findById(UUID.fromString(id))
-            .filter(e -> createdBy.equals(e.getCreatedBy()))
-            .ifPresent(e -> {
-                e.setWorkingSets(sets);
-                rows.add(e);
-            }));
-        exerciseRepository.saveAll(rows);
+        return keptOwn;
     }
 
     /** Appends this week's move to each changed group's (freshly synced) ledger row provenance. */
@@ -326,11 +408,13 @@ public class WeekProposalService {
         return rows.stream().mapToInt(r -> working.get(r.exercise().getId())).sum();
     }
 
-    /** One set moved on the working copy; repeated moves of one exercise merge into one {@code from → to} line. */
+    /** One set moved on the working copy; repeated moves of one exercise (a restore included) merge
+     *  into one {@code from → to} line carrying all their reasons. */
     private static void move(UUID id, int by, Map<UUID, Integer> working, Map<UUID, Integer> fromSets,
                              Map<UUID, List<String>> lineReasons, List<String> reasons) {
         fromSets.putIfAbsent(id, working.get(id));
-        lineReasons.put(id, reasons);
+        lineReasons.merge(id, reasons, (had, more) -> java.util.stream.Stream.concat(had.stream(), more.stream())
+            .distinct().toList());
         working.merge(id, by, Integer::sum);
     }
 
@@ -375,6 +459,12 @@ public class WeekProposalService {
         if (isDeload(o)) {
             return "Deload " + o.before() + " → " + o.after();
         }
+        if (o.restored() > o.before()) {
+            int step = o.after() - o.restored();
+            String arrow = " (" + o.before() + " → " + o.after() + ")";
+            return step == 0 ? "visszaállt a könnyített hét után" + arrow
+                : "visszaállt és " + (step > 0 ? "+" : "") + step + arrow;
+        }
         if (o.noSlot()) {
             return "nincs hely új sorozatnak (" + o.before() + ")";
         }
@@ -386,10 +476,17 @@ public class WeekProposalService {
     }
 
     private static String reasonText(GroupOutcome o) {
-        List<String> parts = new ArrayList<>(o.result().reasons().stream().map(WeekProposalService::hu).toList());
+        List<String> parts = new ArrayList<>();
+        if (o.restored() > o.before()) {
+            parts.add(hu(Reason.DELOAD_RESTORE));
+        }
+        if (o.keptOwn()) {
+            parts.add("a könnyített hét után a saját számod maradt");
+        }
+        parts.addAll(o.result().reasons().stream().map(WeekProposalService::hu).toList());
         if (o.noSlot()) {
             parts.add(hu(Reason.NO_SLOT));
-        } else if (o.result().lever() == Lever.UP && o.after() - o.before() < o.result().delta()) {
+        } else if (o.result().lever() == Lever.UP && o.after() - o.restored() < o.result().delta()) {
             parts.add("nincs hely több sorozatnak");
         }
         return parts.isEmpty() ? "a terv áll" : String.join(", ", parts);
@@ -411,6 +508,7 @@ public class WeekProposalService {
             case DELOAD -> "deload hét";
             case NO_SLOT -> "nincs hely új sorozatnak";
             case AT_CEILING -> "elérte a sáv tetejét";
+            case DELOAD_RESTORE -> "visszaállt a könnyített hét után";
         };
     }
 }
