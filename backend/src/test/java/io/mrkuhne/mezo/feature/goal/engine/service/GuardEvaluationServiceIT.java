@@ -11,7 +11,9 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
+import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
@@ -45,6 +47,7 @@ class GuardEvaluationServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private GoalRepository goalRepository;
     @Autowired private ExerciseSetRepository exerciseSetRepository;
+    @Autowired private MuscleGroupVolumeLogRepository volumeLogRepository;
 
     /** A trend with the given trailing-4w + whole-series rates against an 84 kg latest weight. */
     private WeightTrendResponse trend(String last4wKgPerWeek, String weeklyKgPerWeek) {
@@ -151,6 +154,71 @@ class GuardEvaluationServiceIT extends AbstractIntegrationTest {
         assertThat(status.muscle().active()).isTrue();
         assertThat(status.muscle().belowMaintenanceMuscles()).isEmpty();
         assertThat(status.muscle().minWeeklySetsPerMuscle()).isEqualTo(14);
+    }
+
+    /** A ledger row of a converted run: the sets plus the band of the muscle's tier (null band = not yet synced). */
+    private void bandedLog(UUID user, UUID mesoId, String muscle, int sets, Integer bandLow, Integer bandHigh) {
+        MuscleGroupVolumeLogEntity row = trainPopulator.createVolumeLog(user, mesoId, muscle, sets);
+        row.setBandLow(bandLow);
+        row.setBandHigh(bandHigh);
+        volumeLogRepository.saveAndFlush(row);
+    }
+
+    @Test
+    void aMaintainedQuadAtThreeIsNotFlagged() {
+        UUID user = databasePopulator.populateUser("guard-band-quad@test.local");
+        GoalEntity goal = goalWithGuards(user, List.of("muscle"));
+        MesocycleEntity meso = trainPopulator.createMesocycleWithPhase(user, "RP", "active", 8, "MAV");
+        bandedLog(user, meso.getId(), "quad", 3, 3, 7);
+
+        GuardStatus status = service.evaluate(goal, List.of(meso.getId()), trend("-0.40", "-0.40"));
+
+        assertThat(status.muscle().belowMaintenanceMuscles()).isEmpty();
+        assertThat(status.muscle().notes()).noneMatch(n -> n.contains("alatti heti volumen"));
+        assertThat(status.muscle().minWeeklySetsPerMuscle()).isEqualTo(3);
+    }
+
+    @Test
+    void aMuscleUnderItsBandIsFlagged() {
+        UUID user = databasePopulator.populateUser("guard-band-back@test.local");
+        GoalEntity goal = goalWithGuards(user, List.of("muscle"));
+        MesocycleEntity meso = trainPopulator.createMesocycleWithPhase(user, "RP", "active", 8, "MAV");
+        bandedLog(user, meso.getId(), "back", 11, 14, 22);
+
+        GuardStatus status = service.evaluate(goal, List.of(meso.getId()), trend("-0.40", "-0.40"));
+
+        assertThat(status.muscle().belowMaintenanceMuscles()).containsExactly("back");
+        assertThat(status.muscle().notes())
+            .contains("Sáv alatti heti volumen: back (11, a sáv alja 14).");
+    }
+
+    @Test
+    void aRowWithoutABandFallsBackToTheFixedFloor() {
+        UUID user = databasePopulator.populateUser("guard-band-null@test.local");
+        GoalEntity goal = goalWithGuards(user, List.of("muscle"));
+        MesocycleEntity meso = trainPopulator.createMesocycleWithPhase(user, "RP", "active", 8, "MAV");
+        bandedLog(user, meso.getId(), "vádli", 5, null, null);
+        bandedLog(user, meso.getId(), "mell", 6, null, null);
+
+        GuardStatus status = service.evaluate(goal, List.of(meso.getId()), trend("-0.40", "-0.40"));
+
+        assertThat(status.muscle().belowMaintenanceMuscles()).containsExactly("vádli");
+        assertThat(status.muscle().notes()).anyMatch(n -> n.startsWith("Karbantartás alatti heti volumen: vádli"));
+    }
+
+    @Test
+    void bandJudgedAndFallbackRowsEmitBothNotes() {
+        UUID user = databasePopulator.populateUser("guard-band-both@test.local");
+        GoalEntity goal = goalWithGuards(user, List.of("muscle"));
+        MesocycleEntity meso = trainPopulator.createMesocycleWithPhase(user, "RP", "active", 8, "MAV");
+        bandedLog(user, meso.getId(), "back", 11, 14, 22);
+        bandedLog(user, meso.getId(), "vádli", 4, null, null);
+
+        GuardStatus status = service.evaluate(goal, List.of(meso.getId()), trend("-0.40", "-0.40"));
+
+        assertThat(status.muscle().belowMaintenanceMuscles()).containsExactlyInAnyOrder("back", "vádli");
+        assertThat(status.muscle().notes()).anyMatch(n -> n.startsWith("Sáv alatti heti volumen: back (11, a sáv alja 14)"));
+        assertThat(status.muscle().notes()).anyMatch(n -> n.startsWith("Karbantartás alatti heti volumen: vádli"));
     }
 
     // ── Strength guard: a sustained −6% e1RM trend breaches, −3% (noise band) does not ────────────
