@@ -91,13 +91,55 @@ final class EdzesStore {
     /// Start today's session. Returns the outbox item that tells the server it began — the
     /// caller enqueues it, so this type never has to know what an outbox is.
     @discardableResult
-    func startWorkout(date: String) -> OutboxItem? {
+    func startWorkout(date: String, released: Set<UUID> = []) -> OutboxItem? {
         guard let today = today?.value, let template = today.templateSessionId else { return nil }
-        let fresh = WorkoutSession(today, startedAt: clock())
+        // A mission he let go of on the briefing screen takes its exercise back to last week's own numbers —
+        // never to an invented lighter weight (`withReleasedMissions`).
+        let fresh = WorkoutSession(today.withReleasedMissions(released), startedAt: clock())
         session = fresh
         saveSession()
         return .workoutStart(WorkoutStartPayload(templateSessionId: template),
                              date: date, capturedAt: clock(), id: fresh.ref)
+    }
+
+    /// Swap one exercise of the running workout. **This one write needs a connection** (see `changeExercise`):
+    /// the server mints the replacement row's id and every later set is addressed by it. Returns the error to
+    /// show when it could not be done, `nil` on success.
+    func swapExercise(_ id: UUID, for replacement: CatalogExercise, forWholeBlock: Bool) async -> String? {
+        guard let client, let session else { return "Most nincs futó edzés." }
+        guard let plan = today?.value.exercises.first(where: { $0.id == id }) ?? today?.value.exercises.first
+        else { return "A mai tervet nem érem el, így nem tudom lecserélni." }
+        // The server's own id for this workout. It may not be known yet: the start goes through the outbox, and
+        // the queue may not have drained. The server's start is **idempotent on the template day** — it returns
+        // the open instance rather than making a second one — so asking for it here is safe and is the only way
+        // a swap works on the first exercise of a session.
+        var workoutId = await client.knownWorkoutId(for: session.ref) ?? today?.value.open?.id
+        if workoutId == nil, let template = today?.value.templateSessionId {
+            workoutId = try? await client.startWorkout(templateSessionId: template, ref: session.ref).id
+        }
+        guard let workoutId else {
+            return "Az edzés még nem ért fel a szerverre. Próbáld újra, amint van net."
+        }
+        let old = session.exercises[id]
+        do {
+            let result = try await client.changeExercise(
+                workoutId: workoutId, replacing: id, with: replacement,
+                warmupSets: old?.planned.filter { $0.kind == .warmup }.count ?? plan.warmupCount,
+                workingSets: max(1, old?.planned.filter { $0.kind == .working }.count ?? plan.workingCount),
+                repMin: plan.repMin, repMax: plan.repMax, targetRIR: plan.targetRIR,
+                forWholeBlock: forWholeBlock)
+            today = Cached(value: result.today, fetchedAt: clock(), age: 0)
+            if let fresh = result.today.exercises.first(where: { $0.id == result.exerciseId }) {
+                var updated = self.session ?? session
+                updated.swap(id, for: fresh)
+                update(updated)
+            }
+            return nil
+        } catch TrainFetchError.offline {
+            return "A csere internetet kér, és most nincs. Hagyd ki a gyakorlatot, vagy írd a jegyzetbe, mit csináltál helyette."
+        } catch {
+            return "A cserét a szerver most nem fogadta el."
+        }
     }
 
     /// Put the session back where it was — used when the player closes and when the app
@@ -198,6 +240,30 @@ final class EdzesStore {
             }
         }
     }
+
+    /// What he has ever done, per exercise — the one thing that can say „ez rekordkísérlet" truthfully. Loaded
+    /// once per run and never substituted: with no records at all, no mission is called a record attempt.
+    private(set) var records: [ExerciseRecord] = []
+    private var recordsLoaded = false
+    /// Every exercise he can pick from, for the swap sheet. Loaded only when that sheet is first opened.
+    private(set) var catalog: [CatalogExercise] = []
+    private var catalogLoaded = false
+
+    func loadRecords() async {
+        guard let client, !recordsLoaded else { return }
+        recordsLoaded = true
+        records = (try? await client.records()) ?? []
+    }
+
+    func loadCatalog() async {
+        guard let client, !catalogLoaded else { return }
+        catalogLoaded = true
+        catalog = (try? await client.catalog()) ?? []
+    }
+
+    /// Today's missions: the steps the engine actually took, with his records deciding which of them is a
+    /// record attempt.
+    var missions: [TrainMission] { trainMissions(today?.value, records: records) }
 
     var blockAgeText: String? { Self.ageText(block?.age) }
 

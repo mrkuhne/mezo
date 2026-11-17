@@ -4,41 +4,53 @@ import BoopDesign
 
 // MARK: - The player (B5, the active workout)
 
-// **The design is the owner's own Lágy player, taken over almost as it is** (`IRANY.md` §11b,
-// owner 2026-11-05, and the „Mezo · Lágy irány" artifact's `jatszo()`), dressed in Napkelte —
-// which is the easy half, because that player was already dark with one vivid accent. Here the
-// accent is the Mozgás hue, and **gold is kept for records alone**.
+// **The design is the owner's own Lágy player** (`IRANY.md` §11b, and the „Mezo · Lágy irány" artifact's
+// `jatszo()`), dressed in Napkelte: a dark screen with one vivid accent — here the Mozgás hue — and **gold kept
+// for records alone**.
 //
 // Three screens and one rule between them:
 //
-//   • **lifting** — the exercise, its note VISIBLE (not behind a button), what the plan asks,
-//     the two big numbers, the sets so far, the reserve, and one primary button;
-//   • **rest** — the countdown as a BAR (never a ring) and, above all, **the verdict of the
-//     set just done**;
-//   • **the three questions** — Pumpa · érzed? / Ízületi fájdalom / Akarunk még? — asked
-//     **once per exercise, after its last set**, never between sets.
+//   • **lifting** — the exercise with its photograph, its note VISIBLE (not behind a button), the two big
+//     numbers with the reserve directly under them, the sets so far with how each one went, one primary button;
+//   • **rest** — the countdown as a BAR (never a ring) and, above all, **the verdict of the set just done**;
+//   • **the three questions** — Pumpa · érzed? / Ízületi fájdalom / Akarunk még? — asked **once per exercise,
+//     after its last set**, never between sets.
 //
-// Parity was the owner's own catch on the first Lágy round, so it is the bar here too: add and
-// drop a set, correct a set already logged, swap, skip, do it later, the note, the technique,
-// the records, finish early. What is not in this slice says so plainly instead of pretending.
+// Round 4 (owner, 2026-11-17) rewrote the lifting screen's furniture, and every line of it is his:
+//   – the „2. szett / 6 · 1. gyakorlat / 2" counter and the „legutóbb…" line are **gone** (the strip above and
+//     the set list below already say both, and he reads neither mid-set);
+//   – **the reserve is a third stepper directly under the weight and the reps**, and all three are a couple of
+//     points smaller;
+//   – the sets are a **list**, each with the mark of how it went against the plan on its right;
+//   – **everything else lives behind one „…"** — the note, the swap, the order, a set more or fewer, the
+//     records and the technique. No row of buttons under the numbers.
 //
-// The player is a **full-screen cover at page level, outside the area-page system** — it has
-// to survive the phone locking, and a room opened from the home ring has no navigation stack
-// under it.
+// Typing is new too: the numbers are fields, because a stepper alone cannot enter 62,5 kg on a machine he has
+// never used before.
+//
+// The player is a **full-screen cover at page level, outside the area-page system** — it has to survive the
+// phone locking, and a room opened from the home ring has no navigation stack under it.
 
 struct WorkoutPlayer: View {
     @Binding var session: WorkoutSession
     let hue: Hue
+    /// Exercise name (lowercased) → the server's demo still. Built by the room from today's plan and the
+    /// catalog, so a swapped-in exercise brings its own picture with it.
+    let photos: [String: String]
+    /// Everything he can swap to, and everything he has ever lifted. Loaded by the room, lazily.
+    let catalog: [CatalogExercise]
+    let records: [ExerciseRecord]
     /// Closing the player without finishing: the workout keeps running.
     let onMinimise: () -> Void
     /// Everything is logged: go to the ceremony.
     let onFinish: () -> Void
-    /// The three writes that must reach the server. The player does not know what an outbox
-    /// is; the room turns these into queued items.
+    /// The writes that must reach the server. The player does not know what an outbox is; the room turns these
+    /// into queued items.
     let onLogged: (UUID, SessionSet) -> Void
     let onExerciseDone: (UUID, ExerciseFeedback) -> Void
     let onSkipped: (UUID) -> Void
-    let onToast: (String) -> Void
+    /// The swap, which needs a connection. Returns the sentence to show when it could not be done.
+    let onSwap: (UUID, CatalogExercise, Bool) async -> String?
 
     @State private var kg: Double = 0
     @State private var reps: Int = 0
@@ -46,6 +58,13 @@ struct WorkoutPlayer: View {
     @State private var touched = false
     @State private var feedback = ExerciseFeedback()
     @State private var sheet: PlayerSheet?
+    @State private var swapping = false
+    /// Why the last swap could not be done. It stays **in the sheet**, not in a toast: a message that explains
+    /// why nothing happened has to be where he is still looking.
+    @State private var swapProblem: String?
+    /// The player's own toast. The room's lives **behind** this full-screen cover, so a message raised here
+    /// was never seen — the swap's „nincs net" among them.
+    @State private var toast: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Ticks once a second so the countdown moves; nothing else depends on it.
     @State private var now = Date()
@@ -53,10 +72,9 @@ struct WorkoutPlayer: View {
 
     var body: some View {
         ZStack {
-            // **The player is dark.** Not the page's painted sky: the owner's own rule for
-            // this surface is a dark screen with one vivid accent, and a bright sunrise
-            // behind a weight number is the opposite of a gym at 7 p.m. The hue is here as a
-            // single glow behind the head, nothing more.
+            // **The player is dark.** Not the page's painted sky: the owner's own rule for this surface is a
+            // dark screen with one vivid accent, and a bright sunrise behind a weight number is the opposite of
+            // a gym at 7 p.m. The hue is here as a single glow behind the head, nothing more.
             NK.ground.ignoresSafeArea()
             RadialGradient(colors: [hue.glow.opacity(0.22), .clear], center: .top,
                            startRadius: 0, endRadius: 420)
@@ -80,12 +98,13 @@ struct WorkoutPlayer: View {
             }
         }
         .preferredColorScheme(.dark)
+        .nkToast($toast)
         .onAppear(perform: loadCurrent)
         .onReceive(tick) { now = $0 }
         .onChange(of: session.currentExerciseId) { loadCurrent() }
-        // Every set has its own plan — a warm-up and the working sets after it are different
-        // weights. Without this the big number kept the previous set's value and he would
-        // have logged the warm-up weight three more times under „a terv szerint".
+        // Every set has its own plan — a warm-up and the working sets after it are different weights. Without
+        // this the big number kept the previous set's value and he would have logged the warm-up weight three
+        // more times under „a terv szerint".
         .onChange(of: session.progress.done) { loadCurrent() }
         .sheet(item: $sheet) { sheet(for: $0) }
     }
@@ -143,131 +162,129 @@ struct WorkoutPlayer: View {
 
     @ViewBuilder private var lifting: some View {
         if let e = session.current {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    Text("\(e.logged.count + 1). szett / \(e.setCount)")
-                        .nkFont(11, .medium, design: .monospaced).tracking(1)
-                        .foregroundStyle(hue.glow)
-                    Text("\(index + 1). gyakorlat / \(session.all.count)")
-                        .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45))
-                    Spacer(minLength: 0)
-                    // A warm-up is not the work, and a light weight on the big number means
-                    // something quite different depending on which this is.
-                    if e.plan(at: e.logged.count)?.kind == .warmup {
-                        Text("BEMELEGÍTŐ").nkFont(9, .semibold, design: .monospaced).tracking(1)
-                            .foregroundStyle(.white.opacity(0.75))
-                            .padding(.horizontal, 7).padding(.vertical, 3)
-                            .background(Capsule().fill(.white.opacity(0.12)))
+            exerciseHead(e)
+
+            // The note is on the screen while he lifts — the owner caught its absence once.
+            if let note = e.note, !note.isEmpty {
+                Button { sheet = .note(e.id) } label: {
+                    HStack(alignment: .top, spacing: 9) {
+                        NKGlyph("book-sage", .white.opacity(0.7), size: 15)
+                        Text(note).nkFont(13).foregroundStyle(.white.opacity(0.8))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .padding(12)
+                    .nkGlass()
                 }
-                Text(e.name).nkFont(30, design: .serif).foregroundStyle(.white)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                // The note is on the screen while he lifts — the owner caught its absence once.
-                if let note = e.note, !note.isEmpty {
-                    Button { sheet = .note(e.id) } label: {
-                        HStack(alignment: .top, spacing: 9) {
-                            NKGlyph("book-sage", .white.opacity(0.7), size: 15)
-                            Text(note).nkFont(13).foregroundStyle(.white.opacity(0.8))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(12)
-                        .nkGlass()
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Text(targetLine(e))
-                    .nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.55))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack(spacing: 12) {
-                NKStepper(label: "Súly · kg", value: kgText, planned: !touched, hue: hue,
-                          onDown: { kg = max(0, kg - 2.5); touched = true },
-                          onUp: { kg += 2.5; touched = true })
-                NKStepper(label: "Ismétlés", value: "\(reps)", planned: !touched, hue: hue,
-                          onDown: { reps = max(1, reps - 1); touched = true },
-                          onUp: { reps += 1; touched = true })
+                .buttonStyle(.plain)
             }
 
+            numberPads
             setList(e)
-            reserve
 
-            HStack(spacing: 10) {
-                secondary("book-sage", "Jegyzet") { sheet = .note(e.id) }
-                secondary("repeat-deep", "Csere") { sheet = .swap(e.id) }
-                // No glyph here on purpose: the kit has no "more" mark, and inventing one is a
-                // new icon that needs the owner's eye first.
-                secondary(nil, "Több") { sheet = .exerciseMenu(e.id) }
-            }
-
-            primary(touched ? "Kész a \(e.logged.count + 1). szett" : "Kész · a terv szerint") {
+            primary(touched ? "Kész \(Self.article(e.logged.count + 1)) \(e.logged.count + 1). szett"
+                            : "Kész · a terv szerint") {
                 logSet()
             }
         }
     }
 
-    private var index: Int { session.all.firstIndex { $0.id == session.currentExerciseId } ?? 0 }
+    /// The exercise: its photograph, the muscle group above its name, and the one „…" that holds everything
+    /// else he can do with it.
+    private func exerciseHead(_ e: SessionExercise) -> some View {
+        HStack(alignment: .top, spacing: 13) {
+            NKRemoteThumb(BoopConfig.mediaURL(photo(for: e)), size: 58)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 7) {
+                    Text(muscleName(e.muscle).uppercased())
+                        .nkFont(10, .medium, design: .monospaced).tracking(1.2)
+                        .foregroundStyle(hue.glow)
+                    if e.plan(at: e.logged.count)?.kind == .warmup {
+                        Text("BEMELEGÍTŐ").nkFont(9, .semibold, design: .monospaced).tracking(1)
+                            .foregroundStyle(.white.opacity(0.75))
+                            .padding(.horizontal, 7).padding(.vertical, 2)
+                            .background(Capsule().fill(.white.opacity(0.12)))
+                    }
+                }
+                Text(e.name).nkFont(26, design: .serif).foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Button { sheet = .exerciseMenu(e.id) } label: {
+                Image(systemName: "ellipsis").nkFont(15, .semibold).foregroundStyle(.white.opacity(0.85))
+                    .frame(width: 40, height: 40)
+                    .background(Circle().fill(.white.opacity(0.1)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Mit csinálunk ezzel a gyakorlattal?")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The server's own demo still for the exercise. The session model keeps only what the player needs, so
+    /// the picture is looked up by name — which also survives a swap, because the new row brings its own name.
+    private func photo(for e: SessionExercise) -> String? { photos[e.name.lowercased()] }
+
+    /// Weight and reps side by side, **the reserve directly under them** — the owner's own layout from round 4.
+    /// All three take typing as well as tapping.
+    private var numberPads: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                NKStepper(label: "Súly · kg", value: kgText, planned: !touched, hue: hue,
+                          onSet: { typed in
+                              if let v = Self.decimal(typed) { kg = max(0, v); touched = true }
+                          },
+                          onDown: { kg = max(0, kg - 2.5); touched = true },
+                          onUp: { kg += 2.5; touched = true })
+                NKStepper(label: "Ismétlés", value: "\(reps)", planned: !touched, hue: hue,
+                          onSet: { typed in
+                              if let v = Int(typed.filter(\.isNumber)), v > 0 { reps = v; touched = true }
+                          },
+                          onDown: { reps = max(1, reps - 1); touched = true },
+                          onUp: { reps += 1; touched = true })
+            }
+            NKStepper(label: "Tartalék · ismétlés", value: rir >= 5 ? "5+" : "\(rir)", hue: hue, numberSize: 30,
+                      onSet: { typed in
+                          if let v = Int(typed.filter(\.isNumber)) { rir = min(5, max(0, v)) }
+                      },
+                      onDown: { rir = max(0, rir - 1) },
+                      onUp: { rir = min(5, rir + 1) })
+        }
+    }
 
     private var kgText: String { kg > 0 ? nkKg(kg).replacingOccurrences(of: " kg", with: "") : "–" }
 
-    private func targetLine(_ e: SessionExercise) -> String {
-        var parts: [String] = []
-        if let bestKg = e.bestKg, let bestReps = e.bestReps {
-            parts.append("Legutóbb \(nkKg(bestKg)) × \(bestReps)")
-        }
-        if let plan = e.plan(at: e.logged.count) {
-            let target = [plan.targetKg.map { nkKg($0) }, plan.targetReps.map { "\($0) ismétlés" }]
-                .compactMap { $0 }.joined(separator: " × ")
-            if !target.isEmpty { parts.append("ma a cél \(target)") }
-        }
-        return parts.isEmpty ? "Az első alkalom ezzel a gyakorlattal." : parts.joined(separator: " · ")
+    /// „az 1. szett", „a 2. szett" — Hungarian takes `az` before a vowel sound, and 1 and 5 are the two set
+    /// numbers a player ever reaches that begin with one.
+    static func article(_ n: Int) -> String { (n == 1 || n == 5) ? "az" : "a" }
+
+    /// „62,5" and „62.5" both mean the same thing on a Hungarian phone.
+    static func decimal(_ text: String) -> Double? {
+        let cleaned = text.replacingOccurrences(of: ",", with: ".")
+            .filter { $0.isNumber || $0 == "." }
+        return cleaned.isEmpty ? nil : Double(cleaned)
     }
 
-    /// The sets of this exercise: done ones open for correction, the current one lit, the rest
-    /// waiting — plus the − and + that change how many there are.
+    /// The exercise's sets as a list: what was lifted, the reserve, and **how it went against the plan** on the
+    /// right. A done set opens for correction; the waiting ones show what the plan asks.
     private func setList(_ e: SessionExercise) -> some View {
-        NKFlowRow(spacing: 8, rowSpacing: 8) {
+        VStack(spacing: 7) {
             ForEach(Array(e.logged.enumerated()), id: \.element.id) { i, set in
-                Button { sheet = .editSet(set.id) } label: {
-                    VStack(spacing: 2) {
-                        Text(set.verdict == .record ? "REKORD" : "\(i + 1).")
-                            .nkFont(9, .medium, design: .monospaced).tracking(0.8)
-                            .foregroundStyle(set.verdict == .record ? Color(hex: 0xF2C94C) : .white.opacity(0.45))
-                        Text(setText(set)).nkFont(13, .medium).foregroundStyle(.white.opacity(0.9))
-                    }
-                    .padding(.horizontal, 11).padding(.vertical, 7)
-                    .background(Capsule().fill(.white.opacity(0.1)))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(i + 1). szett, \(setText(set)) — szerkesztés")
+                NKSetRow(index: i + 1, text: setText(set), reserve: set.rir.map { "\($0) tartalék" },
+                         mark: mark(set.verdict), hue: hue) { sheet = .editSet(set.id) }
             }
             ForEach(e.logged.count..<max(e.logged.count, e.setCount), id: \.self) { i in
-                VStack(spacing: 2) {
-                    Text(i == e.logged.count ? "MOST" : "\(i + 1).")
-                        .nkFont(9, .medium, design: .monospaced).tracking(0.8)
-                        .foregroundStyle(i == e.logged.count ? hue.glow : .white.opacity(0.3))
-                    Text(planText(e, i)).nkFont(13).foregroundStyle(.white.opacity(i == e.logged.count ? 0.9 : 0.4))
-                }
-                .padding(.horizontal, 11).padding(.vertical, 7)
-                .background(Capsule().fill(.white.opacity(i == e.logged.count ? 0.14 : 0.05)))
+                NKSetRow(index: i + 1, text: planText(e, i), mark: i == e.logged.count ? .now : .planned, hue: hue)
             }
-            setCountButton("minus", enabled: e.setCount - 1 >= max(1, e.logged.count)) { session.dropSet(from: e.id) }
-            setCountButton("plus", enabled: true) { session.addSet(to: e.id) }
         }
     }
 
-    private func setCountButton(_ symbol: String, enabled: Bool,
-                                action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white.opacity(enabled ? 0.75 : 0.25))
-                .frame(width: 36, height: 32)
-                .background(Capsule().fill(.white.opacity(0.08)))
+    private func mark(_ verdict: SetVerdict) -> NKSetMark {
+        switch verdict {
+        case .record: .record
+        case .above: .above
+        case .onTarget: .onTarget
+        case .below: .below
         }
-        .buttonStyle(.plain).disabled(!enabled)
-        .accessibilityLabel(symbol == "plus" ? "Egy szettel több" : "Egy szettel kevesebb")
     }
 
     private func setText(_ set: SessionSet) -> String {
@@ -278,29 +295,11 @@ struct WorkoutPlayer: View {
     private func planText(_ e: SessionExercise, _ i: Int) -> String {
         guard let plan = e.plan(at: i) else { return "–" }
         let w = plan.targetKg.map { nkKg($0).replacingOccurrences(of: " kg", with: "") } ?? "–"
-        return "\(w) × \(plan.targetReps ?? 0)"
+        guard let reps = plan.targetReps else { return w }
+        return "\(w) × \(reps)"
     }
 
-    /// „Tartalék" — how many reps he had left. 3 means three or more.
-    private var reserve: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("TARTALÉK").nkFont(10, .medium, design: .monospaced).tracking(1.2)
-                .foregroundStyle(.white.opacity(0.5))
-            HStack(spacing: 8) {
-                ForEach(0...3, id: \.self) { v in
-                    Button { rir = v } label: {
-                        Text(v == 3 ? "3+" : "\(v)")
-                            .nkFont(15, .medium)
-                            .foregroundStyle(rir == v ? NK.ground : .white.opacity(0.8))
-                            .frame(maxWidth: .infinity, minHeight: 42)
-                            .background(Capsule().fill(rir == v ? hue.glow : .white.opacity(0.08)))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(v == 3 ? "három vagy több" : "\(v)") ismétlés tartalék")
-                }
-            }
-        }
-    }
+    private var index: Int { session.all.firstIndex { $0.id == session.currentExerciseId } ?? 0 }
 
     // MARK: - Rest
 
@@ -342,7 +341,7 @@ struct WorkoutPlayer: View {
     private func verdictCard(_ set: SessionSet, exercise: SessionExercise) -> some View {
         HStack(alignment: .top, spacing: 12) {
             NKGlyph(set.verdict == .record ? "medal-sun" : "check-ink",
-                    set.verdict == .record ? Color(hex: 0xF2C94C) : hue.glow, size: 20)
+                    set.verdict == .record ? NK.gold : hue.glow, size: 20)
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(exercise.logged.count). szett · \(setText(set))")
                     .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
@@ -379,9 +378,7 @@ struct WorkoutPlayer: View {
 
     private func nextRow(_ next: (exercise: SessionExercise, setIndex: Int)) -> some View {
         HStack(spacing: 12) {
-            if NKBodyMark.canDraw(next.exercise.muscle) {
-                NKBodyMark(muscle: next.exercise.muscle, hue: hue, height: 38).frame(width: 24)
-            }
+            NKRemoteThumb(BoopConfig.mediaURL(photo(for: next.exercise)), size: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text("KÖVETKEZIK · \(next.setIndex + 1). SZETT / \(next.exercise.setCount)")
                     .nkFont(9, .medium, design: .monospaced).tracking(1)
@@ -407,12 +404,12 @@ struct WorkoutPlayer: View {
                         .foregroundStyle(.white.opacity(0.5))
                     if records(e) > 0 {
                         HStack(spacing: 4) {
-                            NKGlyph("medal-sun", Color(hex: 0xF2C94C), size: 12)
+                            NKGlyph("medal-sun", NK.gold, size: 12)
                             Text("\(records(e)) rekord").nkFont(10, .semibold, design: .monospaced)
-                                .foregroundStyle(Color(hex: 0xF2C94C))
+                                .foregroundStyle(NK.gold)
                         }
                         .padding(.horizontal, 7).padding(.vertical, 3)
-                        .background(Capsule().fill(Color(hex: 0xF2C94C).opacity(0.14)))
+                        .background(Capsule().fill(NK.gold.opacity(0.14)))
                     }
                 }
                 Text("Hogy ment?").nkFont(28, design: .serif).foregroundStyle(.white)
@@ -473,18 +470,6 @@ struct WorkoutPlayer: View {
 
     // MARK: - Shared bits
 
-    private func secondary(_ glyph: String?, _ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                if let glyph { NKGlyph(glyph, .white.opacity(0.8), size: 14) }
-                Text(label).nkFont(13).foregroundStyle(.white.opacity(0.8))
-            }
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(Capsule().fill(.white.opacity(0.08)))
-        }
-        .buttonStyle(.plain)
-    }
-
     private func primary(_ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
@@ -498,6 +483,8 @@ struct WorkoutPlayer: View {
         .buttonStyle(.plain)
         .padding(.top, 2)
     }
+
+    private func say(_ text: String) { toast = text }
 
     private func loadCurrent() {
         guard let e = session.current else { return }
@@ -520,13 +507,17 @@ struct WorkoutPlayer: View {
     // MARK: - Sheets
 
     private enum PlayerSheet: Identifiable {
-        case note(UUID), swap(UUID), exerciseMenu(UUID), editSet(UUID), workoutMenu
+        case note(UUID), swap(UUID), exerciseMenu(UUID), editSet(UUID), order, records(UUID), technique(UUID)
+        case workoutMenu
         var id: String {
             switch self {
             case .note(let id): "note-\(id)"
             case .swap(let id): "swap-\(id)"
             case .exerciseMenu(let id): "menu-\(id)"
             case .editSet(let id): "set-\(id)"
+            case .records(let id): "rec-\(id)"
+            case .technique(let id): "tech-\(id)"
+            case .order: "order"
             case .workoutMenu: "workout"
             }
         }
@@ -538,14 +529,14 @@ struct WorkoutPlayer: View {
             case .note(let id): noteSheet(id)
             case .editSet(let id): editSheet(id)
             case .exerciseMenu(let id): exerciseMenuSheet(id)
+            case .swap(let id): swapSheet(id)
+            case .records(let id): recordsSheet(id)
+            case .technique(let id): techniqueSheet(id)
+            case .order: orderSheet
             case .workoutMenu: workoutMenuSheet
-            case .swap: NKSheetFrame(hue: hue, eyebrow: "Edzés", title: "Csere") {
-                NKNotLiveYet(hue: hue, title: "A csere még nem él",
-                             line: "A gyakorlat cseréje a következő körben érkezik. Addig hagyd ki, és a jegyzetbe írd oda, mit csináltál helyette.")
-            }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
         .presentationBackground(NK.ground)
         .presentationCornerRadius(34)
         .presentationDragIndicator(.visible)
@@ -571,13 +562,24 @@ struct WorkoutPlayer: View {
         let found = session.all.compactMap { e in e.logged.first { $0.id == setId }.map { (e, $0) } }.first
         return NKSheetFrame(hue: hue, eyebrow: found?.0.name ?? "Szett", title: "Szett javítása") {
             if let (_, set) = found {
-                VStack(spacing: 14) {
-                    HStack(spacing: 12) {
-                        NKStepper(label: "Súly · kg", value: set.kg.map { nkKg($0).replacingOccurrences(of: " kg", with: "") } ?? "–",
+                VStack(spacing: 12) {
+                    HStack(spacing: 10) {
+                        NKStepper(label: "Súly · kg",
+                                  value: set.kg.map { nkKg($0).replacingOccurrences(of: " kg", with: "") } ?? "–",
                                   hue: hue,
+                                  onSet: { typed in
+                                      if let v = Self.decimal(typed) {
+                                          session.edit(setId: setId, kg: max(0, v), reps: set.reps, rir: set.rir)
+                                      }
+                                  },
                                   onDown: { session.edit(setId: setId, kg: max(0, (set.kg ?? 0) - 2.5), reps: set.reps, rir: set.rir) },
                                   onUp: { session.edit(setId: setId, kg: (set.kg ?? 0) + 2.5, reps: set.reps, rir: set.rir) })
                         NKStepper(label: "Ismétlés", value: "\(set.reps)", hue: hue,
+                                  onSet: { typed in
+                                      if let v = Int(typed.filter(\.isNumber)), v > 0 {
+                                          session.edit(setId: setId, kg: set.kg, reps: v, rir: set.rir)
+                                      }
+                                  },
                                   onDown: { session.edit(setId: setId, kg: set.kg, reps: max(1, set.reps - 1), rir: set.rir) },
                                   onUp: { session.edit(setId: setId, kg: set.kg, reps: set.reps + 1, rir: set.rir) })
                     }
@@ -589,21 +591,217 @@ struct WorkoutPlayer: View {
         }
     }
 
+    /// **Everything that is not lifting** lives here (owner, round 4). The order follows how often he reaches
+    /// for it in a gym, not how the code is organised.
     private func exerciseMenuSheet(_ id: UUID) -> some View {
-        NKSheetFrame(hue: hue, eyebrow: session.exercises[id]?.name ?? "Gyakorlat", title: "Mit csinálunk vele?") {
+        let e = session.exercises[id]
+        return NKSheetFrame(hue: hue, eyebrow: e?.name ?? "Gyakorlat", title: "Mit csinálunk vele?") {
             VStack(spacing: 0) {
                 menuRow("book-sage", "Jegyzet a gyakorlathoz") { sheet = .note(id) }
+                menuRow("repeat-deep", "Másik gyakorlatra cserélem") { sheet = .swap(id) }
+                menuRow("medal-sun", "Rekordok") { sheet = .records(id) }
+                menuRow("camera-ink", "Technika") { sheet = .technique(id) }
+                menuRow("plus-ink", "Egy szettel több") {
+                    session.addSet(to: id); sheet = nil; say("Egy szettel több")
+                }
+                if let e, e.setCount - 1 >= max(1, e.logged.count) {
+                    menuRow("scale-ink", "Egy szettel kevesebb") {
+                        session.dropSet(from: id); sheet = nil; say("Egy szettel kevesebb")
+                    }
+                }
+                menuRow("chart-deep", "Sorrend") { sheet = .order }
                 menuRow("clock-ink", "Később csinálom meg") {
-                    session.postpone(id); sheet = nil; onToast("A gyakorlat a sor végére került")
+                    session.postpone(id); sheet = nil; say("A gyakorlat a sor végére került")
                 }
                 menuRow("moon-sky", "Kihagyom ezt a gyakorlatot") {
                     let step = session.skip(id); sheet = nil
                     onSkipped(id)
-                    onToast("Kihagyva — az összegzés nem büntet érte")
+                    say("Kihagyva — az összegzés nem büntet érte")
                     if step == .finish { onFinish() }
                 }
             }
         }
+    }
+
+    /// Reordering with ▲▼ rather than a drag: in a gym, with one hand and a bar in the other, a long-press drag
+    /// inside a sheet is the wrong gesture — and the model moves by id, so a tap is exact.
+    private var orderSheet: some View {
+        NKSheetFrame(hue: hue, eyebrow: "Edzés", title: "Milyen sorrendben?") {
+            VStack(spacing: 7) {
+                ForEach(Array(session.all.enumerated()), id: \.element.id) { i, e in
+                    HStack(spacing: 10) {
+                        Text("\(i + 1).").nkFont(12, .medium, design: .monospaced)
+                            .foregroundStyle(.white.opacity(0.4)).frame(width: 22, alignment: .leading)
+                        NKRemoteThumb(BoopConfig.mediaURL(photo(for: e)), size: 34)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(e.name).nkFont(14).foregroundStyle(.white.opacity(e.skipped ? 0.4 : 0.95))
+                                .lineLimit(1)
+                            Text("\(e.logged.count) / \(e.setCount) szett")
+                                .nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.4))
+                        }
+                        Spacer(minLength: 0)
+                        moveButton("chevron.up", enabled: i > 0) { session.move(e.id, to: i - 1) }
+                        moveButton("chevron.down", enabled: i < session.all.count - 1) { session.move(e.id, to: i + 1) }
+                    }
+                    .padding(.horizontal, 11).padding(.vertical, 7)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.06)))
+                }
+                Text("A sorrend csak a mai edzésre vonatkozik — a terved nem változik tőle.")
+                    .nkFont(12).foregroundStyle(.white.opacity(0.45))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 4)
+            }
+        }
+    }
+
+    private func moveButton(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 12, weight: .bold))
+                .foregroundStyle(.white.opacity(enabled ? 0.8 : 0.22))
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(.white.opacity(0.08)))
+        }
+        .buttonStyle(.plain).disabled(!enabled)
+        .accessibilityLabel(symbol == "chevron.up" ? "Előbbre" : "Hátrébb")
+    }
+
+    /// The swap: the catalog filtered to the same muscle first, and **the one write in the player that needs a
+    /// connection** — the server mints the replacement row's id and every set after it is addressed by that id.
+    private func swapSheet(_ id: UUID) -> some View {
+        let e = session.exercises[id]
+        let muscle = e?.muscle ?? ""
+        let same = catalog.filter { $0.muscle == muscle && $0.id != id }
+        let rest = catalog.filter { $0.muscle != muscle && $0.id != id }
+        return NKSheetFrame(hue: hue, eyebrow: e?.name ?? "Gyakorlat", title: "Mire cseréljük?") {
+            if catalog.isEmpty {
+                NKNoFreshData("A gyakorlatlistát most nem érem el")
+            } else {
+                VStack(spacing: 7) {
+                    if swapping {
+                        Text("Cserélem…").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    if let swapProblem {
+                        HStack(alignment: .top, spacing: 9) {
+                            NKGlyph("bolt-peach", Color(hex: 0xE8A07A), size: 16)
+                            Text(swapProblem).nkFont(13).foregroundStyle(.white.opacity(0.85))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.08)))
+                    }
+                    ForEach(same + rest.prefix(30)) { c in
+                        Button {
+                            swapping = true
+                            swapProblem = nil
+                            Task {
+                                let problem = await onSwap(id, c, false)
+                                swapping = false
+                                swapProblem = problem
+                                if problem == nil { sheet = nil; say("\(c.name) — lecserélve") }
+                            }
+                        } label: {
+                            HStack(spacing: 11) {
+                                NKRemoteThumb(BoopConfig.mediaURL(c.imageStartURL), size: 40)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(c.name).nkFont(14).foregroundStyle(.white).lineLimit(1)
+                                    Text(muscleName(c.muscle)).nkFont(11, design: .monospaced)
+                                        .foregroundStyle(.white.opacity(0.45))
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(.white.opacity(0.35))
+                            }
+                            .padding(.horizontal, 11).padding(.vertical, 8)
+                            .frame(maxWidth: .infinity)
+                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.06)))
+                            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(swapping)
+                    }
+                    Text("A csere a mai edzésre szól, és internetet kér — a szerver adja a cserélt sor azonosítóját.")
+                        .nkFont(12).foregroundStyle(.white.opacity(0.45))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+    }
+
+    /// What he has ever done on this exercise — his own history, nothing computed here.
+    private func recordsSheet(_ id: UUID) -> some View {
+        let e = session.exercises[id]
+        let record = records.first { $0.name.caseInsensitiveCompare(e?.name ?? "") == .orderedSame }
+        return NKSheetFrame(hue: hue, eyebrow: e?.name ?? "Gyakorlat", title: "Rekordok") {
+            if let r = record {
+                VStack(alignment: .leading, spacing: 12) {
+                    if let best = r.bestSet {
+                        recordRow("A legnehezebb szett",
+                                  [best.weightKg.map { nkKg($0) }, "\(best.reps) ismétlés"].compactMap { $0 }.joined(separator: " × "),
+                                  best.date, gold: true)
+                    }
+                    if let e1rm = r.bestE1rm {
+                        recordRow("Becsült egyismétléses maximum", nkKg(e1rm), r.bestE1rmSet?.date, gold: false)
+                    }
+                    if let vol = r.bestSessionVolumeKg {
+                        recordRow("A legtöbb egy edzésen", nkKg(vol), r.bestSessionVolumeDate, gold: false)
+                    }
+                    recordRow("Eddig összesen", "\(r.sessionCount) alkalom · \(r.totalSets) szett", nil, gold: false)
+                }
+            } else {
+                NKNotLiveYet(hue: hue, title: "Ezzel még nincs előzményed",
+                             line: "Amint néhány szettet rögzítesz ebből a gyakorlatból, itt fognak állni a rekordjaid.")
+            }
+        }
+    }
+
+    private func recordRow(_ label: String, _ value: String, _ date: String?, gold: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label).nkFont(13).foregroundStyle(.white.opacity(0.65))
+                if let date { Text(date).nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.35)) }
+            }
+            Spacer(minLength: 8)
+            Text(value).nkFont(17, .medium).foregroundStyle(gold ? NK.gold : .white)
+        }
+        .padding(.vertical, 9)
+        .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The two demo stills the catalog has for the exercise — the start and the end of the movement — plus the
+    /// rep range the plan is working in. With no pictures it says so instead of showing an empty frame.
+    private func techniqueSheet(_ id: UUID) -> some View {
+        let e = session.exercises[id]
+        let c = catalog.first { $0.name.caseInsensitiveCompare(e?.name ?? "") == .orderedSame }
+        return NKSheetFrame(hue: hue, eyebrow: e?.name ?? "Gyakorlat", title: "Technika") {
+            VStack(alignment: .leading, spacing: 12) {
+                if c?.imageStartURL != nil || c?.imageEndURL != nil {
+                    HStack(spacing: 10) {
+                        techniqueFrame("Kiinduló", BoopConfig.mediaURL(c?.imageStartURL))
+                        techniqueFrame("Végpont", BoopConfig.mediaURL(c?.imageEndURL))
+                    }
+                } else {
+                    NKNoFreshData("Ehhez a gyakorlathoz nincs bemutató kép")
+                }
+                if let note = e?.note, !note.isEmpty {
+                    Text(note).nkFont(14).foregroundStyle(.white.opacity(0.8))
+                }
+                Text("A képek a gyakorlattárból jönnek. Videót a weben tudsz hozzárakni.")
+                    .nkFont(12).foregroundStyle(.white.opacity(0.45))
+            }
+        }
+    }
+
+    private func techniqueFrame(_ label: String, _ url: URL?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            NKRemoteBanner(url, hue: hue, height: 128)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            Text(label.uppercased()).nkFont(9, .medium, design: .monospaced).tracking(1.1)
+                .foregroundStyle(.white.opacity(0.5))
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var workoutMenuSheet: some View {
@@ -622,6 +820,13 @@ struct WorkoutPlayer: View {
                         .background(Capsule().fill(hue.glow))
                 }
                 .buttonStyle(.plain)
+                Button { sheet = .order } label: {
+                    Text("Sorrend")
+                        .nkFont(15).foregroundStyle(.white.opacity(0.8))
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .background(Capsule().fill(.white.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
                 Button { sheet = nil; onMinimise() } label: {
                     Text("Kis méretre — tovább fut")
                         .nkFont(15).foregroundStyle(.white.opacity(0.8))
@@ -636,13 +841,13 @@ struct WorkoutPlayer: View {
     private func menuRow(_ glyph: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                NKGlyph(glyph, .white.opacity(0.8), size: 17)
+                NKGlyph(glyph, glyph.hasSuffix("-sun") ? NK.gold : .white.opacity(0.8), size: 17)
                 Text(label).nkFont(15).foregroundStyle(.white.opacity(0.9))
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.35))
             }
-            .padding(.vertical, 14)
+            .padding(.vertical, 13)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

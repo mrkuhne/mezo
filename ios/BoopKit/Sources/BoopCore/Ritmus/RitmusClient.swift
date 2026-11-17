@@ -36,9 +36,13 @@ public struct RitmusClient: OutboxSender {
     private let train: TrainClient
 
     /// `audioDirectory`: where `VoicePayload.fileName` is resolved (the outbox directory by default).
-    public init(client: Client, audioDirectory: URL = Outbox.defaultDirectory()) {
+    ///
+    /// `train`: **the app's own training client, not a fresh one.** `TrainClient` remembers which server workout
+    /// a queued set belongs to, and that memory is what the player's online calls (the swap) read: with two
+    /// instances the queue learns the workout id and the player never sees it.
+    public init(client: Client, audioDirectory: URL = Outbox.defaultDirectory(), train: TrainClient? = nil) {
         self.client = client; self.audioDirectory = audioDirectory
-        self.train = TrainClient(client: client)
+        self.train = train ?? TrainClient(client: client)
     }
 
     /// Work a retry must not repeat while the app runs: a transcript already paid for, a conversation already created.

@@ -73,22 +73,26 @@ struct RootView: View {
             #if DEBUG
             if UserDefaults.standard.string(forKey: "preview") != nil {
                 let preview = makeClient(tokens: MemoryTokenStore("preview"), transport: PreviewTransport())
+                let previewTrain = TrainClient(client: preview)
                 link = HealthLink(client: preview, userId: me.id)
                 morning = MorningStore(client: preview, onUnauthorized: signOut)
-                ritmus = .preview(client: preview)
+                // One training client for the room AND the outbox sender: it is what remembers the server's
+                // workout id, and the player's online calls read that memory.
+                ritmus = .preview(client: preview, train: previewTrain)
                 food = FoodClient(client: preview)
-                train = TrainClient(client: preview)
+                train = previewTrain
                 cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
                 workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
                 BackgroundSyncHost.ritmus = ritmus
                 return
             }
             #endif
+            let liveTrain = TrainClient(client: session.client)
             link = HealthLink(client: session.client, userId: me.id)
             morning = MorningStore(client: session.client, onUnauthorized: signOut)
-            ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id)
+            ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id, train: liveTrain)
             food = FoodClient(client: session.client)
-            train = TrainClient(client: session.client)
+            train = liveTrain
             cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
             workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
             BackgroundSyncHost.ritmus = ritmus

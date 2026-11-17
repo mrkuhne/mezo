@@ -273,6 +273,32 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
         exercise.note = nil
     }
 
+    /// Reorder: the exercise moves to another place in **his** order. Everything logged travels with it, and the
+    /// one he is on stays the one he is on — the order is a list of ids precisely so this is safe.
+    public mutating func move(_ id: UUID, to index: Int) {
+        guard let at = order.firstIndex(of: id), order.count > 1 else { return }
+        var next = order
+        next.remove(at: at)
+        next.insert(id, at: Swift.max(0, Swift.min(index, next.count)))
+        order = next
+    }
+
+    /// The server performed the swap and sent the replacement row back: it takes the old row's place and its
+    /// logged sets (he did those sets, whatever the row is called now) but **its own set plan**, which is the
+    /// point of letting the server do it.
+    public mutating func swap(_ id: UUID, for exercise: PlannedExercise) {
+        guard let old = exercises[id] else { return }
+        let replacement = SessionExercise(id: exercise.id, name: exercise.name, muscle: exercise.muscle,
+                                          planned: exercise.sets, logged: old.logged,
+                                          adjustment: 0, skipped: old.skipped, note: exercise.note,
+                                          feedback: old.feedback,
+                                          bestKg: exercise.lastWeek?.weightKg, bestReps: exercise.lastWeek?.reps)
+        exercises.removeValue(forKey: id)
+        exercises[exercise.id] = replacement
+        if let at = order.firstIndex(of: id) { order[at] = exercise.id }
+        if currentExerciseId == id { currentExerciseId = exercise.id }
+    }
+
     /// Skip the rest and get on with it.
     public mutating func skipRest() { restEndsAt = nil }
 

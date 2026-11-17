@@ -33,13 +33,13 @@ struct PreviewTransport: ClientTransport {
             return (HTTPResponse(status: .badRequest), nil)
         }
         var sent = ""
-        if (["setSessionTime", "addFocus", "sendMessage"] + Self.foodWriteOps).contains(operationID), let body {
+        if (["setSessionTime", "addFocus", "sendMessage", "changeWorkoutExercise"] + Self.foodWriteOps).contains(operationID), let body {
             sent = String(decoding: try await Data(collecting: body, upTo: 1 << 16), as: UTF8.self)
         }
         if let reply = Self.morningReply(operationID, request, sent: sent) { return reply }
         if let reply = Self.chatReply(operationID, sent: sent) { return reply }
         if let reply = Self.foodReply(operationID, request, sent: sent) { return reply }
-        if let reply = Self.trainReply(operationID, request) { return reply }
+        if let reply = Self.trainReply(operationID, request, sent: sent) { return reply }
         assert(!Self.foodOps.contains(operationID), "PreviewTransport: unanswered op \(operationID)")
         assert(!Self.trainOps.contains(operationID), "PreviewTransport: unanswered op \(operationID)")
         if request.method == .put { return (HTTPResponse(status: .noContent), nil) }
@@ -511,11 +511,15 @@ struct PreviewTransport: ClientTransport {
     /// Every training operation the room can call; one of these falling through unanswered is a bug in this file
     /// (the simulator's network is blocked, so an unanswered call is silence, not an error the screen could show).
     private static let trainOps: Set<String> = ["getTodayWorkout", "listWorkouts", "getExerciseCatalog",
-                                                "getExerciseRecords", "listMesocycles", "getMesocycleVolumeArc"]
+                                                "getExerciseRecords", "listMesocycles", "getMesocycleVolumeArc",
+                                                "changeWorkoutExercise", "startWorkout", "logWorkoutSet",
+                                                "saveWorkoutFeedback", "skipWorkoutExercise", "finishWorkout"]
+    /// What the review has swapped so far: the plan's index → the replacement the sheet asked for.
+    nonisolated(unsafe) private static var swapped: [Int: (name: String, muscle: String, slug: String)] = [:]
 
     /// `-previewEdzesRest YES` makes today a rest day; `-previewEdzesPlain YES` turns the hypertrophy engine off
     /// (no per-set targets and no reasoning at all), which is the state that must never print an invented weight.
-    private static func trainReply(_ op: String, _ request: HTTPRequest) -> (HTTPResponse, HTTPBody?)? {
+    private static func trainReply(_ op: String, _ request: HTTPRequest, sent: String = "") -> (HTTPResponse, HTTPBody?)? {
         func json(_ text: String) -> (HTTPResponse, HTTPBody?) {
             var h = HTTPFields(); h[.contentType] = "application/json"
             return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(text))
@@ -528,14 +532,48 @@ struct PreviewTransport: ClientTransport {
                 return json(#"{"weekDoneDates":["\#(done)"]}"#)
             }
             let plain = UserDefaults.standard.bool(forKey: "previewEdzesPlain")
-            let press = previewExercise(id: previewPressId, name: "Fekvenyomás", muscle: "chest",
-                                        anchor: 77.5, target: 80, plain: plain)
-            let row = previewExercise(id: previewRowId, name: "Hajlott evezés", muscle: "back",
-                                      anchor: 70, target: 70, plain: plain)
-            return json(#"{"templateSessionId":"\#(previewSessionId)","dayLabel":"Hét","title":"Pull Day","durationEst":62,"exercises":[\#(press),\#(row)],"weekDoneDates":["\#(done)"]}"#)
+            let list = previewDay.enumerated()
+                .map { i, e in previewExercise(e, index: i, plain: plain) }
+                .joined(separator: ",")
+            return json(#"{"templateSessionId":"\#(previewSessionId)","dayLabel":"Hét","title":"Vállak és hát","durationEst":68,"exercises":[\#(list)],"weekDoneDates":["\#(done)"],"overloadSummary":{"weightUp":2,"weightDown":0,"repUp":1,"hold":2}}"#)
         case "listMesocycles": return json("[\(previewMesocycle)]")
         case "getMesocycleVolumeArc": return json(previewVolumeArc)
-        case "listWorkouts", "getExerciseCatalog", "getExerciseRecords": return json("[]")
+        case "getExerciseCatalog": return json(previewCatalog)
+        case "getExerciseRecords": return json(previewRecords)
+        case "startWorkout":
+            // The review starts a real-shaped workout, so the player's online path (the swap) can be walked:
+            // without an id from the server there is nothing to change.
+            return (HTTPResponse(status: .created, headerFields: {
+                var h = HTTPFields(); h[.contentType] = "application/json"; return h
+            }()), HTTPBody(#"{"id":"\#(previewWorkoutId)","templateSessionId":"\#(previewSessionId)","date":"\#(dayString(offset: 0))","status":"active","sets":[]}"#))
+        case "logWorkoutSet":
+            return (HTTPResponse(status: .created), nil)
+        case "saveWorkoutFeedback", "skipWorkoutExercise", "finishWorkout":
+            return (HTTPResponse(status: .noContent), nil)
+        case "changeWorkoutExercise":
+            // The review's own swap: remember what the sheet asked for, and answer with the refreshed day —
+            // the same shape the server sends, so the player's „the server mints the new id" path is exercised.
+            // The generated client pretty-prints its bodies (`"name" : "…"`), so the separator is matched
+            // loosely rather than assuming the compact form.
+            func field(_ key: String) -> String? {
+                guard let k = sent.range(of: "\"\(key)\"") else { return nil }
+                let after = sent[k.upperBound...].drop { $0 == " " }
+                guard after.first == ":" else { return nil }
+                let value = after.dropFirst().drop { $0 == " " }
+                guard value.first == "\"" else { return nil }
+                return value.dropFirst().prefix { $0 != "\"" }.description
+            }
+            guard let name = field("name"), let muscle = field("muscle"),
+                  let replaced = field("replacesExerciseId"),
+                  let index = (0..<previewDay.count).first(where: { previewExerciseId($0) == replaced })
+            else { return (HTTPResponse(status: .badRequest), nil) }
+            let slug = previewSlug(for: name)
+            swapped[index] = (name, muscle, slug)
+            let list = previewDay.enumerated().map { i, e in previewExercise(e, index: i, plain: false) }
+                .joined(separator: ",")
+            let today = #"{"templateSessionId":"\#(previewSessionId)","dayLabel":"Hét","title":"Vállak és hát","durationEst":68,"exercises":[\#(list)],"weekDoneDates":[]}"#
+            return json(#"{"exerciseId":"\#(previewExerciseId(index))","today":\#(today)}"#)
+        case "listWorkouts": return json("[]")
         default: return json("{}")
         }
     }
@@ -622,18 +660,127 @@ struct PreviewTransport: ClientTransport {
     }
 
     private static let previewSessionId = "c1c2c3d4-0001-4a2b-9c3d-111122223333"
-    private static let previewPressId = "c1c2c3d4-0002-4a2b-9c3d-111122223333"
-    private static let previewRowId = "c1c2c3d4-0003-4a2b-9c3d-111122223333"
+    private static let previewWorkoutId = "c1c2c3d4-0005-4a2b-9c3d-111122223333"
 
-    /// One exercise of the invented day. `plain` is the engine-off case: counts only, **no weights and no
-    /// reasoning**, so the room can be checked against the rule that it never invents a number.
-    private static func previewExercise(id: String, name: String, muscle: String, anchor: Double,
-                                        target: Double, plain: Bool) -> String {
-        let head = #"{"id":"\#(id)","name":"\#(name)","muscle":"\#(muscle)","warmupSets":2,"workingSets":3,"repMin":6,"repMax":10,"targetRIR":2,"type":"compound","planSlot":true"#
+    /// One exercise of the invented day. The names, the muscle keys and the picture paths are the **real
+    /// catalog's** (`/exercises/<slug>-a.jpg` on the same origin as the API), because a demo still that does not
+    /// exist would make the photo work look finished when it is not. Everything numeric is invented, and the
+    /// room says the answer's age like any other.
+    private struct PreviewExercise {
+        let name: String, muscle: String, slug: String
+        let warmups: Int, working: Int, repMin: Int, repMax: Int
+        /// Last week's working weight, and what the engine asks for today. Equal = „hold", so no mission.
+        let last: Double?, target: Double?
+        let lastReps: Int, targetReps: Int
+        let lever: String
+        let rationale: String
+        let note: String?
+        let warning: String?
+    }
+
+    /// „Vállak és hát", the Monday of the invented block: two missions on weight, one on reps, two holds.
+    private static let previewDay: [PreviewExercise] = [
+        .init(name: "Weighted Pull-Up", muscle: "back-wide", slug: "weighted-pull-up",
+              warmups: 2, working: 4, repMin: 6, repMax: 10, last: 10, target: 12.5, lastReps: 8, targetReps: 8,
+              lever: "weight", rationale: "Múlt héten 10 kg × 8 ment a tartomány tetején (RIR 2) → +2,5 kg.",
+              note: "Lassú leengedés, a lapockát előbb húzd le.", warning: nil),
+        .init(name: "Barbell Row", muscle: "back-mid", slug: "barbell-row",
+              warmups: 1, working: 3, repMin: 8, repMax: 12, last: 72.5, target: 75, lastReps: 10, targetReps: 10,
+              lever: "weight", rationale: "Három hete emelkedik a legnehezebb szett → +2,5 kg.",
+              note: nil, warning: nil),
+        .init(name: "Cable Rear-Delt Fly", muscle: "shoulder-rear", slug: "cable-rear-delt-fly",
+              warmups: 0, working: 3, repMin: 12, repMax: 15, last: 12.5, target: 10, lastReps: 12, targetReps: 12,
+              lever: "deload", rationale: "A jobb vállad két hete jelez → ma könnyítve megy.",
+              note: nil, warning: "A jobb vállad két hete érzékeny: ma könnyítve, és ha fáj, hagyd ki."),
+        .init(name: "Incline DB Curl", muscle: "biceps-long", slug: "incline-db-curl",
+              warmups: 0, working: 3, repMin: 10, repMax: 14, last: 16, target: 16, lastReps: 12, targetReps: 13,
+              lever: "rep", rationale: "A súly stabil, a tartomány alja megvan → +1 ismétlés.",
+              note: nil, warning: nil),
+        .init(name: "Lateral Raise", muscle: "shoulder-side", slug: "lateral-raise",
+              warmups: 0, working: 3, repMin: 12, repMax: 15, last: 10, target: 10, lastReps: 14, targetReps: 14,
+              lever: "hold", rationale: "Tartjuk a súlyt, a technika még épül.", note: nil, warning: nil),
+    ]
+
+    private static func previewExerciseId(_ i: Int) -> String {
+        String(format: "c1c2c3d4-01%02d-4a2b-9c3d-111122223333", i)
+    }
+
+    /// `plain` is the engine-off case: counts only, **no weights and no reasoning**, so the room can be checked
+    /// against the rule that it never invents a number.
+    /// The slug of a catalog row by name — the review's catalog is a fixed list, so a swap keeps its picture.
+    private static func previewSlug(for name: String) -> String {
+        if let own = previewDay.first(where: { $0.name == name }) { return own.slug }
+        return name.lowercased()
+            .replacingOccurrences(of: " · ", with: "-")
+            .replacingOccurrences(of: " ", with: "-")
+            .replacingOccurrences(of: "°", with: "")
+    }
+
+    private static func previewExercise(_ raw: PreviewExercise, index: Int, plain: Bool) -> String {
+        var e = raw
+        if let s = swapped[index] { e = PreviewExercise(name: s.name, muscle: s.muscle, slug: s.slug,
+                                                        warmups: raw.warmups, working: raw.working,
+                                                        repMin: raw.repMin, repMax: raw.repMax,
+                                                        last: raw.last, target: raw.target,
+                                                        lastReps: raw.lastReps, targetReps: raw.targetReps,
+                                                        lever: raw.lever, rationale: raw.rationale,
+                                                        note: nil, warning: raw.warning) }
+        let images = #","imageStartUrl":"/exercises/\#(e.slug)-a.jpg","imageEndUrl":"/exercises/\#(e.slug)-b.jpg""#
+        let note = e.note.map { #","note":"\#($0)""# } ?? ""
+        let warning = e.warning.map { #","warning":"\#($0)""# } ?? ""
+        let head = #"{"id":"\#(previewExerciseId(index))","name":"\#(e.name)","muscle":"\#(e.muscle)","warmupSets":\#(e.warmups),"workingSets":\#(e.working),"repMin":\#(e.repMin),"repMax":\#(e.repMax),"targetRIR":2,"type":"compound","planSlot":true"# + images + note + warning
         if plain { return head + "}" }
-        let move = target > anchor ? "+\(nkRound(target - anchor)) kg" : "tartjuk a súlyt"
-        let sets = #"[{"kind":"warmup","targetWeightKg":\#(nkRound(anchor * 0.5)),"targetReps":8},{"kind":"warmup","targetWeightKg":\#(nkRound(anchor * 0.75)),"targetReps":5},{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":8,"targetRIR":2},{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":8,"targetRIR":2},{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":7,"targetRIR":1}]"#
-        return head + #","anchorWeightKg":\#(nkRound(anchor)),"prescribedSets":\#(sets),"lastWeek":{"weightKg":\#(nkRound(anchor)),"reps":8,"rir":3},"rationale":"Múlt hét 8 × \#(nkRound(anchor)) kg (RIR 3) → \#(move)"}"#
+        guard let target = e.target, let last = e.last else { return head + "}" }
+        // Warm-ups land on real plates, not on 6,2 kg — the engine rounds too, and an unroundable number on the
+        // big display is exactly the kind of detail that makes the review look wrong.
+        let warm = (0..<e.warmups).map { k in
+            let w = (target * (k == 0 ? 0.5 : 0.75) / 2.5).rounded() * 2.5
+            return #"{"kind":"warmup","targetWeightKg":\#(nkRound(max(2.5, w))),"targetReps":\#(k == 0 ? 8 : 5)}"#
+        }
+        let work = (0..<e.working).map { _ in
+            #"{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":\#(e.targetReps),"targetRIR":2}"#
+        }
+        let sets = "[" + (warm + work).joined(separator: ",") + "]"
+        let delta = e.lever == "weight" ? #","deltaKg":\#(nkRound(target - last))"#
+            : (e.lever == "rep" ? #","deltaReps":\#(e.targetReps - e.lastReps)"# : "")
+        let progression = #","progression":{"lever":"\#(e.lever)"\#(delta),"targetWeightKg":\#(nkRound(target)),"targetReps":\#(e.targetReps),"rationale":"\#(e.rationale)"}"#
+        return head + #","anchorWeightKg":\#(nkRound(last)),"prescribedSets":\#(sets),"lastWeek":{"weightKg":\#(nkRound(last)),"reps":\#(e.lastReps),"rir":2},"rationale":"\#(e.rationale)""# + progression + "}"
+    }
+
+    /// The swap sheet's list: today's own exercises plus a handful of real alternatives per muscle.
+    private static var previewCatalog: String {
+        let extras: [(String, String, String)] = [
+            ("Lat Pulldown · Neutral", "back-wide", "lat-pulldown-neutral"),
+            ("Chin-Up", "back-wide", "chin-up"),
+            ("T-Bar Row", "back-mid", "t-bar-row"),
+            ("Seated Cable Row · Neutral", "back-mid", "seated-cable-row-neutral"),
+            ("Single-Arm DB Row", "back-mid", "single-arm-db-row"),
+            ("Face Pull", "shoulder-rear", "face-pull"),
+            ("Bent-Over Reverse Fly", "shoulder-rear", "bent-over-reverse-fly"),
+            ("Cable Lateral Raise", "shoulder-side", "cable-lateral-raise"),
+            ("Preacher Curl", "biceps-short", "preacher-curl"),
+            ("Cable Curl", "biceps-long", "cable-curl"),
+        ]
+        let own = previewDay.enumerated().map { i, e in (e.name, e.muscle, e.slug, previewExerciseId(i)) }
+        let rest = extras.enumerated().map { i, e in (e.0, e.1, e.2, String(format: "c1c2c3d4-02%02d-4a2b-9c3d-111122223333", i)) }
+        let rows = (own + rest).map { r in
+            #"{"id":"\#(r.3)","slug":"\#(r.2)","name":"\#(r.0)","muscle":"\#(r.1)","type":"compound","stim":0.8,"fatigue":0.5,"imageStartUrl":"/exercises/\#(r.2)-a.jpg","imageEndUrl":"/exercises/\#(r.2)-b.jpg","editable":false,"mediaEditable":false,"authoredByMe":false}"#
+        }
+        return "[" + rows.joined(separator: ",") + "]"
+    }
+
+    /// His history on today's exercises — enough for the records sheet, and for one of the missions to be a
+    /// real record attempt (the pull-up's best is 10 kg, today asks for 12,5).
+    private static var previewRecords: String {
+        let rows = previewDay.enumerated().map { i, e -> String in
+            // All-time best: above last week for most of them, and exactly last week for the first — so the
+            // invented day has one real record attempt and one plain overload, which is the honest mix.
+            let best = (e.last ?? 0) * (i == 0 ? 1 : 1.1)
+            let day = dayString(offset: -7)
+            let set = #"{"weightKg":\#(nkRound(best)),"reps":\#(e.lastReps),"date":"\#(day)"}"#
+            return #"{"catalogId":"\#(previewExerciseId(i))","name":"\#(e.name)","muscle":"\#(e.muscle)","type":"compound","bestSet":\#(set),"bestE1rm":{"value":\#(nkRound(best * 1.3)),"set":\#(set)},"bestSessionVolume":{"volumeKg":\#(nkRound(best * Double(e.working * e.lastReps))),"date":"\#(day)"},"totalVolume":\#(nkRound(best * 420)),"totalSets":\#(42 + i * 7),"totalReps":\#(380 + i * 30),"sessionCount":\#(12 + i),"repRecords":[\#(set)],"recentTopSets":[\#(set)],"e1rmSeries":[]}"#
+        }
+        return "[" + rows.joined(separator: ",") + "]"
     }
 
     /// A weight on the wire without a trailing `.0`, so the invented day reads like the server's own numbers.

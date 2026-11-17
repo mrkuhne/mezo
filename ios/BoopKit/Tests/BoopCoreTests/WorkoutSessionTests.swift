@@ -221,3 +221,59 @@ struct WorkoutSessionTests {
         #expect(s.step == .set)
     }
 }
+
+/// Round 4's two additions to the session: reordering, and the swap the **server** performs.
+struct WorkoutSessionOrderTests {
+    let a = UUID(uuidString: "f1f2f3f4-0001-4a2b-9c3d-111122223333")!
+    let b = UUID(uuidString: "f1f2f3f4-0002-4a2b-9c3d-111122223333")!
+    let c = UUID(uuidString: "f1f2f3f4-0003-4a2b-9c3d-111122223333")!
+
+    func exercise(_ id: UUID, _ name: String) -> PlannedExercise {
+        PlannedExercise(id: id, name: name, muscle: "back", type: .compound,
+                        sets: [PrescribedSet(kind: .working, targetKg: 80, targetReps: 8),
+                               PrescribedSet(kind: .working, targetKg: 80, targetReps: 8)],
+                        warmupCount: 0, workingCount: 2, repMin: 6, repMax: 10, targetRIR: 2)
+    }
+
+    func session() -> WorkoutSession {
+        WorkoutSession(TodayWorkout(title: "Pull", exercises: [exercise(a, "A"), exercise(b, "B"), exercise(c, "C")]))
+    }
+
+    @Test func movingAnExerciseChangesOnlyTheOrder() {
+        var s = session()
+        _ = s.log(kg: 80, reps: 8, rir: 2)        // one set on A
+        s.move(c, to: 0)
+        #expect(s.all.map(\.id) == [c, a, b])
+        #expect(s.exercises[a]?.logged.count == 1)   // what he did travels with the row
+        #expect(s.currentExerciseId == a)            // and he is still on the one he was on
+    }
+
+    @Test func movingPastTheEndsIsClamped() {
+        var s = session()
+        s.move(a, to: 99)
+        #expect(s.all.map(\.id) == [b, c, a])
+        s.move(a, to: -5)
+        #expect(s.all.map(\.id) == [a, b, c])
+    }
+
+    @Test func theServersSwapKeepsThePlaceAndTheSetsButTakesTheNewPlan() {
+        let replacement = UUID()
+        var s = session()
+        _ = s.log(kg: 80, reps: 8, rir: 2)
+        let fresh = PlannedExercise(id: replacement, name: "Lat Pulldown", muscle: "back-wide", type: .compound,
+                                    sets: [PrescribedSet(kind: .working, targetKg: 60, targetReps: 12),
+                                           PrescribedSet(kind: .working, targetKg: 60, targetReps: 12),
+                                           PrescribedSet(kind: .working, targetKg: 60, targetReps: 12)],
+                                    warmupCount: 0, workingCount: 3, repMin: 10, repMax: 14, targetRIR: 2,
+                                    lastWeek: LastWeekSet(weightKg: 57.5, reps: 12, rir: 2))
+        s.swap(a, for: fresh)
+
+        #expect(s.all.map(\.id) == [replacement, b, c])
+        #expect(s.currentExerciseId == replacement)
+        #expect(s.exercises[replacement]?.logged.count == 1)       // he did that set, whatever it is called now
+        #expect(s.exercises[replacement]?.setCount == 3)           // the replacement's own set plan
+        #expect(s.exercises[replacement]?.plan(at: 0)?.targetKg == 60)
+        #expect(s.exercises[replacement]?.bestKg == 57.5)
+        #expect(s.exercises[a] == nil)
+    }
+}

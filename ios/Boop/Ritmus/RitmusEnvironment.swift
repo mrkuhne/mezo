@@ -258,11 +258,12 @@ final class RitmusEnvironment {
     }
 
     /// The real wiring: the Boop API client, HealthKit for the snapshot, the user's own directories.
-    static func live(client: Client, health: HealthReader, userId: UUID) -> RitmusEnvironment {
+    static func live(client: Client, health: HealthReader, userId: UUID,
+                     train: TrainClient? = nil) -> RitmusEnvironment {
         let dirs = directories(for: userId)
         // The outbox directory doubles as the audio directory AND the meal-photo directory (`MealDraftSender` and
         // `FoodOutbox` look for `meal-<id>.jpg` there): all of them must stay the same folder.
-        let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox)
+        let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox, train: train)
         let snapshots = SnapshotBuilder(reader: health)
         let calendarReader = CalendarKitReader()
         let env = RitmusEnvironment(

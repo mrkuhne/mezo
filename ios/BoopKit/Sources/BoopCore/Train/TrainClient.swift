@@ -123,6 +123,44 @@ public struct TrainClient: Sendable {
         }
     }
 
+    // MARK: - Csere
+
+    /// Swap one exercise of the **running** workout for another, and get the refreshed day back.
+    ///
+    /// This one write does not go through the outbox, and that is deliberate. The server creates a new
+    /// instance-scoped exercise row and answers with **its** id; every set logged afterwards is addressed by that
+    /// id. Queueing the swap would mean queueing writes against an id that does not exist yet and rewriting their
+    /// payloads when it arrives — one lost map and a whole exercise's sets land on the wrong row, or nowhere. So
+    /// the swap asks for a connection, says so when there is none, and everything else in the player stays
+    /// offline-first. (`scope`: `TODAY` touches this session only; `MESO` also rewrites the template day.)
+    @discardableResult
+    public func changeExercise(workoutId: UUID, replacing: UUID?, with exercise: CatalogExercise,
+                               warmupSets: Int, workingSets: Int, repMin: Int, repMax: Int, targetRIR: Int,
+                               forWholeBlock: Bool = false) async throws -> (exerciseId: UUID, today: TodayWorkout) {
+        try await call {
+            let body = Components.Schemas.WorkoutExerciseChangeRequest(
+                catalogId: exercise.id.wire, name: exercise.name, muscle: exercise.muscle,
+                _type: .init(rawValue: exercise.type.rawValue) ?? .compound,
+                warmupSets: warmupSets, workingSets: workingSets, repMin: repMin, repMax: repMax,
+                targetRIR: targetRIR, scope: forWholeBlock ? .MESO : .TODAY,
+                replacesExerciseId: replacing?.wire)
+            switch try await client.changeWorkoutExercise(path: .init(id: workoutId.wire), body: .json(body)) {
+            case .ok(let ok):
+                let r = try ok.body.json
+                guard let id = UUID(uuidString: r.exerciseId) else { throw TrainFetchError.server }
+                return (id, Self.map(r.today))
+            case .conflict: throw TrainFetchError.conflict(code: nil, workoutId: nil)
+            case .notFound: throw TrainFetchError.notFound
+            case .badRequest: throw TrainFetchError.rejected
+            case .unauthorized: throw TrainFetchError.unauthorized
+            case .undocumented: throw TrainFetchError.server
+            }
+        }
+    }
+
+    /// The server's id for a workout started in this run, when the player needs it for an online call.
+    public func knownWorkoutId(for ref: UUID) async -> UUID? { await memo.id(for: ref) }
+
     // MARK: - Mapping
 
     static func map(_ r: Components.Schemas.WorkoutTodayResponse) -> TodayWorkout {

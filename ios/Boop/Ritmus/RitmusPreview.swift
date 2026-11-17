@@ -9,7 +9,7 @@ import BoopCore
 /// with a journal line); then, and with `-previewPhase napkozben|este`, the day already has a morning and a noon
 /// check-in, as in the approved spike. Invented calendar events and past goals feed the goal chips.
 extension RitmusEnvironment {
-    static func preview(client: Client) -> RitmusEnvironment {
+    static func preview(client: Client, train: TrainClient? = nil) -> RitmusEnvironment {
         let root = URL.cachesDirectory.appendingPathComponent("boop-preview-ritmus", isDirectory: true)
         try? FileManager.default.removeItem(at: root)
         let open = UserDefaults.standard.string(forKey: "previewOpen") ?? ""
@@ -19,7 +19,7 @@ extension RitmusEnvironment {
         let launched = Date()
         let start = opening ? Calendar.current.date(bySettingHour: 16, minute: 2, second: 0, of: launched) ?? launched
             : closing ? Calendar.current.date(bySettingHour: 21, minute: 32, second: 0, of: launched) ?? launched : launched
-        let ritmus = RitmusClient(client: client, audioDirectory: root.appendingPathComponent("outbox"))
+        let ritmus = RitmusClient(client: client, audioDirectory: root.appendingPathComponent("outbox"), train: train)
         let env = RitmusEnvironment(
             ledgerDirectory: root.appendingPathComponent("ledger"), outboxDirectory: root.appendingPathComponent("outbox"),
             sender: ritmus,

@@ -198,18 +198,28 @@ public struct NKStepper: View {
     let value: String
     let planned: Bool
     let hue: Hue
+    /// The size of the number. The owner asked for the three buttons a touch smaller on 2026-11-17 — a couple of
+    /// points, not a redesign — so the default came down from 44 and the row of three fits a 320 pt phone.
+    let numberSize: CGFloat
+    /// Typing instead of tapping. When it is given, the number itself is a field: the owner's catch was that a
+    /// stepper alone cannot enter 62,5 kg on a machine he has never used. `nil` keeps it read-only.
+    let onSet: (@MainActor @Sendable (String) -> Void)?
     let onDown: @MainActor @Sendable () -> Void
     let onUp: @MainActor @Sendable () -> Void
 
-    public init(label: String, value: String, planned: Bool = false, hue: Hue,
+    @State private var draft = ""
+    @FocusState private var editing: Bool
+
+    public init(label: String, value: String, planned: Bool = false, hue: Hue, numberSize: CGFloat = 40,
+                onSet: (@MainActor @Sendable (String) -> Void)? = nil,
                 onDown: @escaping @MainActor @Sendable () -> Void,
                 onUp: @escaping @MainActor @Sendable () -> Void) {
         self.label = label; self.value = value; self.planned = planned; self.hue = hue
-        self.onDown = onDown; self.onUp = onUp
+        self.numberSize = numberSize; self.onSet = onSet; self.onDown = onDown; self.onUp = onUp
     }
 
     public var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 7) {
             HStack(spacing: 5) {
                 Text(label.uppercased()).nkFont(10, .medium, design: .monospaced).tracking(1.2)
                 if planned {
@@ -219,21 +229,17 @@ public struct NKStepper: View {
             }
             .foregroundStyle(.white.opacity(0.5))
 
-            Text(value)
-                .nkFont(44, .medium)
-                .foregroundStyle(planned ? .white.opacity(0.62) : hue.glow)
-                .contentTransition(.numericText())
-                .lineLimit(1).minimumScaleFactor(0.6)
+            number
 
-            HStack(spacing: 10) {
+            HStack(spacing: 9) {
                 stepButton("minus", action: onDown)
                 stepButton("plus", action: onUp)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
+        .padding(.vertical, 12)
         .nkGlass()
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("\(label): \(value)")
         .accessibilityAdjustableAction { direction in
             switch direction {
@@ -244,16 +250,50 @@ public struct NKStepper: View {
         }
     }
 
+    @ViewBuilder private var number: some View {
+        if let onSet {
+            TextField("", text: $draft)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.center)
+                .focused($editing)
+                .nkFont(numberSize, .medium)
+                .foregroundStyle(editing ? hue.glow : (planned ? .white.opacity(0.62) : hue.glow))
+                .lineLimit(1).minimumScaleFactor(0.6)
+                .frame(height: numberSize * 1.18)
+                .accessibilityLabel("\(label), beírható")
+                .onAppear { draft = value }
+                // While he types, the field is his; the moment he leaves it the typed value is committed and the
+                // page's own text takes over again — so a tap on „+" after typing still steps from what he typed.
+                .onChange(of: value) { if !editing { draft = value } }
+                .onChange(of: editing) { _, now in if now { draft = value } else { onSet(draft); draft = value } }
+                .toolbar {
+                    if editing {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Kész") { editing = false }
+                        }
+                    }
+                }
+        } else {
+            Text(value)
+                .nkFont(numberSize, .medium)
+                .foregroundStyle(planned ? .white.opacity(0.62) : hue.glow)
+                .contentTransition(.numericText())
+                .lineLimit(1).minimumScaleFactor(0.6)
+                .frame(height: numberSize * 1.18)
+        }
+    }
+
     private func stepButton(_ symbol: String, action: @escaping @MainActor @Sendable () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.9))
-                .frame(width: 54, height: 40)
+                .frame(width: 50, height: 37)
                 .background(Capsule().fill(.white.opacity(0.1)))
         }
         .buttonStyle(.plain)
-        .accessibilityHidden(true)
+        .accessibilityLabel(symbol == "plus" ? "Több" : "Kevesebb")
     }
 }
 
@@ -350,7 +390,7 @@ public struct NKSetStrip: View {
 
     private func colour(_ group: Group, _ i: Int) -> Color {
         if group.skipped { return .white.opacity(0.07) }
-        if group.records.contains(i) { return Color(hex: 0xF2C94C) }   // gold, and only for a record
+        if group.records.contains(i) { return NK.gold }   // gold, and only for a record
         if i < group.done { return hue.glow }
         if group.current == i { return .white.opacity(0.55) }
         return .white.opacity(0.14)
@@ -360,5 +400,229 @@ public struct NKSetStrip: View {
         let done = groups.filter { !$0.skipped }.reduce(0) { $0 + $1.done }
         let total = groups.filter { !$0.skipped }.reduce(0) { $0 + $1.sets }
         return "\(done) / \(total) szett kész"
+    }
+}
+
+// MARK: - The briefing and the set list (owner round 4, 2026-11-17)
+
+/// How one set turned out, as the player's set list marks it on the right. It is the kit's own small vocabulary
+/// rather than `BoopCore`'s `SetVerdict`, because the design package knows nothing about the training models.
+public enum NKSetMark: Equatable, Sendable {
+    /// Beat his own best — the one place gold is allowed.
+    case record
+    case above, onTarget, below
+    /// Not done yet: the plan's own numbers, waiting.
+    case planned
+    /// The set he is on.
+    case now
+
+    var glyph: String? {
+        switch self {
+        case .record: "medal-sun"
+        case .above: "chart-deep"
+        case .onTarget: "check-ink"
+        case .below: "back-cream"
+        case .planned, .now: nil
+        }
+    }
+
+    var word: String {
+        switch self {
+        case .record: "rekord"
+        case .above: "a terv fölött"
+        case .onTarget: "a terv szerint"
+        case .below: "a terv alatt"
+        case .planned: "még hátra"
+        case .now: "most jön"
+        }
+    }
+}
+
+/// One line of the player's set list: which set it is, what was lifted, the reserve, and **on the right how it
+/// went against what the plan asked** (owner, 2026-11-17: *„a szett mellett jobb oldalon mutassuk, hogy az
+/// elvárthoz képest alá logoltunk, fölé logoltunk vagy medált kaptunk"*).
+public struct NKSetRow: View {
+    let index: Int
+    let text: String
+    let reserve: String?
+    let mark: NKSetMark
+    let hue: Hue
+    let onTap: (@MainActor @Sendable () -> Void)?
+
+    public init(index: Int, text: String, reserve: String? = nil, mark: NKSetMark, hue: Hue,
+                onTap: (@MainActor @Sendable () -> Void)? = nil) {
+        self.index = index; self.text = text; self.reserve = reserve; self.mark = mark
+        self.hue = hue; self.onTap = onTap
+    }
+
+    public var body: some View {
+        let row = HStack(spacing: 12) {
+            Text("\(index).")
+                .nkFont(12, .medium, design: .monospaced)
+                .foregroundStyle(mark == .now ? hue.glow : .white.opacity(0.4))
+                .frame(width: 20, alignment: .leading)
+            Text(text)
+                .nkFont(15, .medium)
+                .foregroundStyle(.white.opacity(waiting ? 0.45 : 0.95))
+            if let reserve {
+                Text(reserve).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.4))
+            }
+            Spacer(minLength: 6)
+            if let glyph = mark.glyph {
+                HStack(spacing: 5) {
+                    NKGlyph(glyph, mark == .record ? NK.gold : .white.opacity(0.75), size: 14)
+                    Text(mark.word)
+                        .nkFont(11, design: .monospaced)
+                        .foregroundStyle(mark == .record ? NK.gold : .white.opacity(0.55))
+                }
+            } else {
+                Text(mark.word)
+                    .nkFont(11, design: .monospaced)
+                    .foregroundStyle(mark == .now ? hue.glow : .white.opacity(0.3))
+            }
+        }
+        .padding(.horizontal, 13)
+        .frame(minHeight: 42)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .fill(.white.opacity(mark == .now ? 0.13 : waiting ? 0.04 : 0.08)))
+        .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+
+        if let onTap {
+            Button(action: onTap) { row }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(index). szett, \(text), \(mark.word) — szerkesztem")
+        } else {
+            row.accessibilityElement(children: .combine)
+        }
+    }
+
+    private var waiting: Bool { mark == .planned }
+}
+
+/// „70–85 perc" against a 0–90 minute axis: the one number the briefing leads with. The estimate is the
+/// server's own `durationEst`; the band around it is the ±10 % the page says out loud, never a guess the page
+/// invents on its own.
+public struct NKTimeRange: View {
+    let minutes: Int
+    let hue: Hue
+    let caption: String
+    private let axis = 90.0
+
+    public init(minutes: Int, hue: Hue, caption: String = "a saját tempód alapján") {
+        self.minutes = minutes; self.hue = hue; self.caption = caption
+    }
+
+    private var low: Int { max(1, Int((Double(minutes) * 0.9).rounded())) }
+    private var high: Int { Int((Double(minutes) * 1.1).rounded()) }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    Text("\(low)–\(high)").nkFont(38, .medium).foregroundStyle(.white)
+                    Text("perc").nkFont(14).foregroundStyle(.white.opacity(0.6))
+                }
+                Spacer(minLength: 8)
+                Text(caption)
+                    .nkFont(12).foregroundStyle(.white.opacity(0.5))
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 110)
+            }
+            GeometryReader { geo in
+                let w = geo.size.width
+                let a = min(1, Double(low) / axis), b = min(1, Double(high) / axis)
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.1))
+                    Capsule().fill(hue.glow)
+                        .frame(width: max(6, w * (b - a)))
+                        .offset(x: w * a)
+                }
+            }
+            .frame(height: 8)
+            HStack {
+                ForEach([0, 30, 60], id: \.self) { m in
+                    Text("\(m)").nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.35))
+                    Spacer(minLength: 0)
+                }
+                Text("90 perc").nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.35))
+            }
+        }
+        .padding(16)
+        .nkGlass()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Várható idő \(low)–\(high) perc, \(caption)")
+    }
+}
+
+/// One card of „Mit vállalsz ma?": the exercise's own photo, what the engine is asking for, and the two taps —
+/// *miért ez?* and *vállalom / elengedtem*.
+public struct NKMissionCard<Photo: View>: View {
+    let kicker: String
+    let glyph: String
+    let exercise: String
+    let target: String
+    let from: String?
+    let taken: Bool
+    let hue: Hue
+    let photo: Photo
+    let onWhy: @MainActor @Sendable () -> Void
+    let onToggle: @MainActor @Sendable () -> Void
+
+    public init(kicker: String, glyph: String, exercise: String, target: String, from: String? = nil,
+                taken: Bool, hue: Hue, @ViewBuilder photo: () -> Photo,
+                onWhy: @escaping @MainActor @Sendable () -> Void,
+                onToggle: @escaping @MainActor @Sendable () -> Void) {
+        self.kicker = kicker; self.glyph = glyph; self.exercise = exercise; self.target = target
+        self.from = from; self.taken = taken; self.hue = hue; self.photo = photo()
+        self.onWhy = onWhy; self.onToggle = onToggle
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ZStack(alignment: .topLeading) {
+                photo
+                HStack(spacing: 6) {
+                    NKGlyph(glyph, glyph.hasSuffix("-sun") ? NK.gold : .white, size: 13)
+                    Text(kicker.uppercased()).nkFont(10, .semibold, design: .monospaced).tracking(1.1)
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 9).padding(.vertical, 5)
+                .background(Capsule().fill(.black.opacity(0.42)))
+                .padding(11)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(exercise).nkFont(13).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
+                Text(target).nkFont(24, .medium).foregroundStyle(taken ? hue.glow : .white.opacity(0.5))
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                if let from {
+                    Text(from).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45)).lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 14).padding(.top, 10)
+            Spacer(minLength: 8)
+            HStack(spacing: 8) {
+                Button(action: onWhy) {
+                    Text("Miért ez?").nkFont(13).foregroundStyle(.white.opacity(0.85))
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                        .background(Capsule().fill(.white.opacity(0.1)))
+                }
+                .buttonStyle(.plain)
+                Button(action: onToggle) {
+                    Text(taken ? "Vállalom" : "Elengedtem")
+                        .nkFont(13, .semibold)
+                        .foregroundStyle(taken ? NK.ground : .white.opacity(0.8))
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                        .background(Capsule().fill(taken ? hue.glow : .white.opacity(0.1)))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(taken ? "Elengedem: \(target)" : "Vállalom: \(target)")
+            }
+            .padding(.horizontal, 12).padding(.bottom, 12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .nkGlass()
+        .opacity(taken ? 1 : 0.62)
     }
 }

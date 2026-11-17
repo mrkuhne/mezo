@@ -353,8 +353,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **the three questions** (Pumpa · érzed? / Ízületi fájdalom / Akarunk még?) — **once per exercise, after its
     last set**, never between sets. That is the rule the whole model is built around.
   Parity was the owner's catch on the first Lágy round, so it is the bar here: add and drop a set, correct one
-  already logged, skip with the summary not punishing it, do it later, the note, finish early. **The swap is the
-  one thing that says plainly it is not built yet** rather than pretending.
+  already logged, skip with the summary not punishing it, do it later, the note, finish early.
   `WorkoutSession` (BoopCore) is the model: **keyed by exercise id, never by position** — the web twin
   (`workoutState.ts`) assumed linear order in two places and logged sets against the wrong exercise when one was
   reordered. It is `Codable` and written to the **outbox folder** (his own unsent work, not the disposable
@@ -366,11 +365,59 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   („Erős nap." → „Rögzítve."). The sunrise is behind the head only; the numbers sit on the dark ground. Left out
   of the Lágy version on purpose: the five stars, the score, the points and the quests — Boop hides gamification
   (2026-11-11), and a workout is not graded out of five here.
-  Still a promise, and said so on the page: the exercise swap, the custom workout, Gyakorlatok and Előzmények.
+  **Round 4 (owner, 2026-11-17 — „hiányzik az indítás előtti rész", with the Lágy briefing beside it):**
+  - **„Eligazítás" — the screen before the first set** (`Edzes/WorkoutBriefing.swift`), the Lágy briefing in
+    Napkelte: the day's own title big, a sentence counting the exercises, working sets and muscles, the
+    **time estimate** on a 0–90 minute axis (`NKTimeRange`, the server's own `durationEst` ±10 %, said out
+    loud), three numbers, the one thing worth a warning (a kímélő-mód comeback, or an exercise the server
+    marked), **„Mit vállalsz ma?"**, **„A mai sor"** with every exercise's photograph and muscle group, Boop's
+    one line, and „Indulás · N küldetéssel". It is a full-screen cover outside the area-page system, like the
+    player it leads into.
+  - **A mission is a step the engine actually took** (`BoopCore/Train/Missions.swift`) — **not gamification**:
+    the decision to hide the web app's quests stands, there are no points and no score. `trainMissions` reads
+    the progression's own lever (weight up → *Túlterhelés*, reps up → *Több ismétlés*) and, when his records
+    are loaded, calls it a *Rekordkísérlet* if today's target would beat anything he has ever done on that
+    exercise. **A deload is never a mission** and nor is a hold. Two things of the Lágy version are deliberately
+    missing because nothing real stands behind them: the per-mission **confidence percentage** (the engine
+    computes nothing of the sort) and the quest vocabulary. **Letting a mission go** takes that exercise back to
+    **last week's own numbers** (`TodayWorkout.withReleasedMissions`); with no last week it keeps the plan,
+    because a lighter invented weight is exactly what this room must not print.
+  - **Photographs, from the server's own catalog** (`NKRemoteThumb` / `NKRemoteBanner`, `BoopConfig.mediaURL`):
+    124 of the 174 catalog rows have demo stills at `/exercises/<slug>-a.jpg` on the API's own origin. They are
+    on the briefing's line-up, the mission cards, the Ma carousel, the player's head, the rest screen's
+    „következik" row, the swap sheet and the technique sheet — toned like every other photo, with a gradient
+    before any white type, and **every one of those views is correct with no photo at all**.
+  - **Ma's session card carries the button** (`TodaySessionCard`): „Indítás" / „Folytatom", the running
+    workout's progress as a bar with its percentage, and how many missions are taken. The **exercise cards were
+    cut back to a photograph, the muscle group and the name** — the set plan and the engine's sentence moved to
+    the briefing, where he reads them before he starts.
+  - **The lifting screen's furniture is his** — the „2. szett / 6 · 1. gyakorlat / 2" counter and the
+    „legutóbb…" line are **gone** (the strip above and the set list below say both), the **reserve is a third
+    stepper directly under the weight and the reps**, all three a couple of points smaller, the sets are a
+    **list** with the mark of how each went against the plan on its right (`NKSetRow`), and **everything else
+    lives behind one „…"**: the note, the swap, the records, the technique, a set more or fewer, the order,
+    later, skip. No row of buttons under the numbers.
+  - **Typing, not only tapping**: weight, reps and reserve are fields (`NKStepper`'s `onSet`), because a stepper
+    alone cannot enter 62,5 kg on a machine he has never used.
+  - **Reordering** (`WorkoutSession.move`) with ▲▼ rather than a drag — one hand, a bar in the other — and it is
+    local to the day: the plan does not change.
+  - **The swap is live** (`TrainClient.changeExercise` → `POST /api/train/workouts/{id}/exercises`, scope
+    `TODAY`). It is **the one write in the player that asks for a connection**, and it says so: the server mints
+    the replacement row's id and every later set is addressed by it, so queueing it would mean queueing writes
+    against an id that does not exist yet. A failure stays **in the sheet**, where he is still looking, rather
+    than in a toast. The replacement keeps the old row's place and its logged sets but takes **its own** set
+    plan (`WorkoutSession.swap(_:for:)`). Two bugs fell out of building it and are fixed: the app built **two
+    `TrainClient`s** (one for the room, one inside `RitmusClient`), so the queue learned the server's workout id
+    and the player never saw it — there is now one, passed in; and the player's own messages were raised on the
+    room's toast, which lives **behind** this full-screen cover, so they were never seen.
+  Still a promise, and said so on the page: the custom workout, Gyakorlatok and Előzmények.
   In the simulator the preview user is new on every launch, so a workout left running shows only within one run;
   on his phone it is on disk.
   Simulator switches: `-previewHome edzes` (the room straight from the ring), `-previewEdzesRest YES` (a rest
   day), `-previewEdzesPlain YES` (the engine off — the state that must never print a weight), `-edzesTab <név>`.
+  The preview day is five **real catalog exercises** with their real picture paths and a mix of levers, and the
+  review answers `startWorkout`, the set/feedback/skip/finish writes and `changeWorkoutExercise` statefully, so
+  the swap can be walked without a server.
 
 - **The Étel room (B4 Étel, shipped 2026-11-13, `mezo-r36n9.14`; spec [`2026-11-13-boop-b4-etel-design.md`](../superpowers/specs/2026-11-13-boop-b4-etel-design.md) — owner decisions 8–21, plan [`2026-11-13-boop-b4-etel.md`](../superpowers/plans/2026-11-13-boop-b4-etel.md)).** The Fuel orb on Ma opens `EtelRoom` (`Etel/EtelRoom.swift`, kit `NKDrillPage` in the fuel hue with a food photo head `NKPhoto.konyha`, four capsule tabs **Ma · Receptek · Kamra · Hét**, last tab kept in `@SceneStorage`). One `EtelStore` (`Etel/EtelRoom.swift`, logic in pure `EtelLogic.swift`) loads day / plan / coach / photos / supplement stash independently, so one failing read never blanks the room. All server calls go through `FoodClient` (`BoopCore/Etel/`); the model types in `FoodModels.swift`. The server owns the rules (day plan, scoring, sensitivities); the phone shows them and never recomputes a verdict.
   - **Ma tab** (`EtelMa`, `MealCard`, `DimensionSheet`): five numbered sections — **1** the day's budget (kcal headline + three macro bars; a kímélő GUIDANCE day shows "ma nincs kalóriakeret" and a "Kikapcsolom" button instead), **2** the day's plan (logged meals as photo cards with score and macros; the open windows from `GET /api/fuel/plan/{date}` with the MOST badge, the suggested recipe or ingredient tip, *Megeszem* / *Kihagyom* / camera), **3** the next-meal tip (*Megnézem a receptet* switches to Receptek when the window has a recipe; *Most nem* dismisses it locally), **4** víz (+250 / +500 ml, idempotent writes), **5** kiegészítők (one-tap group tick). A meal card opens the eight-dimension sheet (macro, micro, who, fat quality, NOVA, plant diversity, **energy density**, context — "Adag" is a recipe-only dimension; each shows what it measures, the server's own detail and the coach note). The processed-food line appears only as the coach's one quiet sentence when NOVA 3–4 carry more than half the meal's kcal; the phone adds no NOVA badge of its own. The headline wraps to two lines on long numbers (kit 38 pt); under 230 pt content width the dimension grid goes to two columns.

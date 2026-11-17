@@ -53,9 +53,12 @@ struct EdzesRoom: View {
     @State private var phase: WorkoutPhase = .hidden
     /// The day of the week the Blokk tab's carousel is showing.
     @State private var blockDay: String?
+    /// The missions he let go of on the briefing screen. Kept here so the choice survives that screen closing
+    /// and reopening before he starts.
+    @State private var released: Set<UUID> = []
 
     /// `hidden` is not „no workout": the session may well be running, minimised.
-    private enum WorkoutPhase { case hidden, playing, ceremony }
+    private enum WorkoutPhase { case hidden, briefing, playing, ceremony }
 
     init(tab: EdzesTab = .ma) {
         #if DEBUG
@@ -101,18 +104,32 @@ struct EdzesRoom: View {
                 if let block { BlockLoadPage(block: block, hue: hue, age: store?.blockAgeText) { page = nil } }
             }
         }
+        .fullScreenCover(isPresented: Binding(get: { phase == .briefing && workout != nil },
+                                              set: { if !$0 { phase = .hidden } })) {
+            if let w = workout {
+                WorkoutBriefing(workout: w, missions: store?.missions ?? [], hue: hue,
+                                dayLine: briefingDayLine, released: $released,
+                                onClose: { phase = .hidden },
+                                onStart: { beginWorkout() })
+            }
+        }
         .fullScreenCover(isPresented: Binding(get: { phase == .playing && store?.session != nil },
                                               set: { if !$0 { phase = .hidden } })) {
             if let store, store.session != nil {
                 WorkoutPlayer(session: Binding(get: { store.session ?? WorkoutSession(TodayWorkout()) },
                                                set: { store.update($0) }),
                               hue: hue,
+                              photos: exercisePhotos,
+                              catalog: store.catalog,
+                              records: store.records,
                               onMinimise: { phase = .hidden },
                               onFinish: { phase = .ceremony },
                               onLogged: { exerciseId, set in enqueueSet(exerciseId, set) },
                               onExerciseDone: { exerciseId, feedback in enqueueFeedback(exerciseId, feedback) },
                               onSkipped: { exerciseId in enqueueSkip(exerciseId) },
-                              onToast: { toast = $0 })
+                              onSwap: { id, replacement, wholeBlock in
+                                  await store.swapExercise(id, for: replacement, forWholeBlock: wholeBlock)
+                              })
             }
         }
         .fullScreenCover(isPresented: Binding(get: { phase == .ceremony && store?.session != nil },
@@ -126,7 +143,11 @@ struct EdzesRoom: View {
         .task {
             if store == nil { store = EdzesStore(client: train, cache: cache, folder: workoutFolder) }
             await store?.load()
+            await store?.loadRecords()
             await store?.loadBlock()
+            // The catalog is only needed by the swap sheet, but it is one cached read and the gym is exactly
+            // where the network is not: better here than at the moment a machine turns out to be occupied.
+            await store?.loadCatalog()
             if blockDay == nil { blockDay = block?.days.first(where: \.isCurrent)?.day ?? block?.days.first?.day }
         }
     }
@@ -162,11 +183,16 @@ struct EdzesRoom: View {
     /// what the rest of the app says about today.
     @ViewBuilder private var highlight: some View {
         if let s = brief?.day.session {
-            NKHighlight(hue: hue, label: s.done ? "megvolt" : "ma", text: s.title, sub: highlightSub)
+            TodaySessionCard(label: s.done ? "megvolt" : "ma", title: s.title, sub: highlightSub,
+                             hue: hue, done: s.done, progress: runningProgress,
+                             missions: store?.missions.count ?? 0, released: released.count,
+                             action: (s.done && store?.session == nil) ? nil : { startOrResume() })
         } else if let w = workout, !w.isRestDay, let title = w.title {
             // The brief has no session but the training plan does (a day started across
             // midnight, or a brief that has not caught up): the plan is the honest thing.
-            NKHighlight(hue: hue, label: "ma", text: title, sub: highlightSub)
+            TodaySessionCard(label: "ma", title: title, sub: highlightSub, hue: hue, done: false,
+                             progress: runningProgress, missions: store?.missions.count ?? 0,
+                             released: released.count, action: { startOrResume() })
         } else if let w = workout, w.isRestDay {
             NKHighlight(hue: hue, label: "ma", text: "Ma nincs edzés", sub: "A blokkod szerint ez pihenőnap.")
         } else if let c = brief.map({ maiCopy($0, .mozgas) }) {
@@ -209,7 +235,7 @@ struct EdzesRoom: View {
                             ForEach(muscleLoadRows, id: \.muscle) { row in
                                 HStack(spacing: 10) {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(muscleName(row.muscle).capitalizedFirst)
+                                        Text(row.muscle.capitalizedFirst)
                                             .nkFont(13).foregroundStyle(.white.opacity(0.85))
                                         NKLevelBar(level: row.level, hue: hue)
                                     }
@@ -228,13 +254,15 @@ struct EdzesRoom: View {
         }
     }
 
-    /// Today's muscles with the working sets each one gets, hardest first.
+    /// Today's muscles with the working sets each one gets, hardest first — grouped by **the name he reads**,
+    /// not by the database key. The catalog splits a muscle into parts (`back-wide`, `back-mid`), and a list
+    /// that says „Hát 4 / Hát 3" reads as a bug, which it was.
     private var muscleLoadRows: [(muscle: String, sets: Int, level: Double)] {
         guard let w = workout else { return [] }
         var sets: [String: Int] = [:]
         for e in w.exercises {
             let working = e.sets.filter { $0.kind == .working }.count
-            sets[e.muscle, default: 0] += working > 0 ? working : e.workingCount
+            sets[muscleName(e.muscle), default: 0] += working > 0 ? working : e.workingCount
         }
         guard let top = sets.values.max(), top > 0 else { return [] }
         return sets.sorted { ($0.value, $1.key) > ($1.value, $0.key) }
@@ -286,18 +314,57 @@ struct EdzesRoom: View {
     /// the server — through the outbox, so a basement gym changes nothing.
     private func startOrResume() {
         guard let store else { return }
-        if store.session == nil {
-            guard workout?.isRestDay == false || workout?.templateSessionId != nil else {
-                toast = "Ma nincs mit elkezdeni — a blokkod szerint pihenőnap."
-                return
-            }
-            if let item = store.startWorkout(date: brief?.date ?? "") { enqueue(item) }
+        // A workout already running goes straight back to the player: the briefing is the screen before the
+        // first set, not a gate he has to pass twice.
+        if store.session != nil { phase = .playing; return }
+        guard workout?.isRestDay == false || workout?.templateSessionId != nil else {
+            toast = "Ma nincs mit elkezdeni — a blokkod szerint pihenőnap."
+            return
         }
+        guard workout != nil else {
+            toast = "A mai edzéstervet nem érem el, így nem tudom elindítani."
+            return
+        }
+        phase = .briefing
+    }
+
+    /// „Indulás" on the briefing: the workout begins, with the missions he let go of taken back to last
+    /// week's own numbers.
+    private func beginWorkout() {
+        guard let store else { return }
+        if let item = store.startWorkout(date: brief?.date ?? "", released: released) { enqueue(item) }
         guard store.session != nil else {
             toast = "A mai edzéstervet nem érem el, így nem tudom elindítani."
             return
         }
         phase = .playing
+    }
+
+    /// „ma 17:30 · 3. hét / 8" over the briefing's title — only the parts that are known.
+    private var briefingDayLine: String? {
+        let parts = [brief?.day.session?.time ?? brief?.day.session?.plannedTime,
+                     workout?.dayLabel,
+                     block.map { "\($0.currentWeek). hét / \($0.weeks)" }].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// Exercise name → its demo still, from today's plan first and the catalog after it. The player looks a
+    /// picture up by name so a swapped-in row brings its own.
+    private var exercisePhotos: [String: String] {
+        var out: [String: String] = [:]
+        for c in store?.catalog ?? [] where c.imageStartURL != nil {
+            out[c.name.lowercased()] = c.imageStartURL
+        }
+        for e in workout?.exercises ?? [] where e.imageStartURL != nil {
+            out[e.name.lowercased()] = e.imageStartURL
+        }
+        return out
+    }
+
+    /// How far he is through the running workout, 0…1 — nil when nothing is running.
+    private var runningProgress: Double? {
+        guard let s = store?.session, s.progress.total > 0 else { return nil }
+        return Double(s.progress.done) / Double(s.progress.total)
     }
 
     private func finishWorkout() {
@@ -463,93 +530,109 @@ struct EdzesRoom: View {
 
 // MARK: - The cards
 
-/// One exercise of today: its set plan, the weight the engine asks for, and **the engine's own
-/// sentence about it**. The sentence is the reason this is one card and not two blocks.
+/// One exercise of today, as the owner asked for it in round 4: **its photograph, its muscle group and its
+/// name — and nothing else.** The set plan, the target weight and the engine's sentence all moved to the
+/// briefing screen, where he reads them before he starts; on Ma they were four lines he scrolled past.
 private struct ExerciseCard: View {
     let exercise: PlannedExercise
     let hue: Hue
     let done: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            // The muscle as a picture, not only a word: the same body, with this exercise's
-            // muscle lit. It is the card's left rail, so every card reads the same way down.
-            VStack(spacing: 6) {
-                if NKBodyMark.canDraw(exercise.muscle) {
-                    NKBodyMark(muscle: exercise.muscle, hue: hue, height: 62)
+        VStack(alignment: .leading, spacing: 0) {
+            ZStack(alignment: .topTrailing) {
+                NKRemoteBanner(BoopConfig.mediaURL(exercise.imageStartURL), hue: hue, height: 112)
+                if done {
+                    NKDoneTick(hue: hue)
+                        .padding(9)
+                        .background(Circle().fill(.black.opacity(0.35)))
+                        .padding(8)
                 }
-                Text(muscleName(exercise.muscle))
-                    .nkFont(10, .medium, design: .monospaced)
-                    .tracking(0.6)
-                    .foregroundStyle(.white.opacity(0.55))
-                    .lineLimit(1).minimumScaleFactor(0.8)
             }
-            .frame(width: 54)
-
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 10) {
-                    Text(exercise.name)
-                        .nkFont(18, design: .serif)
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                    Spacer(minLength: 0)
-                    if done { NKDoneTick(hue: hue) }
-                }
-                // What to lift, big — or nothing at all when the engine prescribed no weight.
-                if let target = targetLine {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(target).nkFont(27, .medium).foregroundStyle(hue.glow)
-                        if let reps = targetReps { Text("× \(reps)").nkFont(14).foregroundStyle(.white.opacity(0.6)) }
-                    }
-                    .padding(.top, 6)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(workingLine).nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.62))
-                    if let warmupLine {
-                        Text(warmupLine).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.42))
-                    }
-                }
-                .padding(.top, targetLine == nil ? 6 : 2)
-                if let reason = exercise.rationale ?? exercise.progression?.rationale, !reason.isEmpty {
-                    Rectangle().fill(.white.opacity(0.1)).frame(height: 0.5).padding(.vertical, 10)
-                    Text(reason)
-                        .nkFont(13)
-                        .foregroundStyle(.white.opacity(0.78))
-                        .lineSpacing(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(muscleName(exercise.muscle).uppercased())
+                    .nkFont(10, .medium, design: .monospaced).tracking(1.2)
+                    .foregroundStyle(hue.glow)
+                Text(exercise.name)
+                    .nkFont(19, design: .serif).foregroundStyle(.white)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             }
+            .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 14)
+            Spacer(minLength: 0)
         }
-        .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .nkGlass()
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(exercise.name), \(muscleName(exercise.muscle))\(done ? ", megvan" : "")")
     }
+}
 
-    /// The weight the first working set asks for — **only** when the server prescribed one.
-    private var targetLine: String? {
-        exercise.sets.first(where: { $0.kind == .working })?.targetKg.map { nkKg($0) }
-    }
+/// Today's session at the top of Ma: what it is, **the one button that starts or continues it**, and — once
+/// it is running — how far he is in it (owner, 2026-11-17).
+private struct TodaySessionCard: View {
+    let label: String
+    let title: String
+    let sub: String
+    let hue: Hue
+    let done: Bool
+    /// 0…1 while a workout is running, nil otherwise.
+    let progress: Double?
+    let missions: Int
+    let released: Int
+    let action: (() -> Void)?
 
-    private var targetReps: Int? {
-        targetLine == nil ? nil : exercise.sets.first(where: { $0.kind == .working })?.targetReps
-    }
+    private var takenMissions: Int { max(0, missions - released) }
 
-    /// „3 sorozat · 6–10 ismétlés" — what he actually has to do, on its own line so the rep
-    /// range never breaks in half.
-    private var workingLine: String {
-        let working = exercise.sets.filter { $0.kind == .working }.count
-        let reps = exercise.repMin == exercise.repMax
-            ? "\(exercise.repMin) ismétlés"
-            : "\(exercise.repMin)–\(exercise.repMax) ismétlés"
-        return "\(working > 0 ? working : exercise.workingCount) sorozat · \(reps)"
-    }
-
-    /// The warm-up, quieter and under it — it is preparation, not the work.
-    private var warmupLine: String? {
-        let warmups = exercise.sets.filter { $0.kind == .warmup }.count
-        return warmups > 0 ? "+ \(warmups) bemelegítő" : nil
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Text(label.uppercased())
+                    .nkFont(10, .medium, design: .monospaced).tracking(1.4)
+                    .foregroundStyle(hue.glow)
+                if progress != nil {
+                    Text("FUT").nkFont(9, .semibold, design: .monospaced).tracking(1.2)
+                        .foregroundStyle(NK.ground)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Capsule().fill(hue.glow))
+                }
+                Spacer(minLength: 0)
+                if takenMissions > 0 {
+                    HStack(spacing: 4) {
+                        NKGlyph("star-sun", NK.gold, size: 12)
+                        Text("\(takenMissions) küldetés").nkFont(10, .medium, design: .monospaced)
+                            .foregroundStyle(NK.gold)
+                    }
+                }
+            }
+            Text(title).nkFont(27, design: .serif).foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            if !sub.isEmpty {
+                Text(sub).nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let progress {
+                VStack(alignment: .leading, spacing: 5) {
+                    NKLevelBar(level: progress, hue: hue)
+                    Text("\(Int((progress * 100).rounded()))% megvan")
+                        .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+                }
+            }
+            if let action {
+                Button(action: action) {
+                    HStack(spacing: 8) {
+                        NKGlyph("bolt-ink", NK.ground, size: 16)
+                        Text(progress != nil ? "Folytatom" : "Indítás")
+                            .nkFont(16, .semibold).foregroundStyle(NK.ground)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(Capsule().fill(hue.glow))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass()
     }
 }
 
