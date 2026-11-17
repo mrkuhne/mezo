@@ -409,11 +409,17 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     **tilted arrow**: green and up for a set that met the plan or beat it, red and down for one that fell
     short (`NK.good` / `NK.under`), with the gold medal, bigger than both, for a record. Arrows are the one
     SF family the Napkelte canon allows beside chevrons, and the rest screen's verdict card carries the same
-    three marks so the card and the row agree at a glance — and **everything else lives behind one „…"**: the note, the
-    swap, the records, the technique, a set more or fewer, doing another exercise because the machine is taken, later, skip, and
-    finishing the workout. There is exactly **one „…" on the screen**, beside the exercise; the header's was
-    removed in the same pass, and `NKInlineStepper` put the reserve on one slim line instead of a third tall
-    card.
+    three marks so the card and the row agree at a glance. The row's left rail is the exercise's photograph
+    and **its name alone** — the muscle group came off the top (owner: standing at the machine he knows what
+    he is working) — and **everything else lives behind one „…"**: the note, the
+    swap, the records, the technique, a set more or fewer, doing another exercise because the machine is
+    taken, later, skip, and finishing the workout. There is exactly **one „…" on the screen**, and it sits
+    **top right, level with the minimise chevron**: it lived beside the exercise for a round, which put it
+    out of reach during the rest, where the exercise head is not on screen at all. `NKInlineStepper` put the
+    reserve on one slim line instead of a third tall card.
+    That menu also opens **„Eligazítás — a mai edzés"**: the briefing goes back over the running player so he
+    can read the day again mid-workout, with its button reading „Vissza az edzéshez" and the mission toggles
+    inert, because those decisions are already made.
   - **Typing, not only tapping**: weight, reps and reserve are fields (`NKStepper`'s `onSet`), because a stepper
     alone cannot enter 62,5 kg on a machine he has never used.
   - **„Foglalt a gép — mást csinálok most"** (`WorkoutSession.switchTo`) — the machine is taken, so he picks
@@ -434,8 +440,10 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   The area menu's **Gyakorlatok** tile took the dumbbell glyph: `ball-sun` draws as a plain filled circle on a
   dark tile, which read as a missing icon rather than an icon.
   Still a promise, and said so on the page: the custom workout, Gyakorlatok and Előzmények.
-  In the simulator the preview user is new on every launch, so a workout left running shows only within one run;
-  on his phone it is on disk.
+  **A review launch clears the workout in progress** (`RootView`, DEBUG preview only): it is written to the
+  user's own folder, not to the preview's scratch root, so without that a workout left running sent the next
+  launch straight into the player and the briefing could not be seen again. On his phone it stays on disk,
+  which is the point of it.
   Simulator switches: `-previewHome edzes` (the room straight from the ring), `-previewEdzesRest YES` (a rest
   day), `-previewEdzesPlain YES` (the engine off — the state that must never print a weight), `-edzesTab <név>`.
   The preview day is five **real catalog exercises** with their real picture paths and a mix of levers, and the

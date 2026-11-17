@@ -14,14 +14,16 @@ osszefoglalo: Edzés közben a telefon sorozatról sorozatra vezet — előírt 
 **Így néz ki edzés közben (B5, 2026-11-17 — a Lágy irány lejátszója, a mostani stílusban):**
 
 - **A lejátszó sötét**, egyetlen élénk színnel. Az arany **csak a rekordoké**.
-- **Emelés közben:** a gyakorlat **fényképe**, fölötte az izomcsoport, a neve, **a jegyzeted végig a képernyőn**
+- **Emelés közben:** a gyakorlat **fényképe** és a neve, **a jegyzeted végig a képernyőn**
   (nem egy gomb mögött), **súly és ismétlés egymás mellett, a tartalék közvetlenül alattuk** — mindhárom
   léptethető **és beírható** (62,5 kg-ot egy gombbal nem lehet) —, a tartalék egyetlen vékony soron —, alattuk a sorozatok **táblázata**: minden sorozatnak saját sora,
   külön oszlopban a súly, az ismétlés és a tartalék, jobb szélen pedig hogy **a tervhez képest** hogyan
   sikerült: **zöld, felfelé mutató nyíl**, ha megvolt a terv vagy több lett, **piros, lefelé mutató nyíl**, ha
   kevesebb, és **arany medál**, ha rekord. Legalul egy nagy gomb: amíg nem nyúlsz a
   számokhoz, az áll rajta „Kész · a terv szerint".
-- **Minden más egyetlen „…" mögött van** a gyakorlat mellett — a képernyőn **csak egy ilyen gomb van**:
+- **Minden más egyetlen „…" mögött van, jobbra fent** (a bezáró nyíllal egy sorban, hogy pihenő közben is ott
+  legyen) — a képernyőn **csak egy ilyen gomb van**: **Eligazítás** (újra megnézheted a mai edzést, közben fut
+  tovább),
   jegyzet, **csere**, rekordok, technika, egy szettel több vagy kevesebb, **„Foglalt a gép — mást csinálok most"**,
   későbbre teszem, kihagyom, és az edzés befejezése.
 - **Pihenő:** nagy visszaszámláló és egy **csík**, ami fogy (nem kör), fölötte pedig a legfontosabb: **az előbbi

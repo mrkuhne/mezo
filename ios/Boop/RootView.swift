@@ -82,7 +82,12 @@ struct RootView: View {
                 food = FoodClient(client: preview)
                 train = previewTrain
                 cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
-                workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
+                let previewFolder = RitmusEnvironment.directories(for: me.id).outbox
+                // A review launch starts the day over. The workout in progress is written to the user's own
+                // folder, not to the preview's scratch root, so without this a workout left running on one
+                // run sent the next one straight into the player — and the briefing could not be seen again.
+                try? FileManager.default.removeItem(at: previewFolder.appendingPathComponent("workout.json"))
+                workoutFolder = previewFolder
                 BackgroundSyncHost.ritmus = ritmus
                 return
             }

@@ -108,9 +108,9 @@ struct EdzesRoom: View {
                                               set: { if !$0 { phase = .hidden } })) {
             if let w = workout {
                 WorkoutBriefing(workout: w, missions: store?.missions ?? [], hue: hue,
-                                dayLine: briefingDayLine, released: $released,
-                                onClose: { phase = .hidden },
-                                onStart: { beginWorkout() })
+                                dayLine: briefingDayLine, released: $released, running: running,
+                                onClose: { phase = running ? .playing : .hidden },
+                                onStart: { running ? phase = .playing : beginWorkout() })
             }
         }
         .fullScreenCover(isPresented: Binding(get: { phase == .playing && store?.session != nil },
@@ -129,7 +129,10 @@ struct EdzesRoom: View {
                               onSkipped: { exerciseId in enqueueSkip(exerciseId) },
                               onSwap: { id, replacement, wholeBlock in
                                   await store.swapExercise(id, for: replacement, forWholeBlock: wholeBlock)
-                              })
+                              },
+                              // Looking at today's plan again mid-workout: the briefing goes over the
+                              // player and the session keeps running underneath.
+                              onBriefing: { phase = .briefing })
             }
         }
         .fullScreenCover(isPresented: Binding(get: { phase == .ceremony && store?.session != nil },

@@ -23,6 +23,9 @@ struct WorkoutBriefing: View {
     let dayLine: String?
     /// The missions he has let go of. Owned by the room, so the choice survives this screen closing.
     @Binding var released: Set<UUID>
+    /// True when the workout is already running and he is only looking at the day again: the button then
+    /// takes him back to the player instead of starting anything, and the missions are already decided.
+    var running: Bool = false
     let onClose: () -> Void
     let onStart: () -> Void
 
@@ -191,11 +194,13 @@ struct WorkoutBriefing: View {
                               photo: { NKRemoteBanner(BoopConfig.mediaURL(m.photo), hue: hue, height: 118) },
                               onWhy: { why = m },
                               onToggle: {
+                                  guard !running else { return }
                                   if released.contains(m.exerciseId) { released.remove(m.exerciseId) }
                                   else { released.insert(m.exerciseId) }
                               })
             }
-            Text("Amit elengedsz, a múlt heti számaival megy — a gyakorlat marad.")
+            Text(running ? "Az edzés már fut, ezek a döntések megvannak — a súlyokat a lejátszóban írod át."
+                         : "Amit elengedsz, a múlt heti számaival megy — a gyakorlat marad.")
                 .nkFont(12).foregroundStyle(.white.opacity(0.45))
         }
     }
@@ -291,6 +296,7 @@ struct WorkoutBriefing: View {
     }
 
     private var startLabel: String {
+        if running { return "Vissza az edzéshez" }
         guard !missions.isEmpty else { return "Indulás" }
         return taken.isEmpty ? "Indulás küldetés nélkül" : "Indulás · \(taken.count) küldetéssel"
     }

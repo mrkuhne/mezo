@@ -51,6 +51,8 @@ struct WorkoutPlayer: View {
     let onSkipped: (UUID) -> Void
     /// The swap, which needs a connection. Returns the sentence to show when it could not be done.
     let onSwap: (UUID, CatalogExercise, Bool) async -> String?
+    /// Look at today's briefing again — the room puts it over the player and the player stays running.
+    let onBriefing: () -> Void
 
     @State private var kg: Double = 0
     @State private var reps: Int = 0
@@ -128,9 +130,17 @@ struct WorkoutPlayer: View {
                 }
                 .frame(maxWidth: .infinity)
 
-                // **One „…" on the screen, not two** (owner, 2026-11-17). It sits by the exercise, where the
-                // actions are; finishing the workout is the last row of that same menu.
-                Color.clear.frame(width: 42, height: 42).accessibilityHidden(true)
+                // **The one „…" of the player**, top right, level with the minimise chevron (owner,
+                // 2026-11-17). It lived beside the exercise for a round, which put it out of reach on the
+                // rest screen — the exercise head is not on that screen at all. It still acts on the
+                // exercise he is on, rest or no rest.
+                Button { if let id = session.currentExerciseId { sheet = .exerciseMenu(id) } } label: {
+                    Image(systemName: "ellipsis").nkFont(16, .semibold).foregroundStyle(.white)
+                        .frame(width: 42, height: 42)
+                }
+                .buttonStyle(.plain).glassEffect(.clear.interactive(), in: .circle)
+                .accessibilityLabel("Mit csinálunk ezzel a gyakorlattal?")
+                .disabled(session.currentExerciseId == nil)
             }
             NKSetStrip(strip, hue: hue)
                 .frame(height: 3)
@@ -191,28 +201,18 @@ struct WorkoutPlayer: View {
         HStack(alignment: .top, spacing: 13) {
             NKRemoteThumb(BoopConfig.mediaURL(photo(for: e)), size: 58)
             VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 7) {
-                    Text(muscleName(e.muscle).uppercased())
-                        .nkFont(10, .medium, design: .monospaced).tracking(1.2)
-                        .foregroundStyle(hue.glow)
-                    if e.plan(at: e.logged.count)?.kind == .warmup {
-                        Text("BEMELEGÍTŐ").nkFont(9, .semibold, design: .monospaced).tracking(1)
-                            .foregroundStyle(.white.opacity(0.75))
-                            .padding(.horizontal, 7).padding(.vertical, 2)
-                            .background(Capsule().fill(.white.opacity(0.12)))
-                    }
+                // The muscle group is gone from here (owner, 2026-11-17): standing in front of the machine
+                // he knows what he is working, and the name is the only thing worth the top of the screen.
+                if e.plan(at: e.logged.count)?.kind == .warmup {
+                    Text("BEMELEGÍTŐ").nkFont(9, .semibold, design: .monospaced).tracking(1)
+                        .foregroundStyle(.white.opacity(0.75))
+                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .background(Capsule().fill(.white.opacity(0.12)))
                 }
                 Text(e.name).nkFont(26, design: .serif).foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
-            Button { sheet = .exerciseMenu(e.id) } label: {
-                Image(systemName: "ellipsis").nkFont(15, .semibold).foregroundStyle(.white.opacity(0.85))
-                    .frame(width: 40, height: 40)
-                    .background(Circle().fill(.white.opacity(0.1)))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Mit csinálunk ezzel a gyakorlattal?")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -620,6 +620,7 @@ struct WorkoutPlayer: View {
         return NKSheetFrame(hue: hue, eyebrow: e?.name ?? "Gyakorlat", title: "Mit csinálunk vele?") {
             VStack(spacing: 0) {
                 menuRow("book-sage", "Jegyzet a gyakorlathoz") { sheet = .note(id) }
+                menuRow("bolt-sun", "Eligazítás — a mai edzés") { sheet = nil; onBriefing() }
                 menuRow("repeat-deep", "Végleg lecserélem másikra") { sheet = .swap(id) }
                 menuRow("medal-sun", "Rekordok") { sheet = .records(id) }
                 menuRow("camera-ink", "Technika") { sheet = .technique(id) }
