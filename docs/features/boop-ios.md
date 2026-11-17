@@ -339,8 +339,36 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   **The one idea the whole thing rests on:** a muscle's ceiling is **not its MRV** — it is where *this plan*
   takes it, by the priority he set (emphasize → MRV, grow → MAV, maintain → MEV). Telling a maintained muscle it
   "has 8 sets left" would be a promise the plan never made.
-  Still a promise, and said so on the page: the player („Indítás"), the custom workout, Gyakorlatok and
-  Előzmények.
+- **The workout player and its closing (B5 phase 2, `mezo-r36n9.15`)** — **the owner's own Lágy player, taken
+  over almost as it is** (`IRANY.md` §11b, owner 2026-11-05, and the „Mezo · Lágy irány" artifact's `jatszo()` /
+  `cer()`), dressed in Napkelte. That was the easy half: the Lágy player was already dark with one vivid accent,
+  so here the accent is the Mozgás hue and **gold stays for records alone**. Three screens and one rule between
+  them:
+  - **lifting** — the exercise, **its note visible** (not behind a button, the owner's own catch), what the plan
+    asks, two big steppers, the sets so far (a done set opens for correction, − and + change how many there are),
+    the reserve 0…3+, and one primary button that reads „Kész · a terv szerint" until he touches a number;
+  - **rest** — the countdown as a **bar, never a ring** (`NKRestBar`; the Napkelte canon says the same from the
+    other side: a circle here is a real clock), and above all **the verdict of the set just done** — record ·
+    a terv fölött · pontosan a terv · a terv alatt, with the sentence behind it;
+  - **the three questions** (Pumpa · érzed? / Ízületi fájdalom / Akarunk még?) — **once per exercise, after its
+    last set**, never between sets. That is the rule the whole model is built around.
+  Parity was the owner's catch on the first Lágy round, so it is the bar here: add and drop a set, correct one
+  already logged, skip with the summary not punishing it, do it later, the note, finish early. **The swap is the
+  one thing that says plainly it is not built yet** rather than pretending.
+  `WorkoutSession` (BoopCore) is the model: **keyed by exercise id, never by position** — the web twin
+  (`workoutState.ts`) assumed linear order in two places and logged sets against the wrong exercise when one was
+  reordered. It is `Codable` and written to the **outbox folder** (his own unsent work, not the disposable
+  cache), so a workout survives the phone locking, a crash and a relaunch. Every set, skip, debrief and finish
+  goes out as an **outbox item** — a basement gym changes nothing.
+  **The closing ceremony** follows the repo's own ceremony pattern: **one pass drives everything** (cubic
+  ease-out, 2400 ms — the orb rises, the counters count up from zero, the sections arrive off that single
+  number), Reduce Motion paints the finished state at once, and the verdict ladder **never shames**
+  („Erős nap." → „Rögzítve."). The sunrise is behind the head only; the numbers sit on the dark ground. Left out
+  of the Lágy version on purpose: the five stars, the score, the points and the quests — Boop hides gamification
+  (2026-11-11), and a workout is not graded out of five here.
+  Still a promise, and said so on the page: the exercise swap, the custom workout, Gyakorlatok and Előzmények.
+  In the simulator the preview user is new on every launch, so a workout left running shows only within one run;
+  on his phone it is on disk.
   Simulator switches: `-previewHome edzes` (the room straight from the ring), `-previewEdzesRest YES` (a rest
   day), `-previewEdzesPlain YES` (the engine off — the state that must never print a weight), `-edzesTab <név>`.
 

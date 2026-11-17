@@ -6,6 +6,7 @@ import BoopDesign
 
 private struct TrainClientKey: EnvironmentKey { static let defaultValue: TrainClient? = nil }
 private struct ServerCacheKey: EnvironmentKey { static let defaultValue: ServerCache? = nil }
+private struct WorkoutFolderKey: EnvironmentKey { static let defaultValue: URL? = nil }
 
 extension EnvironmentValues {
     /// The signed-in user's training client (nil before sign-in, and in tests that have no server).
@@ -18,6 +19,14 @@ extension EnvironmentValues {
     var serverCache: ServerCache? {
         get { self[ServerCacheKey.self] }
         set { self[ServerCacheKey.self] = newValue }
+    }
+
+    /// Where a workout in progress is kept. It sits with the **outbox**, not with the cache:
+    /// a half-finished workout is his own unsent work, and clearing a cache must never be
+    /// able to throw it away.
+    var workoutFolder: URL? {
+        get { self[WorkoutFolderKey.self] }
+        set { self[WorkoutFolderKey.self] = newValue }
     }
 }
 
@@ -49,12 +58,76 @@ final class EdzesStore {
     private static let endpoint = "train/today"
     private static let blockEndpoint = "train/block"
 
+    /// The workout in progress. It is kept here, not in a view, because it must outlive the
+    /// player being closed — „kis méretre" means the workout goes on.
+    private(set) var session: WorkoutSession?
+
     private let client: TrainClient?
     private let cache: ServerCache?
+    /// Where the workout in progress is kept. It can arrive **after** the store is built: the
+    /// per-user folders are set up when the session signs in, which may land a render later
+    /// than the room's first appearance. A store that captured a nil folder at birth would
+    /// silently never save a set — so the folder is attached, not injected once.
+    private var folder: URL?
     private let clock: @MainActor () -> Date
 
-    init(client: TrainClient?, cache: ServerCache?, clock: @escaping @MainActor () -> Date = { Date() }) {
-        self.client = client; self.cache = cache; self.clock = clock
+    init(client: TrainClient?, cache: ServerCache?, folder: URL? = nil,
+         clock: @escaping @MainActor () -> Date = { Date() }) {
+        self.client = client; self.cache = cache; self.folder = folder; self.clock = clock
+        self.session = Self.readSession(folder)
+    }
+
+    /// Point the store at the user's folder, and pick up a workout left running there.
+    func attach(folder: URL?) {
+        guard let folder, self.folder != folder else { return }
+        self.folder = folder
+        if session == nil { session = Self.readSession(folder) }
+    }
+
+    // MARK: - The workout in progress
+
+    private var sessionFile: URL? { folder?.appendingPathComponent("workout.json") }
+
+    /// Start today's session. Returns the outbox item that tells the server it began — the
+    /// caller enqueues it, so this type never has to know what an outbox is.
+    @discardableResult
+    func startWorkout(date: String) -> OutboxItem? {
+        guard let today = today?.value, let template = today.templateSessionId else { return nil }
+        let fresh = WorkoutSession(today, startedAt: clock())
+        session = fresh
+        saveSession()
+        return .workoutStart(WorkoutStartPayload(templateSessionId: template),
+                             date: date, capturedAt: clock(), id: fresh.ref)
+    }
+
+    /// Put the session back where it was — used when the player closes and when the app
+    /// comes back. Saving on every change is deliberate: a set he did is never lost to a
+    /// crash, and the file is tiny.
+    func update(_ session: WorkoutSession) {
+        self.session = session
+        saveSession()
+    }
+
+    /// The workout is over: the session leaves the phone's memory and its file.
+    func endWorkout() {
+        session = nil
+        if let sessionFile { try? FileManager.default.removeItem(at: sessionFile) }
+    }
+
+    private func saveSession() {
+        guard let sessionFile, let session else { return }
+        try? FileManager.default.createDirectory(at: sessionFile.deletingLastPathComponent(),
+                                                 withIntermediateDirectories: true)
+        // Readable after the first unlock, so a workout survives the phone locking mid-set.
+        if let data = try? JSONEncoder().encode(session) {
+            try? data.write(to: sessionFile, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        }
+    }
+
+    private static func readSession(_ folder: URL?) -> WorkoutSession? {
+        guard let url = folder?.appendingPathComponent("workout.json"),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(WorkoutSession.self, from: data)
     }
 
     /// `yyyy-MM-dd` of the day this store is about, in the device's own calendar.

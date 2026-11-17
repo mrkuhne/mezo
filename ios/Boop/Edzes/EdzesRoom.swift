@@ -41,13 +41,21 @@ struct EdzesRoom: View {
     @Environment(\.openPlace) private var openPlace
     @Environment(\.trainClient) private var train
     @Environment(\.serverCache) private var cache
+    @Environment(\.workoutFolder) private var workoutFolder
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @Environment(MorningStore.self) private var morning: MorningStore?
     @SceneStorage("edzes.tab") private var selected: String = EdzesTab.ma.rawValue
     @State private var store: EdzesStore?
     @State private var toast: String?
     @State private var page: EdzesPage?
+    /// Which of the workout's own surfaces is up. The session itself lives in the store, so
+    /// closing the player („kis méretre") leaves the workout running.
+    @State private var phase: WorkoutPhase = .hidden
     /// The day of the week the Blokk tab's carousel is showing.
     @State private var blockDay: String?
+
+    /// `hidden` is not „no workout": the session may well be running, minimised.
+    private enum WorkoutPhase { case hidden, playing, ceremony }
 
     init(tab: EdzesTab = .ma) {
         #if DEBUG
@@ -81,6 +89,10 @@ struct EdzesRoom: View {
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
+        // The per-user folders are built when the session signs in, which can land a render
+        // after this room first appears — so the store is pointed at it whenever it arrives,
+        // not once in `.task`. Without this a workout in progress was never written down.
+        .onChange(of: workoutFolder, initial: true) { store?.attach(folder: workoutFolder) }
         // The sub-page is presented at page level (boop-ios.md §9) and over a room the ring
         // opened with no navigation stack under it.
         .fullScreenCover(item: $page) { p in
@@ -89,8 +101,30 @@ struct EdzesRoom: View {
                 if let block { BlockLoadPage(block: block, hue: hue, age: store?.blockAgeText) { page = nil } }
             }
         }
+        .fullScreenCover(isPresented: Binding(get: { phase == .playing && store?.session != nil },
+                                              set: { if !$0 { phase = .hidden } })) {
+            if let store, store.session != nil {
+                WorkoutPlayer(session: Binding(get: { store.session ?? WorkoutSession(TodayWorkout()) },
+                                               set: { store.update($0) }),
+                              hue: hue,
+                              onMinimise: { phase = .hidden },
+                              onFinish: { phase = .ceremony },
+                              onLogged: { exerciseId, set in enqueueSet(exerciseId, set) },
+                              onExerciseDone: { exerciseId, feedback in enqueueFeedback(exerciseId, feedback) },
+                              onSkipped: { exerciseId in enqueueSkip(exerciseId) },
+                              onToast: { toast = $0 })
+            }
+        }
+        .fullScreenCover(isPresented: Binding(get: { phase == .ceremony && store?.session != nil },
+                                              set: { if !$0 { phase = .hidden } })) {
+            if let store, let session = store.session {
+                WorkoutCeremony(session: session, hue: hue,
+                                onDone: { finishWorkout() },
+                                onNote: { toast = soonToast("Edzés jegyzet") })
+            }
+        }
         .task {
-            if store == nil { store = EdzesStore(client: train, cache: cache) }
+            if store == nil { store = EdzesStore(client: train, cache: cache, folder: workoutFolder) }
             await store?.load()
             await store?.loadBlock()
             if blockDay == nil { blockDay = block?.days.first(where: \.isCurrent)?.day ?? block?.days.first?.day }
@@ -243,6 +277,74 @@ struct EdzesRoom: View {
         }
     }
 
+    // MARK: - The workout itself
+
+    /// True while a session is open, whether the player is on screen or minimised.
+    private var running: Bool { store?.session != nil }
+
+    /// „Indítás" when nothing is running, „Folytatom" when something is. Starting also tells
+    /// the server — through the outbox, so a basement gym changes nothing.
+    private func startOrResume() {
+        guard let store else { return }
+        if store.session == nil {
+            guard workout?.isRestDay == false || workout?.templateSessionId != nil else {
+                toast = "Ma nincs mit elkezdeni — a blokkod szerint pihenőnap."
+                return
+            }
+            if let item = store.startWorkout(date: brief?.date ?? "") { enqueue(item) }
+        }
+        guard store.session != nil else {
+            toast = "A mai edzéstervet nem érem el, így nem tudom elindítani."
+            return
+        }
+        phase = .playing
+    }
+
+    private func finishWorkout() {
+        guard let store, let session = store.session else { return }
+        enqueue(.workoutWrite(.workoutFinish,
+                              payload: TrainPayloadCodec.encode(WorkoutFinishPayload(workoutRef: session.ref)),
+                              workoutRef: session.ref, date: brief?.date ?? "", capturedAt: Date()))
+        store.endWorkout()
+        phase = .hidden
+        toast = "Edzés lezárva"
+    }
+
+    private func enqueueSet(_ exerciseId: UUID, _ set: SessionSet) {
+        guard let session = store?.session else { return }
+        let plan = session.exercises[exerciseId]?.plan(at: max(0, (session.exercises[exerciseId]?.logged.count ?? 1) - 1))
+        let payload = WorkoutSetPayload(
+            workoutRef: session.ref, exerciseId: exerciseId,
+            setIndex: max(0, (session.exercises[exerciseId]?.logged.count ?? 1) - 1),
+            weightKg: set.kg ?? 0, reps: set.reps, rir: set.rir, kind: set.kind,
+            targetWeightKg: plan?.targetKg, targetReps: plan?.targetReps)
+        enqueue(.workoutWrite(.workoutSet, payload: TrainPayloadCodec.encode(payload),
+                              workoutRef: session.ref, date: brief?.date ?? "", capturedAt: set.at))
+    }
+
+    private func enqueueFeedback(_ exerciseId: UUID, _ feedback: ExerciseFeedback) {
+        guard let session = store?.session else { return }
+        let payload = WorkoutFeedbackPayload(workoutRef: session.ref, items: [
+            .init(exerciseId: exerciseId, pump: feedback.pump, jointPain: feedback.jointPain,
+                  workload: feedback.workload)])
+        enqueue(.workoutWrite(.workoutFeedback, payload: TrainPayloadCodec.encode(payload),
+                              workoutRef: session.ref, date: brief?.date ?? "", capturedAt: Date()))
+    }
+
+    private func enqueueSkip(_ exerciseId: UUID) {
+        guard let session = store?.session else { return }
+        let payload = WorkoutSkipExercisePayload(workoutRef: session.ref, exerciseId: exerciseId)
+        enqueue(.workoutWrite(.workoutSkipExercise, payload: TrainPayloadCodec.encode(payload),
+                              workoutRef: session.ref, date: brief?.date ?? "", capturedAt: Date()))
+    }
+
+    /// Every training write goes through the same queue as the rest of the app: it survives a
+    /// basement, a relaunch and a flat battery, and it reaches the server in order.
+    private func enqueue(_ item: OutboxItem) {
+        guard let ritmus else { return }
+        Task { try? await ritmus.outbox.enqueue(item) }
+    }
+
     /// Done means the server has a logged set for it — not that the day is over.
     private func isDone(_ e: PlannedExercise) -> Bool {
         let sets = (workout?.open?.sets ?? []) + (workout?.completed?.sets ?? [])
@@ -253,7 +355,8 @@ struct EdzesRoom: View {
     /// 2026-11-17) — and its place went to the one thing that had no way in at all.
     private var menu: some View {
         NKMenuGrid([
-            NKMenuItem(glyph: "bolt-sun", name: "Indítás", sub: "Sorozatról sorozatra") { toast = soonToast("Edzés indítása") },
+            NKMenuItem(glyph: "bolt-sun", name: running ? "Folytatom" : "Indítás",
+                       sub: running ? "Az edzés fut" : "Sorozatról sorozatra") { startOrResume() },
             NKMenuItem(glyph: "plus-ink", name: "Egyedi edzés", sub: "Saját összeállítás") { toast = soonToast("Egyedi edzés") },
             NKMenuItem(glyph: "ball-sun", name: "Gyakorlatok", sub: "A saját súlyaiddal") { selected = EdzesTab.gyakorlatok.rawValue },
             NKMenuItem(glyph: "book-sage", name: "Előzmények", sub: "Minden eddigi edzés") { selected = EdzesTab.elozmenyek.rawValue },

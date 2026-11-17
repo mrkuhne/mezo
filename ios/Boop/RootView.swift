@@ -13,6 +13,8 @@ struct RootView: View {
     @State private var train: TrainClient?
     /// The last-known-good read cache (B5): per user, beside the ledger and the outbox.
     @State private var cache: ServerCache?
+    /// Where a workout in progress is kept — with the outbox, because it is his own unsent work.
+    @State private var workoutFolder: URL?
 
     var body: some View {
         Group {
@@ -46,6 +48,7 @@ struct RootView: View {
         .environment(\.foodClient, food)
         .environment(\.trainClient, train)
         .environment(\.serverCache, cache)
+        .environment(\.workoutFolder, workoutFolder)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
@@ -61,7 +64,7 @@ struct RootView: View {
         // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
         // the session's client already carries another token, or none).
         guard let me else {
-            ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil
+            ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil; workoutFolder = nil
             BackgroundSyncHost.ritmus = nil; return
         }
         if link?.userId != me.id {
@@ -76,6 +79,7 @@ struct RootView: View {
                 food = FoodClient(client: preview)
                 train = TrainClient(client: preview)
                 cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
+                workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
                 BackgroundSyncHost.ritmus = ritmus
                 return
             }
@@ -86,6 +90,7 @@ struct RootView: View {
             food = FoodClient(client: session.client)
             train = TrainClient(client: session.client)
             cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
+            workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
             BackgroundSyncHost.ritmus = ritmus
         }
         if case .ready = state { Task { await link?.syncIfStale() } }

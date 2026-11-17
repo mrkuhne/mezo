@@ -185,3 +185,180 @@ public struct NKMuscleLoadRow: View {
         return "\(latest) / \(load.mrv) sorozat"
     }
 }
+
+// MARK: - The player's own pieces
+
+/// One number he changes with his thumb, mid-set, with a sweaty hand: the value big enough to
+/// read at arm's length and the two taps either side of it big enough to hit without looking.
+///
+/// `planned` dims the value until he touches it, so a number that is still the plan's looks
+/// different from one he has decided — the Lágy player's „· terv" mark.
+public struct NKStepper: View {
+    let label: String
+    let value: String
+    let planned: Bool
+    let hue: Hue
+    let onDown: @MainActor @Sendable () -> Void
+    let onUp: @MainActor @Sendable () -> Void
+
+    public init(label: String, value: String, planned: Bool = false, hue: Hue,
+                onDown: @escaping @MainActor @Sendable () -> Void,
+                onUp: @escaping @MainActor @Sendable () -> Void) {
+        self.label = label; self.value = value; self.planned = planned; self.hue = hue
+        self.onDown = onDown; self.onUp = onUp
+    }
+
+    public var body: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 5) {
+                Text(label.uppercased()).nkFont(10, .medium, design: .monospaced).tracking(1.2)
+                if planned {
+                    Text("· TERV").nkFont(10, design: .monospaced).tracking(1.2)
+                        .foregroundStyle(.white.opacity(0.35))
+                }
+            }
+            .foregroundStyle(.white.opacity(0.5))
+
+            Text(value)
+                .nkFont(44, .medium)
+                .foregroundStyle(planned ? .white.opacity(0.62) : hue.glow)
+                .contentTransition(.numericText())
+                .lineLimit(1).minimumScaleFactor(0.6)
+
+            HStack(spacing: 10) {
+                stepButton("minus", action: onDown)
+                stepButton("plus", action: onUp)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .nkGlass()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label): \(value)")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: onUp()
+            case .decrement: onDown()
+            default: break
+            }
+        }
+    }
+
+    private func stepButton(_ symbol: String, action: @escaping @MainActor @Sendable () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.9))
+                .frame(width: 54, height: 40)
+                .background(Capsule().fill(.white.opacity(0.1)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHidden(true)
+    }
+}
+
+/// The rest countdown: the time big, and a bar that drains under it.
+///
+/// **A bar, not a ring** — the owner's own rule for this screen (`IRANY.md` §11b: "No ring for
+/// the countdown: a horizontal fill bar"), and the Napkelte canon says the same thing from the
+/// other side: a circle in this app is a real clock, never a progress meter.
+public struct NKRestBar: View {
+    let remaining: TimeInterval
+    let total: TimeInterval
+    let hue: Hue
+
+    public init(remaining: TimeInterval, total: TimeInterval, hue: Hue) {
+        self.remaining = remaining; self.total = total; self.hue = hue
+    }
+
+    /// Under ten seconds the whole thing warms up — the one moment the player raises its voice.
+    private var soon: Bool { remaining <= 10 }
+
+    public var body: some View {
+        VStack(spacing: 10) {
+            Text("PIHENŐ").nkFont(10, .medium, design: .monospaced).tracking(1.4)
+                .foregroundStyle(.white.opacity(0.5))
+            Text(clock)
+                .nkFont(54, .medium, design: .monospaced)
+                .foregroundStyle(soon ? Color(hex: 0xF0A868) : .white)
+                .contentTransition(.numericText(countsDown: true))
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.12))
+                    Capsule().fill(soon ? Color(hex: 0xF0A868) : hue.glow)
+                        .frame(width: max(2, g.size.width * level))
+                }
+            }
+            .frame(height: 5)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pihenő, \(Int(max(0, remaining))) másodperc van hátra")
+    }
+
+    private var level: Double {
+        guard total > 0 else { return 0 }
+        return min(1, max(0, remaining / total))
+    }
+
+    /// „1:30" · „0:08".
+    private var clock: String {
+        let s = Int(max(0, remaining.rounded()))
+        return String(format: "%d:%02d", s / 60, s % 60)
+    }
+}
+
+/// The strip across the top of the player: every set of the whole workout as one tick, grouped
+/// by exercise and weighted by how many sets each has. It is the only place he can see the
+/// whole session at once while lifting.
+public struct NKSetStrip: View {
+    /// One exercise: how many sets, how many are done, which are records, and whether it was
+    /// skipped.
+    public struct Group: Identifiable, Equatable, Sendable {
+        public let id: String
+        public let sets: Int
+        public let done: Int
+        public let records: Set<Int>
+        public let skipped: Bool
+        /// The set he is on right now, when it is in this group.
+        public let current: Int?
+        public init(id: String, sets: Int, done: Int, records: Set<Int> = [], skipped: Bool = false,
+                    current: Int? = nil) {
+            self.id = id; self.sets = sets; self.done = done; self.records = records
+            self.skipped = skipped; self.current = current
+        }
+    }
+
+    let groups: [Group]
+    let hue: Hue
+    public init(_ groups: [Group], hue: Hue) { self.groups = groups; self.hue = hue }
+
+    public var body: some View {
+        HStack(spacing: 7) {
+            ForEach(groups) { group in
+                HStack(spacing: 2) {
+                    ForEach(0..<max(1, group.sets), id: \.self) { i in
+                        Capsule().fill(colour(group, i)).frame(height: 3)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .layoutPriority(Double(max(1, group.sets)))
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+    }
+
+    private func colour(_ group: Group, _ i: Int) -> Color {
+        if group.skipped { return .white.opacity(0.07) }
+        if group.records.contains(i) { return Color(hex: 0xF2C94C) }   // gold, and only for a record
+        if i < group.done { return hue.glow }
+        if group.current == i { return .white.opacity(0.55) }
+        return .white.opacity(0.14)
+    }
+
+    private var label: String {
+        let done = groups.filter { !$0.skipped }.reduce(0) { $0 + $1.done }
+        let total = groups.filter { !$0.skipped }.reduce(0) { $0 + $1.sets }
+        return "\(done) / \(total) szett kész"
+    }
+}

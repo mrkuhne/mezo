@@ -2,14 +2,42 @@
 cim: Natív edzéslejátszó
 szint: Funkció
 terulet: Edzés
-allapot: Tervezve
+allapot: Élesben
 hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B5]
-osszefoglalo: Edzés közben a telefon sorozatról sorozatra vezet — előírt súly, ismétlés és tartalék, pihenőidő-számláló, gyakorlatcsere és rövid visszajelzés.
+osszefoglalo: Edzés közben a telefon sorozatról sorozatra vezet — előírt súly, ismétlés és tartalék, pihenő a sorozat értékelésével, három kérdés gyakorlatonként, a végén pedig egy lezáró kép a napodról.
 ---
 
 ## Mit csinál
+
+**Így néz ki edzés közben (B5, 2026-11-17 — a Lágy irány lejátszója, a mostani stílusban):**
+
+- **A lejátszó sötét**, egyetlen élénk színnel. Az arany **csak a rekordoké**.
+- **Emelés közben:** a gyakorlat neve, **a jegyzeted végig a képernyőn** (nem egy gomb mögött), hogy mit kér a terv,
+  két nagy léptető (súly, ismétlés), az eddigi sorozataid — egy kész sorozatra koppintva javíthatod —, a „+" és „−"
+  a sorozatszámhoz, a tartalék 0–3+, és egy nagy gomb. Amíg nem nyúlsz a számokhoz, az áll rajta: „Kész · a terv szerint".
+- **Pihenő:** nagy visszaszámláló és egy **csík**, ami fogy (nem kör), fölötte pedig a legfontosabb: **az előbbi
+  sorozat értékelése** — rekord · a terv fölött · pontosan a terv · a terv alatt —, mellé egy mondat. Alatta, hogy mi
+  következik, és a „+30 mp" és a „Tovább".
+- **A három kérdés** (Pumpa · érzed? / Ízületi fájdalom / Akarunk még?) **gyakorlatonként egyszer**, az utolsó
+  sorozat után — **soha nem sorozatok között**. Két sorozat közt csak a pihenő van.
+- **Edzés közben megteheted:** sorozatot hozzáadsz vagy elveszel, egy kész sorozatot javítasz, gyakorlatot kihagysz
+  (az összegzés nem büntet érte), későbbre teszel, jegyzetet írsz, vagy korábban befejezed. **A gyakorlatcsere még
+  nem él** — ezt a lejátszó meg is mondja, nem tesz úgy, mintha menne.
+- **„Kis méretre":** a lejátszó becsukódik, de **az edzés tovább fut** — a menüben „Folytatom" áll.
+- **Semmi nem vész el:** amit rögzítesz, az azonnal a telefonra kerül és sorban megy fel a szerverre. Ha a pince
+  közepén vagy térerő nélkül, akkor is. Ha az app összeomlik vagy lezárod a telefont, az edzés ott folytatódik.
+
+**A lezárás (B5, 2026-11-17):** egyetlen mozdulat visz végig mindenen — a gömb felkel, a számok nulláról felszámolnak,
+a szakaszok sorban érkeznek. Egy mondat arról, milyen nap volt (ez **soha nem szid le**), a nap három száma, az új
+rekordjaid aranyban, és a test azokkal az izmokkal, amiket ma megdolgoztattál. Ha kevesebb mozgást kértél a
+telefonodon, az egész azonnal a kész állapotában jelenik meg.
+
+**Ami szándékosan kimaradt a Lágy változatból:** az ötcsillagos pontozás, a pontok és a küldetések. A Boop nem
+játékosít, és egy edzés itt nincs leosztályozva ötből.
+
+**A régi leírás (ami ebből még nem él):**
 1. **Eligazítás:** mi vár ma, és miért (az előírás indoklása, például „+1 ismétlés”, „terhelés-csökkentő hét”).
 2. **Sorozatonként:** a léptető előre kitöltve az előírt súllyal, ismétléssel és tartalékkal (RIR); súlytalan gyakorlatnál csak ismétlés.
 3. **Pihenőidő-számláló** sorozatok között.
@@ -53,7 +81,8 @@ A háttér minden számot kiszámol, ezért a telefonos lejátszó egyszerű mar
 | `workout_timing_profile` | Megtanult időzítés (sorozat, pihenő, átállás) |
 
 ## Mi jön még
-- B5: a natív lejátszó; Élő tevékenység (lásd [Élő tevékenység](08-elo-tevekenyseg.md)); az óra (lásd [Apple Watch-app](07-apple-watch.md)).
+- **A gyakorlatcsere** edzés közben (ma megmondja, hogy még nem él), és a mezociklusra szóló csere.
+- B5: Élő tevékenység (lásd [Élő tevékenység](08-elo-tevekenyseg.md)); az óra (lásd [Apple Watch-app](07-apple-watch.md)).
 - Nyitott kérdés a tulajdonosnak: a visszajelzés (például erős ízületi fájdalom) befolyásolja-e a terhelést.
 
 ## Mi marad ki
