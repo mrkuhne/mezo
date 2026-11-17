@@ -44,7 +44,7 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
 |---|---|---|
 | **k3s** | — | Lightweight Kubernetes. Bundles Traefik ingress + `local-path` storage + `kubectl`. Install via `curl -sfL https://get.k3s.io \| sh -`. |
 | **Ingress** | `Ingress` (Traefik) | HTTPS via Let's Encrypt. Host routes: `/` → frontend, `/api` → backend. |
-| **frontend** | `Deployment` + `Service` | `pnpm build` output served by nginx. Image in GHCR. REAL mode (targets `/api`). |
+| **frontend** | `Deployment` + `Service` | `pnpm build` output served by nginx. Image in GHCR. REAL mode (targets `/api`). `frontend/nginx.conf` gzips text assets and marks the content-hashed `/assets/*` immutable (1 year); the HTML shell and the service workers stay `no-cache`. The backend gzips JSON over 2 KB itself (`server.compression`, SSE excluded) — mezo-l5lvh. |
 | **backend** | `Deployment` + `Service` | Spring Boot, container on :8090. Profile `demodata` (owner seed). Env/secrets from `Secret`/`ConfigMap`. Image in GHCR. |
 | **postgres** | `StatefulSet` + `PVC` + `Secret` | Postgres 16 — image `pgvector/pgvector:pg16` since 2026-07-03 (companion V2.1 vector layer; same PG16 major, data kept on the PVC). `local-path` PVC for data. Credentials in a `Secret`. Not exposed outside the cluster. |
 | **pgAdmin** | `Deployment` + `Service` | DB GUI. Private: reachable only over the Tailscale ingress (`k8s/pgadmin/ingress-tailscale.yaml`). |
