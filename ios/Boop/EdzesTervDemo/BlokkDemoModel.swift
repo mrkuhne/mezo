@@ -236,6 +236,62 @@ final class BlokkDemoModel {
         days[day].exercises[exercise].sets = min(8, max(1, next))
     }
 
+
+    // MARK: the whole block (six weeks)
+
+    static let phases = ["Alap", "Építés", "Építés", "Építés", "Csúcs", "Pihenő"]
+
+    /// One muscle across the six weeks: the plan is week 1, Hangsúly climbs a set a week, Építés one every
+    /// second week, Tartás stays; nothing passes the top of its band, and the last week is half.
+    func path(_ muscle: String) -> [Int] {
+        let start = weekly(muscle)
+        guard let band = band(muscle), start > 0 else { return Array(repeating: start, count: 6) }
+        var out: [Int] = []
+        for week in 0..<5 {
+            let climb: Int
+            switch tiers[muscle] ?? .grow {
+            case .emphasize: climb = week
+            case .grow: climb = week / 2
+            case .maintain: climb = 0
+            }
+            out.append(max(start, min(band.high, start + climb)))
+        }
+        out.append(Int((Double(out[4]) / 2).rounded(.up)))
+        return out
+    }
+
+    func weekTotals() -> [Int] {
+        let other = total() - Self.muscles.map(weekly).reduce(0, +)
+        return (0..<6).map { w in
+            Self.muscles.map { path($0)[w] }.reduce(0, +) + (w == 5 ? (other + 1) / 2 : other)
+        }
+    }
+
+    /// „hétfő 6 · csütörtök 5" — where this muscle's sets sit in the week.
+    func spread(_ muscle: String) -> String {
+        days.indices.compactMap { d in
+            let sets = daySets(d, muscle: muscle)
+            return sets > 0 ? "\(days[d].name.lowercased()) \(sets)" : nil
+        }.joined(separator: " · ")
+    }
+
+    /// The muscles the review has something to say about, in the order of the body.
+    var reviewMuscles: [String] { Self.muscles.filter { m in changes.contains { $0.muscle == m } } }
+    var quietMuscles: [String] { Self.muscles.filter { m in !changes.contains { $0.muscle == m } } }
+    var decided: [String: Bool] = [:]
+
+    func decide(_ muscle: String, accept: Bool) {
+        decided[muscle] = accept
+        for i in changes.indices where changes[i].muscle == muscle { changes[i].accepted = accept }
+    }
+
+    func setDelta(_ muscle: String) -> Int {
+        changes.filter { $0.muscle == muscle }.reduce(0) { sum, c in
+            if case .sets(let from, let to) = c.kind { return sum + (to - from) }
+            return sum
+        }
+    }
+
     func cycle(_ muscle: String) {
         switch tiers[muscle] ?? .grow {
         case .maintain: tiers[muscle] = .grow

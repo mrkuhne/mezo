@@ -3,7 +3,10 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-// THROWAWAY SIMULATOR DEMO — see BlokkDemoModel.swift.
+// THROWAWAY SIMULATOR DEMO, round 2 — see BlokkDemoModel.swift.
+// Owner on round 1: untidy, too much scrolling, unclear whether it is a week or the block, "nothing exciting".
+// Round 2: a full-screen builder with its own three-way bar (Izmok · Napok · Blokk), the body as the hero, a
+// dial per muscle, paged days; the review is a deck of cards, one muscle a card, decided on the card.
 
 struct BlokkDemoRoot: View {
     enum Route { case hub, builder, review }
@@ -20,51 +23,58 @@ struct BlokkDemoRoot: View {
         ZStack {
             NK.ground.ignoresSafeArea()
             switch route {
-            case .hub: BlokkDemoHub(model: model) { route = $0 }
-            case .builder: BlokkBuilderPage(model: model) { route = .hub }
-            case .review: WeekReviewPage(model: model) { route = .hub }
+            case .hub: BlokkDemoHub(model: model) { route = $0 }.transition(.opacity)
+            case .builder: BlokkBuilderPage(model: model) { route = .hub }.transition(.move(edge: .bottom).combined(with: .opacity))
+            case .review: WeekReviewDeck(model: model) { route = .hub }.transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: route)
+        .animation(.smooth(duration: 0.35), value: route)
         .preferredColorScheme(.dark)
     }
 }
 
-// MARK: - The entrance: the weekly card and the builder
+private let demoHue = Hue.mozgas
+private let demoWarn = Color(hex: 0xF2C94C)
+private let demoGood = Color(hex: 0x9FD8A8)
+
+/// The sky of the area behind a full-screen page, fading into the ground.
+private struct DemoSky: View {
+    var height: CGFloat = 420
+    var body: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: demoHue.sky.map { $0.opacity(0.75) } + [NK.ground], startPoint: .top, endPoint: .bottom)
+                .frame(height: height)
+            NK.ground
+        }
+        .ignoresSafeArea()
+    }
+}
+
+// MARK: - The entrance
 
 private struct BlokkDemoHub: View {
     let model: BlokkDemoModel
     let go: (BlokkDemoRoot.Route) -> Void
-    private let hue = Hue.mozgas
+    private let hue = demoHue
 
     var body: some View {
-        let open = model.changes.count
         NKAreaSubPage(hue: hue, crumb: "Edzés", eyebrow: "Blokk · 3. hét kezdődik",
                       title: "V-forma és kar",
                       sentence: "Hathetes blokk, a *hát* és a *bicepsz* a hangsúly. A második hét mögötted van.",
                       onBack: nil) {
             if model.weekAccepted {
-                NKHighlight(hue: hue, label: "A 3. hét", text: "Elfogadva, a hét számai élnek",
-                            sub: "\(model.changes.filter(\.accepted).count) változás lépett életbe. Bármikor újra megnézheted.",
+                NKHighlight(hue: hue, label: "A 3. hét", text: "Indulhat, a hét számai élnek",
+                            sub: "\(model.changes.filter(\.accepted).count) változás lépett életbe.",
                             actions: [NKHighlightAction("Megnézem", weight: .secondary) { go(.review) }])
             } else {
-                NKHighlight(hue: hue, label: "Új hét · jóváhagyásra vár", text: "\(open) dolog változna ezen a héten",
-                            sub: "Két sorozattal több a hátra és a bicepszre, két gyakorlatnál nő a súly. Amíg nem hagyod jóvá, a múlt heti számok maradnak.",
+                NKHighlight(hue: hue, label: "Új hét · jóváhagyásra vár", text: "\(model.reviewMuscles.count) izomnál változna valami",
+                            sub: "Egy-egy sorozattal több a hátra és a bicepszre, két gyakorlatnál nő a súly. Amíg nem hagyod jóvá, a múlt heti számok maradnak.",
                             actions: [NKHighlightAction("Átnézem") { go(.review) },
-                                      NKHighlightAction("Elfogadom átnézés nélkül", weight: .secondary) { model.weekAccepted = true }])
+                                      NKHighlightAction("Elfogadom átnézés nélkül", weight: .secondary) {
+                                          for m in model.reviewMuscles { model.decide(m, accept: true) }
+                                          model.weekAccepted = true
+                                      }])
             }
-
-            NKBare("A blokk hat hete", hue: hue) {
-                NKBlockTimeline([
-                    NKBlockWeek(week: 1, load: 0.45, phase: "Alap", state: .past),
-                    NKBlockWeek(week: 2, load: 0.58, phase: "Építés", state: .past),
-                    NKBlockWeek(week: 3, load: 0.7, phase: "Építés", state: .current),
-                    NKBlockWeek(week: 4, load: 0.82, phase: "Építés", state: .future),
-                    NKBlockWeek(week: 5, load: 0.94, phase: "Csúcs", state: .future),
-                    NKBlockWeek(week: 6, load: 0.4, phase: "Pihenőhét", state: .future, isDeload: true),
-                ], hue: hue, caption: "6 hetes blokk · 3. hét")
-            }
-
             NKBare("A terv", hue: hue, trailing: "\(model.total()) sorozat / hét") {
                 VStack(alignment: .leading, spacing: 14) {
                     NKHueText(model.outside.isEmpty
@@ -78,373 +88,722 @@ private struct BlokkDemoHub: View {
     }
 }
 
-// MARK: - The builder
+// MARK: - The builder: one full screen, three views
 
 private struct BlokkBuilderPage: View {
+    enum Mode: String, CaseIterable { case izmok = "Izmok", napok = "Napok", blokk = "Blokk" }
     let model: BlokkDemoModel
     let onBack: () -> Void
-    private let hue = Hue.mozgas
-    @State private var why: String?
+    @State private var mode: Mode = {
+        switch UserDefaults.standard.string(forKey: "previewBlokkTab") {
+        case "napok": .napok
+        case "blokk": .blokk
+        default: .izmok
+        }
+    }()
+    @State private var muscle: String? = "back"
+    @State private var day = 0
     @State private var saved = false
 
     var body: some View {
-        let out = model.outside
-        NKAreaSubPage(hue: hue, crumb: "Edzés · Blokk", eyebrow: "Blokk szerkesztése · 6 hét",
-                      title: out.isEmpty ? "Minden izom a sávjában van" : "\(out.count) izom lóg ki a sávjából",
-                      sentence: out.isEmpty
-                        ? "Heti *\(model.total()) sorozat*. Amit itt látsz, pontosan az kerül az edzéseidbe."
-                        : "Állítsd a sorozatokat, válts szintet, vagy fogadd el a javaslatot. *A te számod* kerül az edzésbe.",
-                      onBack: onBack) {
-            body_
-            levels
-            ForEach(Array(model.days.enumerated()), id: \.element.id) { index, day in
-                dayBlock(index, day)
-            }
-            NKBare("Mentés", hue: hue) {
-                VStack(alignment: .leading, spacing: 12) {
-                    if saved {
-                        NKHueText("*Elmentve.* Az első hét ezekkel a számokkal indul.", hue: hue)
-                    }
-                    NKActions(out.isEmpty
-                              ? [NKAction(glyph: "check-ink", title: "Blokk mentése", primary: true) { saved = true }]
-                              : [NKAction(glyph: "bolt-ink", title: "Igazítsd a sávba", primary: true) { model.applyAll() },
-                                 NKAction(title: "Mentés így is") { saved = true }], hue: hue)
-                    NKNote("A sáv az a heti sorozatszám, amit a kutatások az adott szinthez ajánlanak. A javaslat soha nem tesz egy gyakorlatra ötnél, egy edzésen egy izomra nyolcnál több sorozatot.", hue: hue)
-                }
-            }
-        }
-        .sheet(item: Binding(get: { why.map(WhyItem.init) }, set: { why = $0?.muscle })) { item in
-            WhySheet(model: model, muscle: item.muscle, hue: hue)
-                .presentationDetents([.medium])
-        }
-    }
-
-    /// The body, each muscle filled to where it stands against the top of its band.
-    private var body_: some View {
-        NKBare("A hét egy képen", hue: hue, trailing: "\(model.total()) sorozat") {
-            HStack(alignment: .center, spacing: 16) {
-                NKBodyMap(BlokkDemoModel.muscles.compactMap { m in
-                    guard let band = model.band(m) else { return nil }
-                    return NKBodyHeat(muscle: m, level: Double(model.weekly(m)) / Double(max(1, band.high)))
-                }, hue: hue, views: .both)
-                .frame(maxHeight: 180)
-                VStack(alignment: .leading, spacing: 10) {
-                    legend(.emphasize, "a sáv teteje a határ")
-                    legend(.grow, "a közepéig építünk")
-                    legend(.maintain, "kevés is megtartja")
-                    Toggle(isOn: Binding(get: { model.volleyball }, set: { model.volleyball = $0 })) {
-                        Text("Röplabda: a láb sávja lejjebb").nkFont(12).foregroundStyle(.white.opacity(0.7))
-                    }
-                    .tint(hue.glow)
-                    .padding(.top, 4)
-                }
-            }
-        }
-    }
-
-    private func legend(_ tier: MuscleTier, _ line: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            TierPill(tier: tier, hue: hue)
-            Text(line).nkFont(11).foregroundStyle(.white.opacity(0.5))
-        }
-    }
-
-    private var levels: some View {
-        NKBare("Szintek és heti sorozatok", hue: hue, trailing: "koppints a szintre") {
+        ZStack {
+            DemoSky(height: 380)
             VStack(spacing: 0) {
-                ForEach(Array(BlokkDemoModel.muscles.enumerated()), id: \.element) { i, muscle in
-                    if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                    MuscleRow(model: model, muscle: muscle, hue: hue) { why = muscle }
+                head
+                switch mode {
+                case .izmok: MusclesView(model: model, selected: $muscle)
+                case .napok: DaysView(model: model, day: $day)
+                case .blokk: BlockView(model: model)
                 }
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { bar }
+        .sensoryFeedback(.selection, trigger: mode)
+        .sensoryFeedback(.success, trigger: saved)
     }
 
-    private func dayBlock(_ index: Int, _ day: DemoDay) -> some View {
-        NKBare("\(day.name) · \(day.title)", hue: hue, trailing: "kb. \(model.minutes(index)) perc") {
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(day.exercises.enumerated()), id: \.element.id) { e, exercise in
-                    if e > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                    HStack(spacing: 10) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(exercise.name).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
-                            Text(exercise.counts ? demoMuscleName(exercise.muscle) : "ugrás · nem számít a sorozatokba")
-                                .nkFont(12).foregroundStyle(.white.opacity(0.5))
+    private var head: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Button(action: onBack) {
+                Image(systemName: "chevron.down").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 40, height: 40).background(Circle().fill(.white.opacity(0.14)))
+            }
+            .buttonStyle(.plain)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(scope).nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(.white.opacity(0.7))
+                Text("V-forma és kar").nkFont(22, design: .serif).foregroundStyle(.white)
+            }
+            Spacer(minLength: 8)
+            let out = model.outside.count
+            HStack(spacing: 6) {
+                Circle().fill(out == 0 ? demoGood : demoWarn).frame(width: 7, height: 7)
+                Text(out == 0 ? "minden a sávban" : "\(out) izom kilóg").nkFont(12, .medium).foregroundStyle(.white.opacity(0.9))
+                    .contentTransition(.numericText())
+            }
+            .padding(.horizontal, 11).padding(.vertical, 7)
+            .background(Capsule().fill(.black.opacity(0.28)))
+        }
+        .padding(.horizontal, 20).padding(.top, 6).padding(.bottom, 10)
+    }
+
+    /// The one line that says what he is looking at — his question on round 1.
+    private var scope: String {
+        switch mode {
+        case .izmok: "EGY HÉT · IZMONKÉNT"
+        case .napok: "EGY HÉT · NAPONKÉNT"
+        case .blokk: "A TELJES BLOKK · 6 HÉT"
+        }
+    }
+
+    private var bar: some View {
+        let out = model.outside
+        return HStack(spacing: 10) {
+            HStack(spacing: 2) {
+                ForEach(Mode.allCases, id: \.self) { item in
+                    Button { withAnimation(.snappy(duration: 0.28)) { mode = item } } label: {
+                        VStack(spacing: 3) {
+                            NKGlyph(glyph(item), mode == item ? NK.ground : .white.opacity(0.75), size: 17)
+                            Text(item.rawValue).nkFont(10, .semibold).foregroundStyle(mode == item ? NK.ground : .white.opacity(0.75))
                         }
-                        Spacer(minLength: 8)
-                        SetStepper(value: exercise.sets, hue: hue,
-                                   down: { model.step(day: index, exercise: e, by: -1) },
-                                   up: { model.step(day: index, exercise: e, by: 1) })
+                        .frame(width: 62, height: 48)
+                        .background { if mode == item { Capsule().fill(.white) } }
+                        .contentShape(Capsule())
                     }
-                    .padding(.vertical, 10)
-                }
-                ForEach(model.overCap(index), id: \.0) { muscle, sets in
-                    Text("\(demoMuscleName(muscle)): \(sets) sorozat egy edzésen. Nyolc fölött már nem ad többet, oszd el két napra.")
-                        .nkFont(12).foregroundStyle(Color(hex: 0xF2C94C))
-                        .padding(.top, 8)
-                }
-                if let note = day.note {
-                    Text(note).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.4)).padding(.top, 8)
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(4)
+            .background(Capsule().fill(.ultraThinMaterial).overlay(Capsule().stroke(.white.opacity(0.12), lineWidth: 1)))
+
+            Button {
+                withAnimation(.snappy) {
+                    if out.isEmpty { saved = true } else { model.applyAll() }
+                }
+            } label: {
+                Text(saved && out.isEmpty ? "Elmentve" : (out.isEmpty ? "Mentés" : "Igazítsd a sávba"))
+                    .nkFont(15, .semibold).foregroundStyle(out.isEmpty ? NK.ground : .white)
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .background(Capsule().fill(out.isEmpty ? AnyShapeStyle(demoHue.glow) : AnyShapeStyle(.white.opacity(0.14))))
+                    .overlay(Capsule().stroke(.white.opacity(out.isEmpty ? 0 : 0.18), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 4)
+        .background(LinearGradient(colors: [NK.ground.opacity(0), NK.ground.opacity(0.95)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+    }
+
+    private func glyph(_ mode: Mode) -> String {
+        switch mode {
+        case .izmok: "dumbbell-ink"
+        case .napok: "clock-ink"
+        case .blokk: "chart-deep"
         }
     }
 }
 
-private struct WhyItem: Identifiable {
-    let muscle: String
-    var id: String { muscle }
+// MARK: Izmok — the body, and one muscle a card
+
+private struct MusclesView: View {
+    let model: BlokkDemoModel
+    @Binding var selected: String?
+
+    var body: some View {
+        let current = selected ?? "back"
+        VStack(spacing: 0) {
+            NKBodyMap(BlokkDemoModel.muscles.compactMap { m in
+                guard let band = model.band(m) else { return nil }
+                let fill = min(1, Double(model.weekly(m)) / Double(max(1, band.high)))
+                return NKBodyHeat(muscle: m, level: m == current ? max(0.75, fill) : fill * 0.28)
+            }, hue: demoHue, views: .both)
+            .frame(maxWidth: .infinity).frame(height: 232)
+            .padding(.horizontal, 40)
+            .animation(.smooth(duration: 0.4), value: current)
+
+            dots(current)
+
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: 14) {
+                    ForEach(BlokkDemoModel.muscles, id: \.self) { m in
+                        MuscleCard(model: model, muscle: m)
+                            .containerRelativeFrame(.horizontal)
+                            .scrollTransition(.interactive, axis: .horizontal) { view, phase in
+                                view.scaleEffect(phase.isIdentity ? 1 : 0.92).opacity(phase.isIdentity ? 1 : 0.55)
+                            }
+                            .id(m)
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .contentMargins(.horizontal, 26, for: .scrollContent)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $selected)
+            .scrollIndicators(.hidden)
+            .sensoryFeedback(.selection, trigger: selected)
+        }
+    }
+
+    /// The eight muscles as a strip: which one is on the card, and which ones are outside their band.
+    private func dots(_ current: String) -> some View {
+        HStack(spacing: 6) {
+            ForEach(BlokkDemoModel.muscles, id: \.self) { m in
+                let out = model.fit(m) != .inside
+                Button { withAnimation(.smooth) { selected = m } } label: {
+                    Capsule()
+                        .fill(m == current ? Color.white : (out ? demoWarn.opacity(0.85) : .white.opacity(0.22)))
+                        .frame(width: m == current ? 26 : 9, height: 9)
+                        .frame(height: 30)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, 2)
+        .animation(.snappy, value: current)
+    }
 }
 
-/// One muscle in the builder: its tier, its band, his own number on it, and the proposal when he is outside.
-private struct MuscleRow: View {
+private struct MuscleCard: View {
     let model: BlokkDemoModel
     let muscle: String
-    let hue: Hue
-    let onWhy: () -> Void
+    @State private var why = false
 
     var body: some View {
         let sets = model.weekly(muscle)
         let fit = model.fit(muscle)
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(alignment: .center, spacing: 10) {
-                if NKBodyMark.canDraw(muscle) {
-                    NKBodyMark(muscle: muscle, hue: hue, height: 40).frame(width: 26)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(demoMuscleName(muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
-                    Text(verdict(fit)).nkFont(12).foregroundStyle(fit == .inside ? .white.opacity(0.55) : Color(hex: 0xF2C94C))
-                }
-                Spacer(minLength: 6)
-                Button { model.cycle(muscle) } label: { TierPill(tier: model.tiers[muscle] ?? .grow, hue: hue) }
-                    .buttonStyle(.plain)
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text("\(sets)").nkFont(22, .medium).foregroundStyle(.white)
-                        .contentTransition(.numericText())
-                    Text("sorozat").nkFont(10).foregroundStyle(.white.opacity(0.45))
-                }
-                .frame(minWidth: 46, alignment: .trailing)
+        let tier = model.tiers[muscle] ?? .grow
+        VStack(spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(demoMuscleName(muscle)).nkFont(26, design: .serif).foregroundStyle(.white)
+                Spacer()
+                Text(verdict(fit)).nkFont(13, .medium).foregroundStyle(fit == .inside ? demoGood : demoWarn)
             }
+            TierSwitch(tier: tier) { model.tiers[muscle] = $0 }
+
             if let band = model.band(muscle) {
-                BandBar(value: sets, band: band, hue: hue, inside: fit == .inside)
+                ArcGauge(value: sets, band: band, inside: fit == .inside)
+                    .frame(height: 132)
+                    .overlay(alignment: .bottom) {
+                        VStack(spacing: 0) {
+                            Text("\(sets)").nkFont(46, .medium).foregroundStyle(.white).contentTransition(.numericText())
+                            Text("sorozat hetente").nkFont(11).foregroundStyle(.white.opacity(0.5))
+                        }
+                    }
+                Text("a sáv \(band.low)–\(band.high)\(band.sport ? " · röplabda miatt lejjebb" : "") · \(model.spread(muscle))")
+                    .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+                    .multilineTextAlignment(.center)
             }
+
             if fit != .inside {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Javaslat: \(model.proposalText(muscle))")
-                        .nkFont(13).foregroundStyle(.white.opacity(0.8))
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(why ? whyText(tier) : "Javaslat: \(model.proposalText(muscle))")
+                        .nkFont(13).foregroundStyle(.white.opacity(0.85))
                         .fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 14) {
+                    HStack(spacing: 16) {
                         Button { withAnimation(.snappy) { model.apply(muscle) } } label: {
-                            Text("Elfogadom").nkFont(13, .semibold).foregroundStyle(NK.ground)
-                                .padding(.horizontal, 14).padding(.vertical, 7)
-                                .background(Capsule().fill(.white))
+                            Text("Elfogadom").nkFont(14, .semibold).foregroundStyle(NK.ground)
+                                .padding(.horizontal, 18).padding(.vertical, 9).background(Capsule().fill(.white))
                         }
                         .buttonStyle(.plain)
-                        Button(action: onWhy) {
-                            Text("miért?").nkFont(13, .medium).foregroundStyle(hue.glow)
+                        Button { withAnimation(.snappy) { why.toggle() } } label: {
+                            Text(why ? "a javaslat" : "miért?").nkFont(14, .medium).foregroundStyle(demoHue.glow)
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .nkGlass(16)
+                .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(demoWarn.opacity(0.1)))
+            } else {
+                Text("Rendben van. A Napok nézetben állíthatod a sorozatokat, a mérő azonnal követi.")
+                    .nkFont(13).foregroundStyle(.white.opacity(0.55))
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 12)
-        .animation(.snappy, value: sets)
+        .padding(20)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .nkGlass(30)
+        .padding(.vertical, 8)
+        .sensoryFeedback(.impact(weight: .light), trigger: sets)
+        .sensoryFeedback(.selection, trigger: tier)
     }
 
     private func verdict(_ fit: DemoFit) -> String {
         switch fit {
         case .inside: "a sávban"
-        case .below(let n): "\(n) sorozattal a sáv alatt"
-        case .above(let n): "\(n) sorozattal a sáv fölött"
-        }
-    }
-}
-
-private struct WhySheet: View {
-    let model: BlokkDemoModel
-    let muscle: String
-    let hue: Hue
-
-    var body: some View {
-        let band = model.band(muscle)
-        let tier = model.tiers[muscle] ?? .grow
-        VStack(alignment: .leading, spacing: 14) {
-            Text("MIÉRT EZ A JAVASLAT").nkFont(11, .semibold, design: .monospaced).tracking(1.4)
-                .foregroundStyle(.white.opacity(0.5))
-            Text("\(demoMuscleName(muscle)) · \(tier.hungarian)").nkFont(26, design: .serif).foregroundStyle(.white)
-            if let band {
-                line("A sáv", "\(band.low)–\(band.high) sorozat hetente. \(tierLine(tier))")
-                line("Most", "\(model.weekly(muscle)) sorozatod van a héten, két edzésre elosztva.")
-                if band.sport {
-                    line("Röplabda", "A lábad heti három edzésen és a szombati versenyen is dolgozik, ezért a sávot lejjebb vettem.")
-                }
-                line("A javaslat", model.proposalText(muscle))
-                line("Ha nem ezt akarod", "Válts szintet a sorban, vagy állítsd kézzel a sorozatokat a napoknál. A te számod kerül az edzésbe.")
-            }
-            Spacer()
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(NK.ground.ignoresSafeArea())
-        .preferredColorScheme(.dark)
-    }
-
-    private func line(_ label: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label.uppercased()).nkFont(10, .semibold, design: .monospaced).tracking(1.2).foregroundStyle(hue.glow)
-            Text(text).nkFont(15).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+        case .below(let n): "\(n) hiányzik"
+        case .above(let n): "\(n) túl sok"
         }
     }
 
-    private func tierLine(_ tier: MuscleTier) -> String {
+    private func whyText(_ tier: MuscleTier) -> String {
         switch tier {
-        case .emphasize: "Hangsúlynál a sáv teteje a határ: innen építjük a legtöbbet."
-        case .grow: "Építésnél ennyi kell ahhoz, hogy nőjön, de ne fáradj el tőle."
-        case .maintain: "Tartásnál a harmada is megtartja, amid van, ha a súly megmarad."
+        case .emphasize: "Hangsúlynál a sáv teteje a határ: innen építjük a legtöbbet. A javaslat egy gyakorlatra legfeljebb öt, egy edzésen egy izomra legfeljebb nyolc sorozatot tesz."
+        case .grow: "Építésnél ennyi kell ahhoz, hogy nőjön, de ne fáradj el tőle. A javaslat a legkevesebb sorozatú gyakorlatot tölti fel először."
+        case .maintain: "Tartásnál a harmada is megtartja, amid van, ha a súly megmarad. Ennél kevesebbnél már veszíthetsz belőle."
         }
     }
 }
 
-// MARK: - The weekly review
-
-private struct WeekReviewPage: View {
-    let model: BlokkDemoModel
-    let onBack: () -> Void
-    private let hue = Hue.mozgas
-    @State private var open: String?
+/// Hangsúly · Építés · Tartás as one switch, the chosen one lit in its own colour.
+private struct TierSwitch: View {
+    let tier: MuscleTier
+    let set: (MuscleTier) -> Void
+    private let all: [MuscleTier] = [.maintain, .grow, .emphasize]
 
     var body: some View {
-        let kept = model.changes.filter(\.accepted).count
-        let added = model.changes.filter(\.accepted).reduce(0) { sum, c in
-            if case .sets(let from, let to) = c.kind { return sum + (to - from) }
-            return sum
-        }
-        NKAreaSubPage(hue: hue, crumb: "Edzés · Blokk", eyebrow: "3. hét · nov. 30 – dec. 6.",
-                      title: "\(model.changes.count) dolog változna ezen a héten",
-                      sentence: "A múlt heti edzéseid alapján. *Amit kikapcsolsz, az marad a múlt heti.*",
-                      onBack: onBack) {
-            NKBare("A hét egy pillantásra", hue: hue) {
-                NKStatRow([NKStat(value: "\(model.total() + added)", target: nil, unit: "sorozat", label: "ezen a héten", trend: added > 0 ? 1 : 0, hot: true),
-                           NKStat(value: "\(model.total())", unit: "sorozat", label: "múlt héten"),
-                           NKStat(value: "\(kept)", target: "\(model.changes.count)", label: "változás él")], hue: hue)
-            }
-
-            NKBare("Izmonként", hue: hue) {
-                VStack(spacing: 0) {
-                    ForEach(Array(BlokkDemoModel.muscles.enumerated()), id: \.element) { i, muscle in
-                        if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                        reviewMuscle(muscle)
-                    }
-                }
-            }
-
-            ForEach(Array(model.days.enumerated()), id: \.element.id) { index, day in
-                reviewDay(index, day)
-            }
-
-            NKNote("Fogyásban vagy, ezért a Hangsúly izmok is csak egy sorozattal lépnek hetente. A Tartás izmok sorozatszáma nem változik, ott csak a súly vagy az ismétlés mozdul.", hue: hue)
-        }
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
-                NKPill(model.weekAccepted ? "Elfogadva" : (kept == model.changes.count ? "Elfogadom mind" : "Elfogadom (\(kept) változás)")) {
-                    model.weekAccepted = true
-                    onBack()
-                }
-                Button { onBack() } label: {
-                    Text("Később döntök, marad a múlt heti").nkFont(13, .medium).foregroundStyle(.white.opacity(0.6))
+        HStack(spacing: 4) {
+            ForEach(all, id: \.self) { item in
+                Button { withAnimation(.snappy) { set(item) } } label: {
+                    Text(item.hungarian).nkFont(13, .semibold)
+                        .foregroundStyle(item == tier ? NK.ground : .white.opacity(0.7))
+                        .frame(maxWidth: .infinity, minHeight: 36)
+                        .background { if item == tier { Capsule().fill(color(item)) } }
+                        .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 6)
-            .background(LinearGradient(colors: [NK.ground.opacity(0), NK.ground, NK.ground], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
         }
+        .padding(4)
+        .background(Capsule().fill(.white.opacity(0.08)))
     }
 
-    private func delta(_ muscle: String) -> Int {
-        model.changes.filter { $0.accepted && $0.muscle == muscle }.reduce(0) { sum, c in
-            if case .sets(let from, let to) = c.kind { return sum + (to - from) }
-            return sum
+    private func color(_ tier: MuscleTier) -> Color {
+        switch tier {
+        case .emphasize: demoHue.glow
+        case .grow: demoGood
+        case .maintain: .white
         }
     }
+}
 
-    private func reviewMuscle(_ muscle: String) -> some View {
-        let before = model.weekly(muscle), after = before + delta(muscle)
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                if NKBodyMark.canDraw(muscle) { NKBodyMark(muscle: muscle, hue: hue, height: 36).frame(width: 24) }
-                Text(demoMuscleName(muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
-                TierPill(tier: model.tiers[muscle] ?? .grow, hue: hue)
-                Spacer(minLength: 6)
-                if after != before {
-                    Text("\(before) → \(after)").nkFont(17, .semibold).foregroundStyle(hue.glow)
-                } else {
-                    Text("\(before) · marad").nkFont(14).foregroundStyle(.white.opacity(0.5))
+// MARK: Napok — one day a page
+
+private struct DaysView: View {
+    let model: BlokkDemoModel
+    @Binding var day: Int
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                ForEach(Array(model.days.enumerated()), id: \.element.id) { index, item in
+                    let on = index == day
+                    Button { withAnimation(.snappy) { day = index } } label: {
+                        VStack(spacing: 5) {
+                            Text(String(item.name.prefix(index == 2 ? 3 : (index == 3 ? 2 : 1))).uppercased())
+                                .nkFont(11, .semibold, design: .monospaced).foregroundStyle(on ? NK.ground : .white.opacity(0.75))
+                            Text("\(model.minutes(index))'").nkFont(15, .medium).foregroundStyle(on ? NK.ground : .white)
+                                .contentTransition(.numericText())
+                            Capsule().fill(on ? NK.ground.opacity(0.5) : demoHue.glow.opacity(0.8))
+                                .frame(width: CGFloat(8 + model.minutes(index) / 2), height: 3)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 62)
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(on ? Color.white : .white.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            if let band = model.band(muscle) {
-                BandBar(value: after, band: band, hue: hue, inside: after >= band.low && after <= band.high, ghost: after != before ? before : nil)
-            }
-        }
-        .padding(.vertical, 10)
-    }
+            .padding(.horizontal, 20)
 
-    private func reviewDay(_ index: Int, _ day: DemoDay) -> some View {
-        let dayChanges = model.changes.filter { $0.day == index }
-        return NKBare("\(day.name) · \(day.title)", hue: hue,
-                      trailing: dayChanges.isEmpty ? "nem változik" : "\(dayChanges.count) változás") {
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(day.exercises.enumerated()), id: \.element.id) { e, exercise in
-                    if e > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                    let change = dayChanges.first { $0.exercise == exercise.name }
-                    VStack(alignment: .leading, spacing: 6) {
+            TabView(selection: $day) {
+                ForEach(Array(model.days.enumerated()), id: \.element.id) { index, item in
+                    DayCard(model: model, index: index, day: item).tag(index)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .sensoryFeedback(.selection, trigger: day)
+        }
+    }
+}
+
+private struct DayCard: View {
+    let model: BlokkDemoModel
+    let index: Int
+    let day: DemoDay
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(day.name.uppercased()).nkFont(11, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(demoHue.glow)
+                    Text(day.title).nkFont(28, design: .serif).foregroundStyle(.white)
+                    Text("kb. \(model.minutes(index)) perc\(day.note.map { " · \($0)" } ?? "")")
+                        .nkFont(13).foregroundStyle(.white.opacity(0.55))
+                }
+                NKFlowRow(spacing: 8, rowSpacing: 8) {
+                    ForEach(BlokkDemoModel.muscles.filter { model.daySets(index, muscle: $0) > 0 }, id: \.self) { m in
+                        let sets = model.daySets(index, muscle: m)
+                        let over = sets > BlokkDemoModel.sessionCap
+                        HStack(spacing: 6) {
+                            Text(demoMuscleName(m)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85))
+                            Text("\(sets)").nkFont(13, .semibold).foregroundStyle(over ? demoWarn : demoHue.glow)
+                                .contentTransition(.numericText())
+                        }
+                        .padding(.horizontal, 11).padding(.vertical, 6)
+                        .background(Capsule().fill(over ? demoWarn.opacity(0.16) : .white.opacity(0.08)))
+                    }
+                }
+                ForEach(model.overCap(index), id: \.0) { muscle, sets in
+                    Text("\(demoMuscleName(muscle)): \(sets) sorozat egy edzésen. Nyolc fölött már nem ad többet, oszd el két napra.")
+                        .nkFont(13).foregroundStyle(demoWarn).fixedSize(horizontal: false, vertical: true)
+                }
+                VStack(spacing: 0) {
+                    ForEach(Array(day.exercises.enumerated()), id: \.element.id) { e, exercise in
+                        if e > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                         HStack(spacing: 10) {
-                            if change != nil {
-                                Capsule().fill(change?.accepted == true ? hue.glow : .white.opacity(0.25)).frame(width: 3, height: 30)
-                            }
+                            Text("\(e + 1)").nkFont(12, .semibold, design: .monospaced).foregroundStyle(.white.opacity(0.35)).frame(width: 16)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(exercise.name).nkFont(15, .medium)
-                                    .foregroundStyle(.white.opacity(change == nil ? 0.6 : 0.95))
-                                Text(line(exercise, change)).nkFont(12)
-                                    .foregroundStyle(change?.accepted == true ? hue.glow : .white.opacity(0.45))
+                                Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(0.95))
+                                Text(exercise.counts ? demoMuscleName(exercise.muscle) : "ugrás · nem számít a sorozatokba")
+                                    .nkFont(12).foregroundStyle(.white.opacity(0.5))
                             }
                             Spacer(minLength: 8)
-                            if let change {
-                                Toggle("", isOn: Binding(get: { change.accepted }, set: { on in
-                                    if let i = model.changes.firstIndex(where: { $0.id == change.id }) { model.changes[i].accepted = on }
-                                }))
-                                .labelsHidden().tint(hue.glow)
-                            }
+                            SetStepper(value: exercise.sets,
+                                       down: { model.step(day: index, exercise: e, by: -1) },
+                                       up: { model.step(day: index, exercise: e, by: 1) })
                         }
-                        if let change {
-                            Button { withAnimation(.snappy) { open = open == change.id ? nil : change.id } } label: {
-                                Text(open == change.id ? change.why : "miért?")
-                                    .nkFont(13, open == change.id ? .regular : .medium)
-                                    .foregroundStyle(open == change.id ? .white.opacity(0.75) : hue.glow)
-                                    .multilineTextAlignment(.leading)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .padding(.leading, 13)
-                            }
-                            .buttonStyle(.plain)
+                        .padding(.vertical, 12)
+                    }
+                }
+            }
+            .padding(22)
+            .background(RoundedRectangle(cornerRadius: 30, style: .continuous).fill(NK.ground.opacity(0.62)))
+            .nkGlass(30)
+            .padding(.horizontal, 20).padding(.bottom, 24)
+        }
+        .scrollIndicators(.hidden)
+    }
+}
+
+// MARK: Blokk — the six weeks
+
+private struct BlockView: View {
+    let model: BlokkDemoModel
+
+    var body: some View {
+        let totals = model.weekTotals()
+        let peak = Double(totals.max() ?? 1)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Az első hét a te terved. Innen a Hangsúly izmok hetente egy sorozattal nőnek a sávjuk tetejéig, a Tartás marad, a hatodik hét a fele.")
+                        .nkFont(14).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+                }
+                HStack(alignment: .bottom, spacing: 8) {
+                    ForEach(0..<6, id: \.self) { w in
+                        VStack(spacing: 6) {
+                            Text("\(totals[w])").nkFont(15, .semibold).foregroundStyle(.white).contentTransition(.numericText())
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(w == 5 ? AnyShapeStyle(.white.opacity(0.06)) : AnyShapeStyle(LinearGradient(colors: [demoHue.glow, demoHue.glow.opacity(0.45)], startPoint: .top, endPoint: .bottom)))
+                                .overlay { if w == 5 { RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(demoHue.glow.opacity(0.7), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4])) } }
+                                .frame(height: CGFloat(120 * Double(totals[w]) / peak))
+                            Text("\(w + 1). hét").nkFont(11, .medium).foregroundStyle(.white.opacity(0.8))
+                            Text(BlokkDemoModel.phases[w]).nkFont(9, design: .monospaced).foregroundStyle(.white.opacity(0.45))
                         }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(18)
+                .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(NK.ground.opacity(0.62)))
+                .nkGlass(26)
+
+                VStack(spacing: 0) {
+                    ForEach(Array(BlokkDemoModel.muscles.enumerated()), id: \.element) { i, m in
+                        if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                        let path = model.path(m)
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(demoMuscleName(m)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
+                                TierPill(tier: model.tiers[m] ?? .grow)
+                            }
+                            .frame(width: 104, alignment: .leading)
+                            HStack(alignment: .bottom, spacing: 4) {
+                                ForEach(0..<6, id: \.self) { w in
+                                    VStack(spacing: 3) {
+                                        Text("\(path[w])").nkFont(11, .medium, design: .monospaced)
+                                            .foregroundStyle(w > 0 && w < 5 && path[w] > path[w - 1] ? demoHue.glow : .white.opacity(0.6))
+                                        RoundedRectangle(cornerRadius: 3).fill(w == 5 ? .white.opacity(0.22) : demoHue.glow.opacity(0.75))
+                                            .frame(height: CGFloat(4 + 26 * Double(path[w]) / Double(max(1, path.max() ?? 1))))
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                            }
+                            .frame(height: 50, alignment: .bottom)
+                        }
+                        .padding(.vertical, 10)
+                    }
+                }
+                .padding(.horizontal, 18).padding(.vertical, 6).nkGlass(26)
+            }
+            .padding(.horizontal, 20).padding(.bottom, 60)
+        }
+        .scrollIndicators(.hidden)
+    }
+}
+
+// MARK: - The weekly review: a deck, one muscle a card
+
+private struct WeekReviewDeck: View {
+    let model: BlokkDemoModel
+    let onBack: () -> Void
+    @State private var index: Int = UserDefaults.standard.integer(forKey: "previewBlokkCard")
+
+    private var count: Int { model.reviewMuscles.count + 2 }
+
+    var body: some View {
+        ZStack {
+            DemoSky(height: 340)
+            VStack(spacing: 0) {
+                top
+                TabView(selection: $index) {
+                    ForEach(Array(model.reviewMuscles.enumerated()), id: \.element) { i, m in
+                        ReviewCard(model: model, muscle: m, position: "\(i + 1) / \(model.reviewMuscles.count)") { accept in
+                            model.decide(m, accept: accept)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { withAnimation(.smooth) { index = i + 1 } }
+                        }
+                        .tag(i)
+                    }
+                    QuietCard(model: model) { withAnimation(.smooth) { index = count - 1 } }.tag(count - 2)
+                    SummaryCard(model: model) {
+                        model.weekAccepted = true
+                        onBack()
+                    }
+                    .tag(count - 1)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+            }
+        }
+        .sensoryFeedback(.selection, trigger: index)
+    }
+
+    private var top: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 5) {
+                ForEach(0..<count, id: \.self) { i in
+                    Capsule().fill(i <= index ? Color.white : .white.opacity(0.25)).frame(height: 3)
+                }
+            }
+            .animation(.smooth, value: index)
+            HStack {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.down").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 40, height: 40).background(Circle().fill(.white.opacity(0.14)))
+                }
+                .buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("3. HÉT · NOV. 30 – DEC. 6.").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(.white.opacity(0.7))
+                    Text("Ez változna a héten").nkFont(20, design: .serif).foregroundStyle(.white)
+                }
+                Spacer()
+                if index < count - 1 {
+                    Button {
+                        for m in model.reviewMuscles where model.decided[m] == nil { model.decide(m, accept: true) }
+                        withAnimation(.smooth) { index = count - 1 }
+                    } label: {
+                        Text("Mind elfogadom").nkFont(13, .semibold).foregroundStyle(.white)
+                            .padding(.horizontal, 13).padding(.vertical, 8).background(Capsule().fill(.black.opacity(0.28)))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.horizontal, 20).padding(.top, 8)
+    }
+}
+
+private struct ReviewCard: View {
+    let model: BlokkDemoModel
+    let muscle: String
+    let position: String
+    let decide: (Bool) -> Void
+
+    var body: some View {
+        let before = model.weekly(muscle)
+        let delta = model.setDelta(muscle)
+        let after = before + delta
+        let tier = model.tiers[muscle] ?? .grow
+        let decision = model.decided[muscle]
+        VStack(spacing: 14) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(position) · \(tier.hungarian.uppercased())").nkFont(11, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(demoHue.glow)
+                    Text(demoMuscleName(muscle)).nkFont(34, design: .serif).foregroundStyle(.white)
+                }
+                Spacer()
+                NKBodyMap([NKBodyHeat(muscle: muscle, level: 1)], hue: demoHue, views: .auto)
+                    .frame(width: 70, height: 110)
+            }
+
+            if let band = model.band(muscle) {
+                ArcGauge(value: after, band: band, inside: after >= band.low && after <= band.high, ghost: delta != 0 ? before : nil)
+                    .frame(height: 124)
+                    .overlay(alignment: .bottom) {
+                        VStack(spacing: 0) {
+                            if delta != 0 {
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                    Text("\(before)").nkFont(26, .medium).foregroundStyle(.white.opacity(0.45))
+                                    Image(systemName: "arrow.right").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white.opacity(0.45))
+                                    Text("\(after)").nkFont(46, .medium).foregroundStyle(.white)
+                                }
+                            } else {
+                                Text("\(before)").nkFont(46, .medium).foregroundStyle(.white)
+                            }
+                            Text(delta != 0 ? "sorozat hetente · a sáv \(band.low)–\(band.high)" : "sorozat · a szám marad, a sáv \(band.low)–\(band.high)")
+                                .nkFont(11).foregroundStyle(.white.opacity(0.5))
+                        }
+                    }
+            }
+
+            VStack(spacing: 0) {
+                ForEach(Array(model.changes.filter { $0.muscle == muscle }.enumerated()), id: \.element.id) { i, change in
+                    if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(change.exercise).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
+                            Spacer(minLength: 8)
+                            Text(amount(change)).nkFont(15, .semibold).foregroundStyle(demoHue.glow)
+                        }
+                        Text("\(model.days[change.day].name) · \(change.why)")
+                            .nkFont(12).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.vertical, 10)
                 }
             }
+
+            Spacer(minLength: 0)
+
+            if let decision {
+                HStack(spacing: 10) {
+                    DemoCheck(on: decision)
+                    Text(decision ? "Elfogadva" : "Marad a múlt heti").nkFont(16, .semibold).foregroundStyle(.white)
+                    Spacer()
+                    Button { withAnimation(.snappy) { model.decided[muscle] = nil } } label: {
+                        Text("mégis másképp").nkFont(13, .medium).foregroundStyle(demoHue.glow)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(minHeight: 54)
+                .transition(.scale(scale: 0.9).combined(with: .opacity))
+            } else {
+                HStack(spacing: 10) {
+                    Button { withAnimation(.snappy) { decide(false) } } label: {
+                        Text("Marad a múlt heti").nkFont(15, .semibold).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 54)
+                            .background(Capsule().fill(.white.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
+                    Button { withAnimation(.snappy) { decide(true) } } label: {
+                        Text("Elfogadom").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                            .frame(maxWidth: .infinity, minHeight: 54)
+                            .background(Capsule().fill(.white))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
+        .padding(22)
+        .frame(maxHeight: .infinity)
+        .background(RoundedRectangle(cornerRadius: 34, style: .continuous).fill(NK.ground.opacity(0.62)))
+        .nkGlass(34)
+        .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 20)
+        .sensoryFeedback(.success, trigger: decision)
     }
 
-    private func line(_ exercise: DemoExercise, _ change: DemoChange?) -> String {
-        guard let change else { return exercise.counts ? "\(exercise.sets) sorozat · ugyanaz, mint múlt héten" : "ugrás · ugyanaz" }
-        let off = change.accepted ? "" : " · kikapcsolva"
+    private func amount(_ change: DemoChange) -> String {
         switch change.kind {
-        case .sets(let from, let to): return "\(from) → \(to) sorozat\(off)"
-        case .weight(let from, let to): return "\(exercise.sets) sorozat · \(demoKg(from)) → \(demoKg(to))\(off)"
-        case .reps(let from, let to): return "\(exercise.sets) sorozat · \(from) → \(to) ismétlés\(off)"
+        case .sets(let from, let to): "\(from) → \(to) sorozat"
+        case .weight(let from, let to): "\(demoKg(from)) → \(demoKg(to))"
+        case .reps(let from, let to): "\(from) → \(to) ismétlés"
         }
+    }
+}
+
+private struct QuietCard: View {
+    let model: BlokkDemoModel
+    let next: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("NEM VÁLTOZIK").nkFont(11, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(demoHue.glow)
+            Text("\(model.quietMuscles.count) izom marad, ahol volt").nkFont(30, design: .serif).foregroundStyle(.white)
+            Text("Ezek Tartás szinten vannak, vagy most nincs okunk lépni velük. Ugyanazt csinálod, mint múlt héten.")
+                .nkFont(14).foregroundStyle(.white.opacity(0.65)).fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 0) {
+                ForEach(Array(model.quietMuscles.enumerated()), id: \.element) { i, m in
+                    if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                    HStack {
+                        Text(demoMuscleName(m)).nkFont(16, .medium).foregroundStyle(.white.opacity(0.95))
+                        TierPill(tier: model.tiers[m] ?? .grow)
+                        Spacer()
+                        Text("\(model.weekly(m)) sorozat").nkFont(15).foregroundStyle(.white.opacity(0.6))
+                    }
+                    .padding(.vertical, 12)
+                }
+            }
+            Spacer(minLength: 0)
+            Button(action: next) {
+                Text("Tovább az összegzéshez").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                    .frame(maxWidth: .infinity, minHeight: 54).background(Capsule().fill(.white))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(22)
+        .frame(maxHeight: .infinity)
+        .background(RoundedRectangle(cornerRadius: 34, style: .continuous).fill(NK.ground.opacity(0.62)))
+        .nkGlass(34)
+        .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 20)
+    }
+}
+
+private struct SummaryCard: View {
+    let model: BlokkDemoModel
+    let start: () -> Void
+    @State private var drawn = false
+
+    var body: some View {
+        let yes = model.reviewMuscles.filter { model.decided[$0] == true }
+        let no = model.reviewMuscles.filter { model.decided[$0] == false }
+        let open = model.reviewMuscles.filter { model.decided[$0] == nil }
+        let added = yes.map(model.setDelta).reduce(0, +)
+        VStack(spacing: 18) {
+            Spacer(minLength: 0)
+            ZStack {
+                Circle().stroke(.white.opacity(0.1), lineWidth: 10)
+                Circle().trim(from: 0, to: drawn ? CGFloat(yes.count + no.count) / CGFloat(max(1, model.reviewMuscles.count)) : 0)
+                    .stroke(AngularGradient(colors: [demoHue.glow, demoWarn, demoHue.glow], center: .center), style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                VStack(spacing: 0) {
+                    Text("\(model.total() + added)").nkFont(54, .medium).foregroundStyle(.white).contentTransition(.numericText())
+                    Text("sorozat a héten").nkFont(12).foregroundStyle(.white.opacity(0.55))
+                }
+            }
+            .frame(width: 190, height: 190)
+            .onAppear { withAnimation(.smooth(duration: 0.9).delay(0.15)) { drawn = true } }
+
+            Text(open.isEmpty ? "Kész a heted" : "Még \(open.count) döntés vár").nkFont(32, design: .serif).foregroundStyle(.white)
+            Text(line(yes: yes.count, no: no.count, added: added))
+                .nkFont(15).foregroundStyle(.white.opacity(0.7)).multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button(action: start) {
+                Text(open.isEmpty ? "Indulhat a hét" : "Így is indulhat, a többi marad")
+                    .nkFont(16, .semibold).foregroundStyle(NK.ground)
+                    .frame(maxWidth: .infinity, minHeight: 56).background(Capsule().fill(demoHue.glow))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(RoundedRectangle(cornerRadius: 34, style: .continuous).fill(NK.ground.opacity(0.62)))
+        .nkGlass(34)
+        .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 20)
+    }
+
+    private func line(yes: Int, no: Int, added: Int) -> String {
+        var parts: [String] = []
+        if yes > 0 { parts.append("\(yes) izomnál elfogadtad a változást") }
+        if no > 0 { parts.append("\(no) izomnál marad a múlt heti") }
+        let head = parts.isEmpty ? "Még semmiről nem döntöttél." : parts.joined(separator: ", ") + "."
+        return added > 0 ? "\(head) Múlt héten \(model.total()) sorozat volt, most \(added)-vel több." : head
     }
 }
 
@@ -452,7 +811,6 @@ private struct WeekReviewPage: View {
 
 private struct TierPill: View {
     let tier: MuscleTier
-    let hue: Hue
 
     var body: some View {
         Text(tier.hungarian.uppercased())
@@ -464,69 +822,105 @@ private struct TierPill: View {
 
     private var color: Color {
         switch tier {
-        case .emphasize: hue.glow
-        case .grow: Color(hex: 0x9FD8A8)
+        case .emphasize: demoHue.glow
+        case .grow: demoGood
         case .maintain: .white.opacity(0.6)
         }
     }
 }
 
-/// The band as a lit stretch of the scale, and his own number as a marker on it.
-private struct BandBar: View {
+/// A half dial: the whole scale as the track, the tier's band lit on it, his number as the bead.
+private struct ArcGauge: View {
     let value: Int
     let band: DemoBand
-    let hue: Hue
     let inside: Bool
     var ghost: Int? = nil
 
     var body: some View {
         let top = Double(max(band.limit, value) + 2)
-        VStack(alignment: .leading, spacing: 5) {
-            GeometryReader { geo in
-                let w = geo.size.width
-                ZStack(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.08)).frame(height: 6)
-                    Capsule().fill(hue.glow.opacity(0.32))
-                        .frame(width: max(6, w * CGFloat(Double(band.high - band.low) / top)), height: 6)
-                        .offset(x: w * CGFloat(Double(band.low) / top))
-                    if let ghost {
-                        Circle().stroke(.white.opacity(0.45), lineWidth: 1.5).frame(width: 10, height: 10)
-                            .offset(x: w * CGFloat(Double(ghost) / top) - 5)
-                    }
-                    Circle().fill(inside ? Color.white : Color(hex: 0xF2C94C))
-                        .frame(width: 12, height: 12)
-                        .shadow(color: .black.opacity(0.4), radius: 2)
-                        .offset(x: w * CGFloat(Double(value) / top) - 6)
+        GeometryReader { geo in
+            let radius = min(geo.size.width / 2 - 14, geo.size.height - 14)
+            let center = CGPoint(x: geo.size.width / 2, y: geo.size.height - 4)
+            ZStack {
+                DemoArc(from: 0, to: 1, radius: radius, center: center)
+                    .stroke(.white.opacity(0.09), style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                DemoArc(from: Double(band.low) / top, to: Double(band.high) / top, radius: radius, center: center)
+                    .stroke(LinearGradient(colors: [demoHue.glow.opacity(0.55), demoHue.glow], startPoint: .leading, endPoint: .trailing),
+                            style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                    .shadow(color: demoHue.glow.opacity(0.45), radius: 8)
+                Text("\(band.low)").nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.55))
+                    .position(point(Double(band.low) / top, radius + 20, center))
+                Text("\(band.high)").nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.55))
+                    .position(point(Double(band.high) / top, radius + 20, center))
+                if let ghost {
+                    Circle().stroke(.white.opacity(0.6), lineWidth: 2).frame(width: 14, height: 14)
+                        .position(point(Double(ghost) / top, radius, center))
                 }
-                .frame(height: 12)
+                Circle().fill(inside ? Color.white : demoWarn)
+                    .frame(width: 20, height: 20)
+                    .overlay(Circle().stroke(NK.ground.opacity(0.6), lineWidth: 3))
+                    .shadow(color: (inside ? Color.white : demoWarn).opacity(0.6), radius: 7)
+                    .position(point(Double(value) / top, radius, center))
             }
-            .frame(height: 12)
-            Text("sáv \(band.low)–\(band.high)\(band.sport ? " · röplabda miatt lejjebb" : "")")
-                .nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.42))
+        }
+        .animation(.snappy(duration: 0.45), value: value)
+        .animation(.snappy(duration: 0.45), value: band)
+    }
+
+    private func point(_ fraction: Double, _ radius: CGFloat, _ center: CGPoint) -> CGPoint {
+        let angle = Double.pi + Double.pi * max(0, min(1, fraction))
+        return CGPoint(x: center.x + radius * CGFloat(cos(angle)), y: center.y + radius * CGFloat(sin(angle)))
+    }
+}
+
+private struct DemoArc: Shape {
+    var from: Double
+    var to: Double
+    let radius: CGFloat
+    let center: CGPoint
+
+    var animatableData: AnimatablePair<Double, Double> {
+        get { AnimatablePair(from, to) }
+        set { from = newValue.first; to = newValue.second }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addArc(center: center, radius: radius, startAngle: .degrees(180 + 180 * from), endAngle: .degrees(180 + 180 * to), clockwise: false)
+        return path
+    }
+}
+
+private struct DemoCheck: View {
+    let on: Bool
+    var body: some View {
+        ZStack {
+            Circle().fill(on ? demoGood : .white.opacity(0.18)).frame(width: 30, height: 30)
+            Text(on ? "✓" : "–").nkFont(16, .bold).foregroundStyle(on ? NK.ground : .white)
         }
     }
 }
 
 private struct SetStepper: View {
     let value: Int
-    let hue: Hue
     let down: () -> Void
     let up: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
             round("−", down)
-            Text("\(value)").nkFont(19, .medium).foregroundStyle(.white)
-                .frame(minWidth: 22).contentTransition(.numericText())
+            Text("\(value)").nkFont(21, .medium).foregroundStyle(.white)
+                .frame(minWidth: 24).contentTransition(.numericText())
             round("+", up)
         }
+        .sensoryFeedback(.impact(weight: .light), trigger: value)
     }
 
     private func round(_ symbol: String, _ action: @escaping () -> Void) -> some View {
         Button { withAnimation(.snappy) { action() } } label: {
-            Text(symbol).nkFont(18, .medium).foregroundStyle(.white.opacity(0.85))
-                .frame(width: 34, height: 34)
-                .background(Circle().fill(.white.opacity(0.1)))
+            Text(symbol).nkFont(19, .medium).foregroundStyle(.white.opacity(0.9))
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(.white.opacity(0.11)))
         }
         .buttonStyle(.plain)
     }
