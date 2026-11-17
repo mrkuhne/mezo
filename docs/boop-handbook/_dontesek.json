@@ -518,5 +518,22 @@
     "miert": "Így semmit nem kell előre beállítanod, edzés közben egy koppintással javítható, és egy helyen látod, mit gondol Boop a termedről.",
     "levaltotta": "—",
     "kovetkezmeny": "Elvetve: a csak egyszeri lista (edzés közben ki kellene lépned a beállításokhoz) és a csak cserénél tanulás (lassú, és nem látható egy helyen)."
+  },
+  "d-2026-11-17-webes-app-befagyasztva": {
+    "cim": "A webes appot már nem fejlesztjük: csak az iPhone-app és a szerver",
+    "datum": "2026-11-17",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés",
+      "Étel",
+      "Alvás",
+      "Energia",
+      "Forma",
+      "Nap"
+    ],
+    "valasztas": "Minden új fejlesztés az iPhone-os Boopba és a szerverbe megy. A webes app úgy marad, ahogy van: nem kap új képernyőt, és a csak a webet érintő hibák sem kerülnek sorra.",
+    "miert": "A Boop váltja le a webes appot; két felületre építeni dupla munka lenne, és a webes számítások úgyis átkerülnek a szerverre, ahol a Boop is használja őket.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A webes felület szabályai (pl. a heti zóna és a napi szettkorlát kijelzése) nem javulnak tovább; ami a Boopnak is kell, az a szerverre kerül. A webes app élesben elérhető marad."
   }
 }

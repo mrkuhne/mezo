@@ -130,3 +130,16 @@ A könyvtől függetlenül találtuk; a digest „kritikus egybevezetés” pont
 - A MEV/MAV/MRV „nincs validáció” megállapítás korlátozott keresésen alapul.
 - A kódállítások olvasásból származnak, tesztfuttatás nélkül; a 3. fejezet 2. pontjának *kiemelt izom* esetét nem rögzíti teszt (a teszt egy 14-re seedelt sort ellenőriz).
 - A könyv egy szerző szintézise; ahol **E** hiányzik, a **K** szerzői gyakorlat.
+
+## 6. Hová került (2026-11-17, a tulajdonos „építsük be mindet” kérése után)
+
+A tulajdonos döntése (#48): a webes appot már nem fejlesztjük, csak az iPhone-appot és a szervert. A megállapítások gazdái — mind a már futó Boop-munkákban, amelyek ugyanazokat a fájlokat írják, ezért nem indult párhuzamos építés:
+
+| Megállapítás | Gazda |
+|---|---|
+| Grind-jel, kiemelt izom 1. hete, napi szettkorlát, deload-ív, heti lépés javaslatként, elakadásészlelés | `mezo-r36n9.65` — volumenmotor v2 + stílus-spec (a három hiba `mezo-s5sd4`, `mezo-p9plo`, `mezo-ehdgq` erre vár) |
+| Gyakorlattípus szerinti RIR-cél, deload-erőfeszítés, szerver által előírt pihenő | `mezo-r36n9.65` stílus-spec §6.2, §6.7 |
+| Gyakorlatcsere, taxonómia, eszközlista | `mezo-r36n9.66` |
+| Edzés-oldal, lejátszó, pihenőóra az iPhone-on | `mezo-r36n9.15` (B5) |
+| Tervajánló bemenetei (idő, szint, több jelölt) | még nincs gazdája — `mezo-r36n9.65`-nél felvetve |
+| Csak a webet érintő tételek (heti zóna, FE-s MEV, kézi hozzáadás alapértéke, webes pihenőóra) | elvetve (#48) |
