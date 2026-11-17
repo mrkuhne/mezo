@@ -296,9 +296,12 @@ private struct MuscleCard: View {
 
             if fit != .inside {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(why ? whyText(tier) : "Javaslat: \(model.proposalText(muscle))")
-                        .nkFont(13).foregroundStyle(.white.opacity(0.85))
-                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(alignment: .top, spacing: 10) {
+                        DemoIcon(why ? .target : .spark, color: demoWarn, size: 18).padding(.top, 1)
+                        Text(why ? whyText(tier) : "Javaslat: \(model.proposalText(muscle))")
+                            .nkFont(13).foregroundStyle(.white.opacity(0.85))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     HStack(spacing: 16) {
                         Button { withAnimation(.snappy) { model.apply(muscle) } } label: {
                             Text("Elfogadom").nkFont(14, .semibold).foregroundStyle(NK.ground)
@@ -427,8 +430,11 @@ private struct DayCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(day.name.uppercased()).nkFont(11, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(demoHue.glow)
                     Text(day.title).nkFont(28, design: .serif).foregroundStyle(.white)
-                    Text("kb. \(model.minutes(index)) perc\(day.note.map { " · \($0)" } ?? "")")
-                        .nkFont(13).foregroundStyle(.white.opacity(0.55))
+                    HStack(spacing: 6) {
+                        DemoPill("kb. \(model.minutes(index)) perc", icon: .calendar)
+                        if let note = day.note { DemoPill(note, icon: .spark) }
+                    }
+                    .padding(.top, 2)
                 }
                 NKFlowRow(spacing: 8, rowSpacing: 8) {
                     ForEach(BlokkDemoModel.muscles.filter { model.daySets(index, muscle: $0) > 0 }, id: \.self) { m in
@@ -451,7 +457,14 @@ private struct DayCard: View {
                     ForEach(Array(day.exercises.enumerated()), id: \.element.id) { e, exercise in
                         if e > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                         HStack(spacing: 10) {
-                            Text("\(e + 1)").nkFont(12, .semibold, design: .monospaced).foregroundStyle(.white.opacity(0.35)).frame(width: 16)
+                            Group {
+                                if exercise.counts, NKBodyMark.canDraw(exercise.muscle) {
+                                    NKBodyMark(muscle: exercise.muscle, hue: demoHue, height: 38)
+                                } else {
+                                    DemoIcon(exercise.counts ? .target : .spark, color: .white.opacity(0.45), size: 20)
+                                }
+                            }
+                            .frame(width: 28, height: 40)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(0.95))
                                 Text(exercise.counts ? demoMuscleName(exercise.muscle) : "ugrás · nem számít a sorozatokba")
@@ -690,29 +703,32 @@ private struct ChangeRow: View {
         let off = change.decided == false
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
+                DemoIcon(icon, color: off ? .white.opacity(0.4) : demoHue.glow, size: 22)
+                    .frame(width: 38, height: 38)
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(demoHue.glow.opacity(off ? 0.05 : 0.14)))
                 VStack(alignment: .leading, spacing: 6) {
                     Text(change.exercise).nkFont(16, .semibold).foregroundStyle(.white.opacity(off ? 0.5 : 0.97))
+                        .lineLimit(1).minimumScaleFactor(0.75)
                     HStack(spacing: 6) {
-                        DemoPill(day.uppercased(), mono: true)
+                        DemoPill(day.uppercased(), mono: true, icon: .calendar)
                         DemoPill(kind.uppercased(), mono: true, color: demoHue.glow)
                     }
                 }
-                Spacer(minLength: 6)
+                Spacer(minLength: 4)
                 HStack(spacing: 8) {
-                    choice("–", on: change.decided == false, tint: .white) { decide(change.decided == false ? nil : false) }
-                    choice("✓", on: change.decided == true, tint: demoGood) { decide(change.decided == true ? nil : true) }
+                    choice(.keep, on: change.decided == false, tint: .white) { decide(change.decided == false ? nil : false) }
+                    choice(.check, on: change.decided == true, tint: demoGood) { decide(change.decided == true ? nil : true) }
                 }
             }
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(from).nkFont(19, .medium).foregroundStyle(.white.opacity(0.45))
-                    .strikethrough(false)
                 Image(systemName: "arrow.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
                 Text(to).nkFont(26, .semibold).foregroundStyle(off ? .white.opacity(0.4) : demoHue.glow)
                     .strikethrough(off, color: .white.opacity(0.5))
                 if off { Text("marad \(from)").nkFont(13, .medium).foregroundStyle(.white.opacity(0.7)) }
             }
             NKFlowRow(spacing: 6, rowSpacing: 6) {
-                ForEach(change.tags, id: \.self) { DemoPill($0) }
+                ForEach(change.tags, id: \.self) { DemoPill($0, icon: DemoIcon.Kind.forReason($0)) }
             }
         }
         .padding(14)
@@ -722,6 +738,14 @@ private struct ChangeRow: View {
             .stroke(change.decided == true ? demoGood.opacity(0.55) : .white.opacity(0.08), lineWidth: 1))
         .animation(.snappy, value: change.decided)
         .sensoryFeedback(.impact(weight: .light), trigger: change.decided)
+    }
+
+    private var icon: DemoIcon.Kind {
+        switch change.kind {
+        case .sets: .sets
+        case .weight: .weight
+        case .reps: .reps
+        }
     }
 
     private var kind: String {
@@ -748,9 +772,9 @@ private struct ChangeRow: View {
         }
     }
 
-    private func choice(_ mark: String, on: Bool, tint: Color, _ action: @escaping () -> Void) -> some View {
+    private func choice(_ mark: DemoIcon.Kind, on: Bool, tint: Color, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(mark).nkFont(17, .bold).foregroundStyle(on ? NK.ground : .white.opacity(0.8))
+            DemoIcon(mark, color: on ? NK.ground : .white.opacity(0.8), size: 20)
                 .frame(width: 40, height: 40)
                 .background(Circle().fill(on ? tint : .white.opacity(0.1)))
         }
@@ -762,15 +786,21 @@ private struct DemoPill: View {
     let text: String
     var mono = false
     var color: Color = .white.opacity(0.78)
-    init(_ text: String, mono: Bool = false, color: Color = .white.opacity(0.78)) { self.text = text; self.mono = mono; self.color = color }
+    var icon: DemoIcon.Kind? = nil
+    init(_ text: String, mono: Bool = false, color: Color = .white.opacity(0.78), icon: DemoIcon.Kind? = nil) {
+        self.text = text; self.mono = mono; self.color = color; self.icon = icon
+    }
 
     var body: some View {
-        Text(text)
-            .nkFont(mono ? 9 : 12, mono ? .semibold : .medium, design: mono ? .monospaced : .default)
-            .tracking(mono ? 1 : 0)
-            .foregroundStyle(color)
-            .padding(.horizontal, mono ? 8 : 10).padding(.vertical, mono ? 4 : 5)
-            .background(Capsule().fill(.white.opacity(0.09)))
+        HStack(spacing: 5) {
+            if let icon { DemoIcon(icon, color: color, size: mono ? 11 : 13) }
+            Text(text)
+                .nkFont(mono ? 9 : 12, mono ? .semibold : .medium, design: mono ? .monospaced : .default)
+                .tracking(mono ? 1 : 0)
+                .foregroundStyle(color)
+        }
+        .padding(.horizontal, mono ? 8 : 10).padding(.vertical, mono ? 4 : 5)
+        .background(Capsule().fill(.white.opacity(0.09)))
     }
 }
 
@@ -816,50 +846,157 @@ private struct SummaryCard: View {
     let start: () -> Void
     @State private var drawn = false
 
+    private func count(_ pick: (DemoChange.Kind) -> Bool) -> Int {
+        model.changes.filter { $0.decided == true && pick($0.kind) }.count
+    }
+
     var body: some View {
         let yes = model.changes.filter { $0.decided == true }.count
         let no = model.changes.filter { $0.decided == false }.count
         let open = model.changes.count - yes - no
-        let added = model.reviewMuscles.map { m in
-            model.lines(m).filter { $0.decided == true }.reduce(0) { sum, c in
-                if case .sets(let from, let to) = c.kind { return sum + (to - from) }
-                return sum
-            }
-        }.reduce(0, +)
-        VStack(spacing: 18) {
-            Spacer(minLength: 0)
-            ZStack {
-                Circle().stroke(.white.opacity(0.1), lineWidth: 10)
-                Circle().trim(from: 0, to: drawn ? CGFloat(yes + no) / CGFloat(max(1, model.changes.count)) : 0)
-                    .stroke(AngularGradient(colors: [demoHue.glow, demoWarn, demoHue.glow], center: .center), style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                VStack(spacing: 0) {
-                    Text("\(model.total() + added)").nkFont(54, .medium).foregroundStyle(.white).contentTransition(.numericText())
-                    Text("sorozat a héten").nkFont(12).foregroundStyle(.white.opacity(0.55))
+        let added = model.changes.filter { $0.decided == true }.reduce(0) { sum, c in
+            if case .sets(let from, let to) = c.kind { return sum + (to - from) }
+            return sum
+        }
+        VStack(spacing: 14) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    HStack(alignment: .center, spacing: 18) {
+                        ZStack {
+                            Circle().stroke(.white.opacity(0.1), lineWidth: 9)
+                            Circle().trim(from: 0, to: drawn ? CGFloat(yes + no) / CGFloat(max(1, model.changes.count)) : 0)
+                                .stroke(AngularGradient(colors: [demoHue.glow, demoWarn, demoHue.glow], center: .center), style: StrokeStyle(lineWidth: 9, lineCap: .round))
+                                .rotationEffect(.degrees(-90))
+                            VStack(spacing: 0) {
+                                Text("\(model.total() + added)").nkFont(40, .medium).foregroundStyle(.white).contentTransition(.numericText())
+                                Text("sorozat").nkFont(11).foregroundStyle(.white.opacity(0.55))
+                            }
+                        }
+                        .frame(width: 124, height: 124)
+                        .onAppear { withAnimation(.smooth(duration: 0.9).delay(0.15)) { drawn = true } }
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(open == 0 ? "Kész a heted" : "Még \(open) döntés vár").nkFont(26, design: .serif).foregroundStyle(.white)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text("múlt héten \(model.total()) sorozat volt").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+                            HStack(spacing: 6) {
+                                DemoPill("\(yes) elfogadva", color: demoGood, icon: .check)
+                                DemoPill("\(no) marad", icon: .keep)
+                            }
+                        }
+                    }
+
+                    HStack(spacing: 10) {
+                        tile(.sets, added > 0 ? "+\(added)" : "0", "sorozat")
+                        tile(.weight, "\(count { if case .weight = $0 { true } else { false } })", "súlyemelés")
+                        tile(.reps, "\(count { if case .reps = $0 { true } else { false } })", "ismétlés")
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        label("Izmonként")
+                        VStack(spacing: 0) {
+                            ForEach(Array(model.reviewMuscles.enumerated()), id: \.element) { i, m in
+                                if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                                muscleRow(m)
+                            }
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        label("Hol érzed a héten")
+                        HStack(spacing: 8) {
+                            ForEach(Array(model.days.enumerated()), id: \.element.id) { index, day in
+                                let n = model.changes.filter { $0.day == index && $0.decided == true }.count
+                                VStack(spacing: 6) {
+                                    Text(String(day.name.prefix(index == 2 ? 3 : (index == 3 ? 2 : 1))).uppercased())
+                                        .nkFont(10, .semibold, design: .monospaced).foregroundStyle(.white.opacity(0.6))
+                                    ZStack {
+                                        Circle().fill(n > 0 ? demoHue.glow.opacity(0.9) : .white.opacity(0.08)).frame(width: 34, height: 34)
+                                        if n > 0 {
+                                            Text("\(n)").nkFont(15, .semibold).foregroundStyle(NK.ground)
+                                        } else {
+                                            DemoIcon(.keep, color: .white.opacity(0.35), size: 14)
+                                        }
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                        }
+                    }
                 }
             }
-            .frame(width: 190, height: 190)
-            .onAppear { withAnimation(.smooth(duration: 0.9).delay(0.15)) { drawn = true } }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
 
-            Text(open == 0 ? "Kész a heted" : "Még \(open) döntés vár").nkFont(32, design: .serif).foregroundStyle(.white)
-            HStack(spacing: 8) {
-                DemoPill("\(yes) elfogadva", color: demoGood)
-                DemoPill("\(no) marad a múlt heti")
-                if added > 0 { DemoPill("+\(added) sorozat", color: demoHue.glow) }
-            }
-            Spacer(minLength: 0)
             Button(action: start) {
-                Text(open == 0 ? "Indulhat a hét" : "Így is indulhat, a többi marad")
-                    .nkFont(16, .semibold).foregroundStyle(NK.ground)
-                    .frame(maxWidth: .infinity, minHeight: 56).background(Capsule().fill(demoHue.glow))
+                HStack(spacing: 8) {
+                    DemoIcon(.spark, color: NK.ground, size: 18)
+                    Text(open == 0 ? "Indulhat a hét" : "Így is indulhat, a többi marad").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                }
+                .frame(maxWidth: .infinity, minHeight: 56).background(Capsule().fill(demoHue.glow))
             }
             .buttonStyle(.plain)
         }
-        .padding(24)
+        .padding(22)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(RoundedRectangle(cornerRadius: 34, style: .continuous).fill(NK.ground.opacity(0.62)))
         .nkGlass(34)
         .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 20)
+    }
+
+    private func label(_ text: String) -> some View {
+        Text(text.uppercased()).nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(demoHue.glow)
+    }
+
+    private func tile(_ icon: DemoIcon.Kind, _ value: String, _ name: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            DemoIcon(icon, color: demoHue.glow, size: 22)
+            Text(value).nkFont(26, .semibold).foregroundStyle(.white).contentTransition(.numericText())
+            Text(name).nkFont(12).foregroundStyle(.white.opacity(0.55))
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white.opacity(0.07)))
+    }
+
+    private func muscleRow(_ muscle: String) -> some View {
+        let lines = model.lines(muscle)
+        let yes = lines.filter { $0.decided == true }
+        let kept = lines.filter { $0.decided == false }.count
+        let open = lines.count - yes.count - kept
+        return HStack(spacing: 10) {
+            if NKBodyMark.canDraw(muscle) { NKBodyMark(muscle: muscle, hue: demoHue, height: 40).frame(width: 26) }
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 7) {
+                    Text(demoMuscleName(muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
+                    TierPill(tier: model.tiers[muscle] ?? .grow)
+                }
+                HStack(spacing: 6) {
+                    ForEach(yes) { c in
+                        DemoPill(short(c), color: demoHue.glow, icon: iconOf(c))
+                    }
+                    if yes.isEmpty { DemoPill(open > 0 ? "még nem döntöttél" : "marad a múlt heti", icon: .keep) }
+                }
+            }
+            Spacer(minLength: 4)
+            if kept > 0 && !yes.isEmpty { DemoPill("\(kept) marad", icon: .keep) }
+        }
+        .padding(.vertical, 10)
+    }
+
+    private func iconOf(_ c: DemoChange) -> DemoIcon.Kind {
+        switch c.kind {
+        case .sets: .sets
+        case .weight: .weight
+        case .reps: .reps
+        }
+    }
+
+    private func short(_ c: DemoChange) -> String {
+        switch c.kind {
+        case .sets(let from, let to): "\(to > from ? "+" : "−")\(abs(to - from))"
+        case .weight(_, let to): demoKg(to)
+        case .reps(let from, let to): "\(to > from ? "+" : "−")\(abs(to - from)) ism."
+        }
     }
 }
 
@@ -979,6 +1116,104 @@ private struct SetStepper: View {
                 .background(Circle().fill(.white.opacity(0.11)))
         }
         .buttonStyle(.plain)
+    }
+}
+/// The feature's own marks, drawn on the kit's 64-unit grid with the same round 5-unit stroke as the outlined
+/// `NKGlyph`s — so nothing here is an emoji or a system symbol.
+private struct DemoIcon: View {
+    enum Kind {
+        case sets, weight, reps, calendar, check, keep, spark, target, feather, shield, flame
+
+        /// The mark a reason pill wears, read off its own words.
+        static func forReason(_ text: String) -> Kind {
+            let t = text.lowercased()
+            if t.contains("fogyás") { return .shield }
+            if t.contains("könnyen") { return .feather }
+            if t.contains("tartalék") || t.contains("sáv") || t.contains("tartomány") { return .target }
+            if t.contains("tárcsa") || t.contains("súly") { return .weight }
+            if t.contains("utolsó") || t.contains("izomláz") { return .flame }
+            if t.contains("tartás") { return .keep }
+            return .check
+        }
+    }
+
+    let kind: Kind
+    let color: Color
+    let size: CGFloat
+    init(_ kind: Kind, color: Color, size: CGFloat = 18) { self.kind = kind; self.color = color; self.size = size }
+
+    var body: some View {
+        Canvas { ctx, s in
+            let k = s.width / 64
+            func P(_ f: (inout Path) -> Void) -> Path { var p = Path(); f(&p); return p.applying(CGAffineTransform(scaleX: k, y: k)) }
+            let st = StrokeStyle(lineWidth: 5 * k, lineCap: .round, lineJoin: .round)
+            let ink = GraphicsContext.Shading.color(color)
+            switch kind {
+            case .sets:
+                // three stacked bars: a set, a set, a set
+                for (i, y) in [16.0, 32.0, 48.0].enumerated() {
+                    ctx.stroke(P { $0.move(to: CGPoint(x: 12, y: y)); $0.addLine(to: CGPoint(x: CGFloat(52 - i * 8), y: y)) }, with: ink, style: st)
+                }
+            case .weight:
+                // a barbell seen from the side
+                ctx.stroke(P { $0.move(to: CGPoint(x: 6, y: 32)); $0.addLine(to: CGPoint(x: 58, y: 32)) }, with: ink, style: st)
+                ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 13, y: 14, width: 9, height: 36), cornerSize: CGSize(width: 4, height: 4)) }, with: ink, style: st)
+                ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 42, y: 14, width: 9, height: 36), cornerSize: CGSize(width: 4, height: 4)) }, with: ink, style: st)
+            case .reps:
+                // a loop that comes back on itself
+                ctx.stroke(P { $0.addArc(center: CGPoint(x: 32, y: 32), radius: 19, startAngle: .degrees(-40), endAngle: .degrees(210), clockwise: false) }, with: ink, style: st)
+                ctx.stroke(P { $0.move(to: CGPoint(x: 39, y: 8)); $0.addLine(to: CGPoint(x: 47, y: 19)); $0.addLine(to: CGPoint(x: 34, y: 23)) }, with: ink, style: st)
+            case .calendar:
+                ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 10, y: 14, width: 44, height: 40), cornerSize: CGSize(width: 9, height: 9)) }, with: ink, style: st)
+                ctx.stroke(P {
+                    $0.move(to: CGPoint(x: 10, y: 27)); $0.addLine(to: CGPoint(x: 54, y: 27))
+                    $0.move(to: CGPoint(x: 22, y: 8)); $0.addLine(to: CGPoint(x: 22, y: 18))
+                    $0.move(to: CGPoint(x: 42, y: 8)); $0.addLine(to: CGPoint(x: 42, y: 18))
+                }, with: ink, style: st)
+            case .check:
+                ctx.stroke(P { $0.move(to: CGPoint(x: 13, y: 34)); $0.addLine(to: CGPoint(x: 26, y: 47)); $0.addLine(to: CGPoint(x: 51, y: 18)) }, with: ink, style: st)
+            case .keep:
+                // two level lines: nothing moves
+                ctx.stroke(P {
+                    $0.move(to: CGPoint(x: 14, y: 24)); $0.addLine(to: CGPoint(x: 50, y: 24))
+                    $0.move(to: CGPoint(x: 14, y: 40)); $0.addLine(to: CGPoint(x: 50, y: 40))
+                }, with: ink, style: st)
+            case .spark:
+                ctx.stroke(P {
+                    $0.move(to: CGPoint(x: 32, y: 8)); $0.addLine(to: CGPoint(x: 32, y: 56))
+                    $0.move(to: CGPoint(x: 8, y: 32)); $0.addLine(to: CGPoint(x: 56, y: 32))
+                    $0.move(to: CGPoint(x: 16, y: 16)); $0.addLine(to: CGPoint(x: 48, y: 48))
+                    $0.move(to: CGPoint(x: 48, y: 16)); $0.addLine(to: CGPoint(x: 16, y: 48))
+                }, with: ink, style: StrokeStyle(lineWidth: 4 * k, lineCap: .round))
+            case .target:
+                ctx.stroke(P { $0.addEllipse(in: CGRect(x: 9, y: 9, width: 46, height: 46)) }, with: ink, style: st)
+                ctx.fill(P { $0.addEllipse(in: CGRect(x: 25, y: 25, width: 14, height: 14)) }, with: ink)
+            case .feather:
+                ctx.stroke(P {
+                    $0.move(to: CGPoint(x: 12, y: 54)); $0.addLine(to: CGPoint(x: 42, y: 22))
+                    $0.move(to: CGPoint(x: 22, y: 43))
+                    $0.addQuadCurve(to: CGPoint(x: 52, y: 10), control: CGPoint(x: 20, y: 14))
+                    $0.addQuadCurve(to: CGPoint(x: 22, y: 43), control: CGPoint(x: 52, y: 42))
+                }, with: ink, style: st)
+            case .shield:
+                ctx.stroke(P {
+                    $0.move(to: CGPoint(x: 32, y: 8)); $0.addLine(to: CGPoint(x: 52, y: 16))
+                    $0.addQuadCurve(to: CGPoint(x: 32, y: 56), control: CGPoint(x: 54, y: 44))
+                    $0.addQuadCurve(to: CGPoint(x: 12, y: 16), control: CGPoint(x: 10, y: 44))
+                    $0.closeSubpath()
+                }, with: ink, style: st)
+            case .flame:
+                ctx.stroke(P {
+                    $0.move(to: CGPoint(x: 32, y: 8))
+                    $0.addQuadCurve(to: CGPoint(x: 48, y: 38), control: CGPoint(x: 50, y: 22))
+                    $0.addQuadCurve(to: CGPoint(x: 32, y: 56), control: CGPoint(x: 48, y: 56))
+                    $0.addQuadCurve(to: CGPoint(x: 16, y: 38), control: CGPoint(x: 16, y: 56))
+                    $0.addQuadCurve(to: CGPoint(x: 32, y: 8), control: CGPoint(x: 18, y: 24))
+                }, with: ink, style: st)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }
 #endif
