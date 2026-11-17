@@ -92,4 +92,6 @@ contradictions: []
 
 ## 6. Claude-indító
 
+Az első audit feladata: **`mezo-1z4jc`**. A későbbi 1–4. szelethez külön termékdöntés és Beads-issue kell.
+
 > Olvasd el ezt a digestet, a [forrásrekordot](../raw/books/jeff-nippard-muscle-ladder-source.md), a [Train élő dokumentációját](../../features/train.md), a [programtervezési kutatási lapot](../concepts/program-design-rules.md), majd a saját szeletedhez tartozó eredeti PDF-oldalakat. Először auditáld a jelenlegi szabályt; külön jelöld a könyvi állítást, a ma működő mezót és a javasolt termékváltozást. Kérj termékdöntést ott, ahol a felhasználó más működést látna. Kövesd a mezo design/prototípus/terv és contract-first workflow-ját. A könyv 20 kész tervét, képeit és gyakorlatleírásait ne másold az alkalmazásba.
