@@ -74,7 +74,8 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         CatalogJsonItem bad = new CatalogJsonItem(
             "bad-item", "Bad Item", "not-a-muscle", "compound",
             new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null,
-            "machine", "stable", false);
+            "machine", "stable", false,
+            List.of("barbell"), "squat", List.of(), List.of("knee"), false, "high");
         assertThatThrownBy(() -> loader.load(List.of(bad)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("bad-item");
@@ -98,7 +99,8 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     @Test
     void testLoad_shouldFailFast_whenStabilityMissing() {
         CatalogJsonItem bad = new CatalogJsonItem("bad-item", "Bad Item", "quad", "compound",
-            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null, "machine", null, false);
+            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null, "machine", null, false,
+            List.of("machine"), "squat", List.of(), List.of("knee"), false, "high");
         assertThatThrownBy(() -> loader.load(List.of(bad)))
             .isInstanceOf(IllegalStateException.class).hasMessageContaining("bad-item");
     }
@@ -106,7 +108,8 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     @Test
     void testLoad_shouldFailFast_whenEquipmentUnknown() {
         CatalogJsonItem bad = new CatalogJsonItem("bad-item", "Bad Item", "quad", "compound",
-            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null, "spaceship", "stable", false);
+            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null, "spaceship", "stable", false,
+            List.of("machine"), "squat", List.of(), List.of("knee"), false, "high");
         assertThatThrownBy(() -> loader.load(List.of(bad)))
             .isInstanceOf(IllegalStateException.class).hasMessageContaining("bad-item");
     }
@@ -125,6 +128,19 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         assertThat(healed.getStability()).isEqualTo("free");
         assertThat(healed.getEquipment()).isEqualTo("barbell");
         assertThat(healed.getLengthenedFriendly()).isFalse();
+    }
+
+    @Test
+    void testLoad_shouldFailFast_whenSelectionAttributeInvalid() {
+        // Everything valid except an equipment kind outside the allowed set (mezo-r36n9.66).
+        CatalogJsonItem bad = new CatalogJsonItem(
+            "bad-equipment", "Bad Equipment", "quad", "compound",
+            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null,
+            "machine", "stable", false,
+            List.of("treadmill"), "squat", List.of(), List.of("knee"), false, "high");
+        assertThatThrownBy(() -> loader.load(List.of(bad)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("bad-equipment");
     }
 
     @Test
@@ -173,6 +189,8 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     private CatalogJsonItem imageItem(String start, String end) {
         return new CatalogJsonItem("box-jump", "Box Jump", "quad", "plyo",
             new BigDecimal("0.60"), new BigDecimal("0.35"), null, start, end,
-            "other", "free", false);
+            "other", "free", false,
+            List.of("specialty"), "jump", List.of("glute", "calf"), List.of("knee", "hip", "ankle"),
+            false, "medium");
     }
 }

@@ -30,7 +30,7 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class ExerciseCatalogLoader implements CommandLineRunner {
 
-    private static final Set<String> MUSCLES = Set.of(
+    static final Set<String> MUSCLES = Set.of(
         "chest-upper", "chest-mid", "chest-lower", "back-wide", "back-mid", "back-lower", "traps",
         "shoulder-front", "shoulder-side", "shoulder-rear", "biceps-long", "biceps-short",
         "biceps-brachialis", "triceps-long", "triceps-lateral", "triceps-medial",
@@ -40,14 +40,37 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
         "machine", "cable", "dumbbell", "barbell", "bodyweight", "kettlebell", "other");
     private static final Set<String> STABILITY = Set.of("stable", "free");
 
+    // Selection attributes (mezo-r36n9.66, spec 2026-11-17-boop-gyakorlatvalasztas-design §6.1).
+    // Package-private so the pure content test checks the JSON against the same sets. GEAR is the
+    // finer, multi-valued kit list the swap filters on ("Mi van a termemben"); EQUIPMENT above is
+    // the single primary kind of mezo-r36n9.79. `lengthened` (loaded at a stretch) is a different
+    // notion from `lengthenedFriendly` (safe for lengthened partials) and is kept apart.
+    static final Set<String> GEAR = Set.of(
+        "barbell", "dumbbell", "kettlebell", "cable", "machine", "smith", "bench", "pullup-bar",
+        "bodyweight", "specialty");
+    static final Set<String> PATTERNS = Set.of(
+        "horizontal-push", "vertical-push", "horizontal-pull", "vertical-pull", "squat", "lunge",
+        "hinge", "knee-flexion", "knee-extension", "hip-extension", "hip-abduction",
+        "elbow-flexion", "elbow-extension", "raise", "fly", "calf-raise", "shrug",
+        "trunk-flexion", "trunk-stability", "carry", "jump");
+    static final Set<String> JOINTS = Set.of(
+        "shoulder", "elbow", "wrist", "lower-back", "hip", "knee", "ankle");
+    static final Set<String> DEMANDS = Set.of("low", "medium", "high");
+
     private final ExerciseCatalogRepository repository;
     private final ObjectMapper objectMapper; // SB4 Jackson 3 (tools.jackson)
 
-    /** One catalog row as authored in content/exercise-catalog.json. */
+    /**
+     * One catalog row as authored in content/exercise-catalog.json. The six selection attributes
+     * (gear … demand) are appended last; they are parsed and validated here but not yet
+     * persisted (mezo-r36n9.66 — the columns land in a follow-up change).
+     */
     public record CatalogJsonItem(
         String slug, String name, String muscle, String type, BigDecimal stim, BigDecimal fatigue,
         String videoUrl, String imageStartUrl, String imageEndUrl,
-        String equipment, String stability, Boolean lengthenedFriendly) {}
+        String equipment, String stability, Boolean lengthenedFriendly,
+        List<String> gear, String pattern, List<String> secondaryMuscles, List<String> joints,
+        Boolean lengthened, String demand) {}
 
     // Same self-invocation note as TrainSeedData: startup enters via run(String...), the IT
     // calls run() through the proxy — both overloads carry @Transactional.
@@ -113,9 +136,28 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
             && item.stim() != null && item.fatigue() != null
             && item.equipment() != null && EQUIPMENT.contains(item.equipment())
             && item.stability() != null && STABILITY.contains(item.stability())
-            && item.lengthenedFriendly() != null;
+            && item.lengthenedFriendly() != null
+            && validAttributes(item);
         if (!valid) {
             throw new IllegalStateException("Invalid exercise-catalog item: " + item.slug());
         }
+    }
+
+    /**
+     * Selection attributes of a master row (spec §6.1): at least one known gear kind, and
+     * {@code bodyweight} only on its own; one known pattern; 0–3 known secondary muscles, never
+     * the row's own; known joints; a non-null {@code lengthened}; a known demand.
+     */
+    private static boolean validAttributes(CatalogJsonItem item) {
+        List<String> equipment = item.gear();
+        List<String> secondary = item.secondaryMuscles();
+        return equipment != null && !equipment.isEmpty() && GEAR.containsAll(equipment)
+            && (!equipment.contains("bodyweight") || equipment.size() == 1)
+            && PATTERNS.contains(item.pattern())
+            && secondary != null && secondary.size() <= 3 && MUSCLES.containsAll(secondary)
+            && !secondary.contains(item.muscle())
+            && item.joints() != null && JOINTS.containsAll(item.joints())
+            && item.lengthened() != null
+            && DEMANDS.contains(item.demand());
     }
 }
