@@ -182,7 +182,8 @@ everything available), one profile per user. Several gyms is a possible later ex
    1. **Role** — same type (compound stays compound, isolation stays isolation), then same `pattern`, then
       overlap in `secondaryMuscles`.
    2. **Discomfort** — exercises with *Enyhe* in their recent feedback, or loading a joint that maps to a pain
-      region in today's check-in, or (after *nem esik jól*) sharing the outgoing exercise's `joints`, move down;
+      region in today's check-in (a new region → joint map; today's `PainRegionMap` only maps regions to muscle
+      groups), or (after *nem esik jól*) sharing the outgoing exercise's `joints`, move down;
       lower `demand` and guided equipment (machine, cable) move up in those cases.
    3. **Goal** (from the running block; no block or no goal = hypertrophy):
       hypertrophy / erohipertrofia → higher stimulus for the fatigue it costs, stable and easy to load, and
@@ -201,7 +202,7 @@ everything available), one profile per user. Several gyms is a possible later ex
 
 **Server contract (shape, not final names):** a read on the running workout's exercise that returns ordered
 suggestions `{exercise, reasonText, signals[], lastTopSet?}` plus per-exercise labels for the full list; a
-read/write pair for the equipment profile; the *nem esik jól* write reuses the feedback record. Reason text is
+read/write pair for the equipment profile; a write (and its undo) for the swap-time discomfort record. Reason text is
 rendered by the server in Hungarian (Boop is Hungarian-only); `signals` are stable codes so the phone and tests
 do not parse prose.
 
