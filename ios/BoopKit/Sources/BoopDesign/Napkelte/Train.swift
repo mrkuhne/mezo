@@ -707,7 +707,12 @@ public struct NKTimeRange: View {
 }
 
 /// One card of „Mit vállalsz ma?": the exercise's own photo, what the engine is asking for, and the two taps —
-/// *miért ez?* and *vállalom / elengedtem*.
+/// *miért ez?* and the one that takes it on or lets it go.
+///
+/// **The card says where it stands; the button says what the tap does** (owner, 2026-11-17: a filled button
+/// reading „Vállalom" read as a command, so taking a mission on looked like switching it off). A taken
+/// mission is lit, outlined in the hue and badged *VÁLLALVA*, and its button offers to let it go; a released
+/// one is dimmed and badged *ELENGEDVE*, and its button offers to take it back.
 public struct NKMissionCard<Photo: View>: View {
     let kicker: String
     let glyph: String
@@ -731,26 +736,31 @@ public struct NKMissionCard<Photo: View>: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ZStack(alignment: .topLeading) {
-                photo
-                HStack(spacing: 6) {
-                    NKGlyph(glyph, glyph.hasSuffix("-sun") ? NK.gold : .white, size: 13)
-                    Text(kicker.uppercased()).nkFont(10, .semibold, design: .monospaced).tracking(1.1)
-                        .foregroundStyle(.white)
+            ZStack(alignment: .top) {
+                photo.opacity(taken ? 1 : 0.5)
+                HStack(alignment: .top, spacing: 6) {
+                    HStack(spacing: 6) {
+                        NKGlyph(glyph, glyph.hasSuffix("-sun") ? NK.gold : .white, size: 13)
+                        Text(kicker.uppercased()).nkFont(10, .semibold, design: .monospaced).tracking(1.1)
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(Capsule().fill(.black.opacity(0.42)))
+                    Spacer(minLength: 0)
+                    state
                 }
-                .padding(.horizontal, 9).padding(.vertical, 5)
-                .background(Capsule().fill(.black.opacity(0.42)))
                 .padding(11)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(exercise).nkFont(13).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
-                Text(target).nkFont(24, .medium).foregroundStyle(taken ? hue.glow : .white.opacity(0.5))
+                Text(target).nkFont(24, .medium).foregroundStyle(taken ? hue.glow : .white.opacity(0.45))
                     .lineLimit(1).minimumScaleFactor(0.7)
                 if let from {
                     Text(from).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45)).lineLimit(1)
                 }
             }
             .padding(.horizontal, 14).padding(.top, 10)
+            .opacity(taken ? 1 : 0.55)
             Spacer(minLength: 8)
             HStack(spacing: 8) {
                 Button(action: onWhy) {
@@ -760,12 +770,15 @@ public struct NKMissionCard<Photo: View>: View {
                 }
                 .buttonStyle(.plain)
                 Button(action: onToggle) {
-                    Text(taken ? "Vállalom" : "Elengedtem")
+                    Text(taken ? "Elengedem" : "Vállalom")
                         .nkFont(13, .semibold)
-                        .foregroundStyle(taken ? NK.ground : .white.opacity(0.8))
+                        .foregroundStyle(taken ? .white.opacity(0.85) : NK.ground)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, minHeight: 40)
-                        .background(Capsule().fill(taken ? hue.glow : .white.opacity(0.1)))
+                        .background {
+                            Capsule().fill(taken ? Color.white.opacity(0.1) : hue.glow)
+                                .overlay { if taken { Capsule().strokeBorder(.white.opacity(0.22), lineWidth: 1) } }
+                        }
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(taken ? "Elengedem: \(target)" : "Vállalom: \(target)")
@@ -774,6 +787,26 @@ public struct NKMissionCard<Photo: View>: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .nkGlass()
-        .opacity(taken ? 1 : 0.62)
+        .overlay {
+            // The taken card is outlined in the hue, so the two states differ at arm's length and not only
+            // by the word on the button.
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .strokeBorder(taken ? hue.glow.opacity(0.6) : .clear, lineWidth: 1.5)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(kicker), \(exercise), \(target) — \(taken ? "vállalva" : "elengedve")")
+    }
+
+    /// The badge that says, in a word, whether this mission is on.
+    private var state: some View {
+        HStack(spacing: 5) {
+            Image(systemName: taken ? "checkmark" : "minus")
+                .font(.system(size: 10, weight: .bold))
+            Text(taken ? "VÁLLALVA" : "ELENGEDVE")
+                .nkFont(10, .semibold, design: .monospaced).tracking(0.8)
+        }
+        .foregroundStyle(taken ? NK.ground : .white.opacity(0.8))
+        .padding(.horizontal, 9).padding(.vertical, 5)
+        .background(Capsule().fill(taken ? hue.glow : .black.opacity(0.5)))
     }
 }
