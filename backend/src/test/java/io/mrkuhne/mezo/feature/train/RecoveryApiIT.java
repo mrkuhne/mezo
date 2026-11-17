@@ -9,9 +9,13 @@ import io.mrkuhne.mezo.api.dto.RecoveryReleaseRequest;
 import io.mrkuhne.mezo.api.dto.RecoveryReturnRule;
 import io.mrkuhne.mezo.api.dto.RecoveryState;
 import io.mrkuhne.mezo.api.dto.RecoveryUpsertRequest;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
+import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
@@ -22,6 +26,7 @@ import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,6 +52,7 @@ class RecoveryApiIT extends ApiIntegrationTest {
     @Autowired private RecoveryPeriodRepository periodRepository;
     @Autowired private MesocycleRepository mesocycleRepository;
     @Autowired private MuscleGroupVolumeLogRepository volumeRepository;
+    @Autowired private ExerciseRepository exerciseRepository;
 
     /** Per test, never a class-load constant (midnight-fragile fixtures). */
     private static LocalDate today() {
@@ -205,31 +211,122 @@ class RecoveryApiIT extends ApiIntegrationTest {
         assertHasRequestError(body, "TRAIN_RECOVERY_UNDO_EXPIRED");
     }
 
-    @Test
-    void testBetter_shouldStepBackAndLowerSets_thenUndoRestoresSets() {
-        RegisteredUser u = registerUser("Recovery StepBack");
-        LocalDate today = today();
-        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(u.id(), 3, 6, 4, CURVE);
-        train.createVolumeLog(u.id(), meso.getId(), "chest", 14); // mev 8
-        recoveryPopulator.open(u.id(), Reason.INJURY, today.minusDays(12), Estimate.UNKNOWN);
+    /** The step-back fixture: back 4 + 2 (Monday), quad 3 (Monday), calf 1 (Thursday) — a long absence. */
+    private record Plan(RegisteredUser u, MesocycleEntity meso, ExerciseEntity back4, ExerciseEntity back2,
+                        ExerciseEntity quad3, ExerciseEntity calf1) {}
 
-        RecoveryState better = postForBody(URL + "/check-in", answer(RecoveryCheckInRequest.AnswerEnum.BETTER),
+    private Plan stepBackPlan() {
+        RegisteredUser u = registerUser("Recovery StepBack");
+        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(u.id(), 3, 6, 4, CURVE);
+        WorkoutSessionEntity mon = train.createWorkoutSession(u.id(), meso.getId(), "Hétfő", "gym", 0, "active");
+        WorkoutSessionEntity thu = train.createWorkoutSession(u.id(), meso.getId(), "Csütörtök", "gym", 3, "active");
+        Plan p = new Plan(u, meso,
+            exercise(u, mon, "Evezés", "back-mid", 4, 0), exercise(u, mon, "Lehúzás", "back-wide", 2, 1),
+            exercise(u, mon, "Guggolás", "quad", 3, 2), exercise(u, thu, "Vádli", "calf", 1, 0));
+        recoveryPopulator.open(u.id(), Reason.INJURY, today().minusDays(12), Estimate.UNKNOWN);
+        return p;
+    }
+
+    private ExerciseEntity exercise(RegisteredUser u, WorkoutSessionEntity day, String name, String muscle,
+                                    int sets, int order) {
+        ExerciseEntity e = train.createExercise(u.id(), day.getId(), name, muscle, "compound");
+        e.setWorkingSets(sets);
+        e.setOrderIndex(order);
+        return train.save(e);
+    }
+
+    private RecoveryState better(RegisteredUser u) {
+        return postForBody(URL + "/check-in", answer(RecoveryCheckInRequest.AnswerEnum.BETTER),
             u.headers(), HttpStatus.OK, RecoveryState.class);
+    }
+
+    private int sets(ExerciseEntity e) {
+        return exerciseRepository.findById(e.getId()).orElseThrow().getWorkingSets();
+    }
+
+    @Test
+    void stepBackTakesOneSetPerTrainedGroup() {
+        Plan p = stepBackPlan();
+
+        RecoveryState better = better(p.u());
 
         assertThat(better.getPeriod().getReturn().getRule()).isEqualTo(RecoveryReturnRule.STEP_BACK);
         // illness started in meso week 2 → target week 1 → today (week 4) moves back 3 weeks
         assertThat(better.getPeriod().getReturn().getShiftDays()).isEqualTo(21);
-        MesocycleEntity shifted = mesocycleRepository.findById(meso.getId()).orElseThrow();
+        MesocycleEntity shifted = mesocycleRepository.findById(p.meso().getId()).orElseThrow();
         assertThat(shifted.getCurrentWeek()).isEqualTo(1);
         assertThat(shifted.getVolumeRecompute().lastRun()).isEqualTo("W1");
-        assertThat(chest(u, meso).getCurrentSets()).isEqualTo(12);
+        assertThat(sets(p.back4())).isEqualTo(3);
+        assertThat(sets(p.back2())).isEqualTo(2);
+        assertThat(sets(p.quad3())).isEqualTo(2);
+        assertThat(sets(p.calf1())).isEqualTo(1); // never below one set
+        assertThat(ledger(p, "back").getCurrentSets()).isEqualTo(5);
+        assertThat(ledger(p, "quad").getCurrentSets()).isEqualTo(2);
+        assertThat(ledger(p, "calf").getCurrentSets()).isEqualTo(1);
+    }
 
-        postForBody(URL + "/undo-better", null, u.headers(), HttpStatus.OK, RecoveryState.class);
+    @Test
+    void revertRestoresEveryExercise() {
+        Plan p = stepBackPlan();
+        better(p.u());
 
-        assertThat(chest(u, meso).getCurrentSets()).isEqualTo(14);
-        MesocycleEntity restored = mesocycleRepository.findById(meso.getId()).orElseThrow();
+        postForBody(URL + "/undo-better", null, p.u().headers(), HttpStatus.OK, RecoveryState.class);
+
+        assertThat(sets(p.back4())).isEqualTo(4);
+        assertThat(sets(p.back2())).isEqualTo(2);
+        assertThat(sets(p.quad3())).isEqualTo(3);
+        assertThat(sets(p.calf1())).isEqualTo(1);
+        assertThat(ledger(p, "back").getCurrentSets()).isEqualTo(6);
+        assertThat(ledger(p, "quad").getCurrentSets()).isEqualTo(3);
+        MesocycleEntity restored = mesocycleRepository.findById(p.meso().getId()).orElseThrow();
         assertThat(restored.getCurrentWeek()).isEqualTo(4);
-        assertThat(restored.getStartDate()).isEqualTo(meso.getStartDate());
+        assertThat(restored.getStartDate()).isEqualTo(p.meso().getStartDate());
+    }
+
+    @Test
+    void revertKeepsAnAmountTheOwnerChangedSince() {
+        Plan p = stepBackPlan();
+        better(p.u());
+        ExerciseEntity row = exerciseRepository.findById(p.back4().getId()).orElseThrow();
+        row.setWorkingSets(5);
+        exerciseRepository.saveAndFlush(row);
+
+        postForBody(URL + "/undo-better", null, p.u().headers(), HttpStatus.OK, RecoveryState.class);
+
+        assertThat(sets(p.back4())).isEqualTo(5);
+        assertThat(sets(p.quad3())).isEqualTo(3); // the untouched ones still come back
+    }
+
+    @Test
+    void aLegacyPeriodKeyedByMuscleRevertsDatesButNoSets() {
+        Plan p = stepBackPlan();
+        better(p.u());
+        RecoveryPeriodEntity period = periodRepository
+            .findFirstByCreatedByAndEndedOnIsNotNullAndDeletedFalseOrderByEndedOnDescStartDateDesc(p.u().id())
+            .orElseThrow();
+        period.setPrevSets(Map.of("back", 12));
+        periodRepository.saveAndFlush(period);
+
+        postForBody(URL + "/undo-better", null, p.u().headers(), HttpStatus.OK, RecoveryState.class);
+
+        assertThat(sets(p.back4())).isEqualTo(3); // nothing to give back for a muscle-keyed period
+        assertThat(sets(p.quad3())).isEqualTo(2);
+        MesocycleEntity restored = mesocycleRepository.findById(p.meso().getId()).orElseThrow();
+        assertThat(restored.getCurrentWeek()).isEqualTo(4);
+        assertThat(restored.getStartDate()).isEqualTo(p.meso().getStartDate());
+    }
+
+    @Test
+    void exemptExercisesAreNeverSteppedBack() {
+        Plan p = stepBackPlan();
+        ExerciseEntity exempt = exerciseRepository.findById(p.back4().getId()).orElseThrow();
+        exempt.setCountsTowardVolume(false);
+        exerciseRepository.saveAndFlush(exempt);
+
+        better(p.u());
+
+        assertThat(sets(p.back4())).isEqualTo(4); // outside the engine
+        assertThat(sets(p.back2())).isEqualTo(1); // the group's only counting row gives the set instead
     }
 
     @Test
@@ -327,8 +424,8 @@ class RecoveryApiIT extends ApiIntegrationTest {
         getForBody(URL, null, HttpStatus.UNAUTHORIZED, Void.class);
     }
 
-    private MuscleGroupVolumeLogEntity chest(RegisteredUser u, MesocycleEntity meso) {
-        return volumeRepository.findByCreatedByAndMesocycleIdInOrderByMuscleAsc(u.id(), List.of(meso.getId()))
-            .stream().filter(v -> v.getMuscle().equals("chest")).findFirst().orElseThrow();
+    private MuscleGroupVolumeLogEntity ledger(Plan p, String group) {
+        return volumeRepository.findByCreatedByAndMesocycleIdInOrderByMuscleAsc(p.u().id(), List.of(p.meso().getId()))
+            .stream().filter(v -> v.getMuscle().equals(group)).findFirst().orElseThrow();
     }
 }
