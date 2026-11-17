@@ -397,13 +397,13 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     **table** (`NKSetTable` + `NKSetRow`) — a header line and one row per set, each value in **its own cell**
     with the mark of how it went against the plan on the right, so the columns line up down the whole list
     (owner's second pass: *„ne csak odaírva"*) — and **everything else lives behind one „…"**: the note, the
-    swap, the records, the technique, a set more or fewer, doing another exercise now, later, skip, and
+    swap, the records, the technique, a set more or fewer, doing another exercise because the machine is taken, later, skip, and
     finishing the workout. There is exactly **one „…" on the screen**, beside the exercise; the header's was
     removed in the same pass, and `NKInlineStepper` put the reserve on one slim line instead of a third tall
     card.
   - **Typing, not only tapping**: weight, reps and reserve are fields (`NKStepper`'s `onSet`), because a stepper
     alone cannot enter 62,5 kg on a machine he has never used.
-  - **„Most másik gyakorlatot csinálok"** (`WorkoutSession.switchTo`) — the machine is taken, so he picks
+  - **„Foglalt a gép — mást csinálok most"** (`WorkoutSession.switchTo`) — the machine is taken, so he picks
     another exercise off today's list and carries on with it. The owner asked for exactly this instead of the
     reorder the round first shipped (*„ne is sorrend legyen, hanem simán lehessen másik gyakorlatot választani,
     ha épp foglalt a gép"*), and it is **not** a reorder: the plan's order stands, and when the chosen exercise

@@ -598,7 +598,7 @@ struct WorkoutPlayer: View {
         return NKSheetFrame(hue: hue, eyebrow: e?.name ?? "Gyakorlat", title: "Mit csinálunk vele?") {
             VStack(spacing: 0) {
                 menuRow("book-sage", "Jegyzet a gyakorlathoz") { sheet = .note(id) }
-                menuRow("repeat-deep", "Másik gyakorlatra cserélem") { sheet = .swap(id) }
+                menuRow("repeat-deep", "Végleg lecserélem másikra") { sheet = .swap(id) }
                 menuRow("medal-sun", "Rekordok") { sheet = .records(id) }
                 menuRow("camera-ink", "Technika") { sheet = .technique(id) }
                 menuRow("plus-ink", "Egy szettel több") {
@@ -609,7 +609,7 @@ struct WorkoutPlayer: View {
                         session.dropSet(from: id); sheet = nil; say("Egy szettel kevesebb")
                     }
                 }
-                menuRow("repeat-peach", "Most másik gyakorlatot csinálok") { sheet = .pick }
+                menuRow("shoe-cream", "Foglalt a gép — mást csinálok most") { sheet = .pick }
                 menuRow("clock-ink", "Később csinálom meg") {
                     session.postpone(id); sheet = nil; say("A gyakorlat a sor végére került")
                 }
@@ -631,7 +631,7 @@ struct WorkoutPlayer: View {
     /// finished the session goes back to the first unfinished exercise after it, exactly as it would have.
     private var pickSheet: some View {
         let others = session.all.filter { !$0.isDone && $0.id != session.currentExerciseId }
-        return NKSheetFrame(hue: hue, eyebrow: "Edzés", title: "Mit csinálsz most?") {
+        return NKSheetFrame(hue: hue, eyebrow: "Edzés", title: "Mit csinálsz helyette?") {
             if others.isEmpty {
                 NKNotLiveYet(hue: hue, title: "Nincs mire váltani",
                              line: "A mai sorból ez az egyetlen gyakorlat, ami még hátravan.")

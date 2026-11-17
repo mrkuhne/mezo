@@ -21,7 +21,7 @@ osszefoglalo: Edzés közben a telefon sorozatról sorozatra vezet — előírt 
   sikerült: rekord · terv fölött · terv szerint · terv alatt. Legalul egy nagy gomb: amíg nem nyúlsz a
   számokhoz, az áll rajta „Kész · a terv szerint".
 - **Minden más egyetlen „…" mögött van** a gyakorlat mellett — a képernyőn **csak egy ilyen gomb van**:
-  jegyzet, **csere**, rekordok, technika, egy szettel több vagy kevesebb, **most másik gyakorlatot csinálok**,
+  jegyzet, **csere**, rekordok, technika, egy szettel több vagy kevesebb, **„Foglalt a gép — mást csinálok most"**,
   későbbre teszem, kihagyom, és az edzés befejezése.
 - **Pihenő:** nagy visszaszámláló és egy **csík**, ami fogy (nem kör), fölötte pedig a legfontosabb: **az előbbi
   sorozat értékelése** — rekord · a terv fölött · pontosan a terv · a terv alatt —, mellé egy mondat. Alatta, hogy mi
