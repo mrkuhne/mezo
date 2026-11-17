@@ -141,5 +141,5 @@ A tulajdonos döntése (#48): a webes appot már nem fejlesztjük, csak az iPhon
 | Gyakorlattípus szerinti RIR-cél, deload-erőfeszítés, szerver által előírt pihenő | `mezo-r36n9.65` stílus-spec §6.2, §6.7 |
 | Gyakorlatcsere, taxonómia, eszközlista | `mezo-r36n9.66` |
 | Edzés-oldal, lejátszó, pihenőóra az iPhone-on | `mezo-r36n9.15` (B5) |
-| Tervajánló bemenetei (idő, szint, több jelölt) | még nincs gazdája — `mezo-r36n9.65`-nél felvetve |
+| Tervajánló bemenetei (idő, szint, több jelölt) | `mezo-r36n9.65` — tulajdonosi döntés #49 |
 | Csak a webet érintő tételek (heti zóna, FE-s MEV, kézi hozzáadás alapértéke, webes pihenőóra) | elvetve (#48) |
