@@ -378,10 +378,11 @@ final class CheckinFlowTests {
     @Test func storageIsPerUser() throws {
         let a = UUID(), b = UUID()
         let dirsA = RitmusEnvironment.directories(for: a, base: root), dirsB = RitmusEnvironment.directories(for: b, base: root)
-        #expect(dirsA.ledger != dirsB.ledger && dirsA.outbox != dirsB.outbox)
+        #expect(dirsA.ledger != dirsB.ledger && dirsA.outbox != dirsB.outbox && dirsA.cache != dirsB.cache)
         #expect(dirsA.ledger.path.contains(a.uuidString))
+        #expect(dirsA.cache.path.contains(a.uuidString))
         let c = clock
-        func env(_ d: (ledger: URL, outbox: URL)) -> RitmusEnvironment {
+        func env(_ d: (ledger: URL, outbox: URL, cache: URL)) -> RitmusEnvironment {
             RitmusEnvironment(ledgerDirectory: d.ledger, outboxDirectory: d.outbox, sender: sender, line: { _, _ in "" },
                               snapshot: { _ in CheckInSnapshotValue() }, plans: nil, clock: { c.now }, calendar: Self.budapest)
         }

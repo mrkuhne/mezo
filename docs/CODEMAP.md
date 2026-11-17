@@ -244,7 +244,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### boop
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-16, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-17, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **entities→tables:** `BoopBriefEntity`→`boop_brief`, `WorkoutTimeOverrideEntity`→`workout_time_override`
@@ -395,7 +395,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-11, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-11-17, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-17, mixed) ·
-  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-13, done) ·
+  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-16, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-12, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-17, mixed) ·
@@ -664,8 +664,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### dayclose
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-16, in-progress) ·
-  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-13, done)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-17, in-progress) ·
+  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-16, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
   - **entities→tables:** `DayCloseEntity`→`day_close`, `DayCloseLineCacheEntity`→`day_close_line_cache`
@@ -1773,7 +1773,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### wearable
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-16, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-17, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,
@@ -1871,9 +1871,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### scripts
 
 - **scripts/:** backup-live-db.sh, boop-notion-sync.mjs, check-beads-backup.mjs, check-generator-toolchain.mjs,
-  com.mezo.db-backup.plist, gen-body-geometry.mjs, gen-codemap.mjs, gen-codemap.test.mjs, gen-folyadek-sprite.mjs,
-  import-exercise-images.mjs, lint-conflict-markers.mjs, lint-docs.mjs, lint-liquibase.mjs, purge-restart.sql,
-  setup-git.sh
+  com.mezo.db-backup.plist, gen-body-geometry-swift.mjs, gen-body-geometry.mjs, gen-codemap.mjs, gen-codemap.test.mjs,
+  gen-folyadek-sprite.mjs, import-exercise-images.mjs, lint-conflict-markers.mjs, lint-docs.mjs, lint-liquibase.mjs,
+  purge-restart.sql, setup-git.sh
 
 ## Unaligned
 

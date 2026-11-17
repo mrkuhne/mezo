@@ -43,6 +43,9 @@ struct MaWall: View {
             etelWallCandidates(plan: plan, now: input.now,
                                supplementsDue: dueSupplements(groups, taken: taken, now: input.now))
         })
+        r.register(WallSource(id: WallSources.edzes) { [brief] input in
+            edzesWallCandidates(brief, now: input.now)
+        })
         r.register(WallSource(id: "brief") { [brief] input in
             briefWallCandidates(brief, now: input.now)
         })

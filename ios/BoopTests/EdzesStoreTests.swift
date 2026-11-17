@@ -1,0 +1,228 @@
+import Foundation
+import Testing
+import BoopCore
+@testable import Boop
+
+/// The Edzés room's data (B5). What is tested here is the room's **honesty**: it shows the server's own numbers,
+/// or it says it has none — there is no third case where a 0 stands in for "we do not know".
+@MainActor
+struct EdzesStoreTests {
+    let transport = ScriptedTransport()
+    let sessionId = "c1c2c3d4-0001-4a2b-9c3d-111122223333"
+    let pressId = "c1c2c3d4-0002-4a2b-9c3d-111122223333"
+
+    func directory() -> URL {
+        let url = URL.temporaryDirectory.appendingPathComponent("edzes-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    func store(cache: ServerCache? = nil, at now: Date = Date()) -> EdzesStore {
+        EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                   cache: cache, clock: { now })
+    }
+
+    var todayJSON: String {
+        #"""
+        {"templateSessionId":"\#(sessionId)","dayLabel":"Hét","title":"Pull Day","durationEst":62,
+         "exercises":[{"id":"\#(pressId)","name":"Fekvenyomás","muscle":"chest","warmupSets":2,"workingSets":3,
+          "repMin":6,"repMax":10,"targetRIR":2,"type":"compound","anchorWeightKg":77.5,
+          "prescribedSets":[{"kind":"warmup","targetWeightKg":40,"targetReps":8},
+                            {"kind":"warmup","targetWeightKg":60,"targetReps":5},
+                            {"kind":"working","targetWeightKg":80,"targetReps":8,"targetRIR":2},
+                            {"kind":"working","targetWeightKg":80,"targetReps":8,"targetRIR":2},
+                            {"kind":"working","targetWeightKg":80,"targetReps":7,"targetRIR":1}],
+          "rationale":"Múlt hét 8 × 77.5 kg (RIR 3) → +2.5 kg"}],
+         "weekDoneDates":["2026-11-16"]}
+        """#
+    }
+
+    @Test func fourTabsInOrder() {
+        // The owner's labels, and the one place they live: „Terv" became „Blokk" on 2026-11-16.
+        #expect(EdzesTab.allCases.map(\.rawValue) == ["Ma", "Blokk", "Gyakorlatok", "Előzmények"])
+    }
+
+    @Test func todaysPlanIsReadAndCached() async throws {
+        let cache = ServerCache(directory: directory())
+        transport.on("getTodayWorkout", 200, todayJSON)
+        let s = store(cache: cache)
+        await s.load()
+
+        #expect(s.today?.value.title == "Pull Day")
+        #expect(s.today?.value.exercises.first?.sets.count == 5)
+        #expect(s.ageText == nil)              // straight from the server: no age to report
+        #expect(s.problem == nil)
+        // Written through, so the next launch without a network has something true to show.
+        let hit = await cache.get(TodayWorkout.self, endpoint: "train/today",
+                                  date: s.today.map { _ in dayKey(Date()) } ?? "", maxAge: 3600)
+        #expect(hit?.value.title == "Pull Day")
+    }
+
+    @Test func emptyCacheOfflineSaysSoRatherThanRenderingZeroes() async throws {
+        transport.on("getTodayWorkout") { _ in throw URLError(.notConnectedToInternet) }
+        let s = store(cache: ServerCache(directory: directory()))
+        await s.load()
+
+        // Nothing to show and it says so — no plan, no invented session, no zeroes.
+        #expect(s.today == nil)
+        #expect(s.problem == .offline)
+    }
+
+    @Test func offlineFallsBackToTheCachedPlanWithItsAge() async throws {
+        let dir = directory()
+        let morning = Date(timeIntervalSince1970: 1_800_000_000)
+        transport.on("getTodayWorkout", 200, todayJSON)
+        await store(cache: ServerCache(directory: dir, clock: { morning }), at: morning).load()
+
+        // Later the same day, with no network: the morning's plan, labelled with its age.
+        let evening = morning.addingTimeInterval(8 * 3600)
+        transport.on("getTodayWorkout") { _ in throw URLError(.notConnectedToInternet) }
+        let s = store(cache: ServerCache(directory: dir, clock: { evening }), at: evening)
+        await s.load()
+
+        #expect(s.today?.value.title == "Pull Day")
+        #expect(s.problem == nil)
+        #expect(s.ageText == "8 órás terv")
+    }
+
+    @Test func staleCacheProducesALoudAgeString() {
+        #expect(EdzesStore.ageText(2 * 86_400) == "2 napos terv")
+        #expect(EdzesStore.ageText(5 * 3600) == "5 órás terv")
+        // A fresh read is not news: under a quarter of an hour the room says nothing about age.
+        #expect(EdzesStore.ageText(300) == nil)
+        #expect(EdzesStore.ageText(nil) == nil)
+    }
+
+    @Test func aRefusalIsNotAnOldAnswer() async throws {
+        let dir = directory()
+        let morning = Date(timeIntervalSince1970: 1_800_000_000)
+        transport.on("getTodayWorkout", 200, todayJSON)
+        await store(cache: ServerCache(directory: dir, clock: { morning }), at: morning).load()
+
+        // 401 is not "here is yesterday": it is a problem the room reports, so the cache is not consulted.
+        transport.on("getTodayWorkout", 401, "[]")
+        let s = store(cache: ServerCache(directory: dir, clock: { morning }), at: morning)
+        await s.load()
+        #expect(s.problem == .unauthorized)
+        #expect(s.today == nil)
+    }
+
+    @Test func briefingLinesComeFromTheServerRationale() async throws {
+        transport.on("getTodayWorkout", 200, todayJSON)
+        let s = store()
+        await s.load()
+
+        let e = try #require(s.today?.value.exercises.first)
+        #expect(e.rationale == "Múlt hét 8 × 77.5 kg (RIR 3) → +2.5 kg")
+        // And with the engine off there is no sentence at all — the room writes none of its own.
+        let plain = ScriptedTransport()
+        plain.on("getTodayWorkout", 200,
+                 #"{"exercises":[{"id":"\#(pressId)","name":"Fekvenyomás","muscle":"chest","warmupSets":2,"workingSets":3,"repMin":6,"repMax":10,"targetRIR":2,"type":"compound"}],"weekDoneDates":[]}"#)
+        let bare = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: plain)),
+                              cache: nil)
+        await bare.load()
+        let p = try #require(bare.today?.value.exercises.first)
+        #expect(p.rationale == nil)
+        #expect(p.sets.allSatisfy { $0.targetKg == nil })
+        #expect(p.anchorKg == nil)
+    }
+
+    @Test func noClientMeansNothingToShow() async {
+        let s = EdzesStore(client: nil, cache: nil)
+        await s.load()
+        #expect(s.today == nil)
+        #expect(s.problem == .unauthorized)
+    }
+
+    /// `yyyy-MM-dd` the way the store keys the cache.
+    func dayKey(_ date: Date) -> String {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = .autoupdatingCurrent
+        let c = cal.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+}
+
+/// The weight the way he reads it.
+@MainActor
+struct EdzesWeightTests {
+    @Test func kilosReadTheHungarianWay() {
+        #expect(nkKg(80) == "80 kg")
+        #expect(nkKg(77.5) == "77,5 kg")
+        #expect(nkKg(62.0) == "62 kg")
+    }
+}
+
+/// What the Ma tab computes from today's plan. These are the numbers the owner reads off the
+/// page, so each one has a rule about what it must NOT say when it does not know.
+@MainActor
+struct EdzesMaLogicTests {
+    func exercise(_ name: String, muscle: String, warmups: Int, working: Int, kg: Double? = nil) -> PlannedExercise {
+        let sets = (0..<warmups).map { _ in PrescribedSet(kind: .warmup, targetKg: kg.map { $0 * 0.6 }) }
+            + (0..<working).map { _ in PrescribedSet(kind: .working, targetKg: kg, targetReps: 8) }
+        return PlannedExercise(id: UUID(), name: name, muscle: muscle, type: .compound, sets: sets,
+                               warmupCount: warmups, workingCount: working, repMin: 6, repMax: 10,
+                               targetRIR: 2, anchorKg: kg)
+    }
+
+    @Test func theBodyMapCountsWorkingSetsOnly() {
+        // A long warm-up is not load. Counting it would make an easy session look hard.
+        let w = TodayWorkout(exercises: [exercise("Fekvenyomás", muscle: "chest", warmups: 5, working: 3),
+                                         exercise("Evezés", muscle: "back", warmups: 0, working: 6)])
+        let heat = edzesBodyHeat(w)
+        let chest = heat.first { $0.muscle == "chest" }
+        let back = heat.first { $0.muscle == "back" }
+        // The back gets twice the working sets, so it is fully lit and the chest half of it.
+        #expect(back?.level == 1)
+        #expect(chest?.level == 0.5)
+    }
+
+    @Test func aRestDayLightsNothing() {
+        #expect(edzesBodyHeat(TodayWorkout()).isEmpty)
+        #expect(edzesBodyHeat(nil).isEmpty)
+    }
+
+    @Test func theSummaryLeavesOutWhatItDoesNotKnow() {
+        // No plan at all: three dashes, not three zeroes.
+        let empty = edzesSummary(nil, brief: nil)
+        #expect(empty.exercises == nil && empty.workingSets == nil && empty.minutes == nil)
+
+        let w = TodayWorkout(durationEst: 62,
+                             exercises: [exercise("Fekvenyomás", muscle: "chest", warmups: 2, working: 3),
+                                         exercise("Evezés", muscle: "back", warmups: 2, working: 3)])
+        let s = edzesSummary(w, brief: nil)
+        #expect(s.exercises == 2)
+        #expect(s.workingSets == 6)      // the warmups are not sets he has to do heavy
+        #expect(s.minutes == 62)
+    }
+
+    @Test func theTimelineMarksTheWeekHeIsInAndDrawsTheDeloadApart() {
+        let block = BlockPlan(id: UUID(), title: "Ősz", shortTitle: "Ősz", status: "active",
+                              startDate: "2026-11-01", endDate: "2026-12-27", weeks: 8, currentWeek: 3,
+                              split: "5 napos", style: "hypertrophy",
+                              phaseCurve: [.mev, .mav, .mav, .mrv, .deload, .mav, .mrv, .mrv])
+        let weeks = edzesTimeline(block)
+        #expect(weeks.count == 8)
+        #expect(weeks.filter { $0.state == .current }.map(\.week) == [3])
+        #expect(weeks.prefix(2).allSatisfy { $0.state == .past })
+        #expect(weeks.suffix(5).allSatisfy { $0.state == .future })
+        // The easy week is marked as itself — drawn apart so a dip never reads as a week missed.
+        let deload = weeks.first { $0.isDeload }
+        #expect(deload?.week == 5)
+        #expect(deload?.phase == "Pihenőhét")
+        // And it really is the lightest week on the row.
+        #expect(deload?.load == weeks.map(\.load).min())
+    }
+
+    @Test func noBlockMeansNoTimeline() {
+        #expect(edzesTimeline(nil).isEmpty)
+    }
+
+    @Test func muscleNamesAreTheOnesHeUses() {
+        #expect(muscleName("chest") == "mellkas")
+        #expect(muscleName("ham") == "comb hátulja")
+        #expect(muscleName("core") == "törzs")
+        // An unknown key is passed through rather than renamed into something invented.
+        #expect(muscleName("tibialis") == "tibialis")
+    }
+}
