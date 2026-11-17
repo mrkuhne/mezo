@@ -63,6 +63,17 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-17 — Web · sebesség- és takarítócsomag (`mezo-v60pu`).** An audit for polling, dead code and
+  wasted work, then four merges. (1) `mezo-l5lvh`: nginx gzips the static assets and marks the hashed
+  `/assets/*` immutable; the backend gzips JSON over 2 KB (SSE excluded) — the JS/CSS on the wire went from
+  4.33 MB to 1.10 MB. (2) `mezo-upzqb`: 37 unreachable frontend files and their orphaned tests removed
+  (~3,200 lines). (3) `mezo-9fcm`: route-level code splitting (`app/lazyPage.ts`) — initial JS 3.13 MB →
+  1.80 MB raw; pages warm on idle and a loaded page renders synchronously; the 3 MiB Workbox override is
+  gone. (4) `mezo-7ahl8`: the lazy feed read re-attempts a missing cron kind at most once per 15 minutes
+  (the FE polls every minute), plus the dead `MemoryRecallService` and 8 caller-less queries removed. The
+  iOS findings were not built here (the files are owned by running Boop sessions): `mezo-r36n9.61`
+  (photo cache, request fan-out) and `mezo-r36n9.62` (Lágy leftovers).
+
 - **2026-11-16 — Boop · végignéztük, mi változik a hátralévő szakaszokban a kész felülettől (`mezo-r36n9.58`).**
   A kész kezdőlap, nap-oldal és területoldalak után minden hátralévő szakaszt újraolvastunk. A lényeg: **egy
   szakasz mostantól egy meglévő fület tölt meg, nem épít új oldalt**. Az **Edzés** szakasza a legnagyobb
