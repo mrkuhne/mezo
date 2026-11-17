@@ -14,6 +14,71 @@ struct DemoExercise: Identifiable, Equatable {
     var sets: Int
     /// Plyo, mobility and forearm work is listed but never counted.
     var counts: Bool = true
+    /// Round 7 — what the engine must know about an exercise before it may put a technique on it.
+    var stable = false
+    var lengthened = false
+    var isolation = false
+    var technique: DemoTechnique = .none
+    /// The day's challenge: half reps after the last set, as many as he can.
+    var challenge = false
+}
+
+/// The block's way of working; an exercise may override it.
+enum DemoStyle: String, CaseIterable {
+    case balanced, volume, heavy, allout
+
+    var name: String {
+        switch self {
+        case .balanced: "Kiegyensúlyozott"
+        case .volume: "Sok ismétlés"
+        case .heavy: "Nagyobb súly"
+        case .allout: "Két sorozat bukásig"
+        }
+    }
+
+    var line: String {
+        switch self {
+        case .balanced: "6–10 a nagy gyakorlatokon, 10–15 a kicsiken, 2 marad a tartalékban."
+        case .volume: "10–15 és 15–25 ismétlés, rövidebb pihenők."
+        case .heavy: "5–8 és 8–12 ismétlés, hosszabb pihenők."
+        case .allout: "Gyakorlatonként két sorozat, mindkettő bukásig. Csak stabil gyakorlaton."
+        }
+    }
+
+    func range(isolation: Bool) -> String {
+        switch self {
+        case .balanced: isolation ? "10–15" : "6–10"
+        case .volume: isolation ? "15–25" : "10–15"
+        case .heavy: isolation ? "8–12" : "5–8"
+        case .allout: isolation ? "8–12" : "6–10"
+        }
+    }
+}
+
+/// What may sit on an exercise's last set.
+enum DemoTechnique: String, CaseIterable {
+    case none, restDrop, drop, myo, partials
+
+    var name: String {
+        switch self {
+        case .none: "Sima sorozatok"
+        case .restDrop: "Pihenős drop"
+        case .drop: "Drop set"
+        case .myo: "Myo set"
+        case .partials: "Félismétlések"
+        }
+    }
+
+    /// What he does, step by step, on the last set.
+    var steps: [String] {
+        switch self {
+        case .none: []
+        case .restDrop: ["Bukásig", "30 mp pihenő", "30%-kal kevesebb súly, ugyanannyi"]
+        case .drop: ["Bukásig", "Azonnal 20%-kal kevesebb", "Újra bukásig"]
+        case .myo: ["Majdnem bukásig", "20 mp pihenő", "3–5 ismétlés, amíg megy"]
+        case .partials: ["Az utolsó teljes sorozat", "Azonnal félismétlések", "Amennyi megy"]
+        }
+    }
 }
 
 struct DemoDay: Identifiable, Equatable {
@@ -135,6 +200,56 @@ final class BlokkDemoModel {
                    tags: ["kétszer az utolsó ismétlésig", "a súly marad"]),
     ]
     var weekAccepted = false
+
+    // MARK: style and techniques (round 7)
+
+    var style: DemoStyle = .balanced
+
+    init() {
+        let stable: Set<String> = ["h1", "h2", "h3", "h5", "k1", "k2", "k4", "k5", "c1", "c2", "c3", "c5", "p1"]
+        let lengthened: Set<String> = ["h2", "h3", "k2", "c3", "p1"]
+        let isolation: Set<String> = ["h3", "h4", "h5", "k2", "k4", "k5", "c3", "c4", "p1"]
+        let techniques: [String: DemoTechnique] = ["h2": .restDrop, "c2": .restDrop]
+        let challenges: Set<String> = ["h3", "k2", "c3", "p1"]
+        for d in days.indices {
+            for e in days[d].exercises.indices {
+                let id = days[d].exercises[e].id
+                days[d].exercises[e].stable = stable.contains(id)
+                days[d].exercises[e].lengthened = lengthened.contains(id)
+                days[d].exercises[e].isolation = isolation.contains(id)
+                days[d].exercises[e].technique = techniques[id] ?? .none
+                days[d].exercises[e].challenge = challenges.contains(id)
+            }
+        }
+    }
+
+    /// Does this exercise take part in the volume and technique story at all (not core, not plyo)?
+    func judged(_ exercise: DemoExercise) -> Bool { exercise.counts && exercise.muscle != "core" }
+
+    func range(_ exercise: DemoExercise) -> String { style.range(isolation: exercise.isolation) }
+
+    /// The techniques this exercise may carry: none on a free-weight lift, half reps only where the stretched
+    /// position is safe to repeat.
+    func allowed(_ exercise: DemoExercise) -> [DemoTechnique] {
+        guard exercise.stable else { return [.none] }
+        return exercise.lengthened ? [.none, .restDrop, .drop, .myo, .partials] : [.none, .restDrop, .drop, .myo]
+    }
+
+    func cycleTechnique(day: Int, exercise: Int) {
+        let ex = days[day].exercises[exercise]
+        let options = allowed(ex)
+        guard options.count > 1, let i = options.firstIndex(of: ex.technique) else { return }
+        days[day].exercises[exercise].technique = options[(i + 1) % options.count]
+    }
+
+    /// One challenge a day: picking a new one takes it from the old.
+    func toggleChallenge(day: Int, exercise: Int) {
+        let was = days[day].exercises[exercise].challenge
+        for e in days[day].exercises.indices { days[day].exercises[e].challenge = false }
+        days[day].exercises[exercise].challenge = !was
+    }
+
+    func techniqueCount(_ day: Int) -> Int { days[day].exercises.filter { $0.technique != .none }.count }
 
     // MARK: rules
 

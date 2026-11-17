@@ -9,12 +9,13 @@ import BoopDesign
 // dial per muscle, paged days; the review is a deck of cards, one muscle a card, decided on the card.
 
 struct BlokkDemoRoot: View {
-    enum Route { case hub, builder, review }
+    enum Route { case hub, builder, review, player }
     @State private var model = BlokkDemoModel()
     @State private var route: Route = {
         switch UserDefaults.standard.string(forKey: "previewBlokkOpen") {
         case "epito": .builder
         case "het": .review
+        case "edzes": .player
         default: .hub
         }
     }()
@@ -26,6 +27,7 @@ struct BlokkDemoRoot: View {
             case .hub: BlokkDemoHub(model: model) { route = $0 }.transition(.opacity)
             case .builder: BlokkBuilderPage(model: model) { route = .hub }.transition(.move(edge: .bottom).combined(with: .opacity))
             case .review: WeekReviewDeck(model: model) { route = .hub }.transition(.move(edge: .bottom).combined(with: .opacity))
+            case .player: BlokkDemoPlayer(model: model) { route = .hub }.transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.smooth(duration: 0.35), value: route)
@@ -33,12 +35,12 @@ struct BlokkDemoRoot: View {
     }
 }
 
-private let demoHue = Hue.mozgas
-private let demoWarn = Color(hex: 0xF2C94C)
-private let demoGood = Color(hex: 0x9FD8A8)
+let demoHue = Hue.mozgas
+let demoWarn = Color(hex: 0xF2C94C)
+let demoGood = Color(hex: 0x9FD8A8)
 
 /// The sky of the area behind a full-screen page, fading into the ground.
-private struct DemoSky: View {
+struct DemoSky: View {
     var height: CGFloat = 420
     var body: some View {
         VStack(spacing: 0) {
@@ -81,7 +83,8 @@ private struct BlokkDemoHub: View {
                               ? "Minden izom a saját sávjában van."
                               : "*\(model.outside.count) izom* lóg ki a sávjából. Az építőben látod, melyik és mennyivel.",
                               hue: hue)
-                    NKActions([NKAction(glyph: "dumbbell-ink", title: "Blokk szerkesztése", primary: true) { go(.builder) }], hue: hue)
+                    NKActions([NKAction(glyph: "dumbbell-ink", title: "Blokk szerkesztése", primary: true) { go(.builder) },
+                               NKAction(glyph: "bolt-ink", title: "Edzés közben") { go(.player) }], hue: hue)
                 }
             }
         }
@@ -430,9 +433,10 @@ private struct DayCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(day.name.uppercased()).nkFont(11, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(demoHue.glow)
                     Text(day.title).nkFont(28, design: .serif).foregroundStyle(.white)
-                    HStack(spacing: 6) {
-                        DemoPill("kb. \(model.minutes(index)) perc", icon: .calendar)
+                    NKFlowRow(spacing: 6, rowSpacing: 6) {
+                        DemoPill("kb. \(model.minutes(index)) perc", icon: .timer)
                         if let note = day.note { DemoPill(note, icon: .spark) }
+                        if model.techniqueCount(index) > 0 { DemoPill("\(model.techniqueCount(index)) technika", color: demoHue.glow, icon: .drop) }
                     }
                     .padding(.top, 2)
                 }
@@ -467,8 +471,22 @@ private struct DayCard: View {
                             .frame(width: 28, height: 40)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(0.95))
-                                Text(exercise.counts ? demoMuscleName(exercise.muscle) : "ugrás · nem számít a sorozatokba")
+                                    .lineLimit(1).minimumScaleFactor(0.8)
+                                Text(exercise.counts ? (model.judged(exercise) ? "\(demoMuscleName(exercise.muscle)) · \(model.range(exercise)) ism." : demoMuscleName(exercise.muscle)) : "ugrás · nem számít a sorozatokba")
                                     .nkFont(12).foregroundStyle(.white.opacity(0.5))
+                                if model.judged(exercise) {
+                                    HStack(spacing: 6) {
+                                        TechniqueChip(exercise: exercise) { model.cycleTechnique(day: index, exercise: e) }
+                                        if exercise.lengthened {
+                                            Button { withAnimation(.snappy) { model.toggleChallenge(day: index, exercise: e) } } label: {
+                                                DemoPill(exercise.challenge ? "KIHÍVÁS" : "kihívás", mono: exercise.challenge,
+                                                         color: exercise.challenge ? demoWarn : .white.opacity(0.4), icon: .flag)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                    .padding(.top, 2)
+                                }
                             }
                             Spacer(minLength: 8)
                             SetStepper(value: exercise.sets,
@@ -502,6 +520,34 @@ private struct BlockView: View {
                     Text("Az első hét a te terved. Innen a Hangsúly izmok hetente egy sorozattal nőnek a sávjuk tetejéig, a Tartás marad, a hatodik hét a fele.")
                         .nkFont(14).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
                 }
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("EDZÉSMÓD · AZ EGÉSZ BLOKKRA").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(demoHue.glow)
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
+                        ForEach(DemoStyle.allCases, id: \.self) { item in
+                            let on = model.style == item
+                            Button { withAnimation(.snappy) { model.style = item } } label: {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack {
+                                        DemoIcon(icon(item), color: on ? NK.ground : demoHue.glow, size: 20)
+                                        Spacer()
+                                        if on { DemoIcon(.check, color: NK.ground, size: 16) }
+                                    }
+                                    Text(item.name).nkFont(15, .semibold).foregroundStyle(on ? NK.ground : .white)
+                                        .lineLimit(1).minimumScaleFactor(0.8)
+                                    Text(item.line).nkFont(11).foregroundStyle(on ? NK.ground.opacity(0.75) : .white.opacity(0.55))
+                                        .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                                }
+                                .padding(12)
+                                .frame(maxWidth: .infinity, minHeight: 112, alignment: .topLeading)
+                                .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(on ? AnyShapeStyle(demoHue.glow) : AnyShapeStyle(.white.opacity(0.07))))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    Text("Egy gyakorlatnál a Napok nézetben felülírhatod.").nkFont(11).foregroundStyle(.white.opacity(0.45))
+                }
+                .sensoryFeedback(.selection, trigger: model.style)
+
                 HStack(alignment: .bottom, spacing: 8) {
                     ForEach(0..<6, id: \.self) { w in
                         VStack(spacing: 6) {
@@ -512,6 +558,7 @@ private struct BlockView: View {
                                 .frame(height: CGFloat(120 * Double(totals[w]) / peak))
                             Text("\(w + 1). hét").nkFont(11, .medium).foregroundStyle(.white.opacity(0.8))
                             Text(BlokkDemoModel.phases[w]).nkFont(9, design: .monospaced).foregroundStyle(.white.opacity(0.45))
+                            DemoIcon(w >= 2 && w <= 4 ? .drop : .keep, color: w >= 2 && w <= 4 ? demoHue.glow : .white.opacity(0.25), size: 14)
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -519,6 +566,12 @@ private struct BlockView: View {
                 .padding(18)
                 .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(NK.ground.opacity(0.62)))
                 .nkGlass(26)
+
+                HStack(spacing: 8) {
+                    DemoPill("1–2. hét: sima sorozatok", icon: .keep)
+                    DemoPill("3–5. hét: technikák", color: demoHue.glow, icon: .drop)
+                }
+                DemoPill("a kihívás minden héten megvan, a pihenőhéten nincs", color: demoWarn, icon: .flag)
 
                 VStack(spacing: 0) {
                     ForEach(Array(BlokkDemoModel.muscles.enumerated()), id: \.element) { i, m in
@@ -551,6 +604,47 @@ private struct BlockView: View {
             .padding(.horizontal, 20).padding(.bottom, 60)
         }
         .scrollIndicators(.hidden)
+    }
+}
+
+private extension BlockView {
+    func icon(_ style: DemoStyle) -> DemoIcon.Kind {
+        switch style {
+        case .balanced: .target
+        case .volume: .reps
+        case .heavy: .weight
+        case .allout: .flame
+        }
+    }
+}
+
+/// The technique of one exercise as a pill he taps to change — or the reason there is none to pick.
+struct TechniqueChip: View {
+    let exercise: DemoExercise
+    let cycle: () -> Void
+
+    var body: some View {
+        if !exercise.stable {
+            DemoPill("szabadsúly · nincs technika", color: .white.opacity(0.4), icon: .shield)
+        } else {
+            Button { withAnimation(.snappy) { cycle() } } label: {
+                DemoPill(exercise.technique == .none ? "+ technika" : exercise.technique.name,
+                         color: exercise.technique == .none ? .white.opacity(0.55) : demoHue.glow,
+                         icon: Self.icon(exercise.technique))
+            }
+            .buttonStyle(.plain)
+            .sensoryFeedback(.selection, trigger: exercise.technique)
+        }
+    }
+
+    static func icon(_ technique: DemoTechnique) -> DemoIcon.Kind {
+        switch technique {
+        case .none: .keep
+        case .restDrop: .timer
+        case .drop: .drop
+        case .myo: .myo
+        case .partials: .partials
+        }
     }
 }
 
@@ -782,7 +876,7 @@ private struct ChangeRow: View {
     }
 }
 
-private struct DemoPill: View {
+struct DemoPill: View {
     let text: String
     var mono = false
     var color: Color = .white.opacity(0.78)
@@ -798,6 +892,7 @@ private struct DemoPill: View {
                 .nkFont(mono ? 9 : 12, mono ? .semibold : .medium, design: mono ? .monospaced : .default)
                 .tracking(mono ? 1 : 0)
                 .foregroundStyle(color)
+                .lineLimit(1).fixedSize()
         }
         .padding(.horizontal, mono ? 8 : 10).padding(.vertical, mono ? 4 : 5)
         .background(Capsule().fill(.white.opacity(0.09)))
@@ -1002,7 +1097,7 @@ private struct SummaryCard: View {
 
 // MARK: - Small pieces
 
-private struct TierPill: View {
+struct TierPill: View {
     let tier: MuscleTier
 
     var body: some View {
@@ -1094,7 +1189,7 @@ private struct DemoCheck: View {
     }
 }
 
-private struct SetStepper: View {
+struct SetStepper: View {
     let value: Int
     let down: () -> Void
     let up: () -> Void
@@ -1120,9 +1215,9 @@ private struct SetStepper: View {
 }
 /// The feature's own marks, drawn on the kit's 64-unit grid with the same round 5-unit stroke as the outlined
 /// `NKGlyph`s — so nothing here is an emoji or a system symbol.
-private struct DemoIcon: View {
+struct DemoIcon: View {
     enum Kind {
-        case sets, weight, reps, calendar, check, keep, spark, target, feather, shield, flame
+        case sets, weight, reps, calendar, check, keep, spark, target, feather, shield, flame, drop, myo, partials, flag, timer
 
         /// The mark a reason pill wears, read off its own words.
         static func forReason(_ text: String) -> Kind {
@@ -1149,6 +1244,35 @@ private struct DemoIcon: View {
             let st = StrokeStyle(lineWidth: 5 * k, lineCap: .round, lineJoin: .round)
             let ink = GraphicsContext.Shading.color(color)
             switch kind {
+            case .drop:
+                // steps going down: the weight comes off
+                ctx.stroke(P {
+                    $0.move(to: CGPoint(x: 8, y: 16)); $0.addLine(to: CGPoint(x: 24, y: 16)); $0.addLine(to: CGPoint(x: 24, y: 32))
+                    $0.addLine(to: CGPoint(x: 40, y: 32)); $0.addLine(to: CGPoint(x: 40, y: 48)); $0.addLine(to: CGPoint(x: 56, y: 48))
+                }, with: ink, style: st)
+            case .myo:
+                // one big effort, then small ones
+                ctx.fill(P { $0.addEllipse(in: CGRect(x: 6, y: 20, width: 24, height: 24)) }, with: ink)
+                for x in [36.0, 46.0, 56.0] {
+                    ctx.fill(P { $0.addEllipse(in: CGRect(x: x - 3.5, y: 28.5, width: 7, height: 7)) }, with: ink)
+                }
+            case .partials:
+                // half of the way: a full arc, and the lower half of it drawn heavy
+                ctx.stroke(P { $0.addArc(center: CGPoint(x: 32, y: 34), radius: 20, startAngle: .degrees(180), endAngle: .degrees(360), clockwise: false) },
+                           with: .color(color.opacity(0.35)), style: st)
+                ctx.stroke(P { $0.addArc(center: CGPoint(x: 32, y: 34), radius: 20, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false) }, with: ink, style: st)
+                ctx.stroke(P { $0.move(to: CGPoint(x: 8, y: 50)); $0.addLine(to: CGPoint(x: 56, y: 50)) }, with: ink, style: st)
+            case .flag:
+                ctx.stroke(P { $0.move(to: CGPoint(x: 16, y: 8)); $0.addLine(to: CGPoint(x: 16, y: 56)) }, with: ink, style: st)
+                ctx.stroke(P {
+                    $0.move(to: CGPoint(x: 16, y: 12)); $0.addLine(to: CGPoint(x: 50, y: 20)); $0.addLine(to: CGPoint(x: 16, y: 34))
+                }, with: ink, style: st)
+            case .timer:
+                ctx.stroke(P { $0.addEllipse(in: CGRect(x: 11, y: 15, width: 42, height: 42)) }, with: ink, style: st)
+                ctx.stroke(P {
+                    $0.move(to: CGPoint(x: 32, y: 36)); $0.addLine(to: CGPoint(x: 32, y: 24))
+                    $0.move(to: CGPoint(x: 25, y: 7)); $0.addLine(to: CGPoint(x: 39, y: 7))
+                }, with: ink, style: st)
             case .sets:
                 // three stacked bars: a set, a set, a set
                 for (i, y) in [16.0, 32.0, 48.0].enumerated() {
