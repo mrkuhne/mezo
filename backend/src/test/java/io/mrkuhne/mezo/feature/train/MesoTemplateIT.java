@@ -438,6 +438,7 @@ class MesoTemplateIT extends ApiIntegrationTest {
         WorkoutSessionEntity day =
             trainPopulator.createWorkoutSession(owner, legacy.getId(), "Hét", "Pull", 0, "planned");
         trainPopulator.createExercise(owner, day.getId(), "Régi húzás", 0);
+        trainPopulator.createExercise(owner, day.getId(), "Régi nyomás", "chest-mid", "compound");
         trainPopulator.createVolumeLogWithoutBaseline(owner, legacy.getId(), "back");
         HttpHeaders auth = ownerAuthHeaders();
 
@@ -450,8 +451,20 @@ class MesoTemplateIT extends ApiIntegrationTest {
             getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class).stream()
                 .filter(t -> t.getId().equals(rerun.getTemplateId())).findFirst().orElseThrow();
         assertThat(template.getVolumePerMuscle().get("back").getName()).isEqualTo("Örökölt kiindulás");
-        // volume engine v2: the name no longer travels into the next run's volume log — a run's
-        // rows are derived from its plan, never copied from the template's landmarks.
+
+        // volume engine v2: the next run's rows are derived from its plan, not copied from the
+        // template's landmarks — so the inherited name does not travel, config landmarks apply.
+        // (The legacy exercise sits in zone "hát", which has no landmark entry; add a chest one.)
+        MesocycleResponse restarted = postForBody(TEMPLATES + "/" + rerun.getTemplateId() + "/start",
+            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+        assertThat(getForList(MESOCYCLES, auth, HttpStatus.OK, MesocycleResponse.class))
+            .filteredOn(m -> m.getId().equals(restarted.getId())).singleElement()
+            .satisfies(m -> {
+                assertThat(m.getVolumePerMuscle().get("chest").getSource().getBaseline().getName())
+                    .isEqualTo("A terv szerint");
+                assertThat(m.getVolumePerMuscle().get("chest").getMev()).isEqualTo(8);
+            });
     }
 
     @Test

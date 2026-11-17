@@ -121,6 +121,28 @@ class VolumeLedgerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aGroupDroppedAndTrainedAgainGetsItsRowBack() {
+        UUID user = databasePopulator.populateUser("ledger-j@test.local");
+        MesocycleEntity meso = train.createActiveMeso(user);
+        WorkoutSessionEntity day = train.createTemplateDay(user, meso.getId(), "Hét");
+        ExerciseEntity bench = exercise(user, day, "Bench", "chest-mid", 3);
+        exercise(user, day, "Row", "back-mid", 3);
+        ledger.sync(user, meso.getId());
+        exerciseRepository.delete(bench);
+        exerciseRepository.flush();
+        ledger.sync(user, meso.getId());
+        assertThat(rows(user, meso.getId())).extracting(MuscleGroupVolumeLogEntity::getMuscle)
+            .containsExactly("back");
+
+        exercise(user, day, "Incline", "chest-upper", 5);
+        ledger.sync(user, meso.getId());
+
+        List<MuscleGroupVolumeLogEntity> rows = rows(user, meso.getId());
+        assertThat(rows).filteredOn(r -> r.getMuscle().equals("chest")).hasSize(1);
+        assertThat(byMuscle(rows, "chest").getCurrentSets()).isEqualTo(5);
+    }
+
+    @Test
     void exemptExercisesAreNotSummed() {
         UUID user = databasePopulator.populateUser("ledger-e@test.local");
         MesocycleEntity meso = train.createActiveMeso(user);

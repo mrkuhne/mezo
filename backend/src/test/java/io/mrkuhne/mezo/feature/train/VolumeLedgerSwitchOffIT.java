@@ -2,7 +2,6 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
@@ -31,11 +30,10 @@ class VolumeLedgerSwitchOffIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("ledger-off@test.local");
         MesocycleEntity meso = train.createActiveMeso(user);
         WorkoutSessionEntity day = train.createTemplateDay(user, meso.getId(), "Hét");
-        ExerciseEntity e = train.createExercise(user, day.getId(), "Bench", "chest-mid", "compound");
+        train.createExercise(user, day.getId(), "Bench", "chest-mid", "compound");
 
         ledger.sync(user, meso.getId());
 
-        assertThat(e).isNotNull();
         assertThat(volumeRepo.findByCreatedByAndMesocycleIdInOrderByMuscleAsc(user, List.of(meso.getId())))
             .isEmpty();
     }

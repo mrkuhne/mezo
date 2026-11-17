@@ -89,7 +89,10 @@ public class VolumeLedger {
             toSave.add(row);
         });
         if (!existing.isEmpty()) {
-            volumeLogRepository.deleteAll(existing.values()); // soft delete — group no longer trained
+            // Physical delete: a soft-deleted tombstone would collide with the (mesocycle, muscle)
+            // unique constraint when the group is trained again. Done BEFORE the upserts below.
+            volumeLogRepository.hardDeleteByIds(
+                existing.values().stream().map(MuscleGroupVolumeLogEntity::getId).toList());
         }
         if (!toSave.isEmpty()) {
             volumeLogRepository.saveAll(toSave);
