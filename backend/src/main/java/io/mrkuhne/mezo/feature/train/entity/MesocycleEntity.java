@@ -105,7 +105,7 @@ public class MesocycleEntity extends OwnedEntity {
     @Column(name = "volume_recompute", columnDefinition = "jsonb")
     private VolumeRecomputeJson volumeRecompute;
 
-    /** Which volume engine drives the run: 1 = legacy, 2 = volume engine v2 (set at run start from Task 10). */
+    /** Which volume engine drives the run: 1 = legacy, 2 = volume engine v2 (set at run start; older runs by VolumeAmountMigrationRunner). */
     @Column(name = "volume_model", nullable = false)
     private short volumeModel = 1;
 

@@ -429,7 +429,7 @@ public class WeekProposalService {
     }
 
     /** {@code "W{n}"} → {@code n}; {@code null}/blank/unparsable ⇒ 0 (never recorded yet). */
-    private static int parseLastRunWeek(VolumeRecomputeJson recompute) {
+    public static int parseLastRunWeek(VolumeRecomputeJson recompute) {
         if (recompute == null || recompute.lastRun() == null || recompute.lastRun().isBlank()) {
             return 0;
         }

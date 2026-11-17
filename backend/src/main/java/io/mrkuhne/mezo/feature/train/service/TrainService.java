@@ -224,6 +224,7 @@ public class TrainService {
         // never share one text[] collection instance.
         m.setPhaseCurve(List.copyOf(src.phaseCurve()));
         m.setNotes(src.notes());
+        m.setVolumeModel((short) 2); // a new run is born on the amount model — nothing to migrate
         if (active) {
             // Single-active invariant holds on the start-as-active path too — the start sheet's
             // "Aktiválás most" stamps directly with active status (live-smoke regression).

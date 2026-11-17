@@ -11,10 +11,10 @@ import java.util.UUID;
  * {@link LegacySetDistribution}'s migration caller, so they never drift on what counts as a
  * template day (mezo-dz9c item 5). Pure, no Spring/DB — the caller owns the fetch.
  */
-final class MesoTemplateDays {
+public final class MesoTemplateDays {
     private MesoTemplateDays() {}
 
-    static List<UUID> ids(List<WorkoutSessionEntity> mesoSessions) {
+    public static List<UUID> ids(List<WorkoutSessionEntity> mesoSessions) {
         return mesoSessions.stream()
             .filter(s -> s.getTemplateSessionId() == null)
             .map(WorkoutSessionEntity::getId)

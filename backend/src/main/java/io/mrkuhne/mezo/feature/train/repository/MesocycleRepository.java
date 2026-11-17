@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.repository;
 
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,4 +30,7 @@ public interface MesocycleRepository extends JpaRepository<MesocycleEntity, UUID
 
     /** How many runs were started from a template — the template library's {@code runCount}. */
     long countByTemplateIdAndCreatedByAndDeletedFalse(UUID templateId, UUID createdBy);
+
+    /** Runs still on a given volume model in the given statuses, all owners — the one-time amount migration. */
+    List<MesocycleEntity> findByVolumeModelAndStatusInAndDeletedFalse(short volumeModel, Collection<String> statuses);
 }

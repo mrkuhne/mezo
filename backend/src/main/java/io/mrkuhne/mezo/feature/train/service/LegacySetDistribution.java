@@ -14,7 +14,8 @@ import java.util.stream.Collectors;
  * It survives only so the one-time data migration can fold what the owner was actually being
  * prescribed into the plan rows.
  *
- * <p>One-time migration helper — deleted with VolumeAmountMigrationRunner.
+ * <p>One-time migration helper: delete this class and {@code VolumeAmountMigrationRunner} once no run
+ * with {@code volume_model = 1} and status active/planned remains in production.
  */
 public final class LegacySetDistribution {
     private LegacySetDistribution() {}
