@@ -15,6 +15,11 @@ class VolumePropertiesIT extends AbstractIntegrationTest {
         assertThat(props.step()).isEqualTo(2);
         assertThat(props.deloadFraction()).isEqualByComparingTo("0.5");
         assertThat(props.grindRirGap()).isEqualTo(2);
+        assertThat(props.stepEmphasize()).isEqualTo(2);
+        assertThat(props.stepGrow()).isEqualTo(1);
+        assertThat(props.stepDeficit()).isEqualTo(1);
+        assertThat(props.bands()).isEqualTo(new VolumeProperties.Bands(3, 2, 5, 8));
+        assertThat(props.weeklyReview().mode()).isEqualTo("auto");
         assertThat(props.baselines()).containsKeys(
             "chest", "back", "shoulder", "biceps", "triceps", "quad", "ham", "glute", "calf");
         assertThat(props.baselines().get("chest"))

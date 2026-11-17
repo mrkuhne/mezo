@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.config;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
@@ -20,8 +21,26 @@ public record VolumeProperties(
     @NotNull @PositiveOrZero Integer grindRirGap,     // RIR-below-target gap that counts as a grind (2)
     // Keyed by the coarse MuscleGroup token (chest/back/…); a group with no entry (core, sport
     // rows) is never seeded — the DA5 skip-don't-fabricate rule holds on the create path too.
-    @NotNull @Size(min = 1) Map<String, @Valid Baseline> baselines
+    @NotNull @Size(min = 1) Map<String, @Valid Baseline> baselines,
+    @NotNull @Valid Bands bands,                      // tier band formulas + caps
+    @NotNull @Valid WeeklyReview weeklyReview,        // proposal mode
+    @NotNull @Positive Integer stepEmphasize,         // weekly step, emphasize tier (2)
+    @NotNull @Positive Integer stepGrow,              // weekly step, grow tier (1)
+    @NotNull @Positive Integer stepDeficit            // weekly step, both tiers in a deficit (1)
 ) {
+    /** Tier band formulas and per-day caps. */
+    public record Bands(
+        @NotNull @Positive Integer maintainLowDivisor,   // maintain low = ceil(mev / this) (3)
+        @NotNull @PositiveOrZero Integer emphasizeLowOffset, // emphasize low = mav - this (2)
+        @NotNull @Positive Integer exerciseCap,          // working sets per exercise (5)
+        @NotNull @Positive Integer sessionCap            // working sets per muscle group per day (8)
+    ) {}
+
+    /** Weekly review proposal mode. */
+    public record WeeklyReview(
+        @NotNull @Pattern(regexp = "auto|manual") String mode
+    ) {}
+
     /** RP intermediate weekly-set landmarks for one coarse muscle group. */
     public record Baseline(
         @NotNull @Positive Integer mev,
