@@ -1,7 +1,7 @@
 ---
 title: Research Wiki — Catalog
 type: summary
-updated: 2026-09-10
+updated: 2026-11-17
 tags: [tooling]
 related: [SCHEMA.md, log.md, README.md]
 ---
@@ -29,6 +29,7 @@ ingest.
 - [Sleep Debunks](concepts/sleep-debunks.md) — the myth list (smart-wake, blue light, magnesium, melatonin, Z-drugs) mezo deliberately builds nothing on. `confidence: medium`.
 - [Morning Routine (Ethier six recs)](concepts/morning-routine.md) — the six morning recs → their mezo habits; the Walker/Ethier division of labor. `confidence: medium`.
 - [Program-Design Rules (RP·Helms·Nippard·Ethier)](concepts/program-design-rules.md) — 1-3 gyakorlat/izom/edzés, 2-4 szett/gyakorlat, heti 2-5 variancia, rep-zóna 25/50/25, MEV/MAV/MRV tábla; a guided-building epic (mezo-oyhy) szabálybázisa. `confidence: medium`.
+- [Personalized hypertrophy exercise selection](concepts/personalized-exercise-selection.md) — the Muscle Ladder bonus guide's goal/equipment/comfort/progression criteria, coverage-gap examples, and cautious product implications. `confidence: medium`.
 - [Set-Volume Landmarks](concepts/set-volume-landmarks.md) — failure (5–12 set/hét) vs volume (12–20) styles, ~11 set/session cap, frequency fix; the source numbers behind the Train set-budget layer (mezo-7rdg). `confidence: medium`.
 - [LLM quantization for agentic use](concepts/llm-quantization-for-agents.md) — why 4-bit specifically hurts tool-calling; the 6–8-bit policy behind ADR 0029. `confidence: medium`.
 - [Goal-Type Taxonomies](concepts/goal-type-taxonomies.md) — Strides' four tracker archetypes (Habit/Target/Average/Milestone) plus Exist's baseline; mezo's five life-goal pillar kinds, and a naming correction on the project's own spec. `confidence: medium`.
