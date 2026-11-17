@@ -23,14 +23,14 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
   [deployment architecture](../infrastructure/deployment-k3s-argocd.md). Goal doubles as hands-on practice
   with the stack Daniel's clients use.
 
-## Epics in flight (state as of 2026-11-13)
+## Epics in flight (state as of 2026-11-17)
 
 The phase list above is the long arc; this is the **current working set** — the epics that own the
 day-to-day slices. Authoritative status is always `bd show <id>`; this table is the index over it.
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (nyolc gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16) — B5 (edzés) következik** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (nyolc gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16); **B5 Edzés — a terület, az eligazítás, a lejátszó és a lezárás — shipped (2026-11-17); a Gyakorlatok, az Előzmények, az Egyedi edzés, a Live Activity és a Watch még hátra** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -62,6 +62,21 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-11-17 — Boop · az Edzés terület, az eligazítás és az edzés közbeni lejátszó a telefonon (`mezo-r36n9.15`).**
+  The Edzés room lives on the training API's own data: today's load on the real MuscleMap body, the block as a
+  timeline (time across, difficulty up, deload hollow), the exercises as a photo carousel, and a Blokk tab whose
+  load page ranks each muscle by the room *this plan* leaves it. **Eligazítás** precedes the first set: the
+  server's duration estimate, the day's **missions** — a step the progression engine actually took (weight →
+  Túlterhelés, reps → Több ismétlés, beating his own best → Rekordkísérlet; never a deload, never a confidence
+  percentage) — and the line-up with every exercise's catalog photograph. The **player** follows the owner's Lágy
+  design in Napkelte: a boxed set table with a green/red tilted arrow or a gold medal per set, typed entry, one
+  „…" menu (swap, „foglalt a gép — mást csinálok most", records, technique, ± set, skip, finish), the three
+  questions once per exercise after its last set, and a closing ceremony that never shames. Every write goes
+  through the outbox; only the swap asks for the net, because the server mints the replacement row's id. Two
+  bugs found on the way: two `TrainClient` instances that never shared the workout id, and a black rest screen
+  after the questions (it asked the *next* exercise for the last set). Merge `ceef35928`.
+  [plan](../superpowers/plans/2026-11-13-boop-b5-edzes.md), döntések #42–#45, [`boop-ios.md`](../features/boop-ios.md) §2.
 
 - **2026-11-17 — Web · sebesség- és takarítócsomag (`mezo-v60pu`).** An audit for polling, dead code and
   wasted work, then four merges. (1) `mezo-l5lvh`: nginx gzips the static assets and marks the hashed

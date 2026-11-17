@@ -304,5 +304,14 @@
       "mezo-r36n9.57"
     ],
     "mi_valtozott": "A kör mögött minden terület külön kis alkalmazás lett, a szimulátorban jóváhagyott minta szerint: alul a terület saját menüsora a saját oldalaival és jelzéseivel, fent a gömb egy vékony vonal fölött, alatta balra a terület ítélete. Alvás: Ma, Hét, Előzmények. Energia: Ma, Check-inek, Minták. Edzés: Ma, Blokk, Gyakorlatok, Előzmények. Forma: Ma, Mi hat rá. Étel: Ma, Receptek, Kamra, Hét. A Pénz (Ma, Pénzem, Költés, Gyakorlás) és a Levél (Ma, Figyelt, Szabályok, Fiókok) oldala is elkészült, adat nélkül: minden fülük megmondja, mi lesz rajta, kitalált szám nélkül."
+  },
+  "ceef35928": {
+    "cim": "Edzés: eligazítás, edzés közbeni lejátszó és lezárás a telefonon",
+    "datum": "2026-11-17",
+    "szakasz": "Edzés",
+    "jegyek": [
+      "mezo-r36n9.15"
+    ],
+    "mi_valtozott": "Az Edzés terület saját adataival él: a mai terhelés az izomtérképen, a blokk idővonala, a gyakorlatok fényképekkel, a Blokk fülön a terhelés izomcsoportonként. Az „Indítás” előtt jön az Eligazítás: mennyi ideig tart, a mai küldetések (amit a motor ma lépett — vállalod vagy elengeded) és a mai sor képekkel. Edzés közben a lejátszó sorozatról sorozatra vezet: táblázatban a szettek, zöld nyíl ha megvolt a terv, piros ha alatta maradt, medál ha rekord; a súly és az ismétlés be is írható; egyetlen „…” menüben a csere, a „foglalt a gép — mást csinálok most”, a rekordok és a technika. A három kérdés gyakorlatonként egyszer jön, a végén egy lezáró kép. Minden térerő nélkül is megmarad; csak a gyakorlatcsere kér internetet."
   }
 }
