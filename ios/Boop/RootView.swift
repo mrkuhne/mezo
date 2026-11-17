@@ -22,6 +22,8 @@ struct RootView: View {
             // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
             if UserDefaults.standard.bool(forKey: "previewKit") {
                 KitGallery()
+            } else if UserDefaults.standard.bool(forKey: "previewCsere") {
+                CsereDemo()   // spike only (mezo-r36n9.66) — never merged
             } else {
                 shell
             }
