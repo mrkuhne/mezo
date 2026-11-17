@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-11-13
+updated: 2026-11-17
 tags: [fuel, recipe, frontend, data-layer, backend, llm, allergens, boop, b4-etel]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -54,7 +54,7 @@ States drawn and tested: list empty / empty filter / loading (`RecipesSkeleton`)
 
 **Deliberate deviations from the prototype:** the recipe hero carries the link „Mezo értékelése 9,2 ›" instead of a score chip; the basis switch shows only above one serving; the Műhely dock is a page card, its steps an open list and save is on the hero's liquid; the composer text is 16 px (no zoom on focus); the amber „changed line" mark is kept. The quick-log button of the shell is hidden on the editor routes (the floating foot owns that corner).
 
-**Not converted / leftovers:** the mic tile inside the composer is the shared `VoiceField` (old look, Hungarian aria — F8); `components/RecipeFitBadge.tsx` (+ its test) has no importer left and waits for the F9 sweep (the list prints the rating as text). In English mode recipe, ingredient and tag names, notes and an already-written AI note stay as written; `RecipeResponse.createdDate` is an ISO instant the client formats (`fmtDate`), `lastLogged` is formatted on the client too — the mock must return the same shapes ([`_platform-language.md`](_platform-language.md) §3 *Mock mode*).
+**Not converted / leftovers:** the mic tile inside the composer is the shared `VoiceField` (old look, Hungarian aria — F8); the list prints the rating as text. In English mode recipe, ingredient and tag names, notes and an already-written AI note stay as written; `RecipeResponse.createdDate` is an ISO instant the client formats (`fmtDate`), `lastLogged` is formatted on the client too — the mock must return the same shapes ([`_platform-language.md`](_platform-language.md) §3 *Mock mode*).
 
 **Since S4:** a Workshop line the LLM could not link to a `pantryItemId` (`null` or hallucinated) but whose stated name matches an entry in the SHARED pantry catalog now arrives on the draft as a `source: "pantry"` line — and that match automatically puts the matched definition on the caller's shelf (`PantryCatalogService.ensureItem`), so the line resolves to a real owned `pantry_item` the moment the recipe is saved.
 
@@ -138,7 +138,7 @@ Backend: `RecipeImageIT`, `RecipeApiIT`, `RecipeServiceIT`, `RecipeRepositoryIT`
 - **Contract:** `api/feature/recipe/recipe.yml`, `recipe-import.yml`, `recipe-image.yml`
 - **Design source:** the Folyadék prototype `docs/design_2.0/prototypes/vilagos/fuel.js` (routes `receptek`, `recept.<id>`, `recept-uj`, `muhely`, `score.r-<id>`); the build plan [`2026-10-12-folyadek-f5-fuel.md`](../superpowers/plans/2026-10-12-folyadek-f5-fuel.md) (area H); the pre-Folyadék editor mock is archived at `docs/archive/design-v1/recipes-editor.html`.
 - **FE data:** `frontend/src/data/fuel/{recipeApi,recipeHooks,recipeMacros,pantryImpact,queryKeys}.ts`
-- **FE views/sheets/components:** `frontend/src/features/fuel/pages/{FuelRecipesPage,RecipesSkeleton,RecipeDetailPage,RecipeEditorPage,RecipeWorkshopPage,FuelRecipeScorePage}.tsx`; `components/{RecipeLogsList,RecipeOverrideRow,ServingToggle,FuelQualityBlocks,FuelScoreSurface}.tsx`, `components/workshop/{WorkshopChatDock,WorkshopIngredientRow}.tsx`; `sheets/{IngredientPickerSheet,ReceptPickSheet}.tsx`; the Fuel-shared liquid pieces `components/folyadek/` (`Pot`, `NumG`, `M3`, `ItemRow`, `EditLine`); `logic/{recipeRole,recipeSlotFace}.ts`. Dead, left for F9: `components/RecipeFitBadge.tsx`. (`RecipeCard`, `RecipeIngredientList` / `Row`, `RecipeScoreSheet` are deleted.)
+- **FE views/sheets/components:** `frontend/src/features/fuel/pages/{FuelRecipesPage,RecipesSkeleton,RecipeDetailPage,RecipeEditorPage,RecipeWorkshopPage,FuelRecipeScorePage}.tsx`; `components/{RecipeLogsList,RecipeOverrideRow,ServingToggle,FuelQualityBlocks,FuelScoreSurface}.tsx`, `components/workshop/{WorkshopChatDock,WorkshopIngredientRow}.tsx`; `sheets/{IngredientPickerSheet,ReceptPickSheet}.tsx`; the Fuel-shared liquid pieces `components/folyadek/` (`Pot`, `NumG`, `M3`, `ItemRow`, `EditLine`); `logic/{recipeRole,recipeSlotFace}.ts`. (`RecipeCard`, `RecipeIngredientList` / `Row`, `RecipeScoreSheet` are deleted.)
 - **FE style / words:** `frontend/src/styles/folyadek-fuel-recept.css` (`.fc-`), `frontend/src/styles/folyadek-fuel-kozos.css` (`.fx-`); `frontend/src/shared/i18n/messages/fuel-recept.{hu,en}.ts`.
 - **Tests:** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe/*.java`; `frontend/src/features/fuel/pages/{FuelRecipesPage,RecipeDetailPage,RecipeEditorPage,RecipeWorkshopPage}.test.tsx`, `RecipePages.en.test.tsx`
 - **Docs/specs:** [`pantry.md`](pantry.md), [`fuel.md`](fuel.md), the six driving specs listed in §1, [ADR 0012](../decisions/0012-consumer-owned-llm-ports.md)

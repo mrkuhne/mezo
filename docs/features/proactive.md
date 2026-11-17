@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-10-12
+updated: 2026-11-17
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -835,7 +835,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   already depends on companion elsewhere in this doc; a direct `companion.service →
   proactive.repository` import would close a NEW slice cycle, `ArchitectureTest.
   feature_slices_are_cycle_free`).
-- **The FE surface (`/me/week`'s hub and view-pages — `WeekHubPage`, `WeekAnalysisPage`, `WeekDaysPage`, `WeekDiscoveriesPage` — `mezo-p2tr`; `WeekReviewCard` is dead code)** — this is a
+- **The FE surface (`/me/week`'s hub and view-pages — `WeekHubPage`, `WeekAnalysisPage`, `WeekDaysPage`, `WeekDiscoveriesPage` — `mezo-p2tr`)** — this is a
   **`me`-owned page**, not an Insights tab (unlike every other proactive surface in this doc): it
   RETIRES the old Insights „Heti" tab outright (`useWeekly`/`WeeklyPage` deleted,
   `/insights/weekly` now redirects to `/me/week`, [`insights.md` §2.2](insights.md)) rather than
@@ -2361,7 +2361,7 @@ because neither is a persisted row ([`today.md` §9](today.md)). Mock mode stays
 are real-mode-only in practice. **Since W5.2 (bd `mezo-b3pp.19`)** `MezoMessageItem` also carries an
 optional `kind: FeedMessageKind` (`buildMezoMessages` copies `m.kind` through) — the ONLY way the FE
 distinguishes an `intervention`/`advice` card from any other feed row, since `interventionKey`/
-`adviceKey` themselves never reach the wire (§4 above). `MezoMessagesSheet.tsx` uses it to render
+`adviceKey` themselves never reach the wire (§4 above). `NapMezoPage.tsx` uses it to render
 „Segített?" instead of the generic feedback label on `kind === 'intervention' || kind === 'advice'`
 rows (S4, bd `mezo-d58h.4`, widened the branch to cover the new kind alongside its pre-S4
 predecessor), still through the same `useFeedback('feed_message')` chips every other persisted card
@@ -2698,7 +2698,7 @@ card, no day gate, no migration, no new feed kind, no FE change.
   A question card is an `advice` row, so the thread's generic advice rendering would have put
   „Segített?" over it and offered the negative reason row („pontatlan"/„túl sok"/…) on the 👎 — but
   here the 👍/👎 IS the answer and those reasons are complaints about a card. `NapMezoPage` (the live
-  thread; `MezoMessagesSheet` is the dead, half-migrated twin — `mezo-1esk`) now keys off
+  thread) now keys off
   `FeedMessage.flagKey`, which already reached the FE from `mezo-6269.2` and only had to survive
   `feedToMessageItem`: `isQuestionCard` is a PREFIX match on `question_`, so a future question key
   behaves correctly the day the backend starts asking it, with no frontend change. The card then
@@ -3302,8 +3302,8 @@ covers the never-lazy 404, the `stale` probe (re-probed on `regenerate` too, not
 regenerate 409/404, and the digest's 400-on-non-Monday + otherwise-always-200 contract. `AnchoredConversationIT` (companion) covers `context_kind`/`context_date` persistence, the
 assistant-only opening turn, and its swallow-and-log failure path. FE: `frontend/src/data/me/
 {meWeekHooks.test.tsx,weeklyReviewHooks.test.ts}`, `frontend/src/features/me/{pages/{WeekHubPage,WeekAnalysisPage,WeekDaysPage,WeekLessonsPage,WeekDiscoveriesPage}.test.tsx,
-logic/useChatHandoff.test.ts,components/week/WeekDayTile.test.tsx}` (`WeekReviewCard`/`WeekScoreBars`
-have no dedicated component test files — their behavior is covered at the hub/view-page
+logic/useChatHandoff.test.ts,components/week/WeekDayTile.test.tsx}` (`WeekScoreBars`
+has no dedicated component test file — its behavior is covered at the hub/view-page
 integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/insights/weekly →
 /me/week` redirect). Full test list: [me.md §8](me.md).
 
@@ -3880,13 +3880,12 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
      `surface:feed_message` and the down-reason histogram, teaching the rollup that the companion's
      cards are unhelpful — from its own survey. `FeedbackLearningService` now drops them via
      `FeedMessageKindSource.answerArtifactIds` (the fifth port inversion).
-  **Accepted UI limitation + follow-up:** `MezoMessagesSheet.tsx` prints the generic „Segített?"
+  **Accepted UI limitation + follow-up:** the message thread printed the generic „Segített?"
   label above the chips for every `kind=advice` row, question cards included; the answer mapping is
   spelled out in the card's own suggestion lines instead. Fixing the label needs the advice key on
   the feed contract and both `VITE_USE_MOCK` modes — filed as bd `mezo-d58h.7.6`, deliberately out of
   this backend-only slice. **(That follow-up SHIPPED — §5.16: the live thread `NapMezoPage` reads
-  „A válaszod" and wears the answers as chips. This paragraph is the S5-era state; `MezoMessagesSheet`
-  is the dead twin, `mezo-1esk`.)**
+  „A válaszod" and wears the answers as chips. This paragraph is the S5-era state.)**
   **No DB change for the keys themselves:** `setupKey` is unconstrained jsonb and this slice adds no
   flag key, so neither the flag-key CHECK nor any "setup-key set" was touched (the spec's
   §error-handling sentence assumed both; there is no setup-key CHECK in the schema). The one
@@ -4099,10 +4098,10 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 **Frontend — Today consumer (`mezo-gst9`, replaces the B1.2 briefing seam + the H1 companion-note seam)**
 - `frontend/src/data/today/feedApi.ts` — `feedApi.get(date)` + `toFeedMessages` (wire→`FeedMessage[]`); replaces `briefingApi.ts` + `heartbeatApi.ts` (both DELETED).
 - `frontend/src/data/today/feedHooks.ts` — `useCompanionFeed()` (`['companionFeed', date]`; dual-mode: mock `[]` synchronous, real GET with 60s `refetchInterval`); re-exported by `data/hooks.ts`; replaces `briefingHooks.ts` + `heartbeatHooks.ts` (both DELETED).
-- `frontend/src/features/today/logic/mezoMessages.ts` — `buildMezoMessages({feed, demoBriefing})`: maps each `FeedMessage` to a thread bubble, prepends the labelled demo card only while no `morning` kind exists. **W5.2:** `MezoMessageItem` gains an optional `kind: FeedMessageKind`, copied straight from `m.kind`, so `MezoMessagesSheet.tsx` can render the „Segített?" variant on `kind === 'intervention' || kind === 'advice'` (§5.4 above). **S4:** also copies `facts`/`suggestions` through onto `MezoMessageItem`.
-- `frontend/src/features/today/components/MezoMessagesSheet.tsx` — the „Segített?" label branch, `kind === 'intervention' || kind === 'advice'` (S4 widened the W5.2 branch); every other kind keeps the generic feedback label. Same `useFeedback('feed_message')` chips either way — no new feedback machinery ([companion.md](companion.md) §5.7).
+- `frontend/src/features/today/logic/mezoMessages.ts` — `buildMezoMessages({feed, demoBriefing})`: maps each `FeedMessage` to a thread bubble, prepends the labelled demo card only while no `morning` kind exists. **W5.2:** `MezoMessageItem` gains an optional `kind: FeedMessageKind`, copied straight from `m.kind`, so `NapMezoPage.tsx` can render the „Segített?" variant on `kind === 'intervention' || kind === 'advice'` (§5.4 above). **S4:** also copies `facts`/`suggestions` through onto `MezoMessageItem`.
+- `frontend/src/features/today/pages/NapMezoPage.tsx` — the „Segített?" label branch, `kind === 'intervention' || kind === 'advice'` (S4 widened the W5.2 branch); every other kind keeps the generic feedback label. Same `useFeedback('feed_message')` chips either way — no new feedback machinery ([companion.md](companion.md) §5.7).
 - `frontend/src/features/today/pages/NapMezoPage.tsx` — S4: renders `m.facts` as the „Miből gondolom" evidence list, and has a suggestion bullet-list block gated on `m.suggestions?.length && !questionAnswers(m)`. **Since `mezo-wtl0` no card reaches that block** — a generated advice row arrives with `suggestions: []` and a question card's suggestions become its answer chips instead (§4/§5.4).
-- `frontend/src/features/today/pages/TodayPage.tsx` — calls `useCompanionFeed()` directly and passes the result + `resolveBriefing(scenario.dayState)` into `buildMezoMessages`; renders `MezoChip`/`MezoMessagesSheet` (see [today.md](today.md)); the retired `BriefingCard.tsx`/`CompanionNoteCard.tsx` are DELETED.
+- `frontend/src/features/today/pages/TodayPage.tsx` — calls `useCompanionFeed()` directly and passes the result + `resolveBriefing(scenario.dayState)` into `buildMezoMessages`; renders the Mezo message thread (see [today.md](today.md)); the retired `BriefingCard.tsx`/`CompanionNoteCard.tsx` are DELETED.
 - `frontend/src/data/types.ts` — `FeedMessage{kind, eyebrow, body, refs, generatedAt}` (NEW);
   `FeedMessageKind` gained `'intervention'` as its sixth value (W5.2, `mezo-b3pp.19`);
   `Briefing.confidence?` stays optional (used only by the demo-fallback path now); the
@@ -4166,7 +4165,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - Contract: `api/feature/proactive/proactive.yml` (weekly-review paths + `WeeklyReview*` schemas), `api/feature/me-week/me-week.yml`, `api/feature/companion/companion.yml` (`CreateConversationRequest.context`).
 - Migrations: `...202608271200_mezo-p2tr_create_weekly_review.sql`, `...202608271500_mezo-p2tr_feedback_weekly_review_kind.sql`, `...202608271800_mezo-p2tr_ai_conversation_context.sql`, `...202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql` (learned_fact `source`/`week_start`/`evidence` + the fourth `knowledge_fact` source).
 - Tests: `feature/proactive/service/WeeklyReviewGeneratorIT.java`, `feature/proactive/service/WeeklyLessonServiceIT.java`, `feature/proactive/controller/WeeklyReviewControllerIT.java`, `support/populator/{WeeklyReviewPopulator,LearnedFactPopulator}.java`; companion-side `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `AnchoredConversationIT`.
-- FE consumer: `frontend/src/data/me/{weeklyReviewApi.ts,weeklyReviewHooks.ts,weeklyReviewMock.ts}`, `frontend/src/features/me/{pages/{WeekHubPage,WeekAnalysisPage,WeekDaysPage,WeekLessonsPage,WeekDiscoveriesPage}.tsx,components/{WeekReviewCard,WeekDiscoveries}.tsx,logic/useChatHandoff.ts}` — full anatomy [me.md](me.md) `Heti` §2/§10. **RETIRED alongside this slice:** the Insights Weekly consumer block just above (`useWeekly`/`WeeklyPage`) — WR does not extend it, it replaces it.
+- FE consumer: `frontend/src/data/me/{weeklyReviewApi.ts,weeklyReviewHooks.ts,weeklyReviewMock.ts}`, `frontend/src/features/me/{pages/{WeekHubPage,WeekAnalysisPage,WeekDaysPage,WeekLessonsPage,WeekDiscoveriesPage}.tsx,components/WeekDiscoveries.tsx,logic/useChatHandoff.ts}` — full anatomy [me.md](me.md) `Heti` §2/§10. **RETIRED alongside this slice:** the Insights Weekly consumer block just above (`useWeekly`/`WeeklyPage`) — WR does not extend it, it replaces it.
 
 **Docs (link, don't duplicate)**
 - Weekly review design of record (WR): `.superpowers/sdd/2026-08-27-weekly-review/`

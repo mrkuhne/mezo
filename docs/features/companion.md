@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-11-13
+updated: 2026-11-17
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -2389,7 +2389,7 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
          recalled_memories envelope, [] when null, degraded flag)
       onError ⇒ event:error, data: StreamError{code:"COMPANION_STREAM_FAILED"} — NO assistant row
   → FE: deltas AND tool events append into the optimistic draft bubble (chips render live through
-    ToolChipRow — mezo-280); done → the persisted pair is written into the ['chat'] query cache (no
+    ToolWorkStrip — mezo-280); done → the persisted pair is written into the ['chat'] query cache (no
     refetch), discarding the draft — chips included — wholesale, and the authoritative chips/refs
     render; error → inline error bubble + invalidate
 ```
@@ -5657,7 +5657,7 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   404 (graph switch off) reads as an honest empty list — the `useLifeEventCandidates` idiom — so
   the rest of the page stays fully usable. No graph **visualization** — text lines only (`mezo-2m4`
   stays parked, spec §12). **Since `mezo-ms9a` (2026-09-01) `KnowledgePage.tsx` is deleted** — this
-  whole chain (now `KindTileGrid`/`KindNodeList`/`NodeDetailSheet`) lives inside the unified
+  whole chain (now `KindTileGrid`/`KindNodeList`) lives inside the unified
   Tudástár's `?view=kategoriak` (`features/insights/`, [`insights.md` §2.4](insights.md)); the hook
   and its contract are unchanged, only the consumer moved.
 - **Acceptance:** `GraphApiIT` confirms `topEdges` is wired through HTTP; `GraphServiceIT` covers
@@ -7806,7 +7806,7 @@ one seam in this doc that fans OUT to three other features at once. The crossing
 | Kind | Artifact table | Owner doc | FE surface |
 |---|---|---|---|
 | `chat_message` | `ai_message` | this doc (§4) | `ChatPage` assistant bubbles ([`insights.md` §2.5](insights.md)) |
-| `feed_message` | `companion_message` | [`proactive.md` §4](proactive.md) | `MezoMessagesSheet` ([`today.md` §1](today.md)) |
+| `feed_message` | `companion_message` | [`proactive.md` §4](proactive.md) | `NapMezoPage` ([`today.md` §1](today.md)) |
 | `weekly_suggestion` | `weekly_suggestion` | [`proactive.md` §4](proactive.md) | Weekly „heti tervjavaslat" card ([`insights.md` §2.2](insights.md)) |
 | `weekly_review` | `weekly_review` | [`proactive.md` §10](proactive.md) | `WeekAnalysisPage` ([`me.md`](me.md)), `mezo-p2tr` |
 | `memoir` | `memoir` | [`proactive.md` §4](proactive.md) | `MemoirPage` ([`insights.md` §2.3](insights.md)) |
@@ -8481,7 +8481,7 @@ offline harness). Two new pure-unit suites, no Spring context:
   empty-id-set = no request, a failing read degrading to "no verdicts"),
   `features/insights/components/FeedbackChips.test.tsx` (the reason row's reveal/retract branches,
   `aria-pressed`), plus per-surface cases in
-  `ChatPage`/`MemoirPage`/`PredictionsPage`/`MezoMessagesSheet`/`TodayPage.feedback` tests (the
+  `ChatPage`/`MemoirPage`/`PredictionsPage`/`TodayPage.feedback` tests (the
   retired `WeeklyPage`'s case moved to `features/me/pages/WeekPage.test.tsx`, `mezo-p2tr`) — see
   [`insights.md` §8](insights.md) and [`today.md` §8](today.md).
 
@@ -10214,7 +10214,7 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241500_mezo-b3pp.19_companion_message_intervention_kind.sql` — the CHECK-widening migration (companion_message kind, CK-swap only).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241600_mezo-b3pp.19_feedback_rollup_intervention_scope.sql` — the CHECK-widening migration (feedback_rollup scope, CK-swap only).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{InterventionServiceIT,InterventionConfigIT,InterventionSwitchOffIT,CompanionMessageInterventionPersistenceIT}.java` — §8. Push-anchor + quiet-hours tests live under `feature/notification` — see [`_platform-notifications.md`](_platform-notifications.md) §10.
-- **FE side** — `frontend/src/features/today/components/MezoMessagesSheet.tsx` (the „Segített?" label on `kind === 'intervention'` rows, same `useFeedback('feed_message')` chips every other card kind uses) + `frontend/src/features/today/logic/mezoMessages.ts` (`MezoMessageItem` gains an optional `kind: FeedMessageKind`, so the sheet can branch on it — the wire never exposes `interventionKey` itself, only `kind`) + `frontend/src/data/types.ts` (`FeedMessageKind` gains `'intervention'`) — see [`proactive.md`](proactive.md) §5.4/§10 (the owning doc for the FE feed consumer) and [`_platform-notifications.md`](_platform-notifications.md) §10 (the `NotificationCategory`/settings-page side).
+- **FE side** — `frontend/src/features/today/pages/NapMezoPage.tsx` (the „Segített?" label on `kind === 'intervention'` rows, same `useFeedback('feed_message')` chips every other card kind uses) + `frontend/src/features/today/logic/mezoMessages.ts` (`MezoMessageItem` gains an optional `kind: FeedMessageKind`, so the sheet can branch on it — the wire never exposes `interventionKey` itself, only `kind`) + `frontend/src/data/types.ts` (`FeedMessageKind` gains `'intervention'`) — see [`proactive.md`](proactive.md) §5.4/§10 (the owning doc for the FE feed consumer) and [`_platform-notifications.md`](_platform-notifications.md) §10 (the `NotificationCategory`/settings-page side).
 
 **Backend — quarterly deep pass (W5.3, `mezo-b3pp.20` — §4/§9, spec §9.3)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/quarterly/config/QuarterlyProperties.java` — the four `mezo.companion.quarterly.*` knobs (`cron`, `maxCandidates`, `maxPeriodLines`, `renderMaxChars`), a feature-scoped record (`@ConfigurationPropertiesScan`) — the `ProfileProperties`/`FlagProperties` precedent (§9).
@@ -10260,7 +10260,7 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `api/feature/me-week/me-week.yml` (new fragment) + `api/feature/companion/companion.yml` (`CreateConversationRequest.context`).
 - Tests: `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `AnchoredConversationIT`.
 - **Owned by `feature/proactive`, not restated here** (the generated weekly-review NARRATIVE + its Monday cron/push/feedback): `feature/proactive/{entity/WeeklyReviewEntity,service/WeeklyReviewGenerator,service/WeeklyReviewJob,service/WeeklyReviewService,service/WeeklyReviewDigestService,service/WeekReviewSourceAdapter}.java` — see [`proactive.md` §10](proactive.md).
-- **FE side** — `frontend/src/features/me/pages/{WeekHubPage,WeekAnalysisPage,WeekDaysPage,WeekLessonsPage,WeekDiscoveriesPage}.tsx` (the hub + 4 view-pages, `mezo-d20.6.10` split — `WeekPage.tsx` no longer exists) + `frontend/src/features/me/components/week/WeekDayTile.tsx` (per-day tile — `WeekDayCard` is deleted) + `frontend/src/features/me/components/{WeekDiscoveries,WeekNextCard,WeekReviewCard}.tsx` + `frontend/src/features/me/logic/useChatHandoff.ts` + `frontend/src/data/me/{meWeek*,weeklyReview*}.ts`, documented in [`me.md`](me.md) `Heti` §2/§4/§10.
+- **FE side** — `frontend/src/features/me/pages/{WeekHubPage,WeekAnalysisPage,WeekDaysPage,WeekLessonsPage,WeekDiscoveriesPage}.tsx` (the hub + 4 view-pages, `mezo-d20.6.10` split — `WeekPage.tsx` no longer exists) + `frontend/src/features/me/components/week/WeekDayTile.tsx` (per-day tile — `WeekDayCard` is deleted) + `frontend/src/features/me/components/{WeekDiscoveries,WeekNextCard}.tsx` + `frontend/src/features/me/logic/useChatHandoff.ts` + `frontend/src/data/me/{meWeek*,weeklyReview*}.ts`, documented in [`me.md`](me.md) `Heti` §2/§4/§10.
 
 **Backend — knowledge graph (W2.1, `mezo-b3pp.6` — §4.2/§6.1)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/entity/{GraphNodeEntity,GraphEdgeEntity}.java` — `extends OwnedEntity`; `meta`/`evidence` typed jsonb columns (§4 above).

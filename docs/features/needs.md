@@ -2,7 +2,7 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-10-11
+updated: 2026-11-17
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
@@ -96,8 +96,7 @@ The pages (each holds its own hooks — there is no single composition root)
   **only** here; tune the system by editing this object. `forecastZeroAt` (`needs.ts:241-275`)
   projects a ring forward (no future events assumed) up to 24h to find its next zero-crossing for
   the sheet's forecast strip. Wake/bed window math is wrap-aware (`isAwakeAt`/`nextCrossing`,
-  `needs.ts:142-157`) — an overnight-awake window (bed < wake) still resolves correctly, the same
-  idiom `dayFace.ts` uses.
+  `needs.ts:142-157`) — an overnight-awake window (bed < wake) still resolves correctly.
 - **`needsInputs.ts`** (`frontend/src/features/today/logic/needsInputs.ts`) — the
   app-data → `NeedsInputs` adapter. `buildNeedsEvents(raw: RawNeedsData)` (`needsInputs.ts:192`)
   turns a snapshot of already-fetched hook data into per-ring `NeedEvent[]`, one small pure
