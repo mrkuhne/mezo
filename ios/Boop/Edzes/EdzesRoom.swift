@@ -425,7 +425,7 @@ struct EdzesRoom: View {
             NKMenuItem(glyph: "bolt-sun", name: running ? "Folytatom" : "Indítás",
                        sub: running ? "Az edzés fut" : "Sorozatról sorozatra") { startOrResume() },
             NKMenuItem(glyph: "plus-ink", name: "Egyedi edzés", sub: "Saját összeállítás") { toast = soonToast("Egyedi edzés") },
-            NKMenuItem(glyph: "ball-sun", name: "Gyakorlatok", sub: "A saját súlyaiddal") { selected = EdzesTab.gyakorlatok.rawValue },
+            NKMenuItem(glyph: "dumbbell-ink", name: "Gyakorlatok", sub: "A saját súlyaiddal") { selected = EdzesTab.gyakorlatok.rawValue },
             NKMenuItem(glyph: "book-sage", name: "Előzmények", sub: "Minden eddigi edzés") { selected = EdzesTab.elozmenyek.rawValue },
         ], hue: hue)
     }
