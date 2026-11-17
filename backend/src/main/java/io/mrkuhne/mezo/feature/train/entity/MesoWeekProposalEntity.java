@@ -34,6 +34,17 @@ import org.hibernate.type.SqlTypes;
 @SQLRestriction("is_deleted = false")
 public class MesoWeekProposalEntity extends OwnedEntity {
 
+    /** {@code kind} values (DB CHECK). */
+    public static final String KIND_WEEKLY = "weekly";
+    public static final String KIND_TIER_CHANGE = "tier_change";
+
+    /** {@code status} values (DB CHECK). */
+    public static final String STATUS_PENDING = "pending";
+    public static final String STATUS_APPLIED = "applied";
+    public static final String STATUS_AUTO_APPLIED = "auto_applied";
+    public static final String STATUS_EXPIRED = "expired";
+    public static final String STATUS_SUPERSEDED = "superseded";
+
     @Id
     @GeneratedValue
     @Column(columnDefinition = "uuid")

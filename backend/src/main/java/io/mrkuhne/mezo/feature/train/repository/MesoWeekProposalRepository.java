@@ -12,13 +12,15 @@ public interface MesoWeekProposalRepository extends JpaRepository<MesoWeekPropos
 
     /** The live {@code weekly} proposal of a run's week (at most one — partial unique index). */
     @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
-        + " and p.kind = 'weekly' and p.week = :week")
+        + " and p.kind = '" + MesoWeekProposalEntity.KIND_WEEKLY + "' and p.week = :week")
     Optional<MesoWeekProposalEntity> findWeekly(
         @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId, @Param("week") int week);
 
     /** The latest applied (or auto-applied) {@code weekly} proposal strictly before {@code beforeWeek}. */
     @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
-        + " and p.kind = 'weekly' and p.status in ('applied', 'auto_applied') and p.week < :beforeWeek"
+        + " and p.kind = '" + MesoWeekProposalEntity.KIND_WEEKLY + "'"
+        + " and p.status in ('" + MesoWeekProposalEntity.STATUS_APPLIED + "', '"
+        + MesoWeekProposalEntity.STATUS_AUTO_APPLIED + "') and p.week < :beforeWeek"
         + " order by p.week desc limit 1")
     Optional<MesoWeekProposalEntity> findLatestApplied(
         @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId,

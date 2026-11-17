@@ -505,7 +505,7 @@ public class TrainPopulator {
      * A completed instance dated inside 1-based week {@code week}'s {@code startDate}-anchored
      * window, carrying {@code nSets} chest working sets at {@code rir} against a fresh chest
      * exercise (own template day, {@code targetRir} set explicitly) — the volume-rollover
-     * trigger's "last week's performance" scenario builder ({@code VolumeProgressionServiceIT}).
+     * "last week's performance" scenario builder ({@code VolumeArcContractIT}).
      * Uses {@link #createWorkoutInstance} + {@link #createLoggedSet} directly (unlike
      * {@link #completedInstanceWithSets}, which hardcodes {@code now()}) so the instance lands in
      * an arbitrary past/future week.

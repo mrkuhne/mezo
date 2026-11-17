@@ -17,4 +17,17 @@ public record WeekProposalLineJson(
     Integer from,
     Integer to,
     List<String> reasons,
-    String decision) {}
+    String decision) {
+
+    /** {@code kind} of a set-count line. */
+    public static final String KIND_SETS = "sets";
+    /** {@code decision} values ({@code null} = undecided). */
+    public static final String DECISION_ACCEPTED = "accepted";
+    public static final String DECISION_KEPT = "kept";
+
+    /** The same line with {@code decision} set. */
+    public WeekProposalLineJson withDecision(String newDecision) {
+        return new WeekProposalLineJson(id, exerciseId, exerciseName, dayIndex, muscleGroup, kind, from, to,
+            reasons, newDecision);
+    }
+}

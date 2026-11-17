@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.service.WeeklySignalReader;
 import io.mrkuhne.mezo.feature.train.service.WeeklySignalReader.GroupSignals;
@@ -32,6 +33,7 @@ class WeeklySignalReaderIT extends AbstractIntegrationTest {
     @Autowired CheckInPopulator checkIns;
     @Autowired DatabasePopulator databasePopulator;
     @Autowired ExerciseSetRepository setRepository;
+    @Autowired ExerciseRepository exerciseRepository;
 
     private UUID owner;
     private MesocycleEntity meso;
@@ -78,6 +80,18 @@ class WeeklySignalReaderIT extends AbstractIntegrationTest {
         swapped.setReplacesExerciseId(planned.getId());
         train.save(swapped);
         log(swapped, instance, 3, 1);
+
+        assertThat(read(3).get("back").logged()).isEqualTo(3);
+    }
+
+    /** A plan edit soft-deletes the old row after its sets were logged: those sets still count. */
+    @Test
+    void aSoftDeletedExerciseRowStillCounts() {
+        ExerciseEntity e = row(day, "Behúzás", "back-mid", 1);
+        log(e, train.createWorkoutInstance(owner, day, weekTwo(1), "completed"), 3, 1);
+        exerciseRepository.delete(exerciseRepository.findById(e.getId()).orElseThrow());
+        exerciseRepository.flush();
+        assertThat(exerciseRepository.findById(e.getId())).isEmpty();
 
         assertThat(read(3).get("back").logged()).isEqualTo(3);
     }
@@ -200,7 +214,7 @@ class WeeklySignalReaderIT extends AbstractIntegrationTest {
         ExerciseEntity back = row(day, "Behúzás", "back-mid", 1);
         log(back, train.createWorkoutInstance(owner, day, weekTwo(1), "completed"), 3, 1);
         log(back, train.createWorkoutInstance(owner, day, weekThree(0), "completed"), 3, 1);
-        checkIns.createCheckIn(owner, weekThree(0), "07:00", c -> c.setSoreness(8));
+        checkIns.createCheckIn(owner, weekThree(0), "07:00", c -> c.setSoreness(6)); // threshold 7
 
         assertThat(read(3).get("back").sorenessHigh()).isFalse();
     }

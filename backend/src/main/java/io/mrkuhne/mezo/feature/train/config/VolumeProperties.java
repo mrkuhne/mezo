@@ -39,7 +39,7 @@ public record VolumeProperties(
     public record Signals(
         @NotNull @Min(1) @Max(3) Integer workloadTooMuch, // workload answer meaning "too much" (3)
         @NotNull @Min(1) @Max(3) Integer jointPainHold,   // joint-pain answer at or above which a group holds (2)
-        @NotNull @Min(1) @Max(10) Integer sorenessHigh    // check-in soreness at or above which it is high (9)
+        @NotNull @Min(1) @Max(10) Integer sorenessHigh    // check-in soreness at or above which it is high (7)
     ) {}
 
     /** Tier band formulas and per-day caps. */
