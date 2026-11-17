@@ -317,6 +317,28 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     **nothing at all** for a week that has not happened.
   - The area menu's **„Blokk" tile became „Egyedi edzés"**: Blokk is one tap away in the bar below, and the
     one-off custom workout had no way in at all.
+  **Round 3 (owner, 2026-11-17 — he pointed at the web app's own week page,
+  `/train/mesocycles/:id/week`, as the standard):** „A mai terhelés" runs the full width (the three numbers as
+  the kit's own `NKStatRow`, the muscles beside the body with their set counts and bars); every exercise card
+  carries a **`NKBodyMark`** — the same body with that exercise's muscle lit — as its left rail, with the muscle
+  named under it, and its set plan reads in two short lines so the rep range never breaks in half.
+  **„A blokk terhelése" was rebuilt on what made the web page good**, with the same maths
+  (`BoopCore/Train/MuscleBands.swift` mirrors `mesoBands.ts` + `mesoWeek.ts`, so a muscle is never at its
+  ceiling on one screen and short of it on the other) and deliberately **not** its vocabulary — „Hamstring",
+  „Core" and „MV-n tart · nem rámpázik" are the bad translations he asked us to drop:
+  - the page opens with a **verdict** („10 izomcsoportot edzel ezen a héten"), how many are still growing / at
+    their ceiling / merely held, and the week-over-week delta as a sentence;
+  - the week's total as **one big number**, next to a **body filled muscle by muscle** against each one's own
+    ceiling;
+  - the muscles **ranked by the room they still have**, each with its tier (Hangsúly · Építés · Tartás), a
+    **sentence** („Még 3 szett fér bele" / „Elérte a felső értéket ebben a tervben"), a bar whose rim is **this
+    plan's ceiling** with the lowest useful level marked in it, and the set count;
+  - and a muscle opens **its own page**, where the weeks are finally labelled — „3. hét · építés · 8 / 12
+    megvolt / terv" — which was his other complaint: the squares never said which week or how many sets. That
+    page also spells the three landmarks out in words and shows where the muscle is on the body.
+  **The one idea the whole thing rests on:** a muscle's ceiling is **not its MRV** — it is where *this plan*
+  takes it, by the priority he set (emphasize → MRV, grow → MAV, maintain → MEV). Telling a maintained muscle it
+  "has 8 sets left" would be a promise the plan never made.
   Still a promise, and said so on the page: the player („Indítás"), the custom workout, Gyakorlatok and
   Előzmények.
   Simulator switches: `-previewHome edzes` (the room straight from the ring), `-previewEdzesRest YES` (a rest

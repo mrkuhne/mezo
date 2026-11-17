@@ -149,6 +149,33 @@ public struct NKBodyMap: View {
     }
 }
 
+/// **One muscle on a thumbnail body** — the mark an exercise card wears, so the muscle it
+/// works is a picture and not only a word. The side is whichever one carries the muscle, and
+/// the rest of the body is the faint outline.
+///
+/// It is deliberately tiny and has no number on it: it says *where*, and the card's own words
+/// say how much.
+public struct NKBodyMark: View {
+    let muscle: String
+    let hue: Hue
+    let height: CGFloat
+
+    public init(muscle: String, hue: Hue, height: CGFloat = 40) {
+        self.muscle = muscle; self.hue = hue; self.height = height
+    }
+
+    public var body: some View {
+        let side = NKBodyMapShapes.shapes(for: muscle).first?.0 ?? .front
+        NKBodyMap([NKBodyHeat(muscle: muscle, level: 1)], hue: hue, views: side == .back ? .back : .front)
+            .frame(height: height)
+            .accessibilityHidden(true)
+    }
+
+    /// True when the muscle is one the body can actually show — a card asks before drawing a
+    /// mark that would be an empty silhouette.
+    public static func canDraw(_ muscle: String) -> Bool { !NKBodyMapShapes.shapes(for: muscle).isEmpty }
+}
+
 /// The parsed geometry, once per run. ~90 kB of path strings turned into `Path`s on every
 /// frame would make the page stutter — and the owner has already rejected one stuttery pass.
 enum NKBodyPaths {

@@ -85,7 +85,8 @@ struct EdzesRoom: View {
         // opened with no navigation stack under it.
         .fullScreenCover(item: $page) { p in
             switch p {
-            case .blockLoad: BlockLoadPage(block: block, hue: hue, age: store?.blockAgeText) { page = nil }
+            case .blockLoad:
+                if let block { BlockLoadPage(block: block, hue: hue, age: store?.blockAgeText) { page = nil } }
             }
         }
         .task {
@@ -157,43 +158,54 @@ struct EdzesRoom: View {
         if !heat.isEmpty {
             let s = edzesSummary(workout, brief: brief)
             NKBare("A MAI TERHELÉS", hue: hue, trailing: store?.ageText) {
-                HStack(alignment: .top, spacing: 18) {
-                    NKBodyMap(heat, hue: hue)
-                        .frame(maxWidth: 150, maxHeight: 200)
-                    VStack(alignment: .leading, spacing: 14) {
-                        loadStat(s.exercises.map { "\($0)" }, "gyakorlat")
-                        loadStat(s.workingSets.map { "\($0)" }, "éles sorozat")
-                        loadStat(s.minutes.map { "\($0)" }, "perc körül")
-                        if !workedMuscles.isEmpty {
-                            NKFlowRow(spacing: 6, rowSpacing: 6) {
-                                ForEach(workedMuscles, id: \.self) { name in
-                                    Text(name)
-                                        .nkFont(12)
-                                        .foregroundStyle(.white.opacity(0.8))
-                                        .padding(.horizontal, 9).padding(.vertical, 4)
-                                        .background(Capsule().fill(.white.opacity(0.08)))
+                VStack(spacing: 16) {
+                    // The three numbers run the whole width — the kit's own row, so they sit
+                    // exactly as they do on every other page.
+                    NKStatRow([
+                        NKStat(value: s.exercises.map { "\($0)" }, label: "gyakorlat", hot: true),
+                        NKStat(value: s.workingSets.map { "\($0)" }, label: "éles sorozat"),
+                        NKStat(value: s.minutes.map { "\($0)" }, unit: "perc", label: "körülbelül"),
+                    ], hue: hue)
+                    HStack(alignment: .top, spacing: 16) {
+                        NKBodyMap(heat, hue: hue)
+                            .frame(maxHeight: 180)
+                        // And the muscles themselves, each with what it gets today, filling
+                        // the rest of the row instead of leaving a hole on the right.
+                        VStack(spacing: 10) {
+                            ForEach(muscleLoadRows, id: \.muscle) { row in
+                                HStack(spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(muscleName(row.muscle).capitalizedFirst)
+                                            .nkFont(13).foregroundStyle(.white.opacity(0.85))
+                                        NKLevelBar(level: row.level, hue: hue)
+                                    }
+                                    Text("\(row.sets)")
+                                        .nkFont(15, .medium, design: .monospaced)
+                                        .foregroundStyle(.white.opacity(0.7))
+                                        .frame(width: 22, alignment: .trailing)
                                 }
                             }
+                            Spacer(minLength: 0)
                         }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
     }
 
-    private func loadStat(_ value: String?, _ label: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(value ?? "–")
-                .nkFont(26, .medium)
-                .foregroundStyle(value == nil ? .white.opacity(0.4) : hue.glow)
-            Text(label).nkFont(13).foregroundStyle(.white.opacity(0.6))
+    /// Today's muscles with the working sets each one gets, hardest first.
+    private var muscleLoadRows: [(muscle: String, sets: Int, level: Double)] {
+        guard let w = workout else { return [] }
+        var sets: [String: Int] = [:]
+        for e in w.exercises {
+            let working = e.sets.filter { $0.kind == .working }.count
+            sets[e.muscle, default: 0] += working > 0 ? working : e.workingCount
         }
-    }
-
-    /// The muscles today's session hits, in the owner's words, hardest first.
-    private var workedMuscles: [String] {
-        edzesBodyHeat(workout).sorted { $0.level > $1.level }.prefix(4).map { muscleName($0.muscle) }
+        guard let top = sets.values.max(), top > 0 else { return [] }
+        return sets.sorted { ($0.value, $1.key) > ($1.value, $0.key) }
+            .prefix(5)
+            .map { (muscle: $0.key, sets: $0.value, level: Double($0.value) / Double(top)) }
     }
 
     /// **Hol tartasz a blokkban** — the eight weeks as time, their height as difficulty, the
@@ -288,14 +300,11 @@ struct EdzesRoom: View {
         }
     }
 
-    /// „8 izomcsoport · a mellkas kapja a legtöbbet" — or the honest version when the server
-    /// sent no per-muscle numbers at all.
+    /// The same sentence the load page opens with, so the card and the page agree.
     private func muscleSummary(_ b: BlockPlan) -> String {
         guard !b.muscles.isEmpty else { return "Az izomcsoportok bontása még nem érkezett meg." }
-        let top = b.muscles.max { ($0.current ?? 0) < ($1.current ?? 0) }
-        let name = top.map { muscleName($0.muscle) } ?? ""
-        guard top?.current != nil else { return "\(b.muscles.count) izomcsoport · nézd meg a bontást" }
-        return "\(b.muscles.count) izomcsoport · a legtöbbet \(hungarianArticle(name).lowercased()) \(name) kapja"
+        let summary = blockWeekSummary(muscleBands(b))
+        return "\(summary.total) szett ezen a héten · \(summary.muscles) izomcsoport"
     }
 
     /// **A heted** — the week's days as a carousel: pick a day, see what it asks for. It moved
@@ -359,31 +368,55 @@ private struct ExerciseCard: View {
     let done: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Text(exercise.name)
-                    .nkFont(18, design: .serif)
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                Spacer(minLength: 0)
-                if done { NKDoneTick(hue: hue) }
-            }
-            if let target = targetLine {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(target).nkFont(27, .medium).foregroundStyle(hue.glow)
-                    if let reps = targetReps { Text("× \(reps)").nkFont(14).foregroundStyle(.white.opacity(0.6)) }
+        HStack(alignment: .top, spacing: 14) {
+            // The muscle as a picture, not only a word: the same body, with this exercise's
+            // muscle lit. It is the card's left rail, so every card reads the same way down.
+            VStack(spacing: 6) {
+                if NKBodyMark.canDraw(exercise.muscle) {
+                    NKBodyMark(muscle: exercise.muscle, hue: hue, height: 62)
                 }
+                Text(muscleName(exercise.muscle))
+                    .nkFont(10, .medium, design: .monospaced)
+                    .tracking(0.6)
+                    .foregroundStyle(.white.opacity(0.55))
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
-            Text(setsLine).nkFont(13).foregroundStyle(.white.opacity(0.62))
-            if let reason = exercise.rationale ?? exercise.progression?.rationale, !reason.isEmpty {
-                Divider().overlay(.white.opacity(0.1))
-                Text(reason)
-                    .nkFont(13)
-                    .foregroundStyle(.white.opacity(0.78))
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
+            .frame(width: 54)
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 10) {
+                    Text(exercise.name)
+                        .nkFont(18, design: .serif)
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                    Spacer(minLength: 0)
+                    if done { NKDoneTick(hue: hue) }
+                }
+                // What to lift, big — or nothing at all when the engine prescribed no weight.
+                if let target = targetLine {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(target).nkFont(27, .medium).foregroundStyle(hue.glow)
+                        if let reps = targetReps { Text("× \(reps)").nkFont(14).foregroundStyle(.white.opacity(0.6)) }
+                    }
+                    .padding(.top, 6)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(workingLine).nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.62))
+                    if let warmupLine {
+                        Text(warmupLine).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.42))
+                    }
+                }
+                .padding(.top, targetLine == nil ? 6 : 2)
+                if let reason = exercise.rationale ?? exercise.progression?.rationale, !reason.isEmpty {
+                    Rectangle().fill(.white.opacity(0.1)).frame(height: 0.5).padding(.vertical, 10)
+                    Text(reason)
+                        .nkFont(13)
+                        .foregroundStyle(.white.opacity(0.78))
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -400,17 +433,20 @@ private struct ExerciseCard: View {
         targetLine == nil ? nil : exercise.sets.first(where: { $0.kind == .working })?.targetReps
     }
 
-    /// „2 bemelegítő · 3 sorozat · 6–10 ismétlés" — the real split, from the server's own list.
-    private var setsLine: String {
-        let warmups = exercise.sets.filter { $0.kind == .warmup }.count
+    /// „3 sorozat · 6–10 ismétlés" — what he actually has to do, on its own line so the rep
+    /// range never breaks in half.
+    private var workingLine: String {
         let working = exercise.sets.filter { $0.kind == .working }.count
-        var parts: [String] = []
-        if warmups > 0 { parts.append("\(warmups) bemelegítő") }
-        parts.append("\(working > 0 ? working : exercise.workingCount) sorozat")
-        parts.append(exercise.repMin == exercise.repMax
-                     ? "\(exercise.repMin) ismétlés"
-                     : "\(exercise.repMin)–\(exercise.repMax) ismétlés")
-        return parts.joined(separator: " · ")
+        let reps = exercise.repMin == exercise.repMax
+            ? "\(exercise.repMin) ismétlés"
+            : "\(exercise.repMin)–\(exercise.repMax) ismétlés"
+        return "\(working > 0 ? working : exercise.workingCount) sorozat · \(reps)"
+    }
+
+    /// The warm-up, quieter and under it — it is preparation, not the work.
+    private var warmupLine: String? {
+        let warmups = exercise.sets.filter { $0.kind == .warmup }.count
+        return warmups > 0 ? "+ \(warmups) bemelegítő" : nil
     }
 }
 
@@ -453,49 +489,6 @@ private struct DayCard: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .nkGlass()
         .accessibilityElement(children: .combine)
-    }
-}
-
-// MARK: - The block's load, muscle by muscle
-
-/// What each muscle gets from the first week to the last. Opened from the Blokk tab's card.
-private struct BlockLoadPage: View {
-    let block: BlockPlan?
-    let hue: Hue
-    let age: String?
-    let onBack: () -> Void
-
-    var body: some View {
-        NKAreaSubPage(hue: hue, crumb: "Edzés · Blokk", eyebrow: "A blokk terhelése",
-                      title: block?.shortTitle ?? "A blokkod",
-                      sentence: sentence, onBack: onBack) {
-            if let block, !block.muscles.isEmpty {
-                NKBare("HETENKÉNT, IZOMCSOPORTONKÉNT", hue: hue, trailing: age) {
-                    VStack(spacing: 22) {
-                        ForEach(block.muscles) { muscle in
-                            NKMuscleLoadRow(load(muscle, weeks: block.weeks), hue: hue, title: muscleName(muscle.muscle))
-                        }
-                    }
-                }
-                NKNote("A halvány oszlop az, amit a blokk tervez arra a hétre; a telt az, amit tényleg megcsináltál. Ahol semmi nincs, ott még nincs adat — nem nulla.", hue: hue)
-            } else {
-                NKNoFreshData("Az izomcsoportok bontása még nem érkezett meg")
-            }
-        }
-    }
-
-    private var sentence: String {
-        guard let block else { return "" }
-        return "A \(block.weeks) hetes blokkod \(block.currentWeek). hetén jársz. Itt látod, melyik izomcsoport mennyit kap hétről hétre, és hol tart a valóság a tervhez képest."
-    }
-
-    /// One muscle's row: its weekly planned scaffold and what was actually logged.
-    private func load(_ muscle: MuscleVolume, weeks: Int) -> NKMuscleLoad {
-        let ordered = muscle.weeks.sorted { $0.week < $1.week }
-        return NKMuscleLoad(muscle: muscle.muscle,
-                            weeks: ordered.map(\.actual),
-                            planned: ordered.map(\.planned),
-                            mev: muscle.mev, mav: muscle.mav, mrv: muscle.mrv)
     }
 }
 

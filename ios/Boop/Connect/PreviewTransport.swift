@@ -551,7 +551,7 @@ struct PreviewTransport: ClientTransport {
     /// other answer — nothing here reaches a screen that claims to be his own data.
     private static var previewMesocycle: String {
         let profiles = previewMuscles.map { m in
-            #""\#(m.key)":{"mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv),"current":\#(m.current),"source":{"baseline":{"name":"\#(m.key)","mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv)},"adjustments":[],"confidence":0.8}}"#
+            #""\#(m.key)":{"mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv),"current":\#(previewCurrent(m)),"source":{"baseline":{"name":"\#(m.key)","mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv)},"adjustments":[],"confidence":0.8}}"#
         }.joined(separator: ",")
         let days = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · fenék", 6),
                     ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mellkas · tricepsz", 5),
@@ -560,7 +560,26 @@ struct PreviewTransport: ClientTransport {
             .enumerated().map { i, d in
                 #"{"id":"c1c2c3d4-001\#(i)-4a2b-9c3d-111122223333","day":"\#(d.0)","type":"\#(d.1)","muscle":"\#(d.2)","exerciseCount":\#(d.3),"exercises":[],"current":\#(d.0 == "Hét")}"#
             }.joined(separator: ",")
-        return #"{"id":"\#(previewBlockId)","title":"Hypertrophy · Ősz","shortTitle":"Ősz","status":"active","goal":"Izomtömeg","startDate":"\#(dayString(offset: -16))","endDate":"\#(dayString(offset: -16 + 56))","weeks":8,"currentWeek":\#(previewCurrentWeek),"split":"5 napos","style":"hypertrophy","hasReport":false,"phaseCurve":[\#(previewPhaseList)],"volumePerMuscle":{\#(profiles)},"days":[\#(days)]}"#
+        return #"{"id":"\#(previewBlockId)","title":"Hypertrophy · Ősz","shortTitle":"Ősz","status":"active","goal":"Izomtömeg","startDate":"\#(dayString(offset: -16))","endDate":"\#(dayString(offset: -16 + 56))","weeks":8,"currentWeek":\#(previewCurrentWeek),"split":"5 napos","style":"hypertrophy","hasReport":false,"musclePriorities":{"chest":"emphasize","back":"emphasize","calf":"maintain"},"phaseCurve":[\#(previewPhaseList)],"volumePerMuscle":{\#(profiles)},"days":[\#(days)]}"#
+    }
+
+    /// What the invented block is doing with each muscle.
+    private static func previewTier(_ key: String) -> String {
+        switch key {
+        case "chest", "back": "emphasize"
+        case "calf": "maintain"
+        default: "grow"
+        }
+    }
+
+    /// This week's planned sets, never past what the tier's ceiling allows.
+    private static func previewCurrent(_ m: (key: String, mev: Int, mav: Int, mrv: Int, current: Int, region: String)) -> Int {
+        let ceiling = switch previewTier(m.key) {
+        case "emphasize": m.mrv
+        case "maintain": m.mev
+        default: m.mav
+        }
+        return min(m.current, ceiling)
     }
 
     private static let previewMuscles: [(key: String, mev: Int, mav: Int, mrv: Int, current: Int, region: String)] = [
@@ -576,14 +595,23 @@ struct PreviewTransport: ClientTransport {
     /// zero sets, and the row has to show that difference.
     private static var previewVolumeArc: String {
         let muscles = previewMuscles.map { m in
+            // A muscle's ceiling is its TIER's landmark, not its MRV, and the engine never
+            // plans past it — so neither does the invented block, or the page would promise
+            // room it then contradicts a row later.
+            let ceiling = switch previewTier(m.key) {
+            case "emphasize": m.mrv
+            case "maintain": m.mev
+            default: m.mav
+            }
             let weeks = (1...8).map { w -> String in
                 let phase = previewPhases[w - 1]
-                let planned: Int = switch phase {
+                let nominal: Int = switch phase {
                 case "MEV": m.mev
                 case "MAV": m.mav
                 case "MRV": m.mrv
                 default: max(4, m.mev - 2)
                 }
+                let planned = min(nominal, ceiling)
                 let actual = w < previewCurrentWeek ? ",\"actual\":\(max(0, planned - (w % 3)))"
                     : (w == previewCurrentWeek ? ",\"actual\":\(max(0, planned - 4))" : "")
                 return #"{"week":\#(w),"phase":"\#(phase)","planned":\#(planned)\#(actual),"isCurrent":\#(w == previewCurrentWeek)}"#
