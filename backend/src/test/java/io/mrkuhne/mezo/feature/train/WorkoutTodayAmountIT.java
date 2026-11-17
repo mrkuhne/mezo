@@ -111,6 +111,38 @@ class WorkoutTodayAmountIT extends AbstractIntegrationTest {
         assertThat(byId(res, row.getId()).getWorkingSets()).isEqualTo(3);
     }
 
+    /** Carried over from VolumeEffectiveSetsIT: the day delta is looked up for today's date only. */
+    @Test
+    void anAdjustmentForAnotherDateIsIgnored() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), todayLabel());
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        ex.setWorkingSets(3);
+        train.save(ex);
+        workoutDayAdjustmentPopulator.createAdjustment(owner, LocalDate.now().plusDays(1), (short) -2);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        assertThat(byId(res, ex.getId()).getWorkingSets()).isEqualTo(3);
+    }
+
+    /** Carried over from VolumeEffectiveSetsIT: a lighten delta never goes below one set. */
+    @Test
+    void theDeltaNeverTakesAnExerciseBelowOneSet() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), todayLabel());
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        ex.setWorkingSets(1);
+        train.save(ex);
+        workoutDayAdjustmentPopulator.createAdjustment(owner, LocalDate.now(), (short) -3);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        assertThat(byId(res, ex.getId()).getWorkingSets()).isEqualTo(1);
+    }
+
     private static String todayLabel() {
         return WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
     }
