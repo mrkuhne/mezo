@@ -57,8 +57,11 @@ struct DemoChange: Identifiable, Equatable {
     let exercise: String
     let muscle: String
     let kind: Kind
-    let why: String
-    var accepted = true
+    /// The reasons as short labels — the owner found the running text under each exercise a blur.
+    let tags: [String]
+    /// nil until he has said yes or no to this one line.
+    var decided: Bool? = nil
+    var accepted: Bool { decided ?? true }
 }
 
 @MainActor @Observable
@@ -119,17 +122,17 @@ final class BlokkDemoModel {
 
     var changes: [DemoChange] = [
         DemoChange(id: "a", day: 0, exercise: "Lat Pulldown · Neutral", muscle: "back", kind: .sets(from: 2, to: 3),
-                   why: "A hát Hangsúly, és a múlt héten minden sorozata megvolt, könnyen ment. Fogyás alatt egyszerre csak egyet lépünk."),
+                   tags: ["minden sorozat megvolt", "könnyen ment", "fogyás alatt csak +1"]),
         DemoChange(id: "b", day: 0, exercise: "Chest Supported Row", muscle: "back", kind: .weight(from: 62.5, to: 65),
-                   why: "Mind a négy sorozatban elérted a 10 ismétlést, kettő maradt a tartalékban."),
-        DemoChange(id: "c", day: 1, exercise: "Leg Press", muscle: "quad", kind: .reps(from: 10, to: 11),
-                   why: "A súly marad, eggyel több ismétlés. A láb Tartás, a sorozatszám nem változik."),
-        DemoChange(id: "d", day: 1, exercise: "Tricep Pushdown", muscle: "triceps", kind: .reps(from: 13, to: 12),
-                   why: "Kétszer is az utolsó ismétlésig mentél. A súly marad, egy ismétléssel kevesebb."),
-        DemoChange(id: "e", day: 3, exercise: "Incline DB Curl", muscle: "biceps", kind: .sets(from: 3, to: 4),
-                   why: "A bicepsz Hangsúly, a sávja 8–14, most 11-nél tartasz. Az izomláz másnapra elmúlt."),
+                   tags: ["4 × 10 ismétlés megvolt", "2 maradt tartalékban"]),
         DemoChange(id: "f", day: 3, exercise: "One-Arm Cable Row", muscle: "back", kind: .weight(from: 27.5, to: 30),
-                   why: "Három sorozat a tartomány tetején, a következő tárcsa 30 kg."),
+                   tags: ["3 sorozat a tartomány tetején", "következő tárcsa 30 kg"]),
+        DemoChange(id: "e", day: 3, exercise: "Incline DB Curl", muscle: "biceps", kind: .sets(from: 3, to: 4),
+                   tags: ["a sávban van hely", "az izomláz másnapra elmúlt"]),
+        DemoChange(id: "c", day: 1, exercise: "Leg Press", muscle: "quad", kind: .reps(from: 10, to: 11),
+                   tags: ["a súly marad", "Tartás: a sorozat nem nő"]),
+        DemoChange(id: "d", day: 1, exercise: "Tricep Pushdown", muscle: "triceps", kind: .reps(from: 13, to: 12),
+                   tags: ["kétszer az utolsó ismétlésig", "a súly marad"]),
     ]
     var weekAccepted = false
 
@@ -278,15 +281,23 @@ final class BlokkDemoModel {
     /// The muscles the review has something to say about, in the order of the body.
     var reviewMuscles: [String] { Self.muscles.filter { m in changes.contains { $0.muscle == m } } }
     var quietMuscles: [String] { Self.muscles.filter { m in !changes.contains { $0.muscle == m } } }
-    var decided: [String: Bool] = [:]
+    func lines(_ muscle: String) -> [DemoChange] { changes.filter { $0.muscle == muscle } }
 
-    func decide(_ muscle: String, accept: Bool) {
-        decided[muscle] = accept
-        for i in changes.indices where changes[i].muscle == muscle { changes[i].accepted = accept }
+    func decide(_ id: String, accept: Bool?) {
+        if let i = changes.firstIndex(where: { $0.id == id }) { changes[i].decided = accept }
     }
 
+    func decideAll(_ muscle: String, accept: Bool, onlyOpen: Bool = false) {
+        for i in changes.indices where changes[i].muscle == muscle && (!onlyOpen || changes[i].decided == nil) {
+            changes[i].decided = accept
+        }
+    }
+
+    func isSettled(_ muscle: String) -> Bool { lines(muscle).allSatisfy { $0.decided != nil } }
+
+    /// The set change of the lines he has not turned down.
     func setDelta(_ muscle: String) -> Int {
-        changes.filter { $0.muscle == muscle }.reduce(0) { sum, c in
+        lines(muscle).filter { $0.decided != false }.reduce(0) { sum, c in
             if case .sets(let from, let to) = c.kind { return sum + (to - from) }
             return sum
         }

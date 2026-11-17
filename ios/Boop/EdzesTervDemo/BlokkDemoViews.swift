@@ -71,7 +71,7 @@ private struct BlokkDemoHub: View {
                             sub: "Egy-egy sorozattal több a hátra és a bicepszre, két gyakorlatnál nő a súly. Amíg nem hagyod jóvá, a múlt heti számok maradnak.",
                             actions: [NKHighlightAction("Átnézem") { go(.review) },
                                       NKHighlightAction("Elfogadom átnézés nélkül", weight: .secondary) {
-                                          for m in model.reviewMuscles { model.decide(m, accept: true) }
+                                          for m in model.reviewMuscles { model.decideAll(m, accept: true) }
                                           model.weekAccepted = true
                                       }])
             }
@@ -107,7 +107,7 @@ private struct BlokkBuilderPage: View {
 
     var body: some View {
         ZStack {
-            DemoSky(height: 380)
+            DemoSky(height: 150)
             VStack(spacing: 0) {
                 head
                 switch mode {
@@ -213,10 +213,11 @@ private struct MusclesView: View {
             NKBodyMap(BlokkDemoModel.muscles.compactMap { m in
                 guard let band = model.band(m) else { return nil }
                 let fill = min(1, Double(model.weekly(m)) / Double(max(1, band.high)))
-                return NKBodyHeat(muscle: m, level: m == current ? max(0.75, fill) : fill * 0.28)
+                return NKBodyHeat(muscle: m, level: m == current ? 1 : fill * 0.12)
             }, hue: demoHue, views: .both)
-            .frame(maxWidth: .infinity).frame(height: 232)
-            .padding(.horizontal, 40)
+            .frame(maxWidth: .infinity).frame(height: 222)
+            .padding(.horizontal, 40).padding(.vertical, 10)
+            .background(RoundedRectangle(cornerRadius: 30, style: .continuous).fill(Color.black.opacity(0.42)).padding(.horizontal, 20))
             .animation(.smooth(duration: 0.4), value: current)
 
             dots(current)
@@ -556,9 +557,8 @@ private struct WeekReviewDeck: View {
                 top
                 TabView(selection: $index) {
                     ForEach(Array(model.reviewMuscles.enumerated()), id: \.element) { i, m in
-                        ReviewCard(model: model, muscle: m, position: "\(i + 1) / \(model.reviewMuscles.count)") { accept in
-                            model.decide(m, accept: accept)
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { withAnimation(.smooth) { index = i + 1 } }
+                        ReviewCard(model: model, muscle: m, position: "\(i + 1) / \(model.reviewMuscles.count)") {
+                            withAnimation(.smooth) { index = i + 1 }
                         }
                         .tag(i)
                     }
@@ -596,7 +596,7 @@ private struct WeekReviewDeck: View {
                 Spacer()
                 if index < count - 1 {
                     Button {
-                        for m in model.reviewMuscles where model.decided[m] == nil { model.decide(m, accept: true) }
+                        for m in model.reviewMuscles { model.decideAll(m, accept: true, onlyOpen: true) }
                         withAnimation(.smooth) { index = count - 1 }
                     } label: {
                         Text("Mind elfogadom").nkFont(13, .semibold).foregroundStyle(.white)
@@ -614,15 +614,16 @@ private struct ReviewCard: View {
     let model: BlokkDemoModel
     let muscle: String
     let position: String
-    let decide: (Bool) -> Void
+    let next: () -> Void
 
     var body: some View {
         let before = model.weekly(muscle)
         let delta = model.setDelta(muscle)
         let after = before + delta
         let tier = model.tiers[muscle] ?? .grow
-        let decision = model.decided[muscle]
-        VStack(spacing: 14) {
+        let lines = model.lines(muscle)
+        let open = lines.filter { $0.decided == nil }.count
+        VStack(spacing: 12) {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(position) · \(tier.hungarian.uppercased())").nkFont(11, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(demoHue.glow)
@@ -630,90 +631,167 @@ private struct ReviewCard: View {
                 }
                 Spacer()
                 NKBodyMap([NKBodyHeat(muscle: muscle, level: 1)], hue: demoHue, views: .auto)
-                    .frame(width: 70, height: 110)
+                    .frame(width: 66, height: 100)
             }
 
             if let band = model.band(muscle) {
                 ArcGauge(value: after, band: band, inside: after >= band.low && after <= band.high, ghost: delta != 0 ? before : nil)
-                    .frame(height: 124)
+                    .frame(height: 112)
                     .overlay(alignment: .bottom) {
                         VStack(spacing: 0) {
                             if delta != 0 {
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Text("\(before)").nkFont(26, .medium).foregroundStyle(.white.opacity(0.45))
-                                    Image(systemName: "arrow.right").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white.opacity(0.45))
-                                    Text("\(after)").nkFont(46, .medium).foregroundStyle(.white)
+                                    Text("\(before)").nkFont(24, .medium).foregroundStyle(.white.opacity(0.45))
+                                    Image(systemName: "arrow.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white.opacity(0.45))
+                                    Text("\(after)").nkFont(42, .medium).foregroundStyle(.white).contentTransition(.numericText())
                                 }
                             } else {
-                                Text("\(before)").nkFont(46, .medium).foregroundStyle(.white)
+                                Text("\(before)").nkFont(42, .medium).foregroundStyle(.white).contentTransition(.numericText())
                             }
-                            Text(delta != 0 ? "sorozat hetente · a sáv \(band.low)–\(band.high)" : "sorozat · a szám marad, a sáv \(band.low)–\(band.high)")
+                            Text(delta != 0 ? "sorozat hetente · a sáv \(band.low)–\(band.high)" : "sorozat hetente, nem változik · a sáv \(band.low)–\(band.high)")
                                 .nkFont(11).foregroundStyle(.white.opacity(0.5))
                         }
                     }
             }
 
-            VStack(spacing: 0) {
-                ForEach(Array(model.changes.filter { $0.muscle == muscle }.enumerated()), id: \.element.id) { i, change in
-                    if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(change.exercise).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
-                            Spacer(minLength: 8)
-                            Text(amount(change)).nkFont(15, .semibold).foregroundStyle(demoHue.glow)
-                        }
-                        Text("\(model.days[change.day].name) · \(change.why)")
-                            .nkFont(12).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                VStack(spacing: 10) {
+                    ForEach(lines) { change in
+                        ChangeRow(change: change, day: model.days[change.day].name) { model.decide(change.id, accept: $0) }
                     }
-                    .padding(.vertical, 10)
                 }
             }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
 
-            Spacer(minLength: 0)
-
-            if let decision {
+            if open == 0 {
                 HStack(spacing: 10) {
-                    DemoCheck(on: decision)
-                    Text(decision ? "Elfogadva" : "Marad a múlt heti").nkFont(16, .semibold).foregroundStyle(.white)
+                    let yes = lines.filter { $0.decided == true }.count
+                    Text("\(yes) elfogadva · \(lines.count - yes) marad").nkFont(14, .medium).foregroundStyle(.white.opacity(0.75))
                     Spacer()
-                    Button { withAnimation(.snappy) { model.decided[muscle] = nil } } label: {
-                        Text("mégis másképp").nkFont(13, .medium).foregroundStyle(demoHue.glow)
+                    Button(action: next) {
+                        Text("Tovább").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                            .padding(.horizontal, 30).frame(minHeight: 54).background(Capsule().fill(demoHue.glow))
                     }
                     .buttonStyle(.plain)
                 }
-                .frame(minHeight: 54)
-                .transition(.scale(scale: 0.9).combined(with: .opacity))
+                .transition(.opacity)
             } else {
                 HStack(spacing: 10) {
-                    Button { withAnimation(.snappy) { decide(false) } } label: {
-                        Text("Marad a múlt heti").nkFont(15, .semibold).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 54)
-                            .background(Capsule().fill(.white.opacity(0.1)))
+                    Button { withAnimation(.snappy) { model.decideAll(muscle, accept: false, onlyOpen: true) } } label: {
+                        Text(open == lines.count ? "Marad mind" : "A többi marad").nkFont(15, .semibold).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 54).background(Capsule().fill(.white.opacity(0.1)))
                     }
                     .buttonStyle(.plain)
-                    Button { withAnimation(.snappy) { decide(true) } } label: {
-                        Text("Elfogadom").nkFont(16, .semibold).foregroundStyle(NK.ground)
-                            .frame(maxWidth: .infinity, minHeight: 54)
-                            .background(Capsule().fill(.white))
+                    Button { withAnimation(.snappy) { model.decideAll(muscle, accept: true, onlyOpen: true) } } label: {
+                        Text(open == lines.count ? (lines.count == 1 ? "Elfogadom" : "Elfogadom mind") : "A többit is").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                            .frame(maxWidth: .infinity, minHeight: 54).background(Capsule().fill(.white))
                     }
                     .buttonStyle(.plain)
                 }
             }
         }
-        .padding(22)
+        .padding(20)
         .frame(maxHeight: .infinity)
         .background(RoundedRectangle(cornerRadius: 34, style: .continuous).fill(NK.ground.opacity(0.62)))
         .nkGlass(34)
         .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 20)
-        .sensoryFeedback(.success, trigger: decision)
+        .sensoryFeedback(.success, trigger: open == 0)
+    }
+}
+
+/// One proposed change as a tile of its own: what moves, the amount as the loudest thing, the reasons as
+/// pills, and its own yes / no.
+private struct ChangeRow: View {
+    let change: DemoChange
+    let day: String
+    let decide: (Bool?) -> Void
+
+    var body: some View {
+        let off = change.decided == false
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(change.exercise).nkFont(16, .semibold).foregroundStyle(.white.opacity(off ? 0.5 : 0.97))
+                    HStack(spacing: 6) {
+                        DemoPill(day.uppercased(), mono: true)
+                        DemoPill(kind.uppercased(), mono: true, color: demoHue.glow)
+                    }
+                }
+                Spacer(minLength: 6)
+                HStack(spacing: 8) {
+                    choice("–", on: change.decided == false, tint: .white) { decide(change.decided == false ? nil : false) }
+                    choice("✓", on: change.decided == true, tint: demoGood) { decide(change.decided == true ? nil : true) }
+                }
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(from).nkFont(19, .medium).foregroundStyle(.white.opacity(0.45))
+                    .strikethrough(false)
+                Image(systemName: "arrow.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+                Text(to).nkFont(26, .semibold).foregroundStyle(off ? .white.opacity(0.4) : demoHue.glow)
+                    .strikethrough(off, color: .white.opacity(0.5))
+                if off { Text("marad \(from)").nkFont(13, .medium).foregroundStyle(.white.opacity(0.7)) }
+            }
+            NKFlowRow(spacing: 6, rowSpacing: 6) {
+                ForEach(change.tags, id: \.self) { DemoPill($0) }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white.opacity(change.decided == true ? 0.1 : 0.055)))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .stroke(change.decided == true ? demoGood.opacity(0.55) : .white.opacity(0.08), lineWidth: 1))
+        .animation(.snappy, value: change.decided)
+        .sensoryFeedback(.impact(weight: .light), trigger: change.decided)
     }
 
-    private func amount(_ change: DemoChange) -> String {
+    private var kind: String {
         switch change.kind {
-        case .sets(let from, let to): "\(from) → \(to) sorozat"
-        case .weight(let from, let to): "\(demoKg(from)) → \(demoKg(to))"
-        case .reps(let from, let to): "\(from) → \(to) ismétlés"
+        case .sets: "sorozat"
+        case .weight: "súly"
+        case .reps: "ismétlés"
         }
+    }
+
+    private var from: String {
+        switch change.kind {
+        case .sets(let from, _): "\(from)"
+        case .weight(let from, _): demoKg(from)
+        case .reps(let from, _): "\(from)"
+        }
+    }
+
+    private var to: String {
+        switch change.kind {
+        case .sets(_, let to): "\(to) sorozat"
+        case .weight(_, let to): demoKg(to)
+        case .reps(_, let to): "\(to) ismétlés"
+        }
+    }
+
+    private func choice(_ mark: String, on: Bool, tint: Color, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(mark).nkFont(17, .bold).foregroundStyle(on ? NK.ground : .white.opacity(0.8))
+                .frame(width: 40, height: 40)
+                .background(Circle().fill(on ? tint : .white.opacity(0.1)))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct DemoPill: View {
+    let text: String
+    var mono = false
+    var color: Color = .white.opacity(0.78)
+    init(_ text: String, mono: Bool = false, color: Color = .white.opacity(0.78)) { self.text = text; self.mono = mono; self.color = color }
+
+    var body: some View {
+        Text(text)
+            .nkFont(mono ? 9 : 12, mono ? .semibold : .medium, design: mono ? .monospaced : .default)
+            .tracking(mono ? 1 : 0)
+            .foregroundStyle(color)
+            .padding(.horizontal, mono ? 8 : 10).padding(.vertical, mono ? 4 : 5)
+            .background(Capsule().fill(.white.opacity(0.09)))
     }
 }
 
@@ -760,15 +838,20 @@ private struct SummaryCard: View {
     @State private var drawn = false
 
     var body: some View {
-        let yes = model.reviewMuscles.filter { model.decided[$0] == true }
-        let no = model.reviewMuscles.filter { model.decided[$0] == false }
-        let open = model.reviewMuscles.filter { model.decided[$0] == nil }
-        let added = yes.map(model.setDelta).reduce(0, +)
+        let yes = model.changes.filter { $0.decided == true }.count
+        let no = model.changes.filter { $0.decided == false }.count
+        let open = model.changes.count - yes - no
+        let added = model.reviewMuscles.map { m in
+            model.lines(m).filter { $0.decided == true }.reduce(0) { sum, c in
+                if case .sets(let from, let to) = c.kind { return sum + (to - from) }
+                return sum
+            }
+        }.reduce(0, +)
         VStack(spacing: 18) {
             Spacer(minLength: 0)
             ZStack {
                 Circle().stroke(.white.opacity(0.1), lineWidth: 10)
-                Circle().trim(from: 0, to: drawn ? CGFloat(yes.count + no.count) / CGFloat(max(1, model.reviewMuscles.count)) : 0)
+                Circle().trim(from: 0, to: drawn ? CGFloat(yes + no) / CGFloat(max(1, model.changes.count)) : 0)
                     .stroke(AngularGradient(colors: [demoHue.glow, demoWarn, demoHue.glow], center: .center), style: StrokeStyle(lineWidth: 10, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 VStack(spacing: 0) {
@@ -779,13 +862,15 @@ private struct SummaryCard: View {
             .frame(width: 190, height: 190)
             .onAppear { withAnimation(.smooth(duration: 0.9).delay(0.15)) { drawn = true } }
 
-            Text(open.isEmpty ? "Kész a heted" : "Még \(open.count) döntés vár").nkFont(32, design: .serif).foregroundStyle(.white)
-            Text(line(yes: yes.count, no: no.count, added: added))
-                .nkFont(15).foregroundStyle(.white.opacity(0.7)).multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(open == 0 ? "Kész a heted" : "Még \(open) döntés vár").nkFont(32, design: .serif).foregroundStyle(.white)
+            HStack(spacing: 8) {
+                DemoPill("\(yes) elfogadva", color: demoGood)
+                DemoPill("\(no) marad a múlt heti")
+                if added > 0 { DemoPill("+\(added) sorozat", color: demoHue.glow) }
+            }
             Spacer(minLength: 0)
             Button(action: start) {
-                Text(open.isEmpty ? "Indulhat a hét" : "Így is indulhat, a többi marad")
+                Text(open == 0 ? "Indulhat a hét" : "Így is indulhat, a többi marad")
                     .nkFont(16, .semibold).foregroundStyle(NK.ground)
                     .frame(maxWidth: .infinity, minHeight: 56).background(Capsule().fill(demoHue.glow))
             }
@@ -796,14 +881,6 @@ private struct SummaryCard: View {
         .background(RoundedRectangle(cornerRadius: 34, style: .continuous).fill(NK.ground.opacity(0.62)))
         .nkGlass(34)
         .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 20)
-    }
-
-    private func line(yes: Int, no: Int, added: Int) -> String {
-        var parts: [String] = []
-        if yes > 0 { parts.append("\(yes) izomnál elfogadtad a változást") }
-        if no > 0 { parts.append("\(no) izomnál marad a múlt heti") }
-        let head = parts.isEmpty ? "Még semmiről nem döntöttél." : parts.joined(separator: ", ") + "."
-        return added > 0 ? "\(head) Múlt héten \(model.total()) sorozat volt, most \(added)-vel több." : head
     }
 }
 
