@@ -349,4 +349,53 @@ class ExerciseSubstituteRankerTest {
                 .joints("knee", "hip").demand("low").done()), goal("strength"));
         assertThat(names(r)).containsExactly("Back Squat", "Leg Press", "Leg Extension");
     }
+
+    // ── fix round 1 ──
+
+    @Test
+    void rank_shouldNotClaimPainToday_whenNoJointInPlayLoadsIt() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(x("Logged Press").done(), x("Other Press")),
+            new Context(null, false, Set.of("knee"), Set.of()));
+        assertThat(ranked(r, "Logged Press").signals()).containsExactly(Signal.SAME_ROLE, Signal.DONE_BEFORE);
+        assertThat(r.suggestions()).allSatisfy(s -> assertThat(s.signals()).doesNotContain(Signal.PAIN_TODAY));
+    }
+
+    @Test
+    void rank_shouldNotClaimSparesJoint_whenOutgoingJointsUnknown() {
+        Candidate customOut = x("My Bench 2").custom().c();
+        var r = ExerciseSubstituteRanker.rank(customOut, pool(x("Logged Press 2").done(), x("Wrist Press").joints("wrist")),
+            new Context(null, true, Set.of(), Set.of()));
+        assertThat(r.suggestions()).hasSize(2)
+            .allSatisfy(s -> assertThat(s.signals()).doesNotContain(Signal.SPARES_JOINT));
+        assertThat(ranked(r, "Logged Press 2").signals()).containsExactly(Signal.SAME_ROLE, Signal.DONE_BEFORE);
+    }
+
+    @Test
+    void rank_shouldPutWidenedBelowEverySameMuscleCandidate_evenOfOtherType() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(
+            x("Incline Machine Press").muscle("chest-upper").equipment("machine").demand("low")
+                .secondary("triceps-lateral", "shoulder-front").joints("knee").stim("0.94").fatigue("0.10")
+                .lengthened(true).done(),
+            x("Flat Fly").type("isolation").pattern("fly").equipment("barbell").demand("high")
+                .joints("shoulder", "elbow").pain(PainLevel.MILD).stim("0.30").fatigue("0.90")),
+            new Context("hypertrophy", true, Set.of("shoulder"), Set.of()));
+        assertThat(names(r)).containsExactly("Flat Fly", "Incline Machine Press");
+    }
+
+    @Test
+    void rank_shouldClampStimulusPerFatigue_belowOneStabilityStep() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(
+            x("Near Zero Fatigue").demand("medium").stim("0.90").fatigue("0.001"),
+            x("Stable Press").demand("low").stim("0.50").fatigue("0.90")), goal("hypertrophy"));
+        assertThat(names(r)).containsExactly("Stable Press", "Near Zero Fatigue");
+    }
+
+    @Test
+    void rank_shouldNeverDropAnAvailablePainFreeCustom_andMarkItCustom() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(x("Only Mine").custom()),
+            new Context("strength", true, Set.of("shoulder"), Set.of()));
+        assertThat(names(r)).containsExactly("Only Mine");
+        assertThat(ranked(r, "Only Mine").signals()).containsExactly(Signal.SAME_ROLE, Signal.CUSTOM);
+        assertThat(r.labels()).isEmpty();
+    }
 }
