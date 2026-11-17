@@ -14,26 +14,16 @@ public final class VolumeBands {
         int mev = landmarks.mev();
         int mav = landmarks.mav();
         int mrv = landmarks.mrv();
-        int low;
-        int high;
-        switch (tier) {
+        int[] range = switch (tier) {
             case MAINTAIN -> {
                 int divisor = cfg.maintainLowDivisor();
-                low = (mev + divisor - 1) / divisor;   // ceil(mev / divisor)
-                high = mev - 1;
+                yield new int[] {(mev + divisor - 1) / divisor, mev - 1};   // ceil(mev / divisor)
             }
-            case GROW -> {
-                low = mev;
-                high = mav;
-            }
-            case EMPHASIZE -> {
-                low = mav - cfg.emphasizeLowOffset();
-                high = mrv;
-            }
-            default -> throw new IllegalStateException("Unhandled tier " + tier);
-        }
-        low = Math.max(1, low);
-        high = Math.max(low, high);
+            case GROW -> new int[] {mev, mav};
+            case EMPHASIZE -> new int[] {mav - cfg.emphasizeLowOffset(), mrv};
+        };
+        int low = Math.max(1, range[0]);
+        int high = Math.max(low, range[1]);
         return new Band(low, high, mrv);
     }
 }
