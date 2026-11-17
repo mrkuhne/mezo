@@ -637,5 +637,24 @@
     ],
     "mit_kapsz": "Az előző (Lágy) kinézetből és a kivett elemekből maradt néhány sosem használt darab, köztük egy betűtípus és több jel. Ezek törlése után az app kisebb lesz, és a későbbi munkák nem botlanak beléjük. A felületen semmi nem változik.",
     "munkamenet": "sebesseg-atnezes"
+  },
+  "mezo-r36n9.63": {
+    "cim": "„Ezt főztem” — recept abból, amit elmondasz és lefotózol",
+    "tipus": "Funkció",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Főzés után elmondod, leírod vagy lefotózod, miből főztél és mennyit használtál, Boop pedig a kamrád tételeihez párosítja, és receptet készít belőle. Amiben nem biztos, azt megmutatja jóváhagyásra; ami nincs a kamrádban, azt egy „+” koppintással felveszed. A „+” a meglévő recept-behúzásnál is megjelenik, így ott sem marad ki többé hozzávaló.",
+    "munkamenet": "ezt-foztem"
+  },
+  "mezo-r36n9.64": {
+    "cim": "A kész étel súlya a receptnél",
+    "tipus": "Funkció",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Megadhatod, mennyit nyom a megfőtt étel, és utána grammra pontosan rögzíthetsz belőle étkezést (például „350 grammot ettem”), nem csak adagokban. Ma a recept csak adagszámot ismer."
   }
 }
