@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-16
+updated: 2026-11-17
 tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
   - frontend/src/shared/i18n
@@ -15,6 +15,8 @@ key_files:
   - backend/src/main/resources
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
+
+> **2026-11-17 — reviewed after `mezo-l5lvh`:** the change under `backend/src/main/resources` only switched on `server.compression` in `application.yml`; no message-bundle key and no user-facing string changed.
 
 > **2026-11-16 — the pantry allergen baseline (`mezo-r36n9.48`) added no translatable text.** Its derivation and its two boot-time backfills live in Java and log in Hungarian only; no message-bundle key, no new user-facing string. Recorded here because the change touched `backend/src/main/resources` (a new Liquibase changeset), not the bundles.
 

@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-11-16
+updated: 2026-11-17
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -661,7 +661,6 @@ in Mezo's own bullet — this subsection is the chat engine itself.
 
 The main `/mezo` entry is the csapat-üzenőfal (`TeamFeedPage`, [insights](insights.md) §3, `mezo-a9bo7.10`) — it no longer embeds `KarakterHubPage`, but its cold start calls the same `useCharacterBootstrap()` mutation; `/mezo/rolad` embeds `DimensionsPage`. Their optional `embedded` prop removes only the duplicate character navigation. Legacy `/mezo/karakter/*` URLs and all real reply/reaction/evidence flows remain. `GeptermPage` is the common engine entrance (back chip → „A csapat”, the dock tab that owns it) and links to memory layers/costs and coaching observers alongside character runs/sources/detectors and AI call audit, plus the „Összes funkció” tile → `/mezo/karakter/gepterem/osszes`, the old 12-tile menu as a dev-menu (`mezo-a9bo7.10`).
 
-The **Mezo hub** (`MezoHubPage`) carries a wide **Karakter** tile — full-width, like the hub's `Diagnózis` tile, bottom line = the average CORE-band maturity gated by `isDossierEmpty` — that opens `/me/karakter`, the dossier hub. **The dossier's entry point moved here from the Én hub in the hub-tile-reorg** (`mezo-o486`, 2026-09-01, spec [`2026-09-01-hub-tile-reorg-design.md`](../superpowers/specs/2026-09-01-hub-tile-reorg-design.md); guiding principle: *Mezo = everything AI-derived, Én = personal data* — the character dossier is companion-derived, [insights.md §2.0](insights.md)) — the route itself did not move, only the tile. `/me/karakter` and everything under it is
 The social surface follows the approved Clay/Mozaik v3 prototype: warm author-led feed cards, compact topic rows and a shared glass evidence popup.
 
 - **Karakter** (`/mezo/karakter`, `KarakterHubPage`): populated dossiers open the feed. An empty dossier (`isDossierEmpty`) retains bootstrap intro/progress/reveal; its CTA opens the first council. Feature-off remains a quiet degraded card.
@@ -1143,7 +1142,7 @@ audited `raw_query` stays within the cap.
 - **`feature/llmlog`** — every character LLM call is audited (feature tag `character`,
   call-kind per pipeline step), the same idiom every other AI-domain doc documents.
 
-- **[Insights](insights.md)** — `MezoHubPage` carries the wide Karakter tile that opens `/me/karakter`
+- **[Insights](insights.md)** — `TeamFeedPage` (`/mezo`) shares the `isDossierEmpty` predicate; the dossier lives at `/mezo/karakter`
   (moved from the Én hub's `EnHubPage` by the hub-tile-reorg, `mezo-o486`, 2026-09-01); the FE data
   layer (`frontend/src/data/character/`) is a plain OpenAPI-client consumer of the seven
   endpoints in §4, following the house dual-mode idiom (`@/data/_client/mode.ts`) shared with
@@ -1920,9 +1919,8 @@ The API fragment remains `api/feature/character/character.yml`.
   `CharacterRunSummary` counts only (`runHeroLede`, `runRowSubline`, `lastRunLine`, kind
   badges/labels)
 - `expertColors.ts` — `expertColor(key)`: the persona's csapatfal character accent (ring arcs, name labels, orbs)
-- `dossierState.ts` — `isDossierEmpty()`, the one shared pre-bootstrap predicate (hub +
-  `MezoHubPage`'s Karakter tile both call it, never re-derive it — the tile's own call moved with
-  it from `EnHubPage.tsx` in the hub-tile-reorg, `mezo-o486`)
+- `dossierState.ts` — `isDossierEmpty()`, the one shared pre-bootstrap predicate (`KarakterHubPage` and
+  `TeamFeedPage` both call it, never re-derive it)
 - Üveg dress (U9): the pages wear the csapatfal `tf-*` kit (`features/insights/boop-world.css`) plus their own blocks at the end of `styles/prototype.css` (`uveg mezo2 karakter|konzilium|gepterem`); the old `.kr-*` rules below are pending a dead-CSS sweep
 - `character.css` — every `.kr-*` rule (source-cited per section against
   `docs/design_2.0/prototypes/src/karakter-head.html`/`karakter-body.html`)

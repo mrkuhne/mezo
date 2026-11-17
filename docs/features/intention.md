@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-11-12
+updated: 2026-11-17
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -62,7 +62,7 @@ The reflect variant **ghosts when there is nothing to reflect on** (no creed, or
 
 **Honest ghost (both variants):** renders `null` when the day is still unresolved (real mode before data / switch off) — `isPending && no foci && no creed` (`IntentionBanner.tsx:26`).
 
-**Note on the timing seam:** which variant a user sees is now decided by the **sleep-anchored face model** (`features/today/logic/dayFace.ts`, off `useSleepGoal()`'s wake/bed) rather than by `daypartNow()`'s fixed 4–11 / 12–17 / 18–3 bands. A consequence of „act-anywhere": selecting the **Este** capsule at 16:00 shows the reflection, and selecting **Reggel** at 22:00 shows the chip — deliberate, and the same retroactive affordance every other Today row gained.
+**Note on the timing seam:** which variant a user sees is now decided by the **sleep-anchored face model** (off `useSleepGoal()`'s wake/bed) rather than by `daypartNow()`'s fixed 4–11 / 12–17 / 18–3 bands. A consequence of „act-anywhere": selecting the **Este** capsule at 16:00 shows the reflection, and selecting **Reggel** at 22:00 shows the chip — deliberate, and the same retroactive affordance every other Today row gained.
 
 ### Two DERIVED habits in the chains ([habit.md](habit.md))
 - **`daily_intention`** (MORNING, position 7, „Napi szándék", anchor „reggeli rutin után", xp 10) — its `Logolás` button opens `IntentionSheet` (add a focus). The habit completes **derived** off `intention_focus_set` (today has ≥ 1 focus), never self-claimed.
