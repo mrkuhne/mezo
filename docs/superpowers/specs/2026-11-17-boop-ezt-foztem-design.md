@@ -80,10 +80,14 @@ Csirkés rizs · 4 adag
 - **+ nincs a kamrában** — „+ Kamrába" adds the food in one tap (§5) and the row becomes ✓, tagged
   **becsült** when the facts are an AI estimate; „Másik" links it to an existing food instead. A row left as
   `+` is left out of the saved recipe with the existing warning and acknowledgement.
-- **Amount and unit are editable on every row, in every state** (owner, 2026-11-17 on the spike: „most a gramm
-  fix mindenhol"): a typeable number and a unit menu (g, ml, db, ek, tk — plus the matched food's own serving
-  unit). Today's review edits only the amount of a matched row and never the unit; `RecipeReview` gains
-  `setUnit`. Name, servings, category as today.
+- **The amount is editable on every row, in every state** (owner, 2026-11-17 on the spike: „most a gramm fix
+  mindenhol"). **The unit follows the food** (found while planning — the spike's free unit menu is NOT built): a
+  saved line's numbers are `amount ÷ the food's basis amount × its facts`, whatever the unit says
+  (`RecipeService.buildLine`), so „2 ek" saved against a per-100-g food would silently count as 2 g. Rule, for
+  every entrance: **once a row has a food, its unit is that food's basis unit** (shown as a fixed label), and the
+  server converts what was said into it (§6.2 step 8). What converts cleanly is filled in; what does not
+  (a piece, a can, spoons of a food measured in grams) is prefilled where a rough rule exists, marked
+  **mennyiség?**, and needs his look. A row with no food yet keeps the unit as said.
 - **A food added by „+ Kamrába" lets him type its facts — on demand** (owner, 2026-11-17 on the spike: „legyen
   megadható a kcal, makró stb.", then „nem kell kiírni felvétel után a makrót és kcalt"): after the add the row
   shows only the **becsült** tag and a quiet „Tápérték megadása" link — **no numbers are printed on the row**.
@@ -124,7 +128,7 @@ the normal recipe create. Contract-first; consumer-owned LLM ports with adapters
   caps from properties). At least one of the two, else 400. Photos go only to the AI; never stored.
 - Response: the existing `RecipeImportResponse` (`result: null` = honest empty). `RecipeImportMatch` grows,
   additively: `state` (`matched | confirm | missing`), `onShelf` (boolean), `alternatives[]`
-  (`{catalogId, name, brand?}`, ≤ 3). The older import routes fill `state` from their existing confidence
+  (`{catalogId, name, brand?, basisUnit}`, ≤ 3), `amountDoubt` (boolean), `basisUnit` (the matched food's). The older import routes fill `state` from their existing confidence
   (1.0 → matched, 0.5 → confirm, 0 → missing) and send no alternatives.
 - Switch `mezo.feature.recipe-cooked.enabled` (off ⇒ 404); AI off ⇒ 503 `RECIPE_COOKED_LLM_UNAVAILABLE`;
   unreadable AI answer ⇒ 502. `LlmCallContext("recipe_cooked", "extract" | "match")`. Sentences in the
@@ -149,6 +153,12 @@ the normal recipe create. Contract-first; consumer-owned LLM ports with adapters
    runners-up as `alternatives`. `none` / invalid → `missing` (confidence 0), runners-up — if any — still
    offered under „Másik". Amount and unit stay exactly as said when the unit does not agree with the food.
 7. Read-only: `match.catalogId` only; the shelf is touched at recipe save (existing) or by a „+" tap.
+8. **Amount into the food's basis unit** (`PantryUnits`, pure, in `feature/pantry`), for every row with a food:
+   same unit → as is; `kg/dkg→g`, `l/dl/cl→ml` → exact; `ek`=15 ml, `tk`=5 ml → exact when the basis is ml;
+   ml↔g (incl. spoons against a gram food) → prefilled 1:1 and the row is `confirm` with `amountDoubt=true`;
+   `db` / a container / no amount → amount left as said (or 0) and `confirm` with `amountDoubt=true`. The
+   response line carries the converted `amount`, `unit` = the basis unit, and `sourceText` keeps what he said.
+   The older import routes get the same step (it replaces "keeps the amount and unit as the source wrote them").
 
 Limits: per-photo bytes and MIME types reuse `RecipeImportProperties`; new properties for max photos and total
   bytes (check the servlet multipart limit); lines reuse the workshop's 30, shortlist size, select timeout.
