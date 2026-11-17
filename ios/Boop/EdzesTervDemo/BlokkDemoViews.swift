@@ -634,24 +634,21 @@ private struct ReviewCard: View {
                     .frame(width: 66, height: 100)
             }
 
+            // The dial is gone from this card (owner, round 4): most changes here are weight or reps, so a set
+            // gauge said nothing about them. One line carries the week's set count instead.
             if let band = model.band(muscle) {
-                ArcGauge(value: after, band: band, inside: after >= band.low && after <= band.high, ghost: delta != 0 ? before : nil)
-                    .frame(height: 112)
-                    .overlay(alignment: .bottom) {
-                        VStack(spacing: 0) {
-                            if delta != 0 {
-                                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Text("\(before)").nkFont(24, .medium).foregroundStyle(.white.opacity(0.45))
-                                    Image(systemName: "arrow.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white.opacity(0.45))
-                                    Text("\(after)").nkFont(42, .medium).foregroundStyle(.white).contentTransition(.numericText())
-                                }
-                            } else {
-                                Text("\(before)").nkFont(42, .medium).foregroundStyle(.white).contentTransition(.numericText())
-                            }
-                            Text(delta != 0 ? "sorozat hetente · a sáv \(band.low)–\(band.high)" : "sorozat hetente, nem változik · a sáv \(band.low)–\(band.high)")
-                                .nkFont(11).foregroundStyle(.white.opacity(0.5))
-                        }
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    if delta != 0 {
+                        Text("\(before)").nkFont(20, .medium).foregroundStyle(.white.opacity(0.45))
+                        Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
                     }
+                    Text("\(after)").nkFont(30, .semibold).foregroundStyle(.white).contentTransition(.numericText())
+                    Text(delta != 0 ? "sorozat hetente" : "sorozat hetente, nem változik").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                    Spacer(minLength: 6)
+                    DemoPill("sáv \(band.low)–\(band.high)", color: after >= band.low && after <= band.high ? demoGood : demoWarn)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.black.opacity(0.28)))
             }
 
             ScrollView {
