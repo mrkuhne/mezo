@@ -410,6 +410,8 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `TrainClient`s** (one for the room, one inside `RitmusClient`), so the queue learned the server's workout id
     and the player never saw it — there is now one, passed in; and the player's own messages were raised on the
     room's toast, which lives **behind** this full-screen cover, so they were never seen.
+  The area menu's **Gyakorlatok** tile took the dumbbell glyph: `ball-sun` draws as a plain filled circle on a
+  dark tile, which read as a missing icon rather than an icon.
   Still a promise, and said so on the page: the custom workout, Gyakorlatok and Előzmények.
   In the simulator the preview user is new on every launch, so a workout left running shows only within one run;
   on his phone it is on disk.
