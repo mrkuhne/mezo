@@ -84,12 +84,13 @@ Csirkés rizs · 4 adag
   fix mindenhol"): a typeable number and a unit menu (g, ml, db, ek, tk — plus the matched food's own serving
   unit). Today's review edits only the amount of a matched row and never the unit; `RecipeReview` gains
   `setUnit`. Name, servings, category as today.
-- **A food added by „+ Kamrába" shows its facts and lets him type them** (owner, same round: „legyen megadható
-  a kcal, makró stb."): the row opens a small block — kcal, fehérje, szénhidrát, zsír per 100 g — prefilled with
-  the estimate; typing any of them turns the tag from **becsült** into **saját adat** and saves the food through
-  the update route (§6.3, `source = manual`, draft → verified). „Kész" folds it to a one-line summary with
-  „Átírom"; „Minden adat a kamrában" opens the full shared confirm form (fibre, sugar, salt, serving, …). The add
-  itself stays one tap — the block never blocks the save.
+- **A food added by „+ Kamrába" lets him type its facts — on demand** (owner, 2026-11-17 on the spike: „legyen
+  megadható a kcal, makró stb.", then „nem kell kiírni felvétel után a makrót és kcalt"): after the add the row
+  shows only the **becsült** tag and a quiet „Tápérték megadása" link — **no numbers are printed on the row**.
+  The link opens a small block — kcal, fehérje, szénhidrát, zsír per 100 g — prefilled with the estimate; typing
+  any of them turns the tag into **saját adat** and saves the food through the update route (§6.3,
+  `source = manual`, draft → verified). „Kész" folds it back to the link; „Minden adat a kamrában" opens the
+  full shared confirm form (fibre, sugar, salt, serving, …). The add itself stays one tap.
 - Exits: **Mentés a Receptek közé** · **Mentés és rögzítés mára** (saves, then logs one serving through the
   existing one-tap recipe log — `EtelRoom.logRecipe`, toast — no new confirmation screen).
 

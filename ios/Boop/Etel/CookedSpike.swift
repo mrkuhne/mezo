@@ -262,7 +262,7 @@ struct CookedSpikeSheet: View {
                         Task {
                             try? await Task.sleep(for: .milliseconds(900))
                             row.wrappedValue.adding = false; row.wrappedValue.state = .matched
-                            row.wrappedValue.estimated = true; picking = nil; editingFacts = row.wrappedValue.id
+                            row.wrappedValue.estimated = true; picking = nil
                         }
                     } label: {
                         HStack(spacing: 7) {
@@ -320,15 +320,7 @@ struct CookedSpikeSheet: View {
             }
             .padding(14).background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.06)))
         } else {
-            Button { editingFacts = r.id } label: {
-                HStack(spacing: 6) {
-                    Text("100 g-ban \(Int(r.kcal)) kcal · F \(num(r.protein)) · Sz \(num(r.carbs)) · Zs \(num(r.fat))")
-                        .nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.6))
-                    Text("Átírom").nkFont(12.5, .medium).foregroundStyle(.white.opacity(0.85)).underline()
-                }
-                .frame(minHeight: 32).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+            quiet(r.ownFacts ? "Tápérték átírása" : "Tápérték megadása") { editingFacts = r.id }
         }
     }
 
