@@ -531,9 +531,11 @@ extension TrainClient: OutboxSender {
         guard let p = TrainPayloadCodec.decode(WorkoutFeedbackPayload.self, from: item.payload)
         else { return malformed("workout feedback") }
         guard let workout = await workoutId(for: p.workoutRef) else { return .retryLater }
+        // In the app the answers are 0-based; the contract is 1-based (pump 1-4, jointPain 1-3, workload 1-3).
+        // Mapped here, at the wire only, so items queued before the fix are corrected too (mezo-r36n9.67).
         let body = p.items.map {
-            Components.Schemas.WorkoutFeedbackInput(exerciseId: $0.exerciseId.wire, pump: $0.pump,
-                                                    jointPain: $0.jointPain, workload: $0.workload)
+            Components.Schemas.WorkoutFeedbackInput(exerciseId: $0.exerciseId.wire, pump: $0.pump + 1,
+                                                    jointPain: $0.jointPain + 1, workload: $0.workload + 1)
         }
         switch try await client.saveWorkoutFeedback(path: .init(id: workout.wire), body: .json(body)) {
         case .noContent: return .sent(nil)
