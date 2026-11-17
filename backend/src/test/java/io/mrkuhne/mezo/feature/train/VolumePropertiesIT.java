@@ -20,6 +20,7 @@ class VolumePropertiesIT extends AbstractIntegrationTest {
         assertThat(props.stepDeficit()).isEqualTo(1);
         assertThat(props.bands()).isEqualTo(new VolumeProperties.Bands(3, 2, 5, 8));
         assertThat(props.weeklyReview().mode()).isEqualTo("auto");
+        assertThat(props.signals()).isEqualTo(new VolumeProperties.Signals(3, 2, 9));
         assertThat(props.baselines()).containsKeys(
             "chest", "back", "shoulder", "biceps", "triceps", "quad", "ham", "glute", "calf");
         assertThat(props.baselines().get("chest"))

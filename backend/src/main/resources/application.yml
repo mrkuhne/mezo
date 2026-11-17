@@ -3135,6 +3135,10 @@ mezo:
       session-cap: 8              # working sets per muscle group per day
     weekly-review:
       mode: auto                  # auto | manual
+    signals:
+      workload-too-much: 3        # exercise_feedback.workload 1 Kevés / 2 Pont jó / 3 Sok volt
+      joint-pain-hold: 2          # exercise_feedback.joint_pain 1 Nincs / 2 Enyhe / 3 Erős: >= holds
+      soreness-high: 9            # check-in soreness 1..10 (10 = worse): the upper two values
     # RP intermediate MEV/MAV/MRV landmarks per coarse muscle group (mezo-xlmp) — seeded onto
     # muscle_group_volume_log at meso create-as-active/activate for the groups the template
     # actually trains. Bands match the demofixtures seed; core/traps intentionally absent
