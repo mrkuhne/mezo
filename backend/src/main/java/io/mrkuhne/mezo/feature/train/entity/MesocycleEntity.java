@@ -105,6 +105,10 @@ public class MesocycleEntity extends OwnedEntity {
     @Column(name = "volume_recompute", columnDefinition = "jsonb")
     private VolumeRecomputeJson volumeRecompute;
 
+    /** Which volume engine drives the run: 1 = legacy, 2 = volume engine v2 (set at run start from Task 10). */
+    @Column(name = "volume_model", nullable = false)
+    private short volumeModel = 1;
+
     /** The {@link MesoTemplateEntity} this mesocycle was started from; null for hand-built ones. */
     @Column(name = "template_id")
     private UUID templateId;
