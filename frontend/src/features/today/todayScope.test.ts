@@ -53,22 +53,28 @@ const RETIRED_VISSZAOLTOZTETES = ['TitanCompanion.tsx', 'TitanScene.tsx']
  *  jelvényként jelenik meg. */
 const RETIRED_FOLYADEK = ['NapCompanion.tsx']
 
+/** Halott-kód takarítás (mezo-upzqb): a régi napi küldetés-kártya/lap/lista (a `NapKuldetesekPage`
+ *  váltotta ki), a régi üzenetlap és az aktivitás-kártya — egyiket sem importálta már semmi. */
+const RETIRED_DEAD_CODE = [
+  'ActivityLogCard.tsx', 'DailyQuestList.tsx', 'DailyQuestsCard.tsx', 'DailyQuestsSheet.tsx',
+  'MezoMessagesSheet.tsx',
+]
+
 describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
-  test.each([...RETIRED_EARLIER, ...RETIRED_DESIGN_20, ...RETIRED_TITANIUM, ...RETIRED_VISSZAOLTOZTETES, ...RETIRED_FOLYADEK])('%s nincs a fában', (file) => {
+  test.each([...RETIRED_EARLIER, ...RETIRED_DESIGN_20, ...RETIRED_TITANIUM, ...RETIRED_VISSZAOLTOZTETES, ...RETIRED_FOLYADEK, ...RETIRED_DEAD_CODE])('%s nincs a fában', (file) => {
     expect(readdirSync(DIR)).not.toContain(file)
   })
 
   test('sanity: a mappa nem üres — a maradó komponensek tényleg ott vannak', () => {
     const files = readdirSync(DIR).filter((f) => f.endsWith('.tsx') && !f.endsWith('.test.tsx'))
     expect(files.sort()).toEqual([
-      'ActivityLogCard.tsx', 'DailyQuestList.tsx', 'DailyQuestsCard.tsx',
-      'DailyQuestsSheet.tsx', 'EletjelStrip.tsx',
+      'EletjelStrip.tsx',
       // Kímélő mód S2 (mezo-q4xt2.2) — a „Hogy vagy?" kártya és a „Nem vagyok jól" lap.
       'KimeloCard.tsx',
       // Folyadék F2 (mezo-n4wf5.2): a nyitóoldal jelenlét-jele (`NapCompanion.tsx`) a Titán-kori
       // elődeihez került a nyugdíjasok közé — a Mai hőse a kit tartálya. Az üzemanyag-kártya
       // részletei a `NapFuelSheet.tsx` lapra költöztek.
-      'MezoMessagesSheet.tsx', 'NapFuelGraphic.tsx', 'NapFuelSheet.tsx',
+      'NapFuelGraphic.tsx', 'NapFuelSheet.tsx',
       // Reflexió S5 (mezo-eq85.5) — az Észrevételek fül kártyája: `ObservationCard.tsx`.
       'NapPersonalInsight.tsx', 'NapzarasCard.tsx', 'NemVagyokJolSheet.tsx', 'ObservationCard.tsx',
     ])

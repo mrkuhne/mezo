@@ -46,7 +46,6 @@ const ALLOWLIST: string[] = [
   'features/today/components/NapFuelGraphic.tsx',
   'features/today/pages/NapHubPage.tsx',
   'features/train/components/ExerciseReview.tsx',
-  'features/train/components/ProgressionBanner.tsx',
   'features/train/components/SetStepper.tsx',
   'features/train/components/SportCeremony.tsx',
   'features/train/components/WorkoutCard.tsx',
