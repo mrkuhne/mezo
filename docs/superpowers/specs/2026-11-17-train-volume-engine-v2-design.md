@@ -151,35 +151,46 @@ band or when no slot is left.
 ### 6.4 The weekly proposal
 
 A new owned table **`meso_week_proposal`**: `mesocycle_id`, `week`, `kind` (`weekly|tier_change`), `status`
-(`pending|applied|auto_applied|dismissed`), `created_at`, `decided_at`, `lines jsonb`, `plan_after jsonb`
+(`pending|applied|auto_applied|expired|superseded`), `created_at`, `decided_at`, `lines jsonb`, `plan_after jsonb`
 (exercise row id → sets once applied: the per-week history the arc and the review's "last week" read).
 
 A **line** is one change to one exercise: `id`, `exerciseId` (the run's template-day row), `exerciseName`,
 `dayIndex`, `muscleGroup`, `kind` (`sets|weight|reps`), `from`, `to`, `reasons[]` (contract-enumerated codes, see
 below), `decision` (`null|accepted|kept`).
 
-**When.** At the start-date-anchored week boundary, generated once (idempotent on `(mesocycle_id, week, kind)`):
+**When.** At the start-date-anchored week boundary, generated once (a `weekly` proposal is unique per
+`(mesocycle_id, week)`; a `tier_change` is not — see §6.5):
 lazily from `getToday` as today, **and** from the proposal read endpoint, so the phone can show it before any
 workout is opened.
 
 **Set lines — `VolumeDecider` v2** (pure), per trained counting group:
 
 1. Week 1: no lines. The plan stands.
-2. Deload phase: every counting exercise goes to ⌈sets / 2⌉ (min 1).
+2. Deload phase: every counting exercise goes to ⌈sets / 2⌉ (min 1). A deload is a **week, not a new baseline**:
+   the proposal stores `restore` (exercise row id → the pre-deload sets), and the week after a deload starts from
+   the restored amounts, as today's arc scaffold already assumes (`VolumeArcService`).
 3. Tartás: no set line, ever.
-4. Hold (no line) when last week's logged sets for the group were below its planned sets, or a grind was flagged,
-   or the feedback says it was too much (workload "too much" or soreness still present at the next session).
-5. Step down by 1 when the group is at or above its band's `high` **and** rule 4's overreach signals fired.
+4. Step down by 1 when the group is at or above its band's `high` **and** an overreach signal fired (a grind, or
+   workload "too much"). This is checked **before** the hold.
+5. Hold (no line) when last week's logged sets for the group were below its planned sets, or a grind was flagged,
+   or the feedback says it was too much, or joint pain of 2+ was reported on one of its exercises, or the daily
+   check-in's soreness was still high on the day of the group's next session.
 6. Otherwise step up: Hangsúly +2, Építés +1; **in an energy deficit both are +1**. Never past the tier's ceiling
    (`band.high`), never past the caps. The set goes to the slot the §6.3 rule picks. No slot → no line, and the
    group is reported with reason `no_slot` on the proposal (not silently dropped).
 
 Signals (fixes #6, #7): logged sets are summed per muscle group over the previous week's **completed sessions of
 the run**, including instance-scoped rows (today-only swaps and additions), using each logged row's own muscle.
-Feedback is the per-exercise `exercise_feedback` of those sessions, reduced per group.
+Feedback is the per-exercise `exercise_feedback` of those sessions (pump 1–4, joint pain 1–3, workload 1–3),
+reduced per group. **Soreness is not a per-exercise field** (`ExerciseFeedbackEntity` has none): it is the daily
+check-in's whole-body scale, read through the existing `DayCheckInPort`. No new feedback field is added.
 
-**Deficit** comes through a train-owned port (`EnergyBalancePort.isInDeficit(userId, date)`), implemented in the
-goal slice — the `GoalRecomputePort` pattern, so `feature/train` does not import `feature/goal`.
+A plan that sits **above** its band because the owner saved it that way is not pulled back by the weekly proposal
+(it was his accepted number); `above_band` appears only in the evaluator and in tier-change proposals.
+
+**Deficit** means: the owner's **active weight goal aims at losing weight** (the goal's planned direction, not a
+measured trend or a day's intake). No active goal → not a deficit. It comes through a train-owned port
+(`EnergyBalancePort.isInDeficit(userId, date)`), implemented in the goal slice — the `GoalRecomputePort` pattern, so `feature/train` does not import `feature/goal`.
 
 **Load lines** are a *preview* of what `ProgressionDecider` will prescribe for the exercise's first session of the
 week (weight up / rep up / rep down), with its own reason codes. They do not replace read-time prescription. A
@@ -187,8 +198,9 @@ week (weight up / rep up / rep down), with its own reason codes. They do not rep
 `SetRecommendationService` consults the week's decided proposal before deciding.
 
 **Applying.** `accepted` set lines write `exercise.working_sets`; then `VolumeLedger.sync`. A proposal is `applied`
-once every line is decided or it is accepted wholesale. Undecided lines of a proposal the owner starts the week
-without are `kept`.
+once every line is decided or it is accepted wholesale. **Nothing is force-decided:** in manual mode an undecided
+line simply stays pending and unapplied (last week's numbers hold, as the owner was promised), and the proposal
+becomes `expired` at the next week boundary. Opening a workout never decides anything.
 
 **Automatic mode.** `mezo.volume.weekly-review.mode` = `auto` (default now) | `manual`. In `auto` the proposal is
 generated and applied in the same transaction (`auto_applied`, every line `accepted`). The Boop slice adds a
@@ -203,15 +215,22 @@ setting.
 
 `PUT …/muscle-priorities` (and the new `sportGroups` on the same request) takes effect immediately: bands are
 re-evaluated, and for every group now outside its band a `tier_change` proposal is raised with the §6.3 edits
-(which may cut). It follows the same mode (auto → applied at once).
+(which may cut). It follows the same mode (auto → applied at once). A newer tier change **supersedes** a still
+pending `tier_change` proposal of the run (`superseded`), so at most one is pending.
+
+**Kímélő return (`RecoveryReturnService`).** Its step-back today lowers the ledger's `current_sets` and keeps
+`prevSets` for undo; with a derived ledger that would change nothing and be erased by the next sync. It moves to
+the amount model: the step-back cuts **exercise amounts** with the §6.3 down-rule and stores the edit list for the
+undo. It still moves `start_date` back, so a week number repeats and that week's `weekly` proposal is not
+regenerated — intended, the same as today's "recovery resume keeps `lastRun`" skip.
 
 ### 6.6 Contract additions (`api/feature/train/train.yml`, all additive)
 
 | Operation | Purpose |
 |---|---|
 | `POST /api/train/meso-plans/evaluate` | §6.3 |
-| `GET /api/train/mesocycles/{id}/week-proposal` | the current week's proposal (generates it if due); `204` when there is none |
-| `POST /api/train/mesocycles/{id}/week-proposal/{proposalId}/decisions` | `{decisions: [{lineId, decision}], acceptRest?: bool, keepRest?: bool}` → the updated proposal; applies when complete |
+| `GET /api/train/mesocycles/{id}/week-proposals` | the run's open proposals — the week's `weekly` one (generated if due) and a pending `tier_change`, if any; an empty list when there is none |
+| `POST /api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions` | `{decisions: [{lineId, decision}], acceptRest?: bool, keepRest?: bool}` → the updated proposal; applies when complete |
 | `sportGroups` on `MesoTemplateUpsertRequest`, `MesoTemplateResponse`, `MesocycleResponse`, `MusclePrioritiesUpdateRequest` | §6.2 |
 
 ### 6.7 The phone screens (designed here, built later)
@@ -327,10 +346,15 @@ accepted default, in config.
 
 ## 9. Slices
 
-1. **S1 — amount model.** §6.1, §6.8, `VolumeLedger`, guard (§6.9), defects 1, 2, 3, 5. Ships alone; behaviour for
-   the owner's run is unchanged.
-2. **S2 — bands and the evaluator.** §6.2, §6.3, `sportGroups`, arc scaffold; defects 4, 8.
-3. **S3 — the weekly proposal.** §6.4, §6.5, endpoints, auto mode; defects 6, 7, 9.
+1. **S1 — the engine's core, in one release.** The amount model (§6.1, §6.8, `VolumeLedger`), the band function
+   (§6.2, without `sportGroups`), `VolumeDecider` v2's **set lines** with the new signals and the proposal table in
+   **auto mode** (§6.4, no endpoints yet), the kímélő step-back (§6.5), the guard (§6.9). Defects 1, 2, 3, 5, 6, 7.
+   The distribution cannot be removed without the new decider in the same release — otherwise sets would freeze —
+   so they ship together. The migration honours `volume_recompute.lastRun`: a run already rolled over this week is
+   not stepped a second time.
+2. **S2 — the evaluator.** §6.3, `sportGroups` and the deficit pace, the arc scaffold; defects 4, 8.
+3. **S3 — the proposal's API.** The two endpoints, load lines and the weekly pin in `SetRecommendationService`,
+   manual mode, tier-change proposals (§6.5); defect 9.
 4. **S4 — Boop screens** (§6.7) — after B5's Edzés room is on main; its own plan, coordinated with the B5 session.
 
 Each slice: contract first, focused ITs with `-Dmezo.test.use-testcontainers=true` + `ArchitectureTest`, codemap,
@@ -342,3 +366,22 @@ Each slice: contract first, focused ITs with `-Dmezo.test.use-testcontainers=tru
 - Whether `VolumeLedger.sync` is a method on `VolumeProgressionService` or its own class.
 - The jsonb line schema's Java record names and the reason-code enum's home.
 - The minutes estimate formula for a day (the demo uses 2.4 min a set + 6).
+
+## 11. Builder-check resolutions (2026-11-17)
+
+An independent read of this document against the code raised nine points. None needed the owner; each is settled
+above as the author's call:
+
+1. S1 and the decider ship together (§9) — the distribution cannot go before its replacement exists.
+2. The kímélő step-back moves to exercise amounts; the repeated week keeps its skipped proposal (§6.5).
+3. Soreness is the daily check-in's, via `DayCheckInPort`; joint pain 2+ holds; no new feedback field (§6.4).
+4. The step-down is checked before the hold; a saved-above-band plan is not pulled back weekly (§6.4).
+5. A deload week restores to the pre-deload amounts afterwards (§6.4 rule 2).
+6. "Deficit" = the active weight goal aims at loss; no goal → no deficit (§6.4).
+7. One pending tier-change proposal at a time; the read returns a list (§6.5, §6.6).
+8. Nothing is force-decided in manual mode; an undecided proposal expires at the week boundary (§6.4).
+9. The band function is part of S1, so the guard can use `band.low` there (§9).
+
+Confirmed from the code: the volume switch is on by default; the distribution has one caller; the hand-patched
+landmarks on the owner's run are replaced by the config table at the first ledger sync (intended); a rerun returns
+the linked template, so ramped amounts never leak into templates.
