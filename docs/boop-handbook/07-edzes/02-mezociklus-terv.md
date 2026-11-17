@@ -2,7 +2,7 @@
 cim: Mezociklus-terv és tervgenerátor
 szint: Funkció
 terulet: Edzés
-allapot: Tervezve
+allapot: Részben él
 hol: [iPhone app, Háttérrendszer, AI]
 szulo: 00-attekintes
 szakasz: [B5]
@@ -10,7 +10,18 @@ osszefoglalo: Néhány kérdés után Boop összerak egy több hetes edzésblokk
 ---
 
 ## Mit csinál
-A **Terv** fülön:
+
+**A Blokk fül (B5, 2026-11-17 — ez már él):**
+
+- **A blokk terhelése:** a blokk hetei egy sorban (idő balra-jobbra, magasság = mennyit kér a hét), alatta egy
+  mondat az izomcsoportokról. Rákoppintva megnyílik a **részletes bontás**: izomcsoportonként egy sor, benne
+  hétről hétre a **tervezett** sorozatszám halvány oszlopként és a **ténylegesen megcsinált** telt oszlopként.
+  Ahol még nincs adat, ott **semmi nem áll** — az nem nulla.
+- **A heted:** a blokk napjai lapozható kártyákon (hétfőtől vasárnapig), mindegyiken a nap típusa, mely
+  izomcsoportokat dolgoztatja és hány gyakorlat. A mai nap meg van jelölve, a már megcsinált napok ki vannak
+  pipálva. (Korábban ez a Ma oldalon volt; a Ma a mai napról szól, a hét a blokk dolga — 2026-11-17.)
+
+**A tervgenerátor és a szerkesztés (még nem él):**
 
 - **Tervgenerátor (varázsló):** kiválasztod a napokat, a hetek számát és a kiemelt izomcsoportokat (legfeljebb kettő
   „kiemelt”), Boop összerak egy mezociklust.

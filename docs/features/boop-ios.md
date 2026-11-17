@@ -2,7 +2,7 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-16
+updated: 2026-11-17
 tags: [ios, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
@@ -297,7 +297,28 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   two-a-day cap — and a finished session is `.happened`. The brief's old thin stand-in (`edzes-keszulj` inside
   `briefWallCandidates`) was **removed in the same change**: two sources offering a session card would bring back
   a card he had just dismissed, because `acted` is keyed by candidate id.
-  Still a promise, and said so on the page: the player („Indítás"), Blokk, Gyakorlatok and Előzmények.
+  **Round 2 (owner, 2026-11-17 — he had the live app's own screens in mind):**
+  - **„A mai terhelés"** — the **real muscle map** he already has on the web, on Ma: the same MuscleMap (MIT)
+    artwork from the same vendored upstream, generated into Swift by `scripts/gen-body-geometry-swift.mjs` and
+    read by the kit's own SVG path reader (`NKPath`). Today's **working sets** light the muscles, read against
+    the hardest-worked one — a single session has no meaning against a weekly landmark. One body normally; both
+    when the session really works both sides, because hiding one would hide half of what he did. Beside it the
+    three numbers he asked for: how many exercises, how many working sets, roughly how long.
+  - **„Hol tartasz"** — the block as a timeline, **time across and difficulty up** (`NKBlockTimeline`): eight
+    weeks, the week he is in lit and named, and the deload drawn **hollow** so a dip never reads as a week he
+    missed.
+  - **The exercises are a carousel** (`NKCarousel`), and **„Az eligazítás" is gone as a separate block** — it
+    said the same thing twice (*„a mai edzés és az eligazítás kb ugyanaz"*). The engine's sentence now rides on
+    the card of the exercise it is about. Every carousel in the app carries **dots** under it, so a row that
+    continues says so.
+  - **„A heted" moved to Blokk** as a day carousel (pick a day, see what it asks for), and Blokk gained **„A
+    blokk terhelése"**: the timeline plus a line about the muscles, opening a page that breaks the whole block
+    down muscle by muscle — the planned scaffold as a faint bar, what was actually logged on top of it, and
+    **nothing at all** for a week that has not happened.
+  - The area menu's **„Blokk" tile became „Egyedi edzés"**: Blokk is one tap away in the bar below, and the
+    one-off custom workout had no way in at all.
+  Still a promise, and said so on the page: the player („Indítás"), the custom workout, Gyakorlatok and
+  Előzmények.
   Simulator switches: `-previewHome edzes` (the room straight from the ring), `-previewEdzesRest YES` (a rest
   day), `-previewEdzesPlain YES` (the engine off — the state that must never print a weight), `-edzesTab <név>`.
 

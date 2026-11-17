@@ -533,9 +533,64 @@ struct PreviewTransport: ClientTransport {
             let row = previewExercise(id: previewRowId, name: "Hajlott evezés", muscle: "back",
                                       anchor: 70, target: 70, plain: plain)
             return json(#"{"templateSessionId":"\#(previewSessionId)","dayLabel":"Hét","title":"Pull Day","durationEst":62,"exercises":[\#(press),\#(row)],"weekDoneDates":["\#(done)"]}"#)
-        case "listWorkouts", "getExerciseCatalog", "getExerciseRecords", "listMesocycles": return json("[]")
+        case "listMesocycles": return json("[\(previewMesocycle)]")
+        case "getMesocycleVolumeArc": return json(previewVolumeArc)
+        case "listWorkouts", "getExerciseCatalog", "getExerciseRecords": return json("[]")
         default: return json("{}")
         }
+    }
+
+    private static let previewBlockId = "c1c2c3d4-0004-4a2b-9c3d-111122223333"
+    /// The eight weeks the owner's own blocks run: build, build, peak, easy week, repeated.
+    private static let previewPhases = ["MEV", "MAV", "MAV", "MRV", "Deload", "MAV", "MRV", "MRV"]
+    private static var previewPhaseList: String { previewPhases.map { #""\#($0)""# }.joined(separator: ",") }
+    private static let previewCurrentWeek = 3
+
+    /// A running block, so the timeline, the week carousel and the load page have something
+    /// real-shaped to draw. The numbers are invented and the room says their age like any
+    /// other answer — nothing here reaches a screen that claims to be his own data.
+    private static var previewMesocycle: String {
+        let profiles = previewMuscles.map { m in
+            #""\#(m.key)":{"mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv),"current":\#(m.current),"source":{"baseline":{"name":"\#(m.key)","mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv)},"adjustments":[],"confidence":0.8}}"#
+        }.joined(separator: ",")
+        let days = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · fenék", 6),
+                    ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mellkas · tricepsz", 5),
+                    ("Pé", "Hát és bicepsz", "hát · bicepsz", 5), ("Szo", "Röplabda", "egész test", 0),
+                    ("Vas", "Pihenő", "regeneráció", 0)]
+            .enumerated().map { i, d in
+                #"{"id":"c1c2c3d4-001\#(i)-4a2b-9c3d-111122223333","day":"\#(d.0)","type":"\#(d.1)","muscle":"\#(d.2)","exerciseCount":\#(d.3),"exercises":[],"current":\#(d.0 == "Hét")}"#
+            }.joined(separator: ",")
+        return #"{"id":"\#(previewBlockId)","title":"Hypertrophy · Ősz","shortTitle":"Ősz","status":"active","goal":"Izomtömeg","startDate":"\#(dayString(offset: -16))","endDate":"\#(dayString(offset: -16 + 56))","weeks":8,"currentWeek":\#(previewCurrentWeek),"split":"5 napos","style":"hypertrophy","hasReport":false,"phaseCurve":[\#(previewPhaseList)],"volumePerMuscle":{\#(profiles)},"days":[\#(days)]}"#
+    }
+
+    private static let previewMuscles: [(key: String, mev: Int, mav: Int, mrv: Int, current: Int, region: String)] = [
+        ("chest", 8, 14, 20, 16, "coral"), ("back", 10, 16, 22, 18, "sky"),
+        ("shoulder", 6, 12, 18, 13, "lav"), ("biceps", 6, 10, 16, 9, "rose"),
+        ("triceps", 6, 10, 16, 10, "rose"), ("quad", 8, 14, 20, 15, "sage"),
+        ("ham", 6, 10, 16, 11, "sage"), ("glute", 6, 12, 18, 12, "sage"),
+        ("calf", 8, 12, 18, 8, "sage"), ("core", 6, 10, 14, 7, "amber"),
+    ]
+
+    /// Per-muscle, per-week: the planned scaffold throughout, and what was logged up to the
+    /// week he is in. The weeks after that carry **no** actual at all — a future week is not
+    /// zero sets, and the row has to show that difference.
+    private static var previewVolumeArc: String {
+        let muscles = previewMuscles.map { m in
+            let weeks = (1...8).map { w -> String in
+                let phase = previewPhases[w - 1]
+                let planned: Int = switch phase {
+                case "MEV": m.mev
+                case "MAV": m.mav
+                case "MRV": m.mrv
+                default: max(4, m.mev - 2)
+                }
+                let actual = w < previewCurrentWeek ? ",\"actual\":\(max(0, planned - (w % 3)))"
+                    : (w == previewCurrentWeek ? ",\"actual\":\(max(0, planned - 4))" : "")
+                return #"{"week":\#(w),"phase":"\#(phase)","planned":\#(planned)\#(actual),"isCurrent":\#(w == previewCurrentWeek)}"#
+            }.joined(separator: ",")
+            return #"{"muscle":"\#(m.key)","region":"\#(m.region)","mrv":\#(m.mrv),"weeks":[\#(weeks)]}"#
+        }.joined(separator: ",")
+        return #"{"mesocycleId":"\#(previewBlockId)","title":"Hypertrophy · Ősz","currentWeek":\#(previewCurrentWeek),"weeks":8,"startDate":"\#(dayString(offset: -16))","endDate":"\#(dayString(offset: 40))","status":"active","phaseCurve":[\#(previewPhaseList)],"muscles":[\#(muscles)]}"#
     }
 
     private static let previewSessionId = "c1c2c3d4-0001-4a2b-9c3d-111122223333"

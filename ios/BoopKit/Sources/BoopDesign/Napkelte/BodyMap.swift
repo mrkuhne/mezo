@@ -110,12 +110,19 @@ public struct NKBodyMap: View {
         .accessibilityLabel(label)
     }
 
+    /// `.auto` shows **one** body — two side by side read as decoration — unless the session
+    /// really works both sides, which a push-pull day does. Then hiding one would hide half of
+    /// what he did, and two bodies are the honest picture.
     private var shown: [NKBodyView] {
         switch views {
-        case .front: [.front]
-        case .back: [.back]
-        case .both: [.front, .back]
-        case .auto: [total(.front) >= total(.back) ? .front : .back]
+        case .front: return [.front]
+        case .back: return [.back]
+        case .both: return [.front, .back]
+        case .auto:
+            let frontHeat = total(.front), backHeat = total(.back)
+            let weaker = min(frontHeat, backHeat), whole = frontHeat + backHeat
+            if whole > 0, weaker / whole >= 0.3 { return [.front, .back] }
+            return [frontHeat >= backHeat ? .front : .back]
         }
     }
 

@@ -12,15 +12,23 @@ osszefoglalo: Az Edzés gömbről nyíló szoba mutatja a mai edzést a valódi 
 ## Mit csinál
 - **A mai edzés** a reggeli összefoglalóban és az Edzés szobában: cím, időpont, becsült hossz, a gyakorlatok és a sorozatszám
   (ha aznap könnyítés van, már a könnyített sorozatszámmal).
+- **A mai terhelés (B5):** egy **izomtérkép** — ugyanaz a test, amit a webes appban is használsz —, rajta azok az
+  izmok világítanak, amiket a mai edzés megdolgoztat. A fényerő az éles sorozatok száma a legtöbbet kapó izomhoz
+  mérve; a bemelegítés nem számít bele, mert az nem terhelés. Alapból **egy** testet látsz, és csak akkor kettőt
+  (elöl-hátul), ha a mai edzés tényleg mindkét oldalt dolgoztatja. Mellette három szám: **hány gyakorlat, hány
+  éles sorozat, körülbelül hány perc** — amelyiket nem tudjuk, ott gondolatjel áll.
+- **Hol tartasz (B5):** a blokkod hetei egy sorban — balról jobbra az idő, a magasság az, hogy mennyit kér tőled
+  az a hét. Az aktuális hét ki van emelve és meg van nevezve, a **könnyű hét pedig üres, szaggatott kerettel**:
+  az nem egy kihagyott hét, hanem a terv része.
 - **A gyakorlatok valódi sorozatai (B5):** minden gyakorlat sora megmutatja, hány bemelegítő és hány éles sorozat van, milyen
   ismétlésszámra, és **milyen súllyal** — pontosan azzal, amit a motor előírt. Ha egy sorozatot már rögzítettél, a sor kipipálva
   áll. **Ha a motor nem írt elő súlyt, nem is látsz súlyt** — csak a darabszámokat: a terv „kiindulási súlya" nem egy adott
   sorozatra szóló előírás, és nem írjuk ki annak.
-- **„Az eligazítás" (B5):** gyakorlatonként egy mondat arról, mit változtatott a motor a múlt héthez képest és miért
-  (például „Múlt hét 8 × 77,5 kg (RIR 3) → +2,5 kg"). **Ezt a mondatot a motor írja**, az app nem fogalmaz hozzá semmit; ha a
-  motor ki van kapcsolva, a blokk egyszerűen nincs ott.
-- **„A heted" (B5):** hétfőtől vasárnapig, melyik napon volt már befejezett edzés. Egy még hátralévő nap üresen áll — arról
-  semmit nem állítunk.
+  A gyakorlatok **lapozhatók**: egy kártya egy gyakorlat, alattuk pöttyök mutatják, hány van még.
+- **Boop indoklása a gyakorlat kártyáján (B5):** egy mondat arról, mit változtatott a motor a múlt héthez képest és
+  miért (például „Múlt hét 8 × 77,5 kg (RIR 3) → +2,5 kg"). **Ezt a mondatot a motor írja**, az app nem fogalmaz
+  hozzá semmit; ha a motor ki van kapcsolva, nincs ott mondat. (Korábban ez külön „Az eligazítás" blokk volt a
+  gyakorlatok alatt — ugyanazt mondta kétszer, ezért a gyakorlat kártyájára került, 2026-11-17.)
 - **Hálózat nélkül (B5):** a szoba a legutóbb látott tervet mutatja, **kiírva, hogy hány órás vagy hány napos**. Ha még soha nem
   láttuk, azt mondja, hogy nincs friss adat — sosem ír ki nullát. Ha a szerver elutasít vagy hibázik, azt elmondja; olyankor nem
   ad helyette régi választ.
@@ -66,8 +74,9 @@ használható offline, utána a szoba inkább azt mondja, hogy nincs friss adat.
 | `mesocycle` · `workout_session` | A futó blokk és a napjai: innen jön a mai nap és a gyakorlatai |
 
 ## Mi jön még
-- B5 következő szakasza: az **edzéslejátszó** („Indítás”), majd a **Blokk**, a **Gyakorlatok** és az **Előzmények** fül — ma
-  mindhárom megmondja, hogy még nem él.
+- B5 következő szakasza: az **edzéslejátszó** („Indítás”) és az **egyedi edzés**, majd a **Gyakorlatok** és az
+  **Előzmények** fül — ma mindhárom megmondja, hogy még nem él. A **Blokk** fül már él
+  ([Mezociklus-terv](02-mezociklus-terv.md)).
 - B7: több fajta javaslat (rövidebb/hosszabb edzés, más mozgás).
 
 ## Mi marad ki

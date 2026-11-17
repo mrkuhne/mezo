@@ -152,3 +152,77 @@ struct EdzesWeightTests {
         #expect(nkKg(62.0) == "62 kg")
     }
 }
+
+/// What the Ma tab computes from today's plan. These are the numbers the owner reads off the
+/// page, so each one has a rule about what it must NOT say when it does not know.
+@MainActor
+struct EdzesMaLogicTests {
+    func exercise(_ name: String, muscle: String, warmups: Int, working: Int, kg: Double? = nil) -> PlannedExercise {
+        let sets = (0..<warmups).map { _ in PrescribedSet(kind: .warmup, targetKg: kg.map { $0 * 0.6 }) }
+            + (0..<working).map { _ in PrescribedSet(kind: .working, targetKg: kg, targetReps: 8) }
+        return PlannedExercise(id: UUID(), name: name, muscle: muscle, type: .compound, sets: sets,
+                               warmupCount: warmups, workingCount: working, repMin: 6, repMax: 10,
+                               targetRIR: 2, anchorKg: kg)
+    }
+
+    @Test func theBodyMapCountsWorkingSetsOnly() {
+        // A long warm-up is not load. Counting it would make an easy session look hard.
+        let w = TodayWorkout(exercises: [exercise("Fekvenyomás", muscle: "chest", warmups: 5, working: 3),
+                                         exercise("Evezés", muscle: "back", warmups: 0, working: 6)])
+        let heat = edzesBodyHeat(w)
+        let chest = heat.first { $0.muscle == "chest" }
+        let back = heat.first { $0.muscle == "back" }
+        // The back gets twice the working sets, so it is fully lit and the chest half of it.
+        #expect(back?.level == 1)
+        #expect(chest?.level == 0.5)
+    }
+
+    @Test func aRestDayLightsNothing() {
+        #expect(edzesBodyHeat(TodayWorkout()).isEmpty)
+        #expect(edzesBodyHeat(nil).isEmpty)
+    }
+
+    @Test func theSummaryLeavesOutWhatItDoesNotKnow() {
+        // No plan at all: three dashes, not three zeroes.
+        let empty = edzesSummary(nil, brief: nil)
+        #expect(empty.exercises == nil && empty.workingSets == nil && empty.minutes == nil)
+
+        let w = TodayWorkout(durationEst: 62,
+                             exercises: [exercise("Fekvenyomás", muscle: "chest", warmups: 2, working: 3),
+                                         exercise("Evezés", muscle: "back", warmups: 2, working: 3)])
+        let s = edzesSummary(w, brief: nil)
+        #expect(s.exercises == 2)
+        #expect(s.workingSets == 6)      // the warmups are not sets he has to do heavy
+        #expect(s.minutes == 62)
+    }
+
+    @Test func theTimelineMarksTheWeekHeIsInAndDrawsTheDeloadApart() {
+        let block = BlockPlan(id: UUID(), title: "Ősz", shortTitle: "Ősz", status: "active",
+                              startDate: "2026-11-01", endDate: "2026-12-27", weeks: 8, currentWeek: 3,
+                              split: "5 napos", style: "hypertrophy",
+                              phaseCurve: [.mev, .mav, .mav, .mrv, .deload, .mav, .mrv, .mrv])
+        let weeks = edzesTimeline(block)
+        #expect(weeks.count == 8)
+        #expect(weeks.filter { $0.state == .current }.map(\.week) == [3])
+        #expect(weeks.prefix(2).allSatisfy { $0.state == .past })
+        #expect(weeks.suffix(5).allSatisfy { $0.state == .future })
+        // The easy week is marked as itself — drawn apart so a dip never reads as a week missed.
+        let deload = weeks.first { $0.isDeload }
+        #expect(deload?.week == 5)
+        #expect(deload?.phase == "Pihenőhét")
+        // And it really is the lightest week on the row.
+        #expect(deload?.load == weeks.map(\.load).min())
+    }
+
+    @Test func noBlockMeansNoTimeline() {
+        #expect(edzesTimeline(nil).isEmpty)
+    }
+
+    @Test func muscleNamesAreTheOnesHeUses() {
+        #expect(muscleName("chest") == "mellkas")
+        #expect(muscleName("ham") == "comb hátulja")
+        #expect(muscleName("core") == "törzs")
+        // An unknown key is passed through rather than renamed into something invented.
+        #expect(muscleName("tibialis") == "tibialis")
+    }
+}
