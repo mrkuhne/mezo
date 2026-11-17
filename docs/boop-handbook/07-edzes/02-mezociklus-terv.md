@@ -2,7 +2,7 @@
 cim: Mezociklus-terv és tervgenerátor
 szint: Funkció
 terulet: Edzés
-allapot: Részben él
+allapot: Részben kész
 hol: [iPhone app, Háttérrendszer, AI]
 szulo: 00-attekintes
 szakasz: [B5]
