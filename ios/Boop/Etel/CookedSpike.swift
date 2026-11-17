@@ -11,7 +11,12 @@ private struct SpikeRow: Identifiable {
     enum State { case matched, confirm, missing }
     let id = UUID()
     var name: String
-    var amount: String
+    var amount: Double
+    var unit: String
+    /// Per 100 g / ml, for a food added from this screen.
+    var kcal: Double = 0, protein: Double = 0, carbs: Double = 0, fat: Double = 0
+    /// The owner typed the facts himself: no longer an estimate.
+    var ownFacts = false
     var said: String
     var state: State
     /// "felveszem a kamrádba": in the shared list, not on his shelf yet.
@@ -35,14 +40,14 @@ struct CookedSpikeSheet: View {
     @State private var name = "Kurkumás csirkés rizs"
     @State private var servings = 4
     @State private var rows: [SpikeRow] = [
-        SpikeRow(name: "Csirkemell filé, friss", amount: "500 g", said: "fél kiló csirkemell", state: .matched),
-        SpikeRow(name: "Jázmin rizs", amount: "300 g", said: "30 deka rizs", state: .matched, fromShared: true),
-        SpikeRow(name: "Olívaolaj, extra szűz", amount: "2 ek", said: "két evőkanál olaj", state: .confirm,
+        SpikeRow(name: "Csirkemell filé, friss", amount: 500, unit: "g", said: "fél kiló csirkemell", state: .matched),
+        SpikeRow(name: "Jázmin rizs", amount: 300, unit: "g", said: "30 deka rizs", state: .matched, fromShared: true),
+        SpikeRow(name: "Olívaolaj, extra szűz", amount: 2, unit: "ek", said: "két evőkanál olaj", state: .confirm,
                  alternatives: ["Napraforgóolaj", "Kókuszolaj, szűz"]),
-        SpikeRow(name: "Vöröshagyma", amount: "1 db", said: "egy fej hagyma", state: .confirm,
+        SpikeRow(name: "Vöröshagyma", amount: 1, unit: "db", said: "egy fej hagyma", state: .confirm,
                  doubt: "mennyiség?", alternatives: ["Lilahagyma", "Újhagyma"]),
-        SpikeRow(name: "Kurkuma", amount: "1 tk", said: "egy teáskanál kurkuma", state: .missing),
-        SpikeRow(name: "Kókusztej", amount: "400 ml", said: "egy doboz kókusztej", state: .missing,
+        SpikeRow(name: "Kurkuma", amount: 1, unit: "tk", kcal: 354, protein: 7.8, carbs: 64.9, fat: 9.9, said: "egy teáskanál kurkuma", state: .missing),
+        SpikeRow(name: "Kókusztej", amount: 400, unit: "ml", kcal: 185, protein: 1.8, carbs: 2.9, fat: 18.5, said: "egy doboz kókusztej", state: .missing,
                  alternatives: ["Kókusztejszín, 20%"]),
     ]
 
@@ -51,6 +56,9 @@ struct CookedSpikeSheet: View {
         _openOther = State(initialValue: openOther)
     }
     @State private var openOther: Bool
+    /// The freshly added food whose facts are open for typing.
+    @State private var editingFacts: UUID?
+    private let units = ["g", "ml", "db", "ek", "tk"]
 
     private let amber = Color(hex: 0xF4C860)
 
@@ -231,14 +239,13 @@ struct CookedSpikeSheet: View {
                     Text("„\(r.said)”").nkFont(12).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
                     FlowRow {
                         if r.fromShared && !r.removed { chip("felveszem a kamrádba", .white.opacity(0.65)) }
-                        if r.estimated { chip("becsült", amber) }
+                        if r.estimated { chip(r.ownFacts ? "saját adat" : "becsült", r.ownFacts ? .white.opacity(0.65) : amber) }
                         if r.state == .confirm && !r.confirmed && !r.removed { chip(r.doubt ?? "ez az?", amber) }
                         if r.state == .missing && !r.removed { chip("nincs a kamrádban", .white.opacity(0.65)) }
                     }
                 }
                 Spacer(minLength: 4)
-                Text(r.amount).nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(r.removed ? 0.35 : 0.8))
-                    .padding(.vertical, 4).padding(.horizontal, 9).background(Capsule().fill(.white.opacity(0.08)))
+                amountField(row)
             }
             if r.removed {
                 quiet("Visszateszem") { row.wrappedValue.removed = false }
@@ -255,7 +262,7 @@ struct CookedSpikeSheet: View {
                         Task {
                             try? await Task.sleep(for: .milliseconds(900))
                             row.wrappedValue.adding = false; row.wrappedValue.state = .matched
-                            row.wrappedValue.estimated = true; picking = nil
+                            row.wrappedValue.estimated = true; picking = nil; editingFacts = row.wrappedValue.id
                         }
                     } label: {
                         HStack(spacing: 7) {
@@ -269,10 +276,73 @@ struct CookedSpikeSheet: View {
                     quiet("Kiveszem") { row.wrappedValue.removed = true }
                 }
             }
+            if r.estimated && !r.removed { factsBlock(row) }
             if picking == r.id && !r.removed { otherList(row) }
         }
         .padding(.vertical, 2)
     }
+
+    /// The amount, typeable, and its unit, pickable.
+    private func amountField(_ row: Binding<SpikeRow>) -> some View {
+        let off = row.wrappedValue.removed
+        return HStack(spacing: 6) {
+            TextField("", value: row.amount, format: .number).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                .nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(off ? 0.35 : 0.9)).frame(width: 52)
+                .padding(.vertical, 6).padding(.horizontal, 8).background(Capsule().fill(.white.opacity(0.1)))
+            Menu {
+                ForEach(units, id: \.self) { u in Button(u) { row.wrappedValue.unit = u } }
+            } label: {
+                HStack(spacing: 3) {
+                    Text(row.wrappedValue.unit).nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(off ? 0.35 : 0.9))
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 9)).foregroundStyle(.white.opacity(0.45))
+                }
+                .padding(.vertical, 6).padding(.horizontal, 9).background(Capsule().fill(.white.opacity(0.1)))
+            }
+        }
+        .disabled(off)
+    }
+
+    /// A food added from this screen: its facts per 100 g, estimated first, typeable by the owner.
+    @ViewBuilder private func factsBlock(_ row: Binding<SpikeRow>) -> some View {
+        let r = row.wrappedValue
+        if editingFacts == r.id {
+            VStack(alignment: .leading, spacing: 10) {
+                NKMono("TÁPÉRTÉK · 100 G-BAN")
+                HStack(spacing: 8) {
+                    fact("kcal", row.kcal, row); fact("fehérje", row.protein, row); fact("szénh.", row.carbs, row); fact("zsír", row.fat, row)
+                }
+                Text(r.ownFacts ? "A saját adatod kerül a kamrába." : "Ezt Boop becsülte. Írd át, ha a csomagoláson más áll.")
+                    .nkFont(12.5).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    solid("Kész") { editingFacts = nil }
+                    quiet("Minden adat a kamrában") {}
+                }
+            }
+            .padding(14).background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.06)))
+        } else {
+            Button { editingFacts = r.id } label: {
+                HStack(spacing: 6) {
+                    Text("100 g-ban \(Int(r.kcal)) kcal · F \(num(r.protein)) · Sz \(num(r.carbs)) · Zs \(num(r.fat))")
+                        .nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.6))
+                    Text("Átírom").nkFont(12.5, .medium).foregroundStyle(.white.opacity(0.85)).underline()
+                }
+                .frame(minHeight: 32).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func fact(_ label: String, _ value: Binding<Double>, _ row: Binding<SpikeRow>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label).nkFont(11).foregroundStyle(.white.opacity(0.5))
+            TextField("", value: Binding(get: { value.wrappedValue }, set: { value.wrappedValue = $0; row.wrappedValue.ownFacts = true }), format: .number)
+                .keyboardType(.decimalPad).nkFont(14, design: .monospaced).foregroundStyle(.white)
+                .padding(.vertical, 8).padding(.horizontal, 10).frame(maxWidth: .infinity)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.white.opacity(0.1)))
+        }
+    }
+
+    private func num(_ v: Double) -> String { v == v.rounded() ? "\(Int(v))" : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",") }
 
     /// The „Másik" list: the runners-up, then a search of his pantry.
     private func otherList(_ row: Binding<SpikeRow>) -> some View {

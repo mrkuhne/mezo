@@ -80,7 +80,16 @@ Csirkés rizs · 4 adag
 - **+ nincs a kamrában** — „+ Kamrába" adds the food in one tap (§5) and the row becomes ✓, tagged
   **becsült** when the facts are an AI estimate; „Másik" links it to an existing food instead. A row left as
   `+` is left out of the saved recipe with the existing warning and acknowledgement.
-- Amount and unit are editable per row (existing). Name, servings, category as today.
+- **Amount and unit are editable on every row, in every state** (owner, 2026-11-17 on the spike: „most a gramm
+  fix mindenhol"): a typeable number and a unit menu (g, ml, db, ek, tk — plus the matched food's own serving
+  unit). Today's review edits only the amount of a matched row and never the unit; `RecipeReview` gains
+  `setUnit`. Name, servings, category as today.
+- **A food added by „+ Kamrába" shows its facts and lets him type them** (owner, same round: „legyen megadható
+  a kcal, makró stb."): the row opens a small block — kcal, fehérje, szénhidrát, zsír per 100 g — prefilled with
+  the estimate; typing any of them turns the tag from **becsült** into **saját adat** and saves the food through
+  the update route (§6.3, `source = manual`, draft → verified). „Kész" folds it to a one-line summary with
+  „Átírom"; „Minden adat a kamrában" opens the full shared confirm form (fibre, sugar, salt, serving, …). The add
+  itself stays one tap — the block never blocks the save.
 - Exits: **Mentés a Receptek közé** · **Mentés és rögzítés mára** (saves, then logs one serving through the
   existing one-tap recipe log — `EtelRoom.logRecipe`, toast — no new confirmation screen).
 
