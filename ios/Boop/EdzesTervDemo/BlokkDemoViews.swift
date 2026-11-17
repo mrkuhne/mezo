@@ -617,9 +617,6 @@ private struct ReviewCard: View {
     let next: () -> Void
 
     var body: some View {
-        let before = model.weekly(muscle)
-        let delta = model.setDelta(muscle)
-        let after = before + delta
         let tier = model.tiers[muscle] ?? .grow
         let lines = model.lines(muscle)
         let open = lines.filter { $0.decided == nil }.count
@@ -634,23 +631,8 @@ private struct ReviewCard: View {
                     .frame(width: 66, height: 100)
             }
 
-            // The dial is gone from this card (owner, round 4): most changes here are weight or reps, so a set
-            // gauge said nothing about them. One line carries the week's set count instead.
-            if let band = model.band(muscle) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    if delta != 0 {
-                        Text("\(before)").nkFont(20, .medium).foregroundStyle(.white.opacity(0.45))
-                        Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
-                    }
-                    Text("\(after)").nkFont(30, .semibold).foregroundStyle(.white).contentTransition(.numericText())
-                    Text(delta != 0 ? "sorozat hetente" : "sorozat hetente, nem változik").nkFont(13).foregroundStyle(.white.opacity(0.6))
-                    Spacer(minLength: 6)
-                    DemoPill("sáv \(band.low)–\(band.high)", color: after >= band.low && after <= band.high ? demoGood : demoWarn)
-                }
-                .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.black.opacity(0.28)))
-            }
-
+            // No weekly total on this card (owner, round 5): next to an exercise's own „2 → 3" the muscle's
+            // „11 → 12" read as the same number and misled. The tiles say what moves.
             ScrollView {
                 VStack(spacing: 10) {
                     ForEach(lines) { change in
