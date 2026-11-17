@@ -114,7 +114,8 @@ workout to fix it) and learning only at the swap (slow, and nowhere to see what 
 equipment. A row's exact attribute values are the builder's to author, reviewed in one sitting against the 166
 names; the lists above may gain a value if a row genuinely does not fit (say so in the plan).
 
-**User-authored exercises** have none of these. They are never filtered out, rank as neutral, and their reason
+**User-authored exercises** have none of these. They are never filtered out by attributes (only his own explicit statements — marking the exercise missing, or a
+strong-pain report — can leave one out of the suggestions), rank as neutral, and their reason
 reads *„saját gyakorlat — erről még keveset tudok”*. Editing attributes on a custom exercise is out of scope.
 
 **Kinds the owner sees in *Mi van a termemben*** (Hungarian labels, one row each, all on by default):
