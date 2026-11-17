@@ -35,6 +35,7 @@ public class WorkoutExerciseChangeService {
     private final ExerciseCatalogRepository exerciseCatalogRepository;
     private final ClosingBlockService closingBlockService;
     private final WorkoutService workoutService;
+    private final VolumeLedger volumeLedger;
 
     @Transactional
     public WorkoutExerciseChangeResponse change(UUID createdBy, UUID workoutId, WorkoutExerciseChangeRequest req) {
@@ -67,6 +68,7 @@ public class WorkoutExerciseChangeService {
 
         if (meso) {
             writePlan(createdBy, instance, templateId, req, replaced, closing);
+            volumeLedger.sync(createdBy, mesoIdOf(templateId));
         }
         exerciseRepository.flush(); // the refreshed today payload below reads through native SQL too
         return WorkoutExerciseChangeResponse.builder()
@@ -96,6 +98,13 @@ public class WorkoutExerciseChangeService {
         }
         e.setWorkingSets(e.getWorkingSets() + delta);
         exerciseRepository.save(e);
+        volumeLedger.sync(createdBy, mesoIdOf(instance.getTemplateSessionId()));
+    }
+
+    /** The run a template day belongs to (null for a custom, meso-less template: sync is then a no-op). */
+    private UUID mesoIdOf(UUID templateId) {
+        return workoutSessionRepository.findById(templateId)
+            .map(WorkoutSessionEntity::getMesocycleId).orElse(null);
     }
 
     private void writePlan(UUID createdBy, WorkoutSessionEntity instance, UUID templateId,

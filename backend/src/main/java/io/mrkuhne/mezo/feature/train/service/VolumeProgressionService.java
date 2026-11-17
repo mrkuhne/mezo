@@ -1,9 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
-import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
-import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
@@ -11,14 +9,10 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,58 +50,6 @@ public class VolumeProgressionService {
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseRepository exerciseRepository;
     private final VolumeProperties props;
-
-    /**
-     * Baseline seeding on the create/activate path (mezo-xlmp): one volume-log row per coarse
-     * {@link MuscleGroup} the meso's TEMPLATE days actually train, from the fixed
-     * {@code mezo.volume.baselines} RP table, {@code currentSets = } the tier's week-1 start
-     * (EMPHASIZE MEV+2, else MEV) — {@link #rolloverIfDue}'s first run stamps the START audit on
-     * top. Idempotent: an existing row's group is skipped untouched, so activate doubles as a
-     * backfill for pre-seed mesos; a group with no baselines entry is never fabricated (DA5).
-     */
-    @Transactional
-    public void seedBaselines(UUID createdBy, UUID mesoId, Map<String, String> priorities) {
-        List<UUID> templateIds = MesoTemplateDays.ids(workoutSessionRepository
-            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId)));
-        if (templateIds.isEmpty()) {
-            return;
-        }
-        SortedSet<String> trained = exerciseRepository
-            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, templateIds).stream()
-            .filter(ExerciseEntity::isCountsTowardVolume) // mezo-gbo7: no target without volume work
-            .map(e -> MuscleGroup.of(e.getMuscle()))
-            .collect(Collectors.toCollection(TreeSet::new));
-        Set<String> existing = volumeLogRepository
-            .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(mesoId)).stream()
-            .map(MuscleGroupVolumeLogEntity::getMuscle)
-            .collect(Collectors.toSet());
-
-        List<MuscleGroupVolumeLogEntity> fresh = new ArrayList<>();
-        for (String group : trained) {
-            VolumeProperties.Baseline b = props.baselines().get(group);
-            if (b == null || existing.contains(group)) {
-                continue;
-            }
-            MuscleGroupVolumeLogEntity row = new MuscleGroupVolumeLogEntity();
-            row.setCreatedBy(createdBy);
-            row.setMesocycleId(mesoId);
-            row.setMuscle(group);
-            row.setMev(b.mev());
-            row.setMav(b.mav());
-            row.setMrv(b.mrv());
-            row.setCurrentSets(PriorityTier.of(priorities, group).weekOneStart(b.mev(), b.mav(), b.mrv()));
-            // confidence is contract-required on VolumeSource; 0.5 = generic table, not personalized.
-            row.setSource(new ProvenanceEnvelope(
-                new ProvenanceEnvelope.Baseline("RP guidelines · intermediate", b.mev(), b.mav(), b.mrv()),
-                List.of(), 0.5,
-                "RP irányelv baseline — a mesociklus aktiválásakor seedelve, személyre szabás nélkül.",
-                null));
-            fresh.add(row);
-        }
-        if (!fresh.isEmpty()) {
-            volumeLogRepository.saveAll(fresh);
-        }
-    }
 
     @Transactional
     public void rolloverIfDue(UUID createdBy, MesocycleEntity meso) {

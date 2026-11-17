@@ -16,8 +16,6 @@ import io.mrkuhne.mezo.feature.train.MesocycleClosed;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
-import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
-import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.config.TrainProperties;
@@ -42,9 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -77,10 +73,8 @@ public class TrainService {
     private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
     private final TrainProperties trainProperties;
-    // Baseline seeding (mezo-xlmp): volume-log rows born on the create-as-active/activate path,
-    // behind the volume-progression switch (gate bean absent ⇔ switch off — mirrors WorkoutService).
-    private final VolumeProgressionService volumeProgressionService;
-    private final ObjectProvider<VolumeProgressionGate> volumeGate;
+    // The volume log is derived from the plan (volume engine v2): recomputed after plan writes.
+    private final VolumeLedger volumeLedger;
     // mezo-meyc.3: fires only on a REAL close (never the idempotent re-close or fill-if-null
     // branches) — the companion AI-review generator's AFTER_COMMIT trigger (S3 task 15).
     private final ApplicationEventPublisher eventPublisher;
@@ -258,12 +252,10 @@ public class TrainService {
                 exerciseRepository.save(toExerciseEntity(createdBy, savedDay.getId(), exercises.get(e), e));
             }
         }
-        // Volume baselines (mezo-xlmp + mezo-meyc.1): only an ACTIVE run carries volume-log rows —
-        // a planned run stays profile-less until activation (MesoVolume's "csak aktív" guard). The
-        // plan's own landmarks win; seedBaselines then fills every trained group it left out.
-        if (active && volumeGate.getIfAvailable() != null) {
-            seedPlanBaselines(createdBy, saved.getId(), src.volumePerMuscle(), src.musclePriorities());
-            volumeProgressionService.seedBaselines(createdBy, saved.getId(), src.musclePriorities());
+        // The volume log is derived from the plan (volume engine v2): only an ACTIVE run carries
+        // rows — a planned run stays profile-less until activation (sync is a no-op for it).
+        if (active) {
+            volumeLedger.sync(createdBy, saved.getId());
         }
         return assembleResponse(createdBy, saved);
     }
@@ -277,11 +269,6 @@ public class TrainService {
     @Transactional
     public MesocycleResponse activateMesocycle(UUID createdBy, UUID id) {
         MesocycleEntity target = ownedMesoOrThrow(createdBy, id);
-        // Unconditional (even when already active): idempotent seeding doubles as the backfill
-        // path for pre-mezo-xlmp mesos that were created without volume-log rows.
-        if (volumeGate.getIfAvailable() != null) {
-            volumeProgressionService.seedBaselines(createdBy, id, target.getMusclePriorities());
-        }
         if (!"active".equals(target.getStatus())) {
             // Single-active invariant (spec rule): activating archives every other active meso.
             archiveActiveMesos(createdBy);
@@ -291,6 +278,9 @@ public class TrainService {
             // transaction lands.
             eventPublisher.publishEvent(new MesocycleActivated(createdBy, id));
         }
+        // Unconditional (even when already active): the ledger is idempotent, so activate also
+        // backfills the volume log of a run that never had rows.
+        volumeLedger.sync(createdBy, id);
         return assembleResponse(createdBy, target);
     }
 
@@ -300,6 +290,7 @@ public class TrainService {
         MesocycleEntity m = OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(id), createdBy);
         Map<String, String> normalized = PriorityTier.normalize(priorities);
         m.setMusclePriorities(normalized.isEmpty() ? null : Map.copyOf(normalized));
+        volumeLedger.sync(createdBy, id); // the tier moves the band
         return assembleResponse(createdBy, m);
     }
 
@@ -363,6 +354,7 @@ public class TrainService {
             fresh.add(toExerciseEntity(createdBy, dayId, inputs.get(i), i));
         }
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
+        volumeLedger.sync(createdBy, mesoId);
         return toDay(day, saved, mediaByCatalogOf(saved));
     }
 
@@ -444,40 +436,6 @@ public class TrainService {
             .name(template.getType())
             .exercises(toDay(template, exercises, media).getExercises())
             .build();
-    }
-
-    /**
-     * The plan document's per-muscle landmarks become the run's volume-log rows, wrapped in the
-     * same baseline {@link ProvenanceEnvelope} shape {@link VolumeProgressionService#seedBaselines}
-     * writes ({@code currentSets = } the tier's week-1 start (EMPHASIZE MEV+2, else MEV)). Runs
-     * BEFORE that RP-table seeding, whose idempotency then leaves these rows untouched and only
-     * fills the groups the plan left out.
-     */
-    private void seedPlanBaselines(
-            UUID createdBy, UUID mesoId, Map<String, VolumeBaseline> baselines, Map<String, String> priorities) {
-        if (baselines == null || baselines.isEmpty()) {
-            return;
-        }
-        List<MuscleGroupVolumeLogEntity> rows = new ArrayList<>(baselines.size());
-        baselines.forEach((muscle, b) -> {
-            MuscleGroupVolumeLogEntity row = new MuscleGroupVolumeLogEntity();
-            row.setCreatedBy(createdBy);
-            row.setMesocycleId(mesoId);
-            row.setMuscle(muscle);
-            row.setMev(b.getMev());
-            row.setMav(b.getMav());
-            row.setMrv(b.getMrv());
-            row.setCurrentSets(PriorityTier.of(priorities, muscle).weekOneStart(b.getMev(), b.getMav(), b.getMrv()));
-            // confidence is contract-required on VolumeSource; 0.5 = plan-level numbers, not
-            // personalized from logged performance.
-            row.setSource(new ProvenanceEnvelope(
-                new ProvenanceEnvelope.Baseline(b.getName(), b.getMev(), b.getMav(), b.getMrv()),
-                List.of(), 0.5,
-                "Sablon baseline — a mesociklus indításakor a sablonból másolva.",
-                null));
-            rows.add(row);
-        });
-        volumeLogRepository.saveAll(rows);
     }
 
     /** Single-active invariant: archives every currently active meso of the owner. */
