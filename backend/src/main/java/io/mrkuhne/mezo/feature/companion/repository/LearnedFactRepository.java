@@ -43,10 +43,6 @@ public interface LearnedFactRepository extends JpaRepository<LearnedFactEntity, 
 
     Optional<LearnedFactEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
-    /** Memória-obszervatórium (mezo-al1i) — az L2 kártya függő-jelölt száma. Kept for callers that
-     *  deliberately want every undecided candidate, snoozed or not. */
-    long countByCreatedByAndUserDecisionIsNullAndDeletedFalse(UUID createdBy);
-
     /** Memória-obszervatórium (U9b final-review fix, mezo-zpxv7): a „N függő tényjelölt" a Rólad
      *  inbox LÁTHATÓ halmazát számolja — a {@link #findPendingVisible} query számláló-változata,
      *  ugyanazzal a snooze-szűrővel. */

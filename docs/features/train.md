@@ -15,6 +15,8 @@ key_files:
 related: [_platform-data-layer, _platform-design-system, today, fuel, me, companion]
 ---
 
+> **2026-11-17 — reviewed after `mezo-7ahl8`:** four derived queries with no caller anywhere (main or tests) were removed from `WorkoutSessionRepository`, `RecoveryPeriodRepository`, `ExerciseFeedbackRepository` and `ExerciseSetRepository`. No behaviour changed; the queries `getToday` uses (§9 `completedWorkout`) are untouched.
+
 # Train — Feature Documentation
 
 > **2026-10-11 — Folyadék F4 · Edzés közben (`mezo-n4wf5.4`).** The whole in-workout flow is on the Folyadék kit: the Eligazítás, the session page (ONE exercise on top with its set grid, the others as rows — focus is view state, `logic/sessionFocus.ts`), the floating dock, every session sheet (`fo-sheet`), both closing ceremonies (a cup that fills in one rAF pass; the sport path shows its XP on the screen and raises no level-up overlay) and the review with its one-exercise view. Behaviour is unchanged except the approved items listed in §2 *The Folyadék face of the in-workout flow*. The old skin (`train session`, `train ceremony`, `uveg edzes session`, `uveg edzes zaras` — 1 106 rules) left `prototype.css` with a zero-usage proof per rule. `GlassBox`, `VoiceField` and the level-up overlay are not converted (other domains use them).

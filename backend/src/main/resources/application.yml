@@ -2681,6 +2681,10 @@ mezo:
       # How many finished days of narrative memory (daily_summary) the feed gather reads;
       # doubles as the emptiness gate: zero summaries in the window -> no message
       past-days: 7
+      # The lazy GET re-attempts a missing cron kind at most once per this many minutes
+      # (mezo-7ahl8): the FE polls every 60 s, and a generation that keeps yielding nothing
+      # (unparseable answer, exhausted tool loop) would otherwise re-run on every poll.
+      lazy-retry-minutes: 15
     hydration:
       # Round 2 S2 (mezo-d58h.7.2, spec §12): training-day hydration. The 15:00 checkpoint is the
       # ONE intraday signal in round 2 — water cannot be caught up at 22:00 — and it speaks only

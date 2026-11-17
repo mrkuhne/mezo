@@ -6,10 +6,14 @@ import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.mapper.ProactiveMapper;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,6 +39,15 @@ public class ProactiveFeedService {
     private final CompanionMessageGenerator generator;
     private final ProactiveProperties properties;
     private final ProactiveMapper mapper;
+
+    /**
+     * When each (user, day, kind) was last attempted by the lazy read (mezo-7ahl8). The FE polls
+     * this endpoint every minute; an attempt that leaves no row — an unparseable answer, an
+     * exhausted tool loop, an LLM outage — must not re-run the whole smart-tier loop on the next
+     * poll. In-memory on purpose: a restart merely allows one more attempt, and only today's
+     * keys are ever read (older ones are pruned as they are met).
+     */
+    private final Map<String, Instant> lastLazyAttempt = new ConcurrentHashMap<>();
 
     /**
      * date = null ⇒ the server's today (the FE sends its local date — the briefing precedent).
@@ -82,6 +95,9 @@ public class ProactiveFeedService {
      * committed, and this read is about to return it.
      */
     private void generateQuietly(UUID userId, LocalDate day, String kind) {
+        if (!lazyAttemptDue(userId, day, kind)) {
+            return;
+        }
         try {
             if (CompanionMessageEntity.KIND_MORNING.equals(kind)) {
                 generator.generateMorning(userId, day);
@@ -92,6 +108,24 @@ public class ProactiveFeedService {
             log.warn("Lazy {} generation failed for user {} on {} — serving what exists",
                     kind, userId, day, e);
         }
+    }
+
+    /** True (and the attempt recorded) unless this kind was tried within the retry window. */
+    private boolean lazyAttemptDue(UUID userId, LocalDate day, String kind) {
+        int minutes = properties.feed().lazyRetryMinutes();
+        if (minutes == 0) {
+            return true;
+        }
+        Instant now = Instant.now();
+        String dayPrefix = day + "|";
+        lastLazyAttempt.keySet().removeIf(key -> !key.startsWith(dayPrefix));
+        String key = dayPrefix + userId + "|" + kind;
+        Instant last = lastLazyAttempt.get(key);
+        if (last != null && Duration.between(last, now).toMinutes() < minutes) {
+            return false;
+        }
+        lastLazyAttempt.put(key, now);
+        return true;
     }
 
     private boolean elapsed(String cron, LocalDateTime dayStart, LocalDateTime now, LocalDate day) {

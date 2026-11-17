@@ -101,7 +101,11 @@ public record ProactiveProperties(
         @NotBlank String eveningCron,
         /** How many finished days of narrative memory (daily_summary) the gather reads;
          *  doubles as the emptiness gate: zero summaries in the window -> no message. */
-        @Min(1) @Max(14) int pastDays
+        @Min(1) @Max(14) int pastDays,
+        /** Minutes the lazy feed read waits before re-attempting a cron kind whose last attempt
+         *  left no row (mezo-7ahl8). The FE polls the feed every minute; without this a failing
+         *  generation re-ran its whole smart-tier tool loop on every poll. 0 disables the wait. */
+        @Min(0) @Max(240) int lazyRetryMinutes
     ) {}
 
     /** Round 2 S2 (bd mezo-d58h.7.2, spec §12) — training-day hydration. Two channels, one

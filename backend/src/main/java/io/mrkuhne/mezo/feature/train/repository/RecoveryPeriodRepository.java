@@ -21,8 +21,6 @@ public interface RecoveryPeriodRepository extends JpaRepository<RecoveryPeriodEn
     List<RecoveryPeriodEntity> findByCreatedByAndStartDateLessThanEqualAndDeletedFalse(
         UUID createdBy, LocalDate to);
 
-    Optional<RecoveryPeriodEntity> findFirstByCreatedByAndDeletedFalseOrderByStartDateDesc(UUID createdBy);
-
     /** The most recently ended period — the comeback ramp and the same-day "Mégsem vagyok jól" undo. */
     Optional<RecoveryPeriodEntity> findFirstByCreatedByAndEndedOnIsNotNullAndDeletedFalseOrderByEndedOnDescStartDateDesc(
         UUID createdBy);

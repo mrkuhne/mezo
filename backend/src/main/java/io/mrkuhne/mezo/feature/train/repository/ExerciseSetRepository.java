@@ -12,9 +12,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface ExerciseSetRepository extends JpaRepository<ExerciseSetEntity, UUID> {
 
-    List<ExerciseSetEntity> findByCreatedByAndExerciseIdOrderBySetIndexAsc(
-        UUID createdBy, UUID exerciseId);
-
     List<ExerciseSetEntity> findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(
         UUID createdBy, UUID workoutSessionId);
 

@@ -223,7 +223,7 @@ this redesign and remain as shipped.
   replacing `GET …/briefing` + `GET …/heartbeat`): returns the day's `companion_message` rows in
   `generated_at` order. For TODAY only, `ensureTodayCronKinds` lazily generates the cron kinds ahead
   of the read (morning always; midday/evening once their fire-time — derived from the SAME cron
-  config via `CronExpression`, the old heartbeat idiom — has elapsed). **Event kinds (sleep/weight)
+  config via `CronExpression`, the old heartbeat idiom — has elapsed). A kind whose last lazy attempt left no row is re-attempted at most once per `mezo.proactive.feed.lazy-retry-minutes` (15; an in-memory per user/day/kind stamp in `ProactiveFeedService`, `mezo-7ahl8`) — the FE polls this endpoint every minute, and a failing generation would otherwise re-run its smart-tier tool loop on every poll. Tests set it to 0; `ProactiveFeedLazyRetryIT` pins the window. **Event kinds (sleep/weight)
   are NEVER lazily generated here** — only their own events create them. **`200 []` is the honest
   empty state, never a 404** (a list endpoint, the P1/experiment precedent — a change from the old
   single-resource briefing/heartbeat reads, which 404'd). **Miss-recovery never costs the reader the

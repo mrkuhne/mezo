@@ -553,8 +553,8 @@ Mezo: …`, ref = assistant message id).
 
 **Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) moved this tool off `MemoryRecallService`
 onto the unified memory platform** — the paragraph above documents V2.3's ORIGINAL shape;
-`MemoryRecallService` itself stays in the tree (Task 11 retires it), just unused from this call
-site. `findSimilarPastDays` now calls `MemoryContextService.retrieve` with a
+`MemoryRecallService` itself is gone (the bean had no caller left; removed with its IT in
+`mezo-7ahl8`). `findSimilarPastDays` now calls `MemoryContextService.retrieve` with a
 `MemoryRequest(SIMILAR_DAYS, deep=false)` and renders `"<date>: <content, capped at recall.render-max-chars>"` per
 hit — no percent, no score: the platform's `finalScore` is an RRF number (order of 0.01–0.05),
 not a 0..1 cosine fraction, so the old `"(egyezés NN%)"` line would have been a lie about what the
@@ -962,8 +962,8 @@ migration** — the service composes existing data:
   nullable `memoryItemId`, plus a nullable `retrievalRunId` on `SimilarDaysResponse`. Product-owner
   decision (2026-09-19): the cards show rank order, no numbers — see
   `.superpowers/sdd/2026-09-06-reflection-self-discovered-patterns/task-10-codebase-notes.md` §1
-  for the full reasoning. `MemoryRecallService` and `properties.recall()` stay in the tree (Task 11
-  retires the former; `recall().maxK()`/`.renderMaxChars()` are still read by both call sites).
+  for the full reasoning. `MemoryRecallService` is removed (`mezo-7ahl8`); `properties.recall()` stays
+  (`recall().maxK()`/`.renderMaxChars()` are still read by both call sites).
 - **`llm-usage`** — a new native daily rollup, `LlmLogRepository.aggregatePerDaySince` (+ the
   `LlmDailyAggregate` interface projection) over `llm_log_history` ([ADR
   0014](../decisions/0014-llm-call-audit-log.md)), wrapped by `LlmUsageService.perDay` — a sibling
