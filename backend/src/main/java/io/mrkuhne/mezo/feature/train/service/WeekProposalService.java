@@ -44,7 +44,8 @@ import org.springframework.transaction.annotation.Transactional;
  * The weekly proposal (volume engine v2, spec §6.4): once per calendar week of an active run, per
  * trained counting muscle group a {@link VolumeDecider} decision, turned into one line per changed
  * exercise ({@link SetSlots} picks where a set goes or comes from), stored as a {@code weekly}
- * {@link MesoWeekProposalEntity} — and, in {@code auto} mode (the only one built so far), applied
+ * {@link MesoWeekProposalEntity}, followed by the weight / rep preview lines of {@link LoadLinePreview}
+ * — and, in {@code auto} mode (the only one built so far), applied
  * at once by writing the exercises' {@code working_sets}. The ledger is then re-derived and the
  * run's {@code volume_recompute} audit and {@code currentWeek} advance, in the shapes the web
  * readers already know.
@@ -71,6 +72,7 @@ public class WeekProposalService {
     private final TemplatePlan templatePlan;
     private final VolumeProperties props;
     private final MuscleProgressReader muscleProgress;
+    private final LoadLinePreview loadLinePreview;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
 
     /**
@@ -232,6 +234,8 @@ public class WeekProposalService {
                 row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS, from, to, lineReasons.get(id), null,
                 row.dayName(), null, null));
         });
+        // Weight / rep lines after the set lines: a preview of the week's load progression, never written.
+        lines.addAll(loadLinePreview.lines(createdBy, meso, calWeek, plan, deloadPhase));
         List<WeekProposalGroupJson> groups = outcomes.values().stream()
             .map(o -> groupJson(o, PriorityTier.of(meso.getMusclePriorities(), o.group()), bands.get(o.group())))
             .toList();
@@ -249,8 +253,9 @@ public class WeekProposalService {
     }
 
     /**
-     * Accepts every line and writes its {@code to} onto the exercise row. A line whose exercise row
-     * no longer exists is {@code kept} and skipped — never an error. Fills {@code planAfter} with
+     * Accepts every line and writes a set line's {@code to} onto the exercise row; a weight / rep line
+     * is accepted without a write (the session's read-time prescription carries it). A set line whose
+     * exercise row no longer exists is {@code kept} and skipped — never an error. Fills {@code planAfter} with
      * every counting exercise's sets after the write.
      */
     void apply(MesoWeekProposalEntity proposal) {
@@ -258,6 +263,10 @@ public class WeekProposalService {
         List<WeekProposalLineJson> decided = new ArrayList<>();
         List<ExerciseEntity> written = new ArrayList<>();
         for (WeekProposalLineJson line : proposal.getLines()) {
+            if (!WeekProposalLineJson.KIND_SETS.equals(line.kind())) {
+                decided.add(line.withDecision(WeekProposalLineJson.DECISION_ACCEPTED)); // load line: no write
+                continue;
+            }
             Optional<ExerciseEntity> row = exerciseRepository.findById(line.exerciseId())
                 .filter(e -> createdBy.equals(e.getCreatedBy()));
             if (row.isEmpty()) {
