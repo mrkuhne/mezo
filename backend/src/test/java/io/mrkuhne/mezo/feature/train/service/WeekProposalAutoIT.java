@@ -51,6 +51,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
     @Autowired DatabasePopulator databasePopulator;
     @Autowired MesocycleRepository mesocycleRepository;
     @Autowired ExerciseRepository exerciseRepository;
+    @Autowired io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository workoutSessionRepository;
     @Autowired MesoWeekProposalRepository proposalRepository;
     @Autowired MuscleGroupVolumeLogRepository volumeRepo;
     @Autowired PlatformTransactionManager transactionManager;
@@ -126,6 +127,42 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         assertThat(reload(b.meso()).getCurrentWeek()).isEqualTo(2);
         assertThat(ledger(b.meso(), "back").getSource().adjustments())
             .anyMatch(a -> a.label().equals("W2: +2 (11 → 13)"));
+    }
+
+    @Test
+    void stalledGroupIsAudited() {
+        Back b = back(4, "emphasize", false);
+        MesocycleEntity styled = reload(b.meso());
+        styled.setTrainingStyle("balanced");
+        mesocycleRepository.saveAndFlush(styled);
+        WorkoutSessionEntity mon = exerciseDay(b.mon4());
+        for (int w = 1; w <= 3; w++) { // flat 60 x 8 for three weeks: every exercise held twice
+            logWeek(b.meso(), w, mon, 0, b.mon4(), b.mon2());
+        }
+
+        workoutService.getToday(owner, null);
+
+        assertThat(reload(b.meso()).getVolumeRecompute().changes())
+            .filteredOn(c -> c.muscle().equals("back")).singleElement()
+            .satisfies(c -> assertThat(c.reason()).contains("megállt a fejlődés"));
+    }
+
+    @Test
+    void unstyledRunIsNotAuditedAsStalled() {
+        Back b = back(4, "emphasize", false);
+        WorkoutSessionEntity mon = exerciseDay(b.mon4());
+        for (int w = 1; w <= 3; w++) {
+            logWeek(b.meso(), w, mon, 0, b.mon4(), b.mon2());
+        }
+
+        workoutService.getToday(owner, null);
+
+        assertThat(reload(b.meso()).getVolumeRecompute().changes())
+            .allSatisfy(c -> assertThat(c.reason()).doesNotContain("megállt a fejlődés"));
+    }
+
+    private WorkoutSessionEntity exerciseDay(ExerciseEntity e) {
+        return workoutSessionRepository.findById(e.getWorkoutSessionId()).orElseThrow();
     }
 
     @Test

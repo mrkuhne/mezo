@@ -20,7 +20,7 @@ public final class VolumeDecider {
      */
     public enum Reason {
         ALL_SETS_DONE, FELT_EASY, DEFICIT_PACE, ROOM_IN_BAND, SORENESS_CLEARED, GRIND, TOO_MUCH, SETS_MISSED,
-        JOINT_PAIN, SORENESS, TIER_MAINTAIN, DELOAD, NO_SLOT, AT_CEILING, DELOAD_RESTORE
+        JOINT_PAIN, SORENESS, TIER_MAINTAIN, DELOAD, NO_SLOT, AT_CEILING, DELOAD_RESTORE, STALLED
     }
 
     public record Input(int week, PriorityTier tier, Band band, int plannedSets, int loggedLastWeek,
