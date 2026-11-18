@@ -325,7 +325,7 @@ Modified: `config/VolumeProperties.java` (+ `application.yml`), `service/VolumeB
 
 **Interfaces:**
 - Produces: `MesoPlanSkeleton.startSets(Band band, PriorityTier tier)` — the single place a generated plan's week-1
-  amount is chosen, **per the owner's answer to the starting-point question** (recommended: Építés at the band's low
+  amount is chosen, **owner decision 2026-11-18 "Sáv széle"** (Építés at the band's low
   = MEV as today, Hangsúly at the band's low = MAV − 2, Tartás at the band's top = MEV − 1); `Skeleton` loses
   `ceilings` and keeps `weekOneSets`. `PriorityTier.ceiling`/`weekOneStart` deleted; `VolumeProperties.step` and
   `mezo.volume.step` deleted; `MesoTemplateService.baselinesOf` and its rerun write deleted (rerun stores
