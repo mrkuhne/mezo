@@ -145,4 +145,52 @@ class ExerciseHistoryResolverRangeIT extends AbstractIntegrationTest {
         assertThat(ref.refRepMax()).isEqualTo(6);
         assertThat(ref.sameRange()).isFalse();
     }
+
+    @Test
+    void exactlyMaxAgeSameRangeInstanceQualifies() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        var other = train.createTemplateDay(owner, meso.getId(), "Péntek");
+        ExerciseEntity cur = row(owner, day.getId(), "Fekvenyomás", 4, 6);
+        ExerciseEntity old = row(owner, other.getId(), "Fekvenyomás", 10, 12);
+        done(owner, day, cur, MAX_AGE, "100", 5, 4, 6);
+        done(owner, other, old, 3, "70", 11, 10, 12);
+
+        var ref = resolver.reference(owner, cur, LocalDate.now(), MAX_AGE);
+
+        assertThat(ref.sameRange()).isTrue();
+        assertThat(ref.sets()).singleElement().satisfies(s -> assertThat(s.getWeightKg()).isEqualByComparingTo("100"));
+    }
+
+    @Test
+    void anotherOwnersHistoryNeverLeaks() {
+        UUID owner = ownerId();
+        UUID stranger = databasePopulator.populateUser("stranger-range@example.com");
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity cur = row(owner, day.getId(), "Fekvenyomás", 4, 6);
+        var smeso = train.createActiveMeso(stranger);
+        var sday = train.createTemplateDay(stranger, smeso.getId(), "Kedd");
+        ExerciseEntity theirs = row(stranger, sday.getId(), "Fekvenyomás", 4, 6);
+        done(stranger, sday, theirs, 2, "150", 5, 4, 6);
+
+        var ref = resolver.reference(owner, cur, LocalDate.now(), MAX_AGE);
+
+        assertThat(ref.sets()).isEmpty();
+    }
+
+    @Test
+    void sameDateTiePicksTheLaterCreatedInstance() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity cur = row(owner, day.getId(), "Fekvenyomás", 4, 6);
+        done(owner, day, cur, 2, "100", 5, 4, 6);
+        done(owner, day, cur, 2, "105", 5, 4, 6);   // same date, created later
+
+        var ref = resolver.reference(owner, cur, LocalDate.now(), MAX_AGE);
+
+        assertThat(ref.sets()).singleElement().satisfies(s -> assertThat(s.getWeightKg()).isEqualByComparingTo("105"));
+    }
 }

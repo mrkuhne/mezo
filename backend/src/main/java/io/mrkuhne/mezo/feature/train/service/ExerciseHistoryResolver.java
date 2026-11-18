@@ -4,16 +4,14 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
-import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
-import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +36,6 @@ public class ExerciseHistoryResolver {
 
     private final ExerciseRepository exerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
-    private final WorkoutSessionRepository workoutSessionRepository;
 
     /**
      * The history reference of one exercise (mezo-r36n9.79, plan §6.7.1): the working sets of the newest
@@ -60,16 +57,14 @@ public class ExerciseHistoryResolver {
         }
         // Query order = newest instance first; sets of one instance are contiguous.
         Map<UUID, List<ExerciseSetEntity>> byInstance = new LinkedHashMap<>();
-        for (ExerciseSetEntity s : exerciseSetRepository
-                .findCompletedWorkingHistory(createdBy, List.copyOf(rangeByRow.keySet()))) {
-            byInstance.computeIfAbsent(s.getWorkoutSessionId(), x -> new ArrayList<>()).add(s);
+        Map<UUID, LocalDate> dateByInstance = new HashMap<>();
+        for (ExerciseSetRepository.DatedSet d : exerciseSetRepository
+                .findCompletedWorkingHistoryDated(createdBy, List.copyOf(rangeByRow.keySet()))) {
+            byInstance.computeIfAbsent(d.set().getWorkoutSessionId(), x -> new ArrayList<>()).add(d.set());
+            dateByInstance.put(d.set().getWorkoutSessionId(), d.date());
         }
         if (byInstance.isEmpty()) {
             return new Reference(List.of(), ex.getRepMin(), ex.getRepMax(), false);
-        }
-        Map<UUID, LocalDate> dateByInstance = new HashMap<>();
-        for (WorkoutSessionEntity w : workoutSessionRepository.findAllById(byInstance.keySet())) {
-            dateByInstance.put(w.getId(), w.getDate());
         }
         List<ExerciseSetEntity> newest = null;
         int[] newestRange = null;
