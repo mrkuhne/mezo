@@ -20,9 +20,11 @@ class MesoPlanSkeletonTest {
         "glute", new VolumeProperties.Baseline(8, 12, 18),
         "calf", new VolumeProperties.Baseline(6, 10, 16));
 
+    static final VolumeProperties.Bands BANDS = new VolumeProperties.Bands(3, 2, 5, 8, 1, 2);
+
     @Test
     void build_shouldDeriveUpperLower_whenFourDays() {
-        var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6, Map.of(), RP);
+        var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6, Map.of(), RP, BANDS);
         assertThat(s.splitLabel()).isEqualTo("Upper / Lower · 4×/hét");
         assertThat(s.days()).hasSize(7);
         assertThat(s.days()).extracting(MesoPlanSkeleton.DayFrame::type)
@@ -31,26 +33,34 @@ class MesoPlanSkeletonTest {
 
     @Test
     void build_shouldDeriveSplitByDayCount_whenTwoToSixDays() {
-        assertThat(MesoPlanSkeleton.build(List.of("Hét", "Csü"), 6, Map.of(), RP).splitLabel()).isEqualTo("Full body · 2×/hét");
-        assertThat(MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén"), 6, Map.of(), RP).splitLabel()).isEqualTo("Full body · 3×/hét");
-        assertThat(MesoPlanSkeleton.build(List.of("Hét", "Kedd", "Sze", "Pén", "Szo"), 6, Map.of(), RP).splitLabel()).isEqualTo("Upper / Lower / Push / Pull / Legs · 5×/hét");
-        assertThat(MesoPlanSkeleton.build(List.of("Hét", "Kedd", "Sze", "Pén", "Szo", "Vas"), 6, Map.of(), RP).splitLabel()).isEqualTo("Push / Pull / Legs ×2 · 6×/hét");
+        assertThat(MesoPlanSkeleton.build(List.of("Hét", "Csü"), 6, Map.of(), RP, BANDS).splitLabel()).isEqualTo("Full body · 2×/hét");
+        assertThat(MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén"), 6, Map.of(), RP, BANDS).splitLabel()).isEqualTo("Full body · 3×/hét");
+        assertThat(MesoPlanSkeleton.build(List.of("Hét", "Kedd", "Sze", "Pén", "Szo"), 6, Map.of(), RP, BANDS).splitLabel()).isEqualTo("Upper / Lower / Push / Pull / Legs · 5×/hét");
+        assertThat(MesoPlanSkeleton.build(List.of("Hét", "Kedd", "Sze", "Pén", "Szo", "Vas"), 6, Map.of(), RP, BANDS).splitLabel()).isEqualTo("Push / Pull / Legs ×2 · 6×/hét");
     }
 
     @Test
-    void build_shouldStartEmphasizeAtMevPlusTwoAndCeilAtMrv_whenPrioritiesGiven() {
+    void build_shouldStartInsideTheBand_whenPrioritiesGiven() {
         var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6,
-            Map.of("back", "emphasize", "calf", "maintain"), RP);
-        assertThat(s.weekOneSets()).containsEntry("back", 12).containsEntry("chest", 8).containsEntry("calf", 6);
-        assertThat(s.ceilings()).containsEntry("back", 22).containsEntry("chest", 14).containsEntry("calf", 6);
+            Map.of("back", "emphasize", "calf", "maintain"), RP, BANDS);
+        // emphasize back = band low mav-2 = 14; grow chest = mev 8; maintain calf (6/10/16) = band 2..5 -> top 5
+        assertThat(s.weekOneSets()).containsEntry("back", 14).containsEntry("chest", 8).containsEntry("calf", 5);
+    }
+
+    @Test
+    void startSets_shouldBeLowForGrowAndEmphasizeAndHighForMaintain() {
+        var band = new VolumeBands.Band(4, 9, 16, false);
+        assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.GROW)).isEqualTo(4);
+        assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.EMPHASIZE)).isEqualTo(4);
+        assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.MAINTAIN)).isEqualTo(9);
     }
 
     @Test
     void build_shouldSpreadWeeklySetsAcrossDays_withRemainderOnEarliestDay() {
-        var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6, Map.of("back", "emphasize"), RP);
+        var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6, Map.of("back", "emphasize"), RP, BANDS);
         var upperDays = s.days().stream().filter(d -> d.type().equals("Upper")).toList();
         assertThat(upperDays).hasSize(2);
-        assertThat(setsOf(upperDays.get(0), "back") + setsOf(upperDays.get(1), "back")).isEqualTo(12);
+        assertThat(setsOf(upperDays.get(0), "back") + setsOf(upperDays.get(1), "back")).isEqualTo(14);
         // shoulder 8 / 2 = 4 each; biceps 6 / 2 = 3 each
         assertThat(setsOf(upperDays.get(0), "shoulder")).isEqualTo(4);
         assertThat(setsOf(upperDays.get(0), "biceps")).isEqualTo(3);
@@ -59,7 +69,7 @@ class MesoPlanSkeletonTest {
     @Test
     void build_shouldTrainEveryGroupAtLeastTwiceAWeek_forEveryDayCount() {
         for (int n = 2; n <= 6; n++) {
-            var s = MesoPlanSkeleton.build(MesoPlanSkeleton.DAY_ORDER.subList(0, n), 6, Map.of(), RP);
+            var s = MesoPlanSkeleton.build(MesoPlanSkeleton.DAY_ORDER.subList(0, n), 6, Map.of(), RP, BANDS);
             for (String g : RP.keySet()) {
                 assertThat(MesoPlanSkeleton.frequencyOf(s, g)).as("%d days, %s", n, g).isGreaterThanOrEqualTo(2);
             }
@@ -70,7 +80,7 @@ class MesoPlanSkeletonTest {
     void build_shouldKeepEveryFrameUnderSessionCapOfEight_forEveryDayCount() {
         for (int n = 2; n <= 6; n++) {
             var s = MesoPlanSkeleton.build(MesoPlanSkeleton.DAY_ORDER.subList(0, n), 6,
-                Map.of("back", "emphasize", "quad", "emphasize"), RP);
+                Map.of("back", "emphasize", "quad", "emphasize"), RP, BANDS);
             s.days().forEach(d -> d.muscles().forEach(m -> assertThat(m.sets()).isBetween(1, 8)));
         }
     }
@@ -84,7 +94,7 @@ class MesoPlanSkeletonTest {
 
     @Test
     void build_shouldIgnoreUnknownGroupsInPriorities() {
-        var s = MesoPlanSkeleton.build(List.of("Hét", "Csü"), 6, Map.of("core", "emphasize"), RP);
+        var s = MesoPlanSkeleton.build(List.of("Hét", "Csü"), 6, Map.of("core", "emphasize"), RP, BANDS);
         assertThat(s.weekOneSets()).doesNotContainKey("core");
     }
 

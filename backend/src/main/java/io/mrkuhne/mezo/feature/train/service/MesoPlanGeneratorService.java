@@ -46,7 +46,8 @@ public class MesoPlanGeneratorService {
     public MesoPlanGenerateResponse generate(UUID user, MesoPlanGenerateRequest req) {
         Map<String, String> priorities = PriorityTier.normalize(req.getPriorities());
         MesoPlanSkeleton.Skeleton skeleton = MesoPlanSkeleton.build(
-            List.copyOf(req.getDaysOfWeek()), req.getWeeks(), priorities, volumeProperties.baselines());
+            List.copyOf(req.getDaysOfWeek()), req.getWeeks(), priorities, volumeProperties.baselines(),
+            volumeProperties.bands());
         List<MesoPlanFiller.Candidate> candidates = candidates(user);
         List<MesoPlanFiller.FilledDay> days = MesoPlanFiller.fill(skeleton, candidates, props);
 

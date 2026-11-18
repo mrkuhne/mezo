@@ -421,18 +421,14 @@ class MesoTemplateIT extends ApiIntegrationTest {
             assertThat(d.getExercises().get(0).getWorkingSets()).isEqualTo(3);
             assertThat(d.getExercises().get(0).getTargetRIR()).isEqualTo(1);
         });
-        assertThat(template.getVolumePerMuscle()).containsOnlyKeys("back");
-        assertThat(template.getVolumePerMuscle().get("back").getMev()).isEqualTo(8);
-        assertThat(template.getVolumePerMuscle().get("back").getMav()).isEqualTo(14);
-        assertThat(template.getVolumePerMuscle().get("back").getMrv()).isEqualTo(20);
-        assertThat(template.getVolumePerMuscle().get("back").getName())
-            .isEqualTo("RP guidelines · intermediate");
+        // volume engine v2: landmarks are config — a rerun no longer materializes them
+        assertThat(template.getVolumePerMuscle()).isNullOrEmpty();
         // The materialized recipes carry the run's own exercise row ids as their stored identity.
         assertThat(template.getDays().get(0).getExercises().get(0).getId()).isNotNull();
     }
 
     @Test
-    void testRerun_shouldNameInheritedBaseline_whenVolumeLogHasNoProvenanceBaseline() {
+    void testRerun_shouldStoreNoLandmarks_whenVolumeLogHasNoProvenanceBaseline() {
         UUID owner = ownerId();
         MesocycleEntity legacy = trainPopulator.createMesocycle(owner, "Provenance nélküli", "archived");
         WorkoutSessionEntity day =
@@ -445,12 +441,10 @@ class MesoTemplateIT extends ApiIntegrationTest {
         MesoRerunResponse rerun = postForBody(MESOCYCLES + "/" + legacy.getId() + "/rerun", null, auth,
             HttpStatus.OK, MesoRerunResponse.class);
 
-        // VolumeBaseline.name is contract-required, so the materialization names it rather than
-        // storing a null into the plan document.
         MesoTemplateResponse template =
             getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class).stream()
                 .filter(t -> t.getId().equals(rerun.getTemplateId())).findFirst().orElseThrow();
-        assertThat(template.getVolumePerMuscle().get("back").getName()).isEqualTo("Örökölt kiindulás");
+        assertThat(template.getVolumePerMuscle()).isNullOrEmpty();
 
         // volume engine v2: the next run's rows are derived from its plan, not copied from the
         // template's landmarks — so the inherited name does not travel, config landmarks apply.

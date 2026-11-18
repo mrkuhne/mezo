@@ -14,12 +14,11 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-/** Volume-progression tuning (mezo.volume): weekly set increment, deload fraction, grind RIR gap,
+/** Volume-progression tuning (mezo.volume): deload fraction, grind RIR gap,
  * and the fixed per-muscle-group RP baseline landmarks seeded at mesocycle create/activate. */
 @Validated
 @ConfigurationProperties(prefix = "mezo.volume")
 public record VolumeProperties(
-    @NotNull @Positive Integer step,                 // sets added per productive week (2)
     @NotNull @Positive BigDecimal deloadFraction,    // deload target = round(prevSets * this) (0.5)
     @NotNull @PositiveOrZero Integer grindRirGap,     // RIR-below-target gap that counts as a grind (2)
     // Keyed by the coarse MuscleGroup token (chest/back/…); a group with no entry (core, sport

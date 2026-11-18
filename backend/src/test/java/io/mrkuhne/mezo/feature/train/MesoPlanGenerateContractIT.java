@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
+import io.mrkuhne.mezo.api.dto.MesoPlanEvaluateRequest;
+import io.mrkuhne.mezo.api.dto.MesoPlanEvaluation;
 import io.mrkuhne.mezo.api.dto.MesoPlanGenerateRequest;
 import io.mrkuhne.mezo.api.dto.MesoPlanGenerateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
@@ -48,13 +50,33 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
         int backSets = t.getDays().stream().flatMap(d -> d.getExercises().stream())
             .filter(e -> "back".equals(io.mrkuhne.mezo.feature.train.service.MuscleGroup.of(e.getMuscle())))
             .mapToInt(GymExerciseInput::getWorkingSets).sum();
-        assertThat(backSets).isEqualTo(12);
+        assertThat(backSets).isEqualTo(14);
         assertThat(t.getDays().stream().flatMap(d -> d.getExercises().stream()))
             .allSatisfy(e -> {
                 assertThat(e.getCatalogId()).isNotNull();
                 assertThat(e.getWorkingSets()).isBetween(1, 8);
                 assertThat(e.getTargetRIR()).isEqualTo(1);
             });
+    }
+
+    @Test
+    void generatedPlanIsInsideItsBands() {
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoPlanGenerateResponse res = postForBody(GENERATE, MesoPlanGenerateRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Sze", "Pén", "Szo")).weeks(6)
+            .priorities(Map.of("back", "emphasize", "chest", "maintain")).build(),
+            auth, HttpStatus.OK, MesoPlanGenerateResponse.class);
+        MesoTemplateUpsertRequest t = res.getTemplate();
+
+        MesoPlanEvaluation eval = postForBody("/api/train/meso-plans/evaluate",
+            MesoPlanEvaluateRequest.builder().weeks(t.getWeeks())
+                .phaseCurve(t.getPhaseCurve().stream()
+                    .map(c -> MesoPlanEvaluateRequest.PhaseCurveEnum.valueOf(c.name())).toList())
+                .days(t.getDays()).musclePriorities(t.getMusclePriorities()).build(),
+            auth, HttpStatus.OK, MesoPlanEvaluation.class);
+
+        assertThat(eval.getMuscles()).filteredOn(m -> m.getWeeklySets() > 0).isNotEmpty()
+            .allSatisfy(m -> assertThat(m.getFit().getValue()).as(m.getMuscle()).isEqualTo("inside"));
     }
 
     @Test

@@ -13,7 +13,6 @@ class VolumePropertiesIT extends AbstractIntegrationTest {
 
     @Test
     void testVolumeProperties_shouldBindDefaults() {
-        assertThat(props.step()).isEqualTo(2);
         assertThat(props.deloadFraction()).isEqualByComparingTo("0.5");
         assertThat(props.grindRirGap()).isEqualTo(2);
         assertThat(props.stepEmphasize()).isEqualTo(2);

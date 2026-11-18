@@ -32,7 +32,7 @@ class MesoPlanGenerateAiIT extends ApiIntegrationTest {
         int backSets = res.getTemplate().getDays().stream().flatMap(d -> d.getExercises().stream())
             .filter(e -> "back".equals(io.mrkuhne.mezo.feature.train.service.MuscleGroup.of(e.getMuscle())))
             .mapToInt(GymExerciseInput::getWorkingSets).sum();
-        assertThat(backSets).isEqualTo(12);
+        assertThat(backSets).isEqualTo(14);
     }
 
     @Test
