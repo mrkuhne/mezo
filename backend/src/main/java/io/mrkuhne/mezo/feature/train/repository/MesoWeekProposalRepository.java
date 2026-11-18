@@ -27,6 +27,27 @@ public interface MesoWeekProposalRepository extends JpaRepository<MesoWeekPropos
         @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId,
         @Param("beforeWeek") int beforeWeek);
 
+    /**
+     * The closed (applied, auto-applied or expired) {@code weekly} proposals strictly before {@code beforeWeek},
+     * latest week first — the post-deload restore looks for the first one still carrying a restore.
+     */
+    @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
+        + " and p.kind = '" + MesoWeekProposalEntity.KIND_WEEKLY + "'"
+        + " and p.status in ('" + MesoWeekProposalEntity.STATUS_APPLIED + "', '"
+        + MesoWeekProposalEntity.STATUS_AUTO_APPLIED + "', '" + MesoWeekProposalEntity.STATUS_EXPIRED + "')"
+        + " and p.week < :beforeWeek order by p.week desc")
+    List<MesoWeekProposalEntity> findClosedWeeklyBefore(
+        @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId,
+        @Param("beforeWeek") int beforeWeek);
+
+    /** Every still-{@code pending} proposal of a run (weekly and tier_change) strictly before {@code beforeWeek}. */
+    @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
+        + " and p.status = '" + MesoWeekProposalEntity.STATUS_PENDING + "' and p.week < :beforeWeek"
+        + " order by p.week asc")
+    List<MesoWeekProposalEntity> findPendingBefore(
+        @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId,
+        @Param("beforeWeek") int beforeWeek);
+
     /** Every applied (or auto-applied) {@code weekly} proposal of a run, oldest week first. */
     @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
         + " and p.kind = '" + MesoWeekProposalEntity.KIND_WEEKLY + "'"

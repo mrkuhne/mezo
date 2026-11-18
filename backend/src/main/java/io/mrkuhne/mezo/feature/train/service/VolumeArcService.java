@@ -273,6 +273,7 @@ public class VolumeArcService {
                 Map<String, Integer> before = new LinkedHashMap<>(next.getPlanAfter());
                 if (next.getLines() != null) {
                     next.getLines().stream()
+                        .filter(l -> WeekProposalLineJson.KIND_SETS.equals(l.kind())) // load lines carry no sets
                         .filter(l -> WeekProposalLineJson.DECISION_ACCEPTED.equals(l.decision()))
                         .forEach(l -> before.put(l.exerciseId().toString(), l.from()));
                 }

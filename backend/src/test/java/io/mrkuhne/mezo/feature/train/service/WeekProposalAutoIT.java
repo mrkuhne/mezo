@@ -303,6 +303,9 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
             assertThat(l.reasons()).containsExactly("deload_restore");
             assertThat(l.decision()).isEqualTo("accepted");
         });
+        // consumed by the auto-applied week after it, exactly as before the manual lifecycle existed
+        assertThat(weekly(meso, 3).getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_AUTO_APPLIED);
+        assertThat(weekly(meso, 3).getRestore()).isEmpty();
         assertThat(reload(meso).getVolumeRecompute().lastRun()).isEqualTo("W4");
         assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c ->
             assertThat(c.change()).isEqualTo("visszaállt a könnyített hét után (3 → 5)"));
