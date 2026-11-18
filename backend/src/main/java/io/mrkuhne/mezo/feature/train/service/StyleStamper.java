@@ -3,7 +3,9 @@ package io.mrkuhne.mezo.feature.train.service;
 import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
 import io.mrkuhne.mezo.feature.train.entity.json.GymExerciseJson;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Stamps a template exercise with its style's prescription (mezo-r36n9.79). Pure, no beans. */
 public final class StyleStamper {
@@ -19,7 +21,8 @@ public final class StyleStamper {
         String group = MuscleGroup.of(ex.muscle());
         boolean legs = cls.compound() && ("quad".equals(group) || "ham".equals(group) || "glute".equals(group));
         StyleTable.Stamp s = StyleTable.stamp(style, cls, stable, legs, p);
-        Set<String> keep = Set.copyOf(ex.overrides() == null ? List.of() : ex.overrides());
+        Set<String> keep = (ex.overrides() == null ? List.<String>of() : ex.overrides()).stream()
+            .filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
         boolean range = !keep.contains("repRange");
         return new GymExerciseJson(ex.id(), ex.name(), ex.muscle(), ex.warmupSets(),
             keep.contains("workingSets") || s.workingSets() == null ? ex.workingSets() : s.workingSets(),

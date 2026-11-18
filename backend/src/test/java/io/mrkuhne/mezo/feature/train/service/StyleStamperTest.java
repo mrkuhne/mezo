@@ -16,7 +16,7 @@ class StyleStamperTest {
     }
 
     @Test void unstyledIsUntouched() {
-        var e = ex("compound", "chest-upper", null, null);
+        var e = ex("compound", "chest-mid", null, null);
         assertThat(StyleStamper.stamp(e, null, true, P)).isSameAs(e);
     }
 
@@ -26,7 +26,7 @@ class StyleStamperTest {
     }
 
     @Test void blockStyleStampsAllFields() {
-        var r = StyleStamper.stamp(ex("compound", "chest-upper", null, null), HEAVY, false, P);
+        var r = StyleStamper.stamp(ex("compound", "chest-mid", null, null), HEAVY, false, P);
         assertThat(r.repMin()).isEqualTo(5);
         assertThat(r.repMax()).isEqualTo(8);
         assertThat(r.targetRir()).isEqualTo(2);
@@ -35,7 +35,7 @@ class StyleStamperTest {
     }
 
     @Test void exerciseStyleBeatsBlockStyle() {
-        var r = StyleStamper.stamp(ex("isolation", "biceps", "volume", null), HEAVY, false, P);
+        var r = StyleStamper.stamp(ex("isolation", "biceps-long", "volume", null), HEAVY, false, P);
         assertThat(r.repMin()).isEqualTo(15);
         assertThat(r.repMax()).isEqualTo(25);
         assertThat(r.restSec()).isEqualTo(75);
@@ -49,8 +49,26 @@ class StyleStamperTest {
             .isEqualTo(2);
     }
 
+    @Test void quadCompoundGetsLegsReserveThreeUnderBalanced() {
+        assertThat(MuscleGroup.of("quad")).isEqualTo("quad");
+        assertThat(MuscleGroup.of("ham")).isEqualTo("ham");
+        assertThat(MuscleGroup.of("glute")).isEqualTo("glute");
+        assertThat(StyleStamper.stamp(ex("compound", "quad", null, null), BALANCED, true, P).targetRir())
+            .isEqualTo(3);
+        assertThat(StyleStamper.stamp(ex("isolation", "quad", null, null), BALANCED, true, P).targetRir())
+            .isEqualTo(2);
+    }
+
+    @Test void nullOverrideElementsAreIgnored() {
+        var o = new java.util.ArrayList<String>();
+        o.add(null);
+        o.add("restSec");
+        assertThat(StyleStamper.stamp(ex("compound", "chest-mid", null, o), HEAVY, false, P).restSec())
+            .isEqualTo(99);
+    }
+
     @Test void alloutStableSetsTwoSets() {
-        var r = StyleStamper.stamp(ex("isolation", "biceps", null, null), ALLOUT, true, P);
+        var r = StyleStamper.stamp(ex("isolation", "biceps-long", null, null), ALLOUT, true, P);
         assertThat(r.workingSets()).isEqualTo(2);
         assertThat(r.targetRir()).isZero();
     }

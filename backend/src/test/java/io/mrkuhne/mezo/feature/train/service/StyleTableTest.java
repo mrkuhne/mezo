@@ -52,6 +52,13 @@ class StyleTableTest {
             .isEqualTo(new Stamp(6, 10, 2, 0, 180, 2, ALLOUT));
     }
 
+    @Test void heavyAndVolumeLegCompoundsKeepReserveTwo() {
+        assertThat(StyleTable.stamp(HEAVY, COMPOUND_FREE, false, true, P))
+            .isEqualTo(new Stamp(5, 8, null, 2, 180, 2, HEAVY));
+        assertThat(StyleTable.stamp(VOLUME, COMPOUND_STABLE, true, true, P))
+            .isEqualTo(new Stamp(10, 15, null, 2, 120, 4, VOLUME));
+    }
+
     @Test void classOfPlyoIsNull() {
         assertThat(ExerciseClass.of("plyo", true)).isNull();
         assertThat(ExerciseClass.of("compound", true)).isEqualTo(COMPOUND_STABLE);
