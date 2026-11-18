@@ -22,6 +22,12 @@ public class CatalogAttributes {
 
     private final ExerciseCatalogRepository exerciseCatalogRepository;
 
+    /** Attributes of one exercise that gate the set techniques (mezo-r36n9.80). */
+    public record Attrs(boolean stable, boolean lengthenedFriendly) {
+        /** No catalog link: counts as free, never lengthened-friendly. */
+        public static final Attrs FREE = new Attrs(false, false);
+    }
+
     /** The catalog ids that are {@code stable}; everything else (null, unknown, free) is free. */
     public record Lookup(Set<UUID> stableIds) {
 
