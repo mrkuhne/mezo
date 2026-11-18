@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
  * soft-deleted rows included — same reading as {@link WeeklySignalReader}). Detection only. An unstyled
  * run is never queried.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MuscleProgressReader {
@@ -42,6 +44,17 @@ public class MuscleProgressReader {
     /** Coarse groups stalled as of run week {@code uptoWeek} (inclusive, 1-based). */
     @Transactional(readOnly = true)
     public Set<String> stalledGroups(UUID createdBy, MesocycleEntity run, int uptoWeek) {
+        // Audit-only signal: a failure here must never abort the week's proposal. Caught INSIDE the
+        // transactional method so no exception leaves the proxy (which would mark the caller's tx rollback-only).
+        try {
+            return read(createdBy, run, uptoWeek);
+        } catch (RuntimeException e) {
+            log.warn("stall detection failed for run {} (ignored): {}", run.getId(), e.toString());
+            return Set.of();
+        }
+    }
+
+    private Set<String> read(UUID createdBy, MesocycleEntity run, int uptoWeek) {
         if (run.getTrainingStyle() == null) {
             return Set.of();
         }
