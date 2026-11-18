@@ -7392,7 +7392,7 @@ export interface components {
         /** @description Full replacement of one logged set's performance fields (mezo-l3on). Deliberately NOT a partial patch — an absent optional field CLEARS it, which avoids the JSON null vs. missing tri-state. setIndex, kind, exerciseId and the target* prescription snapshot are immutable. */
         SetUpdateRequest: {
             /** @description Absent = legs untouched; [] = clear; list = replace. */
-            legs?: components["schemas"]["SetLegInput"][];
+            legs?: components["schemas"]["SetLegInput"][] | null;
             weightKg: number;
             reps: number;
             /** @description Ignored (forced null) on a warmup set — effort tracking is working-set-only */

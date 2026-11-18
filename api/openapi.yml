@@ -18328,6 +18328,7 @@ components:
         legs:
           type: array
           maxItems: 6
+          nullable: true
           description: 'Absent = legs untouched; [] = clear; list = replace.'
           items:
             $ref: '#/components/schemas/SetLegInput'
