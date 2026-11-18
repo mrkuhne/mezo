@@ -405,7 +405,7 @@ public class WeekProposalService {
 
     private static List<SetSlots.Slot> slots(List<TemplatePlan.Row> rows, Map<UUID, Integer> working) {
         return rows.stream()
-            .map(r -> new SetSlots.Slot(r.exercise().getId(), r.dayIndex(), working.get(r.exercise().getId())))
+            .map(r -> SetSlots.Slot.of(r.exercise().getId(), r.dayIndex(), working.get(r.exercise().getId()), r.capExtra()))
             .toList();
     }
 
