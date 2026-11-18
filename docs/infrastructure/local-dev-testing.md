@@ -67,6 +67,26 @@ resolutions), so it does not churn every open branch.
   -Dmezo.test.use-testcontainers=true` on a fresh `ubuntu-latest` runner (no IDE, no browser, no
   swap). Push the branch and let CI be the authoritative green. **Do not change the pom's
   `reuseForks` default** — CI relies on it for speed, and CI has the RAM headroom the laptop lacks.
+- **How the CI suite is kept short (mezo-dubmh, 2026-11-18).** Three mechanisms, none of which
+  removes a test:
+  1. *One Postgres per JVM, one database per Spring context.* The suite builds ~235 distinct
+     contexts (each `@TestPropertySource` combination is its own cache key). The container used
+     to be a per-context bean, so every context started its own Postgres and replayed the whole
+     changelog (235 container starts, 58 250 changeset executions per run). Now
+     `TestcontainersConfiguration` starts one server per JVM (durability off), runs the changelog
+     once into a template database and hands each context a `CREATE DATABASE … TEMPLATE` clone,
+     dropped when the context closes. Isolation is unchanged — no two contexts share a database.
+  2. *Parallel test JVMs:* `-Dmezo.test.forks=N` (default 1). **Only with
+     `-Dmezo.test.use-testcontainers=true`** — each fork then owns a private Postgres; against the
+     shared fixed `mezo_test` DB forks would truncate each other's rows. CI uses 2 (a fork peaks
+     at ~3.5 GB RSS + ~1 GB Postgres on a 4 vCPU / 16 GB runner); the 128 GB machine runs 3+.
+  3. *Scoped jobs:* `test-backend` runs its suite only when the push/PR touches `backend/`,
+     `api/` or `.github/`; `test-frontend` and `test-layout` only for `frontend/`, `api/` or
+     `.github/` (`.github/scripts/ci-scope.sh`). The jobs still start and end green otherwise, so
+     `require-checks.sh` keeps seeing a successful check run. Fail-safe: on a push the job may
+     skip only if the previous `ci` run on the branch is a finished **green** run of exactly the
+     previous commit — a cancelled or red predecessor makes the next push run everything, so a
+     red main cannot be painted green by a docs-only commit.
 - **Local = focused foreground gates.** For the blast radius of a change, run a handful of classes:
   ```bash
   cd backend

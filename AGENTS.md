@@ -134,6 +134,7 @@ docker compose up -d            # local Postgres 16 on :15432 (mezo + mezo_test 
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata,demofixtures  # + Train demo fixtures (opt-in)
 ./mvnw clean test               # ITs against the FIXED mezo_test DB (compose must be up) — inspect tables 1:1
 ./mvnw clean test -Dmezo.test.use-testcontainers=true        # throwaway Testcontainers PG (CI / no compose)
+./mvnw clean test -Dmezo.test.use-testcontainers=true -Dmezo.test.forks=3   # + parallel test JVMs (Testcontainers mode ONLY; ~4.5 GB each)
 # ALWAYS use `clean` (Lombok+MapStruct incremental compile is flaky)
 ```
 
