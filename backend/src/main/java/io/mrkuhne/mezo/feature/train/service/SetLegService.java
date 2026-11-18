@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseSetLegEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetLegRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,8 +47,7 @@ public class SetLegService {
             if ((leg.getReps() != null && leg.getReps() < 0)
                 || (leg.getWeightKg() != null && leg.getWeightKg().signum() < 0)
                 || (leg.getRestSec() != null && (leg.getRestSec() < 0 || leg.getRestSec() > 600))) {
-                throw new SystemRuntimeErrorException(
-                    SystemMessage.error("TRAIN_SET_LEG_KIND_MISMATCH").build(), HttpStatus.BAD_REQUEST);
+                throw bad("TRAIN_SET_LEG_VALUE_INVALID");
             }
         }
     }
@@ -76,7 +76,7 @@ public class SetLegService {
     public Map<UUID, List<ExerciseSetLegEntity>> legsBySetIds(Collection<UUID> setIds) {
         Map<UUID, List<ExerciseSetLegEntity>> out = new LinkedHashMap<>();
         for (ExerciseSetLegEntity l : legRepository.findByExerciseSetIdIn(setIds)) {
-            out.computeIfAbsent(l.getExerciseSetId(), k -> new java.util.ArrayList<>()).add(l);
+            out.computeIfAbsent(l.getExerciseSetId(), k -> new ArrayList<>()).add(l);
         }
         return out;
     }

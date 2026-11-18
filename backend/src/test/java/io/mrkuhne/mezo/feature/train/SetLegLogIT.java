@@ -205,4 +205,23 @@ class SetLegLogIT extends ApiIntegrationTest {
         log(c, req(c, 0, Technique.DROP, List.of(leg(SetLegKind.DROP, "60", 8), leg(SetLegKind.DROP, "45", 6))));
         assertThat(legsSeen.get()).isEqualTo(2);
     }
+
+    @Test
+    void explicitNullLegsOnLogAreNoLegs() {
+        Ctx c = ctx();
+        ExerciseSetResponse r = log(c, req(c, 0, null, null));
+        assertThat(r.getLegs()).isEmpty();
+        assertThat(legRepository.findByExerciseSetIdIn(List.of(r.getId()))).isEmpty();
+    }
+
+    @Test
+    void updateLegsOnTechniquelessSetRejected() {
+        Ctx c = ctx();
+        ExerciseSetResponse r = log(c, req(c, 0, null, List.of()));
+        SetUpdateRequest u = SetUpdateRequest.builder().weightKg(new BigDecimal("80")).reps(10).build();
+        u.setLegs(List.of(leg(SetLegKind.DROP, "60", 8)));
+        ResponseEntity<String> res = exchangeForResponse(HttpMethod.PUT, setUrl(c, r.getId()), u, c.headers());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertHasRequestError(res.getBody(), "TRAIN_SET_LEGS_NEED_TECHNIQUE");
+    }
 }

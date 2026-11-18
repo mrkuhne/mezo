@@ -757,7 +757,7 @@ public class WorkoutService {
         set.setTargetRepMax(exercise.getRepMax());
         ExerciseSetEntity saved = exerciseSetRepository.save(set);
         exerciseSetRepository.flush(); // the replay reads through the repository — the row must be visible
-        if (!req.getLegs().isEmpty()) {
+        if (req.getLegs() != null && !req.getLegs().isEmpty()) {
             setLegService.replace(saved.getId(), req.getLegs()); // legs BEFORE the medal replay
         }
         if (hypertrophyGate.getIfAvailable() != null) {
