@@ -109,6 +109,33 @@ public class ExerciseStyler {
     }
 
     /**
+     * The training style of one exercise of a run's day (mezo-r36n9.79): the exercise's own style, else the
+     * run's; the stamp of that style for the exercise's class gives the rep overshoot and the fallback
+     * rest; the row's (already stamped) reserve is ramped across the run's weeks — never below the free
+     * floor on a free exercise. {@link StyleContext#NONE} for an unstyled run, for plyo (never stamped) and
+     * for a row that does not count toward volume. {@code week} is the run's 1-based current week as the
+     * session sees it. Shared by {@code WorkoutService.getToday} and {@link LoadLinePreview}, so the
+     * weekly proposal's load preview and the session's prescription use the same context.
+     */
+    public StyleContext context(ExerciseEntity e, TrainingStyle runStyle, int week, List<String> phaseCurve,
+                                CatalogAttributes.Lookup stability) {
+        if (runStyle == null || !e.isCountsTowardVolume()) {
+            return StyleContext.NONE;
+        }
+        TrainingStyle style = e.getTrainingStyle() != null ? TrainingStyle.fromWire(e.getTrainingStyle()) : runStyle;
+        boolean stable = stability.stable(e.getCatalogId());
+        ExerciseClass cls = ExerciseClass.of(e.getType(), stable);
+        if (cls == null) {
+            return StyleContext.NONE;
+        }
+        StyleTable.Stamp stamp = StyleTable.stamp(style, cls, stable, StyleStamper.legs(cls, e.getMuscle()), props);
+        int base = e.getTargetRir() != null ? e.getTargetRir() : stamp.reserve();
+        int reserve = EffortRamp.effectiveReserve(base, week, phaseCurve, !stable, props.ramp());
+        return new StyleContext(stamp.effectiveStyle(), reserve,
+            e.getRestSec() != null ? e.getRestSec() : Integer.valueOf(stamp.restSec()), stamp.repOverflow());
+    }
+
+    /**
      * Carries {@code trainingStyle}/{@code restSec}/{@code overrides} over from the stored exercise
      * the incoming one replaces — same identity (catalog id, else exact name), first unmatched — when
      * the request omits them. {@code trainingStyle} and {@code restSec} carry one by one when null;

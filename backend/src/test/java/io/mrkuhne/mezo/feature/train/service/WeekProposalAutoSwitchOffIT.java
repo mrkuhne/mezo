@@ -30,6 +30,7 @@ class WeekProposalAutoSwitchOffIT extends AbstractIntegrationTest {
     @Autowired MesocycleRepository mesocycleRepository;
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired MesoWeekProposalRepository proposalRepository;
+    @Autowired TrainService trainService;
 
     @Test
     void gateOffNeverGenerates() {
@@ -51,5 +52,25 @@ class WeekProposalAutoSwitchOffIT extends AbstractIntegrationTest {
         assertThat(proposalRepository.findAll()).isEmpty();
         assertThat(exerciseRepository.findById(row.getId()).orElseThrow().getWorkingSets()).isEqualTo(2);
         assertThat(mesocycleRepository.findById(meso.getId()).orElseThrow().getVolumeRecompute()).isNull();
+    }
+
+    /** Gate off: a tier change only moves the band (store + ledger), as before S3 — no tier_change proposal. */
+    @Test
+    void gateOffATierChangeRaisesNoProposal() {
+        UUID owner = databasePopulator.populateUser("tier-change-off@test.local");
+        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(
+            owner, 1, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
+        WorkoutSessionEntity mon = train.createWorkoutSession(owner, meso.getId(), "Hétfő", "gym", 0, "active");
+        ExerciseEntity row = train.createExercise(owner, mon.getId(), "Evezés", "back-mid", "compound");
+        row.setWorkingSets(4);
+        train.save(row);
+
+        trainService.updateMusclePriorities(owner, meso.getId(), Map.of("back", "emphasize"), null);
+
+        assertThat(proposalRepository.findAll().stream().filter(p -> p.getMesocycleId().equals(meso.getId())))
+            .isEmpty();
+        assertThat(exerciseRepository.findById(row.getId()).orElseThrow().getWorkingSets()).isEqualTo(4);
+        assertThat(mesocycleRepository.findById(meso.getId()).orElseThrow().getMusclePriorities())
+            .containsEntry("back", "emphasize");
     }
 }

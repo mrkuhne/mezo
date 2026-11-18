@@ -31,15 +31,22 @@ class TemplatePlan {
     private final ExerciseRepository exerciseRepository;
     private final VolumeProperties props;
 
-    /** A counting exercise of a template day; {@code group} null when the group has no landmark entry. */
-    record Row(ExerciseEntity exercise, int dayIndex, String group) {}
+    /**
+     * A counting exercise of a template day; {@code group} null when the group has no landmark entry;
+     * {@code dayName} the template day's label.
+     */
+    record Row(ExerciseEntity exercise, int dayIndex, String group, String dayName) {}
 
     /** The run's counting template-day exercises, sorted by day index then order index. */
     List<Row> rows(UUID createdBy, UUID mesoId) {
         Map<UUID, Integer> dayIndex = new HashMap<>();
+        Map<UUID, String> dayName = new HashMap<>();
         workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId))
             .stream().filter(s -> s.getTemplateSessionId() == null)
-            .forEach(s -> dayIndex.put(s.getId(), s.getOrderIndex() == null ? 0 : s.getOrderIndex()));
+            .forEach(s -> {
+                dayIndex.put(s.getId(), s.getOrderIndex() == null ? 0 : s.getOrderIndex());
+                dayName.put(s.getId(), s.getDayLabel());
+            });
         if (dayIndex.isEmpty()) {
             return List.of();
         }
@@ -47,7 +54,8 @@ class TemplatePlan {
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.copyOf(dayIndex.keySet()))
             .stream()
             .filter(ExerciseEntity::isCountsTowardVolume)
-            .map(e -> new Row(e, dayIndex.get(e.getWorkoutSessionId()), groupOf(e)))
+            .map(e -> new Row(e, dayIndex.get(e.getWorkoutSessionId()), groupOf(e),
+                dayName.get(e.getWorkoutSessionId())))
             .sorted((a, b) -> a.dayIndex() != b.dayIndex() ? Integer.compare(a.dayIndex(), b.dayIndex())
                 : Integer.compare(orderIndex(a.exercise()), orderIndex(b.exercise())))
             .toList();

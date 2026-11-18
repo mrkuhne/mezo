@@ -19,7 +19,6 @@ import io.mrkuhne.mezo.feature.train.ClosingBlockGate;
 import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import io.mrkuhne.mezo.feature.train.config.TimingProperties;
-import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -143,9 +142,10 @@ public class WorkoutService {
     // Kihagyás S2 kímélő mód (mezo-q4xt2.2): the comeback ramp + released-day lightening, read at
     // getToday time from the period rows. Repository-only bean — no cycle.
     private final RecoveryPeriodService recoveryPeriodService;
-    // Training style (mezo-r36n9.79): the stamp table + ramp config, and the batched catalog stability.
-    private final TrainStyleProperties trainStyleProperties;
+    // Training style (mezo-r36n9.79): the per-exercise style context and the batched catalog stability.
     private final ExerciseStyler exerciseStyler;
+    // Weekly pin (volume engine v2 S3): kept weight/rep lines of this week's proposal hold that exercise.
+    private final WeeklyPin weeklyPin;
 
     /**
      * Today's kímélő-mód lightening (spec §9.1.4 / §9.1.6): the DTO shown on the hero, plus the
@@ -287,6 +287,12 @@ public class WorkoutService {
         TrainingStyle runStyle = activeMeso != null && activeMeso.getId().equals(day.getMesocycleId())
             ? TrainingStyle.fromWire(activeMeso.getTrainingStyle()) : null;
         CatalogAttributes.Lookup stability = exerciseStyler.lookupRows(exercises, runStyle != null);
+        // Weekly pin (volume engine v2 S3, spec §6.4): a weight/rep line he kept in this week's proposal holds
+        // that exercise at last week's load — the same hold-only knob readiness and the comeback use. Only on
+        // a day of the active run, with the engine and the prescription on; failure-isolated (unpinned).
+        Set<UUID> pinned = activeMeso != null && activeMeso.getId().equals(day.getMesocycleId())
+                && volumeGate.getIfAvailable() != null && hypertrophyGate.getIfAvailable() != null
+            ? weeklyPin.pinnedRows(createdBy, activeMeso, day, exercises) : Set.of();
         LocalDate today = LocalDate.now();
         int weightUp = 0;
         int weightDown = 0;
@@ -296,7 +302,9 @@ public class WorkoutService {
         for (SessionExerciseAssembler.Entry entry : entries) {
             ExerciseEntity e = entry.row();
             TodayExercise t = mapper.toTodayExercise(e);
-            StyleContext style = styleContext(e, runStyle, activeMeso, stability);
+            StyleContext style = runStyle == null ? StyleContext.NONE
+                : exerciseStyler.context(e, runStyle, activeMeso.getCurrentWeek(), activeMeso.getPhaseCurve(),
+                    stability);
             t.setEffectiveTrainingStyle(
                 exerciseStyler.effective(e.getTrainingStyle(), e.getType(), e.getCatalogId(), runStyle, stability,
                     e.isCountsTowardVolume()));
@@ -337,9 +345,10 @@ public class WorkoutService {
             if (hypertrophyGate.getIfAvailable() != null) {
                 Prescription p = comeback == null
                     ? setRecommendationService.prescribe(createdBy, e, new SetRecommendationService.PrescribeOptions(
-                        deloadWeek, effective, lighten.isPresent(), null, 0, style, today))
+                        deloadWeek, effective, lighten.isPresent() || pinned.contains(e.getId()), null, 0, style,
+                        today))
                     : setRecommendationService.prescribe(createdBy, e, new SetRecommendationService.PrescribeOptions(
-                        deloadWeek, effective, lighten.isPresent() || comeback.holdOnly(),
+                        deloadWeek, effective, lighten.isPresent() || comeback.holdOnly() || pinned.contains(e.getId()),
                         // A deload week already lightens the load — no extra ×0.9 on top; the set
                         // reduction and the RIR floor stay.
                         deloadWeek ? null : comeback.loadFactor(),
@@ -388,32 +397,6 @@ public class WorkoutService {
             .overloadSummary(overloadSummary)
             .comeback(comeback == null ? null : comeback.dto())
             .build();
-    }
-
-    /**
-     * The training style of one of today's exercises (mezo-r36n9.79): the exercise's own style, else the
-     * run's; the stamp of that style for the exercise's class gives the rep overshoot and the fallback
-     * rest; the row's (already stamped) reserve is ramped across the run's weeks — never below the free
-     * floor on a free exercise. {@link StyleContext#NONE} for an unstyled run and for plyo (never stamped).
-     */
-    private StyleContext styleContext(ExerciseEntity e, TrainingStyle runStyle, MesocycleEntity run,
-                                      CatalogAttributes.Lookup stability) {
-        if (runStyle == null || !e.isCountsTowardVolume()) {
-            return StyleContext.NONE;
-        }
-        TrainingStyle style = e.getTrainingStyle() != null ? TrainingStyle.fromWire(e.getTrainingStyle()) : runStyle;
-        boolean stable = stability.stable(e.getCatalogId());
-        ExerciseClass cls = ExerciseClass.of(e.getType(), stable);
-        if (cls == null) {
-            return StyleContext.NONE;
-        }
-        StyleTable.Stamp stamp = StyleTable.stamp(style, cls, stable, StyleStamper.legs(cls, e.getMuscle()),
-            trainStyleProperties);
-        int base = e.getTargetRir() != null ? e.getTargetRir() : stamp.reserve();
-        int reserve = EffortRamp.effectiveReserve(base, run.getCurrentWeek(), run.getPhaseCurve(), !stable,
-            trainStyleProperties.ramp());
-        return new StyleContext(stamp.effectiveStyle(), reserve,
-            e.getRestSec() != null ? e.getRestSec() : Integer.valueOf(stamp.restSec()), stamp.repOverflow());
     }
 
     /**

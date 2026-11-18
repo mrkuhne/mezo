@@ -1184,6 +1184,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/mesocycles/{id}/week-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This week's weekly proposal first, then pending tier changes of the current week, newest first
+         * @description This calendar week's weekly proposal (any status) first, then the run's still-pending tier-change proposals of the current week, newest first. Empty when the run is not active, the gate is off or none exists. Opening it generates the week's proposal when due (like opening the day).
+         */
+        get: operations["listWeekProposals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept or keep proposal lines (per line, or the rest in one go); returns the updated proposal */
+        post: operations["decideWeekProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals": {
         parameters: {
             query?: never;
@@ -7732,6 +7769,86 @@ export interface components {
             /** @description Protected dates in [today-7, today+13], released dates excluded */
             protectedDates: string[];
             comeback?: components["schemas"]["RecoveryComeback"] | null;
+        };
+        /**
+         * @description Why a line (or a muscle that holds) is what it is; Hungarian wording is the client's
+         * @enum {string}
+         */
+        WeekProposalReason: "all_sets_done" | "felt_easy" | "deficit_pace" | "room_in_band" | "soreness_cleared" | "top_of_rep_range" | "reserve_left" | "next_plate" | "grind" | "too_much" | "sets_missed" | "tier_maintain" | "deload" | "no_slot" | "above_band" | "joint_pain" | "soreness" | "at_ceiling" | "deload_restore" | "stalled" | "tier_change";
+        WeekProposalLine: {
+            /** @description Stable line id within the proposal */
+            id: string;
+            /** Format: uuid */
+            exerciseId: string;
+            exerciseName: string;
+            /** @description Template day index the exercise sits on */
+            dayIndex: number;
+            dayName?: string | null;
+            muscleGroup: string;
+            /**
+             * @description Weight and reps lines are a preview (read-time prescription); only sets lines write on accept
+             * @enum {string}
+             */
+            kind: "sets" | "weight" | "reps";
+            /** @description Value before the change (sets; kg or reps) */
+            from: number;
+            /** @description Value after the change (sets; kg or reps) */
+            to: number;
+            reasons: components["schemas"]["WeekProposalReason"][];
+            /**
+             * @description Absent while undecided
+             * @enum {string|null}
+             */
+            decision?: "accepted" | "kept" | null;
+        };
+        WeekProposalMuscle: {
+            muscle: string;
+            /** @enum {string} */
+            tier: "emphasize" | "grow" | "maintain";
+            bandLow?: number | null;
+            bandHigh?: number | null;
+            /** @description The band was lowered because a sport already loads the group */
+            sportAdjusted: boolean;
+            /** @description Weekly sets of the group before the proposal */
+            setsBefore: number;
+            /** @description Weekly sets if every line were applied */
+            setsAfter: number;
+            /** @description 0 = the muscle stays where it was; reasons say why */
+            lineCount: number;
+            reasons: components["schemas"]["WeekProposalReason"][];
+        };
+        WeekProposal: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            mesocycleId: string;
+            /** @description Run week the proposal is for */
+            week: number;
+            /** @enum {string} */
+            kind: "weekly" | "tier_change";
+            /** @enum {string} */
+            status: "pending" | "applied" | "auto_applied" | "expired" | "superseded";
+            /** @enum {string} */
+            mode: "auto" | "manual";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            lines: components["schemas"]["WeekProposalLine"][];
+            muscles: components["schemas"]["WeekProposalMuscle"][];
+        };
+        WeekProposalLineDecision: {
+            lineId: string;
+            /** @enum {string} */
+            decision: "accepted" | "kept";
+        };
+        /** @description Per-line decisions and/or one of the rest flags (not both flags); undecided lines stay pending */
+        WeekProposalDecisionRequest: {
+            decisions?: components["schemas"]["WeekProposalLineDecision"][];
+            /** @description Accept every still-undecided line */
+            acceptRest?: boolean;
+            /** @description Keep every still-undecided line */
+            keepRest?: boolean;
         };
         /** @description "Hogy tanultam?" (mezo-y72o3) — the caller's most recent reviewed week that carries an explanation, joining the expenditure_estimate row with its persisted explanation jsonb. Every nullable field is honestly absent (no fallback), not a fabricated 0/'medium'. */
         ExpenditureExplanationResponse: {
@@ -17869,6 +17986,109 @@ export interface operations {
             };
             /** @description No ended period (TRAIN_RECOVERY_NOT_FOUND) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listWeekProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proposals of the run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekProposal"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The run is not the caller's (TRAIN_MESO_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decideWeekProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeekProposalDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The proposal after the decisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekProposal"];
+                };
+            };
+            /** @description Empty request (no decisions and no rest flag), unknown line id, both rest flags set, one line asked twice with different decisions, or a decided line asked to change (TRAIN_WEEK_PROPOSAL_DECISION_INVALID) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such proposal on the caller's run (TRAIN_WEEK_PROPOSAL_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The proposal is no longer pending, or its week has passed (TRAIN_WEEK_PROPOSAL_CLOSED); a retry that only repeats the stored decisions (no rest flag) returns 200 instead */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

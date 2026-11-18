@@ -794,7 +794,28 @@
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "A heti változtatási javaslatokat egyenként elfogadhatod vagy elutasíthatod, választhatsz kézi módot, és látod, hogyan változik a súly; a régi javaslatot az újabb felváltja."
+    "mit_kapsz": "A heti változtatási javaslatokat egyenként elfogadhatod vagy elutasíthatod, választhatsz kézi módot, és látod, hogyan változik a súly; a régi javaslatot az újabb felváltja.",
+    "munkamenet": "volume-s3"
+  },
+  "mezo-r36n9.87": {
+    "cim": "Edzés: a „marad” a súlycsökkentésnél is a múlt heti súlyt tartsa",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha a heti javaslat csökkentené egy gyakorlat súlyát vagy ismétlését, és te azt mondod rá, hogy „marad”, azon a héten az edzés pontosan a múlt heti súlyt és ismétlést kéri.",
+    "munkamenet": "volume-s3"
+  },
+  "mezo-r36n9.88": {
+    "cim": "Edzés: a heti javaslat apró csiszolásai a kézi mód bekapcsolása előtt",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Mielőtt a telefonon bekapcsolhatod a kézi jóváhagyást, a heti javaslat minden ritka esetben is pontosan viselkedik: egységes feliratok a naplóban, gyorsabb számolás, és több ellenőrzött helyzet.",
+    "munkamenet": "volume-s3"
   },
   "mezo-r36n9.79": {
     "cim": "Edzés: edzésstílus és okosabb haladás",
@@ -860,5 +881,15 @@
       "Alapok"
     ],
     "mit_kapsz": "Az automata ellenőrzések teljes futásakor néha egy belépési próba ok nélkül elbukik. A javítás után a futás megbízhatóan zöld; te nem látsz változást."
+  },
+  "mezo-r36n9.90": {
+    "cim": "Edzés: a könnyített héten végzett szintváltás igazítása a következő héten pótlódjon",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha a könnyített héten állítasz át egy izmot másik szintre, a rá következő héten a blokk magától az új sávhoz igazodik, ahogy bármelyik másik héten.",
+    "munkamenet": "volume-s3"
   }
 }

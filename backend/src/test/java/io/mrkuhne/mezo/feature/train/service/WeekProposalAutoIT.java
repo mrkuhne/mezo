@@ -99,9 +99,9 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         assertThat(p.getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_AUTO_APPLIED);
         assertThat(p.getDecidedAt()).isNotNull();
         // the Thursday one first (lighter day), then the Monday one — one line each
-        assertThat(p.getLines()).extracting(WeekProposalLineJson::exerciseId)
+        assertThat(setLines(p)).extracting(WeekProposalLineJson::exerciseId)
             .containsExactly(b.thu2().getId(), b.mon2().getId());
-        assertThat(p.getLines()).allSatisfy(l -> {
+        assertThat(setLines(p)).allSatisfy(l -> {
             assertThat(l.from()).isEqualTo(2);
             assertThat(l.to()).isEqualTo(3);
             assertThat(l.kind()).isEqualTo("sets");
@@ -110,7 +110,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
             assertThat(l.reasons()).containsExactly("all_sets_done", "room_in_band");
             assertThat(l.id()).isNotBlank();
         });
-        WeekProposalLineJson thu = p.getLines().get(0);
+        WeekProposalLineJson thu = setLines(p).get(0);
         assertThat(thu.exerciseName()).isEqualTo("Húzódzkodás");
         assertThat(thu.dayIndex()).isEqualTo(3);
         assertThat(p.getPlanAfter()).containsEntry(b.mon4().getId().toString(), 4)
@@ -210,7 +210,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         assertThat(ledger(b.meso(), "back").getCurrentSets()).isEqualTo(12);
         assertThat(sets(b.thu2())).isEqualTo(3);
         assertThat(sets(b.mon2())).isEqualTo(2);
-        assertThat(weekly(b.meso(), 2).getLines()).singleElement().satisfies(l -> {
+        assertThat(setLines(weekly(b.meso(), 2))).singleElement().satisfies(l -> {
             assertThat(l.exerciseId()).isEqualTo(b.thu2().getId());
             assertThat(l.reasons()).contains("deficit_pace");
         });
@@ -226,7 +226,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         workoutService.getToday(owner, null);
 
         assertThat(sets(squat)).isEqualTo(3);
-        assertThat(weekly(meso, 2).getLines()).isEmpty();
+        assertThat(setLines(weekly(meso, 2))).isEmpty();
         assertThat(reload(meso).getVolumeRecompute().changes())
             .anyMatch(c -> c.muscle().equals("quad") && c.change().equals("tart (3)"));
     }
@@ -238,7 +238,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         workoutService.getToday(owner, null);
 
         assertThat(ledger(b.meso(), "back").getCurrentSets()).isEqualTo(11);
-        assertThat(weekly(b.meso(), 2).getLines()).isEmpty();
+        assertThat(setLines(weekly(b.meso(), 2))).isEmpty();
         assertThat(reload(b.meso()).getVolumeRecompute().changes())
             .anyMatch(c -> c.muscle().equals("back") && c.change().equals("tart (11)"));
     }
@@ -258,7 +258,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         assertThat(sets(row)).isEqualTo(5);
         assertThat(sets(pull)).isEqualTo(5);
         MesoWeekProposalEntity p = weekly(meso, 2);
-        assertThat(p.getLines()).isEmpty();
+        assertThat(setLines(p)).isEmpty();
         assertThat(p.getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_AUTO_APPLIED);
         assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c -> {
             assertThat(c.muscle()).isEqualTo("back");
@@ -279,7 +279,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         assertThat(sets(squat)).isEqualTo(2);
         assertThat(sets(lunge)).isEqualTo(1); // ⌈1/2⌉ = 1, min 1: no line
         MesoWeekProposalEntity deload = weekly(meso, 3);
-        assertThat(deload.getLines()).singleElement().satisfies(l -> {
+        assertThat(setLines(deload)).singleElement().satisfies(l -> {
             assertThat(l.from()).isEqualTo(4);
             assertThat(l.to()).isEqualTo(2);
             assertThat(l.reasons()).containsExactly("deload");
@@ -296,16 +296,77 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
 
         assertThat(sets(squat)).isEqualTo(4);
         assertThat(sets(lunge)).isEqualTo(1);
-        assertThat(weekly(meso, 4).getLines()).singleElement().satisfies(l -> {
+        assertThat(setLines(weekly(meso, 4))).singleElement().satisfies(l -> {
             assertThat(l.exerciseId()).isEqualTo(squat.getId());
             assertThat(l.from()).isEqualTo(2);
             assertThat(l.to()).isEqualTo(4);
             assertThat(l.reasons()).containsExactly("deload_restore");
             assertThat(l.decision()).isEqualTo("accepted");
         });
+        // consumed by the auto-applied week after it, exactly as before the manual lifecycle existed
+        assertThat(weekly(meso, 3).getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_AUTO_APPLIED);
+        assertThat(weekly(meso, 3).getRestore()).isEmpty();
         assertThat(reload(meso).getVolumeRecompute().lastRun()).isEqualTo("W4");
         assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c ->
             assertThat(c.change()).isEqualTo("visszaállt a könnyített hét után (3 → 5)"));
+    }
+
+    /**
+     * .75 #2: a mid-block deload week (11 → 6) fully done — the week after restores to 11 AND steps +2
+     * (was: restores and holds, because the 6 logged sets were judged against the restored 11).
+     * The stored per-muscle outcome and the lines' day names come with it.
+     */
+    @Test
+    void aFullyDoneDeloadWeekRestoresAndStepsTheWeekAfter() {
+        MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("back", "emphasize"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        WorkoutSessionEntity thu = day(meso, "Csütörtök", 3);
+        ExerciseEntity mon4 = exercise(mon, "Evezés", "back-mid", 4);
+        ExerciseEntity mon2 = exercise(mon, "Lehúzás", "back-wide", 2);
+        ExerciseEntity thu3 = exercise(thu, "Kábeles evezés", "back-mid", 3);
+        ExerciseEntity thu2 = exercise(thu, "Húzódzkodás", "back-wide", 2);
+        workoutService.getToday(owner, null); // week 3: the deload halves 4/2/3/2 → 2/1/2/1
+        assertThat(List.of(sets(mon4), sets(mon2), sets(thu3), sets(thu2))).containsExactly(2, 1, 2, 1);
+        assertThat(weekly(meso, 3).getGroups()).singleElement().satisfies(g -> {
+            assertThat(g.setsBefore()).isEqualTo(11);
+            assertThat(g.setsAfter()).isEqualTo(6);
+            assertThat(g.reasons()).containsExactly("deload");
+        });
+        nextWeek(meso);
+        // every halved set of the (now past) deload week logged — dated against the moved start
+        logWeek(reload(meso), 3, mon, 0, fresh(mon4), fresh(mon2));
+        logWeek(reload(meso), 3, thu, 3, fresh(thu3), fresh(thu2));
+        workoutService.getToday(owner, null);
+
+        // restored to 4/2/3/2 = 11, then +2 on the lighter slots (Thursday's 2, Monday's 2) = 13
+        assertThat(List.of(sets(mon4), sets(mon2), sets(thu3), sets(thu2))).containsExactly(4, 3, 3, 3);
+        MesoWeekProposalEntity week4 = weekly(meso, 4);
+        assertThat(setLines(week4))
+            .extracting(WeekProposalLineJson::exerciseId, WeekProposalLineJson::from, WeekProposalLineJson::to,
+                WeekProposalLineJson::dayName)
+            .containsExactly(
+                tuple(mon4.getId(), 2, 4, "Hétfő"),
+                tuple(mon2.getId(), 1, 3, "Hétfő"),
+                tuple(thu3.getId(), 2, 3, "Csütörtök"),
+                tuple(thu2.getId(), 1, 3, "Csütörtök"));
+        assertThat(setLines(week4)).allSatisfy(l -> {
+            assertThat(l.fromKg()).isNull();
+            assertThat(l.toKg()).isNull();
+        });
+        assertThat(setLines(week4).get(1).reasons())
+            .containsExactly("deload_restore", "all_sets_done", "room_in_band");
+        assertThat(week4.getGroups()).singleElement().satisfies(g -> {
+            assertThat(g.muscle()).isEqualTo("back");
+            assertThat(g.tier()).isEqualTo("emphasize");
+            assertThat(g.bandLow()).isNotNull();
+            assertThat(g.bandHigh()).isGreaterThanOrEqualTo(13);
+            assertThat(g.sportAdjusted()).isFalse();
+            assertThat(g.setsBefore()).isEqualTo(6);
+            assertThat(g.setsAfter()).isEqualTo(13);
+            assertThat(g.reasons()).containsExactly("deload_restore", "all_sets_done", "room_in_band");
+        });
+        assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c ->
+            assertThat(c.change()).isEqualTo("visszaállt és +2 (6 → 13)"));
     }
 
     /** The owner lowered a halved exercise during the deload week: his number stands. */
@@ -324,7 +385,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
 
         assertThat(sets(squat)).isEqualTo(1);
         assertThat(sets(ext)).isEqualTo(4);
-        assertThat(weekly(meso, 4).getLines()).extracting(WeekProposalLineJson::exerciseId)
+        assertThat(setLines(weekly(meso, 4))).extracting(WeekProposalLineJson::exerciseId)
             .containsExactly(ext.getId());
         assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c -> {
             assertThat(c.change()).isEqualTo("visszaállt a könnyített hét után (3 → 5)");
@@ -355,10 +416,10 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(owner, List.of(mon.getId()));
         assertThat(after).extracting(ExerciseEntity::getName, ExerciseEntity::getWorkingSets)
             .containsExactly(tuple("Guggolás", 4), tuple("Lábnyújtás", 3));
-        assertThat(weekly(meso, 4).getLines())
+        assertThat(setLines(weekly(meso, 4)))
             .extracting(WeekProposalLineJson::exerciseId, WeekProposalLineJson::from, WeekProposalLineJson::to)
             .containsExactly(tuple(after.get(0).getId(), 2, 4), tuple(after.get(1).getId(), 2, 3));
-        assertThat(weekly(meso, 4).getLines()).allSatisfy(l -> assertThat(l.reasons()).containsExactly("deload_restore"));
+        assertThat(setLines(weekly(meso, 4))).allSatisfy(l -> assertThat(l.reasons()).containsExactly("deload_restore"));
     }
 
     /** A same-group exercise added during the deload week: the restore stops at the 8-set session cap. */
@@ -401,7 +462,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         workoutService.getToday(owner, null);
 
         assertThat(sets(squat)).isEqualTo(2);
-        assertThat(weekly(meso, 5).getLines()).isEmpty();
+        assertThat(setLines(weekly(meso, 5))).isEmpty();
     }
 
     /** Week 2 → week 4 with week 3 never opened and nothing logged: one proposal, nothing moves. */
@@ -413,7 +474,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         workoutService.getToday(owner, null);
 
         assertThat(proposalRepository.findAll()).extracting(MesoWeekProposalEntity::getWeek).containsExactly(4);
-        assertThat(weekly(b.meso(), 4).getLines()).isEmpty();
+        assertThat(setLines(weekly(b.meso(), 4))).isEmpty();
         assertThat(ledger(b.meso(), "back").getCurrentSets()).isEqualTo(11);
     }
 
@@ -429,7 +490,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
 
         assertThat(sets(squat)).isEqualTo(4);
         assertThat(proposalRepository.findAll()).extracting(MesoWeekProposalEntity::getWeek).containsExactly(4);
-        assertThat(weekly(meso, 4).getLines()).isEmpty();
+        assertThat(setLines(weekly(meso, 4))).isEmpty();
     }
 
     /** Ruling 7: two openers of the same new week (one transaction, then two) — one proposal, no
@@ -484,7 +545,7 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         })).doesNotThrowAnyException();
 
         MesoWeekProposalEntity p = weekly(b.meso(), 2);
-        assertThat(p.getLines()).extracting(WeekProposalLineJson::exerciseId, WeekProposalLineJson::decision)
+        assertThat(setLines(p)).extracting(WeekProposalLineJson::exerciseId, WeekProposalLineJson::decision)
             .containsExactly(
                 org.assertj.core.groups.Tuple.tuple(b.thu2().getId(), "kept"),
                 org.assertj.core.groups.Tuple.tuple(b.mon2().getId(), "accepted"));
@@ -636,6 +697,11 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         return train.save(e);
     }
 
+    /** The proposal's set lines (its weight / rep preview lines follow them; {@link WeekProposalLoadLinesIT} covers those). */
+    private static List<WeekProposalLineJson> setLines(MesoWeekProposalEntity p) {
+        return p.getLines().stream().filter(l -> WeekProposalLineJson.KIND_SETS.equals(l.kind())).toList();
+    }
+
     /** One completed instance of {@code day} in {@code week}, every planned set of {@code exercises} logged. */
     private void logWeek(MesocycleEntity meso, int week, WorkoutSessionEntity day, int dayOffset,
                          ExerciseEntity... exercises) {
@@ -673,6 +739,10 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
     private static GymExerciseInput input(String name, int sets) {
         return GymExerciseInput.builder().name(name).muscle("quad").warmupSets(2).workingSets(sets)
             .repMin(6).repMax(8).targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND).build();
+    }
+
+    private ExerciseEntity fresh(ExerciseEntity e) {
+        return exerciseRepository.findById(e.getId()).orElseThrow();
     }
 
     private int sets(ExerciseEntity e) {

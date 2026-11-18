@@ -23,7 +23,13 @@ public final class VolumeDecider {
         JOINT_PAIN, SORENESS, TIER_MAINTAIN, DELOAD, NO_SLOT, AT_CEILING, DELOAD_RESTORE, STALLED
     }
 
-    public record Input(int week, PriorityTier tier, Band band, int plannedSets, int loggedLastWeek,
+    /**
+     * {@code plannedSets} is this week's starting amount (after a post-deload restore) — the top check and the
+     * step use it; {@code plannedLastWeek} is what last week prescribed — {@code SETS_MISSED} is judged against
+     * it, so a fully done deload week does not read as missed sets the week after (.75 #2).
+     */
+    public record Input(int week, PriorityTier tier, Band band, int plannedSets, int plannedLastWeek,
+                        int loggedLastWeek,
                         boolean grind, boolean tooMuch, boolean jointPain, boolean sorenessHigh,
                         boolean deficit, boolean deloadPhase,
                         int stepEmphasize, int stepGrow, int stepDeficit) {}
@@ -54,7 +60,7 @@ public final class VolumeDecider {
             return new Result(Lever.DOWN, -1, why);
         }
         List<Reason> holds = new ArrayList<>();
-        if (in.loggedLastWeek() < in.plannedSets()) {
+        if (in.loggedLastWeek() < in.plannedLastWeek()) {
             holds.add(Reason.SETS_MISSED);
         }
         if (in.grind()) {

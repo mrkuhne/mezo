@@ -34,6 +34,7 @@ class VolumeDeciderTest {
         Band band = new Band(14, 22, 22, false);
         int planned = 15;
         int logged = 15;
+        int plannedLastWeek = 15;
         boolean grind;
         boolean tooMuch;
         boolean jointPain;
@@ -44,7 +45,8 @@ class VolumeDeciderTest {
         B week(int v) { week = v; return this; }
         B tier(PriorityTier v) { tier = v; return this; }
         B band(Band v) { band = v; return this; }
-        B planned(int v) { planned = v; logged = v; return this; }
+        B planned(int v) { planned = v; logged = v; plannedLastWeek = v; return this; }
+        B plannedLastWeek(int v) { plannedLastWeek = v; return this; }
         B logged(int v) { logged = v; return this; }
         B grind(boolean v) { grind = v; return this; }
         B tooMuch(boolean v) { tooMuch = v; return this; }
@@ -54,7 +56,7 @@ class VolumeDeciderTest {
         B deloadPhase(boolean v) { deloadPhase = v; return this; }
 
         Input build() {
-            return new Input(week, tier, band, planned, logged, grind, tooMuch, jointPain, sorenessHigh,
+            return new Input(week, tier, band, planned, plannedLastWeek, logged, grind, tooMuch, jointPain, sorenessHigh,
                 deficit, deloadPhase, 2, 1, 1);
         }
     }
@@ -147,5 +149,29 @@ class VolumeDeciderTest {
         assertThat(VolumeDecider.step(GROW, true, 2, 1, 3)).isEqualTo(3);
         assertThat(VolumeDecider.step(MAINTAIN, false, 2, 1, 1)).isZero();
         assertThat(VolumeDecider.step(MAINTAIN, true, 2, 1, 1)).isZero();
+    }
+
+    /** .75 #2: the week after a deload restores to 16 but last week only prescribed 8, all logged — it steps. */
+    @Test
+    void setsMissedIsJudgedAgainstLastWeeksPlanNotTheRestoredAmount() {
+        var r = decide(in().tier(EMPHASIZE).planned(16).plannedLastWeek(8).logged(8));
+        assertThat(r.lever()).isEqualTo(UP);
+        assertThat(r.delta()).isEqualTo(2);
+        assertThat(r.reasons()).doesNotContain(SETS_MISSED);
+    }
+
+    @Test
+    void loggedBelowLastWeeksPlanStillHolds() {
+        var r = decide(in().tier(EMPHASIZE).planned(16).plannedLastWeek(8).logged(7));
+        assertThat(r.lever()).isEqualTo(HOLD);
+        assertThat(r.reasons()).containsExactly(SETS_MISSED);
+    }
+
+    /** The top check keeps using the (restored) planned amount, not last week's. */
+    @Test
+    void atTopUsesPlannedSetsNotLastWeek() {
+        var r = decide(in().tier(EMPHASIZE).planned(22).plannedLastWeek(11).logged(11));
+        assertThat(r.lever()).isEqualTo(HOLD);
+        assertThat(r.reasons()).containsExactly(AT_CEILING);
     }
 }
