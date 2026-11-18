@@ -101,6 +101,18 @@ public class ExerciseEntity extends OwnedEntity {
     @Column(name = "training_style")
     private String trainingStyle;
 
+    /** Technique wire value (none|rest_drop|drop|myo|partials); null = none chosen (mezo-r36n9.80). */
+    @Column
+    private String technique;
+
+    /** Who chose the technique (owner|planner|ai); null when no technique. */
+    @Column(name = "technique_source")
+    private String techniqueSource;
+
+    /** The partials-challenge flag (at most one per training day). */
+    @Column(nullable = false)
+    private boolean challenge = false;
+
     /** Stamped rest between sets in seconds (DB CHECK 30–600); null when unstyled. */
     @Column(name = "rest_sec")
     private Integer restSec;

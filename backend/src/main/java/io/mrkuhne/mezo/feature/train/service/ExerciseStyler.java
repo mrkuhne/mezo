@@ -137,7 +137,10 @@ public class ExerciseStyler {
                 in.catalogId(), in.countsTowardVolume(),
                 in.trainingStyle() != null ? in.trainingStyle() : match.trainingStyle(),
                 in.restSec() != null ? in.restSec() : match.restSec(),
-                sentNone ? match.overrides() : in.overrides()));
+                sentNone ? match.overrides() : in.overrides(),
+                in.technique() != null ? in.technique() : match.technique(),
+                in.techniqueSource() != null ? in.techniqueSource() : match.techniqueSource(),
+                in.challenge() != null ? in.challenge() : match.challenge()));
         }
         return out;
     }

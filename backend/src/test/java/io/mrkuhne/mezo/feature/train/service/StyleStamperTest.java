@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class StyleStamperTest {
     static GymExerciseJson ex(String type, String muscle, String style, List<String> overrides) {
         return new GymExerciseJson(UUID.randomUUID(), "X", muscle, 1, 3, 8, 12, 3, 50.0, type, null, null, true,
-            style, 99, overrides);
+            style, 99, overrides, null, null, null);
     }
 
     @Test void unstyledIsUntouched() {
@@ -34,7 +34,7 @@ class StyleStamperTest {
     @Test void nonCountingRowIsUntouched() {
         // the fixed closing block never counts toward volume and is never styled
         var e = new GymExerciseJson(UUID.randomUUID(), "Back extension", "lower-back", 0, 2, 12, 15, 2, null,
-            "isolation", null, null, false, null, null, null);
+            "isolation", null, null, false, null, null, null, null, null, null);
         assertThat(StyleStamper.stamp(e, HEAVY, true, P)).isSameAs(e);
     }
 

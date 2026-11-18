@@ -98,6 +98,10 @@ public class MesocycleEntity extends OwnedEntity {
     @Column(nullable = false)
     private String style;
 
+    /** Block flag: techniques may be prescribed in this plan / run (mezo-r36n9.80). */
+    @Column(name = "techniques_enabled", nullable = false)
+    private boolean techniquesEnabled = false;
+
     /** Training style wire value inherited from the template at start; null = unstyled (mezo-r36n9.79). */
     @Column(name = "training_style")
     private String trainingStyle;

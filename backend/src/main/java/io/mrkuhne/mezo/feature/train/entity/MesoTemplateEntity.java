@@ -74,6 +74,10 @@ public class MesoTemplateEntity extends OwnedEntity {
     @Column
     private String style;
 
+    /** Block flag: techniques may be prescribed in this plan / run (mezo-r36n9.80). */
+    @Column(name = "techniques_enabled", nullable = false)
+    private boolean techniquesEnabled = false;
+
     /** Training style wire value (balanced|volume|heavy|allout); null = unstyled (mezo-r36n9.79). */
     @Column(name = "training_style")
     private String trainingStyle;
