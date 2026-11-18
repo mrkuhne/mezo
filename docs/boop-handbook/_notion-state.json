@@ -725,7 +725,7 @@
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
-      "hash": "b27c6eb50bd1"
+      "hash": "4f120ce1847b"
     },
     "kezikonyv:07-edzes/05-heti-volumen": {
       "page_id": "4168968e-752b-813c-9763-e3bda2691265",
@@ -1049,7 +1049,7 @@
     },
     "jegyek:mezo-r36n9.79": {
       "page_id": "41c8968e-752b-8109-b5f2-e40de21790f7",
-      "hash": "0ba6e2ba36d8"
+      "hash": "43c72099c375"
     },
     "jegyek:mezo-r36n9.78": {
       "page_id": "41c8968e-752b-81e9-adec-dff2f7772dda",
@@ -1162,6 +1162,18 @@
     "kiadasok:ec098c957": {
       "page_id": "41c8968e-752b-8119-a02d-cda7ce3ca2aa",
       "hash": "7dce56479fa4"
+    },
+    "dontesek:d-2026-11-18-gyakorlat-besorolas": {
+      "page_id": "41c8968e-752b-8135-92de-f498993cb302",
+      "hash": "811590e2963f"
+    },
+    "kiadasok:4538c59df": {
+      "page_id": "41c8968e-752b-8131-8afc-c20afeb6988d",
+      "hash": "bccd24411895"
+    },
+    "kezikonyv:07-edzes/14-edzesstilus": {
+      "page_id": "41c8968e-752b-81c4-a675-e42be7ead430",
+      "hash": "7f1c754e3d8e"
     }
   }
 }

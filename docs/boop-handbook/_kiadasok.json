@@ -336,5 +336,16 @@
     ],
     "mi_valtozott": "A szerver egy összerakott blokkról megmondja izmonként, hogy a heti sávján belül, alatta vagy fölötte van-e, és ha kell, konkrét javítást ad — sosem többet ötnél egy gyakorlatra vagy nyolcnál egy izomra egy napon —, vagy kimondja, hogy új gyakorlat kell. Naponként becsüli az edzésidőt, jelzi, ha egy nap túl hosszú, ha egy izom egy napon túl sokat kap, és ha aznap sport is van. Hétről hétre kirajzolja a blokkot (a könnyített hét felez, utána visszaáll, fogyásban lassabb az emelés), és a futó blokk volumen-íve ugyanezt a vonalat mutatja. A „röplabda: a láb sávja lejjebb” beállítás elmenthető, a generált terv pedig minden izmánál a saját sávjában indul (Sáv széle). A futó blokkod számai nem változtak. Képernyő még nincs hozzá: a telefonos blokk-építő a következő szeletek egyike.",
     "verzio": "v3.1.0"
+  },
+  "4538c59df": {
+    "tipus": "Új funkció",
+    "cim": "Edzés: edzésstílus, besorolt gyakorlatok és okosabb haladás",
+    "datum": "2026-11-18",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.79"
+    ],
+    "mi_valtozott": "Minden beépített gyakorlat tudja magáról, milyen eszközzel megy, stabil-e (57) és biztonságos-e nyújtott helyzetben ismételni (23) — a jóváhagyott szigorú lista szerint. Egy blokk kaphat stílust (Kiegyensúlyozott, Sok ismétlés, Nagyobb súly, Két sorozat bukásig), ami beállítja a gyakorlatok ismétléstartományát, tartalékát és pihenőjét, a kézzel beírt értékeidet meghagyva; stílusos blokkban a tartalék a blokk vége felé csökken, minden sorozat pihenőidőt kap, és a heti összesítő jelzi, ha egy izom két hete nem fejlődik. Minden blokkra: a haladás a saját ismétléstartományod legutóbbi edzéséhez mér, tartományváltáskor átszámolja a súlyt. A futó blokkod (stílus nélkül) pontosan ugyanazt írja elő, mint eddig. Képernyő még nincs hozzá: a telefonos blokk-építő a következő szeletek egyike.",
+    "verzio": "v3.2.0"
   }
 }
