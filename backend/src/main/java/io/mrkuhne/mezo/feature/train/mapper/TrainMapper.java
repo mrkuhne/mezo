@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.mapper;
 
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
+import io.mrkuhne.mezo.api.dto.SetLeg;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
@@ -20,6 +21,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetLegEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
@@ -102,8 +104,11 @@ public interface TrainMapper {
     @Mapping(target = "kind", expression = "java(ExerciseSetResponse.KindEnum.fromValue(entity.getKind()))")
     @Mapping(target = "medals", ignore = true)
     @Mapping(target = "technique", source = "technique", qualifiedByName = "techniqueDto")
-    @Mapping(target = "legs", ignore = true) // Task 4/7 loads and wires the legs
+    @Mapping(target = "legs", ignore = true) // WorkoutService wires them from one batched read
     ExerciseSetResponse toSetResponse(ExerciseSetEntity entity);
+
+    @Mapping(target = "kind", expression = "java(io.mrkuhne.mezo.api.dto.SetLegKind.fromValue(entity.getKind()))")
+    SetLeg toSetLeg(ExerciseSetLegEntity entity);
 
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(TodayExercise.TypeEnum.fromValue(entity.getType()))")

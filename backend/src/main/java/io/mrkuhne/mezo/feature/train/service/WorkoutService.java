@@ -25,6 +25,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetLegEntity;
 import io.mrkuhne.mezo.feature.progression.ProgressionGate;
 import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
 import io.mrkuhne.mezo.feature.train.signal.GymSignalCalculator;
@@ -120,6 +121,7 @@ public class WorkoutService {
     // MedalService — attaches the medals a set/session just earned to the logSet/finishWorkout
     // responses. No feature gate: medals are always-on (mirrors ExerciseRecordService).
     private final MedalService medalService;
+    private final SetLegService setLegService;
     // Actual-duration measurement (mezo-1jm8): gap/lead-in caps consumed when finishWorkout
     // derives activeSeconds from the session's logged set timestamps.
     private final TimingProperties timingProperties;
@@ -599,9 +601,11 @@ public class WorkoutService {
         List<SessionExerciseAssembler.Entry> entries = assembleInstance(createdBy, instance,
             exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
                 createdBy, List.of(instance.getTemplateSessionId())));
-        Map<UUID, List<ExerciseSetEntity>> setsByExercise = exerciseSetRepository
-            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId()).stream()
+        List<ExerciseSetEntity> instanceSets = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId());
+        Map<UUID, List<ExerciseSetEntity>> setsByExercise = instanceSets.stream()
             .collect(Collectors.groupingBy(ExerciseSetEntity::getExerciseId));
+        Map<UUID, List<ExerciseSetLegEntity>> legsBySet = legsOf(instanceSets);
         return WorkoutDetailResponse.builder()
             .id(instance.getId())
             .templateSessionId(instance.getTemplateSessionId())
@@ -630,7 +634,7 @@ public class WorkoutService {
                     .skipped(all.stream().anyMatch(ExerciseSetEntity::isSkipped))
                     .sets(all.stream().filter(s -> !s.isSkipped())
                         .sorted(Comparator.comparingInt(ExerciseSetEntity::getSetIndex))
-                        .map(mapper::toSetResponse).toList())
+                        .map(st -> setResponse(st, legsBySet)).toList())
                     .build();
             }).toList())
             .build();
@@ -727,7 +731,13 @@ public class WorkoutService {
         ExerciseEntity exercise = exerciseRepository.findById(req.getExerciseId())
             .filter(e -> belongsTo(createdBy, instance, e))
             .orElseThrow(WorkoutService::notFound);
+        // Logged regardless of the block flag (log what he did); legs only fit a technique (mezo-r36n9.80).
+        Technique technique = req.getTechnique() == null
+            ? Technique.NONE : Technique.fromWire(req.getTechnique().getValue());
+        String techniqueWire = technique == Technique.NONE ? null : technique.wire();
+        setLegService.validate(techniqueWire, req.getLegs());
         ExerciseSetEntity set = new ExerciseSetEntity();
+        set.setTechnique(techniqueWire);
         set.setCreatedBy(createdBy);
         set.setExerciseId(req.getExerciseId());
         set.setWorkoutSessionId(instance.getId());
@@ -747,11 +757,14 @@ public class WorkoutService {
         set.setTargetRepMax(exercise.getRepMax());
         ExerciseSetEntity saved = exerciseSetRepository.save(set);
         exerciseSetRepository.flush(); // the replay reads through the repository — the row must be visible
+        if (!req.getLegs().isEmpty()) {
+            setLegService.replace(saved.getId(), req.getLegs()); // legs BEFORE the medal replay
+        }
         if (hypertrophyGate.getIfAvailable() != null) {
             // Per-machine weight memory (mezo-bk7l2): heal this weight, learn a near-swapped gap.
             weightGapService.onLogged(createdBy, exercise, set.getKind(), req.getWeightKg(), req.getPrescribedWeightKg());
         }
-        ExerciseSetResponse response = mapper.toSetResponse(saved);
+        ExerciseSetResponse response = setResponse(saved, setLegService.legsBySetIds(List.of(saved.getId())));
         // Medals are derived and purely decorative (mezo-wp6n) — the set write above is the user's
         // real data and must survive a failure in the replay-derivation that follows it. Degrade to
         // "no medals for this set" rather than let the @Transactional method roll back the log.
@@ -773,6 +786,8 @@ public class WorkoutService {
     @Transactional
     public ExerciseSetResponse updateSet(UUID createdBy, UUID workoutId, UUID setId, SetUpdateRequest req) {
         ExerciseSetEntity set = ownedActiveSetOrThrow(createdBy, workoutId, setId);
+        // legs: absent = untouched, [] = clear, list = replace; the technique itself is immutable (mezo-r36n9.80).
+        setLegService.validate(set.getTechnique(), req.getLegs());
         set.setWeightKg(req.getWeightKg());
         set.setReps(req.getReps());
         // Warmup sets carry no RIR (mirrors logSet) — effort tracking is working-set-only.
@@ -781,12 +796,15 @@ public class WorkoutService {
         set.setNote(req.getNote());
         ExerciseSetEntity saved = exerciseSetRepository.save(set);
         exerciseSetRepository.flush(); // the medal replay reads through the repository
+        if (req.getLegs() != null) {
+            setLegService.replace(saved.getId(), req.getLegs()); // legs BEFORE the medal replay
+        }
         if (hypertrophyGate.getIfAvailable() != null) {
             // An edit to a weight proves it exists on the machine (mezo-bk7l2) — heal only, never learn.
             exerciseRepository.findById(set.getExerciseId()).ifPresent(ex ->
                 weightGapService.onLogged(createdBy, ex, set.getKind(), req.getWeightKg(), null));
         }
-        ExerciseSetResponse response = mapper.toSetResponse(saved);
+        ExerciseSetResponse response = setResponse(saved, setLegService.legsBySetIds(List.of(saved.getId())));
         // Same rationale as logSet: medals are derived and decorative, the user's edit must survive
         // a failure in the replay-derivation that follows it.
         try {
@@ -1062,15 +1080,27 @@ public class WorkoutService {
             .orElseThrow(WorkoutService::notFound);
     }
 
+    /** One batched leg read for these (live) sets; empty input costs no query. */
+    private Map<UUID, List<ExerciseSetLegEntity>> legsOf(List<ExerciseSetEntity> sets) {
+        return setLegService.legsBySetIds(sets.stream().map(ExerciseSetEntity::getId).toList());
+    }
+
+    private ExerciseSetResponse setResponse(ExerciseSetEntity set, Map<UUID, List<ExerciseSetLegEntity>> legsBySet) {
+        ExerciseSetResponse r = mapper.toSetResponse(set);
+        r.setLegs(legsBySet.getOrDefault(set.getId(), List.of()).stream().map(mapper::toSetLeg).toList());
+        return r;
+    }
+
     private WorkoutInstanceResponse toInstanceResponse(UUID createdBy, WorkoutSessionEntity instance) {
+        List<ExerciseSetEntity> instanceSets = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId());
+        Map<UUID, List<ExerciseSetLegEntity>> legsBySet = legsOf(instanceSets);
         return WorkoutInstanceResponse.builder()
             .id(instance.getId())
             .templateSessionId(instance.getTemplateSessionId())
             .date(instance.getDate())
             .status(WorkoutInstanceResponse.StatusEnum.fromValue(instance.getStatus()))
-            .sets(exerciseSetRepository
-                .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId())
-                .stream().map(mapper::toSetResponse).toList())
+            .sets(instanceSets.stream().map(st -> setResponse(st, legsBySet)).toList())
             .startedAt(toOffsetDateTime(instance.getStartedAt()))
             .finishedAt(toOffsetDateTime(instance.getFinishedAt()))
             .activeSeconds(instance.getActiveSeconds())

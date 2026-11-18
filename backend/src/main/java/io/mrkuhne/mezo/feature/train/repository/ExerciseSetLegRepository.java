@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,6 +21,11 @@ public interface ExerciseSetLegRepository extends JpaRepository<ExerciseSetLegEn
         return exerciseSetIds.isEmpty()
             ? List.of() : findByExerciseSetIdInOrderByExerciseSetIdAscLegIndexAsc(exerciseSetIds);
     }
+
+    /** Bulk delete of one set's legs (a bulk statement so a following re-insert never trips the unique leg index). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM ExerciseSetLegEntity l WHERE l.exerciseSetId = :setId")
+    void deleteByExerciseSetId(@Param("setId") UUID setId);
 
     /** Best partials reps at one parent weight. */
     interface PartialsRow {
