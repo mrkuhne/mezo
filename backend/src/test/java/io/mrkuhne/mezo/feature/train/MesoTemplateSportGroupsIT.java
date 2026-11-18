@@ -149,6 +149,29 @@ class MesoTemplateSportGroupsIT extends ApiIntegrationTest {
             .isNull();
     }
 
+    @Test
+    void updateKeepsOnAbsentAndClearsOnEmpty() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoTemplateUpsertRequest req = upsertRequest();
+        req.setSportGroups(List.of("quad"));
+        MesoTemplateResponse created =
+            postForBody(TEMPLATES, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        String uri = TEMPLATES + "/" + created.getId();
+
+        req.setSportGroups(null); // a client that predates the field must not wipe it
+        MesoTemplateResponse kept = putForBody(uri, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        assertThat(kept.getSportGroups()).containsExactly("quad");
+
+        req.setSportGroups(List.of("calf", "ham"));
+        MesoTemplateResponse set = putForBody(uri, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        assertThat(set.getSportGroups()).containsExactly("ham", "calf");
+
+        req.setSportGroups(List.of());
+        MesoTemplateResponse cleared = putForBody(uri, req, auth, HttpStatus.OK, MesoTemplateResponse.class);
+        assertThat(cleared.getSportGroups()).isNull();
+    }
+
     private MesocycleResponse start(UUID templateId, HttpHeaders auth) {
         return postForBody(TEMPLATES + "/" + templateId + "/start",
             MesoTemplateStartRequest.builder().startDate(LocalDate.now())

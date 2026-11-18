@@ -84,7 +84,11 @@ public class MesoTemplateService {
     @Transactional
     public MesoTemplateResponse update(UUID createdBy, UUID id, MesoTemplateUpsertRequest req) {
         MesoTemplateEntity template = ownedTemplateOrThrow(createdBy, id);
+        List<String> storedSportGroups = template.getSportGroups();
         applyUpsert(template, req);
+        if (req.getSportGroups() == null) { // absent keeps (an older client must not wipe it); [] clears
+            template.setSportGroups(storedSportGroups);
+        }
         return toResponse(templateRepository.save(template));
     }
 

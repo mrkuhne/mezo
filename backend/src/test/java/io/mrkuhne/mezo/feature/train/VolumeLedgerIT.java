@@ -113,6 +113,28 @@ class VolumeLedgerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void sportLowersTheLegBandOnTheRun() {
+        UUID user = databasePopulator.populateUser("ledger-sport@test.local");
+        MesocycleEntity meso = train.createActiveMeso(user);
+        meso.setMusclePriorities(Map.of("quad", "maintain"));
+        mesocycleRepository.saveAndFlush(meso);
+        WorkoutSessionEntity day = train.createTemplateDay(user, meso.getId(), "Hét");
+        exercise(user, day, "Squat", "quad", 3);
+        exercise(user, day, "Row", "back-mid", 4);
+        ledger.sync(user, meso.getId());
+        assertThat(byMuscle(rows(user, meso.getId()), "quad").getBandLow()).isEqualTo(3);
+        assertThat(byMuscle(rows(user, meso.getId()), "quad").getBandHigh()).isEqualTo(7);
+
+        // the run PUT with sportGroups re-syncs the ledger at once
+        trainService.updateMusclePriorities(user, meso.getId(), Map.of("quad", "maintain"), List.of("quad"));
+
+        List<MuscleGroupVolumeLogEntity> rows = rows(user, meso.getId());
+        assertThat(byMuscle(rows, "quad").getBandLow()).isEqualTo(2);
+        assertThat(byMuscle(rows, "quad").getBandHigh()).isEqualTo(5);
+        assertThat(byMuscle(rows, "back").getBandLow()).isEqualTo(byMuscle(rows, "back").getMev());
+    }
+
+    @Test
     void coreGetsNoRow() {
         UUID user = databasePopulator.populateUser("ledger-c@test.local");
         MesocycleEntity meso = train.createActiveMeso(user);
