@@ -77,7 +77,9 @@ A súly- és ismétlés-sorok **előzetes kép** arról, mit fog kérni az első
 **Elfogadás.** Minden sor egyenként **elfogadható** vagy **megtartható** („marad”), vagy egyszerre az összes („Elfogadom átnézés
 nélkül”, illetve „a többi marad”). Ha közben te magad átírtad azt a gyakorlatot, a te számod marad, a javaslat nem írja felül. Amit
 a hét végéig nem döntesz el, az nem történik meg: a múlt heti szám marad, és a javaslat a következő héten lejár. Egy már lezárt
-javaslaton nem lehet változtatni.
+javaslaton nem lehet változtatni (ha a telefon ugyanazt a döntést újraküldi, például akadozó net miatt, azt egyszerűen nyugtázza).
+Ha egy héten nincs mit átnézni (minden izom tart, nincs súly- vagy ismétlés-sor), a javaslat rögtön lezárul — nem kér átnézést
+üres listára. A korábbi hetek még eldöntetlen szint-váltás javaslatait már nem mutatja.
 
 **A „marad” egy súlyemelésnél a múlt heti súlyt tartja.** Ha egy súly- vagy ismétlésemelést megtartasz, azon a héten az edzés a múlt
 heti súlyt és ismétlést kéri annál a gyakorlatnál (akkor is, ha közben a napot átszerkesztetted); a következő héten újra javasol.
@@ -88,8 +90,14 @@ nincs meg a jóváhagyó képernyő, **minden magától érvényesül** (mintha 
 **Ha futam közben szintet vagy sportot váltasz (2026-11-18),** a szerver rögtön megnézi, kicsúszott-e a sávjából az az izom, **amelyiken
 változtattál**, és ha igen, azonnal javasol: sorozatot tesz hozzá vagy vesz el konkrét gyakorlatokon, a korlátokon belül. Most, magától
 érvényesülő módban, ez azonnal be is kerül a tervbe; kézi módban várna a döntésedre. A többi izmot nem bántja — amit te mentettél,
-azt nem húzza vissza. Ha egy újabb váltás jön, az felváltja a még eldöntetlen előzőt. Például: a hát Építésről Hangsúlyra vált, 11
-sorozatról rögtön 14 lesz.
+azt nem húzza vissza. Ha egy újabb váltás jön, az felváltja a még eldöntetlen előzőt (akkor is, ha az újabb már nem kér semmit,
+például visszaváltasz). Például: a hát Építésről Hangsúlyra vált, 11 sorozatról rögtön 14 lesz.
+- **A váltás utáni hét nem büntet.** A következő heti döntés a múlt hetet ahhoz a tervhez méri, amivel ténylegesen edzettél: ha a hét
+  közepén emelted a hátat 11-ről 14-re, és a 11 sorozatot mind megcsináltad, az „minden sorozat megvolt” — nem „kimaradt sorozat”, és a
+  hát lép tovább.
+- **Könnyű héten a váltás nem szünteti meg a könnyű hetet.** Ha terhelés-csökkentő héten váltasz szintet vagy sportot, az új sáv
+  érvényes lesz, de a felezett sorozatokat nem emeli vissza; a rá következő hét visszaállítja a megszokott számokat, és onnan igazodik
+  az új sávhoz.
 
 ## Hogyan működik
 1. Az új hét első edzés-megnyitásakor (hetente egyszer) a háttérrendszer megnézi a múlt hét elvégzett edzéseit, izomcsoportonként.
