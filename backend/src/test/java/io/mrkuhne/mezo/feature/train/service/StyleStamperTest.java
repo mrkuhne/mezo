@@ -20,6 +20,12 @@ class StyleStamperTest {
         assertThat(StyleStamper.stamp(e, null, true, P)).isSameAs(e);
     }
 
+    @Test void exerciseStyleInUnstyledBlockIsUntouched() {
+        // spec §11.3: style effects apply only to a block that HAS a style
+        var e = ex("compound", "chest-mid", "heavy", null);
+        assertThat(StyleStamper.stamp(e, null, true, P)).isSameAs(e);
+    }
+
     @Test void plyoIsUntouched() {
         var e = ex("plyo", "quad", null, null);
         assertThat(StyleStamper.stamp(e, HEAVY, true, P)).isSameAs(e);

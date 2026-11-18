@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
+import io.mrkuhne.mezo.api.dto.CustomWorkoutResponse;
+import io.mrkuhne.mezo.api.dto.CustomWorkoutUpsertRequest;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
@@ -312,6 +314,57 @@ class MesoTemplateStyleIT extends ApiIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
             "select rest_sec from exercise where name = 'Leg Press' and is_deleted = false", Integer.class))
             .isEqualTo(150);
+    }
+
+    @Test
+    void styledExerciseInUnstyledTemplateIsNotStamped() {
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        GymExerciseInput press = styled(ex("Machine Chest Press", "chest-mid", GymExerciseInput.TypeEnum.COMPOUND,
+            catalog("machine-chest-press")), TrainingStyle.ALLOUT);
+        GymExerciseInput fly = styled(ex("Cable Fly", "chest-mid", GymExerciseInput.TypeEnum.ISOLATION,
+            catalog("cable-fly")), TrainingStyle.HEAVY);
+        fly.setRestSec(75);
+
+        MesoTemplateResponse t = postForBody(TEMPLATES, request(null, List.of(press, fly)), auth,
+            HttpStatus.OK, MesoTemplateResponse.class);
+
+        // spec §11.3: an unstyled block is never stamped — input values, the exercise style kept
+        List<GymExercise> e = t.getDays().get(0).getExercises();
+        assertStamp(e.get(0), 8, 12, 3, 1, null, null);
+        assertThat(e.get(0).getTrainingStyle()).isEqualTo(TrainingStyle.ALLOUT);
+        assertStamp(e.get(1), 8, 12, 3, 1, 75, null);
+        assertThat(e.get(1).getTrainingStyle()).isEqualTo(TrainingStyle.HEAVY);
+        MesoTemplateResponse read = getForList(TEMPLATES, auth, HttpStatus.OK, MesoTemplateResponse.class).get(0);
+        assertThat(read.getDays().get(0).getExercises().get(0).getTrainingStyle()).isEqualTo(TrainingStyle.ALLOUT);
+        assertThat(read.getDays().get(0).getExercises().get(0).getEffectiveTrainingStyle()).isNull();
+    }
+
+    @Test
+    void styledExerciseInCustomWorkoutIsNotStamped() {
+        UUID owner = ownerId();
+        GymExerciseInput press = styled(ex("Machine Chest Press", "chest-mid", GymExerciseInput.TypeEnum.COMPOUND,
+            catalog("machine-chest-press")), TrainingStyle.VOLUME);
+        GymExerciseInput fly = styled(ex("Cable Fly", "chest-mid", GymExerciseInput.TypeEnum.ISOLATION,
+            catalog("cable-fly")), TrainingStyle.HEAVY);
+        fly.setRestSec(75);
+
+        CustomWorkoutResponse created = trainService.createCustomWorkout(owner,
+            CustomWorkoutUpsertRequest.builder().name("Saját").exercises(List.of(press, fly)).build());
+
+        List<GymExercise> e = created.getExercises();
+        assertStamp(e.get(0), 8, 12, 3, 1, null, null);
+        assertThat(e.get(0).getTrainingStyle()).isEqualTo(TrainingStyle.VOLUME);
+        assertStamp(e.get(1), 8, 12, 3, 1, 75, null);
+        // a web-style update (no style field) carries the exercise's own fields over, still unstamped
+        CustomWorkoutResponse updated = trainService.updateCustomWorkout(owner, created.getId(),
+            CustomWorkoutUpsertRequest.builder().name("Saját").exercises(e.stream().map(MesoTemplateStyleIT::webInput)
+                .toList()).build());
+        assertThat(updated.getExercises().get(0).getTrainingStyle()).isEqualTo(TrainingStyle.VOLUME);
+        assertThat(updated.getExercises().get(1).getTrainingStyle()).isEqualTo(TrainingStyle.HEAVY);
+        assertStamp(updated.getExercises().get(1), 8, 12, 3, 1, 75, null);
+        assertThat(trainService.listCustomWorkouts(owner).get(0).getExercises().get(0).getEffectiveTrainingStyle())
+            .isNull();
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────────

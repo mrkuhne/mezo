@@ -13,9 +13,11 @@ public final class StyleStamper {
 
     public static GymExerciseJson stamp(GymExerciseJson ex, TrainingStyle blockStyle, boolean stable,
                                         TrainStyleProperties p) {
+        // Style effects apply only to a block that HAS a style (spec §11.3): an exercise's own style
+        // overrides a styled block's, but never wakes up an unstyled block.
+        if (blockStyle == null) return ex;
         TrainingStyle style = TrainingStyle.fromWire(ex.trainingStyle());
         if (style == null) style = blockStyle;
-        if (style == null) return ex;
         ExerciseClass cls = ExerciseClass.of(ex.type(), stable);
         if (cls == null) return ex;
         String group = MuscleGroup.of(ex.muscle());

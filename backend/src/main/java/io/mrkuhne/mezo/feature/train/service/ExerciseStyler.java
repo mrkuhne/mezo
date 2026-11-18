@@ -21,8 +21,8 @@ import org.springframework.stereotype.Component;
  * run day edit, the custom-workout save and the mid-workout swap/add, so the four write paths cannot
  * drift apart. Also computes the read-only {@code effectiveTrainingStyle} of a response exercise.
  *
- * <p>An unstyled block whose exercises carry no style is a no-op: nothing is stamped and the
- * carried fields are all null, so the stored values are exactly what the client sent.
+ * <p>An unstyled block is a no-op (spec §11.3): nothing is stamped and no catalog is read; only the
+ * exercise's own style fields are persisted (and carried over) as sent.
  */
 @Component
 @RequiredArgsConstructor
@@ -66,34 +66,34 @@ public class ExerciseStyler {
     /** Stability of every catalog id that can matter: none at all when nothing is styled (no query). */
     public CatalogAttributes.Lookup lookupRows(Collection<ExerciseEntity> rows, boolean anyBlockStyled) {
         return catalogAttributes.load(rows.stream()
-            .filter(r -> anyBlockStyled || r.getTrainingStyle() != null)
+            .filter(r -> anyBlockStyled)
             .map(ExerciseEntity::getCatalogId).toList());
     }
 
     /** One stability read across several templates (the template list). */
     public CatalogAttributes.Lookup lookupTemplates(Collection<MesoTemplateEntity> templates) {
-        return catalogAttributes.load(templates.stream().flatMap(t -> t.getDays().stream()
-                .flatMap(d -> d.exercises().stream())
-                .filter(e -> t.getTrainingStyle() != null || e.trainingStyle() != null))
+        return catalogAttributes.load(templates.stream().filter(t -> t.getTrainingStyle() != null)
+            .flatMap(t -> t.getDays().stream()).flatMap(d -> d.exercises().stream())
             .map(GymExerciseJson::catalogId).toList());
     }
 
     public CatalogAttributes.Lookup lookup(Collection<GymExerciseJson> exercises, TrainingStyle block) {
         return catalogAttributes.load(exercises.stream()
-            .filter(e -> block != null || e.trainingStyle() != null)
+            .filter(e -> block != null)
             .map(GymExerciseJson::catalogId).toList());
     }
 
     /**
      * The style the stamp actually used: the exercise's own style, else the block's, after the
-     * all-out-on-free fallback; null when unstyled or plyo (never stamped).
+     * all-out-on-free fallback; null for an unstyled block (even when the exercise has a style) and
+     * for plyo (never stamped).
      */
     public io.mrkuhne.mezo.api.dto.TrainingStyle effective(String exerciseStyle, String type, UUID catalogId,
                                                            TrainingStyle block, CatalogAttributes.Lookup stability) {
-        TrainingStyle style = exerciseStyle != null ? TrainingStyle.fromWire(exerciseStyle) : block;
-        if (style == null) {
+        if (block == null) {
             return null;
         }
+        TrainingStyle style = exerciseStyle != null ? TrainingStyle.fromWire(exerciseStyle) : block;
         boolean stable = stability.stable(catalogId);
         ExerciseClass cls = ExerciseClass.of(type, stable);
         if (cls == null) {

@@ -34,9 +34,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -103,10 +105,10 @@ public class TrainService {
                 .stream().collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
         List<ExerciseEntity> allExercises = exercisesBySession.values().stream().flatMap(List::stream).toList();
         Map<UUID, CatalogMedia> mediaByCatalog = mediaByCatalogOf(allExercises);
-        Map<UUID, TrainingStyle> styleByMeso = new java.util.HashMap<>();
+        Map<UUID, TrainingStyle> styleByMeso = new HashMap<>();
         mesos.forEach(m -> styleByMeso.put(m.getId(), TrainingStyle.fromWire(m.getTrainingStyle())));
         CatalogAttributes.Lookup stability = styler.lookupRows(allExercises,
-            styleByMeso.values().stream().anyMatch(java.util.Objects::nonNull));
+            styleByMeso.values().stream().anyMatch(Objects::nonNull));
 
         Map<UUID, List<MesoDay>> daysByMeso = sessions.stream()
             .filter(s -> s.getMesocycleId() != null)
@@ -453,7 +455,7 @@ public class TrainService {
         for (int i = 0; i < inputs.size(); i++) {
             fresh.add(toExerciseEntity(createdBy, template.getId(), inputs.get(i), i));
         }
-        // a custom workout has no block style: only an exercise's own style is stamped
+        // a custom workout has no block style: nothing is stamped, an exercise's own fields persist as sent
         CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, null);
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
         return toCustomWorkoutResponse(template, saved, mediaByCatalogOf(saved), stability);

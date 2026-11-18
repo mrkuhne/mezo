@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -63,7 +64,8 @@ public class WorkoutExerciseChangeService {
 
         List<ExerciseEntity> instanceRows = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(instance.getId()));
-        TrainingStyle block = runStyleOf(templateId);
+        UUID mesoId = mesoIdOf(templateId);
+        TrainingStyle block = runStyleOf(mesoId);
         ExerciseEntity row = fromRequest(createdBy, instance.getId(), req);
         row.setReplacesExerciseId(replaced == null ? null : replaced.getId());
         row.setSavedToPlan(meso);
@@ -73,7 +75,7 @@ public class WorkoutExerciseChangeService {
 
         if (meso) {
             writePlan(createdBy, instance, templateId, req, replaced, closing, block);
-            volumeLedger.sync(createdBy, mesoIdOf(templateId));
+            volumeLedger.sync(createdBy, mesoId);
         }
         exerciseRepository.flush(); // the refreshed today payload below reads through native SQL too
         return WorkoutExerciseChangeResponse.builder()
@@ -161,14 +163,13 @@ public class WorkoutExerciseChangeService {
                 ? row.getCatalogId().equals(replaced.getCatalogId())
                 : replaced.getCatalogId() == null && row.getName().equals(replaced.getName());
             row.setOverrides(sameMovement && replaced.getOverrides() != null
-                ? new java.util.ArrayList<>(replaced.getOverrides()) : null);
+                ? new ArrayList<>(replaced.getOverrides()) : null);
         }
         styler.styleRows(List.of(row), List.of(), block);
     }
 
-    /** The training style of the run a template day belongs to; null for a custom template or an unstyled run. */
-    private TrainingStyle runStyleOf(UUID templateId) {
-        UUID mesoId = mesoIdOf(templateId);
+    /** The training style of a run; null for a custom template (no run) or an unstyled run. */
+    private TrainingStyle runStyleOf(UUID mesoId) {
         return mesoId == null ? null : mesocycleRepository.findById(mesoId)
             .map(m -> TrainingStyle.fromWire(m.getTrainingStyle())).orElse(null);
     }
