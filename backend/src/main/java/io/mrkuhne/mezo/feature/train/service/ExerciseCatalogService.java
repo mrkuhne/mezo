@@ -164,6 +164,16 @@ public class ExerciseCatalogService {
         e.setType(req.getType().getValue());
         e.setStim(req.getStim());
         e.setFatigue(req.getFatigue());
+        // Absent → keep: a fresh row keeps the entity defaults (other/free/false), an edit keeps what is stored.
+        if (req.getEquipment() != null) {
+            e.setEquipment(req.getEquipment().getValue());
+        }
+        if (req.getStability() != null) {
+            e.setStability(req.getStability().getValue());
+        }
+        if (req.getLengthenedFriendly() != null) {
+            e.setLengthenedFriendly(req.getLengthenedFriendly());
+        }
         if (req.getVideoUrl() != null) {
             e.setVideoUrl(req.getVideoUrl());
         }

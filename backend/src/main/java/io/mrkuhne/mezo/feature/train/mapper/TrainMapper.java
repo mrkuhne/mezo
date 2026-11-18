@@ -65,6 +65,8 @@ public interface TrainMapper {
     GymExercise toGymExercise(ExerciseEntity entity);
 
     @Mapping(target = "type", expression = "java(ExerciseCatalogItem.TypeEnum.fromValue(entity.getType()))")
+    @Mapping(target = "equipment", expression = "java(io.mrkuhne.mezo.api.dto.Equipment.fromValue(entity.getEquipment()))")
+    @Mapping(target = "stability", expression = "java(io.mrkuhne.mezo.api.dto.Stability.fromValue(entity.getStability()))")
     @Mapping(target = "editable", ignore = true)
     @Mapping(target = "mediaEditable", ignore = true)
     @Mapping(target = "authoredByMe", ignore = true)

@@ -36,6 +36,9 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
         "biceps-brachialis", "triceps-long", "triceps-lateral", "triceps-medial",
         "quad", "ham", "glute", "calf", "core");
     private static final Set<String> TYPES = Set.of("compound", "isolation", "plyo");
+    private static final Set<String> EQUIPMENT = Set.of(
+        "machine", "cable", "dumbbell", "barbell", "bodyweight", "kettlebell", "other");
+    private static final Set<String> STABILITY = Set.of("stable", "free");
 
     private final ExerciseCatalogRepository repository;
     private final ObjectMapper objectMapper; // SB4 Jackson 3 (tools.jackson)
@@ -43,7 +46,8 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
     /** One catalog row as authored in content/exercise-catalog.json. */
     public record CatalogJsonItem(
         String slug, String name, String muscle, String type, BigDecimal stim, BigDecimal fatigue,
-        String videoUrl, String imageStartUrl, String imageEndUrl) {}
+        String videoUrl, String imageStartUrl, String imageEndUrl,
+        String equipment, String stability, Boolean lengthenedFriendly) {}
 
     // Same self-invocation note as TrainSeedData: startup enters via run(String...), the IT
     // calls run() through the proxy — both overloads carry @Transactional.
@@ -82,6 +86,10 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
             e.setType(item.type());
             e.setStim(item.stim());
             e.setFatigue(item.fatigue());
+            // The classification is content, not user data: always overwritten from the file (drift heals).
+            e.setEquipment(item.equipment());
+            e.setStability(item.stability());
+            e.setLengthenedFriendly(item.lengthenedFriendly());
             // Seed a JSON demo only when provided AND the row has none — never clobber a user video.
             if (item.videoUrl() != null && e.getVideoUrl() == null) {
                 e.setVideoUrl(item.videoUrl());
@@ -102,7 +110,10 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
         boolean valid = item.slug() != null && !item.slug().isBlank()
             && item.name() != null && !item.name().isBlank()
             && MUSCLES.contains(item.muscle()) && TYPES.contains(item.type())
-            && item.stim() != null && item.fatigue() != null;
+            && item.stim() != null && item.fatigue() != null
+            && item.equipment() != null && EQUIPMENT.contains(item.equipment())
+            && item.stability() != null && STABILITY.contains(item.stability())
+            && item.lengthenedFriendly() != null;
         if (!valid) {
             throw new IllegalStateException("Invalid exercise-catalog item: " + item.slug());
         }
