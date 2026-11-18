@@ -48,6 +48,16 @@ public interface MesoWeekProposalRepository extends JpaRepository<MesoWeekPropos
         @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId,
         @Param("beforeWeek") int beforeWeek);
 
+    /** The run's still-{@code pending} {@code tier_change} proposals, newest first (the read endpoint shows them). */
+    @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
+        + " and p.kind = '" + MesoWeekProposalEntity.KIND_TIER_CHANGE + "'"
+        + " and p.status = '" + MesoWeekProposalEntity.STATUS_PENDING + "' order by p.createdAt desc")
+    List<MesoWeekProposalEntity> findPendingTierChanges(
+        @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId);
+
+    /** One proposal of the caller's run by id (the decisions endpoint); absent for another user or run. */
+    Optional<MesoWeekProposalEntity> findByIdAndCreatedByAndMesocycleId(UUID id, UUID createdBy, UUID mesocycleId);
+
     /** Every applied (or auto-applied) {@code weekly} proposal of a run, oldest week first. */
     @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
         + " and p.kind = '" + MesoWeekProposalEntity.KIND_WEEKLY + "'"

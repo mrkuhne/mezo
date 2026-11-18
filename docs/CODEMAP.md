@@ -53,7 +53,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [settings](#settings) | · | · | · | ✓ | [settings](features/settings.md) |
 | [telemetry](#telemetry) | ✓ | 1 | ✓ | · | · |
 | [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [needs](features/needs.md), [proactive](features/proactive.md), [ritual](features/ritual.md), [today](features/today.md) |
-| [train](#train) | ✓ | 4 | ✓ | ✓ | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
+| [train](#train) | ✓ | 5 | ✓ | ✓ | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [tutorial](#tutorial) | ✓ | 1 | ✓ | ✓ | [tutorial](features/tutorial.md) |
 | [wearable](#wearable) | ✓ | 1 | · | · | [boop-ios](features/boop-ios.md) |
 
@@ -1628,12 +1628,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `SportSlotSkipService`, `StyleContext`, `StyleStamper`, `StyleTable`, `TemplatePlan`, `TimingObservation`,
     `TimingObservationExtractor`, `TimingProfileListener`, `TimingProfileService`, `TrainService`, `TrainingStyle`,
     `VolumeArcService`, `VolumeBands`, `VolumeDecider`, `VolumeLedger`, `VolumePath`, `VolumeProgressionService`,
-    `WeekProposalService`, `WeeklyScheduledActivityService`, `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`,
-    `WorkoutAutoCloseService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`,
-    `WorkoutWindowQueryService`
+    `WeekProposalDecisionService`, `WeekProposalQueryService`, `WeekProposalService`, `WeeklyScheduledActivityService`,
+    `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`, `WorkoutAutoCloseService`,
+    `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
   - **controllers→contract:** `PlannedSkipController`→`TrainSkipApi`, `ReadinessController`→`TrainReadinessApi`,
-    `RecoveryController`→`TrainRecoveryApi`, `TrainController`→`TrainApi`
-  - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`
+    `RecoveryController`→`TrainRecoveryApi`, `TrainController`→`TrainApi`,
+    `WeekProposalController`→`TrainWeekProposalApi`
+  - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`, `WeekProposalMapper`
   - **config:** `ClosingBlockProperties`, `HypertrophyProperties`, `MesoPlanProperties`, `ReadinessProperties`,
     `TimingProperties`, `TrainProperties`, `TrainStyleProperties`, `VolumeProperties`
   - **events/listeners:** `MesocycleClosed`
@@ -1652,6 +1653,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     DELETE /api/train/recovery/releases/{date} · POST /api/train/recovery/waive-comeback
 - **Contract** `api/feature/train/train-skip.yml` — 3 operations
   - **endpoints:** GET /api/train/skips · PUT /api/train/skips · DELETE /api/train/skips/{id}
+- **Contract** `api/feature/train/train-week-proposal.yml` — 2 operations
+  - **endpoints:** GET /api/train/mesocycles/{id}/week-proposals ·
+    POST /api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions
 - **Contract** `api/feature/train/train.yml` — 62 operations
   - **endpoints:** GET /api/train/mesocycles · POST /api/train/mesocycles/{id}/activate ·
     POST /api/train/mesocycles/{id}/close · PUT /api/train/mesocycles/{id}/muscle-priorities ·
@@ -1727,7 +1731,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     useEditableNumber.ts, useRecoveryBetter.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts,
     weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutReviewDerive.ts, workoutState.ts
   - **root:** InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 109 IT + 35 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 111 IT + 35 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1747,8 +1751,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`, `TrainStylePropertiesIT`, `TrainingStreakCalculatorIT`,
     `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`,
     `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
-    `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`, `WeekProposalLoadLinesIT`, `WeekProposalLoadLinesSwitchOffIT`,
-    `WeekProposalManualIT`, `WeekProposalStallFailureIT`, `WeekProposalTierIT`, `WeeklyScheduledActivityServiceIT`,
+    `WeekProposalApiAutoIT`, `WeekProposalApiIT`, `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`,
+    `WeekProposalLoadLinesIT`, `WeekProposalLoadLinesSwitchOffIT`, `WeekProposalManualIT`,
+    `WeekProposalStallFailureIT`, `WeekProposalTierIT`, `WeeklyScheduledActivityServiceIT`,
     `WeeklyScheduledActivityTrainingDaysIT`, `WeeklySignalReaderIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`,
     `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`,
     `WorkoutExerciseChangeIT`, `WorkoutFinishLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`,
@@ -1889,7 +1894,6 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
-- **Contract fragment** `api/feature/train/train-week-proposal.yml` — tags `TrainWeekProposal`; no backend controller implements the matching `<Tag>Api`
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
 - **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
