@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-17
+updated: 2026-11-18
 tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
   - frontend/src/shared/i18n
