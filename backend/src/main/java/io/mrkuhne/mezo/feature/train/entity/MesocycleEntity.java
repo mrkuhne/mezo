@@ -69,6 +69,11 @@ public class MesocycleEntity extends OwnedEntity {
     @Column(name = "sport_groups", columnDefinition = "jsonb")
     private List<String> sportGroups;
 
+    /** Whether a sport already loads this coarse muscle group (its volume band is lowered). */
+    public boolean isSportLoaded(String group) {
+        return sportGroups != null && sportGroups.contains(group);
+    }
+
     @NotNull
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;

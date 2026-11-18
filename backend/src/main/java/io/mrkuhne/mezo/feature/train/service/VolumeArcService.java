@@ -4,29 +4,41 @@ import io.mrkuhne.mezo.api.dto.MesocycleVolumeArcResponse;
 import io.mrkuhne.mezo.api.dto.MuscleVolumeArc;
 import io.mrkuhne.mezo.api.dto.VolumeArcWeek;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
+import io.mrkuhne.mezo.feature.train.entity.json.RestoreEntryJson;
+import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalLineJson;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
+import io.mrkuhne.mezo.feature.train.repository.MesoWeekProposalRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Read-only whole-mesocycle volume arc (Phase B, Task B2): per-muscle planned scaffold (DA7) laid
- * alongside the logged actuals bucketed to {@code startDate}-anchored meso-weeks, up to {@code
- * currentWeek} — future weeks carry only {@code planned} ({@code actual == null}). Never gated by
- * the volume-progression switch (harmless read); never mutates state.
+ * Read-only whole-mesocycle volume arc (Phase B, Task B2): per-muscle planned line laid alongside
+ * the logged actuals bucketed to {@code startDate}-anchored meso-weeks, up to {@code currentWeek} —
+ * future weeks carry only {@code planned} ({@code actual == null}). The planned line is the volume
+ * engine v2 path ({@link #plannedPath}): past weeks what each week prescribed, the current and later
+ * weeks {@link VolumePath} from the plan as it stands. Never gated by the volume-progression switch
+ * (harmless read); never mutates state.
  *
  * <p>A muscle with no {@link MuscleGroupVolumeLogEntity} row is simply absent from the response
  * (DA5, same rule as {@link VolumeProgressionService}) — never fabricated.
@@ -36,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class VolumeArcService {
 
     private static final String PHASE_DELOAD = "Deload";
+    private static final String LEGACY_KEY = "legacy";
 
     /** Coarse volume-group → color-family region key, matching the frontend's {@code muscleRegion}. */
     private static final Map<String, String> REGION_BY_GROUP = Map.ofEntries(
@@ -53,6 +66,10 @@ public class VolumeArcService {
     private final MesocycleRepository mesocycleRepository;
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final ExerciseSetRepository exerciseSetRepository;
+    private final ExerciseRepository exerciseRepository;
+    private final WorkoutSessionRepository workoutSessionRepository;
+    private final MesoWeekProposalRepository proposalRepository;
+    private final EnergyBalancePort energyBalance;
     private final VolumeProperties props;
 
     @Transactional(readOnly = true)
@@ -83,10 +100,12 @@ public class VolumeArcService {
 
         Map<String, Map<Integer, Integer>> actualByGroupWeek =
             aggregateActuals(createdBy, mesoId, startDate, weeks);
+        Map<String, int[]> plannedByGroup = plannedPath(createdBy, meso, currentWeek);
 
         List<MuscleVolumeArc> muscles = volumeLogRepository
             .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(mesoId)).stream()
-            .map(row -> buildMuscleArc(row, meso, phaseCurve, weeks, currentWeek, actualByGroupWeek))
+            .map(row -> buildMuscleArc(row, phaseCurve, weeks, currentWeek, actualByGroupWeek,
+                plannedByGroup.getOrDefault(row.getMuscle(), new int[weeks])))
             .toList();
 
         return MesocycleVolumeArcResponse.builder()
@@ -116,18 +135,11 @@ public class VolumeArcService {
         return byGroupWeek;
     }
 
-    private MuscleVolumeArc buildMuscleArc(MuscleGroupVolumeLogEntity row, MesocycleEntity meso,
-            List<String> phaseCurve, int weeks, int currentWeek,
-            Map<String, Map<Integer, Integer>> actualByGroupWeek) {
+    private MuscleVolumeArc buildMuscleArc(MuscleGroupVolumeLogEntity row, List<String> phaseCurve, int weeks,
+            int currentWeek, Map<String, Map<Integer, Integer>> actualByGroupWeek, int[] planned) {
         String muscle = row.getMuscle(); // already the coarse volume-group key
-        int mev = row.getMev();
         int mrv = row.getMrv();
-        PriorityTier tier = PriorityTier.of(meso.getMusclePriorities(), muscle);
-        int ceiling = tier.ceiling(mev, row.getMav(), mrv);
         Map<Integer, Integer> actuals = actualByGroupWeek.getOrDefault(muscle, Map.of());
-        int[] planned = row.getBandHigh() != null
-            ? plannedFromPlan(phaseCurve, weeks, currentWeek, row, tier)
-            : plannedScaffold(phaseCurve, weeks, mev, ceiling);
 
         List<VolumeArcWeek> weekList = new ArrayList<>(weeks);
         for (int w = 1; w <= weeks; w++) {
@@ -149,57 +161,201 @@ public class VolumeArcService {
     }
 
     /**
-     * Planned line of a derived ledger row (volume engine v2): up to the run's current week the
-     * plan's own sum ({@code currentSets}); later non-deload weeks ramp from it by the tier's weekly
-     * step (maintain never) up to {@code max(currentSets, bandHigh)}; a deload week is the previous
-     * week's planned amount × the deload fraction, rounded up.
+     * The planned weekly sets per muscle group (index {@code week − 1}), for the arc and the run's
+     * evaluation (volume engine v2 S2, spec §6.3):
+     * <ul>
+     *   <li><b>past weeks</b> ({@code < currentWeek}): what that week really prescribed — the group sums of
+     *       its applied weekly proposal's {@code planAfter} (rows resolved owner-scoped including
+     *       soft-deleted ones, so a day edit does not lose them); a week without one (week 1, a
+     *       stamped-only week) takes the state before the next applied proposal (its {@code planAfter}
+     *       with its accepted lines turned back to {@code from}), else the current plan;</li>
+     *   <li><b>the current and later weeks</b>: {@link VolumePath#project} from the plan as it stands,
+     *       with the current deload proposal's {@code restore} when the current week is a deload; the
+     *       deficit is today's answer for an active run, else none;</li>
+     *   <li><b>legacy ledger rows</b> (no {@code bandHigh}: archived model-1 runs): the path of one
+     *       synthetic exercise starting at the row's MEV with the caps off — week 1 MEV, the tier step
+     *       up to the band top, the deload halving, the week after restoring.</li>
+     * </ul>
+     * Groups without a landmark entry are never pathed and so never appear.
      */
-    private int[] plannedFromPlan(List<String> phaseCurve, int weeks, int currentWeek,
-            MuscleGroupVolumeLogEntity row, PriorityTier tier) {
-        int own = row.getCurrentSets();
-        int step = switch (tier) {
-            case EMPHASIZE -> props.stepEmphasize();
-            case GROW -> props.stepGrow();
-            case MAINTAIN -> 0;
-        };
-        int cap = Math.max(own, row.getBandHigh());
-        int[] planned = new int[weeks];
-        for (int w = 1; w <= weeks; w++) {
-            int previous = w == 1 ? own : planned[w - 2];
-            if (w <= currentWeek) {
-                planned[w - 1] = own;
-            } else if (PHASE_DELOAD.equalsIgnoreCase(phaseAt(phaseCurve, w))) {
-                planned[w - 1] = BigDecimal.valueOf(previous).multiply(props.deloadFraction())
-                    .setScale(0, RoundingMode.CEILING).intValue();
-            } else {
-                planned[w - 1] = Math.min(previous + step, cap);
+    Map<String, int[]> plannedPath(UUID createdBy, MesocycleEntity run, int currentWeek) {
+        int weeks = run.getWeeks();
+        int fromWeek = Math.max(1, Math.min(weeks, currentWeek));
+        List<String> phaseCurve = run.getPhaseCurve() == null ? List.of() : run.getPhaseCurve();
+        Map<String, int[]> planned = new TreeMap<>();
+        List<PlanRow> plan = planRows(createdBy, run.getId());
+
+        if (fromWeek > 1) {
+            pastWeeks(createdBy, run, fromWeek, plan, planned);
+        }
+
+        Map<String, VolumePath.Group> groups = new TreeMap<>();
+        List<VolumePath.Exercise> amounts = new ArrayList<>();
+        for (PlanRow r : plan) {
+            if (r.group() == null) {
+                continue;
+            }
+            amounts.add(new VolumePath.Exercise(r.exercise().getId().toString(), r.group(), r.dayIndex(),
+                r.exercise().getWorkingSets()));
+            groups.computeIfAbsent(r.group(), g -> {
+                PriorityTier tier = PriorityTier.of(run.getMusclePriorities(), g);
+                return new VolumePath.Group(tier,
+                    VolumeBands.band(props.baselines().get(g), tier, run.isSportLoaded(g), props.bands()));
+            });
+        }
+        boolean deficit = "active".equals(run.getStatus()) && energyBalance.isInDeficit(createdBy, LocalDate.now());
+        fill(planned, weeks, VolumePath.project(new VolumePath.Input(weeks, phaseCurve, fromWeek, amounts,
+            restoreTo(createdBy, run, fromWeek, phaseCurve), groups, deficit,
+            props.stepEmphasize(), props.stepGrow(), props.stepDeficit(), props.deloadFraction(),
+            props.bands().exerciseCap(), props.bands().sessionCap())));
+
+        for (MuscleGroupVolumeLogEntity row
+                : volumeLogRepository.findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(run.getId()))) {
+            if (row.getBandHigh() == null) {
+                planned.put(row.getMuscle(), legacyScaffold(run, row, weeks, phaseCurve));
             }
         }
         return planned;
     }
 
-    /**
-     * Planned-set scaffold (spec DA7, GD4): week 1 starts at MEV, deload weeks drop to {@code
-     * round(ceiling * deloadFraction)} (ramp untouched), every other week ramps by {@code step} up
-     * to the muscle's tier {@code ceiling} (Emphasize MRV / Grow MAV / Maintain MEV — mezo-3m5m,
-     * AD4). The arc RESPONSE still reports the row's raw {@code mrv} untouched (see {@link
-     * MuscleVolumeArc#getMrv()}) — only this internal scaffold shifts with the tier.
-     */
-    private int[] plannedScaffold(List<String> phaseCurve, int weeks, int mev, int ceiling) {
-        int[] planned = new int[weeks];
-        int ramp = mev;
-        for (int w = 1; w <= weeks; w++) {
-            if (w == 1) {
-                planned[w - 1] = mev;
-                ramp = mev;
-            } else if (PHASE_DELOAD.equalsIgnoreCase(phaseAt(phaseCurve, w))) {
-                planned[w - 1] = round(ceiling, props.deloadFraction());
-            } else {
-                ramp = Math.min(ramp + props.step(), ceiling);
-                planned[w - 1] = ramp;
-            }
+    /** Fills weeks {@code 1 … fromWeek − 1} with what each week prescribed. */
+    private void pastWeeks(UUID createdBy, MesocycleEntity run, int fromWeek, List<PlanRow> plan,
+                           Map<String, int[]> planned) {
+        int weeks = run.getWeeks();
+        List<MesoWeekProposalEntity> applied = proposalRepository.findAllApplied(createdBy, run.getId()).stream()
+            .filter(p -> p.getPlanAfter() != null).toList();
+        Map<String, Integer> currentPlan = new LinkedHashMap<>();
+        Map<String, String> groupById = new HashMap<>();
+        plan.forEach(r -> {
+            currentPlan.put(r.exercise().getId().toString(), r.exercise().getWorkingSets());
+            groupById.put(r.exercise().getId().toString(), r.group());
+        });
+
+        List<Map<String, Integer>> states = new ArrayList<>();
+        for (int w = 1; w < fromWeek; w++) {
+            states.add(prescribedAt(w, applied, currentPlan));
         }
-        return planned;
+
+        Set<UUID> unknown = new HashSet<>();
+        states.forEach(state -> state.keySet().stream().filter(id -> !groupById.containsKey(id))
+            .forEach(id -> unknown.add(UUID.fromString(id))));
+        if (!unknown.isEmpty()) {
+            exerciseRepository.findOwnedByIdIncludingDeleted(createdBy, unknown)
+                .forEach(e -> groupById.put(e.getId().toString(), groupOf(e)));
+        }
+
+        for (int w = 1; w < fromWeek; w++) {
+            int index = w - 1;
+            states.get(index).forEach((id, sets) -> {
+                String group = groupById.get(id);
+                if (group != null && sets != null) {
+                    planned.computeIfAbsent(group, g -> new int[weeks])[index] += sets;
+                }
+            });
+        }
+    }
+
+    /**
+     * The exercise amounts week {@code week} prescribed: its own applied proposal's {@code planAfter};
+     * else the state before the next applied proposal; else the plan as it stands.
+     */
+    private static Map<String, Integer> prescribedAt(int week, List<MesoWeekProposalEntity> applied,
+                                                     Map<String, Integer> currentPlan) {
+        Optional<MesoWeekProposalEntity> own = applied.stream().filter(p -> p.getWeek() == week).findFirst();
+        if (own.isPresent()) {
+            return own.get().getPlanAfter();
+        }
+        return applied.stream().filter(p -> p.getWeek() > week).findFirst()
+            .map(next -> {
+                Map<String, Integer> before = new LinkedHashMap<>(next.getPlanAfter());
+                if (next.getLines() != null) {
+                    next.getLines().stream()
+                        .filter(l -> WeekProposalLineJson.DECISION_ACCEPTED.equals(l.decision()))
+                        .forEach(l -> before.put(l.exerciseId().toString(), l.from()));
+                }
+                return before;
+            })
+            .orElse(currentPlan);
+    }
+
+    /** The pre-deload amounts the week after a deload restores, when {@code fromWeek} is itself a deload. */
+    private Map<String, Integer> restoreTo(UUID createdBy, MesocycleEntity run, int fromWeek, List<String> phaseCurve) {
+        if (!PHASE_DELOAD.equalsIgnoreCase(phaseAt(phaseCurve, fromWeek))) {
+            return Map.of();
+        }
+        Map<String, Integer> restore = new HashMap<>();
+        proposalRepository.findWeekly(createdBy, run.getId(), fromWeek)
+            .filter(p -> MesoWeekProposalEntity.STATUS_APPLIED.equals(p.getStatus())
+                || MesoWeekProposalEntity.STATUS_AUTO_APPLIED.equals(p.getStatus()))
+            .map(MesoWeekProposalEntity::getRestore)
+            .ifPresent(entries -> entries.forEach((RestoreEntryJson e) ->
+                restore.put(e.exerciseId().toString(), e.sets())));
+        return restore;
+    }
+
+    /**
+     * A legacy (model-1) ledger row's planned line: one synthetic exercise starting at the row's MEV in
+     * week 1, caps off, band from the row's own landmarks, never sport-adjusted, never in a deficit.
+     */
+    private int[] legacyScaffold(MesocycleEntity run, MuscleGroupVolumeLogEntity row, int weeks,
+                                 List<String> phaseCurve) {
+        String muscle = row.getMuscle();
+        PriorityTier tier = PriorityTier.of(run.getMusclePriorities(), muscle);
+        VolumeProperties.Baseline landmarks = new VolumeProperties.Baseline(row.getMev(), row.getMav(), row.getMrv());
+        VolumePath.Input in = new VolumePath.Input(weeks, phaseCurve, 1,
+            List.of(new VolumePath.Exercise(LEGACY_KEY, muscle, 0, row.getMev())), Map.of(),
+            Map.of(muscle, new VolumePath.Group(tier, VolumeBands.band(landmarks, tier, false, props.bands()))),
+            false, props.stepEmphasize(), props.stepGrow(), props.stepDeficit(), props.deloadFraction(),
+            Integer.MAX_VALUE, Integer.MAX_VALUE);
+        Map<String, int[]> one = new HashMap<>();
+        fill(one, weeks, VolumePath.project(in));
+        return one.getOrDefault(muscle, new int[weeks]);
+    }
+
+    private static void fill(Map<String, int[]> planned, int weeks, List<VolumePath.Week> path) {
+        for (VolumePath.Week week : path) {
+            if (week.week() < 1 || week.week() > weeks) {
+                continue;
+            }
+            week.sets().forEach((group, sets) ->
+                planned.computeIfAbsent(group, g -> new int[weeks])[week.week() - 1] = sets);
+        }
+    }
+
+    // ── plan reading (mirrors WeekProposalService's) ──────────────────────────────────────────
+
+    /** A counting exercise of a template day; {@code group} null when the group has no landmark entry. */
+    private record PlanRow(ExerciseEntity exercise, int dayIndex, String group) {}
+
+    private List<PlanRow> planRows(UUID createdBy, UUID mesoId) {
+        Map<UUID, Integer> dayIndex = new HashMap<>();
+        workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId))
+            .stream().filter(s -> s.getTemplateSessionId() == null)
+            .forEach(s -> dayIndex.put(s.getId(), s.getOrderIndex() == null ? 0 : s.getOrderIndex()));
+        if (dayIndex.isEmpty()) {
+            return List.of();
+        }
+        return exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.copyOf(dayIndex.keySet()))
+            .stream()
+            .filter(ExerciseEntity::isCountsTowardVolume)
+            .map(e -> new PlanRow(e, dayIndex.get(e.getWorkoutSessionId()), groupOf(e)))
+            .sorted((a, b) -> a.dayIndex() != b.dayIndex() ? Integer.compare(a.dayIndex(), b.dayIndex())
+                : Integer.compare(orderIndex(a.exercise()), orderIndex(b.exercise())))
+            .toList();
+    }
+
+    /** The exercise's coarse group when it has a landmark entry, else null (never judged, never pathed). */
+    private String groupOf(ExerciseEntity e) {
+        if (!e.isCountsTowardVolume() || e.getMuscle() == null || e.getMuscle().isBlank()) {
+            return null;
+        }
+        String group = MuscleGroup.of(e.getMuscle());
+        return props.baselines().containsKey(group) ? group : null;
+    }
+
+    private static int orderIndex(ExerciseEntity e) {
+        return e.getOrderIndex() == null ? 0 : e.getOrderIndex();
     }
 
     /** DA1-style bounds-checked 1-based phaseCurve lookup; defensive fallback if lengths ever drift. */
@@ -209,9 +365,5 @@ public class VolumeArcService {
             return "MEV";
         }
         return phaseCurve.get(idx);
-    }
-
-    private static int round(int value, BigDecimal frac) {
-        return BigDecimal.valueOf(value).multiply(frac).setScale(0, RoundingMode.HALF_UP).intValue();
     }
 }

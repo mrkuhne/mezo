@@ -172,7 +172,7 @@ public class WeekProposalService {
                 calWeek, PriorityTier.of(meso.getMusclePriorities(), group),
                 VolumeBands.band(props.baselines().get(group),
                     PriorityTier.of(meso.getMusclePriorities(), group),
-                    meso.getSportGroups() != null && meso.getSportGroups().contains(group), props.bands()),
+                    meso.isSportLoaded(group), props.bands()),
                 restored, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
                 deficit, deloadPhase, props.stepEmphasize(), props.stepGrow(), props.stepDeficit()));
             List<String> reasons = result.reasons().stream().map(WeekProposalService::code).toList();
