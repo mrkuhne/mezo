@@ -678,184 +678,186 @@
     "mit_kapsz": "Amennyi sorozatot egy gyakorlatra beírsz, pontosan annyit ír elő az edzés; minden izomcsoportnak van egy heti sávja a szintje szerint, és az app hétről hétre legfeljebb egy-két sorozatot tol át konkrét gyakorlatokra abból, amit tényleg megcsináltál.",
     "munkamenet": "atlas-workout-recipes"
   },
-  "mezo-r36n9.77": {
-    "cim": "Edzés: a tervépítő számolása (sávok, javaslatok, röplabda)",
+  "mezo-r36n9.63": {
+    "cim": "Étel: „Ezt főztem” — receptet abból, amit tényleg főztél",
     "tipus": "Funkció",
-    "szakasz": "B5 Edzés + Watch",
+    "szakasz": "B4 Étel",
     "terulet": [
-      "Edzés"
+      "Étel"
     ],
-    "mit_kapsz": "A blokk szerkesztésekor a szerver megmondja izmonként a sávot, hogy hol állsz hozzá képest, és konkrét javaslatot ad; a röplabda miatt a láb sávja lejjebb mehet.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "A Receptek fülön elmondod, beírod vagy lefotózod, miből és mennyit főztél; a Boop ebből receptet rak össze, a hozzávalókat a saját polcodhoz és a közös ételtárhoz illeszti (bizonytalan esetben rákérdez), a hiányzót pedig egy gombnyomással felveszi a kamrába."
   },
-  "mezo-r36n9.78": {
-    "cim": "Edzés: a heti jóváhagyás és a kézi mód",
+  "mezo-r36n9.64": {
+    "cim": "Étel: a kész étel súlya a recepten",
     "tipus": "Funkció",
-    "szakasz": "B5 Edzés + Watch",
+    "szakasz": "B4 Étel",
     "terulet": [
-      "Edzés"
+      "Étel"
     ],
-    "mit_kapsz": "A heti változásokról gyakorlatonként dönthetsz (elfogadod vagy marad a múlt heti); erre épül majd a telefonos heti áttekintő.",
-    "munkamenet": "atlas-workout-recipes"
-  },
-  "mezo-r36n9.79": {
-    "cim": "Edzés: edzésmód és hangsúlyosabb emelés",
-    "tipus": "Funkció",
-    "szakasz": "B5 Edzés + Watch",
-    "terulet": [
-      "Edzés"
-    ],
-    "mit_kapsz": "A blokkra választhatsz edzésmódot (kiegyensúlyozott, sok ismétlés, nagyobb súly, két sorozat bukásig), a tartalék a blokk során csökken, és az app izmonként figyeli, hogy haladsz-e.",
-    "munkamenet": "atlas-workout-recipes"
-  },
-  "mezo-r36n9.80": {
-    "cim": "Edzés: a technikák saját helyet kapnak",
-    "tipus": "Funkció",
-    "szakasz": "B5 Edzés + Watch",
-    "terulet": [
-      "Edzés"
-    ],
-    "mit_kapsz": "A drop, a pihenős drop, a myo és a félismétlések külön rögzülnek, így nem rontják el a rekordjaidat, a következő súlyt és a heti sorozatszámot.",
-    "munkamenet": "atlas-workout-recipes"
-  },
-  "mezo-r36n9.81": {
-    "cim": "Edzés: hová kerül a technika, és a napi kihívás",
-    "tipus": "Funkció",
-    "szakasz": "B5 Edzés + Watch",
-    "terulet": [
-      "Edzés"
-    ],
-    "mit_kapsz": "Az app magától javasolja, melyik biztonságos gyakorlatra jusson technika, minden edzésen kijelöl egy kihívást, és jelzi, ha egy izom megakadt.",
-    "munkamenet": "atlas-workout-recipes"
-  },
-  "mezo-r36n9.82": {
-    "cim": "Edzés: az AI finomítja a technikák helyét",
-    "tipus": "Funkció",
-    "szakasz": "B5 Edzés + Watch",
-    "terulet": [
-      "Edzés"
-    ],
-    "mit_kapsz": "Az AI a biztonságos gyakorlatok között mozgathatja a technikákat, egy mondattal indokolva; a döntés a heti jóváhagyásban a tiéd.",
-    "munkamenet": "atlas-workout-recipes"
-  },
-  "mezo-r36n9.83": {
-    "cim": "Boop Edzés: blokk-építő és heti áttekintő a telefonon",
-    "tipus": "Funkció",
-    "szakasz": "B5 Edzés + Watch",
-    "terulet": [
-      "Edzés"
-    ],
-    "mit_kapsz": "A szimulátorban jóváhagyott két képernyő: a teljes képernyős blokk-építő (Izmok · Napok · Blokk) és a lapozható heti áttekintő gyakorlatonkénti döntéssel.",
-    "munkamenet": "atlas-workout-recipes"
-  },
-  "mezo-r36n9.84": {
-    "cim": "Boop Edzés: technika és kihívás edzés közben",
-    "tipus": "Funkció",
-    "szakasz": "B5 Edzés + Watch",
-    "terulet": [
-      "Edzés"
-    ],
-    "mit_kapsz": "Edzés közben a gyakorlaton és a sorozaton látszik a technika, lépésről lépésre vezet (pihenő visszaszámlálóval), és az utolsó sorozat után jön a kihívás számlálóval.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "A recepthez megadhatod, mennyi lett a kész étel, és utána grammra pontosan rögzítheted, mennyit ettél belőle — nem csak adagban."
   },
   "mezo-r36n9.68": {
-    "cim": "Kihagyás utáni visszatérésnél a hét sorszáma késhet",
-    "tipus": "Hiba",
+    "cim": "Edzés: felesleges várakozás a kímélő módból visszatérés után",
+    "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Egy kímélő mód utáni folytatásnál a hét sorszáma átmenetileg a régit mutathatja; a sorozatszámokat nem érinti.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "Ha a kímélő mód egy egész héttel eltolja a blokkot, az edzés megnyitása utána is fölöslegesen sokat dolgozik a háttérben; a javítás után a hét egyszer igazodik, és onnan gyorsan nyílik."
   },
   "mezo-r36n9.69": {
-    "cim": "Ritka ütközés: tervbe mentés pont hétfordulókor",
-    "tipus": "Hiba",
+    "cim": "Edzés: ritka ütközés mentés és hétkezdés között",
+    "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Ha pont abban a pillanatban mentesz gyakorlatcserét a tervbe, amikor az app megnyitja az új hetet, az egyik kérés hibára futhat; ezt zárjuk ki.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "Ha épp akkor mentesz a tervbe, amikor az app egy új hetet nyit, ritkán az egyik művelet elbukhat. A javítás után a kettő mindig sorban fut, egyik sem vész el."
   },
   "mezo-r36n9.70": {
-    "cim": "Belső rendrakás: egy helyen a gyakorlatok összesítése",
+    "cim": "Edzés: egy közös számolás a heti sorozatokhoz",
     "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Három helyen ugyanaz a számolás él külön; egyesítjük, hogy ne térhessenek el egymástól.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "Ma három helyen külön számolja az app, hány sorozat jut egy izomcsoportra, és ezek elcsúszhatnak egymástól. Egy közös számolás után mindenhol ugyanaz a szám jelenik meg."
   },
   "mezo-r36n9.71": {
-    "cim": "A telefon és a web sáv-kijelzése még közelítő",
-    "tipus": "Hiba",
+    "cim": "Edzés: a telefon a szerver sávjait mutassa",
+    "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "A telefonon és a weben a „maradt hely” és a sávok még a régi szabály szerint számolnak; a szerver új sávjaihoz igazítjuk.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "A telefon ma még maga becsli, mennyi hely van egy izom heti sávjában, ezért néha kicsit mást mond, mint a szerver. A javítás után pontosan a szerver számait mutatja."
   },
   "mezo-r36n9.72": {
-    "cim": "A heti terhelési görbe könnyített hét után pontatlan",
-    "tipus": "Hiba",
+    "cim": "Edzés: a blokk ívének tervezett vonala könnyítő hét után",
+    "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "A görbe „tervezett” vonala egy blokk közepén lévő könnyített hét után alulbecsül; a tervépítő munkával együtt javul.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "Egy blokk közepén tartott könnyítő hét után a heti ív tervezett vonala a későbbi heteket kevesebbnek mutatja, mint amennyi valójában jön. A javítás után a vonal a valódi tervet követi, és a blokk lezárásakor sem fagy be hibásan."
   },
   "mezo-r36n9.73": {
-    "cim": "Az egyszeri átállító törlése",
+    "cim": "Edzés: az egyszeri átállító segédek eltávolítása",
     "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Amikor már nincs régi módon futó blokk, töröljük az egyszer használt átállító részt.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "Amint egyetlen futó vagy tervezett blokk sem a régi számolással megy, kitöröljük a régi blokkok átállítására írt egyszeri segédeket. Te nem látsz változást; az app egyszerűbb lesz."
   },
   "mezo-r36n9.74": {
-    "cim": "Belső rendrakás a tervépítő munka előtt",
+    "cim": "Edzés: a régi volumenszámolás maradékainak kitakarítása",
     "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "A régi sávtáblából maradt, már nem használt részeket kivesszük, amikor a tervépítő számolása elkészül.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "Az új motor óta nem használt régi beállítások és tárolt adatok eltűnnek a sablonokból és a beállításokból. Te nem látsz változást; kevesebb a hibalehetőség."
   },
   "mezo-r36n9.75": {
-    "cim": "Teendők a heti jóváhagyáshoz",
+    "cim": "Edzés: kézi módban is jól érjen véget egy könnyítő hét",
     "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Két apróság a kézi jóváhagyás előtt: a könnyített hét utáni visszaállítás és a blokk közepén lévő könnyített hét kezelése.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "Ha a heti javaslatokat kézzel hagyod jóvá, egy könnyítő hét utáni visszaállás ne ismétlődjön újra és újra, és a blokk közepi könnyítés utáni hét ne ragadjon le automatikusan. A heti javaslatok kezelésével együtt készül."
   },
   "mezo-r36n9.76": {
-    "cim": "Megerősítések és hiányzó tesztek a motorhoz",
+    "cim": "Edzés: a volumen-motor megerősítése és hiányzó ellenőrzései",
     "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Néhány ritka eset biztosítása és tesztje, amit az élesítés előtti átnézés feljegyzett.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "Néhány ritka hibalehetőség javítása (például egy könnyítő hét utáni visszaállás egy amúgy is zsúfolt napon) és az eddig hiányzó automata ellenőrzések pótlása, hogy a heti javaslatok megbízhatóan működjenek."
   },
-  "mezo-r36n9.86": {
-    "cim": "Egy szerveroldali teszt a teljes futtatásban megszakad",
-    "tipus": "Hiba",
+  "mezo-r36n9.77": {
+    "cim": "Edzés: izomsávok és a blokk értékelése",
+    "tipus": "Funkció",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Az étkezési edző egyik tesztje a teljes tesztfuttatás közben néha megszakad egy régóta nyitva tartott kapcsolat miatt; a javítás külön ágon kész, ellenőrizni kell.",
-    "munkamenet": "atlas-workout-recipes"
+    "mit_kapsz": "Az összerakott blokkról a szerver megmondja izmonként, hogy a sávján belül van-e, javít a korlátok betartásával, becsüli a napi edzésidőt, és hétről hétre megmutatja a blokk ívét; a röplabdás lábak sávja lejjebb tolható.",
+    "munkamenet": "confident-gagarin"
+  },
+  "mezo-r36n9.78": {
+    "cim": "Edzés: a heti javaslatok elfogadása és a kézi mód",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A heti változtatási javaslatokat egyenként elfogadhatod vagy elutasíthatod, választhatsz kézi módot, és látod, hogyan változik a súly; a régi javaslatot az újabb felváltja."
+  },
+  "mezo-r36n9.79": {
+    "cim": "Edzés: edzésstílus és a fejlődés üteme",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A blokknak és egyes gyakorlatoknak saját edzésstílusa lehet, a gyakorlatok besorolása pontosabb, és a súlyemelés üteme figyelembe veszi az ismétlési tartományt és a terhelés fokozatos emelését."
+  },
+  "mezo-r36n9.80": {
+    "cim": "Edzés: a technikák (például részismétlések) a tervben és a naplóban",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Egy sorozathoz technika tartozhat, a tervben előírható és a naplóban rögzíthető, és az app tudja, kinek és mikor ajánlja."
+  },
+  "mezo-r36n9.81": {
+    "cim": "Edzés: a technikák automatikus tervezése és a kihívás",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az app magától javasol technikát ott, ahol elakadtál, és edzésenként egy kihívást ad a legfontosabb, stabil gyakorlatodra."
+  },
+  "mezo-r36n9.82": {
+    "cim": "Edzés: az AI finomítja a technikák tervét",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés",
+      "AI és memória"
+    ],
+    "mit_kapsz": "Az AI a meglévő szabályok keretein belül finomítja a technikajavaslatokat; a terhelésről sosem ő dönt."
+  },
+  "mezo-r36n9.83": {
+    "cim": "Edzés: blokképítő és heti átnézés a telefonon",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A telefonon összerakod a blokkot (izmok, napok, blokk), látod az értékelését, és hetente egy kártyapakliban átnézed a javasolt változtatásokat — egyenként vagy egyben elfogadva."
+  },
+  "mezo-r36n9.84": {
+    "cim": "Edzés: technika és kihívás edzés közben",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Edzés közben a gyakorlatnál és a sorozatnál látod a technikát és a kihívást, a naplóban megjelennek a technikás sorozatok, és a blokkban beállíthatod őket."
+  },
+  "mezo-r36n9.86": {
+    "cim": "Egy ritkán elbukó automata ellenőrzés a szerveren",
+    "tipus": "Karbantartás",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Az automata ellenőrzések teljes futásakor néha egy belépési próba ok nélkül elbukik. A javítás után a futás megbízhatóan zöld; te nem látsz változást."
   }
 }
