@@ -25,9 +25,8 @@ bd close <id>         # Complete work
 ## Git Workflow
 
 - One bd issue + one `feat/<topic>` branch per change. Flow (**"no-wait, net stays"**, owner decision 2026-09-18): run the **local gates** for what you changed → merge **locally with `--no-ff`** into main → `git push` main → delete the branch. **No self-PR, no waiting for CI before merge.**
-- **Local gates before merge:** focused tests for the change (frontend: both modes — `VITE_USE_MOCK` unset = mock AND `VITE_USE_MOCK=false`, `CI=true`; backend: focused module tests). The current dev machine (128 GB) CAN run the full backend suite when warranted: `./mvnw clean test -Dmezo.test.use-testcontainers=true`. Recipes: [`docs/infrastructure/local-dev-testing.md`](docs/infrastructure/local-dev-testing.md).
+- **Local gates before merge:** focused tests for the change (backend: focused module tests; iOS: `xcodebuild test` per `ios/README.md`; the frozen web frontend only if touched: both modes — `VITE_USE_MOCK` unset = mock AND `VITE_USE_MOCK=false`, `CI=true`). The current dev machine (128 GB) CAN run the full backend suite when warranted: `./mvnw clean test -Dmezo.test.use-testcontainers=true`. Recipes: [`docs/infrastructure/local-dev-testing.md`](docs/infrastructure/local-dev-testing.md).
 - **The safety net:** `ci.yml` (full backend IT suite + FE both modes + lint + contract-drift) still runs automatically on every push to main. Do NOT wait for it — but **a red main outranks everything**: if CI on main goes red, fixing it is the FIRST action of whichever session sees it, before any new work. Check `gh run list --branch main --limit 1` at session start.
-- **Prototype links are checked right after it:** `node docs/design_2.0/prototypes/elo/_link-status.mjs` and `bd list --label publish-debt --status open`. A living-prototype link that lags behind main is a debt: a session that can publish to the fixed Artifact URLs pays it before its own work; a session that cannot files a `publish-debt` issue when it changes a prototype (rule: `docs/design_2.0/prototypes/elo/README.md`).
 - **Optional pre-merge cloud check** for risky/large changes (schema migrations, contract changes, cross-cutting refactors): the old self-PR + `gh workflow run premerge.yml -f pr=<n>` flow still works when you want a green light BEFORE the merge. Historical traps of that flow (stale merge ref, conflicting PR = zero checks): mezo-mxrc, mezo-l4am, mezo-x57b.
 - Conventional commit subjects carrying the driving bd id: `feat(api): ... (mezo-ej0)`.
 - `git pull --rebase` on main **before** merging the feature branch — rebasing *after* the merge flattens the `--no-ff` merge commit; push directly after merging. From a worktree, merge via detached HEAD: `git checkout --detach origin/main && git merge --no-ff <branch> && git push origin HEAD:main`.
@@ -37,7 +36,7 @@ bd close <id>         # Complete work
 **Work is NOT complete until `git push` succeeds — never leave work stranded locally.** Before ending a session:
 
 1. File bd issues for remaining work; close/update finished ones
-2. Run quality gates if code changed (backend: `./mvnw clean test`; frontend: tests in both modes + build)
+2. Run quality gates if code changed (backend: `./mvnw clean test`; iOS: `xcodebuild test`; frontend only if touched: both modes + build)
 3. **Refresh the off-machine tracker backup** — `.beads/issues.jsonl` is the ONLY copy of the
    tracker outside this machine (the Dolt DB is gitignored), and **nothing maintains it
    automatically**: the beads pre-commit hook leaves it byte-identical. It silently drifted 429
@@ -60,11 +59,9 @@ The owner decides what the product should do; agents choose the technical implem
 
 For a decision, give **A helyzet** (context), **A gond** (user-visible consequence), at most two or three **A lehetőségek** (what we would do and the cost in time, money or behavior), and **Az ajánlásom** (one recommended choice and why). Keep it short enough for one screen. Ask one question at a time during design work.
 
-## Visible frontend work and design
+## What we build: the server and the iPhone app only
 
-The owner-approved UI direction is **Folyadék** (2026-10-09; replaces Üveg, which unconverted surfaces still wear while epic `mezo-n4wf5` runs): light only, a structure-first page skeleton, everything is a level that fills, an own outlined icon family, the bottom bar always the five domains. Follow [`docs/design_2.0/2026-10-09-folyadek-style-bible.md`](docs/design_2.0/2026-10-09-folyadek-style-bible.md) and the prototype `docs/design_2.0/prototypes/klinikai-iranyok.html`; reuse the shared UI kit. New screens need a clickable prototype and the owner's approval before implementation.
-
-For any frontend change the owner will see, use the repo's `owner-visible-frontend` skill in `.agents/skills/` alongside the relevant process and frontend skills. The owner's sequence is: **design/spec approval → clickable prototype approval → implementation-plan approval → build, local gates, merge, push, deploy, live verification, report**. A small change may combine the spec and plan approval; an invisible bug fix may skip the prototype. After the final approval, carry the work through shipping without another visual review. Ask again only when a blocker changes what the owner will see. The skill owns the living-prototype and evidence-based acceptance details.
+Owner decision 2026-11-17 (#48): **the web app is frozen.** New work goes to **Boop**, the native iPhone app (`ios/`, epic `mezo-r36n9`, look: the Napkelte canon, visual iteration in the iOS Simulator), and to the **backend**. The web frontend stays deployed as it is — no new screens, no web-only fixes, no Folyadék or living-prototype work; touch `frontend/` only when a backend contract change would otherwise break its build. The owner's sequence for anything he will see: **spec approval → simulator spike approval → plan approval → build, local gates, merge, push, deploy, install on the phone, live check, report.** After the final approval, carry the work through shipping without another visual review.
 
 ## Production data
 
@@ -149,7 +146,7 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 
 **Custom local ports** (standard ones are taken by other projects on this machine): Postgres **15432** (`DB_PORT`), backend HTTP **8090** (`MEZO_PORT`), Vite dev **5180**. Frontend targets the API via `VITE_API_URL` (see `frontend/.env.example`). If the `mezo_pg` volume predates `backend/initdb/`, recreate it once: `docker compose down -v && docker compose up -d`.
 
-## Frontend Development Conventions (Phase 1+) — MANDATORY
+## Frontend Development Conventions (Phase 1+) — the web app is frozen (#48); these apply only if you must touch `frontend/`
 
 > **Trigger — read the reference FIRST.** Whenever you write, review, refactor, or plan **any** `frontend/src` code — a React page, component, bottom-sheet, feature-local logic, a data hook or mock, a REST client, a shared UI primitive, routing, or a frontend test — you MUST read **[`docs/references/frontend_conventions.md`](docs/references/frontend_conventions.md)** **before** writing code, and follow it exactly. Non-negotiable house standard; the living structure is in [`docs/features/_platform-design-system.md` §1a](docs/features/_platform-design-system.md), the rationale in [ADR 0003](docs/decisions/0003-frontend-structure-conventions.md).
 

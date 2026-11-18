@@ -658,5 +658,14 @@
     ],
     "mit_kapsz": "Az edzéslejátszó három kérdésére (pumpa, ízületi fájdalom, mennyiség) adott válaszaid egy fokozattal elcsúszva mennek el: az „erős” fájdalom „enyheként” tárolódhat, a „nincs” pedig el sem jut a szerverre. A javítás után pontosan az mentődik, amit megnyomtál. Erre épül majd az, hogy a gyakorlatcsere kerülje, ami fájt.",
     "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.85": {
+    "cim": "A memória-keresés túl lassú a hosszabb előzményű fióknál",
+    "tipus": "Hiba",
+    "szakasz": "B8 Az egy AI",
+    "terulet": [
+      "AI és memória"
+    ],
+    "mit_kapsz": "A szöveges keresés a régebbi emlékek között időnként kifut az időből, ezért Boop válaszai ilyenkor kevesebb emlékből dolgoznak. A javítás után minden kérdésnél a teljes emlékanyagból válogat."
   }
 }
