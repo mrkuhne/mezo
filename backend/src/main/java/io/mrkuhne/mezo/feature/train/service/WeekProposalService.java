@@ -307,7 +307,8 @@ public class WeekProposalService {
      * A deload proposal's {@code restore} keeps only the entries whose set line was accepted (an undecided
      * or kept halving never happened, so there is nothing to give back). An applied weekly proposal consumes
      * the deload restore it was offered (emptied — never given twice, whatever was decided on its lines);
-     * an expired one leaves it, so the next week offers it again.
+     * an expired one drops only the entries its accepted restore lines gave back, so the next week offers
+     * the rest again.
      */
     void close(MesoWeekProposalEntity proposal, String status) {
         UUID createdBy = proposal.getCreatedBy();
@@ -329,14 +330,39 @@ public class WeekProposalService {
         }
         proposalRepository.save(proposal);
 
+        if (!MesoWeekProposalEntity.KIND_WEEKLY.equals(proposal.getKind())) {
+            return; // a tier change never touches a deload's restore
+        }
         boolean applied = MesoWeekProposalEntity.STATUS_APPLIED.equals(status)
             || MesoWeekProposalEntity.STATUS_AUTO_APPLIED.equals(status);
-        if (applied && MesoWeekProposalEntity.KIND_WEEKLY.equals(proposal.getKind())) {
-            deloadToRestore(createdBy, proposal.getMesocycleId(), proposal.getWeek()).ifPresent(deload -> {
-                deload.setRestore(List.of());
-                proposalRepository.save(deload);
-            });
+        deloadToRestore(createdBy, proposal.getMesocycleId(), proposal.getWeek()).ifPresent(deload -> {
+            deload.setRestore(applied ? List.of() : notGivenBack(deload.getRestore(), proposal));
+            proposalRepository.save(deload);
+        });
+    }
+
+    /**
+     * An expired week's restore lines that he accepted were written — that part of the deload is given back.
+     * The remaining entries: those not matched (id, else identity on the same day — the restore's own
+     * matching) to a row whose {@code deload_restore} line was accepted. Empty when every entry came back.
+     */
+    private List<RestoreEntryJson> notGivenBack(List<RestoreEntryJson> entries, MesoWeekProposalEntity proposal) {
+        String restoreCode = code(Reason.DELOAD_RESTORE);
+        Set<UUID> givenBack = proposal.getLines().stream()
+            .filter(l -> WeekProposalLineJson.KIND_SETS.equals(l.kind()))
+            .filter(l -> WeekProposalLineJson.DECISION_ACCEPTED.equals(l.decision()))
+            .filter(l -> l.reasons() != null && l.reasons().contains(restoreCode))
+            .map(WeekProposalLineJson::exerciseId)
+            .collect(Collectors.toSet());
+        if (givenBack.isEmpty()) {
+            return entries;
         }
+        Map<RestoreEntryJson, TemplatePlan.Row> pairs = TemplatePlan.matchEntries(entries,
+            templatePlan.rows(proposal.getCreatedBy(), proposal.getMesocycleId()));
+        return entries.stream()
+            .filter(e -> !givenBack.contains(e.exerciseId()))
+            .filter(e -> pairs.get(e) == null || !givenBack.contains(pairs.get(e).exercise().getId()))
+            .toList();
     }
 
     // ── steps ─────────────────────────────────────────────────────────────────────────────────

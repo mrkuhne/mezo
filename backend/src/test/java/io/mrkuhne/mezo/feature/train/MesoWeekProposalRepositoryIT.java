@@ -100,17 +100,23 @@ class MesoWeekProposalRepositoryIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void findLatestAppliedSkipsPendingAndLaterWeeks() {
+    void closedAndPendingLookupsFilterByStatusKindAndWeek() {
         UUID user = databasePopulator.populateUser("proposal-d@test.local");
         MesocycleEntity meso = train.createActiveMeso(user);
         repository.saveAndFlush(proposal(user, meso.getId(), 1, "weekly", "applied"));
-        repository.saveAndFlush(proposal(user, meso.getId(), 2, "weekly", "auto_applied"));
+        repository.saveAndFlush(proposal(user, meso.getId(), 2, "weekly", "expired"));
         repository.saveAndFlush(proposal(user, meso.getId(), 3, "weekly", "pending"));
-        repository.saveAndFlush(proposal(user, meso.getId(), 4, "weekly", "applied"));
+        repository.saveAndFlush(proposal(user, meso.getId(), 3, "tier_change", "pending"));
+        repository.saveAndFlush(proposal(user, meso.getId(), 4, "weekly", "auto_applied"));
 
-        assertThat(repository.findLatestApplied(user, meso.getId(), 4).orElseThrow().getWeek()).isEqualTo(2);
-        assertThat(repository.findLatestApplied(user, meso.getId(), 2).orElseThrow().getWeek()).isEqualTo(1);
-        assertThat(repository.findLatestApplied(user, meso.getId(), 1)).isEmpty();
+        assertThat(repository.findClosedWeeklyBefore(user, meso.getId(), 4))
+            .extracting(MesoWeekProposalEntity::getWeek).containsExactly(2, 1);
+        assertThat(repository.findClosedWeeklyBefore(user, meso.getId(), 1)).isEmpty();
+        assertThat(repository.findAllClosedWeekly(user, meso.getId()))
+            .extracting(MesoWeekProposalEntity::getWeek).containsExactly(1, 2, 4);
+        assertThat(repository.findPendingBefore(user, meso.getId(), 4))
+            .extracting(MesoWeekProposalEntity::getKind).containsExactlyInAnyOrder("weekly", "tier_change");
+        assertThat(repository.findPendingBefore(user, meso.getId(), 3)).isEmpty();
     }
 
     @Test

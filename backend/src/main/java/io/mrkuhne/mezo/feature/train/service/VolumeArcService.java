@@ -225,7 +225,7 @@ public class VolumeArcService {
     private void pastWeeks(UUID createdBy, MesocycleEntity run, int fromWeek, List<TemplatePlan.Row> plan,
                            Map<String, int[]> planned) {
         int weeks = run.getWeeks();
-        List<MesoWeekProposalEntity> applied = proposalRepository.findAllApplied(createdBy, run.getId()).stream()
+        List<MesoWeekProposalEntity> applied = proposalRepository.findAllClosedWeekly(createdBy, run.getId()).stream()
             .filter(p -> p.getPlanAfter() != null).toList();
         Map<String, Integer> currentPlan = new LinkedHashMap<>();
         Map<String, String> groupById = new HashMap<>();
@@ -259,8 +259,8 @@ public class VolumeArcService {
     }
 
     /**
-     * The exercise amounts week {@code week} prescribed: its own applied proposal's {@code planAfter};
-     * else the state before the next applied proposal; else the plan as it stands.
+     * The exercise amounts week {@code week} prescribed: its own closed (applied, auto-applied or expired)
+     * proposal's {@code planAfter}; else the state before the next closed proposal; else the plan as it stands.
      */
     private static Map<String, Integer> prescribedAt(int week, List<MesoWeekProposalEntity> applied,
                                                      Map<String, Integer> currentPlan) {

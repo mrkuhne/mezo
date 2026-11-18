@@ -17,16 +17,6 @@ public interface MesoWeekProposalRepository extends JpaRepository<MesoWeekPropos
     Optional<MesoWeekProposalEntity> findWeekly(
         @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId, @Param("week") int week);
 
-    /** The latest applied (or auto-applied) {@code weekly} proposal strictly before {@code beforeWeek}. */
-    @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
-        + " and p.kind = '" + MesoWeekProposalEntity.KIND_WEEKLY + "'"
-        + " and p.status in ('" + MesoWeekProposalEntity.STATUS_APPLIED + "', '"
-        + MesoWeekProposalEntity.STATUS_AUTO_APPLIED + "') and p.week < :beforeWeek"
-        + " order by p.week desc limit 1")
-    Optional<MesoWeekProposalEntity> findLatestApplied(
-        @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId,
-        @Param("beforeWeek") int beforeWeek);
-
     /**
      * The closed (applied, auto-applied or expired) {@code weekly} proposals strictly before {@code beforeWeek},
      * latest week first — the post-deload restore looks for the first one still carrying a restore.
@@ -58,11 +48,15 @@ public interface MesoWeekProposalRepository extends JpaRepository<MesoWeekPropos
     /** One proposal of the caller's run by id (the decisions endpoint); absent for another user or run. */
     Optional<MesoWeekProposalEntity> findByIdAndCreatedByAndMesocycleId(UUID id, UUID createdBy, UUID mesocycleId);
 
-    /** Every applied (or auto-applied) {@code weekly} proposal of a run, oldest week first. */
+    /**
+     * Every closed (applied, auto-applied or expired) {@code weekly} proposal of a run, oldest week first —
+     * an expired week still carries what was accepted in it and the plan it ended with.
+     */
     @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
         + " and p.kind = '" + MesoWeekProposalEntity.KIND_WEEKLY + "'"
         + " and p.status in ('" + MesoWeekProposalEntity.STATUS_APPLIED + "', '"
-        + MesoWeekProposalEntity.STATUS_AUTO_APPLIED + "') order by p.week asc")
-    List<MesoWeekProposalEntity> findAllApplied(
+        + MesoWeekProposalEntity.STATUS_AUTO_APPLIED + "', '" + MesoWeekProposalEntity.STATUS_EXPIRED + "')"
+        + " order by p.week asc")
+    List<MesoWeekProposalEntity> findAllClosedWeekly(
         @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId);
 }

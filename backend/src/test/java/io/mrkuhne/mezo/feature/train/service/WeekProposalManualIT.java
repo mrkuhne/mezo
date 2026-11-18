@@ -1,7 +1,9 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
+import io.mrkuhne.mezo.api.dto.VolumeArcWeek;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -48,6 +50,8 @@ class WeekProposalManualIT extends AbstractIntegrationTest {
     @Autowired MesoWeekProposalRepository proposalRepository;
     @Autowired MuscleGroupVolumeLogRepository volumeRepo;
     @Autowired PlatformTransactionManager transactionManager;
+    @Autowired VolumeArcService volumeArcService;
+    @Autowired VolumeLedger volumeLedger;
 
     private UUID owner;
 
@@ -152,8 +156,8 @@ class WeekProposalManualIT extends AbstractIntegrationTest {
         assertThat(setLines(deload)).extracting(WeekProposalLineJson::exerciseId, WeekProposalLineJson::from,
                 WeekProposalLineJson::to)
             .containsExactlyInAnyOrder(
-                org.assertj.core.groups.Tuple.tuple(squat.getId(), 4, 2),
-                org.assertj.core.groups.Tuple.tuple(press.getId(), 4, 2));
+                tuple(squat.getId(), 4, 2),
+                tuple(press.getId(), 4, 2));
         assertThat(deload.getRestore()).hasSize(2);
         assertThat(List.of(sets(squat), sets(press))).containsExactly(4, 4);
 
@@ -218,6 +222,90 @@ class WeekProposalManualIT extends AbstractIntegrationTest {
         workoutService.getToday(owner, null);
         assertThat(setLines(weekly(meso, 6))).isEmpty();
         assertThat(sets(squat)).isEqualTo(4);
+    }
+
+    /**
+     * An expired week gives back what he accepted in it: the squat's restore line accepted in week 4 (the
+     * press's left undecided) — week 5 offers only the press, with no "your own number stood" note for a
+     * restore the system wrote itself; the press accepted in week 5 and that week expiring too consumes it.
+     */
+    @Test
+    void anExpiredWeekConsumesTheRestoreItGaveBack() {
+        MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
+        ExerciseEntity squat = exercise(day(meso, "Hétfő", 0), "Guggolás", "quad", 4);
+        ExerciseEntity press = exercise(day(meso, "Csütörtök", 3), "Lábtolás", "quad", 4);
+        workoutService.getToday(owner, null);
+        acceptAll(meso, 3);
+        assertThat(List.of(sets(squat), sets(press))).containsExactly(2, 2);
+
+        nextWeek(meso); // week 4: both restore lines; only the squat's accepted, the week expires
+        workoutService.getToday(owner, null);
+        assertThat(setLines(weekly(meso, 4))).extracting(WeekProposalLineJson::exerciseId)
+            .containsExactlyInAnyOrder(squat.getId(), press.getId());
+        acceptLinesOf(meso, 4, squat.getId(), null);
+        assertThat(List.of(sets(squat), sets(press))).containsExactly(4, 2);
+
+        nextWeek(meso); // week 5
+        workoutService.getToday(owner, null);
+        assertThat(weekly(meso, 4).getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_EXPIRED);
+        assertThat(weekly(meso, 3).getRestore()).containsExactly(
+            new RestoreEntryJson(press.getId(), null, "Lábtolás", 3, 4, 2));
+        assertThat(setLines(weekly(meso, 5))).singleElement().satisfies(l -> {
+            assertThat(l.exerciseId()).isEqualTo(press.getId());
+            assertThat(l.from()).isEqualTo(2);
+            assertThat(l.to()).isEqualTo(4);
+            assertThat(l.reasons()).containsExactly("deload_restore");
+        });
+        assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c -> {
+            assertThat(c.muscle()).isEqualTo("quad");
+            assertThat(c.reason()).doesNotContain("saját számod");
+        });
+
+        acceptLinesOf(meso, 5, press.getId(), null); // every restore line accepted, the week still expires
+        nextWeek(meso); // week 6
+        workoutService.getToday(owner, null);
+        assertThat(weekly(meso, 5).getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_EXPIRED);
+        assertThat(weekly(meso, 3).getRestore()).isEmpty();
+        assertThat(setLines(weekly(meso, 6))).isEmpty();
+        assertThat(reload(meso).getVolumeRecompute().changes()).allSatisfy(c ->
+            assertThat(c.reason()).doesNotContain("saját számod"));
+        assertThat(List.of(sets(squat), sets(press))).containsExactly(4, 4);
+    }
+
+    /** The arc's past weeks read expired weeks too: what each week ended with, accepted writes included. */
+    @Test
+    void theArcReadsExpiredWeeks() {
+        MesocycleEntity meso = run(2, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
+        ExerciseEntity squat = exercise(day(meso, "Hétfő", 0), "Guggolás", "quad", 4);
+        ExerciseEntity press = exercise(day(meso, "Csütörtök", 3), "Lábtolás", "quad", 4);
+        workoutService.getToday(owner, null); // week 2: left untouched, expires
+
+        nextWeek(meso); // week 3 (deload): only the squat's halving accepted, expires
+        workoutService.getToday(owner, null);
+        acceptLinesOf(meso, 3, squat.getId(), null);
+
+        nextWeek(meso); // week 4: the squat's restore accepted and the week applied
+        workoutService.getToday(owner, null);
+        acceptLinesOf(meso, 4, squat.getId(), MesoWeekProposalEntity.STATUS_APPLIED);
+        assertThat(weekly(meso, 2).getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_EXPIRED);
+        assertThat(weekly(meso, 3).getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_EXPIRED);
+        assertThat(List.of(sets(squat), sets(press))).containsExactly(4, 4);
+
+        volumeLedger.sync(owner, meso.getId()); // the decisions endpoint syncs after a write; the seam does not
+        // week 1: 8, week 2 (expired untouched): 8, week 3 (expired, squat halved): 2 + 4 = 6
+        List<Integer> planned = volumeArcService.arc(owner, meso.getId()).getMuscles().stream()
+            .filter(m -> m.getMuscle().equals("quad")).findFirst().orElseThrow()
+            .getWeeks().stream().map(VolumeArcWeek::getPlanned).toList();
+        assertThat(planned.subList(0, 3)).containsExactly(8, 8, 6);
+    }
+
+    /** Accepts every line of the week's proposal and closes it applied. */
+    private void acceptAll(MesocycleEntity meso, int week) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            MesoWeekProposalEntity p = weekly(meso, week);
+            p.setLines(p.getLines().stream().map(l -> proposals.applySetLine(p, l)).toList());
+            proposals.close(p, MesoWeekProposalEntity.STATUS_APPLIED);
+        });
     }
 
     // ── fixtures ──────────────────────────────────────────────────────────────────────────────
