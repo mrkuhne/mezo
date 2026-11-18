@@ -79,6 +79,7 @@ public class TrainService {
     private final TrainProperties trainProperties;
     // The volume log is derived from the plan (volume engine v2): recomputed after plan writes.
     private final VolumeLedger volumeLedger;
+    private final TierChangeProposalService tierChangeProposals;
     private final VolumeProperties volumeProperties;
     // mezo-meyc.3: fires only on a REAL close (never the idempotent re-close or fill-if-null
     // branches) — the companion AI-review generator's AFTER_COMMIT trigger (S3 task 15).
@@ -308,17 +309,27 @@ public class TrainService {
         return assembleResponse(createdBy, target);
     }
 
-    /** GD7: the map change is stored now, applied at the next weekly rollover — nothing rewritten retroactively. */
+    /**
+     * Stores the run's tiers (and {@code sportGroups}) now; the ledger follows the new bands. Volume engine v2
+     * (spec §6.5): every group whose band moved and whose plan now sits outside it gets a {@code tier_change}
+     * proposal at once ({@link TierChangeProposalService} — applied in {@code auto} mode, pending in
+     * {@code manual}). The run row is locked first, the weekly proposal's lock order.
+     */
     @Transactional
     public MesocycleResponse updateMusclePriorities(UUID createdBy, UUID id, Map<String, String> priorities,
                                                     List<String> sportGroups) {
         MesocycleEntity m = OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(id), createdBy);
         Map<String, String> normalized = PriorityTier.normalize(priorities);
+        List<String> sport = sportGroups == null ? null // absent = unchanged, [] = cleared
+            : SportGroups.normalize(sportGroups, volumeProperties.baselines().keySet());
+        mesocycleRepository.findLockedByIdAndCreatedByAndDeletedFalse(id, createdBy);
+        Map<String, VolumeBands.Band> bandsBefore = tierChangeProposals.bandsOf(m);
         m.setMusclePriorities(normalized.isEmpty() ? null : Map.copyOf(normalized));
-        if (sportGroups != null) { // absent = unchanged, [] = cleared
-            m.setSportGroups(SportGroups.normalize(sportGroups, volumeProperties.baselines().keySet()));
+        if (sportGroups != null) {
+            m.setSportGroups(sport);
         }
         volumeLedger.sync(createdBy, id); // the tier moves the band
+        tierChangeProposals.raise(createdBy, m, bandsBefore);
         return assembleResponse(createdBy, m);
     }
 
