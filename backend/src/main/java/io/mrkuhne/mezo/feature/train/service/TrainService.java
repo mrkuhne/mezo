@@ -76,6 +76,7 @@ public class TrainService {
     private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
     private final ExerciseStyler styler;
+    private final TechniqueGuard techniqueGuard;
     private final TrainProperties trainProperties;
     // The volume log is derived from the plan (volume engine v2): recomputed after plan writes.
     private final VolumeLedger volumeLedger;
@@ -201,7 +202,8 @@ public class TrainService {
         List<MesoDayInput> days,
         Map<String, VolumeBaseline> volumePerMuscle,
         Map<String, String> musclePriorities,
-        List<String> sportGroups
+        List<String> sportGroups,
+        boolean techniquesEnabled
     ) {}
 
     /**
@@ -233,6 +235,7 @@ public class TrainService {
         // split/style are optional on a template but NOT NULL on a run — an unset one becomes "".
         m.setSplit(src.split() != null ? src.split() : "");
         m.setStyle(src.style() != null ? src.style() : "");
+        m.setTechniquesEnabled(src.techniquesEnabled()); // the run inherits the block flag (mezo-r36n9.80)
         m.setTrainingStyle(src.trainingStyle()); // the run inherits the template's training style (mezo-r36n9.79)
         // Defensive copy: the source list belongs to the template row — two managed entities must
         // never share one text[] collection instance.
@@ -388,7 +391,8 @@ public class TrainService {
         for (int i = 0; i < inputs.size(); i++) {
             fresh.add(toExerciseEntity(createdBy, dayId, inputs.get(i), i));
         }
-        CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, block);
+        CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, block, inputs);
+        techniqueGuard.validateRows(fresh); // 400 rolls the soft-delete back
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
         volumeLedger.sync(createdBy, mesoId);
         return toDay(day, saved, mediaByCatalogOf(saved), block, stability);
@@ -464,7 +468,8 @@ public class TrainService {
             fresh.add(toExerciseEntity(createdBy, template.getId(), inputs.get(i), i));
         }
         // a custom workout has no block style: nothing is stamped, an exercise's own fields persist as sent
-        CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, null);
+        CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, null, inputs);
+        techniqueGuard.validateRows(fresh);
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
         return toCustomWorkoutResponse(template, saved, mediaByCatalogOf(saved), stability);
     }
@@ -517,6 +522,10 @@ public class TrainService {
         e.setTrainingStyle(mapper.styleWire(in.getTrainingStyle()));
         e.setRestSec(in.getRestSec());
         e.setOverrides(mapper.overridesWire(in.getOverrides()));
+        // Technique fields (mezo-r36n9.80): wire values; styleRows carries/overwrites them on a day edit.
+        e.setTechnique(mapper.techniqueWire(in.getTechnique()));
+        e.setTechniqueSource(mapper.techniqueSourceWire(in.getTechniqueSource()));
+        e.setChallenge(Boolean.TRUE.equals(in.getChallenge()));
         e.setOrderIndex(orderIndex);
         return e;
     }

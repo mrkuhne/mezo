@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.train.service;
 
+import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
@@ -53,11 +54,31 @@ public class ExerciseStyler {
      * stability lookup it read, so the caller's response reuses it instead of reading again.
      */
     public CatalogAttributes.Lookup styleRows(List<ExerciseEntity> fresh, List<ExerciseEntity> replaced, TrainingStyle block) {
-        List<GymExerciseJson> carried = carry(replaced.stream().map(mapper::toExerciseJson).toList(),
-            fresh.stream().map(mapper::toExerciseJson).toList());
+        return styleRows(fresh, replaced, block, null);
+    }
+
+    /**
+     * As {@link #styleRows(List, List, TrainingStyle)}, with the request's inputs (same order as
+     * {@code fresh}): an entity cannot tell an absent technique field from a sent default, so the
+     * carry-over reads "was it sent" from the input, never from the half-built row.
+     */
+    public CatalogAttributes.Lookup styleRows(List<ExerciseEntity> fresh, List<ExerciseEntity> replaced,
+                                              TrainingStyle block, List<GymExerciseInput> inputs) {
+        List<GymExerciseJson> incoming = new ArrayList<>(fresh.size());
+        for (int i = 0; i < fresh.size(); i++) {
+            GymExerciseJson row = mapper.toExerciseJson(fresh.get(i));
+            GymExerciseJson sent = inputs == null ? null : mapper.toExerciseJson(inputs.get(i));
+            incoming.add(sent == null ? row : new GymExerciseJson(row.id(), row.name(), row.muscle(),
+                row.warmupSets(), row.workingSets(), row.repMin(), row.repMax(), row.targetRir(),
+                row.anchorWeightKg(), row.type(), row.warning(), row.catalogId(), row.countsTowardVolume(),
+                row.trainingStyle(), row.restSec(), row.overrides(), sent.technique(), sent.techniqueSource(),
+                sent.challenge()));
+        }
+        List<GymExerciseJson> carried = carry(replaced.stream().map(mapper::toExerciseJson).toList(), incoming);
         CatalogAttributes.Lookup stability = lookup(carried, block);
         for (int i = 0; i < fresh.size(); i++) {
             GymExerciseJson e = carried.get(i);
+            applyTechniqueTo(fresh.get(i), e);
             if (!fresh.get(i).isCountsTowardVolume()) {
                 continue; // closing block / plyo rows keep their own fixed prescription
             }
@@ -128,27 +149,51 @@ public class ExerciseStyler {
                 }
             }
             if (match == null) {
-                out.add(in);
+                out.add(withOwnerSource(in));
                 continue;
             }
             boolean sentNone = in.trainingStyle() == null && in.restSec() == null && in.overrides() == null;
-            out.add(new GymExerciseJson(in.id(), in.name(), in.muscle(), in.warmupSets(), in.workingSets(),
-                in.repMin(), in.repMax(), in.targetRir(), in.anchorWeightKg(), in.type(), in.warning(),
-                in.catalogId(), in.countsTowardVolume(),
+            // Technique fields (mezo-r36n9.80): a client that sends none of them (the frozen web client) keeps
+            // the stored pick; one that sends any is taken as-is, so an explicit "none" / false clears it.
+            boolean techniqueSent = in.technique() != null || in.techniqueSource() != null || in.challenge() != null;
+            GymExerciseJson merged = new GymExerciseJson(in.id(), in.name(), in.muscle(), in.warmupSets(),
+                in.workingSets(), in.repMin(), in.repMax(), in.targetRir(), in.anchorWeightKg(), in.type(),
+                in.warning(), in.catalogId(), in.countsTowardVolume(),
                 in.trainingStyle() != null ? in.trainingStyle() : match.trainingStyle(),
                 in.restSec() != null ? in.restSec() : match.restSec(),
                 sentNone ? match.overrides() : in.overrides(),
-                in.technique() != null ? in.technique() : match.technique(),
-                in.techniqueSource() != null ? in.techniqueSource() : match.techniqueSource(),
-                in.challenge() != null ? in.challenge() : match.challenge()));
+                techniqueSent ? in.technique() : match.technique(),
+                techniqueSent ? in.techniqueSource() : match.techniqueSource(),
+                techniqueSent ? in.challenge() : match.challenge());
+            out.add(techniqueSent ? withOwnerSource(merged) : merged);
         }
         return out;
+    }
+
+    /** T2 is the only writer of technique picks: what a request sets is the owner's (none / false clears the source). */
+    private static GymExerciseJson withOwnerSource(GymExerciseJson e) {
+        boolean active = (e.technique() != null && !"none".equals(e.technique())) || Boolean.TRUE.equals(e.challenge());
+        String source = active ? "owner" : null;
+        if (java.util.Objects.equals(source, e.techniqueSource())) {
+            return e;
+        }
+        return new GymExerciseJson(e.id(), e.name(), e.muscle(), e.warmupSets(), e.workingSets(), e.repMin(),
+            e.repMax(), e.targetRir(), e.anchorWeightKg(), e.type(), e.warning(), e.catalogId(),
+            e.countsTowardVolume(), e.trainingStyle(), e.restSec(), e.overrides(), e.technique(), source,
+            e.challenge());
     }
 
     private static boolean sameIdentity(GymExerciseJson a, GymExerciseJson b) {
         return a.catalogId() != null
             ? a.catalogId().equals(b.catalogId())
             : b.catalogId() == null && Objects.equals(a.name(), b.name());
+    }
+
+    /** Writes the carried technique fields onto a run row (mezo-r36n9.80). */
+    static void applyTechniqueTo(ExerciseEntity row, GymExerciseJson e) {
+        row.setTechnique(e.technique());
+        row.setTechniqueSource(e.techniqueSource());
+        row.setChallenge(Boolean.TRUE.equals(e.challenge()));
     }
 
     /** Writes the stamped prescription and the style fields onto a run row. */

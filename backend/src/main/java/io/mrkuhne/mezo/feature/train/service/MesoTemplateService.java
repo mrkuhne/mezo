@@ -58,6 +58,7 @@ public class MesoTemplateService {
     private final TrainService trainService;
     private final TrainMapper mapper;
     private final ExerciseStyler styler;
+    private final TechniqueGuard techniqueGuard;
     private final VolumeProperties volumeProperties;
 
     /** The owner's templates, oldest first, each carrying how many runs were started from it. */
@@ -103,7 +104,7 @@ public class MesoTemplateService {
             t.getWeeks(), t.getSplit(), t.getStyle(), t.getTrainingStyle(), t.getPhaseCurve(), t.getNotes(),
             req.getStatus().getValue(),
             mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle()),
-            t.getMusclePriorities(), t.getSportGroups()));
+            t.getMusclePriorities(), t.getSportGroups(), t.isTechniquesEnabled()));
     }
 
     /**
@@ -133,6 +134,7 @@ public class MesoTemplateService {
         template.setSplit(run.getSplit());
         template.setStyle(run.getStyle());
         template.setTrainingStyle(run.getTrainingStyle());
+        template.setTechniquesEnabled(run.isTechniquesEnabled());
         template.setPhaseCurve(List.copyOf(run.getPhaseCurve()));
         template.setNotes(run.getNotes());
         template.setDays(daysOf(createdBy, run.getId()));
@@ -179,6 +181,11 @@ public class MesoTemplateService {
         template.setTrainingStyle(style);
         template.setDays(styler.styleTemplateDays(template.getDays(),
             mapper.toDaysJson(req.getDays() != null ? req.getDays() : List.of()), TrainingStyle.fromWire(style)));
+        techniqueGuard.validateDays(template.getDays()); // 400 on a free exercise, a 2nd challenge, ...
+        // absent keeps the stored flag (the frozen web client never sends it); a create starts false
+        if (req.getTechniquesEnabled() != null) {
+            template.setTechniquesEnabled(req.getTechniquesEnabled());
+        }
         template.setVolumePerMuscle(mapper.toBaselinesJson(req.getVolumePerMuscle()));
     }
 

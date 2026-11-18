@@ -40,6 +40,7 @@ public class WorkoutExerciseChangeService {
     private final VolumeLedger volumeLedger;
     private final MesocycleRepository mesocycleRepository;
     private final ExerciseStyler styler;
+    private final CatalogAttributes catalogAttributes;
 
     @Transactional
     public WorkoutExerciseChangeResponse change(UUID createdBy, UUID workoutId, WorkoutExerciseChangeRequest req) {
@@ -164,8 +165,32 @@ public class WorkoutExerciseChangeService {
                 : replaced.getCatalogId() == null && row.getName().equals(replaced.getName());
             row.setOverrides(sameMovement && replaced.getOverrides() != null
                 ? new ArrayList<>(replaced.getOverrides()) : null);
+            keepTechniqueIfAllowed(row, replaced);
         }
         styler.styleRows(List.of(row), List.of(), block);
+    }
+
+    /**
+     * Technique / challenge on a swapped row (mezo-r36n9.80): kept only when the new movement passes the
+     * same {@link TechniqueRules} as a save, otherwise both are cleared (a free movement never inherits
+     * the machine-only pick of the one it replaced).
+     */
+    private void keepTechniqueIfAllowed(ExerciseEntity row, ExerciseEntity replaced) {
+        boolean tech = replaced.getTechnique() != null && !"none".equals(replaced.getTechnique());
+        if (!tech && !replaced.isChallenge()) {
+            return;
+        }
+        CatalogAttributes.Attrs attrs = catalogAttributes.loadAttrs(java.util.Collections.singletonList(row.getCatalogId()))
+            .of(row.getCatalogId());
+        if (TechniqueRules.check(Technique.fromWire(replaced.getTechnique()), replaced.isChallenge(), attrs).isEmpty()) {
+            row.setTechnique(replaced.getTechnique());
+            row.setTechniqueSource(replaced.getTechniqueSource());
+            row.setChallenge(replaced.isChallenge());
+        } else {
+            row.setTechnique(null);
+            row.setTechniqueSource(null);
+            row.setChallenge(false);
+        }
     }
 
     /** The training style of a run; null for a custom template (no run) or an unstyled run. */
