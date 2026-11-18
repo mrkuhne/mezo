@@ -17,6 +17,8 @@ related: [_platform-auth-security, _platform-design-system, companion, settings,
 ---
 
 > **2026-11-18 — `mezo-r36n9.77` (no language change).** Two new error keys `TRAIN_SPORT_GROUP_INVALID` and `TRAIN_MESO_PHASE_CURVE_LENGTH` in `messages_hu`/`messages_en` (train, S2); the bundle mechanics below are unchanged.
+
+> **2026-11-18 — `mezo-r36n9.80` (no language change).** Eight new train error keys in `messages_hu`/`messages_en` (`TRAIN_TECHNIQUE_NOT_STABLE`, `…_NOT_LENGTHENED`, `…_ON_CHALLENGE`, `…_TWO_CHALLENGES`, `TRAIN_TECHNIQUES_DISABLED`, `TRAIN_SET_LEGS_NEED_TECHNIQUE`, `TRAIN_SET_LEG_KIND_MISMATCH`, `TRAIN_SET_LEGS_TOO_MANY`, `TRAIN_SET_LEG_VALUE_INVALID`); mechanics unchanged. See [`train.md`](train.md) §4 *Intensity techniques*.
 > **2026-11-17 — reviewed after `mezo-l5lvh`:** the change under `backend/src/main/resources` only switched on `server.compression` in `application.yml`; no message-bundle key and no user-facing string changed. Same day, `mezo-7ahl8` added one more non-language key there (`mezo.proactive.feed.lazy-retry-minutes`).
 
 > **2026-11-16 — the pantry allergen baseline (`mezo-r36n9.48`) added no translatable text.** Its derivation and its two boot-time backfills live in Java and log in Hungarian only; no message-bundle key, no new user-facing string. Recorded here because the change touched `backend/src/main/resources` (a new Liquibase changeset), not the bundles.

@@ -63,6 +63,23 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-18 — Train style T2: the technique model (`mezo-r36n9.80`).**
+  A planned exercise can now carry an **intensity technique** — the owner's *pihenős drop* (rest-drop), a drop set,
+  myo-reps or lengthened partials — or be the **day's challenge**, in a block that has `techniques_enabled` (default
+  off: every web block and the running block behave byte-identically). The technique replaces the **last** working set;
+  only stable exercises may carry one (partials and the challenge also need a lengthened-friendly one), enforced
+  server-side on template save, day edit and a new mid-run `PUT .../exercises/{id}/technique`. The daily workout
+  prescribes the technique set as a read-time overlay (drop weight snapped to a real weight, myo mini-sets, partials to
+  failure) in loading weeks only — never a deload week, never a comeback or readiness-lighten day; the challenge wins on
+  its row, one per day. The log stores what was done as **legs** (`exercise_set_leg`, `SetLogRequest`/`SetUpdateRequest`
+  `legs`, absent = untouched) and the readers stay honest: tonnage counts drop and mini legs but not partials, the
+  progression reference and the grind signal skip the technique set, a technique set weighs 2 against the exercise and
+  session caps, the depth challenge scores from the last straight set, and `challengeBest` / `partialsBest` are derived.
+  **Deferred on purpose:** automatic placement and the challenge offer (T3), AI use (T4), the Boop screens, a mid-run
+  flag toggle, cap weight in the draft-plan evaluate, legs in the companion's tonnage text (`mezo-r36n9.89`). Spec
+  [train style and techniques](../superpowers/specs/2026-11-17-train-style-and-techniques-design.md), plan
+  [T2](../superpowers/plans/2026-11-18-train-style-t2-technique-model.md);
+  [`train.md`](../features/train.md) §4 `#### Intensity techniques`, §9.
 - **2026-11-18 — Train style T1: training style and progression (`mezo-r36n9.79`).**
   A block can now carry a **training style** — *Kiegyensúlyozott*, *Sok ismétlés*, *Nagyobb súly* or *Két sorozat
   bukásig* — that stamps rep range, reserve (reps in reserve) and rest onto every exercise (all-out also sets two

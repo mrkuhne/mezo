@@ -46,7 +46,7 @@ blokkban számít, aminek van stílusa.
    előtti ismétlés-többlet, és izomcsoportonkénti elakadás-figyelés.
 
 ## Miért így
-- Az intenzitás-technikák (például csonka sorozat, ejtett sorozat) később **csak stabil gyakorlatokon** jönnek: ezért kell a stabil/szabad besorolás.
+- Az intenzitás-technikák **csak stabil gyakorlatokon** engedettek (lásd [Technikák](15-technikak.md)): ezért kell a stabil/szabad besorolás.
 - A saját beírásod mindig erősebb a stílusnál: a stílus segít, nem kényszerít.
 - Tulajdonosi döntés alapján a szigorú stabil-lista a biztonság felé téved: inkább legyen egy gyakorlat „szabad”, mint hogy fáradtan, szabad súllyal
   menjen bukásig.
@@ -73,4 +73,6 @@ képernyőin jön. Utána az intenzitás-technikák (stabil gyakorlatokon), az e
 valamint egy mód a stílus levételére.
 
 ## Mi marad ki
-A webes app nem kapja meg (befagyasztott). Technikák és elakadási javaslatok egyelőre nincsenek; az elakadás csak a heti javaslat naplójában jelenik meg.
+A webes app nem kapja meg (befagyasztott). Az elakadási javaslatok egyelőre nincsenek; az elakadás csak a heti javaslat naplójában jelenik meg.
+
+A technikákról (pihenős drop, drop set, myo set, félismétlések, napi kihívás) lásd [Technikák](15-technikak.md).
