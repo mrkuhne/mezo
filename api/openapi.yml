@@ -45,6 +45,14 @@ tags:
       check-in's "Jobban" ends it and applies the return rule (continue / resume
       the week / step back one week), shifting the active meso calendar; "Mégsem
       vagyok jól" undoes that on the same day.
+  - name: TrainWeekProposal
+    description: >-
+      Volume engine v2 S3 (mezo-r36n9.78, spec 2026-11-17 §6.4/§6.6) — the
+      weekly volume proposal of a run: set / weight / rep lines with reason
+      codes, grouped per muscle. In auto mode it is applied at once (read-only
+      record); in manual mode the user decides line by line (accept / keep).
+      Nothing is force-decided: a pending proposal expires at the next week
+      boundary.
   - name: Goal
     description: Goal domain — goal-rooted timeline (trajectory + quality guards + window)
   - name: BiometricProfile
@@ -3374,6 +3382,102 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: No ended period (TRAIN_RECOVERY_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/week-proposals':
+    get:
+      tags:
+        - TrainWeekProposal
+      operationId: listWeekProposals
+      summary: >-
+        The run's weekly proposals (newest first); empty when the run is not
+        active, the gate is off or none exists
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Proposals of the run
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeekProposal'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: The run is not the caller's (TRAIN_MESO_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions':
+    post:
+      tags:
+        - TrainWeekProposal
+      operationId: decideWeekProposal
+      summary: >-
+        Accept or keep proposal lines (per line, or the rest in one go); returns
+        the updated proposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: proposalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeekProposalDecisionRequest'
+      responses:
+        '200':
+          description: The proposal after the decisions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeekProposal'
+        '400':
+          description: >-
+            Unknown line id, both rest flags set, or a decided line asked to
+            change (TRAIN_WEEK_PROPOSAL_DECISION_INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such proposal on the caller's run (TRAIN_WEEK_PROPOSAL_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The proposal is no longer pending (TRAIN_WEEK_PROPOSAL_CLOSED)
           content:
             application/json:
               schema:
@@ -19164,6 +19268,213 @@ components:
           allOf:
             - $ref: '#/components/schemas/RecoveryComeback'
           nullable: true
+    WeekProposalReason:
+      type: string
+      description: >-
+        Why a line (or a muscle that holds) is what it is; Hungarian wording is
+        the client's
+      enum:
+        - all_sets_done
+        - felt_easy
+        - deficit_pace
+        - room_in_band
+        - soreness_cleared
+        - top_of_rep_range
+        - reserve_left
+        - next_plate
+        - grind
+        - too_much
+        - sets_missed
+        - tier_maintain
+        - deload
+        - no_slot
+        - above_band
+        - joint_pain
+        - soreness
+        - at_ceiling
+        - deload_restore
+        - stalled
+        - tier_change
+    WeekProposalLine:
+      type: object
+      required:
+        - id
+        - exerciseId
+        - exerciseName
+        - dayIndex
+        - muscleGroup
+        - kind
+        - from
+        - to
+        - reasons
+      properties:
+        id:
+          type: string
+          description: Stable line id within the proposal
+        exerciseId:
+          type: string
+          format: uuid
+        exerciseName:
+          type: string
+        dayIndex:
+          type: integer
+          description: Template day index the exercise sits on
+        dayName:
+          type: string
+          nullable: true
+        muscleGroup:
+          type: string
+        kind:
+          type: string
+          enum:
+            - sets
+            - weight
+            - reps
+          description: >-
+            Weight and reps lines are a preview (read-time prescription); only
+            sets lines write on accept
+        from:
+          type: number
+          description: Value before the change (sets; kg or reps)
+        to:
+          type: number
+          description: Value after the change (sets; kg or reps)
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalReason'
+        decision:
+          type: string
+          nullable: true
+          enum:
+            - accepted
+            - kept
+          description: Absent while undecided
+    WeekProposalMuscle:
+      type: object
+      required:
+        - muscle
+        - tier
+        - sportAdjusted
+        - setsBefore
+        - setsAfter
+        - lineCount
+        - reasons
+      properties:
+        muscle:
+          type: string
+        tier:
+          type: string
+          enum:
+            - emphasize
+            - grow
+            - maintain
+        bandLow:
+          type: integer
+          nullable: true
+        bandHigh:
+          type: integer
+          nullable: true
+        sportAdjusted:
+          type: boolean
+          description: The band was lowered because a sport already loads the group
+        setsBefore:
+          type: integer
+          description: Weekly sets of the group before the proposal
+        setsAfter:
+          type: integer
+          description: Weekly sets if every line were applied
+        lineCount:
+          type: integer
+          description: 0 = the muscle stays where it was; reasons say why
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalReason'
+    WeekProposal:
+      type: object
+      required:
+        - id
+        - mesocycleId
+        - week
+        - kind
+        - status
+        - mode
+        - createdAt
+        - lines
+        - muscles
+      properties:
+        id:
+          type: string
+          format: uuid
+        mesocycleId:
+          type: string
+          format: uuid
+        week:
+          type: integer
+          description: Run week the proposal is for
+        kind:
+          type: string
+          enum:
+            - weekly
+            - tier_change
+        status:
+          type: string
+          enum:
+            - pending
+            - applied
+            - auto_applied
+            - expired
+            - superseded
+        mode:
+          type: string
+          enum:
+            - auto
+            - manual
+        createdAt:
+          type: string
+          format: date-time
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalLine'
+        muscles:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalMuscle'
+    WeekProposalLineDecision:
+      type: object
+      required:
+        - lineId
+        - decision
+      properties:
+        lineId:
+          type: string
+        decision:
+          type: string
+          enum:
+            - accepted
+            - kept
+    WeekProposalDecisionRequest:
+      type: object
+      description: >-
+        Per-line decisions and/or one of the rest flags (not both flags);
+        undecided lines stay pending
+      properties:
+        decisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalLineDecision'
+        acceptRest:
+          type: boolean
+          description: Accept every still-undecided line
+        keepRest:
+          type: boolean
+          description: Keep every still-undecided line
     ExpenditureExplanationResponse:
       type: object
       description: >-
