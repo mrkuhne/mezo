@@ -36,15 +36,6 @@ public final class TechniqueRules {
         };
     }
 
-    /**
-     * Cap weight of a row: its technique set weighs {@code capWeightCfg} (2) instead of 1 against the exercise and
-     * session caps when it carries a technique/challenge in an enabled block — {@code sets + capExtra}; else sets.
-     * A row with no set has no technique set (0).
-     */
-    public static int capWeight(int sets, Technique t, boolean challenge, boolean enabled, int capWeightCfg) {
-        return sets > 0 ? sets + capExtra(t, challenge, enabled, capWeightCfg) : 0;
-    }
-
     /** The extra set-equivalents a row's technique set adds over its plain count: cfg - 1, or 0 when it carries none. */
     public static int capExtra(Technique t, boolean challenge, boolean enabled, int capWeightCfg) {
         boolean tech = t != null && t != Technique.NONE;

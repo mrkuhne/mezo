@@ -152,6 +152,7 @@ public class WorkoutService {
     private final TrainTechniqueProperties trainTechniqueProperties;
     private final TechniqueWeights techniqueWeights;
     private final PartialsBest partialsBest;
+    private final CatalogAttributes catalogAttributes;
 
     /**
      * Today's kímélő-mód lightening (spec §9.1.4 / §9.1.6): the DTO shown on the hero, plus the
@@ -295,6 +296,9 @@ public class WorkoutService {
         CatalogAttributes.Lookup stability = exerciseStyler.lookupRows(exercises, runStyle != null);
         boolean techniquesOn = activeMeso != null && activeMeso.isTechniquesEnabled()
             && activeMeso.getId().equals(day.getMesocycleId());
+        // The rules are checked on write, but catalog attributes can change later (an edited row, a deploy's
+        // catalog reload, a template start): re-check the picks at prescription time, one batched read.
+        Set<UUID> invalidPicks = techniquesOn ? invalidPicks(entries) : Set.of();
         LocalDate today = LocalDate.now();
         int weightUp = 0;
         int weightDown = 0;
@@ -356,10 +360,11 @@ public class WorkoutService {
                     p = lightCareSet(p, careRegion);
                 }
                 // Technique overlay (mezo-r36n9.80): a flagged run only. A gentle day (comeback, or a readiness
-                // lighten — which also covers every care-lightened row) carries neither technique nor challenge;
-                // the echo then says so too (the stored plan is untouched).
+                // lighten — which also covers every care-lightened row), a deload week and a pick the catalog no
+                // longer allows carry neither technique nor challenge; the echo then says so too (the stored plan
+                // is untouched).
                 if (techniquesOn) {
-                    if (comeback != null || lighten.isPresent()) {
+                    if (comeback != null || lighten.isPresent() || deloadWeek || invalidPicks.contains(e.getId())) {
                         t.setTechnique(null);
                         t.setTechniqueSource(null);
                         t.setChallenge(false);
@@ -409,6 +414,21 @@ public class WorkoutService {
             .overloadSummary(overloadSummary)
             .comeback(comeback == null ? null : comeback.dto())
             .build();
+    }
+
+    /** Rows whose stored pick no longer passes {@link TechniqueRules}; one catalog read, none without a pick. */
+    private Set<UUID> invalidPicks(List<SessionExerciseAssembler.Entry> entries) {
+        List<ExerciseEntity> picked = entries.stream().map(SessionExerciseAssembler.Entry::row)
+            .filter(r -> Technique.fromWire(r.getTechnique()) != Technique.NONE || r.isChallenge()).toList();
+        if (picked.isEmpty()) {
+            return Set.of();
+        }
+        CatalogAttributes.AttrsLookup attrs = catalogAttributes.loadAttrs(
+            picked.stream().map(ExerciseEntity::getCatalogId).toList());
+        return picked.stream()
+            .filter(r -> TechniqueRules.check(Technique.fromWire(r.getTechnique()), r.isChallenge(),
+                attrs.of(r.getCatalogId())).isPresent())
+            .map(ExerciseEntity::getId).collect(java.util.stream.Collectors.toSet());
     }
 
     /**
@@ -735,6 +755,10 @@ public class WorkoutService {
         Technique technique = req.getTechnique() == null
             ? Technique.NONE : Technique.fromWire(req.getTechnique().getValue());
         String techniqueWire = technique == Technique.NONE ? null : technique.wire();
+        if (technique != Technique.NONE && "warmup".equals(req.getKind())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_SET_TECHNIQUE_ON_WARMUP").build(), HttpStatus.BAD_REQUEST);
+        }
         setLegService.validate(techniqueWire, req.getLegs());
         ExerciseSetEntity set = new ExerciseSetEntity();
         set.setTechnique(techniqueWire);

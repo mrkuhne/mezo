@@ -523,7 +523,8 @@ public class TrainService {
         e.setRestSec(in.getRestSec());
         e.setOverrides(mapper.overridesWire(in.getOverrides()));
         // Technique fields (mezo-r36n9.80): wire values; styleRows carries/overwrites them on a day edit.
-        e.setTechnique(mapper.techniqueWire(in.getTechnique()));
+        e.setTechnique(in.getTechnique() == null || in.getTechnique() == io.mrkuhne.mezo.api.dto.Technique.NONE
+            ? null : mapper.techniqueWire(in.getTechnique()));
         e.setTechniqueSource(mapper.techniqueSourceWire(in.getTechniqueSource()));
         e.setChallenge(Boolean.TRUE.equals(in.getChallenge()));
         e.setOrderIndex(orderIndex);

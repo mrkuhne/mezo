@@ -46,7 +46,8 @@ public class ExerciseStyler {
         CatalogAttributes.Lookup stability = lookup(
             carried.stream().flatMap(d -> d.exercises().stream()).toList(), block);
         return carried.stream().map(day -> withExercises(day, day.exercises().stream()
-            .map(e -> StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props)).toList())).toList();
+            .map(e -> noneAsNull(StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props))).toList()))
+            .toList();
     }
 
     /**
@@ -198,7 +199,7 @@ public class ExerciseStyler {
                 ids.add(carried.get(i).catalogId());
             }
         }
-        if (ids.isEmpty() && !anyCarriedPick(carried, incoming)) {
+        if (ids.isEmpty()) {
             return carried; // nothing carried carries a pick: no catalog read
         }
         CatalogAttributes.AttrsLookup attrs = catalogAttributes.loadAttrs(ids);
@@ -211,15 +212,6 @@ public class ExerciseStyler {
             out.add(invalid ? e.withTechnique(null, null, false) : e);
         }
         return out;
-    }
-
-    private static boolean anyCarriedPick(List<GymExerciseJson> carried, List<GymExerciseJson> incoming) {
-        for (int i = 0; i < carried.size(); i++) {
-            if (!techniqueSent(incoming.get(i)) && carriesPick(carried.get(i))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static boolean carriesPick(GymExerciseJson e) {
@@ -243,9 +235,14 @@ public class ExerciseStyler {
             : b.catalogId() == null && Objects.equals(a.name(), b.name());
     }
 
+    /** "none" is stored as null everywhere (readers treat null as none); the wire "none" only means "clear it". */
+    static GymExerciseJson noneAsNull(GymExerciseJson e) {
+        return "none".equals(e.technique()) ? e.withTechnique(null, e.techniqueSource(), e.challenge()) : e;
+    }
+
     /** Writes the carried technique fields onto a run row (mezo-r36n9.80). */
     static void applyTechniqueTo(ExerciseEntity row, GymExerciseJson e) {
-        row.setTechnique(e.technique());
+        row.setTechnique(noneAsNull(e).technique());
         row.setTechniqueSource(e.techniqueSource());
         row.setChallenge(Boolean.TRUE.equals(e.challenge()));
     }

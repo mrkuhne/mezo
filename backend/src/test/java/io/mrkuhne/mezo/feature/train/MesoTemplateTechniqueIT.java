@@ -119,7 +119,7 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
         });
         MesoTemplateResponse cleared = putForBody(TEMPLATES + "/" + created.getId(), clear, auth,
             HttpStatus.OK, MesoTemplateResponse.class);
-        assertThat(cleared.getDays().get(0).getExercises().get(0).getTechnique()).isEqualTo(Technique.NONE);
+        assertThat(cleared.getDays().get(0).getExercises().get(0).getTechnique()).isNull(); // none is stored (and echoed) as null
         assertThat(cleared.getDays().get(0).getExercises().get(1).getChallenge()).isFalse();
         assertThat(cleared.getDays().get(0).getExercises().get(0).getTechniqueSource()).isNull();
     }

@@ -41,6 +41,8 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
     @Autowired io.mrkuhne.mezo.support.populator.CheckInPopulator checkIns;
     @Autowired io.mrkuhne.mezo.support.populator.ReadinessChoicePopulator choices;
     @Autowired OwnerProperties ownerProperties;
+    @Autowired io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository catalog;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -66,6 +68,8 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
         MesocycleEntity meso = run(owner, week, enabled);
         WorkoutSessionEntity day = train.createTemplateDay(owner, meso.getId(), todayLabel());
         ExerciseEntity bench = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        // stable + lengthened-friendly catalog row: the picks are re-checked against it at prescription time
+        bench.setCatalogId(catalog.findBySlug("cable-fly").orElseThrow().getId());
         bench.setTechnique(technique);
         bench.setTechniqueSource(technique == null ? null : "owner");
         bench.setChallenge(challenge);
@@ -169,6 +173,27 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
             assertThat(s.getTechnique()).isNull();
             assertThat(s.getLegs()).isNullOrEmpty();
         });
+        assertSuppressed(t); // the echo says plain too
+    }
+
+    @Test
+    void pickThatTheCatalogNoLongerAllowsIsPlain() {
+        Fixture f = fixture(2, true, "rest_drop", false, true);
+        UUID catalogId = f.bench().getCatalogId();
+        String before = jdbc.queryForObject("select stability from exercise_catalog where id = ?", String.class,
+            catalogId);
+        jdbc.update("update exercise_catalog set stability = 'free' where id = ?", catalogId);
+        try {
+            TodayExercise t = bench(workoutService.getToday(f.owner(), null));
+
+            assertSuppressed(t);
+            assertThat(working(t)).hasSize(3);
+            // the stored plan is untouched
+            assertThat(jdbc.queryForObject("select technique from exercise where id = ?", String.class,
+                f.bench().getId())).isEqualTo("rest_drop");
+        } finally {
+            jdbc.update("update exercise_catalog set stability = ? where id = ?", before, catalogId);
+        }
     }
 
     @Test

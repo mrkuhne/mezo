@@ -224,4 +224,16 @@ class SetLegLogIT extends ApiIntegrationTest {
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertHasRequestError(res.getBody(), "TRAIN_SET_LEGS_NEED_TECHNIQUE");
     }
+
+    @Test
+    void warmupSetWithTechniqueIsRejected() {
+        Ctx c = ctx();
+        SetLogRequest r = req(c, 0, Technique.DROP, List.of(leg(SetLegKind.DROP, "60", 8)));
+        r.setKind("warmup");
+
+        ResponseEntity<String> res = logRaw(c, r);
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(res.getBody()).contains("TRAIN_SET_TECHNIQUE_ON_WARMUP");
+    }
 }

@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ExerciseTechniqueService {
 
+    public static final String RUN_NOT_EDITABLE = "TRAIN_RUN_NOT_EDITABLE";
     public static final String TECHNIQUES_DISABLED = "TRAIN_TECHNIQUES_DISABLED";
 
     private final MesocycleRepository mesocycleRepository;
@@ -41,10 +42,15 @@ public class ExerciseTechniqueService {
         MesocycleEntity meso = OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(mesoId), createdBy);
         ExerciseEntity row = exerciseRepository.findById(exerciseId)
             .filter(e -> createdBy.equals(e.getCreatedBy()))
+            // Template-day rows only: a row added mid-workout hangs off an instance session (templateSessionId set).
             .filter(e -> workoutSessionRepository.findById(e.getWorkoutSessionId())
-                .filter(s -> mesoId.equals(s.getMesocycleId())).isPresent())
+                .filter(s -> mesoId.equals(s.getMesocycleId()) && s.getTemplateSessionId() == null).isPresent())
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+        if ("archived".equals(meso.getStatus())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error(RUN_NOT_EDITABLE).build(), HttpStatus.CONFLICT);
+        }
         if (!meso.isTechniquesEnabled()) {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error(TECHNIQUES_DISABLED).build(), HttpStatus.CONFLICT);

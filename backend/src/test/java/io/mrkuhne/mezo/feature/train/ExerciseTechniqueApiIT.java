@@ -139,4 +139,28 @@ class ExerciseTechniqueApiIT extends ApiIntegrationTest {
         putForBody("/api/train/mesocycles/" + mine.mesoId() + "/exercises/" + r.fly().getId() + "/technique",
             body(Technique.DROP, false), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
     }
+
+    @Test
+    void rowAddedMidWorkoutIs404() {
+        UUID owner = owner();
+        Run r = run(owner, true);
+        WorkoutSessionEntity day = trainPopulator.createWorkoutSession(owner, r.mesoId(), "Kedd", "Pull", 1,
+            "planned");
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(owner, day,
+            java.time.LocalDate.now(), "active");
+        ExerciseEntity added = row(owner, instance, "Cable Fly extra", "cable-fly");
+
+        putForBody(url(r, added), body(Technique.DROP, false), ownerAuthHeaders(), HttpStatus.NOT_FOUND,
+            String.class);
+    }
+
+    @Test
+    void archivedRunIs409() {
+        Run r = run(owner(), true);
+        jdbcTemplate.update("update mesocycle set status = 'archived' where id = ?", r.mesoId());
+
+        String body = putForBody(url(r, r.fly()), body(Technique.DROP, false), ownerAuthHeaders(),
+            HttpStatus.CONFLICT, String.class);
+        assertThat(body).contains("TRAIN_RUN_NOT_EDITABLE");
+    }
 }
