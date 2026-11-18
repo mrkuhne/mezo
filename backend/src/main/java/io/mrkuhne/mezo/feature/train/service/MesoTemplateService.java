@@ -198,7 +198,8 @@ public class MesoTemplateService {
             for (int e = 0; e < stored.size(); e++) {
                 GymExerciseJson ex = stored.get(e);
                 response.getDays().get(d).getExercises().get(e).setEffectiveTrainingStyle(
-                    styler.effective(ex.trainingStyle(), ex.type(), ex.catalogId(), block, stability));
+                    styler.effective(ex.trainingStyle(), ex.type(), ex.catalogId(), block, stability,
+                        ex.countsTowardVolume()));
             }
         }
         response.setRunCount((int) mesocycleRepository

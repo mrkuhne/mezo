@@ -15,7 +15,7 @@ public final class StyleStamper {
                                         TrainStyleProperties p) {
         // Style effects apply only to a block that HAS a style (spec §11.3): an exercise's own style
         // overrides a styled block's, but never wakes up an unstyled block.
-        if (blockStyle == null) return ex;
+        if (blockStyle == null || !ex.countsTowardVolume()) return ex; // closing block / plyo: never styled
         TrainingStyle style = TrainingStyle.fromWire(ex.trainingStyle());
         if (style == null) style = blockStyle;
         ExerciseClass cls = ExerciseClass.of(ex.type(), stable);

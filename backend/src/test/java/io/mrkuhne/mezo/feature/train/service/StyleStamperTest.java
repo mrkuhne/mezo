@@ -31,6 +31,13 @@ class StyleStamperTest {
         assertThat(StyleStamper.stamp(e, HEAVY, true, P)).isSameAs(e);
     }
 
+    @Test void nonCountingRowIsUntouched() {
+        // the fixed closing block never counts toward volume and is never styled
+        var e = new GymExerciseJson(UUID.randomUUID(), "Back extension", "lower-back", 0, 2, 12, 15, 2, null,
+            "isolation", null, null, false, null, null, null);
+        assertThat(StyleStamper.stamp(e, HEAVY, true, P)).isSameAs(e);
+    }
+
     @Test void blockStyleStampsAllFields() {
         var r = StyleStamper.stamp(ex("compound", "chest-mid", null, null), HEAVY, false, P);
         assertThat(r.repMin()).isEqualTo(5);

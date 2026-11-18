@@ -58,6 +58,9 @@ public class ExerciseStyler {
         CatalogAttributes.Lookup stability = lookup(carried, block);
         for (int i = 0; i < fresh.size(); i++) {
             GymExerciseJson e = carried.get(i);
+            if (!fresh.get(i).isCountsTowardVolume()) {
+                continue; // closing block / plyo rows keep their own fixed prescription
+            }
             applyTo(fresh.get(i), StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props));
         }
         return stability;
@@ -86,11 +89,12 @@ public class ExerciseStyler {
     /**
      * The style the stamp actually used: the exercise's own style, else the block's, after the
      * all-out-on-free fallback; null for an unstyled block (even when the exercise has a style) and
-     * for plyo (never stamped).
+     * for plyo and every row that does not count toward volume (never stamped).
      */
     public io.mrkuhne.mezo.api.dto.TrainingStyle effective(String exerciseStyle, String type, UUID catalogId,
-                                                           TrainingStyle block, CatalogAttributes.Lookup stability) {
-        if (block == null) {
+                                                           TrainingStyle block, CatalogAttributes.Lookup stability,
+                                                           boolean countsTowardVolume) {
+        if (block == null || !countsTowardVolume) {
             return null;
         }
         TrainingStyle style = exerciseStyle != null ? TrainingStyle.fromWire(exerciseStyle) : block;

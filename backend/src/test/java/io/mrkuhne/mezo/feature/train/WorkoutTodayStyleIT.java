@@ -191,6 +191,25 @@ class WorkoutTodayStyleIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void nonCountingRowInStyledRunIsNeverStyled() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = run(owner, "heavy", 5, SIX_WEEKS);
+        WorkoutSessionEntity day = train.createTemplateDay(owner, meso.getId(), todayLabel());
+        ExerciseEntity closing = train.createExercise(owner, day.getId(), "Closing Extension", "lower-back", "isolation");
+        closing.setRepMin(12);
+        closing.setRepMax(15);
+        closing.setTargetRir(2);
+        closing.setCountsTowardVolume(false);
+        train.save(closing);
+
+        TodayExercise t = byName(workoutService.getToday(owner, null), "Closing Extension");
+
+        assertThat(t.getTargetRIR()).isEqualTo(2);
+        assertThat(t.getEffectiveTrainingStyle()).isNull();
+        assertThat(t.getPrescribedSets()).allSatisfy(s -> assertThat(s.getRestSec()).isNull());
+    }
+
+    @Test
     void alloutRunPrescribesTwoSetsAtZero() {
         UUID owner = ownerId();
         styledDay(owner, "allout", 1, List.of(

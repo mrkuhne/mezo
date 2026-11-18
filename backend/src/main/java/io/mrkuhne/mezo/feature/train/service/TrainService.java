@@ -558,7 +558,8 @@ public class TrainService {
             .exercises(exercises.stream().map(e -> {
                 GymExercise g = mapper.toGymExercise(e);
                 g.setEffectiveTrainingStyle(
-                    styler.effective(e.getTrainingStyle(), e.getType(), e.getCatalogId(), block, stability));
+                    styler.effective(e.getTrainingStyle(), e.getType(), e.getCatalogId(), block, stability,
+                        e.isCountsTowardVolume()));
                 if (e.getCatalogId() != null) {
                     CatalogMedia m = mediaByCatalog.get(e.getCatalogId());
                     if (m != null) {

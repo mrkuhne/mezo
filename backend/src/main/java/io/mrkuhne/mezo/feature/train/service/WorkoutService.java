@@ -298,7 +298,8 @@ public class WorkoutService {
             TodayExercise t = mapper.toTodayExercise(e);
             StyleContext style = styleContext(e, runStyle, activeMeso, stability);
             t.setEffectiveTrainingStyle(
-                exerciseStyler.effective(e.getTrainingStyle(), e.getType(), e.getCatalogId(), runStyle, stability));
+                exerciseStyler.effective(e.getTrainingStyle(), e.getType(), e.getCatalogId(), runStyle, stability,
+                    e.isCountsTowardVolume()));
             t.setChangeScope(entry.changeScope() == null ? null
                 : TodayExercise.ChangeScopeEnum.fromValue(entry.changeScope()));
             t.setReplacesName(entry.replacesName());
@@ -397,7 +398,7 @@ public class WorkoutService {
      */
     private StyleContext styleContext(ExerciseEntity e, TrainingStyle runStyle, MesocycleEntity run,
                                       CatalogAttributes.Lookup stability) {
-        if (runStyle == null) {
+        if (runStyle == null || !e.isCountsTowardVolume()) {
             return StyleContext.NONE;
         }
         TrainingStyle style = e.getTrainingStyle() != null ? TrainingStyle.fromWire(e.getTrainingStyle()) : runStyle;

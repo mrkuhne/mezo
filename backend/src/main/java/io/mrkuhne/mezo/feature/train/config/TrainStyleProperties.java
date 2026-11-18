@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -31,8 +32,8 @@ public record TrainStyleProperties(
         @Positive Integer workingSets,
         @NotNull @PositiveOrZero Integer reserve,
         @PositiveOrZero Integer legReserve,
-        @NotNull @Positive Integer compoundRestSec,
-        @NotNull @Positive Integer isolationRestSec,
+        @NotNull @Min(30) @Max(600) Integer compoundRestSec,
+        @NotNull @Min(30) @Max(600) Integer isolationRestSec,
         @NotNull @PositiveOrZero Integer repOverflow
     ) {}
 

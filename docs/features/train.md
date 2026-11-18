@@ -745,7 +745,7 @@ Tables `recovery_period` and `recovery_day_release`, the `/api/train/recovery*` 
 #### Training style (T1, `mezo-r36n9.79`, 2026-11-18; spec `2026-11-17-train-style-and-techniques-design.md`, plan `2026-11-18-train-style-t1-style-and-progression.md`)
 A block (a template and the run started from it) may carry a **training style**, `balanced | volume | heavy | allout` (Hungarian: *Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két sorozat bukásig*), which **stamps rep range, reserve (target RIR), rest and (all-out only) set count onto its exercises** and makes the engine ramp effort across the block. **A block with `trainingStyle = null` is prescribed exactly as before** — every style effect below is a no-op there. Contract is additive and optional (`MesoTemplateUpsertRequest`/`MesoTemplateResponse`/`MesocycleResponse.trainingStyle`; `GymExerciseInput.trainingStyle|restSec|overrides[]`; `GymExercise`/`TodayExercise` add read-only `effectiveTrainingStyle`; `PrescribedSet.restSec`); the web sends none of it and needs no code change (only `api.gen.ts` regenerated). Migration `202611181200_mezo-r36n9.79_train_style.sql`. **The Boop screens that set and show it are a later slice** (builder, active workout); T1 is engine + contract.
 
-- **The style table** (`mezo.train.style.styles` → `TrainStyleProperties`, `service/StyleTable.stamp(style, class, stable, legs, props)`; class = compound/isolation from the exercise `type`, plyo is never stamped):
+- **The style table** (`mezo.train.style.styles` → `TrainStyleProperties`, `service/StyleTable.stamp(style, class, stable, legs, props)`; class = compound/isolation from the exercise `type`, plyo is never stamped, and neither is any row that does not count toward volume — the fixed closing block keeps its own 12–15 / RIR 2, gets no ramp, overshoot or rest, and shows no `effectiveTrainingStyle`, including when a day edit sends it back):
 
   | Style | Compound reps | Isolation reps | Sets | Reserve | Rest compound / isolation | Overshoot (`rep-overflow`) |
   |---|---|---|---|---|---|---|
@@ -1191,6 +1191,7 @@ Both modes and both layers must stay green.
 - **NOT deferred, for the avoidance of doubt:** the pyramid `completedRounds` scoring fix landed on both sides — `mezo-d20.3.5` made the FE capture and send the value honestly for every run kind, and the backend half (F6.3) shipped with the F6 backend slice.
 
 ---
+- **Range conversion on a hold day (T1, `mezo-r36n9.79`):** a readiness/comeback hold (`capAtHold`) caps only *upward* moves, so a downward range conversion stands, while an upward conversion on a hold day is held at the old-range reference weight — which can sit off the new range for that one day; accepted.
 
 ## 10. Key files
 
