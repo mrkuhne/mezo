@@ -87,8 +87,9 @@ public class ExerciseEntity extends OwnedEntity {
     /**
      * Whether this exercise's sets count as hypertrophy volume (mezo-gbo7). False for the fix-zárás
      * closing block (posture/accessory work) and for plyometrics, so neither distorts the per-muscle
-     * weekly set target nor consumes the group's budget. Read by WorkoutService.effectiveWorkingSets,
-     * VolumeProgressionService's weekly signals, VolumeArcService's actuals and the baseline seeding.
+     * weekly set sum nor consumes the group's budget. Read by VolumeLedger (the derived plan sum),
+     * WeekProposalService (the weekly decision and restore), WeeklySignalReader, LegacySetDistribution
+     * (the one-time migration) and VolumeArcService's actuals.
      */
     @Column(name = "counts_toward_volume", nullable = false)
     private boolean countsTowardVolume = true;

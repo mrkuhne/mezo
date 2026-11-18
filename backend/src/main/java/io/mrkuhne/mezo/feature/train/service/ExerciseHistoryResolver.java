@@ -34,7 +34,7 @@ public class ExerciseHistoryResolver {
     private final ExerciseSetRepository exerciseSetRepository;
 
     /** Records/challenge identity idiom: catalog id when linked, else the exact name. */
-    private static String identityKey(UUID catalogId, String name) {
+    static String identityKey(UUID catalogId, String name) {
         return catalogId != null ? "c:" + catalogId : "n:" + name;
     }
 

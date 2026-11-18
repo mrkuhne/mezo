@@ -42,8 +42,8 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
         assertThat(t.getMusclePriorities()).containsEntry("back", "emphasize").containsEntry("calf", "maintain").doesNotContainKey("chest");
         assertThat(t.getDays()).hasSize(7);
         assertThat(t.getDays()).extracting(MesoDayInput::getType).containsExactly("Upper", "Rest", "Lower", "Rest", "Upper", "Lower", "Rest");
-        assertThat(t.getVolumePerMuscle()).containsKeys("chest", "back", "shoulder", "biceps", "triceps", "quad", "ham", "glute", "calf");
-        assertThat(t.getVolumePerMuscle().get("back").getMev()).isEqualTo(10);
+        // volume engine v2: landmarks are config, never written into a template
+        assertThat(t.getVolumePerMuscle()).isNullOrEmpty();
 
         int backSets = t.getDays().stream().flatMap(d -> d.getExercises().stream())
             .filter(e -> "back".equals(io.mrkuhne.mezo.feature.train.service.MuscleGroup.of(e.getMuscle())))

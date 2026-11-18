@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -195,18 +196,37 @@ public class GuardEvaluationService {
             .min(Comparator.naturalOrder())
             .orElse(null);
 
-        // Distinct muscles whose prescribed weekly sets sit below the warn floor (6).
-        List<String> belowMaintenance = logs.stream()
-            .filter(l -> l.getCurrentSets() != null && l.getCurrentSets() < warnBelow)
-            .map(MuscleGroupVolumeLogEntity::getMuscle)
+        // A row of a converted run carries its tier's band: "below maintenance" is under the band's own
+        // low end (a deliberately maintained quad at 3 is inside its 3-7 band). A row without a band (a run
+        // not yet synced) keeps the fixed warn-below floor exactly.
+        Map<String, MuscleGroupVolumeLogEntity> underBand = new LinkedHashMap<>();
+        Map<String, MuscleGroupVolumeLogEntity> underFloor = new LinkedHashMap<>();
+        for (MuscleGroupVolumeLogEntity l : logs) {
+            if (l.getCurrentSets() == null) {
+                continue;
+            }
+            if (l.getBandLow() != null) {
+                if (l.getCurrentSets() < l.getBandLow()) {
+                    underBand.putIfAbsent(l.getMuscle(), l);
+                }
+            } else if (l.getCurrentSets() < warnBelow) {
+                underFloor.putIfAbsent(l.getMuscle(), l);
+            }
+        }
+        List<String> belowMaintenance = Stream.concat(underBand.keySet().stream(), underFloor.keySet().stream())
             .distinct()
             .toList();
 
         boolean rateWithinCap = rateWithinCap(trend);
 
         List<String> notes = new ArrayList<>();
-        if (!belowMaintenance.isEmpty()) {
-            notes.add("Karbantartás alatti heti volumen: " + String.join(", ", belowMaintenance)
+        if (!underBand.isEmpty()) {
+            notes.add("Sáv alatti heti volumen: " + underBand.values().stream()
+                .map(l -> l.getMuscle() + " (" + l.getCurrentSets() + ", a sáv alja " + l.getBandLow() + ")")
+                .collect(Collectors.joining(", ")) + ".");
+        }
+        if (!underFloor.isEmpty()) {
+            notes.add("Karbantartás alatti heti volumen: " + String.join(", ", underFloor.keySet())
                 + " (warn-küszöb " + warnBelow + " szett/hét; karbantartás "
                 + props.volume().maintenanceSets() + ").");
         }

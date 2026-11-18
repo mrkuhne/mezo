@@ -279,19 +279,19 @@ class MesoTemplateIT extends ApiIntegrationTest {
                 .containsExactly("Bench Press", "Incline Bench Press");
             assertThat(m.getDays().get(1).getExercises()).extracting(GymExercise::getName)
                 .containsExactly("Row", "Lat Pulldown");
-            // volumePerMuscle jsonb -> muscle_group_volume_log rows, W1 start at MEV
+            // volume engine v2: the run's volume-log rows are DERIVED from its plan (Σ working sets)
             assertThat(m.getVolumePerMuscle()).containsOnlyKeys("chest", "back");
             assertThat(m.getVolumePerMuscle().get("chest").getMev()).isEqualTo(8);
             assertThat(m.getVolumePerMuscle().get("chest").getMav()).isEqualTo(14);
             assertThat(m.getVolumePerMuscle().get("chest").getMrv()).isEqualTo(20);
-            assertThat(m.getVolumePerMuscle().get("chest").getCurrent()).isEqualTo(8);
+            assertThat(m.getVolumePerMuscle().get("chest").getCurrent()).isEqualTo(6); // 2 chest exercises x 3 working sets
             assertThat(m.getVolumePerMuscle().get("back").getMev()).isEqualTo(10);
             assertThat(m.getVolumePerMuscle().get("chest").getSource().getBaseline().getName())
-                .isEqualTo("RP guidelines · intermediate");
-            // The landmarks came from the PLAN, not from the generic RP table — the two happen to
-            // agree numerically for chest/back, so the provenance note is what tells them apart.
+                .isEqualTo("A terv szerint");
+            // Landmarks come from config and the sets from the plan's exercises (the template's
+            // own volumePerMuscle is never read).
             assertThat(m.getVolumePerMuscle().get("chest").getSource().getNote())
-                .startsWith("Sablon baseline");
+                .startsWith("A heti sorozatszám");
         });
         // The run's exercise rows are fresh rows with their own PKs — the template's recipe ids
         // (stored in the plan jsonb) must never be reused as workout exercise ids.
@@ -438,6 +438,7 @@ class MesoTemplateIT extends ApiIntegrationTest {
         WorkoutSessionEntity day =
             trainPopulator.createWorkoutSession(owner, legacy.getId(), "Hét", "Pull", 0, "planned");
         trainPopulator.createExercise(owner, day.getId(), "Régi húzás", 0);
+        trainPopulator.createExercise(owner, day.getId(), "Régi nyomás", "chest-mid", "compound");
         trainPopulator.createVolumeLogWithoutBaseline(owner, legacy.getId(), "back");
         HttpHeaders auth = ownerAuthHeaders();
 
@@ -451,16 +452,19 @@ class MesoTemplateIT extends ApiIntegrationTest {
                 .filter(t -> t.getId().equals(rerun.getTemplateId())).findFirst().orElseThrow();
         assertThat(template.getVolumePerMuscle().get("back").getName()).isEqualTo("Örökölt kiindulás");
 
-        // ...and that name survives into the next run's volume-log provenance (the chain the null
-        // used to travel down).
+        // volume engine v2: the next run's rows are derived from its plan, not copied from the
+        // template's landmarks — so the inherited name does not travel, config landmarks apply.
+        // (The legacy exercise sits in zone "hát", which has no landmark entry; add a chest one.)
         MesocycleResponse restarted = postForBody(TEMPLATES + "/" + rerun.getTemplateId() + "/start",
             startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.ACTIVE), auth,
             HttpStatus.OK, MesocycleResponse.class);
         assertThat(getForList(MESOCYCLES, auth, HttpStatus.OK, MesocycleResponse.class))
             .filteredOn(m -> m.getId().equals(restarted.getId())).singleElement()
-            .satisfies(m -> assertThat(
-                m.getVolumePerMuscle().get("back").getSource().getBaseline().getName())
-                .isEqualTo("Örökölt kiindulás"));
+            .satisfies(m -> {
+                assertThat(m.getVolumePerMuscle().get("chest").getSource().getBaseline().getName())
+                    .isEqualTo("A terv szerint");
+                assertThat(m.getVolumePerMuscle().get("chest").getMev()).isEqualTo(8);
+            });
     }
 
     @Test

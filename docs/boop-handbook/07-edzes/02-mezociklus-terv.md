@@ -49,8 +49,8 @@ osszefoglalo: Néhány kérdés után Boop összerak egy több hetes edzésblokk
 2. **Gyakorlatok kitöltése:** szabályok szerint a katalógusból.
 3. **AI-válogatás (opcionális):** egy AI-modell a szabályos keretek között jobb gyakorlatokat választhat; ha ki van kapcsolva,
    a szabályos kitöltés marad.
-4. Semmi nem mentődik, amíg el nem mented sablonként; indításkor a sablon napjaiból létrejönnek az edzésnapok, és a heti
-   sorozatszámok a táblázatból indulnak.
+4. Semmi nem mentődik, amíg el nem mented sablonként; indításkor a sablon napjaiból létrejönnek az edzésnapok, és a gyakorlatokra
+   beírt sorozatszámok maradnak az igazság — az első héten pontosan az, amit megterveztél (lásd [Heti volumen](05-heti-volumen.md)).
 5. Ma csak **izomépítő (hipertrófia)** irányt ismer a generátor.
 6. A mezociklus csatolható a súlycélhoz (lásd a Terv részt).
 

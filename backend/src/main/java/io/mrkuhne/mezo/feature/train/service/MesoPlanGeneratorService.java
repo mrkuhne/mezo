@@ -5,7 +5,6 @@ import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesoPlanGenerateRequest;
 import io.mrkuhne.mezo.api.dto.MesoPlanGenerateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
-import io.mrkuhne.mezo.api.dto.VolumeBaseline;
 import io.mrkuhne.mezo.feature.train.config.MesoPlanProperties;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
@@ -109,9 +108,6 @@ public class MesoPlanGeneratorService {
 
     private MesoTemplateUpsertRequest toTemplate(MesoPlanSkeleton.Skeleton s, List<MesoPlanFiller.FilledDay> days,
                                                  Map<String, String> priorities, MesoPlanGenerateRequest req) {
-        Map<String, VolumeBaseline> baselines = new LinkedHashMap<>();
-        volumeProperties.baselines().forEach((g, b) -> baselines.put(g, VolumeBaseline.builder()
-            .name("RP guidelines · intermediate").mev(b.mev()).mav(b.mav()).mrv(b.mrv()).build()));
         List<MesoDayInput> dayInputs = new ArrayList<>(7);
         for (int i = 0; i < s.days().size(); i++) {
             MesoPlanSkeleton.DayFrame frame = s.days().get(i);
@@ -131,7 +127,7 @@ public class MesoPlanGeneratorService {
             .weeks(req.getWeeks()).split(s.splitLabel()).style("RP · " + req.getWeeks() + " hét")
             .phaseCurve(s.phaseCurve().stream().map(MesoTemplateUpsertRequest.PhaseCurveEnum::fromValue).toList())
             .notes(req.getGoalText() == null || req.getGoalText().isBlank() ? null : req.getGoalText().strip())
-            .volumePerMuscle(baselines)
+            .volumePerMuscle(null) // volume engine v2: landmarks are never stored in a template
             .days(dayInputs)
             .build();
     }

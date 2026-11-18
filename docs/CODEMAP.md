@@ -169,7 +169,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-13, done) ·
   [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-10-11, done) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-17, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-18, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
@@ -200,7 +200,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-17, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-18, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -267,7 +267,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-17, shipped) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-18, shipped) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-11-17, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
@@ -393,15 +393,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-11, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-11-17, shipped) ·
+  [docs/features/character.md](features/character.md) (updated 2026-11-18, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-17, mixed) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-16, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-12, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-11-17, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-11-18, mixed) ·
   [docs/features/settings.md](features/settings.md) (updated 2026-11-17, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-17, mixed) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-17, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-18, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
@@ -793,8 +793,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### goal
 
-*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-17, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-11-17, mixed)
+*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-18, done) ·
+  [docs/features/me.md](features/me.md) (updated 2026-11-18, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -813,7 +813,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `GoalSuggestionPreviewService`, `GoalSuggestionProposedEvent`, `GoalSuggestionService`,
     `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`,
     `IntakeDayClassifier`, `IntakeDayMarkService`, `LearnedBaseResolver`, `MesoLifecycleSuggestionListener`,
-    `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`, `WeeklyCardPolicy`
+    `TdeeBootstrapService`, `TrainEnergyBalanceAdapter`, `TrainGoalRecomputeAdapter`, `WeeklyCardPolicy`
   - **controllers→contract:** `GoalController`→`GoalApi`
   - **mappers:** `ExpenditureExplanationMapper`, `ExpenditureInsightMapper`, `GoalMapper`, `GoalPlanLinkMapper`,
     `GoalSuggestionMapper`
@@ -831,15 +831,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 28 IT + 16 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 29 IT + 16 unit
   - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewJobNotificationIT`, `AdaptiveReviewServiceIT`,
-    `ExpenditureEstimateRepositoryIT`, `ExpenditureExplanationControllerIT`, `ExpenditureInsightControllerIT`,
-    `ExpenditureInsightServiceIT`, `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`,
-    `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`,
-    `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
-    `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
-    `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`, `IntakeDayMarkRepositoryIT`,
-    `IntakeDayMarkServiceIT`
+    `EnergyBalanceAdapterIT`, `ExpenditureEstimateRepositoryIT`, `ExpenditureExplanationControllerIT`,
+    `ExpenditureInsightControllerIT`, `ExpenditureInsightServiceIT`, `ExpenditureLearningServiceIT`,
+    `ExpenditureRolloutRunnerIT`, `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`,
+    `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`,
+    `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionNotificationIT`,
+    `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`,
+    `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`, `IntakeDayMarkRepositoryIT`, `IntakeDayMarkServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
     `GoalSuggestionPopulator`, `MealPopulator`, `RunningPopulator`, `TrainPopulator`, `UserPopulator`,
     `WeightLogPopulator`
@@ -1059,7 +1059,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/habit.md](features/habit.md) (updated 2026-11-17, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-12, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-11-17, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-11-18, mixed) ·
   [docs/features/settings.md](features/settings.md) (updated 2026-11-17, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-17, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-11, done) ·
@@ -1290,7 +1290,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-17, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-18, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`, `PersonFactEntity`→`person_fact`
@@ -1589,8 +1589,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### train
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-17, done) ·
-  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-17, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-11-17, done) ·
+  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-18, done) ·
+  [docs/features/train.md](features/train.md) (updated 2026-11-18, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-11, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
@@ -1598,35 +1598,36 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `ExerciseCatalogEntity`→`exercise_catalog`, `ExerciseEntity`→`exercise`,
     `ExerciseFeedbackEntity`→`exercise_feedback`, `ExerciseSetEntity`→`exercise_set`,
     `ExerciseWeightGapEntity`→`exercise_weight_gap`, `GymScheduleSlotEntity`→`gym_schedule_slot`,
-    `MesoTemplateEntity`→`meso_template`, `MesocycleEntity`→`mesocycle`, `MesocycleReportEntity`→`mesocycle_report`,
-    `MuscleGroupVolumeLogEntity`→`muscle_group_volume_log`, `PlannedSkipEntity`→`planned_skip`,
-    `ReadinessChoiceEntity`→`readiness_choice`, `RecoveryDayReleaseEntity`→`recovery_day_release`,
-    `RecoveryPeriodEntity`→`recovery_period`, `RunSessionLogEntity`→`run_session_log`,
-    `RunningBlockEntity`→`running_block`, `SportEventEntity`→`sport_event`,
+    `MesoTemplateEntity`→`meso_template`, `MesoWeekProposalEntity`→`meso_week_proposal`, `MesocycleEntity`→`mesocycle`,
+    `MesocycleReportEntity`→`mesocycle_report`, `MuscleGroupVolumeLogEntity`→`muscle_group_volume_log`,
+    `PlannedSkipEntity`→`planned_skip`, `ReadinessChoiceEntity`→`readiness_choice`,
+    `RecoveryDayReleaseEntity`→`recovery_day_release`, `RecoveryPeriodEntity`→`recovery_period`,
+    `RunSessionLogEntity`→`run_session_log`, `RunningBlockEntity`→`running_block`, `SportEventEntity`→`sport_event`,
     `SportScheduleSlotEntity`→`sport_schedule_slot`, `SportSessionEntity`→`sport_session`,
     `SportSlotSkipEntity`→`sport_slot_skip`, `WorkoutDayAdjustmentEntity`→`workout_day_adjustment`,
     `WorkoutSessionEntity`→`workout_session`, `WorkoutTimingProfileEntity`→`workout_timing_profile`
   - **repositories:** `ExerciseCatalogRepository`, `ExerciseFeedbackRepository`, `ExerciseRepository`,
     `ExerciseSetRepository`, `ExerciseWeightGapRepository`, `GymScheduleSlotRepository`, `MesoTemplateRepository`,
-    `MesocycleReportRepository`, `MesocycleRepository`, `MuscleGroupVolumeLogRepository`, `PlannedSkipRepository`,
-    `ReadinessChoiceRepository`, `RecoveryDayReleaseRepository`, `RecoveryPeriodRepository`, `RunSessionLogRepository`,
-    `RunningBlockRepository`, `SportEventRepository`, `SportScheduleSlotRepository`, `SportSessionRepository`,
-    `SportSlotSkipRepository`, `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`,
+    `MesoWeekProposalRepository`, `MesocycleReportRepository`, `MesocycleRepository`, `MuscleGroupVolumeLogRepository`,
+    `PlannedSkipRepository`, `ReadinessChoiceRepository`, `RecoveryDayReleaseRepository`, `RecoveryPeriodRepository`,
+    `RunSessionLogRepository`, `RunningBlockRepository`, `SportEventRepository`, `SportScheduleSlotRepository`,
+    `SportSessionRepository`, `SportSlotSkipRepository`, `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`,
     `WorkoutTimingProfileRepository`
   - **services:** `ActivityEnergyModel`, `AthleteBodyPort`, `CatalogMediaResolver`, `ClosingBlockService`,
-    `ComebackRamp`, `DayCheckInPort`, `E1rmSeries`, `EwmaEstimator`, `ExerciseCatalogService`,
-    `ExerciseHistoryResolver`, `ExerciseRecordService`, `GoalRecomputePort`, `GymScheduleService`, `LoggedSession`,
-    `LoggedSessionReadPort`, `MedalEvaluator`, `MedalService`, `MesoPlanFiller`, `MesoPlanGeneratorService`,
-    `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`, `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`,
-    `MesocycleReportService`, `MuscleGroup`, `OneRepMax`, `PainRegionMap`, `PlannedSkipLock`, `PlannedSkipPolicy`,
-    `PlannedSkipService`, `Prescription`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`,
-    `ReadinessService`, `RecoveryFuelMode`, `RecoveryPeriodService`, `RecoveryReturnPolicy`, `RecoveryReturnService`,
-    `RunningService`, `SessionExerciseAssembler`, `SessionTimingCalculator`, `SetRecommendationService`,
-    `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `TimingObservation`,
-    `TimingObservationExtractor`, `TimingProfileListener`, `TimingProfileService`, `TrainService`, `VolumeArcService`,
-    `VolumeDecider`, `VolumeProgressionService`, `WeeklyScheduledActivityService`, `WeightGapService`, `WeightSnapper`,
-    `WorkoutAutoCloseService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`,
-    `WorkoutWindowQueryService`
+    `ComebackRamp`, `DayCheckInPort`, `E1rmSeries`, `EnergyBalancePort`, `EwmaEstimator`, `ExerciseCatalogService`,
+    `ExerciseHistoryResolver`, `ExerciseRecordService`, `GoalRecomputePort`, `GymScheduleService`,
+    `LegacySetDistribution`, `LoggedSession`, `LoggedSessionReadPort`, `MedalEvaluator`, `MedalService`,
+    `MesoPlanFiller`, `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`,
+    `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `OneRepMax`,
+    `PainRegionMap`, `PlannedSkipLock`, `PlannedSkipPolicy`, `PlannedSkipService`, `Prescription`, `PriorityTier`,
+    `ProgressionDecider`, `ReadinessAssessor`, `ReadinessService`, `RecoveryFuelMode`, `RecoveryPeriodService`,
+    `RecoveryReturnPolicy`, `RecoveryReturnService`, `RunningService`, `SessionExerciseAssembler`,
+    `SessionTimingCalculator`, `SetRecommendationService`, `SetSlots`, `SportService`, `SportSessionLoggedEvent`,
+    `SportSlotSkipService`, `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`,
+    `TimingProfileService`, `TrainService`, `VolumeArcService`, `VolumeBands`, `VolumeDecider`, `VolumeLedger`,
+    `VolumeProgressionService`, `WeekProposalService`, `WeeklyScheduledActivityService`, `WeeklySignalReader`,
+    `WeightGapService`, `WeightSnapper`, `WorkoutAutoCloseService`, `WorkoutExerciseChangeService`,
+    `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
   - **controllers→contract:** `PlannedSkipController`→`TrainSkipApi`, `ReadinessController`→`TrainReadinessApi`,
     `RecoveryController`→`TrainRecoveryApi`, `TrainController`→`TrainApi`
   - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`
@@ -1635,9 +1636,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **events/listeners:** `MesocycleClosed`
   - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `GymSignalCalculator`,
     `HypertrophyDriveGate`, `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`,
-    `ProvenanceEnvelope`, `RunSignalCalculator`, `RunningBlockStructure`, `RunningSeedData`, `SportSignalCalculator`,
-    `TrainSeedData`, `TrainingCommitmentCalculator`, `TrainingStreakCalculator`, `VolumeBaselineJson`,
-    `VolumeProgressionGate`, `VolumeRecomputeJson`
+    `ProvenanceEnvelope`, `RestoreEntryJson`, `RunSignalCalculator`, `RunningBlockStructure`, `RunningSeedData`,
+    `SportSignalCalculator`, `TrainSeedData`, `TrainingCommitmentCalculator`, `TrainingStreakCalculator`,
+    `VolumeAmountMigrationRunner`, `VolumeBaselineJson`, `VolumeProgressionGate`, `VolumeRecomputeJson`,
+    `WeekProposalLineJson`
 - **Contract** `api/feature/train/train-readiness.yml` — 3 operations
   - **endpoints:** GET /api/train/readiness/today · POST /api/train/readiness/today ·
     DELETE /api/train/readiness/today
@@ -1721,29 +1723,31 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     useEditableNumber.ts, useRecoveryBetter.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts,
     weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutReviewDerive.ts, workoutState.ts
   - **root:** InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 92 IT + 24 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 97 IT + 27 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
     `ExerciseCatalogSoftDeleteIT`, `ExerciseRecordContractIT`, `ExerciseRecordServiceIT`, `ExerciseVolumeFlagIT`,
-    `GoalPresetBackfillSqlIT`, `GoalPresetCarryIT`, `GymScheduleContractIT`, `GymSignalCalculatorIT`,
-    `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoPlanGenerateAiIT`, `MesoPlanGenerateContractIT`,
-    `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`, `MesoStartTierSeedIT`, `MesoTemplateIT`,
-    `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`, `MesocycleCloseReportIT`, `MusclePrioritiesCarryIT`,
-    `PlannedSkipConsumersIT`, `PlannedSkipContractIT`, `PlannedSkipPersistenceIT`, `PrescribedSetsFoundationIT`,
-    `ProvenanceRoundTripIT`, `ReadinessContractIT`, `ReadinessLightenIT`, `ReadinessServiceIT`, `RecoveryApiIT`,
-    `RecoveryCentralReadIT`, `RecoveryFuelDaysIT`, `RecoveryPeriodPersistenceIT`, `RunSessionLevelUpApiIT`,
-    `RunSignalCalculatorIT`, `RunningContractIT`, `ScheduleGoalRecomputeIT`, `SetRecommendationServiceIT`,
-    `SportContractIT`, `SportEventContractIT`, `SportServiceIT`, `SportSessionRangeIT`, `SportSignalCalculatorIT`,
-    `SportSlotSkipContractIT`, `SportSlotSkipPersistenceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`,
-    `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`, `TrainingStreakCalculatorIT`, `VolumeArcContractIT`,
-    `VolumeArcVolumeFlagIT`, `VolumeBaselineSeedIT`, `VolumeBaselineSeedSwitchOffIT`, `VolumeEffectiveSetsIT`,
-    `VolumeEffectiveSetsSwitchOffIT`, `VolumeProgressionServiceIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`,
-    `WarmupExclusionIT`, `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`,
-    `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`,
-    `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`, `WorkoutExerciseChangeIT`, `WorkoutFinishLevelUpApiIT`,
-    `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`,
-    `WorkoutTimingBackfillIT`, `WorkoutTimingIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`,
+    `FailingWeeklyEngineIT`, `GoalPresetBackfillSqlIT`, `GoalPresetCarryIT`, `GymScheduleContractIT`,
+    `GymSignalCalculatorIT`, `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoPlanGenerateAiIT`,
+    `MesoPlanGenerateContractIT`, `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`, `MesoTemplateIT`,
+    `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`, `MesoWeekProposalRepositoryIT`,
+    `MesocycleCloseReportIT`, `MusclePrioritiesCarryIT`, `PlannedSkipConsumersIT`, `PlannedSkipContractIT`,
+    `PlannedSkipPersistenceIT`, `PrescribedSetsFoundationIT`, `ProvenanceRoundTripIT`, `ReadinessContractIT`,
+    `ReadinessLightenIT`, `ReadinessServiceIT`, `RecoveryApiIT`, `RecoveryCentralReadIT`, `RecoveryFuelDaysIT`,
+    `RecoveryPeriodPersistenceIT`, `RunSessionLevelUpApiIT`, `RunSignalCalculatorIT`, `RunningContractIT`,
+    `ScheduleGoalRecomputeIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`,
+    `SportServiceIT`, `SportSessionRangeIT`, `SportSignalCalculatorIT`, `SportSlotSkipContractIT`,
+    `SportSlotSkipPersistenceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`,
+    `TrainServiceIT`, `TrainingStreakCalculatorIT`, `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`,
+    `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`, `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`,
+    `VolumePropertiesIT`, `WarmupExclusionIT`, `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`,
+    `WeekProposalTierIT`, `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`,
+    `WeeklySignalReaderIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`,
+    `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`,
+    `WorkoutExerciseChangeIT`, `WorkoutFinishLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`,
+    `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`, `WorkoutTimingIT`,
+    `WorkoutTodayAmountIT`, `WorkoutTodayAmountSwitchOffIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`,
     `WorkoutWeightGapIT`, `WorkoutWindowQueryServiceIT`
   - **populators:** `BiometricProfilePopulator`, `CheckInPopulator`, `DatabasePopulator`, `GoalPopulator`,
     `MesoTemplatePopulator`, `PlannedSkipPopulator`, `ReadinessChoicePopulator`, `RecoveryPeriodPopulator`,

@@ -667,5 +667,15 @@
       "AI és memória"
     ],
     "mit_kapsz": "A szöveges keresés a régebbi emlékek között időnként kifut az időből, ezért Boop válaszai ilyenkor kevesebb emlékből dolgoznak. A javítás után minden kérdésnél a teljes emlékanyagból válogat."
+  },
+  "mezo-r36n9.65": {
+    "cim": "Edzés: a te sorozatszámod az igazság — a motor magja",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2 · S1",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Amennyi sorozatot egy gyakorlatra beírsz, pontosan annyit ír elő az edzés; minden izomcsoportnak van egy heti sávja a szintje szerint, és az app hétről hétre legfeljebb egy-két sorozatot tol át konkrét gyakorlatokra abból, amit tényleg megcsináltál.",
+    "munkamenet": "atlas-workout-recipes"
   }
 }

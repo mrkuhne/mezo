@@ -9,16 +9,19 @@ import io.mrkuhne.mezo.api.dto.RecoveryReturn;
 import io.mrkuhne.mezo.api.dto.RecoveryReturnRule;
 import io.mrkuhne.mezo.api.dto.RecoveryState;
 import io.mrkuhne.mezo.api.dto.RecoveryUpsertRequest;
+import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
-import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryDayReleaseEntity;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
-import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.RecoveryDayReleaseRepository;
 import io.mrkuhne.mezo.feature.train.repository.RecoveryPeriodRepository;
 import io.mrkuhne.mezo.feature.train.service.RecoveryReturnPolicy.Decision;
@@ -29,13 +32,16 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +50,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Every write of kímélő mód (Kihagyás S2, mezo-q4xt2.2, spec 2026-09-28 §9.1) plus the
  * {@link RecoveryState} read model: opening/updating a period, the daily check-in, the return rule
  * applied at "Jobban" (a whole-week shift of the active meso, and for a long absence one week back
- * with lower weekly sets), its exact undo ("Mégsem vagyok jól" / "Tévedés volt"), released days and
+ * with one set less per trained muscle group), its exact undo ("Mégsem vagyok jól" / "Tévedés volt"), released days and
  * waiving the comeback ramp. Every write takes {@link PlannedSkipLock} first, so two quick taps
  * resolve to one row.
  */
@@ -59,7 +65,10 @@ public class RecoveryReturnService {
     private final RecoveryDayReleaseRepository releases;
     private final RecoveryPeriodService periodService;
     private final MesocycleRepository mesos;
-    private final MuscleGroupVolumeLogRepository volumeLogs;
+    private final WorkoutSessionRepository sessions;
+    private final ExerciseRepository exercises;
+    private final VolumeLedger volumeLedger;
+    private final ObjectProvider<VolumeProgressionGate> volumeGate;
     private final VolumeProperties volumeProps;
     private final PlannedSkipLock lock;
 
@@ -207,8 +216,8 @@ public class RecoveryReturnService {
     /**
      * Apply the return rule at "Jobban": nothing for CONTINUE or without an active meso; otherwise
      * snapshot the meso, move its dates by whole weeks so today falls in the target week, set
-     * {@code currentWeek} to it, and for STEP_BACK lower every muscle's weekly sets by one step
-     * (never below MEV) and mark the target week's rollover as already run.
+     * {@code currentWeek} to it, and for STEP_BACK take one set off every trained muscle group's
+     * biggest exercise (never below 1; the undo data lands in {@code prevSets}) and mark the target week's rollover as already run.
      */
     void apply(RecoveryPeriodEntity p, LocalDate today) {
         Decision d = RecoveryReturnPolicy.decide(p.getStartDate(), p.getEndedOn());
@@ -238,19 +247,7 @@ public class RecoveryReturnService {
         meso.setCurrentWeek(target);
 
         if (d.rule() == Rule.STEP_BACK) {
-            Map<String, Integer> prevSets = new HashMap<>();
-            List<MuscleGroupVolumeLogEntity> logs =
-                volumeLogs.findByCreatedByAndMesocycleIdInOrderByMuscleAsc(p.getCreatedBy(), List.of(meso.getId()));
-            for (MuscleGroupVolumeLogEntity log : logs) {
-                if (log.getCurrentSets() == null) {
-                    continue;
-                }
-                prevSets.put(log.getMuscle(), log.getCurrentSets());
-                int floor = log.getMev() == null ? 0 : log.getMev();
-                log.setCurrentSets(Math.max(floor, log.getCurrentSets() - volumeProps.step()));
-            }
-            volumeLogs.saveAll(logs);
-            p.setPrevSets(prevSets);
+            p.setPrevSets(stepBackAmounts(p.getCreatedBy(), meso.getId()));
             meso.setVolumeRecompute(recompute == null
                 ? new VolumeRecomputeJson("W" + target, null, null, List.of())
                 : new VolumeRecomputeJson("W" + target, recompute.nextRun(), recompute.trigger(), recompute.changes()));
@@ -272,18 +269,9 @@ public class RecoveryReturnService {
                     meso.setVolumeRecompute(new VolumeRecomputeJson(
                         p.getPrevLastRun(), recompute.nextRun(), recompute.trigger(), recompute.changes()));
                 }
-                if (p.getPrevSets() != null) {
-                    List<MuscleGroupVolumeLogEntity> logs = volumeLogs
-                        .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(p.getCreatedBy(), List.of(meso.getId()));
-                    for (MuscleGroupVolumeLogEntity log : logs) {
-                        Integer prev = p.getPrevSets().get(log.getMuscle());
-                        if (prev != null) {
-                            log.setCurrentSets(prev);
-                        }
-                    }
-                    volumeLogs.saveAll(logs);
-                }
+                restoreAmounts(p, meso.getId());
                 mesos.saveAndFlush(meso);
+                volumeLedger.sync(p.getCreatedBy(), meso.getId());
             });
         }
         p.setShiftMesoId(null);
@@ -293,6 +281,79 @@ public class RecoveryReturnService {
         p.setPrevCurrentWeek(null);
         p.setPrevLastRun(null);
         p.setPrevSets(null);
+    }
+
+    /**
+     * STEP_BACK on amounts (volume engine v2, spec §6.5): every muscle group the run trains with
+     * counting exercises gives up ONE set — {@link SetSlots#pickDown} picks the exercise (the biggest,
+     * never below 1). Returns exercise id → sets before, for the changed rows only (the undo data).
+     * Gate off: no amounts, no ledger.
+     */
+    private Map<String, Integer> stepBackAmounts(UUID user, UUID mesoId) {
+        Map<String, Integer> prev = new HashMap<>();
+        if (volumeGate.getIfAvailable() == null) {
+            return prev;
+        }
+        Map<UUID, Integer> dayIndex = new HashMap<>();
+        List<WorkoutSessionEntity> all = sessions.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(user, List.of(mesoId));
+        all.stream().filter(s -> s.getTemplateSessionId() == null)
+            .forEach(s -> dayIndex.put(s.getId(), s.getOrderIndex() == null ? 0 : s.getOrderIndex()));
+        if (dayIndex.isEmpty()) {
+            return prev;
+        }
+        Map<String, List<ExerciseEntity>> byGroup = new TreeMap<>();
+        exercises.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.copyOf(dayIndex.keySet()))
+            .stream().filter(ExerciseEntity::isCountsTowardVolume)
+            .filter(e -> e.getMuscle() != null && !e.getMuscle().isBlank())
+            .forEach(e -> {
+                String group = MuscleGroup.of(e.getMuscle());
+                if (volumeProps.baselines().containsKey(group)) {
+                    byGroup.computeIfAbsent(group, k -> new ArrayList<>()).add(e);
+                }
+            });
+        List<ExerciseEntity> changed = new ArrayList<>();
+        byGroup.values().forEach(rows -> {
+            List<SetSlots.Slot> slots = rows.stream()
+                .map(e -> new SetSlots.Slot(e.getId(), dayIndex.get(e.getWorkoutSessionId()), e.getWorkingSets()))
+                .toList();
+            SetSlots.pickDown(slots).ifPresent(id -> rows.stream().filter(e -> e.getId().equals(id)).findFirst()
+                .ifPresent(e -> {
+                    prev.put(id.toString(), e.getWorkingSets());
+                    e.setWorkingSets(e.getWorkingSets() - 1);
+                    changed.add(e);
+                }));
+        });
+        exercises.saveAllAndFlush(changed);
+        volumeLedger.sync(user, mesoId);
+        return prev;
+    }
+
+    /**
+     * Undo of {@link #stepBackAmounts}: each stored exercise gets its sets back — only while it still
+     * holds the stepped-back value (an owner's or a weekly proposal's change since stands). A legacy
+     * period keyed by muscle name has no exercise ids and reverts nothing here.
+     */
+    private void restoreAmounts(RecoveryPeriodEntity p, UUID mesoId) {
+        if (p.getPrevSets() == null) {
+            return;
+        }
+        List<ExerciseEntity> restored = new ArrayList<>();
+        p.getPrevSets().forEach((key, before) -> {
+            UUID id;
+            try {
+                id = UUID.fromString(key);
+            } catch (IllegalArgumentException legacyMuscleKey) {
+                return;
+            }
+            exercises.findById(id)
+                .filter(e -> p.getCreatedBy().equals(e.getCreatedBy()))
+                .filter(e -> e.getWorkingSets() != null && e.getWorkingSets() == before - 1)
+                .ifPresent(e -> {
+                    e.setWorkingSets(before);
+                    restored.add(e);
+                });
+        });
+        exercises.saveAllAndFlush(restored);
     }
 
     // ==== helpers ====

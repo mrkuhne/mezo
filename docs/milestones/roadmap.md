@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (nyolc gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16); **B5 Edzés — a terület, az eligazítás, a lejátszó és a lezárás — shipped (2026-11-17); a Gyakorlatok, az Előzmények, az Egyedi edzés, a Live Activity és a Watch még hátra** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (nyolc gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16); **B5 Edzés — a terület, az eligazítás, a lejátszó és a lezárás — shipped (2026-11-17); a Gyakorlatok, az Előzmények, az Egyedi edzés, a Live Activity és a Watch még hátra; az edzésmotor magja (volumen-motor v2, S1: a terv a szám, `mezo-r36n9.65`) shipped (2026-11-18), a további szeletek (sáv-értékelő, heti javaslat API, stílus és technikák, Boop-képernyők) még hátra** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -62,6 +62,27 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-11-18 — Train volume engine v2 — S1: the plan is the amount (`mezo-r36n9.65`).**
+  The set count the owner types on an exercise is now exactly what the workout prescribes — the hidden per-muscle
+  weekly target and the distribution that re-spread it over the week are gone (a hand-built block had been
+  prescribing eight leg-press sets for a three-set plan). Each muscle group has a **tier band** from the landmark
+  table (Tartás ⌈mev/3⌉…mev−1 · Építés mev…mav · Hangsúly mav−2…mrv); `muscle_group_volume_log` is now **derived**
+  from the plan by `VolumeLedger.sync` (hard-deleting rows of groups no longer trained). Every calendar week
+  `WeekProposalService` decides per muscle from what was actually done last week (sets done, grind, workload,
+  joint pain, check-in soreness, a cutting goal slows the step) and moves at most one or two sets onto specific
+  exercises — never above 5 on an exercise or 8 for a muscle in a day — stored in the new `meso_week_proposal`
+  table and applied at once (auto mode; the approval screen is a later slice). A deload week halves, and the week
+  after returns each row to its own number (identity-keyed, cap-aware, consumed once) unless the owner changed it.
+  The kímélő step-back now cuts one set off a real exercise per muscle and its undo restores exactly that. A
+  one-time startup runner converted the runs in flight to amounts (it honours `volume_recompute.lastRun`), the
+  goal guard measures against the band, and a failing weekly engine can never block today's workout. **Deferred
+  on purpose:** the build-time evaluator and sport lowering (S2), the proposal API + manual mode + tier-change
+  proposals (S3), the phone's and web arc's exact band statements; follow-ups filed under `mezo-r36n9`. Spec and
+  as-built deviations: [spec](../superpowers/specs/2026-11-17-train-volume-engine-v2-design.md) §12, plan
+  [S1](../superpowers/plans/2026-11-17-volume-engine-v2-s1-core.md), hand-over
+  [programme](../superpowers/plans/2026-11-18-volume-engine-programme-handover.md);
+  [`train.md`](../features/train.md) §4 `#### Volume engine v2`, §9.
 
 - **2026-11-18 — Web app frozen; only the server and the iPhone app are developed (owner decision #48, `mezo-1z4jc`).**
   "webes appot már nem fejlesztünk, csak iphone app és szerver." The web frontend stays deployed as it is. Cleanup the

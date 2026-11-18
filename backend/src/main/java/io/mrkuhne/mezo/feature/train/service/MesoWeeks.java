@@ -5,15 +5,15 @@ import java.time.temporal.ChronoUnit;
 
 /**
  * Shared meso-week math (spec DA1/DA2): {@code startDate}-anchored 7-day week buckets, 1-based.
- * Package-visible — shared by {@link TrainService} (calendar-week-on-activate) and
- * {@link VolumeProgressionService} (the weekly rollover trigger + last-week window), so the two
- * never drift on what "week n" means. Pure, no Spring/DB.
+ * Public (the migration runner reads it too) — shared by {@link TrainService} (calendar-week-on-activate),
+ * {@link WeekProposalService} (the weekly proposal trigger) and {@link WeeklySignalReader} (the
+ * last-week window), so they never drift on what "week n" means. Pure, no Spring/DB.
  */
-final class MesoWeeks {
+public final class MesoWeeks {
     private MesoWeeks() {}
 
     /** Week containing today, clamped to [1, weeks] — week 1 before the start date. */
-    static int clampWeek(LocalDate startDate, int weeks) {
+    public static int clampWeek(LocalDate startDate, int weeks) {
         return weekOf(startDate, LocalDate.now(), weeks);
     }
 

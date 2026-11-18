@@ -125,7 +125,9 @@ public class VolumeArcService {
         PriorityTier tier = PriorityTier.of(meso.getMusclePriorities(), muscle);
         int ceiling = tier.ceiling(mev, row.getMav(), mrv);
         Map<Integer, Integer> actuals = actualByGroupWeek.getOrDefault(muscle, Map.of());
-        int[] planned = plannedScaffold(phaseCurve, weeks, mev, ceiling);
+        int[] planned = row.getBandHigh() != null
+            ? plannedFromPlan(phaseCurve, weeks, currentWeek, row, tier)
+            : plannedScaffold(phaseCurve, weeks, mev, ceiling);
 
         List<VolumeArcWeek> weekList = new ArrayList<>(weeks);
         for (int w = 1; w <= weeks; w++) {
@@ -144,6 +146,36 @@ public class VolumeArcService {
             .mrv(mrv)
             .weeks(weekList)
             .build();
+    }
+
+    /**
+     * Planned line of a derived ledger row (volume engine v2): up to the run's current week the
+     * plan's own sum ({@code currentSets}); later non-deload weeks ramp from it by the tier's weekly
+     * step (maintain never) up to {@code max(currentSets, bandHigh)}; a deload week is the previous
+     * week's planned amount × the deload fraction, rounded up.
+     */
+    private int[] plannedFromPlan(List<String> phaseCurve, int weeks, int currentWeek,
+            MuscleGroupVolumeLogEntity row, PriorityTier tier) {
+        int own = row.getCurrentSets();
+        int step = switch (tier) {
+            case EMPHASIZE -> props.stepEmphasize();
+            case GROW -> props.stepGrow();
+            case MAINTAIN -> 0;
+        };
+        int cap = Math.max(own, row.getBandHigh());
+        int[] planned = new int[weeks];
+        for (int w = 1; w <= weeks; w++) {
+            int previous = w == 1 ? own : planned[w - 2];
+            if (w <= currentWeek) {
+                planned[w - 1] = own;
+            } else if (PHASE_DELOAD.equalsIgnoreCase(phaseAt(phaseCurve, w))) {
+                planned[w - 1] = BigDecimal.valueOf(previous).multiply(props.deloadFraction())
+                    .setScale(0, RoundingMode.CEILING).intValue();
+            } else {
+                planned[w - 1] = Math.min(previous + step, cap);
+            }
+        }
+        return planned;
     }
 
     /**

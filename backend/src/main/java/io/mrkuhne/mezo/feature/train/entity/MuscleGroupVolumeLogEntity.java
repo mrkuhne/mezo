@@ -61,6 +61,13 @@ public class MuscleGroupVolumeLogEntity extends OwnedEntity {
     @Column(name = "current_sets", nullable = false)
     private Integer currentSets;
 
+    /** Tier band of the group's weekly sets (volume engine v2); null on rows older than the engine. */
+    @Column(name = "band_low")
+    private Integer bandLow;
+
+    @Column(name = "band_high")
+    private Integer bandHigh;
+
     @NotNull
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
