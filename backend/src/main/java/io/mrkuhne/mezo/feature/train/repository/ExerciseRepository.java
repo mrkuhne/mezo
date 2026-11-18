@@ -31,9 +31,12 @@ public interface ExerciseRepository extends JpaRepository<ExerciseEntity, UUID> 
         String getType();
         UUID getCatalogId();
         Instant getCreatedAt();
+        Integer getRepMin();
+        Integer getRepMax();
     }
 
-    @Query(value = "SELECT id, name, muscle, type, catalog_id AS \"catalogId\", created_at AS \"createdAt\" "
+    @Query(value = "SELECT id, name, muscle, type, catalog_id AS \"catalogId\", created_at AS \"createdAt\", "
+        + "rep_min AS \"repMin\", rep_max AS \"repMax\" "
         + "FROM exercise WHERE created_by = :createdBy", nativeQuery = true)
     List<ExerciseIdentityRow> findIdentityRowsIncludingDeleted(@Param("createdBy") UUID createdBy);
 

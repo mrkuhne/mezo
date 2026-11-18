@@ -651,6 +651,10 @@ public class WorkoutService {
         set.setDoneAt(Instant.now());
         set.setTargetWeightKg(req.getTargetWeightKg());
         set.setTargetReps(req.getTargetReps());
+        // The trained range, snapshotted at create only (updateSet never touches it): the row's range
+        // can later change or the row be soft-deleted, the set keeps what it was trained at.
+        set.setTargetRepMin(exercise.getRepMin());
+        set.setTargetRepMax(exercise.getRepMax());
         ExerciseSetEntity saved = exerciseSetRepository.save(set);
         exerciseSetRepository.flush(); // the replay reads through the repository — the row must be visible
         if (hypertrophyGate.getIfAvailable() != null) {
