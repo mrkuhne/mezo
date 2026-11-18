@@ -358,5 +358,16 @@
     ],
     "mi_valtozott": "A heti változtatási javaslat mostantól gyakorlatonként áll össze: sorozatszám, súly és ismétlés, mindegyik a saját okaival, izmonként csoportosítva. A telefon le tudja kérni, és egyenként vagy egyben („Elfogadom átnézés nélkül”) jóvá lehet hagyni. Kézi módban a javaslat megvárja a döntésedet, a hét végén pedig lejár; ez a mód addig kikapcsolva marad, amíg a telefonos képernyő el nem készül, így a blokkod továbbra is magától lép. Ha egy súlyemelésre azt mondod, „marad”, azon a héten a múlt heti súly marad. Ha egy izom szintjét vagy a sportot átállítod, a blokk azonnal az új sávhoz igazodik, de csak a megváltoztatott izmoknál. A könnyített hét utáni hét már lép, ha minden sorozat megvolt, és a frissen előre vett izom sem ragad le „kimaradt sorozat” miatt. Képernyő még nincs hozzá.",
     "verzio": "v3.3.0"
+  },
+  "808bed82e": {
+    "tipus": "Új funkció",
+    "cim": "Edzés: a technikák a tervben, a napi edzésben és a naplóban",
+    "datum": "2026-11-18",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.80"
+    ],
+    "mi_valtozott": "Egy gyakorlathoz mostantól technika tartozhat (pihenős drop, drop set, myo set, félismétlések), vagy lehet a nap kihívása. Csak stabil gyakorlatra kerülhet, a félismétlés és a kihívás csak olyanra, amelyet nyújtott helyzetben is biztonságos ismételni; minden mást a szerver elutasít. A technika a meglévő utolsó sorozatot váltja ki, a terhelő heteken él, a könnyített héten és a kímélő napokon nem. A napi edzés az utolsó sorozatnál lépésenként előírja, mit kell csinálni (például: bukásig, 30 mp pihenő, 30 %-kal kisebb súly, ugyanannyi ismétlés), a kihívásnál ott a megdöntendő szám; a napló a technika részeit is rögzíti. A rekordokba, a következő edzés alapjába és a heti sorozatszámba ezek a részek nem számítanak bele, a szándékos bukás nem számít túl nehéznek. Csak bekapcsolt blokkban működik: a futó blokkod és a webes blokkok változatlanok. Képernyő és automatikus elhelyezés még nincs hozzá.",
+    "verzio": "v3.4.0"
   }
 }

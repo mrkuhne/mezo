@@ -37,8 +37,8 @@ ha a kettő ütközik, a **kihívás nyer**. Egy napon legfeljebb **egy kihívá
    és kihívás** — biztonsági okból.
 4. **Csak bekapcsolt blokkban.** A technikák blokkonként kapcsolhatók (alapból ki). A webes blokkok és a most futó blokk változatlanok maradnak.
 5. **Edzés közben** a napi edzés az utolsó sorozatnál megmutatja a lépéseket: az alapsorozatot, majd a drop súlyát (a ténylegesen emelhető
-   legközelebbi, de nem nagyobb súlyra kerekítve), a pihenőket és hogy bukásig kell-e menni. A futó blokkban egy gyakorlat technikája edzés közben is
-   átállítható.
+   legközelebbi, de nem nagyobb súlyra kerekítve), a pihenőket és hogy bukásig kell-e menni. A futó blokkban egy gyakorlat technikája a blokk napjain
+   menet közben is átállítható (a már elkezdett edzésen nem).
 6. **A napló** a sorozat alatt rögzíti, mit csináltál valójában (a drop súlyát és ismétlését, a mini-sorozatokat, a félismétlések számát). A naplózás a
    blokk beállításától függetlenül mindig működik: azt írjuk fel, amit csináltál. Egy webes szerkesztés sosem törli a már rögzített részeket.
 

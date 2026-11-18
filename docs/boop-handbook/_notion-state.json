@@ -725,7 +725,7 @@
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
-      "hash": "4f120ce1847b"
+      "hash": "667f4c660167"
     },
     "kezikonyv:07-edzes/05-heti-volumen": {
       "page_id": "4168968e-752b-813c-9763-e3bda2691265",
@@ -1045,7 +1045,7 @@
     },
     "jegyek:mezo-r36n9.80": {
       "page_id": "41c8968e-752b-81c0-aadb-d311b0556e21",
-      "hash": "0398e2bc0a9f"
+      "hash": "f7fa4a1d2542"
     },
     "jegyek:mezo-r36n9.79": {
       "page_id": "41c8968e-752b-8109-b5f2-e40de21790f7",
@@ -1173,7 +1173,7 @@
     },
     "kezikonyv:07-edzes/14-edzesstilus": {
       "page_id": "41c8968e-752b-81c4-a675-e42be7ead430",
-      "hash": "7f1c754e3d8e"
+      "hash": "8caed6cc8701"
     },
     "jegyek:mezo-r36n9.90": {
       "page_id": "41c8968e-752b-8184-90df-f39bbc3d1d5c",
@@ -1194,6 +1194,18 @@
     "jegyek:mezo-r36n9.89": {
       "page_id": "41c8968e-752b-81d7-b374-ed27cf3eea6f",
       "hash": "75e9622ee94b"
+    },
+    "dontesek:d-2026-11-18-technika-kivalt-sorozatot": {
+      "page_id": "41c8968e-752b-81f5-be71-e1484ee3ad09",
+      "hash": "3b4c8be0e663"
+    },
+    "kiadasok:808bed82e": {
+      "page_id": "41c8968e-752b-81e8-8391-e38d352f2941",
+      "hash": "c6f6585ffc40"
+    },
+    "kezikonyv:07-edzes/15-technikak": {
+      "page_id": "41c8968e-752b-8133-8f30-e3411e37f22a",
+      "hash": "a667a8a3eb0f"
     }
   }
 }
