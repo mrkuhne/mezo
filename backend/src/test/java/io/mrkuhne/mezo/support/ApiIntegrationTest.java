@@ -10,7 +10,12 @@ import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.auth.service.InviteService;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ReactorClientHttpRequestFactory;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,12 +51,29 @@ import tools.jackson.databind.ObjectMapper;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class ApiIntegrationTest extends AbstractIntegrationTest {
 
+    /**
+     * One request = one fresh TCP connection (no client-side pooling). The suite keeps ~30 cached
+     * contexts alive for ~45 minutes, so a test class routinely talks to a context it has not touched
+     * for a minute or more. The default Reactor Netty client keeps keep-alive connections in a JVM-wide
+     * pool for ever; a pooled connection the server side has dropped meanwhile fails a non-idempotent
+     * POST with {@code PrematureCloseException: Connection has been closed BEFORE response, while
+     * sending request body} (and is never retried) — it hit {@code MealCoachApiIT}'s very first login in
+     * two full runs, 64-65 s after that context's previous request. Loopback connects cost ~nothing.
+     */
+    private static final ClientHttpRequestFactory FRESH_CONNECTION_PER_REQUEST =
+        new ReactorClientHttpRequestFactory(HttpClient.create(ConnectionProvider.newConnection()));
+
     @Autowired protected TestRestTemplate rest;
     @Autowired protected DatabasePopulator databasePopulator;
     @Autowired protected ObjectMapper objectMapper;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private InviteService inviteService;
     @Autowired private AppUserRepository appUserRepository;
+
+    @BeforeEach
+    void useFreshConnectionPerRequest() {
+        rest.getRestTemplate().setRequestFactory(FRESH_CONNECTION_PER_REQUEST);
+    }
 
     /** Logs in as the demodata owner and returns ready-to-use Bearer headers. */
     protected HttpHeaders ownerAuthHeaders() {
