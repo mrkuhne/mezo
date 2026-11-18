@@ -317,6 +317,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/mesocycles/{id}/evaluation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read-only evaluation of a run's plan (its template days) — the path is the volume arc's planned line */
+        get: operations["getMesocycleEvaluation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/mesocycles/{id}/days/{dayId}/exercises": {
         parameters: {
             query?: never;
@@ -362,6 +379,23 @@ export interface paths {
         put?: never;
         /** Generate a hypertrophy mesocycle proposal (deterministic skeleton + optional LLM exercise pick); returns a MesoTemplateUpsertRequest-compatible template */
         post: operations["generateMesoPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/meso-plans/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Measure a draft mesocycle plan against the muscle-group volume bands (read-only, deterministic, never blocks a save) */
+        post: operations["evaluateMesoPlan"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6511,6 +6545,78 @@ export interface components {
             } | null;
             /** @description Free-text goal steering exercise choice (e.g. "röplabda mellett, vállra figyelve") */
             goalText?: string | null;
+        };
+        MesoPlanEvaluateRequest: {
+            weeks: number;
+            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
+            days: components["schemas"]["MesoDayInput"][];
+            /** @description Sparse per-muscle tier map; absent = grow */
+            musclePriorities?: {
+                [key: string]: string;
+            } | null;
+            /** @description Coarse muscle groups a sport already loads; null = none (the evaluation then suggests groups from the sport schedule) */
+            sportGroups?: string[] | null;
+            /** @description Target session length; per-day overTarget is null when absent */
+            sessionMinutesTarget?: number | null;
+        };
+        VolumeBandView: {
+            low: number;
+            high: number;
+            limit: number;
+            sportAdjusted: boolean;
+        };
+        DaySetSpread: {
+            dayIndex: number;
+            sets: number;
+        };
+        PlanProposalEdit: {
+            dayIndex: number;
+            exerciseIndex: number;
+            delta: number;
+        };
+        MuscleEvaluation: {
+            muscle: string;
+            /** @enum {string} */
+            tier: "emphasize" | "grow" | "maintain";
+            band: components["schemas"]["VolumeBandView"];
+            weeklySets: number;
+            /** @enum {string} */
+            fit: "below" | "inside" | "above";
+            /** @description Sets short of the band floor (positive) or over its top (negative); 0 inside */
+            diff: number;
+            spread: components["schemas"]["DaySetSpread"][];
+            proposal: components["schemas"]["PlanProposalEdit"][];
+            proposalBlocked: boolean;
+        };
+        SessionCapWarning: {
+            muscle: string;
+            sets: number;
+            cap: number;
+        };
+        DayEvaluation: {
+            dayIndex: number;
+            day: string;
+            minutesEstimate: number;
+            overTarget?: boolean | null;
+            sessionCapWarnings: components["schemas"]["SessionCapWarning"][];
+            sportSameDay: boolean;
+        };
+        VolumePathWeek: {
+            week: number;
+            phase: string;
+            total: number;
+            muscles: {
+                [key: string]: number;
+            };
+        };
+        MesoPlanEvaluation: {
+            deficit: boolean;
+            /** @description Distinct weekdays (0=Hét..6=Vas) of the user's sport schedule */
+            sportDays: number[];
+            suggestedSportGroups: string[];
+            muscles: components["schemas"]["MuscleEvaluation"][];
+            days: components["schemas"]["DayEvaluation"][];
+            path: components["schemas"]["VolumePathWeek"][];
         };
         MesoPlanGenerateResponse: {
             /**
@@ -14783,6 +14889,55 @@ export interface operations {
             };
         };
     };
+    getMesocycleEvaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The run's plan evaluation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoPlanEvaluation"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     replaceDayExercises: {
         parameters: {
             query?: never;
@@ -14897,6 +15052,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MesoPlanGenerateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    evaluateMesoPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoPlanEvaluateRequest"];
+            };
+        };
+        responses: {
+            /** @description The plan's evaluation — nothing is persisted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoPlanEvaluation"];
                 };
             };
             /** @description Validation error */
