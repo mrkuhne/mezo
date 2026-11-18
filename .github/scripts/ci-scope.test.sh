@@ -21,25 +21,30 @@ printf '.github/workflows/ci.yml\n' | touches_scope backend/; assert_rc $? 0 "a 
 printf 'backendish/file\n' | touches_scope backend/; assert_rc $? 1 "prefix match needs the slash"
 printf '' | touches_scope backend/; assert_rc $? 1 "empty diff => out of scope"
 
-# ── predecessor_is_green ──
-GREEN='{"workflow_runs":[{"id":2,"head_sha":"bbb","status":"in_progress","conclusion":null},
-  {"id":1,"head_sha":"aaa","status":"completed","conclusion":"success"}]}'
-printf '%s' "$GREEN" | predecessor_is_green 2 aaa; assert_rc $? 0 "previous run green on the before sha"
-printf '%s' "$GREEN" | predecessor_is_green 2 zzz; assert_rc $? 1 "previous run is for another commit"
-CANCELLED='{"workflow_runs":[{"id":2,"head_sha":"bbb","status":"in_progress","conclusion":null},
-  {"id":1,"head_sha":"aaa","status":"completed","conclusion":"cancelled"}]}'
-printf '%s' "$CANCELLED" | predecessor_is_green 2 aaa; assert_rc $? 1 "cancelled predecessor forces a run"
-RUNNING='{"workflow_runs":[{"id":2,"head_sha":"bbb","status":"queued","conclusion":null},
-  {"id":1,"head_sha":"aaa","status":"in_progress","conclusion":null}]}'
-printf '%s' "$RUNNING" | predecessor_is_green 2 aaa; assert_rc $? 1 "still-running predecessor forces a run"
-RED='{"workflow_runs":[{"id":1,"head_sha":"aaa","status":"completed","conclusion":"failure"}]}'
-printf '%s' "$RED" | predecessor_is_green 2 aaa; assert_rc $? 1 "red predecessor forces a run"
-printf '%s' '{"workflow_runs":[]}' | predecessor_is_green 2 aaa; assert_rc $? 1 "no predecessor forces a run"
-printf '%s' 'not json' | predecessor_is_green 2 aaa 2>/dev/null; [ $? -ne 0 ]; assert_rc $? 0 "unreadable API answer forces a run"
+# ── green_shas: only finished green runs count ──
+RUNS='{"workflow_runs":[{"id":4,"head_sha":"ddd","status":"in_progress","conclusion":null},
+  {"id":3,"head_sha":"ccc","status":"completed","conclusion":"cancelled"},
+  {"id":2,"head_sha":"bbb","status":"completed","conclusion":"success"},
+  {"id":1,"head_sha":"aaa","status":"completed","conclusion":"failure"}]}'
+assert_eq "$(printf '%s' "$RUNS" | green_shas)" "bbb" "running, cancelled and red runs are not a base"
+assert_eq "$(printf '%s' '{"workflow_runs":[]}' | green_shas)" "" "no runs => no base"
+assert_eq "$(printf '%s' 'not json' | green_shas 2>/dev/null)" "" "unreadable API answer => no base"
+
+# ── first_ancestor: against a real throwaway history  A - B - C,  X unrelated ──
+REPO_DIR=$(mktemp -d); trap 'rm -rf "$REPO_DIR"' EXIT
+g() { git -C "$REPO_DIR" -c user.email=t@t -c user.name=t "$@"; }
+g init -q
+g commit -q --allow-empty -m A; A=$(g rev-parse HEAD)
+g commit -q --allow-empty -m B; B=$(g rev-parse HEAD)
+g commit -q --allow-empty -m C; C=$(g rev-parse HEAD)
+g checkout -q --orphan other; g commit -q --allow-empty -m X; X=$(g rev-parse HEAD)
+assert_eq "$(cd "$REPO_DIR" && printf '%s\n%s\n' "$X" "$B" | first_ancestor "$C")" "$B" "skips a green run that is not an ancestor"
+assert_eq "$(cd "$REPO_DIR" && printf '%s\n%s\n' "$B" "$A" | first_ancestor "$C")" "$B" "newest green ancestor wins"
+(cd "$REPO_DIR" && printf '%s\n' "$X" | first_ancestor "$C" >/dev/null); assert_rc $? 1 "no green ancestor => rc 1"
+(cd "$REPO_DIR" && printf 'deadbeef\n' | first_ancestor "$C" >/dev/null); assert_rc $? 1 "unknown sha => rc 1"
 
 # ── decide: the doubt cases never touch git or the network ──
 assert_eq "$(EVENT=workflow_dispatch SHA=x decide backend/ | cut -d' ' -f1)" "true" "unknown event => run"
-assert_eq "$(EVENT=push SHA=x BEFORE=0000000000000000000000000000000000000000 decide backend/ | cut -d' ' -f1)" "true" "new ref => run"
 assert_eq "$(EVENT=pull_request SHA=x BASE_SHA= decide backend/ | cut -d' ' -f1)" "true" "no base sha => run"
 assert_eq "$(EVENT=pull_request SHA=nope BASE_SHA=nope2 decide backend/ | cut -d' ' -f1)" "true" "undiffable range => run"
 

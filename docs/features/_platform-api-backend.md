@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-13
+updated: 2026-11-18
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -392,6 +392,7 @@ References: `docs/references/testing_standards.md` + `integration_test_framework
 cd backend && docker compose up -d
 ./mvnw clean test                                   # ITs vs fixed mezo_test DB — ALWAYS use clean (Lombok+MapStruct incremental is flaky)
 ./mvnw clean test -Dmezo.test.use-testcontainers=true   # throwaway PG (CI / no compose)
+./mvnw clean test -Dmezo.test.use-testcontainers=true -Dmezo.test.forks=3   # + parallel test JVMs (Testcontainers mode only; CI uses 2)
 
 # Frontend — BOTH modes must be green
 cd frontend
