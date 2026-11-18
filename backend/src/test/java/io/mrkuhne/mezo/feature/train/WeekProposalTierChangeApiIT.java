@@ -104,6 +104,34 @@ class WeekProposalTierChangeApiIT extends ApiIntegrationTest {
             .isEqualTo(9);
     }
 
+    /** Changing back to a band that holds the plan supersedes the pending fix, raises nothing new; the old one is closed. */
+    @Test
+    void aRevertSupersedesThePendingFixAndItCanNoLongerBeAccepted() {
+        RegisteredUser u = registerUser("Tier Change Revert");
+        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(u.id(), 1, 6, CURVE);
+        WorkoutSessionEntity mon = train.createWorkoutSession(u.id(), meso.getId(), "Hétfő", "gym", 0, "active");
+        WorkoutSessionEntity thu = train.createWorkoutSession(u.id(), meso.getId(), "Csütörtök", "gym", 3, "active");
+        ExerciseEntity mon4 = exercise(u.id(), mon, "Evezés", "back-mid", 4);
+        ExerciseEntity mon2 = exercise(u.id(), mon, "Lehúzás", "back-wide", 2);
+        ExerciseEntity thu3 = exercise(u.id(), thu, "Kábeles evezés", "back-mid", 3);
+        ExerciseEntity thu2 = exercise(u.id(), thu, "Húzódzkodás", "back-wide", 2);
+
+        putPriorities(u, meso, Map.of("back", "emphasize")); // 11 below 14 → P1 pending
+        MesoWeekProposalEntity p1 = onlyPending(meso);
+
+        putPriorities(u, meso, Map.of()); // back to Építés 10–16: 11 is inside → nothing new
+        MesoWeekProposalEntity closed = proposalRepository.findById(p1.getId()).orElseThrow();
+        assertThat(closed.getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_SUPERSEDED);
+        assertThat(closed.getDecidedAt()).isNotNull();
+        assertThat(proposalRepository.findAll().stream().filter(p -> p.getMesocycleId().equals(meso.getId())))
+            .singleElement().satisfies(p -> assertThat(p.getId()).isEqualTo(p1.getId()));
+
+        String body = postForBody(url(meso) + "/" + p1.getId() + "/decisions",
+            new WeekProposalDecisionRequest().acceptRest(true), u.headers(), HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(body, "TRAIN_WEEK_PROPOSAL_CLOSED");
+        assertThat(List.of(sets(mon4), sets(mon2), sets(thu3), sets(thu2))).containsExactly(4, 2, 3, 2);
+    }
+
     // ── fixtures ──────────────────────────────────────────────────────────────────────────────
 
     private void putPriorities(RegisteredUser u, MesocycleEntity meso, Map<String, String> priorities) {

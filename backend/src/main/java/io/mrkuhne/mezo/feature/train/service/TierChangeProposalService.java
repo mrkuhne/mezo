@@ -31,10 +31,14 @@ import org.springframework.transaction.annotation.Transactional;
  * A tier or sport change on a running block (volume engine v2 S3, spec §6.5, defect 9): the groups whose band
  * moved in that request and whose plan now sits outside the new band get the plan evaluator's cap-respecting
  * edits ({@link PlanEvaluator}, spec §6.3 — which may cut) as one {@code tier_change} proposal of the calendar
- * week. A still-pending tier change of the run is {@code superseded} first, so at most one pends. {@code auto}
+ * week. Any band change supersedes a still-pending tier change of the run (even when the new request needs
+ * no fix and raises nothing), so at most one pends and none outlives the bands it was made for. {@code auto}
  * mode applies it at once ({@code auto_applied}, ledger re-synced, a provenance note per changed group);
  * {@code manual} leaves it pending for the decisions endpoint. A group he did not touch is never pulled back
  * (§6.4: a plan saved above its band stays). The run's weekly audit / {@code currentWeek} are not touched.
+ *
+ * <p>The evaluator sees the run's counting template rows only (no warmups, no exempt rows), so its session
+ * cap counts counting working sets per group and day — the same slots the weekly proposal uses.
  *
  * <p>Only with the volume-progression gate on, on an active amount-model (v2) run; the caller holds the run's
  * row lock (the weekly generation's lock order: run row, then plan rows and proposals).
@@ -70,7 +74,8 @@ public class TierChangeProposalService {
      * Raises (and in {@code auto} mode applies) the tier-change proposal for the run's new tiers / sport groups.
      *
      * @param bandsBefore {@link #bandsOf} the run before the change
-     * @return the stored proposal; empty when no changed group needs an edit (nothing is superseded then)
+     * @return the stored proposal; empty when no changed group needs an edit (a pending one is still superseded
+     *         when any band changed)
      */
     @Transactional
     public Optional<MesoWeekProposalEntity> raise(UUID createdBy, MesocycleEntity run, Map<String, Band> bandsBefore) {
@@ -127,12 +132,13 @@ public class TierChangeProposalService {
                 m.band().low(), m.band().high(), m.band().sportAdjusted(), m.weeklySets(), after,
                 List.copyOf(groupReasons)));
         }
+        // Spec §6.5: any band change supersedes a still-pending tier change — even one that needs no fix now,
+        // so an older proposal never applies a fix the current band no longer calls for.
+        proposalRepository.findPendingTierChanges(createdBy, run.getId())
+            .forEach(p -> weekProposalService.close(p, MesoWeekProposalEntity.STATUS_SUPERSEDED));
         if (lines.isEmpty()) {
             return Optional.empty();
         }
-
-        proposalRepository.findPendingTierChanges(createdBy, run.getId())
-            .forEach(p -> weekProposalService.close(p, MesoWeekProposalEntity.STATUS_SUPERSEDED));
         MesoWeekProposalEntity proposal = new MesoWeekProposalEntity();
         proposal.setCreatedBy(createdBy);
         proposal.setMesocycleId(run.getId());
