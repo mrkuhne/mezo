@@ -1,0 +1,34 @@
+package io.mrkuhne.mezo.feature.train.service;
+
+import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
+import io.mrkuhne.mezo.feature.train.entity.json.GymExerciseJson;
+import java.util.List;
+import java.util.Set;
+
+/** Stamps a template exercise with its style's prescription (mezo-r36n9.79). Pure, no beans. */
+public final class StyleStamper {
+    private StyleStamper() {}
+
+    public static GymExerciseJson stamp(GymExerciseJson ex, TrainingStyle blockStyle, boolean stable,
+                                        TrainStyleProperties p) {
+        TrainingStyle style = TrainingStyle.fromWire(ex.trainingStyle());
+        if (style == null) style = blockStyle;
+        if (style == null) return ex;
+        ExerciseClass cls = ExerciseClass.of(ex.type(), stable);
+        if (cls == null) return ex;
+        String group = MuscleGroup.of(ex.muscle());
+        boolean legs = cls.compound() && ("quad".equals(group) || "ham".equals(group) || "glute".equals(group));
+        StyleTable.Stamp s = StyleTable.stamp(style, cls, stable, legs, p);
+        Set<String> keep = Set.copyOf(ex.overrides() == null ? List.of() : ex.overrides());
+        boolean range = !keep.contains("repRange");
+        return new GymExerciseJson(ex.id(), ex.name(), ex.muscle(), ex.warmupSets(),
+            keep.contains("workingSets") || s.workingSets() == null ? ex.workingSets() : s.workingSets(),
+            range ? s.repMin() : ex.repMin(),
+            range ? s.repMax() : ex.repMax(),
+            keep.contains("targetRir") ? ex.targetRir() : s.reserve(),
+            ex.anchorWeightKg(), ex.type(), ex.warning(), ex.catalogId(), ex.countsTowardVolume(),
+            ex.trainingStyle(),
+            keep.contains("restSec") ? ex.restSec() : s.restSec(),
+            ex.overrides());
+    }
+}

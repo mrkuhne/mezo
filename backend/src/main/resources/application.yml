@@ -3171,6 +3171,18 @@ mezo:
         hike:       { light: 5.3, moderate: 6.0, hard: 7.8 }   # 17082 fields/hillsides no load; 17080 cross country; 17012 backpacking with daypack
         run:        { light: 7.5, moderate: 9.3, hard: 10.5 }  # 12020 jogging self-selected pace; 12050 6–6.3 mph; 12060 6.7 mph / 9 min-mile
         other:      { light: 3.0, moderate: 4.0, hard: 6.0 }   # fallback for unmapped kinds (e.g. kajak); mirrors volleyball's generic band
+    # Training styles (mezo-r36n9.79, spec §6.2) — binds onto TrainStyleProperties. Stamped onto every
+    # exercise of a styled block; working-sets null = keep the plan's, leg-reserve null = reserve.
+    style:
+      allout-free-reserve: 1        # all-out asked on a free exercise -> heavy row at this reserve
+      same-range-max-age-days: 56   # reference must be this fresh to count as the same-range reference
+      stall-weeks: 2
+      ramp: { middle-delta: 1, last-week-delta: 2, deload-delta: 2, free-floor: 1 }
+      styles:
+        balanced: { compound-rep-min: 6,  compound-rep-max: 10, isolation-rep-min: 10, isolation-rep-max: 15, reserve: 2, leg-reserve: 3, compound-rest-sec: 150, isolation-rest-sec: 90,  rep-overflow: 3 }
+        volume:   { compound-rep-min: 10, compound-rep-max: 15, isolation-rep-min: 15, isolation-rep-max: 25, reserve: 2, compound-rest-sec: 120, isolation-rest-sec: 75,  rep-overflow: 4 }
+        heavy:    { compound-rep-min: 5,  compound-rep-max: 8,  isolation-rep-min: 8,  isolation-rep-max: 12, reserve: 2, compound-rest-sec: 180, isolation-rest-sec: 120, rep-overflow: 2 }
+        allout:   { compound-rep-min: 6,  compound-rep-max: 10, isolation-rep-min: 8,  isolation-rep-max: 12, working-sets: 2, reserve: 0, compound-rest-sec: 180, isolation-rest-sec: 120, rep-overflow: 2 }
     # Workout-timing tuning (mezo-1jm8) — measurement clips + profile-learner seeds.
     # Binds onto TimingProperties.
     timing:
