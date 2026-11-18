@@ -139,4 +139,13 @@ class VolumeDeciderTest {
     @Test void aPlanAboveItsBandIsNotPulledBack() {
         assertThat(decide(in().tier(GROW).band(new Band(10, 16, 22, false)).planned(19).logged(19)).delta()).isZero();
     }
+
+    @Test void stepPinsTheWeeklyValues() {
+        assertThat(VolumeDecider.step(EMPHASIZE, false, 2, 1, 1)).isEqualTo(2);
+        assertThat(VolumeDecider.step(GROW, false, 2, 1, 1)).isEqualTo(1);
+        assertThat(VolumeDecider.step(EMPHASIZE, true, 2, 1, 1)).isEqualTo(1);
+        assertThat(VolumeDecider.step(GROW, true, 2, 1, 3)).isEqualTo(3);
+        assertThat(VolumeDecider.step(MAINTAIN, false, 2, 1, 1)).isZero();
+        assertThat(VolumeDecider.step(MAINTAIN, true, 2, 1, 1)).isZero();
+    }
 }
