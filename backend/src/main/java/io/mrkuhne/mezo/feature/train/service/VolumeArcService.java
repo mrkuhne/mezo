@@ -4,7 +4,6 @@ import io.mrkuhne.mezo.api.dto.MesocycleVolumeArcResponse;
 import io.mrkuhne.mezo.api.dto.MuscleVolumeArc;
 import io.mrkuhne.mezo.api.dto.VolumeArcWeek;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
-import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
@@ -15,7 +14,6 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesoWeekProposalRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
-import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -67,7 +65,7 @@ public class VolumeArcService {
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseRepository exerciseRepository;
-    private final WorkoutSessionRepository workoutSessionRepository;
+    private final TemplatePlan templatePlan;
     private final MesoWeekProposalRepository proposalRepository;
     private final EnergyBalancePort energyBalance;
     private final VolumeProperties props;
@@ -183,7 +181,7 @@ public class VolumeArcService {
         int fromWeek = Math.max(1, Math.min(weeks, currentWeek));
         List<String> phaseCurve = run.getPhaseCurve() == null ? List.of() : run.getPhaseCurve();
         Map<String, int[]> planned = new TreeMap<>();
-        List<PlanRow> plan = planRows(createdBy, run.getId());
+        List<TemplatePlan.Row> plan = templatePlan.rows(createdBy, run.getId());
 
         if (fromWeek > 1) {
             pastWeeks(createdBy, run, fromWeek, plan, planned);
@@ -191,7 +189,7 @@ public class VolumeArcService {
 
         Map<String, VolumePath.Group> groups = new TreeMap<>();
         List<VolumePath.Exercise> amounts = new ArrayList<>();
-        for (PlanRow r : plan) {
+        for (TemplatePlan.Row r : plan) {
             if (r.group() == null) {
                 continue;
             }
@@ -205,7 +203,7 @@ public class VolumeArcService {
         }
         boolean deficit = "active".equals(run.getStatus()) && energyBalance.isInDeficit(createdBy, LocalDate.now());
         fill(planned, weeks, VolumePath.project(new VolumePath.Input(weeks, phaseCurve, fromWeek, amounts,
-            restoreTo(createdBy, run, fromWeek, phaseCurve), groups, deficit,
+            restoreTo(createdBy, run, fromWeek, phaseCurve, plan), groups, deficit,
             props.stepEmphasize(), props.stepGrow(), props.stepDeficit(), props.deloadFraction(),
             props.bands().exerciseCap(), props.bands().sessionCap())));
 
@@ -219,7 +217,7 @@ public class VolumeArcService {
     }
 
     /** Fills weeks {@code 1 … fromWeek − 1} with what each week prescribed. */
-    private void pastWeeks(UUID createdBy, MesocycleEntity run, int fromWeek, List<PlanRow> plan,
+    private void pastWeeks(UUID createdBy, MesocycleEntity run, int fromWeek, List<TemplatePlan.Row> plan,
                            Map<String, int[]> planned) {
         int weeks = run.getWeeks();
         List<MesoWeekProposalEntity> applied = proposalRepository.findAllApplied(createdBy, run.getId()).stream()
@@ -241,7 +239,7 @@ public class VolumeArcService {
             .forEach(id -> unknown.add(UUID.fromString(id))));
         if (!unknown.isEmpty()) {
             exerciseRepository.findOwnedByIdIncludingDeleted(createdBy, unknown)
-                .forEach(e -> groupById.put(e.getId().toString(), groupOf(e)));
+                .forEach(e -> groupById.put(e.getId().toString(), templatePlan.groupOf(e)));
         }
 
         for (int w = 1; w < fromWeek; w++) {
@@ -278,18 +276,25 @@ public class VolumeArcService {
             .orElse(currentPlan);
     }
 
-    /** The pre-deload amounts the week after a deload restores, when {@code fromWeek} is itself a deload. */
-    private Map<String, Integer> restoreTo(UUID createdBy, MesocycleEntity run, int fromWeek, List<String> phaseCurve) {
+    /**
+     * The pre-deload amounts the week after a deload restores, when {@code fromWeek} is itself a deload:
+     * the current deload proposal's restore entries, each keyed by the current row it matches (by id,
+     * else by identity on the same day — a day re-saved during the deload re-mints its rows), the same
+     * matching the weekly proposal's restore uses.
+     */
+    private Map<String, Integer> restoreTo(UUID createdBy, MesocycleEntity run, int fromWeek, List<String> phaseCurve,
+                                           List<TemplatePlan.Row> plan) {
         if (!PHASE_DELOAD.equalsIgnoreCase(phaseAt(phaseCurve, fromWeek))) {
             return Map.of();
         }
-        Map<String, Integer> restore = new HashMap<>();
-        proposalRepository.findWeekly(createdBy, run.getId(), fromWeek)
+        List<RestoreEntryJson> entries = proposalRepository.findWeekly(createdBy, run.getId(), fromWeek)
             .filter(p -> MesoWeekProposalEntity.STATUS_APPLIED.equals(p.getStatus())
                 || MesoWeekProposalEntity.STATUS_AUTO_APPLIED.equals(p.getStatus()))
             .map(MesoWeekProposalEntity::getRestore)
-            .ifPresent(entries -> entries.forEach((RestoreEntryJson e) ->
-                restore.put(e.exerciseId().toString(), e.sets())));
+            .orElse(List.of());
+        Map<String, Integer> restore = new HashMap<>();
+        TemplatePlan.matchEntries(entries == null ? List.of() : entries, plan)
+            .forEach((entry, row) -> restore.put(row.exercise().getId().toString(), entry.sets()));
         return restore;
     }
 
@@ -320,42 +325,6 @@ public class VolumeArcService {
             week.sets().forEach((group, sets) ->
                 planned.computeIfAbsent(group, g -> new int[weeks])[week.week() - 1] = sets);
         }
-    }
-
-    // ── plan reading (mirrors WeekProposalService's) ──────────────────────────────────────────
-
-    /** A counting exercise of a template day; {@code group} null when the group has no landmark entry. */
-    private record PlanRow(ExerciseEntity exercise, int dayIndex, String group) {}
-
-    private List<PlanRow> planRows(UUID createdBy, UUID mesoId) {
-        Map<UUID, Integer> dayIndex = new HashMap<>();
-        workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId))
-            .stream().filter(s -> s.getTemplateSessionId() == null)
-            .forEach(s -> dayIndex.put(s.getId(), s.getOrderIndex() == null ? 0 : s.getOrderIndex()));
-        if (dayIndex.isEmpty()) {
-            return List.of();
-        }
-        return exerciseRepository
-            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.copyOf(dayIndex.keySet()))
-            .stream()
-            .filter(ExerciseEntity::isCountsTowardVolume)
-            .map(e -> new PlanRow(e, dayIndex.get(e.getWorkoutSessionId()), groupOf(e)))
-            .sorted((a, b) -> a.dayIndex() != b.dayIndex() ? Integer.compare(a.dayIndex(), b.dayIndex())
-                : Integer.compare(orderIndex(a.exercise()), orderIndex(b.exercise())))
-            .toList();
-    }
-
-    /** The exercise's coarse group when it has a landmark entry, else null (never judged, never pathed). */
-    private String groupOf(ExerciseEntity e) {
-        if (!e.isCountsTowardVolume() || e.getMuscle() == null || e.getMuscle().isBlank()) {
-            return null;
-        }
-        String group = MuscleGroup.of(e.getMuscle());
-        return props.baselines().containsKey(group) ? group : null;
-    }
-
-    private static int orderIndex(ExerciseEntity e) {
-        return e.getOrderIndex() == null ? 0 : e.getOrderIndex();
     }
 
     /** DA1-style bounds-checked 1-based phaseCurve lookup; defensive fallback if lengths ever drift. */

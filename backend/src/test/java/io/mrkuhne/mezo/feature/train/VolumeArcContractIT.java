@@ -160,6 +160,31 @@ class VolumeArcContractIT extends ApiIntegrationTest {
     }
 
     /**
+     * The Monday is re-saved during the deload week (new rows): the projected week after still restores
+     * the re-minted squat, found by identity on the same day — as the weekly proposal will.
+     */
+    @Test
+    void aDayReMintedDuringTheDeloadStillProjectsTheRestore() {
+        UUID user = databasePopulator.populateUser("arc-deload-remint@test.local");
+        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(user, 2, 6, DELOAD_IN_WEEK_3);
+        meso.setMusclePriorities(Map.of("quad", "grow"));
+        mesocycleRepository.saveAndFlush(meso);
+        WorkoutSessionEntity mon = train.createWorkoutSession(user, meso.getId(), "Hétfő", "gym", 0, "active");
+        WorkoutSessionEntity thu = train.createWorkoutSession(user, meso.getId(), "Csütörtök", "gym", 3, "active");
+        ExerciseEntity squat = exercise(user, mon, "Guggolás", "quad", 4, 0);
+        exercise(user, thu, "Lábnyújtás", "quad", 4, 0);
+        weekProposals.generateIfDue(user, reload(meso)); // week 3 = deload: 4 + 4 → 2 + 2
+
+        trainService.replaceDayExercises(user, meso.getId(), mon.getId(), List.of(
+            input("Guggolás", "quad", fresh(squat).getWorkingSets())));
+
+        // same line as without the edit: weeks 1–2 = 8 (the old rows resolve), week 3 = 4, week 4 restored
+        // to 8 and +1 = 9, then 10, then both at the 5-set cap
+        assertThat(planned(volumeArcService.arc(user, meso.getId()), "quad"))
+            .containsExactly(8, 8, 4, 9, 10, 10);
+    }
+
+    /**
      * Two weekly proposals applied, then a day edit re-mints the Monday rows: the past weeks still show
      * what each week prescribed (the soft-deleted rows resolve), the current week the plan as it stands.
      */
