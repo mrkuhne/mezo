@@ -33,6 +33,7 @@ run bash .github/scripts/compute-release.test.sh
 run bash .github/scripts/compute-release.sigpipe.test.sh
 run bash .github/scripts/release-commit.test.sh
 run bash .github/scripts/require-checks.test.sh
+run bash .github/scripts/ci-scope.test.sh
 run bash .github/scripts/deploy-alert.test.sh
 
 echo "✅ cheap gates passed."

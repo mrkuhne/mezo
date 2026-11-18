@@ -206,7 +206,9 @@ runs on every push to `main` and on PRs, parallel to `deploy.yml` and **not bloc
 `node scripts/lint-liquibase.mjs` — migration filename/constraint-prefix/seed-SQL rules),
 `contract-drift` (regenerates the OpenAPI fragment merge + FE `api.gen.ts` and fails on
 `git diff` vs the committed artifacts), `test-frontend` (vitest in real AND mock mode) and
-`test-backend` (full IT suite on Testcontainers Postgres). A fifth job, `lint-k8s`
+`test-backend` (full IT suite on Testcontainers Postgres; since mezo-dubmh the three test jobs
+run their suites only when the commit touches their area — see
+[local-dev-testing.md](local-dev-testing.md) §The gate model). A fifth job, `lint-k8s`
 (mezo-ibxy), schema-checks the plain manifests under `k8s/`/`argocd/` with kubeconform
 0.8.0 and helm-templates the monitoring chart against `k8s/monitoring/values.yaml`.
 Rationale and the phased plan

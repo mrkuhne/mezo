@@ -31,6 +31,11 @@ one of the two bases. Never `@SpringBootTest` directly in a test class.
 Rules:
 - `AbstractIntegrationTest` boots the full context against a real Postgres (fixed `mezo_test`
   compose DB by default; Testcontainers opt-in via `-Dmezo.test.use-testcontainers=true`).
+  In Testcontainers mode there is ONE Postgres container per test JVM and ONE private database
+  per Spring context, cloned from a Liquibase-migrated template (`TestcontainersConfiguration`,
+  mezo-dubmh) — so a new `@TestPropertySource` combination costs a context start, not a
+  container start plus a full changelog replay. `-Dmezo.test.forks=N` adds parallel test JVMs
+  (Testcontainers mode only).
 - `ApiIntegrationTest` adds `RANDOM_PORT`, `TestRestTemplate`, the `demodata` profile
   (so the owner exists for login) and the helpers below.
 - HTTP-level test classes must NOT be `@Transactional` — the server handles requests in its

@@ -16,6 +16,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read     # ci-scope.sh reads the previous ci run on the branch (mezo-dubmh)
 
 jobs:
   lint:
@@ -101,22 +102,44 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0    # ci-scope.sh diffs against the previous commit / PR base
+      - name: Does this commit touch the web frontend?
+        # mezo-dubmh: the expensive steps below run only when it does. The job still starts
+        # and ends green otherwise, so require-checks.sh keeps seeing a successful check run.
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          BEFORE: ${{ github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        working-directory: .
+        run: bash .github/scripts/ci-scope.sh frontend/ api/
       - uses: pnpm/action-setup@v4
+        if: steps.scope.outputs.run == 'true'
         with:
           # No `version:` — the pin lives in frontend/package.json's `packageManager`
           # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
           package_json_file: frontend/package.json
       - uses: actions/setup-node@v7
+        if: steps.scope.outputs.run == 'true'
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+        if: steps.scope.outputs.run == 'true'
       - name: Tests (real mode)
+        if: steps.scope.outputs.run == 'true'
         env:
           VITE_USE_MOCK: "false"
         run: pnpm test
       - name: Tests (mock mode)
+        if: steps.scope.outputs.run == 'true'
         env:
           VITE_USE_MOCK: "true"
         run: pnpm test
@@ -135,24 +158,47 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0    # ci-scope.sh diffs against the previous commit / PR base
+      - name: Does this commit touch the web frontend?
+        # mezo-dubmh: the expensive steps below run only when it does. The job still starts
+        # and ends green otherwise, so require-checks.sh keeps seeing a successful check run.
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          BEFORE: ${{ github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        working-directory: .
+        run: bash .github/scripts/ci-scope.sh frontend/ api/
       - uses: pnpm/action-setup@v4
+        if: steps.scope.outputs.run == 'true'
         with:
           # No `version:` — the pin lives in frontend/package.json's `packageManager`
           # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
           package_json_file: frontend/package.json
       - uses: actions/setup-node@v7
+        if: steps.scope.outputs.run == 'true'
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+        if: steps.scope.outputs.run == 'true'
       - name: Cache Playwright browsers
+        if: steps.scope.outputs.run == 'true'
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
       - run: pnpm exec playwright install chromium --with-deps
+        if: steps.scope.outputs.run == 'true'
       - name: Layout invariants
+        if: steps.scope.outputs.run == 'true'
         run: pnpm test:layout
       - name: Upload traces on failure
         if: failure()
@@ -166,16 +212,38 @@ jobs:
     # Full IT suite on a throwaway Testcontainers Postgres (no fixed-DB
     # dependency; ubuntu-latest ships Docker). Same command as the CI variant
     # documented in CLAUDE.md "Build & Test".
+    # mezo-dubmh: two parallel test JVMs, each with its own Postgres container (one database
+    # per Spring context inside it — see TestcontainersConfiguration). Two, not more: a fork
+    # peaks around 3.5 GB RSS plus ~1 GB for its Postgres, and the runner has 4 vCPU / 16 GB.
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v7    # full repo so ../api contract is present
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0    # ci-scope.sh diffs against the previous commit / PR base
+      - name: Does this commit touch the backend?
+        # mezo-dubmh: the expensive steps below run only when it does. The job still starts
+        # and ends green otherwise, so require-checks.sh keeps seeing a successful check run.
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          BEFORE: ${{ github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        working-directory: .
+        run: bash .github/scripts/ci-scope.sh backend/ api/
       - uses: actions/setup-java@v6
+        if: steps.scope.outputs.run == 'true'
         with:
           distribution: temurin
           java-version: 21
           cache: maven
       - name: Integration tests (Testcontainers Postgres)
-        run: ./mvnw -B clean test -Dmezo.test.use-testcontainers=true
+        if: steps.scope.outputs.run == 'true'
+        run: ./mvnw -B clean test -Dmezo.test.use-testcontainers=true -Dmezo.test.forks=2

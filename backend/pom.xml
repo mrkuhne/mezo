@@ -54,6 +54,13 @@
 			property indirection is for.)
 		-->
 		<mezo.excludedTestGroups>eval</mezo.excludedTestGroups>
+		<!--
+			mezo-dubmh: parallel test JVMs. ONLY together with -Dmezo.test.use-testcontainers=true
+			(each fork then owns a private Postgres); the default fixed mezo_test DB is shared,
+			so forks would TRUNCATE each other's rows. CI passes -Dmezo.test.forks=2
+			(a fork peaks at ~3.5 GB RSS + ~1 GB for its Postgres).
+		-->
+		<mezo.test.forks>1</mezo.test.forks>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -326,6 +333,8 @@
 						at the CLI to opt in for that one explicit run.
 					-->
 					<excludedGroups>${mezo.excludedTestGroups}</excludedGroups>
+					<forkCount>${mezo.test.forks}</forkCount>
+					<reuseForks>true</reuseForks>
 					<systemPropertyVariables>
 						<api.version>${docker.api.version}</api.version>
 						<!--
