@@ -248,4 +248,92 @@ class ProgressionDeciderTest {
         assertThat(ProgressionDecider.capAtHold(deload, ref("60", 8, 0), 6, 8)).isSameAs(deload);
         assertThat(ProgressionDecider.capAtHold(down, ref("60", 4, 0), 6, 8)).isSameAs(down);
     }
+
+    // ── Range conversion + ramped grind + per-style overshoot (T1, mezo-r36n9.79) ───────
+
+    private static Decision convert(RefSet r, int repMin, int repMax, int targetRir, Set<BigDecimal> gaps) {
+        return ProgressionDecider.convert(r, repMin, repMax, targetRir, COMPOUND, Set.of(), gaps);
+    }
+
+    @Test
+    void convertHigherRangeGoesLighter() {
+        // e1RM = 80 × (1 + (8+2)/30) = 106.667; wanted = 106.667 / (1 + (12+2)/30) = 72.73 → grid 72.5.
+        // reps = 30 × (106.667/72.5 − 1) − 2 = 12.14 → 12.
+        Decision d = convert(ref("80", 8, 2), 12, 15, 2, Set.of());
+        assertThat(d.lever()).isEqualTo(Lever.WEIGHT);
+        assertThat(d.base()).isEqualByComparingTo("72.5");
+        assertThat(d.deltaKg()).isEqualByComparingTo("-7.5");
+        assertThat(d.deltaReps()).isNull();
+        assertThat(d.workingReps()).isEqualTo(12);
+        assertThat(d.rationale()).isEqualTo("Új tartomány (12–15): a 8×80 kg alapján → 72,5 kg × 12");
+    }
+
+    @Test
+    void convertLowerRangeGoesHeavier() {
+        // wanted = 106.667 / (1 + (4+2)/30) = 88.89 → 90 (1.11 away vs 87.5 at 1.39).
+        // reps = 30 × (106.667/90 − 1) − 2 = 3.56 → 4 (clamped to the floor).
+        Decision d = convert(ref("80", 8, 2), 4, 6, 2, Set.of());
+        assertThat(d.lever()).isEqualTo(Lever.WEIGHT);
+        assertThat(d.base()).isEqualByComparingTo("90");
+        assertThat(d.deltaKg()).isEqualByComparingTo("10");
+        assertThat(d.workingReps()).isEqualTo(4);
+    }
+
+    @Test
+    void convertKeepsWeightWhenItFits() {
+        // wanted = 106.667 / (1 + (8+2)/30) = 80 exactly → the reference weight itself; reps = 8.
+        Decision d = convert(ref("80", 8, 2), 8, 12, 2, Set.of());
+        assertThat(d.lever()).isEqualTo(Lever.HOLD);
+        assertThat(d.base()).isEqualByComparingTo("80");
+        assertThat(d.deltaKg()).isNull();
+        assertThat(d.deltaReps()).isNull();
+        assertThat(d.workingReps()).isEqualTo(8);
+    }
+
+    @Test
+    void convertRespectsGaps() {
+        // Same as the lighter case but 72.5 is a known gap → 75 (2.27 away; 70 is 2.73).
+        // reps = 30 × (106.667/75 − 1) − 2 = 10.67 → 11 → clamped up to 12.
+        Decision d = convert(ref("80", 8, 2), 12, 15, 2, Set.of(new BigDecimal("72.5")));
+        assertThat(d.base()).isEqualByComparingTo("75");
+        assertThat(d.workingReps()).isEqualTo(12);
+    }
+
+    private static Decision ramped(boolean on) {
+        return ProgressionDecider.decide(ref("80", 8, 0), 6, 10, 0, COMPOUND, Set.of(), Set.of(), false, 10, on);
+    }
+
+    @Test
+    void rampedGrindTwoBelowPrescribedHolds() {
+        // Prescribed 10, logged 8 (= 10 − 2) at RIR 0 → grind (slack −1) → hold/consolidate.
+        Decision d = ramped(true);
+        assertThat(d.lever()).isEqualTo(Lever.HOLD);
+        assertThat(d.base()).isEqualByComparingTo("80");
+        assertThat(d.workingReps()).isEqualTo(8);
+    }
+
+    @Test
+    void rampedGrindOffKeepsOldRule() {
+        // Same set, ramped off: RIR 0 at target 0 → slack 0 → no grind → +1 rep.
+        Decision d = ramped(false);
+        assertThat(d.lever()).isEqualTo(Lever.REP);
+        assertThat(d.workingReps()).isEqualTo(9);
+    }
+
+    @Test
+    void heavyOverflowTwoForcesEarlier() {
+        StepPolicy heavy = new StepPolicy(new BigDecimal("0.05"), new BigDecimal("0.10"),
+            new BigDecimal("0.15"), 2, 2, STEP);
+        StepPolicy balanced = new StepPolicy(new BigDecimal("0.05"), new BigDecimal("0.10"),
+            new BigDecimal("0.15"), 2, 3, STEP);
+        // 8 × 14 @1, range 10–12, next real weight 10 kg = +25% (too big). repMax + 2 = 14 → forced.
+        // equal-effort reps at 10 kg = 5, clamped up to repMin − overflow = 8.
+        Decision forced = ProgressionDecider.decide(ref("8", 14, 1), 10, 12, 1, heavy, Set.of(), Set.of(), false);
+        assertThat(forced.lever()).isEqualTo(Lever.WEIGHT);
+        assertThat(forced.base()).isEqualByComparingTo("10");
+        // overflow 3 still builds a rep at the same point.
+        Decision builds = ProgressionDecider.decide(ref("8", 14, 1), 10, 12, 1, balanced, Set.of(), Set.of(), false);
+        assertThat(builds.lever()).isEqualTo(Lever.REP);
+        assertThat(builds.workingReps()).isEqualTo(15);
+    }
 }

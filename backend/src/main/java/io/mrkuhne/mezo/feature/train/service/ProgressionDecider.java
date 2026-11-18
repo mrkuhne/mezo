@@ -37,9 +37,24 @@ public final class ProgressionDecider {
 
     public static Decision decide(RefSet ref, int repMin, int repMax, int targetRir, StepPolicy policy,
                                   Set<BigDecimal> used, Set<BigDecimal> gaps, boolean deloadWeek) {
+        return decide(ref, repMin, repMax, targetRir, policy, used, gaps, deloadWeek, null, false);
+    }
+
+    /**
+     * As above, plus the styled-block ramped grind (T1 §11.3): when the target reserve is 0–1 the
+     * RIR is too noisy to read, so a set that landed two or more reps under what was prescribed
+     * ({@code refTargetReps}) counts as a grind (slack −1); otherwise the slack is the reserve
+     * above target, never negative.
+     */
+    public static Decision decide(RefSet ref, int repMin, int repMax, int targetRir, StepPolicy policy,
+                                  Set<BigDecimal> used, Set<BigDecimal> gaps, boolean deloadWeek,
+                                  Integer refTargetReps, boolean rampedGrind) {
         int rp = ref.reps();
         int rir = ref.rir() != null ? ref.rir() : targetRir; // null RIR → neutral slack
         int slack = rir - targetRir;
+        if (rampedGrind && targetRir <= 1 && refTargetReps != null) {
+            slack = rp <= refTargetReps - 2 ? -1 : Math.max(0, rir - targetRir);
+        }
         BigDecimal w = ref.weightKg();
 
         if (deloadWeek) {
@@ -103,6 +118,44 @@ public final class ProgressionDecider {
         int reps = clamp(equalEffortReps(w, rp, rir, targetRir, c1), Math.max(1, repMin - policy.repOverflow()), repMax);
         return new Decision(Lever.WEIGHT, c1, reps, c1.subtract(w), null,
             rp + " ismétlés " + fmt(w) + " kg-mal megvan → " + fmt(c1) + " kg (+" + pct(w, c1) + "%)");
+    }
+
+    /**
+     * Converts the reference set into a new rep range: the wanted load is the one at which the
+     * range floor lands on the target reserve (Epley), snapped to the nearest real weight — ever
+     * logged or on the plate grid, minus known gaps, the reference weight itself included (ties
+     * go lighter). Reps are the equal-effort count clamped into the range.
+     */
+    public static Decision convert(RefSet ref, int repMin, int repMax, int targetRir, StepPolicy policy,
+                                   Set<BigDecimal> used, Set<BigDecimal> gaps) {
+        BigDecimal w = ref.weightKg();
+        int r = ref.rir() != null ? ref.rir() : targetRir;
+        double e1rm = w.doubleValue() * (1 + (ref.reps() + r) / 30.0);
+        BigDecimal wanted = BigDecimal.valueOf(e1rm / (1 + (repMin + targetRir) / 30.0));
+        TreeSet<BigDecimal> cands = new TreeSet<>();
+        cands.addAll(ladder(w, -1, policy.plateStep(), used, gaps));
+        cands.addAll(ladder(w, 1, policy.plateStep(), used, gaps));
+        BigDecimal wn = WeightSnapper.norm(w);
+        boolean wGap = gaps.stream().anyMatch(g -> WeightSnapper.norm(g).compareTo(wn) == 0);
+        if (!wGap) {
+            cands.add(wn);
+        }
+        BigDecimal base = w;
+        BigDecimal bestDist = null;
+        for (BigDecimal c : cands) { // ascending → strict < keeps the lighter on a tie
+            BigDecimal dist = c.subtract(wanted).abs();
+            if (bestDist == null || dist.compareTo(bestDist) < 0) {
+                bestDist = dist;
+                base = c;
+            }
+        }
+        int reps = clamp(equalEffortReps(w, ref.reps(), ref.rir(), targetRir, base), repMin, repMax);
+        String rationale = "Új tartomány (" + repMin + "–" + repMax + "): a " + ref.reps() + "×" + fmt(w)
+            + " kg alapján → " + fmt(base) + " kg × " + reps;
+        if (base.compareTo(wn) == 0) {
+            return new Decision(Lever.HOLD, w, reps, null, null, rationale);
+        }
+        return new Decision(Lever.WEIGHT, base, reps, base.subtract(w), null, rationale);
     }
 
     private static Decision weightUp(RefSet ref, int rir, BigDecimal base, int repMin, int repMax,
