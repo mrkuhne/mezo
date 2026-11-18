@@ -51,6 +51,9 @@ const GRANDFATHERED = {
   // mezo-r36n9.2: released (deployed) with unnamed inline CHECKs on daily_metric / wearable_workout;
   // 202611100100_mezo-r36n9.2_wearable_check_naming.sql renames them in the live schema.
   '202611092310_mezo-r36n9.2_wearable_tables.sql': new Set(['inline-check']),
+  // mezo-r36n9.80: released (deployed in v3.4.0) with unnamed inline PK / FK / CHECKs and an ix_ index on
+  // exercise_set_leg; 202611181900_mezo-r36n9.80_exercise_set_leg_naming.sql renames them in the live schema.
+  '202611181600_mezo-r36n9.80_techniques.sql': new Set(['inline-primary-key', 'inline-foreign-key', 'inline-check', 'index-prefix']),
 };
 
 // `(?:\.\d+)*` (zero or more), not `?` (at most one): CLAUDE.md mandates the
