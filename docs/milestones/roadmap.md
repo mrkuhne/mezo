@@ -35,7 +35,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
 | `mezo-6269` — **Proaktív Coaching megfigyelő** | ◐ 5/20 (25%) | Making the coaching decision process visible: a proaktív motor 13 szabályt értékel óránként és csak a győztest mutatja — ez az epic teszi láthatóvá a döntési folyamatot egy első osztályú felületen. |
-| `mezo-gb1s` — **Mezo-kalauz (in-app tutorial)** | ◐ 6/10 (60%) | Per-page guided tour for beta onboarding. [`tutorial.md`](../features/tutorial.md). |
+| `mezo-gb1s` — **Mezo-kalauz (in-app tutorial)** | ✅ closed — web frozen (#48, 2026-11-17) | Per-page guided tour for the web beta; Boop hides the tutorial. [`tutorial.md`](../features/tutorial.md). |
 | `mezo-jcpt` — **Napi értékelés (daily score) redesign** | 🔄 open | C-hybrid score + Mozaik 2.0 UI; spec `2026-09-03-daily-score-redesign`. |
 | `mezo-06o0` / `mezo-88jw` | 🔄 open | Emberek section build-out; the daily-rhythm IA direction spec. |
 | `mezo-d6ivw` — **Mezo emlékezete** | ◐ 11/13 (85%) | A reflexiós észrevételek, a knowledge_fact/RAG memória, a Konzílium, a chat és a proaktív üzenetek egy összefüggő tanuló-motorrá és AI-élménnyé állnak össze, elsődlegesen a csapatfal (`mezo-a9bo7`) világán. Vezérli: `/emlekezet` skill. S8 (`.12`, chat-memória) shipped 2026-09-28; „Rólam is" (`.13`, person first) shipped 2026-09-29; S9 (`.10`, heti tény-összevonás) shipped 2026-09-30. |
@@ -56,7 +56,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-ju4j6` — **Boop visszaöltöztetés** | ✅ closed | Titanium visual rollback to Mozaik/Clay, functionality kept. See the milestone log (2026-09-20). |
 | `mezo-a9bo7` / `mezo-ui5by` — **Boop csapat-üzenőfal** | ✅ closed | Social wall + karakter-narratíva; `mezo-ui5by` a duplikátum. See the milestone log (2026-09-27). |
 | `mezo-ck2` — **Check-in 2.0** | ✅ shipped 2026-09-28 | 14-item check-in (5 core + time-of-day items + adaptive „A nap kérdése"), feeding chat, flags, patterns, detectors, life goals, meal coach, training readiness, Napom, ritual, rings. Follow-ups: `persistent_pain` lighten action, day-review reading the day rating. See the milestone log (2026-09-28). [`today.md`](../features/today.md), [`me.md`](../features/me.md). |
-| `mezo-n4wf5` — **Folyadék (new UI identity)** | ◐ F1–F5 + N1 done (6 of 12) | Light-only identity, structure-first pages, everything is a level that fills — and, since 2026-10-11, an English version of the whole app. F1 (foundation + frame + kit) done 2026-10-09; F2 (Nap — every page of the domain, the routine builder, Napzárás) done 2026-10-10; F3 (Edzés) and F4 (Edzés közben — Eligazítás, the session page and its sheets, both closing ceremonies, the review) done 2026-10-11; **N1 (Nyelv alap — the language switch and the bilingual foundation) done 2026-10-11**; **F5 (Fuel — the whole domain in the new look AND in both languages, with the server-written Fuel sentences) done 2026-10-12**. **Remaining:** F6 Én, F7 Mezo, F8 átfedők (overlays, Settings shell), N2 (Nyelv pótlás — Nap, Edzés and Edzés közben, built before the language decision, get their words in both languages), N3 (the AI in English: prompts, team voice, notifications, built-in catalogs), F9 záró söprés. [Spec](../superpowers/specs/2026-10-09-folyadek-irany-design.md), [language spec](../superpowers/specs/2026-10-11-nyelv-alap-design.md), [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md), [`_platform-design-system.md`](../features/_platform-design-system.md), [`_platform-language.md`](../features/_platform-language.md). |
+| `mezo-n4wf5` — **Folyadék (new UI identity)** | ✅ closed — web frozen (#48, 2026-11-17) at F1–F5 + N1 | The web app's light-only identity; the converted surfaces stay as shipped, the rest keep Üveg. New UI work is Boop's (Napkelte). |
 | `mezo-me75u` — **Üvegesítés** | ✅ closed | Whole app onto the dark glass material (U1–U11). See the milestone log (2026-09-27). |
 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
@@ -84,6 +84,14 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   [programme](../superpowers/plans/2026-11-18-volume-engine-programme-handover.md);
   [`train.md`](../features/train.md) §4 `#### Volume engine v2`, §9.
 
+- **2026-11-18 — Web app frozen; only the server and the iPhone app are developed (owner decision #48, `mezo-1z4jc`).**
+  "webes appot már nem fejlesztünk, csak iphone app és szerver." The web frontend stays deployed as it is. Cleanup the
+  same day: 68 finished or web-only Claude sessions archived; 25 web-only issues closed (Folyadék `mezo-n4wf5`,
+  Mezo-kalauz `mezo-gb1s`, the Titanium/Design 2.0 leftovers, the set-budget and parity tickets, the held Mezo
+  prototype publish-debt); 12 long-idle server issues moved from in progress back to open; Boop B0 and B3 closed
+  with their leftovers on their own tickets (`mezo-o8tcu`, `mezo-lb2yb`, `mezo-r36n9.85`, `mezo-r36n9.13.1`,
+  `mezo-r36n9.26`). `CLAUDE.md`/`AGENTS.md` lost the web obligations (Folyadék canon, living prototypes, prototype
+  link check, FE gates by default) and gained the Boop owner-gate flow.
 - **2026-11-17 — Boop · az Edzés terület, az eligazítás és az edzés közbeni lejátszó a telefonon (`mezo-r36n9.15`).**
   The Edzés room lives on the training API's own data: today's load on the real MuscleMap body, the block as a
   timeline (time across, difficulty up, deload hollow), the exercises as a photo carousel, and a Blokk tab whose

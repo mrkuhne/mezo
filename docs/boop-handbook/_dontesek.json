@@ -495,6 +495,56 @@
     "levaltotta": "A „Boop elmondja” funkciót (S3 óta élt).",
     "kovetkezmeny": "A hang a telefon sajátja volt, tehát ha valaha mégis kellene, visszahozható. A felolvasott mondatokban lévő koppintható részek megmaradtak — azok szövegként is működnek."
   },
+  "d-2026-11-17-gyakorlatvalasztas": {
+    "cim": "A gyakorlatcsere személyre szabása: minden szempont egyszerre, csak az iPhone-on",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A csere egyszerre veszi figyelembe a blokk célját, az elérhető eszközöket és a jelzett kényelmetlenséget, megőrzi a gyakorlat szerepét a tervben, és egy mondatban megindokolja az ajánlást. Csak az iPhone-os Boopban készül el. A négy további lépés (a gyakorlatok „miért ezt?” magyarázata, a tervbeli hiányok jelzése, a tudatos gyakorlatváltás és az indokolt katalógusbővítés) mind része a programnak, egymás után.",
+    "miert": "Egy gyakorlatválasztásról szóló edzői anyag tanulsága: nincs mindenkinek legjobb gyakorlat, az a jó, ami illik a célhoz, az eszközökhöz és az emberhez. Azt kérted, hogy ne fél megoldás készüljön, és hogy a webes alkalmazással ne foglalkozzunk.",
+    "levaltotta": "Az azonos izomra ható gyakorlatok indoklás nélküli felsorolását.",
+    "kovetkezmeny": "A gyakorlatok új adatokat kapnak (eszköz, mozgásfajta, terhelt ízületek). Az anyag szerzőjének kedvenc gyakorlatai nem lesznek rangsor, és az app nem ígér százalékos eredményt."
+  },
+  "d-2026-11-17-eszkozlista": {
+    "cim": "Honnan tudja Boop, milyen eszközeid vannak: lista és jelzés a cserénél",
+    "datum": "2026-11-17",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Induláskor minden eszköz elérhetőnek számít. Az Edzés beállításaiban van egy rövid „Mi van a termemben” lista, a cserénél pedig egy „ehhez nincs eszközöm” gomb, ami ugyanezt a listát frissíti.",
+    "miert": "Így semmit nem kell előre beállítanod, edzés közben egy koppintással javítható, és egy helyen látod, mit gondol Boop a termedről.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Elvetve: a csak egyszeri lista (edzés közben ki kellene lépned a beállításokhoz) és a csak cserénél tanulás (lassú, és nem látható egy helyen)."
+  },
+  "d-2026-11-17-webes-app-befagyasztva": {
+    "cim": "A webes appot már nem fejlesztjük: csak az iPhone-app és a szerver",
+    "datum": "2026-11-17",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok",
+      "Edzés",
+      "Étel"
+    ],
+    "valasztas": "Minden új fejlesztés az iPhone-os Boopba és a szerverbe megy. A webes app úgy marad, ahogy van: nem kap új képernyőt, és a csak a webet érintő hibák sem kerülnek sorra.",
+    "miert": "A Boop váltja le a webes appot; két felületre építeni dupla munka lenne, és a webes számítások úgyis átkerülnek a szerverre, ahol a Boop is használja őket.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A webes felület szabályai (pl. a heti zóna és a napi szettkorlát kijelzése) nem javulnak tovább; ami a Boopnak is kell, az a szerverre kerül. A webes app élesben elérhető marad."
+  },
+  "d-2026-11-17-tervajanlo-a-blokkepitobe": {
+    "cim": "A tervajánló a meglévő tervépítőbe kerül, nem külön munkába",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A tervépítő megkérdezi, mennyi időd van egy edzésre és mennyire vagy edzett, és ugyanarra a célra két-három tervet mutat becsült idővel, amik közül te választasz. Ezt az edzésmotort és a tervépítőt most újraépítő munka csinálja meg.",
+    "miert": "Ugyanarról a képernyőről van szó; így csak egyszer építjük meg, és nem kell utána újra hozzányúlni.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az edzésmotor és a tervépítő munkája hosszabb lesz. Elvetve: külön, később induló munka (később érkezne, és a tervépítőt kétszer kellene átírni)."
+  },
   "d-2026-11-17-az-app-javasol": {
     "cim": "Az app javasol, te döntesz — a te számod az igazság",
     "datum": "2026-11-17",

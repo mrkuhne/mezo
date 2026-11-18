@@ -205,7 +205,7 @@
     },
     "jegyek:mezo-r36n9.13": {
       "page_id": "4168968e-752b-8158-850f-d45093d83c69",
-      "hash": "7077527fa2ae"
+      "hash": "3cb4de486783"
     },
     "jegyek:mezo-r36n9.14": {
       "page_id": "4168968e-752b-8126-b650-c1fd3b87c390",
@@ -994,6 +994,34 @@
     "kiadasok:ceef35928": {
       "page_id": "41b8968e-752b-81c5-a90b-c7a3d869722f",
       "hash": "7b0c198fdc9c"
+    },
+    "jegyek:mezo-r36n9.67": {
+      "page_id": "41b8968e-752b-819e-a5b4-fb65b256756e",
+      "hash": "59f16442e9a1"
+    },
+    "jegyek:mezo-r36n9.66": {
+      "page_id": "41b8968e-752b-81e5-8d86-e02df9ba97d8",
+      "hash": "9d01db8d7e8f"
+    },
+    "dontesek:d-2026-11-17-gyakorlatvalasztas": {
+      "page_id": "41b8968e-752b-812b-8f77-fd24f4822c67",
+      "hash": "93f787dd6079"
+    },
+    "dontesek:d-2026-11-17-eszkozlista": {
+      "page_id": "41b8968e-752b-8111-965d-fca648938e78",
+      "hash": "b6b3520e0b5c"
+    },
+    "dontesek:d-2026-11-17-webes-app-befagyasztva": {
+      "page_id": "41b8968e-752b-8172-a95d-d6a40af02a34",
+      "hash": "66b10cc11659"
+    },
+    "dontesek:d-2026-11-17-tervajanlo-a-blokkepitobe": {
+      "page_id": "41b8968e-752b-8144-8f1d-e68561353a0a",
+      "hash": "d49c10089ea8"
+    },
+    "jegyek:mezo-r36n9.85": {
+      "page_id": "41c8968e-752b-8183-bebd-d6b98db50adf",
+      "hash": "27765f6e6849"
     }
   }
 }
