@@ -1617,17 +1617,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ComebackRamp`, `DayCheckInPort`, `E1rmSeries`, `EnergyBalancePort`, `EwmaEstimator`, `ExerciseCatalogService`,
     `ExerciseHistoryResolver`, `ExerciseRecordService`, `GoalRecomputePort`, `GymScheduleService`,
     `LegacySetDistribution`, `LoggedSession`, `LoggedSessionReadPort`, `MedalEvaluator`, `MedalService`,
-    `MesoPlanFiller`, `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`,
-    `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `OneRepMax`,
-    `PainRegionMap`, `PlannedSkipLock`, `PlannedSkipPolicy`, `PlannedSkipService`, `Prescription`, `PriorityTier`,
-    `ProgressionDecider`, `ReadinessAssessor`, `ReadinessService`, `RecoveryFuelMode`, `RecoveryPeriodService`,
-    `RecoveryReturnPolicy`, `RecoveryReturnService`, `RunningService`, `SessionExerciseAssembler`,
-    `SessionTimingCalculator`, `SetRecommendationService`, `SetSlots`, `SportService`, `SportSessionLoggedEvent`,
-    `SportSlotSkipService`, `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`,
-    `TimingProfileService`, `TrainService`, `VolumeArcService`, `VolumeBands`, `VolumeDecider`, `VolumeLedger`,
-    `VolumeProgressionService`, `WeekProposalService`, `WeeklyScheduledActivityService`, `WeeklySignalReader`,
-    `WeightGapService`, `WeightSnapper`, `WorkoutAutoCloseService`, `WorkoutExerciseChangeService`,
-    `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
+    `MesoPlanEvaluateService`, `MesoPlanFiller`, `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`,
+    `MesoPlanSkeleton`, `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`,
+    `MuscleGroup`, `OneRepMax`, `PainRegionMap`, `PlanEvaluator`, `PlannedSkipLock`, `PlannedSkipPolicy`,
+    `PlannedSkipService`, `Prescription`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`,
+    `ReadinessService`, `RecoveryFuelMode`, `RecoveryPeriodService`, `RecoveryReturnPolicy`, `RecoveryReturnService`,
+    `RunningService`, `SessionExerciseAssembler`, `SessionTimingCalculator`, `SetRecommendationService`, `SetSlots`,
+    `SportGroups`, `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `TemplatePlan`,
+    `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`, `TimingProfileService`, `TrainService`,
+    `VolumeArcService`, `VolumeBands`, `VolumeDecider`, `VolumeLedger`, `VolumePath`, `VolumeProgressionService`,
+    `WeekProposalService`, `WeeklyScheduledActivityService`, `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`,
+    `WorkoutAutoCloseService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`,
+    `WorkoutWindowQueryService`
   - **controllers→contract:** `PlannedSkipController`→`TrainSkipApi`, `ReadinessController`→`TrainReadinessApi`,
     `RecoveryController`→`TrainRecoveryApi`, `TrainController`→`TrainApi`
   - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`
@@ -1649,12 +1650,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     DELETE /api/train/recovery/releases/{date} · POST /api/train/recovery/waive-comeback
 - **Contract** `api/feature/train/train-skip.yml` — 3 operations
   - **endpoints:** GET /api/train/skips · PUT /api/train/skips · DELETE /api/train/skips/{id}
-- **Contract** `api/feature/train/train.yml` — 60 operations
+- **Contract** `api/feature/train/train.yml` — 62 operations
   - **endpoints:** GET /api/train/mesocycles · POST /api/train/mesocycles/{id}/activate ·
     POST /api/train/mesocycles/{id}/close · PUT /api/train/mesocycles/{id}/muscle-priorities ·
     GET /api/train/mesocycles/{id}/report · POST /api/train/mesocycles/{id}/report/regenerate ·
-    GET /api/train/mesocycles/{id}/volume-arc · PUT /api/train/mesocycles/{id}/days/{dayId}/exercises ·
-    POST /api/train/mesocycles/{id}/rerun · POST /api/train/meso-plans/generate · GET /api/train/meso-templates ·
+    GET /api/train/mesocycles/{id}/volume-arc · GET /api/train/mesocycles/{id}/evaluation ·
+    PUT /api/train/mesocycles/{id}/days/{dayId}/exercises · POST /api/train/mesocycles/{id}/rerun ·
+    POST /api/train/meso-plans/generate · POST /api/train/meso-plans/evaluate · GET /api/train/meso-templates ·
     POST /api/train/meso-templates · PUT /api/train/meso-templates/{id} · DELETE /api/train/meso-templates/{id} ·
     POST /api/train/meso-templates/{id}/start · GET /api/train/custom-workouts · POST /api/train/custom-workouts ·
     PUT /api/train/custom-workouts/{id} · DELETE /api/train/custom-workouts/{id} · GET /api/train/exercises ·
@@ -1723,28 +1725,28 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     useEditableNumber.ts, useRecoveryBetter.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts,
     weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutReviewDerive.ts, workoutState.ts
   - **root:** InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 97 IT + 27 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 99 IT + 29 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
     `ExerciseCatalogSoftDeleteIT`, `ExerciseRecordContractIT`, `ExerciseRecordServiceIT`, `ExerciseVolumeFlagIT`,
     `FailingWeeklyEngineIT`, `GoalPresetBackfillSqlIT`, `GoalPresetCarryIT`, `GymScheduleContractIT`,
-    `GymSignalCalculatorIT`, `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoPlanGenerateAiIT`,
-    `MesoPlanGenerateContractIT`, `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`, `MesoTemplateIT`,
-    `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`, `MesoWeekProposalRepositoryIT`,
-    `MesocycleCloseReportIT`, `MusclePrioritiesCarryIT`, `PlannedSkipConsumersIT`, `PlannedSkipContractIT`,
-    `PlannedSkipPersistenceIT`, `PrescribedSetsFoundationIT`, `ProvenanceRoundTripIT`, `ReadinessContractIT`,
-    `ReadinessLightenIT`, `ReadinessServiceIT`, `RecoveryApiIT`, `RecoveryCentralReadIT`, `RecoveryFuelDaysIT`,
-    `RecoveryPeriodPersistenceIT`, `RunSessionLevelUpApiIT`, `RunSignalCalculatorIT`, `RunningContractIT`,
-    `ScheduleGoalRecomputeIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`,
-    `SportServiceIT`, `SportSessionRangeIT`, `SportSignalCalculatorIT`, `SportSlotSkipContractIT`,
-    `SportSlotSkipPersistenceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`,
-    `TrainServiceIT`, `TrainingStreakCalculatorIT`, `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`,
-    `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`, `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`,
-    `VolumePropertiesIT`, `WarmupExclusionIT`, `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`,
-    `WeekProposalTierIT`, `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`,
-    `WeeklySignalReaderIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`,
-    `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`,
+    `GymSignalCalculatorIT`, `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoPlanEvaluateContractIT`,
+    `MesoPlanGenerateAiIT`, `MesoPlanGenerateContractIT`, `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`,
+    `MesoTemplateIT`, `MesoTemplateSportGroupsIT`, `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`,
+    `MesoWeekProposalRepositoryIT`, `MesocycleCloseReportIT`, `MusclePrioritiesCarryIT`, `PlannedSkipConsumersIT`,
+    `PlannedSkipContractIT`, `PlannedSkipPersistenceIT`, `PrescribedSetsFoundationIT`, `ProvenanceRoundTripIT`,
+    `ReadinessContractIT`, `ReadinessLightenIT`, `ReadinessServiceIT`, `RecoveryApiIT`, `RecoveryCentralReadIT`,
+    `RecoveryFuelDaysIT`, `RecoveryPeriodPersistenceIT`, `RunSessionLevelUpApiIT`, `RunSignalCalculatorIT`,
+    `RunningContractIT`, `ScheduleGoalRecomputeIT`, `SetRecommendationServiceIT`, `SportContractIT`,
+    `SportEventContractIT`, `SportServiceIT`, `SportSessionRangeIT`, `SportSignalCalculatorIT`,
+    `SportSlotSkipContractIT`, `SportSlotSkipPersistenceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`,
+    `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`, `TrainingStreakCalculatorIT`,
+    `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`,
+    `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
+    `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`, `WeekProposalTierIT`, `WeeklyScheduledActivityServiceIT`,
+    `WeeklyScheduledActivityTrainingDaysIT`, `WeeklySignalReaderIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`,
+    `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`,
     `WorkoutExerciseChangeIT`, `WorkoutFinishLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`,
     `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`, `WorkoutTimingIT`,
     `WorkoutTodayAmountIT`, `WorkoutTodayAmountSwitchOffIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`,
