@@ -52,6 +52,9 @@ class ChallengeOutcomeIT extends AbstractIntegrationTest {
     @Autowired
     private UserPopulator userPopulator;
 
+    @Autowired
+    private io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository exerciseSetRepository;
+
     /** A planted template session (the challenge's {@code templateSessionId}) + its target exercise. */
     private record Plan(WorkoutSessionEntity template, UUID exerciseId) {
         UUID templateSessionId() {
@@ -146,6 +149,34 @@ class ChallengeOutcomeIT extends AbstractIntegrationTest {
         ChallengeEntity r = reload(c);
         assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_HIT);
         assertThat(r.getOutcomeGood()).isTrue();
+    }
+
+    /** A deliberate reserve-0 technique set never wins a depth challenge (mezo-r36n9.80, spec §6.4). */
+    @Test
+    void depthChallengeIgnoresTechniqueSet() {
+        UUID user = userPopulator.createUser("chl-depth-tech@test.local").getId();
+        Plan plan = plantTemplate(user);
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(user, plan.template(), PAST, "completed");
+        // target RIR ≤ 1; the straight sets stop at RIR 3, the LAST set is a drop set taken to failure.
+        ChallengeEntity c = depthChallenge(user, plan, PAST, 1);
+        trainPopulator.createLoggedSet(user, plan.exerciseId(), instance.getId(), 0, "80.00", 8, 3);
+        trainPopulator.createLoggedSet(user, plan.exerciseId(), instance.getId(), 1, "80.00", 8, 3);
+        var technique = new io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity();   // technique: insert-only
+        technique.setCreatedBy(user);
+        technique.setExerciseId(plan.exerciseId());
+        technique.setWorkoutSessionId(instance.getId());
+        technique.setSetIndex(2);
+        technique.setWeightKg(new java.math.BigDecimal("80.00"));
+        technique.setReps(8);
+        technique.setRir(0);
+        technique.setTechnique("drop");
+        exerciseSetRepository.saveAndFlush(technique);
+
+        evaluator.evaluate(c, TODAY);
+
+        ChallengeEntity r = reload(c);
+        assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_MISS);
+        assertThat(r.getOutcome()).contains("RIR 3");
     }
 
     @Test

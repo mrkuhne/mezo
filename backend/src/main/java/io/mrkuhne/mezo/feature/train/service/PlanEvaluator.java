@@ -24,8 +24,21 @@ public final class PlanEvaluator {
 
     public enum Fit { BELOW, INSIDE, ABOVE }
 
-    /** {@code group} is the coarse muscle group (may be null); {@code counts} false = exempt from volume. */
-    public record PlanExercise(String group, int workingSets, int warmupSets, boolean counts) {}
+    /**
+     * {@code group} is the coarse muscle group (may be null); {@code counts} false = exempt from volume;
+     * {@code capExtra} = the extra set-equivalents its technique set weighs against the caps
+     * ({@link TechniqueRules#capExtra}; 0 for a plain row or a block with techniques off).
+     */
+    public record PlanExercise(String group, int workingSets, int warmupSets, boolean counts, int capExtra) {
+        public PlanExercise(String group, int workingSets, int warmupSets, boolean counts) {
+            this(group, workingSets, warmupSets, counts, 0);
+        }
+
+        /** What the row weighs against the exercise / session caps. */
+        int capWeight() {
+            return workingSets > 0 ? workingSets + capExtra : 0;
+        }
+    }
 
     /** {@code index}: the day's reported index; null = its position in the list (a run reports its orderIndex). */
     public record PlanDay(String day, List<PlanExercise> exercises, Integer index) {
@@ -57,7 +70,7 @@ public final class PlanEvaluator {
     public record Result(List<MuscleResult> muscles, List<DayResult> days, List<VolumePath.Week> path) {}
 
     /** One counting exercise of a landmark group. */
-    private record Row(String key, String group, int dayIndex, int exerciseIndex, int sets) {}
+    private record Row(String key, String group, int dayIndex, int exerciseIndex, int sets, int capExtra) {}
 
     public static Result evaluate(Input in) {
         VolumeProperties p = in.props();
@@ -67,7 +80,7 @@ public final class PlanEvaluator {
             for (int e = 0; e < list.size(); e++) {
                 PlanExercise x = list.get(e);
                 if (x.counts() && x.group() != null && p.baselines().containsKey(x.group())) {
-                    rows.add(new Row(d + ":" + e, x.group(), reportedIndex(in, d), e, x.workingSets()));
+                    rows.add(new Row(d + ":" + e, x.group(), reportedIndex(in, d), e, x.workingSets(), x.capExtra()));
                 }
             }
         }
@@ -95,7 +108,7 @@ public final class PlanEvaluator {
         }
 
         List<VolumePath.Exercise> amounts = rows.stream()
-            .map(r -> new VolumePath.Exercise(r.key(), r.group(), r.dayIndex(), r.sets())).toList();
+            .map(r -> new VolumePath.Exercise(r.key(), r.group(), r.dayIndex(), r.sets(), r.capExtra())).toList();
         List<VolumePath.Week> path = VolumePath.project(new VolumePath.Input(in.weeks(), in.phaseCurve(), 1,
             amounts, Map.of(), judged, in.deficit(), p.stepEmphasize(), p.stepGrow(), p.stepDeficit(),
             p.deloadFraction(), p.bands().exerciseCap(), p.bands().sessionCap()));
@@ -159,7 +172,8 @@ public final class PlanEvaluator {
 
     private static List<SetSlots.Slot> slots(Map<UUID, Row> byId, Map<UUID, Integer> current) {
         return current.entrySet().stream()
-            .map(e -> new SetSlots.Slot(e.getKey(), byId.get(e.getKey()).dayIndex(), e.getValue())).toList();
+            .map(e -> SetSlots.Slot.of(e.getKey(), byId.get(e.getKey()).dayIndex(), e.getValue(),
+                byId.get(e.getKey()).capExtra())).toList();
     }
 
     private static int reportedIndex(Input in, int d) {
@@ -184,8 +198,9 @@ public final class PlanEvaluator {
         int cap = p.bands().sessionCap();
         List<CapWarning> warnings = new ArrayList<>();
         for (String group : p.baselines().keySet()) {
+            // by cap weight: a technique set weighs 2 (mezo-r36n9.80, spec §6.4)
             int sets = day.exercises().stream()
-                .filter(x -> x.counts() && group.equals(x.group())).mapToInt(PlanExercise::workingSets).sum();
+                .filter(x -> x.counts() && group.equals(x.group())).mapToInt(PlanExercise::capWeight).sum();
             if (sets > cap) {
                 warnings.add(new CapWarning(group, sets, cap));
             }
@@ -194,8 +209,8 @@ public final class PlanEvaluator {
         List<ExerciseCapWarning> exerciseWarnings = new ArrayList<>();
         for (int e = 0; e < day.exercises().size(); e++) {
             PlanExercise x = day.exercises().get(e);
-            if (x.counts() && x.workingSets() > exCap) {
-                exerciseWarnings.add(new ExerciseCapWarning(e, x.workingSets(), exCap));
+            if (x.counts() && x.capWeight() > exCap) {
+                exerciseWarnings.add(new ExerciseCapWarning(e, x.capWeight(), exCap));
             }
         }
         int weekday = MesoPlanSkeleton.DAY_ORDER.indexOf(day.day());

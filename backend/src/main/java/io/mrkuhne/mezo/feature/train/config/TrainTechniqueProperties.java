@@ -17,7 +17,7 @@ public record TrainTechniqueProperties(
     @NotNull @Valid Drop drop,            // straight drop set: lighter leg, no rest
     @NotNull @Valid Myo myo,
     @NotNull @Valid Partials partials,
-    @NotNull @PositiveOrZero Integer capWeight   // extra set-equivalents a technique/challenge row costs (2)
+    @NotNull @Positive Integer capWeight   // what a technique/challenge row's technique set weighs against the caps (2)
 ) {
     /** A drop-style technique: reserve on the main part, drop percent, rest before the leg. */
     public record Drop(

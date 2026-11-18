@@ -86,8 +86,9 @@ public class ChallengeOutcomeEvaluator {
                     && s.getWeightKg().compareTo(c.getTargetWeightKg()) >= 0
                     && s.getReps() != null && c.getTargetReps() != null && s.getReps() >= c.getTargetReps());
             case ChallengeEntity.TYPE_DEPTH -> {
-                ExerciseSetEntity last = logged.get(logged.size() - 1);
-                yield last.getRir() != null && c.getTargetRir() != null && last.getRir() <= c.getTargetRir();
+                ExerciseSetEntity last = depthSet(logged);
+                yield last != null && last.getRir() != null && c.getTargetRir() != null
+                    && last.getRir() <= c.getTargetRir();
             }
             case ChallengeEntity.TYPE_VOLUME -> c.getTargetSets() != null && logged.size() >= c.getTargetSets();
             case ChallengeEntity.TYPE_OVERLOAD -> logged.stream().anyMatch(s ->
@@ -108,6 +109,19 @@ public class ChallengeOutcomeEvaluator {
         return true;
     }
 
+    /**
+     * The set a depth challenge is scored on: the last NON-technique set (mezo-r36n9.80, spec §6.4) — a technique
+     * set is taken to failure by design and would win the challenge for free. Null when only technique sets exist.
+     */
+    private static ExerciseSetEntity depthSet(List<ExerciseSetEntity> logged) {
+        for (int i = logged.size() - 1; i >= 0; i--) {
+            if (logged.get(i).getTechnique() == null) {
+                return logged.get(i);
+            }
+        }
+        return null;
+    }
+
     private String describe(ChallengeEntity c, List<ExerciseSetEntity> logged) {
         return switch (c.getType()) {
             case ChallengeEntity.TYPE_PR -> {
@@ -115,7 +129,10 @@ public class ChallengeOutcomeEvaluator {
                     .filter(w -> w != null).reduce(BigDecimal.ZERO, (a, b) -> a.compareTo(b) >= 0 ? a : b);
                 yield "legjobb szett " + best.stripTrailingZeros().toPlainString() + " kg";
             }
-            case ChallengeEntity.TYPE_DEPTH -> "utolsó szet RIR " + logged.get(logged.size() - 1).getRir();
+            case ChallengeEntity.TYPE_DEPTH -> {
+                ExerciseSetEntity last = depthSet(logged);
+                yield last != null ? "utolsó szet RIR " + last.getRir() : "csak technikás szett";
+            }
             case ChallengeEntity.TYPE_VOLUME -> logged.size() + " logolt szett";
             case ChallengeEntity.TYPE_OVERLOAD -> {
                 if (c.getTargetWeightKg() == null) {

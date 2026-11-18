@@ -3,7 +3,10 @@ package io.mrkuhne.mezo.feature.train.service;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetLegRepository;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,15 @@ public class PartialsBest {
         return legRepository.bestPartialsPerWeight(createdBy, identityKey).stream()
             .map(r -> new Best(r.getWeightKg(), r.getReps()))
             .toList();
+    }
+
+    /** Records per weight for EVERY identity in one read (key: {@link ExerciseHistoryResolver#identityKey}). */
+    public Map<String, List<Best>> bestPerWeightByIdentity(UUID createdBy) {
+        Map<String, List<Best>> out = new LinkedHashMap<>();
+        for (ExerciseSetLegRepository.IdentityPartialsRow r : legRepository.bestPartialsPerWeightAll(createdBy)) {
+            out.computeIfAbsent(r.getIdentityKey(), k -> new ArrayList<>()).add(new Best(r.getWeightKg(), r.getReps()));
+        }
+        return out;
     }
 
     /** The best at exactly {@code weightKg}; null when there is no record or no weight. */

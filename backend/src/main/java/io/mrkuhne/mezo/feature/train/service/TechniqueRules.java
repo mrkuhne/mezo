@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.SetLegKind;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import java.util.Optional;
 import java.util.Set;
 
@@ -35,9 +36,24 @@ public final class TechniqueRules {
         };
     }
 
-    /** Cap weight of a row: sets + cfg when it carries a technique/challenge in an enabled block, else sets. */
+    /**
+     * Cap weight of a row: its technique set weighs {@code capWeightCfg} (2) instead of 1 against the exercise and
+     * session caps when it carries a technique/challenge in an enabled block — {@code sets + capExtra}; else sets.
+     * A row with no set has no technique set (0).
+     */
     public static int capWeight(int sets, Technique t, boolean challenge, boolean enabled, int capWeightCfg) {
+        return sets > 0 ? sets + capExtra(t, challenge, enabled, capWeightCfg) : 0;
+    }
+
+    /** The extra set-equivalents a row's technique set adds over its plain count: cfg - 1, or 0 when it carries none. */
+    public static int capExtra(Technique t, boolean challenge, boolean enabled, int capWeightCfg) {
         boolean tech = t != null && t != Technique.NONE;
-        return enabled && (tech || challenge) ? sets + capWeightCfg : sets;
+        return enabled && (tech || challenge) ? Math.max(0, capWeightCfg - 1) : 0;
+    }
+
+    /** {@link #capExtra} of a template/run exercise row. */
+    public static int capExtra(ExerciseEntity e, boolean enabled,
+                               int capWeightCfg) {
+        return capExtra(Technique.fromWire(e.getTechnique()), e.isChallenge(), enabled, capWeightCfg);
     }
 }

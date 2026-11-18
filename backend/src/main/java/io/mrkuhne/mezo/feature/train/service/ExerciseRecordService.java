@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train.service;
 import io.mrkuhne.mezo.api.dto.E1rmPoint;
 import io.mrkuhne.mezo.api.dto.E1rmRecord;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
+import io.mrkuhne.mezo.api.dto.PartialsBestEntry;
 import io.mrkuhne.mezo.api.dto.RecordSetRef;
 import io.mrkuhne.mezo.api.dto.SessionVolumeRecord;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
@@ -43,6 +44,8 @@ public class ExerciseRecordService {
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseRepository exerciseRepository;
     private final ExerciseCatalogRepository exerciseCatalogRepository;
+    private final SetTonnage setTonnage;
+    private final PartialsBest partialsBest;
 
     public List<ExerciseRecordResponse> list(UUID createdBy) {
         List<ExerciseSetEntity> sets = exerciseSetRepository
@@ -73,15 +76,20 @@ public class ExerciseRecordService {
         Map<UUID, ExerciseCatalogEntity> catalog = exerciseCatalogRepository.findAllById(linkedIds)
             .stream().collect(Collectors.toMap(ExerciseCatalogEntity::getId, c -> c));
 
+        // Tonnage only: drop/mini legs (one batched read); the records and e1RM read parent rows only.
+        Map<UUID, BigDecimal> legTonnage = setTonnage.legTonnage(sets);
+        Map<String, List<PartialsBest.Best>> partials = partialsBest.bestPerWeightByIdentity(createdBy);
         return setsByIdentity.entrySet().stream()
-            .map(e -> toRecord(displayByIdentity.get(e.getKey()), catalog, e.getValue()))
+            .map(e -> toRecord(displayByIdentity.get(e.getKey()), catalog, e.getValue(), legTonnage,
+                partials.getOrDefault(e.getKey(), List.of())))
             .sorted(Comparator.comparing(ExerciseRecordResponse::getSessionCount).reversed()
                 .thenComparing(ExerciseRecordResponse::getName))
             .toList();
     }
 
     private ExerciseRecordResponse toRecord(ExerciseIdentityRow display,
-        Map<UUID, ExerciseCatalogEntity> catalog, List<ExerciseSetEntity> sets) {
+        Map<UUID, ExerciseCatalogEntity> catalog, List<ExerciseSetEntity> sets,
+        Map<UUID, BigDecimal> legTonnage, List<PartialsBest.Best> partials) {
         ExerciseCatalogEntity cat =
             display.getCatalogId() != null ? catalog.get(display.getCatalogId()) : null;
         List<ExerciseSetEntity> weighted =
@@ -103,7 +111,7 @@ public class ExerciseRecordService {
             LinkedHashMap::new, Collectors.toList()));
 
         SessionVolumeRecord bestSessionVolume = bySession.values().stream()
-            .map(g -> Map.entry(sessionVolume(g), sessionDate(g)))
+            .map(g -> Map.entry(sessionVolume(g, legTonnage), sessionDate(g)))
             .filter(en -> en.getKey().signum() > 0)
             .max(Map.Entry.comparingByKey())
             .map(en -> SessionVolumeRecord.builder()
@@ -130,8 +138,8 @@ public class ExerciseRecordService {
             .map(en -> toRef(en.getValue()))
             .toList();
 
-        BigDecimal totalVolume = weighted.stream()
-            .map(s -> s.getWeightKg().multiply(BigDecimal.valueOf(s.getReps())))
+        BigDecimal totalVolume = sets.stream()
+            .map(s -> SetTonnage.of(s, legTonnage))
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .setScale(0, RoundingMode.HALF_UP);
 
@@ -152,6 +160,9 @@ public class ExerciseRecordService {
             .sessionCount(bySession.size())
             .repRecords(repRecords)
             .recentTopSets(recentTopSets)
+            .partialsBest(partials.stream()
+                .map(b -> PartialsBestEntry.builder().weightKg(b.weightKg()).reps(b.reps()).build())
+                .toList())
             // The story curve (mezo-lf3cv): oldest-first, one point per session, capped at the
             // newest 52, sessions with nothing eligible omitted (gap, never a zero). Unlike the
             // figures above it honours the skipped flag — see E1rmSeries / bd mezo-za09c.
@@ -179,9 +190,10 @@ public class ExerciseRecordService {
             .map(i -> i.atZone(ZoneId.systemDefault()).toLocalDate()).orElseThrow();
     }
 
-    private BigDecimal sessionVolume(List<ExerciseSetEntity> group) {
-        return group.stream().filter(s -> s.getWeightKg() != null)
-            .map(s -> s.getWeightKg().multiply(BigDecimal.valueOf(s.getReps())))
+    /** Session tonnage: parent weight × reps plus drop/mini legs, never partials ({@link SetTonnage}). */
+    private BigDecimal sessionVolume(List<ExerciseSetEntity> group, Map<UUID, BigDecimal> legTonnage) {
+        return group.stream()
+            .map(s -> SetTonnage.of(s, legTonnage))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 

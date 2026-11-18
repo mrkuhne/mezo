@@ -48,8 +48,12 @@ class TechniqueRulesTest {
 
     @Test
     void testCapWeight_onlyWhenEnabled() {
-        assertThat(TechniqueRules.capWeight(3, Technique.DROP, false, true, 2)).isEqualTo(5);
-        assertThat(TechniqueRules.capWeight(3, Technique.NONE, true, true, 2)).isEqualTo(5);
+        // cfg 2 = the technique set weighs two: one extra over the plain count (owner decision 2026-11-18)
+        assertThat(TechniqueRules.capWeight(3, Technique.DROP, false, true, 2)).isEqualTo(4);
+        assertThat(TechniqueRules.capWeight(3, Technique.NONE, true, true, 2)).isEqualTo(4);
+        assertThat(TechniqueRules.capWeight(0, Technique.DROP, false, true, 2)).isZero();
+        assertThat(TechniqueRules.capExtra(Technique.MYO, false, true, 2)).isEqualTo(1);
+        assertThat(TechniqueRules.capExtra(Technique.MYO, false, false, 2)).isZero();
         assertThat(TechniqueRules.capWeight(3, Technique.DROP, false, false, 2)).isEqualTo(3);
         assertThat(TechniqueRules.capWeight(3, Technique.NONE, false, true, 2)).isEqualTo(3);
     }

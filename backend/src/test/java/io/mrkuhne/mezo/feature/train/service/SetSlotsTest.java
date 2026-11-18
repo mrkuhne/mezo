@@ -48,6 +48,29 @@ class SetSlotsTest {
         assertThat(SetSlots.pickDown(List.of(b, a))).contains(b.exerciseId());
     }
 
+    /** A technique/challenge row weighs one extra set against the caps (mezo-r36n9.80, spec §6.4). */
+    @Test void capWeightTwoBlocksTheExtraSet() {
+        // exercise cap: 4 sets with the technique set weighing 2 = 5 -> full; the plain 3-set row takes it
+        var tech = SetSlots.Slot.of(UUID.randomUUID(), 0, 4, 1);
+        var plain = slot(3, 4);
+        assertThat(tech.capWeight()).isEqualTo(5);
+        assertThat(SetSlots.pickUp(List.of(tech, plain), 5, 8)).contains(plain.exerciseId());
+        // session cap: Monday 4 + 3 (one technique set) = 8 weighted -> the day is full, nothing fits
+        var a = slot(0, 4);
+        var b = SetSlots.Slot.of(UUID.randomUUID(), 0, 3, 1);
+        assertThat(SetSlots.pickUp(List.of(a, b), 5, 8)).isEmpty();
+        // the band still counts plain sets: pickDown takes from the 4, not the weighted 3 (=4)
+        assertThat(SetSlots.pickDown(List.of(b, a))).contains(a.exerciseId());
+    }
+
+    @Test void unflaggedCapsUnchanged() {
+        var a = slot(0, 4); var b = slot(0, 3);                                // 7 < 8, a below 5
+        assertThat(a.capWeight()).isEqualTo(4);
+        assertThat(SetSlots.Slot.of(a.exerciseId(), 0, 4, 0)).isEqualTo(a);
+        assertThat(SetSlots.pickUp(List.of(a, b), 5, 8)).contains(b.exerciseId());
+        assertThat(SetSlots.Slot.of(UUID.randomUUID(), 0, 0, 1).capWeight()).isZero();   // no set, no technique set
+    }
+
     @Test void anEmptyGroupYieldsNothing() {
         assertThat(SetSlots.pickUp(List.of(), 5, 8)).isEmpty();
         assertThat(SetSlots.pickDown(List.of())).isEmpty();

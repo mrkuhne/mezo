@@ -1,9 +1,11 @@
 package io.mrkuhne.mezo.feature.train.service;
 
+import io.mrkuhne.mezo.feature.train.config.TrainTechniqueProperties;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.json.RestoreEntryJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
+import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,9 +32,15 @@ class TemplatePlan {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
     private final VolumeProperties props;
+    private final MesocycleRepository mesocycleRepository;
+    private final TrainTechniqueProperties techniqueProps;
 
-    /** A counting exercise of a template day; {@code group} null when the group has no landmark entry. */
-    record Row(ExerciseEntity exercise, int dayIndex, String group) {}
+    /**
+     * A counting exercise of a template day; {@code group} null when the group has no landmark entry;
+     * {@code capExtra} = the extra set-equivalents its technique set weighs against the exercise / session caps
+     * ({@link TechniqueRules#capExtra}: only in a techniques-enabled run, mezo-r36n9.80).
+     */
+    record Row(ExerciseEntity exercise, int dayIndex, String group, int capExtra) {}
 
     /** The run's counting template-day exercises, sorted by day index then order index. */
     List<Row> rows(UUID createdBy, UUID mesoId) {
@@ -43,11 +51,15 @@ class TemplatePlan {
         if (dayIndex.isEmpty()) {
             return List.of();
         }
+        boolean techniques = mesocycleRepository.findById(mesoId)
+            .map(m -> m.isTechniquesEnabled()).orElse(false);
+        int capWeight = techniqueProps.capWeight();
         return exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.copyOf(dayIndex.keySet()))
             .stream()
             .filter(ExerciseEntity::isCountsTowardVolume)
-            .map(e -> new Row(e, dayIndex.get(e.getWorkoutSessionId()), groupOf(e)))
+            .map(e -> new Row(e, dayIndex.get(e.getWorkoutSessionId()), groupOf(e),
+                TechniqueRules.capExtra(e, techniques, capWeight)))
             .sorted((a, b) -> a.dayIndex() != b.dayIndex() ? Integer.compare(a.dayIndex(), b.dayIndex())
                 : Integer.compare(orderIndex(a.exercise()), orderIndex(b.exercise())))
             .toList();

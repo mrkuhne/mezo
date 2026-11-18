@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.api.dto.PlanProposalEdit;
 import io.mrkuhne.mezo.api.dto.SessionCapWarning;
 import io.mrkuhne.mezo.api.dto.VolumeBandView;
 import io.mrkuhne.mezo.api.dto.VolumePathWeek;
+import io.mrkuhne.mezo.feature.train.config.TrainTechniqueProperties;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -56,6 +57,7 @@ public class MesoPlanEvaluateService {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
     private final VolumeArcService volumeArcService;
+    private final TrainTechniqueProperties techniqueProps;
 
     @Transactional(readOnly = true)
     public MesoPlanEvaluation evaluate(UUID userId, MesoPlanEvaluateRequest req) {
@@ -106,7 +108,8 @@ public class MesoPlanEvaluateService {
             for (ExerciseEntity e : bySession.getOrDefault(s.getId(), List.of())) {
                 String group = e.getMuscle() == null || e.getMuscle().isBlank() ? null : MuscleGroup.of(e.getMuscle());
                 list.add(new PlanEvaluator.PlanExercise(group, e.getWorkingSets() == null ? 0 : e.getWorkingSets(),
-                    e.getWarmupSets() == null ? 0 : e.getWarmupSets(), e.isCountsTowardVolume()));
+                    e.getWarmupSets() == null ? 0 : e.getWarmupSets(), e.isCountsTowardVolume(),
+                    TechniqueRules.capExtra(e, run.isTechniquesEnabled(), techniqueProps.capWeight())));
             }
             days.add(new PlanEvaluator.PlanDay(s.getDayLabel(), list, s.getOrderIndex()));
         }

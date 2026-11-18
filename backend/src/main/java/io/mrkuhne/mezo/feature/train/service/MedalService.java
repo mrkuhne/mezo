@@ -53,6 +53,7 @@ public class MedalService {
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseRepository exerciseRepository;
     private final ExerciseCatalogRepository exerciseCatalogRepository;
+    private final SetTonnage setTonnage;
 
     /**
      * Every medal the owner has ever earned, newest first. Same-day medals are grouped by exercise
@@ -152,6 +153,8 @@ public class MedalService {
         Map<UUID, ExerciseCatalogEntity> catalog = exerciseCatalogRepository.findAllById(linkedIds)
             .stream().collect(Collectors.toMap(ExerciseCatalogEntity::getId, c -> c));
 
+        // SESSION_VOLUME only: drop/mini legs add tonnage (one batched read); every other rule reads parents.
+        Map<UUID, BigDecimal> legTonnage = setTonnage.legTonnage(sets);
         List<Earned> earned = new ArrayList<>();
         for (Map.Entry<String, List<ExerciseSetEntity>> entry : setsByIdentity.entrySet()) {
             ExerciseIdentityRow display = displayByIdentity.get(entry.getKey());
@@ -160,7 +163,7 @@ public class MedalService {
             List<ExerciseSetEntity> ordered = entry.getValue().stream()
                 .sorted(replayOrder()).toList();
             replaySets(ordered, display, cat, earned);
-            replaySessions(ordered, display, cat, earned);
+            replaySessions(ordered, display, cat, legTonnage, earned);
         }
         return earned;
     }
@@ -206,11 +209,12 @@ public class MedalService {
     }
 
     /**
-     * The session-scoped pass: Σ(weight × reps) of THIS identity within one workout instance,
+     * The session-scoped pass: Σ(weight × reps) of THIS identity within one workout instance (drop/mini legs
+     * included, partials never — {@link SetTonnage}),
      * against the same identity's best prior session.
      */
     private void replaySessions(List<ExerciseSetEntity> ordered, ExerciseIdentityRow display,
-        ExerciseCatalogEntity cat, List<Earned> out) {
+        ExerciseCatalogEntity cat, Map<UUID, BigDecimal> legTonnage, List<Earned> out) {
         // session = workout instance; legacy sets without an instance group by exercise row
         Map<UUID, List<ExerciseSetEntity>> bySession = ordered.stream().collect(Collectors.groupingBy(
             s -> s.getWorkoutSessionId() != null ? s.getWorkoutSessionId() : s.getExerciseId(),
@@ -224,7 +228,7 @@ public class MedalService {
             .map(Map.Entry::getValue)
             .toList();
         for (List<ExerciseSetEntity> session : sessions) {
-            BigDecimal volume = sessionVolume(session);
+            BigDecimal volume = sessionVolume(session, legTonnage);
             if (volume.signum() <= 0) {
                 continue; // bodyweight-only session — carries no comparable volume, sets no baseline
             }
@@ -297,9 +301,10 @@ public class MedalService {
         return session.stream().map(this::setInstant).max(Comparator.naturalOrder()).orElseThrow();
     }
 
-    private BigDecimal sessionVolume(List<ExerciseSetEntity> session) {
-        return session.stream().filter(s -> s.getWeightKg() != null)
-            .map(s -> s.getWeightKg().multiply(BigDecimal.valueOf(s.getReps())))
+    /** Σ tonnage of the session: parent weight × reps plus drop/mini legs, never partials ({@link SetTonnage}). */
+    private BigDecimal sessionVolume(List<ExerciseSetEntity> session, Map<UUID, BigDecimal> legTonnage) {
+        return session.stream()
+            .map(s -> SetTonnage.of(s, legTonnage))
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .setScale(0, RoundingMode.HALF_UP);
     }

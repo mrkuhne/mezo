@@ -109,7 +109,9 @@ public class WeeklySignalReader {
                 if (inWeek) {
                     logged.merge(group, 1, Integer::sum);
                     lastTrained.merge(group, s.getDate(), (a, b) -> a.isAfter(b) ? a : b);
-                    if (set.getRir() != null) {
+                    // A technique set's reserve of 0 is deliberate, not a grind (mezo-r36n9.80, spec §6.4):
+                    // the newest NON-technique working set carries the signal; it still counts as one set.
+                    if (set.getRir() != null && set.getTechnique() == null) {
                         latestRir.put(set.getExerciseId(), set.getRir()); // oldest-first: last write wins
                     }
                 }
