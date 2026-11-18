@@ -6348,6 +6348,8 @@ export interface components {
                 [key: string]: components["schemas"]["VolumeProfile"];
             };
             days?: components["schemas"]["MesoDay"][];
+            /** @description Block training style; null = no style (unstyled block behaves as before). */
+            trainingStyle?: components["schemas"]["TrainingStyle"] | null;
         };
         MesoTemplateResponse: {
             /** Format: uuid */
@@ -6373,6 +6375,8 @@ export interface components {
             days: components["schemas"]["MesoDay"][];
             /** @description Number of mesocycle runs started from this template */
             runCount: number;
+            /** @description Block training style; null = no style (unstyled block behaves as before). */
+            trainingStyle?: components["schemas"]["TrainingStyle"] | null;
         };
         VolumeRecompute: {
             lastRun: string;
@@ -6495,6 +6499,14 @@ export interface components {
             imageStartUrl?: string | null;
             /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
             imageEndUrl?: string | null;
+            /** @description Per-exercise style; null = inherit the block style. */
+            trainingStyle?: components["schemas"]["TrainingStyle"] | null;
+            /** @description The style in force for this exercise (own style, else the block's); null = unstyled. */
+            readonly effectiveTrainingStyle?: components["schemas"]["TrainingStyle"] | null;
+            /** @description Rest between sets in seconds; null = derived from the style. */
+            restSec?: number | null;
+            /** @description Style-prescription fields the user has taken over by hand. */
+            overrides?: components["schemas"]["StyleOverride"][];
         };
         MesoPlanGenerateRequest: {
             /** @description Training days, FE day tokens; any weekday incl. weekend */
@@ -6540,6 +6552,8 @@ export interface components {
                 [key: string]: components["schemas"]["VolumeBaseline"];
             } | null;
             days: components["schemas"]["MesoDayInput"][];
+            /** @description Block training style; null = no style (unstyled block behaves as before). */
+            trainingStyle?: components["schemas"]["TrainingStyle"] | null;
         };
         MesoTemplateStartRequest: {
             /** Format: date */
@@ -6686,6 +6700,12 @@ export interface components {
             catalogId?: string;
             /** @description Whether this exercise's sets count as hypertrophy volume; false for the fix-zárás closing block and plyometrics (mezo-gbo7). Absent = true. */
             countsTowardVolume?: boolean;
+            /** @description Per-exercise style; null = inherit the block style. */
+            trainingStyle?: components["schemas"]["TrainingStyle"] | null;
+            /** @description Rest between sets in seconds; null = derived from the style. */
+            restSec?: number | null;
+            /** @description Style-prescription fields the user has taken over by hand. */
+            overrides?: components["schemas"]["StyleOverride"][];
         };
         CustomWorkoutResponse: {
             /** Format: uuid */
@@ -6720,6 +6740,10 @@ export interface components {
             authoredByMe: boolean;
             /** @description The author's display name for user-authored rows; null on master rows */
             authorName?: string | null;
+            equipment?: components["schemas"]["Equipment"];
+            stability?: components["schemas"]["Stability"];
+            /** @description Whether the exercise loads the muscle well at long length. */
+            lengthenedFriendly?: boolean;
         };
         CatalogExerciseCreateRequest: {
             name: string;
@@ -6732,6 +6756,10 @@ export interface components {
             videoUrl?: string | null;
             imageStartUrl?: string | null;
             imageEndUrl?: string | null;
+            equipment?: components["schemas"]["Equipment"];
+            stability?: components["schemas"]["Stability"];
+            /** @description Whether the exercise loads the muscle well at long length. Absent on create = false; absent on update = unchanged. */
+            lengthenedFriendly?: boolean;
         };
         CatalogVideoRequest: {
             /** @description A YouTube watch/short URL or an Instagram reel/post permalink, or null to clear the demo */
@@ -6893,6 +6921,14 @@ export interface components {
             replacedByName?: string | null;
             /** @description Whether a "Mezociklusra is" change may target this exercise (false for rows added only for this workout and for the fixed closing block). */
             planSlot?: boolean;
+            /** @description Per-exercise style; null = inherit the block style. */
+            trainingStyle?: components["schemas"]["TrainingStyle"] | null;
+            /** @description The style in force for this exercise (own style, else the block's); null = unstyled. */
+            readonly effectiveTrainingStyle?: components["schemas"]["TrainingStyle"] | null;
+            /** @description Rest between sets in seconds; null = derived from the style. */
+            restSec?: number | null;
+            /** @description Style-prescription fields the user has taken over by hand. */
+            overrides?: components["schemas"]["StyleOverride"][];
         };
         PrescribedSet: {
             /** @enum {string} */
@@ -6900,7 +6936,29 @@ export interface components {
             targetWeightKg?: number | null;
             targetReps: number;
             targetRIR?: number | null;
+            /** @description Rest after this set in seconds; set only on styled blocks. */
+            restSec?: number | null;
         };
+        /**
+         * @description Block-level training style (volume/intensity profile).
+         * @enum {string}
+         */
+        TrainingStyle: "balanced" | "volume" | "heavy" | "allout";
+        /**
+         * @description Catalog equipment class. Absent on create = other.
+         * @enum {string}
+         */
+        Equipment: "machine" | "cable" | "dumbbell" | "barbell" | "bodyweight" | "kettlebell" | "other";
+        /**
+         * @description Catalog stability class. Absent on create = free.
+         * @enum {string}
+         */
+        Stability: "stable" | "free";
+        /**
+         * @description A style-prescribed field the user has overridden.
+         * @enum {string}
+         */
+        StyleOverride: "repRange" | "workingSets" | "targetRir" | "restSec";
         /** @description Per-exercise progressive-overload recommendation for TODAY vs the last completed session. Null when there is no meaningful progression (first session / no history) — the FE then shows the start-weight pill instead of the banner. */
         ProgressionSignal: {
             /**
