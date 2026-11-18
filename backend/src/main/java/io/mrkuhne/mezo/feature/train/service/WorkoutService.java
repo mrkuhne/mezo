@@ -20,6 +20,7 @@ import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import io.mrkuhne.mezo.feature.train.config.TimingProperties;
 import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
+import io.mrkuhne.mezo.feature.train.config.TrainTechniqueProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -146,6 +147,9 @@ public class WorkoutService {
     // Training style (mezo-r36n9.79): the stamp table + ramp config, and the batched catalog stability.
     private final TrainStyleProperties trainStyleProperties;
     private final ExerciseStyler exerciseStyler;
+    private final TrainTechniqueProperties trainTechniqueProperties;
+    private final TechniqueWeights techniqueWeights;
+    private final PartialsBest partialsBest;
 
     /**
      * Today's kímélő-mód lightening (spec §9.1.4 / §9.1.6): the DTO shown on the hero, plus the
@@ -287,6 +291,8 @@ public class WorkoutService {
         TrainingStyle runStyle = activeMeso != null && activeMeso.getId().equals(day.getMesocycleId())
             ? TrainingStyle.fromWire(activeMeso.getTrainingStyle()) : null;
         CatalogAttributes.Lookup stability = exerciseStyler.lookupRows(exercises, runStyle != null);
+        boolean techniquesOn = activeMeso != null && activeMeso.isTechniquesEnabled()
+            && activeMeso.getId().equals(day.getMesocycleId());
         LocalDate today = LocalDate.now();
         int weightUp = 0;
         int weightDown = 0;
@@ -347,6 +353,11 @@ public class WorkoutService {
                 if (careRegion != null) {
                     p = lightCareSet(p, careRegion);
                 }
+                // Technique overlay (mezo-r36n9.80): a flagged run only; never on a care-lightened row or a
+                // comeback day (those are deliberately gentle).
+                if (techniquesOn && careRegion == null && comeback == null) {
+                    p = overlayTechnique(createdBy, e, t, p, deloadWeek);
+                }
                 t.setPrescribedSets(p.sets());
                 // The ramped reserve is an engine overlay: switch off ⇒ the row's stamped targetRir stands.
                 if (style.styled()) {
@@ -388,6 +399,30 @@ public class WorkoutService {
             .overloadSummary(overloadSummary)
             .comeback(comeback == null ? null : comeback.dto())
             .build();
+    }
+
+    /**
+     * The technique (or challenge) overlay of one exercise (mezo-r36n9.80): after the plain prescription, on its
+     * last working set. Nothing is loaded for an exercise without a technique or a challenge. A challenge also
+     * carries the best partials reps ever logged at the weight it is prescribed at.
+     */
+    private Prescription overlayTechnique(UUID createdBy, ExerciseEntity e, TodayExercise t, Prescription p,
+                                          boolean deloadWeek) {
+        Technique technique = Technique.fromWire(e.getTechnique());
+        if (technique == Technique.NONE && !e.isChallenge()) {
+            return p;
+        }
+        BigDecimal maxKg = p.sets().stream().map(PrescribedSet::getTargetWeightKg)
+            .filter(java.util.Objects::nonNull).max(BigDecimal::compareTo).orElse(null);
+        Set<BigDecimal> real = deloadWeek ? Set.of() : techniqueWeights.realWeights(createdBy, e, maxKg);
+        Prescription out = TechniquePrescriber.apply(p, technique, e.isChallenge(), deloadWeek, real,
+            trainTechniqueProperties);
+        if (e.isChallenge() && !deloadWeek) {
+            p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING)
+                .reduce((a, b) -> b)
+                .ifPresent(last -> t.setChallengeBest(partialsBest.at(createdBy, e, last.getTargetWeightKg())));
+        }
+        return out;
     }
 
     /**
