@@ -16,15 +16,19 @@
 # and a path-filtered workflow creates no run at all — both would read as "missing". A job
 # that starts, decides it has nothing to test and ends green keeps that gate truthful.
 #
-# FAIL-SAFE: every doubt resolves to run=true. In particular, on a push to main the job is
-# only allowed to skip when the PREVIOUS ci.yml run on main (a) is for exactly this push's
-# `before` commit and (b) completed with success. ci.yml cancels in-progress runs per ref,
-# so without (b) a docs push landing on top of a backend push would cancel the backend run
-# and then skip — leaving the backend change untested and main looking green. With (b) a
-# cancelled or red predecessor forces the next push to run everything, whatever it touched:
-# main stays red until something actually passes.
+# FAIL-SAFE: every doubt resolves to run=true. On a push the diff base is NOT the previous
+# commit but the newest ancestor that has a finished GREEN ci.yml run (found through the API).
+# By induction a green run at G means everything in scope up to G was tested: either G ran
+# the suite, or it skipped because nothing in scope had changed since an earlier green.
+# Cancelled and red runs in between do not matter — their commits are inside G..HEAD, so if
+# any of them touched the scope this run does the work. A red main therefore stays red: a
+# docs-only push after a failing backend push still diffs back past the failure and re-runs.
+# (The first version only looked at the immediately previous run; with several sessions
+# pushing every few minutes that run was always cancelled or still running, so every push
+# ran everything and nothing ever finished — measured on 2026-11-18, runs 44288879356 and
+# 44291300029.)
 #
-# Usage: EVENT=push|pull_request SHA=… [BEFORE=…] [BASE_SHA=…] REPO=owner/name RUN_ID=… \
+# Usage: EVENT=push|pull_request SHA=… [BASE_SHA=…] [REF_NAME=…] REPO=owner/name \
 #        bash .github/scripts/ci-scope.sh <path-prefix>...
 set -uo pipefail
 
@@ -43,14 +47,19 @@ touches_scope() {
   return 1
 }
 
-# stdin: the workflow-runs API payload (newest first). args: <this run id> <before sha>.
-# Exit 0 only if the newest run other than this one is a completed success on <before sha>.
-predecessor_is_green() {
-  local run_id="$1" before="$2"
-  jq -e --arg id "$run_id" --arg before "$before" '
-    [.workflow_runs[]? | select((.id | tostring) != $id)] | first
-    | . != null and .head_sha == $before and .status == "completed" and .conclusion == "success"
-  ' > /dev/null
+# stdin: the workflow-runs API payload (newest first). stdout: head shas of green runs.
+green_shas() {
+  jq -r '.workflow_runs[]? | select(.status == "completed" and .conclusion == "success") | .head_sha'
+}
+
+# stdin: candidate shas, newest first. stdout: the first that is an ancestor of $1; rc 1 if none.
+first_ancestor() {
+  local head="$1" sha
+  while IFS= read -r sha; do
+    [ -n "$sha" ] || continue
+    if git merge-base --is-ancestor "$sha" "$head" 2>/dev/null; then echo "$sha"; return 0; fi
+  done
+  return 1
 }
 
 decide() { # args: path prefixes. stdout: "true <reason>" or "false <reason>"
@@ -61,14 +70,11 @@ decide() { # args: path prefixes. stdout: "true <reason>" or "false <reason>"
       range="${BASE_SHA}...${SHA}"
       ;;
     push)
-      case "${BEFORE:-}" in
-        ""|0000000000000000000000000000000000000000) echo "true no previous commit (new ref or force push)"; return ;;
-      esac
-      if ! gh api "repos/${REPO}/actions/workflows/ci.yml/runs?branch=${REF_NAME:-main}&event=push&per_page=5" \
-          | predecessor_is_green "${RUN_ID}" "${BEFORE}"; then
-        echo "true the previous ci run on this branch is not a finished green run of ${BEFORE}"; return
-      fi
-      range="${BEFORE}..${SHA}"
+      local base
+      base=$(gh api "repos/${REPO}/actions/workflows/ci.yml/runs?branch=${REF_NAME:-main}&event=push&status=success&per_page=30" \
+          | green_shas | first_ancestor "${SHA}") || base=""
+      [ -n "$base" ] || { echo "true no earlier green ci run found among this commit's ancestors"; return; }
+      range="${base}..${SHA}"
       ;;
     *) echo "true unhandled event '${EVENT:-}'"; return ;;
   esac

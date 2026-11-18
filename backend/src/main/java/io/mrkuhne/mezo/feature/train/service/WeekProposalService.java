@@ -67,6 +67,7 @@ public class WeekProposalService {
     private final WeeklySignalReader signalReader;
     private final EnergyBalancePort energyBalance;
     private final VolumeLedger volumeLedger;
+    private final TemplatePlan templatePlan;
     private final VolumeProperties props;
     private final MuscleProgressReader muscleProgress;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
@@ -145,8 +146,8 @@ public class WeekProposalService {
      * see each other) and persists the proposal as {@code pending}, lines undecided.
      */
     Draft build(UUID createdBy, MesocycleEntity meso, int calWeek) {
-        List<PlanRow> plan = planRows(createdBy, meso.getId());
-        Map<String, List<PlanRow>> byGroup = new TreeMap<>();
+        List<TemplatePlan.Row> plan = templatePlan.rows(createdBy, meso.getId());
+        Map<String, List<TemplatePlan.Row>> byGroup = new TreeMap<>();
         plan.stream().filter(r -> r.group() != null)
             .forEach(r -> byGroup.computeIfAbsent(r.group(), k -> new ArrayList<>()).add(r));
 
@@ -174,7 +175,8 @@ public class WeekProposalService {
             VolumeDecider.Result result = VolumeDecider.decide(new VolumeDecider.Input(
                 calWeek, PriorityTier.of(meso.getMusclePriorities(), group),
                 VolumeBands.band(props.baselines().get(group),
-                    PriorityTier.of(meso.getMusclePriorities(), group), props.bands()),
+                    PriorityTier.of(meso.getMusclePriorities(), group),
+                    meso.isSportLoaded(group), props.bands()),
                 restored, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
                 deficit, deloadPhase, props.stepEmphasize(), props.stepGrow(), props.stepDeficit()));
             List<String> reasons = result.reasons().stream().map(WeekProposalService::code).toList();
@@ -214,7 +216,7 @@ public class WeekProposalService {
                 keptOwn.contains(group), stalledGroups.contains(group)));
         });
 
-        Map<UUID, PlanRow> rowById = plan.stream()
+        Map<UUID, TemplatePlan.Row> rowById = plan.stream()
             .collect(Collectors.toMap(r -> r.exercise().getId(), r -> r, (a, b) -> a));
         List<WeekProposalLineJson> lines = new ArrayList<>();
         fromSets.forEach((id, from) -> {
@@ -222,7 +224,7 @@ public class WeekProposalService {
             if (to == from) {
                 return; // moved up and back down again: no net change
             }
-            PlanRow row = rowById.get(id);
+            TemplatePlan.Row row = rowById.get(id);
             lines.add(new WeekProposalLineJson(UUID.randomUUID().toString(), id, row.exercise().getName(),
                 row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS, from, to, lineReasons.get(id), null));
         });
@@ -295,16 +297,16 @@ public class WeekProposalService {
      *
      * @return the groups where an owner's deload-week edit stood
      */
-    private Set<String> restoreAfterDeload(UUID createdBy, UUID mesoId, int calWeek, List<PlanRow> plan,
+    private Set<String> restoreAfterDeload(UUID createdBy, UUID mesoId, int calWeek, List<TemplatePlan.Row> plan,
                                            Map<UUID, Integer> working, Map<UUID, Integer> fromSets,
                                            Map<UUID, List<String>> lineReasons) {
         List<RestoreEntryJson> entries = deloadToRestore(createdBy, mesoId, calWeek)
             .map(MesoWeekProposalEntity::getRestore).orElse(List.of());
         Set<String> keptOwn = new HashSet<>();
-        Map<RestoreEntryJson, PlanRow> pairs = matchEntries(entries, plan);
+        Map<RestoreEntryJson, TemplatePlan.Row> pairs = TemplatePlan.matchEntries(entries, plan);
 
         // The owner's deload-week edit stands; the rest are eligible to return to their own number.
-        Map<RestoreEntryJson, PlanRow> eligible = new LinkedHashMap<>();
+        Map<RestoreEntryJson, TemplatePlan.Row> eligible = new LinkedHashMap<>();
         pairs.forEach((entry, row) -> {
             if (working.get(row.exercise().getId()) != entry.deloadSets()) {
                 keptOwn.add(row.group());
@@ -317,7 +319,7 @@ public class WeekProposalService {
         // eligible entry returning to its own number keeps the day within max(session cap, what the
         // entries summed to before the deload), each one simply returns (no cap can cut his number).
         Map<String, Boolean> dayFullyRestorable = new HashMap<>();
-        for (PlanRow row : plan) {
+        for (TemplatePlan.Row row : plan) {
             if (row.group() == null) {
                 continue;
             }
@@ -359,42 +361,8 @@ public class WeekProposalService {
         return keptOwn;
     }
 
-    private static String dayKeyOf(PlanRow row) {
+    private static String dayKeyOf(TemplatePlan.Row row) {
         return row.group() + "|" + row.dayIndex();
-    }
-
-    /**
-     * Two passes, so an entry whose row was replaced never claims by identity a row another entry
-     * still owns by id: first every entry whose {@code exerciseId} still exists, then — for the
-     * remaining entries only — identity (catalog id / name) on the same template day among rows
-     * not yet matched. Each row is matched at most once; an entry with nothing left is dropped.
-     */
-    private static Map<RestoreEntryJson, PlanRow> matchEntries(List<RestoreEntryJson> entries, List<PlanRow> plan) {
-        Map<RestoreEntryJson, PlanRow> pairs = new LinkedHashMap<>();
-        Set<UUID> matched = new HashSet<>();
-        List<RestoreEntryJson> rest = new ArrayList<>();
-        for (RestoreEntryJson entry : entries) {
-            Optional<PlanRow> byId = plan.stream()
-                .filter(r -> r.group() != null && r.exercise().getId().equals(entry.exerciseId())).findFirst();
-            if (byId.isEmpty()) {
-                rest.add(entry);
-            } else if (matched.add(byId.get().exercise().getId())) {
-                pairs.put(entry, byId.get());
-            }
-        }
-        for (RestoreEntryJson entry : rest) {
-            String key = ExerciseHistoryResolver.identityKey(entry.catalogId(), entry.exerciseName());
-            plan.stream()
-                .filter(r -> r.group() != null && r.dayIndex() == entry.dayIndex()
-                    && !matched.contains(r.exercise().getId())
-                    && key.equals(ExerciseHistoryResolver.identityKey(r.exercise())))
-                .findFirst()
-                .ifPresent(r -> {
-                    matched.add(r.exercise().getId());
-                    pairs.put(entry, r);
-                });
-        }
-        return pairs;
     }
 
     /** Appends this week's move to each changed group's (freshly synced) ledger row provenance. */
@@ -428,31 +396,6 @@ public class WeekProposalService {
 
     // ── plan reading ──────────────────────────────────────────────────────────────────────────
 
-    /** A counting exercise of a template day; {@code group} null when the group has no band. */
-    private record PlanRow(ExerciseEntity exercise, int dayIndex, String group) {}
-
-    private List<PlanRow> planRows(UUID createdBy, UUID mesoId) {
-        Map<UUID, Integer> dayIndex = new HashMap<>();
-        workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId))
-            .stream().filter(s -> s.getTemplateSessionId() == null)
-            .forEach(s -> dayIndex.put(s.getId(), s.getOrderIndex() == null ? 0 : s.getOrderIndex()));
-        if (dayIndex.isEmpty()) {
-            return List.of();
-        }
-        return exerciseRepository
-            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.copyOf(dayIndex.keySet()))
-            .stream()
-            .filter(ExerciseEntity::isCountsTowardVolume)
-            .map(e -> {
-                String group = e.getMuscle() == null || e.getMuscle().isBlank() ? null : MuscleGroup.of(e.getMuscle());
-                return new PlanRow(e, dayIndex.get(e.getWorkoutSessionId()),
-                    group != null && props.baselines().containsKey(group) ? group : null);
-            })
-            .sorted((a, b) -> a.dayIndex() != b.dayIndex() ? Integer.compare(a.dayIndex(), b.dayIndex())
-                : Integer.compare(orderIndex(a.exercise()), orderIndex(b.exercise())))
-            .toList();
-    }
-
     private List<ExerciseEntity> templateExercises(UUID createdBy, UUID mesoId) {
         List<UUID> templateIds = MesoTemplateDays.ids(workoutSessionRepository
             .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId)));
@@ -460,17 +403,13 @@ public class WeekProposalService {
             : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, templateIds);
     }
 
-    private static int orderIndex(ExerciseEntity e) {
-        return e.getOrderIndex() == null ? 0 : e.getOrderIndex();
-    }
-
-    private static List<SetSlots.Slot> slots(List<PlanRow> rows, Map<UUID, Integer> working) {
+    private static List<SetSlots.Slot> slots(List<TemplatePlan.Row> rows, Map<UUID, Integer> working) {
         return rows.stream()
             .map(r -> new SetSlots.Slot(r.exercise().getId(), r.dayIndex(), working.get(r.exercise().getId())))
             .toList();
     }
 
-    private static int sum(List<PlanRow> rows, Map<UUID, Integer> working) {
+    private static int sum(List<TemplatePlan.Row> rows, Map<UUID, Integer> working) {
         return rows.stream().mapToInt(r -> working.get(r.exercise().getId())).sum();
     }
 

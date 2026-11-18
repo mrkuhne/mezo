@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.VolumeBaseline;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
+import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.MesocycleActivated;
 import io.mrkuhne.mezo.feature.train.MesocycleClosed;
@@ -78,6 +79,7 @@ public class TrainService {
     private final TrainProperties trainProperties;
     // The volume log is derived from the plan (volume engine v2): recomputed after plan writes.
     private final VolumeLedger volumeLedger;
+    private final VolumeProperties volumeProperties;
     // mezo-meyc.3: fires only on a REAL close (never the idempotent re-close or fill-if-null
     // branches) — the companion AI-review generator's AFTER_COMMIT trigger (S3 task 15).
     private final ApplicationEventPublisher eventPublisher;
@@ -198,7 +200,8 @@ public class TrainService {
         String status,
         List<MesoDayInput> days,
         Map<String, VolumeBaseline> volumePerMuscle,
-        Map<String, String> musclePriorities
+        Map<String, String> musclePriorities,
+        List<String> sportGroups
     ) {}
 
     /**
@@ -222,6 +225,7 @@ public class TrainService {
         // Defensive copy: the source map belongs to the template row — two managed entities must
         // never share one jsonb map instance (same reason as the phaseCurve copy below).
         m.setMusclePriorities(src.musclePriorities() != null ? Map.copyOf(src.musclePriorities()) : null);
+        m.setSportGroups(src.sportGroups() != null ? List.copyOf(src.sportGroups()) : null);
         m.setStartDate(src.startDate());
         m.setEndDate(src.startDate().plusWeeks(src.weeks()));
         m.setWeeks(src.weeks());
@@ -306,10 +310,14 @@ public class TrainService {
 
     /** GD7: the map change is stored now, applied at the next weekly rollover — nothing rewritten retroactively. */
     @Transactional
-    public MesocycleResponse updateMusclePriorities(UUID createdBy, UUID id, Map<String, String> priorities) {
+    public MesocycleResponse updateMusclePriorities(UUID createdBy, UUID id, Map<String, String> priorities,
+                                                    List<String> sportGroups) {
         MesocycleEntity m = OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(id), createdBy);
         Map<String, String> normalized = PriorityTier.normalize(priorities);
         m.setMusclePriorities(normalized.isEmpty() ? null : Map.copyOf(normalized));
+        if (sportGroups != null) { // absent = unchanged, [] = cleared
+            m.setSportGroups(SportGroups.normalize(sportGroups, volumeProperties.baselines().keySet()));
+        }
         volumeLedger.sync(createdBy, id); // the tier moves the band
         return assembleResponse(createdBy, m);
     }

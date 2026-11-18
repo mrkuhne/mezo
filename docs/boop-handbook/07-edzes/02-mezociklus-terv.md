@@ -45,14 +45,19 @@ osszefoglalo: Néhány kérdés után Boop összerak egy több hetes edzésblokk
 
 ## Hogyan működik
 1. **Váz:** a hetente vállalt napok számából felosztás, az izomcsoportonkénti sorozatszám egy bevett táblázatból (minimum,
-   optimális és maximális heti sorozat — lásd [Heti volumen](05-heti-volumen.md)).
+   optimális és maximális heti sorozat — lásd [Heti volumen](05-heti-volumen.md)). **Minden izomcsoport az első héten a saját sávján
+   belül indul, a sáv szélén** (Építés: a sáv aljáról, Hangsúly: a saját sávja aljáról, Tartás: a sáv tetejéről) — a tulajdonos döntése, 2026-11-18.
 2. **Gyakorlatok kitöltése:** szabályok szerint a katalógusból.
 3. **AI-válogatás (opcionális):** egy AI-modell a szabályos keretek között jobb gyakorlatokat választhat; ha ki van kapcsolva,
    a szabályos kitöltés marad.
 4. Semmi nem mentődik, amíg el nem mented sablonként; indításkor a sablon napjaiból létrejönnek az edzésnapok, és a gyakorlatokra
    beírt sorozatszámok maradnak az igazság — az első héten pontosan az, amit megterveztél (lásd [Heti volumen](05-heti-volumen.md)).
-5. Ma csak **izomépítő (hipertrófia)** irányt ismer a generátor.
-6. A mezociklus csatolható a súlycélhoz (lásd a Terv részt).
+5. **A terv mérése (2026-11-18, a szerver már tudja):** a szerver az összerakott tervet izmonként a sávjához méri (a sporttal terhelt lábaknál
+   lejjebb tolt sávhoz), konkrét, a korlátokat betartó javítást javasol — vagy kimondja, hogy új gyakorlat kell —, becsüli napi edzésidőt,
+   figyelmeztet a napi nyolc sorozat fölötti izomra és a sportos napokra, és hétről hétre kirajzolja a blokkot; a futó blokk volumen-íve
+   ugyanezt a vonalat használja. Részletek: [Heti volumen](05-heti-volumen.md).
+6. Ma csak **izomépítő (hipertrófia)** irányt ismer a generátor.
+7. A mezociklus csatolható a súlycélhoz (lásd a Terv részt).
 
 ## Miért így
 A terv és a futam szétválasztása lehetővé teszi, hogy egy bevált blokkot újra lefuttass, és két futamot összehasonlíts.
@@ -68,18 +73,21 @@ Az AI csak gyakorlatot választ, a terhelésről soha nem dönt.
 | `mezo.meso-plan.target-rir` | Cél-tartalék (hány ismétlés maradjon „a tankban”) | 1 |
 | `mezo.meso-plan.compound-warmup` / `isolation-warmup` | Bemelegítő sorozatok száma | 2 / 1 |
 | `mezo.train.gym-default-minutes` | Edzés feltételezett hossza (a beosztásnak nincs hossza) | 60 perc |
+| `mezo.volume.bands.sport-low-shift` / `sport-high-shift` | Sporttal terhelt izomcsoportnál ennyivel lejjebb kerül a sáv alja / teteje | 1 / 2 |
+| `mezo.volume.evaluator.*` | A tervmérő időbecslése: munkasorozatonként / bemelegítő sorozatonként / edzésenként ráhagyás | 2,4 perc / 1 perc / 6 perc |
 
 ## Adattáblák
 | Tábla | Mit tárol |
 |---|---|
-| `meso_template` | A tervsablon: napok, gyakorlatok, izomcsoportonkénti volumen |
-| `mesocycle` | Egy futam: hetek, fázisgörbe (például utolsó hét terhelés-csökkentő), aktuális hét, izom-prioritások, állapot |
+| `meso_template` | A tervsablon: napok, gyakorlatok, a sporttal terhelt izomcsoportok |
+| `mesocycle` | Egy futam: hetek, fázisgörbe (például utolsó hét terhelés-csökkentő), aktuális hét, izom-prioritások, sporttal terhelt izomcsoportok, állapot |
 | `workout_session` | Edzésnapok (sablon) és elvégzett edzések (példány) |
 | `exercise` | Gyakorlat-recept egy napon: bemelegítő és munkasorozatok, ismétlés-tartomány, cél-RIR, kezdősúly, megjegyzés |
 | `gym_schedule_slot` | Heti beosztás |
 
 ## Mi jön még
-- B5: natív varázsló, szerkesztő és sablonkönyvtár.
+- B5: natív varázsló, szerkesztő és sablonkönyvtár — a **blokk-építő képernyők**, amelyek megmutatják a szerver mérését és javításait.
+- **A heti jóváhagyás** (soronként elfogadod vagy megtartod a heti változtatást, és a szintváltás is javaslat lesz): a következő szelet (S3).
 - B6: a mezociklus a Terv része lesz a súlycél és az étrend mellett.
 
 ## Mi marad ki

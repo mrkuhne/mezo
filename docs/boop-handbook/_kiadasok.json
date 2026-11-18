@@ -323,5 +323,18 @@
       "mezo-r36n9.65"
     ],
     "mi_valtozott": "Amennyi sorozatot egy gyakorlatra beírsz, pontosan annyit ír ki az edzés — a régi rejtett heti cél, ami például egy háromsorozatos lábtolásból nyolcat csinált, megszűnt. Minden izomnak van egy heti sávja a szintje szerint (Tartás, Építés, Hangsúly). Hétről hétre az app abból dönt, amit ténylegesen megcsináltál (megvolt-e minden sorozat, túl nehéz volt-e, fájt-e ízület, maradt-e izomláz, fogysz-e), és legfeljebb egy-két sorozatot tesz konkrét gyakorlatokra — sosem többet ötnél egy gyakorlatra vagy nyolcnál egy izomra egy edzésen. A könnyített hét felez, utána visszaáll, kivéve, ha közben te átírtad. Kímélő mód után izmonként egy sorozat jön le, visszavonhatóan. A futó blokkod számai az átálláskor egy sem változtak."
+  },
+  "ec098c957": {
+    "tipus": "Új funkció",
+    "cim": "Edzés: a blokk-építő mérőműszere — sávok, javaslat, idő, a blokk íve",
+    "datum": "2026-11-18",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.77",
+      "mezo-r36n9.72",
+      "mezo-r36n9.74"
+    ],
+    "mi_valtozott": "A szerver egy összerakott blokkról megmondja izmonként, hogy a heti sávján belül, alatta vagy fölötte van-e, és ha kell, konkrét javítást ad — sosem többet ötnél egy gyakorlatra vagy nyolcnál egy izomra egy napon —, vagy kimondja, hogy új gyakorlat kell. Naponként becsüli az edzésidőt, jelzi, ha egy nap túl hosszú, ha egy izom egy napon túl sokat kap, és ha aznap sport is van. Hétről hétre kirajzolja a blokkot (a könnyített hét felez, utána visszaáll, fogyásban lassabb az emelés), és a futó blokk volumen-íve ugyanezt a vonalat mutatja. A „röplabda: a láb sávja lejjebb” beállítás elmenthető, a generált terv pedig minden izmánál a saját sávjában indul (Sáv széle). A futó blokkod számai nem változtak. Képernyő még nincs hozzá: a telefonos blokk-építő a következő szeletek egyike.",
+    "verzio": "v3.1.0"
   }
 }

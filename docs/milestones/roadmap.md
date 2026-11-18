@@ -81,6 +81,22 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   [train style and techniques](../superpowers/specs/2026-11-17-train-style-and-techniques-design.md), plan
   [T1](../superpowers/plans/2026-11-18-train-style-t1-style-and-progression.md);
   [`train.md`](../features/train.md) §4 `#### Training style`, §9.
+- **2026-11-18 — Train volume engine v2 — S2: bands and the evaluator (`mezo-r36n9.77`).**
+  The server can now measure a plan against each muscle's band **before** it is saved: `POST /api/train/meso-plans/evaluate`
+  (and `GET /api/train/mesocycles/{id}/evaluation` for a running block) says per muscle whether the weekly sets sit
+  below, inside or above the band and proposes a **cap-safe fix** (≤ 5 on an exercise, ≤ 8 per muscle a day) or says a
+  new exercise is needed; it estimates the minutes of each day (2.4 min per working set + 1 per warm-up set + 6),
+  warns on a muscle over 8 sets in a day and on a day with sport, and projects the block week by week (`VolumePath`:
+  deload halves, the week after restores, a deficit slows the step). Sport-loaded groups (`sportGroups`, e.g. volleyball
+  legs) get a **lowered band** (low −1, high −2), stored on the template and the run and followed by the ledger, the
+  weekly decider and the arc; the schedule's sport suggests the groups. The block's volume arc now reads the same
+  projection (past weeks from what was prescribed, a mid-run deload no longer under-stated), and the retired ceiling,
+  week-one start and `mezo.volume.step` are gone. Owner decision *„Sáv széle”*: a generated plan **starts inside each
+  band at its edge** (Építés low = MEV, Hangsúly low = MAV−2, Tartás high = MEV−1). **Not done:** tier-change proposals,
+  the proposal endpoints and manual mode (S3), the phone's blokk-építő screens. Deviations:
+  [spec](../superpowers/specs/2026-11-17-train-volume-engine-v2-design.md) §12 *S2 as built*, plan
+  [S2](../superpowers/plans/2026-11-18-volume-engine-v2-s2-evaluator.md); [`train.md`](../features/train.md) §4
+  `#### Volume engine v2`, §9.
 
 - **2026-11-18 — Train volume engine v2 — S1: the plan is the amount (`mezo-r36n9.65`).**
   The set count the owner types on an exercise is now exactly what the workout prescribes — the hidden per-muscle

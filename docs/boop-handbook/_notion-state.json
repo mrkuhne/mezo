@@ -717,7 +717,7 @@
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
-      "hash": "a32ea55f3cfc"
+      "hash": "e98b8ae3801f"
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
@@ -729,7 +729,7 @@
     },
     "kezikonyv:07-edzes/05-heti-volumen": {
       "page_id": "4168968e-752b-813c-9763-e3bda2691265",
-      "hash": "6cd4f98a746c"
+      "hash": "eb467c148fbf"
     },
     "kezikonyv:07-edzes/06-gyakorlatok-elozmenyek": {
       "page_id": "4168968e-752b-8189-8150-ca1dc31f807c",
@@ -1057,7 +1057,7 @@
     },
     "jegyek:mezo-r36n9.77": {
       "page_id": "41c8968e-752b-813a-bf7d-d677b908dff0",
-      "hash": "ae16df99f353"
+      "hash": "be44612021fa"
     },
     "jegyek:mezo-r36n9.65": {
       "page_id": "41c8968e-752b-81c4-a49b-ef8befbf6a13",
@@ -1077,7 +1077,7 @@
     },
     "jegyek:mezo-r36n9.74": {
       "page_id": "41c8968e-752b-81a9-a747-cd72a2167524",
-      "hash": "86d0c5388068"
+      "hash": "a206993b6ff1"
     },
     "jegyek:mezo-r36n9.73": {
       "page_id": "41c8968e-752b-8188-8f21-c2e64da61f9d",
@@ -1085,7 +1085,7 @@
     },
     "jegyek:mezo-r36n9.72": {
       "page_id": "41c8968e-752b-81d4-b2de-e3537647a657",
-      "hash": "ddd8aee4784c"
+      "hash": "fbc1914bc567"
     },
     "jegyek:mezo-r36n9.71": {
       "page_id": "41c8968e-752b-81c4-9111-d8e7abab6ea6",
@@ -1154,6 +1154,14 @@
     "kiadasok:57bf92ba4": {
       "page_id": "41c8968e-752b-815d-9a2d-e722e5ab499f",
       "hash": "b6d4de0c21b7"
+    },
+    "dontesek:d-2026-11-18-sav-szele": {
+      "page_id": "41c8968e-752b-8195-809f-fc10885f4446",
+      "hash": "dd540d8c13fb"
+    },
+    "kiadasok:ec098c957": {
+      "page_id": "41c8968e-752b-8119-a02d-cda7ce3ca2aa",
+      "hash": "7dce56479fa4"
     }
   }
 }

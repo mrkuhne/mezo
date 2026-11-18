@@ -83,10 +83,11 @@ resolutions), so it does not churn every open branch.
   3. *Scoped jobs:* `test-backend` runs its suite only when the push/PR touches `backend/`,
      `api/` or `.github/`; `test-frontend` and `test-layout` only for `frontend/`, `api/` or
      `.github/` (`.github/scripts/ci-scope.sh`). The jobs still start and end green otherwise, so
-     `require-checks.sh` keeps seeing a successful check run. Fail-safe: on a push the job may
-     skip only if the previous `ci` run on the branch is a finished **green** run of exactly the
-     previous commit — a cancelled or red predecessor makes the next push run everything, so a
-     red main cannot be painted green by a docs-only commit.
+     `require-checks.sh` keeps seeing a successful check run. Fail-safe: on a push the
+     diff base is the newest ancestor with a finished **green** `ci` run, not the previous commit — cancelled and red runs in between
+     fall inside the diffed range, so a red main cannot be painted green by a docs-only commit.
+     On `main` every push keeps its own run (the concurrency group carries the sha); only PR
+     runs are superseded by a newer push.
 - **Local = focused foreground gates.** For the blast radius of a change, run a handful of classes:
   ```bash
   cd backend

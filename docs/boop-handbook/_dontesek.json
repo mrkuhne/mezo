@@ -689,5 +689,18 @@
     "miert": "A dropszett és a hasonló technikák csak ott biztonságosak, ahol a gép vagy a megtámasztás elbírja a fáradt végét.",
     "levaltotta": "Az a javaslat, hogy az álló szabad súlyos gyakorlatok is stabilnak számítsanak.",
     "kovetkezmeny": "Minden gyakorlathoz tartozik eszköz és stabilitás; a technikák csak a stabil gyakorlatokra kerülhetnek (mezo-r36n9.79)."
+  },
+  "d-2026-11-18-sav-szele": {
+    "cim": "A generált terv minden izma a sávja szélén indul",
+    "datum": "2026-11-18",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés",
+      "Terv"
+    ],
+    "valasztas": "Amikor Boop összerak neked egy blokkot, minden izomcsoport már az első héten a saját sávján belül indul, éppen a szélén: az Építés a sáv aljáról, a Hangsúly a saját sávja aljáról, a Tartás a sáv tetejéről. Innen a heti lépés emel.",
+    "miert": "Így a friss terv sosem lóg ki a sávjából, a blokk-építő nem talál rajta javítanivalót, és a szint így már az első héten számít: aki hangsúlyos, az többet kap, aki csak tartja, az a sávja tetején marad.",
+    "levaltotta": "A régi kezdőérték (a minimum, a hangsúlyosnál két sorozattal fölötte) és a szintenkénti plafon.",
+    "kovetkezmeny": "A régi plafon és a hét-1 kezdőérték megszűnt; a generált tervek első hete kicsit másként néz ki, mint eddig. A sportot a generátor még nem veszi figyelembe."
   }
 }

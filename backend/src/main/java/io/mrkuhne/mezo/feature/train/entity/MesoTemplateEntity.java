@@ -59,6 +59,11 @@ public class MesoTemplateEntity extends OwnedEntity {
     @Column(name = "muscle_priorities", columnDefinition = "jsonb")
     private Map<String, String> musclePriorities;
 
+    /** Coarse muscle groups a sport already loads (lowers their volume band); null = none (mezo-r36n9.77). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "sport_groups", columnDefinition = "jsonb")
+    private List<String> sportGroups;
+
     @NotNull
     @Column(nullable = false)
     private Integer weeks;
