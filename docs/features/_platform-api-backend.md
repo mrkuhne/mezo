@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-13
+updated: 2026-11-18
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -382,7 +382,7 @@ References: `docs/references/testing_standards.md` + `integration_test_framework
 - `support/ApiIntegrationTest.java extends AbstractIntegrationTest` — `@ActiveProfiles("demodata")`, `RANDOM_PORT`, `TestRestTemplate`. **Not `@Transactional`** (server commits in its own tx; cleanup via `ResetDatabase`). Provides `ownerAuthHeaders()` (logs in via `/api/auth/login` with credentials from `OwnerProperties`, never hardcoded); verb helpers `getForBody/getForList/postForBody/putForBody/deleteAndExpect/exchangeForBody` where the **expected status is always a param and always asserted**; `exchangeForResponse` for header inspection (CORS); and `assertHasFieldError(body, field, code)` / `assertHasRequestError(body, code)` that parse the `List<SystemMessage>` JSON and match on **code/type/field, never resolved text** (codes are the contract). (SB4 → Jackson 3, `tools.jackson.databind.ObjectMapper`.)
 - `support/ResetDatabase.java` — one `TRUNCATE ... CASCADE` over all owned domain tables (now incl. `goal_plan_link` + the three progression tables `skill_progress`, `level_up_event`, `perk_unlock`) + `DELETE` of non-owner users/profiles. **Growth rule (mandatory): every new owned table is added here in the same change; `exercise_catalog` is master data and must NOT be truncated.**
 - `support/populator/{UserPopulator,TrainPopulator,RunningPopulator,…,SkillProgressPopulator,LevelUpEventPopulator}.java` — one `<Aggregate>Populator` per aggregate; `DatabasePopulator` is the facade. **Growth rule: each new aggregate gets its own populator in the same change.** (`mezo-8e4` adds `SkillProgressPopulator` + `LevelUpEventPopulator`.)
-- DB target: fixed `mezo_test` compose DB by default; throwaway Testcontainers via `-Dmezo.test.use-testcontainers=true`. Surefire also runs `*IT.java` (Failsafe deliberately unconfigured to avoid double execution).
+- DB target: fixed `mezo_test` compose DB by default; throwaway Testcontainers via `-Dmezo.test.use-testcontainers=true`. Surefire also runs `*IT.java` (Failsafe deliberately unconfigured to avoid double execution). Testcontainers mode (`mezo-dubmh`): one Postgres container per test JVM and one template-cloned database per Spring context; `-Dmezo.test.forks=N` runs N parallel test JVMs (Testcontainers mode only; CI uses 2).
 - Canonical examples: `feature/biometrics/BiometricsContractIT.java` (round-trips weight POST/GET, asserts a 400 FIELD error, asserts check-in upsert); `feature/train/ProvenanceRoundTripIT.java` (proves the typed-jsonb envelope survives a DB round-trip).
 
 **Commands:**
