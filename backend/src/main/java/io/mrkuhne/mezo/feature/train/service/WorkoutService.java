@@ -353,10 +353,18 @@ public class WorkoutService {
                 if (careRegion != null) {
                     p = lightCareSet(p, careRegion);
                 }
-                // Technique overlay (mezo-r36n9.80): a flagged run only; never on a care-lightened row or a
-                // comeback day (those are deliberately gentle).
-                if (techniquesOn && careRegion == null && comeback == null) {
-                    p = overlayTechnique(createdBy, e, t, p, deloadWeek);
+                // Technique overlay (mezo-r36n9.80): a flagged run only. A gentle day (comeback, or a readiness
+                // lighten — which also covers every care-lightened row) carries neither technique nor challenge;
+                // the echo then says so too (the stored plan is untouched).
+                if (techniquesOn) {
+                    if (comeback != null || lighten.isPresent()) {
+                        t.setTechnique(null);
+                        t.setTechniqueSource(null);
+                        t.setChallenge(false);
+                        t.setChallengeBest(null);
+                    } else {
+                        p = overlayTechnique(createdBy, e, t, p, deloadWeek);
+                    }
                 }
                 t.setPrescribedSets(p.sets());
                 // The ramped reserve is an engine overlay: switch off ⇒ the row's stamped targetRir stands.
@@ -414,7 +422,9 @@ public class WorkoutService {
         }
         BigDecimal maxKg = p.sets().stream().map(PrescribedSet::getTargetWeightKg)
             .filter(java.util.Objects::nonNull).max(BigDecimal::compareTo).orElse(null);
-        Set<BigDecimal> real = deloadWeek ? Set.of() : techniqueWeights.realWeights(createdBy, e, maxKg);
+        Technique effective = e.isChallenge() ? Technique.PARTIALS : technique;
+        boolean drops = effective == Technique.DROP || effective == Technique.REST_DROP;
+        Set<BigDecimal> real = deloadWeek || !drops ? Set.of() : techniqueWeights.realWeights(createdBy, e, maxKg);
         Prescription out = TechniquePrescriber.apply(p, technique, e.isChallenge(), deloadWeek, real,
             trainTechniqueProperties);
         if (e.isChallenge() && !deloadWeek) {

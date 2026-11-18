@@ -37,6 +37,9 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
     @Autowired MesocycleRepository mesocycleRepository;
     @Autowired ExerciseSetLegRepository legs;
     @Autowired DatabasePopulator databasePopulator;
+    @Autowired io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator recovery;
+    @Autowired io.mrkuhne.mezo.support.populator.CheckInPopulator checkIns;
+    @Autowired io.mrkuhne.mezo.support.populator.ReadinessChoicePopulator choices;
     @Autowired OwnerProperties ownerProperties;
 
     private UUID owner() {
@@ -118,6 +121,9 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
         assertThat(leg.getWeightKg()).isNotNull();
         assertThat(leg.getWeightKg()).isLessThanOrEqualTo(
             last.getTargetWeightKg().multiply(new BigDecimal("0.70")));
+        assertThat(last.getTargetRIR()).isZero();
+        assertThat(leg.getRestBeforeSec()).isEqualTo(30);
+        assertThat(leg.getReps()).isEqualTo(last.getTargetReps());
         assertThat(w.get(0).getTechnique()).isNull();
         assertThat(w.get(1).getLegs()).isNullOrEmpty();
         assertThat(t.getTechniqueSource().getValue()).isEqualTo("owner");
@@ -175,5 +181,58 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
         assertThat(last.getLegs()).hasSize(1);
         assertThat(last.getLegs().get(0).getWeightKg()).isNull();
         assertThat(last.getLegs().get(0).getDropPercent()).isEqualTo(30);
+        assertThat(working(t)).hasSize(3);
+    }
+
+    private void assertSuppressed(TodayExercise t) {
+        assertThat(t.getTechnique()).isNull();
+        assertThat(t.getTechniqueSource()).isNull();
+        assertThat(t.getChallenge()).isFalse();
+        assertThat(t.getChallengeBest()).isNull();
+        assertThat(working(t)).allSatisfy(s -> {
+            assertThat(s.getTechnique()).isNull();
+            assertThat(s.getLegs()).isNullOrEmpty();
+        });
+    }
+
+    @Test
+    void comebackDayCarriesNoTechnique() {
+        Fixture f = fixture(2, true, "rest_drop", true, true);
+        recovery.ended(f.owner(), io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason.ILLNESS,
+            LocalDate.now().minusDays(4), LocalDate.now());
+
+        WorkoutTodayResponse res = workoutService.getToday(f.owner(), null);
+
+        assertThat(res.getComeback()).isNotNull();
+        assertSuppressed(bench(res));
+    }
+
+    @Test
+    void lightenDayCarriesNoTechniqueOnAnyRow() {
+        Fixture f = fixture(2, true, "rest_drop", false, true);
+        ExerciseEntity care = train.createExercise(f.owner(), f.day().getId(), "Rear Delt Fly", 1,
+            "shoulder-rear", "isolation", null);
+        care.setTechnique("drop");
+        care.setTechniqueSource("owner");
+        train.save(care);
+        WorkoutSessionEntity past = train.createWorkoutInstance(f.owner(), f.day(), LocalDate.now().minusDays(8),
+            "completed");
+        train.createLoggedSet(f.owner(), care.getId(), past.getId(), 0, "20", 8, 1);
+        checkIns.createCheckIn(f.owner(), LocalDate.now(), "06:30", c -> {
+            c.setSoreness(8);
+            c.setPain(true);
+            c.setPainRegions(List.of(io.mrkuhne.mezo.feature.biometrics.checkin.entity.PainRegion.VALL));
+            c.setPainIntensity(5);
+        });
+        choices.createChoice(f.owner(), LocalDate.now(),
+            io.mrkuhne.mezo.feature.train.entity.ReadinessChoiceEntity.Choice.LIGHTEN);
+
+        WorkoutTodayResponse res = workoutService.getToday(f.owner(), null);
+
+        assertSuppressed(bench(res)); // a non-care row on a lighten day
+        TodayExercise careRow = res.getExercises().stream()
+            .filter(e -> "Rear Delt Fly".equals(e.getName())).findFirst().orElseThrow();
+        assertThat(careRow.getWorkingSets()).isEqualTo(1); // the care row was lightened
+        assertSuppressed(careRow); // and a care row never carries one
     }
 }

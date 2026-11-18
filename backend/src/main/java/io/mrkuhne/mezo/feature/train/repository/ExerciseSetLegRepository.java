@@ -1,10 +1,13 @@
 package io.mrkuhne.mezo.feature.train.repository;
 
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetLegEntity;
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Repository for {@link ExerciseSetLegEntity} (technique-set legs, mezo-r36n9.80). */
 public interface ExerciseSetLegRepository extends JpaRepository<ExerciseSetLegEntity, UUID> {
@@ -20,23 +23,26 @@ public interface ExerciseSetLegRepository extends JpaRepository<ExerciseSetLegEn
 
     /** Best partials reps at one parent weight. */
     interface PartialsRow {
-        java.math.BigDecimal getWeightKg();
+        BigDecimal getWeightKg();
 
         Integer getReps();
     }
 
     /**
      * Best partials-leg reps per parent weight for one exercise identity (key as
-     * {@code ExerciseHistoryResolver.identityKey}), over LIVE parent working sets only — a soft-deleted
-     * parent leaves its legs behind, so the parent's flag is the gate. Derived, never stored (ADR 0016).
+     * {@code ExerciseHistoryResolver.identityKey}), over LIVE, non-skipped parent working sets of COMPLETED, live workouts only — a soft-deleted
+     * parent leaves its legs behind, so the parent's flag is the gate; an open workout never counts. Derived, never stored (ADR 0016).
      */
-    @org.springframework.data.jpa.repository.Query(value = """
+    @Query(value = """
         SELECT s.weight_kg AS "weightKg", MAX(l.reps) AS "reps"
         FROM exercise_set_leg l
         JOIN exercise_set s ON s.id = l.exercise_set_id
         JOIN exercise e ON e.id = s.exercise_id
+        JOIN workout_session w ON w.id = s.workout_session_id
+          AND w.status = 'completed' AND w.is_deleted = false
         WHERE s.created_by = :createdBy
           AND s.is_deleted = false
+          AND s.skipped = false
           AND s.kind = 'working'
           AND l.kind = 'partials'
           AND l.reps IS NOT NULL
@@ -47,6 +53,6 @@ public interface ExerciseSetLegRepository extends JpaRepository<ExerciseSetLegEn
         ORDER BY s.weight_kg
         """, nativeQuery = true)
     List<PartialsRow> bestPartialsPerWeight(
-        @org.springframework.data.repository.query.Param("createdBy") UUID createdBy,
-        @org.springframework.data.repository.query.Param("identityKey") String identityKey);
+        @Param("createdBy") UUID createdBy,
+        @Param("identityKey") String identityKey);
 }

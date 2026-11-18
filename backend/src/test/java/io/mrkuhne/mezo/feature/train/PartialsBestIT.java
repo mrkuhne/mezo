@@ -28,6 +28,7 @@ class PartialsBestIT extends AbstractIntegrationTest {
     @Autowired ExerciseSetLegRepository legs;
     @Autowired ExerciseSetRepository sets;
     @Autowired DatabasePopulator databasePopulator;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     @Autowired OwnerProperties ownerProperties;
 
     private UUID owner() {
@@ -101,5 +102,22 @@ class PartialsBestIT extends AbstractIntegrationTest {
 
         assertThat(partialsBest.at(owner, bench, new BigDecimal("60"))).isNull();
         assertThat(partialsBest.at(owner, fly, new BigDecimal("60"))).isEqualTo(40);
+    }
+
+    @Test
+    void openAndDeletedWorkoutsIgnored() {
+        UUID owner = owner();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        var ex = exercise(owner, day, "Fekvenyomás");
+        var done = train.createWorkoutInstance(owner, day, LocalDate.now().minusDays(7), "completed");
+        setWithPartials(owner, ex, done, 0, "60", "partials", 10);
+        var open = train.createWorkoutInstance(owner, day, LocalDate.now(), "active");
+        setWithPartials(owner, ex, open, 0, "60", "partials", 50);
+        var gone = train.createWorkoutInstance(owner, day, LocalDate.now().minusDays(14), "completed");
+        setWithPartials(owner, ex, gone, 0, "60", "partials", 40);
+        jdbc.update("UPDATE workout_session SET is_deleted = true WHERE id = ?", gone.getId());
+
+        assertThat(partialsBest.at(owner, ex, new BigDecimal("60"))).isEqualTo(10);
     }
 }
