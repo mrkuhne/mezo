@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.json.GymExerciseJson;
 import io.mrkuhne.mezo.feature.train.entity.json.MesoDayJson;
 import io.mrkuhne.mezo.feature.train.entity.json.VolumeBaselineJson;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
@@ -64,11 +65,15 @@ public class MesoTemplateService {
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final TrainService trainService;
     private final TrainMapper mapper;
+    private final ExerciseStyler styler;
 
     /** The owner's templates, oldest first, each carrying how many runs were started from it. */
     public List<MesoTemplateResponse> list(UUID createdBy) {
-        return templateRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtAsc(createdBy)
-            .stream().map(this::toResponse).toList();
+        List<MesoTemplateEntity> templates =
+            templateRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtAsc(createdBy);
+        // One catalog read for the whole list's effective styles, never one per template.
+        CatalogAttributes.Lookup stability = styler.lookupTemplates(templates);
+        return templates.stream().map(t -> toResponse(t, stability)).toList();
     }
 
     @Transactional
@@ -98,7 +103,8 @@ public class MesoTemplateService {
         MesoTemplateEntity t = ownedTemplateOrThrow(createdBy, templateId);
         return trainService.stampRun(createdBy, new TrainService.StampSource(
             t.getId(), t.getTitle(), t.getShortTitle(), t.getGoal(), t.getGoalPreset(), req.getStartDate(),
-            t.getWeeks(), t.getSplit(), t.getStyle(), t.getPhaseCurve(), t.getNotes(), req.getStatus().getValue(),
+            t.getWeeks(), t.getSplit(), t.getStyle(), t.getTrainingStyle(), t.getPhaseCurve(), t.getNotes(),
+            req.getStatus().getValue(),
             mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle()),
             t.getMusclePriorities()));
     }
@@ -128,6 +134,7 @@ public class MesoTemplateService {
         template.setWeeks(run.getWeeks());
         template.setSplit(run.getSplit());
         template.setStyle(run.getStyle());
+        template.setTrainingStyle(run.getTrainingStyle());
         template.setPhaseCurve(List.copyOf(run.getPhaseCurve()));
         template.setNotes(run.getNotes());
         template.setDays(daysOf(createdBy, run.getId()));
@@ -145,7 +152,12 @@ public class MesoTemplateService {
                 SystemMessage.error("TRAIN_MESO_TEMPLATE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
     }
 
-    /** Full replace of the plan document — every field comes from the request, nothing is merged. */
+    /**
+     * Full replace of the plan document — every field comes from the request, except the training
+     * style fields (mezo-r36n9.79): the frozen web client never sends them, so when the request omits
+     * them the block style and each exercise's style/rest/overrides are carried over from the stored
+     * document (see {@link ExerciseStyler#carry}); then every exercise is stamped under the style.
+     */
     private void applyUpsert(MesoTemplateEntity template, MesoTemplateUpsertRequest req) {
         template.setTitle(req.getTitle());
         template.setShortTitle(req.getShortTitle());
@@ -164,12 +176,31 @@ public class MesoTemplateService {
         template.setPhaseCurve(req.getPhaseCurve().stream()
             .map(MesoTemplateUpsertRequest.PhaseCurveEnum::getValue).toList());
         template.setNotes(req.getNotes());
-        template.setDays(mapper.toDaysJson(req.getDays() != null ? req.getDays() : List.of()));
+        String style = req.getTrainingStyle() != null
+            ? req.getTrainingStyle().getValue() : template.getTrainingStyle();
+        template.setTrainingStyle(style);
+        template.setDays(styler.styleTemplateDays(template.getDays(),
+            mapper.toDaysJson(req.getDays() != null ? req.getDays() : List.of()), TrainingStyle.fromWire(style)));
         template.setVolumePerMuscle(mapper.toBaselinesJson(req.getVolumePerMuscle()));
     }
 
     private MesoTemplateResponse toResponse(MesoTemplateEntity template) {
+        return toResponse(template, styler.lookup(template.getDays().stream()
+            .flatMap(d -> d.exercises().stream()).toList(), TrainingStyle.fromWire(template.getTrainingStyle())));
+    }
+
+    private MesoTemplateResponse toResponse(MesoTemplateEntity template, CatalogAttributes.Lookup stability) {
         MesoTemplateResponse response = mapper.toTemplateResponse(template);
+        TrainingStyle block = TrainingStyle.fromWire(template.getTrainingStyle());
+        // The mapped days mirror the stored days one-to-one, in order.
+        for (int d = 0; d < template.getDays().size(); d++) {
+            List<GymExerciseJson> stored = template.getDays().get(d).exercises();
+            for (int e = 0; e < stored.size(); e++) {
+                GymExerciseJson ex = stored.get(e);
+                response.getDays().get(d).getExercises().get(e).setEffectiveTrainingStyle(
+                    styler.effective(ex.trainingStyle(), ex.type(), ex.catalogId(), block, stability));
+            }
+        }
         response.setRunCount((int) mesocycleRepository
             .countByTemplateIdAndCreatedByAndDeletedFalse(template.getId(), template.getCreatedBy()));
         return response;

@@ -72,6 +72,7 @@ public class TrainService {
     private final MesocycleReportService reportService;
     private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
+    private final ExerciseStyler styler;
     private final TrainProperties trainProperties;
     // The volume log is derived from the plan (volume engine v2): recomputed after plan writes.
     private final VolumeLedger volumeLedger;
@@ -100,13 +101,18 @@ public class TrainService {
             ? Map.of()
             : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, sessionIds)
                 .stream().collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
-        Map<UUID, CatalogMedia> mediaByCatalog = mediaByCatalogOf(
-            exercisesBySession.values().stream().flatMap(List::stream).toList());
+        List<ExerciseEntity> allExercises = exercisesBySession.values().stream().flatMap(List::stream).toList();
+        Map<UUID, CatalogMedia> mediaByCatalog = mediaByCatalogOf(allExercises);
+        Map<UUID, TrainingStyle> styleByMeso = new java.util.HashMap<>();
+        mesos.forEach(m -> styleByMeso.put(m.getId(), TrainingStyle.fromWire(m.getTrainingStyle())));
+        CatalogAttributes.Lookup stability = styler.lookupRows(allExercises,
+            styleByMeso.values().stream().anyMatch(java.util.Objects::nonNull));
 
         Map<UUID, List<MesoDay>> daysByMeso = sessions.stream()
             .filter(s -> s.getMesocycleId() != null)
             .collect(Collectors.groupingBy(WorkoutSessionEntity::getMesocycleId, LinkedHashMap::new,
-                Collectors.mapping(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), mediaByCatalog),
+                Collectors.mapping(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), mediaByCatalog,
+                        styleByMeso.get(s.getMesocycleId()), stability),
                     Collectors.toList())));
         // hasReport in ONE batched query (mezo-meyc.2) — the Történet list's "van riportja" flag
         // must never become a per-run lookup.
@@ -184,6 +190,7 @@ public class TrainService {
         Integer weeks,
         String split,
         String style,
+        String trainingStyle,
         List<String> phaseCurve,
         String notes,
         String status,
@@ -220,6 +227,7 @@ public class TrainService {
         // split/style are optional on a template but NOT NULL on a run — an unset one becomes "".
         m.setSplit(src.split() != null ? src.split() : "");
         m.setStyle(src.style() != null ? src.style() : "");
+        m.setTrainingStyle(src.trainingStyle()); // the run inherits the template's training style (mezo-r36n9.79)
         // Defensive copy: the source list belongs to the template row — two managed entities must
         // never share one text[] collection instance.
         m.setPhaseCurve(List.copyOf(src.phaseCurve()));
@@ -347,9 +355,15 @@ public class TrainService {
         return assembleResponse(createdBy, target);
     }
 
+    /**
+     * Full-list day replace. Training style (mezo-r36n9.79): the style fields a client omits are
+     * carried over from the day's old rows (same identity, first unmatched) and every row is
+     * re-stamped under the run's style — a no-op for an unstyled run.
+     */
     @Transactional
     public MesoDay replaceDayExercises(UUID createdBy, UUID mesoId, UUID dayId, List<GymExerciseInput> inputs) {
-        ownedMesoOrThrow(createdBy, mesoId);
+        MesocycleEntity meso = ownedMesoOrThrow(createdBy, mesoId);
+        TrainingStyle block = TrainingStyle.fromWire(meso.getTrainingStyle());
         WorkoutSessionEntity day = OwnershipGuard.ownedOrThrow(
             workoutSessionRepository.findById(dayId)
                 .filter(s -> mesoId.equals(s.getMesocycleId())),
@@ -357,15 +371,17 @@ public class TrainService {
 
         // Full-list replace: soft-delete the current rows (@SQLDelete flips is_deleted), then
         // insert the new list with orderIndex pinned by array order.
-        exerciseRepository.deleteAll(exerciseRepository
-            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(dayId)));
+        List<ExerciseEntity> old = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(dayId));
+        exerciseRepository.deleteAll(old);
         List<ExerciseEntity> fresh = new ArrayList<>(inputs.size());
         for (int i = 0; i < inputs.size(); i++) {
             fresh.add(toExerciseEntity(createdBy, dayId, inputs.get(i), i));
         }
+        CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, block);
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
         volumeLedger.sync(createdBy, mesoId);
-        return toDay(day, saved, mediaByCatalogOf(saved));
+        return toDay(day, saved, mediaByCatalogOf(saved), block, stability);
     }
 
     // ── Saját edzés (custom workout templates, mezo-ws2x) ─────────────────────────
@@ -387,8 +403,9 @@ public class TrainService {
         Map<UUID, List<ExerciseEntity>> byTemplate = exercises.stream()
             .collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
         Map<UUID, CatalogMedia> media = mediaByCatalogOf(exercises);
+        CatalogAttributes.Lookup stability = styler.lookupRows(exercises, false);
         return templates.stream()
-            .map(t -> toCustomWorkoutResponse(t, byTemplate.getOrDefault(t.getId(), List.of()), media))
+            .map(t -> toCustomWorkoutResponse(t, byTemplate.getOrDefault(t.getId(), List.of()), media, stability))
             .toList();
     }
 
@@ -429,22 +446,25 @@ public class TrainService {
     /** Full-list replace, same soft-delete + re-insert pattern as {@link #replaceDayExercises}. */
     private CustomWorkoutResponse replaceCustomExercises(
             UUID createdBy, WorkoutSessionEntity template, List<GymExerciseInput> inputs) {
-        exerciseRepository.deleteAll(exerciseRepository
-            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(template.getId())));
+        List<ExerciseEntity> old = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(template.getId()));
+        exerciseRepository.deleteAll(old);
         List<ExerciseEntity> fresh = new ArrayList<>(inputs.size());
         for (int i = 0; i < inputs.size(); i++) {
             fresh.add(toExerciseEntity(createdBy, template.getId(), inputs.get(i), i));
         }
+        // a custom workout has no block style: only an exercise's own style is stamped
+        CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, null);
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
-        return toCustomWorkoutResponse(template, saved, mediaByCatalogOf(saved));
+        return toCustomWorkoutResponse(template, saved, mediaByCatalogOf(saved), stability);
     }
 
-    private CustomWorkoutResponse toCustomWorkoutResponse(
-            WorkoutSessionEntity template, List<ExerciseEntity> exercises, Map<UUID, CatalogMedia> media) {
+    private CustomWorkoutResponse toCustomWorkoutResponse(WorkoutSessionEntity template,
+            List<ExerciseEntity> exercises, Map<UUID, CatalogMedia> media, CatalogAttributes.Lookup stability) {
         return CustomWorkoutResponse.builder()
             .id(template.getId())
             .name(template.getType())
-            .exercises(toDay(template, exercises, media).getExercises())
+            .exercises(toDay(template, exercises, media, null, stability).getExercises())
             .build();
     }
 
@@ -483,6 +503,10 @@ public class TrainService {
             : !"plyo".equals(in.getType() == null ? null : in.getType().getValue()));
         e.setWarning(in.getWarning());
         e.setCatalogId(in.getCatalogId());
+        // Training style fields travel as wire values (mezo-r36n9.79); an empty overrides list is null.
+        e.setTrainingStyle(mapper.styleWire(in.getTrainingStyle()));
+        e.setRestSec(in.getRestSec());
+        e.setOverrides(mapper.overridesWire(in.getOverrides()));
         e.setOrderIndex(orderIndex);
         return e;
     }
@@ -505,10 +529,13 @@ public class TrainService {
             ? Map.of()
             : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, sessionIds)
                 .stream().collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
-        Map<UUID, CatalogMedia> mediaByCatalog = mediaByCatalogOf(
-            exercisesBySession.values().stream().flatMap(List::stream).toList());
+        List<ExerciseEntity> allExercises = exercisesBySession.values().stream().flatMap(List::stream).toList();
+        Map<UUID, CatalogMedia> mediaByCatalog = mediaByCatalogOf(allExercises);
+        TrainingStyle block = TrainingStyle.fromWire(m.getTrainingStyle());
+        CatalogAttributes.Lookup stability = styler.lookupRows(allExercises, block != null);
         List<MesoDay> days = sessions.stream()
-            .map(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), mediaByCatalog)).toList();
+            .map(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), mediaByCatalog,
+                block, stability)).toList();
         if (!volume.isEmpty()) {
             r.setVolumePerMuscle(volume);
         }
@@ -519,7 +546,7 @@ public class TrainService {
     }
 
     private MesoDay toDay(WorkoutSessionEntity s, List<ExerciseEntity> exercises,
-        Map<UUID, CatalogMedia> mediaByCatalog) {
+        Map<UUID, CatalogMedia> mediaByCatalog, TrainingStyle block, CatalogAttributes.Lookup stability) {
         return MesoDay.builder()
             .id(s.getId())
             .day(s.getDayLabel())
@@ -528,6 +555,8 @@ public class TrainService {
             .exerciseCount(exercises.size())
             .exercises(exercises.stream().map(e -> {
                 GymExercise g = mapper.toGymExercise(e);
+                g.setEffectiveTrainingStyle(
+                    styler.effective(e.getTrainingStyle(), e.getType(), e.getCatalogId(), block, stability));
                 if (e.getCatalogId() != null) {
                     CatalogMedia m = mediaByCatalog.get(e.getCatalogId());
                     if (m != null) {

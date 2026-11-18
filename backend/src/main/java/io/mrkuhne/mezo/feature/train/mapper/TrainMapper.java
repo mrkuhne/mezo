@@ -55,6 +55,7 @@ public interface TrainMapper {
     @Mapping(target = "phaseCurve", expression = "java(phaseCurve(entity.getPhaseCurve()))")
     @Mapping(target = "volumePerMuscle", ignore = true)
     @Mapping(target = "days", ignore = true)
+    @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
     MesocycleResponse toResponse(MesocycleEntity entity);
 
     @Mapping(target = "current", source = "currentSets")
@@ -62,6 +63,9 @@ public interface TrainMapper {
 
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(GymExercise.TypeEnum.fromValue(entity.getType()))")
+    @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
+    @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesDto")
+    @Mapping(target = "effectiveTrainingStyle", ignore = true) // needs the block style + catalog: service-side
     GymExercise toGymExercise(ExerciseEntity entity);
 
     @Mapping(target = "type", expression = "java(ExerciseCatalogItem.TypeEnum.fromValue(entity.getType()))")
@@ -108,6 +112,11 @@ public interface TrainMapper {
     @Mapping(target = "replacesName", ignore = true)
     @Mapping(target = "replacedByName", ignore = true)
     @Mapping(target = "planSlot", ignore = true)
+    // Training-style fields reach the today payload in T1 Task 8, not here (mezo-r36n9.79).
+    @Mapping(target = "trainingStyle", ignore = true)
+    @Mapping(target = "effectiveTrainingStyle", ignore = true)
+    @Mapping(target = "restSec", ignore = true)
+    @Mapping(target = "overrides", ignore = true)
     TodayExercise toTodayExercise(ExerciseEntity entity);
 
     @Mapping(target = "status", expression = "java(WorkoutSummaryResponse.StatusEnum.fromValue(entity.getStatus()))")
@@ -129,6 +138,7 @@ public interface TrainMapper {
     /** runCount needs a run-count query, so the service stitches it onto the mapped response. */
     @Mapping(target = "phaseCurve", expression = "java(templatePhaseCurve(entity.getPhaseCurve()))")
     @Mapping(target = "runCount", ignore = true)
+    @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
     MesoTemplateResponse toTemplateResponse(MesoTemplateEntity entity);
 
     /**
@@ -147,6 +157,9 @@ public interface TrainMapper {
     @Mapping(target = "videoUrl", ignore = true)
     @Mapping(target = "imageStartUrl", ignore = true)
     @Mapping(target = "imageEndUrl", ignore = true)
+    @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
+    @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesDto")
+    @Mapping(target = "effectiveTrainingStyle", ignore = true) // needs the block style + catalog: service-side
     GymExercise toGymExercise(GymExerciseJson json);
 
     List<MesoDayJson> toDaysJson(List<MesoDayInput> days);
@@ -160,6 +173,8 @@ public interface TrainMapper {
     @Mapping(target = "id", expression = "java(java.util.UUID.randomUUID())")
     @Mapping(target = "targetRir", source = "targetRIR")
     @Mapping(target = "type", expression = "java(input.getType().getValue())")
+    @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleWire")
+    @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesWire")
     GymExerciseJson toExerciseJson(GymExerciseInput input);
 
     /**
@@ -180,6 +195,8 @@ public interface TrainMapper {
      */
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(GymExerciseInput.TypeEnum.fromValue(json.type()))")
+    @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
+    @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesDto")
     GymExerciseInput toExerciseInput(GymExerciseJson json);
 
     Map<String, VolumeBaseline> toBaselines(Map<String, VolumeBaselineJson> volumePerMuscle);
@@ -196,6 +213,39 @@ public interface TrainMapper {
 
     default List<MesoTemplateResponse.PhaseCurveEnum> templatePhaseCurve(List<String> curve) {
         return curve.stream().map(MesoTemplateResponse.PhaseCurveEnum::fromValue).toList();
+    }
+
+    // ── training style (mezo-r36n9.79): the stored form is always the WIRE value ("balanced",
+    // "repRange"). MapStruct's implicit enum<->String conversion uses name()/valueOf ("BALANCED",
+    // "REP_RANGE"), which is wrong for both directions, so every style mapping is qualified.
+
+    @org.mapstruct.Named("styleWire")
+    default String styleWire(io.mrkuhne.mezo.api.dto.TrainingStyle style) {
+        return style == null ? null : style.getValue();
+    }
+
+    @org.mapstruct.Named("styleDto")
+    default io.mrkuhne.mezo.api.dto.TrainingStyle styleDto(String wire) {
+        return wire == null ? null : io.mrkuhne.mezo.api.dto.TrainingStyle.fromValue(wire);
+    }
+
+    /** Wire list for storage; an empty list is stored as null ("no override"), so unstyled documents stay byte-identical. */
+    @org.mapstruct.Named("overridesWire")
+    default List<String> overridesWire(List<io.mrkuhne.mezo.api.dto.StyleOverride> overrides) {
+        if (overrides == null || overrides.isEmpty()) {
+            return null;
+        }
+        return overrides.stream().filter(java.util.Objects::nonNull)
+            .map(io.mrkuhne.mezo.api.dto.StyleOverride::getValue).toList();
+    }
+
+    @org.mapstruct.Named("overridesDto")
+    default List<io.mrkuhne.mezo.api.dto.StyleOverride> overridesDto(List<String> wire) {
+        List<io.mrkuhne.mezo.api.dto.StyleOverride> out = new java.util.ArrayList<>();
+        if (wire != null) {
+            wire.forEach(w -> out.add(io.mrkuhne.mezo.api.dto.StyleOverride.fromValue(w)));
+        }
+        return out;
     }
 
     /** Entity stores Instant; the generated contract type uses OffsetDateTime (UTC on the wire either way). */

@@ -88,6 +88,10 @@ public class MesocycleEntity extends OwnedEntity {
     @Column(nullable = false)
     private String style;
 
+    /** Training style wire value inherited from the template at start; null = unstyled (mezo-r36n9.79). */
+    @Column(name = "training_style")
+    private String trainingStyle;
+
     @NotNull
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "phase_curve", nullable = false, columnDefinition = "text[]")

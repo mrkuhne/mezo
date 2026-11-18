@@ -69,6 +69,10 @@ public class MesoTemplateEntity extends OwnedEntity {
     @Column
     private String style;
 
+    /** Training style wire value (balanced|volume|heavy|allout); null = unstyled (mezo-r36n9.79). */
+    @Column(name = "training_style")
+    private String trainingStyle;
+
     @NotNull
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "phase_curve", nullable = false, columnDefinition = "text[]")
