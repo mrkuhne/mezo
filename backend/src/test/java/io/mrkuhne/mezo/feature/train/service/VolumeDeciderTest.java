@@ -31,7 +31,7 @@ class VolumeDeciderTest {
     private static final class B {
         int week = 3;
         PriorityTier tier = EMPHASIZE;
-        Band band = new Band(14, 22, 22);
+        Band band = new Band(14, 22, 22, false);
         int planned = 15;
         int logged = 15;
         boolean grind;
@@ -117,7 +117,7 @@ class VolumeDeciderTest {
     }
 
     @Test void growStepsOne() {
-        assertThat(decide(in().tier(GROW).band(new Band(10, 16, 22)).planned(12).logged(12)).delta()).isEqualTo(1);
+        assertThat(decide(in().tier(GROW).band(new Band(10, 16, 22, false)).planned(12).logged(12)).delta()).isEqualTo(1);
     }
 
     @Test void deficitStepsOneEvenOnEmphasize() {
@@ -137,6 +137,6 @@ class VolumeDeciderTest {
     }
 
     @Test void aPlanAboveItsBandIsNotPulledBack() {
-        assertThat(decide(in().tier(GROW).band(new Band(10, 16, 22)).planned(19).logged(19)).delta()).isZero();
+        assertThat(decide(in().tier(GROW).band(new Band(10, 16, 22, false)).planned(19).logged(19)).delta()).isZero();
     }
 }
