@@ -96,8 +96,9 @@ például visszaváltasz). Például: a hát Építésről Hangsúlyra vált, 11
   közepén emelted a hátat 11-ről 14-re, és a 11 sorozatot mind megcsináltad, az „minden sorozat megvolt” — nem „kimaradt sorozat”, és a
   hát lép tovább.
 - **Könnyű héten a váltás nem szünteti meg a könnyű hetet.** Ha terhelés-csökkentő héten váltasz szintet vagy sportot, az új sáv
-  érvényes lesz, de a felezett sorozatokat nem emeli vissza; a rá következő hét visszaállítja a megszokott számokat, és onnan igazodik
-  az új sávhoz.
+  érvényes lesz, de a felezett sorozatokat nem emeli vissza; a rá következő hét visszaállítja a megszokott számokat. Az új sávhoz
+  igazítás ilyenkor **nem pótlódik be magától**: onnan a megszokott heti lépés megy tovább (lefelé nem vág), az igazítást a
+  blokk-építőben teheted meg.
 
 ## Hogyan működik
 1. Az új hét első edzés-megnyitásakor (hetente egyszer) a háttérrendszer megnézi a múlt hét elvégzett edzéseit, izomcsoportonként.
@@ -163,3 +164,4 @@ például visszaváltasz). Például: a hát Építésről Hangsúlyra vált, 11
 - Ebben a lépésben **a telefonos jóváhagyó képernyő és a fiókonkénti kézi/automata kapcsoló** kimaradt: a szerver kész, de mindenkinek
   a magától érvényesülő mód fut, amíg a telefon-szelet el nem készül.
 - Szintváltásnál a **régóta sávon kívül lévő, de most nem változtatott izom** nem kap javaslatot — azt a blokk-építő képernyő javítja.
+- A **könnyített héten végzett szintváltás** sávhoz igazítását a következő hét még nem pótolja be magától (későbbi javítás).

@@ -881,5 +881,15 @@
       "Alapok"
     ],
     "mit_kapsz": "Az automata ellenőrzések teljes futásakor néha egy belépési próba ok nélkül elbukik. A javítás után a futás megbízhatóan zöld; te nem látsz változást."
+  },
+  "mezo-r36n9.90": {
+    "cim": "Edzés: a könnyített héten végzett szintváltás igazítása a következő héten pótlódjon",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha a könnyített héten állítasz át egy izmot másik szintre, a rá következő héten a blokk magától az új sávhoz igazodik, ahogy bármelyik másik héten.",
+    "munkamenet": "volume-s3"
   }
 }
