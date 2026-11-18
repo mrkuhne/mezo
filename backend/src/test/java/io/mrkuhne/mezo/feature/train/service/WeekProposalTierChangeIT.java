@@ -34,6 +34,7 @@ class WeekProposalTierChangeIT extends AbstractIntegrationTest {
     private static final List<String> CURVE = List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload");
 
     @Autowired TrainService trainService;
+    @Autowired WorkoutService workoutService;
     @Autowired TrainPopulator train;
     @Autowired DatabasePopulator databasePopulator;
     @Autowired MesocycleRepository mesocycleRepository;
@@ -52,7 +53,11 @@ class WeekProposalTierChangeIT extends AbstractIntegrationTest {
     }
 
     private void run(Map<String, String> priorities, List<String> sportGroups) {
-        meso = train.activeMesoStartedWeeksAgo(owner, 1, 6, CURVE);
+        run(priorities, sportGroups, CURVE);
+    }
+
+    private void run(Map<String, String> priorities, List<String> sportGroups, List<String> curve) {
+        meso = train.activeMesoStartedWeeksAgo(owner, 1, 6, curve);
         meso.setMusclePriorities(priorities);
         meso.setSportGroups(sportGroups);
         meso = mesocycleRepository.saveAndFlush(meso);
@@ -242,7 +247,133 @@ class WeekProposalTierChangeIT extends AbstractIntegrationTest {
         assertThat(sets(row)).isEqualTo(4);
     }
 
+    /**
+     * Final review #1: back raised 11 → 14 by Építés → Hangsúly in the middle of week 2, all 11 of the old plan
+     * logged that week. Week 3 judges "missed sets" against what week 2 prescribed when he trained (11), not the
+     * raised plan (14): he did them all, so back steps up.
+     */
+    @Test
+    void aMidWeekTierRaiseDoesNotReadAsMissedSetsTheWeekAfter() {
+        run(null, null);
+        Back b = back();
+        workoutService.getToday(owner, null); // week 2's weekly proposal (week 1 unlogged: back holds)
+
+        trainService.updateMusclePriorities(owner, meso.getId(), Map.of("back", "emphasize"), null);
+        assertThat(total(b)).isEqualTo(14);
+        nextWeek();
+        logWeekOldPlan(2, b);
+
+        workoutService.getToday(owner, null);
+
+        MesoWeekProposalEntity w3 = proposalRepository.findWeekly(owner, meso.getId(), 3).orElseThrow();
+        assertThat(w3.getGroups()).filteredOn(g -> g.muscle().equals("back")).singleElement().satisfies(g -> {
+            assertThat(g.reasons()).doesNotContain("sets_missed").contains("all_sets_done");
+            assertThat(g.setsBefore()).isEqualTo(14);
+            assertThat(g.setsAfter()).isEqualTo(16);
+        });
+    }
+
+    /** The same when the raise is made on the new week's first day, before its weekly proposal is built. */
+    @Test
+    void aTierRaiseBeforeTheWeeksFirstOpenDoesNotReadAsMissedSets() {
+        run(null, null);
+        Back b = back();
+        workoutService.getToday(owner, null); // week 2's weekly proposal
+        nextWeek();
+        logWeekOldPlan(2, b);
+
+        trainService.updateMusclePriorities(owner, meso.getId(), Map.of("back", "emphasize"), null);
+        workoutService.getToday(owner, null);
+
+        MesoWeekProposalEntity w3 = proposalRepository.findWeekly(owner, meso.getId(), 3).orElseThrow();
+        assertThat(w3.getGroups()).filteredOn(g -> g.muscle().equals("back")).singleElement().satisfies(g -> {
+            assertThat(g.reasons()).doesNotContain("sets_missed").contains("all_sets_done");
+            assertThat(g.setsAfter()).isEqualTo(16);
+        });
+    }
+
+    /** Control: with no tier change, the same short week still holds back for missed sets. */
+    @Test
+    void withoutATierChangeMissedSetsStillHold() {
+        run(Map.of("back", "emphasize"), null);
+        Back b = back();
+        workoutService.getToday(owner, null);
+        nextWeek();
+        WorkoutSessionEntity instance = train.createWorkoutInstance(owner, mon,
+            reload().getStartDate().plusDays(7), "completed");
+        for (int s = 0; s < 4; s++) {
+            train.createLoggedSet(owner, b.mon4().getId(), instance.getId(), s, "60", 8, 0);
+        }
+
+        workoutService.getToday(owner, null);
+
+        assertThat(proposalRepository.findWeekly(owner, meso.getId(), 3).orElseThrow().getGroups())
+            .filteredOn(g -> g.muscle().equals("back")).singleElement()
+            .satisfies(g -> assertThat(g.reasons()).contains("sets_missed"));
+    }
+
+    /**
+     * Final review #2: a tier change during a deload week does not lift the halved plan back to the band: the
+     * light week stays light, no proposal is raised, but the band itself moves.
+     */
+    @Test
+    void aTierChangeInADeloadWeekKeepsTheLightWeek() {
+        run(null, null, List.of("MEV", "Deload", "MAV", "MAV", "MRV", "MRV"));
+        ExerciseEntity mon2 = ex(mon, "Evezés", "back-mid", 2);
+        ExerciseEntity mon1 = ex(mon, "Lehúzás", "back-wide", 1);
+        ExerciseEntity thu2 = ex(thu, "Kábeles evezés", "back-mid", 2);
+        ExerciseEntity thu1 = ex(thu, "Húzódzkodás", "back-wide", 1);
+
+        trainService.updateMusclePriorities(owner, meso.getId(), Map.of("back", "emphasize"), null);
+
+        assertThat(List.of(sets(mon2), sets(mon1), sets(thu2), sets(thu1))).containsExactly(2, 1, 2, 1);
+        assertThat(proposals()).isEmpty();
+        assertThat(ledger("back").getBandLow()).isEqualTo(14);
+        assertThat(ledger("back").getCurrentSets()).isEqualTo(6);
+    }
+
     // ── fixtures ──────────────────────────────────────────────────────────────────────────────
+
+    private record Back(ExerciseEntity mon4, ExerciseEntity mon2, ExerciseEntity thu3, ExerciseEntity thu2) {}
+
+    /** Back at 11: Mon 4 + 2, Thu 3 + 2. */
+    private Back back() {
+        return new Back(ex(mon, "Evezés", "back-mid", 4), ex(mon, "Lehúzás", "back-wide", 2),
+            ex(thu, "Kábeles evezés", "back-mid", 3), ex(thu, "Húzódzkodás", "back-wide", 2));
+    }
+
+    private int total(Back b) {
+        return sets(b.mon4()) + sets(b.mon2()) + sets(b.thu3()) + sets(b.thu2());
+    }
+
+    /** Every set of the 11-set plan (the fixture's own counts, not the raised rows) logged in {@code week}. */
+    private void logWeekOldPlan(int week, Back b) {
+        logDay(week, mon, 0, b.mon4(), b.mon2());
+        logDay(week, thu, 3, b.thu3(), b.thu2());
+    }
+
+    private void logDay(int week, WorkoutSessionEntity day, int offset, ExerciseEntity... exercises) {
+        WorkoutSessionEntity instance = train.createWorkoutInstance(owner, day,
+            reload().getStartDate().plusDays(7L * (week - 1) + offset), "completed");
+        int i = 0;
+        for (ExerciseEntity e : exercises) {
+            for (int s = 0; s < e.getWorkingSets(); s++) {
+                train.createLoggedSet(owner, e.getId(), instance.getId(), i++, "60", 8, 0);
+            }
+        }
+    }
+
+    /** "A week later": the run started one more week ago. */
+    private void nextWeek() {
+        MesocycleEntity later = reload();
+        later.setStartDate(later.getStartDate().minusWeeks(1));
+        later.setEndDate(later.getEndDate().minusWeeks(1));
+        meso = mesocycleRepository.saveAndFlush(later);
+    }
+
+    private MesocycleEntity reload() {
+        return mesocycleRepository.findById(meso.getId()).orElseThrow();
+    }
 
     private ExerciseEntity ex(WorkoutSessionEntity day, String name, String muscle, int sets) {
         ExerciseEntity e = train.createExercise(owner, day.getId(), name, muscle, "compound");

@@ -110,6 +110,26 @@ class WeekProposalManualIT extends AbstractIntegrationTest {
         });
     }
 
+    /**
+     * Final review #3: a week with nothing to review (back on Tartás holds, no load history) never pends —
+     * the phone would offer a review with nothing in it. Closed {@code applied} at build time, plan recorded.
+     */
+    @Test
+    void aWeekWithNothingToReviewIsClosedAtOnce() {
+        MesocycleEntity meso = run(2, NO_DELOAD, Map.of("back", "maintain"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        ExerciseEntity row = exercise(mon, "Evezés", "back-mid", 4);
+
+        workoutService.getToday(owner, null);
+
+        MesoWeekProposalEntity p = weekly(meso, 2);
+        assertThat(p.getLines()).isEmpty();
+        assertThat(p.getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_APPLIED);
+        assertThat(p.getDecidedAt()).isNotNull();
+        assertThat(p.getPlanAfter()).containsEntry(row.getId().toString(), 4);
+        assertThat(sets(row)).isEqualTo(4);
+    }
+
     @Test
     void anUndecidedProposalExpiresAtTheNextWeekBoundary() {
         Back b = back();
@@ -278,7 +298,7 @@ class WeekProposalManualIT extends AbstractIntegrationTest {
         MesocycleEntity meso = run(2, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
         ExerciseEntity squat = exercise(day(meso, "Hétfő", 0), "Guggolás", "quad", 4);
         ExerciseEntity press = exercise(day(meso, "Csütörtök", 3), "Lábtolás", "quad", 4);
-        workoutService.getToday(owner, null); // week 2: left untouched, expires
+        workoutService.getToday(owner, null); // week 2: Tartás holds, nothing to review — closed at once
 
         nextWeek(meso); // week 3 (deload): only the squat's halving accepted, expires
         workoutService.getToday(owner, null);
@@ -287,12 +307,12 @@ class WeekProposalManualIT extends AbstractIntegrationTest {
         nextWeek(meso); // week 4: the squat's restore accepted and the week applied
         workoutService.getToday(owner, null);
         acceptLinesOf(meso, 4, squat.getId(), MesoWeekProposalEntity.STATUS_APPLIED);
-        assertThat(weekly(meso, 2).getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_EXPIRED);
+        assertThat(weekly(meso, 2).getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_APPLIED);
         assertThat(weekly(meso, 3).getStatus()).isEqualTo(MesoWeekProposalEntity.STATUS_EXPIRED);
         assertThat(List.of(sets(squat), sets(press))).containsExactly(4, 4);
 
         volumeLedger.sync(owner, meso.getId()); // the decisions endpoint syncs after a write; the seam does not
-        // week 1: 8, week 2 (expired untouched): 8, week 3 (expired, squat halved): 2 + 4 = 6
+        // week 1: 8, week 2 (nothing to review, applied): 8, week 3 (expired, squat halved): 2 + 4 = 6
         List<Integer> planned = volumeArcService.arc(owner, meso.getId()).getMuscles().stream()
             .filter(m -> m.getMuscle().equals("quad")).findFirst().orElseThrow()
             .getWeeks().stream().map(VolumeArcWeek::getPlanned).toList();

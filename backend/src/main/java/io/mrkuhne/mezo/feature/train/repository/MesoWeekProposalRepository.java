@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.repository;
 
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,6 +45,22 @@ public interface MesoWeekProposalRepository extends JpaRepository<MesoWeekPropos
         + " and p.status = '" + MesoWeekProposalEntity.STATUS_PENDING + "' order by p.createdAt desc")
     List<MesoWeekProposalEntity> findPendingTierChanges(
         @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId);
+
+    /**
+     * The run's {@code weekly} proposals (any status) strictly before {@code beforeWeek}, latest week first — the
+     * first one is the previous week's build, whose {@code createdAt} bounds "tier changes since last week".
+     */
+    @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
+        + " and p.kind = '" + MesoWeekProposalEntity.KIND_WEEKLY + "' and p.week < :beforeWeek order by p.week desc")
+    List<MesoWeekProposalEntity> findWeeklyBefore(
+        @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId,
+        @Param("beforeWeek") int beforeWeek);
+
+    /** The run's {@code tier_change} proposals (any status) created strictly after {@code after}. */
+    @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
+        + " and p.kind = '" + MesoWeekProposalEntity.KIND_TIER_CHANGE + "' and p.createdAt > :after")
+    List<MesoWeekProposalEntity> findTierChangesCreatedAfter(
+        @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId, @Param("after") Instant after);
 
     /** One proposal of the caller's run by id (the decisions endpoint); absent for another user or run. */
     Optional<MesoWeekProposalEntity> findByIdAndCreatedByAndMesocycleId(UUID id, UUID createdBy, UUID mesocycleId);

@@ -1191,7 +1191,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The run's weekly proposals (newest first); empty when the run is not active, the gate is off or none exists */
+        /**
+         * This week's weekly proposal first, then pending tier changes of the current week, newest first
+         * @description This calendar week's weekly proposal (any status) first, then the run's still-pending tier-change proposals of the current week, newest first. Empty when the run is not active, the gate is off or none exists. Opening it generates the week's proposal when due (like opening the day).
+         */
         get: operations["listWeekProposals"];
         put?: never;
         post?: never;
@@ -18057,7 +18060,7 @@ export interface operations {
                     "application/json": components["schemas"]["WeekProposal"];
                 };
             };
-            /** @description Unknown line id, both rest flags set, or a decided line asked to change (TRAIN_WEEK_PROPOSAL_DECISION_INVALID) */
+            /** @description Empty request (no decisions and no rest flag), unknown line id, both rest flags set, one line asked twice with different decisions, or a decided line asked to change (TRAIN_WEEK_PROPOSAL_DECISION_INVALID) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -18084,7 +18087,7 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
-            /** @description The proposal is no longer pending (TRAIN_WEEK_PROPOSAL_CLOSED) */
+            /** @description The proposal is no longer pending, or its week has passed (TRAIN_WEEK_PROPOSAL_CLOSED); a retry that only repeats the stored decisions (no rest flag) returns 200 instead */
             409: {
                 headers: {
                     [name: string]: unknown;

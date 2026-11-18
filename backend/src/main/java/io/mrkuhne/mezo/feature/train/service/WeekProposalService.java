@@ -145,7 +145,11 @@ public class WeekProposalService {
         Draft draft = build(createdBy, run, calWeek);
         if (!MODE_AUTO.equals(props.weeklyReview().mode())) {
             // Manual: the proposal waits. Nothing written, so the ledger and its provenance stay as they
-            // are; the week is still recorded, its audit worded as a proposal.
+            // are; the week is still recorded, its audit worded as a proposal. A week with no line has
+            // nothing to review: closed at once (every line vacuously decided), so it never pends.
+            if (draft.proposal().getLines().isEmpty()) {
+                close(draft.proposal(), MesoWeekProposalEntity.STATUS_APPLIED);
+            }
             stamp(run, calWeek, draft.outcomes().values().stream().map(WeekProposalService::proposedChange).toList());
             return;
         }
@@ -187,10 +191,13 @@ public class WeekProposalService {
 
         Map<String, Integer> beforeByGroup = new HashMap<>();
         byGroup.forEach((group, rows) -> beforeByGroup.put(group, sum(rows, working)));
+        Map<String, Integer> tierMoves = tierChangeMovesSinceLastWeek(createdBy, meso.getId(), calWeek);
         Set<String> keptOwn = restoreAfterDeload(createdBy, meso.getId(), calWeek, plan, working, fromSets, lineReasons);
 
         byGroup.forEach((group, rows) -> {
             int before = beforeByGroup.get(group);
+            // What last week prescribed while he trained it: a tier change since then moved the plan after.
+            int plannedLastWeek = Math.max(0, before - tierMoves.getOrDefault(group, 0));
             int restored = sum(rows, working);
             GroupSignals s = signals.getOrDefault(group, new GroupSignals(0, false, false, false, false));
             PriorityTier tier = PriorityTier.of(meso.getMusclePriorities(), group);
@@ -199,7 +206,7 @@ public class WeekProposalService {
             bands.put(group, band);
             VolumeDecider.Result result = VolumeDecider.decide(new VolumeDecider.Input(
                 calWeek, tier, band,
-                restored, before, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
+                restored, plannedLastWeek, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
                 deficit, deloadPhase, props.stepEmphasize(), props.stepGrow(), props.stepDeficit()));
             List<String> reasons = result.reasons().stream().map(WeekProposalService::code).toList();
             boolean noSlot = false;
@@ -267,6 +274,26 @@ public class WeekProposalService {
         proposal.setRestore(restore.isEmpty() ? null : restore);
         proposal.setGroups(groups);
         return new Draft(proposalRepository.save(proposal), outcomes);
+    }
+
+    /**
+     * Per group, the net sets the run's tier changes wrote since the previous week's weekly proposal was built
+     * (since the run's start when there is none): the accepted set lines (an accepted set line is always a
+     * written one — {@link #applySetLine} records {@code kept} otherwise), whatever the proposal's status. A
+     * change made in the middle of last week, or on this week's first day before this build, is counted — last
+     * week was logged under the plan before it, so {@code SETS_MISSED} is judged against that plan.
+     */
+    private Map<String, Integer> tierChangeMovesSinceLastWeek(UUID createdBy, UUID mesoId, int calWeek) {
+        Instant since = proposalRepository.findWeeklyBefore(createdBy, mesoId, calWeek).stream()
+            .findFirst().map(MesoWeekProposalEntity::getCreatedAt).orElse(Instant.EPOCH);
+        Map<String, Integer> moves = new HashMap<>();
+        proposalRepository.findTierChangesCreatedAfter(createdBy, mesoId, since).stream()
+            .flatMap(p -> p.getLines().stream())
+            .filter(l -> WeekProposalLineJson.KIND_SETS.equals(l.kind()))
+            .filter(l -> WeekProposalLineJson.DECISION_ACCEPTED.equals(l.decision()))
+            .filter(l -> l.muscleGroup() != null && l.from() != null && l.to() != null)
+            .forEach(l -> moves.merge(l.muscleGroup(), l.to() - l.from(), Integer::sum));
+        return moves;
     }
 
     /**
@@ -515,8 +542,11 @@ public class WeekProposalService {
         working.merge(id, by, Integer::sum);
     }
 
-    /** DA1: {@code phaseCurve} is 1-based against a 1-based week — index {@code calWeek − 1}, bounds-checked. */
-    private static boolean isDeloadPhase(MesocycleEntity meso, int calWeek) {
+    /**
+     * DA1: {@code phaseCurve} is 1-based against a 1-based week — index {@code calWeek − 1}, bounds-checked.
+     * Shared with {@link TierChangeProposalService} (no band fix in a deload week).
+     */
+    static boolean isDeloadPhase(MesocycleEntity meso, int calWeek) {
         List<String> phaseCurve = meso.getPhaseCurve();
         int idx = calWeek - 1;
         if (phaseCurve == null || idx < 0 || idx >= phaseCurve.size()) {

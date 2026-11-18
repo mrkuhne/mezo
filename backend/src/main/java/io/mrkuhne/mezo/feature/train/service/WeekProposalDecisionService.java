@@ -41,11 +41,13 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>Every line decided → {@link WeekProposalService#close} as {@code applied}.</li>
  * </ul>
  *
- * <p>Idempotent: the same decision on an already decided line is a no-op. Refused (400
- * {@code TRAIN_WEEK_PROPOSAL_DECISION_INVALID}, nothing written): an empty request, both rest flags, an
- * unknown line id, one line id asked twice with different decisions, or a decided line asked to change.
- * A proposal that is no longer pending — or whose week the calendar has already left (it expires at the
- * next generation) — is 409 {@code TRAIN_WEEK_PROPOSAL_CLOSED}.
+ * <p>Idempotent: the same decision on an already decided line is a no-op — on a closed proposal too: a request
+ * with no rest flag whose every decision equals the stored one (a retried closing submit) returns the proposal
+ * unchanged. Refused (400 {@code TRAIN_WEEK_PROPOSAL_DECISION_INVALID}, nothing written): an empty request,
+ * both rest flags, an unknown line id, one line id asked twice with different decisions, or a decided line
+ * asked to change. Any other request on a proposal that is no longer pending — or any request on one whose
+ * week the calendar has already left (it expires at the next generation) — is 409
+ * {@code TRAIN_WEEK_PROPOSAL_CLOSED}.
  */
 @Service
 @RequiredArgsConstructor
@@ -67,10 +69,14 @@ public class WeekProposalDecisionService {
         MesoWeekProposalEntity proposal = proposalRepository
             .findByIdAndCreatedByAndMesocycleId(proposalId, createdBy, mesoId)
             .orElseThrow(WeekProposalDecisionService::notFound);
-        if (!MesoWeekProposalEntity.STATUS_PENDING.equals(proposal.getStatus())
-                || proposal.getWeek() < MesoWeeks.clampWeek(run.getStartDate(), run.getWeeks())) {
-            throw new SystemRuntimeErrorException(
-                SystemMessage.error("TRAIN_WEEK_PROPOSAL_CLOSED").build(), HttpStatus.CONFLICT);
+        if (!MesoWeekProposalEntity.STATUS_PENDING.equals(proposal.getStatus())) {
+            if (isRepeat(request, proposal)) {
+                return queryService.toDtos(List.of(proposal), run).get(0); // a retried submit: nothing to do
+            }
+            throw closed();
+        }
+        if (proposal.getWeek() < MesoWeeks.clampWeek(run.getStartDate(), run.getWeeks())) {
+            throw closed();
         }
 
         boolean acceptRest = Boolean.TRUE.equals(request.getAcceptRest());
@@ -110,6 +116,23 @@ public class WeekProposalDecisionService {
             proposalRepository.save(proposal);
         }
         return queryService.toDtos(List.of(proposal), run).get(0);
+    }
+
+    /**
+     * A request that only repeats what the closed proposal already records (no rest flag, at least one decision,
+     * every one naming a line whose stored decision is the same) — e.g. the phone resending a closing submit
+     * whose response was lost. Answered with the proposal unchanged instead of a 409.
+     */
+    private static boolean isRepeat(WeekProposalDecisionRequest request, MesoWeekProposalEntity proposal) {
+        List<WeekProposalLineDecision> decisions = request.getDecisions();
+        if (Boolean.TRUE.equals(request.getAcceptRest()) || Boolean.TRUE.equals(request.getKeepRest())
+                || decisions == null || decisions.isEmpty()) {
+            return false;
+        }
+        Map<String, String> stored = new HashMap<>();
+        proposal.getLines().forEach(l -> stored.put(l.id(), l.decision()));
+        return decisions.stream().allMatch(d -> d.getLineId() != null && d.getDecision() != null
+            && d.getDecision().getValue().equals(stored.get(d.getLineId())));
     }
 
     /**
@@ -180,6 +203,11 @@ public class WeekProposalDecisionService {
     private static SystemRuntimeErrorException notFound() {
         return new SystemRuntimeErrorException(
             SystemMessage.error("TRAIN_WEEK_PROPOSAL_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
+    }
+
+    private static SystemRuntimeErrorException closed() {
+        return new SystemRuntimeErrorException(
+            SystemMessage.error("TRAIN_WEEK_PROPOSAL_CLOSED").build(), HttpStatus.CONFLICT);
     }
 
     private static SystemRuntimeErrorException invalid() {

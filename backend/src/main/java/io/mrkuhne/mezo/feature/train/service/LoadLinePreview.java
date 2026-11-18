@@ -20,7 +20,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 /**
- * The weight and rep lines of a weekly proposal (volume engine v2 S3, spec §6.7): a preview of what the
+ * The weight and rep lines of a weekly proposal (volume engine v2 S3, spec §6.4): a preview of what the
  * week's first session of each counting template-day exercise will prescribe — the same
  * {@link SetRecommendationService#prescribe} call {@code WorkoutService.getToday} makes, with the same
  * {@link StyleContext} ({@link ExerciseStyler#context}, at the proposal's week) and no session overlays
@@ -38,8 +38,10 @@ import org.springframework.stereotype.Service;
  *   <li>a down move (weight or reps) → its line with {@code grind};</li>
  *   <li>HOLD, no reference (first session / anchor), no net change (bodyweight at the range top) → none.</li>
  * </ul>
- * No load lines in a deload week or with the Hypertrophy Drive off. Failure-isolated: an exception is
- * logged and yields no load lines — the weekly engine never breaks on the preview.
+ * No load lines in a deload week or with the Hypertrophy Drive off. Failure-isolated per row: an exception
+ * while previewing one exercise is logged and costs only that exercise's line (an outer catch covers the shared
+ * setup — no load lines at all). Limit: a repository / database error marks the weekly transaction rollback-only
+ * even when caught here, so the whole week's generation rolls back and is retried on the next open.
  */
 @Slf4j
 @Service
@@ -78,25 +80,15 @@ public class LoadLinePreview {
             LocalDate today = LocalDate.now();
             List<WeekProposalLineJson> lines = new ArrayList<>();
             for (TemplatePlan.Row row : rows) {
-                ExerciseEntity ex = row.exercise();
-                StyleContext style = runStyle == null ? StyleContext.NONE
-                    : exerciseStyler.context(ex, runStyle, calWeek, run.getPhaseCurve(), stability);
-                Prescription p = setRecommendationService.prescribe(createdBy, ex,
-                    new SetRecommendationService.PrescribeOptions(false, ex.getWorkingSets(), false, null, 0,
-                        style, today));
-                ProgressionSignal signal = p.progression();
-                if (signal == null || signal.getLever() == null) {
-                    continue; // first session / anchor: nothing to preview against
-                }
-                ExerciseSetEntity ref = topSet(historyResolver
-                    .reference(createdBy, ex, today, styleProps.sameRangeMaxAgeDays()).sets());
-                if (ref == null) {
-                    continue;
-                }
-                Integer targetReserve = style.styled() ? Integer.valueOf(style.effectiveReserve()) : ex.getTargetRir();
-                WeekProposalLineJson line = line(row, signal, ref, targetReserve);
-                if (line != null) {
-                    lines.add(line);
+                try {
+                    WeekProposalLineJson line = lineFor(createdBy, run, calWeek, row, runStyle, stability, today);
+                    if (line != null) {
+                        lines.add(line);
+                    }
+                } catch (RuntimeException e) {
+                    // One bad row costs only its own line, never the week's other load lines.
+                    log.warn("Weekly proposal load preview failed for exercise {} (run {} week {}): no line",
+                        row.exercise().getId(), run.getId(), calWeek, e);
                 }
             }
             return lines;
@@ -105,6 +97,27 @@ public class LoadLinePreview {
                 calWeek, e);
             return List.of();
         }
+    }
+
+    /** One row's load line, or {@code null} (no reference to preview against, HOLD, no net change). */
+    private WeekProposalLineJson lineFor(UUID createdBy, MesocycleEntity run, int calWeek, TemplatePlan.Row row,
+                                         TrainingStyle runStyle, CatalogAttributes.Lookup stability, LocalDate today) {
+        ExerciseEntity ex = row.exercise();
+        StyleContext style = runStyle == null ? StyleContext.NONE
+            : exerciseStyler.context(ex, runStyle, calWeek, run.getPhaseCurve(), stability);
+        Prescription p = setRecommendationService.prescribe(createdBy, ex,
+            new SetRecommendationService.PrescribeOptions(false, ex.getWorkingSets(), false, null, 0, style, today));
+        ProgressionSignal signal = p.progression();
+        if (signal == null || signal.getLever() == null) {
+            return null; // first session / anchor: nothing to preview against
+        }
+        ExerciseSetEntity ref = topSet(historyResolver
+            .reference(createdBy, ex, today, styleProps.sameRangeMaxAgeDays()).sets());
+        if (ref == null) {
+            return null;
+        }
+        Integer targetReserve = style.styled() ? Integer.valueOf(style.effectiveReserve()) : ex.getTargetRir();
+        return line(row, signal, ref, targetReserve);
     }
 
     private WeekProposalLineJson line(TemplatePlan.Row row, ProgressionSignal signal, ExerciseSetEntity ref,

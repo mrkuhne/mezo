@@ -164,6 +164,64 @@ class WeekProposalApiIT extends ApiIntegrationTest {
         assertHasRequestError(body, "TRAIN_WEEK_PROPOSAL_CLOSED");
     }
 
+    /**
+     * Final review #5: a retried closing submit (the phone resends after a lost response) gets the closed
+     * proposal back unchanged; a different decision on the closed proposal is still 409.
+     */
+    @Test
+    void aRetriedClosingSubmitReturnsTheClosedProposal() {
+        RegisteredUser u = registerUser("Week Proposal Retry");
+        Back b = back(u.id());
+        WeekProposal p = read(u, b.meso()).get(0);
+        WeekProposalDecisionRequest closing = new WeekProposalDecisionRequest().decisions(p.getLines().stream()
+            .map(l -> decision(l.getId(), l.getKind() == WeekProposalLine.KindEnum.SETS
+                && l.getExerciseId().equals(b.thu2().getId())
+                ? WeekProposalLineDecision.DecisionEnum.KEPT : WeekProposalLineDecision.DecisionEnum.ACCEPTED))
+            .toList());
+
+        WeekProposal first = decide(u, b.meso(), p, closing, HttpStatus.OK, WeekProposal.class);
+        WeekProposal again = decide(u, b.meso(), p, closing, HttpStatus.OK, WeekProposal.class);
+
+        assertThat(first.getStatus()).isEqualTo(WeekProposal.StatusEnum.APPLIED);
+        assertThat(again.getStatus()).isEqualTo(WeekProposal.StatusEnum.APPLIED);
+        assertThat(again.getDecidedAt()).isNotNull();
+        assertThat(again.getLines()).isEqualTo(first.getLines());
+        assertThat(List.of(sets(b.mon2()), sets(b.thu2()))).containsExactly(3, 2);
+        assertThat(ledger(u.id(), b.meso(), "back").getSource().adjustments()).hasSize(1);
+
+        // a subset of the same decisions is a repeat too; a changed one or a rest flag is not
+        decide(u, b.meso(), p, new WeekProposalDecisionRequest().decisions(List.of(
+            decision(lineOf(p, b.mon2()).getId(), WeekProposalLineDecision.DecisionEnum.ACCEPTED))),
+            HttpStatus.OK, WeekProposal.class);
+        assertHasRequestError(decide(u, b.meso(), p, new WeekProposalDecisionRequest().decisions(List.of(
+                decision(lineOf(p, b.thu2()).getId(), WeekProposalLineDecision.DecisionEnum.ACCEPTED))),
+            HttpStatus.CONFLICT, String.class), "TRAIN_WEEK_PROPOSAL_CLOSED");
+        assertHasRequestError(decide(u, b.meso(), p, new WeekProposalDecisionRequest().decisions(List.of(
+                decision(lineOf(p, b.mon2()).getId(), WeekProposalLineDecision.DecisionEnum.ACCEPTED)))
+                .acceptRest(true), HttpStatus.CONFLICT, String.class), "TRAIN_WEEK_PROPOSAL_CLOSED");
+        assertThat(sets(b.thu2())).isEqualTo(2);
+    }
+
+    /**
+     * Final review #4: a pending tier change of a past week (its expiry has not run yet) is not listed —
+     * deciding it would be refused.
+     */
+    @Test
+    void aPendingTierChangeOfAPastWeekIsNotListed() {
+        RegisteredUser u = registerUser("Week Proposal Past Tier");
+        Back b = back(u.id());
+        read(u, b.meso()); // week 2 recorded: the next read does not run the expiry again
+        MesoWeekProposalEntity past = tierChange(u.id(), b.meso(), 1);
+        MesoWeekProposalEntity current = tierChange(u.id(), b.meso(), 2);
+
+        List<WeekProposal> listed = read(u, b.meso());
+
+        assertThat(listed).extracting(WeekProposal::getKind)
+            .containsExactly(WeekProposal.KindEnum.WEEKLY, WeekProposal.KindEnum.TIER_CHANGE);
+        assertThat(listed.get(1).getId()).isEqualTo(current.getId());
+        assertThat(listed).extracting(WeekProposal::getId).doesNotContain(past.getId());
+    }
+
     @Test
     void keepRestClosesTheProposalWithNothingWritten() {
         RegisteredUser u = registerUser("Week Proposal Keep Rest");
@@ -261,6 +319,19 @@ class WeekProposalApiIT extends ApiIntegrationTest {
         logWeek(owner, meso, mon, 0, b.mon4(), b.mon2());
         logWeek(owner, meso, thu, 3, b.thu3(), b.thu2());
         return b;
+    }
+
+    /** A pending tier-change proposal of {@code week} with no lines, stored directly. */
+    private MesoWeekProposalEntity tierChange(UUID owner, MesocycleEntity meso, int week) {
+        MesoWeekProposalEntity p = new MesoWeekProposalEntity();
+        p.setCreatedBy(owner);
+        p.setMesocycleId(meso.getId());
+        p.setWeek(week);
+        p.setKind(MesoWeekProposalEntity.KIND_TIER_CHANGE);
+        p.setStatus(MesoWeekProposalEntity.STATUS_PENDING);
+        p.setLines(List.of());
+        p.setGroups(List.of());
+        return proposalRepository.saveAndFlush(p);
     }
 
     private ExerciseEntity exercise(UUID owner, WorkoutSessionEntity day, String name, String muscle, int sets) {

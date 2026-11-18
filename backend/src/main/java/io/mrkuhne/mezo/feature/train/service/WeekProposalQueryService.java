@@ -25,7 +25,8 @@ import org.springframework.stereotype.Service;
  * Opening the review is like opening the day — the week's proposal is generated on demand
  * ({@link VolumeProgressionService#rolloverIfDue}, the same lazy trigger {@code getToday} uses, failure logged
  * and swallowed), then this calendar week's {@code weekly} proposal (any status) and the run's pending
- * {@code tier_change} proposals (newest first) are returned, weekly first.
+ * {@code tier_change} proposals of the current week (newest first) are returned, weekly first. A pending tier
+ * change of a past week (its expiry runs at the next generation) is left out — deciding it would be a 409.
  *
  * <p>Deliberately not {@code @Transactional}: the generation runs in its own transaction, so a failing weekly
  * engine cannot poison the read.
@@ -58,7 +59,10 @@ public class WeekProposalQueryService {
         int calWeek = MesoWeeks.clampWeek(meso.getStartDate(), meso.getWeeks());
         List<MesoWeekProposalEntity> found = new ArrayList<>();
         proposalRepository.findWeekly(createdBy, mesoId, calWeek).ifPresent(found::add);
-        found.addAll(proposalRepository.findPendingTierChanges(createdBy, mesoId));
+        // A pending tier change of a past week (its expiry has not run yet) would only be refused on decide.
+        proposalRepository.findPendingTierChanges(createdBy, mesoId).stream()
+            .filter(p -> p.getWeek() >= calWeek)
+            .forEach(found::add);
         return toDtos(found, meso);
     }
 
