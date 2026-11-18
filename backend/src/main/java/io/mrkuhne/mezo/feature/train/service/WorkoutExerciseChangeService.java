@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -180,7 +181,7 @@ public class WorkoutExerciseChangeService {
         if (!tech && !replaced.isChallenge()) {
             return;
         }
-        CatalogAttributes.Attrs attrs = catalogAttributes.loadAttrs(java.util.Collections.singletonList(row.getCatalogId()))
+        CatalogAttributes.Attrs attrs = catalogAttributes.loadAttrs(Collections.singletonList(row.getCatalogId()))
             .of(row.getCatalogId());
         if (TechniqueRules.check(Technique.fromWire(replaced.getTechnique()), replaced.isChallenge(), attrs).isEmpty()) {
             row.setTechnique(replaced.getTechnique());

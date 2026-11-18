@@ -34,7 +34,7 @@ public class TechniqueGuard {
     public void validateRows(List<ExerciseEntity> rows) {
         validate(List.of(rows.stream().map(r -> new GymExerciseJson(r.getId(), r.getName(), r.getMuscle(), null,
             null, null, null, null, null, r.getType(), null, r.getCatalogId(), r.isCountsTowardVolume(), null, null,
-            null, r.getTechnique(), r.getTechniqueSource(), r.isChallenge())).toList()));
+            null, null, null, null).withTechnique(r.getTechnique(), r.getTechniqueSource(), r.isChallenge())).toList()));
     }
 
     private void validate(List<List<GymExerciseJson>> days) {

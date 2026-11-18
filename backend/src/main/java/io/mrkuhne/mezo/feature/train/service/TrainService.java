@@ -386,13 +386,13 @@ public class TrainService {
         // insert the new list with orderIndex pinned by array order.
         List<ExerciseEntity> old = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(dayId));
-        exerciseRepository.deleteAll(old);
         List<ExerciseEntity> fresh = new ArrayList<>(inputs.size());
         for (int i = 0; i < inputs.size(); i++) {
             fresh.add(toExerciseEntity(createdBy, dayId, inputs.get(i), i));
         }
         CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, block, inputs);
-        techniqueGuard.validateRows(fresh); // 400 rolls the soft-delete back
+        techniqueGuard.validateRows(fresh); // before the soft-delete: a 400 leaves the day untouched
+        exerciseRepository.deleteAll(old);
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
         volumeLedger.sync(createdBy, mesoId);
         return toDay(day, saved, mediaByCatalogOf(saved), block, stability);
@@ -462,7 +462,6 @@ public class TrainService {
             UUID createdBy, WorkoutSessionEntity template, List<GymExerciseInput> inputs) {
         List<ExerciseEntity> old = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(template.getId()));
-        exerciseRepository.deleteAll(old);
         List<ExerciseEntity> fresh = new ArrayList<>(inputs.size());
         for (int i = 0; i < inputs.size(); i++) {
             fresh.add(toExerciseEntity(createdBy, template.getId(), inputs.get(i), i));
@@ -470,6 +469,7 @@ public class TrainService {
         // a custom workout has no block style: nothing is stamped, an exercise's own fields persist as sent
         CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, null, inputs);
         techniqueGuard.validateRows(fresh);
+        exerciseRepository.deleteAll(old);
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
         return toCustomWorkoutResponse(template, saved, mediaByCatalogOf(saved), stability);
     }

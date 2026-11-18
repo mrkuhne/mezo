@@ -275,6 +275,91 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
     }
 
     @Test
+    void carriedPickThatBecameInvalidIsClearedNotBlocking() {
+        UUID owner = ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoTemplateResponse created = postForBody(TEMPLATES, request(true, List.of(
+            tech(ex("Cable Fly", "chest-mid", catalog("cable-fly")), Technique.DROP),
+            ex("Leg Extension", "quad", catalog("leg-extension")))), auth, HttpStatus.OK,
+            MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + created.getId() + "/start", start(), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+        jdbcTemplate.update("update exercise_catalog set stability = 'free' where slug = 'cable-fly'");
+        try {
+            // a web resave of an unrelated field: the stale pick is cleared, no 400
+            MesoTemplateUpsertRequest web = webRequest(created);
+            web.setNotes("csak egy jegyzet");
+            MesoTemplateResponse resaved = putForBody(TEMPLATES + "/" + created.getId(), web, auth,
+                HttpStatus.OK, MesoTemplateResponse.class);
+            GymExercise fly = resaved.getDays().get(0).getExercises().get(0);
+            assertThat(fly.getTechnique()).isNull();
+            assertThat(fly.getTechniqueSource()).isNull();
+            assertThat(fly.getChallenge()).isFalse();
+
+            // the same on a run day edit
+            MesoDay day = run.getDays().get(0);
+            List<GymExerciseInput> inputs = new ArrayList<>(day.getExercises().stream()
+                .map(MesoTemplateTechniqueIT::webInput).toList());
+            MesoDay edited = trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs);
+            assertThat(edited.getExercises().get(0).getTechnique()).isNull();
+            assertThat(edited.getExercises().get(0).getChallenge()).isFalse();
+            // ...but SENDING a pick on the now-free movement is still refused
+            inputs.get(0).setTechnique(Technique.DROP);
+            assertThatThrownBy(() -> trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs))
+                .isInstanceOf(SystemRuntimeErrorException.class);
+        } finally {
+            jdbcTemplate.update("update exercise_catalog set stability = 'stable' where slug = 'cable-fly'");
+        }
+    }
+
+    @Test
+    void runDayEditSendingTechniqueStoresWireAndOwner() {
+        UUID owner = ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoTemplateResponse t = postForBody(TEMPLATES, request(true, List.of(
+            ex("Cable Fly", "chest-mid", catalog("cable-fly")))), auth, HttpStatus.OK, MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + t.getId() + "/start", start(), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+        MesoDay day = run.getDays().get(0);
+        List<GymExerciseInput> inputs = new ArrayList<>(day.getExercises().stream()
+            .map(MesoTemplateTechniqueIT::webInput).toList());
+        inputs.get(0).setTechnique(Technique.REST_DROP);
+
+        MesoDay edited = trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs);
+
+        assertThat(edited.getExercises().get(0).getTechnique()).isEqualTo(Technique.REST_DROP);
+        assertThat(jdbcTemplate.queryForObject(
+            "select technique from exercise where name = 'Cable Fly' and is_deleted = false", String.class))
+            .isEqualTo("rest_drop");
+        assertThat(jdbcTemplate.queryForObject(
+            "select technique_source from exercise where name = 'Cable Fly' and is_deleted = false", String.class))
+            .isEqualTo("owner");
+    }
+
+    @Test
+    void runDayEditWithTwoChallengesRejected() {
+        UUID owner = ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoTemplateResponse t = postForBody(TEMPLATES, request(true, List.of(
+            ex("Cable Fly", "chest-mid", catalog("cable-fly")),
+            ex("Pec Deck", "chest-mid", catalog("pec-deck")))), auth, HttpStatus.OK, MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + t.getId() + "/start", start(), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+        MesoDay day = run.getDays().get(0);
+        List<GymExerciseInput> inputs = new ArrayList<>(day.getExercises().stream()
+            .map(MesoTemplateTechniqueIT::webInput).toList());
+        inputs.forEach(i -> i.setChallenge(true));
+
+        assertThatThrownBy(() -> trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getMessages().get(0).getCode())
+                .isEqualTo("TRAIN_TECHNIQUE_TWO_CHALLENGES"));
+        assertThat(jdbcTemplate.queryForObject(
+            "select count(*) from exercise where workout_session_id = ? and is_deleted = false",
+            Integer.class, day.getId())).isEqualTo(2);
+    }
+
+    @Test
     void unflaggedTemplateIsUntouched() throws Exception {
         ownerId();
         HttpHeaders auth = ownerAuthHeaders();

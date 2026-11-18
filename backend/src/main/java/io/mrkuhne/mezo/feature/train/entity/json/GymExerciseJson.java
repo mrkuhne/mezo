@@ -48,4 +48,11 @@ public record GymExerciseJson(
     public GymExerciseJson {
         countsTowardVolume = countsTowardVolume != null ? countsTowardVolume : !"plyo".equals(type);
     }
+
+    /** Same exercise with the three technique fields replaced (mezo-r36n9.80). */
+    public GymExerciseJson withTechnique(String technique, String techniqueSource, Boolean challenge) {
+        return new GymExerciseJson(id, name, muscle, warmupSets, workingSets, repMin, repMax, targetRir,
+            anchorWeightKg, type, warning, catalogId, countsTowardVolume, trainingStyle, restSec, overrides,
+            technique, techniqueSource, challenge);
+    }
 }
