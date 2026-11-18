@@ -16,6 +16,7 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **2026-11-18 — `mezo-r36n9.78` (no language change).** Four new error keys in `messages_hu`/`messages_en` (train, volume engine v2 S3, both bundles in parity): `TRAIN_MESO_NOT_FOUND` (404 on `GET …/week-proposals`), `TRAIN_WEEK_PROPOSAL_NOT_FOUND` (404), `TRAIN_WEEK_PROPOSAL_CLOSED` (409) and `TRAIN_WEEK_PROPOSAL_DECISION_INVALID` (400) on the decisions endpoint. The proposal's reason codes are enum values; their Hungarian wording is the client's. The bundle mechanics below are unchanged.
 > **2026-11-18 — `mezo-r36n9.77` (no language change).** Two new error keys `TRAIN_SPORT_GROUP_INVALID` and `TRAIN_MESO_PHASE_CURVE_LENGTH` in `messages_hu`/`messages_en` (train, S2); the bundle mechanics below are unchanged.
 > **2026-11-17 — reviewed after `mezo-l5lvh`:** the change under `backend/src/main/resources` only switched on `server.compression` in `application.yml`; no message-bundle key and no user-facing string changed. Same day, `mezo-7ahl8` added one more non-language key there (`mezo.proactive.feed.lazy-retry-minutes`).
 

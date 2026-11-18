@@ -794,7 +794,18 @@
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "A heti változtatási javaslatokat egyenként elfogadhatod vagy elutasíthatod, választhatsz kézi módot, és látod, hogyan változik a súly; a régi javaslatot az újabb felváltja."
+    "mit_kapsz": "A heti változtatási javaslatokat egyenként elfogadhatod vagy elutasíthatod, választhatsz kézi módot, és látod, hogyan változik a súly; a régi javaslatot az újabb felváltja.",
+    "munkamenet": "volume-s3"
+  },
+  "mezo-r36n9.87": {
+    "cim": "Edzés: a „marad” a súlycsökkentésnél is a múlt heti súlyt tartsa",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha a heti javaslat csökkentené egy gyakorlat súlyát vagy ismétlését, és te azt mondod rá, hogy „marad”, azon a héten az edzés pontosan a múlt heti súlyt és ismétlést kéri.",
+    "munkamenet": "volume-s3"
   },
   "mezo-r36n9.79": {
     "cim": "Edzés: edzésstílus és okosabb haladás",
