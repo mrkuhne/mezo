@@ -27,7 +27,12 @@ public final class PlanEvaluator {
     /** {@code group} is the coarse muscle group (may be null); {@code counts} false = exempt from volume. */
     public record PlanExercise(String group, int workingSets, int warmupSets, boolean counts) {}
 
-    public record PlanDay(String day, List<PlanExercise> exercises) {}
+    /** {@code index}: the day's reported index; null = its position in the list (a run reports its orderIndex). */
+    public record PlanDay(String day, List<PlanExercise> exercises, Integer index) {
+        public PlanDay(String day, List<PlanExercise> exercises) {
+            this(day, exercises, null);
+        }
+    }
 
     /** {@code sportWeekdays}: 0=Hét..6=Vas. */
     public record Input(int weeks, List<String> phaseCurve, List<PlanDay> days, Map<String, String> priorities,
@@ -40,11 +45,14 @@ public final class PlanEvaluator {
 
     public record CapWarning(String muscle, int sets, int cap) {}
 
+    public record ExerciseCapWarning(int exerciseIndex, int sets, int cap) {}
+
     public record MuscleResult(String muscle, PriorityTier tier, Band band, int weeklySets, Fit fit, int diff,
                                List<DaySets> spread, List<ProposalEdit> proposal, boolean proposalBlocked) {}
 
     public record DayResult(int dayIndex, String day, int minutesEstimate, Boolean overTarget,
-                            List<CapWarning> sessionCapWarnings, boolean sportSameDay) {}
+                            List<CapWarning> sessionCapWarnings, List<ExerciseCapWarning> exerciseCapWarnings,
+                            boolean sportSameDay) {}
 
     public record Result(List<MuscleResult> muscles, List<DayResult> days, List<VolumePath.Week> path) {}
 
@@ -59,7 +67,7 @@ public final class PlanEvaluator {
             for (int e = 0; e < list.size(); e++) {
                 PlanExercise x = list.get(e);
                 if (x.counts() && x.group() != null && p.baselines().containsKey(x.group())) {
-                    rows.add(new Row(d + ":" + e, x.group(), d, e, x.workingSets()));
+                    rows.add(new Row(d + ":" + e, x.group(), reportedIndex(in, d), e, x.workingSets()));
                 }
             }
         }
@@ -154,6 +162,11 @@ public final class PlanEvaluator {
             .map(e -> new SetSlots.Slot(e.getKey(), byId.get(e.getKey()).dayIndex(), e.getValue())).toList();
     }
 
+    private static int reportedIndex(Input in, int d) {
+        Integer index = in.days().get(d).index();
+        return index == null ? d : index;
+    }
+
     private static DayResult day(Input in, int d) {
         VolumeProperties p = in.props();
         PlanDay day = in.days().get(d);
@@ -177,8 +190,16 @@ public final class PlanEvaluator {
                 warnings.add(new CapWarning(group, sets, cap));
             }
         }
+        int exCap = p.bands().exerciseCap();
+        List<ExerciseCapWarning> exerciseWarnings = new ArrayList<>();
+        for (int e = 0; e < day.exercises().size(); e++) {
+            PlanExercise x = day.exercises().get(e);
+            if (x.counts() && x.workingSets() > exCap) {
+                exerciseWarnings.add(new ExerciseCapWarning(e, x.workingSets(), exCap));
+            }
+        }
         int weekday = MesoPlanSkeleton.DAY_ORDER.indexOf(day.day());
         boolean sportSameDay = weekday >= 0 && in.sportWeekdays() != null && in.sportWeekdays().contains(weekday);
-        return new DayResult(d, day.day(), minutes, over, warnings, sportSameDay);
+        return new DayResult(reportedIndex(in, d), day.day(), minutes, over, warnings, exerciseWarnings, sportSameDay);
     }
 }

@@ -143,6 +143,22 @@ class PlanEvaluatorTest {
         assertThat(r.days().get(0).sessionCapWarnings().get(0).cap()).isEqualTo(8);
     }
 
+    @Test void exerciseCapWarning() {
+        List<PlanDay> days = List.of(new PlanDay("Hét", List.of(ex("chest", 3), ex("chest", 7))));
+        Result r = PlanEvaluator.evaluate(input(days, Map.of()));
+        assertThat(r.days().get(0).exerciseCapWarnings()).hasSize(1);
+        assertThat(r.days().get(0).exerciseCapWarnings().get(0).exerciseIndex()).isEqualTo(1);
+        assertThat(r.days().get(0).exerciseCapWarnings().get(0).sets()).isEqualTo(7);
+        assertThat(r.days().get(0).exerciseCapWarnings().get(0).cap()).isEqualTo(5);
+    }
+
+    @Test void explicitDayIndexIsReported() {
+        List<PlanDay> days = List.of(new PlanDay("Csüt", List.of(ex("chest", 3)), 3));
+        Result r = PlanEvaluator.evaluate(input(days, Map.of()));
+        assertThat(r.days().get(0).dayIndex()).isEqualTo(3);
+        assertThat(r.muscles().get(0).spread().get(0).dayIndex()).isEqualTo(3);
+    }
+
     @Test void sportSameDay() {
         List<PlanDay> days = List.of(new PlanDay("Kedd", List.of(ex("chest", 3))),
             new PlanDay("Szo", List.of(ex("chest", 3))), new PlanDay("???", List.of(ex("chest", 3))));

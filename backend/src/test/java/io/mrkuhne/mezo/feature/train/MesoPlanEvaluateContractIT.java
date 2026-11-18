@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesoTemplateRepository;
+import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesoWeekProposalRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -41,6 +42,7 @@ class MesoPlanEvaluateContractIT extends ApiIntegrationTest {
     @Autowired MesoTemplateRepository templateRepository;
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired MesoWeekProposalRepository proposalRepository;
+    @Autowired MuscleGroupVolumeLogRepository volumeLogRepository;
 
     private static GymExerciseInput ex(String name, String muscle, int sets) {
         return GymExerciseInput.builder().name(name).muscle(muscle).warmupSets(1).workingSets(sets)
@@ -136,6 +138,58 @@ class MesoPlanEvaluateContractIT extends ApiIntegrationTest {
         postForBody(EVALUATE, request(day("Hét", ex("Fekvenyomás", "chest", 3)))
             .sportGroups(List.of("wing")).build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+    }
+
+    @Test
+    void phaseCurveLengthMismatchIs400() {
+        postForBody(EVALUATE, request(day("Hét", ex("Fekvenyomás", "chest", 3))).weeks(6).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+    }
+
+    @Test
+    void exerciseAboveTheCapIsWarned() {
+        MesoPlanEvaluation e = evaluate(request(day("Hét", ex("Fekvenyomás", "chest", 3),
+            ex("Dőlt", "chest", 7))).build());
+        assertThat(e.getDays().get(0).getExerciseCapWarnings()).hasSize(1);
+        assertThat(e.getDays().get(0).getExerciseCapWarnings().get(0).getExerciseIndex()).isEqualTo(1);
+        assertThat(e.getDays().get(0).getExerciseCapWarnings().get(0).getSets()).isEqualTo(7);
+        assertThat(e.getDays().get(0).getExerciseCapWarnings().get(0).getCap()).isEqualTo(5);
+    }
+
+    @Test
+    void runEvaluationReportsTheSessionOrderIndexAndNeverWrites() {
+        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(ownerId(), 0, 4, List.of("MEV", "MAV", "MRV", "Deload"));
+        WorkoutSessionEntity thu = train.createWorkoutSession(ownerId(), meso.getId(), "Csüt", "gym", 3, "active");
+        var e1 = train.createExercise(ownerId(), thu.getId(), "Fekvenyomás", "chest", "compound");
+        e1.setWorkingSets(3);
+        train.save(e1);
+        long mesos = mesocycleRepository.count();
+        long exercises = exerciseRepository.count();
+        long proposals = proposalRepository.count();
+        long logs = volumeLogRepository.count();
+
+        MesoPlanEvaluation e = getForBody("/api/train/mesocycles/" + meso.getId() + "/evaluation",
+            ownerAuthHeaders(), HttpStatus.OK, MesoPlanEvaluation.class);
+
+        assertThat(e.getDays()).hasSize(1);
+        assertThat(e.getDays().get(0).getDayIndex()).isEqualTo(3);
+        assertThat(muscle(e, "chest").getSpread().get(0).getDayIndex()).isEqualTo(3);
+        assertThat(mesocycleRepository.count()).isEqualTo(mesos);
+        assertThat(exerciseRepository.count()).isEqualTo(exercises);
+        assertThat(proposalRepository.count()).isEqualTo(proposals);
+        assertThat(volumeLogRepository.count()).isEqualTo(logs);
+    }
+
+    @Test
+    void anArchivedRunsEvaluationIgnoresTheDeficit() {
+        MesocycleEntity meso = runWithChest(ownerId(), 3);
+        meso.setStatus("archived");
+        mesocycleRepository.saveAndFlush(meso);
+        goals.createGoal(ownerId(), "cut", "active");
+
+        MesoPlanEvaluation e = getForBody("/api/train/mesocycles/" + meso.getId() + "/evaluation",
+            ownerAuthHeaders(), HttpStatus.OK, MesoPlanEvaluation.class);
+        assertThat(e.getDeficit()).isFalse();
     }
 
     @Test

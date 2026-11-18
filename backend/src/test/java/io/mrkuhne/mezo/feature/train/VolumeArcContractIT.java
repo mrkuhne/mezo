@@ -160,6 +160,32 @@ class VolumeArcContractIT extends ApiIntegrationTest {
     }
 
     /**
+     * The owner edits a row during the deload week: his number stands for the week after (the weekly
+     * proposal keeps it), so the projection does not plan from the pre-deload amount for that row.
+     */
+    @Test
+    void anOwnerEditDuringTheDeloadWeekStandsInTheProjection() {
+        UUID user = databasePopulator.populateUser("arc-deload-edit@test.local");
+        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(user, 2, 6, DELOAD_IN_WEEK_3);
+        meso.setMusclePriorities(Map.of("quad", "grow"));
+        mesocycleRepository.saveAndFlush(meso);
+        WorkoutSessionEntity mon = train.createWorkoutSession(user, meso.getId(), "Hétfő", "gym", 0, "active");
+        WorkoutSessionEntity thu = train.createWorkoutSession(user, meso.getId(), "Csütörtök", "gym", 3, "active");
+        ExerciseEntity squat = exercise(user, mon, "Guggolás", "quad", 4, 0);
+        exercise(user, thu, "Lábnyújtás", "quad", 4, 0);
+        weekProposals.generateIfDue(user, reload(meso)); // week 3 = deload: 4 + 4 → 2 + 2
+
+        ExerciseEntity edited = fresh(squat);
+        edited.setWorkingSets(1); // the owner pushes the squat from 2 to 1 during the deload week
+        train.save(edited);
+
+        // weeks 1–2: 8; week 3: 1 + 2 = 3; week 4: the squat keeps his 1, the extension restores to 4 = 5,
+        // +1 (grow) = 6; then 7, 8
+        assertThat(planned(volumeArcService.arc(user, meso.getId()), "quad"))
+            .containsExactly(8, 8, 3, 6, 7, 8);
+    }
+
+    /**
      * The Monday is re-saved during the deload week (new rows): the projected week after still restores
      * the re-minted squat, found by identity on the same day — as the weekly proposal will.
      */

@@ -201,7 +201,7 @@ public class VolumeArcService {
                     VolumeBands.band(props.baselines().get(g), tier, run.isSportLoaded(g), props.bands()));
             });
         }
-        boolean deficit = "active".equals(run.getStatus()) && energyBalance.isInDeficit(createdBy, LocalDate.now());
+        boolean deficit = deficitFor(createdBy, run);
         fill(planned, weeks, VolumePath.project(new VolumePath.Input(weeks, phaseCurve, fromWeek, amounts,
             restoreTo(createdBy, run, fromWeek, phaseCurve, plan), groups, deficit,
             props.stepEmphasize(), props.stepGrow(), props.stepDeficit(), props.deloadFraction(),
@@ -214,6 +214,11 @@ public class VolumeArcService {
             }
         }
         return planned;
+    }
+
+    /** Today's deficit answer, for an active run only — a finished or archived run's path ignores it. */
+    boolean deficitFor(UUID createdBy, MesocycleEntity run) {
+        return "active".equals(run.getStatus()) && energyBalance.isInDeficit(createdBy, LocalDate.now());
     }
 
     /** Fills weeks {@code 1 … fromWeek − 1} with what each week prescribed. */
@@ -294,7 +299,13 @@ public class VolumeArcService {
             .orElse(List.of());
         Map<String, Integer> restore = new HashMap<>();
         TemplatePlan.matchEntries(entries == null ? List.of() : entries, plan)
-            .forEach((entry, row) -> restore.put(row.exercise().getId().toString(), entry.sets()));
+            .forEach((entry, row) -> {
+                // the owner's deload-week edit stands: only a row still at the deload amount is restored
+                Integer now = row.exercise().getWorkingSets();
+                if (now != null && now == entry.deloadSets()) {
+                    restore.put(row.exercise().getId().toString(), entry.sets());
+                }
+            });
         return restore;
     }
 

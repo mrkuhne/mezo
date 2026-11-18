@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.DayEvaluation;
 import io.mrkuhne.mezo.api.dto.DaySetSpread;
+import io.mrkuhne.mezo.api.dto.ExerciseCapWarning;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesoPlanEvaluateRequest;
@@ -20,6 +21,8 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -32,6 +35,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,6 +73,10 @@ public class MesoPlanEvaluateService {
             days.add(new PlanEvaluator.PlanDay(d.getDay(), list));
         }
         List<String> phaseCurve = req.getPhaseCurve().stream().map(MesoPlanEvaluateRequest.PhaseCurveEnum::getValue).toList();
+        if (phaseCurve.size() != req.getWeeks()) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_MESO_PHASE_CURVE_LENGTH").build(), HttpStatus.BAD_REQUEST);
+        }
 
         List<SportScheduleSlotEntity> slots = sportSlotRepository
             .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
@@ -100,13 +108,13 @@ public class MesoPlanEvaluateService {
                 list.add(new PlanEvaluator.PlanExercise(group, e.getWorkingSets() == null ? 0 : e.getWorkingSets(),
                     e.getWarmupSets() == null ? 0 : e.getWarmupSets(), e.isCountsTowardVolume()));
             }
-            days.add(new PlanEvaluator.PlanDay(s.getDayLabel(), list));
+            days.add(new PlanEvaluator.PlanDay(s.getDayLabel(), list, s.getOrderIndex()));
         }
         List<String> phaseCurve = run.getPhaseCurve() == null ? List.of() : run.getPhaseCurve();
 
         List<SportScheduleSlotEntity> slots = sportSlotRepository
             .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
-        boolean deficit = energyBalance.isInDeficit(userId, LocalDate.now());
+        boolean deficit = volumeArcService.deficitFor(userId, run);
         PlanEvaluator.Result result = PlanEvaluator.evaluate(new PlanEvaluator.Input(run.getWeeks(), phaseCurve, days,
             run.getMusclePriorities(),
             run.getSportGroups() == null ? Set.of() : new HashSet<>(run.getSportGroups()),
@@ -143,6 +151,8 @@ public class MesoPlanEvaluateService {
             .build()).toList();
         List<DayEvaluation> days = r.days().stream().map(d -> DayEvaluation.builder()
             .dayIndex(d.dayIndex()).day(d.day()).minutesEstimate(d.minutesEstimate()).overTarget(d.overTarget())
+            .exerciseCapWarnings(d.exerciseCapWarnings().stream().map(w -> ExerciseCapWarning.builder()
+                .exerciseIndex(w.exerciseIndex()).sets(w.sets()).cap(w.cap()).build()).toList())
             .sessionCapWarnings(d.sessionCapWarnings().stream().map(w -> SessionCapWarning.builder()
                 .muscle(w.muscle()).sets(w.sets()).cap(w.cap()).build()).toList())
             .sportSameDay(d.sportSameDay()).build()).toList();
@@ -167,7 +177,7 @@ public class MesoPlanEvaluateService {
                 sets.put(e.getKey(), e.getValue()[w - 1]);
                 total += e.getValue()[w - 1];
             }
-            weeks.add(VolumePathWeek.builder().week(w).phase(w - 1 < curve.size() ? curve.get(w - 1) : "MEV")
+            weeks.add(VolumePathWeek.builder().week(w).phase(w - 1 < curve.size() ? curve.get(w - 1) : VolumePath.MISSING_PHASE)
                 .total(total).muscles(sets).build());
         }
         return weeks;

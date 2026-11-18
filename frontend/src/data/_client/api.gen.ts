@@ -6593,12 +6593,20 @@ export interface components {
             sets: number;
             cap: number;
         };
+        ExerciseCapWarning: {
+            /** @description Index in the day's exercise list */
+            exerciseIndex: number;
+            sets: number;
+            cap: number;
+        };
         DayEvaluation: {
             dayIndex: number;
             day: string;
             minutesEstimate: number;
             overTarget?: boolean | null;
             sessionCapWarnings: components["schemas"]["SessionCapWarning"][];
+            /** @description Counting exercises of the day above the per-exercise working-set cap (may be empty) */
+            exerciseCapWarnings: components["schemas"]["ExerciseCapWarning"][];
             sportSameDay: boolean;
         };
         VolumePathWeek: {
@@ -6640,7 +6648,7 @@ export interface components {
             musclePriorities?: {
                 [key: string]: string;
             } | null;
-            /** @description Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; null/empty = none */
+            /** @description Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; absent on a PUT keeps the stored list, [] clears it */
             sportGroups?: string[] | null;
             weeks: number;
             split?: string | null;
@@ -6660,11 +6668,11 @@ export interface components {
             status: "active" | "planned";
         };
         MusclePrioritiesUpdateRequest: {
-            /** @description Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m) */
+            /** @description Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); absent or empty CLEARS the map to all grow (unlike sportGroups, which keeps when absent) (mezo-3m5m) */
             musclePriorities?: {
                 [key: string]: string;
             } | null;
-            /** @description Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; null/empty = none */
+            /** @description Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; absent keeps the stored list, [] clears it */
             sportGroups?: string[] | null;
         };
         MesoRerunResponse: {

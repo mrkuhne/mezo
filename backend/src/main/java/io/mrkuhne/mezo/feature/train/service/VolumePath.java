@@ -96,8 +96,11 @@ public final class VolumePath {
         return new Week(w, phase(in, w), sets.values().stream().mapToInt(Integer::intValue).sum(), sets);
     }
 
+    /** A week the phase curve does not cover reads as the first phase everywhere (path, arc, run evaluation). */
+    static final String MISSING_PHASE = "MEV";
+
     private static String phase(Input in, int w) {
-        return w >= 1 && w <= in.phaseCurve().size() ? in.phaseCurve().get(w - 1) : "";
+        return w >= 1 && w <= in.phaseCurve().size() ? in.phaseCurve().get(w - 1) : MISSING_PHASE;
     }
 
     private static boolean isDeload(Input in, int w) {

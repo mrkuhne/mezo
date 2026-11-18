@@ -2480,9 +2480,20 @@ components:
           type: integer
         cap:
           type: integer
+    ExerciseCapWarning:
+      type: object
+      required: [exerciseIndex, sets, cap]
+      properties:
+        exerciseIndex:
+          type: integer
+          description: Index in the day's exercise list
+        sets:
+          type: integer
+        cap:
+          type: integer
     DayEvaluation:
       type: object
-      required: [dayIndex, day, minutesEstimate, sessionCapWarnings, sportSameDay]
+      required: [dayIndex, day, minutesEstimate, sessionCapWarnings, exerciseCapWarnings, sportSameDay]
       properties:
         dayIndex:
           type: integer
@@ -2497,6 +2508,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SessionCapWarning'
+        exerciseCapWarnings:
+          type: array
+          description: Counting exercises of the day above the per-exercise working-set cap (may be empty)
+          items:
+            $ref: '#/components/schemas/ExerciseCapWarning'
         sportSameDay:
           type: boolean
     VolumePathWeek:
@@ -2586,7 +2602,7 @@ components:
         sportGroups:
           type: array
           nullable: true
-          description: Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; null/empty = none
+          description: Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; absent on a PUT keeps the stored list, [] clears it
           items:
             type: string
         weeks:
@@ -2636,13 +2652,13 @@ components:
         musclePriorities:
           type: object
           nullable: true
-          description: Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); null/empty = all grow (mezo-3m5m)
+          description: Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); absent or empty CLEARS the map to all grow (unlike sportGroups, which keeps when absent) (mezo-3m5m)
           additionalProperties:
             type: string
         sportGroups:
           type: array
           nullable: true
-          description: Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; null/empty = none
+          description: Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; absent keeps the stored list, [] clears it
           items:
             type: string
     MesoRerunResponse:
