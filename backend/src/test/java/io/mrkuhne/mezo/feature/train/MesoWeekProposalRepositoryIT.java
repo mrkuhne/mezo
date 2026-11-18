@@ -6,12 +6,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.json.RestoreEntryJson;
+import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalGroupJson;
 import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalLineJson;
 import io.mrkuhne.mezo.feature.train.repository.MesoWeekProposalRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,19 +56,47 @@ class MesoWeekProposalRepositoryIT extends AbstractIntegrationTest {
         MesocycleEntity meso = train.createActiveMeso(user);
         UUID exerciseId = UUID.randomUUID();
         MesoWeekProposalEntity p = proposal(user, meso.getId(), 3, "weekly", "pending");
-        p.setLines(List.of(new WeekProposalLineJson(
-            "l1", exerciseId, "Row", 1, "back", "sets", 3, 4, List.of("under-band", "progress"), "accepted")));
+        p.setLines(List.of(
+            new WeekProposalLineJson("l1", exerciseId, "Row", 1, "back", "sets", 3, 4,
+                List.of("under-band", "progress"), "accepted", "Hétfő", null, null),
+            new WeekProposalLineJson("l2", exerciseId, "Row", 1, "back", "weight", null, null,
+                List.of("all_sets_done"), null, "Hétfő", new BigDecimal("60"), new BigDecimal("62.5"))));
+        p.setGroups(List.of(new WeekProposalGroupJson("back", "emphasize", 12, 20, false, 11, 13,
+            List.of("all_sets_done", "room_in_band"))));
         p.setPlanAfter(Map.of(exerciseId.toString(), 4));
         UUID catalogId = UUID.randomUUID();
         p.setRestore(List.of(new RestoreEntryJson(exerciseId, catalogId, "Row", 1, 4, 2)));
         repository.saveAndFlush(p);
 
         MesoWeekProposalEntity read = repository.findWeekly(user, meso.getId(), 3).orElseThrow();
-        assertThat(read.getLines()).containsExactly(new WeekProposalLineJson(
-            "l1", exerciseId, "Row", 1, "back", "sets", 3, 4, List.of("under-band", "progress"), "accepted"));
+        assertThat(read.getLines()).containsExactly(
+            new WeekProposalLineJson("l1", exerciseId, "Row", 1, "back", "sets", 3, 4,
+                List.of("under-band", "progress"), "accepted", "Hétfő", null, null),
+            new WeekProposalLineJson("l2", exerciseId, "Row", 1, "back", "weight", null, null,
+                List.of("all_sets_done"), null, "Hétfő", new BigDecimal("60"), new BigDecimal("62.5")));
+        assertThat(read.getGroups()).containsExactly(new WeekProposalGroupJson("back", "emphasize", 12, 20, false,
+            11, 13, List.of("all_sets_done", "room_in_band")));
         assertThat(read.getPlanAfter()).containsEntry(exerciseId.toString(), 4);
         assertThat(read.getRestore()).containsExactly(new RestoreEntryJson(exerciseId, catalogId, "Row", 1, 4, 2));
         assertThat(read.getDecidedAt()).isNull();
+    }
+
+    /** A line stored before S3 (no dayName / fromKg / toKg) and a row without groups still read. */
+    @Test
+    void aPreS3RowStillReads() {
+        UUID user = databasePopulator.populateUser("proposal-f@test.local");
+        MesocycleEntity meso = train.createActiveMeso(user);
+        MesoWeekProposalEntity p = repository.saveAndFlush(proposal(user, meso.getId(), 3, "weekly", "applied"));
+        UUID exerciseId = UUID.randomUUID();
+        jdbc.update("update meso_week_proposal set lines = cast(? as jsonb) where id = ?",
+            "[{\"id\":\"l1\",\"exerciseId\":\"" + exerciseId + "\",\"exerciseName\":\"Row\",\"dayIndex\":1,"
+                + "\"muscleGroup\":\"back\",\"kind\":\"sets\",\"from\":3,\"to\":4,"
+                + "\"reasons\":[\"all_sets_done\"],\"decision\":\"accepted\"}]", p.getId());
+
+        MesoWeekProposalEntity read = repository.findWeekly(user, meso.getId(), 3).orElseThrow();
+        assertThat(read.getLines()).containsExactly(new WeekProposalLineJson("l1", exerciseId, "Row", 1, "back",
+            "sets", 3, 4, List.of("all_sets_done"), "accepted", null, null, null));
+        assertThat(read.getGroups()).isNull();
     }
 
     @Test

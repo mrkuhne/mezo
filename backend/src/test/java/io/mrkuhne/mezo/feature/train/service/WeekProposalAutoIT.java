@@ -308,6 +308,64 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
             assertThat(c.change()).isEqualTo("visszaállt a könnyített hét után (3 → 5)"));
     }
 
+    /**
+     * .75 #2: a mid-block deload week (11 → 6) fully done — the week after restores to 11 AND steps +2
+     * (was: restores and holds, because the 6 logged sets were judged against the restored 11).
+     * The stored per-muscle outcome and the lines' day names come with it.
+     */
+    @Test
+    void aFullyDoneDeloadWeekRestoresAndStepsTheWeekAfter() {
+        MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("back", "emphasize"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        WorkoutSessionEntity thu = day(meso, "Csütörtök", 3);
+        ExerciseEntity mon4 = exercise(mon, "Evezés", "back-mid", 4);
+        ExerciseEntity mon2 = exercise(mon, "Lehúzás", "back-wide", 2);
+        ExerciseEntity thu3 = exercise(thu, "Kábeles evezés", "back-mid", 3);
+        ExerciseEntity thu2 = exercise(thu, "Húzódzkodás", "back-wide", 2);
+        workoutService.getToday(owner, null); // week 3: the deload halves 4/2/3/2 → 2/1/2/1
+        assertThat(List.of(sets(mon4), sets(mon2), sets(thu3), sets(thu2))).containsExactly(2, 1, 2, 1);
+        assertThat(weekly(meso, 3).getGroups()).singleElement().satisfies(g -> {
+            assertThat(g.setsBefore()).isEqualTo(11);
+            assertThat(g.setsAfter()).isEqualTo(6);
+            assertThat(g.reasons()).containsExactly("deload");
+        });
+        nextWeek(meso);
+        // every halved set of the (now past) deload week logged — dated against the moved start
+        logWeek(reload(meso), 3, mon, 0, fresh(mon4), fresh(mon2));
+        logWeek(reload(meso), 3, thu, 3, fresh(thu3), fresh(thu2));
+        workoutService.getToday(owner, null);
+
+        // restored to 4/2/3/2 = 11, then +2 on the lighter slots (Thursday's 2, Monday's 2) = 13
+        assertThat(List.of(sets(mon4), sets(mon2), sets(thu3), sets(thu2))).containsExactly(4, 3, 3, 3);
+        MesoWeekProposalEntity week4 = weekly(meso, 4);
+        assertThat(week4.getLines())
+            .extracting(WeekProposalLineJson::exerciseId, WeekProposalLineJson::from, WeekProposalLineJson::to,
+                WeekProposalLineJson::dayName)
+            .containsExactly(
+                tuple(mon4.getId(), 2, 4, "Hétfő"),
+                tuple(mon2.getId(), 1, 3, "Hétfő"),
+                tuple(thu3.getId(), 2, 3, "Csütörtök"),
+                tuple(thu2.getId(), 1, 3, "Csütörtök"));
+        assertThat(week4.getLines()).allSatisfy(l -> {
+            assertThat(l.fromKg()).isNull();
+            assertThat(l.toKg()).isNull();
+        });
+        assertThat(week4.getLines().get(1).reasons())
+            .containsExactly("deload_restore", "all_sets_done", "room_in_band");
+        assertThat(week4.getGroups()).singleElement().satisfies(g -> {
+            assertThat(g.muscle()).isEqualTo("back");
+            assertThat(g.tier()).isEqualTo("emphasize");
+            assertThat(g.bandLow()).isNotNull();
+            assertThat(g.bandHigh()).isGreaterThanOrEqualTo(13);
+            assertThat(g.sportAdjusted()).isFalse();
+            assertThat(g.setsBefore()).isEqualTo(6);
+            assertThat(g.setsAfter()).isEqualTo(13);
+            assertThat(g.reasons()).containsExactly("deload_restore", "all_sets_done", "room_in_band");
+        });
+        assertThat(reload(meso).getVolumeRecompute().changes()).singleElement().satisfies(c ->
+            assertThat(c.change()).isEqualTo("visszaállt és +2 (6 → 13)"));
+    }
+
     /** The owner lowered a halved exercise during the deload week: his number stands. */
     @Test
     void aDeloadWeekEditSurvivesTheRestore() {
@@ -673,6 +731,10 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
     private static GymExerciseInput input(String name, int sets) {
         return GymExerciseInput.builder().name(name).muscle("quad").warmupSets(2).workingSets(sets)
             .repMin(6).repMax(8).targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND).build();
+    }
+
+    private ExerciseEntity fresh(ExerciseEntity e) {
+        return exerciseRepository.findById(e.getId()).orElseThrow();
     }
 
     private int sets(ExerciseEntity e) {

@@ -1641,7 +1641,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ProvenanceEnvelope`, `RestoreEntryJson`, `RunSignalCalculator`, `RunningBlockStructure`, `RunningSeedData`,
     `SportSignalCalculator`, `TrainSeedData`, `TrainingCommitmentCalculator`, `TrainingStreakCalculator`,
     `VolumeAmountMigrationRunner`, `VolumeBaselineJson`, `VolumeProgressionGate`, `VolumeRecomputeJson`,
-    `WeekProposalLineJson`
+    `WeekProposalGroupJson`, `WeekProposalLineJson`
 - **Contract** `api/feature/train/train-readiness.yml` — 3 operations
   - **endpoints:** GET /api/train/readiness/today · POST /api/train/readiness/today ·
     DELETE /api/train/readiness/today
@@ -1888,6 +1888,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
+- **Contract fragment** `api/feature/train/train-week-proposal.yml` — tags `TrainWeekProposal`; no backend controller implements the matching `<Tag>Api`
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
 - **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

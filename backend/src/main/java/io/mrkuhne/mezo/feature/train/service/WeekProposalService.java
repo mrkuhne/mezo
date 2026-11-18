@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.json.RestoreEntryJson;
+import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalGroupJson;
 import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalLineJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesoWeekProposalRepository;
@@ -163,6 +164,7 @@ public class WeekProposalService {
         Map<UUID, List<String>> lineReasons = new HashMap<>();
         List<RestoreEntryJson> restore = new ArrayList<>();
         Map<String, GroupOutcome> outcomes = new LinkedHashMap<>();
+        Map<String, VolumeBands.Band> bands = new HashMap<>();
 
         Map<String, Integer> beforeByGroup = new HashMap<>();
         byGroup.forEach((group, rows) -> beforeByGroup.put(group, sum(rows, working)));
@@ -172,12 +174,13 @@ public class WeekProposalService {
             int before = beforeByGroup.get(group);
             int restored = sum(rows, working);
             GroupSignals s = signals.getOrDefault(group, new GroupSignals(0, false, false, false, false));
+            PriorityTier tier = PriorityTier.of(meso.getMusclePriorities(), group);
+            VolumeBands.Band band = VolumeBands.band(props.baselines().get(group), tier,
+                meso.isSportLoaded(group), props.bands());
+            bands.put(group, band);
             VolumeDecider.Result result = VolumeDecider.decide(new VolumeDecider.Input(
-                calWeek, PriorityTier.of(meso.getMusclePriorities(), group),
-                VolumeBands.band(props.baselines().get(group),
-                    PriorityTier.of(meso.getMusclePriorities(), group),
-                    meso.isSportLoaded(group), props.bands()),
-                restored, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
+                calWeek, tier, band,
+                restored, before, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
                 deficit, deloadPhase, props.stepEmphasize(), props.stepGrow(), props.stepDeficit()));
             List<String> reasons = result.reasons().stream().map(WeekProposalService::code).toList();
             boolean noSlot = false;
@@ -226,8 +229,12 @@ public class WeekProposalService {
             }
             TemplatePlan.Row row = rowById.get(id);
             lines.add(new WeekProposalLineJson(UUID.randomUUID().toString(), id, row.exercise().getName(),
-                row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS, from, to, lineReasons.get(id), null));
+                row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS, from, to, lineReasons.get(id), null,
+                row.dayName(), null, null));
         });
+        List<WeekProposalGroupJson> groups = outcomes.values().stream()
+            .map(o -> groupJson(o, PriorityTier.of(meso.getMusclePriorities(), o.group()), bands.get(o.group())))
+            .toList();
 
         MesoWeekProposalEntity proposal = new MesoWeekProposalEntity();
         proposal.setCreatedBy(createdBy);
@@ -237,6 +244,7 @@ public class WeekProposalService {
         proposal.setStatus(MesoWeekProposalEntity.STATUS_PENDING);
         proposal.setLines(lines);
         proposal.setRestore(restore.isEmpty() ? null : restore);
+        proposal.setGroups(groups);
         return new Draft(proposalRepository.save(proposal), outcomes);
     }
 
@@ -478,6 +486,24 @@ public class WeekProposalService {
             return "tart (" + o.before() + ")";
         }
         return (diff > 0 ? "+" : "") + diff + " (" + o.before() + " → " + o.after() + ")";
+    }
+
+    /** The stored per-muscle outcome: the contract reason codes under the same conditions {@link #reasonText} uses. */
+    private static WeekProposalGroupJson groupJson(GroupOutcome o, PriorityTier tier, VolumeBands.Band band) {
+        List<String> reasons = new ArrayList<>();
+        if (o.restored() > o.before()) {
+            reasons.add(code(Reason.DELOAD_RESTORE));
+        }
+        o.result().reasons().forEach(r -> reasons.add(code(r)));
+        if (o.stalled()) {
+            reasons.add(code(Reason.STALLED));
+        }
+        if (o.noSlot()) {
+            reasons.add(code(Reason.NO_SLOT));
+        }
+        return new WeekProposalGroupJson(o.group(), tier.name().toLowerCase(Locale.ROOT),
+            band == null ? null : band.low(), band == null ? null : band.high(),
+            band != null && band.sportAdjusted(), o.before(), o.after(), reasons.stream().distinct().toList());
     }
 
     private static String reasonText(GroupOutcome o) {
