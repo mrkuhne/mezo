@@ -43,6 +43,70 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testCreateExercise_shouldDefaultToOtherFreeFalse_whenAttributesAbsent() {
+        CatalogExerciseCreateRequest req = CatalogExerciseCreateRequest.builder()
+            .name("Plain Move").muscle(CatalogExerciseCreateRequest.MuscleEnum.QUAD)
+            .type(CatalogExerciseCreateRequest.TypeEnum.COMPOUND)
+            .stim(BigDecimal.valueOf(0.6)).fatigue(BigDecimal.valueOf(0.4)).build();
+        ExerciseCatalogItem body = postForBody(
+            "/api/train/exercises", req, ownerAuthHeaders(), HttpStatus.CREATED, ExerciseCatalogItem.class);
+        assertThat(body.getEquipment()).isEqualTo(io.mrkuhne.mezo.api.dto.Equipment.OTHER);
+        assertThat(body.getStability()).isEqualTo(io.mrkuhne.mezo.api.dto.Stability.FREE);
+        assertThat(body.getLengthenedFriendly()).isFalse();
+    }
+
+    @Test
+    void testUpdateExercise_shouldMarkStableAndKeepWhenAbsent_whenUserEditsOwnRow() {
+        HttpHeaders auth = ownerAuthHeaders();
+        CatalogExerciseCreateRequest create = CatalogExerciseCreateRequest.builder()
+            .name("Stable Move").muscle(CatalogExerciseCreateRequest.MuscleEnum.QUAD)
+            .type(CatalogExerciseCreateRequest.TypeEnum.COMPOUND)
+            .stim(BigDecimal.valueOf(0.6)).fatigue(BigDecimal.valueOf(0.4)).build();
+        ExerciseCatalogItem created = postForBody(
+            "/api/train/exercises", create, auth, HttpStatus.CREATED, ExerciseCatalogItem.class);
+
+        CatalogExerciseCreateRequest mark = CatalogExerciseCreateRequest.builder()
+            .name("Stable Move").muscle(CatalogExerciseCreateRequest.MuscleEnum.QUAD)
+            .type(CatalogExerciseCreateRequest.TypeEnum.COMPOUND)
+            .stim(BigDecimal.valueOf(0.6)).fatigue(BigDecimal.valueOf(0.4))
+            .equipment(io.mrkuhne.mezo.api.dto.Equipment.MACHINE)
+            .stability(io.mrkuhne.mezo.api.dto.Stability.STABLE).lengthenedFriendly(true).build();
+        ExerciseCatalogItem marked = putForBody(
+            "/api/train/exercises/" + created.getId(), mark, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+        assertThat(marked.getEquipment()).isEqualTo(io.mrkuhne.mezo.api.dto.Equipment.MACHINE);
+        assertThat(marked.getStability()).isEqualTo(io.mrkuhne.mezo.api.dto.Stability.STABLE);
+        assertThat(marked.getLengthenedFriendly()).isTrue();
+
+        // A later PUT that omits the three fields leaves them unchanged.
+        CatalogExerciseCreateRequest rename = CatalogExerciseCreateRequest.builder()
+            .name("Stable Move 2").muscle(CatalogExerciseCreateRequest.MuscleEnum.QUAD)
+            .type(CatalogExerciseCreateRequest.TypeEnum.COMPOUND)
+            .stim(BigDecimal.valueOf(0.6)).fatigue(BigDecimal.valueOf(0.4)).build();
+        ExerciseCatalogItem kept = putForBody(
+            "/api/train/exercises/" + created.getId(), rename, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+        assertThat(kept.getEquipment()).isEqualTo(io.mrkuhne.mezo.api.dto.Equipment.MACHINE);
+        assertThat(kept.getStability()).isEqualTo(io.mrkuhne.mezo.api.dto.Stability.STABLE);
+        assertThat(kept.getLengthenedFriendly()).isTrue();
+    }
+
+    @Test
+    void testList_shouldExposeMasterClassification_andMasterStaysReadOnly() {
+        HttpHeaders auth = ownerAuthHeaders();
+        ExerciseCatalogItem pulldown = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)
+            .stream().filter(e -> "lat-pulldown-pronated".equals(e.getSlug())).findFirst().orElseThrow();
+        assertThat(pulldown.getEquipment()).isEqualTo(io.mrkuhne.mezo.api.dto.Equipment.CABLE);
+        assertThat(pulldown.getStability()).isEqualTo(io.mrkuhne.mezo.api.dto.Stability.STABLE);
+        assertThat(pulldown.getLengthenedFriendly()).isTrue();
+        CatalogExerciseCreateRequest req = CatalogExerciseCreateRequest.builder()
+            .name("x").muscle(CatalogExerciseCreateRequest.MuscleEnum.BACK_WIDE)
+            .type(CatalogExerciseCreateRequest.TypeEnum.COMPOUND)
+            .stim(BigDecimal.valueOf(0.6)).fatigue(BigDecimal.valueOf(0.4))
+            .stability(io.mrkuhne.mezo.api.dto.Stability.FREE).build();
+        String body = putForBody("/api/train/exercises/" + pulldown.getId(), req, auth, HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(body, "CATALOG_MASTER_READONLY");
+    }
+
+    @Test
     void testUpdateMasterExercise_shouldReturn409_whenMasterReadonly() {
         HttpHeaders auth = ownerAuthHeaders();
         ExerciseCatalogItem boxJump = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)

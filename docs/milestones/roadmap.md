@@ -63,6 +63,24 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-18 — Train style T1: training style and progression (`mezo-r36n9.79`).**
+  A block can now carry a **training style** — *Kiegyensúlyozott*, *Sok ismétlés*, *Nagyobb súly* or *Két sorozat
+  bukásig* — that stamps rep range, reserve (reps in reserve) and rest onto every exercise (all-out also sets two
+  sets), with the owner's own entries (`overrides`) kept; the style is stamped on template save, run start, rerun,
+  day edit and swap. Across a styled block the effort ramps (reserve base, base−1, then base−2 in the last loading
+  week, +2 in a deload week; a free exercise never below 1), each set carries its prescribed rest, and the rep
+  overshoot before a weight jump is per style. Every catalog exercise now knows its equipment, whether it is
+  **stable or free** (57 stable of 166, the owner-approved list) and whether it is safe in the stretch (23). For
+  **every** block, progression got a bug fix: the reference is the newest session at the *current* rep range
+  (at most 56 days old), and a session trained at a different range is converted to the current one when it was
+  inside its own range — a lift trained 6–10 on Monday and 12–15 on Thursday progresses each from its own last
+  session. A styled run's muscles that did not move for two weeks are flagged *megállt a fejlődés* in the weekly
+  proposal audit. **Deferred on purpose:** the intensity techniques (T2), the offers on a stall and the style
+  change mid-run (T3), the Boop builder and workout screens, a way to clear a block's style. An unstyled block
+  prescribes byte-identically to before (golden test). Spec
+  [train style and techniques](../superpowers/specs/2026-11-17-train-style-and-techniques-design.md), plan
+  [T1](../superpowers/plans/2026-11-18-train-style-t1-style-and-progression.md);
+  [`train.md`](../features/train.md) §4 `#### Training style`, §9.
 - **2026-11-18 — Train volume engine v2 — S2: bands and the evaluator (`mezo-r36n9.77`).**
   The server can now measure a plan against each muscle's band **before** it is saved: `POST /api/train/meso-plans/evaluate`
   (and `GET /api/train/mesocycles/{id}/evaluation` for a running block) says per muscle whether the weekly sets sit

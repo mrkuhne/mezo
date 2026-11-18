@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.train.entity.json;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -26,7 +27,10 @@ public record GymExerciseJson(
     String type,
     String warning,
     UUID catalogId,
-    Boolean countsTowardVolume
+    Boolean countsTowardVolume,
+    String trainingStyle,        // wire value (balanced|volume|heavy|allout) or null (mezo-r36n9.79)
+    Integer restSec,             // stamped rest seconds, null when unstyled
+    List<String> overrides       // repRange|workingSets|targetRir|restSec the stamper must keep
 ) {
     /**
      * Documents written before mezo-gbo7 carry no {@code countsTowardVolume}; Jackson hands us null

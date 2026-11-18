@@ -5,9 +5,13 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +36,66 @@ public class ExerciseHistoryResolver {
 
     private final ExerciseRepository exerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
+
+    /**
+     * The history reference of one exercise (mezo-r36n9.79, plan §6.7.1): the working sets of the newest
+     * completed instance of the identity trained at the CURRENT rep range if it is at most
+     * {@code sameRangeMaxAgeDays} old, else of the newest instance overall. {@code refRepMin/Max} is the
+     * chosen instance's trained range; {@code sameRange} is whether it equals the current exercise's range.
+     * No history: empty sets, the current range, {@code sameRange = false}.
+     */
+    public record Reference(List<ExerciseSetEntity> sets, int refRepMin, int refRepMax, boolean sameRange) { }
+
+    public Reference reference(UUID createdBy, ExerciseEntity ex, LocalDate today, int sameRangeMaxAgeDays) {
+        String key = identityKey(ex);
+        Map<UUID, int[]> rangeByRow = new HashMap<>();
+        rangeByRow.put(ex.getId(), new int[] {ex.getRepMin(), ex.getRepMax()});
+        for (ExerciseRepository.ExerciseIdentityRow r : exerciseRepository.findIdentityRowsIncludingDeleted(createdBy)) {
+            if (key.equals(identityKey(r.getCatalogId(), r.getName()))) {
+                rangeByRow.put(r.getId(), new int[] {r.getRepMin(), r.getRepMax()});
+            }
+        }
+        // Query order = newest instance first; sets of one instance are contiguous.
+        Map<UUID, List<ExerciseSetEntity>> byInstance = new LinkedHashMap<>();
+        Map<UUID, LocalDate> dateByInstance = new HashMap<>();
+        for (ExerciseSetRepository.DatedSet d : exerciseSetRepository
+                .findCompletedWorkingHistoryDated(createdBy, List.copyOf(rangeByRow.keySet()))) {
+            byInstance.computeIfAbsent(d.set().getWorkoutSessionId(), x -> new ArrayList<>()).add(d.set());
+            dateByInstance.put(d.set().getWorkoutSessionId(), d.date());
+        }
+        if (byInstance.isEmpty()) {
+            return new Reference(List.of(), ex.getRepMin(), ex.getRepMax(), false);
+        }
+        List<ExerciseSetEntity> newest = null;
+        int[] newestRange = null;
+        for (Map.Entry<UUID, List<ExerciseSetEntity>> e : byInstance.entrySet()) {
+            int[] range = instanceRange(e.getValue(), rangeByRow);
+            if (newest == null) {
+                newest = e.getValue();
+                newestRange = range;
+            }
+            boolean same = range[0] == ex.getRepMin() && range[1] == ex.getRepMax();
+            LocalDate date = dateByInstance.get(e.getKey());
+            if (same && date != null && ChronoUnit.DAYS.between(date, today) <= sameRangeMaxAgeDays) {
+                return new Reference(e.getValue(), range[0], range[1], true);
+            }
+        }
+        boolean same = newestRange[0] == ex.getRepMin() && newestRange[1] == ex.getRepMax();
+        return new Reference(newest, newestRange[0], newestRange[1], same);
+    }
+
+    /** The trained range of an instance: its top working set's snapshot, else the range of the row it was logged on. */
+    private static int[] instanceRange(List<ExerciseSetEntity> sets, Map<UUID, int[]> rangeByRow) {
+        ExerciseSetEntity top = sets.stream()
+            .max(Comparator
+                .comparing((ExerciseSetEntity s) -> s.getWeightKg() != null ? s.getWeightKg() : BigDecimal.valueOf(-1))
+                .thenComparing(ExerciseSetEntity::getReps))
+            .orElseThrow();
+        if (top.getTargetRepMin() != null && top.getTargetRepMax() != null) {
+            return new int[] {top.getTargetRepMin(), top.getTargetRepMax()};
+        }
+        return rangeByRow.get(top.getExerciseId());
+    }
 
     /** Records/challenge identity idiom: catalog id when linked, else the exact name. */
     static String identityKey(UUID catalogId, String name) {

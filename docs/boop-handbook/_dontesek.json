@@ -678,6 +678,18 @@
     "levaltotta": "A technika mint szabad szöveges megjegyzés.",
     "kovetkezmeny": "Új adat kerül a sorozathoz és a tervhez; a lejátszó és a blokk is mutatja."
   },
+  "d-2026-11-18-gyakorlat-besorolas": {
+    "cim": "Gyakorlatok besorolása: stabil vagy szabad",
+    "datum": "2026-11-18",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A 166 beépített gyakorlat eszközt, stabil/szabad és „nyújtott helyzetben biztonságos” jelölést kap a szigorú lista szerint: gép, kábel és megtámasztott (padon, ülve, mellkason) gyakorlat stabil, az álló szabad súlyos gyakorlat (pl. kézisúlyzós oldalemelés, álló bicepsz, egykezes evezés) szabad. Technika csak stabil gyakorlatra kerülhet; saját gyakorlatnál ez átírható.",
+    "miert": "A dropszett és a hasonló technikák csak ott biztonságosak, ahol a gép vagy a megtámasztás elbírja a fáradt végét.",
+    "levaltotta": "Az a javaslat, hogy az álló szabad súlyos gyakorlatok is stabilnak számítsanak.",
+    "kovetkezmeny": "Minden gyakorlathoz tartozik eszköz és stabilitás; a technikák csak a stabil gyakorlatokra kerülhetnek (mezo-r36n9.79)."
+  },
   "d-2026-11-18-sav-szele": {
     "cim": "A generált terv minden izma a sávja szélén indul",
     "datum": "2026-11-18",

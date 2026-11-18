@@ -1984,6 +1984,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MesoDay'
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Block training style; null = no style (unstyled block behaves as before).
     MesoTemplateResponse:
       type: object
       required:
@@ -2052,6 +2057,11 @@ components:
         runCount:
           type: integer
           description: Number of mesocycle runs started from this template
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Block training style; null = no style (unstyled block behaves as before).
     VolumeRecompute:
       type: object
       required:
@@ -2345,6 +2355,28 @@ components:
           type: string
           nullable: true
           description: Demo still (end position); alternated with imageStartUrl to convey the movement
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Per-exercise style; null = inherit the block style.
+        effectiveTrainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          readOnly: true
+          description: The style in force for this exercise (own style, else the block's); null = unstyled.
+        restSec:
+          type: integer
+          minimum: 30
+          maximum: 600
+          nullable: true
+          description: Rest between sets in seconds; null = derived from the style.
+        overrides:
+          type: array
+          description: Style-prescription fields the user has taken over by hand.
+          items:
+            $ref: '#/components/schemas/StyleOverride'
     MesoPlanGenerateRequest:
       type: object
       required: [daysOfWeek, weeks]
@@ -2634,6 +2666,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MesoDayInput'
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Block training style; null = no style (unstyled block behaves as before).
     MesoTemplateStartRequest:
       type: object
       required:
@@ -3002,6 +3039,22 @@ components:
         countsTowardVolume:
           type: boolean
           description: Whether this exercise's sets count as hypertrophy volume; false for the fix-zárás closing block and plyometrics (mezo-gbo7). Absent = true.
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Per-exercise style; null = inherit the block style.
+        restSec:
+          type: integer
+          minimum: 30
+          maximum: 600
+          nullable: true
+          description: Rest between sets in seconds; null = derived from the style.
+        overrides:
+          type: array
+          description: Style-prescription fields the user has taken over by hand.
+          items:
+            $ref: '#/components/schemas/StyleOverride'
     CustomWorkoutResponse:
       type: object
       required:
@@ -3095,6 +3148,13 @@ components:
           type: string
           nullable: true
           description: The author's display name for user-authored rows; null on master rows
+        equipment:
+          $ref: '#/components/schemas/Equipment'
+        stability:
+          $ref: '#/components/schemas/Stability'
+        lengthenedFriendly:
+          type: boolean
+          description: Whether the exercise loads the muscle well at long length.
     CatalogExerciseCreateRequest:
       type: object
       required:
@@ -3133,6 +3193,13 @@ components:
           type: string
           nullable: true
           maxLength: 500
+        equipment:
+          $ref: '#/components/schemas/Equipment'
+        stability:
+          $ref: '#/components/schemas/Stability'
+        lengthenedFriendly:
+          type: boolean
+          description: Whether the exercise loads the muscle well at long length. Absent on create = false; absent on update = unchanged.
     CatalogVideoRequest:
       type: object
       properties:
@@ -3486,6 +3553,28 @@ components:
           description: >-
             Whether a "Mezociklusra is" change may target this exercise (false for rows added
             only for this workout and for the fixed closing block).
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Per-exercise style; null = inherit the block style.
+        effectiveTrainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          readOnly: true
+          description: The style in force for this exercise (own style, else the block's); null = unstyled.
+        restSec:
+          type: integer
+          minimum: 30
+          maximum: 600
+          nullable: true
+          description: Rest between sets in seconds; null = derived from the style.
+        overrides:
+          type: array
+          description: Style-prescription fields the user has taken over by hand.
+          items:
+            $ref: '#/components/schemas/StyleOverride'
     PrescribedSet:
       type: object
       required:
@@ -3503,6 +3592,26 @@ components:
         targetRIR:
           type: integer
           nullable: true
+        restSec:
+          type: integer
+          nullable: true
+          description: Rest after this set in seconds; set only on styled blocks.
+    TrainingStyle:
+      type: string
+      enum: [balanced, volume, heavy, allout]
+      description: Block-level training style (volume/intensity profile).
+    Equipment:
+      type: string
+      enum: [machine, cable, dumbbell, barbell, bodyweight, kettlebell, other]
+      description: Catalog equipment class. Absent on create = other.
+    Stability:
+      type: string
+      enum: [stable, free]
+      description: Catalog stability class. Absent on create = free.
+    StyleOverride:
+      type: string
+      enum: [repRange, workingSets, targetRir, restSec]
+      description: A style-prescribed field the user has overridden.
     ProgressionSignal:
       type: object
       description: >-

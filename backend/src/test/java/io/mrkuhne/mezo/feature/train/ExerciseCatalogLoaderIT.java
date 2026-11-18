@@ -73,10 +73,58 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     void testLoad_shouldFailFast_whenContentInvalid() {
         CatalogJsonItem bad = new CatalogJsonItem(
             "bad-item", "Bad Item", "not-a-muscle", "compound",
-            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null);
+            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null,
+            "machine", "stable", false);
         assertThatThrownBy(() -> loader.load(List.of(bad)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("bad-item");
+    }
+
+    @Test
+    void testRun_shouldClassifyEveryMasterRow_whenLoaded() {
+        List<ExerciseCatalogEntity> master = repository.findAll().stream()
+            .filter(e -> e.getCreatedBy() == null).toList();
+        assertThat(master).hasSize(166).allSatisfy(e -> {
+            assertThat(e.getEquipment()).isNotBlank();
+            assertThat(e.getStability()).isIn("stable", "free");
+        });
+        ExerciseCatalogEntity pulldown = repository.findBySlug("lat-pulldown-pronated").orElseThrow();
+        assertThat(pulldown.getEquipment()).isEqualTo("cable");
+        assertThat(pulldown.getStability()).isEqualTo("stable");
+        assertThat(pulldown.getLengthenedFriendly()).isTrue();
+        assertThat(repository.findBySlug("barbell-squat").orElseThrow().getStability()).isEqualTo("free");
+    }
+
+    @Test
+    void testLoad_shouldFailFast_whenStabilityMissing() {
+        CatalogJsonItem bad = new CatalogJsonItem("bad-item", "Bad Item", "quad", "compound",
+            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null, "machine", null, false);
+        assertThatThrownBy(() -> loader.load(List.of(bad)))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("bad-item");
+    }
+
+    @Test
+    void testLoad_shouldFailFast_whenEquipmentUnknown() {
+        CatalogJsonItem bad = new CatalogJsonItem("bad-item", "Bad Item", "quad", "compound",
+            new BigDecimal("0.50"), new BigDecimal("0.50"), null, null, null, "spaceship", "stable", false);
+        assertThatThrownBy(() -> loader.load(List.of(bad)))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("bad-item");
+    }
+
+    @Test
+    void testRun_shouldHealClassificationDrift_whenDbRowChanged() {
+        ExerciseCatalogEntity drifted = repository.findBySlug("barbell-squat").orElseThrow();
+        drifted.setStability("stable");
+        drifted.setEquipment("machine");
+        drifted.setLengthenedFriendly(true);
+        repository.saveAndFlush(drifted);
+
+        loader.run();
+
+        ExerciseCatalogEntity healed = repository.findBySlug("barbell-squat").orElseThrow();
+        assertThat(healed.getStability()).isEqualTo("free");
+        assertThat(healed.getEquipment()).isEqualTo("barbell");
+        assertThat(healed.getLengthenedFriendly()).isFalse();
     }
 
     @Test
@@ -124,6 +172,7 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     /** The real box-jump content row, with the two image frames swapped in. */
     private CatalogJsonItem imageItem(String start, String end) {
         return new CatalogJsonItem("box-jump", "Box Jump", "quad", "plyo",
-            new BigDecimal("0.60"), new BigDecimal("0.35"), null, start, end);
+            new BigDecimal("0.60"), new BigDecimal("0.35"), null, start, end,
+            "other", "free", false);
     }
 }

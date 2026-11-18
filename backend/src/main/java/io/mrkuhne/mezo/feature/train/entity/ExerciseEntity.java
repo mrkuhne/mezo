@@ -7,11 +7,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 /**
  * A planned exercise within a {@link WorkoutSessionEntity} (FK {@code workout_session_id},
@@ -93,6 +96,19 @@ public class ExerciseEntity extends OwnedEntity {
      */
     @Column(name = "counts_toward_volume", nullable = false)
     private boolean countsTowardVolume = true;
+
+    /** Per-exercise training style wire value; null = the block's style (mezo-r36n9.79). */
+    @Column(name = "training_style")
+    private String trainingStyle;
+
+    /** Stamped rest between sets in seconds (DB CHECK 30–600); null when unstyled. */
+    @Column(name = "rest_sec")
+    private Integer restSec;
+
+    /** Style fields the owner has taken over by hand (repRange|workingSets|targetRir|restSec); null = none. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<String> overrides;
 
     @NotNull
     @Column(name = "order_index", nullable = false)

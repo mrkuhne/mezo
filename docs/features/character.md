@@ -15,6 +15,8 @@ key_files:
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
+> **2026-11-18 — reviewed after T1 (`mezo-r36n9.79`):** a train-owned Liquibase changeset landed in the shared `1.1.0/script` folder; nothing about the character dossier changed.
+
 > **2026-11-18 — `mezo-r36n9.77` (no character change).** The 1.1.0 changelog gained `202611181000_mezo-r36n9.77_sport_groups.sql` (`sport_groups` on `meso_template`/`mesocycle`, owned by [`train.md`](train.md)).
 > **2026-11-17 — reviewed after `mezo-7ahl8`:** two derived queries with no caller anywhere (main or tests) were removed — `CharacterClaimRepository.findByIdAndCreatedByAndStatus` and `CharacterConferenceRepository.findFirstByCreatedByOrderByGeneratedAtDesc`. No behaviour changed.
 

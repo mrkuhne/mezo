@@ -46,6 +46,30 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSetEntity, 
         @org.springframework.data.repository.query.Param("createdBy") UUID createdBy,
         @org.springframework.data.repository.query.Param("exerciseIds") List<UUID> exerciseIds);
 
+    /** A history set with its instance's date. */
+    record DatedSet(ExerciseSetEntity set, java.time.LocalDate date) { }
+
+    /**
+     * {@link #findCompletedWorkingHistory} with each set's instance date (same filters and order, owner-scoped;
+     * soft-deleted sets and instances are excluded by the entities' {@code @SQLRestriction}).
+     */
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT new io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository$DatedSet(s, w.date)
+        FROM ExerciseSetEntity s, WorkoutSessionEntity w
+        WHERE s.createdBy = :createdBy
+          AND w.createdBy = :createdBy
+          AND s.exerciseId IN :exerciseIds
+          AND s.workoutSessionId = w.id
+          AND w.status = 'completed'
+          AND s.skipped = false
+          AND s.kind = 'working'
+          AND s.reps IS NOT NULL
+        ORDER BY w.date DESC, w.createdAt DESC, s.setIndex ASC
+        """)
+    List<DatedSet> findCompletedWorkingHistoryDated(
+        @org.springframework.data.repository.query.Param("createdBy") UUID createdBy,
+        @org.springframework.data.repository.query.Param("exerciseIds") List<UUID> exerciseIds);
+
     /** Working sets only (record aggregation input — warmups excluded). */
     List<ExerciseSetEntity> findByCreatedByAndRepsNotNullAndKind(UUID createdBy, String kind);
 

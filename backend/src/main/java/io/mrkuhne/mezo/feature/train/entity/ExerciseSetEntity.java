@@ -81,4 +81,12 @@ public class ExerciseSetEntity extends OwnedEntity {
     /** The Progresszió-prescribed reps for this set, snapshotted at log time (null = none). */
     @Column(name = "target_reps")
     private Integer targetReps;
+
+    /** The trained rep range (floor), snapshotted from the set's own exercise row at create (null = legacy). */
+    @Column(name = "target_rep_min")
+    private Integer targetRepMin;
+
+    /** The trained rep range (ceiling), snapshotted from the set's own exercise row at create (null = legacy). */
+    @Column(name = "target_rep_max")
+    private Integer targetRepMax;
 }

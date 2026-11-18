@@ -69,6 +69,7 @@ public class WeekProposalService {
     private final VolumeLedger volumeLedger;
     private final TemplatePlan templatePlan;
     private final VolumeProperties props;
+    private final MuscleProgressReader muscleProgress;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
 
     /**
@@ -77,7 +78,7 @@ public class WeekProposalService {
      * {@code after} after the week's decision; {@code keptOwn} = a deload-week edit of the owner's stood.
      */
     record GroupOutcome(String group, int before, int restored, int after, VolumeDecider.Result result,
-                        boolean noSlot, boolean keptOwn) {
+                        boolean noSlot, boolean keptOwn, boolean stalled) {
         boolean changed() {
             return after != before;
         }
@@ -151,6 +152,8 @@ public class WeekProposalService {
             .forEach(r -> byGroup.computeIfAbsent(r.group(), k -> new ArrayList<>()).add(r));
 
         Map<String, GroupSignals> signals = signalReader.read(createdBy, meso, calWeek);
+        // Styled runs only (empty otherwise): groups whose every exercise held for the stall window — audit only.
+        Set<String> stalledGroups = muscleProgress.stalledGroups(createdBy, meso, calWeek - 1);
         boolean deficit = energyBalance.isInDeficit(createdBy, LocalDate.now());
         boolean deloadPhase = isDeloadPhase(meso, calWeek);
 
@@ -210,7 +213,7 @@ public class WeekProposalService {
                 default -> { } // HOLD / NONE: no line
             }
             outcomes.put(group, new GroupOutcome(group, before, restored, sum(rows, working), result, noSlot,
-                keptOwn.contains(group)));
+                keptOwn.contains(group), stalledGroups.contains(group)));
         });
 
         Map<UUID, TemplatePlan.Row> rowById = plan.stream()
@@ -486,6 +489,9 @@ public class WeekProposalService {
             parts.add("a könnyített hét után a saját számod maradt");
         }
         parts.addAll(o.result().reasons().stream().map(WeekProposalService::hu).toList());
+        if (o.stalled()) {
+            parts.add(hu(Reason.STALLED));
+        }
         if (o.noSlot()) {
             parts.add(hu(Reason.NO_SLOT));
         } else if (o.result().lever() == Lever.UP && o.after() - o.restored() < o.result().delta()) {
@@ -511,6 +517,7 @@ public class WeekProposalService {
             case NO_SLOT -> "nincs hely új sorozatnak";
             case AT_CEILING -> "elérte a sáv tetejét";
             case DELOAD_RESTORE -> "visszaállt a könnyített hét után";
+            case STALLED -> "megállt a fejlődés";
         };
     }
 }

@@ -42,6 +42,8 @@ class WorkoutExerciseChangeIT extends AbstractIntegrationTest {
     @Autowired private WorkoutService workoutService;
     @Autowired private WorkoutExerciseChangeService changeService;
     @Autowired private ExerciseRepository exerciseRepository;
+    @Autowired private io.mrkuhne.mezo.feature.train.repository.MesocycleRepository mesocycleRepository;
+    @Autowired private io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository catalogRepository;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
@@ -216,6 +218,59 @@ class WorkoutExerciseChangeIT extends AbstractIntegrationTest {
                 user, instance.getId(), req("Lateral Raise", ScopeEnum.TODAY, null, 3)))
             .isInstanceOf(SystemRuntimeErrorException.class)
             .hasMessage("TRAIN_WORKOUT_NOT_ACTIVE");
+    }
+
+    @Test
+    void swapKeepsStyleDropsOverrides() {
+        // mezo-r36n9.79: a styled run; the replaced slot has its own style and an owner override.
+        MesocycleEntity meso = mesocycleRepository.findById(day.getMesocycleId()).orElseThrow();
+        meso.setTrainingStyle("balanced");
+        mesocycleRepository.save(meso);
+        rowA.setTrainingStyle("heavy");
+        rowA.setRepMin(12);
+        rowA.setRepMax(15);
+        rowA.setRestSec(240);
+        rowA.setOverrides(List.of("repRange", "restSec"));
+        exerciseRepository.save(rowA);
+        UUID stableRow = catalogRepository.findBySlug("seated-cable-row-neutral").orElseThrow().getId();
+        WorkoutExerciseChangeRequest swap = req("Seated Cable Row", ScopeEnum.MESO, rowA.getId(), 3);
+        swap.setCatalogId(stableRow);
+
+        WorkoutExerciseChangeResponse res = changeService.change(user, instance.getId(), swap);
+
+        // the plan row keeps the slot's style, drops the overrides and is re-stamped (heavy compound)
+        ExerciseEntity plan = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId())).get(0);
+        assertThat(plan.getName()).isEqualTo("Seated Cable Row");
+        assertThat(plan.getTrainingStyle()).isEqualTo("heavy");
+        assertThat(plan.getOverrides()).isNull();
+        assertThat(plan.getRepMin()).isEqualTo(5);
+        assertThat(plan.getRepMax()).isEqualTo(8);
+        assertThat(plan.getTargetRir()).isEqualTo(2);
+        assertThat(plan.getRestSec()).isEqualTo(180);
+        assertThat(plan.getWorkingSets()).isEqualTo(rowA.getWorkingSets());
+        // ...and so does today's instance row
+        ExerciseEntity today = exerciseRepository.findById(res.getExerciseId()).orElseThrow();
+        assertThat(today.getTrainingStyle()).isEqualTo("heavy");
+        assertThat(today.getOverrides()).isNull();
+        assertThat(today.getRepMin()).isEqualTo(5);
+        assertThat(today.getRestSec()).isEqualTo(180);
+    }
+
+    @Test
+    void addUnderStyledRunIsStamped() {
+        MesocycleEntity meso = mesocycleRepository.findById(day.getMesocycleId()).orElseThrow();
+        meso.setTrainingStyle("volume");
+        mesocycleRepository.save(meso);
+
+        WorkoutExerciseChangeResponse res =
+            changeService.change(user, instance.getId(), req("Lateral Raise", ScopeEnum.TODAY, null, 3));
+
+        ExerciseEntity added = exerciseRepository.findById(res.getExerciseId()).orElseThrow();
+        assertThat(added.getTrainingStyle()).isNull();
+        assertThat(added.getRepMin()).isEqualTo(10); // volume compound 10–15, free (no catalog)
+        assertThat(added.getRepMax()).isEqualTo(15);
+        assertThat(added.getRestSec()).isEqualTo(120);
     }
 
     @Test

@@ -81,4 +81,22 @@ public class ExerciseCatalogEntity {
     /** Demo still, end position; alternated with {@link #imageStartUrl} to convey the movement. */
     @Column(name = "image_end_url")
     private String imageEndUrl;
+
+    /** {@code machine|cable|dumbbell|barbell|bodyweight|kettlebell|other} (DB CHECKed); loader-owned on master rows. */
+    @NotNull
+    @Column(nullable = false)
+    private String equipment = "other";
+
+    /**
+     * {@code stable|free} (DB CHECKed): a stable exercise (machine, cable, supported) is fit for
+     * intensity techniques; a free-weight one is not. Loader-owned on master rows, user-settable on own rows.
+     */
+    @NotNull
+    @Column(nullable = false)
+    private String stability = "free";
+
+    /** Loads the muscle well in its lengthened position; loader-owned on master rows. */
+    @NotNull
+    @Column(name = "lengthened_friendly", nullable = false)
+    private Boolean lengthenedFriendly = false;
 }

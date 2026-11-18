@@ -60,6 +60,7 @@ Driving design: [`docs/superpowers/specs/2026-10-11-nyelv-alap-design.md`](../su
 | FE coverage: Fuel (all nine areas, the Fuel settings pages, the server-written Fuel sentences) | ✅ F5 (`mezo-n4wf5.5`) — leftovers listed in §9 |
 | FE coverage: Én, Mezo, overlays, login | ⬜ F6–F8, bilingual from their first line |
 | Prompts, team voice, notifications, built-in catalogs | ⬜ N3 |
+| Train style (T1, `mezo-r36n9.79`): the engine's Hungarian rationales (`Új tartomány …`) and the weekly-audit reason `megállt a fejlődés`, the master catalog's new attributes | ⬜ server-written Hungarian only, like the other engine sentences — N3 |
 | Mock mode | ✅ the mock account's language follows the device cache |
 
 ---

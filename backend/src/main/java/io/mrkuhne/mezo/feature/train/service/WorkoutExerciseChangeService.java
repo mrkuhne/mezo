@@ -6,10 +6,12 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
+import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -36,6 +38,8 @@ public class WorkoutExerciseChangeService {
     private final ClosingBlockService closingBlockService;
     private final WorkoutService workoutService;
     private final VolumeLedger volumeLedger;
+    private final MesocycleRepository mesocycleRepository;
+    private final ExerciseStyler styler;
 
     @Transactional
     public WorkoutExerciseChangeResponse change(UUID createdBy, UUID workoutId, WorkoutExerciseChangeRequest req) {
@@ -60,15 +64,18 @@ public class WorkoutExerciseChangeService {
 
         List<ExerciseEntity> instanceRows = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(instance.getId()));
+        UUID mesoId = mesoIdOf(templateId);
+        TrainingStyle block = runStyleOf(mesoId);
         ExerciseEntity row = fromRequest(createdBy, instance.getId(), req);
         row.setReplacesExerciseId(replaced == null ? null : replaced.getId());
         row.setSavedToPlan(meso);
         row.setOrderIndex(instanceRows.size());
+        style(row, replaced, block);
         ExerciseEntity saved = exerciseRepository.save(row);
 
         if (meso) {
-            writePlan(createdBy, instance, templateId, req, replaced, closing);
-            volumeLedger.sync(createdBy, mesoIdOf(templateId));
+            writePlan(createdBy, instance, templateId, req, replaced, closing, block);
+            volumeLedger.sync(createdBy, mesoId);
         }
         exerciseRepository.flush(); // the refreshed today payload below reads through native SQL too
         return WorkoutExerciseChangeResponse.builder()
@@ -108,7 +115,7 @@ public class WorkoutExerciseChangeService {
     }
 
     private void writePlan(UUID createdBy, WorkoutSessionEntity instance, UUID templateId,
-            WorkoutExerciseChangeRequest req, ExerciseEntity replaced, Set<UUID> closing) {
+            WorkoutExerciseChangeRequest req, ExerciseEntity replaced, Set<UUID> closing, TrainingStyle block) {
         ExerciseEntity plan = fromRequest(createdBy, templateId, req);
         plan.setAddedInWorkoutId(instance.getId());
         if (replaced != null) {
@@ -119,6 +126,7 @@ public class WorkoutExerciseChangeService {
             plan.setRepMax(replaced.getRepMax());
             plan.setTargetRir(replaced.getTargetRir());
             plan.setOrderIndex(replaced.getOrderIndex());
+            style(plan, replaced, block);
             exerciseRepository.delete(replaced); // soft delete (@SQLDelete) — its logged sets stay
             exerciseRepository.save(plan);
             return;
@@ -137,7 +145,33 @@ public class WorkoutExerciseChangeService {
             exerciseRepository.saveAll(day);
             plan.setOrderIndex(at);
         }
+        style(plan, null, block);
         exerciseRepository.save(plan);
+    }
+
+    /**
+     * Training style on a swapped / added row (mezo-r36n9.79): a swap keeps the slot's style and
+     * rest; its overrides only when the movement keeps its identity (same catalog id, else same
+     * name) — a different movement drops them. Then the row is re-stamped under the run's style
+     * (a no-op for an unstyled run and an unstyled slot).
+     */
+    private void style(ExerciseEntity row, ExerciseEntity replaced, TrainingStyle block) {
+        if (replaced != null) {
+            row.setTrainingStyle(replaced.getTrainingStyle());
+            row.setRestSec(replaced.getRestSec());
+            boolean sameMovement = row.getCatalogId() != null
+                ? row.getCatalogId().equals(replaced.getCatalogId())
+                : replaced.getCatalogId() == null && row.getName().equals(replaced.getName());
+            row.setOverrides(sameMovement && replaced.getOverrides() != null
+                ? new ArrayList<>(replaced.getOverrides()) : null);
+        }
+        styler.styleRows(List.of(row), List.of(), block);
+    }
+
+    /** The training style of a run; null for a custom template (no run) or an unstyled run. */
+    private TrainingStyle runStyleOf(UUID mesoId) {
+        return mesoId == null ? null : mesocycleRepository.findById(mesoId)
+            .map(m -> TrainingStyle.fromWire(m.getTrainingStyle())).orElse(null);
     }
 
     private static boolean hasPlanSlot(ExerciseEntity e, UUID templateId, Set<UUID> closing) {
