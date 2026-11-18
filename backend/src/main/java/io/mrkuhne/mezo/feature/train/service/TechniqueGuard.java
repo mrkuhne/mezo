@@ -64,7 +64,7 @@ public class TechniqueGuard {
         return (t != null && t != Technique.NONE) || Boolean.TRUE.equals(e.challenge());
     }
 
-    private static SystemRuntimeErrorException fail(String code, String exerciseName) {
+    static SystemRuntimeErrorException fail(String code, String exerciseName) {
         return new SystemRuntimeErrorException(
             SystemMessage.error(code).params(List.of(exerciseName)).build(), HttpStatus.BAD_REQUEST);
     }

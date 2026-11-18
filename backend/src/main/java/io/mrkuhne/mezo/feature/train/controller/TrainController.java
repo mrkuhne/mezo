@@ -71,6 +71,7 @@ import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.TimingObservationExtractor;
 import io.mrkuhne.mezo.feature.train.service.TimingProfileService;
+import io.mrkuhne.mezo.feature.train.service.ExerciseTechniqueService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.VolumeArcService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutExerciseChangeService;
@@ -93,6 +94,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TrainController implements TrainApi {
 
     private final TrainService service;
+    private final ExerciseTechniqueService exerciseTechniqueService;
     private final MesoTemplateService mesoTemplateService;
     private final MesocycleReportService mesocycleReportService;
     private final WorkoutService workoutService;
@@ -249,9 +251,7 @@ public class TrainController implements TrainApi {
 
     @Override
     public GymExercise updateExerciseTechnique(UUID id, UUID exerciseId, ExerciseTechniqueUpdateRequest request) {
-        // Stub until T2 Task 5 wires the service.
-        throw new SystemRuntimeErrorException(
-            SystemMessage.error("NOT_IMPLEMENTED").build(), HttpStatus.NOT_IMPLEMENTED);
+        return exerciseTechniqueService.update(currentUserId.get(), id, exerciseId, request);
     }
 
     @Override
