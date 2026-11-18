@@ -24,6 +24,7 @@ class VolumeArcContractIT extends ApiIntegrationTest {
 
     @Autowired TrainPopulator train;
     @Autowired MesocycleRepository mesocycleRepository;
+    @Autowired io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository volumeLogRepository;
 
     @Test
     void testGetMesocycleVolumeArc_shouldReturnActualsAndPlannedScaffold_whenMesoHasLoggedWeeks() {
@@ -69,6 +70,42 @@ class VolumeArcContractIT extends ApiIntegrationTest {
         assertThat(week6.getActual()).isNull();
         assertThat(week6.getPlanned()).isNotNull();
         assertThat(week6.getIsCurrent()).isFalse();
+    }
+
+    private static final List<String> NO_DELOAD = List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload");
+
+    /** A derived ledger row: the plan's own sum and the tier band, on a run in its first week. */
+    private List<Integer> plannedOf(String muscle, String tier, int sets, Integer bandLow, Integer bandHigh) {
+        UUID owner = ownerId();
+        MesocycleEntity meso = train.activeMesoStartedWeeksAgo(owner, 0, 6, NO_DELOAD);
+        meso.setMusclePriorities(java.util.Map.of(muscle, tier));
+        mesocycleRepository.saveAndFlush(meso);
+        var row = train.createVolumeLog(owner, meso.getId(), muscle, sets);
+        row.setBandLow(bandLow);
+        row.setBandHigh(bandHigh);
+        volumeLogRepository.saveAndFlush(row);
+
+        MesocycleVolumeArcResponse res = getForBody(
+            "/api/train/mesocycles/" + meso.getId() + "/volume-arc",
+            ownerAuthHeaders(), HttpStatus.OK, MesocycleVolumeArcResponse.class);
+        return res.getMuscles().stream().filter(m -> m.getMuscle().equals(muscle)).findFirst().orElseThrow()
+            .getWeeks().stream().map(VolumeArcWeek::getPlanned).toList();
+    }
+
+    @Test
+    void aMaintainedGroupPlansItsOwnSetsEveryWeek() {
+        assertThat(plannedOf("chest", "maintain", 2, 3, 7)).containsExactly(2, 2, 2, 2, 2, 1);
+    }
+
+    @Test
+    void aGrowGroupRampsFromThePlanToItsBandTop() {
+        assertThat(plannedOf("back", "grow", 11, 10, 16)).containsExactly(11, 12, 13, 14, 15, 8);
+    }
+
+    @Test
+    void aRowWithoutABandKeepsTheOldScaffold() {
+        // old scaffold: week 1 = MEV (8 in the fixture), +step (2) per productive week
+        assertThat(plannedOf("chest", "grow", 2, null, null)).startsWith(8, 10);
     }
 
     /** Find-or-create yields the demodata-seeded owner's id — the single-user principal. */
