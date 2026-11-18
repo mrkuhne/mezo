@@ -7,11 +7,9 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 
 /**
- * Per-muscle priority tier — picks which volume landmark is "100%" for the weekly ramp
- * (mezo-3m5m, spec GD4). Maintain's ceiling is MEV: {@link VolumeDecider} ramps a muscle
- * below its ceiling back up (e.g. recovering toward MEV after a deload) and holds once it
- * reaches the ceiling — the ceiling alone encodes maintain semantics, there is no separate
- * ramp-disable flag.
+ * Per-muscle priority tier (mezo-3m5m, spec GD4) — Építés / Hangsúly / Tartás. It selects the
+ * weekly set band of a muscle group ({@link VolumeBands#band}); the band, not a single ceiling
+ * landmark, encodes what each tier means.
  */
 public enum PriorityTier {
     EMPHASIZE, GROW, MAINTAIN;
@@ -24,16 +22,6 @@ public enum PriorityTier {
             case "maintain" -> MAINTAIN;
             default -> GROW;
         };
-    }
-
-    public int ceiling(int mev, int mav, int mrv) {
-        return switch (this) { case EMPHASIZE -> mrv; case GROW -> mav; case MAINTAIN -> mev; };
-    }
-
-    /** Week-1 start of the ramp (mesocycle wizard redesign): EMPHASIZE begins two sets above MEV
-     *  (never above MRV), GROW and MAINTAIN begin at MEV. Pairs with {@link #ceiling}. */
-    public int weekOneStart(int mev, int mav, int mrv) {
-        return this == EMPHASIZE ? Math.min(mev + 2, mrv) : mev;
     }
 
     /**

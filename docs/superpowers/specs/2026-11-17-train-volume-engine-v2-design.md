@@ -410,3 +410,25 @@ shipped code differs, this section is the truth. Source: the controller's ledger
 | §6.1 ledger | rows of dropped groups are removed | They are **hard**-deleted: the `(mesocycle_id, muscle)` unique key is not partial and a soft-deleted tombstone would block re-adding the group. |
 | §6.4 "Applying" | an `applied` status | The auto path writes status `auto_applied` with every line `accepted` (or `kept` when its row vanished) and fills `plan_after`. `applied`, `expired`, `superseded` and the tier-change kind exist in the table's check constraints for S3. |
 | Test layout | — | Proposal ITs (`WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`, `WeekProposalTierIT`) live under `feature/train/service/` because `build`/`apply` are package-private; `TrainPopulator` builds model-2 runs. |
+
+### S2 as built (2026-11-18, `mezo-r36n9.77`)
+
+S2 (bands and the evaluator) shipped on `feat/volume-engine-v2-s2`; owner's starting-point answer 2026-11-18
+*„Sáv széle”*. Where the code differs from §§6.2–6.6 and 9, this table is the truth. Source: the controller's rulings
+A–F and the code in `feature/train`.
+
+| Where | This document says | S2 shipped |
+|---|---|---|
+| Contract commits (ruling A) | one contract change | **Two** `train.yml` commits: `sportGroups` with the template/run work, the two evaluation operations later with their handlers (a declared-only operation would have forced a stub controller). |
+| §6.6 endpoints | `POST /meso-plans/evaluate` | Plus **`GET /api/train/mesocycles/{id}/evaluation`** — the same evaluation of a run's own template days (read-only, owner-scoped), for the phone's run view. |
+| §6.3 arc rewrite, restore | the arc's planned line switches to the evaluator's `path` | `VolumeArcService.plannedPath`: past weeks from each applied proposal's `plan_after` (soft-deleted ids resolved), current/future from `VolumePath.project` with `restoreTo` when the current week is a deload; the evaluation's run `path` is that same line. The restore is a **two-pass** match (id, then identity) and the plan-row reader is one shared `TemplatePlan` component used by both `WeekProposalService` and the arc (ruling F — the spec's "one place" outranked "WeekProposalService band call only"). |
+| §6.3 path rule | `path` mirrors the weekly engine | Mirrors `WeekProposalService.build` with all signals green (ruling C): the week after a deload restores to `max(current, pre-deload)` **then** steps; landmark-less groups are excluded from sets and total. `VolumeDecider.step` is the shared step rule. |
+| Legacy arc line | scaffold ramps by `step` to the tier ceiling | A row with no band is a synthetic one-exercise path from its MEV: Grow `[8, 9, 10, 11, 12, 6]` (was `[8, 10, 12, 14, 14, 7]`) — the tier step replaces `mezo.volume.step`; `PriorityTier.ceiling`/`weekOneStart` and the key are deleted. |
+| Deload value in the path test | 14 → 7 (group total halved) | Per-exercise ⌈sets × fraction⌉ (§6.4 rule 2) gives **8** for 14 over four exercises (ruling D). |
+| §6.2 sport shift | sport-loaded groups lower the band | Implemented as `low − sport-low-shift (1)`, `high − sport-high-shift (2)`, floor `low + 1`; `Band.sportAdjusted` is exposed on the wire. `sportGroups` on template, run, their responses and `PUT …/muscle-priorities`; `TRAIN_SPORT_GROUP_INVALID` 400. |
+| Template `PUT` (ruling E) | full replace | A `PUT` with `sportGroups` absent **keeps** the stored value (`[]` clears): the frozen web editor never sends the field and would wipe a phone-set value. Same rule on `muscle-priorities`. |
+| §6.3 response shape | per-muscle fit, proposal, minutes, path | Additions that serve decision #49 (session time): `suggestedSportGroups` (from `sport_schedule_slot` via `mezo.volume.sport-groups-by-sport`, only while the plan's `sportGroups` is absent), `sportDays`, per-day `sportSameDay`, `overTarget` (null without `sessionMinutesTarget`), the request's `sessionMinutesTarget`, `proposalBlocked`, signed `diff`, `spread`. |
+| Evaluator `dayIndex` | — | The stateless POST uses the day's position in the request; a run's evaluation uses the template day's `orderIndex` (final review fix), like the arc and the proposal lines. Added: `exerciseCapWarnings[]`, a 400 for a phase curve not `weeks` long. |
+| Deficit | the evaluator reads the goal | `EnergyBalancePort.isInDeficit`; the arc asks it only for an `active` run, the evaluation always (parked inconsistency). |
+| §9 generator | week 1 from the tier ceilings | **Starts at the band's edge** (owner decision „Sáv széle”): Építés low = MEV, Hangsúly low = MAV−2, Tartás **high** = MEV−1, via `MesoPlanSkeleton.startSets`; the skeleton's `ceilings` are gone; the generator is never sport-adjusted. |
+| Not done in S2 | — | The tier-change proposals (§6.5) and manual mode stay **S3**, with the proposal endpoints and load lines; the phone's blokk-építő screens are a later Boop slice. |

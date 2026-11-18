@@ -6,7 +6,7 @@ allapot: Részben kész
 hol: [Háttérrendszer]
 szulo: 04-progresszio-motor
 szakasz: [B5]
-osszefoglalo: A gyakorlatra beírt sorozatszám az igazság — az edzés pontosan annyit ír elő; a hét sávot ad izomcsoportonként, és hétről hétre legfeljebb egy-két sorozatot tol át, amit tényleg megcsináltál alapján.
+osszefoglalo: A gyakorlatra beírt sorozatszám az igazság — az edzés pontosan annyit ír elő; a szerver minden izomcsoportnak sávot ad (a sport által terhelt lábaknak lejjebb tolva), megméri vele a tervet, és hétről hétre legfeljebb egy-két sorozatot tol át, amit tényleg megcsináltál alapján.
 ---
 
 ## Mit csinál
@@ -23,6 +23,26 @@ Minden izomcsoportnak van egy **heti sávja** aszerint, milyen szinten tartod:
 | **Tartás** | a minimum harmadától a minimum alá egy sorozatig | 4–9 |
 
 A sáv **tanácsot ad**, nem tilt: a tervedet nem utasítja vissza, és amit te mentettél, azt a hétről hétre való lépés nem húzza vissza.
+
+**A sport lejjebb viszi a láb sávját (2026-11-18).** Ha hetente röplabdázol, a lábad már kap terhelést a pályán, ezért az edzésterv
+arra az izomcsoportra kisebb sávot kér: az alja eggyel, a teteje kettővel lejjebb kerül (a sáv így sem lesz üres). Ezt a tervnél
+és a futó blokknál is beállíthatod izomcsoportonként; ha nem állítod be, a szerver a heti sportbeosztásodból **javasol** csoportokat
+(röplabdánál a combfeszítőt, a combhajlítót, a farizmot és a vádlit) — de magától nem alkalmazza. Például: egy 8–12-es Építés sáv
+sportos lábnál 7–10 lesz.
+
+**A terv mérése mentés előtt (2026-11-18, a telefon képernyői még hátra).** A szerver az összerakott tervet megméri:
+- **Izmonként** megmondja, a sávon belül van-e, alatta vagy fölötte, és mennyivel; ha kell, **konkrét javítást** ad (melyik napon,
+  melyik gyakorlaton hány sorozat több vagy kevesebb) úgy, hogy soha ne menjen gyakorlatonként öt, izomcsoportonként egy napon
+  nyolc sorozat fölé. Ha emiatt nincs hová tenni a hiányzó sorozatot, kimondja: **új gyakorlat kell**.
+- **Naponként becsüli az edzés hosszát** (sorozatonként kb. 2,4 perc, bemelegítő sorozatonként 1 perc, plusz 6 perc ráhagyás), és jelzi,
+  ha egy nap túllépi a megadott időt.
+- **Figyelmeztet**, ha egy izomra egy napon nyolcnál több sorozat jut, és ha aznap sport is van.
+- **Hétről hétre kirajzolja a blokkot**: a könnyű hét felez, utána minden gyakorlat visszaáll, fogyás alatt lassabb az emelés. Ez a
+  legjobb eset (mintha minden hét jól sikerülne); a valóság a heti megnézés után ettől eltérhet.
+
+A **futó blokk volumen-íve ugyanezt a vonalat mutatja**: a már lement hetek azt, amit tényleg előírtak neked, a mostani és a következők a
+fenti kirajzolást — így egy könnyű hét közepén sem hazudik az ív. A **generált terv** minden izma a saját sávján belül indul (a
+sáv szélén: az Építés az aljáról, a Hangsúly a saját sávja aljáról, a Tartás a tetejéről).
 
 Minden új héten a motor izomcsoportonként **megnézi, mit csináltál tényleg** a múlt héten, és ebből dönt:
 - megvolt-e minden előírt sorozat,
@@ -57,7 +77,8 @@ később jön a telefonra.
 - A tulajdonos döntése (2026-11-17): az app **javasol, te döntesz**, és a te elfogadott számod az igazság.
 - A „minimum – optimális – maximum” heti sorozat bevett modell (RP-táblázat); a számok beállíthatók, nem kőbe vésettek.
 - A fogyás alatti lassabb lépés a bevett elv: étel-hiányban a munkát nem vágjuk, csak lassabban emeljük.
-- Részletek: Döntések napló, 2026-11-17.
+- A generált terv a sáv szélén indul — a tulajdonos döntése, 2026-11-18 („Sáv széle”).
+- Részletek: Döntések napló, 2026-11-17 és 2026-11-18.
 
 ## Beállítások
 | Beállítás | Mit állít | Alapérték |
@@ -71,6 +92,11 @@ később jön a telefonra.
 | `mezo.volume.bands.exercise-cap` | Legfeljebb ennyi munkasorozat egy gyakorlaton | 5 |
 | `mezo.volume.bands.session-cap` | Legfeljebb ennyi munkasorozat egy izomcsoportra egy edzésen | 8 |
 | `mezo.volume.bands.maintain-low-divisor` / `emphasize-low-offset` | Hogyan jön ki a Tartás és a Hangsúly sáv alja | 3 / 2 |
+| `mezo.volume.bands.sport-low-shift` / `sport-high-shift` | Sporttal terhelt izomcsoportnál ennyivel lejjebb kerül a sáv alja / teteje | 1 / 2 |
+| `mezo.volume.evaluator.minutes-per-working-set` | A tervmérő ennyi percet számol egy munkasorozatra | 2,4 perc |
+| `mezo.volume.evaluator.minutes-per-warmup-set` | … egy bemelegítő sorozatra | 1 perc |
+| `mezo.volume.evaluator.session-overhead-minutes` | … ráhagyás egy edzésre (készülődés, pihenők közötti szünetek) | 6 perc |
+| `mezo.volume.sport-groups-by-sport` | Melyik izomcsoportot terheli egy sport (a javaslathoz) | röplabda: comb, combhajlító, far, vádli |
 | `mezo.volume.signals.*` | Mikor számít soknak a munka, erősnek a fájdalom, magasnak az izomláz (1–10-es skálán) | 3 / 2 / 7 |
 | `mezo.volume.weekly-review.mode` | A heti változás magától érvényesül-e (`auto`) vagy jóváhagyásra vár (`manual`, később) | magától |
 | `mezo.volume.baselines.*` | Izomcsoportonkénti minimum / optimális / maximum heti sorozat (például mell 8 / 14 / 20) | lásd konfiguráció |
@@ -81,14 +107,14 @@ később jön a telefonra.
 | `exercise` | A gyakorlat sorozatszáma — ez az igazság, ezt írja elő az edzés |
 | `muscle_group_volume_log` | Izomcsoportonként a heti összeg (a tervből kiszámolva) és a hozzá tartozó sáv alja és teteje |
 | `meso_week_proposal` | A heti változás: soronként a gyakorlat, a régi és az új szám, az indok; a könnyű hét után visszaállítandó számok |
-| `mesocycle` | A fázisgörbe, az izom-szintek, az utolsó heti számolás nyoma és hogy a futam már az új módon megy-e |
+| `mesocycle` | A fázisgörbe, az izom-szintek, a sporttal terhelt izomcsoportok, az utolsó heti számolás nyoma és hogy a futam már az új módon megy-e |
+| `meso_template` | A terv sablonja — itt is eltárolódik, mely izomcsoportokat terheli a sport |
 
 ## Mi jön még
 - **Jóváhagyó képernyő a telefonon:** soronkénti „Elfogadom / Megtartom”, vagy „Elfogadom átnézés nélkül”, és a változtatás okai.
-- **Tervépítő sáv-értékelő:** a terv mentése előtt megmondja, melyik izomcsoport van a sávja alatt vagy fölött, és javasol konkrét átrakást.
-- **A sport (például röplabda) lejjebb viszi a láb sávját** — még nincs bekötve.
+- **A telefon képernyői a mérésre (blokk-építő):** a szerver már tud mérni és javítást adni, de a telefonon még nincs olyan képernyő, ami megmutatná és elfogadtatná.
 - **Szintváltás a futam közben** azonnali javaslatot is adjon, ne csak a sávot tolja el.
-- **A telefon és a webes ív „még férő” számai** egyelőre közelítőek az új számítás mellett; a következő szelet pontosítja őket.
+- **A telefon „még férő” számai** egyelőre a régi közelítést használják; a szerver ívét és sávjait a telefon-szelet köti rá.
 - Technikák (például dropszett) és a terv stílusa — külön tervezett csomag.
 
 ## Mi marad ki

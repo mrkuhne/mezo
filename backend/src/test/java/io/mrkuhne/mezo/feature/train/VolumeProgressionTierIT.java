@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * The volume arc's planned scaffold per tier (mezo-3m5m, spec GD4): a Grow group ramps to MAV, a
- * Maintain group stays flat at MEV, both through a Deload week. The weekly ROLLOVER cases that
+ * The volume arc's planned scaffold per tier (mezo-3m5m, spec GD4): a Grow group ramps by its tier step, a
+ * Maintain group stays flat, both through a Deload week. The weekly ROLLOVER cases that
  * used to live here moved to {@code service.WeekProposalTierIT} with volume engine v2 (the weekly
  * step now moves the plan's exercise sets, not a ledger target).
  */
@@ -33,34 +33,30 @@ class VolumeProgressionTierIT extends AbstractIntegrationTest {
     @Test
     void testVolumeArc_shouldPinPlannedScaffoldPerTier() {
         // mezo-3m5m final review, fix 5: the spec's testing list names "scaffold curve per tier" —
-        // this pins VolumeArcService#plannedScaffold's actual week-by-week numbers for a Grow group
-        // (ramps to MAV) alongside a Maintain group (flat at MEV), both through a Deload week.
+        // this pins VolumeArcService#plannedPath's week-by-week numbers for a Grow group
+        // (ramps) alongside a Maintain group (flat), both through a Deload week.
         UUID owner = ownerId();
         var meso = train.activeMesoStartedWeeksAgo(
             owner, 2, 6, List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"));
         meso.setMusclePriorities(Map.of("glute", "maintain")); // chest carries no entry -> defaults Grow
         mesocycleRepository.saveAndFlush(meso);
 
-        // chest (Grow, real RP baseline mev 8/mav 14/mrv 20 — mezo.volume.baselines). currentSets is
-        // irrelevant to `planned` (VolumeArcService reads only mev + the tier ceiling for the
-        // scaffold), so it's seeded at mev for a neutral fixture.
+        // chest (Grow, real RP baseline mev 8/mav 14/mrv 20 — mezo.volume.baselines; band 8..14).
+        // The seeded log rows carry no bandHigh, so they are LEGACY rows: VolumeArcService#plannedPath
+        // takes the synthetic-exercise path from the row's MEV (currentSets plays no part).
         createVolumeLog(owner, meso.getId(), "chest", 8, 14, 20, 8);
-        // glute (Maintain -> ceiling = mev = 8, real RP baseline mev 8/mav 12/mrv 18).
+        // glute (Maintain, real RP baseline mev 8/mav 12/mrv 18).
         createVolumeLog(owner, meso.getId(), "glute", 8, 12, 18, 8);
 
         MesocycleVolumeArcResponse res = arcService.arc(owner, meso.getId());
 
-        // Hand-computed against VolumeArcService#plannedScaffold (step = mezo.volume.step = 2,
-        // deloadFraction = mezo.volume.deload-fraction = 0.5):
-        //   w1 = mev (scaffold always starts at MEV, tier-independent);
-        //   each later non-Deload week ramps by +step, clamped at the tier's ceiling — Grow's
-        //   ceiling is MAV (14), Maintain's is MEV (8) so it never moves off its own week-1 value;
-        //   the Deload week (w6, tier-independent branch) is round(ceiling * deloadFraction) — NOT
-        //   round(prevWeek * deloadFraction), so it reads off the (possibly still-ramping) ceiling.
-        // chest (Grow, mev 8, ceiling 14): 8 -> 10 -> 12 -> 14 -> 14 (clamped) -> round(14*0.5)=7.
-        int[] expectedChest = {8, 10, 12, 14, 14, 7};
-        // glute (Maintain, mev 8, ceiling 8): flat at 8 every ramp week (already at ceiling from
-        // week 1) -> round(8*0.5)=4 on the Deload week.
+        // Hand-computed against VolumeArcService#legacyScaffold -> VolumePath#project (one synthetic
+        // exercise at MEV, caps off, no deficit, deloadFraction = mezo.volume.deload-fraction = 0.5):
+        //   w1 = mev; each later non-Deload week steps by the tier step (Hangsúly 2, Építés/Grow 1,
+        //   Tartás 0), capped at band.high; the Deload week halves with ceil; the week after restores.
+        // chest (Grow, step 1, band high 14): 8 -> 9 -> 10 -> 11 -> 12 (MRV week) -> ceil(12*0.5)=6.
+        int[] expectedChest = {8, 9, 10, 11, 12, 6};
+        // glute (Maintain, step 0): flat at 8 every ramp week -> ceil(8*0.5)=4 on the Deload week.
         int[] expectedGlute = {8, 8, 8, 8, 8, 4};
 
         assertPlanned(res, "chest", expectedChest);

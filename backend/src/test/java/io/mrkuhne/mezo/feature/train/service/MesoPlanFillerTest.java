@@ -62,7 +62,7 @@ class MesoPlanFillerTest {
 
     @Test
     void fill_shouldCoverEveryFrameSetExactly_whenCatalogCoversAllGroups() {
-        var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6, Map.of("back", "emphasize"), RP);
+        var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6, Map.of("back", "emphasize"), RP, MesoPlanSkeletonTest.BANDS);
         var days = MesoPlanFiller.fill(s, CATALOG, PROPS);
         assertThat(days).hasSize(7);
         for (int i = 0; i < 7; i++) {

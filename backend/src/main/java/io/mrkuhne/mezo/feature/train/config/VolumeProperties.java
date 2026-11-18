@@ -9,16 +9,16 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-/** Volume-progression tuning (mezo.volume): weekly set increment, deload fraction, grind RIR gap,
+/** Volume-progression tuning (mezo.volume): deload fraction, grind RIR gap,
  * and the fixed per-muscle-group RP baseline landmarks seeded at mesocycle create/activate. */
 @Validated
 @ConfigurationProperties(prefix = "mezo.volume")
 public record VolumeProperties(
-    @NotNull @Positive Integer step,                 // sets added per productive week (2)
     @NotNull @Positive BigDecimal deloadFraction,    // deload target = round(prevSets * this) (0.5)
     @NotNull @PositiveOrZero Integer grindRirGap,     // RIR-below-target gap that counts as a grind (2)
     // Keyed by the coarse MuscleGroup token (chest/back/…); a group with no entry (core, sport
@@ -29,8 +29,18 @@ public record VolumeProperties(
     @NotNull @Positive Integer stepEmphasize,         // weekly step, emphasize tier (2)
     @NotNull @Positive Integer stepGrow,              // weekly step, grow tier (1)
     @NotNull @Positive Integer stepDeficit,           // weekly step, both tiers in a deficit (1)
-    @NotNull @Valid Signals signals                   // last-week signal thresholds
+    @NotNull @Valid Signals signals,                  // last-week signal thresholds
+    @NotNull @Valid Evaluator evaluator,              // session-minutes model of the plan evaluator
+    // sport kind -> coarse muscle groups that sport already loads (band is sport-adjusted for them)
+    @NotNull Map<String, List<String>> sportGroupsBySport
 ) {
+    /** Per-set minute costs the plan evaluator uses to estimate a session's duration. */
+    public record Evaluator(
+        @NotNull @Positive BigDecimal minutesPerWorkingSet,   // 2.4
+        @NotNull @Positive BigDecimal minutesPerWarmupSet,    // 1.0
+        @NotNull @PositiveOrZero Integer sessionOverheadMinutes // 6
+    ) {}
+
     /**
      * Thresholds that turn last week's feedback into the decider's flags. Scales: workload 1–3
      * (Kevés volt / Pont jó / Sok volt), joint pain 1–3 (Nincs / Enyhe / Erős) — higher = worse;
@@ -47,7 +57,9 @@ public record VolumeProperties(
         @NotNull @Positive Integer maintainLowDivisor,   // maintain low = ceil(mev / this) (3)
         @NotNull @PositiveOrZero Integer emphasizeLowOffset, // emphasize low = mav - this (2)
         @NotNull @Positive Integer exerciseCap,          // working sets per exercise (5)
-        @NotNull @Positive Integer sessionCap            // working sets per muscle group per day (8)
+        @NotNull @Positive Integer sessionCap,           // working sets per muscle group per day (8)
+        @NotNull @PositiveOrZero Integer sportLowShift,  // sport-loaded group: low -= this (1)
+        @NotNull @PositiveOrZero Integer sportHighShift  // sport-loaded group: high -= this (2)
     ) {}
 
     /** Weekly review proposal mode. */

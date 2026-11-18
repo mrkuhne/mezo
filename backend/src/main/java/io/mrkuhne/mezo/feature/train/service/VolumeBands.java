@@ -6,11 +6,11 @@ import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 public final class VolumeBands {
     private VolumeBands() {}
 
-    /** Weekly working-set band; {@code limit} is the hard ceiling (the group's MRV). */
-    public record Band(int low, int high, int limit) {}
+    /** Weekly working-set band; {@code limit} is the hard ceiling (the group's MRV); {@code sportAdjusted} marks a sport-lowered band. */
+    public record Band(int low, int high, int limit, boolean sportAdjusted) {}
 
     public static Band band(VolumeProperties.Baseline landmarks, PriorityTier tier,
-                            VolumeProperties.Bands cfg) {
+                            boolean sportLoaded, VolumeProperties.Bands cfg) {
         int mev = landmarks.mev();
         int mav = landmarks.mav();
         int mrv = landmarks.mrv();
@@ -24,6 +24,10 @@ public final class VolumeBands {
         };
         int low = Math.max(1, range[0]);
         int high = Math.max(low, range[1]);
-        return new Band(low, high, mrv);
+        if (sportLoaded) {   // spec §6.2: the sport already trains these groups; keep the band non-empty
+            low = Math.max(1, low - cfg.sportLowShift());
+            high = Math.max(low + 1, high - cfg.sportHighShift());
+        }
+        return new Band(low, high, mrv, sportLoaded);
     }
 }

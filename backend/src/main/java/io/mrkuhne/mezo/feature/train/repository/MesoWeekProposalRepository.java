@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.repository;
 
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,12 @@ public interface MesoWeekProposalRepository extends JpaRepository<MesoWeekPropos
     Optional<MesoWeekProposalEntity> findLatestApplied(
         @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId,
         @Param("beforeWeek") int beforeWeek);
+
+    /** Every applied (or auto-applied) {@code weekly} proposal of a run, oldest week first. */
+    @Query("select p from MesoWeekProposalEntity p where p.createdBy = :createdBy and p.mesocycleId = :mesocycleId"
+        + " and p.kind = '" + MesoWeekProposalEntity.KIND_WEEKLY + "'"
+        + " and p.status in ('" + MesoWeekProposalEntity.STATUS_APPLIED + "', '"
+        + MesoWeekProposalEntity.STATUS_AUTO_APPLIED + "') order by p.week asc")
+    List<MesoWeekProposalEntity> findAllApplied(
+        @Param("createdBy") UUID createdBy, @Param("mesocycleId") UUID mesocycleId);
 }

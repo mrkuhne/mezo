@@ -66,7 +66,8 @@ public class VolumeLedger {
         List<MuscleGroupVolumeLogEntity> toSave = new ArrayList<>();
         setsByGroup.forEach((group, sets) -> {
             VolumeProperties.Baseline b = props.baselines().get(group);
-            VolumeBands.Band band = VolumeBands.band(b, PriorityTier.of(meso.getMusclePriorities(), group), props.bands());
+            VolumeBands.Band band = VolumeBands.band(b, PriorityTier.of(meso.getMusclePriorities(), group),
+                meso.isSportLoaded(group), props.bands());
             MuscleGroupVolumeLogEntity row = existing.remove(group);
             if (row == null) {
                 row = new MuscleGroupVolumeLogEntity();

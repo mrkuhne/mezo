@@ -129,6 +129,27 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void emphasizedQuadStopsAtTheSportTop() {
+        MesocycleEntity meso = run(2, NO_DELOAD, Map.of("quad", "emphasize"));
+        meso.setSportGroups(List.of("quad"));
+        mesocycleRepository.saveAndFlush(meso);
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        ExerciseEntity a = exercise(mon, "Guggolás", "quad", 4);
+        ExerciseEntity b = exercise(mon, "Lábtoló", "quad", 4);
+        WorkoutSessionEntity thu = day(meso, "Csütörtök", 3);
+        ExerciseEntity c = exercise(thu, "Kitörés", "quad", 4);
+        ExerciseEntity d = exercise(thu, "Lábfeszítés", "quad", 3);
+        logWeek(meso, 1, mon, 0, a, b);
+        logWeek(meso, 1, thu, 3, c, d);
+
+        workoutService.getToday(owner, null);
+
+        // 15 sets, emphasize +2 would reach 17; the sport-lowered top is 16 (18 - 2)
+        assertThat(ledger(meso, "quad").getBandHigh()).isEqualTo(16);
+        assertThat(ledger(meso, "quad").getCurrentSets()).isEqualTo(16);
+    }
+
+    @Test
     void anUnconvertedRunIsNeverGenerated() {
         Back b = back(2, "emphasize", true);
         MesocycleEntity legacy = reload(b.meso());

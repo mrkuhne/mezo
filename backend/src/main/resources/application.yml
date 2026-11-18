@@ -3122,7 +3122,6 @@ mezo:
     isolation-warmup: 1
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
-    step: 2                 # sets added per productive week
     deload-fraction: 0.5    # deload target = round(prevSets * this)
     grind-rir-gap: 2        # RIR-below-target gap that counts as a grind
     step-emphasize: 2       # weekly step, Hangsúly tier
@@ -3133,12 +3132,20 @@ mezo:
       emphasize-low-offset: 2     # Hangsúly low = mav - 2
       exercise-cap: 5             # working sets per exercise
       session-cap: 8              # working sets per muscle group per day
+      sport-low-shift: 1          # sport-loaded group: band low - 1 (min 1)
+      sport-high-shift: 2         # sport-loaded group: band high - 2 (min low + 1)
     weekly-review:
       mode: auto                  # auto | manual
     signals:
       workload-too-much: 3        # exercise_feedback.workload 1 Kevés / 2 Pont jó / 3 Sok volt
       joint-pain-hold: 2          # exercise_feedback.joint_pain 1 Nincs / 2 Enyhe / 3 Erős: >= holds
       soreness-high: 7            # check-in soreness 1..10 (10 = worse): 7 and above is high
+    evaluator:                    # plan evaluator session-minutes model
+      minutes-per-working-set: 2.4
+      minutes-per-warmup-set: 1.0
+      session-overhead-minutes: 6
+    sport-groups-by-sport:        # coarse muscle groups a sport already loads
+      volleyball: [quad, ham, glute, calf]
     # RP intermediate MEV/MAV/MRV landmarks per coarse muscle group (mezo-xlmp) — seeded onto
     # muscle_group_volume_log at meso create-as-active/activate for the groups the template
     # actually trains. Bands match the demofixtures seed; core/traps intentionally absent

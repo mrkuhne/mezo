@@ -75,13 +75,20 @@ public final class VolumeDecider {
         if (atTop) {
             return new Result(Lever.HOLD, 0, List.of(Reason.AT_CEILING));
         }
-        int step = in.deficit() ? in.stepDeficit()
-            : (in.tier() == PriorityTier.EMPHASIZE ? in.stepEmphasize() : in.stepGrow());
+        int step = step(in.tier(), in.deficit(), in.stepEmphasize(), in.stepGrow(), in.stepDeficit());
         int delta = Math.min(step, top - in.plannedSets());
         List<Reason> why = new ArrayList<>(List.of(Reason.ALL_SETS_DONE, Reason.ROOM_IN_BAND));
         if (in.deficit()) {
             why.add(Reason.DEFICIT_PACE);
         }
         return new Result(Lever.UP, delta, why);
+    }
+
+    /** The one weekly step rule (shared with {@link VolumePath}): Tartás 0, a deficit its own step, Hangsúly vs Építés. */
+    public static int step(PriorityTier tier, boolean deficit, int stepEmphasize, int stepGrow, int stepDeficit) {
+        if (tier == PriorityTier.MAINTAIN) {
+            return 0;
+        }
+        return deficit ? stepDeficit : (tier == PriorityTier.EMPHASIZE ? stepEmphasize : stepGrow);
     }
 }

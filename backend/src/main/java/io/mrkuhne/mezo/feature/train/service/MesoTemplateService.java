@@ -5,24 +5,20 @@ import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
 import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
-import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
-import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.json.MesoDayJson;
-import io.mrkuhne.mezo.feature.train.entity.json.VolumeBaselineJson;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesoTemplateRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
-import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,16 +50,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MesoTemplateService {
 
-    /** Baseline label for a materialized landmark whose run row carried no provenance baseline. */
-    private static final String INHERITED_BASELINE_NAME = "Örökölt kiindulás";
-
     private final MesoTemplateRepository templateRepository;
     private final MesocycleRepository mesocycleRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
-    private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final TrainService trainService;
     private final TrainMapper mapper;
+    private final VolumeProperties volumeProperties;
 
     /** The owner's templates, oldest first, each carrying how many runs were started from it. */
     public List<MesoTemplateResponse> list(UUID createdBy) {
@@ -82,7 +75,11 @@ public class MesoTemplateService {
     @Transactional
     public MesoTemplateResponse update(UUID createdBy, UUID id, MesoTemplateUpsertRequest req) {
         MesoTemplateEntity template = ownedTemplateOrThrow(createdBy, id);
+        List<String> storedSportGroups = template.getSportGroups();
         applyUpsert(template, req);
+        if (req.getSportGroups() == null) { // absent keeps (an older client must not wipe it); [] clears
+            template.setSportGroups(storedSportGroups);
+        }
         return toResponse(templateRepository.save(template));
     }
 
@@ -100,7 +97,7 @@ public class MesoTemplateService {
             t.getId(), t.getTitle(), t.getShortTitle(), t.getGoal(), t.getGoalPreset(), req.getStartDate(),
             t.getWeeks(), t.getSplit(), t.getStyle(), t.getPhaseCurve(), t.getNotes(), req.getStatus().getValue(),
             mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle()),
-            t.getMusclePriorities()));
+            t.getMusclePriorities(), t.getSportGroups()));
     }
 
     /**
@@ -125,13 +122,13 @@ public class MesoTemplateService {
         template.setGoalPreset(run.getGoalPreset());
         template.setMusclePriorities(
             run.getMusclePriorities() != null ? Map.copyOf(run.getMusclePriorities()) : null);
+        template.setSportGroups(run.getSportGroups() != null ? List.copyOf(run.getSportGroups()) : null);
         template.setWeeks(run.getWeeks());
         template.setSplit(run.getSplit());
         template.setStyle(run.getStyle());
         template.setPhaseCurve(List.copyOf(run.getPhaseCurve()));
         template.setNotes(run.getNotes());
         template.setDays(daysOf(createdBy, run.getId()));
-        template.setVolumePerMuscle(baselinesOf(createdBy, run.getId()));
         MesoTemplateEntity saved = templateRepository.save(template);
 
         run.setTemplateId(saved.getId()); // dirty-checked link-back — one legacy run, one template
@@ -158,6 +155,7 @@ public class MesoTemplateService {
         // values, same as the run PUT (mezo-ltk0, tier-review follow-up 2).
         Map<String, String> normalizedPriorities = PriorityTier.normalize(req.getMusclePriorities());
         template.setMusclePriorities(normalizedPriorities.isEmpty() ? null : normalizedPriorities);
+        template.setSportGroups(SportGroups.normalize(req.getSportGroups(), volumeProperties.baselines().keySet()));
         template.setWeeks(req.getWeeks());
         template.setSplit(req.getSplit());
         template.setStyle(req.getStyle());
@@ -191,27 +189,5 @@ public class MesoTemplateService {
             .map(d -> new MesoDayJson(d.getDayLabel(), d.getType(), d.getMuscle(), d.isMuscleAccent(),
                 d.getNote(), mapper.toExercisesJson(exercisesByDay.getOrDefault(d.getId(), List.of()))))
             .toList();
-    }
-
-    /**
-     * The run's per-muscle landmarks as the plan's baseline: the CURRENT MEV/MAV/MRV of each
-     * volume-log row (what the run actually trained on), named after its provenance baseline —
-     * or {@link #INHERITED_BASELINE_NAME} when that row carries none, since {@code VolumeBaseline
-     * .name} is contract-required and the name is copied on into every future run's provenance.
-     */
-    private Map<String, VolumeBaselineJson> baselinesOf(UUID createdBy, UUID mesocycleId) {
-        Map<String, VolumeBaselineJson> baselines = volumeLogRepository
-            .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(mesocycleId))
-            .stream()
-            .collect(Collectors.toMap(MuscleGroupVolumeLogEntity::getMuscle,
-                v -> new VolumeBaselineJson(baselineName(v), v.getMev(), v.getMav(), v.getMrv()),
-                (a, b) -> a, LinkedHashMap::new));
-        return baselines.isEmpty() ? null : baselines;
-    }
-
-    private String baselineName(MuscleGroupVolumeLogEntity row) {
-        ProvenanceEnvelope source = row.getSource();
-        String name = source != null && source.baseline() != null ? source.baseline().name() : null;
-        return name != null ? name : INHERITED_BASELINE_NAME;
     }
 }

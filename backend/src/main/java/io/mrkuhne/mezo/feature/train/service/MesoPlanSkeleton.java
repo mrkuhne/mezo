@@ -11,9 +11,10 @@ import java.util.Map;
  * training model). Pure: day tokens + weeks + sparse priorities + the RP landmark table in,
  * a 7-day frame out. Split is derived from the day COUNT only (2–3 Full · 4 Upper/Lower ·
  * 5 Upper/Lower/Push/Pull/Legs · 6 PPL×2), which by construction trains every coarse group
- * ≥2×/week. Week-1 sets per group come from {@link PriorityTier#weekOneStart}, ceilings from
- * {@link PriorityTier#ceiling}; the weekly amount is spread over the days that contain the
- * group, remainder on the earliest day. Groups absent from the landmark table (core, traps)
+ * ≥2×/week. Week-1 sets per group start inside the group's {@link VolumeBands.Band} (no sport
+ * input here, so never sport-adjusted): see {@link #startSets} — the band's low for Építés and
+ * Hangsúly, its top for Tartás (owner decision 2026-11-18 "Sáv széle"). The weekly amount is
+ * spread over the days that contain the group, remainder on the earliest day. Groups absent from the landmark table (core, traps)
  * are never framed (DA5).
  */
 public final class MesoPlanSkeleton {
@@ -27,7 +28,7 @@ public final class MesoPlanSkeleton {
     public record DayFrame(String day, String type, List<MuscleFrame> muscles) {}
 
     public record Skeleton(String splitLabel, List<DayFrame> days, Map<String, Integer> weekOneSets,
-                           Map<String, Integer> ceilings, List<String> phaseCurve) {}
+                           List<String> phaseCurve) {}
 
     private static final Map<Integer, List<String>> SPLIT_DAYS = Map.of(
         2, List.of("Full", "Full"),
@@ -49,18 +50,22 @@ public final class MesoPlanSkeleton {
         "Pull", List.of("back", "biceps"),
         "Legs", List.of("quad", "ham", "glute", "calf"));
 
+    /** Week-1 weekly sets: the band's low for Építés (GROW) and Hangsúly (EMPHASIZE), its top for Tartás. */
+    public static int startSets(VolumeBands.Band band, PriorityTier tier) {
+        return tier == PriorityTier.MAINTAIN ? band.high() : band.low();
+    }
+
     public static Skeleton build(List<String> daysOfWeek, int weeks, Map<String, String> priorities,
-                                 Map<String, VolumeProperties.Baseline> baselines) {
+                                 Map<String, VolumeProperties.Baseline> baselines,
+                                 VolumeProperties.Bands bands) {
         List<String> training = daysOfWeek.stream().sorted((a, b) -> DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b)).toList();
         int n = Math.max(2, Math.min(6, training.size()));
         List<String> types = SPLIT_DAYS.get(n);
 
         Map<String, Integer> weekOne = new LinkedHashMap<>();
-        Map<String, Integer> ceilings = new LinkedHashMap<>();
         baselines.forEach((group, b) -> {
             PriorityTier tier = PriorityTier.of(priorities, group);
-            weekOne.put(group, tier.weekOneStart(b.mev(), b.mav(), b.mrv()));
-            ceilings.put(group, tier.ceiling(b.mev(), b.mav(), b.mrv()));
+            weekOne.put(group, startSets(VolumeBands.band(b, tier, false, bands), tier));
         });
 
         // frequency per group over the chosen split
@@ -95,7 +100,7 @@ public final class MesoPlanSkeleton {
             days.add(new DayFrame(day, type, List.copyOf(muscles)));
         }
         return new Skeleton(SPLIT_LABEL.get(n) + " · " + training.size() + "×/hét",
-            List.copyOf(days), Map.copyOf(weekOne), Map.copyOf(ceilings), phaseCurve(weeks));
+            List.copyOf(days), Map.copyOf(weekOne), phaseCurve(weeks));
     }
 
     /** weeks-1 ramp weeks then a Deload: the first one or two ramp weeks sit at MEV (two once

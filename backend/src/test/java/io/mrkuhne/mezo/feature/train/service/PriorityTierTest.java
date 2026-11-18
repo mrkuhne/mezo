@@ -33,30 +33,6 @@ class PriorityTierTest {
         PriorityTier tier = PriorityTier.of(Map.of("back", "typo"), "back");
         assertThat(tier).isEqualTo(PriorityTier.GROW);
     }
-    @Test void emphasizeCeiling_returnsMrv() {
-        int ceiling = PriorityTier.EMPHASIZE.ceiling(8, 14, 20);
-        assertThat(ceiling).isEqualTo(20);
-    }
-    @Test void growCeiling_returnsMav() {
-        int ceiling = PriorityTier.GROW.ceiling(8, 14, 20);
-        assertThat(ceiling).isEqualTo(14);
-    }
-    @Test void maintainCeiling_returnsMev() {
-        int ceiling = PriorityTier.MAINTAIN.ceiling(8, 14, 20);
-        assertThat(ceiling).isEqualTo(8);
-    }
-
-    @Test
-    void weekOneStart_shouldBeMevPlusTwoCappedAtMrv_whenEmphasize() {
-        assertThat(PriorityTier.EMPHASIZE.weekOneStart(10, 16, 22)).isEqualTo(12);
-        assertThat(PriorityTier.EMPHASIZE.weekOneStart(21, 21, 22)).isEqualTo(22);
-    }
-
-    @Test
-    void weekOneStart_shouldBeMev_whenGrowOrMaintain() {
-        assertThat(PriorityTier.GROW.weekOneStart(10, 16, 22)).isEqualTo(10);
-        assertThat(PriorityTier.MAINTAIN.weekOneStart(10, 16, 22)).isEqualTo(10);
-    }
 
     // === normalize() (mezo-ltk0, tier-review follow-up 2) ==========================
 
