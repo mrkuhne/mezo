@@ -717,7 +717,7 @@
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
-      "hash": "3f815c59e3e6"
+      "hash": "a32ea55f3cfc"
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
@@ -725,11 +725,11 @@
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
-      "hash": "dd2da096929e"
+      "hash": "b27c6eb50bd1"
     },
     "kezikonyv:07-edzes/05-heti-volumen": {
       "page_id": "4168968e-752b-813c-9763-e3bda2691265",
-      "hash": "9a036bc49e34"
+      "hash": "6cd4f98a746c"
     },
     "kezikonyv:07-edzes/06-gyakorlatok-elozmenyek": {
       "page_id": "4168968e-752b-8189-8150-ca1dc31f807c",
@@ -1022,6 +1022,130 @@
     "jegyek:mezo-r36n9.85": {
       "page_id": "41c8968e-752b-8183-bebd-d6b98db50adf",
       "hash": "27765f6e6849"
+    },
+    "jegyek:mezo-r36n9.86": {
+      "page_id": "41c8968e-752b-81ef-9ece-c0f3f12d11e0",
+      "hash": "3f926b00ca0a"
+    },
+    "jegyek:mezo-r36n9.84": {
+      "page_id": "41c8968e-752b-81cd-b959-e58f0b1ee344",
+      "hash": "26f20a5f002a"
+    },
+    "jegyek:mezo-r36n9.83": {
+      "page_id": "41c8968e-752b-8153-bdb6-da35a245d143",
+      "hash": "abeb82e7aed2"
+    },
+    "jegyek:mezo-r36n9.82": {
+      "page_id": "41c8968e-752b-8199-8ca8-e59f633c1d12",
+      "hash": "e331a5239dad"
+    },
+    "jegyek:mezo-r36n9.81": {
+      "page_id": "41c8968e-752b-8134-be83-cdfb709fab6a",
+      "hash": "514db634d36f"
+    },
+    "jegyek:mezo-r36n9.80": {
+      "page_id": "41c8968e-752b-81a1-9168-d44cff42cbe8",
+      "hash": "9c877f4231a5"
+    },
+    "jegyek:mezo-r36n9.79": {
+      "page_id": "41c8968e-752b-8154-b0b6-de56c74c1110",
+      "hash": "744f1061f00e"
+    },
+    "jegyek:mezo-r36n9.78": {
+      "page_id": "41c8968e-752b-8165-8e32-c1fe343907aa",
+      "hash": "239c7adb90ef"
+    },
+    "jegyek:mezo-r36n9.77": {
+      "page_id": "41c8968e-752b-810b-8de2-efa1c595de7a",
+      "hash": "7d4aaf36586c"
+    },
+    "jegyek:mezo-r36n9.65": {
+      "page_id": "41c8968e-752b-8125-a992-d47b4907f69c",
+      "hash": "5c5d462714bb"
+    },
+    "jegyek:mezo-r36n9.76": {
+      "page_id": "41c8968e-752b-815b-905e-ff65b55fc773",
+      "hash": "382d8021bf09"
+    },
+    "jegyek:mezo-r36n9.75": {
+      "page_id": "41c8968e-752b-81aa-a1ae-cc7055254ff7",
+      "hash": "cd95194c6ee8"
+    },
+    "jegyek:mezo-r36n9.74": {
+      "page_id": "41c8968e-752b-813d-84ce-f1fdfb939557",
+      "hash": "55f780371ec8"
+    },
+    "jegyek:mezo-r36n9.73": {
+      "page_id": "41c8968e-752b-8147-945d-d5bc247557b9",
+      "hash": "3cc7a55fe320"
+    },
+    "jegyek:mezo-r36n9.72": {
+      "page_id": "41c8968e-752b-8109-a49d-c4443abf6ce8",
+      "hash": "a94fd46b32f9"
+    },
+    "jegyek:mezo-r36n9.71": {
+      "page_id": "41c8968e-752b-8148-a0c7-c3e622681bb6",
+      "hash": "3e42533686e6"
+    },
+    "jegyek:mezo-r36n9.70": {
+      "page_id": "41c8968e-752b-81c2-93d9-f952143df19d",
+      "hash": "617ed06f3543"
+    },
+    "jegyek:mezo-r36n9.69": {
+      "page_id": "41c8968e-752b-81d8-abaf-e9720032124c",
+      "hash": "75fa4b0227f7"
+    },
+    "jegyek:mezo-r36n9.68": {
+      "page_id": "41c8968e-752b-81d9-99e6-dba70c98cb0b",
+      "hash": "3f3e6df5a831"
+    },
+    "dontesek:d-2026-11-17-az-app-javasol": {
+      "page_id": "41c8968e-752b-818e-969b-cd1a55b9abad",
+      "hash": "78df81bcbfdd"
+    },
+    "dontesek:d-2026-11-17-minden-hiba-javitva": {
+      "page_id": "41c8968e-752b-8180-b889-d6d0e57e7dc6",
+      "hash": "cb4ed068a80c"
+    },
+    "dontesek:d-2026-11-17-motor-eloszor": {
+      "page_id": "41c8968e-752b-818e-9671-c509c09b6e63",
+      "hash": "3b7c7e07ffe8"
+    },
+    "dontesek:d-2026-11-17-heti-atnezes": {
+      "page_id": "41c8968e-752b-8172-b780-c71c0d082a90",
+      "hash": "4a230a3c5038"
+    },
+    "dontesek:d-2026-11-17-magatol-amig-nincs-kepernyo": {
+      "page_id": "41c8968e-752b-818a-8c81-e6e6d4968172",
+      "hash": "094a88415d35"
+    },
+    "dontesek:d-2026-11-17-ujraepites": {
+      "page_id": "41c8968e-752b-81e4-819a-fd9ab38ae0e0",
+      "hash": "5100b4a0c70d"
+    },
+    "dontesek:d-2026-11-17-savok-szabalyok": {
+      "page_id": "41c8968e-752b-81c8-9991-e509c8272513",
+      "hash": "80d719d3a547"
+    },
+    "dontesek:d-2026-11-17-ket-telefonkepernyo": {
+      "page_id": "41c8968e-752b-81e6-9152-ca4506eebc82",
+      "hash": "58bf51cea093"
+    },
+    "dontesek:d-2026-11-17-stilus-a-blokkon": {
+      "page_id": "41c8968e-752b-8114-9d41-ccb2c65e0ae9",
+      "hash": "3207836a0db3"
+    },
+    "dontesek:d-2026-11-17-minden-beepul": {
+      "page_id": "41c8968e-752b-8142-8089-fd7547ae38d6",
+      "hash": "360e5d22ffef"
+    },
+    "dontesek:d-2026-11-17-technika-lathato": {
+      "page_id": "41c8968e-752b-815a-a9e5-fcf308eb8b05",
+      "hash": "37a302d927fd"
+    },
+    "kiadasok:57bf92ba4": {
+      "page_id": "41c8968e-752b-815d-9a2d-e722e5ab499f",
+      "hash": "d9abed832caf"
     }
   }
 }
