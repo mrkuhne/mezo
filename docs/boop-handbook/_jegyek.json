@@ -638,5 +638,15 @@
     ],
     "mit_kapsz": "Az előző (Lágy) kinézetből és a kivett elemekből maradt néhány sosem használt darab, köztük egy betűtípus és több jel. Ezek törlése után az app kisebb lesz, és a későbbi munkák nem botlanak beléjük. A felületen semmi nem változik.",
     "munkamenet": "sebesseg-atnezes"
+  },
+  "mezo-r36n9.65": {
+    "cim": "Edzés: a te sorozatszámod az igazság — a motor magja",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2 · S1",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Amennyi sorozatot egy gyakorlatra beírsz, pontosan annyit ír elő az edzés; minden izomcsoportnak van egy heti sávja a szintje szerint, és az app hétről hétre legfeljebb egy-két sorozatot tol át konkrét gyakorlatokra abból, amit tényleg megcsináltál.",
+    "munkamenet": "atlas-workout-recipes"
   }
 }

@@ -29,7 +29,10 @@ A motor megkeresi az **utolsó elvégzett edzést ugyanazzal a gyakorlattal**, a
 Ráadásként a mai napra, a sablon módosítása nélkül: könnyítés a reggeli készenlét alapján, egy napra szóló könnyítés, visszatérő
 rámpa kímélő időszak után (lásd [Kihagyás, kímélő mód, készenlét](11-kihagyas-kimelo.md)).
 
-**Ami nem mozgatja a terhelést:** a pumpa/ízület/munka visszajelzés, a záró megjegyzés, az alvás, az étel, a testsúly, az óra adatai.
+**A sorozatok számáról** nem ez a motor dönt: azt a gyakorlatra beírt szám adja, és hétről hétre a heti javaslat mozgatja egy-két
+sorral (lásd [Heti volumen](05-heti-volumen.md)). Ez a motor a súlyt és az ismétlést számolja arra a sorozatszámra.
+
+**Ami nem mozgatja a súlyt és az ismétlést:** a pumpa-visszajelzés, a záró megjegyzés, az alvás, az étel, a testsúly, az óra adatai.
 
 ## Miért így
 - Átlátható és visszafordítható: minden előírás mellett ott az ok.
@@ -56,7 +59,9 @@ rámpa kímélő időszak után (lásd [Kihagyás, kímélő mód, készenlét](
 | `exercise_weight_gap` | Gépenként hiányzó súlyok |
 
 ## Mi jön még
-B5: a Boop lejátszó mutatja az előírást és az indoklást. Nyitott: a visszajelzés bekerüljön-e a motorba (tulajdonosi döntés kell).
+B5: a Boop lejátszó mutatja az előírást és az indoklást. A heti sorozat-javaslat már figyelembe veszi a gyakorlat utáni visszajelzést
+(túl sok volt-e a munka, fájt-e az ízület) és az izomlázat — de a súly és az ismétlés kiszámolását a visszajelzés még nem
+befolyásolja (ez egy későbbi csomag kérdése).
 
 ## Mi marad ki
 Nincs.

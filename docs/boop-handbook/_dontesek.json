@@ -494,5 +494,138 @@
     "miert": "A nap oldalának átépítésekor kérted, hogy vegyük ki: a reggeli összefoglalót olvasni gyorsabb, mint végighallgatni.",
     "levaltotta": "A „Boop elmondja” funkciót (S3 óta élt).",
     "kovetkezmeny": "A hang a telefon sajátja volt, tehát ha valaha mégis kellene, visszahozható. A felolvasott mondatokban lévő koppintható részek megmaradtak — azok szövegként is működnek."
+  },
+  "d-2026-11-17-az-app-javasol": {
+    "cim": "Az app javasol, te döntesz — a te számod az igazság",
+    "datum": "2026-11-17",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Az edzésterv sorozatszáma az, amit elfogadtál: az edzés pontosan ennyit ír elő, az app csak javasol.",
+    "miert": "Egy rejtett szám osztotta szét a sorozatokat, és előfordult, hogy nem azt kaptad, amit beírtál.",
+    "levaltotta": "A rejtett heti cél, ami szétosztotta a sorozatokat a gyakorlatok között.",
+    "kovetkezmeny": "Az első indításkor a futó blokkod egyszer átváltott az új módra, ugyanazokkal a számokkal, amiket előző nap láttál."
+  },
+  "d-2026-11-17-minden-hiba-javitva": {
+    "cim": "Mind a kilenc ismert hiba megoldódik",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A sorozatszám-motor kilenc ismert hibáját mind javítjuk, nem csak a legfájóbbakat.",
+    "miert": "Ugyanabból az okból jöttek, ezért egy átépítés oldja meg őket egyszerre.",
+    "levaltotta": "A hibák egyenkénti foltozása.",
+    "kovetkezmeny": "Három hiba az első szeletben megoldódik, a többi a következő szeletekben."
+  },
+  "d-2026-11-17-motor-eloszor": {
+    "cim": "Előbb a háttérrendszer, utána a telefon-képernyők",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Először a közös háttérrendszerben épül meg a motor; a képernyők a telefonra jönnek, a webes app nem kap új felületet.",
+    "miert": "A szabályoknak egy helyen kell élniük, hogy a web és a telefon ne mondjon mást.",
+    "levaltotta": "A számolás a telefonon.",
+    "kovetkezmeny": "Amíg a telefon-képernyő nincs kész, a heti javaslat magától érvényesül."
+  },
+  "d-2026-11-17-heti-atnezes": {
+    "cim": "Heti átnézés, jóváhagyással — gyorsan is elfogadható",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Hetente egyszer átnézheted a javasolt változtatásokat gyakorlatonként, vagy átnézés nélkül elfogadhatod az egészet.",
+    "miert": "Te döntöd el, mennyire akarsz beleszólni, de a javaslat mindig megindokolt.",
+    "levaltotta": "A csendes, magától történő átírás.",
+    "kovetkezmeny": "A jóváhagyó képernyő a telefonra jön egy későbbi szeletben; addig minden magától érvényesül."
+  },
+  "d-2026-11-17-magatol-amig-nincs-kepernyo": {
+    "cim": "Amíg nincs jóváhagyó képernyő, a heti változtatás magától érvényesül",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A heti javaslatot az app addig magától alkalmazza, amíg a telefonra meg nem érkezik a jóváhagyó képernyő.",
+    "miert": "Ugyanaz, mintha átnézés nélkül elfogadnád, és nem áll le a haladás.",
+    "levaltotta": "A kézi jóváhagyásra várakozó hét.",
+    "kovetkezmeny": "Minden változtatás sorokban látszik az indokával, és később is visszaolvasható."
+  },
+  "d-2026-11-17-ujraepites": {
+    "cim": "A motor magját újraépítjük, nem foltozzuk",
+    "datum": "2026-11-17",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A sorozatszám-motor magja újraépül (A megközelítés), nem csak kijavítjuk a régit.",
+    "miert": "A hibák szerkezetiek voltak; a foltozás megtartotta volna a rejtett számot.",
+    "levaltotta": "A régi motor javítása és a terv összegéből kikövetkeztetett heti cél.",
+    "kovetkezmeny": "Több munka egyszerre, de a hibák egy része megszűnik, nem csak enyhül."
+  },
+  "d-2026-11-17-savok-szabalyok": {
+    "cim": "A bemutatott sávok és szabályok érvényben maradnak",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A szintek sávjai, a láb sávjának lejjebb vitele sport mellett, a fogyás alatti legfeljebb +1 sorozat hetente, az öt sorozat egy gyakorlaton és a nyolc egy izomcsoportra egy edzésen úgy maradnak, ahogy a demóban mutattuk.",
+    "miert": "Rákérdeztem, és nem volt kifogásod ellene.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "A számok beállíthatók; a sport miatti sávcsökkentés a következő szeletben kerül be."
+  },
+  "d-2026-11-17-ket-telefonkepernyo": {
+    "cim": "Két új telefon-képernyő: a blokképítő és a heti átnézés",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés",
+      "Terv"
+    ],
+    "valasztas": "A telefonon két képernyő épül: a blokképítő (izmonként, naponként és egész blokkra) és a heti átnézés kártyákkal; az átnézésen nincs heti összeg és nincs számlap, a gyakorlatonkénti csempék mutatják a változást.",
+    "miert": "A kipróbált szimulátoros demó volt a jóváhagyott kinézet.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "Új képernyő előtt újra kipróbáljuk a szimulátorban, és a te jóváhagyásod kell."
+  },
+  "d-2026-11-17-stilus-a-blokkon": {
+    "cim": "Az edzés stílusa a blokkon él, a gyakorlat felülírhatja",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A stílus (például a nehézségi jelleg) a blokkra vonatkozik, egy-egy gyakorlat pedig külön felülírhatja.",
+    "miert": "Egy beállítás elég a legtöbb esetben, de a kivételek ne vesszenek el.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "A tervben látszik, melyik gyakorlat tér el a blokk stílusától; ez a stílus-és-technikák csomagban épül."
+  },
+  "d-2026-11-17-minden-beepul": {
+    "cim": "Mindent beépítünk, amit a kutatás és a beszélgetés felvetett",
+    "datum": "2026-11-17",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Minden, ami a körbenézésben és a beszélgetésben előkerült, bekerül a stílus-és-technikák csomagba.",
+    "miert": "Azt kérted: „építsük be mindegyiket”.",
+    "levaltotta": "A csökkentett, kiválogatott lista.",
+    "kovetkezmeny": "A csomag több szeletre oszlik, és sorban készül el."
+  },
+  "d-2026-11-17-technika-lathato": {
+    "cim": "A technikák az edzés közben és a blokkban is látszanak",
+    "datum": "2026-11-17",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A technikát (például a dropszettet) és a gyakorlat különleges szerepét az aktív edzésben a gyakorlaton és a sorozaton is látni kell, a blokkban pedig beállíthatónak és láthatónak kell lennie.",
+    "miert": "Hogy edzés közben ne kelljen emlékezned rá, és a tervben is látsszon, mi hol van.",
+    "levaltotta": "A technika mint szabad szöveges megjegyzés.",
+    "kovetkezmeny": "Új adat kerül a sorozathoz és a tervhez; a lejátszó és a blokk is mutatja."
   }
 }
