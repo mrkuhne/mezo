@@ -124,7 +124,10 @@ public class WeekProposalService {
             return;
         }
         if (proposalRepository.findWeekly(createdBy, run.getId(), calWeek).isPresent()) {
-            return; // backstop; the unique index is the last one
+            // The week was decided before (a kímélő step-back moved the run back and the calendar
+            // is repeating it, or the unique index backstop): record it, regenerate nothing.
+            stamp(run, calWeek, List.of());
+            return;
         }
         Draft draft = build(createdBy, run, calWeek);
         if (MODE_AUTO.equals(props.weeklyReview().mode())) {
@@ -295,40 +298,100 @@ public class WeekProposalService {
         List<RestoreEntryJson> entries = deloadToRestore(createdBy, mesoId, calWeek)
             .map(MesoWeekProposalEntity::getRestore).orElse(List.of());
         Set<String> keptOwn = new HashSet<>();
-        Set<UUID> matched = new HashSet<>();
-        for (RestoreEntryJson entry : entries) {
-            String key = ExerciseHistoryResolver.identityKey(entry.catalogId(), entry.exerciseName());
-            PlanRow row = plan.stream()
-                .filter(r -> r.group() != null && r.exercise().getId().equals(entry.exerciseId()))
-                .findFirst()
-                .or(() -> plan.stream()
-                    .filter(r -> r.group() != null && r.dayIndex() == entry.dayIndex()
-                        && !matched.contains(r.exercise().getId())
-                        && key.equals(ExerciseHistoryResolver.identityKey(r.exercise())))
-                    .findFirst())
-                .orElse(null);
-            if (row == null || !matched.add(row.exercise().getId())) {
-                continue; // nothing left of it to restore
+        Map<RestoreEntryJson, PlanRow> pairs = matchEntries(entries, plan);
+
+        // The owner's deload-week edit stands; the rest are eligible to return to their own number.
+        Map<RestoreEntryJson, PlanRow> eligible = new LinkedHashMap<>();
+        pairs.forEach((entry, row) -> {
+            if (working.get(row.exercise().getId()) != entry.deloadSets()) {
+                keptOwn.add(row.group());
+            } else {
+                eligible.put(entry, row);
             }
-            UUID id = row.exercise().getId();
-            int current = working.get(id);
-            if (current != entry.deloadSets()) {
-                keptOwn.add(row.group()); // the owner changed it during the deload week: his number stands
+        });
+
+        // Per group-day: the caps only limit a restore BEYOND the day's pre-deload state. When every
+        // eligible entry returning to its own number keeps the day within max(session cap, what the
+        // entries summed to before the deload), each one simply returns (no cap can cut his number).
+        Map<String, Boolean> dayFullyRestorable = new HashMap<>();
+        for (PlanRow row : plan) {
+            if (row.group() == null) {
                 continue;
             }
-            int dayTotal = plan.stream()
-                .filter(r -> row.group().equals(r.group()) && r.dayIndex() == row.dayIndex())
-                .mapToInt(r -> working.get(r.exercise().getId())).sum();
-            int fits = Math.min(Math.min(entry.sets(), props.bands().exerciseCap()),
-                current + Math.max(0, props.bands().sessionCap() - dayTotal));
-            int to = Math.max(current, fits);
+            String dayKey = row.group() + "|" + row.dayIndex();
+            dayFullyRestorable.computeIfAbsent(dayKey, k -> {
+                int after = plan.stream().filter(r -> r.group() != null && dayKeyOf(r).equals(k))
+                    .mapToInt(r -> {
+                        int cur = working.get(r.exercise().getId());
+                        return eligible.entrySet().stream()
+                            .filter(e -> e.getValue() == r).mapToInt(e -> Math.max(cur, e.getKey().sets()))
+                            .findFirst().orElse(cur);
+                    }).sum();
+                int before = eligible.entrySet().stream().filter(e -> dayKeyOf(e.getValue()).equals(k))
+                    .mapToInt(e -> e.getKey().sets()).sum();
+                return after <= Math.max(props.bands().sessionCap(), before);
+            });
+        }
+
+        eligible.forEach((entry, row) -> {
+            UUID id = row.exercise().getId();
+            int current = working.get(id);
+            int to;
+            if (dayFullyRestorable.get(dayKeyOf(row))) {
+                to = Math.max(current, entry.sets());
+            } else {
+                int dayTotal = plan.stream()
+                    .filter(r -> row.group().equals(r.group()) && r.dayIndex() == row.dayIndex())
+                    .mapToInt(r -> working.get(r.exercise().getId())).sum();
+                int fits = Math.min(Math.min(entry.sets(), Math.max(props.bands().exerciseCap(), entry.sets())),
+                    current + Math.max(0, props.bands().sessionCap() - dayTotal));
+                to = Math.max(current, fits);
+            }
             if (to > current) {
                 fromSets.putIfAbsent(id, current);
                 lineReasons.put(id, List.of(code(Reason.DELOAD_RESTORE)));
                 working.put(id, to);
             }
-        }
+        });
         return keptOwn;
+    }
+
+    private static String dayKeyOf(PlanRow row) {
+        return row.group() + "|" + row.dayIndex();
+    }
+
+    /**
+     * Two passes, so an entry whose row was replaced never claims by identity a row another entry
+     * still owns by id: first every entry whose {@code exerciseId} still exists, then — for the
+     * remaining entries only — identity (catalog id / name) on the same template day among rows
+     * not yet matched. Each row is matched at most once; an entry with nothing left is dropped.
+     */
+    private static Map<RestoreEntryJson, PlanRow> matchEntries(List<RestoreEntryJson> entries, List<PlanRow> plan) {
+        Map<RestoreEntryJson, PlanRow> pairs = new LinkedHashMap<>();
+        Set<UUID> matched = new HashSet<>();
+        List<RestoreEntryJson> rest = new ArrayList<>();
+        for (RestoreEntryJson entry : entries) {
+            Optional<PlanRow> byId = plan.stream()
+                .filter(r -> r.group() != null && r.exercise().getId().equals(entry.exerciseId())).findFirst();
+            if (byId.isEmpty()) {
+                rest.add(entry);
+            } else if (matched.add(byId.get().exercise().getId())) {
+                pairs.put(entry, byId.get());
+            }
+        }
+        for (RestoreEntryJson entry : rest) {
+            String key = ExerciseHistoryResolver.identityKey(entry.catalogId(), entry.exerciseName());
+            plan.stream()
+                .filter(r -> r.group() != null && r.dayIndex() == entry.dayIndex()
+                    && !matched.contains(r.exercise().getId())
+                    && key.equals(ExerciseHistoryResolver.identityKey(r.exercise())))
+                .findFirst()
+                .ifPresent(r -> {
+                    matched.add(r.exercise().getId());
+                    pairs.put(entry, r);
+                });
+        }
+        return pairs;
     }
 
     /** Appends this week's move to each changed group's (freshly synced) ledger row provenance. */

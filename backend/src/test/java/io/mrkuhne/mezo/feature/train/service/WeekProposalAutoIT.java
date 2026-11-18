@@ -485,6 +485,74 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         assertThat(reload(meso).getVolumeRecompute().lastRun()).isEqualTo("W3");
     }
 
+    /** A deload halves 6 → 3; the owner's own six-set exercise (over the 5-set cap) comes back as six. */
+    @Test
+    void aSixSetExerciseComesBackAsSixAfterADeload() {
+        MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        ExerciseEntity squat = exercise(mon, "Guggolás", "quad", 6);
+        workoutService.getToday(owner, null);
+        assertThat(sets(squat)).isEqualTo(3);
+
+        nextWeek(meso);
+        workoutService.getToday(owner, null);
+
+        assertThat(sets(squat)).isEqualTo(6);
+    }
+
+    /** The same lift twice on a day; the first row is re-minted during the deload: each keeps its own number. */
+    @Test
+    void theSameLiftTwiceOnADayRestoresEachRowToItsOwnNumber() {
+        MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
+        WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
+        ExerciseEntity first = exerciseAt(mon, "Guggolás", "quad", 4, 0);
+        ExerciseEntity second = exerciseAt(mon, "Guggolás", "quad", 2, 1);
+        workoutService.getToday(owner, null);
+        assertThat(sets(first)).isEqualTo(2);
+        assertThat(sets(second)).isEqualTo(1);
+        // the first row replaced by a re-minted one of the same identity (a day edit), at the halved 2
+        exerciseRepository.delete(exerciseRepository.findById(first.getId()).orElseThrow());
+        exerciseRepository.flush();
+        ExerciseEntity reminted = exerciseAt(mon, "Guggolás", "quad", 2, 2);
+
+        nextWeek(meso);
+        workoutService.getToday(owner, null);
+
+        assertThat(sets(reminted)).isEqualTo(4);
+        assertThat(sets(second)).isEqualTo(2);
+    }
+
+    /**
+     * After a kímélő step-back the calendar reaches a week whose weekly proposal already exists:
+     * the week is recorded (currentWeek, lastRun) without regenerating anything.
+     */
+    @Test
+    void aRepeatedWeekAfterAStepBackIsStampedNotRegenerated() {
+        Back b = back(3, "emphasize", true);
+        workoutService.getToday(owner, null); // week 3 decided and applied
+        assertThat(reload(b.meso()).getVolumeRecompute().lastRun()).isEqualTo("W3");
+        List<Integer> setsBefore = List.of(sets(b.mon4()), sets(b.mon2()), sets(b.thu3()), sets(b.thu2()));
+        int proposalsBefore = proposalRepository.findAll().size();
+
+        // the step-back: the run is shifted a week and recorded as having reached week 2 only
+        MesocycleEntity shifted = reload(b.meso());
+        shifted.setStartDate(shifted.getStartDate().plusWeeks(1));
+        shifted.setEndDate(shifted.getEndDate().plusWeeks(1));
+        shifted.setCurrentWeek(2);
+        shifted.setVolumeRecompute(new VolumeRecomputeJson("W2", "W3", "recovery-step-back", List.of()));
+        mesocycleRepository.saveAndFlush(shifted);
+        nextWeek(b.meso()); // the calendar is in week 3 again
+
+        workoutService.getToday(owner, null);
+
+        MesocycleEntity after = reload(b.meso());
+        assertThat(after.getCurrentWeek()).isEqualTo(3);
+        assertThat(after.getVolumeRecompute().lastRun()).isEqualTo("W3");
+        assertThat(after.getVolumeRecompute().changes()).isEmpty();
+        assertThat(proposalRepository.findAll()).hasSize(proposalsBefore);
+        assertThat(List.of(sets(b.mon4()), sets(b.mon2()), sets(b.thu3()), sets(b.thu2()))).isEqualTo(setsBefore);
+    }
+
     // ── fixtures ──────────────────────────────────────────────────────────────────────────────
 
     /** An active 6-week run that is now in {@code week} (started {@code week − 1} weeks ago). */
@@ -501,6 +569,12 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
     private ExerciseEntity exercise(WorkoutSessionEntity day, String name, String muscle, int sets) {
         ExerciseEntity e = train.createExercise(owner, day.getId(), name, muscle, "compound");
         e.setWorkingSets(sets);
+        return train.save(e);
+    }
+
+    private ExerciseEntity exerciseAt(WorkoutSessionEntity day, String name, String muscle, int sets, int order) {
+        ExerciseEntity e = exercise(day, name, muscle, sets);
+        e.setOrderIndex(order);
         return train.save(e);
     }
 

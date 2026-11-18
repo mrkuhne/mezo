@@ -31,6 +31,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class VolumeLedger {
 
+    /** The plan-derived provenance every row carries (a refresh also replaces an old seeded baseline/note). */
+    private static final String BASELINE_NAME = "A terv szerint";
+    private static final String DERIVED_NOTE = "A heti sorozatszám a terv gyakorlataiból adódik össze.";
+
     private final MesocycleRepository mesocycleRepository;
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
@@ -71,18 +75,15 @@ public class VolumeLedger {
                 row.setMuscle(group);
                 // confidence is contract-required on VolumeSource; 0.5 = derived, not personalized.
                 row.setSource(new ProvenanceEnvelope(
-                    new ProvenanceEnvelope.Baseline("A terv szerint", b.mev(), b.mav(), b.mrv()),
-                    List.of(), 0.5,
-                    "A heti sorozatszám a terv gyakorlataiból adódik össze.", null));
+                    new ProvenanceEnvelope.Baseline(BASELINE_NAME, b.mev(), b.mav(), b.mrv()),
+                    List.of(), 0.5, DERIVED_NOTE, null));
             } else {
                 ProvenanceEnvelope old = row.getSource();
                 row.setSource(new ProvenanceEnvelope(
-                    new ProvenanceEnvelope.Baseline(
-                        old != null && old.baseline() != null ? old.baseline().name() : "A terv szerint",
-                        b.mev(), b.mav(), b.mrv()),
+                    new ProvenanceEnvelope.Baseline(BASELINE_NAME, b.mev(), b.mav(), b.mrv()),
                     old != null && old.adjustments() != null ? old.adjustments() : List.of(),
                     old != null ? old.confidence() : Double.valueOf(0.5),
-                    old != null ? old.note() : null,
+                    DERIVED_NOTE,
                     old != null ? old.userOverride() : null));
             }
             row.setMev(b.mev());

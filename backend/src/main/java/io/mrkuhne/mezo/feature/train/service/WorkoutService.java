@@ -195,8 +195,8 @@ public class WorkoutService {
             .findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
             .stream().findFirst().orElse(null);
         // Volume progression (mezo-hi9m): lazy weekly rollover, own @Transactional bean — mutates
-        // activeMeso in place (currentWeek/volumeRecompute + each muscle's currentSets), so no
-        // re-read is needed. MUST run before deloadWeek below (reads activeMeso.currentWeek).
+        // activeMeso in place (currentWeek/volumeRecompute; the week's set changes go to the
+        // exercise rows and the derived ledger), so no re-read is needed. MUST run before deloadWeek below (reads activeMeso.currentWeek).
         if (activeMeso != null && volumeGate.getIfAvailable() != null) {
             volumeProgressionService.rolloverIfDue(createdBy, activeMeso);
         }

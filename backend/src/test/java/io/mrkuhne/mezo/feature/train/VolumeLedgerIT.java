@@ -71,6 +71,28 @@ class VolumeLedgerIT extends AbstractIntegrationTest {
         assertThat(back.getSource().confidence()).isNotNull();
     }
 
+    /** An old-style row (seeded baseline name and note) gets the plan-derived provenance; its history stays. */
+    @Test
+    void anOldStyleRowsBaselineAndNoteAreRefreshedButItsAdjustmentsKept() {
+        UUID user = databasePopulator.populateUser("ledger-old@test.local");
+        MesocycleEntity meso = train.createActiveMeso(user);
+        WorkoutSessionEntity day = train.createTemplateDay(user, meso.getId(), "Hét");
+        exercise(user, day, "Row", "back-mid", 4);
+        MuscleGroupVolumeLogEntity old = train.createVolumeLog(user, meso.getId(), "back", 8);
+        var adjustments = old.getSource().adjustments();
+        old.setSource(new io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope(
+            old.getSource().baseline(), adjustments, 0.78, "RP irányelv baseline — seedelve", null));
+        volumeRepo.saveAndFlush(old);
+
+        ledger.sync(user, meso.getId());
+
+        var source = byMuscle(rows(user, meso.getId()), "back").getSource();
+        assertThat(source.baseline().name()).isEqualTo("A terv szerint");
+        assertThat(source.note()).isEqualTo("A heti sorozatszám a terv gyakorlataiból adódik össze.");
+        assertThat(source.adjustments()).isEqualTo(adjustments);
+        assertThat(source.confidence()).isEqualTo(0.78);
+    }
+
     @Test
     void tierSetsTheBand() {
         UUID user = databasePopulator.populateUser("ledger-b@test.local");
