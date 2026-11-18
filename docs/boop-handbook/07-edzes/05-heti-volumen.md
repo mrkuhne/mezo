@@ -6,7 +6,7 @@ allapot: Részben kész
 hol: [Háttérrendszer]
 szulo: 04-progresszio-motor
 szakasz: [B5]
-osszefoglalo: A gyakorlatra beírt sorozatszám az igazság — az edzés pontosan annyit ír elő; a szerver minden izomcsoportnak sávot ad (a sport által terhelt lábaknak lejjebb tolva), megméri vele a tervet, és hétről hétre legfeljebb egy-két sorozatot tol át, amit tényleg megcsináltál alapján.
+osszefoglalo: A gyakorlatra beírt sorozatszám az igazság — az edzés pontosan annyit ír elő; a szerver minden izomcsoportnak sávot ad (a sport által terhelt lábaknak lejjebb tolva), megméri vele a tervet, és hétről hétre legfeljebb egy-két sorozatot tol át, amit tényleg megcsináltál alapján; a heti javaslat gyakorlatonként, indokkal látszik, és egyenként vagy egyben elfogadható.
 ---
 
 ## Mit csinál
@@ -56,18 +56,56 @@ mindkettőnél egyet) — soha nem tesz egy gyakorlatra öt munkasorozatnál tö
 Tartásnál nem változtat. Ha a hét nem sikerült, tart.
 
 A **könnyebb (terhelés-csökkentő) hét** a gyakorlatok sorozatszámát felezi. A **rá következő hét visszaviszi az előző számokat** — kivéve
-azt a gyakorlatot, amit a könnyű héten te magad átírtál: az a te számod marad.
+azt a gyakorlatot, amit a könnyű héten te magad átírtál: az a te számod marad. **Ha a könnyű héten minden (felezett) sorozatot
+megcsináltál, a következő hét a visszaállítás mellé lép is egyet (2026-11-18)** — korábban ilyenkor tartott, mert a múlt hét kisebb
+számait a visszaállított tervhez mérte. Például: a hát a könnyű héten 6 sorozat, utána nem csak 11-re áll vissza, hanem 13-ra lép.
 
 **Kímélő időszak után** (hosszabb kihagyás) izomcsoportonként egy sorozat lekerül egy-egy gyakorlatról; ha meggondolod magad („Mégsem
 vagyok jól” vagy „Tévedés volt”), pontosan ugyanaz a sorozat visszakerül — de csak ha közben nem változtattál rajta te vagy a heti lépés.
 
-**Egyelőre a heti változtatás magától érvényesül.** A jóváhagyó képernyő, ahol soronként elfogadhatnád vagy megtarthatnád,
-később jön a telefonra.
+**A heti javaslat gyakorlatonként (2026-11-18).** A heti változás egy lista: minden sor egy gyakorlat egy napon (például „Hétfő ·
+Evezés: 3 → 4 sorozat”), és mindegyik mellett ott az oka (például „minden sorozat megvolt”, „van még hely a sávban”, „könnyű hét”).
+Három fajta sor van:
+- **sorozat** — hány munkasorozat legyen; ez az egyetlen, ami a tervedet átírja;
+- **súly** — mennyivel nő vagy csökken a súly (például 60 → 62,5 kg), mert a múlt héten az ismétléstartomány tetején voltál, maradt
+  tartalék, vagy túl nehéz volt;
+- **ismétlés** — hány ismétlés legyen ugyanazzal a súllyal.
+
+A súly- és ismétlés-sorok **előzetes kép** arról, mit fog kérni az első edzés a héten — a tervet nem írják át. Izmonként egy
+összegzés is jár: milyen szinten van, mi a sávja, hány sorozat volt és lesz, és ha nem változik, miért nem.
+
+**Elfogadás.** Minden sor egyenként **elfogadható** vagy **megtartható** („marad”), vagy egyszerre az összes („Elfogadom átnézés
+nélkül”, illetve „a többi marad”). Ha közben te magad átírtad azt a gyakorlatot, a te számod marad, a javaslat nem írja felül. Amit
+a hét végéig nem döntesz el, az nem történik meg: a múlt heti szám marad, és a javaslat a következő héten lejár. Egy már lezárt
+javaslaton nem lehet változtatni (ha a telefon ugyanazt a döntést újraküldi, például akadozó net miatt, azt egyszerűen nyugtázza).
+Ha egy héten nincs mit átnézni (minden izom tart, nincs súly- vagy ismétlés-sor), a javaslat rögtön lezárul — nem kér átnézést
+üres listára. A korábbi hetek még eldöntetlen szint-váltás javaslatait már nem mutatja.
+
+**A „marad” egy súlyemelésnél a múlt heti súlyt tartja.** Ha egy súly- vagy ismétlésemelést megtartasz, azon a héten az edzés a múlt
+heti súlyt és ismétlést kéri annál a gyakorlatnál (akkor is, ha közben a napot átszerkesztetted); a következő héten újra javasol.
+
+**Kézi mód — a szerveren kész, de még ki van kapcsolva.** Kézi módban a heti változás megvárja a döntésedet. Amíg a telefonon
+nincs meg a jóváhagyó képernyő, **minden magától érvényesül** (mintha mindent elfogadnál), a lista pedig utólag megnézhető.
+
+**Ha futam közben szintet vagy sportot váltasz (2026-11-18),** a szerver rögtön megnézi, kicsúszott-e a sávjából az az izom, **amelyiken
+változtattál**, és ha igen, azonnal javasol: sorozatot tesz hozzá vagy vesz el konkrét gyakorlatokon, a korlátokon belül. Most, magától
+érvényesülő módban, ez azonnal be is kerül a tervbe; kézi módban várna a döntésedre. A többi izmot nem bántja — amit te mentettél,
+azt nem húzza vissza. Ha egy újabb váltás jön, az felváltja a még eldöntetlen előzőt (akkor is, ha az újabb már nem kér semmit,
+például visszaváltasz). Például: a hát Építésről Hangsúlyra vált, 11 sorozatról rögtön 14 lesz.
+- **A váltás utáni hét nem büntet.** A következő heti döntés a múlt hetet ahhoz a tervhez méri, amivel ténylegesen edzettél: ha a hét
+  közepén emelted a hátat 11-ről 14-re, és a 11 sorozatot mind megcsináltad, az „minden sorozat megvolt” — nem „kimaradt sorozat”, és a
+  hát lép tovább.
+- **Könnyű héten a váltás nem szünteti meg a könnyű hetet.** Ha terhelés-csökkentő héten váltasz szintet vagy sportot, az új sáv
+  érvényes lesz, de a felezett sorozatokat nem emeli vissza; a rá következő hét visszaállítja a megszokott számokat. Az új sávhoz
+  igazítás ilyenkor **nem pótlódik be magától**: onnan a megszokott heti lépés megy tovább (lefelé nem vág), az igazítást a
+  blokk-építőben teheted meg.
 
 ## Hogyan működik
 1. Az új hét első edzés-megnyitásakor (hetente egyszer) a háttérrendszer megnézi a múlt hét elvégzett edzéseit, izomcsoportonként.
 2. Minden izomcsoportra eldönti: nő, tart, csökken vagy könnyebb hét — a fenti szempontok alapján, mindig megindokolva.
-3. A változás **konkrét gyakorlatokra** kerül (sorokban: melyik gyakorlat, mennyiről mennyire, miért), és azonnal érvényes.
+3. A változás **konkrét gyakorlatokra** kerül (sorokban: melyik gyakorlat, mennyiről mennyire, miért). Magától érvényesülő módban
+   (ez a mostani) azonnal érvényes; kézi módban vár, amíg soronként vagy egyben döntesz, és a hét végén lejár, ami eldöntetlen maradt.
+   A javaslat az edzés megnyitása nélkül is lekérhető, így a telefon előre megmutathatja.
 4. A heti sorozatszám-összeg izomcsoportonként ebből a tervből adódik össze — a Terv oldalon és a célőrben is ez látszik.
 5. Ha a heti számolás valamiért hibázik, az edzésed ettől **akkor is elindul** a megszokott számokkal; a következő megnyitáskor újra próbálja.
 6. A jelenleg futó blokkodat az első indításkor a rendszer egyszer átváltotta az új módra úgy, hogy pontosan azt kapod, amit előző nap
@@ -98,7 +136,7 @@ később jön a telefonra.
 | `mezo.volume.evaluator.session-overhead-minutes` | … ráhagyás egy edzésre (készülődés, pihenők közötti szünetek) | 6 perc |
 | `mezo.volume.sport-groups-by-sport` | Melyik izomcsoportot terheli egy sport (a javaslathoz) | röplabda: comb, combhajlító, far, vádli |
 | `mezo.volume.signals.*` | Mikor számít soknak a munka, erősnek a fájdalom, magasnak az izomláz (1–10-es skálán) | 3 / 2 / 7 |
-| `mezo.volume.weekly-review.mode` | A heti változás magától érvényesül-e (`auto`) vagy jóváhagyásra vár (`manual`, később) | magától |
+| `mezo.volume.weekly-review.mode` | A heti változás magától érvényesül-e (`auto`) vagy jóváhagyásra vár (`manual` — a szerveren kész, a telefon képernyőjéig nem kapcsoljuk be) | magától |
 | `mezo.volume.baselines.*` | Izomcsoportonkénti minimum / optimális / maximum heti sorozat (például mell 8 / 14 / 20) | lásd konfiguráció |
 
 ## Adattáblák
@@ -106,14 +144,16 @@ később jön a telefonra.
 |---|---|
 | `exercise` | A gyakorlat sorozatszáma — ez az igazság, ezt írja elő az edzés |
 | `muscle_group_volume_log` | Izomcsoportonként a heti összeg (a tervből kiszámolva) és a hozzá tartozó sáv alja és teteje |
-| `meso_week_proposal` | A heti változás: soronként a gyakorlat, a régi és az új szám, az indok; a könnyű hét után visszaállítandó számok |
+| `meso_week_proposal` | A heti változás: soronként a gyakorlat, a nap, a régi és az új szám (súlynál kilóban), az indok és a döntésed; izmonként egy összegzés; az állapota (vár, elfogadva, magától érvényesült, lejárt, felváltva); a könnyű hét után visszaállítandó számok |
 | `mesocycle` | A fázisgörbe, az izom-szintek, a sporttal terhelt izomcsoportok, az utolsó heti számolás nyoma és hogy a futam már az új módon megy-e |
 | `meso_template` | A terv sablonja — itt is eltárolódik, mely izomcsoportokat terheli a sport |
 
 ## Mi jön még
-- **Jóváhagyó képernyő a telefonon:** soronkénti „Elfogadom / Megtartom”, vagy „Elfogadom átnézés nélkül”, és a változtatás okai.
+- **Jóváhagyó képernyő a telefonon:** a szerver már tudja (soronkénti „Elfogadom / Marad”, „Elfogadom átnézés nélkül”, az okok),
+  a telefonon még nincs meg. Vele jön a **fiókonkénti kapcsoló** a kézi módhoz.
+- **A „marad” a súlycsökkentésnél is a múlt heti súlyt tartsa:** most csak egy emelést tud megfogni; egy javasolt csökkentésnél a
+  „marad” még nem hozza vissza a múlt heti súlyt. Csak kézi módban számít.
 - **A telefon képernyői a mérésre (blokk-építő):** a szerver már tud mérni és javítást adni, de a telefonon még nincs olyan képernyő, ami megmutatná és elfogadtatná.
-- **Szintváltás a futam közben** azonnali javaslatot is adjon, ne csak a sávot tolja el.
 - **A telefon „még férő” számai** egyelőre a régi közelítést használják; a szerver ívét és sávjait a telefon-szelet köti rá.
 - Technikák (például dropszett) és a terv stílusa — külön tervezett csomag.
 
@@ -121,3 +161,7 @@ később jön a telefonra.
 - A **tört (közvetett) sorozatok** számolása: csak a közvetlen munkasorozat számít.
 - A jóváhagyás nélküli, rejtett átírás: amit az app megváltoztat, az sorokban látszik és megindokolt.
 - A mag- és a csuklyás izom sávja: ezeknek nincs heti sávja, így nincs is ítélet rájuk.
+- Ebben a lépésben **a telefonos jóváhagyó képernyő és a fiókonkénti kézi/automata kapcsoló** kimaradt: a szerver kész, de mindenkinek
+  a magától érvényesülő mód fut, amíg a telefon-szelet el nem készül.
+- Szintváltásnál a **régóta sávon kívül lévő, de most nem változtatott izom** nem kap javaslatot — azt a blokk-építő képernyő javítja.
+- A **könnyített héten végzett szintváltás** sávhoz igazítását a következő hét még nem pótolja be magától (későbbi javítás).

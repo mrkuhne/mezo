@@ -37,17 +37,22 @@ class TemplatePlan {
 
     /**
      * A counting exercise of a template day; {@code group} null when the group has no landmark entry;
+     * {@code dayName} the template day's label;
      * {@code capExtra} = the extra set-equivalents its technique set weighs against the exercise / session caps
      * ({@link TechniqueRules#capExtra}: only in a techniques-enabled run, mezo-r36n9.80).
      */
-    record Row(ExerciseEntity exercise, int dayIndex, String group, int capExtra) {}
+    record Row(ExerciseEntity exercise, int dayIndex, String group, String dayName, int capExtra) {}
 
     /** The run's counting template-day exercises, sorted by day index then order index. */
     List<Row> rows(UUID createdBy, UUID mesoId) {
         Map<UUID, Integer> dayIndex = new HashMap<>();
+        Map<UUID, String> dayName = new HashMap<>();
         workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId))
             .stream().filter(s -> s.getTemplateSessionId() == null)
-            .forEach(s -> dayIndex.put(s.getId(), s.getOrderIndex() == null ? 0 : s.getOrderIndex()));
+            .forEach(s -> {
+                dayIndex.put(s.getId(), s.getOrderIndex() == null ? 0 : s.getOrderIndex());
+                dayName.put(s.getId(), s.getDayLabel());
+            });
         if (dayIndex.isEmpty()) {
             return List.of();
         }
@@ -59,7 +64,7 @@ class TemplatePlan {
             .stream()
             .filter(ExerciseEntity::isCountsTowardVolume)
             .map(e -> new Row(e, dayIndex.get(e.getWorkoutSessionId()), groupOf(e),
-                TechniqueRules.capExtra(e, techniques, capWeight)))
+                dayName.get(e.getWorkoutSessionId()), TechniqueRules.capExtra(e, techniques, capWeight)))
             .sorted((a, b) -> a.dayIndex() != b.dayIndex() ? Integer.compare(a.dayIndex(), b.dayIndex())
                 : Integer.compare(orderIndex(a.exercise()), orderIndex(b.exercise())))
             .toList();

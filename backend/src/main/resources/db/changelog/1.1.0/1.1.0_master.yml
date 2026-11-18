@@ -427,6 +427,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202611181200_mezo-r36n9.79_train_style.sql
   - changeSet:
+      id: "1.1.0:202611181400_mezo-r36n9.78_week_proposal_groups"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611181400_mezo-r36n9.78_week_proposal_groups.sql
+  - changeSet:
       id: "1.1.0:202611181600_mezo-r36n9.80_techniques"
       author: daniel.kuhne
       changes:

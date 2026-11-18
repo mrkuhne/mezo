@@ -729,7 +729,7 @@
     },
     "kezikonyv:07-edzes/05-heti-volumen": {
       "page_id": "4168968e-752b-813c-9763-e3bda2691265",
-      "hash": "eb467c148fbf"
+      "hash": "faaecc48f405"
     },
     "kezikonyv:07-edzes/06-gyakorlatok-elozmenyek": {
       "page_id": "4168968e-752b-8189-8150-ca1dc31f807c",
@@ -1045,7 +1045,7 @@
     },
     "jegyek:mezo-r36n9.80": {
       "page_id": "41c8968e-752b-81c0-aadb-d311b0556e21",
-      "hash": "57ff4e69ac14"
+      "hash": "0398e2bc0a9f"
     },
     "jegyek:mezo-r36n9.79": {
       "page_id": "41c8968e-752b-8109-b5f2-e40de21790f7",
@@ -1053,7 +1053,7 @@
     },
     "jegyek:mezo-r36n9.78": {
       "page_id": "41c8968e-752b-81e9-adec-dff2f7772dda",
-      "hash": "6ecf0d0a1f3f"
+      "hash": "0e84d60d2b22"
     },
     "jegyek:mezo-r36n9.77": {
       "page_id": "41c8968e-752b-813a-bf7d-d677b908dff0",
@@ -1073,7 +1073,7 @@
     },
     "jegyek:mezo-r36n9.75": {
       "page_id": "41c8968e-752b-81a2-8dc8-c90ab568ef53",
-      "hash": "f8c3cb449627"
+      "hash": "85a34c32a8bc"
     },
     "jegyek:mezo-r36n9.74": {
       "page_id": "41c8968e-752b-81a9-a747-cd72a2167524",
@@ -1174,6 +1174,26 @@
     "kezikonyv:07-edzes/14-edzesstilus": {
       "page_id": "41c8968e-752b-81c4-a675-e42be7ead430",
       "hash": "7f1c754e3d8e"
+    },
+    "jegyek:mezo-r36n9.90": {
+      "page_id": "41c8968e-752b-8184-90df-f39bbc3d1d5c",
+      "hash": "094bb881047a"
+    },
+    "jegyek:mezo-r36n9.88": {
+      "page_id": "41c8968e-752b-815e-ae5a-cf16f6d2a217",
+      "hash": "b7cd7131fe63"
+    },
+    "jegyek:mezo-r36n9.87": {
+      "page_id": "41c8968e-752b-8114-99ad-de9a217e5eda",
+      "hash": "7348933ae1d7"
+    },
+    "kiadasok:69db5ffa7": {
+      "page_id": "41c8968e-752b-8112-8c4c-dba575af222d",
+      "hash": "804e15fb114d"
+    },
+    "jegyek:mezo-r36n9.89": {
+      "page_id": "41c8968e-752b-81d7-b374-ed27cf3eea6f",
+      "hash": "75e9622ee94b"
     }
   }
 }

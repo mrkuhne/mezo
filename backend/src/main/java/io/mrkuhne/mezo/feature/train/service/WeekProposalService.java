@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.json.RestoreEntryJson;
+import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalGroupJson;
 import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalLineJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesoWeekProposalRepository;
@@ -29,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -43,10 +45,12 @@ import org.springframework.transaction.annotation.Transactional;
  * The weekly proposal (volume engine v2, spec §6.4): once per calendar week of an active run, per
  * trained counting muscle group a {@link VolumeDecider} decision, turned into one line per changed
  * exercise ({@link SetSlots} picks where a set goes or comes from), stored as a {@code weekly}
- * {@link MesoWeekProposalEntity} — and, in {@code auto} mode (the only one built so far), applied
- * at once by writing the exercises' {@code working_sets}. The ledger is then re-derived and the
- * run's {@code volume_recompute} audit and {@code currentWeek} advance, in the shapes the web
- * readers already know.
+ * {@link MesoWeekProposalEntity}, followed by the weight / rep preview lines of {@link LoadLinePreview}.
+ * In {@code auto} mode it is applied at once by writing the exercises' {@code working_sets}; the
+ * ledger is then re-derived. In {@code manual} mode it stays {@code pending} — nothing is written
+ * until a line is decided ({@link #applySetLine} + {@link #close}, the decisions endpoint's seam), and
+ * an undecided proposal expires at the next week boundary. Either way the run's
+ * {@code volume_recompute} audit and {@code currentWeek} advance, in the shapes the web readers know.
  *
  * <p>Idempotent per calendar week twice over: {@code volume_recompute.lastRun} and the partial
  * unique index on a run's weekly proposal. Gate off: does nothing.
@@ -58,6 +62,8 @@ public class WeekProposalService {
     static final String TRIGGER_LABEL = "weekly-rollover";
     private static final String PHASE_DELOAD = "Deload";
     private static final String MODE_AUTO = "auto";
+    /** Manual-mode audit prefix: the week's change is a proposal until he decides it. */
+    static final String PROPOSAL_PREFIX = "javaslat: ";
 
     private final MesocycleRepository mesocycleRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
@@ -70,6 +76,7 @@ public class WeekProposalService {
     private final TemplatePlan templatePlan;
     private final VolumeProperties props;
     private final MuscleProgressReader muscleProgress;
+    private final LoadLinePreview loadLinePreview;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
 
     /**
@@ -121,10 +128,14 @@ public class WeekProposalService {
             return; // a concurrent opener recorded it while we waited for the lock
         }
         if (calWeek <= 1) {
-            // Week 1: the plan stands. Recorded once, nothing generated.
+            // Week 1: the plan stands. Recorded once, nothing generated (no earlier proposal can pend).
             stamp(run, calWeek, List.of());
             return;
         }
+        // The week boundary: whatever was left undecided before this week never happens. Before the
+        // repeated-week check (a step-back still closes older weeks) and before building (the restore
+        // lookup must see a deload week closed and pruned to what he accepted).
+        expirePending(createdBy, run.getId(), calWeek);
         if (proposalRepository.findWeekly(createdBy, run.getId(), calWeek).isPresent()) {
             // The week was decided before (a kímélő step-back moved the run back and the calendar
             // is repeating it, or the unique index backstop): record it, regenerate nothing.
@@ -132,13 +143,26 @@ public class WeekProposalService {
             return;
         }
         Draft draft = build(createdBy, run, calWeek);
-        if (MODE_AUTO.equals(props.weeklyReview().mode())) {
-            apply(draft.proposal());
-        } // manual mode is a later slice: the proposal stays pending and nothing is applied
-
+        if (!MODE_AUTO.equals(props.weeklyReview().mode())) {
+            // Manual: the proposal waits. Nothing written, so the ledger and its provenance stay as they
+            // are; the week is still recorded, its audit worded as a proposal. A week with no line has
+            // nothing to review: closed at once (every line vacuously decided), so it never pends.
+            if (draft.proposal().getLines().isEmpty()) {
+                close(draft.proposal(), MesoWeekProposalEntity.STATUS_APPLIED);
+            }
+            stamp(run, calWeek, draft.outcomes().values().stream().map(WeekProposalService::proposedChange).toList());
+            return;
+        }
+        apply(draft.proposal());
         volumeLedger.sync(createdBy, run.getId());
         appendAdjustments(createdBy, run.getId(), calWeek, draft.outcomes());
         stamp(run, calWeek, draft.outcomes().values().stream().map(WeekProposalService::change).toList());
+    }
+
+    /** Every still-pending proposal of the run (weekly and tier_change) before {@code calWeek} → {@code expired}. */
+    private void expirePending(UUID createdBy, UUID mesoId, int calWeek) {
+        proposalRepository.findPendingBefore(createdBy, mesoId, calWeek)
+            .forEach(p -> close(p, MesoWeekProposalEntity.STATUS_EXPIRED));
     }
 
     /**
@@ -163,21 +187,26 @@ public class WeekProposalService {
         Map<UUID, List<String>> lineReasons = new HashMap<>();
         List<RestoreEntryJson> restore = new ArrayList<>();
         Map<String, GroupOutcome> outcomes = new LinkedHashMap<>();
+        Map<String, VolumeBands.Band> bands = new HashMap<>();
 
         Map<String, Integer> beforeByGroup = new HashMap<>();
         byGroup.forEach((group, rows) -> beforeByGroup.put(group, sum(rows, working)));
+        Map<String, Integer> tierMoves = tierChangeMovesSinceLastWeek(createdBy, meso.getId(), calWeek);
         Set<String> keptOwn = restoreAfterDeload(createdBy, meso.getId(), calWeek, plan, working, fromSets, lineReasons);
 
         byGroup.forEach((group, rows) -> {
             int before = beforeByGroup.get(group);
+            // What last week prescribed while he trained it: a tier change since then moved the plan after.
+            int plannedLastWeek = Math.max(0, before - tierMoves.getOrDefault(group, 0));
             int restored = sum(rows, working);
             GroupSignals s = signals.getOrDefault(group, new GroupSignals(0, false, false, false, false));
+            PriorityTier tier = PriorityTier.of(meso.getMusclePriorities(), group);
+            VolumeBands.Band band = VolumeBands.band(props.baselines().get(group), tier,
+                meso.isSportLoaded(group), props.bands());
+            bands.put(group, band);
             VolumeDecider.Result result = VolumeDecider.decide(new VolumeDecider.Input(
-                calWeek, PriorityTier.of(meso.getMusclePriorities(), group),
-                VolumeBands.band(props.baselines().get(group),
-                    PriorityTier.of(meso.getMusclePriorities(), group),
-                    meso.isSportLoaded(group), props.bands()),
-                restored, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
+                calWeek, tier, band,
+                restored, plannedLastWeek, s.logged(), s.grind(), s.tooMuch(), s.jointPain(), s.sorenessHigh(),
                 deficit, deloadPhase, props.stepEmphasize(), props.stepGrow(), props.stepDeficit()));
             List<String> reasons = result.reasons().stream().map(WeekProposalService::code).toList();
             boolean noSlot = false;
@@ -226,8 +255,14 @@ public class WeekProposalService {
             }
             TemplatePlan.Row row = rowById.get(id);
             lines.add(new WeekProposalLineJson(UUID.randomUUID().toString(), id, row.exercise().getName(),
-                row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS, from, to, lineReasons.get(id), null));
+                row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS, from, to, lineReasons.get(id), null,
+                row.dayName(), null, null));
         });
+        // Weight / rep lines after the set lines: a preview of the week's load progression, never written.
+        lines.addAll(loadLinePreview.lines(createdBy, meso, calWeek, plan, deloadPhase));
+        List<WeekProposalGroupJson> groups = outcomes.values().stream()
+            .map(o -> groupJson(o, PriorityTier.of(meso.getMusclePriorities(), o.group()), bands.get(o.group())))
+            .toList();
 
         MesoWeekProposalEntity proposal = new MesoWeekProposalEntity();
         proposal.setCreatedBy(createdBy);
@@ -237,55 +272,139 @@ public class WeekProposalService {
         proposal.setStatus(MesoWeekProposalEntity.STATUS_PENDING);
         proposal.setLines(lines);
         proposal.setRestore(restore.isEmpty() ? null : restore);
+        proposal.setGroups(groups);
         return new Draft(proposalRepository.save(proposal), outcomes);
     }
 
     /**
-     * Accepts every line and writes its {@code to} onto the exercise row. A line whose exercise row
-     * no longer exists is {@code kept} and skipped — never an error. Fills {@code planAfter} with
-     * every counting exercise's sets after the write.
+     * Per group, the net sets the run's tier changes wrote since the previous week's weekly proposal was built
+     * (since the run's start when there is none): the accepted set lines (an accepted set line is always a
+     * written one — {@link #applySetLine} records {@code kept} otherwise), whatever the proposal's status. A
+     * change made in the middle of last week, or on this week's first day before this build, is counted — last
+     * week was logged under the plan before it, so {@code SETS_MISSED} is judged against that plan.
+     */
+    private Map<String, Integer> tierChangeMovesSinceLastWeek(UUID createdBy, UUID mesoId, int calWeek) {
+        Instant since = proposalRepository.findWeeklyBefore(createdBy, mesoId, calWeek).stream()
+            .findFirst().map(MesoWeekProposalEntity::getCreatedAt).orElse(Instant.EPOCH);
+        Map<String, Integer> moves = new HashMap<>();
+        proposalRepository.findTierChangesCreatedAfter(createdBy, mesoId, since).stream()
+            .flatMap(p -> p.getLines().stream())
+            .filter(l -> WeekProposalLineJson.KIND_SETS.equals(l.kind()))
+            .filter(l -> WeekProposalLineJson.DECISION_ACCEPTED.equals(l.decision()))
+            .filter(l -> l.muscleGroup() != null && l.from() != null && l.to() != null)
+            .forEach(l -> moves.merge(l.muscleGroup(), l.to() - l.from(), Integer::sum));
+        return moves;
+    }
+
+    /**
+     * The {@code auto} path: every line accepted ({@link #applySetLine} — a set line whose row vanished
+     * is {@code kept}, never an error), then closed {@code auto_applied}.
      */
     void apply(MesoWeekProposalEntity proposal) {
-        UUID createdBy = proposal.getCreatedBy();
-        List<WeekProposalLineJson> decided = new ArrayList<>();
-        List<ExerciseEntity> written = new ArrayList<>();
-        for (WeekProposalLineJson line : proposal.getLines()) {
-            Optional<ExerciseEntity> row = exerciseRepository.findById(line.exerciseId())
-                .filter(e -> createdBy.equals(e.getCreatedBy()));
-            if (row.isEmpty()) {
-                decided.add(line.withDecision(WeekProposalLineJson.DECISION_KEPT));
-                continue;
-            }
-            row.get().setWorkingSets(line.to());
-            written.add(row.get());
-            decided.add(line.withDecision(WeekProposalLineJson.DECISION_ACCEPTED));
-        }
-        exerciseRepository.saveAll(written);
+        proposal.setLines(proposal.getLines().stream().map(l -> applySetLine(proposal, l)).toList());
+        close(proposal, MesoWeekProposalEntity.STATUS_AUTO_APPLIED);
+    }
 
+    /**
+     * Accepts one line. A set line writes its {@code to} onto the exercise row only while that row (the
+     * owner's, still there) holds the line's {@code from}; a vanished or since-moved row is recorded
+     * {@code kept} and nothing is written (his own edit stands). A weight / rep line is accepted without a
+     * write (the session's read-time prescription carries it). The caller re-syncs the ledger after a write.
+     *
+     * @return the line with its decision
+     */
+    WeekProposalLineJson applySetLine(MesoWeekProposalEntity proposal, WeekProposalLineJson line) {
+        if (!WeekProposalLineJson.KIND_SETS.equals(line.kind())) {
+            return line.withDecision(WeekProposalLineJson.DECISION_ACCEPTED); // load line: no write
+        }
+        Optional<ExerciseEntity> row = exerciseRepository.findById(line.exerciseId())
+            .filter(e -> proposal.getCreatedBy().equals(e.getCreatedBy()))
+            .filter(e -> Objects.equals(e.getWorkingSets(), line.from()));
+        if (row.isEmpty()) {
+            return line.withDecision(WeekProposalLineJson.DECISION_KEPT);
+        }
+        row.get().setWorkingSets(line.to());
+        exerciseRepository.save(row.get());
+        return line.withDecision(WeekProposalLineJson.DECISION_ACCEPTED);
+    }
+
+    /**
+     * Closes a proposal as {@code applied}, {@code auto_applied} or {@code expired} (its lines as the caller
+     * left them): {@code decidedAt}, and {@code planAfter} = every counting template exercise's sets now.
+     * A deload proposal's {@code restore} keeps only the entries whose set line was accepted (an undecided
+     * or kept halving never happened, so there is nothing to give back). An applied weekly proposal consumes
+     * the deload restore it was offered (emptied — never given twice, whatever was decided on its lines);
+     * an expired one drops only the entries its accepted restore lines gave back, so the next week offers
+     * the rest again.
+     */
+    void close(MesoWeekProposalEntity proposal, String status) {
+        UUID createdBy = proposal.getCreatedBy();
         Map<String, Integer> planAfter = new LinkedHashMap<>();
         templateExercises(createdBy, proposal.getMesocycleId()).stream()
             .filter(ExerciseEntity::isCountsTowardVolume)
             .forEach(e -> planAfter.put(e.getId().toString(), e.getWorkingSets()));
-
-        proposal.setLines(decided);
         proposal.setPlanAfter(planAfter);
-        proposal.setStatus(MesoWeekProposalEntity.STATUS_AUTO_APPLIED);
+        proposal.setStatus(status);
         proposal.setDecidedAt(Instant.now());
+        if (proposal.getRestore() != null && !proposal.getRestore().isEmpty()) {
+            Set<UUID> accepted = proposal.getLines().stream()
+                .filter(l -> WeekProposalLineJson.KIND_SETS.equals(l.kind()))
+                .filter(l -> WeekProposalLineJson.DECISION_ACCEPTED.equals(l.decision()))
+                .map(WeekProposalLineJson::exerciseId)
+                .collect(Collectors.toSet());
+            proposal.setRestore(proposal.getRestore().stream()
+                .filter(e -> accepted.contains(e.exerciseId())).toList());
+        }
         proposalRepository.save(proposal);
 
-        // The deload this week gave back from is consumed: no later week can restore it again.
+        if (!MesoWeekProposalEntity.KIND_WEEKLY.equals(proposal.getKind())) {
+            return; // a tier change never touches a deload's restore
+        }
+        boolean applied = MesoWeekProposalEntity.STATUS_APPLIED.equals(status)
+            || MesoWeekProposalEntity.STATUS_AUTO_APPLIED.equals(status);
         deloadToRestore(createdBy, proposal.getMesocycleId(), proposal.getWeek()).ifPresent(deload -> {
-            deload.setRestore(List.of());
+            deload.setRestore(applied ? List.of() : notGivenBack(deload.getRestore(), proposal));
             proposalRepository.save(deload);
         });
     }
 
+    /**
+     * An expired week's restore lines that he accepted were written — that part of the deload is given back.
+     * The remaining entries: those not matched (id, else identity on the same day — the restore's own
+     * matching) to a row whose {@code deload_restore} line was accepted. Empty when every entry came back.
+     */
+    private List<RestoreEntryJson> notGivenBack(List<RestoreEntryJson> entries, MesoWeekProposalEntity proposal) {
+        String restoreCode = code(Reason.DELOAD_RESTORE);
+        Set<UUID> givenBack = proposal.getLines().stream()
+            .filter(l -> WeekProposalLineJson.KIND_SETS.equals(l.kind()))
+            .filter(l -> WeekProposalLineJson.DECISION_ACCEPTED.equals(l.decision()))
+            .filter(l -> l.reasons() != null && l.reasons().contains(restoreCode))
+            .map(WeekProposalLineJson::exerciseId)
+            .collect(Collectors.toSet());
+        if (givenBack.isEmpty()) {
+            return entries;
+        }
+        Map<RestoreEntryJson, TemplatePlan.Row> pairs = TemplatePlan.matchEntries(entries,
+            templatePlan.rows(proposal.getCreatedBy(), proposal.getMesocycleId()));
+        return entries.stream()
+            .filter(e -> !givenBack.contains(e.exerciseId()))
+            .filter(e -> pairs.get(e) == null || !givenBack.contains(pairs.get(e).exercise().getId()))
+            .toList();
+    }
+
     // ── steps ─────────────────────────────────────────────────────────────────────────────────
 
-    /** The latest applied weekly proposal before {@code week}, when it still carries a restore. */
+    /**
+     * The deload to give back from before {@code week}: the latest closed (applied, auto-applied or expired)
+     * weekly proposal that was a deload (non-null {@code restore}), when its restore is still non-empty.
+     * Stopping at the latest deload — even an emptied one — keeps an older, never-consumed restore from
+     * resurfacing after a later deload was given back.
+     */
     private Optional<MesoWeekProposalEntity> deloadToRestore(UUID createdBy, UUID mesoId, int week) {
-        return proposalRepository.findLatestApplied(createdBy, mesoId, week)
-            .filter(p -> p.getRestore() != null && !p.getRestore().isEmpty());
+        return proposalRepository.findClosedWeeklyBefore(createdBy, mesoId, week).stream()
+            .filter(p -> p.getRestore() != null)
+            .findFirst()
+            .filter(p -> !p.getRestore().isEmpty());
     }
 
     /**
@@ -423,8 +542,11 @@ public class WeekProposalService {
         working.merge(id, by, Integer::sum);
     }
 
-    /** DA1: {@code phaseCurve} is 1-based against a 1-based week — index {@code calWeek − 1}, bounds-checked. */
-    private static boolean isDeloadPhase(MesocycleEntity meso, int calWeek) {
+    /**
+     * DA1: {@code phaseCurve} is 1-based against a 1-based week — index {@code calWeek − 1}, bounds-checked.
+     * Shared with {@link TierChangeProposalService} (no band fix in a deload week).
+     */
+    static boolean isDeloadPhase(MesocycleEntity meso, int calWeek) {
         List<String> phaseCurve = meso.getPhaseCurve();
         int idx = calWeek - 1;
         if (phaseCurve == null || idx < 0 || idx >= phaseCurve.size()) {
@@ -460,6 +582,13 @@ public class WeekProposalService {
         return new VolumeRecomputeJson.Change(o.group(), changeText(o), reasonText(o), isDeload(o) ? Boolean.TRUE : null);
     }
 
+    /** Manual mode: a changed group's audit line reads as a proposal ("javaslat: +1 …"); a held one as usual. */
+    private static VolumeRecomputeJson.Change proposedChange(GroupOutcome o) {
+        VolumeRecomputeJson.Change c = change(o);
+        return o.changed() ? new VolumeRecomputeJson.Change(c.muscle(), PROPOSAL_PREFIX + c.change(), c.reason(),
+            c.warning()) : c;
+    }
+
     private static String changeText(GroupOutcome o) {
         if (isDeload(o)) {
             return "Deload " + o.before() + " → " + o.after();
@@ -478,6 +607,24 @@ public class WeekProposalService {
             return "tart (" + o.before() + ")";
         }
         return (diff > 0 ? "+" : "") + diff + " (" + o.before() + " → " + o.after() + ")";
+    }
+
+    /** The stored per-muscle outcome: the contract reason codes under the same conditions {@link #reasonText} uses. */
+    private static WeekProposalGroupJson groupJson(GroupOutcome o, PriorityTier tier, VolumeBands.Band band) {
+        List<String> reasons = new ArrayList<>();
+        if (o.restored() > o.before()) {
+            reasons.add(code(Reason.DELOAD_RESTORE));
+        }
+        o.result().reasons().forEach(r -> reasons.add(code(r)));
+        if (o.stalled()) {
+            reasons.add(code(Reason.STALLED));
+        }
+        if (o.noSlot()) {
+            reasons.add(code(Reason.NO_SLOT));
+        }
+        return new WeekProposalGroupJson(o.group(), tier.name().toLowerCase(Locale.ROOT),
+            band == null ? null : band.low(), band == null ? null : band.high(),
+            band != null && band.sportAdjusted(), o.before(), o.after(), reasons.stream().distinct().toList());
     }
 
     private static String reasonText(GroupOutcome o) {
