@@ -677,5 +677,185 @@
     ],
     "mit_kapsz": "Amennyi sorozatot egy gyakorlatra beírsz, pontosan annyit ír elő az edzés; minden izomcsoportnak van egy heti sávja a szintje szerint, és az app hétről hétre legfeljebb egy-két sorozatot tol át konkrét gyakorlatokra abból, amit tényleg megcsináltál.",
     "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.77": {
+    "cim": "Edzés: a tervépítő számolása (sávok, javaslatok, röplabda)",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A blokk szerkesztésekor a szerver megmondja izmonként a sávot, hogy hol állsz hozzá képest, és konkrét javaslatot ad; a röplabda miatt a láb sávja lejjebb mehet.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.78": {
+    "cim": "Edzés: a heti jóváhagyás és a kézi mód",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A heti változásokról gyakorlatonként dönthetsz (elfogadod vagy marad a múlt heti); erre épül majd a telefonos heti áttekintő.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.79": {
+    "cim": "Edzés: edzésmód és hangsúlyosabb emelés",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A blokkra választhatsz edzésmódot (kiegyensúlyozott, sok ismétlés, nagyobb súly, két sorozat bukásig), a tartalék a blokk során csökken, és az app izmonként figyeli, hogy haladsz-e.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.80": {
+    "cim": "Edzés: a technikák saját helyet kapnak",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A drop, a pihenős drop, a myo és a félismétlések külön rögzülnek, így nem rontják el a rekordjaidat, a következő súlyt és a heti sorozatszámot.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.81": {
+    "cim": "Edzés: hová kerül a technika, és a napi kihívás",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az app magától javasolja, melyik biztonságos gyakorlatra jusson technika, minden edzésen kijelöl egy kihívást, és jelzi, ha egy izom megakadt.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.82": {
+    "cim": "Edzés: az AI finomítja a technikák helyét",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az AI a biztonságos gyakorlatok között mozgathatja a technikákat, egy mondattal indokolva; a döntés a heti jóváhagyásban a tiéd.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.83": {
+    "cim": "Boop Edzés: blokk-építő és heti áttekintő a telefonon",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2 · telefon",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A szimulátorban jóváhagyott két képernyő: a teljes képernyős blokk-építő (Izmok · Napok · Blokk) és a lapozható heti áttekintő gyakorlatonkénti döntéssel.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.84": {
+    "cim": "Boop Edzés: technika és kihívás edzés közben",
+    "tipus": "Funkció",
+    "szakasz": "Volumen-motor v2 · telefon",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Edzés közben a gyakorlaton és a sorozaton látszik a technika, lépésről lépésre vezet (pihenő visszaszámlálóval), és az utolsó sorozat után jön a kihívás számlálóval.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.68": {
+    "cim": "Kihagyás utáni visszatérésnél a hét sorszáma késhet",
+    "tipus": "Hiba",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Egy kímélő mód utáni folytatásnál a hét sorszáma átmenetileg a régit mutathatja; a sorozatszámokat nem érinti.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.69": {
+    "cim": "Ritka ütközés: tervbe mentés pont hétfordulókor",
+    "tipus": "Hiba",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha pont abban a pillanatban mentesz gyakorlatcserét a tervbe, amikor az app megnyitja az új hetet, az egyik kérés hibára futhat; ezt zárjuk ki.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.70": {
+    "cim": "Belső rendrakás: egy helyen a gyakorlatok összesítése",
+    "tipus": "Fejlesztés",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Három helyen ugyanaz a számolás él külön; egyesítjük, hogy ne térhessenek el egymástól.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.71": {
+    "cim": "A telefon és a web sáv-kijelzése még közelítő",
+    "tipus": "Hiba",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A telefonon és a weben a „maradt hely” és a sávok még a régi szabály szerint számolnak; a szerver új sávjaihoz igazítjuk.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.72": {
+    "cim": "A heti terhelési görbe könnyített hét után pontatlan",
+    "tipus": "Hiba",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A görbe „tervezett” vonala egy blokk közepén lévő könnyített hét után alulbecsül; a tervépítő munkával együtt javul.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.73": {
+    "cim": "Az egyszeri átállító törlése",
+    "tipus": "Fejlesztés",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Amikor már nincs régi módon futó blokk, töröljük az egyszer használt átállító részt.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.74": {
+    "cim": "Belső rendrakás a tervépítő munka előtt",
+    "tipus": "Fejlesztés",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A régi sávtáblából maradt, már nem használt részeket kivesszük, amikor a tervépítő számolása elkészül.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.75": {
+    "cim": "Teendők a heti jóváhagyáshoz",
+    "tipus": "Fejlesztés",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Két apróság a kézi jóváhagyás előtt: a könnyített hét utáni visszaállítás és a blokk közepén lévő könnyített hét kezelése.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.76": {
+    "cim": "Megerősítések és hiányzó tesztek a motorhoz",
+    "tipus": "Fejlesztés",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Néhány ritka eset biztosítása és tesztje, amit az élesítés előtti átnézés feljegyzett.",
+    "munkamenet": "atlas-workout-recipes"
+  },
+  "mezo-r36n9.86": {
+    "cim": "Egy szerveroldali teszt a teljes futtatásban megszakad",
+    "tipus": "Hiba",
+    "szakasz": "Volumen-motor v2",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az étkezési edző egyik tesztje a teljes tesztfuttatás közben néha megszakad egy régóta nyitva tartott kapcsolat miatt; a javítás külön ágon kész, ellenőrizni kell.",
+    "munkamenet": "atlas-workout-recipes"
   }
 }

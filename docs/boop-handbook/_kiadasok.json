@@ -313,5 +313,14 @@
       "mezo-r36n9.15"
     ],
     "mi_valtozott": "Az Edzés terület saját adataival él: a mai terhelés az izomtérképen, a blokk idővonala, a gyakorlatok fényképekkel, a Blokk fülön a terhelés izomcsoportonként. Az „Indítás” előtt jön az Eligazítás: mennyi ideig tart, a mai küldetések (amit a motor ma lépett — vállalod vagy elengeded) és a mai sor képekkel. Edzés közben a lejátszó sorozatról sorozatra vezet: táblázatban a szettek, zöld nyíl ha megvolt a terv, piros ha alatta maradt, medál ha rekord; a súly és az ismétlés be is írható; egyetlen „…” menüben a csere, a „foglalt a gép — mást csinálok most”, a rekordok és a technika. A három kérdés gyakorlatonként egyszer jön, a végén egy lezáró kép. Minden térerő nélkül is megmarad; csak a gyakorlatcsere kér internetet."
+  },
+  "57bf92ba4": {
+    "cim": "Edzés: a te sorozatszámod az igazság — a heti emelés új motorja",
+    "datum": "2026-11-18",
+    "szakasz": "Volumen-motor v2 · S1",
+    "jegyek": [
+      "mezo-r36n9.65"
+    ],
+    "mi_valtozott": "Amennyi sorozatot egy gyakorlatra beírsz, pontosan annyit ír ki az edzés — a régi rejtett heti cél, ami például egy háromsorozatos lábtolásból nyolcat csinált, megszűnt. Minden izomnak van egy heti sávja a szintje szerint (Tartás, Építés, Hangsúly). Hétről hétre az app abból dönt, amit ténylegesen megcsináltál (megvolt-e minden sorozat, túl nehéz volt-e, fájt-e ízület, maradt-e izomláz, fogysz-e), és legfeljebb egy-két sorozatot tesz konkrét gyakorlatokra — sosem többet ötnél egy gyakorlatra vagy nyolcnál egy izomra egy edzésen. A könnyített hét felez, utána visszaáll, kivéve, ha közben te átírtad. Kímélő mód után izmonként egy sorozat jön le, visszavonhatóan. A futó blokkod számai az átálláskor egy sem változtak."
   }
 }
