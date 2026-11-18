@@ -35,7 +35,7 @@ contract-first OpenAPI (`api/feature/train/train.yml` → `api/openapi.yml` → 
 | Conversion target | The current range's floor at the effective reserve: wanted kg = e1RM(ref) / (1 + (repMin + rir)/30), nearest real weight (ever-logged ∪ plate grid − known gaps, the reference weight included), reps by equal effort clamped to the range. |
 | Per-style overshoot (`repOverflow`) | balanced 3 · volume 4 · heavy 2 · allout 2 (unstyled stays `mezo.hypertrophy.rep-overflow` = 3). |
 | Grind when the ramped reserve is 0–1 (§11.3) | Styled blocks only: grind = logged reps ≤ the set's prescribed reps (`target_reps` snapshot) − 2; slack otherwise max(0, loggedRIR − target). Unstyled: unchanged. |
-| Stall detection (§6.7.4, §11.5) | Detection only in T1: pure `MuscleStallDetector` + `MuscleProgressReader` (styled runs only). The offers (technique / range change / one-week reduction) are T3. Surfacing as a weekly-proposal audit reason `stalled` is Task 9b **only if the S2 session agrees** to the `WeekProposalService` touch; otherwise T3 wires it. |
+| Stall detection (§6.7.4, §11.5) | Detection only in T1: pure `MuscleStallDetector` + `MuscleProgressReader` (styled runs only). The offers (technique / range change / one-week reduction) are T3. Surfaced as a weekly-proposal audit reason `stalled` (Task 9b, agreed with S2). |
 | Mid-run style change | Not in T1 (no endpoint). The run inherits the template's style at start; a run day edit re-stamps under the run's style. |
 | Free exercise under *Két sorozat bukásig* | Stamped as *Nagyobb súly* with reserve 1; the response's read-only `effectiveTrainingStyle` = `heavy` lets the client show why. |
 
@@ -319,9 +319,15 @@ curve → base.
   `weightDownRepsUpIsNotMoved…` (define: a lighter top set is a hold), `absentWeekIsNotAHold`, `tooLittleDataIsNotStalled`,
   reader `unstyledRunHasNoStalls`, `stalledGroupFromLoggedSets`.
 - [ ] **Step 2:** Implement; run → pass. Commit `feat(train): per-muscle stall detection (mezo-r36n9.79)`.
-- [ ] **Step 3 (9b, only with the S2 session's OK on bd):** in `WeekProposalService.build`, for a styled run, add the
-  audit reason `stalled` to each stalled group's audit entry (no line, no amount change); test
-  `WeekProposalAutoIT.stalledGroupIsAudited`. Without the OK: file the wiring as a note on `mezo-r36n9.81` (T3).
+- [ ] **Step 3 (9b — agreed with S2 on bd `mezo-r36n9.77`, 2026-11-18, provided it stays outside the
+  `VolumeBands.band` call S2 changes):** in `WeekProposalService.build`, for a styled run, add the audit reason
+  `stalled` to each stalled group's audit entry (no line, no amount change); test
+  `WeekProposalAutoIT.stalledGroupIsAudited`.
+
+**S2 overlap to expect on rebase:** S2 adds `sportGroups` to the same three schemas T1 extends
+(`MesoTemplateUpsertRequest`, `MesoTemplateResponse`, `MesocycleResponse`) plus new evaluate operations, and its
+changeset `202611181000_mezo-r36n9.77_sport_groups.sql` sits before T1's in the master. Second to merge keeps both
+sides, regenerates `openapi.yml`, `api.gen.ts` and `CODEMAP.md`.
 
 ### Task 10: Docs, gates, ship
 
