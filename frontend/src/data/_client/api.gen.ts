@@ -6321,6 +6321,8 @@ export interface components {
             musclePriorities?: {
                 [key: string]: string;
             } | null;
+            /** @description Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; null/empty = none */
+            sportGroups?: string[] | null;
             /** Format: date */
             startDate: string;
             /** Format: date */
@@ -6361,6 +6363,8 @@ export interface components {
             musclePriorities?: {
                 [key: string]: string;
             } | null;
+            /** @description Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; null/empty = none */
+            sportGroups?: string[] | null;
             weeks: number;
             split?: string | null;
             style?: string | null;
@@ -6530,6 +6534,8 @@ export interface components {
             musclePriorities?: {
                 [key: string]: string;
             } | null;
+            /** @description Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; null/empty = none */
+            sportGroups?: string[] | null;
             weeks: number;
             split?: string | null;
             style?: string | null;
@@ -6552,6 +6558,8 @@ export interface components {
             musclePriorities?: {
                 [key: string]: string;
             } | null;
+            /** @description Coarse muscle groups a sport (e.g. volleyball) already loads; lowers their volume band (mezo-r36n9.77). Keys of the landmark table, normalised de-duplicated in table order; null/empty = none */
+            sportGroups?: string[] | null;
         };
         MesoRerunResponse: {
             /** Format: uuid */

@@ -197,7 +197,8 @@ public class TrainController implements TrainApi {
     public MesocycleResponse updateMesocycleMusclePriorities(
             UUID id, MusclePrioritiesUpdateRequest musclePrioritiesUpdateRequest) {
         return service.updateMusclePriorities(currentUserId.get(), id,
-            musclePrioritiesUpdateRequest.getMusclePriorities());
+            musclePrioritiesUpdateRequest.getMusclePriorities(),
+            musclePrioritiesUpdateRequest.getSportGroups());
     }
 
     @Override

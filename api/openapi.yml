@@ -15500,6 +15500,15 @@ components:
             absent key = grow); null/empty = all grow (mezo-3m5m)
           additionalProperties:
             type: string
+        sportGroups:
+          type: array
+          nullable: true
+          description: >-
+            Coarse muscle groups a sport (e.g. volleyball) already loads; lowers
+            their volume band (mezo-r36n9.77). Keys of the landmark table,
+            normalised de-duplicated in table order; null/empty = none
+          items:
+            type: string
         startDate:
           type: string
           format: date
@@ -15582,6 +15591,15 @@ components:
             Sparse per-coarse-muscle priority tier map (emphasize/maintain;
             absent key = grow); null/empty = all grow (mezo-3m5m)
           additionalProperties:
+            type: string
+        sportGroups:
+          type: array
+          nullable: true
+          description: >-
+            Coarse muscle groups a sport (e.g. volleyball) already loads; lowers
+            their volume band (mezo-r36n9.77). Keys of the landmark table,
+            normalised de-duplicated in table order; null/empty = none
+          items:
             type: string
         weeks:
           type: integer
@@ -16034,6 +16052,15 @@ components:
             absent key = grow); null/empty = all grow (mezo-3m5m)
           additionalProperties:
             type: string
+        sportGroups:
+          type: array
+          nullable: true
+          description: >-
+            Coarse muscle groups a sport (e.g. volleyball) already loads; lowers
+            their volume band (mezo-r36n9.77). Keys of the landmark table,
+            normalised de-duplicated in table order; null/empty = none
+          items:
+            type: string
         weeks:
           type: integer
           minimum: 1
@@ -16091,6 +16118,15 @@ components:
             Sparse per-coarse-muscle priority tier map (emphasize/maintain;
             absent key = grow); null/empty = all grow (mezo-3m5m)
           additionalProperties:
+            type: string
+        sportGroups:
+          type: array
+          nullable: true
+          description: >-
+            Coarse muscle groups a sport (e.g. volleyball) already loads; lowers
+            their volume band (mezo-r36n9.77). Keys of the landmark table,
+            normalised de-duplicated in table order; null/empty = none
+          items:
             type: string
     MesoRerunResponse:
       type: object

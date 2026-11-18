@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
 import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -64,6 +65,7 @@ public class MesoTemplateService {
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final TrainService trainService;
     private final TrainMapper mapper;
+    private final VolumeProperties volumeProperties;
 
     /** The owner's templates, oldest first, each carrying how many runs were started from it. */
     public List<MesoTemplateResponse> list(UUID createdBy) {
@@ -100,7 +102,7 @@ public class MesoTemplateService {
             t.getId(), t.getTitle(), t.getShortTitle(), t.getGoal(), t.getGoalPreset(), req.getStartDate(),
             t.getWeeks(), t.getSplit(), t.getStyle(), t.getPhaseCurve(), t.getNotes(), req.getStatus().getValue(),
             mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle()),
-            t.getMusclePriorities()));
+            t.getMusclePriorities(), t.getSportGroups()));
     }
 
     /**
@@ -125,6 +127,7 @@ public class MesoTemplateService {
         template.setGoalPreset(run.getGoalPreset());
         template.setMusclePriorities(
             run.getMusclePriorities() != null ? Map.copyOf(run.getMusclePriorities()) : null);
+        template.setSportGroups(run.getSportGroups() != null ? List.copyOf(run.getSportGroups()) : null);
         template.setWeeks(run.getWeeks());
         template.setSplit(run.getSplit());
         template.setStyle(run.getStyle());
@@ -158,6 +161,7 @@ public class MesoTemplateService {
         // values, same as the run PUT (mezo-ltk0, tier-review follow-up 2).
         Map<String, String> normalizedPriorities = PriorityTier.normalize(req.getMusclePriorities());
         template.setMusclePriorities(normalizedPriorities.isEmpty() ? null : normalizedPriorities);
+        template.setSportGroups(SportGroups.normalize(req.getSportGroups(), volumeProperties.baselines().keySet()));
         template.setWeeks(req.getWeeks());
         template.setSplit(req.getSplit());
         template.setStyle(req.getStyle());
