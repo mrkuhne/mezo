@@ -112,11 +112,11 @@ public interface TrainMapper {
     @Mapping(target = "replacesName", ignore = true)
     @Mapping(target = "replacedByName", ignore = true)
     @Mapping(target = "planSlot", ignore = true)
-    // Training-style fields reach the today payload in T1 Task 8, not here (mezo-r36n9.79).
-    @Mapping(target = "trainingStyle", ignore = true)
+    // Training style (mezo-r36n9.79): the row's own fields as wire values; the effective style and the
+    // ramped targetRIR need the run + catalog, so WorkoutService.getToday sets them.
+    @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
+    @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesDto")
     @Mapping(target = "effectiveTrainingStyle", ignore = true)
-    @Mapping(target = "restSec", ignore = true)
-    @Mapping(target = "overrides", ignore = true)
     TodayExercise toTodayExercise(ExerciseEntity entity);
 
     @Mapping(target = "status", expression = "java(WorkoutSummaryResponse.StatusEnum.fromValue(entity.getStatus()))")

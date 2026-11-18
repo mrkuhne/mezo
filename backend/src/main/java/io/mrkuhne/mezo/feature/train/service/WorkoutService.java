@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.feature.train.ClosingBlockGate;
 import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import io.mrkuhne.mezo.feature.train.config.TimingProperties;
+import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -142,6 +143,9 @@ public class WorkoutService {
     // Kihagyás S2 kímélő mód (mezo-q4xt2.2): the comeback ramp + released-day lightening, read at
     // getToday time from the period rows. Repository-only bean — no cycle.
     private final RecoveryPeriodService recoveryPeriodService;
+    // Training style (mezo-r36n9.79): the stamp table + ramp config, and the batched catalog stability.
+    private final TrainStyleProperties trainStyleProperties;
+    private final ExerciseStyler exerciseStyler;
 
     /**
      * Today's kímélő-mód lightening (spec §9.1.4 / §9.1.6): the DTO shown on the hero, plus the
@@ -278,6 +282,12 @@ public class WorkoutService {
         // Kímélő mód (mezo-q4xt2.2): comeback ramp / released day — read-time only, like dayDelta;
         // writes no workout_day_adjustment row. The readiness care override below still wins.
         Comeback comeback = comebackFor(createdBy, LocalDate.now(RECOVERY_TZ));
+        // Training style (mezo-r36n9.79): only a day of the active run carries the run's style — a
+        // custom workout is never styled. One batched stability read for the whole day (none unstyled).
+        TrainingStyle runStyle = activeMeso != null && activeMeso.getId().equals(day.getMesocycleId())
+            ? TrainingStyle.fromWire(activeMeso.getTrainingStyle()) : null;
+        CatalogAttributes.Lookup stability = exerciseStyler.lookupRows(exercises, runStyle != null);
+        LocalDate today = LocalDate.now();
         int weightUp = 0;
         int weightDown = 0;
         int repUp = 0;
@@ -286,6 +296,12 @@ public class WorkoutService {
         for (SessionExerciseAssembler.Entry entry : entries) {
             ExerciseEntity e = entry.row();
             TodayExercise t = mapper.toTodayExercise(e);
+            StyleContext style = styleContext(e, runStyle, activeMeso, stability);
+            t.setEffectiveTrainingStyle(
+                exerciseStyler.effective(e.getTrainingStyle(), e.getType(), e.getCatalogId(), runStyle, stability));
+            if (style.styled()) {
+                t.setTargetRIR(style.effectiveReserve());
+            }
             t.setChangeScope(entry.changeScope() == null ? null
                 : TodayExercise.ChangeScopeEnum.fromValue(entry.changeScope()));
             t.setReplacesName(entry.replacesName());
@@ -322,13 +338,14 @@ public class WorkoutService {
             t.setWorkingSets(effective);
             if (hypertrophyGate.getIfAvailable() != null) {
                 Prescription p = comeback == null
-                    ? setRecommendationService.prescribe(createdBy, e, deloadWeek, effective, lighten.isPresent())
-                    : setRecommendationService.prescribe(createdBy, e, deloadWeek, effective,
-                        lighten.isPresent() || comeback.holdOnly(),
+                    ? setRecommendationService.prescribe(createdBy, e, new SetRecommendationService.PrescribeOptions(
+                        deloadWeek, effective, lighten.isPresent(), null, 0, style, today))
+                    : setRecommendationService.prescribe(createdBy, e, new SetRecommendationService.PrescribeOptions(
+                        deloadWeek, effective, lighten.isPresent() || comeback.holdOnly(),
                         // A deload week already lightens the load — no extra ×0.9 on top; the set
                         // reduction and the RIR floor stay.
                         deloadWeek ? null : comeback.loadFactor(),
-                        ComebackRamp.rirFloor(null));
+                        ComebackRamp.rirFloor(null), style, today));
                 if (careRegion != null) {
                     p = lightCareSet(p, careRegion);
                 }
@@ -369,6 +386,32 @@ public class WorkoutService {
             .overloadSummary(overloadSummary)
             .comeback(comeback == null ? null : comeback.dto())
             .build();
+    }
+
+    /**
+     * The training style of one of today's exercises (mezo-r36n9.79): the exercise's own style, else the
+     * run's; the stamp of that style for the exercise's class gives the rep overshoot and the fallback
+     * rest; the row's (already stamped) reserve is ramped across the run's weeks — never below the free
+     * floor on a free exercise. {@link StyleContext#NONE} for an unstyled run and for plyo (never stamped).
+     */
+    private StyleContext styleContext(ExerciseEntity e, TrainingStyle runStyle, MesocycleEntity run,
+                                      CatalogAttributes.Lookup stability) {
+        if (runStyle == null) {
+            return StyleContext.NONE;
+        }
+        TrainingStyle style = e.getTrainingStyle() != null ? TrainingStyle.fromWire(e.getTrainingStyle()) : runStyle;
+        boolean stable = stability.stable(e.getCatalogId());
+        ExerciseClass cls = ExerciseClass.of(e.getType(), stable);
+        if (cls == null) {
+            return StyleContext.NONE;
+        }
+        StyleTable.Stamp stamp = StyleTable.stamp(style, cls, stable, StyleStamper.legs(cls, e.getMuscle()),
+            trainStyleProperties);
+        int base = e.getTargetRir() != null ? e.getTargetRir() : stamp.reserve();
+        int reserve = EffortRamp.effectiveReserve(base, run.getCurrentWeek(), run.getPhaseCurve(), !stable,
+            trainStyleProperties.ramp());
+        return new StyleContext(stamp.effectiveStyle(), reserve,
+            e.getRestSec() != null ? e.getRestSec() : Integer.valueOf(stamp.restSec()), stamp.repOverflow());
     }
 
     /**

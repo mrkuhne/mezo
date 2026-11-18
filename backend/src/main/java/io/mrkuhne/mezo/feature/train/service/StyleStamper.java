@@ -20,9 +20,7 @@ public final class StyleStamper {
         if (style == null) style = blockStyle;
         ExerciseClass cls = ExerciseClass.of(ex.type(), stable);
         if (cls == null) return ex;
-        String group = MuscleGroup.of(ex.muscle());
-        boolean legs = cls.compound() && ("quad".equals(group) || "ham".equals(group) || "glute".equals(group));
-        StyleTable.Stamp s = StyleTable.stamp(style, cls, stable, legs, p);
+        StyleTable.Stamp s = StyleTable.stamp(style, cls, stable, legs(cls, ex.muscle()), p);
         Set<String> keep = (ex.overrides() == null ? List.<String>of() : ex.overrides()).stream()
             .filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
         boolean range = !keep.contains("repRange");
@@ -35,5 +33,11 @@ public final class StyleStamper {
             ex.trainingStyle(),
             keep.contains("restSec") ? ex.restSec() : s.restSec(),
             ex.overrides());
+    }
+
+    /** "Legs" for the leg reserve: a compound exercise whose coarse group is quad, ham or glute. */
+    static boolean legs(ExerciseClass cls, String muscle) {
+        String group = MuscleGroup.of(muscle);
+        return cls.compound() && ("quad".equals(group) || "ham".equals(group) || "glute".equals(group));
     }
 }

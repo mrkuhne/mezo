@@ -3,12 +3,14 @@ package io.mrkuhne.mezo.feature.train.service;
 import io.mrkuhne.mezo.api.dto.PrescribedSet;
 import io.mrkuhne.mezo.api.dto.ProgressionSignal;
 import io.mrkuhne.mezo.feature.train.config.HypertrophyProperties;
+import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.service.ProgressionDecider.Decision;
 import io.mrkuhne.mezo.feature.train.service.ProgressionDecider.RefSet;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -30,6 +32,14 @@ public class SetRecommendationService {
     private final ExerciseHistoryResolver historyResolver;
     private final HypertrophyProperties props;
     private final WeightGapService weightGapService;
+    private final TrainStyleProperties styleProps;
+
+    /**
+     * Every knob of one prescription (mezo-r36n9.79). {@code style} is {@link StyleContext#NONE} for an
+     * unstyled run; {@code today} anchors the same-range reference window.
+     */
+    public record PrescribeOptions(boolean deloadWeek, int effectiveWorkingSets, boolean holdOnly,
+                                   BigDecimal loadFactor, int rirFloor, StyleContext style, LocalDate today) { }
 
     /** Plan-1 shape: prescribes against the exercise's own template {@code workingSets}. */
     public Prescription prescribe(UUID createdBy, ExerciseEntity ex, boolean deloadWeek) {
@@ -66,8 +76,28 @@ public class SetRecommendationService {
     public Prescription prescribe(UUID createdBy, ExerciseEntity ex, boolean deloadWeek,
                                   int effectiveWorkingSets, boolean holdOnly,
                                   BigDecimal loadFactor, int rirFloor) {
-        boolean hold = holdOnly || loadFactor != null;
-        ExerciseSetEntity ref = referenceWorkingSet(createdBy, ex);
+        return prescribe(createdBy, ex, new PrescribeOptions(deloadWeek, effectiveWorkingSets, holdOnly,
+            loadFactor, rirFloor, StyleContext.NONE, LocalDate.now()));
+    }
+
+    /**
+     * The full shape. A styled exercise ({@link StyleContext#styled()}, T1 §6) prescribes at the ramped
+     * reserve with the style's rep overshoot and the ramped grind, and carries its rest on every set;
+     * an unstyled one prescribes exactly as before. For everyone, the reference is rep-range-aware
+     * (§6.7.1): a different-range reference whose top set lies inside its own range and outside the
+     * current one is converted to the current range instead of being judged against it.
+     */
+    public Prescription prescribe(UUID createdBy, ExerciseEntity ex, PrescribeOptions o) {
+        boolean deloadWeek = o.deloadWeek();
+        BigDecimal loadFactor = o.loadFactor();
+        StyleContext style = o.style();
+        boolean styled = style.styled();
+        boolean hold = o.holdOnly() || loadFactor != null;
+        // The row's reserve unstyled (as before, may be null); the ramped reserve on a styled exercise.
+        Integer targetRir = styled ? Integer.valueOf(style.effectiveReserve()) : ex.getTargetRir();
+        ExerciseHistoryResolver.Reference reference =
+            historyResolver.reference(createdBy, ex, o.today(), styleProps.sameRangeMaxAgeDays());
+        ExerciseSetEntity ref = topSet(reference.sets());
         BigDecimal base;
         int workingReps;
         String rationale;
@@ -80,9 +110,20 @@ public class SetRecommendationService {
             // Proportional step (mezo-bk7sn): candidates are the real weights — ever logged ∪ the
             // plate grid, minus the machine's known gaps (mezo-bk7l2).
             Set<BigDecimal> gaps = weightGapService.gaps(createdBy, ex);
-            Decision d = ProgressionDecider.decide(
-                refSet, ex.getRepMin(), ex.getRepMax(), ex.getTargetRir(), stepPolicy(ex.getType()),
-                historyResolver.workingWeightsEverLogged(createdBy, ex), gaps, deloadWeek);
+            Set<BigDecimal> used = historyResolver.workingWeightsEverLogged(createdBy, ex);
+            ProgressionDecider.StepPolicy policy = stepPolicy(ex.getType(), style);
+            Decision d;
+            if (converts(reference, ref.getReps(), ex.getRepMin(), ex.getRepMax())) {
+                d = ProgressionDecider.convert(refSet, ex.getRepMin(), ex.getRepMax(), targetRir, policy, used, gaps);
+                if (deloadWeek) { // convert ignores the deload: regress the converted base, as decide would
+                    BigDecimal light = roundClamp(d.base().multiply(new BigDecimal("0.9")));
+                    d = new Decision(ProgressionDecider.Lever.DELOAD, light, ex.getRepMin(),
+                        light.subtract(ref.getWeightKg()), null, "Deload hét — visszaveszünk");
+                }
+            } else {
+                d = ProgressionDecider.decide(refSet, ex.getRepMin(), ex.getRepMax(), targetRir, policy, used, gaps,
+                    deloadWeek, styled ? ref.getTargetReps() : null, styled);
+            }
             if (hold) {
                 d = ProgressionDecider.capAtHold(d, refSet, ex.getRepMin(), ex.getRepMax());
             }
@@ -105,7 +146,7 @@ public class SetRecommendationService {
             if (d.lever() == ProgressionDecider.Lever.WEIGHT || d.lever() == ProgressionDecider.Lever.DELOAD) {
                 if (gaps.contains(WeightSnapper.norm(base))) {
                     Optional<WeightSnapper.Snap> snap = WeightSnapper.snap(
-                        base, workingReps, ex.getTargetRir(), ex.getRepMin(), ex.getRepMax(), ref.getWeightKg(),
+                        base, workingReps, targetRir, ex.getRepMin(), ex.getRepMax(), ref.getWeightKg(),
                         gaps, historyResolver.workingWeightsEverLogged(createdBy, ex), props.plateStep());
                     if (snap.isPresent()) {
                         rationale = rationale + " · " + strip(base) + " kg nincs a gépen → "
@@ -170,36 +211,52 @@ public class SetRecommendationService {
                     .targetWeightKg(base == null ? null : roundClamp(base.multiply(BigDecimal.valueOf(r.pct()))))
                     .targetReps(r.reps())
                     .targetRIR(null)
+                    .restSec(style.restSec())
                     .build());
             }
         }
-        for (int j = 0; j < effectiveWorkingSets; j++) {
+        int rirFloor = o.rirFloor();
+        for (int j = 0; j < o.effectiveWorkingSets(); j++) {
             sets.add(PrescribedSet.builder()
                 .kind(PrescribedSet.KindEnum.WORKING)
                 .targetWeightKg(base)
                 .targetReps(workingReps)
                 .targetRIR(rirFloor > 0
-                    ? Integer.valueOf(Math.max(rirFloor, ex.getTargetRir() == null ? 0 : ex.getTargetRir()))
-                    : ex.getTargetRir())
+                    ? Integer.valueOf(Math.max(rirFloor, targetRir == null ? 0 : targetRir))
+                    : targetRir)
+                .restSec(style.restSec())
                 .build());
         }
         return new Prescription(sets, rationale, progression);
     }
 
-    private ProgressionDecider.StepPolicy stepPolicy(String type) {
+    /** The unstyled policy, with the style's rep overshoot on a styled exercise (T1 §6.4). */
+    private ProgressionDecider.StepPolicy stepPolicy(String type, StyleContext style) {
         return new ProgressionDecider.StepPolicy(
             props.stepPercent().getOrDefault(type, props.defaultStepPercent()), props.maxJump(),
-            props.maxJumpReserve(), props.reserveSlack(), props.repOverflow(), props.plateStep());
+            props.maxJumpReserve(), props.reserveSlack(),
+            style.styled() ? style.repOverflow() : props.repOverflow(), props.plateStep());
     }
 
     /**
-     * Top WORKING set of the most recent completed session where this exercise's IDENTITY was
-     * trained (max weight, then reps). Identity-resolved (mezo-eq4w) so a day edit's row swap
-     * never resets double progression — the pre-edit rows' history still anchors the target.
+     * Convert only a different-range reference whose top set lies inside its OWN range and outside the
+     * current one (plan decision "when to convert"); a same-range reference, or reps in the current
+     * range, or reps outside both ranges are judged as before.
      */
-    private ExerciseSetEntity referenceWorkingSet(UUID createdBy, ExerciseEntity ex) {
-        return historyResolver.latestCompletedWorkingSets(createdBy, List.of(ex))
-            .getOrDefault(ex.getId(), List.of()).stream()
+    private static boolean converts(ExerciseHistoryResolver.Reference r, int reps, int repMin, int repMax) {
+        if (r.sameRange() || (reps >= repMin && reps <= repMax)) {
+            return false;
+        }
+        return reps >= r.refRepMin() && reps <= r.refRepMax();
+    }
+
+    /**
+     * Top WORKING set of the reference instance (max weight, then reps). The reference is
+     * identity-resolved (mezo-eq4w) so a day edit's row swap never resets double progression — the
+     * pre-edit rows' history still anchors the target.
+     */
+    private static ExerciseSetEntity topSet(List<ExerciseSetEntity> sets) {
+        return sets.stream()
             .max(Comparator
                 .comparing((ExerciseSetEntity s) -> s.getWeightKg() != null ? s.getWeightKg() : BigDecimal.valueOf(-1))
                 .thenComparing(ExerciseSetEntity::getReps))

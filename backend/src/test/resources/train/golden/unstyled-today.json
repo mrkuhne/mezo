@@ -1,0 +1,350 @@
+{
+  "templateSessionId" : "<uuid>",
+  "title" : "gym",
+  "durationEst" : null,
+  "exercises" : [ {
+    "id" : "<uuid>",
+    "name" : "Fekvenyomás",
+    "muscle" : "chest",
+    "warmupSets" : 2,
+    "workingSets" : 3,
+    "repMin" : 6,
+    "repMax" : 8,
+    "targetRIR" : 1,
+    "anchorWeightKg" : null,
+    "type" : "compound",
+    "warning" : null,
+    "videoUrl" : null,
+    "imageStartUrl" : null,
+    "imageEndUrl" : null,
+    "note" : null,
+    "lastWeek" : {
+      "weightKg" : 60.00,
+      "reps" : 8,
+      "rir" : 1
+    },
+    "prescribedSets" : [ {
+      "kind" : "warmup",
+      "targetWeightKg" : 32.5,
+      "targetReps" : 8,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "warmup",
+      "targetWeightKg" : 47.5,
+      "targetReps" : 3,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 62.50,
+      "targetReps" : 6,
+      "targetRIR" : 1,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 62.50,
+      "targetReps" : 6,
+      "targetRIR" : 1,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 62.50,
+      "targetReps" : 6,
+      "targetRIR" : 1,
+      "restSec" : null
+    } ],
+    "rationale" : "Múlt hét 8×60 kg a tartomány tetején → +2,5 kg (+4%)",
+    "progression" : {
+      "lever" : "weight",
+      "deltaKg" : 2.50,
+      "deltaReps" : null,
+      "targetWeightKg" : 62.50,
+      "targetReps" : 6,
+      "rationale" : "Múlt hét 8×60 kg a tartomány tetején → +2,5 kg (+4%)"
+    },
+    "changeScope" : null,
+    "replacesName" : null,
+    "replacedByName" : null,
+    "planSlot" : true,
+    "trainingStyle" : null,
+    "effectiveTrainingStyle" : null,
+    "restSec" : null,
+    "overrides" : [ ]
+  }, {
+    "id" : "<uuid>",
+    "name" : "Oldalemelés",
+    "muscle" : "shoulders",
+    "warmupSets" : 2,
+    "workingSets" : 3,
+    "repMin" : 10,
+    "repMax" : 15,
+    "targetRIR" : 2,
+    "anchorWeightKg" : null,
+    "type" : "isolation",
+    "warning" : null,
+    "videoUrl" : null,
+    "imageStartUrl" : null,
+    "imageEndUrl" : null,
+    "note" : null,
+    "lastWeek" : {
+      "weightKg" : 10.00,
+      "reps" : 12,
+      "rir" : 2
+    },
+    "prescribedSets" : [ {
+      "kind" : "warmup",
+      "targetWeightKg" : 5.0,
+      "targetReps" : 8,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "warmup",
+      "targetWeightKg" : 7.5,
+      "targetReps" : 3,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 10.00,
+      "targetReps" : 13,
+      "targetRIR" : 2,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 10.00,
+      "targetReps" : 13,
+      "targetRIR" : 2,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 10.00,
+      "targetReps" : 13,
+      "targetRIR" : 2,
+      "restSec" : null
+    } ],
+    "rationale" : "Múlt hét 12 rep a tartományban → +1 rep",
+    "progression" : {
+      "lever" : "rep",
+      "deltaKg" : null,
+      "deltaReps" : 1,
+      "targetWeightKg" : 10.00,
+      "targetReps" : 13,
+      "rationale" : "Múlt hét 12 rep a tartományban → +1 rep"
+    },
+    "changeScope" : null,
+    "replacesName" : null,
+    "replacedByName" : null,
+    "planSlot" : true,
+    "trainingStyle" : null,
+    "effectiveTrainingStyle" : null,
+    "restSec" : null,
+    "overrides" : [ ]
+  }, {
+    "id" : "<uuid>",
+    "name" : "Guggolás",
+    "muscle" : "quad",
+    "warmupSets" : 2,
+    "workingSets" : 3,
+    "repMin" : 5,
+    "repMax" : 8,
+    "targetRIR" : 2,
+    "anchorWeightKg" : 80.00,
+    "type" : "compound",
+    "warning" : null,
+    "videoUrl" : null,
+    "imageStartUrl" : null,
+    "imageEndUrl" : null,
+    "note" : null,
+    "lastWeek" : null,
+    "prescribedSets" : [ {
+      "kind" : "warmup",
+      "targetWeightKg" : 40.0,
+      "targetReps" : 8,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "warmup",
+      "targetWeightKg" : 60.0,
+      "targetReps" : 3,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 80.0,
+      "targetReps" : 8,
+      "targetRIR" : 2,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 80.0,
+      "targetReps" : 8,
+      "targetRIR" : 2,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 80.0,
+      "targetReps" : 8,
+      "targetRIR" : 2,
+      "restSec" : null
+    } ],
+    "rationale" : "Kezdő súly (anchor)",
+    "progression" : null,
+    "changeScope" : null,
+    "replacesName" : null,
+    "replacedByName" : null,
+    "planSlot" : true,
+    "trainingStyle" : null,
+    "effectiveTrainingStyle" : null,
+    "restSec" : null,
+    "overrides" : [ ]
+  }, {
+    "id" : "<uuid>",
+    "name" : "Hiperextenzió",
+    "muscle" : "back",
+    "warmupSets" : 2,
+    "workingSets" : 3,
+    "repMin" : 10,
+    "repMax" : 15,
+    "targetRIR" : 2,
+    "anchorWeightKg" : null,
+    "type" : "isolation",
+    "warning" : null,
+    "videoUrl" : null,
+    "imageStartUrl" : null,
+    "imageEndUrl" : null,
+    "note" : null,
+    "lastWeek" : {
+      "weightKg" : 0.00,
+      "reps" : 15,
+      "rir" : 2
+    },
+    "prescribedSets" : [ {
+      "kind" : "warmup",
+      "targetWeightKg" : null,
+      "targetReps" : 8,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "warmup",
+      "targetWeightKg" : null,
+      "targetReps" : 3,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : null,
+      "targetReps" : 15,
+      "targetRIR" : 2,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : null,
+      "targetReps" : 15,
+      "targetRIR" : 2,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : null,
+      "targetReps" : 15,
+      "targetRIR" : 2,
+      "restSec" : null
+    } ],
+    "rationale" : "Testsúlyos — ismétlésre progresszálunk",
+    "progression" : {
+      "lever" : "rep",
+      "deltaKg" : null,
+      "deltaReps" : 1,
+      "targetWeightKg" : null,
+      "targetReps" : 15,
+      "rationale" : "Testsúlyos — ismétlésre progresszálunk"
+    },
+    "changeScope" : null,
+    "replacesName" : null,
+    "replacedByName" : null,
+    "planSlot" : true,
+    "trainingStyle" : null,
+    "effectiveTrainingStyle" : null,
+    "restSec" : null,
+    "overrides" : [ ]
+  }, {
+    "id" : "<uuid>",
+    "name" : "Evezés",
+    "muscle" : "back",
+    "warmupSets" : 2,
+    "workingSets" : 3,
+    "repMin" : 8,
+    "repMax" : 10,
+    "targetRIR" : 1,
+    "anchorWeightKg" : null,
+    "type" : "compound",
+    "warning" : null,
+    "videoUrl" : null,
+    "imageStartUrl" : null,
+    "imageEndUrl" : null,
+    "note" : null,
+    "lastWeek" : {
+      "weightKg" : 70.00,
+      "reps" : 7,
+      "rir" : 0
+    },
+    "prescribedSets" : [ {
+      "kind" : "warmup",
+      "targetWeightKg" : 35.0,
+      "targetReps" : 8,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "warmup",
+      "targetWeightKg" : 50.0,
+      "targetReps" : 3,
+      "targetRIR" : null,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 67.50,
+      "targetReps" : 8,
+      "targetRIR" : 1,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 67.50,
+      "targetReps" : 8,
+      "targetRIR" : 1,
+      "restSec" : null
+    }, {
+      "kind" : "working",
+      "targetWeightKg" : 67.50,
+      "targetReps" : 8,
+      "targetRIR" : 1,
+      "restSec" : null
+    } ],
+    "rationale" : "Múlt hét 7 rep a cél alatt, grind → −2,5 kg",
+    "progression" : {
+      "lever" : "weight",
+      "deltaKg" : -2.50,
+      "deltaReps" : null,
+      "targetWeightKg" : 67.50,
+      "targetReps" : 8,
+      "rationale" : "Múlt hét 7 rep a cél alatt, grind → −2,5 kg"
+    },
+    "changeScope" : null,
+    "replacesName" : null,
+    "replacedByName" : null,
+    "planSlot" : true,
+    "trainingStyle" : null,
+    "effectiveTrainingStyle" : null,
+    "restSec" : null,
+    "overrides" : [ ]
+  } ],
+  "openWorkout" : null,
+  "completedWorkout" : null,
+  "weekDoneDates" : [ ],
+  "overloadSummary" : {
+    "weightUp" : 1,
+    "weightDown" : 1,
+    "repUp" : 2,
+    "hold" : 0
+  },
+  "comeback" : null
+}
