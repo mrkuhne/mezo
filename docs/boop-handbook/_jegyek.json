@@ -891,5 +891,15 @@
     ],
     "mit_kapsz": "Ha a könnyített héten állítasz át egy izmot másik szintre, a rá következő héten a blokk magától az új sávhoz igazodik, ahogy bármelyik másik héten.",
     "munkamenet": "volume-s3"
+  },
+  "mezo-r36n9.89": {
+    "cim": "Edzés: Boop is számolja bele a technikás sorozatokat a megmozgatott összsúlyba",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Amikor Boop a heti edzésmunkádról beszél, a csökkentett súlyú és a mini-sorozatok is beleszámítanak az összsúlyba, ugyanúgy, ahogy az érmeknél és a rekordoknál.",
+    "munkamenet": "engine-t2-technique"
   }
 }
