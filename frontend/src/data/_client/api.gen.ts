@@ -334,6 +334,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/mesocycles/{id}/exercises/{exerciseId}/technique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set or clear the technique/challenge of one exercise in a running mesocycle */
+        put: operations["updateExerciseTechnique"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/mesocycles/{id}/days/{dayId}/exercises": {
         parameters: {
             query?: never;
@@ -6337,6 +6354,8 @@ export interface components {
             adaptive?: components["schemas"]["CheckInAdaptiveItem"];
         };
         MesocycleResponse: {
+            /** @description Block flag; techniques and the challenge are prescribed only when true. */
+            techniquesEnabled?: boolean;
             /** Format: uuid */
             id: string;
             /**
@@ -6388,6 +6407,8 @@ export interface components {
             trainingStyle?: components["schemas"]["TrainingStyle"] | null;
         };
         MesoTemplateResponse: {
+            /** @description Block flag; techniques and the challenge are prescribed only when true. */
+            techniquesEnabled?: boolean;
             /** Format: uuid */
             id: string;
             title: string;
@@ -6514,6 +6535,12 @@ export interface components {
             muscleAccent?: boolean;
         };
         GymExercise: {
+            /** @description Intensity technique on the last working set; null = none. */
+            technique?: components["schemas"]["Technique"] | null;
+            /** @description Who set the technique; null = none. */
+            techniqueSource?: components["schemas"]["TechniqueSource"] | null;
+            /** @description Proactive "depth" challenge flag (partials challenge on the last working set). */
+            challenge?: boolean;
             /** Format: uuid */
             id: string;
             name: string;
@@ -6651,6 +6678,8 @@ export interface components {
             llmUsed: boolean;
         };
         MesoTemplateUpsertRequest: {
+            /** @description Block flag; techniques and the challenge are prescribed only when true. */
+            techniquesEnabled?: boolean;
             title: string;
             shortTitle?: string | null;
             goal?: string | null;
@@ -6807,6 +6836,12 @@ export interface components {
             exercises?: components["schemas"]["GymExerciseInput"][];
         };
         GymExerciseInput: {
+            /** @description Intensity technique on the last working set; null = none. */
+            technique?: components["schemas"]["Technique"] | null;
+            /** @description Who set the technique; null = none. */
+            techniqueSource?: components["schemas"]["TechniqueSource"] | null;
+            /** @description Proactive "depth" challenge flag (partials challenge on the last working set). */
+            challenge?: boolean;
             name: string;
             muscle?: string;
             warmupSets: number;
@@ -6919,6 +6954,8 @@ export interface components {
             date: string;
         };
         ExerciseRecordResponse: {
+            /** @description Best partials-leg reps per parent weight (derived). */
+            partialsBest?: components["schemas"]["PartialsBestEntry"][];
             /**
              * Format: uuid
              * @description Identity when the exercise is catalog-linked; absent for name-grouped legacy rows
@@ -7004,6 +7041,14 @@ export interface components {
             mode: "RAMP" | "RELEASED";
         };
         TodayExercise: {
+            /** @description Intensity technique on the last working set; null = none. */
+            technique?: components["schemas"]["Technique"] | null;
+            /** @description Who set the technique; null = none. */
+            techniqueSource?: components["schemas"]["TechniqueSource"] | null;
+            /** @description Proactive "depth" challenge flag (partials challenge on the last working set). */
+            challenge?: boolean;
+            /** @description Best partials reps at the challenge set's prescribed weight; null when none. */
+            challengeBest?: number | null;
             /** Format: uuid */
             id: string;
             name: string;
@@ -7053,6 +7098,8 @@ export interface components {
             overrides?: components["schemas"]["StyleOverride"][];
         };
         PrescribedSet: {
+            technique?: components["schemas"]["Technique"] | null;
+            legs?: components["schemas"]["PrescribedLeg"][];
             /** @enum {string} */
             kind: "warmup" | "working";
             targetWeightKg?: number | null;
@@ -7060,6 +7107,53 @@ export interface components {
             targetRIR?: number | null;
             /** @description Rest after this set in seconds; set only on styled blocks. */
             restSec?: number | null;
+        };
+        /**
+         * @description Intensity technique applied to the last working set of an exercise.
+         * @enum {string}
+         */
+        Technique: "none" | "rest_drop" | "drop" | "myo" | "partials";
+        /**
+         * @description Who set the technique (planner/ai reserved for later slices).
+         * @enum {string}
+         */
+        TechniqueSource: "owner" | "planner" | "ai";
+        /**
+         * @description Kind of a technique leg hanging off a parent set.
+         * @enum {string}
+         */
+        SetLegKind: "drop" | "mini" | "partials";
+        PrescribedLeg: {
+            kind: components["schemas"]["SetLegKind"];
+            weightKg?: number | null;
+            reps?: number | null;
+            /** @description Myo mini-sets stop when a set falls below this. */
+            minReps?: number | null;
+            toFailure: boolean;
+            restBeforeSec: number;
+            /** @description Drop leg load as percent of the parent weight actually lifted. */
+            dropPercent?: number | null;
+        };
+        SetLeg: {
+            legIndex: number;
+            kind: components["schemas"]["SetLegKind"];
+            weightKg?: number | null;
+            reps?: number | null;
+            restSec?: number | null;
+        };
+        SetLegInput: {
+            kind: components["schemas"]["SetLegKind"];
+            weightKg?: number | null;
+            reps?: number | null;
+            restSec?: number | null;
+        };
+        PartialsBestEntry: {
+            weightKg: number;
+            reps: number;
+        };
+        ExerciseTechniqueUpdateRequest: {
+            technique: components["schemas"]["Technique"];
+            challenge: boolean;
         };
         /**
          * @description Block-level training style (volume/intensity profile).
@@ -7242,6 +7336,8 @@ export interface components {
             streakWeeks: number;
         };
         ExerciseSetResponse: {
+            technique?: components["schemas"]["Technique"] | null;
+            legs?: components["schemas"]["SetLeg"][];
             /** Format: uuid */
             id: string;
             /** Format: uuid */
@@ -7273,6 +7369,8 @@ export interface components {
             templateSessionId: string;
         };
         SetLogRequest: {
+            technique?: components["schemas"]["Technique"] | null;
+            legs?: components["schemas"]["SetLegInput"][];
             /** Format: uuid */
             exerciseId: string;
             setIndex: number;
@@ -7293,6 +7391,8 @@ export interface components {
         };
         /** @description Full replacement of one logged set's performance fields (mezo-l3on). Deliberately NOT a partial patch — an absent optional field CLEARS it, which avoids the JSON null vs. missing tri-state. setIndex, kind, exerciseId and the target* prescription snapshot are immutable. */
         SetUpdateRequest: {
+            /** @description Absent = legs untouched; [] = clear; list = replace. */
+            legs?: components["schemas"]["SetLegInput"][];
             weightKg: number;
             reps: number;
             /** @description Ignored (forced null) on a warmup set — effort tracking is working-set-only */
@@ -14995,6 +15095,69 @@ export interface operations {
             };
             /** @description Mesocycle not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateExerciseTechnique: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                exerciseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExerciseTechniqueUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated exercise */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GymExercise"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Techniques disabled on this run */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

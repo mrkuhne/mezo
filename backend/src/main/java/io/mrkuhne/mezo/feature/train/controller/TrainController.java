@@ -13,6 +13,8 @@ import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseNoteRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
+import io.mrkuhne.mezo.api.dto.ExerciseTechniqueUpdateRequest;
+import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
@@ -74,12 +76,15 @@ import io.mrkuhne.mezo.feature.train.service.VolumeArcService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutExerciseChangeService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Implements the generated contract interface — mappings come from {@link TrainApi}. */
@@ -240,6 +245,13 @@ public class TrainController implements TrainApi {
     @Override
     public MesoDay replaceDayExercises(UUID id, UUID dayId, List<GymExerciseInput> gymExerciseInput) {
         return service.replaceDayExercises(currentUserId.get(), id, dayId, gymExerciseInput);
+    }
+
+    @Override
+    public GymExercise updateExerciseTechnique(UUID id, UUID exerciseId, ExerciseTechniqueUpdateRequest request) {
+        // Stub until T2 Task 5 wires the service.
+        throw new SystemRuntimeErrorException(
+            SystemMessage.error("NOT_IMPLEMENTED").build(), HttpStatus.NOT_IMPLEMENTED);
     }
 
     @Override
