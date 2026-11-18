@@ -58,9 +58,7 @@ public final class ProgressionDecider {
         BigDecimal w = ref.weightKg();
 
         if (deloadWeek) {
-            BigDecimal base = round(w.multiply(new BigDecimal("0.9")), policy.plateStep());
-            return new Decision(Lever.DELOAD, base, repMin, base.subtract(w), null,
-                "Deload hét — visszaveszünk");
+            return deload(w, w, repMin, policy.plateStep());
         }
         if (rp >= repMax) {
             return up(ref, rp, rir, slack, repMin, repMax, targetRir, policy, used, gaps);
@@ -272,6 +270,19 @@ public final class ProgressionDecider {
         }
         int reps = Math.max(repMin, Math.min(ref.reps(), repMax));
         return new Decision(Lever.HOLD, ref.weightKg(), reps, null, null, LIGHTENED_RATIONALE);
+    }
+
+    /** HU rationale of a deload-week regression. */
+    public static final String DELOAD_RATIONALE = "Deload hét — visszaveszünk";
+
+    /**
+     * The deload-week regression: ×0.9 of {@code base}, plate-snapped, reps at the range floor, the delta
+     * measured against the reference weight {@code refWeight}. Shared by {@link #decide} (base = the
+     * reference) and the converted reference (base = the converted load), so the two cannot drift.
+     */
+    public static Decision deload(BigDecimal base, BigDecimal refWeight, int repMin, BigDecimal plateStep) {
+        BigDecimal light = round(base.multiply(new BigDecimal("0.9")), plateStep);
+        return new Decision(Lever.DELOAD, light, repMin, light.subtract(refWeight), null, DELOAD_RATIONALE);
     }
 
     /** HU rationale of a readiness-held exercise. */

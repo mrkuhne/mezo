@@ -299,9 +299,6 @@ public class WorkoutService {
             StyleContext style = styleContext(e, runStyle, activeMeso, stability);
             t.setEffectiveTrainingStyle(
                 exerciseStyler.effective(e.getTrainingStyle(), e.getType(), e.getCatalogId(), runStyle, stability));
-            if (style.styled()) {
-                t.setTargetRIR(style.effectiveReserve());
-            }
             t.setChangeScope(entry.changeScope() == null ? null
                 : TodayExercise.ChangeScopeEnum.fromValue(entry.changeScope()));
             t.setReplacesName(entry.replacesName());
@@ -350,6 +347,10 @@ public class WorkoutService {
                     p = lightCareSet(p, careRegion);
                 }
                 t.setPrescribedSets(p.sets());
+                // The ramped reserve is an engine overlay: switch off ⇒ the row's stamped targetRir stands.
+                if (style.styled()) {
+                    t.setTargetRIR(style.effectiveReserve());
+                }
                 t.setRationale(p.rationale());
                 t.setProgression(p.progression());
                 if (p.progression() != null) {

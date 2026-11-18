@@ -116,9 +116,7 @@ public class SetRecommendationService {
             if (converts(reference, ref.getReps(), ex.getRepMin(), ex.getRepMax())) {
                 d = ProgressionDecider.convert(refSet, ex.getRepMin(), ex.getRepMax(), targetRir, policy, used, gaps);
                 if (deloadWeek) { // convert ignores the deload: regress the converted base, as decide would
-                    BigDecimal light = roundClamp(d.base().multiply(new BigDecimal("0.9")));
-                    d = new Decision(ProgressionDecider.Lever.DELOAD, light, ex.getRepMin(),
-                        light.subtract(ref.getWeightKg()), null, "Deload hét — visszaveszünk");
+                    d = ProgressionDecider.deload(d.base(), ref.getWeightKg(), ex.getRepMin(), props.plateStep());
                 }
             } else {
                 d = ProgressionDecider.decide(refSet, ex.getRepMin(), ex.getRepMax(), targetRir, policy, used, gaps,
