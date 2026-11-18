@@ -269,6 +269,61 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/mesocycles/{id}/exercises/{exerciseId}/technique:
+    put:
+      tags: [Train]
+      operationId: updateExerciseTechnique
+      summary: Set or clear the technique/challenge of one exercise in a running mesocycle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseTechniqueUpdateRequest'
+      responses:
+        '200':
+          description: Updated exercise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymExercise'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Techniques disabled on this run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/mesocycles/{id}/days/{dayId}/exercises:
     put:
       tags: [Train]
@@ -1908,6 +1963,9 @@ components:
         - phaseCurve
         - hasReport
       properties:
+        techniquesEnabled:
+          type: boolean
+          description: Block flag; techniques and the challenge are prescribed only when true.
         id:
           type: string
           format: uuid
@@ -1999,6 +2057,9 @@ components:
         - days
         - runCount
       properties:
+        techniquesEnabled:
+          type: boolean
+          description: Block flag; techniques and the challenge are prescribed only when true.
         id:
           type: string
           format: uuid
@@ -2312,6 +2373,19 @@ components:
         - targetRIR
         - type
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+          description: Intensity technique on the last working set; null = none.
+        techniqueSource:
+          allOf:
+            - $ref: '#/components/schemas/TechniqueSource'
+          nullable: true
+          description: Who set the technique; null = none.
+        challenge:
+          type: boolean
+          description: Proactive "depth" challenge flag (partials challenge on the last working set).
         id:
           type: string
           format: uuid
@@ -2612,6 +2686,9 @@ components:
         - phaseCurve
         - days
       properties:
+        techniquesEnabled:
+          type: boolean
+          description: Block flag; techniques and the challenge are prescribed only when true.
         title:
           type: string
           minLength: 1
@@ -2998,6 +3075,19 @@ components:
         - targetRIR
         - type
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+          description: Intensity technique on the last working set; null = none.
+        techniqueSource:
+          allOf:
+            - $ref: '#/components/schemas/TechniqueSource'
+          nullable: true
+          description: Who set the technique; null = none.
+        challenge:
+          type: boolean
+          description: Proactive "depth" challenge flag (partials challenge on the last working set).
         name:
           type: string
           minLength: 1
@@ -3288,6 +3378,11 @@ components:
         - repRecords
         - recentTopSets
       properties:
+        partialsBest:
+          type: array
+          description: Best partials-leg reps per parent weight (derived).
+          items:
+            $ref: '#/components/schemas/PartialsBestEntry'
         catalogId:
           type: string
           format: uuid
@@ -3474,6 +3569,23 @@ components:
         - targetRIR
         - type
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+          description: Intensity technique on the last working set; null = none.
+        techniqueSource:
+          allOf:
+            - $ref: '#/components/schemas/TechniqueSource'
+          nullable: true
+          description: Who set the technique; null = none.
+        challenge:
+          type: boolean
+          description: Proactive "depth" challenge flag (partials challenge on the last working set).
+        challengeBest:
+          type: integer
+          nullable: true
+          description: Best partials reps at the challenge set's prescribed weight; null when none.
         id:
           type: string
           format: uuid
@@ -3581,6 +3693,14 @@ components:
         - kind
         - targetReps
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        legs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrescribedLeg'
         kind:
           type: string
           enum: [warmup, working]
@@ -3596,6 +3716,96 @@ components:
           type: integer
           nullable: true
           description: Rest after this set in seconds; set only on styled blocks.
+    Technique:
+      type: string
+      enum: [none, rest_drop, drop, myo, partials]
+      description: Intensity technique applied to the last working set of an exercise.
+    TechniqueSource:
+      type: string
+      enum: [owner, planner, ai]
+      description: Who set the technique (planner/ai reserved for later slices).
+    SetLegKind:
+      type: string
+      enum: [drop, mini, partials]
+      description: Kind of a technique leg hanging off a parent set.
+    PrescribedLeg:
+      type: object
+      required: [kind, toFailure, restBeforeSec]
+      properties:
+        kind:
+          $ref: '#/components/schemas/SetLegKind'
+        weightKg:
+          type: number
+          nullable: true
+        reps:
+          type: integer
+          nullable: true
+        minReps:
+          type: integer
+          nullable: true
+          description: Myo mini-sets stop when a set falls below this.
+        toFailure:
+          type: boolean
+        restBeforeSec:
+          type: integer
+        dropPercent:
+          type: integer
+          nullable: true
+          description: Drop leg load as percent of the parent weight actually lifted.
+    SetLeg:
+      type: object
+      required: [legIndex, kind]
+      properties:
+        legIndex:
+          type: integer
+        kind:
+          $ref: '#/components/schemas/SetLegKind'
+        weightKg:
+          type: number
+          nullable: true
+        reps:
+          type: integer
+          nullable: true
+        restSec:
+          type: integer
+          nullable: true
+    SetLegInput:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          $ref: '#/components/schemas/SetLegKind'
+        weightKg:
+          type: number
+          minimum: 0
+          maximum: 999
+          nullable: true
+        reps:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        restSec:
+          type: integer
+          minimum: 0
+          maximum: 600
+          nullable: true
+    PartialsBestEntry:
+      type: object
+      required: [weightKg, reps]
+      properties:
+        weightKg:
+          type: number
+        reps:
+          type: integer
+    ExerciseTechniqueUpdateRequest:
+      type: object
+      required: [technique, challenge]
+      properties:
+        technique:
+          $ref: '#/components/schemas/Technique'
+        challenge:
+          type: boolean
     TrainingStyle:
       type: string
       enum: [balanced, volume, heavy, allout]
@@ -3852,6 +4062,14 @@ components:
         - exerciseId
         - setIndex
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        legs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SetLeg'
         id:
           type: string
           format: uuid
@@ -3903,6 +4121,15 @@ components:
         - weightKg
         - reps
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        legs:
+          type: array
+          maxItems: 6
+          items:
+            $ref: '#/components/schemas/SetLegInput'
         exerciseId:
           type: string
           format: uuid
@@ -3966,6 +4193,13 @@ components:
         - weightKg
         - reps
       properties:
+        legs:
+          type: array
+          maxItems: 6
+          nullable: true
+          description: Absent = legs untouched; [] = clear; list = replace.
+          items:
+            $ref: '#/components/schemas/SetLegInput'
         weightKg:
           type: number
           minimum: 0

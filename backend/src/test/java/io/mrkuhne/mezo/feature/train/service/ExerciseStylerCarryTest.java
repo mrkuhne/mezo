@@ -14,7 +14,7 @@ class ExerciseStylerCarryTest {
 
     private static GymExerciseJson ex(UUID catalogId, String name, String style, Integer restSec, List<String> overrides) {
         return new GymExerciseJson(UUID.randomUUID(), name, "chest-mid", 1, 3, 8, 12, 2, null, "compound", null,
-            catalogId, true, style, restSec, overrides);
+            catalogId, true, style, restSec, overrides, null, null, null);
     }
 
     @Test

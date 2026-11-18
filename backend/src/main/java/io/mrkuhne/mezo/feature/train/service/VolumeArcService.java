@@ -194,7 +194,7 @@ public class VolumeArcService {
                 continue;
             }
             amounts.add(new VolumePath.Exercise(r.exercise().getId().toString(), r.group(), r.dayIndex(),
-                r.exercise().getWorkingSets()));
+                r.exercise().getWorkingSets(), r.capExtra()));
             groups.computeIfAbsent(r.group(), g -> {
                 PriorityTier tier = PriorityTier.of(run.getMusclePriorities(), g);
                 return new VolumePath.Group(tier,

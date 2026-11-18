@@ -3,6 +3,10 @@
   "title" : "gym",
   "durationEst" : null,
   "exercises" : [ {
+    "technique" : null,
+    "techniqueSource" : null,
+    "challenge" : false,
+    "challengeBest" : null,
     "id" : "<uuid>",
     "name" : "Fekvenyomás",
     "muscle" : "chest",
@@ -24,30 +28,40 @@
       "rir" : 1
     },
     "prescribedSets" : [ {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 32.5,
       "targetReps" : 8,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 47.5,
       "targetReps" : 3,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 62.50,
       "targetReps" : 6,
       "targetRIR" : 1,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 62.50,
       "targetReps" : 6,
       "targetRIR" : 1,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 62.50,
       "targetReps" : 6,
@@ -72,6 +86,10 @@
     "restSec" : null,
     "overrides" : [ ]
   }, {
+    "technique" : null,
+    "techniqueSource" : null,
+    "challenge" : false,
+    "challengeBest" : null,
     "id" : "<uuid>",
     "name" : "Oldalemelés",
     "muscle" : "shoulders",
@@ -93,30 +111,40 @@
       "rir" : 2
     },
     "prescribedSets" : [ {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 5.0,
       "targetReps" : 8,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 7.5,
       "targetReps" : 3,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 10.00,
       "targetReps" : 13,
       "targetRIR" : 2,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 10.00,
       "targetReps" : 13,
       "targetRIR" : 2,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 10.00,
       "targetReps" : 13,
@@ -141,6 +169,10 @@
     "restSec" : null,
     "overrides" : [ ]
   }, {
+    "technique" : null,
+    "techniqueSource" : null,
+    "challenge" : false,
+    "challengeBest" : null,
     "id" : "<uuid>",
     "name" : "Guggolás",
     "muscle" : "quad",
@@ -158,30 +190,40 @@
     "note" : null,
     "lastWeek" : null,
     "prescribedSets" : [ {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 40.0,
       "targetReps" : 8,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 60.0,
       "targetReps" : 3,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 80.0,
       "targetReps" : 8,
       "targetRIR" : 2,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 80.0,
       "targetReps" : 8,
       "targetRIR" : 2,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 80.0,
       "targetReps" : 8,
@@ -199,6 +241,10 @@
     "restSec" : null,
     "overrides" : [ ]
   }, {
+    "technique" : null,
+    "techniqueSource" : null,
+    "challenge" : false,
+    "challengeBest" : null,
     "id" : "<uuid>",
     "name" : "Hiperextenzió",
     "muscle" : "back",
@@ -220,30 +266,40 @@
       "rir" : 2
     },
     "prescribedSets" : [ {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : null,
       "targetReps" : 8,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : null,
       "targetReps" : 3,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : null,
       "targetReps" : 15,
       "targetRIR" : 2,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : null,
       "targetReps" : 15,
       "targetRIR" : 2,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : null,
       "targetReps" : 15,
@@ -268,6 +324,10 @@
     "restSec" : null,
     "overrides" : [ ]
   }, {
+    "technique" : null,
+    "techniqueSource" : null,
+    "challenge" : false,
+    "challengeBest" : null,
     "id" : "<uuid>",
     "name" : "Evezés",
     "muscle" : "back",
@@ -289,30 +349,40 @@
       "rir" : 0
     },
     "prescribedSets" : [ {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 35.0,
       "targetReps" : 8,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 50.0,
       "targetReps" : 3,
       "targetRIR" : null,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 67.50,
       "targetReps" : 8,
       "targetRIR" : 1,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 67.50,
       "targetReps" : 8,
       "targetRIR" : 1,
       "restSec" : null
     }, {
+      "technique" : null,
+      "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 67.50,
       "targetReps" : 8,

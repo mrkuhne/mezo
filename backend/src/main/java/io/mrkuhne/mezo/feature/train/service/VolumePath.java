@@ -23,8 +23,15 @@ public final class VolumePath {
 
     private static final String DELOAD = "Deload";
 
-    /** One counting exercise; {@code key} is a row id's string or {@code dayIndex:exerciseIndex}. */
-    public record Exercise(String key, String group, int dayIndex, int sets) {}
+    /**
+     * One counting exercise; {@code key} is a row id's string or {@code dayIndex:exerciseIndex}; {@code capExtra}
+     * = the extra set-equivalents its technique set weighs against the caps ({@link TechniqueRules#capExtra}).
+     */
+    public record Exercise(String key, String group, int dayIndex, int sets, int capExtra) {
+        public Exercise(String key, String group, int dayIndex, int sets) {
+            this(key, group, dayIndex, sets, 0);
+        }
+    }
 
     public record Group(PriorityTier tier, Band band) {}
 
@@ -80,7 +87,8 @@ public final class VolumePath {
             rows.forEach(e -> keyById.put(id(e.key()), e.key()));
             for (int i = 0; i < delta; i++) {
                 List<SetSlots.Slot> slots = rows.stream()
-                    .map(e -> new SetSlots.Slot(id(e.key()), e.dayIndex(), current.get(e.key()))).toList();
+                    .map(e -> SetSlots.Slot.of(id(e.key()), e.dayIndex(), current.get(e.key()), e.capExtra()))
+                    .toList();
                 Optional<UUID> pick = SetSlots.pickUp(slots, in.exerciseCap(), in.sessionCap());
                 if (pick.isEmpty()) {
                     break;

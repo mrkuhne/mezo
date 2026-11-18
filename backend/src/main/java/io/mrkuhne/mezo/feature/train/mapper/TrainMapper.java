@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.mapper;
 
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
+import io.mrkuhne.mezo.api.dto.SetLeg;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
@@ -20,6 +21,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetLegEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
@@ -64,6 +66,8 @@ public interface TrainMapper {
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(GymExercise.TypeEnum.fromValue(entity.getType()))")
     @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
+    @Mapping(target = "technique", source = "technique", qualifiedByName = "techniqueDto")
+    @Mapping(target = "techniqueSource", source = "techniqueSource", qualifiedByName = "techniqueSourceDto")
     @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesDto")
     @Mapping(target = "effectiveTrainingStyle", ignore = true) // needs the block style + catalog: service-side
     GymExercise toGymExercise(ExerciseEntity entity);
@@ -99,7 +103,12 @@ public interface TrainMapper {
     @Mapping(target = "index", source = "setIndex")
     @Mapping(target = "kind", expression = "java(ExerciseSetResponse.KindEnum.fromValue(entity.getKind()))")
     @Mapping(target = "medals", ignore = true)
+    @Mapping(target = "technique", source = "technique", qualifiedByName = "techniqueDto")
+    @Mapping(target = "legs", ignore = true) // WorkoutService wires them from one batched read
     ExerciseSetResponse toSetResponse(ExerciseSetEntity entity);
+
+    @Mapping(target = "kind", expression = "java(io.mrkuhne.mezo.api.dto.SetLegKind.fromValue(entity.getKind()))")
+    SetLeg toSetLeg(ExerciseSetLegEntity entity);
 
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(TodayExercise.TypeEnum.fromValue(entity.getType()))")
@@ -115,6 +124,8 @@ public interface TrainMapper {
     // Training style (mezo-r36n9.79): the row's own fields as wire values; the effective style and the
     // ramped targetRIR need the run + catalog, so WorkoutService.getToday sets them.
     @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
+    @Mapping(target = "technique", source = "technique", qualifiedByName = "techniqueDto")
+    @Mapping(target = "techniqueSource", source = "techniqueSource", qualifiedByName = "techniqueSourceDto")
     @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesDto")
     @Mapping(target = "effectiveTrainingStyle", ignore = true)
     TodayExercise toTodayExercise(ExerciseEntity entity);
@@ -158,6 +169,8 @@ public interface TrainMapper {
     @Mapping(target = "imageStartUrl", ignore = true)
     @Mapping(target = "imageEndUrl", ignore = true)
     @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
+    @Mapping(target = "technique", source = "technique", qualifiedByName = "techniqueDto")
+    @Mapping(target = "techniqueSource", source = "techniqueSource", qualifiedByName = "techniqueSourceDto")
     @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesDto")
     @Mapping(target = "effectiveTrainingStyle", ignore = true) // needs the block style + catalog: service-side
     GymExercise toGymExercise(GymExerciseJson json);
@@ -174,6 +187,8 @@ public interface TrainMapper {
     @Mapping(target = "targetRir", source = "targetRIR")
     @Mapping(target = "type", expression = "java(input.getType().getValue())")
     @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleWire")
+    @Mapping(target = "technique", source = "technique", qualifiedByName = "techniqueWire")
+    @Mapping(target = "techniqueSource", source = "techniqueSource", qualifiedByName = "techniqueSourceWire")
     @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesWire")
     GymExerciseJson toExerciseJson(GymExerciseInput input);
 
@@ -196,6 +211,8 @@ public interface TrainMapper {
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(GymExerciseInput.TypeEnum.fromValue(json.type()))")
     @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
+    @Mapping(target = "technique", source = "technique", qualifiedByName = "techniqueDto")
+    @Mapping(target = "techniqueSource", source = "techniqueSource", qualifiedByName = "techniqueSourceDto")
     @Mapping(target = "overrides", source = "overrides", qualifiedByName = "overridesDto")
     GymExerciseInput toExerciseInput(GymExerciseJson json);
 
@@ -227,6 +244,28 @@ public interface TrainMapper {
     @org.mapstruct.Named("styleDto")
     default io.mrkuhne.mezo.api.dto.TrainingStyle styleDto(String wire) {
         return wire == null ? null : io.mrkuhne.mezo.api.dto.TrainingStyle.fromValue(wire);
+    }
+
+    // ── techniques (mezo-r36n9.80): same wire-value rule as the style (rest_drop is not REST_DROP).
+
+    @org.mapstruct.Named("techniqueWire")
+    default String techniqueWire(io.mrkuhne.mezo.api.dto.Technique t) {
+        return t == null ? null : t.getValue();
+    }
+
+    @org.mapstruct.Named("techniqueDto")
+    default io.mrkuhne.mezo.api.dto.Technique techniqueDto(String wire) {
+        return wire == null ? null : io.mrkuhne.mezo.api.dto.Technique.fromValue(wire);
+    }
+
+    @org.mapstruct.Named("techniqueSourceWire")
+    default String techniqueSourceWire(io.mrkuhne.mezo.api.dto.TechniqueSource t) {
+        return t == null ? null : t.getValue();
+    }
+
+    @org.mapstruct.Named("techniqueSourceDto")
+    default io.mrkuhne.mezo.api.dto.TechniqueSource techniqueSourceDto(String wire) {
+        return wire == null ? null : io.mrkuhne.mezo.api.dto.TechniqueSource.fromValue(wire);
     }
 
     /** Wire list for storage; an empty list is stored as null ("no override"), so unstyled documents stay byte-identical. */

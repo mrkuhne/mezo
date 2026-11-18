@@ -30,7 +30,10 @@ public record GymExerciseJson(
     Boolean countsTowardVolume,
     String trainingStyle,        // wire value (balanced|volume|heavy|allout) or null (mezo-r36n9.79)
     Integer restSec,             // stamped rest seconds, null when unstyled
-    List<String> overrides       // repRange|workingSets|targetRir|restSec the stamper must keep
+    List<String> overrides,      // repRange|workingSets|targetRir|restSec the stamper must keep
+    String technique,            // wire value (none|rest_drop|drop|myo|partials) or null (mezo-r36n9.80)
+    String techniqueSource,      // owner|planner|ai or null
+    Boolean challenge            // partials-challenge flag; null in old documents
 ) {
     /**
      * Documents written before mezo-gbo7 carry no {@code countsTowardVolume}; Jackson hands us null
@@ -44,5 +47,12 @@ public record GymExerciseJson(
      */
     public GymExerciseJson {
         countsTowardVolume = countsTowardVolume != null ? countsTowardVolume : !"plyo".equals(type);
+    }
+
+    /** Same exercise with the three technique fields replaced (mezo-r36n9.80). */
+    public GymExerciseJson withTechnique(String technique, String techniqueSource, Boolean challenge) {
+        return new GymExerciseJson(id, name, muscle, warmupSets, workingSets, repMin, repMax, targetRir,
+            anchorWeightKg, type, warning, catalogId, countsTowardVolume, trainingStyle, restSec, overrides,
+            technique, techniqueSource, challenge);
     }
 }

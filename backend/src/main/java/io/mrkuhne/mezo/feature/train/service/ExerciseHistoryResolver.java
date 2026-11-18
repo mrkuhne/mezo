@@ -66,6 +66,7 @@ public class ExerciseHistoryResolver {
         if (byInstance.isEmpty()) {
             return new Reference(List.of(), ex.getRepMin(), ex.getRepMax(), false);
         }
+        byInstance.replaceAll((id, sets) -> withoutTechniqueSets(sets));
         List<ExerciseSetEntity> newest = null;
         int[] newestRange = null;
         for (Map.Entry<UUID, List<ExerciseSetEntity>> e : byInstance.entrySet()) {
@@ -82,6 +83,16 @@ public class ExerciseHistoryResolver {
         }
         boolean same = newestRange[0] == ex.getRepMin() && newestRange[1] == ex.getRepMax();
         return new Reference(newest, newestRange[0], newestRange[1], same);
+    }
+
+    /**
+     * An instance's sets without its technique sets (mezo-r36n9.80, spec §6.4): a deliberate reserve-0 set is
+     * never the progression reference's top set or a grind — the effort-controlled straight sets are. An
+     * instance logged with technique sets only keeps them (still the honest last performance).
+     */
+    static List<ExerciseSetEntity> withoutTechniqueSets(List<ExerciseSetEntity> sets) {
+        List<ExerciseSetEntity> plain = sets.stream().filter(s -> s.getTechnique() == null).toList();
+        return plain.isEmpty() ? sets : new ArrayList<>(plain);
     }
 
     /** The trained range of an instance: its top working set's snapshot, else the range of the row it was logged on. */

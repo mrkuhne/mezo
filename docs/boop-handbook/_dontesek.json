@@ -702,5 +702,17 @@
     "miert": "Így a friss terv sosem lóg ki a sávjából, a blokk-építő nem talál rajta javítanivalót, és a szint így már az első héten számít: aki hangsúlyos, az többet kap, aki csak tartja, az a sávja tetején marad.",
     "levaltotta": "A régi kezdőérték (a minimum, a hangsúlyosnál két sorozattal fölötte) és a szintenkénti plafon.",
     "kovetkezmeny": "A régi plafon és a hét-1 kezdőérték megszűnt; a generált tervek első hete kicsit másként néz ki, mint eddig. A sportot a generátor még nem veszi figyelembe."
+  },
+  "d-2026-11-18-technika-kivalt-sorozatot": {
+    "cim": "A technika az utolsó sorozatot váltja ki, nem jön plusz sorozat",
+    "datum": "2026-11-18",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Ha egy gyakorlatra technikát teszel (például pihenős dropot vagy myo sorozatot), a meglévő utolsó sorozatod lesz a technikás; a sorozatok száma nem nő. A saját választásod minden terhelő héten él, a könnyített héten nem.",
+    "miert": "A technika időt spórol: egy technikás sorozat nagyjából annyit ér, mint több sima, fele idő alatt. Egy plusz sorozat hosszabb edzést és több fáradtságot hozna, haszon nélkül.",
+    "levaltotta": "Az a lehetőség, hogy a technikás sorozat a meglévők mellé, pluszban kerüljön.",
+    "kovetkezmeny": "A technikás sorozat a napi és a gyakorlatonkénti felső korlátnál kettőnek számít, a heti sorozatszámban egynek (mezo-r36n9.80)."
   }
 }

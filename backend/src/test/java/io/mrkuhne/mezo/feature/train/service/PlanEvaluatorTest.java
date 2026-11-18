@@ -127,6 +127,20 @@ class PlanEvaluatorTest {
         assertThat(PlanEvaluator.evaluate(input(days, Map.of())).days().get(0).overTarget()).isNull();
     }
 
+    /** A technique row weighs one extra set in the day's cap warnings and blocks a proposal at the cap (mezo-r36n9.80). */
+    @Test void techniqueRowsWeighExtraAgainstTheCaps() {
+        List<PlanDay> days = List.of(new PlanDay("Hét", List.of(
+            new PlanExercise("chest", 4, 0, true, 1), new PlanExercise("chest", 4, 0, true))));   // 8 plain, 9 weighted
+        Result r = PlanEvaluator.evaluate(input(days, Map.of()));
+        DayResult d = r.days().get(0);
+        assertThat(d.sessionCapWarnings()).singleElement()
+            .satisfies(w -> assertThat(w.sets()).isEqualTo(9));
+        assertThat(d.exerciseCapWarnings()).isEmpty();                     // 4 + 1 = 5 is AT the exercise cap
+        assertThat(muscle(r, "chest").weeklySets()).isEqualTo(8);          // the band counts plain sets
+        assertThat(PlanEvaluator.evaluate(input(List.of(new PlanDay("Hét", List.of(ex("chest", 4), ex("chest", 4)))),
+            Map.of())).days().get(0).sessionCapWarnings()).isEmpty();
+    }
+
     @Test void exemptExercisesCountForMinutesOnly() {
         List<PlanDay> days = List.of(new PlanDay("Hét", List.of(new PlanExercise("chest", 4, 0, false))));
         Result r = PlanEvaluator.evaluate(input(days, Map.of()));

@@ -834,7 +834,8 @@
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Egy sorozathoz technika tartozhat, a tervben előírható és a naplóban rögzíthető, és az app tudja, kinek és mikor ajánlja."
+    "mit_kapsz": "A tervben egy gyakorlatra rá lehet tenni technikát (pihenős drop, drop set, myo set, félismétlések) vagy a nap kihívását; a napi edzés előírja, a napló rögzíti, a rekordok és számolók pedig nem csalódnak tőle.",
+    "munkamenet": "engine-t2-techniques"
   },
   "mezo-r36n9.81": {
     "cim": "Edzés: a technikák automatikus tervezése és a kihívás",

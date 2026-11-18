@@ -258,6 +258,39 @@ class WorkoutExerciseChangeIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void swapToFreeMovementClearsTechnique() {
+        // mezo-r36n9.80: the slot carries a drop technique; a stable movement keeps it, a free one loses it.
+        rowA.setTechnique("drop");
+        rowA.setTechniqueSource("owner");
+        exerciseRepository.save(rowA);
+        rowB.setChallenge(true);
+        rowB.setTechniqueSource("owner");
+        exerciseRepository.save(rowB);
+
+        WorkoutExerciseChangeRequest toStable = req("Seated Cable Row", ScopeEnum.MESO, rowA.getId(), 3);
+        toStable.setCatalogId(catalogRepository.findBySlug("seated-cable-row-neutral").orElseThrow().getId());
+        changeService.change(user, instance.getId(), toStable);
+        ExerciseEntity kept = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId())).get(0);
+        assertThat(kept.getName()).isEqualTo("Seated Cable Row");
+        assertThat(kept.getTechnique()).isEqualTo("drop");
+        assertThat(kept.getTechniqueSource()).isEqualTo("owner");
+
+        WorkoutExerciseChangeRequest toFree = req("Barbell Row", ScopeEnum.MESO, rowB.getId(), 3);
+        toFree.setCatalogId(catalogRepository.findBySlug("barbell-row").orElseThrow().getId());
+        WorkoutExerciseChangeResponse res = changeService.change(user, instance.getId(), toFree);
+        ExerciseEntity cleared = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId())).stream()
+            .filter(r -> r.getName().equals("Barbell Row")).findFirst().orElseThrow();
+        assertThat(cleared.isChallenge()).isFalse();
+        assertThat(cleared.getTechnique()).isNull();
+        assertThat(cleared.getTechniqueSource()).isNull();
+        ExerciseEntity today = exerciseRepository.findById(res.getExerciseId()).orElseThrow();
+        assertThat(today.isChallenge()).isFalse();
+        assertThat(today.getTechniqueSource()).isNull();
+    }
+
+    @Test
     void addUnderStyledRunIsStamped() {
         MesocycleEntity meso = mesocycleRepository.findById(day.getMesocycleId()).orElseThrow();
         meso.setTrainingStyle("volume");

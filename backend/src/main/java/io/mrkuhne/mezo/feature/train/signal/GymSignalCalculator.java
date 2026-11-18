@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository.ExerciseIdent
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.service.MedalService;
 import io.mrkuhne.mezo.feature.train.service.OneRepMax;
+import io.mrkuhne.mezo.feature.train.service.SetTonnage;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ public class GymSignalCalculator {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseCatalogRepository exerciseCatalogRepository;
     private final MedalService medalService;
+    private final SetTonnage setTonnage;
 
     public GymSignal compute(UUID createdBy, UUID instanceId) {
         List<ExerciseSetEntity> sets = exerciseSetRepository
@@ -43,6 +45,8 @@ public class GymSignalCalculator {
         Map<UUID, ExerciseCatalogEntity> catalog = new HashMap<>();
         exerciseCatalogRepository.findAll().forEach(c -> catalog.put(c.getId(), c));
 
+        // Volume = parent + drop/mini legs, never partials (mezo-r36n9.80); one batched leg read.
+        Map<UUID, BigDecimal> legTonnage = setTonnage.legTonnage(sets);
         Map<String, Long> volumeByMuscle = new HashMap<>();
         BigDecimal bestE1rm = null;
         int workSetCount = 0;
@@ -52,15 +56,16 @@ public class GymSignalCalculator {
             if (s.isSkipped() || s.getReps() == null || !"working".equals(s.getKind())) {
                 continue; // skip markers + no-rep rows + warmups carry no progression work
             }
-            workSetCount++;
+            workSetCount++;   // a technique set is one work set, whatever its legs
+            BigDecimal tonnage = SetTonnage.of(s, legTonnage);
+            if (s.getWeightKg() != null || tonnage.signum() > 0) {
+                long vol = tonnage.setScale(0, RoundingMode.HALF_UP).longValueExact();
+                volumeByMuscle.merge(muscleOf(s.getExerciseId(), exercises, catalog), vol, Long::sum);
+            }
             if (s.getWeightKg() == null) {
                 bodyweightRepCount += s.getReps();
-                continue; // bodyweight/plyo: no e1RM, no volume
+                continue; // bodyweight/plyo: no e1RM (and no volume unless a weighted leg carried some)
             }
-            String muscle = muscleOf(s.getExerciseId(), exercises, catalog);
-            long vol = s.getWeightKg().multiply(BigDecimal.valueOf(s.getReps()))
-                .setScale(0, RoundingMode.HALF_UP).longValueExact();
-            volumeByMuscle.merge(muscle, vol, Long::sum);
             // OneRepMax refuses reps > REP_CAP (null) — skip those rather than crash the running max.
             BigDecimal e1rm = epley(s.getWeightKg(), s.getReps());
             if (e1rm != null && (bestE1rm == null || e1rm.compareTo(bestE1rm) > 0)) {

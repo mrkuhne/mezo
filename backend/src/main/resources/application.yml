@@ -3190,6 +3190,16 @@ mezo:
         volume:   { compound-rep-min: 10, compound-rep-max: 15, isolation-rep-min: 15, isolation-rep-max: 25, reserve: 2, compound-rest-sec: 120, isolation-rest-sec: 75,  rep-overflow: 4 }
         heavy:    { compound-rep-min: 5,  compound-rep-max: 8,  isolation-rep-min: 8,  isolation-rep-max: 12, reserve: 2, compound-rest-sec: 180, isolation-rest-sec: 120, rep-overflow: 2 }
         allout:   { compound-rep-min: 6,  compound-rep-max: 10, isolation-rep-min: 8,  isolation-rep-max: 12, working-sets: 2, reserve: 0, compound-rest-sec: 180, isolation-rest-sec: 120, rep-overflow: 2 }
+    # Set techniques (mezo-r36n9.80, spec §6.3) — binds onto TrainTechniqueProperties. The technique set is the
+    # LAST working set; reserve = the main part's target RIR. cap-weight: what a technique or challenge row's
+    # technique set weighs against the exercise (5) / session (8) caps — 2 = it counts as two sets (the weekly
+    # band still counts it as one).
+    technique:
+      rest-drop: { main-reserve: 0, drop-percent: 30, rest-sec: 30 }
+      drop:      { main-reserve: 0, drop-percent: 20, rest-sec: 0 }
+      myo:       { main-reserve: 1, mini-reps: 5, mini-min-reps: 3, mini-rest-sec: 20, max-minis: 4 }
+      partials:  { main-reserve: 0 }
+      cap-weight: 2
     # Workout-timing tuning (mezo-1jm8) — measurement clips + profile-learner seeds.
     # Binds onto TimingProperties.
     timing:

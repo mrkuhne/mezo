@@ -44,6 +44,8 @@ terhelés-csökkentő héten kettővel több; szabad súlyos gyakorlatnál sosem
 és a tartomány tetején a stílusnak megfelelő számú ismétlést épít, mielőtt súlyt emel (4 / 3 / 2). Ha a tartalék 0–1, a motor
 nem hisz a becsült tartaléknak: „őrlésnek” számít, ha két vagy több ismétlést hagytál ki az előírthoz képest.
 
+A **technikás sorozatot** (lásd [Technikák](15-technikak.md)) a motor nem veszi kiindulásnak és nem tekinti őrlésnek: a rendes sorozataidból számol.
+
 **Elakadás-figyelés:** stílusos blokkban a motor izomcsoportonként nézi, hogy valamelyik gyakorlatnál a legjobb sorozat javult-e
 (nehezebb vagy több ismétlés) az előző héthez képest. Ha két egymást követő héten **egyetlen** gyakorlat sem javult az adott izomnál,
 a heti javaslat naplójába bekerül: „megállt a fejlődés”. Egyelőre csak jelzés — számot nem változtat; a javaslatok (technika,

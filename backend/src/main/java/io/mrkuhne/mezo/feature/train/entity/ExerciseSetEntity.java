@@ -82,6 +82,10 @@ public class ExerciseSetEntity extends OwnedEntity {
     @Column(name = "target_reps")
     private Integer targetReps;
 
+    /** Technique this set was logged as (rest_drop|drop|myo|partials); null = straight set. Immutable after create. */
+    @Column(updatable = false)
+    private String technique;
+
     /** The trained rep range (floor), snapshotted from the set's own exercise row at create (null = legacy). */
     @Column(name = "target_rep_min")
     private Integer targetRepMin;

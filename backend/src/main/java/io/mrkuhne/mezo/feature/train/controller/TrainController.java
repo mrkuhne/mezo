@@ -13,6 +13,8 @@ import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseNoteRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
+import io.mrkuhne.mezo.api.dto.ExerciseTechniqueUpdateRequest;
+import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
@@ -69,6 +71,7 @@ import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.TimingObservationExtractor;
 import io.mrkuhne.mezo.feature.train.service.TimingProfileService;
+import io.mrkuhne.mezo.feature.train.service.ExerciseTechniqueService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.VolumeArcService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutExerciseChangeService;
@@ -88,6 +91,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TrainController implements TrainApi {
 
     private final TrainService service;
+    private final ExerciseTechniqueService exerciseTechniqueService;
     private final MesoTemplateService mesoTemplateService;
     private final MesocycleReportService mesocycleReportService;
     private final WorkoutService workoutService;
@@ -240,6 +244,11 @@ public class TrainController implements TrainApi {
     @Override
     public MesoDay replaceDayExercises(UUID id, UUID dayId, List<GymExerciseInput> gymExerciseInput) {
         return service.replaceDayExercises(currentUserId.get(), id, dayId, gymExerciseInput);
+    }
+
+    @Override
+    public GymExercise updateExerciseTechnique(UUID id, UUID exerciseId, ExerciseTechniqueUpdateRequest request) {
+        return exerciseTechniqueService.update(currentUserId.get(), id, exerciseId, request);
     }
 
     @Override

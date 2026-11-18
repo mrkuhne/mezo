@@ -32,7 +32,7 @@ public final class StyleStamper {
             ex.anchorWeightKg(), ex.type(), ex.warning(), ex.catalogId(), ex.countsTowardVolume(),
             ex.trainingStyle(),
             keep.contains("restSec") ? ex.restSec() : s.restSec(),
-            ex.overrides());
+            ex.overrides(), ex.technique(), ex.techniqueSource(), ex.challenge());
     }
 
     /** "Legs" for the leg reserve: a compound exercise whose coarse group is quad, ham or glute. */
