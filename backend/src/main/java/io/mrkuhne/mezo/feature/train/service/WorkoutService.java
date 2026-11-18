@@ -144,6 +144,8 @@ public class WorkoutService {
     private final RecoveryPeriodService recoveryPeriodService;
     // Training style (mezo-r36n9.79): the per-exercise style context and the batched catalog stability.
     private final ExerciseStyler exerciseStyler;
+    // Weekly pin (volume engine v2 S3): kept weight/rep lines of this week's proposal hold that exercise.
+    private final WeeklyPin weeklyPin;
 
     /**
      * Today's kímélő-mód lightening (spec §9.1.4 / §9.1.6): the DTO shown on the hero, plus the
@@ -285,6 +287,12 @@ public class WorkoutService {
         TrainingStyle runStyle = activeMeso != null && activeMeso.getId().equals(day.getMesocycleId())
             ? TrainingStyle.fromWire(activeMeso.getTrainingStyle()) : null;
         CatalogAttributes.Lookup stability = exerciseStyler.lookupRows(exercises, runStyle != null);
+        // Weekly pin (volume engine v2 S3, spec §6.4): a weight/rep line he kept in this week's proposal holds
+        // that exercise at last week's load — the same hold-only knob readiness and the comeback use. Only on
+        // a day of the active run, with the engine and the prescription on; failure-isolated (unpinned).
+        Set<UUID> pinned = activeMeso != null && activeMeso.getId().equals(day.getMesocycleId())
+                && volumeGate.getIfAvailable() != null && hypertrophyGate.getIfAvailable() != null
+            ? weeklyPin.pinnedRows(createdBy, activeMeso, day, exercises) : Set.of();
         LocalDate today = LocalDate.now();
         int weightUp = 0;
         int weightDown = 0;
@@ -337,9 +345,10 @@ public class WorkoutService {
             if (hypertrophyGate.getIfAvailable() != null) {
                 Prescription p = comeback == null
                     ? setRecommendationService.prescribe(createdBy, e, new SetRecommendationService.PrescribeOptions(
-                        deloadWeek, effective, lighten.isPresent(), null, 0, style, today))
+                        deloadWeek, effective, lighten.isPresent() || pinned.contains(e.getId()), null, 0, style,
+                        today))
                     : setRecommendationService.prescribe(createdBy, e, new SetRecommendationService.PrescribeOptions(
-                        deloadWeek, effective, lighten.isPresent() || comeback.holdOnly(),
+                        deloadWeek, effective, lighten.isPresent() || comeback.holdOnly() || pinned.contains(e.getId()),
                         // A deload week already lightens the load — no extra ×0.9 on top; the set
                         // reduction and the RIR floor stay.
                         deloadWeek ? null : comeback.loadFactor(),
