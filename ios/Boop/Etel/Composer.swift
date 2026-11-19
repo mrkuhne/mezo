@@ -786,11 +786,8 @@ private struct MealComposerHost: View {
                     Text("Nem ismertem fel semmit. Tegyél hozzá lent egy receptet, egy kamra-tételt, vagy írd le másképp.")
                         .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
                 }
-                VStack(spacing: 0) {
-                    ForEach(Array(draft.items.enumerated()), id: \.offset) { i, item in
-                        if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                        line(i, item).padding(.vertical, 11)
-                    }
+                VStack(spacing: 10) {
+                    ForEach(Array(draft.items.enumerated()), id: \.offset) { i, item in line(i, item) }
                 }
                 if draftHasUnknownAllergens(draft, profile: model.profile) {
                     Text("Egyes tételeknél nincs allergén-adat, ezért ott nem jelzek semmit — ez nem azt jelenti, hogy nincs benne.")
@@ -859,41 +856,91 @@ private struct MealComposerHost: View {
         }
     }
 
-    /// One line of the plate: where it came from as a mark, the name (editable), the amount (editable), what it adds,
-    /// and the flags that matter to him.
+    /// One thing on the plate, as a tile of its own with three clear rows: what it is and what it adds; how much
+    /// (a stepper, the number typeable); its macros and the way to take it off. Flags that matter to him close it.
     private func line(_ i: Int, _ item: DraftItem) -> some View {
         let badges = draftBadges(for: item, profile: model.profile)
         let glyph = switch item.source { case .recipe: "book-sage"; case .pantry: "bowl-sage"; case .estimate: "spark-cream" }
         let doubt = sourceTag(item).contains("nézd át")
-        return HStack(alignment: .top, spacing: 12) {
-            EtelMedallion(glyph: glyph, size: 38, lit: item.source != .estimate)
-            VStack(alignment: .leading, spacing: 7) {
-                TextField("", text: Binding(get: { item.name }, set: { model.rename(i, $0) }))
-                    .nkFont(15.5, .medium).foregroundStyle(.white)
-                HStack(spacing: 8) {
-                    TextField("", value: Binding(get: { item.amount }, set: { model.setAmount(i, $0) }), format: .number)
-                        .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                        .font(.custom(Lagy.outfitFamily, size: 15).weight(.medium)).foregroundStyle(.white).frame(width: 62)
-                        .padding(.vertical, 6).padding(.horizontal, 8)
-                        .background(Capsule().fill(.white.opacity(0.1)).overlay(Capsule().stroke(.white.opacity(0.18))))
-                        .accessibilityLabel("\(item.name) mennyisége")
-                    Text(item.unit).nkFont(13).foregroundStyle(.white.opacity(0.6))
-                    Spacer(minLength: 4)
-                    Text(huInt(Int(item.contribution.kcal.rounded()))).font(.custom(Lagy.outfitFamily, size: 16).weight(.medium))
+        let c = item.contribution
+        // grams and millilitres move by ten, servings and pieces by a half
+        let step: Double = ["g", "ml"].contains(item.unit.lowercased()) ? 10 : 0.5
+        return VStack(alignment: .leading, spacing: 12) {
+            // 1 · what it is, and the energy it adds
+            HStack(alignment: .center, spacing: 12) {
+                EtelMedallion(glyph: glyph, size: 40, lit: item.source != .estimate)
+                VStack(alignment: .leading, spacing: 4) {
+                    TextField("", text: Binding(get: { item.name }, set: { model.rename(i, $0) }))
+                        .nkFont(16, .medium).foregroundStyle(.white)
+                    EtelPill(text: sourceTag(item), tone: doubt ? .warn : (item.source == .estimate ? .plain : .hue))
+                }
+                Spacer(minLength: 6)
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(huInt(Int(c.kcal.rounded()))).font(.custom(Lagy.outfitFamily, size: 22).weight(.medium))
                         .foregroundStyle(.white).monospacedDigit()
                     Text("kcal").nkFont(11).foregroundStyle(.white.opacity(0.5))
                 }
-                NKFlowRow(spacing: 6, rowSpacing: 6) {
-                    EtelPill(text: sourceTag(item), tone: doubt ? .warn : (item.source == .estimate ? .plain : .hue))
-                    EtelPill(text: "\(Int(item.contribution.p.rounded())) g fehérje")
-                    ForEach(badges) { EtelPill(badge: $0) }
+                .accessibilityElement(children: .combine)
+            }
+            Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5)
+            // 2 · how much
+            HStack(spacing: 10) {
+                Text("Mennyiség").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                Spacer(minLength: 6)
+                HStack(spacing: 0) {
+                    stepButton("−", "\(item.name) kevesebb") { model.setAmount(i, max(0, item.amount - step)) }
+                    HStack(spacing: 4) {
+                        TextField("", value: Binding(get: { item.amount }, set: { model.setAmount(i, $0) }), format: .number)
+                            .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                            .font(.custom(Lagy.outfitFamily, size: 17).weight(.medium)).foregroundStyle(.white)
+                            .frame(width: 58).accessibilityLabel("\(item.name) mennyisége")
+                        Text(item.unit).nkFont(13).foregroundStyle(.white.opacity(0.6)).frame(minWidth: 28, alignment: .leading)
+                    }
+                    .padding(.horizontal, 6)
+                    stepButton("+", "\(item.name) több") { model.setAmount(i, item.amount + step) }
                 }
+                .background(Capsule().fill(.white.opacity(0.08)).overlay(Capsule().stroke(.white.opacity(0.16))))
             }
-            Button { model.remove(i) } label: {
-                Text("Töröl").nkFont(12.5).foregroundStyle(.white.opacity(0.55)).frame(minWidth: 40, minHeight: 34)
+            // 3 · its macros, and the way off the plate
+            HStack(spacing: 6) {
+                macroChip("F", c.p, lit: true)
+                macroChip("Sz", c.c)
+                macroChip("Zs", c.f)
+                Spacer(minLength: 6)
+                Button { model.remove(i) } label: {
+                    Text("Leveszem").nkFont(12.5, .medium).foregroundStyle(.white.opacity(0.7))
+                        .padding(.horizontal, 12).frame(minHeight: 30)
+                        .background(Capsule().stroke(.white.opacity(0.22)))
+                }
+                .buttonStyle(.plain).accessibilityLabel("\(item.name) levétele a tányérról")
             }
-            .buttonStyle(.plain).accessibilityLabel("\(item.name) törlése")
+            if !badges.isEmpty {
+                NKFlowRow(spacing: 6, rowSpacing: 6) { ForEach(badges) { EtelPill(badge: $0) } }
+            }
         }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white.opacity(0.05)))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(doubt ? Color(red: 0.96, green: 0.78, blue: 0.38).opacity(0.45) : .white.opacity(0.1)))
+    }
+
+    private func stepButton(_ sign: String, _ label: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(sign).font(.custom(Lagy.outfitFamily, size: 20).weight(.medium)).foregroundStyle(.white)
+                .frame(width: 40, height: 40).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).accessibilityLabel(label)
+    }
+
+    /// One macro of a line: its letter, then the grams.
+    private func macroChip(_ letter: String, _ grams: Double, lit: Bool = false) -> some View {
+        HStack(spacing: 4) {
+            Text(letter).nkFont(11, .semibold).foregroundStyle(lit ? Hue.fuel.glow : .white.opacity(0.55))
+            Text("\(Int(grams.rounded())) g").nkFont(12.5, .medium).foregroundStyle(.white.opacity(0.9)).monospacedDigit()
+        }
+        .padding(.horizontal, 9).frame(minHeight: 26)
+        .background(Capsule().fill(lit ? Hue.fuel.glow.opacity(0.14) : .white.opacity(0.08)))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(letter == "F" ? "fehérje" : letter == "Sz" ? "szénhidrát" : "zsír") \(Int(grams.rounded())) gramm")
     }
 
     private func sourceTag(_ item: DraftItem) -> String { draftSourceTag(item) }
