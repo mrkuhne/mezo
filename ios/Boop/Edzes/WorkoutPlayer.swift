@@ -497,7 +497,7 @@ struct WorkoutPlayer: View {
                               remaining: resting ? techniqueRemaining : nil, total: run.restTotal, hue: hue)
             if resting {
                 HStack(spacing: 10) {
-                    secondary("Elég volt · befejezem") { endTechnique() }
+                    secondary("Elég volt · befejezem") { stopSteps() }
                     Button { session.skipTechniqueRest() } label: {
                         HStack(spacing: 6) {
                             Text("Kezdem").nkFont(16, .semibold)
@@ -512,7 +512,7 @@ struct WorkoutPlayer: View {
             } else {
                 legPads(run)
                 primary(legLabel(run)) { logLeg() }
-                secondary("Elég volt · befejezem a sorozatot") { endTechnique() }
+                secondary("Elég volt · befejezem a sorozatot") { stopSteps() }
             }
         }
     }
@@ -524,7 +524,9 @@ struct WorkoutPlayer: View {
     private var techniqueRemaining: TimeInterval {
         _ = now
         guard let ends = session.technique?.restEndsAt else { return 0 }
-        return max(0, ends.timeIntervalSince(now))
+        // `now` ticks once a second, so right after the tap it can be up to a second old: never show more than the
+        // rest itself („0:21" of a 20 s rest).
+        return min(session.technique?.restTotal ?? .infinity, max(0, ends.timeIntervalSince(now)))
     }
 
     /// The step's weight and reps. A drop says what it came off; „ugyanannyi" is prefilled with the reps he did.
@@ -724,12 +726,14 @@ struct WorkoutPlayer: View {
         if step == .finish { onFinish() }
     }
 
-    private func endTechnique() {
+    /// „Elég volt": the technique's steps stop; the challenge after them, if any, still comes.
+    private func stopSteps() {
         let before = sentIds
-        let step = session.endTechnique()
+        let step = session.stopTechniqueSteps()
         sendNew(since: before)
         if step == .finish { onFinish() }
     }
+
 
     /// A technique set that was the exercise's last one ends the exercise: its three questions come before
     /// whatever he asked for.

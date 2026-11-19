@@ -1044,5 +1044,15 @@
     ],
     "mit_kapsz": "A Napok fülön a technikát és a nap kihívását egy felugró listából választod, mindegyikhez rövid leírással; a sor nem ugrál, és látszik, mit tett oda Boop.",
     "munkamenet": "boop-blokk-epito"
+  },
+  "mezo-r36n9.99": {
+    "cim": "Edzés: technika és kihívás egy sorozaton a lejátszóban",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha egy gyakorlaton technika és kihívás is van, edzés közben előbb a technika lépései jönnek, utána a kihívás félismétlései; ha a technikát korábban abbahagyod, a kihívás akkor is jön.",
+    "munkamenet": "player-technique"
   }
 }

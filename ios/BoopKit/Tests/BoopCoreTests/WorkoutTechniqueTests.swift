@@ -137,6 +137,55 @@ struct WorkoutTechniqueTests {
         #expect(e?.challengeBest == 7)
     }
 
+    // MARK: - A technique and the challenge on one set (owner 2026-11-19, mezo-r36n9.98)
+
+    var restDropThenChallenge: PrescribedSet {
+        PrescribedSet(kind: .working, targetKg: 60, targetReps: 10, targetRIR: 0, technique: .restDrop,
+                      legs: restDrop.legs + [PrescribedLeg(kind: .partials, toFailure: true, restBeforeSec: 0)])
+    }
+
+    var myoThenChallenge: PrescribedSet {
+        PrescribedSet(kind: .working, targetKg: 30, targetReps: 15, targetRIR: 1, technique: .myo,
+                      legs: myo.legs + [PrescribedLeg(kind: .partials, toFailure: true, restBeforeSec: 0)])
+    }
+
+    @Test func theChallengeComesAfterTheTechniquesSteps() {
+        var s = session([exercise(pulldown, "Lat Pulldown", last: restDropThenChallenge, technique: .restDrop,
+                                  challenge: true, best: 6)])
+        #expect(s.exercises[pulldown]?.liveChallenge == true)
+        _ = s.log(kg: 60, reps: 10, rir: 2); s.skipRest()
+        _ = s.log(kg: 60, reps: 9, rir: 0); s.skipTechniqueRest()
+        #expect(s.step == .leg(.drop))
+        let step = s.logLeg(kg: 40, reps: 9)
+        #expect(step == .partials)
+        _ = s.logLeg(kg: nil, reps: 8)
+        let set = s.exercises[pulldown]?.logged.last
+        #expect(set?.technique == .restDrop)
+        #expect(set?.legs?.map(\.kind) == [.drop, .partials])
+        #expect(set?.partials == 8)
+    }
+
+    @Test func stoppingTheTechniqueEarlyStillOffersTheChallenge() {
+        var s = session([exercise(pulldown, "Lat Pulldown", last: restDropThenChallenge, technique: .restDrop,
+                                  challenge: true, best: 6)])
+        _ = s.log(kg: 60, reps: 10, rir: 2); s.skipRest()
+        _ = s.log(kg: 60, reps: 9, rir: 0)
+        #expect(s.stopTechniqueSteps() == .partials)          // the drop is skipped, the challenge is not
+        #expect(s.stopTechniqueSteps() == .debrief(exercise: pulldown))
+        #expect(s.exercises[pulldown]?.logged.last?.legs == nil)
+    }
+
+    @Test func aMyoMiniThatFallsShortGoesToTheChallenge() {
+        var s = session([exercise(curl, "Preacher Curl", last: myoThenChallenge, technique: .myo,
+                                  challenge: true, best: 7)])
+        _ = s.log(kg: 30, reps: 12, rir: 2); s.skipRest()
+        _ = s.log(kg: 30, reps: 15, rir: 1); s.skipTechniqueRest()
+        _ = s.logLeg(kg: 30, reps: 2)                          // short: the remaining minis are skipped
+        #expect(s.step == .partials)
+        _ = s.logLeg(kg: nil, reps: 5)
+        #expect(s.exercises[curl]?.logged.last?.legs?.map(\.kind) == [.mini, .partials])
+    }
+
     // MARK: - What must not change
 
     @Test func aSetAddedInTheGymDoesNotRepeatTheTechnique() {
