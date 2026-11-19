@@ -13,7 +13,7 @@ name: premerge
 # regenerated it against their own base).
 #
 # A full ci.yml re-run costs ~21.5 min wall clock / ~42 runner-minutes, dominated by
-# the backend and frontend suites — which are the LEAST likely to break this way. This
+# the backend suite — which is the LEAST likely to break this way. This
 # workflow runs only what a merge can actually break: the convention/generator gates
 # (~30 s) and contract-drift (~25 s). ~2 minutes total.
 #
@@ -95,16 +95,11 @@ jobs:
           SHA: ${{ env.head_sha }}
         run: bash .github/scripts/require-checks.sh
 
-      - uses: pnpm/action-setup@v4
-        with:
-          # No `version:` — the pin lives in frontend/package.json's `packageManager`
-          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
-          package_json_file: frontend/package.json
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache: npm
+          cache-dependency-path: api/generate/package-lock.json
 
       - name: Convention + generator gates (shared with ci.yml's lint job)
         run: bash .github/scripts/cheap-gates.sh
@@ -113,6 +108,5 @@ jobs:
         run: |
           set -euo pipefail
           (cd api/generate && npm ci && npm run generate:api)
-          (cd frontend && pnpm install --frozen-lockfile && pnpm generate:api)
-          git diff --exit-code -- api/openapi.yml frontend/src/data/_client/api.gen.ts \
-            || { echo '::error::Merging this PR makes the committed contract artifacts stale — two branches each regenerated them against their own base. Merge main into the branch, regenerate, commit.'; exit 1; }
+          git diff --exit-code -- api/openapi.yml \
+            || { echo '::error::Merging this PR makes the committed merged contract stale — two branches each regenerated it against their own base. Merge main into the branch, regenerate, commit.'; exit 1; }

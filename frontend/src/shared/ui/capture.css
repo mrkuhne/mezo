@@ -1,8 +1,0 @@
-/* Capture family — the quick-log capture sheets (water, weight, sleep, sport, journal, activity,
-   check-in) and their shared header (CaptureHeader + CaptureArt).
-
-   Üveg (mezo-me75u.3): the whole skin — the floating glass sheet, the header, the one loud value,
-   the scale cells, chips, fields and the lit Mentés — lives in the `── uveg nap rogzites (` block at
-   the end of src/styles/prototype.css, so it sits after the uveg kit it builds on and the structure
-   tests can read it. The old §2.2 A wash heroes and --gradient-cta primaries that lived here were
-   removed in the same change. This file stays as the CaptureArt import anchor. */

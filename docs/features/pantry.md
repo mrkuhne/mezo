@@ -2,16 +2,11 @@
 title: Pantry (Kamra)
 type: feature-domain
 status: done
-updated: 2026-11-17
+updated: 2026-11-19
 tags: [fuel, pantry, frontend, data-layer, backend, multi-user, allergens, barcode, sensitivities, boop, b4-etel]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/pantry
   - api/feature/pantry/pantry.yml
-  - frontend/src/data/fuel/pantryHooks.ts
-  - frontend/src/data/fuel/pantryApi.ts
-  - frontend/src/features/fuel/pages/FuelKamraPage.tsx
-  - frontend/src/features/fuel/pages/KamraItemDetailPage.tsx
-  - frontend/src/features/fuel/sheets/CatalogSearchSheet.tsx
   - backend/src/main/resources/db/changelog/1.0.0/script/202609021410_mezo-qw37.4_pantry_catalog_split.sql
 related: [fuel, recipe, boop-ios, _platform-data-layer, _platform-auth-security]
 ---
@@ -229,6 +224,7 @@ Commands: backend focused `./mvnw clean test -Dtest='Pantry*,...' -Dmezo.test.us
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **After a save or a delete the form does not stay behind the user (Folyadék F1 final review, `mezo-n4wf5.1`, 2026-10-09).** With a history-based back, a post-mutation `navigate(...)` that PUSHED left the editor — or the deleted record — one Vissza away. The leave now replaces the current entry or pops (`useLeaveAfterMutation` in `shared/hooks/useBackNav.ts`, rules in `shared/lib/backNav.ts`; see [`_platform-design-system.md`](_platform-design-system.md)). Destinations are unchanged. `KamraItemDetailPage`'s delete REPLACES the deleted item's entry with `/fuel/kamra`. Pinned by `tests/layout/navigation.spec.ts` („Vissza after a save or a delete…").

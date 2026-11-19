@@ -18,11 +18,10 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
               │  24.04)  —  k3s single node       │
               │                                   │
               │  Traefik ingress (bundled in k3s) │
-              │     ├── /      → frontend Service  │
-              │     └── /api   → backend Service   │
+              │     ├── /api       → backend      │
+              │     └── /exercises → backend      │
               │                                   │
               │  namespace: mezo                  │
-              │   ├ frontend  Deployment + Service (nginx, static build)
               │   ├ backend   Deployment + Service (Spring Boot :8090, profile=demodata)
               │   ├ postgres  StatefulSet + PVC + Secret (local-path storage)
               │   ├ postgres-exporter  Deployment + Service (Postgres metrics for Grafana)
@@ -43,8 +42,7 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
 | Component | k8s object(s) | Notes |
 |---|---|---|
 | **k3s** | — | Lightweight Kubernetes. Bundles Traefik ingress + `local-path` storage + `kubectl`. Install via `curl -sfL https://get.k3s.io \| sh -`. |
-| **Ingress** | `Ingress` (Traefik) | HTTPS via Let's Encrypt. Host routes: `/` → frontend, `/api` → backend. |
-| **frontend** | `Deployment` + `Service` | `pnpm build` output served by nginx. Image in GHCR. REAL mode (targets `/api`). `frontend/nginx.conf` gzips text assets and marks the content-hashed `/assets/*` immutable (1 year); the HTML shell and the service workers stay `no-cache`. The backend gzips JSON over 2 KB itself (`server.compression`, SSE excluded) — mezo-l5lvh. |
+| **Ingress** | `Ingress` (Traefik) | HTTPS via Let's Encrypt. Host routes: `/api` → backend, `/exercises` → backend (exercise stills, `mezo-r36n9.97.1`). Nothing else is served — `/` answers 404 since the web app (and its `/` → frontend rule, nginx Deployment and Service) was retired 2026-11-19 (#52, `mezo-r36n9.97.3`). The backend gzips JSON over 2 KB itself (`server.compression`, SSE excluded) — mezo-l5lvh. |
 | **backend** | `Deployment` + `Service` | Spring Boot, container on :8090. Profile `demodata` (owner seed). Env/secrets from `Secret`/`ConfigMap`. Image in GHCR. |
 | **postgres** | `StatefulSet` + `PVC` + `Secret` | Postgres 16 — image `pgvector/pgvector:pg16` since 2026-07-03 (companion V2.1 vector layer; same PG16 major, data kept on the PVC). `local-path` PVC for data. Credentials in a `Secret`. Not exposed outside the cluster. |
 | **pgAdmin** | `Deployment` + `Service` | DB GUI. Private: reachable only over the Tailscale ingress (`k8s/pgadmin/ingress-tailscale.yaml`). |
@@ -61,7 +59,6 @@ k8s/
 │                    exporter-deployment.yaml, exporter-service.yaml (postgres_exporter),
 │                    backup-cronjob.yaml, backup-pvc.yaml
 ├── backend/         deployment.yaml, service.yaml, configmap.yaml
-├── frontend/        deployment.yaml, service.yaml
 ├── ingress.yaml
 ├── cert-manager/    clusterissuer.yaml
 ├── pgadmin/         deployment.yaml, service.yaml, ingress-tailscale.yaml
@@ -102,10 +99,10 @@ argocd/
 
 0. Provision VPS + harden (SSH key, `ufw`, Tailscale).
 1. Install k3s; verify `kubectl get nodes`. Learn: node, pod, `get/describe/logs`.
-2. Write mezo manifests (namespace → Postgres → backend → frontend → Ingress). Hand-apply with `kubectl apply`.
+2. Write mezo manifests (namespace → Postgres → backend → Ingress; the frontend step was retired 2026-11-19, #52). Hand-apply with `kubectl apply`.
 3. Add pgAdmin (private). Learn why DB admin is never on the public internet.
 4. Install ArgoCD; create the `Application`; switch to push-to-deploy. Learn the manual-vs-GitOps contrast.
-5. Build FE/BE images → GHCR; wire `imagePullSecret`.
+5. Build the backend image → GHCR; wire `imagePullSecret`.
 
 Tip: steps 1–3 can be rehearsed locally on **k3d/minikube** with zero VPS cost before touching the real box.
 
@@ -118,11 +115,11 @@ Tip: steps 1–3 can be rehearsed locally on **k3d/minikube** with zero VPS cost
 | Tailscale (private admin) | server `mezo-k3s` = `100.75.51.113`; admin Mac = `100.68.26.113` |
 | k3s | `v1.35.5+k3s1` (Traefik ingress + local-path storage bundled) |
 | Public URL | `https://46.225.112.172.sslip.io/` (Let's Encrypt via cert-manager) |
-| Images | `ghcr.io/mrkuhne/mezo-backend`, `ghcr.io/mrkuhne/mezo-frontend` (private; pulled with `ghcr-pull` secret) — tags live in `k8s/*/deployment.yaml`, bumped by the release pipeline on every deploy |
+| Images | `ghcr.io/mrkuhne/mezo-backend` (private; pulled with `ghcr-pull` secret) — its tag lives in `k8s/backend/deployment.yaml`, bumped by the release pipeline on every deploy. (`mezo-frontend` is no longer built or deployed since 2026-11-19, #52.) |
 | Grafana (private) | `https://grafana.tail8ce56d.ts.net` |
-| Owner login | `owner@mezo.local` / `MEZO_OWNER_PASSWORD` (demodata seed; entered through the app's own login screen — no longer baked into the frontend build, since `mezo-qw37` S1) |
+| Owner login | `owner@mezo.local` / `MEZO_OWNER_PASSWORD` (demodata seed; entered through the iPhone app's login screen) |
 | Backend timezone | `TZ=Europe/Budapest` on the backend Deployment env (`k8s/backend/deployment.yaml:46`) — pins the JVM default zone so business-date columns (`level_up_event.occurred_on`, gamification streak/coin rollover) and every `@Scheduled` cron run on Budapest wall-clock, not the eclipse-temurin UTC default. Without it, a 00:00–02:00 log lands on the previous business date (mezo-k0t2) and the crons fire 1–2 h off their intended local time. Matches `k8s/postgres/backup-cronjob.yaml`'s `timeZone`. **Now also load-bearing for push-notification timing** ([`_platform-notifications.md`](../features/_platform-notifications.md) §8) — mezo has no per-user `Profile.timezone`, so the (not-yet-built, N2) per-minute notification dispatcher will resolve every anchor (gym start, sleep wind-down, Napzárás window, check-ins) off this same server zone; changing or unsetting `TZ` would silently shift every notification's send time, not just date bucketing. |
-| Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed). Planned: `GEMINI_API_KEY` joins `mezo-app` + the backend Deployment env when the Phase-3 companion first deploys (ADR 0008) — until then the backend boots on its dummy-key default. **Same pattern for push notifications:** `VAPID_PUBLIC`/`VAPID_PRIVATE` (the Web Push VAPID keypair — [`_platform-notifications.md`](../features/_platform-notifications.md), [ADR 0014](../decisions/0014-own-webpush-implementation.md)) join the existing `mezo-app` SealedSecret + the backend Deployment env once a real keypair is generated; until then the backend boots on `application.yml`'s `dummy-vapid-public`/`dummy-vapid-private` defaults, which now **fail loudly** on the first real send (`VapidSigner.decodePrivateKey` rejects a malformed scalar) rather than silently minting a well-formed-but-useless token. **DONE 2026-07-29** (`mezo-7kr3`): a real P-256 pair is sealed into `mezo-app` and wired into the backend env; the public half is also the `VITE_VAPID_PUBLIC` repo variable (see the gotcha below). **`OPENAI_API_KEY` joins `mezo-app` (`mezo-ozri.2`)** — the companion's chat provider moves to GPT-5.6, and `GEMINI_API_KEY` is **not** replaced: embedding, audio transcription and the chat fallback all still ride it. Re-sealing is cluster-specific; never hand-edit `sealedsecret.yaml`. **DONE 2026-09-09** (`mezo-kdhn`): sealed with `kubeseal --merge-into`, which encrypts only the new key and leaves the seven existing encrypted values byte-identical — the safer alternative to re-sealing the FULL Secret, since it never needs any current value in the clear. With the key in, `optional: true` is **gone** from the Deployment's `secretKeyRef` (a missing key must stop the pod loudly instead of booting on the dummy default and failing every chat turn at request time) and production sets `MEZO_COMPANION_LLM_PROVIDER=openai` on the Deployment — **not** in `application.yml`, whose default stays `gemini` so local dev, CI and the tests need no OpenAI key. Rollback is deleting that one env entry. **Order matters:** the key must land and sync BEFORE the provider flip, or there is a window where the config says `openai` and the key has not arrived — the two went out as two separate merges for exactly that reason. |
+| Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed). Planned: `GEMINI_API_KEY` joins `mezo-app` + the backend Deployment env when the Phase-3 companion first deploys (ADR 0008) — until then the backend boots on its dummy-key default. **Same pattern for push notifications:** `VAPID_PUBLIC`/`VAPID_PRIVATE` (the Web Push VAPID keypair — [`_platform-notifications.md`](../features/_platform-notifications.md), [ADR 0014](../decisions/0014-own-webpush-implementation.md)) join the existing `mezo-app` SealedSecret + the backend Deployment env once a real keypair is generated; until then the backend boots on `application.yml`'s `dummy-vapid-public`/`dummy-vapid-private` defaults, which now **fail loudly** on the first real send (`VapidSigner.decodePrivateKey` rejects a malformed scalar) rather than silently minting a well-formed-but-useless token. **DONE 2026-07-29** (`mezo-7kr3`): a real P-256 pair is sealed into `mezo-app` and wired into the backend env; the public half was also the `VITE_VAPID_PUBLIC` repo variable for the web bundle (retired with the web app, 2026-11-19, #52). **`OPENAI_API_KEY` joins `mezo-app` (`mezo-ozri.2`)** — the companion's chat provider moves to GPT-5.6, and `GEMINI_API_KEY` is **not** replaced: embedding, audio transcription and the chat fallback all still ride it. Re-sealing is cluster-specific; never hand-edit `sealedsecret.yaml`. **DONE 2026-09-09** (`mezo-kdhn`): sealed with `kubeseal --merge-into`, which encrypts only the new key and leaves the seven existing encrypted values byte-identical — the safer alternative to re-sealing the FULL Secret, since it never needs any current value in the clear. With the key in, `optional: true` is **gone** from the Deployment's `secretKeyRef` (a missing key must stop the pod loudly instead of booting on the dummy default and failing every chat turn at request time) and production sets `MEZO_COMPANION_LLM_PROVIDER=openai` on the Deployment — **not** in `application.yml`, whose default stays `gemini` so local dev, CI and the tests need no OpenAI key. Rollback is deleting that one env entry. **Order matters:** the key must land and sync BEFORE the provider flip, or there is a window where the config says `openai` and the key has not arrived — the two went out as two separate merges for exactly that reason. |
 
 Local admin access:
 - `kubectl` from the Mac: `export KUBECONFIG=~/.kube/mezo-k3s.yaml` (context `mezo`, server `https://100.75.51.113:6443` over Tailscale).
@@ -133,9 +130,6 @@ Build/push images (arm64 Mac → amd64 server):
 # backend
 cd backend && ./mvnw -B clean package -DskipTests
 docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-backend:<tag> backend --push
-# frontend
-cd frontend && VITE_USE_MOCK=false VITE_API_URL= pnpm build
-docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-frontend:<tag> frontend --push
 ```
 
 pgAdmin (step 3): deployed, private. Reachable on the tailnet at
@@ -173,23 +167,20 @@ auto-sync on `k8s/`. See [ADR 0002](../decisions/0002-ci-cd-github-actions-auto-
 *why* and [`docs/superpowers/plans/2026-06-14-ci-cd-auto-deploy.md`](../superpowers/plans/2026-06-14-ci-cd-auto-deploy.md)
 for the build-out steps.
 
-**Flow** — four jobs, fired on push to `main`:
+**Flow** — three jobs, fired on push to `main` (a fourth, `build-frontend`, and the
+`force_frontend` input were removed with the web app, 2026-11-19, #52):
 
 1. **`version`** — runs `.github/scripts/compute-release.sh`: computes the next semver from the
    conventional commits since the last `v*` tag (`feat` → minor, `feat!` / `BREAKING CHANGE:` →
-   major, else patch) and derives `frontend_changed` / `backend_changed` by comparing each
-   top-level directory's **tree-object hash** between the base and HEAD (`frontend` → FE;
-   `backend` or `api` → BE). Tree hashes are used rather than `git diff base..HEAD`, which proved
+   major, else patch) and derives `backend_changed` by comparing the `backend` and `api`
+   directories' **tree-object hashes** between the base and HEAD. Tree hashes are used rather than `git diff base..HEAD`, which proved
    unreliable under `actions/checkout`'s merge-commit checkout — it silently reported the backend
    as unchanged on the first run and skipped its deploy (fixed in mezo-7n5).
-2. **`build-frontend`** (only if FE changed) — `pnpm build` (no owner creds baked in since
-   `mezo-qw37` S1 — login happens at runtime) → docker build/push
-   `ghcr.io/mrkuhne/mezo-frontend:<ver>`. No test step (mezo-oa3).
-3. **`build-backend`** (only if BE changed) — `./mvnw -B clean package -DskipTests` (no
+2. **`build-backend`** (only if BE changed) — `./mvnw -B clean package -DskipTests` (no
    Testcontainers/Docker needed since tests are skipped) → docker build/push
    `ghcr.io/mrkuhne/mezo-backend:<ver>`.
-4. **`release`** (if nothing failed and ≥1 component shipped) — runs
-   `.github/scripts/release-commit.sh`: rewrites the changed `k8s/<comp>/deployment.yaml` image
+3. **`release`** (if nothing failed and the backend shipped) — runs
+   `.github/scripts/release-commit.sh`: rewrites `k8s/backend/deployment.yaml`'s image
    tag to `<ver>`, commits it back as `chore(release): v<ver> [skip ci]`,
    `git pull --rebase origin main` (non-fast-forward guard), tags **`v<ver>` on the commit the
    images were built from** (`github.sha`, *not* the rebased manifest commit — see the
@@ -201,14 +192,15 @@ workflow.
 
 **Convention + test gates — `.github/workflows/ci.yml` (separate workflow; mezo-ah18.4 + .5):**
 runs on every push to `main` and on PRs, parallel to `deploy.yml` and **not blocking it**
-(decision in ADR 0007: fix-forward beats slowing every release). Four jobs:
+(decision in ADR 0007: fix-forward beats slowing every release). Four jobs (the web jobs
+`test-frontend` and `test-layout` were removed with the web app, 2026-11-19, #52):
 `lint` (`node scripts/lint-docs.mjs --errors-only` — doc errors block, 🔶 staleness advisory;
 `node scripts/lint-liquibase.mjs` — migration filename/constraint-prefix/seed-SQL rules),
-`contract-drift` (regenerates the OpenAPI fragment merge + FE `api.gen.ts` and fails on
-`git diff` vs the committed artifacts), `test-frontend` (vitest in real AND mock mode) and
-`test-backend` (full IT suite on Testcontainers Postgres; since mezo-dubmh the three test jobs
-run their suites only when the commit touches their area — see
-[local-dev-testing.md](local-dev-testing.md) §The gate model). A fifth job, `lint-k8s`
+`contract-drift` (regenerates the OpenAPI fragment merge and fails on `git diff` vs the
+committed `api/openapi.yml`) and
+`test-backend` (full IT suite on Testcontainers Postgres; since mezo-dubmh it runs its suite only
+when the commit touches `backend/`, `api/` or `.github/` — see
+[local-dev-testing.md](local-dev-testing.md) §The gate model). The fourth job, `lint-k8s`
 (mezo-ibxy), schema-checks the plain manifests under `k8s/`/`argocd/` with kubeconform
 0.8.0 and helm-templates the monitoring chart against `k8s/monitoring/values.yaml`.
 Rationale and the phased plan
@@ -221,11 +213,12 @@ existing `ghcr-pull` secret (unchanged).
 **One-time bootstrap (manual, already done):**
 - Repo **Settings → Actions → Workflow permissions → "Read and write permissions"** (so the
   commit-back + tag push are allowed).
-- Repo **Variables** `VITE_OWNER_EMAIL` / `VITE_OWNER_PASSWORD` — **OBSOLETE since `mezo-qw37` S1**:
-  the frontend no longer reads them at build time (login happens at runtime through the app's own
-  login screen). Nothing in CI or the build references them anymore; remove them from
+- Repo **Variables** `VITE_OWNER_EMAIL` / `VITE_OWNER_PASSWORD` / `VITE_VAPID_PUBLIC` — **OBSOLETE**:
+  only the web bundle read them, and the web app was retired 2026-11-19 (#52). Nothing in CI or the
+  build references them anymore; remove them from
   **Settings → Secrets and variables → Actions → Variables** the next time someone is in there.
-- **GHCR package → Actions access** for each private package (`mezo-frontend`, `mezo-backend`):
+- **GHCR package → Actions access** for the private package (`mezo-backend`; `mezo-frontend` is no
+  longer pushed since 2026-11-19, #52):
   package **Settings → "Manage Actions access" → Add Repository → `mrkuhne/mezo` → Write**. The
   packages were first created by hand with a PAT, so they are not auto-linked to the repo; without
   this the `GITHUB_TOKEN` push fails with `denied: permission_denied: write_package`.
@@ -266,9 +259,9 @@ opens a race:
 3. M1's `release` job rebases its manifest commit onto the new main — which now contains M2 —
    and *used to tag there*.
 
-Tag `vX` therefore described **M2's** `frontend`/`backend`/`api` trees, which were never in any
+Tag `vX` therefore described **M2's** source trees, which were never in any
 image. The next run takes `vX` as its base, compares tree hashes, sees no difference, reports
-`fe=false/be=false` and **skips the build entirely**. M2 ships never, and nothing goes red.
+nothing changed and **skips the build entirely**. M2 ships never, and nothing goes red.
 Observed 2026-09-04 (run 33920695717 built `ca82135`, released `v2.163.0` rebased onto
 `58608d47` which already contained PRs #436 and #435).
 
@@ -283,8 +276,7 @@ hashes equal the built commit's, *and* the next `compute-release.sh` run still r
 `backend_changed=true`. Against the pre-fix logic it fails on both.
 
 **Recovery**, if a component was skipped this way: re-run `deploy.yml` via
-`workflow_dispatch` with `force_frontend` / `force_backend`, which ORs past the tree-hash
-detection. Then hard-refresh ArgoCD and confirm the pod's image tag.
+`workflow_dispatch` with `force_backend`, which ORs past the tree-hash detection. Then hard-refresh ArgoCD and confirm the pod's image tag.
 
 ### Gotcha — SIGPIPE in `compute-release.sh` silently stopped every deploy (mezo-0j9n)
 
@@ -317,32 +309,12 @@ and the new `compute-release.sigpipe.test.sh` now run in `ci.yml`'s `lint` job. 
 drives `main()` against a fake `git` that streams a >64 KiB, line-flushed tag list, so any
 early-exiting pipe reader fails it deterministically on every platform, macOS included.
 
-### Gotcha — a changed `VITE_*` repo variable does NOT trigger a frontend rebuild
+### Retired gotcha — `VITE_*` repo variables and `force_frontend`
 
-`deploy.yml` decides what to build from **tree-hash path detection** (`.github/scripts/compute-release.sh`
-compares each top-level dir's tree object base→HEAD). Every `VITE_*` is **inlined into the bundle at
-build time**, so changing a repo *variable* alters what the bundle must contain while leaving
-`frontend/` byte-identical: the push-triggered run skips `build-frontend`, ArgoCD sees no new image,
-and **the stale bundle stays live — silently, with a green 13-second "success"**.
-
-Found while wiring the VAPID keypair (`mezo-7kr3`): `VITE_VAPID_PUBLIC` was set, the deploy went green,
-and the deployed bundle still carried an empty key — which on a real device surfaces only as
-`pushManager.subscribe()` rejecting with `InvalidAccessError`.
-
-**The escape hatch:** `deploy.yml` has a `workflow_dispatch` with `force_frontend` / `force_backend`,
-OR'd into the `version` job's outputs so every downstream condition keeps reading one pair of flags.
-
-```bash
-gh workflow run deploy.yml -r main -f force_frontend=true
-```
-
-**Use it whenever you change a `VITE_*` repo variable** (`gh variable set …`) — rotating the VAPID
-keypair is the case that will recur. Verify the result rather than trusting the green check:
-
-```bash
-B=$(curl -sk https://<host>/ | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
-curl -sk "https://<host>$B" | grep -c '<the expected public key>'   # must print 1
-```
+Until 2026-11-19 a changed `VITE_*` repo variable needed a manual `force_frontend` deploy, because it
+was baked into the web bundle without changing `frontend/` (found wiring the VAPID key, `mezo-7kr3`).
+The web app, its build job and that input were retired (#52, `mezo-r36n9.97.3`); the details are in
+this file's git history.
 
 ## Out of scope (future, would each warrant its own ADR/doc)
 

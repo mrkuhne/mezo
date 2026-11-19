@@ -9,10 +9,6 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/security
   - backend/src/main/java/io/mrkuhne/mezo/techcore/exception
   - api/feature/auth/auth.yml
-  - frontend/src/app/auth
-  - frontend/src/features/auth
-  - frontend/src/shared/lib/userScope.ts
-  - frontend/src/data/_client/api.ts
 related: [_platform-data-layer, _platform-api-backend, _platform-notifications, _platform-language, me, admin-hub]
 ---
 
@@ -410,6 +406,7 @@ cd frontend && VITE_USE_MOCK=true pnpm test     # mock mode
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Public exercise stills (`mezo-r36n9.97.1`, 2026-11-19).** `SecurityConfig` permits `GET /exercises/**` without a token: the 248 demo JPEGs moved from the web app into the backend's static resources and the iPhone's image loader sends no `Authorization` header. Not personal data; a missing file answers 404, not 401 (`ExerciseImagesIT`).
 
 **Gotchas:**

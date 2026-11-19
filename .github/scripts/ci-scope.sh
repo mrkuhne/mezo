@@ -3,10 +3,10 @@
 # ci-scope.sh — should this ci.yml job do its expensive work on this commit? (mezo-dubmh)
 # =============================================================================
 #
-# The web frontend is frozen (owner decision #48, 2026-11-17) and most pushes to main are
-# iOS / docs / tracker commits. Before this script every one of them still ran the full
-# backend suite (~59 min) AND both frontend suites (~33 + 8 min) against code they had
-# not touched.
+# Most pushes to main are iOS / docs / tracker commits. Before this script every one of
+# them still ran the full backend suite (~59 min) AND the (since retired, 2026-11-19 #52)
+# web frontend suites (~33 + 8 min) against code they had not touched. Today only
+# test-backend calls it (`backend/ api/`).
 #
 # A job calls this with the path prefixes it cares about; the script writes `run=true|false`
 # to $GITHUB_OUTPUT and the job's expensive steps carry `if: steps.scope.outputs.run == 'true'`.

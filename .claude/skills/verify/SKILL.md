@@ -1,6 +1,6 @@
 ---
 name: verify
-description: How to runtime-verify mezo frontend changes end-to-end — build/launch/drive recipe for the mock-mode PWA surface.
+description: RETIRED 2026-11-19 (#52) — How to runtime-verify mezo frontend changes end-to-end — build/launch/drive recipe for the mock-mode PWA surface.
 ---
 
 # mezo frontend verify recipe

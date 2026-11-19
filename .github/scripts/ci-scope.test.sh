@@ -16,7 +16,7 @@ assert_eq() { # <actual> <expected> <name>
 # ── touches_scope ──
 printf 'docs/a.md\nios/Boop/App.swift\n' | touches_scope backend/ api/; assert_rc $? 1 "docs + ios only => backend out of scope"
 printf 'docs/a.md\nbackend/pom.xml\n' | touches_scope backend/ api/; assert_rc $? 0 "one backend file => in scope"
-printf 'api/feature/train.yml\n' | touches_scope frontend/ api/; assert_rc $? 0 "contract change => frontend in scope"
+printf 'api/feature/train.yml\n' | touches_scope backend/ api/; assert_rc $? 0 "contract change => backend in scope"
 printf '.github/workflows/ci.yml\n' | touches_scope backend/; assert_rc $? 0 "a CI change is always in scope"
 printf 'backendish/file\n' | touches_scope backend/; assert_rc $? 1 "prefix match needs the slash"
 printf '' | touches_scope backend/; assert_rc $? 1 "empty diff => out of scope"

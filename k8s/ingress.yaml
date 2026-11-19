@@ -1,6 +1,6 @@
 # The public front door. Traefik (bundled with k3s) turns this Ingress into
-# routing rules: /api → backend, everything else → frontend. Same host = same
-# browser origin, so the frontend's relative /api calls need no CORS.
+# routing rules: /api and /exercises → backend. Nothing else is served: the web
+# app (and its `/` → frontend rule) was retired 2026-11-19 (#52), so `/` answers 404.
 #
 # Host uses sslip.io: 46.225.112.172.sslip.io resolves to the server's public IP
 # with no domain purchase. Swap in a real domain later by changing `host` (in
@@ -39,10 +39,3 @@ spec:
                 name: backend
                 port:
                   number: 8090
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 80

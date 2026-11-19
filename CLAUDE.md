@@ -4,7 +4,7 @@ This file provides Claude-specific instructions for this project.
 
 > **Core house rules live in [`AGENTS.md`](AGENTS.md)** — beads, git workflow, session
 > completion, non-interactive shell discipline, docs mandate, architecture, build & test,
-> frontend/backend conventions. Reading it is MANDATORY at session start; everything there
+> backend conventions. Reading it is MANDATORY at session start; everything there
 > applies to Claude sessions in full.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
@@ -31,7 +31,7 @@ bd close <id>         # Complete work
 
 **"No-wait, net stays"** (owner decision 2026-09-18) — canonical rules in [`AGENTS.md`](AGENTS.md) §Git Workflow:
 
-- One bd issue + one `feat/<topic>` branch per change. Run the **local gates** for what you changed (backend focused tests and/or iOS `xcodebuild test`; the frozen web frontend only if you had to touch it — the 128 GB machine can run the full suite with `-Dmezo.test.use-testcontainers=true` when warranted) → `git pull --rebase` main → merge **locally with `--no-ff`** → `git push` main → delete the branch. **No self-PR, no waiting for CI before merge.** From a worktree: `git checkout --detach origin/main && git merge --no-ff <branch> && git push origin HEAD:main`.
+- One bd issue + one `feat/<topic>` branch per change. Run the **local gates** for what you changed (backend focused tests and/or iOS `xcodebuild test` — the 128 GB machine can run the full suite with `-Dmezo.test.use-testcontainers=true` when warranted) → `git pull --rebase` main → merge **locally with `--no-ff`** → `git push` main → delete the branch. **No self-PR, no waiting for CI before merge.** From a worktree: `git checkout --detach origin/main && git merge --no-ff <branch> && git push origin HEAD:main`.
 - **The safety net:** `ci.yml` still runs on every push to main. Don't wait for it — but **a red main outranks everything**: fix it before any new work. Check `gh run list --branch main --limit 1` at session start.
 - **Optional pre-merge cloud check** for risky changes (migrations, API contract, cross-cutting refactors): the old self-PR + `gh workflow run premerge.yml -f pr=<n>` flow remains available.
 - Conventional commit subjects carrying the driving bd id: `feat(api): ... (mezo-ej0)`.
@@ -41,7 +41,7 @@ bd close <id>         # Complete work
 **Work is NOT complete until `git push` succeeds — never leave work stranded locally.** Before ending a session:
 
 1. File bd issues for remaining work; close/update finished ones
-2. Run quality gates if code changed (backend: `./mvnw clean test`; iOS: `xcodebuild test` per `ios/README.md`; frontend only if touched: both modes + build)
+2. Run quality gates if code changed (backend: `./mvnw clean test`; iOS: `xcodebuild test` per `ios/README.md`)
 3. **Refresh the off-machine tracker backup** — `.beads/issues.jsonl` is the ONLY copy of the
    tracker outside this machine (the Dolt DB is gitignored), and **nothing maintains it
    automatically**: the beads pre-commit hook leaves it byte-identical. It silently drifted 429
@@ -120,13 +120,11 @@ plan, its look) keeps the space true **in the same session**:
 
 Privacy: no personal health values in Notion, ever (examples are invented and marked „például”).
 
-## What we build: the server and the iPhone app only (owner decision 2026-11-17, #48)
+## What we build: the server and the iPhone app only (owner decision 2026-11-19, #52)
 
-> **The web app is frozen.** "webes appot már nem fejlesztünk, csak iphone app és szerver."
-> Every new feature goes to **Boop** (the native iPhone app, `ios/`) and the **backend**. The web
-> frontend (`frontend/`) stays deployed as it is: no new screens, no web-only fixes, no Folyadék
-> work, no living-prototype upkeep. Logic Boop needs moves to the backend. Touch `frontend/` only
-> when a backend contract change would otherwise break its build or tests.
+> **The web app is retired** (decision #52, 2026-11-19; frozen since #48, 2026-11-17). Only the
+> iPhone app (**Boop**, `ios/`) and the server (`backend/`) are built. The old web code is
+> recoverable from git history.
 
 The retired web canon (Folyadék bible, `docs/design_2.0/prototypes/**`, the living-prototype
 Artifacts and `_link-status.mjs`) is history — read it only to recover what a web screen did.

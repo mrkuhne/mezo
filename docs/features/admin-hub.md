@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-11-13
+updated: 2026-11-19
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -11,8 +11,6 @@ key_files:
   - api/feature/llm-usage/llm-usage.yml
   - api/feature/ai-drafts/ai-drafts.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/admin
-  - frontend/src/features/admin
-  - frontend/src/data/admin
 related: [_platform-auth-security, me, _platform-api-backend, _platform-data-layer, _platform-design-system, admin-memory-explorer]
 ---
 
@@ -462,6 +460,7 @@ AiUsageHero/AiUserFilter.test.tsx`, `AdminLayout.test.tsx`, `Sparkline.test.tsx`
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **Hungarian number agreement (Check-in 2.0 follow-up C, 2026-09-28).** The memory explorer's sampled-vector banner no longer prints a fixed „a …-ból": `huArticle`/`huFrom` (`shared/lib/huNum.ts`) pick „a"/„az" and -ból/-ből from how the number is read aloud („az 1842-ből"); see [`admin-memory-explorer.md`](admin-memory-explorer.md). Copy only — no route, hook or contract moved.

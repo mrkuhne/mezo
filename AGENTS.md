@@ -25,8 +25,8 @@ bd close <id>         # Complete work
 ## Git Workflow
 
 - One bd issue + one `feat/<topic>` branch per change. Flow (**"no-wait, net stays"**, owner decision 2026-09-18): run the **local gates** for what you changed → merge **locally with `--no-ff`** into main → `git push` main → delete the branch. **No self-PR, no waiting for CI before merge.**
-- **Local gates before merge:** focused tests for the change (backend: focused module tests; iOS: `xcodebuild test` per `ios/README.md`; the frozen web frontend only if touched: both modes — `VITE_USE_MOCK` unset = mock AND `VITE_USE_MOCK=false`, `CI=true`). The current dev machine (128 GB) CAN run the full backend suite when warranted: `./mvnw clean test -Dmezo.test.use-testcontainers=true`. Recipes: [`docs/infrastructure/local-dev-testing.md`](docs/infrastructure/local-dev-testing.md).
-- **The safety net:** `ci.yml` (full backend IT suite + FE both modes + lint + contract-drift) still runs automatically on every push to main. Do NOT wait for it — but **a red main outranks everything**: if CI on main goes red, fixing it is the FIRST action of whichever session sees it, before any new work. Check `gh run list --branch main --limit 1` at session start.
+- **Local gates before merge:** focused tests for the change (backend: focused module tests; iOS: `xcodebuild test` per `ios/README.md`). The current dev machine (128 GB) CAN run the full backend suite when warranted: `./mvnw clean test -Dmezo.test.use-testcontainers=true`. Recipes: [`docs/infrastructure/local-dev-testing.md`](docs/infrastructure/local-dev-testing.md).
+- **The safety net:** `ci.yml` (full backend IT suite + lint + contract-drift) still runs automatically on every push to main. Do NOT wait for it — but **a red main outranks everything**: if CI on main goes red, fixing it is the FIRST action of whichever session sees it, before any new work. Check `gh run list --branch main --limit 1` at session start.
 - **Optional pre-merge cloud check** for risky/large changes (schema migrations, contract changes, cross-cutting refactors): the old self-PR + `gh workflow run premerge.yml -f pr=<n>` flow still works when you want a green light BEFORE the merge. Historical traps of that flow (stale merge ref, conflicting PR = zero checks): mezo-mxrc, mezo-l4am, mezo-x57b.
 - Conventional commit subjects carrying the driving bd id: `feat(api): ... (mezo-ej0)`.
 - `git pull --rebase` on main **before** merging the feature branch — rebasing *after* the merge flattens the `--no-ff` merge commit; push directly after merging. From a worktree, merge via detached HEAD: `git checkout --detach origin/main && git merge --no-ff <branch> && git push origin HEAD:main`.
@@ -36,7 +36,7 @@ bd close <id>         # Complete work
 **Work is NOT complete until `git push` succeeds — never leave work stranded locally.** Before ending a session:
 
 1. File bd issues for remaining work; close/update finished ones
-2. Run quality gates if code changed (backend: `./mvnw clean test`; iOS: `xcodebuild test`; frontend only if touched: both modes + build)
+2. Run quality gates if code changed (backend: `./mvnw clean test`; iOS: `xcodebuild test`)
 3. **Refresh the off-machine tracker backup** — `.beads/issues.jsonl` is the ONLY copy of the
    tracker outside this machine (the Dolt DB is gitignored), and **nothing maintains it
    automatically**: the beads pre-commit hook leaves it byte-identical. It silently drifted 429
@@ -61,7 +61,7 @@ For a decision, give **A helyzet** (context), **A gond** (user-visible consequen
 
 ## What we build: the server and the iPhone app only
 
-Owner decision 2026-11-17 (#48): **the web app is frozen.** New work goes to **Boop**, the native iPhone app (`ios/`, epic `mezo-r36n9`, look: the Napkelte canon, visual iteration in the iOS Simulator), and to the **backend**. The web frontend stays deployed as it is — no new screens, no web-only fixes, no Folyadék or living-prototype work; touch `frontend/` only when a backend contract change would otherwise break its build. The owner's sequence for anything he will see: **spec approval → simulator spike approval → plan approval → build, local gates, merge, push, deploy, install on the phone, live check, report.** After the final approval, carry the work through shipping without another visual review.
+Owner decision 2026-11-19 (#52): **the web app is retired.** Only the iPhone app — **Boop** (`ios/`, epic `mezo-r36n9`, look: the Napkelte canon, visual iteration in the iOS Simulator) — and the server (`backend/`) are built. The old web code is recoverable from git history. The owner's sequence for anything he will see: **spec approval → simulator spike approval → plan approval → build, local gates, merge, push, deploy, install on the phone, live check, report.** After the final approval, carry the work through shipping without another visual review.
 
 ## Production data
 
@@ -116,17 +116,13 @@ If a finished piece of work leaves no trace in `docs/` of the decision behind it
 - **Phase 2 — Core data backend:** 🔄 in progress. **Java / Spring Boot 4.0 + PostgreSQL**, swapping the mock hooks to a real REST API **without changing the hook signatures** (frontend untouched). Monorepo: `frontend/` + `backend/` + `api/` (OpenAPI contract — single source of truth for the FE↔BE boundary). Slice A (foundation + thin auth + biometrics + TanStack Query wiring) ✅ done; Slice B (Train) ✅ done; slices C (Fuel) → D (Insights seed) → E (People) remain.
 - **Phase 3 — AI brain:** later. Spring AI, pgvector, RAG, pattern/companion pipeline.
 
+The web app (`frontend/`) was retired 2026-11-19 (#52); today the monorepo is `backend/` + `api/` + `ios/`, and the old web code is in git history.
+
 Design spec for Phase 2 (slice map, decisions): `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`.
 
 ## Build & Test
 
 ```bash
-# Frontend (under frontend/)
-cd frontend
-pnpm dev          # vite dev server on :5180 — mode depends on frontend/.env: no .env (bare checkout) ⇒ MOCK by default; .env copied from .env.example sets VITE_USE_MOCK=false ⇒ REAL (backend on :8090 required); force either explicitly: VITE_USE_MOCK=true pnpm dev / VITE_USE_MOCK=false pnpm dev
-pnpm build        # tsc -b && vite build
-pnpm test         # vitest run — mode depends on ambient frontend/.env (VITE_USE_MOCK unset ⇒ mock, per data/_client/mode.ts; a local .env copied from .env.example sets it to false ⇒ real) — never rely on a bare invocation, always pin the mode explicitly, see the Gate below
-
 # Backend (under backend/)
 cd backend
 docker compose up -d            # local Postgres 16 on :15432 (mezo + mezo_test DBs via initdb/)
@@ -141,23 +137,10 @@ docker compose up -d            # local Postgres 16 on :15432 (mezo + mezo_test 
 ```bash
 # API contract (under api/ — see api_contract_conventions.md)
 cd api/generate && npm run generate:api   # merge feature fragments -> api/openapi.yml
-cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.ts (FE types)
 # backend Java types regenerate automatically in ./mvnw generate-sources/test
 ```
 
-**Custom local ports** (standard ones are taken by other projects on this machine): Postgres **15432** (`DB_PORT`), backend HTTP **8090** (`MEZO_PORT`), Vite dev **5180**. Frontend targets the API via `VITE_API_URL` (see `frontend/.env.example`). If the `mezo_pg` volume predates `backend/initdb/`, recreate it once: `docker compose down -v && docker compose up -d`.
-
-## Frontend Development Conventions (Phase 1+) — the web app is frozen (#48); these apply only if you must touch `frontend/`
-
-> **Trigger — read the reference FIRST.** Whenever you write, review, refactor, or plan **any** `frontend/src` code — a React page, component, bottom-sheet, feature-local logic, a data hook or mock, a REST client, a shared UI primitive, routing, or a frontend test — you MUST read **[`docs/references/frontend_conventions.md`](docs/references/frontend_conventions.md)** **before** writing code, and follow it exactly. Non-negotiable house standard; the living structure is in [`docs/features/_platform-design-system.md` §1a](docs/features/_platform-design-system.md), the rationale in [ADR 0003](docs/decisions/0003-frontend-structure-conventions.md).
-
-**The non-negotiables (the reference has the full rules + recipes):**
-- **Four layers:** `app/` (shell + `router.tsx`) · `features/<domain>/{pages,components,sheets,logic}/` · `shared/{ui,lib,hooks}/` · `data/` (per-domain + `_client/` + the `data/hooks.ts` barrel).
-- **Naming:** everything routed is a `*Section` (owns an `<Outlet>`) or a `*Page` (leaf). Modals → `*Sheet` in `sheets/`; presentational → `components/`; pure logic → `logic/`. **Never introduce a new `*Screen`/`*View`.**
-- **Data:** every feature imports hooks from **`@/data/hooks` only** (a thin re-export barrel); implementations live in `data/<domain>/<name>Hooks.ts`. Dual-mode reads use `useDualQuery` — never the mock seed as a real-mode fallback.
-- **Imports:** deep + absolute via the `@/*` alias; **no barrels** except `data/hooks.ts`; no relative `../`; tests colocated.
-- **`shared/ui` is domain-free** — a UI file that imports `@/data/*` or serves one feature belongs in `features/<domain>/components/`.
-- **Gate:** `cd frontend && pnpm build && VITE_USE_MOCK=true pnpm test && VITE_USE_MOCK=false pnpm test` — both modes green, both set **explicitly**: a bare `pnpm test` is environment-dependent either way (mock on an unset var, real if a local `frontend/.env` from `.env.example` sets `VITE_USE_MOCK=false`), so it can silently run the same mode twice and leave the other one vacuous — this is the same reasoning `ci.yml`'s `test-frontend` job comment gives for setting the var explicitly in both steps. Update the feature's `docs/features/<domain>.md` + run `node scripts/lint-docs.mjs`.
+**Custom local ports** (standard ones are taken by other projects on this machine): Postgres **15432** (`DB_PORT`), backend HTTP **8090** (`MEZO_PORT`). If the `mezo_pg` volume predates `backend/initdb/`, recreate it once: `docker compose down -v && docker compose up -d`.
 
 ## Backend Development Conventions (Phase 2+) — MANDATORY
 
@@ -172,7 +155,7 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 | `testing_standards.md` | any backend test — integration-first (`@SpringBootTest` + Testcontainers Postgres), `test{Method}_should{Result}_when{Condition}`, AssertJ only, Java `DatabasePopulator` data, no mocks/`@MockBean`/H2 in integration tests |
 | `integration_test_framework.md` | any integration test or test infrastructure — extend `AbstractIntegrationTest` (service-level) / `ApiIntegrationTest` (HTTP-level: verb helpers, `ownerAuthHeaders()`, SystemMessage asserts), data via `*Populator` factories, **new domain table → `ResetDatabase` TRUNCATE list, new aggregate → new populator** |
 | `configuration_conventions.md` | any configurable value or feature toggle — everything in `application.yml` under the `mezo:` root (switches: `mezo.feature.<name>.enabled` + `FeaturesConfiguration` constants + `@ConditionalOnProperty`; values: `@Validated` `*Properties` records), **never `@Value`**, no hardcoded tunables |
-| `api_contract_conventions.md` | any REST endpoint or FE↔BE DTO — **contract-first**: edit `api/feature/<name>/<name>.yml` BEFORE code, merge (`api/generate`), backend implements generated `<Tag>Api` + uses `api.dto` models, frontend types from `src/data/_client/api.gen.ts` (`satisfies` on request bodies); never hand-write boundary DTOs |
+| `api_contract_conventions.md` | any REST endpoint or FE↔BE DTO — **contract-first**: edit `api/feature/<name>/<name>.yml` BEFORE code, merge (`api/generate`), backend implements generated `<Tag>Api` + uses `api.dto` models; never hand-write boundary DTOs |
 | `companion_tool_conventions.md` | any `@Tool` in `feature/companion/tools/` — narrow responsibility, enumerated `scope`/param values, an explicit `Használd, amikor …` trigger clause, describe ONLY what is rendered (no overclaim); keep the system prompt's `[Eszköz-útmutató]` routing hint (`ChatService.SYSTEM_PROMPT`) in sync |
 | `security_conventions.md` | any auth, identity, ownership, cron fan-out or prompt-persona code — `CurrentUser`/`requireOwner()`, foreign row = 404, `UserFanOut`, `{{NÉV}}` via `PromptPersona`, B-user test on every endpoint |
 

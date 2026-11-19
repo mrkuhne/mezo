@@ -1,20 +1,16 @@
 ---
 title: Insights (the Mezo tab)
 type: feature-domain
-status: mixed
-updated: 2026-11-17
+status: retired
+updated: 2026-11-19
 tags: [insights, mezo-tab, frontend, data-layer]
-key_files:
-  - frontend/src/features/insights
-  - frontend/src/data/insights
-  - frontend/src/data/character
-  - frontend/src/data/feedback
-  - frontend/src/shared/lib/markdown.tsx
-  - frontend/src/features/insights/logic/coachingCopy.ts
+key_files: []
 related: [_platform-data-layer, _platform-design-system, today, me, character, companion, proactive]
 ---
 
 # Insights — the Mezo tab — Feature Documentation
+
+> **Retired 2026-11-19 (#52, `mezo-r36n9.97.3`).** This area existed only in the web app, which was switched off. The doc is kept as history; the code it describes is in git history.
 
 > One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)); **Memoir** is ✅ real since **proactive W2 (`mezo-h4wp.4`)** — the tab un-ghosted, rendering the companion's generated weekly memoir (anniversary/archive stay mock-only; the mock-only demo reaction row was RETIRED at Phase 5 W4.1 `mezo-b3pp.15` in favour of real 👍/👎 feedback chips that render in both modes — §2.3, closes `mezo-kr9v`); **Predictions** is ✅ real since **proactive P1 (`mezo-h4wp.7`)** — the tab un-ghosted, rendering pattern-grounded forecasts with deterministic validation („tanulom" on null confidence, honest accuracy header); and **Experiments** is ✅ real since **proactive P2 (`mezo-h4wp.8`)** — the last tab un-ghosted, rendering companion-proposed N=1 experiments with an L2 accept/dismiss write path + deterministic outcomes. **All proactive-epic tabs are now real** (`PHASE3_TAB_IDS` is empty; the proactive epic is complete) — plus the post-epic **Memória** tab (§2.9, `mezo-al1i`, a read-only observatory over the memory pipeline itself), never phase-gated, for **all seven remaining Insights tabs real** today. **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. **Reached as the `Mezo` tab** — the fourth of the five first-class tabs, promoted out of a hidden ✨-icon link in Today's header by Design 2.0 ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md)). **The name changed with the promotion: the section is called `Mezo`, its routes are `/mezo/*`, and `/insights/*` is a redirect** (§2). **The post-epic Motor tab (was §2.8, `mezo-viqs`/`mezo-18bx`) is RETIRED (`mezo-tk88.4`)** — its pattern-gate diagnostics were folded into the Patterns tab's own dashboard (new §2.1: hero + decision inbox + lifecycle sections + a collapsed „Adat-egészség" coverage panel) and the per-pattern **pattern-pair detail page** (§2.1b, `mezo-tk88.5` — `PatternDetailPage.tsx`); `/mezo/motor` now redirects to `/mezo/patterns` (`router.tsx`). **The Weekly tab (was §2.2, `mezo-t16y.1`/D′) is also RETIRED (`mezo-p2tr`)** — the weekly score review, its growth card and the weekly tervjavaslat prose all moved to **`/me/week`** (the `Heti` hub + view-pages, backed by the backend-computed `GET /api/me/week` — [`me.md`](me.md)); `/mezo/weekly` now redirects to `/me/week` (`router.tsx`).
 
@@ -1528,6 +1524,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history. Everything this doc describes lived only in the web app, so it is `status: retired` and kept as history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **A minta SOSEM a nyilas belső párcímével vagy a gépi statisztikai mondattal szól a felhasználóhoz (mezo-0469 szabálya, 2026-09-26-i visszaesés után újra kimondva).** A katalógus `title`-je („Esti lezárás ↔ rákövetkező alvásminőség”) a motor belső neve, a tárolt statisztikai `Pattern.mechanism` („Gyenge pozitív együttjárás a(z) … között …”, `PatternDetectionService.mechanism()`) a Pearson-futás leírása. Minden felhasználói felület a `logic/patternCopy.ts` két függvényén át beszél: `patternHeadline(title, pair)` → a pár kérdése (`questionHu`, pl. „Jobban alszol, ha este lezárod a napot?”; pár nélkül a nyilas címből kérdő mondat), `patternPlainLine(mechanism, pair)` → a lelet mondata (`findingSentence`), különben a pár miértje (`mechanismHu`); az emberi (reflexiós) szöveg változatlanul megy. Használói: a fal és a szobák (`teamFeed.patternPost`/`observationPost`, `teamEdition.editionPost` régi kiadásai), a részlet-hero (`PatternAnswerHero`, `mezo-rstt7` óta minden sor — katalógus és laborfüzet egyaránt — ugyanazt az egy hőst kapja; a korábbi `HypothesisStateCard`/`PatternDetailHero` külön hős-párost törölte a rewrite, a „Hipotézis: {cím}?” sor változatlanul megszűnt, helyette a miért), a mentett-minta fallback (`PatternArtifactDetail`). A `pairLine` nyíl helyett „Figyelem: A és másnapi B”; a teszt-terv csempék között nincs nyíl, a sáv köznyelvi („másnap · nézem a hatást”, „8 nap · kell a döntéshez”, „60 nap · ennyit nézek vissza”, érték-fajta: „megtörtént-e aznap / hánykor volt / mennyi volt aznap”). Backend-oldalon az esti kiadás jelöltje (`EditionCandidateCollector`) statisztikai sornál és gyűlő párnál a pár kérdését/miértjét viszi címnek/rekord-szövegnek. **Új felület, ami mintát mutat → ezeken a függvényeken át, soha nem `pattern.title`/`pattern.mechanism`/`pair.title` nyersen.**

@@ -2,17 +2,13 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-11-11
+updated: 2026-11-19
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
   - backend/src/main/java/io/mrkuhne/mezo/feature/notification
   - backend/src/main/java/io/mrkuhne/mezo/feature/appnotification
   - api/feature/notification/notification.yml
-  - frontend/public/push-sw.js
-  - frontend/src/data/notification
-  - frontend/src/features/me/pages/NotificationFeedPage.tsx
-  - frontend/src/features/notification/logic
 related: [proactive, today, ritual, me, fuel, insights, journal, companion, _platform-api-backend]
 ---
 
@@ -1242,6 +1238,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **The header panel's two CSS rules MUST stay `.app-head > …`-qualified, and the scrim's
   `z-index` MUST stay low (mezo-g9fz).** Both are stacking/specificity traps in the shell header,
   and both were hit while building the panel:

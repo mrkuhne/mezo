@@ -1,14 +1,14 @@
 name: ghcr-retention
 # Scheduled GHCR tag-retention (mezo-gloh).
 #
-# WHY THIS EXISTS: deploy.yml pushes a new ghcr.io/mrkuhne/mezo-backend and
-# ghcr.io/mrkuhne/mezo-frontend version on every release and NEVER deletes old
-# ones — the registry kept all 599 images before a manual cleanup
+# WHY THIS EXISTS: deploy.yml pushes a new ghcr.io/mrkuhne/mezo-backend
+# version on every release and NEVER deletes old ones — the registry kept all 599 images before a manual cleanup
 # (mezo-ibxy slice 0). This workflow prunes old versions on a schedule, always
 # keeping: the newest 20 versions per package, AND any version whose tags
-# include a tag currently pinned in k8s/backend/deployment.yaml or
-# k8s/frontend/deployment.yaml (read at runtime, so a re-pin is picked up
-# automatically without editing this file).
+# include a tag currently pinned in k8s/backend/deployment.yaml (read at
+# runtime, so a re-pin is picked up automatically without editing this file).
+# The mezo-frontend package left the matrix when the web app was retired
+# (2026-11-19, #52); its remaining versions are no longer pruned or deployed.
 #
 # WHY THE GITHUB API DIRECTLY, NOT actions/delete-package-versions:
 #   - Its `ignore-versions` input is a regex tested against `version.name`,
@@ -22,7 +22,7 @@ name: ghcr-retention
 #     re-derived from a manifest-digest lookup done outside the action anyway,
 #     at which point calling the API ourselves is simpler and auditable.
 #   - Multi-arch safety was also checked and is a non-issue either way: both
-#     build-frontend and build-backend in deploy.yml call
+#     build-backend in deploy.yml calls
 #     docker/build-push-action with `platforms: linux/amd64` only (a single
 #     platform, no matrix) — so every pushed version is a plain single-arch
 #     image, not a multi-arch manifest list, and there are no attestation/sig
@@ -32,7 +32,7 @@ name: ghcr-retention
 #     dependency on an ignore-versions regex working the way we need.
 #
 # WHY THE PLAIN GITHUB_TOKEN: the repo owner (mrkuhne) is a personal GitHub
-# user account, not an org, and deploy.yml already pushes both packages using
+# user account, not an org, and deploy.yml already pushes the package using
 # `docker/login-action` with `password: secrets.GITHUB_TOKEN` — that only
 # succeeds because the packages are linked to this repo, and a repo-linked
 # package accepts the workflow's own GITHUB_TOKEN (with `packages: write`)
@@ -99,7 +99,7 @@ jobs:
         id: keep-tags
         run: |
           tags=$(grep -hoE 'image:\s*ghcr\.io/[^:[:space:]]+:[^[:space:]]+' \
-                   k8s/backend/deployment.yaml k8s/frontend/deployment.yaml \
+                   k8s/backend/deployment.yaml \
                  | sed -E 's#.*:([^:]+)$#\1#' \
                  | sort -u \
                  | tr '\n' ' ')
@@ -112,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [mezo-backend, mezo-frontend]
+        package: [mezo-backend]
     steps:
       - name: Prune old GHCR versions for ${{ matrix.package }}
         env:

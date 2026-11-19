@@ -6,19 +6,18 @@
 //
 //   node scripts/check-generator-toolchain.mjs --manifests   # pins only (no install needed)
 //   node scripts/check-generator-toolchain.mjs api           # + api/generate/node_modules
-//   node scripts/check-generator-toolchain.mjs frontend      # + frontend/node_modules
 //
-// Why: `api/openapi.yml` and `frontend/src/data/_client/api.gen.ts` are generated
-// AND committed, and CI's contract-drift job regenerates them with a lockfile-exact
-// toolchain and fails on any difference. So the generator's version is part of those
-// artifacts' identity. When the d20-fuel-mely merge (efa5a1bb5) committed an
-// openapi.yml produced by a STALE node_modules — a serializer that quotes strings
+// Why: `api/openapi.yml` is generated AND committed, and CI's contract-drift job
+// regenerates it with a lockfile-exact toolchain and fails on any difference. So the
+// generator's version is part of that artifact's identity. (The web app's generated
+// `api.gen.ts` and its `frontend` toolchain left with the web app, retired 2026-11-19, #52.)
+// When the d20-fuel-mely merge (efa5a1bb5) committed an openapi.yml produced by a STALE node_modules — a serializer that quotes strings
 // differently — every open PR failed contract-drift through no fault of its own,
 // until a canonical regeneration healed it (224637b36). mezo-a5m2.
 //
 // Two independent holes are closed here:
-//   1. the manifests used caret RANGES, so `npm install` / `pnpm install` (without
-//      --frozen-lockfile) could float the generator to a newer version at any time;
+//   1. the manifests used caret RANGES, so `npm install` (without a lockfile-exact
+//      install) could float the generator to a newer version at any time;
 //   2. nothing checked that the node_modules you are about to generate FROM matches
 //      the pin at all — the exact failure above.
 //
@@ -38,12 +37,6 @@ const TOOLCHAINS = {
     modules: 'api/generate/node_modules',
     deps: ['openapi-merge-cli'],
     writes: 'api/openapi.yml',
-  },
-  frontend: {
-    manifest: 'frontend/package.json',
-    modules: 'frontend/node_modules',
-    deps: ['openapi-typescript'],
-    writes: 'frontend/src/data/_client/api.gen.ts',
   },
 };
 
@@ -91,7 +84,7 @@ function checkInstalled(key, declared) {
 const arg = process.argv[2] ?? '--manifests';
 const keys = arg === '--manifests' ? Object.keys(TOOLCHAINS) : [arg];
 for (const k of keys) {
-  if (!TOOLCHAINS[k]) { console.error(`unknown toolchain '${k}' (expected: api | frontend | --manifests)`); process.exit(2); }
+  if (!TOOLCHAINS[k]) { console.error(`unknown toolchain '${k}' (expected: api | --manifests)`); process.exit(2); }
   const declared = checkManifest(k);
   if (arg !== '--manifests') checkInstalled(k, declared);
 }

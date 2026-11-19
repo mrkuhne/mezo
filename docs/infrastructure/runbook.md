@@ -21,7 +21,7 @@ running **k3s** `v1.35.5+k3s1` (single node, control-plane + workload). k3s bund
 
 | Namespace | What | Notes |
 |---|---|---|
-| `mezo` | the app: `postgres` (StatefulSet, image `pgvector/pgvector:pg16` since 2026-07-03 — companion V2.1), `backend` (Deployment — **Phase-3 companion LIVE since 2026-07-04**: `GEMINI_API_KEY` in the `mezo-app` SealedSecret, nightly crons 02:20/02:40 + Sun 03:00), `frontend` (Deployment), `pgadmin` (Deployment), `postgres-exporter` (Deployment) | the product |
+| `mezo` | the app: `postgres` (StatefulSet, image `pgvector/pgvector:pg16` since 2026-07-03 — companion V2.1), `backend` (Deployment — **Phase-3 companion LIVE since 2026-07-04**: `GEMINI_API_KEY` in the `mezo-app` SealedSecret, nightly crons 02:20/02:40 + Sun 03:00), `pgadmin` (Deployment), `postgres-exporter` (Deployment) | the product |
 | `kube-system` | k3s core (Traefik, CoreDNS, metrics-server, local-path) + **sealed-secrets controller** | platform |
 | `cert-manager` | cert-manager (Let's Encrypt certs) | public HTTPS |
 | `argocd` | ArgoCD (GitOps controller + UI) | deploys `k8s/` from git |
@@ -29,21 +29,21 @@ running **k3s** `v1.35.5+k3s1` (single node, control-plane + workload). k3s bund
 | `monitoring` | VictoriaMetrics k8s-stack: vmsingle/vmagent (metrics), vlsingle/vlagent (logs), vmalert + alertmanager (→ Telegram, **pending** — blackhole until the token is sealed, §4), Grafana | observability, ADR 0037 |
 
 **Images** (private, on GitHub Container Registry, pulled with the `ghcr-pull` secret):
-`ghcr.io/mrkuhne/mezo-backend`, `ghcr.io/mrkuhne/mezo-frontend` — tags in `k8s/*/deployment.yaml`.
+`ghcr.io/mrkuhne/mezo-backend` — tag in `k8s/backend/deployment.yaml`. (The web app's
+`mezo-frontend` image is no longer built or deployed since 2026-11-19, #52.)
 
 ---
 
 ## 2. How it works (request flows)
 
-**Public app** — `https://46.225.112.172.sslip.io/`
+**Public API** — `https://46.225.112.172.sslip.io/` (used by the iPhone app)
 ```
-browser ─DNS(sslip.io→46.225.112.172)→ :443 ─→ Traefik ─Ingress "mezo"→
-    /        → frontend Service :80  (nginx serving the static PWA)
-    /api/*   → backend  Service :8090 (Spring Boot) ─→ postgres Service :5432
+client ─DNS(sslip.io→46.225.112.172)→ :443 ─→ Traefik ─Ingress "mezo"→
+    /api/*       → backend Service :8090 (Spring Boot) ─→ postgres Service :5432
+    /exercises/* → backend Service :8090 (exercise stills, static)
+    /            → 404 (the web app was retired 2026-11-19, #52)
 TLS: Let's Encrypt cert in Secret "mezo-tls", issued/renewed by cert-manager (HTTP-01).
 ```
-Same host for FE and API → same browser origin → no CORS. The frontend was built with
-`VITE_API_URL=""`, so it calls `/api/*` relatively (domain not baked in).
 
 **Private admin** — `https://pgadmin.tail8ce56d.ts.net`, `https://argocd.tail8ce56d.ts.net`
 ```
@@ -243,10 +243,7 @@ Do **not** `kubectl apply` for things under `k8s/` — ArgoCD owns them (selfHea
 # backend
 cd backend && ./mvnw -B clean package -DskipTests
 docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-backend:0.0.2 backend --push
-# frontend
-cd frontend && VITE_USE_MOCK=false VITE_API_URL= pnpm build
-docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-frontend:0.0.2 frontend --push
-# then bump the image tag in k8s/backend/deployment.yaml (or frontend) and:
+# then bump the image tag in k8s/backend/deployment.yaml and:
 git commit -am "deploy backend 0.0.2" && git push     # ArgoCD rolls it out
 ```
 GHCR login if needed: `gh auth token | docker login ghcr.io -u mrkuhne --password-stdin`.

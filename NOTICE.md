@@ -2,8 +2,8 @@
 
 ## MuscleMap (body geometry)
 
-`frontend/src/features/train/logic/bodyGeometry.gen.ts` is generated (see
-`scripts/gen-body-geometry.mjs`, from the vendored sources under `scripts/vendor/musclemap/`)
+`ios/BoopKit/Sources/BoopDesign/Napkelte/BodyGeometry.gen.swift` is generated (see
+`scripts/gen-body-geometry-swift.mjs`, from the vendored sources under `scripts/vendor/musclemap/`)
 from the anatomy path data of **MuscleMap** — https://github.com/melihcolpan/MuscleMap —
 Copyright © 2026 Melih Colpan, licensed under the MIT License:
 

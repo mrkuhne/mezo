@@ -2,16 +2,13 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-10-09
+updated: 2026-11-19
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalProposePort.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java
   - api/feature/lifegoal/lifegoal.yml
-  - frontend/src/data/lifegoal
-  - frontend/src/features/me/pages/CelokPage.tsx
-  - frontend/src/features/me/pages/CelPage.tsx
 related: [goal-engine, growth, companion, me, today, train, ../research/entities/exist-io.md, ../research/concepts/goal-type-taxonomies.md, ../research/concepts/perma-and-wellbeing-taxonomies.md, ../research/concepts/goal-conflict.md, ../research/concepts/goal-pursuit-evidence.md]
 ---
 
@@ -877,6 +874,7 @@ correctly in every golden while being invisible in the app (§9).
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **After a save or a delete the form does not stay behind the user (Folyadék F1 final review, `mezo-n4wf5.1`, 2026-10-09).** With a history-based back, a post-mutation `navigate(...)` that PUSHED left the editor — or the deleted record — one Vissza away. The leave now replaces the current entry or pops (`useLeaveAfterMutation` in `shared/hooks/useBackNav.ts`, rules in `shared/lib/backNav.ts`; see [`_platform-design-system.md`](_platform-design-system.md)). Destinations are unchanged. `CelWizardPage` (draft → `/me/goals`, activated → `/me/goals/:id`) and `CelPage`'s Archiválás (→ `/me/goals`) REPLACE the entry they leave. Pinned by `tests/layout/navigation.spec.ts` („Vissza after a save or a delete…").
