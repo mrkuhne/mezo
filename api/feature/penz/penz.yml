@@ -19,7 +19,7 @@ paths:
         '200':
           description: The settings
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzSettingsResponse' } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     put:
       tags: [Penz]
       operationId: putPenzSettings
@@ -31,8 +31,8 @@ paths:
         '200':
           description: The stored settings
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzSettingsResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/accounts:
     get:
       tags: [Penz]
@@ -46,7 +46,7 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PenzAccountResponse' } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     post:
       tags: [Penz]
       operationId: createPenzAccount
@@ -58,8 +58,8 @@ paths:
         '200':
           description: The created account
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/accounts/{id}:
     put:
       tags: [Penz]
@@ -74,9 +74,9 @@ paths:
         '200':
           description: The updated account
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No such account of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such account of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/accounts/{id}/archive:
     post:
       tags: [Penz]
@@ -88,8 +88,8 @@ paths:
         '200':
           description: The archived account
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountResponse' } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No such account of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such account of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/categories:
     get:
       tags: [Penz]
@@ -101,7 +101,7 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PenzCategoryResponse' } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     post:
       tags: [Penz]
       operationId: createPenzCategory
@@ -113,9 +113,9 @@ paths:
         '200':
           description: The created category
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzCategoryResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '409': { description: A category of this kind already has this name, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'A category of this kind already has this name', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/categories/{id}:
     put:
       tags: [Penz]
@@ -130,10 +130,10 @@ paths:
         '200':
           description: The updated category
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzCategoryResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No such category of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '409': { description: A category of this kind already has this name, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such category of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'A category of this kind already has this name', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/transactions:
     get:
       tags: [Penz]
@@ -151,8 +151,8 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PenzTransactionResponse' } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     post:
       tags: [Penz]
       operationId: createPenzTransaction
@@ -164,10 +164,10 @@ paths:
         '200':
           description: The stored transaction
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzTransactionResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: Unknown account or category of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Unknown account or category of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: 'No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/transactions/{id}:
     put:
       tags: [Penz]
@@ -182,10 +182,10 @@ paths:
         '200':
           description: The updated transaction
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzTransactionResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No such transaction of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such transaction of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: 'No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     delete:
       tags: [Penz]
       operationId: deletePenzTransaction
@@ -194,8 +194,8 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '204': { description: Deleted }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No such transaction of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such transaction of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/transactions/{id}/reviewed:
     post:
       tags: [Penz]
@@ -207,8 +207,8 @@ paths:
         '200':
           description: The transaction
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzTransactionResponse' } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No such transaction of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such transaction of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/transfers:
     post:
       tags: [Penz]
@@ -223,10 +223,10 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PenzTransactionResponse' } }
-        '400': { description: Validation failure (e.g. the same account on both sides), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: Unknown account of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure (e.g. the same account on both sides)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Unknown account of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: 'No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/recurring-rules:
     get:
       tags: [Penz]
@@ -238,7 +238,7 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PenzRecurringRuleResponse' } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     post:
       tags: [Penz]
       operationId: createPenzRecurringRule
@@ -250,10 +250,10 @@ paths:
         '200':
           description: The created rule
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzRecurringRuleResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: Unknown account or category of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Unknown account or category of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: 'No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/recurring-rules/{id}:
     put:
       tags: [Penz]
@@ -268,10 +268,10 @@ paths:
         '200':
           description: The updated rule
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzRecurringRuleResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No such rule of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such rule of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: 'No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     delete:
       tags: [Penz]
       operationId: deletePenzRecurringRule
@@ -280,8 +280,8 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '204': { description: Deleted }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No such rule of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such rule of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/allowance:
     get:
       tags: [Penz]
@@ -293,9 +293,9 @@ paths:
         '200':
           description: The allowance for the month and week containing the date
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzAllowanceResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '501': { description: Not built yet (PENZ_NOT_IMPLEMENTED) — the engine lands in a later phase of L4, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '501': { description: 'Not built yet (PENZ_NOT_IMPLEMENTED) — the engine lands in a later phase of L4', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/month-closes:
     get:
       tags: [Penz]
@@ -307,7 +307,7 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PenzMonthCloseResponse' } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/month-closes/open:
     get:
       tags: [Penz]
@@ -319,7 +319,7 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PenzMonthCloseResponse' } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/month-closes/{month}:
     post:
       tags: [Penz]
@@ -337,10 +337,10 @@ paths:
         '200':
           description: The close
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzMonthCloseResponse' } } }
-        '400': { description: Validation failure, or the month is not over yet, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '409': { description: Already closed, or no savings-target account for a transfer, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '501': { description: Not built yet (PENZ_NOT_IMPLEMENTED) — the remaining figure needs the engine of a later phase, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure, or the month is not over yet', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'Already closed, or no savings-target account for a transfer', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '501': { description: 'Not built yet (PENZ_NOT_IMPLEMENTED) — the remaining figure needs the engine of a later phase', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
     PenzMoney:

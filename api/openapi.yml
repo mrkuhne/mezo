@@ -14760,8 +14760,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PenzMonthCloseResponse'
         '400':
-          description: Validation failure
-          or the month is not over yet: null
+          description: 'Validation failure, or the month is not over yet'
           content:
             application/json:
               schema:
@@ -14773,8 +14772,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
-          description: Already closed
-          or no savings-target account for a transfer: null
+          description: 'Already closed, or no savings-target account for a transfer'
           content:
             application/json:
               schema:
@@ -14815,8 +14813,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
-          description: Missing
-          unknown or revoked API key: null
+          description: 'Missing, unknown or revoked API key'
           content:
             application/json:
               schema:

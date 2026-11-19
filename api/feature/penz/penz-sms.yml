@@ -24,9 +24,9 @@ paths:
         '200':
           description: What happened to the SMS
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzSmsIngestResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing, unknown or revoked API key, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '429': { description: Too many SMS for this key (Retry-After header), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing, unknown or revoked API key', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '429': { description: 'Too many SMS for this key (Retry-After header)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/sms/keys:
     get:
       tags: [PenzSms]
@@ -38,7 +38,7 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PenzSmsKeyResponse' } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     post:
       tags: [PenzSms]
       operationId: createPenzSmsKey
@@ -50,8 +50,8 @@ paths:
         '200':
           description: The key, with its plaintext once
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzSmsKeyCreatedResponse' } } }
-        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/sms/keys/{id}:
     delete:
       tags: [PenzSms]
@@ -61,8 +61,8 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '204': { description: Revoked }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No such key of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such key of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
     PenzSmsIngestRequest:
