@@ -2696,6 +2696,89 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/exercises/{exerciseId}/discomfort':
+    post:
+      tags:
+        - Train
+      operationId: markExerciseDiscomfort
+      summary: Remember that an exercise does not feel right (mezo-r36n9.66)
+      description: >-
+        The swap-time "nem esik jól" note, keyed by the exercise's identity and
+        the workout's day. Idempotent per day.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Done
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The workout is not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Train
+      operationId: clearExerciseDiscomfort
+      summary: Take back today's discomfort note on an exercise (mezo-r36n9.66)
+      description: Removes the workout day's note only; older notes keep counting.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Done
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The workout is not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/workouts/{id}/exercises/{exerciseId}/plan-sets':
     post:
       tags:

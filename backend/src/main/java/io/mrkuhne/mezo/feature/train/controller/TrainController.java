@@ -60,6 +60,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import io.mrkuhne.mezo.feature.train.service.EwmaEstimator;
+import io.mrkuhne.mezo.feature.train.service.ExerciseDiscomfortService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymProfileService;
@@ -103,6 +104,7 @@ public class TrainController implements TrainApi {
     private final SportSlotSkipService sportSlotSkipService;
     private final GymScheduleService gymScheduleService;
     private final GymProfileService gymProfileService;
+    private final ExerciseDiscomfortService exerciseDiscomfortService;
     private final ExerciseCatalogService exerciseCatalogService;
     private final ExerciseRecordService exerciseRecordService;
     private final MedalService medalService;
@@ -383,6 +385,16 @@ public class TrainController implements TrainApi {
     @Override
     public WorkoutExerciseChangeResponse changeWorkoutExercise(UUID id, WorkoutExerciseChangeRequest request) {
         return workoutExerciseChangeService.change(currentUserId.get(), id, request);
+    }
+
+    @Override
+    public void markExerciseDiscomfort(UUID id, UUID exerciseId) {
+        exerciseDiscomfortService.mark(currentUserId.get(), id, exerciseId);
+    }
+
+    @Override
+    public void clearExerciseDiscomfort(UUID id, UUID exerciseId) {
+        exerciseDiscomfortService.clear(currentUserId.get(), id, exerciseId);
     }
 
     @Override

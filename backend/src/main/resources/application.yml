@@ -2957,6 +2957,9 @@ mezo:
       glute:    { mev: 8,  mav: 12, mrv: 18 }
       calf:     { mev: 6,  mav: 10, mrv: 16 }
   train:
+    substitute:                    # reasoned exercise swap (mezo-r36n9.66)
+      feedback-window: 3           # newest after-exercise answers that count towards an exercise's discomfort level
+      record-window-days: 42       # days a swap-time "nem esik jól" record counts
     gym-default-minutes: 60        # gym schedule slots carry no duration
     run-default-minutes: 45        # interval runs have no single continuous duration
     sport-session-max-span-days: 400   # widest inclusive from..to window the sport-session log accepts
