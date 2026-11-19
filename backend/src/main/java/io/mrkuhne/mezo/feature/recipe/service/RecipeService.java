@@ -49,12 +49,37 @@ public class RecipeService {
 
     @Transactional
     public RecipeResponse create(UUID userId, RecipeRequest req) {
+        if (req.getClientRef() != null) {
+            return createIdempotent(userId, req, req.getClientRef());
+        }
         RecipeEntity recipe = new RecipeEntity();
         recipe.setCreatedBy(userId); // server-side ownership — never from the client
         mapper.applyScalars(recipe, req);
         rebuildLines(userId, recipe, req.getIngredients());
         RecipeEntity saved = repository.save(recipe); // cascade=ALL persists the lines
         return withFit(saved, mapper.toResponse(saved), pantryByIdFor(List.of(saved)));
+    }
+
+    /**
+     * The retry path (mezo-dguzv, the meal create's shape): the recipe for a repeated {@code clientRef} is
+     * returned as it is — never a second one, and never rewritten by the repeat — and only the call that
+     * really created it fills the fields and the lines. The header is claimed with
+     * {@code INSERT … ON CONFLICT DO NOTHING}, so a concurrent request with the same ref waits on the index
+     * until this transaction commits (header AND lines together), then reads the finished recipe.
+     */
+    private RecipeResponse createIdempotent(UUID userId, RecipeRequest req, UUID ref) {
+        var existing = repository.findByCreatedByAndClientRefAndDeletedFalse(userId, ref);
+        if (existing.isPresent()) {
+            return withFit(existing.get(), mapper.toResponse(existing.get()), pantryByIdFor(List.of(existing.get())));
+        }
+        int created = repository.insertIfClientRefAbsent(userId, req.getName(), req.getCategory(), ref);
+        RecipeEntity recipe = repository.findByCreatedByAndClientRefAndDeletedFalse(userId, ref).orElseThrow();
+        if (created == 1) {
+            mapper.applyScalars(recipe, req);
+            rebuildLines(userId, recipe, req.getIngredients());
+            recipe = repository.saveAndFlush(recipe);
+        }
+        return withFit(recipe, mapper.toResponse(recipe), pantryByIdFor(List.of(recipe)));
     }
 
     // Reads stay annotated by exception: the mapper walks the recipe's LAZY lines and
