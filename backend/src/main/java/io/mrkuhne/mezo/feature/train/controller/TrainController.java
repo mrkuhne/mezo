@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.CatalogVideoRequest;
 import io.mrkuhne.mezo.api.dto.CustomWorkoutResponse;
 import io.mrkuhne.mezo.api.dto.CustomWorkoutUpsertRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
+import io.mrkuhne.mezo.api.dto.ExerciseSubstitutesResponse;
 import io.mrkuhne.mezo.api.dto.ExerciseNoteRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
@@ -61,6 +62,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import io.mrkuhne.mezo.feature.train.service.EwmaEstimator;
 import io.mrkuhne.mezo.feature.train.service.ExerciseDiscomfortService;
+import io.mrkuhne.mezo.feature.train.service.ExerciseSubstituteService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymProfileService;
@@ -105,6 +107,7 @@ public class TrainController implements TrainApi {
     private final GymScheduleService gymScheduleService;
     private final GymProfileService gymProfileService;
     private final ExerciseDiscomfortService exerciseDiscomfortService;
+    private final ExerciseSubstituteService exerciseSubstituteService;
     private final ExerciseCatalogService exerciseCatalogService;
     private final ExerciseRecordService exerciseRecordService;
     private final MedalService medalService;
@@ -390,6 +393,11 @@ public class TrainController implements TrainApi {
     @Override
     public void markExerciseDiscomfort(UUID id, UUID exerciseId) {
         exerciseDiscomfortService.mark(currentUserId.get(), id, exerciseId);
+    }
+
+    @Override
+    public ExerciseSubstitutesResponse getExerciseSubstitutes(UUID id, UUID exerciseId) {
+        return exerciseSubstituteService.substitutes(currentUser.get(), id, exerciseId);
     }
 
     @Override

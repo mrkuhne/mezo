@@ -1769,6 +1769,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/workouts/{id}/exercises/{exerciseId}/substitutes:
+    get:
+      tags: [Train]
+      operationId: getExerciseSubstitutes
+      summary: Ranked, reasoned swap suggestions for one exercise of an active workout (mezo-r36n9.66)
+      description: >-
+        Up to five same-muscle alternatives with one Hungarian reason sentence each, ranked by role, today's
+        discomfort, the running block's goal and trackability; plus the quiet labels of exercises left out
+        (no equipment / hurt before). A swap-time discomfort note on the outgoing exercise steers the ranking.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Suggestions and labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseSubstitutesResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The workout is not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/workouts/{id}/exercises/{exerciseId}/plan-sets:
     post:
       tags: [Train]
@@ -3569,6 +3616,58 @@ components:
           type: string
           nullable: true
           description: Systemic demand low | medium | high; null on user-authored rows.
+    ExerciseSubstitutesResponse:
+      type: object
+      required: [suggestions, labels]
+      properties:
+        suggestions:
+          type: array
+          description: Ordered best-fit first, 0..5
+          items:
+            $ref: '#/components/schemas/ExerciseSubstitute'
+        labels:
+          type: array
+          description: Candidates left out of the suggestions, with the quiet label the full list shows
+          items:
+            $ref: '#/components/schemas/ExerciseSubstituteLabel'
+    ExerciseSubstitute:
+      type: object
+      required: [exercise, reasonText, signals]
+      properties:
+        exercise:
+          $ref: '#/components/schemas/ExerciseCatalogItem'
+        reasonText:
+          type: string
+          description: One Hungarian sentence, ending with a full stop
+        signals:
+          type: array
+          description: Stable signal codes that put the suggestion where it is
+          items:
+            type: string
+        lastTopSet:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/LastTopSet'
+    LastTopSet:
+      type: object
+      required: [weightKg, reps]
+      properties:
+        weightKg:
+          type: number
+          nullable: true
+          description: null for a bodyweight set
+        reps:
+          type: integer
+    ExerciseSubstituteLabel:
+      type: object
+      required: [catalogId, label]
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+        label:
+          type: string
+          enum: [NO_EQUIPMENT, HURT_BEFORE]
     CatalogExerciseCreateRequest:
       type: object
       required:

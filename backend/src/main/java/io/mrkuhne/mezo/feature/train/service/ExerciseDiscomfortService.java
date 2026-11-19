@@ -51,7 +51,7 @@ public class ExerciseDiscomfortService {
     }
 
     /** The exercise row must be the user's own and belong to this instance or its template day. */
-    private ExerciseEntity rowOrThrow(UUID createdBy, WorkoutSessionEntity instance, UUID exerciseId) {
+    ExerciseEntity rowOrThrow(UUID createdBy, WorkoutSessionEntity instance, UUID exerciseId) {
         return exerciseRepository.findById(exerciseId)
             .filter(e -> createdBy.equals(e.getCreatedBy())
                 && (instance.getTemplateSessionId().equals(e.getWorkoutSessionId())

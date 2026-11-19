@@ -53,7 +53,11 @@ public class ExerciseCatalogService {
     private static final String SLUG_UNIQUE_INDEX = "uq_exercise_catalog_slug";
 
     public List<ExerciseCatalogItem> list(AppUserEntity viewer) {
-        List<ExerciseCatalogEntity> rows = repository.findAllByOrderByMuscleAscNameAsc();
+        return toItems(viewer, repository.findAllByOrderByMuscleAscNameAsc());
+    }
+
+    /** Maps catalogue rows to the viewer-relative contract item (one batched author lookup). */
+    public List<ExerciseCatalogItem> toItems(AppUserEntity viewer, Collection<ExerciseCatalogEntity> rows) {
         Map<UUID, String> names = authorNames(rows);
         return rows.stream().map(e -> toItem(e, viewer, names)).toList();
     }
