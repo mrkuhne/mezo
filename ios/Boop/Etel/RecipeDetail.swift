@@ -36,6 +36,8 @@ struct RecipeDetailSheet: View {
     @State private var showCamera = false
     @State private var busyPhoto = false
     @State private var askRemove = false
+    /// The dimension whose explanation is open (a sheet over this sheet).
+    @State private var dimension: DimensionSelection?
 
     private enum LoadState { case loading, ready, unavailable }
 
@@ -45,10 +47,14 @@ struct RecipeDetailSheet: View {
         if let recipe {
             NKSheetFrame(hue: .fuel, eyebrow: "RECEPT", title: recipe.name) {
                 header(recipe)
+                score(recipe)
+                sensitivity(recipe)
                 ingredients(recipe)
                 steps(recipe)
-                numbers(recipe)
                 history
+            }
+            .sheet(item: Binding(get: { [d = dimension] in d }, set: { dimension = $0 })) { d in
+                DimensionSheet(selection: d)
             }
             .mealPhotoLibrary(isPresented: $showLibrary) { data in
                 guard let data else { onToast("Ezt a képet nem tudom megnyitni"); return }
@@ -73,19 +79,27 @@ struct RecipeDetailSheet: View {
 
     // MARK: header
 
+    /// The photo, the recipe in pills, its macros per serving, and the one tap that logs a serving.
     private func header(_ r: Recipe) -> some View {
-        let badges = recipeBadges(r, profile: store.profile)
+        let s = r.perServing
         return VStack(alignment: .leading, spacing: 0) {
             if let image = store.recipeImages[r.id] { NKCardPhoto(Image(uiImage: image), hue: .fuel, height: 190) }
-            VStack(alignment: .leading, spacing: 12) {
-                Text(recipeRowFacts(r)).nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
-                if r.prepMins != nil || r.cookMins != nil {
-                    let total = (r.prepMins ?? 0) + (r.cookMins ?? 0)
-                    Text("\(total) perc · előkészítés \(r.prepMins ?? 0), főzés \(r.cookMins ?? 0)").nkFont(13).foregroundStyle(.white.opacity(0.6))
+            VStack(alignment: .leading, spacing: 14) {
+                NKFlowRow(spacing: 6, rowSpacing: 6) {
+                    EtelPill(text: etelSlotLabel(r.category), glyph: "bowl-cream", tone: .hue)
+                    if let time = recipeTimeText(r) {
+                        if let prep = r.prepMins, let cook = r.cookMins, prep > 0, cook > 0 {
+                            EtelPill(text: "\(time) · \(prep) előkészítés, \(cook) főzés", glyph: "clock-ink")
+                        } else {
+                            EtelPill(text: time, glyph: "clock-ink")
+                        }
+                    }
+                    EtelPill(text: "\(r.servings) adag")
+                    EtelPill(text: "NOVA \(r.nova)", tone: r.nova >= 3 ? .outline : .plain)
                 }
-                if !badges.isEmpty { FlowRow { ForEach(badges) { RecipeBadgeView(badge: $0) } } }
-                if let line = recipeAllergenLine(r, profile: store.profile) {
-                    Text(line).nkFont(13).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 8) {
+                    NKMono("EGY ADAG")
+                    EtelMacroTiles(kcal: s.kcal, p: s.p, c: s.c, f: s.f)
                 }
                 NKPill(logging ? "Rögzítem…" : "Megeszem 1 adagot", glyph: "plate-deep") { Task { await log(r) } }.disabled(logging)
                 photoControls(r)
@@ -98,50 +112,128 @@ struct RecipeDetailSheet: View {
     }
 
     private func photoControls(_ r: Recipe) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 14) {
             Menu {
                 if PhotoCapture.cameraAvailable { Button("Fotózok", systemImage: "camera") { showCamera = true } }
                 Button("Kiválasztok egyet", systemImage: "photo") { showLibrary = true }
             } label: {
-                Text(busyPhoto ? "Feltöltöm…" : (r.hasImage ? "Fotó cseréje" : "Fotó hozzáadása"))
-                    .nkFont(14, .medium).foregroundStyle(.white).padding(.horizontal, 16).frame(minHeight: 40)
-                    .background(Capsule().fill(.white.opacity(0.1)))
+                HStack(spacing: 6) {
+                    NKGlyph("camera-ink", .white.opacity(0.7), size: 14)
+                    Text(busyPhoto ? "Feltöltöm…" : (r.hasImage ? "Fotó cseréje" : "Fotó hozzáadása")).nkFont(13.5, .medium).foregroundStyle(.white.opacity(0.75))
+                }
+                .frame(minHeight: 40).contentShape(Rectangle())
             }
             .disabled(busyPhoto)
             if r.hasImage {
-                Button("Fotó törlése") { askRemove = true }.nkFont(14).foregroundStyle(.white.opacity(0.65)).buttonStyle(.plain).frame(minHeight: 40)
+                Button("Fotó törlése") { askRemove = true }.nkFont(13.5).foregroundStyle(.white.opacity(0.5)).buttonStyle(.plain).frame(minHeight: 40)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    // MARK: the score
+
+    /// The recipe's own score and the dimensions it is judged on — the same engine that scores a logged meal, without
+    /// the day's context. A tile opens that dimension's explanation.
+    private func score(_ r: Recipe) -> some View {
+        EtelSheetCard(label: "BOOP ÉRTÉKELÉSE", trailing: "egy adagra") {
+            switch breakdownState {
+            case .loading:
+                HStack(spacing: 14) {
+                    EtelScoreRing(points: etelPoints(r.fit), size: 64)
+                    Text("A részleteket számolom…").nkFont(13.5).foregroundStyle(.white.opacity(0.5))
+                }
+            case .unavailable:
+                HStack(spacing: 14) {
+                    EtelScoreRing(points: etelPoints(r.fit), size: 64)
+                    Text("A pontszám részleteit most nem tudom megmutatni.").nkFont(13.5).foregroundStyle(.white.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            case .ready:
+                if let b = breakdown?.breakdown {
+                    HStack(alignment: .center, spacing: 14) {
+                        EtelScoreRing(points: Int((b.value * 100).rounded()), size: 64)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("a recept pontszáma").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                            if let fits = breakdown?.fitsFor, !fits.isEmpty {
+                                NKFlowRow(spacing: 6, rowSpacing: 6) {
+                                    ForEach(fits, id: \.self) { EtelPill(text: recipeFitLabel($0), tone: .hue) }
+                                }
+                            }
+                        }
+                    }
+                    if let line = [b.summary, b.tagline].compactMap({ $0 }).first(where: { !$0.isEmpty }) {
+                        Text(line).nkFont(14).lineSpacing(2).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+                    }
+                    DimensionGrid(entries: recipeBreakdownRows(b)) { entry in
+                        dimension = DimensionSelection(entry: entry, mealTitle: r.name, coachNote: nil)
+                    }
+                    Text("Koppints egy szempontra, és megmutatom, miért annyi.").nkFont(12).foregroundStyle(.white.opacity(0.45))
+                } else {
+                    Text("Ehhez a recepthez még nincs pontszám — nincs benne kalória, amiből számolni lehetne.")
+                        .nkFont(13.5).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    // MARK: sensitivity
+
+    @ViewBuilder private func sensitivity(_ r: Recipe) -> some View {
+        let facts = etelAllergenFacts(r.allergens, profile: store.profile)
+        let processed = recipeBadges(r, profile: store.profile).filter { $0.tone == .processed }
+        if !facts.isEmpty || !processed.isEmpty {
+            EtelSheetCard(label: "AMIRE FIGYELSZ") {
+                if !facts.isEmpty { EtelAllergenRows(facts: facts) }
+                if !processed.isEmpty { NKFlowRow(spacing: 6, rowSpacing: 6) { ForEach(processed) { EtelPill(badge: $0) } } }
+                if facts.contains(where: { $0.state == .noData }) {
+                    Text("A „nincs adat” nem azt jelenti, hogy nincs benne: a hozzávalókról nincs elég információ.")
+                        .nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
 
     // MARK: sections
 
+    private func amountText(_ i: RecipeIngredient) -> String {
+        "\(i.amount == i.amount.rounded() ? "\(Int(i.amount))" : String(format: "%.1f", i.amount).replacingOccurrences(of: ".", with: ",")) \(i.unit)"
+    }
+
     private func ingredients(_ r: Recipe) -> some View {
-        card("HOZZÁVALÓK") {
+        EtelSheetCard(label: "HOZZÁVALÓK", trailing: "\(r.servings) adagra") {
             if r.ingredients.isEmpty {
                 Text("Ehhez a recepthez nincs hozzávaló mentve.").nkFont(14).foregroundStyle(.white.opacity(0.6))
-            }
-            ForEach(Array(r.ingredients.enumerated()), id: \.offset) { _, i in
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(i.name).nkFont(15).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 6)
-                    Text("\(i.amount == i.amount.rounded() ? "\(Int(i.amount))" : String(format: "%.1f", i.amount)) \(i.unit)")
-                        .nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(0.65))
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(r.ingredients.enumerated()), id: \.offset) { k, i in
+                        if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            Circle().fill(Hue.fuel.glow.opacity(0.7)).frame(width: 5, height: 5).offset(y: -3)
+                            Text(i.name).nkFont(15).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 6)
+                            Text(amountText(i)).font(.custom(Lagy.outfitFamily, size: 15).weight(.medium)).foregroundStyle(.white.opacity(0.85))
+                                .monospacedDigit()
+                        }
+                        .padding(.vertical, 9)
+                        .accessibilityElement(children: .combine)
+                    }
                 }
             }
-            Text("A hozzávalók \(r.servings) adagra szólnak.").nkFont(12.5).foregroundStyle(.white.opacity(0.5))
         }
     }
 
     private func steps(_ r: Recipe) -> some View {
-        card("ELKÉSZÍTÉS") {
+        EtelSheetCard(label: "ELKÉSZÍTÉS", trailing: r.steps.isEmpty ? nil : "\(r.steps.count) lépés") {
             if r.steps.isEmpty {
                 Text("Ehhez a recepthez nincs lépés mentve.").nkFont(14).foregroundStyle(.white.opacity(0.6))
             }
             ForEach(Array(r.steps.enumerated()), id: \.offset) { k, step in
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text("\(k + 1)").font(.custom(Lagy.outfitFamily, size: 15).weight(.medium)).foregroundStyle(.white.opacity(0.55)).frame(width: 18)
-                    Text(step).nkFont(14.5).lineSpacing(2).foregroundStyle(.white.opacity(0.88)).fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .top, spacing: 12) {
+                    Text("\(k + 1)").font(.custom(Lagy.outfitFamily, size: 13).weight(.semibold)).foregroundStyle(Hue.fuel.glow)
+                        .frame(width: 26, height: 26).background(Circle().fill(Hue.fuel.glow.opacity(0.15)))
+                    Text(step).nkFont(14.5).lineSpacing(3).foregroundStyle(.white.opacity(0.88)).fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 3)
                 }
             }
             if let url = r.sourceUrl {
@@ -154,66 +246,27 @@ struct RecipeDetailSheet: View {
         }
     }
 
-    private func numbers(_ r: Recipe) -> some View {
-        let s = r.perServing
-        return card("A SZÁMOK ADAGONKÉNT") {
-            Text("\(huInt(Int(s.kcal.rounded()))) kcal · F \(Int(s.p.rounded())) g · Sz \(Int(s.c.rounded())) g · Zs \(Int(s.f.rounded())) g")
-                .nkFont(14, design: .monospaced).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
-            switch breakdownState {
-            case .loading:
-                Text("A recept pontszámát számolom…").nkFont(13.5).foregroundStyle(.white.opacity(0.5)).redacted(reason: .placeholder)
-            case .unavailable:
-                Text("A recept pontszámát most nem tudom megmutatni.").nkFont(13.5).foregroundStyle(.white.opacity(0.6))
-            case .ready:
-                if let b = breakdown?.breakdown {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("\(Int((b.value * 100).rounded()))").font(.custom(Lagy.outfitFamily, size: 28).weight(.light)).foregroundStyle(.white)
-                        Text("/100 a recept pontszáma").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.5))
-                    }
-                    ForEach(recipeBreakdownRows(b)) { e in
-                        HStack(spacing: 10) {
-                            Text(e.name).nkFont(13.5).foregroundStyle(.white.opacity(0.8))
-                            Spacer(minLength: 6)
-                            Text(e.points.map { "\($0)" } ?? "nincs adat").nkFont(13, design: .monospaced)
-                                .foregroundStyle(.white.opacity(e.points == nil ? 0.45 : 0.9))
-                        }
-                    }
-                    if let line = [b.summary, b.tagline].compactMap({ $0 }).first(where: { !$0.isEmpty }) {
-                        Text(line).nkFont(13.5).lineSpacing(2).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
-                    }
-                } else {
-                    Text("Ehhez a recepthez még nincs pontszám — nincs benne kalória, amiből számolni lehetne.")
-                        .nkFont(13.5).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
-
     private var history: some View {
-        card("EDDIG") {
+        EtelSheetCard(label: "EDDIG", trailing: logs.map { $0.isEmpty ? nil : "\($0.count) alkalom" } ?? nil) {
             if logsProblem {
                 Text("Most nem látom, mikor etted.").nkFont(14).foregroundStyle(.white.opacity(0.6))
             } else if let logs {
                 if logs.isEmpty { Text("Még nem ettél belőle.").nkFont(14).foregroundStyle(.white.opacity(0.6)) }
-                ForEach(logs.prefix(6)) { l in
-                    HStack(spacing: 10) {
-                        Text(recipeLogLine(l)).nkFont(14).foregroundStyle(.white.opacity(0.85))
-                        Spacer(minLength: 6)
-                        if let score = l.score { Text("\(Int((score * 100).rounded()))").nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(0.6)) }
+                VStack(spacing: 0) {
+                    ForEach(Array(logs.prefix(6).enumerated()), id: \.element.id) { k, l in
+                        if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                        HStack(spacing: 10) {
+                            Text(recipeLogLine(l)).nkFont(14).foregroundStyle(.white.opacity(0.85))
+                            Spacer(minLength: 6)
+                            if let score = l.score { EtelScoreRing(points: Int((score * 100).rounded()), size: 30) }
+                        }
+                        .padding(.vertical, 8)
                     }
                 }
             } else {
                 Text("Betöltöm…").nkFont(14).foregroundStyle(.white.opacity(0.5)).redacted(reason: .placeholder)
             }
         }
-    }
-
-    private func card<C: View>(_ label: String, @ViewBuilder _ content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            NKMono(label)
-            content()
-        }
-        .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
     }
 
     // MARK: actions

@@ -157,6 +157,25 @@ final class EtelStore {
         if case .success(let p) = await Self.attempt({ try await food.sensitivity() }) { profile = p }
     }
 
+    /// A food's own score, 0…100. The server sends it on the row; nil = too few facts to score.
+    func shelfPoints(_ row: PantryRow) -> Int? {
+        if let s = row.score { return Int((s * 100).rounded()) }
+        #if DEBUG
+        // Simulator review only (mezo-r36n9.101): the server's `score` field is still being built; the preview
+        // shelf gets stand-in values so the rings can be looked at. Removed when the field is wired.
+        if UserDefaults.standard.string(forKey: "preview") != nil { return PantryPreviewScore.points(row) }
+        #endif
+        return nil
+    }
+
+    /// The dimensions a food is judged on; nil when the server has none for it (or cannot be reached).
+    func shelfBreakdown(_ row: PantryRow) async -> MealBreakdown? {
+        #if DEBUG
+        if UserDefaults.standard.string(forKey: "preview") != nil { return PantryPreviewScore.breakdown(row) }
+        #endif
+        return nil
+    }
+
     /// A food the owner just put on the shelf: at the top of the list at once (the server returned the stored row).
     func shelfAdded(_ row: PantryRow) {
         shelf.removeAll { $0.id != nil && $0.id == row.id }
@@ -593,7 +612,8 @@ struct EtelRoom: View {
     }
 
     var body: some View {
-        let v = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
+        let today = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
+        let v = etelTabVerdict(tab, today: today, recipes: store.recipesLoaded ? store.recipes : nil, shelf: store.shelfLoaded ? store.shelf : nil)
         NKAreaPage(hue: .fuel, name: "Étel", eyebrow: "Étel · \(tab.rawValue.lowercased())", level: store.day == nil ? nil : v.level,
                    display: etelDayPoints(store.day).map { "\($0)" },
                    headline: v.headline, sentence: v.sentence, photo: NKPhoto.konyha, glyph: "bowl-cream",
@@ -796,3 +816,34 @@ struct EtelRoom: View {
         }
     }
 }
+
+#if DEBUG
+/// Stand-in scores for the simulator review of the Kamra pages (mezo-r36n9.101), derived from the row's own facts so
+/// they look plausible. Never used outside `-preview`; replaced by the server's food score.
+enum PantryPreviewScore {
+    private static func dims(_ r: PantryRow) -> [(String, String, Int?, String)] {
+        let nova: Int? = r.nova.map { [1: 96, 2: 84, 3: 55, 4: 22][$0] ?? 50 }
+        let fibre: Int? = r.fiberG.map { min(98, 40 + Int($0 * 6)) }
+        let who: Int? = (r.sugarG == nil && r.saltG == nil && r.saturatedFatG == nil) ? nil
+            : max(20, 96 - Int((r.sugarG ?? 0) * 2.2) - Int((r.saltG ?? 0) * 18) - Int((r.saturatedFatG ?? 0) * 3))
+        let fat: Int? = r.fatG.map { f in f < 0.5 ? 80 : max(25, 92 - Int(((r.saturatedFatG ?? f * 0.35) / f) * 80)) }
+        let density: Int? = r.kcal.map { max(20, min(97, 110 - Int($0 / 5))) }
+        return [("nova", "Feldolgozottság", nova, "A NOVA-besorolás alapján."),
+                ("who", "WHO", who, "Cukor, só és telített zsír a WHO ajánlásához mérve."),
+                ("micro", "Rost", fibre, "A rosttartalom alapján."),
+                ("fat_quality", "Zsírminőség", fat, "A telített zsír aránya az összes zsírban."),
+                ("energy_density", "Energiasűrűség", density, "Mennyi energia jut 100 grammra.")]
+    }
+
+    static func points(_ r: PantryRow) -> Int? {
+        let known = dims(r).compactMap(\.2)
+        return known.count >= 2 ? known.reduce(0, +) / known.count : nil
+    }
+
+    static func breakdown(_ r: PantryRow) -> MealBreakdown? {
+        guard let total = points(r) else { return nil }
+        return MealBreakdown(value: Double(total) / 100, confidence: 1, tagline: nil, summary: nil,
+                             dimensions: dims(r).compactMap { d in d.2.map { ScoreDimension(id: d.0, label: d.1, weight: 0.2, score: Double($0) / 100, detail: d.3) } })
+    }
+}
+#endif

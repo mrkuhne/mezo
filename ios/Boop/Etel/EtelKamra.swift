@@ -105,7 +105,7 @@ func declaredAllergens(_ r: PantryRow) -> [String] {
 
 // MARK: - Facts, NOVA, provenance
 
-private func huNumber(_ v: Double) -> String {
+func huNumber(_ v: Double) -> String {
     v == v.rounded() ? String(Int(v)) : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
 }
 
@@ -198,6 +198,20 @@ extension PantryRow {
     }
 }
 
+// MARK: - What the shelf is, in numbers
+
+/// The three numbers over the shelf: how many foods, how many of them barely processed, how many carry a flag for him.
+func shelfStats(_ rows: [PantryRow], profile: SensitivityProfile?) -> [NKStat] {
+    let whole = rows.filter { ($0.nova ?? 9) <= 2 }.count
+    let flagged = rows.filter { if case .flagged = pantrySensitivity($0, profile: profile) { true } else { false } }.count
+    return [NKStat(value: "\(rows.count)", label: "tétel a polcon"),
+            NKStat(value: "\(whole)", label: "alig feldolgozott", hot: true),
+            NKStat(value: "\(flagged)", label: "jelzéssel neked")]
+}
+
+/// The row's basis, "100 g" / "1 db".
+func shelfBasis(_ r: PantryRow) -> String { "\(huNumber(r.per ?? 100)) \(r.unit ?? "g")" }
+
 // MARK: - The tab
 
 enum PantryAddRoute: String, Identifiable, Equatable {
@@ -205,7 +219,9 @@ enum PantryAddRoute: String, Identifiable, Equatable {
     var id: String { rawValue }
 }
 
-/// `Kamra`: four ways to put a food on the shelf, then the shelf (search, category filter, the catalog behind the search).
+/// `Kamra` on the warm blocks: four ways to put a food on the shelf, the shelf in three numbers, then the shelf (search,
+/// category filter, the catalog behind the search) — a food per row, its category's mark, its facts as pills, its own
+/// score as a ring.
 struct EtelKamra: View {
     let store: EtelStore
     let onAdd: (PantryAddRoute) -> Void
@@ -218,9 +234,10 @@ struct EtelKamra: View {
     @State private var hits: [PantryRow] = []
     @State private var searching = false
     @State private var searchProblem = false
+    private let hue = Hue.fuel
 
     var body: some View {
-        NKDrillSection(number: 1, label: "FELVESZEK EGYET") {
+        NKBare("FELVESZEK EGYET", hue: hue) {
             HStack(spacing: 8) {
                 addChip("search-ink", "Vonalkód", primary: true) { onAdd(.barcode) }
                 addChip("link-deep", "Link") { onAdd(.link) }
@@ -228,18 +245,34 @@ struct EtelKamra: View {
                 addChip("plus-ink", "Kézzel") { onAdd(.manual) }
             }
         }
-        NKDrillSection(number: 2, label: "A KAMRÁD" + (store.shelfLoaded && store.shelfProblem == nil ? " · \(store.shelf.count) TÉTEL" : "")) { shelf }
-        NKDrillSection(number: 3, label: "BEÁLLÍTÁSOK") { EtelSettingsList(store: store, onSheet: onSheet) }
+        if store.shelfLoaded, store.shelfProblem == nil, !store.shelf.isEmpty {
+            NKBare("A KAMRÁD SZÁMOKBAN", hue: hue) { NKStatRow(shelfStats(store.shelf, profile: store.profile), hue: hue) }
+        }
+        NKBare("A KAMRÁD", hue: hue, state: shelfState) { shelf }
+        NKBare("BEÁLLÍTÁSOK", hue: hue) { EtelSettingsList(store: store, onSheet: onSheet) }
+    }
+
+    private var shelfState: NKBlockState {
+        if !store.shelfLoaded { return .loading }
+        if let problem = store.shelfProblem, store.shelf.isEmpty {
+            return .failed("Most nem érem el a kamrádat. \(etelProblemLine(problem))", { onRetry() })
+        }
+        return .ready
     }
 
     private func addChip(_ glyph: String, _ title: String, primary: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 6) {
-                NKGlyph(glyph, primary ? NK.ground : .white, size: 18)
-                Text(title).nkFont(12.5, .semibold).foregroundStyle(primary ? NK.ground : .white).lineLimit(1).minimumScaleFactor(0.7)
+            VStack(spacing: 7) {
+                NKGlyph(glyph, primary ? NK.ground : .white, size: 19)
+                Text(title).nkFont(12.5, .semibold).foregroundStyle(primary ? NK.ground : .white.opacity(0.9)).lineLimit(1).minimumScaleFactor(0.7)
             }
-            .frame(maxWidth: .infinity).frame(minHeight: 62)
-            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(primary ? .white.opacity(0.92) : .white.opacity(0.08)))
+            .frame(maxWidth: .infinity).frame(height: 66)
+            .background {
+                let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
+                if primary { shape.fill(.white.opacity(0.95)) }
+                else { shape.fill(.white.opacity(0.08)).overlay(shape.stroke(.white.opacity(0.14))) }
+            }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Felveszek egyet: \(title)")
@@ -248,92 +281,37 @@ struct EtelKamra: View {
     // MARK: shelf
 
     @ViewBuilder private var shelf: some View {
-        if !store.shelfLoaded {
-            VStack(alignment: .leading, spacing: 14) {
-                ForEach(0..<4, id: \.self) { _ in
-                    HStack(spacing: 12) {
-                        RoundedRectangle(cornerRadius: 13).fill(.white.opacity(0.08)).frame(width: 42, height: 42)
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Étel neve itt").nkFont(15, .medium)
-                            Text("Tejtermék · 120 kcal / 100 g").nkFont(12)
-                        }
+        let shown = filterShelf(store.shelf, query: query, category: category)
+        let more = catalogOnly(hits, shelf: store.shelf)
+        VStack(alignment: .leading, spacing: 0) {
+            EtelSearchField(query: $query, prompt: "Keresés a kamrában és a katalógusban").padding(.bottom, 10)
+            if store.shelf.isEmpty {
+                Text("A kamrád még üres. Vegyél fel egyet fent — vonalkóddal, linkkel, címkefotóval vagy kézzel.")
+                    .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
+            } else {
+                EtelFilterChips(chips: [(nil, "Mind · \(store.shelf.count)")] + shelfCategories(store.shelf).map { (Optional($0.key), "\($0.label) · \($0.count)") },
+                                selected: $category)
+                    .padding(.bottom, 6)
+                if shown.isEmpty {
+                    Text("Ilyet nem találok a kamrádban.").nkFont(14).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 12)
+                }
+                ForEach(Array(shown.prefix(visible).enumerated()), id: \.element.rowKey) { k, r in
+                    if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 56) }
+                    row(r)
+                }
+                if shown.count > visible {
+                    Button { visible += 40 } label: {
+                        Text("Még \(min(40, shown.count - visible)) tétel · összesen \(shown.count)").nkFont(14, .medium).foregroundStyle(.white.opacity(0.85))
+                            .frame(maxWidth: .infinity).frame(minHeight: 44).background(Capsule().fill(.white.opacity(0.08)))
                     }
+                    .buttonStyle(.plain).padding(.top, 10)
                 }
             }
-            .foregroundStyle(.white.opacity(0.4)).redacted(reason: .placeholder).accessibilityLabel("Betöltöm a kamrádat")
-        } else if let problem = store.shelfProblem, store.shelf.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Most nem érem el a kamrádat.").nkFont(14).foregroundStyle(.white.opacity(0.7))
-                Text(etelProblemLine(problem)).nkFont(13).foregroundStyle(.white.opacity(0.5))
-                Button(action: onRetry) {
-                    Text("Újra").nkFont(14, .semibold).foregroundStyle(NK.ground).padding(.horizontal, 18).frame(minHeight: 38)
-                        .background(Capsule().fill(.white.opacity(0.95)))
-                }
-                .buttonStyle(.plain)
-            }
-        } else {
-            let shown = filterShelf(store.shelf, query: query, category: category)
-            let more = catalogOnly(hits, shelf: store.shelf)
-            VStack(alignment: .leading, spacing: 0) {
-                searchField.padding(.bottom, 10)
-                if store.shelf.isEmpty {
-                    Text("A kamrád még üres. Vegyél fel egyet fent — vonalkóddal, linkkel, címkefotóval vagy kézzel.")
-                        .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
-                } else {
-                    categoryChips
-                    if shown.isEmpty {
-                        Text("Ilyet nem találok a kamrádban.").nkFont(14).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 12)
-                    }
-                    ForEach(Array(shown.prefix(visible).enumerated()), id: \.element.rowKey) { k, r in
-                        row(r)
-                        if k < min(shown.count, visible) - 1 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                    }
-                    if shown.count > visible {
-                        Button { visible += 40 } label: {
-                            Text("Még \(min(40, shown.count - visible)) tétel · összesen \(shown.count)").nkFont(14, .medium).foregroundStyle(.white.opacity(0.85))
-                                .frame(maxWidth: .infinity).frame(minHeight: 44).background(Capsule().fill(.white.opacity(0.08)))
-                        }
-                        .buttonStyle(.plain).padding(.top, 10)
-                    }
-                }
-                if folded(query).count >= 2 { catalog(more) }
-            }
-            .task(id: query) { await searchCatalog() }
-            .onChange(of: query) { visible = 30 }
-            .onChange(of: category) { visible = 30 }
+            if folded(query).count >= 2 { catalog(more) }
         }
-    }
-
-    private var searchField: some View {
-        HStack(spacing: 10) {
-            NKGlyph("search-ink", .white.opacity(0.6), size: 16)
-            TextField("", text: $query, prompt: Text("Keresés a kamrában és a katalógusban").foregroundStyle(.white.opacity(0.45)))
-                .nkFont(15).foregroundStyle(.white).submitLabel(.search).accessibilityLabel("Keresés a kamrában és a katalógusban")
-        }
-        .padding(.horizontal, 16).frame(minHeight: 46)
-        .background(Capsule().fill(.white.opacity(0.08)))
-        .overlay(Capsule().stroke(.white.opacity(0.12)))
-    }
-
-    private var categoryChips: some View {
-        let cats = shelfCategories(store.shelf)
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                chip("Mind · \(store.shelf.count)", on: category == nil) { category = nil }
-                ForEach(cats) { c in chip("\(c.label) · \(c.count)", on: category == c.key) { category = (category == c.key ? nil : c.key) } }
-            }
-            .padding(.vertical, 2)
-        }
-        .padding(.bottom, 6)
-    }
-
-    private func chip(_ text: String, on: Bool, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(text).nkFont(12.5, .medium).foregroundStyle(on ? NK.ground : .white.opacity(0.85)).padding(.horizontal, 12).frame(minHeight: 34)
-                .background(Capsule().fill(on ? .white.opacity(0.92) : .white.opacity(0.08)))
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .task(id: query) { await searchCatalog() }
+        .onChange(of: query) { visible = 30 }
+        .onChange(of: category) { visible = 30 }
     }
 
     // MARK: catalog
@@ -349,8 +327,8 @@ struct EtelKamra: View {
                 Text("A katalógusban sincs ilyen. Vegyél fel egyet fent.").nkFont(14).foregroundStyle(.white.opacity(0.6))
             }
             ForEach(Array(more.enumerated()), id: \.element.rowKey) { k, r in
+                if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 56) }
                 row(r)
-                if k < more.count - 1 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
             }
         }
     }
@@ -368,39 +346,44 @@ struct EtelKamra: View {
 
     // MARK: row
 
+    /// One food = one row: its category's mark, the name, what it is, its facts as pills, the flag that matters to
+    /// him, and its own score as a ring.
     private func row(_ r: PantryRow) -> some View {
         let state = pantrySensitivity(r, profile: store.profile)
+        let kind = [NewPantryFood.categoryLabel(r.category), r.brand].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
         return Button { onOpen(r) } label: {
-            HStack(spacing: 12) {
-                NKThumb(image: nil, glyph: "bowl-sage", size: 42)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(r.name).nkFont(15, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 6) {
-                        Text(rowFacts(r)).nkFont(12.5).foregroundStyle(.white.opacity(0.55))
-                        if let n = r.nova {
-                            Text("NOVA \(n)").nkFont(10.5, design: .monospaced).foregroundStyle(n >= 3 ? Color(red: 0.96, green: 0.78, blue: 0.38).opacity(0.9) : .white.opacity(0.45))
+            HStack(alignment: .top, spacing: 12) {
+                EtelMedallion(glyph: etelCategoryGlyph(r.category), size: 44)
+                VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(r.name).nkFont(15.5, .medium).foregroundStyle(.white).multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if !kind.isEmpty { Text(kind).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(1) }
+                    }
+                    NKFlowRow(spacing: 6, rowSpacing: 6) {
+                        if let kcal = r.kcal {
+                            EtelPill(text: "\(huInt(Int(kcal.rounded()))) kcal / \(shelfBasis(r))")
+                        } else {
+                            EtelPill(text: "nincs tápérték-adat", tone: .muted)
+                        }
+                        if let p = r.proteinG { EtelPill(text: "\(huNumber(p)) g fehérje", tone: .hue) }
+                        if let n = r.nova { EtelPill(text: "NOVA \(n)", tone: n >= 3 ? .outline : .plain) }
+                        if !r.onShelf { EtelPill(text: "katalógus", tone: .muted) }
+                        switch state {
+                        case .flagged(let badges): ForEach(badges) { EtelPill(badge: $0) }
+                        case .noData: EtelPill(text: "allergén: nincs adat", tone: .muted)
+                        case .nothing: EmptyView()
                         }
                     }
-                    if !r.onShelf { Text("katalógus · még nincs a kamrádban").nkFont(11).foregroundStyle(.white.opacity(0.45)) }
                 }
                 Spacer(minLength: 4)
-                switch state {
-                case .flagged(let badges): if let first = badges.first { RecipeBadgeView(badge: first) }
-                case .noData: Text("nincs adat").nkFont(11).foregroundStyle(.white.opacity(0.4))
-                case .nothing: EmptyView()
-                }
+                EtelScoreRing(points: store.shelfPoints(r), size: 40).padding(.top, 2)
             }
-            .padding(.vertical, 11).frame(minHeight: 44).contentShape(Rectangle())
+            .padding(.vertical, 13).frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Megnyitja a tételt")
-    }
-
-    private func rowFacts(_ r: PantryRow) -> String {
-        let cat = NewPantryFood.categoryLabel(r.category).map { "\($0) · " } ?? ""
-        guard let kcal = r.kcal else { return cat + "nincs tápérték-adat" }
-        return cat + "\(huInt(Int(kcal.rounded()))) kcal / \(huNumber(r.per ?? 100)) \(r.unit ?? "g")"
     }
 }
 

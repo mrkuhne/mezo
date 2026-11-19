@@ -536,6 +536,8 @@ public struct PantryRow: Equatable, Sendable {
     public var barcode: String?
     /// The owner who first added the shared definition, when it is not the signed-in owner.
     public var sharedFrom: String?
+    /// The food's own score, 0…1 (the meal engine's food-only dimensions); nil when it has too few facts to score.
+    public var score: Double?
 
     /// One stable key for lists: the shelf row, else the catalog row.
     public var rowKey: String { id?.uuidString ?? catalogId?.uuidString ?? name }
@@ -544,7 +546,8 @@ public struct PantryRow: Equatable, Sendable {
                 unit: String? = nil, kcal: Double? = nil, proteinG: Double? = nil, carbsG: Double? = nil, fatG: Double? = nil,
                 fiberG: Double? = nil, sugarG: Double? = nil, saltG: Double? = nil, saturatedFatG: Double? = nil, nova: Int? = nil,
                 allergens: [String: AllergenState] = [:], onShelf: Bool = true, source: String? = nil, category: String? = nil,
-                barcode: String? = nil, sharedFrom: String? = nil) {
+                barcode: String? = nil, sharedFrom: String? = nil, score: Double? = nil) {
+        self.score = score
         self.id = id; self.catalogId = catalogId; self.name = name; self.brand = brand; self.kind = kind; self.per = per
         self.unit = unit; self.kcal = kcal; self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG
         self.fiberG = fiberG; self.sugarG = sugarG; self.saltG = saltG; self.saturatedFatG = saturatedFatG; self.nova = nova

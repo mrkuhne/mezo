@@ -453,3 +453,26 @@ func etelStats(day: FoodDay, plan: FuelPlan?) -> [NKStat] {
         NKStat(value: "\(day.meals.count)", target: windows > 0 ? "\(windows)" : nil, unit: "", label: "étkezés a tervből"),
     ]
 }
+
+/// What the head says on each tab: Ma and Hét speak about the day, Receptek about the library, Kamra about the shelf
+/// (the orb keeps the day's level everywhere — it is the area's, not the tab's).
+func etelTabVerdict(_ tab: EtelTab, today: EtelVerdict, recipes: [Recipe]?, shelf: [PantryRow]?) -> EtelVerdict {
+    switch tab {
+    case .ma, .het: return today
+    case .receptek:
+        guard let recipes else { return EtelVerdict(headline: "Betöltöm a receptjeidet", sentence: "Egy pillanat.", level: today.level) }
+        if recipes.isEmpty {
+            return EtelVerdict(headline: "Még üres a recepttárad", sentence: "Hozz be egyet linkkel, fotóval, vagy kérd Booptól.", level: today.level)
+        }
+        let best = recipes.filter { $0.fit != nil }.max { ($0.fit ?? 0) < ($1.fit ?? 0) }
+        let sentence = best.map { "A legjobb pontszámú: \($0.name)." } ?? "A receptjeidnek még nincs pontszáma."
+        return EtelVerdict(headline: "\(recipes.count) recept a táradban", sentence: sentence, level: today.level)
+    case .kamra:
+        guard let shelf else { return EtelVerdict(headline: "Betöltöm a kamrádat", sentence: "Egy pillanat.", level: today.level) }
+        if shelf.isEmpty {
+            return EtelVerdict(headline: "Még üres a kamrád", sentence: "Vegyél fel egyet vonalkóddal, linkkel, címkefotóval vagy kézzel.", level: today.level)
+        }
+        let whole = shelf.filter { ($0.nova ?? 9) <= 2 }.count
+        return EtelVerdict(headline: "\(shelf.count) tétel a kamrádban", sentence: "Ebből \(whole) alig feldolgozott alapanyag.", level: today.level)
+    }
+}

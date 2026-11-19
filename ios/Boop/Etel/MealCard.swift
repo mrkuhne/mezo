@@ -93,7 +93,7 @@ struct MealDetail: View {
 }
 
 /// All eight dimensions, always: four across, two rows (two across at the narrowest widths, so no name is cut).
-private struct DimensionGrid: View {
+struct DimensionGrid: View {
     let entries: [DimensionEntry]
     let onTap: (DimensionEntry) -> Void
     @State private var width: CGFloat = 300
@@ -112,7 +112,7 @@ private struct DimensionGrid: View {
                         Capsule().fill(.white.opacity(0.1)).frame(height: 3)
                             .overlay(alignment: .leading) {
                                 GeometryReader { g in
-                                    Capsule().fill(.white.opacity(0.75)).frame(width: g.size.width * Double(e.points ?? 0) / 100)
+                                    Capsule().fill(Hue.fuel.glow.opacity(0.9)).frame(width: g.size.width * Double(e.points ?? 0) / 100)
                                 }
                             }
                         Text(e.name).nkFont(9.5).foregroundStyle(.white.opacity(0.55)).lineLimit(2).minimumScaleFactor(0.7)
