@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
@@ -28,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 /**
  * The planner snapshot and the run start's week-1 challenges (mezo-r36n9.81, T3 Task 3): a styled block with the
@@ -43,7 +46,7 @@ class TechniquePlanServiceIT extends ApiIntegrationTest {
     @Autowired private ExerciseCatalogRepository catalogRepository;
     @Autowired private MesocycleRepository mesocycleRepository;
     @Autowired private TrainPopulator trainPopulator;
-    @Autowired private TechniquePlanService planService;
+    @MockitoSpyBean private TechniquePlanService planService;
     @Autowired private JdbcTemplate jdbcTemplate;
 
     private UUID ownerId() {
@@ -65,6 +68,23 @@ class TechniquePlanServiceIT extends ApiIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
             "select count(*) from exercise e join workout_session s on s.id = e.workout_session_id "
                 + "where s.mesocycle_id = ? and e.technique is not null", Integer.class, run.getId())).isZero();
+    }
+
+    @Test
+    void failingChallengePlacementDoesNotBlockTheStart() {
+        ownerId();
+        doThrow(new NullPointerException("planner bug")).when(planService).placeStartChallenges(any(), any());
+
+        MesocycleResponse run = startRun(TrainingStyle.BALANCED, true, null,
+            day("Hét", pecDeck(), cableFly(), legExtension()));
+
+        assertThat(run.getId()).isNotNull();
+        assertThat(jdbcTemplate.queryForObject("select status from mesocycle where id = ?", String.class, run.getId()))
+            .isEqualTo("active");
+        assertThat(jdbcTemplate.queryForObject(
+            "select count(*) from exercise e join workout_session s on s.id = e.workout_session_id "
+                + "where s.mesocycle_id = ?", Integer.class, run.getId())).isEqualTo(3);
+        assertThat(challengeRows(run.getId())).isEmpty();
     }
 
     @Test

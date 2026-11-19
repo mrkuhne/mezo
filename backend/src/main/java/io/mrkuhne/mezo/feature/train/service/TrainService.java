@@ -275,7 +275,9 @@ public class TrainService {
                 exerciseRepository.save(toExerciseEntity(createdBy, savedDay.getId(), exercises.get(e), e));
             }
         }
-        // Week 1's planner challenges (mezo-r36n9.81) — a no-op unless the run opts in; never blocks the start.
+        // Week 1's planner challenges (mezo-r36n9.81) — a no-op unless the run opts in. The catch keeps a planner
+        // logic error from blocking the start; a repository failure inside it would still mark this joined
+        // transaction rollback-only (a separate transaction could not see the uncommitted run rows).
         try {
             techniquePlanService.placeStartChallenges(createdBy, saved);
         } catch (RuntimeException ex) {

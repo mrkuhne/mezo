@@ -547,7 +547,11 @@ public class WeekProposalService {
      * Shared with {@link TierChangeProposalService} (no band fix in a deload week).
      */
     static boolean isDeloadPhase(MesocycleEntity meso, int calWeek) {
-        List<String> phaseCurve = meso.getPhaseCurve();
+        return isDeloadPhase(meso.getPhaseCurve(), calWeek);
+    }
+
+    /** The same rule on a bare phase curve (a run's or a draft's); null or out of bounds is not a deload. */
+    static boolean isDeloadPhase(List<String> phaseCurve, int calWeek) {
         int idx = calWeek - 1;
         if (phaseCurve == null || idx < 0 || idx >= phaseCurve.size()) {
             return false;

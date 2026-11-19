@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -40,8 +41,6 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class TechniquePlanService {
-
-    private static final String PHASE_DELOAD = "Deload";
 
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
@@ -87,7 +86,7 @@ public class TechniquePlanService {
 
     /** The draft's week as the planner sees it (draft rows get deterministic ids, see {@link #draftRowId}). */
     public TechniquePlanner.Input snapshotDraft(UUID userId, MesoPlanEvaluateRequest req, int week) {
-        return inputFor(readDraft(userId, req), week, deload(phaseCurve(req), week));
+        return inputFor(readDraft(userId, req), week, WeekProposalService.isDeloadPhase(phaseCurve(req), week));
     }
 
     /** Every week 1..weeks of the draft; empty when the draft does not opt in. */
@@ -99,7 +98,7 @@ public class TechniquePlanService {
         List<String> curve = phaseCurve(req);
         List<TechniquePlanner.Week> weeks = new ArrayList<>();
         for (int w = 1; w <= req.getWeeks(); w++) {
-            weeks.add(TechniquePlanner.plan(inputFor(base, w, deload(curve, w))));
+            weeks.add(TechniquePlanner.plan(inputFor(base, w, WeekProposalService.isDeloadPhase(curve, w))));
         }
         return List.copyOf(weeks);
     }
@@ -175,7 +174,8 @@ public class TechniquePlanService {
                 List.copyOf(planRows)));
         }
         Base base = new Base(List.copyOf(days), run.getMusclePriorities() == null ? Map.of() : run.getMusclePriorities(),
-            run.getSportGroups() == null ? Set.of() : Set.copyOf(run.getSportGroups()),
+            run.getSportGroups() == null ? Set.of()
+                : run.getSportGroups().stream().filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet()),
             energyBalance.isInDeficit(createdBy, LocalDate.now()));
         return new RunState(base, rowsById);
     }
@@ -270,9 +270,4 @@ public class TechniquePlanService {
             : req.getPhaseCurve().stream().map(MesoPlanEvaluateRequest.PhaseCurveEnum::getValue).toList();
     }
 
-    /** Same rule as {@link WeekProposalService#isDeloadPhase}: out of bounds is not a deload. */
-    private static boolean deload(List<String> curve, int week) {
-        int idx = week - 1;
-        return idx >= 0 && idx < curve.size() && PHASE_DELOAD.equalsIgnoreCase(curve.get(idx));
-    }
 }
