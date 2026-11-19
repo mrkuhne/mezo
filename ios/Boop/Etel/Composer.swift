@@ -1072,13 +1072,22 @@ struct MealTimeRow: View {
 struct MealScanView: View {
     let image: UIImage?
     let reduceMotion: Bool
+    /// What the pill says, in turn (nil = the meal's own steps).
+    var phrases: [String]? = nil
+    /// The line under it.
+    var footnote = "Semmi nem mentődik el, amíg át nem nézted."
     @State private var sweep: CGFloat = 0
     @State private var step = 0
     @State private var pulse = false
     private let hue = Hue.fuel
 
+    init(image: UIImage?, reduceMotion: Bool, phrases: [String]? = nil, footnote: String = "Semmi nem mentődik el, amíg át nem nézted.") {
+        self.image = image; self.reduceMotion = reduceMotion; self.phrases = phrases; self.footnote = footnote
+    }
+
     private var steps: [String] {
-        image == nil ? ["Olvasom, amit írtál…", "Megkeresem a kamrádban…", "Kiszámolom…"]
+        if let phrases, !phrases.isEmpty { return phrases }
+        return image == nil ? ["Olvasom, amit írtál…", "Megkeresem a kamrádban…", "Kiszámolom…"]
             : ["Megnézem a képet…", "Felismerem, mi van rajta…", "Megbecsülöm az adagot…", "Kiszámolom…"]
     }
 
@@ -1113,7 +1122,7 @@ struct MealScanView: View {
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 34)
             }
-            Text("Semmi nem mentődik el, amíg át nem nézted.").nkFont(12.5).foregroundStyle(.white.opacity(0.5))
+            Text(footnote).nkFont(12.5).foregroundStyle(.white.opacity(0.5))
         }
         .onAppear {
             guard !reduceMotion else { return }

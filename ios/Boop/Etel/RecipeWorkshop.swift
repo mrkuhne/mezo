@@ -72,11 +72,7 @@ struct RecipeWorkshopSheet: View {
             return try await food.workshop(message: message, history: history, draft: draft)
         }))
         makeReview = { draft in
-            RecipeImportModel(mode: .text, reader: { _ in nil },
-                              saver: { recipe in
-                                  guard let food else { throw FoodFetchError.unauthorized }
-                                  return try await food.createRecipe(recipe)
-                              }, review: RecipeReview(workshop: draft), eyebrow: "RECEPTMŰHELY")
+            RecipeImportModel(mode: .text, food: food, review: RecipeReview(workshop: draft), eyebrow: "RECEPTMŰHELY")
         }
         self.onSaved = onSaved
         self.profile = profile
@@ -111,6 +107,7 @@ struct RecipeWorkshopSheet: View {
                 conversation
             }
         }
+        .reviewFoodForm(reviewing, profile: profile)
     }
 
     @ViewBuilder private var conversation: some View {

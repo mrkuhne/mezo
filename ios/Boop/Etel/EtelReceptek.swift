@@ -112,6 +112,27 @@ func recipeFitLabel(_ key: String) -> String {
     }
 }
 
+// MARK: - The ways to a new recipe
+
+/// One tile of „ÚJ RECEPT".
+struct RecipeEntrance: Identifiable, Equatable {
+    enum Route: Equatable { case cooked, link, photo, workshop }
+    let route: Route
+    let glyph: String
+    let title: String
+    let sub: String
+    var lit = false
+    var id: String { title }
+}
+
+/// „Ezt főztem" first and lit (mezo-r36n9.63), then the link (with its text mode), the photo and the workshop.
+let recipeEntrances: [RecipeEntrance] = [
+    RecipeEntrance(route: .cooked, glyph: "bowl-cream", title: "Ezt főztem", sub: "elmondom, miből és mennyit", lit: true),
+    RecipeEntrance(route: .link, glyph: "link-deep", title: "Linkből", sub: "receptoldalról vagy szövegből"),
+    RecipeEntrance(route: .photo, glyph: "camera-ink", title: "Fotóból", sub: "könyvből vagy képernyőről"),
+    RecipeEntrance(route: .workshop, glyph: "chat-ink", title: "Receptműhely", sub: "Boop kitalál egyet neked"),
+]
+
 // MARK: - The tab
 
 /// The `Receptek` tab of the Étel room on the warm blocks: the ways to a new recipe as tiles, the library in three
@@ -120,8 +141,8 @@ struct EtelReceptek: View {
     let store: EtelStore
     let onImport: (RecipeImportModel.Mode) -> Void
     let onWorkshop: () -> Void
-    /// „Ezt főztem" — nil hides the tile.
-    var onCooked: (() -> Void)? = nil
+    /// „Ezt főztem" (mezo-r36n9.63): the first way to a new recipe.
+    let onCooked: () -> Void
     let onOpen: (Recipe) -> Void
     let onRetry: () -> Void
     @State private var query = ""
@@ -147,14 +168,17 @@ struct EtelReceptek: View {
     // MARK: new recipe
 
     private var entrances: some View {
-        let cooked = onCooked
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-            if let cooked {
-                entrance("bowl-cream", "Ezt főztem", "elmondom, miből és mennyit", lit: true, action: cooked)
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+            ForEach(recipeEntrances) { e in
+                entrance(e.glyph, e.title, e.sub, lit: e.lit) {
+                    switch e.route {
+                    case .cooked: onCooked()
+                    case .link: onImport(.link)
+                    case .photo: onImport(.photo)
+                    case .workshop: onWorkshop()
+                    }
+                }
             }
-            entrance("link-deep", "Linkből", "receptoldalról vagy szövegből", lit: cooked == nil) { onImport(.link) }
-            entrance("camera-ink", "Fotóból", "könyvből vagy képernyőről") { onImport(.photo) }
-            entrance("chat-ink", "Receptműhely", "Boop kitalál egyet neked", action: onWorkshop)
         }
     }
 

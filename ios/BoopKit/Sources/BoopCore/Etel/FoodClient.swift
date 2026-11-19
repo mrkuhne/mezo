@@ -243,15 +243,44 @@ public struct FoodClient: Sendable {
         return response.result.map { Self.map($0.value1) }
     }
 
+    /// „Ezt főztem": what he said / typed and up to six photos, matched to the pantry into the same review draft an
+    /// import ends in. nil when no ingredient could be read. Nothing is stored; the photos go only to the model. Each
+    /// photo part says it is a JPEG (the server refuses a part without an image type), so the bytes must be JPEG.
+    public func cooked(text: String?, photos: [Data]) async throws -> RecipeImportDraft? {
+        typealias Part = Operations.cookedRecipe.Input.Body.multipartFormPayload
+        var parts: [Part] = []
+        if let words = text?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty {
+            parts.append(.text(.init(payload: .init(body: HTTPBody(String(words.prefix(4000)))))))
+        }
+        for (n, photo) in photos.prefix(6).enumerated() {
+            var fields = HTTPFields()
+            fields[.contentType] = "image/jpeg"
+            parts.append(.undocumented(.init(name: "photos", filename: "photo-\(n + 1).jpg", headerFields: fields, body: HTTPBody(photo))))
+        }
+        guard !parts.isEmpty else { throw FoodFetchError.rejected }
+        let body = parts
+        let response: Components.Schemas.RecipeImportResponse = try await call(mapsRefusals: true) {
+            switch try await client.cookedRecipe(body: .multipartForm(MultipartBody(body))) {
+            case .ok(let ok): return try ok.body.json
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .badGateway, .serviceUnavailable: throw FoodFetchError.unavailable
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+        return response.result.map { Self.map($0.value1) }
+    }
+
     /// Saves a reviewed recipe — the one save every import route (and the workshop) ends in. A line carries a
     /// `catalogId` (put on the shelf by the server now) or a `pantryItemId`; the caller never passes a line with neither.
+    /// The recipe's `clientRef` travels with it: a repeated save of the same review returns the first recipe.
     public func createRecipe(_ recipe: NewRecipe) async throws -> Recipe {
         let lines: [Components.Schemas.RecipeIngredientRequest] = recipe.lines.map {
             .init(pantryItemId: $0.pantryItemId?.wire, catalogId: $0.catalogId?.wire, amount: $0.amount, unit: $0.unit)
         }
         let body = Components.Schemas.RecipeRequest(
             name: recipe.name, category: recipe.category, servings: recipe.servings,
-            steps: recipe.steps, sourceUrl: recipe.sourceUrl, ingredients: lines)
+            steps: recipe.steps, sourceUrl: recipe.sourceUrl, clientRef: recipe.clientRef.wire, ingredients: lines)
         return try await call(mapsRefusals: true) {
             switch try await client.createRecipe(body: .json(body)) {
             case .created(let ok): return Self.map(try ok.body.json)
@@ -483,6 +512,98 @@ public struct FoodClient: Sendable {
         shelf.id = UUID(uuidString: response.id); shelf.onShelf = true
         if let a = response.allergens?.additionalProperties { shelf.allergens = Self.allergens(a) }
         return shelf
+    }
+
+    /// „+ Kamrába": puts a food on the shelf by its name alone — the shared catalog's food when one matches, an
+    /// AI-estimated food (`estimated`) otherwise. Idempotent on the name. A name that belongs to something this may not
+    /// bind (a supplement, somebody else's unreviewed food) throws `.conflict`: the normal add form takes over.
+    public func quickAddPantry(name: String) async throws -> PantryRow {
+        let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let response: Components.Schemas.PantryItemResponse = try await call(mapsRefusals: true) {
+            switch try await client.quickAddPantryItem(body: .json(.init(name: clean))) {
+            case .ok(let ok): return try ok.body.json
+            case .badRequest: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .conflict: throw FoodFetchError.conflict
+            case .badGateway, .serviceUnavailable: throw FoodFetchError.unavailable
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+        return Self.row(from: response, onto: PantryRow(name: clean))
+    }
+
+    /// The owner's own four facts onto a food of his shelf (the review's „Tápérték megadása"): the same food is
+    /// updated, an estimate stops being one, and every other field stays as it is (the server keeps what is not sent).
+    public func setFacts(_ facts: FoodFacts, of row: PantryRow) async throws -> PantryRow {
+        var next = row
+        next.kcal = facts.kcal; next.proteinG = facts.proteinG; next.carbsG = facts.carbsG; next.fatG = facts.fatG
+        let request = Components.Schemas.PantryItemRequest(
+            kind: .food, name: row.name, brand: row.brand, per: row.per, unit: row.unit,
+            kcal: facts.kcal, proteinG: facts.proteinG, carbsG: facts.carbsG, fatG: facts.fatG)
+        return try await update(row, request, onto: next)
+    }
+
+    /// „Pontosítom": the facts a reader brought (a scanned product, a label photo, typed numbers) replace the facts of
+    /// the SAME shelf food — never a second food. The reader's own source and barcode travel with them.
+    public func replaceFood(_ row: PantryRow, with food: NewPantryFood) async throws -> PantryRow {
+        let source: Components.Schemas.PantrySource = switch food.origin {
+        case .manual: .manual
+        case .barcode: .openfoodfacts
+        case .labelPhoto: .photo
+        case .link: .web
+        }
+        let name = food.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        var next = row
+        next.name = name.isEmpty ? row.name : name
+        next.brand = food.brand; next.barcode = food.barcode ?? row.barcode; next.category = food.category ?? row.category
+        next.per = food.per; next.unit = food.unit
+        next.kcal = food.kcal; next.proteinG = food.proteinG; next.carbsG = food.carbsG; next.fatG = food.fatG
+        next.fiberG = food.fiberG; next.sugarG = food.sugarG; next.saltG = food.saltG; next.saturatedFatG = food.saturatedFatG
+        next.nova = food.nova
+        if !food.allergens.isEmpty { next.allergens = food.allergens }
+        let request = Components.Schemas.PantryItemRequest(
+            kind: .food, name: next.name, brand: food.brand, source: .init(value1: source), barcode: food.barcode,
+            category: food.category.flatMap { .init(rawValue: $0) },
+            per: food.per, unit: food.unit, kcal: food.kcal, proteinG: food.proteinG, carbsG: food.carbsG, fatG: food.fatG,
+            fiberG: food.fiberG, sugarG: food.sugarG, saltG: food.saltG, saturatedFatG: food.saturatedFatG, nova: food.nova)
+        return try await update(row, request, onto: next)
+    }
+
+    private func update(_ row: PantryRow, _ request: Components.Schemas.PantryItemRequest, onto next: PantryRow) async throws -> PantryRow {
+        guard let id = row.id else { throw FoodFetchError.rejected }
+        let response: Components.Schemas.PantryItemResponse = try await call(mapsRefusals: true) {
+            switch try await client.updatePantryItem(path: .init(id: id.wire), body: .json(request)) {
+            case .ok(let ok): return try ok.body.json
+            case .badRequest, .forbidden: throw FoodFetchError.rejected
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .notFound: throw FoodFetchError.notFound
+            case .conflict: throw FoodFetchError.conflict
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+        return Self.row(from: response, onto: next)
+    }
+
+    /// The dimensions a food is judged on by itself (processing, sugar-salt-saturated fat, fibre, fat quality, energy
+    /// density); nil when the server has none for it. A shelf row is asked by its shelf id, a catalog food by its own.
+    public func pantryBreakdown(_ row: PantryRow) async throws -> MealBreakdown? {
+        try await call {
+            if let id = row.id {
+                switch try await client.getPantryItemBreakdown(path: .init(id: id.wire)) {
+                case .ok(let ok): return try ok.body.json.breakdown.map { Self.map($0.value1) }
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .notFound: throw FoodFetchError.notFound
+                case .undocumented: throw FoodFetchError.server
+                }
+            }
+            guard let catalogId = row.catalogId else { return nil }
+            switch try await client.getPantryCatalogBreakdown(path: .init(id: catalogId.wire)) {
+            case .ok(let ok): return try ok.body.json.breakdown.map { Self.map($0.value1) }
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .notFound: throw FoodFetchError.notFound
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
     }
 
     /// The owner's supplement stash — the names behind the protocol's rows.
@@ -932,6 +1053,7 @@ public struct FoodClient: Sendable {
                 if status == 404 { throw FoodFetchError.notFound }
                 // A refusal or an unavailable model stays what it is even when its body cannot be read.
                 if mapsRefusals, status == 400 { throw FoodFetchError.rejected }
+                if mapsRefusals, status == 409 { throw FoodFetchError.conflict }
                 if mapsRefusals, status == 502 || status == 503 { throw FoodFetchError.unavailable }
             }
             throw isNetworkFailure(error) ? FoodFetchError.offline : FoodFetchError.server
@@ -1067,7 +1189,12 @@ extension FoodClient {
             ImportedLine(name: l.value1.name, amount: l.value1.amount, unit: l.value1.unit,
                          catalogId: l.value2.match.catalogId.flatMap(UUID.init(uuidString:)),
                          confidence: l.value2.match.confidence, needsReview: l.value2.match.needsReview, sourceText: l.value2.sourceText,
-                         allergens: l.value2.allergens.map { allergens($0.additionalProperties) })
+                         allergens: l.value2.allergens.map { allergens($0.additionalProperties) },
+                         state: MatchState(rawValue: l.value2.match.state.rawValue), onShelf: l.value2.match.onShelf,
+                         basisUnit: l.value2.match.basisUnit, amountDoubt: l.value2.match.amountDoubt,
+                         alternatives: l.value2.match.alternatives.compactMap { a in
+                             UUID(uuidString: a.catalogId).map { FoodChoice(id: $0, name: a.name, brand: a.brand, basisUnit: a.basisUnit) }
+                         })
         }, sourceUrl: d.sourceUrl, needsReview: d.needsReview ?? false, cookedWeightG: d.cookedWeightG)
     }
 
@@ -1076,7 +1203,22 @@ extension FoodClient {
                   per: i.per, unit: i.unit, kcal: i.macros.kcal, proteinG: i.macros.p, carbsG: i.macros.c, fatG: i.macros.f,
                   fiberG: i.fiberG, sugarG: i.sugarG, saltG: i.saltG, saturatedFatG: i.saturatedFatG, nova: i.nova,
                   allergens: allergens(i.allergens?.additionalProperties), onShelf: true, source: i.source.rawValue, category: i.category,
-                  barcode: i.barcode, sharedFrom: i.sharedFrom?.value1.authorName)
+                  barcode: i.barcode, sharedFrom: i.sharedFrom?.value1.authorName, score: i.score, estimated: i.estimated ?? false)
+    }
+
+    /// What a pantry write answered, laid over the row the phone already holds (the answer carries the four facts and
+    /// the basis, not the rest of the label).
+    static func row(from r: Components.Schemas.PantryItemResponse, onto base: PantryRow) -> PantryRow {
+        var row = base
+        row.id = UUID(uuidString: r.id); row.catalogId = UUID(uuidString: r.catalogId)
+        row.name = r.name; row.brand = r.brand ?? base.brand; row.kind = r.kind.rawValue; row.onShelf = true
+        row.source = r.source ?? base.source; row.category = r.category ?? base.category; row.barcode = r.barcode ?? base.barcode
+        if let a = r.allergens?.additionalProperties { row.allergens = allergens(a) }
+        row.estimated = r.estimated ?? false
+        row.per = r.per ?? base.per; row.unit = r.unit ?? base.unit
+        row.kcal = r.kcal ?? base.kcal; row.proteinG = r.proteinG ?? base.proteinG
+        row.carbsG = r.carbsG ?? base.carbsG; row.fatG = r.fatG ?? base.fatG
+        return row
     }
 
     static func map(_ r: Components.Schemas.FuelWeekResponse) -> FuelWeek {
@@ -1099,7 +1241,7 @@ extension FoodClient {
                   kcal: e.kcal, proteinG: e.proteinG, carbsG: e.carbsG, fatG: e.fatG,
                   fiberG: e.fiberG, sugarG: e.sugarG, saltG: e.saltG, saturatedFatG: e.saturatedFatG, nova: e.nova,
                   allergens: allergens(e.allergens?.additionalProperties), onShelf: false, source: e.source.rawValue, category: e.category,
-                  barcode: e.barcode, sharedFrom: e.authorName)
+                  barcode: e.barcode, sharedFrom: e.authorName, score: e.score, estimated: e.estimated ?? false)
     }
 
     static func map(_ r: Components.Schemas.SensitivityProfileResponse) -> SensitivityProfile {

@@ -11,8 +11,12 @@ import BoopDesign
 @MainActor @Observable
 final class PantryAddModel {
     enum Stage: Equatable { case route, reading, confirm }
+    /// `.adding` puts a new food on the shelf; `.replacing` is „Pontosítom": what a reader brings replaces the facts of
+    /// that same food (an update, never a second food).
+    enum Mode: Equatable { case adding, replacing(PantryRow) }
 
     let route: PantryAddRoute
+    let mode: Mode
     /// The step the owner is on: an unknown barcode moves from the scan on to the label photo.
     private(set) var activeRoute: PantryAddRoute
     private(set) var stage: Stage
@@ -27,20 +31,29 @@ final class PantryAddModel {
     private let scraper: @Sendable (String) async throws -> NewPantryFood?
     private let labeler: @Sendable (Data) async throws -> NewPantryFood?
     private let saver: @Sendable (NewPantryFood) async throws -> PantryRow
+    private let replacer: @Sendable (PantryRow, NewPantryFood) async throws -> PantryRow
 
-    init(route: PantryAddRoute,
+    init(route: PantryAddRoute, mode: Mode = .adding, prefillName: String? = nil,
          scraper: @escaping @Sendable (String) async throws -> NewPantryFood?,
          labeler: @escaping @Sendable (Data) async throws -> NewPantryFood?,
-         saver: @escaping @Sendable (NewPantryFood) async throws -> PantryRow) {
-        self.route = route; self.activeRoute = route; self.scraper = scraper; self.labeler = labeler; self.saver = saver
-        food = NewPantryFood(origin: .manual)
+         saver: @escaping @Sendable (NewPantryFood) async throws -> PantryRow,
+         replacer: @escaping @Sendable (PantryRow, NewPantryFood) async throws -> PantryRow = { _, _ in throw FoodFetchError.unauthorized }) {
+        self.route = route; self.mode = mode; self.activeRoute = route; self.scraper = scraper; self.labeler = labeler
+        self.saver = saver; self.replacer = replacer
+        switch mode {
+        case .adding: food = NewPantryFood(name: prefillName ?? "", origin: .manual)
+        case .replacing(let row): food = NewPantryFood(replacing: row)
+        }
         stage = route == .manual ? .confirm : .route
     }
 
-    convenience init(route: PantryAddRoute, food: FoodClient) {
-        self.init(route: route, scraper: { try await food.scrapeFood(url: $0) }, labeler: { try await food.readLabel($0) },
-                  saver: { try await food.addFood($0) })
+    convenience init(route: PantryAddRoute, food: FoodClient, mode: Mode = .adding, prefillName: String? = nil) {
+        self.init(route: route, mode: mode, prefillName: prefillName,
+                  scraper: { try await food.scrapeFood(url: $0) }, labeler: { try await food.readLabel($0) },
+                  saver: { try await food.addFood($0) }, replacer: { try await food.replaceFood($0, with: $1) })
     }
+
+    var isReplacing: Bool { if case .replacing = mode { true } else { false } }
 
     /// Whether the confirm can save, and what holds it.
     var canSave: Bool { pantryAddReady(food) && (!pantryAddNeedsLook(food) || looked) && !saving }
@@ -51,7 +64,14 @@ final class PantryAddModel {
 
     /// A scanned or typed product the lookup found: straight to the confirm.
     func scanned(_ item: LookupItem) {
-        food = NewPantryFood(scanned: item); looked = false; problem = nil; stage = .confirm
+        food = keepingName(NewPantryFood(scanned: item)); looked = false; problem = nil; stage = .confirm
+    }
+
+    /// „Pontosítom" keeps the food's own name when the reader brings none (a label photo often has no name on it).
+    private func keepingName(_ f: NewPantryFood) -> NewPantryFood {
+        guard case .replacing(let row) = mode, f.name.trimmingCharacters(in: .whitespaces).isEmpty else { return f }
+        var named = f; named.name = row.name
+        return named
     }
 
     /// An unknown code goes on to the label photo, carrying the code.
@@ -63,7 +83,7 @@ final class PantryAddModel {
     func typeFacts(code: String?) {
         carriedCode = code
         var f = NewPantryFood(origin: .manual); f.barcode = code
-        food = f; looked = false; problem = nil; stage = .confirm
+        food = keepingName(f); looked = false; problem = nil; stage = .confirm
     }
 
     func readLink(_ raw: String) async {
@@ -90,7 +110,7 @@ final class PantryAddModel {
         do {
             if var f = try await work() {
                 if let code = carriedCode, f.barcode == nil { f.barcode = code }
-                food = f; looked = false; stage = .confirm
+                food = keepingName(f); looked = false; stage = .confirm
             } else {
                 stage = .route; problem = nothing
             }
@@ -113,8 +133,14 @@ final class PantryAddModel {
     func save() async -> PantryRow? {
         guard canSave else { return nil }
         saving = true; problem = nil; defer { saving = false }
-        do { return try await saver(food) }
+        do {
+            switch mode {
+            case .adding: return try await saver(food)
+            case .replacing(let row): return try await replacer(row, food)
+            }
+        }
         catch FoodFetchError.offline { problem = "Nincs net — a számok itt maradnak, próbáld újra, amint van." }
+        catch FoodFetchError.conflict { problem = isReplacing ? "Ez a vonalkód már egy másik ételé." : "Ilyen nevű étel már van — adj neki más nevet." }
         catch FoodFetchError.rejected { problem = "A szerver nem fogadta el ezeket az adatokat. Nézd át a számokat." }
         catch FoodFetchError.unauthorized { problem = "Újra be kell jelentkezned, aztán mentsd újra." }
         catch { problem = "Nem sikerült felvenni — próbáld újra." }
@@ -127,12 +153,17 @@ final class PantryAddModel {
 struct PantryAddSheet: View {
     let route: PantryAddRoute
     let profile: SensitivityProfile?
+    /// The name the form opens with (a review row whose quick add could not bind its name).
+    var prefillName: String? = nil
+    /// „Pontosítom": the food whose facts this form replaces.
+    var replacing: PantryRow? = nil
     let onSaved: (PantryRow) -> Void
     @Environment(\.foodClient) private var foodClient
 
     var body: some View {
         if let foodClient {
-            PantryAddHost(route: route, food: foodClient, profile: profile, onSaved: onSaved)
+            PantryAddHost(route: route, food: foodClient, mode: replacing.map { .replacing($0) } ?? .adding, prefillName: prefillName,
+                          profile: profile, onSaved: onSaved)
         } else {
             NKSheetFrame(hue: .fuel, eyebrow: "KAMRA", title: "Most nem érem el") {
                 Text("Jelentkezz be újra, és utána felvehetsz.").nkFont(15).foregroundStyle(.white.opacity(0.8))
@@ -153,8 +184,9 @@ private struct PantryAddHost: View {
     let onSaved: (PantryRow) -> Void
     @Environment(\.dismiss) private var dismiss
 
-    init(route: PantryAddRoute, food: FoodClient, profile: SensitivityProfile?, onSaved: @escaping (PantryRow) -> Void) {
-        _model = State(initialValue: PantryAddModel(route: route, food: food))
+    init(route: PantryAddRoute, food: FoodClient, mode: PantryAddModel.Mode, prefillName: String?, profile: SensitivityProfile?,
+         onSaved: @escaping (PantryRow) -> Void) {
+        _model = State(initialValue: PantryAddModel(route: route, food: food, mode: mode, prefillName: prefillName))
         _scan = State(initialValue: BarcodeScanModel(lookup: { code in try await food.lookup(barcode: code) }))
         self.profile = profile; self.onSaved = onSaved
     }
@@ -174,7 +206,7 @@ private struct PantryAddHost: View {
     }
 
     var body: some View {
-        NKSheetFrame(hue: .fuel, eyebrow: "FELVESZEK EGYET", title: title) {
+        NKSheetFrame(hue: .fuel, eyebrow: model.isReplacing ? "PONTOSÍTOM" : "FELVESZEK EGYET", title: title) {
             switch model.stage {
             case .reading: reading
             case .confirm: PantryConfirm(model: model, profile: profile, onSaved: { onSaved($0) })
@@ -259,8 +291,9 @@ private struct PantryAddHost: View {
 // MARK: - The one confirm
 
 /// What every route ends in: the food's name, its category and its facts per 100 g, all editable. Nothing is saved until
-/// the owner taps; a macro left empty stays "nincs adat"; a reading that doubts itself must be looked at first.
-private struct PantryConfirm: View {
+/// the owner taps; a macro left empty stays "nincs adat"; a reading that doubts itself must be looked at first. In
+/// „Pontosítom" mode the same form replaces the facts of the food it was opened on.
+struct PantryConfirm: View {
     let model: PantryAddModel
     let profile: SensitivityProfile?
     let onSaved: (PantryRow) -> Void
@@ -314,7 +347,7 @@ private struct PantryConfirm: View {
                 .buttonStyle(.plain).accessibilityAddTraits(m.looked ? .isSelected : [])
             }
             Button { Task { if let row = await m.save() { onSaved(row) } } } label: {
-                Text(m.saving ? "Felveszem…" : "Felveszem a kamrába").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                Text(m.isReplacing ? (m.saving ? "Mentem…" : "Átírom a kamrában") : (m.saving ? "Felveszem…" : "Felveszem a kamrába")).nkFont(16, .semibold).foregroundStyle(NK.ground)
                     .frame(maxWidth: .infinity).frame(height: 50).background(Capsule().fill(.white.opacity(m.canSave ? 0.95 : 0.3)))
             }
             .buttonStyle(.plain).disabled(!m.canSave)

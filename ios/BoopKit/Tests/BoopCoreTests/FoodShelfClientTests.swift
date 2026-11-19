@@ -135,4 +135,100 @@ struct FoodShelfClientTests {
         #expect(list[1].items.isEmpty)
         #expect(list[1].mealId == nil)
     }
+
+    // MARK: quick-add, typed facts, „Pontosítom", the food's own score (mezo-r36n9.63)
+
+    private func itemJSON(estimated: Bool, source: String = "ai_estimate", kcal: Double = 354, barcode: String? = nil) -> String {
+        #"{"id":"\#(pantryId)","catalogId":"\#(catalogId)","kind":"food","name":"Kurkuma","source":"\#(source)","estimated":\#(estimated),"per":100,"unit":"g","kcal":\#(kcal),"proteinG":7.8,"carbsG":64.9,"fatG":9.9\#(barcode.map { #","barcode":"\#($0)""# } ?? "")}"#
+    }
+
+    @Test func testQuickAdd_decodesEstimated() async throws {
+        stub.on("quickAddPantryItem", .json(200, itemJSON(estimated: true)))
+        let row = try await food().quickAddPantry(name: "  kurkuma ")
+        #expect(row.estimated && row.onShelf)
+        #expect(row.id == UUID(uuidString: pantryId) && row.catalogId == UUID(uuidString: catalogId))
+        #expect(row.name == "Kurkuma" && row.unit == "g" && row.per == 100 && row.kcal == 354 && row.source == "ai_estimate")
+        // an estimate never guesses these
+        #expect(row.nova == nil && row.allergens.isEmpty)
+        let body = (try? JSONSerialization.jsonObject(with: Data((stub.sent.last?.body ?? "").utf8))) as? [String: Any]
+        #expect(body?["name"] as? String == "kurkuma")
+        #expect(stub.sent.last?.path == "/api/pantry/items/quick-add")
+    }
+
+    @Test func testQuickAdd_409IsConflict() async throws {
+        stub.on("quickAddPantryItem", .status(409))
+        await #expect(throws: FoodFetchError.conflict) { _ = try await food().quickAddPantry(name: "Kurkuma") }
+        stub.on("quickAddPantryItem", .status(502))
+        await #expect(throws: FoodFetchError.unavailable) { _ = try await food().quickAddPantry(name: "Kurkuma") }
+    }
+
+    @Test func testSetFacts_putsAllFieldsBack() async throws {
+        stub.on("updatePantryItem", .json(200, itemJSON(estimated: false, source: "manual", kcal: 312)))
+        let row = PantryRow(id: UUID(uuidString: pantryId), catalogId: UUID(uuidString: catalogId), name: "Kurkuma", brand: "Pelda", per: 100,
+                            unit: "g", kcal: 354, proteinG: 7.8, carbsG: 64.9, fatG: 9.9, fiberG: 21, source: "ai_estimate", estimated: true)
+        let saved = try await food().setFacts(FoodFacts(kcal: 312, proteinG: 9, carbsG: 60, fatG: 8), of: row)
+        #expect(!saved.estimated && saved.kcal == 312 && saved.source == "manual")
+        // what the answer does not carry stays as the phone knew it
+        #expect(saved.fiberG == 21 && saved.brand == "Pelda")
+        let sent = try #require(stub.sent.last)
+        #expect(sent.path == "/api/pantry/\(pantryId)")
+        let body = (try? JSONSerialization.jsonObject(with: Data((sent.body ?? "").utf8))) as? [String: Any]
+        #expect(body?["kind"] as? String == "food" && body?["name"] as? String == "Kurkuma" && body?["brand"] as? String == "Pelda")
+        #expect(body?["per"] as? Double == 100 && body?["unit"] as? String == "g")
+        #expect(body?["kcal"] as? Double == 312 && body?["proteinG"] as? Double == 9 && body?["carbsG"] as? Double == 60 && body?["fatG"] as? Double == 8)
+        // no source is sent: the server reads that as the owner typing, and the estimate stops being one
+        #expect(body?["source"] == nil)
+    }
+
+    @Test func testReplaceFood_putsToTheSameIdWithReaderSource() async throws {
+        stub.on("updatePantryItem", .json(200, itemJSON(estimated: false, source: "openfoodfacts", kcal: 330, barcode: "5997001234567")))
+        let row = PantryRow(id: UUID(uuidString: pantryId), catalogId: UUID(uuidString: catalogId), name: "Kurkuma", per: 100, unit: "g", kcal: 354,
+                            source: "ai_estimate", estimated: true)
+        let scanned = NewPantryFood(name: "Kurkuma", barcode: "5997001234567", kcal: 330, proteinG: 8, carbsG: 65, fatG: 10, fiberG: 21, nova: 1,
+                                    allergens: ["mustard": .traces], origin: .barcode)
+        let saved = try await food().replaceFood(row, with: scanned)
+        #expect(saved.id == row.id && !saved.estimated && saved.barcode == "5997001234567" && saved.fiberG == 21 && saved.nova == 1)
+        #expect(saved.allergens == ["mustard": .traces])
+        #expect(stub.ops == ["updatePantryItem"])   // an update of the same food, never a create
+        let sent = try #require(stub.sent.last)
+        #expect(sent.path == "/api/pantry/\(pantryId)")
+        let body = (try? JSONSerialization.jsonObject(with: Data((sent.body ?? "").utf8))) as? [String: Any]
+        #expect(body?["source"] as? String == "openfoodfacts" && body?["barcode"] as? String == "5997001234567")
+        #expect(body?["fiberG"] as? Double == 21)
+
+        stub.on("updatePantryItem", .json(200, itemJSON(estimated: false, source: "photo")))
+        _ = try await food().replaceFood(row, with: NewPantryFood(name: "Kurkuma", kcal: 330, origin: .labelPhoto))
+        let photo = (try? JSONSerialization.jsonObject(with: Data((stub.sent.last?.body ?? "").utf8))) as? [String: Any]
+        #expect(photo?["source"] as? String == "photo")
+
+        // a barcode that already belongs to another food
+        stub.on("updatePantryItem", .status(409))
+        await #expect(throws: FoodFetchError.conflict) { _ = try await food().replaceFood(row, with: scanned) }
+        // a food that is not on the shelf has nothing to update
+        await #expect(throws: FoodFetchError.rejected) { _ = try await food().replaceFood(PantryRow(name: "x"), with: scanned) }
+    }
+
+    @Test func testShelfAndCatalogRowsCarryTheirOwnScoreAndTheEstimateFlag() async throws {
+        stub.on("getPantry", .json(200, #"{"ingredients":[{"id":"\#(pantryId)","kind":"food","name":"Kurkuma","source":"ai_estimate","per":100,"unit":"g","macros":{"kcal":354,"p":7.8,"c":64.9,"f":9.9},"micros":[],"lastUsed":"-","usedInRecipes":0,"catalogId":"\#(catalogId)","catalogEditable":true,"estimated":true,"score":0.71},{"id":"\#(catalogId)","kind":"food","name":"Só","source":"manual","per":100,"unit":"g","macros":{"kcal":0,"p":0,"c":0,"f":0},"micros":[],"lastUsed":"-","usedInRecipes":0,"catalogId":"\#(catalogId)","catalogEditable":true}],"stash":[],"imports":[],"suggestions":[]}"#))
+        let shelf = try await food().pantry()
+        #expect(shelf[0].score == 0.71 && shelf[0].estimated && shelf[0].source == "ai_estimate")
+        #expect(shelf[1].score == nil && !shelf[1].estimated)   // no score is no score, never a zero
+        stub.on("searchPantryCatalog", .json(200, #"[{"id":"\#(catalogId)","kind":"food","name":"Zabpehely","source":"manual","per":100,"unit":"g","kcal":370,"score":0.83,"estimated":false}]"#))
+        #expect(try await food().pantry(query: "zab").first?.score == 0.83)
+    }
+
+    @Test func testPantryBreakdown_asksTheShelfRowByItsIdAndACatalogFoodByItsOwn() async throws {
+        let json = #"{"breakdown":{"value":0.71,"confidence":1,"dimensions":[{"id":"nova","label":"Feldolgozottság","weight":0.3,"score":0.9,"detail":"x"},{"id":"who","label":"WHO","weight":0.25,"score":0.6,"detail":"y"}],"improve":[],"tools":[]}}"#
+        stub.on("getPantryItemBreakdown", .json(200, json))
+        let shelf = try await food().pantryBreakdown(PantryRow(id: UUID(uuidString: pantryId), catalogId: UUID(uuidString: catalogId), name: "Zab"))
+        #expect(shelf?.dimensions.map(\.id) == ["nova", "who"])
+        #expect(stub.sent.last?.path == "/api/pantry/\(pantryId)/breakdown")
+
+        stub.on("getPantryCatalogBreakdown", .json(200, #"{"breakdown":null}"#))
+        #expect(try await food().pantryBreakdown(PantryRow(id: nil, catalogId: UUID(uuidString: catalogId), name: "Zab", onShelf: false)) == nil)
+        #expect(stub.sent.last?.path == "/api/pantry/catalog/\(catalogId)/breakdown")
+        // a row with neither id asks nobody
+        #expect(try await food().pantryBreakdown(PantryRow(name: "x")) == nil)
+        #expect(stub.ops.count == 2)
+    }
 }
