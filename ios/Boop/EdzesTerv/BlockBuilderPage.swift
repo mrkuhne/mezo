@@ -79,6 +79,7 @@ struct BlockBuilderPage: View {
             if let ex = model.draft?.days[safe: pick.day]?.exercises[safe: pick.exercise] {
                 TechniquePicker(exercise: ex,
                                 choose: { model.draft?.setTechnique(day: pick.day, exercise: pick.exercise, $0) },
+                                challenge: { model.draft?.setChallenge(day: pick.day, exercise: pick.exercise, $0) },
                                 onClose: { picking = nil })
             }
         }
@@ -572,18 +573,9 @@ private struct BuilderDayCard: View {
                     .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
                 Text(subtitle(draft, exercise)).nkFont(12).foregroundStyle(capped ? planWarn : .white.opacity(0.5))
                 if exercise.judged, draft.techniquesEnabled {
-                    NKFlowRow(spacing: 6, rowSpacing: 6) {
-                        BuilderTechniqueChip(exercise: exercise) { pick(TechniquePick(day: index, exercise: e)) }
-                        if exercise.canTakeChallenge {
-                            Button { withAnimation(.snappy) { model.draft?.toggleChallenge(day: index, exercise: e) } } label: {
-                                PlanPill(exercise.challenge ? "KIHÍVÁS" : "kihívás", mono: exercise.challenge,
-                                         color: exercise.challenge ? planWarn : .white.opacity(0.4), mark: .flag)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(exercise.challenge ? "A nap kihívása, koppints a levételhez" : "Legyen ez a nap kihívása")
-                        }
-                    }
-                    .padding(.top, 2)
+                    // One pill, whatever is chosen: the row keeps its height when he picks (owner, 2026-11-19).
+                    BuilderTechniqueChip(exercise: exercise) { pick(TechniquePick(day: index, exercise: e)) }
+                        .padding(.top, 2)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -615,13 +607,32 @@ private struct BuilderTechniqueChip: View {
             PlanPill("szabadsúly · nincs technika", color: .white.opacity(0.4), mark: .shield)
         } else {
             Button(action: open) {
-                PlanPill(exercise.challenge ? "kihívás a végén" : (exercise.technique == .none ? "+ technika" : exercise.technique.name),
-                         color: exercise.technique == .none ? .white.opacity(0.55) : planHue.glow,
-                         mark: Self.mark(exercise.technique))
+                HStack(spacing: 5) {
+                    PlanMark(exercise.challenge ? .flag : Self.mark(exercise.technique), color: color, size: 13)
+                    Text(label).nkFont(12, .medium).foregroundStyle(color).lineLimit(1).truncationMode(.tail)
+                    if exercise.pickedByBoop {
+                        Text("Boop").nkFont(9, .semibold, design: .monospaced).tracking(0.8)
+                            .foregroundStyle(NK.ground)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Capsule().fill(planHue.glow))
+                    }
+                }
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .background(Capsule().fill(.white.opacity(0.09)))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Technika: \(exercise.technique.name). Koppints a választáshoz.")
+            .accessibilityLabel("\(label)\(exercise.pickedByBoop ? ", Boop javaslata" : ""). Koppints a választáshoz.")
         }
+    }
+
+    private var label: String {
+        if exercise.challenge { return "Kihívás a végén" }
+        return exercise.technique == .none ? "+ technika vagy kihívás" : exercise.technique.name
+    }
+
+    private var color: Color {
+        if exercise.challenge { return planWarn }
+        return exercise.technique == .none ? .white.opacity(0.55) : planHue.glow
     }
 
     static func mark(_ technique: SetTechnique) -> PlanMark.Kind {

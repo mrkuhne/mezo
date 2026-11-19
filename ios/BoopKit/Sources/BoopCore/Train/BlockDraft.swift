@@ -131,6 +131,20 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
 
     public var canTakeChallenge: Bool { stable && lengthened && judged }
 
+    /// The pick on screen is Boop's own (the planner or the AI put it there, he has not touched it).
+    public var pickedByBoop: Bool {
+        guard ["planner", "ai"].contains(wire.techniqueSource ?? "") else { return false }
+        return technique == SetTechnique(wire: wire.technique) && challenge == (wire.challenge ?? false) && (technique != .none || challenge)
+    }
+
+    /// Why the day's challenge cannot sit on this exercise; nil when it can.
+    public var challengeUnavailableReason: String? {
+        if canTakeChallenge { return nil }
+        if !judged { return "Ez a gyakorlat nem számít bele a sorozatokba." }
+        if !stable { return "Szabadsúlyos gyakorlaton nincs kihívás." }
+        return "A kihívás félismétlés a nyújtott helyzetben — ennél a gyakorlatnál ez nem biztonságos."
+    }
+
     /// Why a technique is not offered on this exercise, in his words; nil when it is.
     public func unavailableReason(_ technique: SetTechnique) -> String? {
         if allowedTechniques.contains(technique) { return nil }
@@ -253,6 +267,20 @@ public struct BlockDraft: Equatable, Sendable {
               days[day].exercises[exercise].allowedTechniques.contains(technique) else { return }
         days[day].exercises[exercise].technique = technique
         if technique != .none { days[day].exercises[exercise].challenge = false }
+    }
+
+    /// Puts the day's challenge on this exercise (taking it from any other that day, and replacing its technique) or
+    /// takes it off.
+    public mutating func setChallenge(day: Int, exercise: Int, _ on: Bool) {
+        guard techniquesEnabled, days.indices.contains(day), days[day].exercises.indices.contains(exercise) else { return }
+        if on {
+            guard days[day].exercises[exercise].canTakeChallenge else { return }
+            for e in days[day].exercises.indices { days[day].exercises[e].challenge = false }
+            days[day].exercises[exercise].challenge = true
+            days[day].exercises[exercise].technique = .none
+        } else {
+            days[day].exercises[exercise].challenge = false
+        }
     }
 
     /// One challenge a day: picking a new one takes it from the old; tapping the same one clears it. The challenge

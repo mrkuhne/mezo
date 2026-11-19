@@ -16,6 +16,8 @@ struct TechniquePick: Identifiable, Equatable {
 struct TechniquePicker: View {
     let exercise: DraftExercise
     let choose: (SetTechnique) -> Void
+    /// Puts the day's challenge on this exercise (true) or takes it off (false).
+    let challenge: (Bool) -> Void
     let onClose: () -> Void
     /// DEBUG review: `-previewBlokkPickerInfo YES` opens with the descriptions shown.
     @State private var showInfo = UserDefaults.standard.bool(forKey: "previewBlokkPickerInfo")
@@ -42,20 +44,24 @@ struct TechniquePicker: View {
             }
 
             ScrollView {
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     ForEach(SetTechnique.allCases, id: \.self) { t in row(t) }
+                    Text("A NAP KIHÍVÁSA").nkFont(10, .semibold, design: .monospaced).tracking(1.3)
+                        .foregroundStyle(planWarn).padding(.top, 10)
+                    challengeRow
+                    if exercise.pickedByBoop {
+                        Text("A mostani választást Boop tette ide a heti javaslatban. Ha átállítod, a te döntésed lesz.")
+                            .nkFont(12).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 6)
+                    }
                 }
             }
             .scrollIndicators(.hidden)
             .scrollBounceBehavior(.basedOnSize)
 
-            if exercise.challenge {
-                Text("Ez a nap kihívása: a végén félismétlések jönnek. Ha technikát választasz, a kihívás lekerül róla.")
-                    .nkFont(12).foregroundStyle(planWarn.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
-            }
         }
         .padding(.horizontal, 22).padding(.top, 22).padding(.bottom, 12)
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationBackground(NK.ground.opacity(0.96))
         .preferredColorScheme(.dark)
@@ -82,6 +88,7 @@ struct TechniquePicker: View {
                         }
                     }
                     Spacer(minLength: 6)
+                    if on && exercise.pickedByBoop { boopTag }
                     if on { PlanMark(.check, color: planGood, size: 18) }
                 }
                 if showInfo {
@@ -102,6 +109,57 @@ struct TechniquePicker: View {
         .accessibilityAddTraits(on ? .isSelected : [])
         .accessibilityHint(reason ?? t.about)
         .sensoryFeedback(.selection, trigger: on)
+    }
+
+    private var boopTag: some View {
+        Text("BOOP").nkFont(9, .semibold, design: .monospaced).tracking(0.8).foregroundStyle(NK.ground)
+            .padding(.horizontal, 6).padding(.vertical, 3).background(Capsule().fill(planHue.glow))
+    }
+
+    /// The day's challenge as a row of its own: half reps after the last set, one exercise a day.
+    private var challengeRow: some View {
+        let reason = exercise.challengeUnavailableReason
+        let on = exercise.challenge
+        return Button {
+            guard reason == nil else { return }
+            challenge(!on)
+            onClose()
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    PlanMark(.flag, color: on ? NK.ground : (reason == nil ? planWarn : .white.opacity(0.3)), size: 20)
+                        .frame(width: 36, height: 36)
+                        .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .fill(on ? planWarn : planWarn.opacity(reason == nil ? 0.14 : 0.04)))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(on ? "Kihívás · koppints a levételhez" : "Kihívás a végén").nkFont(16, .semibold)
+                            .foregroundStyle(.white.opacity(reason == nil ? 0.97 : 0.4))
+                        if let reason {
+                            Text(reason).nkFont(12).foregroundStyle(.white.opacity(0.4)).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    Spacer(minLength: 6)
+                    if on && exercise.pickedByBoop { boopTag }
+                    if on { PlanMark(.check, color: planGood, size: 18) }
+                }
+                if showInfo {
+                    Text("Az utolsó sorozat után félismétlések a nyújtott helyzetben, amennyi megy — egy szám, amit legközelebb megdöntesz. Naponta egy gyakorlaton; ha másikra teszed, innen lekerül, és helyette nincs más technika.")
+                        .nkFont(13).foregroundStyle(.white.opacity(reason == nil ? 0.7 : 0.4))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, 48)
+                        .transition(.opacity)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(on ? 0.1 : 0.05)))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(on ? planWarn.opacity(0.5) : .white.opacity(0.06), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(reason != nil)
+        .accessibilityAddTraits(on ? .isSelected : [])
+        .accessibilityHint(reason ?? "A nap kihívása: félismétlések az utolsó sorozat után.")
     }
 
     private func mark(_ t: SetTechnique) -> PlanMark.Kind {
