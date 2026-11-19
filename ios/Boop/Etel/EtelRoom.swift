@@ -497,11 +497,18 @@ enum RecipeSheet: Identifiable {
     case detail(UUID)
     case importer(RecipeImportModel.Mode)
     case workshop
+    #if DEBUG
+    /// Throwaway spike (mezo-r36n9.63): „Ezt főztem" on fixture rows.
+    case cookedSpike(String)
+    #endif
     var id: String {
         switch self {
         case .detail(let id): "detail-\(id)"
         case .importer(let m): "import-\(m)"
         case .workshop: "workshop"
+        #if DEBUG
+        case .cookedSpike(let s): "cooked-\(s)"
+        #endif
         }
     }
 }
@@ -577,6 +584,14 @@ struct EtelRoom: View {
 
     private var tab: EtelTab { EtelTab(rawValue: selected) ?? .ma }
 
+    /// Throwaway spike (mezo-r36n9.63): the „Ezt főztem" row shows only in a DEBUG build launched with `-etelCooked YES`.
+    private var cookedSpikeEntrance: (() -> Void)? {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "etelCooked") { return { recipeSheet = .cookedSpike("cooked") } }
+        #endif
+        return nil
+    }
+
     var body: some View {
         let v = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
         NKAreaPage(hue: .fuel, name: "Étel", eyebrow: "Étel · \(tab.rawValue.lowercased())", level: store.day == nil ? nil : v.level,
@@ -595,6 +610,7 @@ struct EtelRoom: View {
                        onSheet: { etelSheet = $0 }, onAsk: { openPlace(.boop) })
             case .receptek:
                 EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },
+                             onCooked: cookedSpikeEntrance,
                              onOpen: { recipeSheet = .detail($0.id) }, onRetry: { Task { await reload() } })
             case .kamra:
                 EtelKamra(store: store, onAdd: { kamraSheet = .add($0) }, onOpen: { kamraSheet = .item($0) }, onRetry: { Task { await reload() } },
@@ -634,6 +650,10 @@ struct EtelRoom: View {
                     RecipeImportHost(mode: mode, food: food, profile: store.profile) { saved($0) }
                 case .workshop:
                     RecipeWorkshopSheet(food: food, profile: store.profile) { saved($0) }
+                #if DEBUG
+                case .cookedSpike(let s):
+                    CookedSpikeSheet(stage: s == "cooked" ? .input : .review, openOther: s == "cooked-other")
+                #endif
                 }
             }
             .presentationDetents([.large])
@@ -697,6 +717,7 @@ struct EtelRoom: View {
             case "import": recipeSheet = .importer(.link)
             case "text": recipeSheet = .importer(.text)
             case "workshop": recipeSheet = .workshop
+            case "cooked", "cooked-review", "cooked-other": recipeSheet = .cookedSpike(which)
             case "kamra-item": if let food { await store.loadShelf(food: food); if let r = store.shelf.first { kamraSheet = .item(r) } }
             case "kamra-catalog": if let food, let r = (try? await food.pantry(query: "zab"))?.first(where: { !$0.onShelf }) { kamraSheet = .item(r) }
             case "add-link": kamraSheet = .add(.link)

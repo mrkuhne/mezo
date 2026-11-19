@@ -75,6 +75,8 @@ struct EtelReceptek: View {
     let store: EtelStore
     let onImport: (RecipeImportModel.Mode) -> Void
     let onWorkshop: () -> Void
+    /// „Ezt főztem" — nil hides the row.
+    var onCooked: (() -> Void)? = nil
     let onOpen: (Recipe) -> Void
     let onRetry: () -> Void
     @State private var query = ""
@@ -82,7 +84,10 @@ struct EtelReceptek: View {
     var body: some View {
         NKDrillSection(number: 1, label: "ÚJ RECEPT") {
             VStack(spacing: 10) {
-                importRow("link-deep", "Beillesztek egy linket", "a receptoldalról vagy a szövegből kiolvasom", primary: true) { onImport(.link) }
+                if let onCooked {
+                    importRow("bowl-cream", "Ezt főztem", "elmondom vagy lefotózom, miből és mennyit", primary: true, action: onCooked)
+                }
+                importRow("link-deep", "Beillesztek egy linket", "a receptoldalról vagy a szövegből kiolvasom", primary: onCooked == nil) { onImport(.link) }
                 importRow("camera-ink", "Lefotózom a receptet", "könyvből vagy képernyőről") { onImport(.photo) }
                 importRow("chat-ink", "Receptműhely", "Boop kitalál egyet a szabályaid szerint", action: onWorkshop)
             }
