@@ -44,7 +44,19 @@ public final class BlockBuilderModel {
 
     // MARK: loading
 
+    /// Loads the block, the catalog and the first evaluation. A second call while one is on its way waits for it
+    /// (the room preloads the builder; opening it mid-preload must not start over).
     public func load() async {
+        if let inFlight = loadTask { await inFlight.value; return }
+        let task = Task { await performLoad() }
+        loadTask = task
+        await task.value
+        loadTask = nil
+    }
+
+    private var loadTask: Task<Void, Never>?
+
+    private func performLoad() async {
         phase = .loading
         do {
             async let block = client.runningBlock()
