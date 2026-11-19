@@ -123,6 +123,11 @@ class PenzAllowanceApiIT extends ApiIntegrationTest {
         assertThat(open).filteredOn(m -> m.getMonth().equals("2026-10")).singleElement()
             .satisfies(m -> assertThat(m.getFinalRemaining().getHufMinor()).isEqualTo(33_596_000L));
 
+        // months close oldest first: October cannot close while September is open
+        String early = postForBody("/api/penz/month-closes/2026-10", new PenzMonthCloseRequest().leftoverAction("kept"),
+            h, HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(early, "PENZ_EARLIER_MONTH_OPEN");
+
         PenzMonthCloseResponse close = postForBody("/api/penz/month-closes/2026-09",
             new PenzMonthCloseRequest().leftoverAction("transferred"), h, HttpStatus.OK, PenzMonthCloseResponse.class);
         assertThat(close.getLeftoverAction()).isEqualTo(PenzMonthCloseResponse.LeftoverActionEnum.NONE);
@@ -166,6 +171,13 @@ class PenzAllowanceApiIT extends ApiIntegrationTest {
             .containsExactlyInAnyOrder(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 5));
         assertThat(october).filteredOn(t -> t.getSource() == PenzTransactionResponse.SourceEnum.RECURRING)
             .allSatisfy(t -> assertThat(t.getNeedsReview()).isFalse());
+
+        // closing October now works, and it stores the figure carrying September's deficit
+        PenzMonthCloseResponse octClose = postForBody("/api/penz/month-closes/2026-10",
+            new PenzMonthCloseRequest().leftoverAction("kept"), h, HttpStatus.OK, PenzMonthCloseResponse.class);
+        assertThat(octClose.getFinalRemaining().getHufMinor()).isEqualTo(31_096_000L);
+        assertThat(octClose.getDeficit().getHufMinor()).isZero();
+        assertThat(octClose.getLeftoverAction()).isEqualTo(PenzMonthCloseResponse.LeftoverActionEnum.KEPT);
 
         // user B: none of A's money — only the default Gyakorlás line (20 000 Ft) and no deficit
         RegisteredUser b = registerUser("penz allowance b");

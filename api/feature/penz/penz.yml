@@ -344,7 +344,7 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzMonthCloseResponse' } } }
         '400': { description: 'Validation failure, or the month is not over yet', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '409': { description: 'Already closed, or no savings-target account for a transfer', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'Already closed (PENZ_MONTH_ALREADY_CLOSED), an earlier month is still open (PENZ_EARLIER_MONTH_OPEN — months close oldest first), or no savings-target account for a transfer', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
     PenzMoney:

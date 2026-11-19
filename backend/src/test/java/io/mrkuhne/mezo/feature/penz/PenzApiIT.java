@@ -500,6 +500,12 @@ class PenzApiIT extends ApiIntegrationTest {
         assertHasRequestError(closed, "PENZ_MONTH_ALREADY_CLOSED");
         postForBody("/api/penz/month-closes/" + current.minusMonths(1), Map.of("leftoverAction", "spent"),
             u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        // months close oldest first: three months ago is still open
+        String earlier = postForBody("/api/penz/month-closes/" + current.minusMonths(1), keep, u.headers(),
+            HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(earlier, "PENZ_EARLIER_MONTH_OPEN");
+        postForBody("/api/penz/month-closes/" + current.minusMonths(3), keep, u.headers(), HttpStatus.OK,
+            PenzMonthCloseResponse.class);
         // an empty month still owes the Gyakorlás line (default 20 000 Ft): it closes with that deficit
         PenzMonthCloseResponse empty = postForBody("/api/penz/month-closes/" + current.minusMonths(1), keep,
             u.headers(), HttpStatus.OK, PenzMonthCloseResponse.class);

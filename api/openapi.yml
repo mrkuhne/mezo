@@ -14788,7 +14788,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
-          description: 'Already closed, or no savings-target account for a transfer'
+          description: >-
+            Already closed (PENZ_MONTH_ALREADY_CLOSED), an earlier month is
+            still open (PENZ_EARLIER_MONTH_OPEN — months close oldest first), or
+            no savings-target account for a transfer
           content:
             application/json:
               schema:

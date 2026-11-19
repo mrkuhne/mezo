@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
  * deficit: a deficit, or nothing left, always closes as {@code none}; a leftover closes as {@code kept} or
  * {@code transferred} — the latter writes a HUF transfer pair dated the month's last day from the default
  * account into the savings-target account (409 {@code PENZ_NO_SAVINGS_TARGET_ACCOUNT} when either is missing).
+ * Months close oldest first: an earlier open month is 409 {@code PENZ_EARLIER_MONTH_OPEN}.
  *
  * <p>The remaining figure is the allowance engine's {@code remaining} of the month ({@link #remainingFor}), with
  * the previous deficit taken only from a CLOSED previous month (old {@code summarizeClose}). Open months carry the
@@ -131,6 +132,24 @@ public class PenzMonthCloseService {
         if (repository.findByCreatedByAndMonthAndDeletedFalse(owner, m.toString()).isPresent()) {
             throw PenzErrors.conflict("PENZ_MONTH_ALREADY_CLOSED");
         }
+        if (!earlierOpen(owner, m).isEmpty()) {
+            throw PenzErrors.conflict("PENZ_EARLIER_MONTH_OPEN");
+        }
         return m;
+    }
+
+    /**
+     * Months before {@code month} (from the earliest transaction month) that have no close. Months close oldest
+     * first: a month's previousDeficit line reads the previous month's STORED close, so closing a month while an
+     * earlier one is open would freeze it without the earlier deficit.
+     */
+    private List<YearMonth> earlierOpen(UUID owner, YearMonth month) {
+        List<String> withData = transactions.findMonthsWithTransactionsBefore(owner, month.atDay(1));
+        if (withData.isEmpty()) {
+            return List.of();
+        }
+        List<MonthCloseInput> closed = repository.findByCreatedByAndDeletedFalseOrderByMonthDesc(owner).stream()
+            .map(c -> new MonthCloseInput(YearMonth.parse(c.getMonth()), c.getDeficitMinor())).toList();
+        return MonthCloseRules.monthsToClose(month.atDay(1), YearMonth.parse(withData.getFirst()), closed);
     }
 }
