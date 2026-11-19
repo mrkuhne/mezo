@@ -170,10 +170,13 @@ public struct NKStatRow: View {
 public struct NKCurve: View {
     let values: [Double], labels: [String], hue: Hue
     let target: Double?, nowIndex: Int?, height: CGFloat
+    /// What lies after "now" is a plan, not a fact: drawn dashed and fainter (a day's food, where the line runs on
+    /// into what is still to be eaten).
+    let planAfterNow: Bool
     public init(values: [Double], labels: [String] = [], hue: Hue, target: Double? = nil,
-                nowIndex: Int? = nil, height: CGFloat = 132) {
+                nowIndex: Int? = nil, height: CGFloat = 132, planAfterNow: Bool = false) {
         self.values = values; self.labels = labels; self.hue = hue
-        self.target = target; self.nowIndex = nowIndex; self.height = height
+        self.target = target; self.nowIndex = nowIndex; self.height = height; self.planAfterNow = planAfterNow
     }
 
     public var body: some View {
@@ -187,18 +190,36 @@ public struct NKCurve: View {
                 func pt(_ i: Int) -> CGPoint {
                     CGPoint(x: w * CGFloat(i) / CGFloat(values.count - 1), y: y(values[i]))
                 }
-                var line = Path()
-                line.move(to: pt(0))
-                for i in 1..<values.count {
-                    let a = pt(i - 1), b = pt(i), mx = (a.x + b.x) / 2
-                    line.addCurve(to: b, control1: CGPoint(x: mx, y: a.y), control2: CGPoint(x: mx, y: b.y))
+                /// The smooth line through points `from...to`.
+                func curve(_ from: Int, _ to: Int) -> Path {
+                    var line = Path()
+                    line.move(to: pt(from))
+                    guard to > from else { return line }
+                    for i in (from + 1)...to {
+                        let a = pt(i - 1), b = pt(i), mx = (a.x + b.x) / 2
+                        line.addCurve(to: b, control1: CGPoint(x: mx, y: a.y), control2: CGPoint(x: mx, y: b.y))
+                    }
+                    return line
                 }
-                var fill = line
-                fill.addLine(to: CGPoint(x: w, y: h)); fill.addLine(to: CGPoint(x: 0, y: h)); fill.closeSubpath()
-                ctx.fill(fill, with: .linearGradient(Gradient(colors: [hue.glow.opacity(0.42), hue.glow.opacity(0.02)]),
-                                                     startPoint: .zero, endPoint: CGPoint(x: 0, y: h)))
-                ctx.stroke(line, with: .color(hue.glow),
+                func area(_ line: Path, _ from: Int, _ to: Int) -> Path {
+                    var fill = line
+                    fill.addLine(to: CGPoint(x: pt(to).x, y: h)); fill.addLine(to: CGPoint(x: pt(from).x, y: h)); fill.closeSubpath()
+                    return fill
+                }
+                let lastIndex = values.count - 1
+                let split = planAfterNow ? min(lastIndex, max(0, nowIndex ?? lastIndex)) : lastIndex
+                let fact = curve(0, split)
+                ctx.fill(area(fact, 0, split), with: .linearGradient(Gradient(colors: [hue.glow.opacity(0.42), hue.glow.opacity(0.02)]),
+                                                                    startPoint: .zero, endPoint: CGPoint(x: 0, y: h)))
+                ctx.stroke(fact, with: .color(hue.glow),
                            style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                if split < lastIndex {
+                    let plan = curve(split, lastIndex)
+                    ctx.fill(area(plan, split, lastIndex), with: .linearGradient(Gradient(colors: [hue.glow.opacity(0.14), hue.glow.opacity(0.01)]),
+                                                                                startPoint: .zero, endPoint: CGPoint(x: 0, y: h)))
+                    ctx.stroke(plan, with: .color(hue.glow.opacity(0.7)),
+                               style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, dash: [2, 5]))
+                }
                 if let t = target {
                     let ty = y(t)
                     var d = Path(); d.move(to: CGPoint(x: 0, y: ty)); d.addLine(to: CGPoint(x: w, y: ty))

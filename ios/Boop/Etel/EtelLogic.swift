@@ -362,3 +362,94 @@ func draftSourceTag(_ item: DraftItem) -> String {
     case .estimate: item.needsReview || item.confidence < 0.6 ? "becslés · nézd át" : "becslés"
     }
 }
+
+// MARK: - The warm Ma page (mezo-r36n9.101): the day's curve, the three numbers, the orb's number
+
+/// The title a logged meal is known by: its own, else its first three foods, else its slot.
+func mealTitle(_ meal: BoopCore.Meal, slotLabel: String = "") -> String {
+    if let t = meal.title, !t.isEmpty { return t }
+    let names = meal.items.map(\.name)
+    return names.isEmpty ? (slotLabel.isEmpty ? "Étkezés" : slotLabel) : names.prefix(3).joined(separator: ", ")
+}
+
+/// The mean score of today's meals, 0…100 — the number in the head's orb. nil until a scored meal exists (a 0 is
+/// never shown).
+func etelDayPoints(_ day: FoodDay?) -> Int? {
+    let points = (day?.meals ?? []).compactMap(mealPoints)
+    guard !points.isEmpty else { return nil }
+    return Int((Double(points.reduce(0, +)) / Double(points.count)).rounded())
+}
+
+/// "a" or "az" in front of a Hungarian word.
+func huArticle(_ word: String) -> String {
+    guard let first = word.lowercased().first else { return "a" }
+    return "aáeéiíoóöőuúüű".contains(first) ? "az" : "a"
+}
+
+/// The day's energy as one line: what is eaten up to now, then where the plan's open windows take it.
+struct EtelCurve: Equatable {
+    /// One value per hour from 06 to 22, in kcal (cumulative).
+    let values: [Double]
+    let labels: [String]
+    let nowIndex: Int
+    let target: Double
+    let note: String
+}
+
+/// Minutes since midnight of an "HH:mm" string; nil when it is not one.
+func etelMinutes(_ hhmm: String) -> Int? {
+    let parts = hhmm.split(separator: ":").compactMap { Int($0) }
+    return parts.count == 2 ? parts[0] * 60 + parts[1] : nil
+}
+
+/// nil on a day with no energy goal (a kímélő day, or no targets): there is no line to draw against.
+func etelDayCurve(day: FoodDay, plan: FuelPlan?, now: Date, calendar: Calendar = .current) -> EtelCurve? {
+    guard day.fuelMode != "GUIDANCE", day.targets.kcal > 0 else { return nil }
+    let first = 6, last = 22
+    func minutes(_ d: Date) -> Int {
+        let c = calendar.dateComponents([.hour, .minute], from: d)
+        return (c.hour ?? 0) * 60 + (c.minute ?? 0)
+    }
+    let nowMin = minutes(now)
+    let eaten = day.meals.map { (at: minutes($0.loggedAt), kcal: $0.macros.kcal) }
+    // What is still planned: every open window's budget, landing at its start (never before now).
+    let open = (plan?.windows ?? []).filter { ($0.state == .now || $0.state == .pending) && $0.loggedMealIds.isEmpty }
+    let planned = open.compactMap { w -> (at: Int, kcal: Double)? in
+        guard let b = w.budget, let from = etelMinutes(w.from) else { return nil }
+        return (max(from, nowMin), b.kcal)
+    }
+    let nowIndex = min(last - first, max(0, Int((Double(nowMin) / 60).rounded()) - first))
+    let values = (first...last).map { hour -> Double in
+        let m = hour * 60
+        let done = eaten.filter { $0.at <= m || hour == last }.reduce(0) { $0 + $1.kcal }
+        // Up to and including the "now" point the line is a fact: only what is eaten.
+        guard hour - first > nowIndex else { return done }
+        let all = eaten.reduce(0) { $0 + $1.kcal }
+        return all + planned.filter { $0.at <= m || hour == last }.reduce(0) { $0 + $1.kcal }
+    }
+    let labels = (first...last).map { $0 % 2 == 0 ? "\($0)" : "" }
+    let end = values.last ?? 0, target = day.targets.kcal
+    let note: String
+    if open.isEmpty {
+        note = end >= target * 0.97 ? "A mai keret megvan." : "Mára nincs több tervezett étkezés."
+    } else if end >= target * 0.97, let lastOpen = open.last {
+        let name = lastOpen.label.lowercased()
+        note = "A görbe vége a mai terv: \(huArticle(name)) \(name) után éred el a keretet."
+    } else {
+        note = "A görbe vége a mai terv: \(huInt(Int(end.rounded()))) kalóriáig visz, a kereted \(huInt(Int(target.rounded())))."
+    }
+    return EtelCurve(values: values, labels: labels, nowIndex: nowIndex, target: target, note: note)
+}
+
+/// The three numbers under the highlight: energy, protein (the lit one), and how many meals are behind him.
+func etelStats(day: FoodDay, plan: FuelPlan?) -> [NKStat] {
+    let guidance = day.fuelMode == "GUIDANCE"
+    let windows = (plan?.windows ?? []).filter { $0.state != .skipped }.count
+    return [
+        NKStat(value: huInt(Int(day.consumed.kcal.rounded())), unit: "kcal",
+               label: guidance ? "megvan mára" : "a kereted \(huInt(Int(day.targets.kcal.rounded())))"),
+        NKStat(value: "\(Int(day.consumed.p.rounded()))", target: day.targets.p > 0 ? "\(Int(day.targets.p.rounded()))" : nil,
+               unit: "g", label: "fehérje", hot: true),
+        NKStat(value: "\(day.meals.count)", target: windows > 0 ? "\(windows)" : nil, unit: "", label: "étkezés a tervből"),
+    ]
+}

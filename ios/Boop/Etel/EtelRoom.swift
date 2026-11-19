@@ -68,6 +68,9 @@ final class EtelStore {
     @ObservationIgnored private var takenDay: String?
     @ObservationIgnored private var failedWater: (ml: Int, ref: UUID, at: Date)?
 
+    /// The instant the last load read the day at (the Ma page's curve draws "now" from it).
+    var clock: Date { now }
+
     /// The day's `yyyy-MM-dd`, as the server knows it.
     var ymd: String { food?.ymd(now) ?? day?.date ?? "" }
 
@@ -546,6 +549,7 @@ struct EtelRoom: View {
     /// Set when the home screen's ring opened this room with no navigation stack around it.
     @Environment(\.closeRoom) private var closeRoom
     @Environment(\.foodClient) private var food
+    @Environment(\.openPlace) private var openPlace
     @SceneStorage("etel.tab") private var selected: String = EtelTab.ma.rawValue
     @State private var store = EtelStore()
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
@@ -575,16 +579,20 @@ struct EtelRoom: View {
 
     var body: some View {
         let v = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
-        NKAreaPage(hue: .fuel, name: "Étel", eyebrow: "Étkezés · ma", level: v.level ?? 0,
-                   headline: v.headline, sentence: v.sentence, photo: NKPhoto.konyha,
+        NKAreaPage(hue: .fuel, name: "Étel", eyebrow: "Étel · \(tab.rawValue.lowercased())", level: store.day == nil ? nil : v.level,
+                   display: etelDayPoints(store.day).map { "\($0)" },
+                   headline: v.headline, sentence: v.sentence, photo: NKPhoto.konyha, glyph: "bowl-cream",
                    tabs: etelTabs(pending: store.pending.count), selectedTab: $selected,
-                   onBack: { if let closeRoom { closeRoom() } else { dismiss() } }) {
+                   actions: [NKAreaAction(glyph: "plus-ink", label: "Étkezés rögzítése") { composer = MealStart(entrance: .pick) },
+                             NKAreaAction(glyph: "repeat-deep", label: "Frissítés") { Task { await reload() } }],
+                   onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
+                   onAsk: { openPlace(.boop) }) {
             switch tab {
             case .ma:
                 EtelMa(store: store, onDimension: { dimension = $0 }, onToast: { toast = $0 },
                        onRetry: { Task { await reload() } }, onTab: { selected = $0.rawValue },
                        onCapture: { composer = MealStart(entrance: $0) }, onCard: cardAction,
-                       onSheet: { etelSheet = $0 })
+                       onSheet: { etelSheet = $0 }, onAsk: { openPlace(.boop) })
             case .receptek:
                 EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },
                              onOpen: { recipeSheet = .detail($0.id) }, onRetry: { Task { await reload() } })
