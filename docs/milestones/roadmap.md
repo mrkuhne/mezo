@@ -63,6 +63,16 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-19 — Boop: reasoned exercise swap + „Mi van a termemben" (`mezo-r36n9.66`, `mezo-r36n9.67`).**
+  Swapping an exercise mid-workout now suggests up to five replacements ranked on the server (same role → what hurt before →
+  the block's goal → what he can track), each with one reason sentence; *ehhez nincs eszközöm* and *nem esik jól* re-rank at
+  once and can be taken back, the full catalogue stays choosable. Backend: six catalogue attributes, `gym_profile`,
+  `exercise_discomfort`, `GET/PUT /api/train/gym-profile`, `POST/DELETE …/discomfort`, `GET …/substitutes`, config
+  `mezo.train.substitute.*`. Phone: `SwapSheet` and the *Mi van a termemben* page (Edzés room *Beállítások* + the sheet's
+  link). Fix `mezo-r36n9.67`: the after-exercise three answers reach the server exactly as tapped (were one level low).
+  Spec [2026-11-17-boop-gyakorlatvalasztas-design](../superpowers/specs/2026-11-17-boop-gyakorlatvalasztas-design.md);
+  [`train.md`](../features/train.md) §4, [`boop-ios.md`](../features/boop-ios.md).
+
 - **2026-11-19 — Boop Pénz L4: the money foundation (`mezo-r36n9.102`).**
   Backend only, no screen. A money value type (minor units + currency + a HUF twin computed once at write time from
   the frankfurter.dev ECB rate of the row's date and stored, global per-date rate cache, 7-day fallback, else 503

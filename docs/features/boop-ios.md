@@ -279,7 +279,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   for `ios/Boop/Edzes/EdzesRoom.swift`, branched beside `EtelRoom()` in `NapView`, because the morning brief
   cannot carry what the training API knows. **The frame is still the kit's** (`NKAreaPage`, the area's own bar,
   the tab set and its badge are unchanged — the owner has seen that page), and every control it had is still
-  there. What is new on **Ma**:
+  there — since 2026-11-19 the room's *Beállítások* action opens *Mi van a termemben* (§ below, `mezo-r36n9.66`) instead of a „soon" toast. What is new on **Ma**:
   - the exercise rows now carry the **real warmup/working split and the weight the engine asks for**
     („2 bemelegítő · 3 sorozat · 6–10 ismétlés", „80 kg × 8"), and a row is ticked when the server has a logged
     set for it. With the hypertrophy engine **off** the server sends only counts, so the rows show counts and
@@ -542,7 +542,11 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   switch saves at once, a failed save puts the switch back and shows *„Nem sikerült elmenteni · Újra”*, and a profile that
   could not be read shows no switches at all (*„Most nem érem el a termed beállításait · Újra”*). Simulator:
   `-previewEdzesGym YES` (+ `-previewEdzesGymSeed YES` two kinds off and one exercise missing, `-previewEdzesGymFail YES`
-  every save refused).
+  every save refused). `-previewEdzesSwapFail YES` makes the suggestion fetch fail (the plain-list fallback).
+  Opening the swap sheet may **start the workout on the server** (the discomfort and suggestion calls address the workout
+  by its server id, asked for idempotently like the swap itself — `serverWorkoutId`), and opening *Mi van a termemben* from
+  the sheet **replaces the swap sheet** (one sheet at a time inside the player). The after-exercise three questions now go
+  to the server exactly as tapped (`mezo-r36n9.67`, the server stores them 1-based).
 
 - **A set correction reaches the server (`mezo-r36n9.96`, 2026-11-19)** — the correction sheet used to change the
   phone's session only (no `workoutSetEdit` item was ever queued, though the sheet said otherwise). Now the player
@@ -754,7 +758,7 @@ Added to the `filter.operations` list in B3: `listCheckInsForDay`, `saveCheckIn`
 
 ### B5 API operations (added to the same generator filter) — Edzés, stage 1
 
-29 train operations: `getTodayWorkout`, `startWorkout`, `logWorkoutSet`, `updateWorkoutSet`, `deleteWorkoutSet`, `saveWorkoutFeedback`, `skipWorkoutExercise`, `changeWorkoutExercise`, `addPlanWorkingSets`, `saveExerciseNote`, `saveWorkoutNote`, `finishWorkout`, `listWorkouts`, `getWorkoutDetail`, `getExerciseCatalog`, `getExerciseRecords`, `listMesocycles`, `getMesocycleReport`, `getMesocycleVolumeArc`, `generateMesoPlan`, `createMesoTemplate`, `startMesoTemplate`, `listMesoTemplates`, `getGymSchedule`, `getTodayReadiness`, `chooseTodayReadiness`, `listSportSessions`, `logSportSession`, `getSportSchedule`. **No contract change and no Liquibase** — the training API already existed for the web app.
+34 train operations (29 + the five of `mezo-r36n9.66`, listed last): `getTodayWorkout`, `startWorkout`, `logWorkoutSet`, `updateWorkoutSet`, `deleteWorkoutSet`, `saveWorkoutFeedback`, `skipWorkoutExercise`, `changeWorkoutExercise`, `addPlanWorkingSets`, `saveExerciseNote`, `saveWorkoutNote`, `finishWorkout`, `listWorkouts`, `getWorkoutDetail`, `getExerciseCatalog`, `getExerciseRecords`, `listMesocycles`, `getMesocycleReport`, `getMesocycleVolumeArc`, `generateMesoPlan`, `createMesoTemplate`, `startMesoTemplate`, `listMesoTemplates`, `getGymSchedule`, `getTodayReadiness`, `chooseTodayReadiness`, `listSportSessions`, `logSportSession`, `getSportSchedule`, `getGymProfile`, `putGymProfile`, `markExerciseDiscomfort`, `clearExerciseDiscomfort`, `getExerciseSubstitutes`. **No contract change and no Liquibase** — the training API already existed for the web app.
 
 `TrainClient` (`BoopCore/Train/`) wraps them behind plain value types (`TrainModels.swift`), with two rules the room's honesty rests on: **an absent server value stays `nil`, never `0`** (with the hypertrophy engine off the server sends only warmup/working *counts*, so the set rows carry no weight rather than printing the plan's anchor weight as a per-set target), and **wire enums read leniently**, so a value the server adds later degrades instead of emptying the room. `blockPlan()` returns an optional — no running block is a state the Blokk tab shows, not an error — and merges two reads (the block's MEV/MAV/MRV landmarks and days, plus the volume arc's per-week planned/actual sets).
 

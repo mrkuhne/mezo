@@ -646,8 +646,8 @@
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Amikor edzés közben gyakorlatot cserélsz, Boop olyat ajánl, ami illik a blokk céljához, amihez van eszközöd a termedben, és ami nem terheli azt, ami legutóbb fájt — úgy, hogy a tervben ugyanazt a munkát végzi. Minden ajánlás mellett egy mondat áll arról, miért az. Később ugyanerre épül a gyakorlatok „miért ezt?” magyarázata, a tervben hiányzó kiegészítő mozgások jelzése és az, hogy mikor érdemes egy gyakorlatot megtartani vagy lecserélni.",
-    "munkamenet": "mezo-nippard-exercise-selection"
+    "mit_kapsz": "Amikor edzés közben gyakorlatot cserélsz, Boop legfeljebb öt ajánlást ad, mindegyik mellett egy mondattal, miért az. Az „ehhez nincs eszközöm” és a „nem esik jól” gomb azonnal átrendezi a listát, és visszavonható; a teljes lista továbbra is választható. A „Mi van a termemben” oldalon beállítod, mi hiányzik a termedből.",
+    "munkamenet": "folyadek-74e4af"
   },
   "mezo-r36n9.67": {
     "cim": "A gyakorlat utáni visszajelzés rosszul érkezhet meg a szerverre",
@@ -657,7 +657,7 @@
       "Edzés"
     ],
     "mit_kapsz": "Az edzéslejátszó három kérdésére (pumpa, ízületi fájdalom, mennyiség) adott válaszaid egy fokozattal elcsúszva mennek el: az „erős” fájdalom „enyheként” tárolódhat, a „nincs” pedig el sem jut a szerverre. A javítás után pontosan az mentődik, amit megnyomtál. Erre épül majd az, hogy a gyakorlatcsere kerülje, ami fájt.",
-    "munkamenet": "mezo-nippard-exercise-selection"
+    "munkamenet": "folyadek-74e4af"
   },
   "mezo-r36n9.85": {
     "cim": "A memória-keresés túl lassú a hosszabb előzményű fióknál",

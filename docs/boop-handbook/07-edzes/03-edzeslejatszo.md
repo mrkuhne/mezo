@@ -39,6 +39,16 @@ osszefoglalo: Edzés közben a telefon sorozatról sorozatra vezet — előírt 
 - **A csere internetet kér.** Ez az egyetlen ilyen a lejátszóban: a cserélt gyakorlatnak a szerver ad azonosítót,
   és minden utána rögzített sorozat ahhoz tartozik. Ha nincs net, a lap ott helyben meg is mondja, miért nem ment,
   és addig marad nyitva.
+- **A csere ajánl is (2026-11-19 óta).** A „Végleg lecserélem másikra” lap legfeljebb **öt ajánlást** ad, mindegyik mellett
+  egy mondattal, miért került oda — például „ugyanaz a mozgás, kíméli a vállad, amit ma jeleztél”. Alattuk a „Minden
+  gyakorlat” keresővel: **a teljes lista mindig választható**, a kiszűrt gyakorlat is, csak halk címke áll mellette
+  („nincs hozzá eszközöd” vagy „legutóbb fájt”). Két gomb szól a lapnak: **„ehhez nincs eszközöm”** és **„nem esik jól”** —
+  mindkettő azonnal átrendezi az ajánlásokat, és mindkettő visszavonható. Ha az ajánlást nem lehet lekérni, ezt kiírja, és a
+  teljes listából választhatsz. A lap alján a „Mi van a termemben ›” megnyitja a terem beállításait (lásd
+  [Mi van a termemben](17-mi-van-a-termemben.md)); ilyenkor a csere lap helyére a terem lapja lép. Előfordulhat, hogy a
+  lap megnyitása már elindítja az edzést a szerveren — ez nem rejtett lépés, csak így kapják meg az ajánlások az edzés adatait.
+- **A három kérdés pontosan úgy mentődik, ahogy megnyomtad (2026-11-19 óta).** Korábban egy fokozattal elcsúszva ment el a
+  szerverre (az „erős” fájdalom „enyhének” látszott), most nem.
 - **Ha foglalt a gép:** a „…" menüből kiválasztod, melyik gyakorlatot csinálod most. Ez **nem rendezi át a
   tervet** — ha azzal megvagy, ott folytatod, ahol tartottál.
 - **„Kis méretre":** a lejátszó becsukódik, de **az edzés tovább fut** — a menüben „Folytatom" áll.
@@ -56,7 +66,7 @@ játékosít, és egy edzés itt nincs leosztályozva ötből.
 **A régi leírás (ami ebből még nem él):**
 1. **Sorozatonként:** a léptető előre kitöltve az előírt súllyal, ismétléssel és tartalékkal (RIR); súlytalan gyakorlatnál csak ismétlés.
 2. **Pihenőidő-számláló** sorozatok között.
-3. **Gyakorlat-hozzáadás** edzés közben, és a csere **az egész mezociklusra** (a mai napra szóló csere már él).
+3. **Gyakorlat-hozzáadás** edzés közben, és a csere **az egész mezociklusra** (a mai napra szóló csere és az ajánlás már él).
 4. **Gyakorlat utáni visszajelzés:** pumpa (1–4), ízületi fájdalom (1–3), munka mennyisége (1–3) — kihagyható.
 5. **Gyakorlat-megjegyzés**, amit legközelebb előre betölt.
 6. **Befejezés** záró megjegyzéssel, majd összegzés.
@@ -91,8 +101,11 @@ játékosít, és egy edzés itt nincs leosztályozva ötből.
    egy pihenő, egy átállás).
 6. A webes appban a sorozatállapot és a pihenőidő a böngészőben él; a Boop ezt Swiftben, saját modellel építi újra.
 
+## Hogyan dönt az ajánlás
+A szerver sorrendet állít fel, nem „legjobbat” hirdet. Először azt nézi, **mennyire tölti be ugyanazt a szerepet** (ugyanaz az izom, hasonló fajta és mozdulat), utána hogy **mi nem terheli azt, ami legutóbb fájt vagy amit ma jeleztél**, aztán hogy **mit szolgál a blokk célja** (építés, erő vagy kímélőbb), végül hogy **mit tudsz jól követni**, mert már csináltad. Ami **nem fér a termedbe**, vagy **amitől nemrég erősen fájt** valamid, nem kerül az ajánlások közé, de a teljes listában megvan. Ha kevés a jelölt, a környező izmokra is kiterjed a keresés. A mondat mindig ugyanazokból a fix fordulatokból áll: nincs benne gyakorlatnév, szám vagy ígéret.
+
 ## Miért így
-A háttér minden számot kiszámol, ezért a telefonos lejátszó egyszerű maradhat (kutatás 03 §5). A webes lejátszó oldal nem kerül
+Az ajánlás azért ilyen szerény, mert a döntés a tiéd marad: Boop csak a rendelkezésre álló tudást rendezi sorba, és megmondja az okát. A háttér minden számot kiszámol, ezért a telefonos lejátszó egyszerű maradhat (kutatás 03 §5). A webes lejátszó oldal nem kerül
 át egy az egyben, csak a funkciói.
 
 ## Beállítások
@@ -102,6 +115,8 @@ A háttér minden számot kiszámol, ezért a telefonos lejátszó egyszerű mar
 | `mezo.train.timing.gap-cap-seconds` | Két sorozat közti szünet felső határa az aktív idő számításánál | 300 mp |
 | `mezo.train.timing.seed-set-cycle-compound/isolation` | Kezdő becslés egy sorozat+pihenő ciklusra | 180 / 125 mp |
 | `mezo.feature.closing-block.enabled` | Rögzített záró gyakorlatpár minden edzés végén | ki |
+| `mezo.train.substitute.feedback-window` | Egy gyakorlat hány legutóbbi gyakorlat utáni válasza számít az ajánlásnál | 3 |
+| `mezo.train.substitute.record-window-days` | Hány napig számít a csere közben jelzett „nem esik jól” | 42 nap |
 
 ## Adattáblák
 | Tábla | Mit tárol |
@@ -109,13 +124,15 @@ A háttér minden számot kiszámol, ezért a telefonos lejátszó egyszerű mar
 | `workout_session` | Az elvégzett edzés: állapot, kezdés, befejezés, aktív idő, záró megjegyzés, eredet (mezociklus / saját) |
 | `exercise_set` | Sorozatok: súly, ismétlés, RIR, oldal, bemelegítő/munka, kihagyva, és az előírt súly/ismétlés pillanatképe |
 | `exercise_feedback` | Gyakorlat utáni visszajelzés (pumpa, ízület, munka) |
+| `exercise_discomfort` | A csere közben jelzett „nem esik jól”, gyakorlatonként és naponta egy |
+| `gym_profile` | Mi hiányzik a termedből (lásd [Mi van a termemben](17-mi-van-a-termemben.md)) |
 | `exercise_weight_gap` | Gépenként hiányzó súlyok, amit a rögzítésből tanul |
 | `workout_timing_profile` | Megtanult időzítés (sorozat, pihenő, átállás) |
 
 ## Mi jön még
 - A csere **az egész mezociklusra** (a mai napra szóló már él), és gyakorlat hozzáadása edzés közben.
 - B5: Élő tevékenység (lásd [Élő tevékenység](08-elo-tevekenyseg.md)); az óra (lásd [Apple Watch-app](07-apple-watch.md)).
-- Nyitott kérdés a tulajdonosnak: a visszajelzés (például erős ízületi fájdalom) befolyásolja-e a terhelést.
+- Nyitott kérdés a tulajdonosnak: a visszajelzés (például erős ízületi fájdalom) befolyásolja-e a **terhelést** — a gyakorlatcsere ajánlását már befolyásolja (a nemrég erősen fájó gyakorlat kimarad az ajánlásból), a heti súlyt még nem.
 
 ## Mi marad ki
 Az edzés végi XP-ceremónia és az érmek — lásd [Ami kimarad](12-ami-kimarad.md).
