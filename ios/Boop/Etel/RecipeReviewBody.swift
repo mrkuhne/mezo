@@ -25,7 +25,7 @@ struct EtelStepper: View {
                     .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
                     .font(.custom(Lagy.outfitFamily, size: 17).weight(.medium)).foregroundStyle(.white)
                     .frame(width: 56).accessibilityLabel(label)
-                Text(unit).nkFont(13).foregroundStyle(.white.opacity(0.6)).frame(minWidth: 26, alignment: .leading).lineLimit(1)
+                Text(unit).nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize().frame(minWidth: 26, alignment: .leading)
             }
             .padding(.horizontal, 4)
             button("+", "\(label): több") { onChange(value + step) }

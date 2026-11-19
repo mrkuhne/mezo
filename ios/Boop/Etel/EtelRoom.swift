@@ -721,10 +721,8 @@ struct EtelRoom: View {
             case "workshop": recipeSheet = .workshop
             case "cooked": recipeSheet = .cooked(.input)
             case "cooked-filled": recipeSheet = .cooked(.filled)
+            // with `-etelReview other|added|facts` the review opens one step further (ReviewBody.debugOpen)
             case "cooked-review": recipeSheet = .cooked(.review)
-            case "cooked-other": UserDefaults.standard.set("other", forKey: "etelReview"); recipeSheet = .cooked(.review)
-            case "cooked-added": UserDefaults.standard.set("added", forKey: "etelReview"); recipeSheet = .cooked(.review)
-            case "cooked-facts": UserDefaults.standard.set("facts", forKey: "etelReview"); recipeSheet = .cooked(.review)
             case "kamra-estimated": if let food { await store.loadShelf(food: food); if let r = store.shelf.first(where: \.estimated) { kamraSheet = .item(r) } }
             case "kamra-item": if let food { await store.loadShelf(food: food); if let r = store.shelf.first { kamraSheet = .item(r) } }
             case "kamra-catalog": if let food, let r = (try? await food.pantry(query: "zab"))?.first(where: { !$0.onShelf }) { kamraSheet = .item(r) }
