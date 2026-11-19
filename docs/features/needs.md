@@ -2,14 +2,9 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-11-17
+updated: 2026-11-19
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
-  - frontend/src/features/today/logic/needs.ts
-  - frontend/src/features/today/logic/needsInputs.ts
-  - frontend/src/features/today/logic/needsAverage.ts
-  - frontend/src/features/today/pages/EletjelPage.tsx
-  - frontend/src/data/needs
   - api/feature/needs/needs.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/needs
 related: [today, ritual, _platform-data-layer, growth]
@@ -349,6 +344,7 @@ to average — render „…", never 0); for „does this need ask for attention
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **Decision — architecture "hybrid": one pure engine, a thin real backend slice now.** The

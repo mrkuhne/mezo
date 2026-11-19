@@ -1,20 +1,16 @@
 ---
 title: Central settings and personal context
 type: feature-platform
-status: done
-updated: 2026-11-17
+status: retired
+updated: 2026-11-19
 tags: [frontend, platform, ai]
-key_files:
-  - frontend/src/features/settings
-  - frontend/src/data/companion/preferencesApi.ts
-  - frontend/src/data/companion/preferencesHooks.ts
-  - frontend/src/app/TitleBar.tsx
-  - frontend/src/shared/i18n/messages/settings.hu.ts
-  - frontend/src/features/me/pages/BeallitasokPage.tsx
+key_files: []
 related: [_platform-design-system, _platform-language, companion, me, fuel, train, insights, _platform-auth-security]
 ---
 
 # Central settings
+
+> **Retired 2026-11-19 (#52, `mezo-r36n9.97.3`).** This area existed only in the web app, which was switched off. The doc is kept as history; the code it describes is in git history.
 
 > **2026-10-12 — Folyadék F5 · Fuel (`mezo-n4wf5.5`).** The two Fuel settings pages (`/settings/fuel`, `/settings/fuel/slots` —
 > `features/fuel/pages/FuelSettingsPage.tsx`, `FuelSlotsPage.tsx`, mounted by `settingsRoutes.tsx`) are built from the Folyadék
@@ -141,6 +137,7 @@ Language: `SettingsPages.en.test.tsx` (every page in English, a runtime switch o
 
 ## 9. Decisions & limits
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history. Everything this doc describes lived only in the web app, so it is `status: retired` and kept as history.
 - **Chrome (Folyadék F1, `mezo-n4wf5.1`).** `/settings/*` hides the bottom bar; the `TitleBar` is the only shell chrome. The settings button lives on the hubs' title bar only (sub-pages are back · title · „?" · bell), so deep pages reach `/settings` via a hub. The settings sub-pages keep their fixed `navigate('/settings…', { state })` back (origin-state return); converting them to „vissza oda, ahonnan jöttél" is slice F8.
 
 There is no independent editable goal date. Maintenance has no invented arrival date. The

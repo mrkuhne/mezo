@@ -10,9 +10,6 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore
   - backend/pom.xml
   - backend/src/main/resources/messages_hu.properties
-  - frontend/src/data/_client/api.ts
-  - frontend/src/data/fuel/pantryApi.ts
-  - frontend/src/data/hooks.ts
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
 
@@ -418,6 +415,7 @@ cd frontend && pnpm generate:api           # regenerate src/data/_client/api.gen
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Static content (`mezo-r36n9.97.1`, 2026-11-19).** The backend now serves `classpath:/static/exercises/**` at `/exercises/**` (Spring's default static handler, `spring.web.resources.cache.cachecontrol.max-age=7d`); the ingress routes `/exercises` to the backend. First step of retiring the web app (decision #52).
 
 - **Contract-first is the rule, not a guideline.** Never hand-write boundary DTOs; never re-add validation the spec can express. Both generated artifacts (`api/openapi.yml`, `frontend/src/data/_client/api.gen.ts`) are committed and regenerated together in one green commit; breaking changes are allowed *within* Phase 2 since FE+BE ship together. Spec → `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`; convention → `docs/references/api_contract_conventions.md`.

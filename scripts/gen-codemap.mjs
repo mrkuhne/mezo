@@ -335,7 +335,8 @@ function renderCrossCutting(root, model) {
 function renderUnaligned(model) {
   const L = ['## Unaligned', '',
     'Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.', ''];
-  const unboundDocs = model.docs.filter((d) => !d.bound);
+  // A retired doc (status: retired) describes code that is gone — history, not a binding gap.
+  const unboundDocs = model.docs.filter((d) => !d.bound && d.status !== 'retired');
   const undocumented = [...model.features.values()].filter((f) => !f.docs.length).map((f) => f.key);
   if (!model.orphanFragments.length && !unboundDocs.length && !undocumented.length) {
     L.push('_None — every contract fragment and feature doc binds to a feature block, and every feature has a doc._', '');

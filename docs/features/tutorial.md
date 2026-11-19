@@ -2,13 +2,9 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-10-12
+updated: 2026-11-19
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
-  - frontend/src/features/tutorial
-  - frontend/src/shared/ui/kalauz
-  - frontend/src/shared/lib/tutorialSeen.ts
-  - frontend/src/data/tutorial
   - backend/src/main/java/io/mrkuhne/mezo/feature/tutorial
   - api/feature/tutorial/tutorial-progress.yml
 related: [today, train, insights, me, fuel, _platform-design-system, _platform-data-layer, _platform-auth-security]
@@ -354,6 +350,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - Decisions D1–D11 and the full UX/architecture rationale live in the spec
   ([`docs/superpowers/specs/2026-09-02-mezo-kalauz-tutorial-design.md`](../superpowers/specs/2026-09-02-mezo-kalauz-tutorial-design.md))
   — this doc doesn't restate them.

@@ -5,10 +5,6 @@ status: mixed
 updated: 2026-11-19
 tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
-  - frontend/src/shared/i18n
-  - frontend/src/shared/lib/format.ts
-  - frontend/src/shared/i18n/LanguageBoundary.tsx
-  - frontend/src/data/auth/languageHooks.ts
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java
   - backend/src/main/java/io/mrkuhne/mezo/techcore/message
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/OutputLanguageDirective.java
@@ -362,6 +358,7 @@ F5 translated a domain of about 130 source files with nine parallel builders. Wh
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **`backend/src/main/resources` gained `static/exercises/`** (2026-11-19, `mezo-r36n9.97.1`) — binary demo stills only; no message bundles or language keys changed.
 
 **Decisions:** typed catalog over a library (react-i18next typed keys are costly at this size, react-intl has no key safety, Lingui/Paraglide add a build step for two languages); Hungarian as a bundle, not a base file; directive appended, never prepended; English-only locale `en-GB` for day-first, 24-hour output; the Hungarian output of `format.ts` stays hand-rolled so it is byte-for-byte the old text.

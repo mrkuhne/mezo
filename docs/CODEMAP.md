@@ -54,7 +54,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### activity
 
-*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/activity`
   - **entities→tables:** `ActivityLogEntity`→`activity_log`
@@ -74,8 +74,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### admin
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-13, done) ·
-  [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-11, done)
+*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-19, done) ·
+  [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
   - **repositories:** `AdminAlertQuery`, `AdminCatalogQuery`, `AdminFeatureQuery`, `AdminInsightsQuery`,
@@ -113,7 +113,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### appnotification
 
-*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-11-11, mixed)
+*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification`
   - **sub-features:** `domain`
@@ -133,7 +133,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### auth
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-13, done) ·
+*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-19, done) ·
   [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-11-19, done) ·
   [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-19, mixed)
 
@@ -158,7 +158,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-18, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -333,14 +333,14 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### companion
 
-*BE + API* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-11, done) ·
+*BE + API* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-19, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-11-19, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-19, mixed) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-16, done) ·
-  [docs/features/journal.md](features/journal.md) (updated 2026-11-12, done) ·
-  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-11-18, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-11-17, mixed) ·
+  [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
+  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
+  [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed) ·
+  [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
   [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
@@ -620,7 +620,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### fuel
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
   - **entities→tables:** `FuelSettingsEntity`→`fuel_settings`, `MealSlotTemplateEntity`→`meal_slot_template`,
@@ -650,7 +650,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### gamification
 
-*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/gamification`
   - **entities→tables:** `CoinEventEntity`→`coin_event`, `GamificationProfileEntity`→`gamification_profile`,
@@ -672,7 +672,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### goal
 
 *BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-18, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-11-18, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -724,7 +724,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### habit
 
-*BE + API* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/habit`
   - **entities→tables:** `HabitChainEntity`→`habit_chain`, `HabitDayEntity`→`habit_day`, `HabitDefEntity`→`habit_def`
@@ -752,7 +752,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### intention
 
-*BE + API* · read next: [docs/features/intention.md](features/intention.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/intention.md](features/intention.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/intention`
   - **entities→tables:** `DailyIntentionEntity`→`daily_intention`, `IntentionCreedEntity`→`intention_creed`,
@@ -772,7 +772,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### journal
 
-*BE + API* · read next: [docs/features/journal.md](features/journal.md) (updated 2026-11-12, done)
+*BE + API* · read next: [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/journal`
   - **entities→tables:** `DecisionEntryEntity`→`decision_entry`, `GratitudeEntryEntity`→`gratitude_entry`,
@@ -798,7 +798,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### lifegoal
 
-*BE + API* · read next: [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress)
+*BE + API* · read next: [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal`
   - **sub-features:** `catalog`, `engine`
@@ -831,7 +831,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-13, done) ·
+*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-19, done) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
@@ -865,7 +865,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
@@ -921,7 +921,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### needs
 
-*BE + API* · read next: [docs/features/needs.md](features/needs.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/needs.md](features/needs.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/needs`
   - **entities→tables:** `NeedsDayEntity`→`needs_day`
@@ -938,7 +938,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### notification
 
-*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-11-11, mixed)
+*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/notification`
   - **sub-features:** `domain`
@@ -971,7 +971,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### nutrition
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **entities→tables:** `DietSettingsEntity`→`diet_settings`, `SensitivityProfileEntity`→`sensitivity_profile`
@@ -997,7 +997,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### pantry
 
-*BE + API* · read next: [docs/features/pantry.md](features/pantry.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/pantry.md](features/pantry.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
   - **entities→tables:** `PantryCatalogEntity`→`pantry_catalog`, `PantryImportEntity`→`pantry_import`,
@@ -1029,7 +1029,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-18, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`, `PersonFactEntity`→`person_fact`
@@ -1057,7 +1057,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### proactive
 
 *BE + API* · read next: [docs/features/contextual-feed-evaluation.md](features/contextual-feed-evaluation.md) (updated 2026-09-24, complete) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-11-17, complete)
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-11-19, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -1148,7 +1148,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### progression
 
-*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/progression`
   - **sub-features:** `activity`, `gym`, `habit`, `lifegoal`, `needs`, `quest`, `run`, `sport`
@@ -1177,7 +1177,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### quest
 
-*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/quest`
   - **entities→tables:** `DailyQuestEntity`→`daily_quest`
@@ -1198,7 +1198,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### recipe
 
-*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
@@ -1228,7 +1228,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### ritual
 
-*BE + API* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-11-17, done)
+*BE + API* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/ritual`
   - **entities→tables:** `RitualDayEntity`→`ritual_day`
@@ -1261,7 +1261,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### train
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-17, done) ·
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-19, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-18, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-11-19, done)
 
@@ -1401,7 +1401,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### tutorial
 
-*BE + API* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-10-12, mixed)
+*BE + API* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/tutorial`
   - **entities→tables:** `TutorialProgressEntity`→`tutorial_progress`
@@ -1490,9 +1490,5 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-api-backend.md`](features/_platform-api-backend.md) — its `key_files` point outside any single feature package
-- **Feature doc** [`docs/features/_platform-data-layer.md`](features/_platform-data-layer.md) — its `key_files` point outside any single feature package
-- **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Feature doc** [`docs/features/insights.md`](features/insights.md) — its `key_files` point outside any single feature package
-- **Feature doc** [`docs/features/settings.md`](features/settings.md) — its `key_files` point outside any single feature package
 - **Features with no `docs/features/` doc:** `medication`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

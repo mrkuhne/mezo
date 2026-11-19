@@ -9,8 +9,6 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/llmlog
   - api/feature/companion/companion.yml
   - api/feature/memory-retrieval/memory-retrieval.yml
-  - frontend/src/data/insights/chatHooks.ts
-  - frontend/src/data/insights/memoryFeedbackHooks.ts
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
 related: [dayclose, boop-ios, insights, proactive, today, me, character, _platform-api-backend, _platform-auth-security, _platform-notifications, _platform-language, journal, ritual]
 ---
@@ -9202,6 +9200,8 @@ and the `tests/layout/chat-memory.spec.ts` Playwright spec (320px, no horizontal
 reduced-motion branch) cover the FE surface — full detail: [`insights.md`](insights.md) §8.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 
 **Check-in 2.0 (`mezo-ck2`, 2026-09-28) — decisions, deviations, follow-ups.** NULL is never a
 value in any rule, metric or renderer (legacy rows are read as-is). `persistent_pain` offers

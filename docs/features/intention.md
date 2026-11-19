@@ -2,13 +2,10 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-11-17
+updated: 2026-11-19
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
-  - frontend/src/data/intention
-  - frontend/src/features/today/pages/NapHubPage.tsx
-  - frontend/src/features/today/sheets/IntentionSheet.tsx
   - api/feature/intention/intention.yml
 related: [dayclose, boop-ios, today, habit, growth, _platform-data-layer, _platform-api-backend]
 ---
@@ -177,6 +174,7 @@ await reflect('partial')                                        // yes | partial
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`NapHubPage.tsx`) moved after this doc, in the Nap orbit re-dress (`mezo-izma7`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.
 
 - **A napom review, `mezo-yjzhw.4` (2026-09-24) — another skin-only `NapHubPage.tsx` move, unrelated to intention.** `NapHubPage` now mounts `<NapzarasCard now={tick} />` (`frontend/src/features/today/pages/NapHubPage.tsx:61`) directly above the `.nap-center-orbit` (the Kreed tile lives inside that orbit, untouched). The card is the evening Napzárás entry point — shown 20:00–24:00 local time unless the ritual is already closed — and is unrelated to the intention/creed/reflection flow this doc covers; see [ritual.md](ritual.md) for what it is and [today.md](today.md) for the "A napom" page it links to.

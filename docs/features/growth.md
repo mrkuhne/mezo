@@ -2,17 +2,13 @@
 title: Growth — Daily Quests, Activity Log & Gamified Progression
 type: feature-domain
 status: done
-updated: 2026-11-17
+updated: 2026-11-19
 tags: [today, me, train, fuel, intention, ritual, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/quest
   - backend/src/main/java/io/mrkuhne/mezo/feature/activity
   - backend/src/main/java/io/mrkuhne/mezo/feature/progression/service
   - backend/src/main/java/io/mrkuhne/mezo/feature/gamification
-  - frontend/src/data/quest
-  - frontend/src/data/activity
-  - frontend/src/data/gamification
-  - frontend/src/features/me/pages/GrowthHubPage.tsx
 related: [today, me, train, fuel, habit, intention, ritual, _platform-data-layer, _platform-api-backend, _platform-design-system]
 ---
 
@@ -195,6 +191,7 @@ await categorize(entryId, 'learning')                                  // pick/o
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **Mock fidelity note (mezo-rmhr fix wave):** `progressionProfileMock.athletic` carries the full 12-entry band (incl. `robustness`) to mirror the real profile response, so all-band row counts and FE-summed XP literals match between modes.

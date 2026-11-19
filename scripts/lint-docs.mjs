@@ -33,6 +33,10 @@
 //      key_file's date, so the next `node scripts/lint-docs.mjs` shows ✅ fresh.
 //      (You do NOT touch the key_files — committing the *doc* is what clears it.)
 //
+// A feature doc with `status: retired` describes code that no longer exists (e.g. the
+// web app, retired 2026-11-19, #52): it is kept as history, may carry an empty
+// `key_files: []`, and is never stale — there is no code left for it to drift from.
+//
 // A doc that has never been committed (or is staged but uncommitted) has no
 // commit date to compare, so it is reported ⚠ "uncommitted — commit then
 // re-run" rather than fresh/stale.
@@ -301,7 +305,8 @@ function lintDoc(absPath, { isFeature }) {
   if (!fm.found) {
     add(SEV.ERROR, 'missing YAML frontmatter (file must begin with a `---` fenced block)');
   } else {
-    const required = isFeature ? REQUIRED_FEATURE_KEYS : REQUIRED_RESEARCH_KEYS;
+    const required = (isFeature ? REQUIRED_FEATURE_KEYS : REQUIRED_RESEARCH_KEYS)
+      .filter((k) => !(k === 'key_files' && fm.data.status === 'retired'));
     for (const k of required) {
       const v = fm.data[k];
       const empty = v === undefined || v === '' || (Array.isArray(v) && v.length === 0);
@@ -349,7 +354,7 @@ function lintDoc(absPath, { isFeature }) {
 
   // ── Staleness (the core check) — feature docs only ────────────────────────
   let stale = false;
-  if (isFeature) {
+  if (isFeature && fm.data.status !== 'retired') {
     const docCommit = gitLastSubstantiveCommit(absPath);
     const docMs = isoToMs(docCommit?.iso);
     if (docMs === null) {

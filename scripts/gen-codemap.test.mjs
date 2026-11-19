@@ -175,6 +175,19 @@ test('a contract fragment whose tag no-one implements is reported under Unaligne
   }
 });
 
+test('a retired feature doc with no key_files is not reported under Unaligned', () => {
+  const root = makeFixture();
+  try {
+    write(root, 'docs/features/gone.md', [
+      '---', 'title: Gone', 'status: retired', 'updated: 2026-11-19', 'key_files: []', '---', '', '# Gone', '',
+    ].join('\n'));
+    const body = buildBody(root);
+    assert.ok(!body.slice(body.indexOf('## Unaligned')).includes('docs/features/gone.md'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('the body is deterministic — the same tree renders byte-identical output', () => {
   const root = makeFixture();
   try {
