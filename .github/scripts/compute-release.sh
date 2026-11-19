@@ -53,7 +53,7 @@ main() {
     base_ref="$last_tag"; base_ver="${last_tag#v}"
   fi
 
-  local level version fe="false" be="false"
+  local level version be="false"
   level=$(git log "${base_ref}..HEAD" --format='%s%n%b' | compute_bump)
   version=$(next_version "$base_ver" "$level")
   # Path-change detection compares each top-level dir's tree-object hash between
@@ -67,15 +67,14 @@ main() {
     h=$(git rev-parse -q --verify "HEAD:$1" 2>/dev/null || echo absent)
     [ "$b" != "$h" ] && echo true || echo false
   }
-  if [ "$(tree_changed frontend)" = "true" ]; then fe="true"; fi
+  # (frontend/ is no longer a component: the web app was retired 2026-11-19, #52.)
   if [ "$(tree_changed backend)" = "true" ] || [ "$(tree_changed api)" = "true" ]; then be="true"; fi
 
   {
     echo "version=${version}"
-    echo "frontend_changed=${fe}"
     echo "backend_changed=${be}"
   } >> "${GITHUB_OUTPUT:-/dev/stdout}"
-  echo "Resolved v${version} (level=${level}, fe=${fe}, be=${be}) since ${base_ref}" >&2
+  echo "Resolved v${version} (level=${level}, be=${be}) since ${base_ref}" >&2
 }
 
 # Run main only when executed directly, so the test can source the pure fns.

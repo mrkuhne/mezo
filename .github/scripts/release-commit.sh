@@ -2,11 +2,12 @@
 # Release step of deploy.yml, extracted from inline YAML so the concurrency invariant
 # it must uphold is testable (see release-commit.test.sh / mezo-pl7d).
 #
-# env: VERSION, FE, BE ("true"/"false"), BUILT_SHA (the commit the images were built from).
+# env: VERSION, BE ("true"/"false"), BUILT_SHA (the commit the image was built from).
+# (The frontend image and its retag left with the web app, retired 2026-11-19, #52.)
 set -euo pipefail
 trap 'rc=$?; echo "::error::release-commit.sh aborted (rc=${rc}) at: ${BASH_COMMAND}" >&2' ERR
 
-: "${VERSION:?}"; : "${FE:?}"; : "${BE:?}"; : "${BUILT_SHA:?}"
+: "${VERSION:?}"; : "${BE:?}"; : "${BUILT_SHA:?}"
 
 # Portable in-place edit: `sed -i -E` means different things on GNU and BSD sed, and
 # this script now also runs under the local test on macOS.
@@ -27,9 +28,8 @@ pushed=false
 for attempt in 1 2 3 4 5; do
   git fetch --quiet origin main
   git checkout --quiet -B release-bump FETCH_HEAD
-  if [ "$FE" = "true" ]; then retag frontend k8s/frontend/deployment.yaml; fi
-  if [ "$BE" = "true" ]; then retag backend  k8s/backend/deployment.yaml; fi
-  git add k8s/frontend/deployment.yaml k8s/backend/deployment.yaml
+  if [ "$BE" = "true" ]; then retag backend k8s/backend/deployment.yaml; fi
+  git add k8s/backend/deployment.yaml
   if git diff --cached --quiet; then
     echo "No manifest change to commit (main already at v${VERSION}); skipping." >&2
     pushed=true

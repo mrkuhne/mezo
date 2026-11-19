@@ -13,7 +13,7 @@ see each piece appear. ArgoCD will later sync this directory automatically (GitO
 ```
 k8s/
 ├── namespace.yaml              # the `mezo` namespace
-├── ingress.yaml               # Traefik Ingress: /api→backend, /→frontend, TLS via cert-manager
+├── ingress.yaml               # Traefik Ingress: /api + /exercises→backend, TLS via cert-manager
 ├── postgres/
 │   ├── service.yaml            # headless Service → stable `postgres:5432` DNS
 │   ├── statefulset.yaml        # Postgres 16 + its own persistent disk (PVC)
@@ -28,9 +28,6 @@ k8s/
 │   ├── service.yaml            # backend:8090 (ClusterIP)
 │   ├── secret.example.yaml     # TEMPLATE for mezo-app (JWT + owner creds)
 │   └── sealedsecret*.yaml      # mezo-app, ghcr-pull, RSA-encrypted (committed)
-├── frontend/
-│   ├── deployment.yaml         # nginx serving the static PWA build
-│   └── service.yaml            # frontend:80 (ClusterIP)
 ├── cert-manager/
 │   └── clusterissuer.yaml      # Let's Encrypt prod issuer (HTTP-01 via Traefik)
 ├── pgadmin/
@@ -111,7 +108,6 @@ kubectl apply -f k8s/postgres/sealedsecret.yaml -f k8s/backend/sealedsecret.yaml
 # 3. workloads
 kubectl apply -f k8s/postgres/service.yaml -f k8s/postgres/statefulset.yaml
 kubectl apply -f k8s/backend/
-kubectl apply -f k8s/frontend/
 
 # 4. HTTPS: install cert-manager (once), then issuer + ingress
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml

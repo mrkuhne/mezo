@@ -28,35 +28,35 @@ git init -q --bare "$tmp/origin.git"
 git clone -q "$tmp/origin.git" "$tmp/work"
 cd "$tmp/work"
 
-mkdir -p frontend backend api k8s/frontend k8s/backend
-echo 1 > frontend/app.txt; echo 1 > backend/app.txt; echo 1 > api/spec.txt
-echo "image: ghcr.io/mrkuhne/mezo-frontend:1.0.0" > k8s/frontend/deployment.yaml
+mkdir -p backend api k8s/backend
+echo 1 > backend/app.txt; echo 1 > api/spec.txt
 echo "image: ghcr.io/mrkuhne/mezo-backend:1.0.0"  > k8s/backend/deployment.yaml
 git add -A && git commit -qm "chore: seed"
 git tag -a v1.0.0 -m "release v1.0.0"
 git push -q origin main --tags
 
-# --- M1 merges: a frontend change. Its deploy run checks out M1 and builds from it. ---
-echo 2 > frontend/app.txt; git commit -aqm "feat: fe change"; git push -q origin main
+# --- M1 merges: a backend change. Its deploy run checks out M1 and builds from it. ---
+echo 2 > backend/app.txt; git commit -aqm "feat: be change"; git push -q origin main
 M1="$(git rev-parse HEAD)"
 out="$tmp/o1"; GITHUB_OUTPUT="$out" bash "$DIR/compute-release.sh" >/dev/null 2>&1
-v1="$(sed -n 's/^version=//p' "$out")"; fe1="$(sed -n 's/^frontend_changed=//p' "$out")"; be1="$(sed -n 's/^backend_changed=//p' "$out")"
-assert_eq "$v1/$fe1/$be1" "1.1.0/true/false" "run 1 computes 1.1.0, frontend only"
+v1="$(sed -n 's/^version=//p' "$out")"; be1="$(sed -n 's/^backend_changed=//p' "$out")"
+assert_eq "$v1/$be1" "1.1.0/true" "run 1 computes 1.1.0, backend changed"
+assert_eq "$(grep -c '^frontend_changed=' "$out")" "0" "no frontend component any more (web app retired 2026-11-19, #52)"
 
-# --- M2 merges WHILE run 1 is still building: a backend change. ---
-echo 2 > backend/app.txt; git commit -aqm "feat: be change"; git push -q origin main
+# --- M2 merges WHILE run 1 is still building: a contract change (also ships in the backend image). ---
+echo 2 > api/spec.txt; git commit -aqm "feat: contract change"; git push -q origin main
 M2="$(git rev-parse HEAD)"
 
 # --- run 1's release job now executes, from the commit it built (M1). ---
 git checkout -q "$M1"
-VERSION="$v1" FE="$fe1" BE="$be1" BUILT_SHA="$M1" bash "$DIR/release-commit.sh" >/dev/null 2>&1
+VERSION="$v1" BE="$be1" BUILT_SHA="$M1" bash "$DIR/release-commit.sh" >/dev/null 2>&1
 rc=$?
 assert_eq "$rc" "0" "release-commit.sh succeeds"
 git fetch -q origin 'refs/tags/*:refs/tags/*' --force
 git checkout -q main && git pull -q --rebase origin main
 
 # --- The invariant: the tag must describe the trees that were actually built. ---
-for d in frontend backend api; do
+for d in backend api; do
   assert_eq "$(git rev-parse "v${v1}:$d")" "$(git rev-parse "${M1}:$d")" \
     "tag v${v1} carries the BUILT ${d}/ tree, not a later one"
 done
@@ -65,7 +65,7 @@ done
 git checkout -q "$M2"
 out2="$tmp/o2"; GITHUB_OUTPUT="$out2" bash "$DIR/compute-release.sh" >/dev/null 2>&1
 assert_eq "$(sed -n 's/^backend_changed=//p' "$out2")" "true" \
-  "run 2 still builds M2's backend change (it was never in an image)"
+  "run 2 still builds M2's contract change (it was never in an image)"
 
 # ── mezo-hocr: a second deploy lands its manifest bump while this one is running ──────
 # The release job commits the k8s image-tag bump and then had to reconcile with main. If a
@@ -78,30 +78,29 @@ tmp2="$(mktemp -d)"; trap 'rm -rf "${shim:-}" "${tmp:-}" "${tmp2:-}"' EXIT
 git init -q --bare "$tmp2/origin.git"
 git clone -q "$tmp2/origin.git" "$tmp2/work"
 cd "$tmp2/work"
-mkdir -p frontend backend api k8s/frontend k8s/backend
-echo 1 > frontend/app.txt; echo 1 > backend/app.txt; echo 1 > api/spec.txt
-echo "image: ghcr.io/mrkuhne/mezo-frontend:1.0.0" > k8s/frontend/deployment.yaml
+mkdir -p backend api k8s/backend
+echo 1 > backend/app.txt; echo 1 > api/spec.txt
 echo "image: ghcr.io/mrkuhne/mezo-backend:1.0.0"  > k8s/backend/deployment.yaml
 git add -A && git commit -qm "chore: seed"
 git tag -a v1.0.0 -m "release v1.0.0"
 git push -q origin main --tags
 
-echo 2 > frontend/app.txt; git commit -aqm "feat: fe change"; git push -q origin main
+echo 2 > backend/app.txt; git commit -aqm "feat: be change"; git push -q origin main
 BUILT="$(git rev-parse HEAD)"
 
 # A parallel deploy wins the race and pushes ITS bump to the same line first.
 git clone -q "$tmp2/origin.git" "$tmp2/other"
 ( cd "$tmp2/other"
-  sed -E 's|(ghcr\.io/mrkuhne/mezo-frontend:).*|\11.0.9|' k8s/frontend/deployment.yaml > t && mv -f t k8s/frontend/deployment.yaml
+  sed -E 's|(ghcr\.io/mrkuhne/mezo-backend:).*|\11.0.9|' k8s/backend/deployment.yaml > t && mv -f t k8s/backend/deployment.yaml
   git commit -aqm "chore(release): v1.0.9 [skip ci]" && git push -q origin main )
 
 git checkout -q "$BUILT"
-VERSION=1.1.0 FE=true BE=false BUILT_SHA="$BUILT" bash "$DIR/release-commit.sh" >/dev/null 2>&1
+VERSION=1.1.0 BE=true BUILT_SHA="$BUILT" bash "$DIR/release-commit.sh" >/dev/null 2>&1
 assert_eq "$?" "0" "release-commit.sh survives a parallel release landing on the same manifest line"
 
 git fetch -q origin 'refs/tags/*:refs/tags/*' --force
 git checkout -q main && git fetch -q origin && git reset -q --hard origin/main
-assert_eq "$(sed -n 's|^image: ghcr.io/mrkuhne/mezo-frontend:||p' k8s/frontend/deployment.yaml)" "1.1.0" \
+assert_eq "$(sed -n 's|^image: ghcr.io/mrkuhne/mezo-backend:||p' k8s/backend/deployment.yaml)" "1.1.0" \
   "the manifest on main really carries this run's version (the image is not stranded)"
 assert_eq "$(git rev-parse -q --verify "v1.1.0^{commit}" || echo MISSING)" "$BUILT" \
   "the tag still points at the BUILT commit, not at the reconciled manifest commit"

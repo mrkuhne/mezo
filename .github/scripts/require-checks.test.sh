@@ -13,8 +13,9 @@ assert_eq() { # <actual> <expected> <name>
 
 # ── expected_jobs: the gate's expected set comes OUT of ci.yml, never hardcoded ──
 CI_JOBS=$(expected_jobs < "$DIR/../workflows/ci.yml")
-assert_eq "$(printf '%s\n' "$CI_JOBS" | wc -l | tr -d ' ')" "6" "ci.yml currently defines 6 jobs (lint, lint-k8s, contract-drift, test-frontend, test-layout, test-backend)"
+assert_eq "$(printf '%s\n' "$CI_JOBS" | wc -l | tr -d ' ')" "4" "ci.yml currently defines 4 jobs (lint, lint-k8s, contract-drift, test-backend; the web jobs left with the web app, #52)"
 assert_eq "$(printf '%s\n' "$CI_JOBS" | grep -cx 'test-backend')" "1" "test-backend is in the expected set"
+assert_eq "$(printf '%s\n' "$CI_JOBS" | grep -c 'frontend\|layout')" "0" "no web job is left (web app retired 2026-11-19, #52)"
 assert_eq "$(printf '%s\n' "$CI_JOBS" | grep -cx 'runs-on')" "0" "step/key lines are not mistaken for jobs"
 
 # A workflow with no top-level `jobs:` must yield nothing, so main()'s guard can refuse

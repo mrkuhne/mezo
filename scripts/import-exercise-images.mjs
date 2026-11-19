@@ -5,7 +5,7 @@
 // Vendors the demo stills for the exercise catalog: for every slug in
 // scripts/data/exercise-image-map.json it downloads that exercise's TWO frames
 // (start + end position) from the public-domain free-exercise-db and writes them
-// to frontend/public/exercises/{slug}-a.jpg | {slug}-b.jpg, then (with
+// to backend/src/main/resources/static/exercises/{slug}-a.jpg | {slug}-b.jpg, then (with
 // --write-catalog) stamps the relative paths onto content/exercise-catalog.json
 // so the startup loader seeds them.
 //

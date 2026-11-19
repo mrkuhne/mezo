@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Converts the MIT-licensed MuscleMap Swift path files into the iOS app's own geometry file.
 //
-// Same upstream, same vendored source files and same slug rules as `gen-body-geometry.mjs`
-// (which emits the web app's `bodyGeometry.gen.ts`), so the phone and the web draw the *same*
-// body — one upstream, two generated files, neither hand-edited.
+// Same upstream, same vendored source files and same slug rules as the web app's former
+// `gen-body-geometry.mjs` (retired with the web app 2026-11-19, #52) — one upstream, one
+// generated file, never hand-edited.
 //
 // Source: https://github.com/melihcolpan/MuscleMap (MIT) — see NOTICE.md at the repo root.
 // openGym's own converted paths are AGPL and must never be copied.

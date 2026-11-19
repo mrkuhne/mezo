@@ -61,152 +61,27 @@ jobs:
             | kubeconform -strict -ignore-missing-schemas -kubernetes-version 1.35.0 -summary
 
   contract-drift:
-    # Fails when api/openapi.yml is a stale merge of the api/feature/* fragments,
-    # or frontend api.gen.ts was not regenerated after a contract change. The
-    # backend cannot drift (openapi-generator-maven-plugin regenerates on every
-    # build) — this closes the FE half and the fragments->merge half.
+    # Fails when api/openapi.yml is a stale merge of the api/feature/* fragments. The
+    # backend cannot drift (openapi-generator-maven-plugin regenerates on every build) —
+    # this closes the fragments->merge half. (The web app's generated types left with the
+    # web app, retired 2026-11-19, #52; the iPhone's copy is synced by ios/scripts/sync-openapi.sh.)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v4
-        with:
-          # No `version:` — the pin lives in frontend/package.json's `packageManager`
-          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
-          package_json_file: frontend/package.json
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache: npm
+          cache-dependency-path: api/generate/package-lock.json
       - name: Regenerate merged OpenAPI spec from fragments
         working-directory: api/generate
         run: |
           npm ci
           npm run generate:api
-      - name: Regenerate frontend API types
-        working-directory: frontend
+      - name: Fail on drift (committed spec stale vs fragments)
         run: |
-          pnpm install --frozen-lockfile
-          pnpm generate:api
-      - name: Fail on drift (committed spec/types stale vs fragments)
-        run: |
-          git diff --exit-code -- api/openapi.yml frontend/src/data/_client/api.gen.ts \
-            || { echo '::error::Generated contract artifacts are stale. Run: cd api/generate && npm run generate:api; cd frontend && pnpm generate:api — then commit.'; exit 1; }
-
-  test-frontend:
-    # The CLAUDE.md gate, machine-enforced: vitest must be green in BOTH modes
-    # (VITE_USE_MOCK=false + VITE_USE_MOCK=true). Includes the dualMode.guard test.
-    # BOTH steps set the var EXPLICITLY: `isMockMode()` is `VITE_USE_MOCK !== 'false'`,
-    # so an UNSET var means MOCK — and `frontend/.env` (which is what makes a local
-    # `pnpm test` real-mode) is gitignored, hence absent on a CI checkout. Leaving the
-    # first step bare therefore ran mock mode twice and the real-mode gate was vacuous.
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0    # ci-scope.sh diffs against the previous commit / PR base
-      - name: Does this commit touch the web frontend?
-        # mezo-dubmh: the expensive steps below run only when it does. The job still starts
-        # and ends green otherwise, so require-checks.sh keeps seeing a successful check run.
-        id: scope
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          EVENT: ${{ github.event_name }}
-          REF_NAME: ${{ github.ref_name }}
-          SHA: ${{ github.sha }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        working-directory: .
-        run: bash .github/scripts/ci-scope.sh frontend/ api/
-      - uses: pnpm/action-setup@v4
-        if: steps.scope.outputs.run == 'true'
-        with:
-          # No `version:` — the pin lives in frontend/package.json's `packageManager`
-          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
-          package_json_file: frontend/package.json
-      - uses: actions/setup-node@v7
-        if: steps.scope.outputs.run == 'true'
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-        if: steps.scope.outputs.run == 'true'
-      - name: Tests (real mode)
-        if: steps.scope.outputs.run == 'true'
-        env:
-          VITE_USE_MOCK: "false"
-        run: pnpm test
-      - name: Tests (mock mode)
-        if: steps.scope.outputs.run == 'true'
-        env:
-          VITE_USE_MOCK: "true"
-        run: pnpm test
-
-  test-layout:
-    # Layout invariants at REAL phone viewports (mezo-gllr). Deliberately NOT a
-    # screenshot gate: the golden suite that used to live beside this was retired in
-    # mezo-ryb6 (it never caught a real regression, only its own churn — one mock-seed
-    # change invalidated all 118 goldens on both platforms at once).
-    # This job survives it because its bug class is invisible to BOTH other suites:
-    # jsdom (test-frontend) computes no layout at all, and the goldens ran at 440x956,
-    # taller than a real phone. It caught the keret-hero clipping 66 px at 852.
-    runs-on: ubuntu-24.04   # Playwright has no chromium build for ubuntu-26.04 yet (mezo-6byhm)
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0    # ci-scope.sh diffs against the previous commit / PR base
-      - name: Does this commit touch the web frontend?
-        # mezo-dubmh: the expensive steps below run only when it does. The job still starts
-        # and ends green otherwise, so require-checks.sh keeps seeing a successful check run.
-        id: scope
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          EVENT: ${{ github.event_name }}
-          REF_NAME: ${{ github.ref_name }}
-          SHA: ${{ github.sha }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        working-directory: .
-        run: bash .github/scripts/ci-scope.sh frontend/ api/
-      - uses: pnpm/action-setup@v4
-        if: steps.scope.outputs.run == 'true'
-        with:
-          # No `version:` — the pin lives in frontend/package.json's `packageManager`
-          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
-          package_json_file: frontend/package.json
-      - uses: actions/setup-node@v7
-        if: steps.scope.outputs.run == 'true'
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-        if: steps.scope.outputs.run == 'true'
-      - name: Cache Playwright browsers
-        if: steps.scope.outputs.run == 'true'
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install chromium --with-deps
-        if: steps.scope.outputs.run == 'true'
-      - name: Layout invariants
-        if: steps.scope.outputs.run == 'true'
-        run: pnpm test:layout
-      - name: Upload traces on failure
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: layout-failures
-          path: frontend/test-results/
-          retention-days: 7
+          git diff --exit-code -- api/openapi.yml \
+            || { echo '::error::The merged contract is stale. Run: cd api/generate && npm run generate:api — then commit.'; exit 1; }
 
   test-backend:
     # Full IT suite on a throwaway Testcontainers Postgres (no fixed-DB
