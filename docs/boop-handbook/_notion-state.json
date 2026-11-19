@@ -721,7 +721,7 @@
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
-      "hash": "aba6bc2b9b37"
+      "hash": "f243d6963c1d"
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
@@ -1245,7 +1245,7 @@
     },
     "jegyek:mezo-r36n9.96": {
       "page_id": "41d8968e-752b-819b-a587-e888a7917d57",
-      "hash": "e5a2e554ce74"
+      "hash": "970fa7355329"
     },
     "jegyek:mezo-r36n9.95": {
       "page_id": "41d8968e-752b-8147-99c5-d13a30b33cb1",
@@ -1274,6 +1274,10 @@
     "kiadasok:b1f2d3584": {
       "page_id": "41d8968e-752b-812d-9d53-f27b7e2f36bb",
       "hash": "2936b9326f18"
+    },
+    "kiadasok:66c47af44": {
+      "page_id": "41d8968e-752b-8133-95a4-e8107e045035",
+      "hash": "b8d3f4d4dba9"
     }
   }
 }

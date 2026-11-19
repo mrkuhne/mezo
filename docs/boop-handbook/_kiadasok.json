@@ -423,5 +423,15 @@
     ],
     "mi_valtozott": "A Napok fülön minden gyakorlatnál egyetlen címke mutatja a technikát vagy a kihívást, így a sor nem ugrál. Rákoppintva felugrik a választó: az öt technika (ami nem választható, az halványan, az okával), alatta a nap kihívása, és egy „i” gomb rövid leírásokkal. Amit Boop tett oda a heti javaslatban, azon „Boop” jelzés van, amíg át nem állítod; a heti átnézés csempéin pedig megjelenik Boop egymondatos indoklása, ha van.",
     "verzio": ""
+  },
+  "66c47af44": {
+    "tipus": "Javítás",
+    "cim": "Edzés: a javított sorozat a szerverre is felkerül",
+    "datum": "2026-11-19",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.96"
+    ],
+    "mi_valtozott": "Ha edzés közben kijavítasz egy már rögzített sorozatot, a javítás a javító lap bezárásakor sorba áll, és amint van net, a szerveren is ugyanazt a sorozatot írja át. Korábban a javítás csak a telefonon látszott, a szerver és a következő heti terv a régi számmal számolt."
   }
 }
