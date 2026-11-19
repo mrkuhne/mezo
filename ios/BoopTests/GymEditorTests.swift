@@ -70,4 +70,37 @@ struct GymEditorTests {
         #expect(f.saved.isEmpty)
         #expect(e.failed)
     }
+
+    @Test func aMissingExerciseIsNamedFromTheCatalogue() {
+        let id = UUID()
+        let row = CatalogExercise(id: id, slug: "x", name: "Lat Pulldown", muscle: "back", type: .compound, stim: 1, fatigue: 1)
+        #expect(missingName(id, in: [row]) == "Lat Pulldown")
+    }
+
+    @Test func noCatalogueIsNeitherDeletedNorNamed() {
+        #expect(missingName(UUID(), in: []) == "Gyakorlat")
+        let other = CatalogExercise(id: UUID(), slug: "x", name: "Other", muscle: "back", type: .compound, stim: 1, fatigue: 1)
+        #expect(missingName(UUID(), in: [other]) == "Törölt gyakorlat")
+    }
+
+    @Test func aTapDuringTheFirstReadSavesNothingAndComplainsAboutNothing() async {
+        let f = Fake()
+        let e = GymEditor(current: { f.gym }, ready: { f.loaded }, load: { try? await Task.sleep(for: .milliseconds(200)) },
+                          save: { f.save($0) })
+        let start = Task { await e.start() }
+        try? await Task.sleep(for: .milliseconds(50))
+        await e.setKind(.cable, on: false)
+        await start.value
+        #expect(f.saved.isEmpty)
+        #expect(!e.failed)
+    }
+
+    @Test func aLaterSuccessfulSaveClearsTheFailure() async {
+        let f = Fake(); f.refuse = true; let e = editor(f)
+        await e.setKind(.machine, on: false)
+        #expect(e.failed)
+        f.refuse = false
+        await e.setKind(.cable, on: false)
+        #expect(!e.failed)
+    }
 }

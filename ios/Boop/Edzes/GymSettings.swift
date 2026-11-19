@@ -12,6 +12,13 @@ import BoopDesign
 // save back itself) and then re-reads the store's profile. So the swap sheet's chip and this page cannot drift.
 // Every switch saves at once; a failed save puts the switch back and shows the quiet *„Nem sikerült elmenteni · Újra"*.
 
+/// The name of a missing exercise. With no catalogue at hand (offline, not read yet) nothing is known, so the label is
+/// neutral; „Törölt gyakorlat" only when the catalogue is there and truly lacks the id.
+func missingName(_ id: UUID, in catalog: [CatalogExercise]) -> String {
+    if let row = catalog.first(where: { $0.id == id }) { return row.name }
+    return catalog.isEmpty ? "Gyakorlat" : "Törölt gyakorlat"
+}
+
 @MainActor @Observable
 final class GymEditor {
     private(set) var profile: GymProfile
@@ -60,6 +67,8 @@ final class GymEditor {
     }
 
     private func run(_ change: @escaping (GymProfile) -> GymProfile) async {
+        // While the first read is in flight there is nothing to save yet and nothing to apologise for.
+        if loading { return }
         guard loaded else { failed = true; lastChange = change; return }
         let before = profile
         profile = change(profile)
@@ -88,7 +97,7 @@ struct GymSheet: View {
 
     /// Missing exercises in the catalogue's own naming; one the catalogue no longer has still gets a row to undo.
     private var gone: [(id: UUID, name: String)] {
-        editor.profile.missing.map { id in (id, store.catalog.first { $0.id == id }?.name ?? "Törölt gyakorlat") }
+        editor.profile.missing.map { id in (id, missingName(id, in: store.catalog)) }
             .sorted { $0.name < $1.name }
     }
 
@@ -115,6 +124,7 @@ struct GymSheet: View {
                     Text(kind.label).nkFont(16).foregroundStyle(.white)
                 }
                 .tint(hue.glow)
+                .disabled(!editor.loaded || editor.loading)
                 .padding(.vertical, 9)
                 .frame(minHeight: 44)
                 .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
