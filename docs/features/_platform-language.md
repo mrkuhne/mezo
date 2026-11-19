@@ -358,6 +358,7 @@ F5 translated a domain of about 130 source files with nine parallel builders. Wh
 
 ## 9. Decisions, gotchas & deferred
 
+- **`application.yml` trimmed (2026-11-19, `mezo-r36n9.97.4`).** The web-only `mezo.admin.*`, `mezo.telemetry.*` blocks and the tutorial / admin / screen-telemetry switches left with their areas; nothing about language settings changed.
 - **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **`backend/src/main/resources` gained `static/exercises/`** (2026-11-19, `mezo-r36n9.97.1`) — binary demo stills only; no message bundles or language keys changed.
 

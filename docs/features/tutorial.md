@@ -191,7 +191,7 @@ TutorialProvider (route-aware, mounted once in AppLayout)
 `created_by` where `is_deleted = false`), one `jsonb` column (`progress`, keyed by guide id →
 `TutorialProgressEntryJson`), soft-delete (`is_deleted`), `updated_at`.
 
-**Contract** ([`api/feature/tutorial/tutorial-progress.yml`](../../api/feature/tutorial/tutorial-progress.yml),
+**Contract** (`api/feature/tutorial/tutorial-progress.yml` (removed, in git history),
 tag `TutorialProgress`):
 
 | Method | Path | Behavior |
