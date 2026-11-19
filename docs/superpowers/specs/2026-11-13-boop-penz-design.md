@@ -1,6 +1,10 @@
 # Boop Pénz — personal finance + the AI investing companion (design)
 
-- **Status:** draft, awaiting the owner's approval · **Date:** 2026-11-13 · **Issue:** `mezo-r36n9.33` · **Epic:** `mezo-r36n9`
+- **Status:** **approved by the owner 2026-11-19** — the design *and* the look. The simulator spike of the four
+  pages was approved in the same pass (round 11, §5.6), so **there is no further visual round**: build to match it.
+  · **Date:** 2026-11-13, amended 2026-11-19 · **Issue:** `mezo-r36n9.33.1` · **Epic:** `mezo-r36n9`
+- **Picking this up? Start at** [`../plans/2026-11-19-boop-penz-plan.md`](../plans/2026-11-19-boop-penz-plan.md)
+  — the handover guide and the per-slice plan. This document is the *why*; that one is the *what next*.
 - **Evidence:** old-app map [`02-finance-tracker-map.md`](../research/boop-life/02-finance-tracker-map.md),
   prior art [`04-invest-prior-art.md`](../research/boop-life/04-invest-prior-art.md),
   UI direction [`03-ui-direction.md`](../research/boop-life/03-ui-direction.md).
@@ -174,6 +178,43 @@ The primitives are the journal literature's, and they need only entry, exit and 
 - **The monthly recurring strategy** (decision 5) is proposed the same way, computed from salary and actual
   spending, and re-proposed when the spending picture changes materially.
 
+### 5.6 The approved look — round 11, and what the build must match
+
+The first spike of the four pages was **rejected by the owner** in exactly five words of his own:
+*„egybefolynak az infók, nagyon száraz, nincsenek ikonok, a hírek kevesek és nem tudok rákattintani, a
+magyarázatok ne a görgetőn legyenek, és hiányoznak a cselekvések."* Round 11 answered all five and **that is the
+approved look**. The build matches it; it is not a starting point to iterate from.
+
+| What he rejected | What the build must do | Spike reference |
+|---|---|---|
+| no icons, everything runs together | **Every section head carries its own glyph.** Not cards everywhere — the glyph plus the section rule is the structure. | `EBare(glyph:)`, `EAreaContent.sectionGlyph` |
+| pages are text and nothing else | **Every page opens with two buttons** right under the verdict (Ma: *Kiadás · Befektetnék* · Pénzem: *Befektetést rögzítek · Felosztást kérek* · Költés: *Kiadás · 2 tétel ellenőrzése* · Gyakorlás: *Új kereskedés · A teljes napló*), and Költés carries a second pair above the month close. | `EAction` / `EActionRow` |
+| "how it works" paragraphs on the scroll | **Folded behind one quiet line that opens a sheet.** One per page, never a paragraph in the flow. | `EInfoRow` / `EInfoSheet` |
+| the news is thin and not tappable | **A news item is a card you open** (below). | `ENews` / `ENewsCard` / `ENewsSheet` |
+
+**The news card** carries, in this order: which of *his* holdings it touches and that holding's sleeve · the
+headline · **the computed effect in forint**, set apart typographically so it never reads as model prose · Boop's
+one-line reading · a confidence row (three dots + the word) and the source count · an *Elemzés ›* affordance.
+Negative effects are drawn in the warm tone, never in the area's green.
+
+**The analysis sheet** behind it has five parts, and none may be dropped:
+
+1. **Mit jelent neked** — the forint figure, with the line *"Ezt a számot a rendszer számolta ki a te
+   tételeidből — nem az AI írta."* This is §6's architectural rule made visible to the owner.
+2. **Amit Boop gondol róla** — the actual reading, several paragraphs, in his language.
+3. **Mennyire biztos** — the level **and a written account of where it could be wrong**, specific to that item
+   (e.g. "az árfolyam tény, de hogy mi okozta, arról a három forrás három dolgot mond").
+4. **Honnan van** — the sources by name, each openable.
+5. **Nincs teendőd** — with a **per-item** reason. A 10+ year holding and a currency move are left alone for
+   different reasons, and one sentence for both is a lie (this was a real bug in the first cut).
+
+Two rendering traps found while verifying, worth knowing in the real kit: a plain `Text` prints the emphasis
+markup literally (the hue-text component must be used wherever the content allows `*emphasis*`), and a "lit" row
+style that uses the area hue turns a loss green — never mark a negative number as `hot`.
+
+Screenshots of the approved state: `docs/design_2.0/prototypes/boop-ios-spike/penz-1-ma.png`,
+`penz-2-hirek.png`, `penz-3-hirelemzes.png`, `penz-4-koltes.png`, `penz-5-gyakorlas.png`, `penz-6-penzem.png`.
+
 ## 6. Boundaries — and the copy rules they imply
 
 Owner-confirmed rules (2026-11-13). Every string on every Pénz screen is written to these:
@@ -345,19 +386,41 @@ test; `OutboxItem.id` **is** the `clientRef` the server keys idempotency on, and
 (2xx `.sent` · no-connection `.offline` · 401/409/429/5xx/timeout `.retryLater`, cap 8 · other 4xx `.failed`,
 shown as *Újra*) is authoritative.
 
-**Two iOS facts that make this area more than a new screen:**
-- **There is no area page in code yet.** `ios/Boop` has `Nap`, `Terv`, `Naplo`, `BoopChat`, `Capture`, `Shell`,
-  `Connect`, `Ritmus`. The area-page pattern of §5 lives only in the prototypes and this spec, so Pénz is
-  *defining* it. (`L0` in the life-dashboard slice map is the slice that builds the shared area kit.)
-  **But the photo-head treatment already exists in the kit** and must be reused rather than written a third
-  time: `NKPhotoSky`, `NKOrbScrim`, `NKCardPhoto`, `NKThumb`, `NKCapsuleTabs`
-  (`BoopDesign/Napkelte/Etel.swift`) and `NKDrillPage(headPhoto:)` (`Napkelte/Drill.swift:18`), all shipped by
-  B4 with the Képek rules baked in — tone 0.8 / −0.06, the hue's gradient over the photo, the orb scrim, and a
-  correct render when there is no photo at all.
-- **`NKSpineBar` is a hard-coded four-item array and `Hue` is a closed five-case enum** (forma, alvas, mozgas,
-  fuel, pulzus) driving every sky, orb and glow palette through array-indexed lookups that **crash on a new case
-  if any table is missed** (and the orb shader needs exactly four colours). A per-area bottom bar and a Pénz hue
-  are kit changes touching every `switch` over `Hue` — a shared hot spot, so one writer at a time.
+**The iOS side, re-checked 2026-11-19 — most of it now exists.** When this spec was written there was no area
+page in code and no Pénz colour. Slice **L0** (`mezo-r36n9.37`) has since shipped the shared area kit, so the
+Pénz UI slice is mostly *composition*, not new components. In
+`ios/BoopKit/Sources/BoopDesign/Napkelte/{Area,AreaBlocks}.swift`:
+
+- **`NKAreaPage`** — the whole area page: hue, name, eyebrow with its own glyph, head orb, headline, sentence,
+  photo head, tabs, actions, back and the "ask Boop" item. **`display: nil` prints no number in the orb**, which
+  is exactly §10.2 decision 3 — no kit change needed for the scoreless Pénz orb, just pass `nil`.
+- **`NKAreaBar` / `NKAreaTab` / `NKAreaTabs`** — the per-area five-item bar with badges. `NKAreaBar.glyph(_:)`
+  is the label→glyph map to extend with *Pénzem · Költés · Gyakorlás*.
+- **`Hue` already has a `penz` case** (`Tokens.swift:53-57`), added for exactly this area, and the orb ring
+  already paints it. **The closed-enum trap in the old text no longer applies to Pénz.**
+- **The blocks** map one-to-one onto §5's pages: `NKHighlight` (+`NKHighlightAction`), `NKStat`/`NKStatRow`,
+  `NKLevelBar`, `NKCurve`, `NKComposition`, `NKAreaRow`/`NKRowList`, `NKSearchableRowList`, `NKMenuGrid`,
+  `NKList`, `NKNote`, `NKAskRow`, `NKBare`, `NKHueText`/`nkHueAttributed` (use these wherever the copy allows
+  `*emphasis*` — a plain `Text` prints the markup).
+- **`NKAction`/`NKActions`** — the button row of §5.6, already in the kit.
+- **`NKInfoRow`** — the explanation-behind-a-button row of §5.6, already in the kit (it takes an action; the
+  sheet behind it is the caller's).
+- **`NKStale` / `NKNoFreshData` / `NKNotLiveYet` / `NKBlockState`** — the honest states this area needs for stale
+  prices and for a tab whose data is not built yet. Use `NKNotLiveYet` rather than inventing placeholder numbers.
+- **`NKAreaSubPage`** — a pushed sub-page with crumb and title. **The news analysis (§5.6) should be this, not a
+  sheet**, so it can be deep-linked and so the back gesture behaves.
+- Photo heads: `NKPhotoSky`, `NKOrbScrim`, `NKCardPhoto`, `NKThumb` (`Napkelte/Etel.swift`) with the Képek rules
+  baked in.
+
+**What the kit still lacks for Pénz**, and is therefore part of the UI slice:
+1. **A glyph on `NKBare`'s section head.** `NKBare(_:hue:trailing:state:)` has no glyph parameter; §5.6 requires
+   one on every section head. Add it with a default of `nil` so no existing caller changes.
+2. **The news card** — nothing in the kit carries "which holding · computed effect · confidence · source count".
+   New: `NKNewsCard` plus the analysis sub-page's five parts. The spike's `ENews`/`ENewsCard`/`ENewsSheet`
+   (`boop-ios-spike/BoopSpike/EletPenzKit.swift`) are the executable reference.
+
+`BoopDesign/Napkelte/**` is a **shared hot spot** — one writer at a time; check for another in-progress issue
+owning it before editing.
 
 **Shared hot spots** other sessions may own concurrently: `api/generate/merge.yml`, `api/openapi.yml`,
 `frontend/src/data/_client/api.gen.ts`, `messages_hu/en.properties`, `1.1.0_master.yml`,
@@ -439,38 +502,34 @@ my calls, not the owner's, and a builder may raise any of them again with a reas
 9. **Strings are Hungarian**, but every new error code goes into both `messages_hu` and `messages_en`, as the
    repo requires.
 
-### 10.2 Still the owner's to answer
+### 10.2 Answered by the owner, 2026-11-19
 
-Four questions survived the builder check that only he can settle; they are in front of him and this document is
-not final until they are answered. **My recommendation is recorded with each.**
+The four questions the builder check surfaced went to the owner with a recommendation each. He took all four
+(„Mehet mind a négy"), so they are **decisions now, not open items** — do not re-litigate:
 
-1. **May Boop name products it researched itself, or only from a list that is kept current?** The old app used a
-   hand-checked catalog of eight products with dated figures. Decision 12 wants two or three concrete options per
-   sleeve — three options across four sleeves is a much larger catalog, and someone must keep it true; free
-   research instead means the fee and cost figures have no verified source for the amount guard to check.
-   *Recommendation:* a curated list that Boop may propose from, plus research that may **suggest an addition** the
-   owner approves once — so every named figure always has a dated, checked source.
-2. **What does "years of coverage" mean on the long sleeve's card?** It needs a spending baseline and a
-   withdrawal assumption, and any assumed growth brushes boundary 3 ("never promises a return").
-   *Recommendation:* *"as it stands today, with no growth assumed, this sleeve covers N years of your current
-   fixed costs"* — honest, needs no forecast, and the fixed costs already exist in the allowance engine.
-3. **Does the Pénz area have a score in its orb?** Every other area page carries one. A 0–100 money score sits
-   badly next to boundary 2 and the anti-goal about streaks. *Recommendation:* **no number** — the orb fills with
-   how much of the week's money is left, with no score inside it. Consequence: the shared area kit (slice L0)
-   needs a scoreless variant.
-4. **Does the daily digest push a notification, and does a news item open into anything?** The old app pushed a
-   morning brief at a chosen time and let an item open into an on-demand analysis with a `buy | wait | none`
-   verdict — the verdict is dead under boundaries 1 and 4. *Recommendation:* **no push** (the digest is for when
-   he opens the app; a push about money he must not act on works against decision 6), and an item **does** open,
-   into the sources and what it touches — but with no verdict and no action. Consequence: the per-item article
-   fetch and its adversarial-text handling (§6, §9) are in scope for L6.
+1. **Boop proposes from a curated list.** It may *research* and **suggest an addition**, which the owner approves
+   once; only then may it be named in a proposal. Every figure Boop prints about a product therefore has a dated,
+   checked source the amount guard can verify. Consequence for L7: a product entity with fee fields, a
+   `reviewed_at`, and a one-tap approve flow — not free-text research into a proposal.
+2. **"Years of coverage" means:** *"as it stands today, with no growth assumed, this sleeve covers N years of your
+   current fixed costs."* No forecast, no assumed return (boundary 3 holds), and the fixed-cost figure is the one
+   the allowance engine already computes. Consequence for L6: the long sleeve's card needs the allowance engine's
+   fixed-cost total, so L6 depends on L4 for more than storage.
+3. **Pénz has no score.** The masthead orb fills with how much of the week's money is left and carries **no
+   number**. Consequence: the shared area kit needs a scoreless variant — in the spike this is `EMetric.scoreless`
+   + `EMetric.orbLevel` (`EletRoot.swift`), and the real kit needs the same two affordances.
+4. **No push, but the item opens.** The daily digest is for when he opens the app — a notification about money he
+   must not act on works against decision 6. A news item **does** open into the full analysis (§5.6), with no
+   verdict and no action button. Consequence: the per-item article fetch and its adversarial-text handling
+   (§6, §9) are in scope for **L6**.
 
 ## 11. Slices — reshaping L4/L5
 
 The life-dashboard slice map had two Pénz slices (`L4` adatalap, `L5` a szoba, both after B6 and L0) built around
 tabs *Ma · Keretek · Előzmények · Tervezett* and no investing. Today's decisions replace them with four, in this
-order. Earliest start is unchanged: **after B6 ships**, and after `L0` (which builds the shared area kit and the
-per-area bar this design needs).
+order. Earliest start: **after B6 ships** (`mezo-r36n9.16`, still open 2026-11-19). The other dependency is
+already met — **`L0` shipped** (`mezo-r36n9.37`), so the shared area kit, the per-area bar and the `penz` hue
+exist (§9).
 
 | Slice | What | Depends on |
 |---|---|---|
@@ -483,10 +542,17 @@ per-area bar this design needs).
 Slicing is the builder's call and may change in the plan; what must not change is that **L4 ships no screen** and
 **the digest cannot ship before the portfolio it talks about**.
 
-## 12. Next steps
+## 12. Where this stands
 
-1. Owner approves this document.
-2. **Simulator spike** of the five pages (Xcode + the iOS Simulator; no HTML artifacts for Boop) → owner's OK on
-   the look. This is the only place for visual iteration.
-3. `superpowers:writing-plans` → a plan in `docs/superpowers/plans/` with the *Kész, ha…* checklist, per slice.
-4. Build → gates → merge → deploy → live check → Hungarian report.
+1. ~~Owner approves this document.~~ **Done 2026-11-19.**
+2. ~~Simulator spike of the four pages → owner's OK on the look.~~ **Done** — rounds 1 and 11, approved
+   2026-11-19 (§5.6). **The three owner gates are closed; there is no further visual round.**
+3. ~~Plan with the *Kész, ha…* checklists.~~ **Done** —
+   [`../plans/2026-11-19-boop-penz-plan.md`](../plans/2026-11-19-boop-penz-plan.md), which is also the handover
+   guide for whoever builds this.
+4. **Next:** build L4 → gates → merge → deploy → live check → Hungarian report. Per the owner's standing order
+   (`CLAUDE.md` §Frontend change workflow), after the third gate he does not want another round: build to match
+   the approved spike and run straight through.
+
+**Not startable yet.** B6 (A Terv) and the shared area kit must land first (§11). Until then this document and
+the plan sit ready, and the spike is the reference.
