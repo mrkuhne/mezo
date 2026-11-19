@@ -40,10 +40,15 @@ public enum BlockStyle: String, CaseIterable, Sendable, Equatable {
 }
 
 /// What may sit on an exercise's last set (T2). The wire spells `rest_drop`.
-public enum SetTechnique: String, CaseIterable, Sendable, Equatable {
+public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
     case none, restDrop = "rest_drop", drop, myo, partials
 
     public init(wire: String?) { self = SetTechnique(rawValue: wire ?? "none") ?? .none }
+
+    /// Lenient like every wire enum: a technique the server adds later reads as straight sets.
+    public init(from decoder: Decoder) throws {
+        self.init(wire: try decoder.singleValueContainer().decode(String.self))
+    }
 
     public var name: String {
         switch self {
@@ -52,6 +57,17 @@ public enum SetTechnique: String, CaseIterable, Sendable, Equatable {
         case .drop: "Drop set"
         case .myo: "Myo set"
         case .partials: "Félismétlések"
+        }
+    }
+
+    /// One or two sentences on what it is — the picker's info text.
+    public var about: String {
+        switch self {
+        case .none: "Minden sorozat ugyanúgy megy, technika nélkül."
+        case .restDrop: "Az utolsó sorozat bukásig, 30 mp pihenő, aztán 30%-kal kisebb súllyal ugyanannyi ismétlés. Kevesebb idő alatt ugyanannyi munka."
+        case .drop: "Az utolsó sorozat bukásig, majd pihenő nélkül 20%-kal kisebb súllyal újra bukásig."
+        case .myo: "Az utolsó sorozat majdnem bukásig, aztán 20 mp-es pihenőkkel 3–5 ismétléses mini-sorozatok, amíg megy."
+        case .partials: "Az utolsó teljes sorozat után azonnal félismétlések a nyújtott helyzetben, amennyi megy. Csak ott, ahol ez biztonságos."
         }
     }
 
@@ -114,6 +130,28 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     }
 
     public var canTakeChallenge: Bool { stable && lengthened && judged }
+
+    /// The pick on screen is Boop's own (the planner or the AI put it there, he has not touched it).
+    public var pickedByBoop: Bool {
+        guard ["planner", "ai"].contains(wire.techniqueSource ?? "") else { return false }
+        return technique == SetTechnique(wire: wire.technique) && challenge == (wire.challenge ?? false) && (technique != .none || challenge)
+    }
+
+    /// Why the day's challenge cannot sit on this exercise; nil when it can.
+    public var challengeUnavailableReason: String? {
+        if canTakeChallenge { return nil }
+        if !judged { return "Ez a gyakorlat nem számít bele a sorozatokba." }
+        if !stable { return "Szabadsúlyos gyakorlaton nincs kihívás." }
+        return "A kihívás félismétlés a nyújtott helyzetben — ennél a gyakorlatnál ez nem biztonságos."
+    }
+
+    /// Why a technique is not offered on this exercise, in his words; nil when it is.
+    public func unavailableReason(_ technique: SetTechnique) -> String? {
+        if allowedTechniques.contains(technique) { return nil }
+        if !judged { return "Ez a gyakorlat nem számít bele a sorozatokba." }
+        if !stable { return "Szabadsúlyos gyakorlaton nincs technika." }
+        return "Ennél a gyakorlatnál a nyújtott helyzet ismétlése nem biztonságos."
+    }
 }
 
 public struct DraftDay: Identifiable, Equatable, Sendable {
@@ -220,6 +258,29 @@ public struct BlockDraft: Equatable, Sendable {
         guard options.count > 1 else { return }
         let i = options.firstIndex(of: ex.technique) ?? 0
         days[day].exercises[exercise].technique = options[(i + 1) % options.count]
+    }
+
+    /// Picks a technique from the picker. An offered one only; picking a technique takes the day's challenge off this
+    /// exercise (the challenge is its own half-rep finish, spec §11 q6).
+    public mutating func setTechnique(day: Int, exercise: Int, _ technique: SetTechnique) {
+        guard techniquesEnabled, days.indices.contains(day), days[day].exercises.indices.contains(exercise),
+              days[day].exercises[exercise].allowedTechniques.contains(technique) else { return }
+        days[day].exercises[exercise].technique = technique
+        if technique != .none { days[day].exercises[exercise].challenge = false }
+    }
+
+    /// Puts the day's challenge on this exercise (taking it from any other that day, and replacing its technique) or
+    /// takes it off.
+    public mutating func setChallenge(day: Int, exercise: Int, _ on: Bool) {
+        guard techniquesEnabled, days.indices.contains(day), days[day].exercises.indices.contains(exercise) else { return }
+        if on {
+            guard days[day].exercises[exercise].canTakeChallenge else { return }
+            for e in days[day].exercises.indices { days[day].exercises[e].challenge = false }
+            days[day].exercises[exercise].challenge = true
+            days[day].exercises[exercise].technique = .none
+        } else {
+            days[day].exercises[exercise].challenge = false
+        }
     }
 
     /// One challenge a day: picking a new one takes it from the old; tapping the same one clears it. The challenge

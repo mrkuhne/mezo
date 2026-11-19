@@ -193,7 +193,9 @@ public struct TrainClient: Sendable {
             lastWeek: e.lastWeek.map { LastWeekSet(weightKg: $0.weightKg, reps: $0.reps, rir: $0.rir) },
             note: e.note, warning: e.warning, videoURL: e.videoUrl,
             imageStartURL: e.imageStartUrl, imageEndURL: e.imageEndUrl,
-            replacesName: e.replacesName, replacedByName: e.replacedByName, planSlot: e.planSlot ?? true)
+            replacesName: e.replacesName, replacedByName: e.replacedByName, planSlot: e.planSlot ?? true,
+            technique: e.technique.map { SetTechnique(wire: $0.value1.rawValue) },
+            challenge: e.challenge ?? false, challengeBest: e.challengeBest)
     }
 
     /// The exercise's sets. With the engine on, they are its own per-set targets verbatim. With it off there are
@@ -202,14 +204,23 @@ public struct TrainClient: Sendable {
     /// the server never made.
     static func sets(of e: Components.Schemas.TodayExercise) -> [PrescribedSet] {
         if let given = e.prescribedSets, !given.isEmpty {
-            return given.map { PrescribedSet(kind: .init(wire: $0.kind.rawValue), targetKg: $0.targetWeightKg,
-                                             targetReps: $0.targetReps, targetRIR: $0.targetRIR) }
+            return given.map {
+                PrescribedSet(kind: .init(wire: $0.kind.rawValue), targetKg: $0.targetWeightKg,
+                              targetReps: $0.targetReps, targetRIR: $0.targetRIR, restSec: $0.restSec,
+                              technique: $0.technique.map { SetTechnique(wire: $0.value1.rawValue) },
+                              legs: ($0.legs ?? []).map(map))
+            }
         }
         let warmups = (0..<max(0, e.warmupSets)).map { _ in PrescribedSet(kind: .warmup, targetReps: e.repMax) }
         let working = (0..<max(0, e.workingSets)).map { _ in
             PrescribedSet(kind: .working, targetReps: e.repMin, targetRIR: e.targetRIR)
         }
         return warmups + working
+    }
+
+    static func map(_ l: Components.Schemas.PrescribedLeg) -> PrescribedLeg {
+        PrescribedLeg(kind: .init(wire: l.kind.rawValue), weightKg: l.weightKg, reps: l.reps, minReps: l.minReps,
+                      toFailure: l.toFailure, restBeforeSec: l.restBeforeSec, dropPercent: l.dropPercent)
     }
 
     static func map(_ w: Components.Schemas.WorkoutInstanceResponse) -> WorkoutInstance {
@@ -224,7 +235,10 @@ public struct TrainClient: Sendable {
         guard let id = UUID(uuidString: s.id), let exerciseId = UUID(uuidString: s.exerciseId) else { return nil }
         return LoggedSet(id: id, exerciseId: exerciseId, setIndex: s.setIndex,
                          kind: .init(wire: s.kind?.rawValue), weightKg: s.weightKg, reps: s.reps, rir: s.rir,
-                         side: s.side, note: s.note, skipped: s.skipped ?? false, doneAt: s.doneAt)
+                         side: s.side, note: s.note, skipped: s.skipped ?? false, doneAt: s.doneAt,
+                         technique: s.technique.map { SetTechnique(wire: $0.value1.rawValue) },
+                         legs: s.legs.map { $0.map { LoggedLeg(kind: .init(wire: $0.kind.rawValue), weightKg: $0.weightKg,
+                                                               reps: $0.reps, restSec: $0.restSec) } })
     }
 
     static func map(_ s: Components.Schemas.WorkoutSummaryResponse) -> WorkoutHistoryDay {
@@ -429,10 +443,15 @@ extension TrainClient: OutboxSender {
         guard let p = TrainPayloadCodec.decode(WorkoutSetPayload.self, from: item.payload)
         else { return malformed("workout set") }
         guard let workout = await workoutId(for: p.workoutRef) else { return .retryLater }
-        let body = Components.Schemas.SetLogRequest(
+        var body = Components.Schemas.SetLogRequest(
             exerciseId: p.exerciseId.wire, setIndex: p.setIndex, weightKg: p.weightKg, reps: p.reps, rir: p.rir,
             side: p.side, note: p.note, kind: p.kind.rawValue,
             targetWeightKg: p.targetWeightKg, targetReps: p.targetReps)
+        // A technique set carries its steps with it (T2); a straight set sends neither field.
+        if let wire = p.technique, let t = Components.Schemas.Technique(rawValue: wire), t != .none {
+            body.technique = .init(value1: t)
+            body.legs = p.legs?.compactMap(Self.legInput)
+        }
         switch try await client.logWorkoutSet(path: .init(id: workout.wire), body: .json(body)) {
         case .created: return .sent(nil)
         case .conflict: return .retryLater
@@ -447,8 +466,10 @@ extension TrainClient: OutboxSender {
         guard let p = TrainPayloadCodec.decode(WorkoutSetEditPayload.self, from: item.payload)
         else { return malformed("set correction") }
         guard let workout = await workoutId(for: p.workoutRef) else { return .retryLater }
-        let body = Components.Schemas.SetUpdateRequest(weightKg: p.weightKg, reps: p.reps, rir: p.rir,
+        // `legs` absent = the server leaves them untouched; a correction of the main part never wipes its steps.
+        var body = Components.Schemas.SetUpdateRequest(weightKg: p.weightKg, reps: p.reps, rir: p.rir,
                                                        side: p.side, note: p.note)
+        if let legs = p.legs { body.legs = legs.compactMap(Self.legInput) }
         switch try await client.updateWorkoutSet(path: .init(id: workout.wire, setId: p.setId.wire),
                                                  body: .json(body)) {
         case .ok: return .sent(nil)
@@ -458,6 +479,11 @@ extension TrainClient: OutboxSender {
         case .unauthorized: return Self.map(401)
         case .undocumented(let code, _): return Self.map(code)
         }
+    }
+
+    static func legInput(_ l: WorkoutLegPayload) -> Components.Schemas.SetLegInput? {
+        guard let kind = Components.Schemas.SetLegKind(rawValue: l.kind) else { return nil }
+        return .init(kind: kind, weightKg: l.weightKg, reps: l.reps, restSec: l.restSec)
     }
 
     private func sendSkipExercise(_ item: OutboxItem) async throws -> OutboxSendResult {

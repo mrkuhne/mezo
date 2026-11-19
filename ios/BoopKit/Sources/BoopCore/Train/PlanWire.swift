@@ -223,6 +223,8 @@ public struct WireProposalLine: Decodable, Equatable, Sendable {
     public let fromRepMax: Int?
     public let toRepMin: Int?
     public let toRepMax: Int?
+    /// T4: the AI's one-line Hungarian reason on an `ai_suggested` line.
+    public let note: String?
 }
 
 public struct WireProposalMuscle: Decodable, Equatable, Sendable {

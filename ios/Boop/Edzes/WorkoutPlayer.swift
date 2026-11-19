@@ -58,6 +58,8 @@ struct WorkoutPlayer: View {
     @State private var reps: Int = 0
     @State private var rir: Int = 2
     @State private var touched = false
+    /// The half reps he has counted so far in the partials moment.
+    @State private var partials = 0
     @State private var feedback = ExerciseFeedback()
     @State private var sheet: PlayerSheet?
     @State private var swapping = false
@@ -89,6 +91,8 @@ struct WorkoutPlayer: View {
                         case .set: lifting
                         case .rest: resting
                         case .debrief: debrief
+                        case .techniqueRest, .leg: techniqueStep
+                        case .partials: partialsMoment
                         case .finish: Color.clear.frame(height: 1)
                         }
                     }
@@ -108,6 +112,9 @@ struct WorkoutPlayer: View {
         // this the big number kept the previous set's value and he would have logged the warm-up weight three
         // more times under „a terv szerint".
         .onChange(of: session.progress.done) { loadCurrent() }
+        // Each step of a technique set has its own numbers: the drop's lighter weight, a mini-set's few reps.
+        .onChange(of: session.technique?.legs.count) { loadCurrent() }
+        .onChange(of: session.technique == nil) { loadCurrent() }
         .sheet(item: $sheet) { sheet(for: $0) }
     }
 
@@ -185,13 +192,16 @@ struct WorkoutPlayer: View {
                 .buttonStyle(.plain)
             }
 
+            // The technique set is next: the card shows every step before he starts, the first one lit.
+            if let plan = techniquePlan(e), let t = plan.technique, t != .partials {
+                let card = TechniqueLines.lines(plan: plan, run: nil)
+                TechniqueStepCard(technique: t, lines: card.lines, current: 0, remaining: nil, total: nil, hue: hue)
+            }
+
             numberPads
             setList(e)
 
-            primary(touched ? "Kész \(Self.article(e.logged.count + 1)) \(e.logged.count + 1). szett"
-                            : "Kész · a terv szerint") {
-                logSet()
-            }
+            primary(liftLabel(e)) { logSet() }
         }
     }
 
@@ -211,10 +221,42 @@ struct WorkoutPlayer: View {
                 }
                 Text(e.name).nkFont(26, design: .serif).foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
+                // What is special about this exercise today, said up front (owner decision 2026-11-17 #3).
+                if techniqueToShow(e) != nil || e.liveChallenge {
+                    HStack(spacing: 6) {
+                        if let t = techniqueToShow(e) { TechniquePill(technique: t, hue: hue) }
+                        if e.liveChallenge { ChallengePill() }
+                    }
+                    .padding(.top, 3)
+                }
             }
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The technique to put on the head: the exercise's own, unless the challenge already says it (the challenge's
+    /// technique is always the half reps).
+    private func techniqueToShow(_ e: SessionExercise) -> SetTechnique? {
+        // From today's prescription, not the stored pick: with the block's switch off the server still echoes it.
+        let t = e.liveTechnique
+        return t == .partials && e.liveChallenge ? nil : t
+    }
+
+    /// The plan of the set he is on, when it is a technique set the player walks through.
+    private func techniquePlan(_ e: SessionExercise) -> PrescribedSet? {
+        let i = e.logged.count
+        guard e.planned.indices.contains(i), e.planned[i].isTechnique else { return nil }
+        return e.planned[i]
+    }
+
+    private func liftLabel(_ e: SessionExercise) -> String {
+        if let plan = techniquePlan(e) {
+            if plan.technique == .partials { return e.liveChallenge ? "Megvan · jöhet a kihívás" : "Megvan · jöhetnek a félismétlések" }
+            let rest = plan.legs.first?.restBeforeSec ?? 0
+            return rest > 0 ? "Megvan a főrész · jöhet a pihenő" : "Megvan a főrész · tovább"
+        }
+        return touched ? "Kész \(Self.article(e.logged.count + 1)) \(e.logged.count + 1). szett" : "Kész · a terv szerint"
     }
 
     /// The server's own demo still for the exercise. The session model keeps only what the player needs, so
@@ -266,6 +308,7 @@ struct WorkoutPlayer: View {
                 NKSetRow(index: i + 1, kg: set.kg.map(Self.plain) ?? "–", reps: "\(set.reps)",
                          reserve: set.rir.map { "\($0)" } ?? "–",
                          mark: mark(set.verdict), hue: hue) { sheet = .editSet(set.id) }
+                if let note = TechniqueLines.rowNote(plan: nil, logged: set) { techniqueNote(note, set.technique) }
             }
             ForEach(e.logged.count..<max(e.logged.count, e.setCount), id: \.self) { i in
                 let plan = e.plan(at: i)
@@ -273,8 +316,28 @@ struct WorkoutPlayer: View {
                          reps: plan?.targetReps.map { "\($0)" } ?? "–",
                          reserve: plan?.targetRIR.map { "\($0)" } ?? "–",
                          mark: i == e.logged.count ? .now : .planned, hue: hue)
+                // The technique set is marked in the list, so he sees it coming.
+                if e.planned.indices.contains(i),
+                   let note = TechniqueLines.rowNote(plan: e.planned[i], logged: nil) {
+                    techniqueNote(note, e.planned[i].technique)
+                }
             }
         }
+    }
+
+    /// The line under a technique set's row: its mark and what it adds (planned) or what was done (logged).
+    private func techniqueNote(_ text: String, _ t: SetTechnique?) -> some View {
+        // The challenge's half reps wear the challenge's flag and yellow, like its pill in the head.
+        let challenge = t == .partials && session.current?.liveChallenge == true
+        let tint = challenge ? planWarn : hue.glow
+        return HStack(spacing: 6) {
+            if let t { PlanMark(challenge ? .flag : techniqueMark(t), color: tint, size: 12) }
+            Text(challenge ? "kihívás · \(text)" : text).nkFont(11, .medium).foregroundStyle(tint.opacity(0.9))
+                .lineLimit(1).minimumScaleFactor(0.8)
+            Spacer(minLength: 0)
+        }
+        .padding(.leading, 38)
+        .padding(.top, -2)
     }
 
     /// A weight without its unit — the column header already says „KG".
@@ -307,7 +370,7 @@ struct WorkoutPlayer: View {
 
     @ViewBuilder private var resting: some View {
         if let current = session.current {
-            NKRestBar(remaining: remaining, total: WorkoutSession.restSeconds, hue: hue)
+            NKRestBar(remaining: remaining, total: session.restTotal ?? WorkoutSession.restSeconds, hue: hue)
                 .padding(.vertical, 6)
             // **The set just done, wherever it was.** Answering the three questions moves the session to the
             // next exercise while the rest runs on, so asking the *current* exercise for its last set left
@@ -417,6 +480,101 @@ struct WorkoutPlayer: View {
         .nkGlass()
     }
 
+    // MARK: - Inside a technique set
+
+    /// The short rest and the next step of a technique set: the step card with the countdown in it, and — when it
+    /// is time to lift — the step's own numbers.
+    @ViewBuilder private var techniqueStep: some View {
+        if let e = session.current, let run = session.technique, let plan = techniquePlanOfRun(e) {
+            exerciseHead(e)
+            let card = TechniqueLines.lines(plan: plan, run: run)
+            let resting: Bool = { if case .techniqueRest = session.step { return true } else { return false } }()
+            TechniqueStepCard(technique: run.technique, lines: card.lines, current: card.current,
+                              remaining: resting ? techniqueRemaining : nil, total: run.restTotal, hue: hue)
+            if resting {
+                HStack(spacing: 10) {
+                    secondary("Elég volt · befejezem") { endTechnique() }
+                    Button { session.skipTechniqueRest() } label: {
+                        HStack(spacing: 6) {
+                            Text("Kezdem").nkFont(16, .semibold)
+                            Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold))
+                        }
+                        .foregroundStyle(NK.ground)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .background(Capsule().fill(hue.glow))
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                legPads(run)
+                primary(legLabel(run)) { logLeg() }
+                secondary("Elég volt · befejezem a sorozatot") { endTechnique() }
+            }
+        }
+    }
+
+    private func techniquePlanOfRun(_ e: SessionExercise) -> PrescribedSet? {
+        e.planned.indices.contains(e.logged.count) ? e.planned[e.logged.count] : nil
+    }
+
+    private var techniqueRemaining: TimeInterval {
+        _ = now
+        guard let ends = session.technique?.restEndsAt else { return 0 }
+        return max(0, ends.timeIntervalSince(now))
+    }
+
+    /// The step's weight and reps. A drop says what it came off; „ugyanannyi" is prefilled with the reps he did.
+    private func legPads(_ run: TechniqueRun) -> some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 10) {
+                NKStepper(label: "Súly · kg", value: kgText, planned: !touched, hue: hue,
+                          onSet: { typed in if let v = Self.decimal(typed) { kg = max(0, v); touched = true } },
+                          onDown: { kg = max(0, kg - 2.5); touched = true },
+                          onUp: { kg += 2.5; touched = true })
+                NKStepper(label: "Ismétlés", value: "\(reps)", planned: !touched, hue: hue,
+                          onSet: { typed in if let v = Int(typed.filter(\.isNumber)), v >= 0 { reps = v; touched = true } },
+                          onDown: { reps = max(0, reps - 1); touched = true },
+                          onUp: { reps += 1; touched = true })
+            }
+            if run.next?.kind == .drop, let main = run.main.kg {
+                Text("\(run.next?.dropPercent ?? 30)%-kal kevesebb, mint \(nkKg(main))")
+                    .nkFont(12, .medium).foregroundStyle(hue.glow)
+            } else if run.next?.kind == .mini, let min = run.next?.minReps {
+                Text("Ha \(min)-nál kevesebb jön ki, ott a vége.").nkFont(12).foregroundStyle(.white.opacity(0.55))
+            }
+        }
+    }
+
+    private func legLabel(_ run: TechniqueRun) -> String {
+        switch run.next?.kind {
+        case .mini?: return "Megvan a mini szett"
+        default: return "Megvan a drop"
+        }
+    }
+
+    /// The half reps — the challenge's own moment after the last full set.
+    @ViewBuilder private var partialsMoment: some View {
+        if let e = session.current {
+            PartialsCounter(count: $partials, best: e.liveChallenge ? e.challengeBest : nil, challenge: e.liveChallenge)
+            primary(partials == 0 ? "Most nem megy · kihagyom" : "Megvan: \(partials) félismétlés") {
+                let before = sentIds
+                let step = partials == 0 ? session.endTechnique() : session.logLeg(kg: nil, reps: partials)
+                partials = 0
+                sendNew(since: before)
+                if step == .finish { onFinish() }
+            }
+        }
+    }
+
+    private func secondary(_ label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label).nkFont(15, .medium).foregroundStyle(.white.opacity(0.8))
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background(Capsule().fill(.white.opacity(0.1)))
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - The three questions
 
     @ViewBuilder private var debrief: some View {
@@ -437,11 +595,18 @@ struct WorkoutPlayer: View {
                     }
                 }
                 Text("Hogy ment?").nkFont(28, design: .serif).foregroundStyle(.white)
+                if let line = partialsLine(e) {
+                    HStack(spacing: 6) {
+                        PlanMark(.flag, color: line.beaten ? NK.gold : planWarn, size: 13)
+                        Text(line.text).nkFont(13, .medium).foregroundStyle(line.beaten ? NK.gold : .white.opacity(0.75))
+                    }
+                    .padding(.top, 2)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             if case .rest = session.step {} else if nextUp != nil {
-                NKRestBar(remaining: remaining, total: WorkoutSession.restSeconds, hue: hue)
+                NKRestBar(remaining: remaining, total: session.restTotal ?? WorkoutSession.restSeconds, hue: hue)
             }
             setList(e)
 
@@ -469,6 +634,16 @@ struct WorkoutPlayer: View {
                 if step == .finish { onFinish() }
             }
         }
+    }
+
+    /// „Új csúcs: 9 félismétlés" — a beaten half-rep best is a record, so it is gold; otherwise the plain count.
+    private func partialsLine(_ e: SessionExercise) -> (text: String, beaten: Bool)? {
+        guard let today = e.partialsToday else { return nil }
+        if e.isChallenge, let best = e.challengeBest, today > best {
+            return ("Új csúcs: \(today) félismétlés · eddig \(best)", true)
+        }
+        if e.isChallenge, e.challengeBest == nil, today > 0 { return ("Az első csúcsod: \(today) félismétlés", true) }
+        return ("\(today) félismétlés", false)
     }
 
     private func records(_ e: SessionExercise) -> Int { e.logged.filter { $0.verdict == .record }.count }
@@ -512,6 +687,13 @@ struct WorkoutPlayer: View {
 
     private func loadCurrent() {
         guard let e = session.current else { return }
+        if let run = session.technique, run.exerciseId == e.id, let leg = run.next {
+            let d = WorkoutSession.legDefaults(leg, main: run.main, plannedKg: techniquePlanOfRun(e)?.targetKg)
+            kg = d.kg ?? run.main.kg ?? 0
+            reps = d.reps
+            touched = false
+            return
+        }
         let plan = e.plan(at: e.logged.count)
         kg = plan?.targetKg ?? e.bestKg ?? 0
         reps = plan?.targetReps ?? 8
@@ -521,11 +703,43 @@ struct WorkoutPlayer: View {
     }
 
     private func logSet() {
-        guard let id = session.currentExerciseId else { return }
+        guard session.currentExerciseId != nil else { return }
+        let before = sentIds
         let step = session.log(kg: kg > 0 ? kg : nil, reps: reps, rir: rir)
-        if let set = session.exercises[id]?.logged.last { onLogged(id, set) }
+        // A technique set's main part is not a write yet — the set goes out with its steps, as one.
+        sendNew(since: before)
         touched = false
         if step == .finish { onFinish() }
+    }
+
+    private func logLeg() {
+        let before = sentIds
+        let step = session.logLeg(kg: kg > 0 ? kg : nil, reps: reps)
+        sendNew(since: before)
+        touched = false
+        if step == .finish { onFinish() }
+    }
+
+    private func endTechnique() {
+        let before = sentIds
+        let step = session.endTechnique()
+        sendNew(since: before)
+        if step == .finish { onFinish() }
+    }
+
+    /// A technique set that was the exercise's last one ends the exercise: its three questions come before
+    /// whatever he asked for.
+    static func questionsFirst(_ step: WorkoutStep) -> Bool { if case .debrief = step { true } else { false } }
+    static let questionsFirstLine = "A sorozat mentve — előbb a három kérdés"
+
+    /// Every logged set's id — the player sends whatever is new after a tap, whichever way it was finished (a
+    /// step, „elég volt", or a skip or switch that closes a technique set half done).
+    private var sentIds: Set<UUID> { Set(session.loggedSets.map(\.id)) }
+
+    private func sendNew(since before: Set<UUID>) {
+        for e in session.all {
+            for set in e.logged where !before.contains(set.id) { onLogged(e.id, set) }
+        }
     }
 
     // MARK: - Sheets
@@ -634,17 +848,30 @@ struct WorkoutPlayer: View {
                 }
                 menuRow("shoe-cream", "Foglalt a gép — mást csinálok most") { sheet = .pick }
                 menuRow("clock-ink", "Később csinálom meg") {
-                    session.postpone(id); sheet = nil; say("A gyakorlat a sor végére került")
+                    let before = sentIds
+                    let step = session.postpone(id); sendNew(since: before); sheet = nil
+                    say(Self.questionsFirst(step) ? Self.questionsFirstLine : "A gyakorlat a sor végére került")
                 }
                 menuRow("moon-sky", "Kihagyom ezt a gyakorlatot") {
-                    let step = session.skip(id); sheet = nil
+                    let before = sentIds
+                    let step = session.skip(id); sendNew(since: before); sheet = nil
+                    if Self.questionsFirst(step) {
+                        // The technique set was the last one: the exercise is done, not skipped.
+                        say(Self.questionsFirstLine)
+                        return
+                    }
                     onSkipped(id)
                     say("Kihagyva — az összegzés nem büntet érte")
                     if step == .finish { onFinish() }
                 }
                 Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5).padding(.vertical, 4)
                 menuRow("star-sun", left > 0 ? "Befejezem az edzést · \(left) szett hátra"
-                                             : "Lezárom az edzést") { sheet = nil; onFinish() }
+                                             : "Lezárom az edzést") {
+                    // A technique set half done is still a set he did.
+                    let before = sentIds
+                    _ = session.endTechnique(); sendNew(since: before)
+                    sheet = nil; onFinish()
+                }
             }
         }
     }
@@ -662,9 +889,11 @@ struct WorkoutPlayer: View {
                 VStack(spacing: 7) {
                     ForEach(others) { e in
                         Button {
-                            session.switchTo(e.id)
+                            let before = sentIds
+                            let step = session.switchTo(e.id)
+                            sendNew(since: before)
                             sheet = nil
-                            say("\(e.name) következik")
+                            say(Self.questionsFirst(step) ? Self.questionsFirstLine : "\(e.name) következik")
                         } label: {
                             HStack(spacing: 11) {
                                 NKRemoteThumb(BoopConfig.mediaURL(photo(for: e)), size: 42)
@@ -726,6 +955,12 @@ struct WorkoutPlayer: View {
                         Button {
                             swapping = true
                             swapProblem = nil
+                            // A technique set in progress is a set he did: it goes out on the old row first.
+                            if session.technique?.exerciseId == id {
+                                let before = sentIds
+                                _ = session.endTechnique()
+                                sendNew(since: before)
+                            }
                             Task {
                                 let problem = await onSwap(id, c, false)
                                 swapping = false

@@ -15,12 +15,21 @@ struct BlockBuilderPage: View {
     @State private var muscle: String?
     @State private var day = 0
     @State private var confirmLeave = false
+    /// The technique picker, presented at page level (boop-ios.md §9).
+    @State private var picking: TechniquePick?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(model: BlockBuilderModel, initialMode: Mode = .izmok, onClose: @escaping () -> Void) {
         _model = State(initialValue: model)
         _mode = State(initialValue: initialMode)
         self.onClose = onClose
+        #if DEBUG
+        // Simulator review: `-previewBlokkPicker YES` opens the picker on the first day's second exercise.
+        // A number picks the exercise (`-previewBlokkPicker 0`).
+        if let v = UserDefaults.standard.string(forKey: "previewBlokkPicker") {
+            _picking = State(initialValue: TechniquePick(day: 0, exercise: Int(v) ?? 1))
+        }
+        #endif
     }
 
     var body: some View {
@@ -53,7 +62,7 @@ struct BlockBuilderPage: View {
                     Group {
                         switch mode {
                         case .izmok: BuilderMusclesView(model: model, selected: $muscle)
-                        case .napok: BuilderDaysView(model: model, day: $day)
+                        case .napok: BuilderDaysView(model: model, day: $day) { picking = $0 }
                         case .blokk: BuilderBlockView(model: model)
                         }
                     }
@@ -66,6 +75,14 @@ struct BlockBuilderPage: View {
         .overlay(alignment: .top) { saveBanner }
         .sensoryFeedback(.selection, trigger: mode)
         .sensoryFeedback(.success, trigger: model.saveState == .saved)
+        .sheet(item: $picking) { pick in
+            if let ex = model.draft?.days[safe: pick.day]?.exercises[safe: pick.exercise] {
+                TechniquePicker(exercise: ex,
+                                choose: { model.draft?.setTechnique(day: pick.day, exercise: pick.exercise, $0) },
+                                challenge: { model.draft?.setChallenge(day: pick.day, exercise: pick.exercise, $0) },
+                                onClose: { picking = nil })
+            }
+        }
         .confirmationDialog("Elveted a változtatásokat?", isPresented: $confirmLeave, titleVisibility: .visible) {
             Button("Elvetem", role: .destructive, action: onClose)
             Button("Maradok", role: .cancel) {}
@@ -443,6 +460,7 @@ private struct BuilderTierSwitch: View {
 private struct BuilderDaysView: View {
     let model: BlockBuilderModel
     @Binding var day: Int
+    let pick: (TechniquePick) -> Void
 
     var body: some View {
         let days = model.draft?.days ?? []
@@ -471,7 +489,7 @@ private struct BuilderDaysView: View {
 
             TabView(selection: $day) {
                 ForEach(Array(days.enumerated()), id: \.element.id) { index, _ in
-                    BuilderDayCard(model: model, index: index).tag(index)
+                    BuilderDayCard(model: model, index: index, pick: pick).tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -483,6 +501,7 @@ private struct BuilderDaysView: View {
 private struct BuilderDayCard: View {
     let model: BlockBuilderModel
     let index: Int
+    let pick: (TechniquePick) -> Void
 
     var body: some View {
         if let draft = model.draft, draft.days.indices.contains(index) {
@@ -554,18 +573,9 @@ private struct BuilderDayCard: View {
                     .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
                 Text(subtitle(draft, exercise)).nkFont(12).foregroundStyle(capped ? planWarn : .white.opacity(0.5))
                 if exercise.judged, draft.techniquesEnabled {
-                    NKFlowRow(spacing: 6, rowSpacing: 6) {
-                        BuilderTechniqueChip(exercise: exercise) { model.draft?.cycleTechnique(day: index, exercise: e) }
-                        if exercise.canTakeChallenge {
-                            Button { withAnimation(.snappy) { model.draft?.toggleChallenge(day: index, exercise: e) } } label: {
-                                PlanPill(exercise.challenge ? "KIHÍVÁS" : "kihívás", mono: exercise.challenge,
-                                         color: exercise.challenge ? planWarn : .white.opacity(0.4), mark: .flag)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(exercise.challenge ? "A nap kihívása, koppints a levételhez" : "Legyen ez a nap kihívása")
-                        }
-                    }
-                    .padding(.top, 2)
+                    // One pill, whatever is chosen: the row keeps its height when he picks (owner, 2026-11-19).
+                    BuilderTechniqueChip(exercise: exercise) { pick(TechniquePick(day: index, exercise: e)) }
+                        .padding(.top, 2)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -589,22 +599,40 @@ private struct BuilderDayCard: View {
 /// The technique of one exercise as a pill he taps to change — or the reason there is none to pick.
 private struct BuilderTechniqueChip: View {
     let exercise: DraftExercise
-    let cycle: () -> Void
+    /// Opens the picker.
+    let open: () -> Void
 
     var body: some View {
         if !exercise.stable {
             PlanPill("szabadsúly · nincs technika", color: .white.opacity(0.4), mark: .shield)
         } else {
-            Button { withAnimation(.snappy) { cycle() } } label: {
-                PlanPill(exercise.challenge ? "kihívás a végén" : (exercise.technique == .none ? "+ technika" : exercise.technique.name),
-                         color: exercise.technique == .none ? .white.opacity(0.55) : planHue.glow,
-                         mark: Self.mark(exercise.technique))
+            Button(action: open) {
+                HStack(spacing: 5) {
+                    PlanMark(exercise.challenge ? .flag : Self.mark(exercise.technique), color: color, size: 13)
+                    Text(label).nkFont(12, .medium).foregroundStyle(color).lineLimit(1).truncationMode(.tail)
+                    if exercise.pickedByBoop {
+                        Text("Boop").nkFont(9, .semibold, design: .monospaced).tracking(0.8)
+                            .foregroundStyle(NK.ground)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Capsule().fill(planHue.glow))
+                    }
+                }
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .background(Capsule().fill(.white.opacity(0.09)))
             }
             .buttonStyle(.plain)
-            .disabled(exercise.challenge)
-            .sensoryFeedback(.selection, trigger: exercise.technique)
-            .accessibilityLabel("Technika: \(exercise.technique.name). Koppints a váltáshoz.")
+            .accessibilityLabel("\(label)\(exercise.pickedByBoop ? ", Boop javaslata" : ""). Koppints a választáshoz.")
         }
+    }
+
+    private var label: String {
+        if exercise.challenge { return "Kihívás a végén" }
+        return exercise.technique == .none ? "+ technika vagy kihívás" : exercise.technique.name
+    }
+
+    private var color: Color {
+        if exercise.challenge { return planWarn }
+        return exercise.technique == .none ? .white.opacity(0.55) : planHue.glow
     }
 
     static func mark(_ technique: SetTechnique) -> PlanMark.Kind {
@@ -799,4 +827,8 @@ private struct BuilderBlockView: View {
         case .allout: .flame
         }
     }
+}
+
+fileprivate extension Array {
+    subscript(safe index: Int) -> Element? { indices.contains(index) ? self[index] : nil }
 }

@@ -132,12 +132,13 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
     // MARK: fixtures
 
     private static func ex(_ id: String, _ name: String, _ muscle: String, _ sets: Int, type: String = "compound",
-                           cat: String? = nil, counts: Bool = true, technique: String? = nil) -> [String: Any] {
+                           cat: String? = nil, counts: Bool = true, technique: String? = nil,
+                           source: String = "owner") -> [String: Any] {
         var e: [String: Any] = ["id": id, "name": name, "muscle": muscle, "warmupSets": 1, "workingSets": sets,
                                 "repMin": type == "isolation" ? 10 : 6, "repMax": type == "isolation" ? 15 : 10,
                                 "targetRIR": 2, "type": type, "countsTowardVolume": counts, "challenge": false]
         if let cat { e["catalogId"] = cat }
-        if let technique { e["technique"] = technique; e["techniqueSource"] = "owner" }
+        if let technique { e["technique"] = technique; e["techniqueSource"] = source }
         return e
     }
 
@@ -150,7 +151,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
          "days": [
             ["id": "d-h", "day": "Hét", "type": "Hát és bicepsz", "muscle": "back", "exercises": [
                 ex("h1", "Chest Supported Row", "back", 4, cat: "c-stable"),
-                ex("h2", "Lat Pulldown · Neutral", "back-wide", 2, cat: "c-long", technique: "rest_drop"),
+                ex("h2", "Lat Pulldown · Neutral", "back-wide", 2, cat: "c-long", technique: "rest_drop", source: "planner"),
                 ex("h3", "Preacher Curl", "biceps", 3, type: "isolation", cat: "c-long"),
                 ex("h4", "Hammer Curl", "biceps", 3, type: "isolation"),
                 ex("h5", "Cable Lateral Raise", "shoulder", 2, type: "isolation", cat: "c-stable"),

@@ -161,4 +161,40 @@ struct BlockDraftTests {
         #expect(coarseMuscle("hamstring") == "ham")
         #expect(coarseMuscle("abs") == "core")
     }
+
+    @Test func pickerSetsOnlyOfferedTechniquesAndClearsTheChallenge() {
+        var d = PlanFixtures.draft
+        d.setTechnique(day: 0, exercise: 1, .myo)
+        #expect(d.days[0].exercises[1].technique == .none, "techniques off")
+        d.techniquesEnabled = true
+        d.toggleChallenge(day: 0, exercise: 1)
+        d.setTechnique(day: 0, exercise: 1, .myo)
+        #expect(d.days[0].exercises[1].technique == .myo && !d.days[0].exercises[1].challenge)
+        d.setTechnique(day: 0, exercise: 0, .partials)
+        #expect(d.days[0].exercises[0].technique == .none, "not lengthened: half reps not offered")
+        #expect(d.days[0].exercises[0].unavailableReason(.partials) != nil)
+        #expect(d.days[1].exercises[0].unavailableReason(.drop) == "Szabadsúlyos gyakorlaton nincs technika.")
+        #expect(d.days[0].exercises[1].unavailableReason(.partials) == nil)
+        for t in SetTechnique.allCases { #expect(!t.about.isEmpty) }
+    }
+
+    @Test func challengeFromThePickerAndBoopsOwnPick() throws {
+        var d = PlanFixtures.draft
+        d.techniquesEnabled = true
+        d.setChallenge(day: 0, exercise: 1, true)
+        #expect(d.days[0].exercises[1].challenge && d.days[0].exercises[1].technique == .none)
+        d.setChallenge(day: 0, exercise: 0, true)
+        #expect(!d.days[0].exercises[0].challenge, "not lengthened")
+        #expect(d.days[0].exercises[0].challengeUnavailableReason != nil)
+        d.setChallenge(day: 0, exercise: 1, false)
+        #expect(!d.days[0].exercises[1].challenge)
+        let json = PlanFixtures.blocksJSON().replacingOccurrences(of: #""technique":"rest_drop","techniqueSource":"owner""#,
+                                                                   with: #""technique":"rest_drop","techniqueSource":"planner""#)
+        let block = try JSONDecoder().decode([WireBlock].self, from: Data(json.utf8))[0]
+        var boop = BlockDraft(block: block, catalog: PlanFixtures.catalog)
+        #expect(boop.days[1].exercises[1].pickedByBoop)
+        boop.techniquesEnabled = true
+        boop.setTechnique(day: 1, exercise: 1, .drop)
+        #expect(!boop.days[1].exercises[1].pickedByBoop, "his change makes it his")
+    }
 }

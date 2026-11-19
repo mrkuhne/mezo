@@ -874,7 +874,8 @@
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Edzés közben a gyakorlatnál és a sorozatnál látod a technikát és a kihívást, a naplóban megjelennek a technikás sorozatok, és a blokkban beállíthatod őket."
+    "mit_kapsz": "Edzés közben a gyakorlatnál és a sorozatnál látod a technikát és a kihívást, a naplóban megjelennek a technikás sorozatok, és a blokkban beállíthatod őket.",
+    "munkamenet": "player-technique"
   },
   "mezo-r36n9.86": {
     "cim": "Egy ritkán elbukó automata ellenőrzés a szerveren",
@@ -933,5 +934,114 @@
       "Edzés"
     ],
     "mit_kapsz": "Megbízhatóbb ellenőrzés minden kiadásnál: egy, a csapat-csevegést vizsgáló teszt néha ok nélkül elbukik, ezt kell kijavítani."
+  },
+  "mezo-r36n9.95": {
+    "cim": "Étel: egy dátumhoz kötött teszt javítása",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Az étel-rögzítés egyik automatikus ellenőrzése újra megbízhatóan fut; neked nem változik semmi."
+  },
+  "mezo-r36n9.96": {
+    "cim": "Edzés: a javított sorozat a szerverre is jusson fel",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha edzés közben kijavítasz egy már rögzített sorozatot, a javítás a szerverre is felkerül, nem csak a telefonon változik."
+  },
+  "mezo-r36n9.97": {
+    "cim": "A webes app leállítása és a csak-webes szerverrészek kivezetése",
+    "tipus": "Funkció",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Csak az iPhone app és a szerver marad: a webes app leáll, a csak ott használt részek (pontok, küldetések, adminfelület, böngészős push, csak-webes háttérmunkák) kikerülnek, az adataid megmaradnak. Havi AI-költség kb. a felére csökken."
+  },
+  "mezo-r36n9.97.1": {
+    "cim": "A gyakorlatok képei a szerverről jönnek",
+    "tipus": "Feladat",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Az edzésnél látott gyakorlatképek ugyanott maradnak a telefonon, csak már a szerver adja őket, nem a webes app."
+  },
+  "mezo-r36n9.97.2": {
+    "cim": "Eltűnnek a webes appra mutató gombok az iPhone-ról",
+    "tipus": "Feladat",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A Terv, a Nap és a Fiók oldalon nem kínál többé a Boop webes appot."
+  },
+  "mezo-r36n9.97.3": {
+    "cim": "A webes app leáll",
+    "tipus": "Feladat",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A webes app címe nem tölt be semmit; az iPhone app változatlanul működik, és a szerverváltoztatásoknál nem kell többé a webet is igazítani."
+  },
+  "mezo-r36n9.97.4": {
+    "cim": "Kikerül a bemutató, a webes képernyő-mérés és az adminfelület",
+    "tipus": "Feladat",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Kisebb, tisztább szerver; semmi nem változik, amit az iPhone-on látsz."
+  },
+  "mezo-r36n9.97.5": {
+    "cim": "Kikerülnek a pontok, szintek, érmek és küldetések",
+    "tipus": "Feladat",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A pontgyűjtés világa megszűnik a szerveren; az edzés befejezése ugyanúgy működik, az adatok megmaradnak."
+  },
+  "mezo-r36n9.97.6": {
+    "cim": "Ellenőrzési pont: szokások, életcélok, rituálék, igény-körök, gyógyszer-ciklus",
+    "tipus": "Feladat",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Előbb megmutatom, hol tart az iPhone, és egyenként eldöntöd, melyik menjen; amit megtartasz, marad. A napzárás és az emlékezet változatlanul működik."
+  },
+  "mezo-r36n9.97.7": {
+    "cim": "Kikerül a böngészős push",
+    "tipus": "Feladat",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A webes értesítésküldés megszűnik; az iPhone értesítéseihez szükséges eszköz-regisztráció marad."
+  },
+  "mezo-r36n9.97.8": {
+    "cim": "Leállnak a csak-webes háttérmunkák, kikerül a webes csengő",
+    "tipus": "Feladat",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Nem fut többé a napi hírfolyam, a kihívások és a többi, csak a weben látott háttérmunka; a havi AI-költség kb. a felére csökken."
+  },
+  "mezo-r36n9.94": {
+    "cim": "Edzés: technika- és kihívás-választó a blokképítőben",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A Napok fülön a technikát és a nap kihívását egy felugró listából választod, mindegyikhez rövid leírással; a sor nem ugrál, és látszik, mit tett oda Boop.",
+    "munkamenet": "boop-blokk-epito"
   }
 }

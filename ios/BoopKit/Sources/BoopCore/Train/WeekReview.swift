@@ -56,6 +56,8 @@ public struct ReviewLine: Identifiable, Equatable, Sendable {
     public let reasonCodes: [String]
     /// What the server already holds (a decided line is final there).
     public let serverDecision: LineDecision?
+    /// Boop's own sentence on why (AI lines); nil otherwise.
+    public var note: String? = nil
 }
 
 public struct ReviewMuscle: Identifiable, Equatable, Sendable {
@@ -126,7 +128,8 @@ public struct WeekReview: Equatable, Sendable {
         return ReviewLine(id: l.id, exerciseId: l.exerciseId, exerciseName: l.exerciseName, dayIndex: l.dayIndex,
                           dayName: DraftDay.longName(l.dayName ?? ""), muscle: coarseMuscle(l.muscleGroup), kind: kind,
                           reasons: l.reasons.compactMap(reasonText), reasonCodes: l.reasons,
-                          serverDecision: l.decision.flatMap(LineDecision.init(rawValue:)))
+                          serverDecision: l.decision.flatMap(LineDecision.init(rawValue:)),
+                          note: l.note.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 })
     }
 
     // MARK: grouping
