@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.WeekProposalReason;
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
 import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalGroupJson;
 import io.mrkuhne.mezo.feature.train.entity.json.WeekProposalLineJson;
+import io.mrkuhne.mezo.feature.train.service.Technique;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -74,6 +75,13 @@ public class WeekProposalMapper {
             .from(weight ? l.fromKg() : number(l.from()))
             .to(weight ? l.toKg() : number(l.to()))
             .reasons(reasons(l.reasons()))
+            .fromTechnique(technique(l.fromTechnique()))
+            .toTechnique(technique(l.toTechnique()))
+            .challenge(l.challenge())
+            .fromRepMin(l.fromRepMin())
+            .fromRepMax(l.fromRepMax())
+            .toRepMin(l.toRepMin())
+            .toRepMax(l.toRepMax())
             .decision(l.decision() == null ? null : WeekProposalLine.DecisionEnum.fromValue(l.decision()));
     }
 
@@ -117,6 +125,10 @@ public class WeekProposalMapper {
     private static List<WeekProposalReason> reasons(List<String> codes) {
         return codes == null ? List.of()
             : codes.stream().map(REASONS::get).filter(Objects::nonNull).distinct().toList();
+    }
+
+    private static io.mrkuhne.mezo.api.dto.Technique technique(String wire) {
+        return wire == null ? null : Technique.fromWire(wire).toApi();
     }
 
     private static BigDecimal number(Integer value) {

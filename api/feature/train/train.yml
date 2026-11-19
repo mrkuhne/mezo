@@ -2485,6 +2485,15 @@ components:
       type: object
       required: [weeks, phaseCurve, days]
       properties:
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Draft's block training style; with techniquesEnabled it turns the technique planner projection on.
+        techniquesEnabled:
+          type: boolean
+          nullable: true
+          description: Draft's technique flag; absent/false = no planner output.
         weeks:
           type: integer
           minimum: 1
@@ -2635,6 +2644,41 @@ components:
           type: object
           additionalProperties:
             type: integer
+        techniques:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannedTechnique'
+          description: Technique picks of this week (stored picks for the current week, planner projection for later weeks); absent when the block does not opt in.
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannedChallenge'
+          description: The day challenges (partial-rep add-on) of this week; absent when the block does not opt in.
+    PlannedTechnique:
+      type: object
+      required: [dayIndex, exerciseIndex, technique, source]
+      properties:
+        dayIndex: { type: integer }
+        exerciseIndex: { type: integer }
+        technique:
+          $ref: '#/components/schemas/Technique'
+        source:
+          $ref: '#/components/schemas/TechniqueSource'
+    PlannedChallenge:
+      type: object
+      required: [dayIndex, exerciseIndex]
+      properties:
+        dayIndex: { type: integer }
+        exerciseIndex: { type: integer }
+    TechniqueWarning:
+      type: object
+      required: [code, dayIndex]
+      properties:
+        code:
+          type: string
+          enum: [owner_over_allowance, no_challenge_candidate]
+        dayIndex: { type: integer }
+        exerciseIndex: { type: integer, nullable: true }
     MesoPlanEvaluation:
       type: object
       required: [deficit, sportDays, suggestedSportGroups, muscles, days, path]
@@ -2662,6 +2706,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VolumePathWeek'
+        techniqueWarnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/TechniqueWarning'
+          description: Technique planner notes (owner picks over the allowance, a day without a challenge candidate); absent when the block does not opt in.
     MesoPlanGenerateResponse:
       type: object
       required: [template, rationale, llmUsed, draftId]

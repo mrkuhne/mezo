@@ -256,7 +256,7 @@ public class WeekProposalService {
             TemplatePlan.Row row = rowById.get(id);
             lines.add(new WeekProposalLineJson(UUID.randomUUID().toString(), id, row.exercise().getName(),
                 row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS, from, to, lineReasons.get(id), null,
-                row.dayName(), null, null));
+                row.dayName(), null, null, null, null, null, null, null, null, null));
         });
         // Weight / rep lines after the set lines: a preview of the week's load progression, never written.
         lines.addAll(loadLinePreview.lines(createdBy, meso, calWeek, plan, deloadPhase));

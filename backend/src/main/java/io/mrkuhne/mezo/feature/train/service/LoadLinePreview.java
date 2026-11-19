@@ -165,7 +165,7 @@ public class LoadLinePreview {
                                               List<String> reasons, BigDecimal fromKg, BigDecimal toKg) {
         ExerciseEntity ex = row.exercise();
         return new WeekProposalLineJson(UUID.randomUUID().toString(), ex.getId(), ex.getName(), row.dayIndex(),
-            row.group(), kind, from, to, List.copyOf(reasons), null, row.dayName(), fromKg, toKg);
+            row.group(), kind, from, to, List.copyOf(reasons), null, row.dayName(), fromKg, toKg, null, null, null, null, null, null, null);
     }
 
     /** The reference's top working set, exactly as {@code SetRecommendationService} picks it (max weight, then reps). */

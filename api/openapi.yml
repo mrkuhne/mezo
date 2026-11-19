@@ -16307,6 +16307,17 @@ components:
         - phaseCurve
         - days
       properties:
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: >-
+            Draft's block training style; with techniquesEnabled it turns the
+            technique planner projection on.
+        techniquesEnabled:
+          type: boolean
+          nullable: true
+          description: Draft's technique flag; absent/false = no planner output.
         weeks:
           type: integer
           minimum: 1
@@ -16507,6 +16518,63 @@ components:
           type: object
           additionalProperties:
             type: integer
+        techniques:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannedTechnique'
+          description: >-
+            Technique picks of this week (stored picks for the current week,
+            planner projection for later weeks); absent when the block does not
+            opt in.
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannedChallenge'
+          description: >-
+            The day challenges (partial-rep add-on) of this week; absent when
+            the block does not opt in.
+    PlannedTechnique:
+      type: object
+      required:
+        - dayIndex
+        - exerciseIndex
+        - technique
+        - source
+      properties:
+        dayIndex:
+          type: integer
+        exerciseIndex:
+          type: integer
+        technique:
+          $ref: '#/components/schemas/Technique'
+        source:
+          $ref: '#/components/schemas/TechniqueSource'
+    PlannedChallenge:
+      type: object
+      required:
+        - dayIndex
+        - exerciseIndex
+      properties:
+        dayIndex:
+          type: integer
+        exerciseIndex:
+          type: integer
+    TechniqueWarning:
+      type: object
+      required:
+        - code
+        - dayIndex
+      properties:
+        code:
+          type: string
+          enum:
+            - owner_over_allowance
+            - no_challenge_candidate
+        dayIndex:
+          type: integer
+        exerciseIndex:
+          type: integer
+          nullable: true
     MesoPlanEvaluation:
       type: object
       required:
@@ -16540,6 +16608,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VolumePathWeek'
+        techniqueWarnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/TechniqueWarning'
+          description: >-
+            Technique planner notes (owner picks over the allowance, a day
+            without a challenge candidate); absent when the block does not opt
+            in.
     MesoPlanGenerateResponse:
       type: object
       required:
@@ -19577,6 +19653,12 @@ components:
         - deload_restore
         - stalled
         - tier_change
+        - technique_week
+        - emphasis
+        - deficit_allowance
+        - sport_day
+        - challenge
+        - ai_suggested
     WeekProposalLine:
       type: object
       required:
@@ -19612,9 +19694,14 @@ components:
             - sets
             - weight
             - reps
+            - technique
+            - rep_range
           description: >-
-            Weight and reps lines are a preview (read-time prescription); only
-            sets lines write on accept
+            Weight and reps lines are a preview (read-time prescription); sets,
+            technique and rep_range lines write on accept. technique lines carry
+            from/to = working sets before/after, fromTechnique/toTechnique the
+            change (challenge true = a partials add-on that keeps the sets).
+            rep_range lines carry from/to = rep max, plus the four rep bounds.
         from:
           type: number
           description: Value before the change (sets; kg or reps)
@@ -19625,6 +19712,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WeekProposalReason'
+        fromTechnique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        toTechnique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        challenge:
+          type: boolean
+          nullable: true
+          description: 'True on a challenge move (technique partials, sets unchanged)'
+        fromRepMin:
+          type: integer
+          nullable: true
+        fromRepMax:
+          type: integer
+          nullable: true
+        toRepMin:
+          type: integer
+          nullable: true
+        toRepMax:
+          type: integer
+          nullable: true
         decision:
           type: string
           nullable: true

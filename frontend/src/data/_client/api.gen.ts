@@ -6623,6 +6623,10 @@ export interface components {
             goalText?: string | null;
         };
         MesoPlanEvaluateRequest: {
+            /** @description Draft's block training style; with techniquesEnabled it turns the technique planner projection on. */
+            trainingStyle?: components["schemas"]["TrainingStyle"] | null;
+            /** @description Draft's technique flag; absent/false = no planner output. */
+            techniquesEnabled?: boolean | null;
             weeks: number;
             phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
             days: components["schemas"]["MesoDayInput"][];
@@ -6692,6 +6696,26 @@ export interface components {
             muscles: {
                 [key: string]: number;
             };
+            /** @description Technique picks of this week (stored picks for the current week, planner projection for later weeks); absent when the block does not opt in. */
+            techniques?: components["schemas"]["PlannedTechnique"][];
+            /** @description The day challenges (partial-rep add-on) of this week; absent when the block does not opt in. */
+            challenges?: components["schemas"]["PlannedChallenge"][];
+        };
+        PlannedTechnique: {
+            dayIndex: number;
+            exerciseIndex: number;
+            technique: components["schemas"]["Technique"];
+            source: components["schemas"]["TechniqueSource"];
+        };
+        PlannedChallenge: {
+            dayIndex: number;
+            exerciseIndex: number;
+        };
+        TechniqueWarning: {
+            /** @enum {string} */
+            code: "owner_over_allowance" | "no_challenge_candidate";
+            dayIndex: number;
+            exerciseIndex?: number | null;
         };
         MesoPlanEvaluation: {
             deficit: boolean;
@@ -6701,6 +6725,8 @@ export interface components {
             muscles: components["schemas"]["MuscleEvaluation"][];
             days: components["schemas"]["DayEvaluation"][];
             path: components["schemas"]["VolumePathWeek"][];
+            /** @description Technique planner notes (owner picks over the allowance, a day without a challenge candidate); absent when the block does not opt in. */
+            techniqueWarnings?: components["schemas"]["TechniqueWarning"][];
         };
         MesoPlanGenerateResponse: {
             /**
@@ -7874,7 +7900,7 @@ export interface components {
          * @description Why a line (or a muscle that holds) is what it is; Hungarian wording is the client's
          * @enum {string}
          */
-        WeekProposalReason: "all_sets_done" | "felt_easy" | "deficit_pace" | "room_in_band" | "soreness_cleared" | "top_of_rep_range" | "reserve_left" | "next_plate" | "grind" | "too_much" | "sets_missed" | "tier_maintain" | "deload" | "no_slot" | "above_band" | "joint_pain" | "soreness" | "at_ceiling" | "deload_restore" | "stalled" | "tier_change";
+        WeekProposalReason: "all_sets_done" | "felt_easy" | "deficit_pace" | "room_in_band" | "soreness_cleared" | "top_of_rep_range" | "reserve_left" | "next_plate" | "grind" | "too_much" | "sets_missed" | "tier_maintain" | "deload" | "no_slot" | "above_band" | "joint_pain" | "soreness" | "at_ceiling" | "deload_restore" | "stalled" | "tier_change" | "technique_week" | "emphasis" | "deficit_allowance" | "sport_day" | "challenge" | "ai_suggested";
         WeekProposalLine: {
             /** @description Stable line id within the proposal */
             id: string;
@@ -7886,15 +7912,23 @@ export interface components {
             dayName?: string | null;
             muscleGroup: string;
             /**
-             * @description Weight and reps lines are a preview (read-time prescription); only sets lines write on accept
+             * @description Weight and reps lines are a preview (read-time prescription); sets, technique and rep_range lines write on accept. technique lines carry from/to = working sets before/after, fromTechnique/toTechnique the change (challenge true = a partials add-on that keeps the sets). rep_range lines carry from/to = rep max, plus the four rep bounds.
              * @enum {string}
              */
-            kind: "sets" | "weight" | "reps";
+            kind: "sets" | "weight" | "reps" | "technique" | "rep_range";
             /** @description Value before the change (sets; kg or reps) */
             from: number;
             /** @description Value after the change (sets; kg or reps) */
             to: number;
             reasons: components["schemas"]["WeekProposalReason"][];
+            fromTechnique?: components["schemas"]["Technique"] | null;
+            toTechnique?: components["schemas"]["Technique"] | null;
+            /** @description True on a challenge move (technique partials, sets unchanged) */
+            challenge?: boolean | null;
+            fromRepMin?: number | null;
+            fromRepMax?: number | null;
+            toRepMin?: number | null;
+            toRepMax?: number | null;
             /**
              * @description Absent while undecided
              * @enum {string|null}

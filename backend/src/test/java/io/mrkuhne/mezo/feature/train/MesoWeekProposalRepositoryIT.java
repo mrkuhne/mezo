@@ -58,9 +58,9 @@ class MesoWeekProposalRepositoryIT extends AbstractIntegrationTest {
         MesoWeekProposalEntity p = proposal(user, meso.getId(), 3, "weekly", "pending");
         p.setLines(List.of(
             new WeekProposalLineJson("l1", exerciseId, "Row", 1, "back", "sets", 3, 4,
-                List.of("under-band", "progress"), "accepted", "Hétfő", null, null),
+                List.of("under-band", "progress"), "accepted", "Hétfő", null, null, null, null, null, null, null, null, null),
             new WeekProposalLineJson("l2", exerciseId, "Row", 1, "back", "weight", null, null,
-                List.of("all_sets_done"), null, "Hétfő", new BigDecimal("60"), new BigDecimal("62.5"))));
+                List.of("all_sets_done"), null, "Hétfő", new BigDecimal("60"), new BigDecimal("62.5"), null, null, null, null, null, null, null)));
         p.setGroups(List.of(new WeekProposalGroupJson("back", "emphasize", 12, 20, false, 11, 13,
             List.of("all_sets_done", "room_in_band"))));
         p.setPlanAfter(Map.of(exerciseId.toString(), 4));
@@ -71,9 +71,9 @@ class MesoWeekProposalRepositoryIT extends AbstractIntegrationTest {
         MesoWeekProposalEntity read = repository.findWeekly(user, meso.getId(), 3).orElseThrow();
         assertThat(read.getLines()).containsExactly(
             new WeekProposalLineJson("l1", exerciseId, "Row", 1, "back", "sets", 3, 4,
-                List.of("under-band", "progress"), "accepted", "Hétfő", null, null),
+                List.of("under-band", "progress"), "accepted", "Hétfő", null, null, null, null, null, null, null, null, null),
             new WeekProposalLineJson("l2", exerciseId, "Row", 1, "back", "weight", null, null,
-                List.of("all_sets_done"), null, "Hétfő", new BigDecimal("60"), new BigDecimal("62.5")));
+                List.of("all_sets_done"), null, "Hétfő", new BigDecimal("60"), new BigDecimal("62.5"), null, null, null, null, null, null, null));
         assertThat(read.getGroups()).containsExactly(new WeekProposalGroupJson("back", "emphasize", 12, 20, false,
             11, 13, List.of("all_sets_done", "room_in_band")));
         assertThat(read.getPlanAfter()).containsEntry(exerciseId.toString(), 4);
@@ -95,7 +95,7 @@ class MesoWeekProposalRepositoryIT extends AbstractIntegrationTest {
 
         MesoWeekProposalEntity read = repository.findWeekly(user, meso.getId(), 3).orElseThrow();
         assertThat(read.getLines()).containsExactly(new WeekProposalLineJson("l1", exerciseId, "Row", 1, "back",
-            "sets", 3, 4, List.of("all_sets_done"), "accepted", null, null, null));
+            "sets", 3, 4, List.of("all_sets_done"), "accepted", null, null, null, null, null, null, null, null, null, null));
         assertThat(read.getGroups()).isNull();
     }
 
