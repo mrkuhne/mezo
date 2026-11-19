@@ -3397,6 +3397,38 @@ components:
         lengthenedFriendly:
           type: boolean
           description: Whether the exercise loads the muscle well at long length.
+        gear:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: >-
+            Kit the exercise needs (barbell, dumbbell, kettlebell, cable, machine, smith, bench,
+            pullup-bar, bodyweight, specialty); null on user-authored rows (mezo-r36n9.66).
+        pattern:
+          type: string
+          nullable: true
+          description: Movement pattern (spec 2026-11-17 §6.1); null on user-authored rows.
+        secondaryMuscles:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: Up to three assisting muscles; null on user-authored rows.
+        joints:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: Joints the movement loads (shoulder, elbow, wrist, lower-back, hip, knee, ankle); null on user-authored rows.
+        lengthened:
+          type: boolean
+          nullable: true
+          description: Loads the muscle at a stretch; null on user-authored rows. Distinct from lengthenedFriendly.
+        demand:
+          type: string
+          nullable: true
+          description: Systemic demand low | medium | high; null on user-authored rows.
     CatalogExerciseCreateRequest:
       type: object
       required:

@@ -62,8 +62,8 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
 
     /**
      * One catalog row as authored in content/exercise-catalog.json. The six selection attributes
-     * (gear … demand) are appended last; they are parsed and validated here but not yet
-     * persisted (mezo-r36n9.66 — the columns land in a follow-up change).
+     * (gear … demand) are appended last; they are validated here and persisted
+     * on master rows (mezo-r36n9.66).
      */
     public record CatalogJsonItem(
         String slug, String name, String muscle, String type, BigDecimal stim, BigDecimal fatigue,
@@ -113,6 +113,13 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
             e.setEquipment(item.equipment());
             e.setStability(item.stability());
             e.setLengthenedFriendly(item.lengthenedFriendly());
+            // Selection attributes (mezo-r36n9.66): same content-overwrite rule; user rows are never in the file.
+            e.setGear(item.gear());
+            e.setPattern(item.pattern());
+            e.setSecondaryMuscles(item.secondaryMuscles());
+            e.setJoints(item.joints());
+            e.setLengthened(item.lengthened());
+            e.setDemand(item.demand());
             // Seed a JSON demo only when provided AND the row has none — never clobber a user video.
             if (item.videoUrl() != null && e.getVideoUrl() == null) {
                 e.setVideoUrl(item.videoUrl());

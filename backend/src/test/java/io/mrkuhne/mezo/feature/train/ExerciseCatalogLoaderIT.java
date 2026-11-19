@@ -88,6 +88,12 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         assertThat(master).hasSize(166).allSatisfy(e -> {
             assertThat(e.getEquipment()).isNotBlank();
             assertThat(e.getStability()).isIn("stable", "free");
+            assertThat(e.getGear()).isNotEmpty();
+            assertThat(e.getPattern()).isNotBlank();
+            assertThat(e.getSecondaryMuscles()).isNotNull();
+            assertThat(e.getJoints()).isNotNull();
+            assertThat(e.getLengthened()).isNotNull();
+            assertThat(e.getDemand()).isIn("low", "medium", "high");
         });
         ExerciseCatalogEntity pulldown = repository.findBySlug("lat-pulldown-pronated").orElseThrow();
         assertThat(pulldown.getEquipment()).isEqualTo("cable");
@@ -120,6 +126,9 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         drifted.setStability("stable");
         drifted.setEquipment("machine");
         drifted.setLengthenedFriendly(true);
+        drifted.setGear(List.of("machine"));
+        drifted.setPattern("jump");
+        drifted.setDemand("low");
         repository.saveAndFlush(drifted);
 
         loader.run();
@@ -128,6 +137,9 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         assertThat(healed.getStability()).isEqualTo("free");
         assertThat(healed.getEquipment()).isEqualTo("barbell");
         assertThat(healed.getLengthenedFriendly()).isFalse();
+        assertThat(healed.getGear()).contains("barbell");
+        assertThat(healed.getPattern()).isEqualTo("squat");
+        assertThat(healed.getDemand()).isEqualTo("high");
     }
 
     @Test
