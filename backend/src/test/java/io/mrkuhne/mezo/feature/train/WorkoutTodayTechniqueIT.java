@@ -304,4 +304,70 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
         assertThat(t.getTechniqueSource().getValue()).isEqualTo("owner");
         assertThat(working(t).get(2).getTechnique()).isEqualTo(Technique.DROP);
     }
+
+    // --- technique + challenge on one exercise (mezo-r36n9.98) ---
+
+    @Test
+    void techniqueAndChallengeTogether_techniqueLegsThenChallengePartials() {
+        Fixture f = fixture(2, true, "rest_drop", true, true);
+        TodayExercise t = bench(workoutService.getToday(f.owner(), null));
+
+        assertThat(t.getTechnique()).isEqualTo(Technique.REST_DROP);
+        assertThat(t.getChallenge()).isTrue();
+        List<PrescribedSet> w = working(t);
+        PrescribedSet last = w.get(2);
+        assertThat(last.getTechnique()).isEqualTo(Technique.REST_DROP);
+        assertThat(last.getTargetRIR()).isZero();
+        assertThat(last.getLegs()).extracting(l -> l.getKind())
+            .containsExactly(SetLegKind.DROP, SetLegKind.PARTIALS);
+        assertThat(last.getLegs().get(0).getChallenge()).isNull();
+        var half = last.getLegs().get(1);
+        assertThat(half.getChallenge()).isTrue();
+        assertThat(half.getToFailure()).isTrue();
+        assertThat(half.getRestBeforeSec()).isZero();
+        assertThat(w.get(1).getLegs()).isNullOrEmpty();
+    }
+
+    @Test
+    void challengeBestComparesTheSameSetupOnly() {
+        Fixture f = fixture(2, true, "rest_drop", true, true);
+        BigDecimal w = working(bench(workoutService.getToday(f.owner(), null))).get(2).getTargetWeightKg();
+        WorkoutSessionEntity old = train.createWorkoutInstance(f.owner(), f.day(), LocalDate.now().minusDays(30),
+            "completed");
+        seedPartials(f, old, 0, w.toPlainString(), 14);   // a plain challenge set (no technique before)
+        ExerciseSetEntity combined = train.createLoggedSet(f.owner(), f.bench().getId(), old.getId(), 1,
+            w.toPlainString(), 8, 0);
+        jdbc.update("update exercise_set set technique = 'rest_drop' where id = ?", combined.getId());
+        ExerciseSetLegEntity drop = new ExerciseSetLegEntity();
+        drop.setExerciseSetId(combined.getId());
+        drop.setLegIndex(0);
+        drop.setKind("drop");
+        drop.setReps(8);
+        legs.saveAndFlush(drop);
+        ExerciseSetLegEntity half = new ExerciseSetLegEntity();
+        half.setExerciseSetId(combined.getId());
+        half.setLegIndex(1);
+        half.setKind("partials");
+        half.setReps(6);
+        legs.saveAndFlush(half);
+
+        // rest-drop before the half reps: only the rest-drop session's number counts
+        assertThat(bench(workoutService.getToday(f.owner(), null)).getChallengeBest()).isEqualTo(6);
+
+        // the plain challenge: only the plain session's number counts
+        f.bench().setTechnique(null);
+        train.save(f.bench());
+        assertThat(bench(workoutService.getToday(f.owner(), null)).getChallengeBest()).isEqualTo(14);
+    }
+
+    @Test
+    void sportDayKeepsOwnerTechniqueButDropsTheChallenge() {
+        Fixture f = fixture(2, true, "drop", true, true);
+        sportDay(f, true);
+        TodayExercise t = bench(workoutService.getToday(f.owner(), null));
+        assertThat(t.getTechnique()).isEqualTo(Technique.DROP);
+        assertThat(t.getChallenge()).isFalse();
+        assertThat(t.getChallengeBest()).isNull();
+        assertThat(working(t).get(2).getLegs()).extracting(l -> l.getKind()).containsExactly(SetLegKind.DROP);
+    }
 }

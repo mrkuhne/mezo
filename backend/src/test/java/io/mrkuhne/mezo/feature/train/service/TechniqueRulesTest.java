@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.SetLegKind;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -35,8 +36,44 @@ class TechniqueRulesTest {
     }
 
     @Test
-    void testCheck_challengeWithTechnique_shouldReject() {
-        assertThat(TechniqueRules.check(Technique.MYO, true, LENGTHENED)).contains("TRAIN_TECHNIQUE_ON_CHALLENGE");
+    void testCheck_challengeWithTechnique_shouldPass() {
+        // mezo-r36n9.98: a technique and the day's challenge may share a row
+        assertThat(TechniqueRules.check(Technique.MYO, true, LENGTHENED)).isEmpty();
+        assertThat(TechniqueRules.check(Technique.REST_DROP, true, LENGTHENED)).isEmpty();
+        assertThat(TechniqueRules.check(Technique.DROP, true, LENGTHENED)).isEmpty();
+        assertThat(TechniqueRules.check(Technique.PARTIALS, true, LENGTHENED)).isEmpty();
+    }
+
+    @Test
+    void testCheck_challengeWithTechnique_stillNeedsLengthenedAndStable() {
+        assertThat(TechniqueRules.check(Technique.REST_DROP, true, STABLE)).contains("TRAIN_TECHNIQUE_NOT_LENGTHENED");
+        assertThat(TechniqueRules.check(Technique.MYO, true, CatalogAttributes.Attrs.FREE))
+            .contains("TRAIN_TECHNIQUE_NOT_STABLE");
+    }
+
+    @Test
+    void testLegsFit_techniqueLegsThenOneChallengePartials() {
+        assertThat(TechniqueRules.legsFit(Technique.REST_DROP, List.of(SetLegKind.DROP))).isTrue();
+        assertThat(TechniqueRules.legsFit(Technique.REST_DROP, List.of(SetLegKind.DROP, SetLegKind.PARTIALS))).isTrue();
+        assertThat(TechniqueRules.legsFit(Technique.MYO,
+            List.of(SetLegKind.MINI, SetLegKind.MINI, SetLegKind.PARTIALS))).isTrue();
+        assertThat(TechniqueRules.legsFit(Technique.PARTIALS, List.of(SetLegKind.PARTIALS))).isTrue();
+        // the half reps come last, once; a foreign kind never fits
+        assertThat(TechniqueRules.legsFit(Technique.DROP, List.of(SetLegKind.PARTIALS, SetLegKind.DROP))).isFalse();
+        assertThat(TechniqueRules.legsFit(Technique.DROP,
+            List.of(SetLegKind.DROP, SetLegKind.PARTIALS, SetLegKind.PARTIALS))).isFalse();
+        assertThat(TechniqueRules.legsFit(Technique.DROP, List.of(SetLegKind.MINI))).isFalse();
+        assertThat(TechniqueRules.legsFit(Technique.NONE, List.of(SetLegKind.PARTIALS))).isFalse();
+        assertThat(TechniqueRules.legsFit(Technique.NONE, List.of())).isTrue();
+    }
+
+    @Test
+    void testChallengeSetup() {
+        assertThat(TechniqueRules.challengeSetup(Technique.NONE)).isEqualTo("none");
+        assertThat(TechniqueRules.challengeSetup(null)).isEqualTo("none");
+        assertThat(TechniqueRules.challengeSetup(Technique.PARTIALS)).isEqualTo("none");
+        assertThat(TechniqueRules.challengeSetup(Technique.REST_DROP)).isEqualTo("rest_drop");
+        assertThat(TechniqueRules.challengeSetup(Technique.MYO)).isEqualTo("myo");
     }
 
     @Test
@@ -63,6 +100,11 @@ class TechniqueRulesTest {
         assertThat(TechniqueRules.capExtra(Technique.MYO, false, false, 2)).isZero();
         assertThat(TechniqueRules.capExtra(Technique.DROP, false, false, 2)).isZero();
         assertThat(TechniqueRules.capExtra(Technique.NONE, false, true, 2)).isZero();
+        // mezo-r36n9.98: technique and challenge each add one; partials on the challenge row is the challenge
+        assertThat(TechniqueRules.capExtra(Technique.REST_DROP, true, true, 2)).isEqualTo(2);
+        assertThat(TechniqueRules.capExtra(Technique.MYO, true, true, 3)).isEqualTo(4);
+        assertThat(TechniqueRules.capExtra(Technique.PARTIALS, true, true, 2)).isEqualTo(1);
+        assertThat(TechniqueRules.capExtra(Technique.REST_DROP, true, false, 2)).isZero();
     }
 
     @Test

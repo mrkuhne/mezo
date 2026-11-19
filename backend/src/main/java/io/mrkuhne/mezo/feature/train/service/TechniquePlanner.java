@@ -31,6 +31,10 @@ import java.util.UUID;
  * valid: eligible (rule 1), from the start week, within the day's and the muscle's allowance. An AI challenge is kept
  * while its row is still a challenge candidate. An AI pick that is no longer valid is simply not kept, so the
  * proposal's lines remove (or replace) it; the planner never flips a valid one back to its default.
+ *
+ * <p>The planner itself never puts a technique on the day's challenge row, but an owner / AI row carrying both
+ * (allowed since mezo-r36n9.98) is kept as it is: its challenge is the day's challenge, its technique a pick that
+ * consumes allowance.
  */
 public final class TechniquePlanner {
 
@@ -235,10 +239,12 @@ public final class TechniquePlanner {
         return plannerHeld(row) || aiHeld(row) ? row.workingSets() + 1 : row.workingSets();
     }
 
-    /** What the row weighs against the caps as it stands (a technique or challenge set weighs capWeight). */
+    /**
+     * What the row weighs against the caps as it stands: {@link TechniqueRules#capExtra} — its technique and its
+     * challenge each add {@code capWeight - 1} (an owner row may carry both, mezo-r36n9.98).
+     */
     private static int capWeightOf(PlanRow row, boolean isChallenge, Input in) {
-        boolean extra = hasTechnique(row) || isChallenge;
-        return row.workingSets() + (extra ? Math.max(0, in.capWeight() - 1) : 0);
+        return row.workingSets() + TechniqueRules.capExtra(row.technique(), isChallenge, true, in.capWeight());
     }
 
     /** §6.6: the day's first stable + lengthened-friendly counting row, Hangsúly first, then Építés, then the rest. */

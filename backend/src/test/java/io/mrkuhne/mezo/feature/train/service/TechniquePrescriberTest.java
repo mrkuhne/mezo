@@ -125,11 +125,44 @@ class TechniquePrescriberTest {
     }
 
     @Test
-    void testChallengeWinsAndIsPartials() {
-        PrescribedSet s = TechniquePrescriber.apply(rx(working("40", 10)), Technique.MYO, true, false, REAL, CFG)
+    void testChallengeAlone_isOneChallengePartialsLeg() {
+        PrescribedSet s = TechniquePrescriber.apply(rx(working("40", 10)), Technique.NONE, true, false, REAL, CFG)
             .sets().get(0);
         assertThat(s.getTechnique().getValue()).isEqualTo("partials");
-        assertThat(s.getLegs()).singleElement().extracting(PrescribedLeg::getKind).isEqualTo(SetLegKind.PARTIALS);
+        assertThat(s.getTargetRIR()).isZero();
+        assertThat(s.getLegs()).singleElement().satisfies(l -> {
+            assertThat(l.getKind()).isEqualTo(SetLegKind.PARTIALS);
+            assertThat(l.getChallenge()).isTrue();
+        });
+    }
+
+    @Test
+    void testTechniqueAndChallenge_techniqueLegsFirstThenChallengePartials() {
+        // mezo-r36n9.98 (was: the challenge wins and the technique is dropped)
+        PrescribedSet s = TechniquePrescriber.apply(rx(working("40", 10)), Technique.MYO, true, false, REAL, CFG)
+            .sets().get(0);
+        assertThat(s.getTechnique().getValue()).isEqualTo("myo");
+        assertThat(s.getTargetRIR()).isEqualTo(1);   // the technique's main reserve
+        assertThat(s.getLegs()).extracting(PrescribedLeg::getKind).containsExactly(
+            SetLegKind.MINI, SetLegKind.MINI, SetLegKind.MINI, SetLegKind.MINI, SetLegKind.PARTIALS);
+        assertThat(s.getLegs().subList(0, 4)).allSatisfy(l -> assertThat(l.getChallenge()).isNull());
+        PrescribedLeg half = s.getLegs().get(4);
+        assertThat(half.getChallenge()).isTrue();
+        assertThat(half.getToFailure()).isTrue();
+        assertThat(half.getRestBeforeSec()).isZero();
+
+        PrescribedSet rd = TechniquePrescriber.apply(rx(working("40", 10)), Technique.REST_DROP, true, false, REAL,
+            CFG).sets().get(0);
+        assertThat(rd.getLegs()).extracting(PrescribedLeg::getKind)
+            .containsExactly(SetLegKind.DROP, SetLegKind.PARTIALS);
+        assertThat(rd.getLegs().get(0).getWeightKg()).isEqualByComparingTo("27.5");
+    }
+
+    @Test
+    void testPartialsTechniqueOnTheChallenge_isOneLeg() {
+        PrescribedSet s = TechniquePrescriber.apply(rx(working("40", 10)), Technique.PARTIALS, true, false, REAL, CFG)
+            .sets().get(0);
+        assertThat(s.getLegs()).singleElement().satisfies(l -> assertThat(l.getChallenge()).isTrue());
     }
 
     @Test

@@ -28,7 +28,10 @@ public class SetLegService {
 
     private final ExerciseSetLegRepository legRepository;
 
-    /** Legs only with a technique, only kinds that technique allows, at most {@value #MAX_LEGS}; throws 400. */
+    /**
+     * Legs only with a technique, only kinds that technique allows (plus one trailing {@code partials} leg — the day
+     * challenge's half reps after a drop / myo technique, mezo-r36n9.98), at most {@value #MAX_LEGS}; throws 400.
+     */
     public void validate(String technique, List<SetLegInput> legs) {
         if (legs == null || legs.isEmpty()) {
             return;
@@ -40,10 +43,10 @@ public class SetLegService {
         if (legs.size() > MAX_LEGS) {
             throw bad("TRAIN_SET_LEGS_TOO_MANY");
         }
+        if (!TechniqueRules.legsFit(t, legs.stream().map(SetLegInput::getKind).toList())) {
+            throw bad("TRAIN_SET_LEG_KIND_MISMATCH");
+        }
         for (SetLegInput leg : legs) {
-            if (leg.getKind() == null || !TechniqueRules.allowedLegKinds(t).contains(leg.getKind())) {
-                throw bad("TRAIN_SET_LEG_KIND_MISMATCH");
-            }
             if ((leg.getReps() != null && leg.getReps() < 0)
                 || (leg.getWeightKg() != null && leg.getWeightKg().signum() < 0)
                 || (leg.getRestSec() != null && (leg.getRestSec() < 0 || leg.getRestSec() > 600))) {

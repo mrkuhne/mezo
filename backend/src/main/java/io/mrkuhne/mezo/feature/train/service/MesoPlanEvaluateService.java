@@ -94,7 +94,7 @@ public class MesoPlanEvaluateService {
             priorities, sportGroups == null ? Set.of() : new HashSet<>(sportGroups), deficit,
             req.getSessionMinutesTarget(), sportWeekdays(slots), props));
         EvaluatorTechniques.Shown shown = optsIn
-            ? EvaluatorTechniques.ofProjection(techniquePlanService.projectDraft(userId, req)) : null;
+            ? EvaluatorTechniques.ofProjection(techniquePlanService.planDraft(userId, req)) : null;
         return toResponse(deficit, result, slots, sportGroups == null, null, null, shown);
     }
 
@@ -143,7 +143,7 @@ public class MesoPlanEvaluateService {
             run.getSportGroups() == null ? Set.of() : new HashSet<>(run.getSportGroups()),
             deficit, null, sportWeekdays(slots), props));
         EvaluatorTechniques.Shown shown = optsIn
-            ? EvaluatorTechniques.ofRun(techniquePlanService.projectRun(userId, run), run.getCurrentWeek(),
+            ? EvaluatorTechniques.ofRun(techniquePlanService.planRun(userId, run), run.getCurrentWeek(),
                 storedTechniques, storedChallenges)
             : null;
         return toResponse(deficit, result, slots, run.getSportGroups() == null,
@@ -192,6 +192,7 @@ public class MesoPlanEvaluateService {
         if (shown != null) shown.applyTo(path);
         return MesoPlanEvaluation.builder()
             .techniqueWarnings(shown == null ? null : shown.warnings())
+            .recommendations(shown == null ? null : shown.recommendations())
             .deficit(deficit)
             .sportDays(List.copyOf(sportWeekdays(slots)))
             .suggestedSportGroups(props.baselines().keySet().stream().filter(suggested::contains).toList())

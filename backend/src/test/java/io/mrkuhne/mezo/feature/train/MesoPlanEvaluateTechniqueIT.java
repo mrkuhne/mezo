@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.PlannedChallenge;
 import io.mrkuhne.mezo.api.dto.PlannedTechnique;
 import io.mrkuhne.mezo.api.dto.Technique;
+import io.mrkuhne.mezo.api.dto.TechniqueRecommendation;
 import io.mrkuhne.mezo.api.dto.TechniqueSource;
 import io.mrkuhne.mezo.api.dto.TechniqueWarning;
 import io.mrkuhne.mezo.api.dto.TrainingStyle;
@@ -155,11 +156,77 @@ class MesoPlanEvaluateTechniqueIT extends ApiIntegrationTest {
         }
     }
 
+    // ── per-exercise recommendations (mezo-r36n9.98) ───────────────────────────
+
+    @Test
+    void draftReturnsARecommendationPerStableExercise() {
+        GymExerciseInput legExt = legExtension();
+        legExt.setRepMin(15);
+        legExt.setRepMax(20);
+        GymExerciseInput curl = ex("Incline DB Curl", "biceps-long", catalog("incline-db-curl"));
+        GymExerciseInput row = ex("Chest-Supported Row", "back-mid", catalog("chest-supported-row"));
+        row.setType(GymExerciseInput.TypeEnum.COMPOUND);
+        GymExerciseInput bench = ex("Barbell Bench Press", "chest-mid", catalog("barbell-bench-press"));
+        bench.setType(GymExerciseInput.TypeEnum.COMPOUND);
+
+        MesoPlanEvaluation e = evaluate(draft(TrainingStyle.BALANCED, true,
+            day("Hét", pecDeck(), legExt, curl), day("Szer", row, bench)));
+
+        // the free bench press may carry no technique: no recommendation for it
+        assertThat(e.getRecommendations()).containsExactly(
+            rec(0, 0, Technique.REST_DROP, "stable_machine", true),
+            rec(0, 1, Technique.MYO, "isolation_pump", true),
+            rec(0, 2, Technique.PARTIALS, "lengthened_safe", true),
+            rec(1, 0, Technique.NONE, "no_safe_technique", false));
+    }
+
+    @Test
+    void draftAllOutExerciseIsRecommendedNone() {
+        GymExerciseInput deck = pecDeck();
+        deck.setTrainingStyle(TrainingStyle.ALLOUT);
+        MesoPlanEvaluation e = evaluate(draft(TrainingStyle.BALANCED, true, day("Hét", deck)));
+        assertThat(e.getRecommendations()).containsExactly(rec(0, 0, Technique.NONE, "all_out", true));
+    }
+
+    @Test
+    void runEvaluationCarriesRecommendations() {
+        ownerId();
+        MesocycleResponse run = startRun(TrainingStyle.BALANCED, true, day("Hét", pecDeck(), cableFly()));
+        // the balanced style stamps the isolations' high-rep range at run start: the planner's myo rule applies
+        assertThat(evaluateRun(run.getId()).getRecommendations()).containsExactly(
+            rec(0, 0, Technique.MYO, "isolation_pump", true),
+            rec(0, 1, Technique.MYO, "isolation_pump", true));
+    }
+
+    @Test
+    void draftCapWeightCountsTechniqueAndChallengeOnOneRow() {
+        GymExerciseInput both = pecDeck();
+        both.setWorkingSets(4);
+        both.setTechnique(Technique.DROP);
+        both.setChallenge(true);
+        // 4 sets + the technique's extra + the challenge's extra = 6 against the exercise cap of 5
+        MesoPlanEvaluation e = evaluate(draft(TrainingStyle.BALANCED, true, day("Hét", both)));
+        assertThat(e.getDays().get(0).getExerciseCapWarnings()).singleElement()
+            .satisfies(w -> assertThat(w.getSets()).isEqualTo(6));
+        // the owner's combination is shown as it is: his technique and his challenge on the same row
+        assertThat(e.getPath().get(0).getChallenges()).containsExactly(
+            PlannedChallenge.builder().dayIndex(0).exerciseIndex(0).build());
+        assertThat(e.getPath().get(0).getTechniques()).containsExactly(PlannedTechnique.builder()
+            .dayIndex(0).exerciseIndex(0).technique(Technique.DROP).source(TechniqueSource.OWNER).build());
+    }
+
+    private static TechniqueRecommendation rec(int day, int index, Technique t, String reason, boolean challengeFit) {
+        return TechniqueRecommendation.builder().dayIndex(day).exerciseIndex(index).technique(t).reason(reason)
+            .challengeFit(challengeFit).build();
+    }
+
     /** An unflagged block: every path week's techniques / challenges and the techniqueWarnings are JSON null. */
     private void assertUnflaggedShape(String json) {
         JsonNode root = JsonMapper.builder().build().readTree(json);
         assertThat(root.has("techniqueWarnings")).isTrue();
         assertThat(root.get("techniqueWarnings").isNull()).isTrue();
+        assertThat(root.has("recommendations")).isTrue();
+        assertThat(root.get("recommendations").isNull()).isTrue();
         assertThat(root.get("path")).isNotEmpty().allSatisfy(week -> {
             assertThat(week.has("techniques")).isTrue();
             assertThat(week.get("techniques").isNull()).isTrue();

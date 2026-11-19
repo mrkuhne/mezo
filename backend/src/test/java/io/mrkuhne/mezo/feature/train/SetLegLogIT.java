@@ -40,6 +40,9 @@ class SetLegLogIT extends ApiIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private ExerciseSetLegRepository legRepository;
     @MockitoSpyBean private MedalService medalService;
+    @Autowired private io.mrkuhne.mezo.feature.train.service.PartialsBest partialsBest;
+    @Autowired private io.mrkuhne.mezo.feature.train.repository.ExerciseRepository exerciseRepository;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private record Ctx(UUID owner, UUID templateId, UUID workoutId, UUID exerciseId, HttpHeaders headers) {}
 
@@ -115,6 +118,31 @@ class SetLegLogIT extends ApiIntegrationTest {
     void wrongLegKindRejected() {
         Ctx c = ctx();
         ResponseEntity<String> res = logRaw(c, req(c, 0, Technique.MYO, List.of(leg(SetLegKind.DROP, "60", 8))));
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertHasRequestError(res.getBody(), "TRAIN_SET_LEG_KIND_MISMATCH");
+    }
+
+    @Test
+    void techniqueLegsThenChallengePartials_shouldLog() {
+        // mezo-r36n9.98: a drop / myo set of the day's challenge ends in the half reps
+        Ctx c = ctx();
+        ExerciseSetResponse r = log(c, req(c, 0, Technique.REST_DROP,
+            List.of(leg(SetLegKind.DROP, "56", 10), leg(SetLegKind.PARTIALS, "56", 7))));
+        assertThat(r.getTechnique()).isEqualTo(Technique.REST_DROP);
+        assertThat(r.getLegs()).extracting(l -> l.getKind()).containsExactly(SetLegKind.DROP, SetLegKind.PARTIALS);
+
+        // the challenge's number to beat reads that partials leg, in the rest-drop setup only (once completed)
+        jdbcTemplate.update("update workout_session set status = 'completed' where id = ?", c.workoutId());
+        ExerciseEntity press = exerciseRepository.findById(c.exerciseId()).orElseThrow();
+        assertThat(partialsBest.at(c.owner(), press, new BigDecimal("80"),
+            io.mrkuhne.mezo.feature.train.service.Technique.REST_DROP)).isEqualTo(7);
+        assertThat(partialsBest.at(c.owner(), press, new BigDecimal("80"),
+            io.mrkuhne.mezo.feature.train.service.Technique.NONE)).isNull();
+        jdbcTemplate.update("update workout_session set status = 'active' where id = ?", c.workoutId());
+
+        // the half reps only as the last leg
+        ResponseEntity<String> res = logRaw(c, req(c, 1, Technique.REST_DROP,
+            List.of(leg(SetLegKind.PARTIALS, "56", 7), leg(SetLegKind.DROP, "56", 10))));
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertHasRequestError(res.getBody(), "TRAIN_SET_LEG_KIND_MISMATCH");
     }

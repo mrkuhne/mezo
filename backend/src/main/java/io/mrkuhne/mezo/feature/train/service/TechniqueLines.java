@@ -76,7 +76,7 @@ final class TechniqueLines {
         Map<Integer, Boolean> sportDay = new HashMap<>();
         List<TechniquePlanner.PlanRow> allRows = new ArrayList<>();
         Map<UUID, Integer> sets = new HashMap<>();
-        Map<UUID, Boolean> extra = new HashMap<>();   // carries a technique or a challenge (weighs capWeight)
+        Map<UUID, Integer> extra = new HashMap<>();   // TechniqueRules.capExtra: technique and challenge each add
         Map<UUID, Technique> technique = new HashMap<>();
         Map<UUID, Boolean> challenge = new HashMap<>();
         for (TechniquePlanner.PlanDay day : input.days()) {
@@ -86,7 +86,7 @@ final class TechniqueLines {
                 sets.put(r.id(), working.getOrDefault(r.id(), r.workingSets()));
                 technique.put(r.id(), r.technique() == null ? Technique.NONE : r.technique());
                 challenge.put(r.id(), r.challenge());
-                extra.put(r.id(), hasTechnique(r) || r.challenge());
+                extra.put(r.id(), TechniqueRules.capExtra(r.technique(), r.challenge(), true, input.capWeight()));
             }
         }
 
@@ -144,14 +144,14 @@ final class TechniqueLines {
                     boolean challengeAfter = challenged.contains(id);
                     int weightAfter = from + 1 + (challengeAfter ? capExtra : 0);
                     if (r.effectiveStyle() != TrainingStyle.ALLOUT
-                            && fitsOneMore(r, weightAfter, input, allRows, sets, extra, capExtra)) {
+                            && fitsOneMore(r, weightAfter, input, allRows, sets, extra)) {
                         to = from + 1;
                     }
                 }
                 case CHALLENGE_ON -> challenge.put(id, true);
                 case CHALLENGE_OFF -> challenge.put(id, false);
             }
-            extra.put(id, technique.get(id) != Technique.NONE || challenge.get(id));
+            extra.put(id, TechniqueRules.capExtra(technique.get(id), challenge.get(id), true, input.capWeight()));
             sets.put(id, to);
             TemplatePlan.Row planRow = planById.get(id);
             lines.add(new WeekProposalLineJson(UUID.randomUUID().toString(), id, planRow.exercise().getName(),
@@ -173,14 +173,14 @@ final class TechniqueLines {
      */
     private static boolean fitsOneMore(TechniquePlanner.PlanRow row, int rowWeightAfter, TechniquePlanner.Input in,
                                        List<TechniquePlanner.PlanRow> allRows, Map<UUID, Integer> sets,
-                                       Map<UUID, Boolean> extra, int capExtra) {
+                                       Map<UUID, Integer> extra) {
         if (rowWeightAfter > in.exerciseCap()) return false;   // by cap weight, as SetSlots.pickUp
         if (row.group() == null) return true;
         int dayWeight = rowWeightAfter;
         for (TechniquePlanner.PlanRow r : allRows) {
             if (r.id().equals(row.id()) || r.dayIndex() != row.dayIndex() || !r.counts()
                     || !row.group().equals(r.group())) continue;
-            dayWeight += sets.get(r.id()) + (extra.get(r.id()) ? capExtra : 0);
+            dayWeight += sets.get(r.id()) + extra.get(r.id());
         }
         return dayWeight <= in.sessionCap();
     }

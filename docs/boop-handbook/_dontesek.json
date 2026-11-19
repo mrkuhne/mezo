@@ -775,5 +775,29 @@
     "miert": "„A webes appban már semmit nem fogok használni, csak az iphone appot.” A web minden szerverváltoztatásnál plusz munka, a csak-webes háttérmunkák pénzbe kerülnek, és Boop olyan régi adatokból is merített, amiket már nem vezetsz.",
     "levaltotta": "A 2026-11-17-i döntés: a web változatlanul fut tovább, csak nem fejlesztjük.",
     "kovetkezmeny": "Nyolc lépés, mindegyik után zöld főág; a havi AI-költség kb. a felére csökken (mezo-r36n9.97)."
+  },
+  "d-2026-11-19-technika-es-kihivas-egyutt": {
+    "cim": "Technika és kihívás egyszerre is lehet ugyanazon a gyakorlaton",
+    "datum": "2026-11-19",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Egy gyakorlaton lehet technika (például pihenős drop) és a nap kihívása is: előbb a technika, utána a félismétléses kihívás. A megdöntendő számot csak az ugyanígy végzett korábbi alkalmakhoz méri.",
+    "miert": "A tulajdonos mindkettőt akarja ugyanott; az összevetés úgy marad igazságos, ha a drop utáni félismétlést nem a sima sorozat utánihoz mérjük.",
+    "levaltotta": "Az a szabály, hogy a kihívás kiváltja a technikát (egy gyakorlaton csak az egyik lehet).",
+    "kovetkezmeny": "A szerver, az edzés-lejátszó és a blokképítő is módosult (mezo-r36n9.98, mezo-r36n9.99)."
+  },
+  "d-2026-11-19-technika-ajanlas": {
+    "cim": "A technika-választóban Boop ajánl: szabály alapján, AI-mondattal kiegészítve",
+    "datum": "2026-11-19",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Minden gyakorlatnál a választó tetején ott a javasolt technika egy mondatos okkal, amit a szerver a gyakorlat tulajdonságaiból számol; ha a heti AI is mondott róla valamit, az is megjelenik.",
+    "miert": "Azonnal megjelenik, nem kerül pénzbe, és AI nélkül is működik (az elmúlt napokban az AI kerete kifogyott).",
+    "levaltotta": "Az, hogy minden megnyitáskor csak az AI ajánljon.",
+    "kovetkezmeny": "Új szerver-mező a tervmérő válaszában (mezo-r36n9.98)."
   }
 }

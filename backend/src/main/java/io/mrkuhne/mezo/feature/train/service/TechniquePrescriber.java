@@ -11,9 +11,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Pure policy: puts the chosen technique (or the challenge, which wins and is partials) on the LAST
- * working set of a prescription (mezo-r36n9.80). No-op without a technique/challenge and in a deload
- * week. Never mutates the input: the technique set is a copy, the other sets are shared as-is.
+ * Pure policy: puts the chosen technique and/or the day's challenge on the LAST working set of a prescription
+ * (mezo-r36n9.80). The challenge is one {@code partials} leg marked {@code challenge}; with a technique as well
+ * (mezo-r36n9.98) the set carries the technique (its reserve, its legs) and the challenge's partials leg follows
+ * the technique's legs. No-op without a technique/challenge and in a deload week. Never mutates the input: the
+ * technique set is a copy, the other sets are shared as-is.
  */
 public final class TechniquePrescriber {
 
@@ -21,7 +23,8 @@ public final class TechniquePrescriber {
 
     public static Prescription apply(Prescription p, Technique t, boolean challenge, boolean deloadWeek,
                                      Set<BigDecimal> realWeights, TrainTechniqueProperties cfg) {
-        Technique eff = challenge ? Technique.PARTIALS : (t == null ? Technique.NONE : t);
+        Technique own = t == null ? Technique.NONE : t;
+        Technique eff = own != Technique.NONE ? own : (challenge ? Technique.PARTIALS : Technique.NONE);
         if (eff == Technique.NONE || deloadWeek || p == null || p.sets() == null) return p;
         int idx = -1;
         for (int i = 0; i < p.sets().size(); i++) {
@@ -55,14 +58,25 @@ public final class TechniquePrescriber {
             }
             case PARTIALS -> {
                 out.setTargetRIR(cfg.partials().mainReserve());
-                out.setLegs(List.of(new PrescribedLeg().kind(SetLegKind.PARTIALS).toFailure(true)
-                    .restBeforeSec(0)));
+                out.setLegs(List.of(partialsLeg(challenge)));
             }
             default -> { return p; }
+        }
+        if (challenge && eff != Technique.PARTIALS) {
+            // technique first, then the challenge's half reps (mezo-r36n9.98)
+            List<PrescribedLeg> legs = new ArrayList<>(out.getLegs());
+            legs.add(partialsLeg(true));
+            out.setLegs(legs);
         }
         List<PrescribedSet> sets = new ArrayList<>(p.sets());
         sets.set(idx, out);
         return new Prescription(List.copyOf(sets), p.rationale(), p.progression());
+    }
+
+    /** Half reps in the stretched position to failure, straight after; {@code challenge} marks the day's challenge. */
+    private static PrescribedLeg partialsLeg(boolean challenge) {
+        return new PrescribedLeg().kind(SetLegKind.PARTIALS).toFailure(true).restBeforeSec(0)
+            .challenge(challenge ? Boolean.TRUE : null);
     }
 
     private static PrescribedLeg dropLeg(PrescribedSet main, TrainTechniqueProperties.Drop c,

@@ -38,6 +38,9 @@ public interface ExerciseSetLegRepository extends JpaRepository<ExerciseSetLegEn
      * Best partials-leg reps per parent weight for one exercise identity (key as
      * {@code ExerciseHistoryResolver.identityKey}), over LIVE, non-skipped parent working sets of COMPLETED, live workouts only — a soft-deleted
      * parent leaves its legs behind, so the parent's flag is the gate; an open workout never counts. Derived, never stored (ADR 0016).
+     * Only sets of the given challenge {@code setup} (mezo-r36n9.98, {@code TechniqueRules.challengeSetup}): the
+     * parent's technique when it is a drop / myo technique before the half reps, else {@code none} — every set
+     * logged before the combination existed is {@code none}.
      */
     @Query(value = """
         SELECT s.weight_kg AS "weightKg", MAX(l.reps) AS "reps"
@@ -55,12 +58,14 @@ public interface ExerciseSetLegRepository extends JpaRepository<ExerciseSetLegEn
           AND s.weight_kg IS NOT NULL
           AND (CASE WHEN e.catalog_id IS NOT NULL THEN 'c:' || CAST(e.catalog_id AS text)
                     ELSE 'n:' || e.name END) = :identityKey
+          AND (CASE WHEN s.technique IS NULL OR s.technique = 'partials' THEN 'none' ELSE s.technique END) = :setup
         GROUP BY s.weight_kg
         ORDER BY s.weight_kg
         """, nativeQuery = true)
     List<PartialsRow> bestPartialsPerWeight(
         @Param("createdBy") UUID createdBy,
-        @Param("identityKey") String identityKey);
+        @Param("identityKey") String identityKey,
+        @Param("setup") String setup);
 
     /** Best partials reps at one parent weight of one exercise identity. */
     interface IdentityPartialsRow extends PartialsRow {
@@ -70,6 +75,8 @@ public interface ExerciseSetLegRepository extends JpaRepository<ExerciseSetLegEn
     /**
      * {@link #bestPartialsPerWeight} for EVERY identity in one read (the records list, mezo-r36n9.80) — same
      * gates: live, non-skipped parent working sets of completed, live workouts; ordered by identity then weight.
+     * Plain challenge sets only (setup {@code none}, mezo-r36n9.98), so a record is never inflated or deflated by
+     * a technique done before the half reps.
      */
     @Query(value = """
         SELECT x."identityKey", x.weight_kg AS "weightKg", MAX(x.reps) AS "reps"
@@ -89,6 +96,7 @@ public interface ExerciseSetLegRepository extends JpaRepository<ExerciseSetLegEn
             AND l.kind = 'partials'
             AND l.reps IS NOT NULL
             AND s.weight_kg IS NOT NULL
+            AND (CASE WHEN s.technique IS NULL OR s.technique = 'partials' THEN 'none' ELSE s.technique END) = 'none'
         ) x
         GROUP BY x."identityKey", x.weight_kg
         ORDER BY x."identityKey", x.weight_kg

@@ -375,14 +375,27 @@ public class WorkoutService {
                 // longer allows carry neither technique nor challenge; the echo then says so too (the stored plan
                 // is untouched).
                 if (techniquesOn) {
-                    if (comeback != null || lighten.isPresent() || deloadWeek || invalidPicks.contains(e.getId())
-                        || sportSuppressed.contains(e.getId())) {
+                    if (comeback != null || lighten.isPresent() || deloadWeek || invalidPicks.contains(e.getId())) {
                         t.setTechnique(null);
                         t.setTechniqueSource(null);
                         t.setChallenge(false);
                         t.setChallengeBest(null);
                     } else {
-                        p = overlayTechnique(createdBy, e, t, p, deloadWeek);
+                        // Sport day: the challenge goes, a planner technique goes, an owner / ai technique stands
+                        // — also when the same row carried both (mezo-r36n9.98).
+                        boolean sport = sportSuppressed.contains(e.getId());
+                        Technique technique = sport && "planner".equals(e.getTechniqueSource())
+                            ? Technique.NONE : Technique.fromWire(e.getTechnique());
+                        boolean challenge = !sport && e.isChallenge();
+                        if (sport) {
+                            t.setChallenge(false);
+                            t.setChallengeBest(null);
+                            if (technique == Technique.NONE) {
+                                t.setTechnique(null);
+                                t.setTechniqueSource(null);
+                            }
+                        }
+                        p = overlayTechnique(createdBy, e, technique, challenge, t, p, deloadWeek);
                     }
                 }
                 t.setPrescribedSets(p.sets());
@@ -471,27 +484,28 @@ public class WorkoutService {
     }
 
     /**
-     * The technique (or challenge) overlay of one exercise (mezo-r36n9.80): after the plain prescription, on its
-     * last working set. Nothing is loaded for an exercise without a technique or a challenge. A challenge also
-     * carries the best partials reps ever logged at the weight it is prescribed at.
+     * The technique and/or challenge overlay of one exercise (mezo-r36n9.80): after the plain prescription, on its
+     * last working set — with both, the technique's legs first and the challenge's half reps last (mezo-r36n9.98).
+     * Nothing is loaded for an exercise without a technique or a challenge. A challenge also carries the best
+     * partials reps logged at the weight it is prescribed at, in the same setup (the same technique before the half
+     * reps, or none).
      */
-    private Prescription overlayTechnique(UUID createdBy, ExerciseEntity e, TodayExercise t, Prescription p,
-                                          boolean deloadWeek) {
-        Technique technique = Technique.fromWire(e.getTechnique());
-        if (technique == Technique.NONE && !e.isChallenge()) {
+    private Prescription overlayTechnique(UUID createdBy, ExerciseEntity e, Technique technique, boolean challenge,
+                                          TodayExercise t, Prescription p, boolean deloadWeek) {
+        if (technique == Technique.NONE && !challenge) {
             return p;
         }
         BigDecimal maxKg = p.sets().stream().map(PrescribedSet::getTargetWeightKg)
             .filter(java.util.Objects::nonNull).max(BigDecimal::compareTo).orElse(null);
-        Technique effective = e.isChallenge() ? Technique.PARTIALS : technique;
-        boolean drops = effective == Technique.DROP || effective == Technique.REST_DROP;
+        boolean drops = technique == Technique.DROP || technique == Technique.REST_DROP;
         Set<BigDecimal> real = deloadWeek || !drops ? Set.of() : techniqueWeights.realWeights(createdBy, e, maxKg);
-        Prescription out = TechniquePrescriber.apply(p, technique, e.isChallenge(), deloadWeek, real,
+        Prescription out = TechniquePrescriber.apply(p, technique, challenge, deloadWeek, real,
             trainTechniqueProperties);
-        if (e.isChallenge() && !deloadWeek) {
+        if (challenge && !deloadWeek) {
             p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING)
                 .reduce((a, b) -> b)
-                .ifPresent(last -> t.setChallengeBest(partialsBest.at(createdBy, e, last.getTargetWeightKg())));
+                .ifPresent(last -> t.setChallengeBest(
+                    partialsBest.at(createdBy, e, last.getTargetWeightKg(), technique)));
         }
         return out;
     }

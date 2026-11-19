@@ -1590,7 +1590,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-17, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-18, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-11-18, done) ·
+  [docs/features/train.md](features/train.md) (updated 2026-11-19, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-11, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
@@ -1629,13 +1629,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `SetTonnage`, `SportGroups`, `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `StallOffers`,
     `StyleContext`, `StyleStamper`, `StyleTable`, `Technique`, `TechniqueAiRefiner`, `TechniqueGuard`,
     `TechniqueLines`, `TechniqueLlm`, `TechniqueMerger`, `TechniquePlanService`, `TechniquePlanner`,
-    `TechniquePrescriber`, `TechniqueRefineRequested`, `TechniqueRules`, `TechniqueWeights`, `TemplatePlan`,
-    `TierChangeProposalService`, `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`,
-    `TimingProfileService`, `TrainService`, `TrainingStyle`, `VolumeArcService`, `VolumeBands`, `VolumeDecider`,
-    `VolumeLedger`, `VolumePath`, `VolumeProgressionService`, `WeekProposalDecisionService`,
-    `WeekProposalQueryService`, `WeekProposalService`, `WeeklyPin`, `WeeklyScheduledActivityService`,
-    `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`, `WorkoutAutoCloseService`,
-    `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
+    `TechniquePrescriber`, `TechniqueRecommender`, `TechniqueRefineRequested`, `TechniqueRules`, `TechniqueWeights`,
+    `TemplatePlan`, `TierChangeProposalService`, `TimingObservation`, `TimingObservationExtractor`,
+    `TimingProfileListener`, `TimingProfileService`, `TrainService`, `TrainingStyle`, `VolumeArcService`,
+    `VolumeBands`, `VolumeDecider`, `VolumeLedger`, `VolumePath`, `VolumeProgressionService`,
+    `WeekProposalDecisionService`, `WeekProposalQueryService`, `WeekProposalService`, `WeeklyPin`,
+    `WeeklyScheduledActivityService`, `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`,
+    `WorkoutAutoCloseService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`,
+    `WorkoutWindowQueryService`
   - **controllers→contract:** `PlannedSkipController`→`TrainSkipApi`, `ReadinessController`→`TrainReadinessApi`,
     `RecoveryController`→`TrainRecoveryApi`, `TrainController`→`TrainApi`,
     `WeekProposalController`→`TrainWeekProposalApi`
@@ -1737,7 +1738,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     useEditableNumber.ts, useRecoveryBetter.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts,
     weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutReviewDerive.ts, workoutState.ts
   - **root:** InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 131 IT + 41 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 131 IT + 42 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,

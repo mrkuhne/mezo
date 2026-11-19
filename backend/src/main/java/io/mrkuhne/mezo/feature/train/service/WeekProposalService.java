@@ -445,7 +445,8 @@ public class WeekProposalService {
     /**
      * The row still carries what the line moves away from: its technique, or for a challenge line its flag — and a
      * challenge is only placed on a row without a technique, a technique only on a row that is not the challenge
-     * (one row never carries both).
+     * (the planner never makes one row carry both; an owner / AI row may since mezo-r36n9.98, but a planner line
+     * never writes such a row — {@link #plannerMayWrite}).
      */
     private static boolean holdsFromTechnique(ExerciseEntity e, WeekProposalLineJson line) {
         Technique from = Technique.fromWire(line.fromTechnique());
