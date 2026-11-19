@@ -131,4 +131,28 @@ struct EtelHetTests {
         #expect(w.scoreGaps == 0)
         #expect(!w.days[3].note.contains("nem jött meg"))
     }
+
+    // MARK: the warm tab (mezo-r36n9.109)
+
+    @Test func theObservationNamesTheProteinGapOverJudgedDaysOnly() {
+        let w = HetWeek(days: [
+            HetDay(date: "2026-11-10", label: "H", name: "Hétfő", kcal: 2300, target: 2400, proteinG: 120, isToday: false, kimelo: false, judged: true, skippedKcal: 0, scorePoints: 70, note: ""),
+            HetDay(date: "2026-11-11", label: "K", name: "Kedd", kcal: 2350, target: 2400, proteinG: 130, isToday: false, kimelo: false, judged: true, skippedKcal: 0, scorePoints: 72, note: ""),
+            HetDay(date: "2026-11-12", label: "Sze", name: "Ma", kcal: 400, target: 2400, proteinG: 20, isToday: true, kimelo: false, judged: false, skippedKcal: 0, scorePoints: nil, note: "")],
+            waterline: 2400, proteinTarget: 160, averageKcal: 2325, averageProtein: 125, averageScore: 71, judgedDays: 2,
+            kimeloDays: 0, skippedDays: 0, skippedKcal: 0, targetsVary: false, scoreGaps: 0)
+        let o = hetObservation(w)
+        #expect(o?.title == "A fehérje mind a 2 értékelt napon elmaradt")
+        #expect(o?.sub.contains("35 g") == true, "the mean gap over the judged days only: (40 + 30) / 2")
+    }
+
+    @Test func tooFewJudgedDaysSayNothing() {
+        let w = HetWeek(days: [HetDay(date: "2026-11-12", label: "Sze", name: "Ma", kcal: 400, target: 2400, proteinG: 20, isToday: true,
+                                      kimelo: false, judged: false, skippedKcal: 0, scorePoints: nil, note: "")],
+                        waterline: 2400, proteinTarget: 160, averageKcal: nil, averageProtein: nil, averageScore: nil, judgedDays: 0,
+                        kimeloDays: 0, skippedDays: 0, skippedKcal: 0, targetsVary: false, scoreGaps: 0)
+        #expect(hetObservation(w) == nil)
+        #expect(hetVerdict(w, level: 0.2).headline == "Még kevés a rögzítés a héten")
+        #expect(hetDateLabel("2026-11-18") == "november 18.")
+    }
 }

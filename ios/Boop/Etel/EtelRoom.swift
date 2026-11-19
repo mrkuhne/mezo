@@ -589,7 +589,8 @@ struct EtelRoom: View {
 
     var body: some View {
         let today = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
-        let v = etelTabVerdict(tab, today: today, recipes: store.recipesLoaded ? store.recipes : nil, shelf: store.shelfLoaded ? store.shelf : nil)
+        let v = etelTabVerdict(tab, today: today, recipes: store.recipesLoaded ? store.recipes : nil, shelf: store.shelfLoaded ? store.shelf : nil,
+                                week: store.week.map { hetWeek($0, scores: store.weekScores, today: store.ymd, scoreFailures: store.weekScoreFailures) })
         NKAreaPage(hue: .fuel, name: "Étel", eyebrow: "Étel · \(tab.rawValue.lowercased())", level: store.day == nil ? nil : v.level,
                    display: etelDayPoints(store.day).map { "\($0)" },
                    headline: v.headline, sentence: v.sentence, glyph: "bowl-cream",
