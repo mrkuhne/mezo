@@ -3,8 +3,6 @@ import Foundation
 public enum BoopConfig {
     /// Production backend; the generated paths already start with `/api`.
     public static let apiBaseURL = URL(string: "https://46.225.112.172.sslip.io")!
-    /// The web app (plans are set up there in v1).
-    public static let webAppURL = URL(string: "https://46.225.112.172.sslip.io/")!
 
     /// An absolute URL for a media path the server hands out relative to its own origin — the exercise demo
     /// stills (`/exercises/barbell-row-a.jpg`) are stored that way. A path that is already absolute is returned
