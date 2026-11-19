@@ -17,13 +17,12 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | Feature | BE | API | Docs |
 |---|---|---|---|
 | [activity](#activity) | ✓ | 1 | [growth](features/growth.md) |
-| [admin](#admin) | ✓ | 3 | [admin-hub](features/admin-hub.md), [admin-memory-explorer](features/admin-memory-explorer.md) |
 | [appnotification](#appnotification) | ✓ | 1 | [_platform-notifications](features/_platform-notifications.md) |
-| [auth](#auth) | ✓ | 2 | [admin-hub](features/admin-hub.md), [_platform-auth-security](features/_platform-auth-security.md), [_platform-language](features/_platform-language.md) |
+| [auth](#auth) | ✓ | 2 | [_platform-auth-security](features/_platform-auth-security.md), [_platform-language](features/_platform-language.md) |
 | [biometrics](#biometrics) | ✓ | 6 | [me](features/me.md) |
 | [boop](#boop) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
 | [character](#character) | ✓ | 1 | [character](features/character.md) |
-| [companion](#companion) | ✓ | 5 | [admin-memory-explorer](features/admin-memory-explorer.md), [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
+| [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [dayclose](#dayclose) | ✓ | 1 | [boop-ios](features/boop-ios.md), [dayclose](features/dayclose.md) |
 | [fuel](#fuel) | ✓ | 2 | [fuel](features/fuel.md) |
 | [gamification](#gamification) | ✓ | 1 | [growth](features/growth.md) |
@@ -32,7 +31,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [intention](#intention) | ✓ | 1 | [intention](features/intention.md) |
 | [journal](#journal) | ✓ | 1 | [journal](features/journal.md) |
 | [lifegoal](#lifegoal) | ✓ | 1 | [lifegoal](features/lifegoal.md) |
-| [llmlog](#llmlog) | ✓ | 2 | [admin-hub](features/admin-hub.md), [companion](features/companion.md) |
+| [llmlog](#llmlog) | ✓ | 2 | [companion](features/companion.md) |
 | [meal](#meal) | ✓ | 3 | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · |
 | [needs](#needs) | ✓ | 1 | [needs](features/needs.md) |
@@ -45,9 +44,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [quest](#quest) | ✓ | 1 | [growth](features/growth.md) |
 | [recipe](#recipe) | ✓ | 3 | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | [ritual](features/ritual.md) |
-| [telemetry](#telemetry) | ✓ | 1 | · |
 | [train](#train) | ✓ | 5 | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md) |
-| [tutorial](#tutorial) | ✓ | 1 | [tutorial](features/tutorial.md) |
 | [wearable](#wearable) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
 
 ## Features
@@ -72,45 +69,6 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **ITs:** `ActivityApiIT`, `ActivityClassifierIT`, `ActivityHistoryApiIT`, `ActivityLogEntityIT`
   - **populators:** `ActivityPopulator`, `QuestPopulator`, `UserPopulator`
 
-### admin
-
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-19, done) ·
-  [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-19, done)
-
-- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
-  - **repositories:** `AdminAlertQuery`, `AdminCatalogQuery`, `AdminFeatureQuery`, `AdminInsightsQuery`,
-    `AdminRowQuery`
-  - **services:** `AdminAlertService`, `AdminConvenienceViews`, `AdminDataBrowserService`, `AdminFeatureService`,
-    `AdminMemoryGraphMapper`, `AdminMemoryReplayService`, `AdminMemoryRunMapper`, `AdminMemoryService`,
-    `AdminOverviewService`, `AdminSeries`, `AdminSqlDialect`, `AdminTableCatalog`, `AdminUsageService`,
-    `AdminUserService`
-  - **controllers→contract:** `AdminDataController`→`AdminDataApi`, `AdminInsightsController`→`AdminInsightsApi`,
-    `AdminMemoryController`→`AdminMemoryApi`
-  - **config:** `AdminMemoryProperties`, `AdminProperties`
-- **Contract** `api/feature/admin-data/admin-data.yml` — 3 operations
-  - **endpoints:** GET /api/admin/data/tables · GET /api/admin/data/views · GET /api/admin/data/tables/{table}/rows
-- **Contract** `api/feature/admin-insights/admin-insights.yml` — 11 operations
-  - **endpoints:** GET /api/admin/overview · GET /api/admin/users-insight · GET /api/admin/users/{id}/insight ·
-    GET /api/admin/users/{id}/feedback · GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix ·
-    GET /api/admin/usage/screens · GET /api/admin/alerts · GET /api/admin/features · GET /api/admin/features/{key} ·
-    GET /api/admin/feedback/summary
-- **Contract** `api/feature/admin-memory/admin-memory.yml` — 8 operations
-  - **endpoints:** GET /api/admin/users/{userId}/memory/runs · GET /api/admin/users/{userId}/memory/runs/{runId} ·
-    POST /api/admin/users/{userId}/memory/replay · GET /api/admin/users/{userId}/memory/graph ·
-    GET /api/admin/users/{userId}/memory/vectors · GET /api/admin/users/{userId}/memory/vectors/{itemId}/neighbors ·
-    GET /api/admin/memory/health · GET /api/admin/users/{userId}/memory/health
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 24 IT + 3 unit
-  - **ITs:** `AdminAlertsCompanionOffIT`, `AdminAlertsIT`, `AdminDataBrowserIT`, `AdminFeatureBoardIT`,
-    `AdminFeatureDetailIT`, `AdminFeatureQueryIT`, `AdminFeaturesCompanionOffIT`,
-    `AdminMemoryGlobalHealthCompanionOffIT`, `AdminMemoryGlobalHealthIT`, `AdminMemoryGraphIT`,
-    `AdminMemoryHealthGraphOffIT`, `AdminMemoryHealthIT`, `AdminMemoryReplayIT`, `AdminMemoryRunsIT`,
-    `AdminMemoryVectorsIT`, `AdminMemoryVectorsSamplingIT`, `AdminOverviewIT`, `AdminScreenUsageIT`,
-    `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`, `AdminUserFeedbackCompanionOffIT`,
-    `AdminUserFeedbackIT`, `AdminUserInsightIT`
-  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `DailySummaryPopulator`, `FeedbackPopulator`,
-    `GraphPopulator`, `LlmLogPopulator`, `MealPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`,
-    `UserPopulator`
-
 ### appnotification
 
 *BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-11-19, mixed)
@@ -133,8 +91,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### auth
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-19, done) ·
-  [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-11-19, done) ·
+*BE + API* · read next: [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-11-19, done) ·
   [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
@@ -333,8 +290,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### companion
 
-*BE + API* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-11-19, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-11-19, shipped) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-19, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-19, mixed) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-16, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
@@ -831,8 +787,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-19, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-11-19, mixed)
+*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -1243,22 +1198,6 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `RitualReflectionEventIT`, `RitualSwitchOffIT`
   - **populators:** `RitualPopulator`, `SleepGoalPopulator`, `UserPopulator`
 
-### telemetry
-
-*BE + API* · read next: **none — no HOW doc exists for this feature yet**
-
-- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/telemetry`
-  - **entities→tables:** `ScreenEventEntity`→`screen_event`
-  - **repositories:** `ScreenDayRow`, `ScreenEventRepository`, `ScreenUsageRow`
-  - **services:** `ScreenEventRetentionJob`, `ScreenEventService`
-  - **controllers→contract:** `TelemetryController`→`TelemetryApi`
-  - **config:** `TelemetryProperties`
-- **Contract** `api/feature/telemetry/telemetry.yml` — 1 operation
-  - **endpoints:** POST /api/telemetry/screen-events
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/telemetry` — 3 IT + 1 unit
-  - **ITs:** `ScreenEventIngestIT`, `ScreenEventRetentionJobIT`, `TelemetrySwitchOffIT`
-  - **populators:** `UserPopulator`
-
 ### train
 
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-19, done) ·
@@ -1399,21 +1338,6 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `RunningPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
     `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
 
-### tutorial
-
-*BE + API* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-11-19, mixed)
-
-- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/tutorial`
-  - **entities→tables:** `TutorialProgressEntity`→`tutorial_progress`
-  - **repositories:** `TutorialProgressRepository`
-  - **services:** `TutorialProgressService`
-  - **controllers→contract:** `TutorialProgressController`→`TutorialProgressApi`
-  - **other:** `TutorialProgressEntryJson`
-- **Contract** `api/feature/tutorial/tutorial-progress.yml` — 3 operations
-  - **endpoints:** GET /api/tutorial/progress · PUT /api/tutorial/progress · DELETE /api/tutorial/progress
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/tutorial` — 2 IT + 0 unit
-  - **ITs:** `TutorialProgressApiIT`, `TutorialProgressSwitchOffApiIT`
-
 ### wearable
 
 *BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-19, in-progress)
@@ -1481,7 +1405,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### scripts
 
 - **scripts/:** backup-live-db.sh, boop-notion-sync.mjs, check-beads-backup.mjs, check-generator-toolchain.mjs,
-  com.mezo.db-backup.plist, gen-body-geometry-swift.mjs, gen-codemap.mjs, gen-codemap.test.mjs,
+  check-ios-contract.mjs, com.mezo.db-backup.plist, gen-body-geometry-swift.mjs, gen-codemap.mjs, gen-codemap.test.mjs,
   import-exercise-images.mjs, lint-conflict-markers.mjs, lint-docs.mjs, lint-liquibase.mjs, purge-restart.sql,
   setup-git.sh
 
@@ -1490,5 +1414,5 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-api-backend.md`](features/_platform-api-backend.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `medication`, `telemetry`
+- **Features with no `docs/features/` doc:** `medication`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

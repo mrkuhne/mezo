@@ -389,39 +389,6 @@ public class FeaturesConfiguration {
      *  either way. */
     public static final String TIMING_PROFILE_SWITCH = "mezo.feature.timing-profile.enabled";
 
-    /** Mezo-kalauz seen-store (mezo-gb1s.1). */
-    public static final String TUTORIAL_SWITCH = "mezo.feature.tutorial.enabled";
-
     /** Monday adaptive-review job (diet-plan slice 5) — weekly_correction goal suggestions. */
     public static final String ADAPTIVE_REVIEW_JOB_SWITCH = "mezo.techcore.cron.adaptive-review-job.enabled";
-
-    /**
-     * Admin hub insights + data browser ({@code /api/admin/overview}, {@code /api/admin/data/**}).
-     * Off: those endpoints 404; the existing invite/account admin API is unaffected (mezo-d5iy).
-     */
-    public static final String ADMIN_INSIGHTS_SWITCH = "mezo.feature.admin-insights.enabled";
-
-    /**
-     * RAG memory explorer ({@code /api/admin/users/*}{@code /memory/**}, mezo-4qyt). Off ⇒ those
-     * endpoints 404 and no admin-memory bean exists; the admin hub's own endpoints are unaffected.
-     * A given endpoint ADDITIONALLY needs {@link #COMPANION_SWITCH} (runs, replay, vectors,
-     * health) or {@link #KNOWLEDGE_GRAPH_SWITCH} (the graph endpoint) — the controller consumes
-     * those beans through {@code ObjectProvider} and answers 404 ADMIN_MEMORY_DISABLED when one
-     * is absent, rather than failing to start.
-     */
-    public static final String ADMIN_MEMORY_SWITCH = "mezo.feature.admin-memory.enabled";
-
-    /**
-     * Lean screen-event telemetry (bd mezo-o5cz, spec 2026-09-07). Off ⇒ {@code
-     * POST /api/telemetry/screen-events} 404s, no ScreenEventService / TelemetryController /
-     * ScreenEventRetentionJob bean exists, and nothing is ever written to {@code screen_event}.
-     * The frontend's telemetry client swallows the 404 (and every other failure) silently —
-     * telemetry must never degrade the app.
-     *
-     * <p>The OWNER-only READ side ({@code GET /api/admin/usage/screens}) is deliberately NOT
-     * gated by this: it sits on {@link #ADMIN_INSIGHTS_SWITCH} like every other admin panel, and
-     * with telemetry off it simply reads an empty table (zeros) instead of the admin hub gaining
-     * a second, differently-gated 404.
-     */
-    public static final String SCREEN_TELEMETRY_SWITCH = "mezo.feature.screen-telemetry.enabled";
 }

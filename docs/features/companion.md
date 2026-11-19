@@ -9201,6 +9201,7 @@ reduced-motion branch) cover the FE surface — full detail: [`insights.md`](ins
 
 ## 9. Decisions, gotchas & deferred
 
+- **Admin readers gone (2026-11-19, `mezo-r36n9.97.4`).** The owner console's RAG memory explorer left with the web app; `MemoryProjectionService`, `MemoryHealthQuery`, `MemoryNeighborQuery`, `MemoryPromptTraceQuery` and `GraphStructureQuery` now have no production caller and stay for slice B8 to keep or cut. Likewise the llmlog aggregate queries the admin hub read (`AiDraftOutcomeRepository#aggregateByFeatureSince`, several `LlmLogRepository` rows).
 - **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 
 **Check-in 2.0 (`mezo-ck2`, 2026-09-28) — decisions, deviations, follow-ups.** NULL is never a

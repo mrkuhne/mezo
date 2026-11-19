@@ -37,11 +37,10 @@ import org.springframework.stereotype.Service;
  * map jump. Documented rather than solved; a shared cache is not worth it for an owner-only
  * surface.
  *
- * <p>The tuning knobs ({@code pca-target-dims}, {@code vector-sample-threshold}) belong to the
- * ADMIN slice's {@code AdminMemoryProperties} and arrive as a {@link ProjectionRequest} parameter
- * instead of an injected dependency: {@code feature/companion} may never import
- * {@code feature/admin} (the ArchUnit {@code feature_slices_are_cycle_free} rule), so the plan's
- * sketch of injecting {@code AdminMemoryProperties} here would have failed the build.
+ * <p>The tuning knobs ({@code pca-target-dims}, {@code vector-sample-threshold}) arrive as a
+ * {@link ProjectionRequest} parameter instead of an injected dependency; they belonged to the
+ * caller. Its only caller, the admin RAG memory explorer, left with the web retirement
+ * (mezo-r36n9.97.4) — this service stays for slice B8 to keep or cut.
  */
 @Service
 @RequiredArgsConstructor

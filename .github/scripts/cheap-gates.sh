@@ -27,6 +27,7 @@ run node scripts/lint-docs.mjs --errors-only
 run node scripts/lint-liquibase.mjs
 run node scripts/check-generator-toolchain.mjs --manifests
 run node scripts/lint-conflict-markers.mjs
+run node scripts/check-ios-contract.mjs
 run node --test scripts/gen-codemap.test.mjs
 run node scripts/gen-codemap.mjs --check
 run bash .github/scripts/compute-release.test.sh

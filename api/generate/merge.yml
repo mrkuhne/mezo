@@ -35,7 +35,6 @@ inputs:
   - inputFile: ../feature/sleep-shot/sleep-shot.yml
   - inputFile: ../feature/fuel-settings/fuel-settings.yml
   - inputFile: ../feature/diet-settings/diet-settings.yml
-  - inputFile: ../feature/tutorial/tutorial-progress.yml
   - inputFile: ../feature/ritual/ritual.yml
   - inputFile: ../feature/gamification/gamification.yml
   - inputFile: ../feature/notification/notification.yml
@@ -50,10 +49,6 @@ inputs:
   - inputFile: ../feature/diagnosis/diagnosis.yml
   - inputFile: ../feature/admin/admin.yml
   - inputFile: ../feature/lifegoal/lifegoal.yml
-  - inputFile: ../feature/admin-insights/admin-insights.yml
-  - inputFile: ../feature/admin-data/admin-data.yml
-  - inputFile: ../feature/admin-memory/admin-memory.yml
-  - inputFile: ../feature/telemetry/telemetry.yml
   - inputFile: ../feature/ai-drafts/ai-drafts.yml
   - inputFile: ../feature/wearable/wearable.yml
   - inputFile: ../feature/boop/boop.yml

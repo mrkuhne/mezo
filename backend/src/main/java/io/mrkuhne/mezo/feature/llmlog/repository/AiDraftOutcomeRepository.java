@@ -15,9 +15,9 @@ public interface AiDraftOutcomeRepository extends JpaRepository<AiDraftOutcomeEn
     Optional<AiDraftOutcomeEntity> findByCreatedByAndDraftIdAndDeletedFalse(UUID createdBy, UUID draftId);
 
     /** Per-feature outcome-count buckets since {@code since} (Funkciók scorecard
-     *  {@code acceptedShare}, mezo-76f6 Task 2) — the primitive {@link
-     *  io.mrkuhne.mezo.feature.admin.service.AdminFeatureService#board} folds into
-     *  {@code (accepted+edited)/total}, null when a feature has zero outcomes in the period.
+     *  {@code acceptedShare}, mezo-76f6 Task 2) — the primitive the admin hub's feature board
+     *  folded into {@code (accepted+edited)/total} (that reader left with the web retirement,
+     *  mezo-r36n9.97.4), null when a feature has zero outcomes in the period.
      *  Same grouped-aggregate shape as {@code LlmLogRepository#aggregateByUserAndFeatureSince}. */
     @Query("""
         select new io.mrkuhne.mezo.feature.llmlog.repository.AiDraftOutcomeFeatureRow(
