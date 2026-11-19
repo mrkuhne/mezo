@@ -443,5 +443,16 @@
       "mezo-r36n9.99"
     ],
     "mi_valtozott": "Ha egy gyakorlaton technika és kihívás is van, a telefon edzés közben előbb a technika lépéseit vezeti végig, utána jön a kihívás félismétléseinek számlálója a megdöntendő csúccsal. Ha a technikát korábban abbahagyod, vagy egy myo mini-sorozat már nem jön ki, a kihívás akkor is jön. A gyakorlat neve alatt mindkét címke látszik. Élőben akkor jelenik meg, amikor a szerver is megkapja ezt a változást."
+  },
+  "ec97c3037": {
+    "tipus": "Új funkció",
+    "cim": "Edzés: Boop finomítja a technikák tervét",
+    "datum": "2026-11-19",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.82"
+    ],
+    "mi_valtozott": "Amikor a heti javaslatot kézi módban te nézed át, Boop a háttérben megnézi a múlt hetedet (mit emeltél, sikerült-e a technika, fájt-e ízület, volt-e izomláz, megállt-e egy izom), és a gépi technika- és kihívássorokat áthelyezheti vagy kicserélheti — csak oda, ahová a szabályok amúgy is engednék, a napi és heti kereten belül, a Tartás izmokra soha. Minden változtatás egy rövid magyar indoklással és „Boop javaslata” jelöléssel jön, és te döntesz róla. A saját választásaidhoz nem nyúl; ha az AI nem működik, a gépi terv marad. Az elfogadott Boop-választás megmarad, amíg szabályos. Automata módban, a blokképítőben és a blokk indulásakor nincs AI. Az első ilyen átnézésed hétfőn (november 23-án) jön.",
+    "verzio": "v3.7.0"
   }
 }

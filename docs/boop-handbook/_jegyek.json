@@ -1054,5 +1054,25 @@
     ],
     "mit_kapsz": "Ha egy gyakorlaton technika és kihívás is van, edzés közben előbb a technika lépései jönnek, utána a kihívás félismétlései; ha a technikát korábban abbahagyod, a kihívás akkor is jön.",
     "munkamenet": "player-technique"
+  },
+  "mezo-r36n9.100": {
+    "cim": "Edzés: Boop indoklása a heti átnézésben",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés",
+      "AI és memória"
+    ],
+    "mit_kapsz": "A heti átnézésben a „Boop javaslata” sor mellett azt is látod, miért javasolja Boop a technika vagy a kihívás áthelyezését."
+  },
+  "mezo-r36n9.98": {
+    "cim": "Edzés: technika és kihívás együtt, ajánlás a technikaválasztóban",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Egy gyakorlaton a technika és a nap kihívása együtt is lehet (előbb a technika, utána a félismétlések), a blokképítő technikaválasztója pedig gyakorlatonként ajánl egyet, egy mondatos indoklással.",
+    "munkamenet": "boop-blokk-epito"
   }
 }

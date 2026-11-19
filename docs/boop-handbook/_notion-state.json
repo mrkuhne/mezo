@@ -1037,7 +1037,7 @@
     },
     "jegyek:mezo-r36n9.82": {
       "page_id": "41c8968e-752b-8197-b6d0-e39c2342b9c5",
-      "hash": "7d3faabe2614"
+      "hash": "a1466f6f2105"
     },
     "jegyek:mezo-r36n9.81": {
       "page_id": "41c8968e-752b-81bb-9fa1-cc91d6cbb02c",
@@ -1205,7 +1205,7 @@
     },
     "kezikonyv:07-edzes/15-technikak": {
       "page_id": "41c8968e-752b-8133-8f30-e3411e37f22a",
-      "hash": "d329e5cb820e"
+      "hash": "9d217d0505db"
     },
     "jegyek:mezo-r36n9.92": {
       "page_id": "41d8968e-752b-819d-bed4-c90e4df96a79",
@@ -1286,6 +1286,22 @@
     "kiadasok:20bad910a": {
       "page_id": "41d8968e-752b-816c-89e7-c2b21826e261",
       "hash": "57768a4de70c"
+    },
+    "jegyek:mezo-r36n9.100": {
+      "page_id": "41d8968e-752b-815d-a77b-e51e210d4b1e",
+      "hash": "3e21e83873a0"
+    },
+    "dontesek:d-2026-11-19-ai-technika-marad": {
+      "page_id": "41d8968e-752b-8106-ba2b-cedb7f6ffca4",
+      "hash": "cd06a98fe8af"
+    },
+    "kiadasok:ec97c3037": {
+      "page_id": "41d8968e-752b-81c9-b9e0-e0609bb3672c",
+      "hash": "9a33f6f76ab8"
+    },
+    "jegyek:mezo-r36n9.98": {
+      "page_id": "41d8968e-752b-8105-a390-c584f6d7a6bf",
+      "hash": "4c2188dafca0"
     }
   }
 }
