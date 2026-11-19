@@ -17,7 +17,7 @@ struct SwapActions {
     var substitutes: @MainActor (UUID) async -> Substitutes? = { _ in nil }
     /// The sentence to show when the change could not be saved, nil on success.
     var markMissing: @MainActor (MissingEdit) async -> String? = { _ in nil }
-    var undoMissing: @MainActor (MissingEdit) async -> Void = { _ in }
+    var undoMissing: @MainActor (MissingEdit) async -> String? = { _ in nil }
     var setDiscomfort: @MainActor (Bool, UUID) async -> Bool = { _, _ in false }
 }
 
@@ -40,7 +40,10 @@ struct SwapSheet: View {
     @State private var showAll = false
     @State private var query = ""
     @State private var note: String?
-    @State private var undo: (@MainActor () async -> Void)?
+    /// The undo of the last change; the sentence when it could not be undone, nil when it was.
+    @State private var undo: (@MainActor () async -> String?)?
+    /// A chip or *visszavonom* is talking to the server: a second tap waits (like the player's `swapping`).
+    @State private var busy = false
     /// The kinds to choose from when the exercise needs several portable ones.
     @State private var asking: [EquipmentKind]?
     /// The chip lights at the tap, not when the server answers.
@@ -94,17 +97,27 @@ struct SwapSheet: View {
     @ViewBuilder private func chipButtons(_ out: CatalogExercise, edit: MissingEdit?, lacking: Bool, sore: Bool) -> some View {
         // Bodyweight only: there is no kit to switch off.
         if edit != nil || lacking {
-            chip("ehhez nincs eszközöm", on: lacking || asking != nil) { Task { await toggleEquipment(out) } }
+            chip("ehhez nincs eszközöm", on: lacking || asking != nil) { guarded { await toggleEquipment(out) } }
         }
-        chip("nem esik jól", on: sore) { Task { await toggleDiscomfort(!sore) } }
+        chip("nem esik jól", on: sore) { guarded { await toggleDiscomfort(!sore) } }
+    }
+
+    /// One server conversation at a time; a tap while one runs is dropped.
+    private func guarded(_ work: @escaping @MainActor () async -> Void) {
+        guard !busy else { return }
+        busy = true
+        Task { await work(); busy = false }
     }
 
     private func toggleEquipment(_ out: CatalogExercise) async {
         if asking != nil { asking = nil; return }
         let gym = actions.gym()
         if gym.lacks(out) {
-            for e in gym.edits(blocking: out) { await actions.undoMissing(e) }
-            note = nil; undo = nil
+            var failure: String?
+            for e in gym.edits(blocking: out) {
+                if let problem = await actions.undoMissing(e) { failure = problem }
+            }
+            note = failure; undo = nil
             await refresh()
             return
         }
@@ -143,15 +156,19 @@ struct SwapSheet: View {
         }
         if on {
             note = "Feljegyeztem. Olyat ajánlok, ami kíméli."
-            undo = { _ = await actions.setDiscomfort(false, exerciseId) }
+            undo = {
+                await actions.setDiscomfort(false, exerciseId) ? nil : "Most nem tudtam visszavonni — ehhez internet kell."
+            }
         } else {
             note = nil; undo = nil
         }
         await refresh()
     }
 
+    /// Without suggestions a chip would change nothing he can see (spec §6.2): disabled and dimmed then.
     private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        let off = failed || swapping
+        return Button(action: action) {
             Text(title).nkFont(13, .medium).lineLimit(1).minimumScaleFactor(0.8)
                 .foregroundStyle(on ? NK.ground : .white)
                 .padding(.horizontal, 14).frame(minHeight: 38)
@@ -159,6 +176,8 @@ struct SwapSheet: View {
                 .overlay(Capsule().strokeBorder(.white.opacity(on ? 0 : 0.18), lineWidth: 0.5))
         }
         .buttonStyle(.plain)
+        .disabled(off || busy)
+        .opacity(off ? 0.4 : 1)
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
@@ -168,7 +187,7 @@ struct SwapSheet: View {
             Text("Melyik hiányzik a termedből?").nkFont(13).foregroundStyle(.white.opacity(0.7))
             ForEach(kinds, id: \.self) { k in
                 Button {
-                    if let out = outRow { Task { await apply(.kind(k), out) } }
+                    if let out = outRow { guarded { await apply(.kind(k), out) } }
                 } label: {
                     HStack {
                         Text(k.label).nkFont(15).foregroundStyle(.white)
@@ -181,6 +200,7 @@ struct SwapSheet: View {
                     .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .buttonStyle(.plain)
+                .disabled(busy || failed)
             }
         }
     }
@@ -202,12 +222,17 @@ struct SwapSheet: View {
     @ViewBuilder private var undoButton: some View {
         if let undo {
             Button("visszavonom") {
-                Task {
-                    await undo()
+                guarded {
+                    if let problem = await undo() {
+                        // Not undone: say so, and leave *visszavonom* to try again.
+                        note = problem
+                        return
+                    }
                     note = nil; self.undo = nil
                     await refresh()
                 }
             }
+            .disabled(busy)
             .buttonStyle(.plain).font(.system(size: 12, weight: .semibold))
             .foregroundStyle(.white).underline()
             .frame(minHeight: 28)

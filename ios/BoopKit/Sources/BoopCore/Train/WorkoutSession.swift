@@ -114,6 +114,10 @@ public struct SessionExercise: Codable, Sendable, Equatable, Identifiable {
     public var challenge: Bool?
     /// The half-rep count to beat on the challenge.
     public var challengeBest: Int?
+    /// „Nem esik jól" said in the swap sheet today and accepted by the server (mezo-r36n9.66). Kept with the
+    /// session so the chip still tells the truth — and can be cleared — after a relaunch. Optional so a session
+    /// saved by an older build still restores.
+    public var discomfort: Bool?
 
     public var isChallenge: Bool { challenge ?? false }
 
@@ -535,6 +539,11 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
         exercises[exercise.id] = replacement
         if let at = order.firstIndex(of: id) { order[at] = exercise.id }
         if currentExerciseId == id { currentExerciseId = exercise.id }
+    }
+
+    /// Record (or clear) „nem esik jól" on one exercise of the session.
+    public mutating func setDiscomfort(_ on: Bool, for id: UUID) {
+        exercises[id]?.discomfort = on ? true : nil
     }
 
     /// Skip the rest and get on with it.

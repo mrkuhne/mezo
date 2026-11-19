@@ -518,9 +518,14 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   row is found **by name** (`catalogRow(named:in:)`, as the technique sheet does); without one both chips are hidden. The
   equipment chip runs `missingEdit(for:)`: a machine / Smith / specialty row marks that exercise missing, one portable kind is
   switched off, several ask which one (bench last); un-tapping a lit chip undoes every edit blocking it
-  (`GymProfile.edits(blocking:)`). `EdzesStore.markMissing/undoMissing` apply the edit to the profile **as read from the
-  server** (a profile it could not read is never overwritten — the PUT replaces it whole) and take it back on a refusal;
-  `setDiscomfort` records / clears the swap-time discomfort; each chip re-fetches the suggestions. Today's exercises are left
+  (`GymProfile.edits(blocking:)`). `EdzesStore.saveGym` (behind `markMissing/undoMissing` and the gym page) **re-reads the
+  profile from the server before every write** and applies the edit to that (an edit from another device or run is never
+  written over; a profile it cannot read is never written — the PUT replaces it whole), runs one write at a time, and on a
+  refusal leaves the profile as the server last said it; both return the sentence to show. `setDiscomfort` records / clears
+  the swap-time discomfort and keeps the flag on the session's exercise (`SessionExercise.discomfort`, saved with the
+  session file), so the chip tells the truth after a relaunch. Each chip re-fetches the suggestions; chips and
+  *visszavonom* ignore a second tap while one is in flight, and when the suggestions cannot be fetched both chips are
+  disabled and dimmed (a change would show no effect). Today's exercises are left
   out of suggestions and list **by name** — the old filter compared catalogue ids with the workout's row ids and so never
   excluded anything on a real server. Loading says *Keresem…*; a failed fetch says *„Most nem érem el az ajánlásokat — a
   teljes listából választhatsz.”* over the plain list. The swap itself is unchanged (online, *Cserélem…*, rows disabled,

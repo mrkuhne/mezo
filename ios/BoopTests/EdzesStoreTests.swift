@@ -232,9 +232,96 @@ struct EdzesMaLogicTests {
 struct EdzesSwapTests {
     let transport = ScriptedTransport()
 
-    func store() -> EdzesStore {
+    func store(folder: URL? = nil) -> EdzesStore {
         EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
-                   cache: nil)
+                   cache: nil, folder: folder)
+    }
+
+    /// The server's gym profile, changed by its own PUTs and — in a test — by „another device".
+    final class ServerGym: @unchecked Sendable {
+        private let lock = NSLock()
+        private var off: [String]
+        private var puts = 0
+        /// The 1-based PUT numbers the server refuses.
+        let refuse: Set<Int>
+        init(off: [String], refuse: Set<Int> = []) { self.off = off; self.refuse = refuse }
+        var json: String { lock.withLock { Self.render(off) } }
+        func elsewhere(_ kinds: [String]) { lock.withLock { off = kinds } }
+        func put(_ body: String) -> (Int, String) {
+            lock.withLock {
+                puts += 1
+                if refuse.contains(puts) { return (400, "") }
+                let data = Data(body.utf8)
+                let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+                off = obj?["offKinds"] as? [String] ?? []
+                return (200, Self.render(off))
+            }
+        }
+        static func render(_ off: [String]) -> String {
+            #"{"offKinds":[\#(off.sorted().map { "\"\($0)\"" }.joined(separator: ","))],"missingExerciseIds":[]}"#
+        }
+    }
+
+    func serve(_ server: ServerGym) {
+        transport.on("getGymProfile") { _ in (200, server.json) }
+        transport.on("putGymProfile") { body in server.put(body) }
+    }
+
+    @Test func everyWriteReReadsTheProfileSoAnotherDevicesEditSurvives() async {
+        let server = ServerGym(off: ["barbell"])
+        serve(server)
+        let s = store()
+        await s.loadGym()
+        // Switched off on another device (or in an earlier run) after this store read the profile.
+        server.elsewhere(["barbell", "smith"])
+        #expect(await s.markMissing(.kind(.cable)) == nil)
+        #expect(s.gym.offKinds == ["barbell", "cable", "smith"])
+        #expect(transport.count("getGymProfile") == 2)
+    }
+
+    @Test func overlappingSavesLeaveTheStoreAsTheServerHasIt() async {
+        // Tap A's PUT is refused, tap B's goes through: the store must end on the server's truth, not on a
+        // snapshot from before A.
+        let server = ServerGym(off: [], refuse: [1])
+        serve(server)
+        let s = store()
+        async let a = s.markMissing(.kind(.cable))
+        async let b = s.markMissing(.kind(.dumbbell))
+        let (ra, rb) = await (a, b)
+        #expect(ra != nil)
+        #expect(rb == nil)
+        #expect(s.gym.offKinds == ["dumbbell"])
+        #expect(server.json.contains("dumbbell") && !server.json.contains("cable"))
+    }
+
+    @Test func aRefusedUndoSaysSo() async {
+        let server = ServerGym(off: ["cable"], refuse: [1])
+        serve(server)
+        let s = store()
+        #expect(await s.undoMissing(.kind(.cable)) != nil)
+        #expect(s.gym.offKinds == ["cable"])
+    }
+
+    @Test func nemEsikJolSurvivesARelaunch() async throws {
+        let folder = URL.temporaryDirectory.appendingPathComponent("swap-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let session = "c1c2c3d4-0001-4a2b-9c3d-111122223333", row = "c1c2c3d4-0002-4a2b-9c3d-111122223333"
+        transport.on("getTodayWorkout", 200, #"{"templateSessionId":"\#(session)","dayLabel":"Hét","title":"Pull","durationEst":40,"exercises":[{"id":"\#(row)","name":"Barbell Row","muscle":"back-mid","warmupSets":0,"workingSets":2,"repMin":8,"repMax":10,"targetRIR":2,"type":"compound"}],"weekDoneDates":[]}"#)
+        transport.on("startWorkout", 201, #"{"id":"c1c2c3d4-0005-4a2b-9c3d-111122223333","templateSessionId":"\#(session)","date":"2026-11-19","status":"active","sets":[]}"#)
+        transport.on("markExerciseDiscomfort", 204)
+        transport.on("clearExerciseDiscomfort", 204)
+        let first = store(folder: folder)
+        await first.load()
+        first.startWorkout(date: "2026-11-19")
+        let id = UUID(uuidString: row)!
+        #expect(await first.setDiscomfort(true, exerciseId: id))
+
+        // The app relaunches: a new store reads the session file and the chip is still lit — and can be cleared.
+        let second = store(folder: folder)
+        #expect(second.discomforts == [id])
+        await second.load()
+        #expect(await second.setDiscomfort(false, exerciseId: id))
+        #expect(store(folder: folder).discomforts.isEmpty)
     }
 
     @Test func noEquipmentNeverWritesOverAProfileItCouldNotRead() async {
@@ -254,7 +341,7 @@ struct EdzesSwapTests {
         let s = store()
         #expect(await s.markMissing(.kind(.cable)) == nil)
         #expect(s.gym.offKinds == ["barbell", "cable"])
-        await s.undoMissing(.kind(.cable))
+        #expect(await s.undoMissing(.kind(.cable)) == nil)
         #expect(s.gym.offKinds == ["barbell"])
     }
 

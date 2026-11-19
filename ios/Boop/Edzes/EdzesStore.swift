@@ -153,8 +153,14 @@ final class EdzesStore {
     /// „Mi van a termemben": what his gym lacks. Everything counts as available until the server says otherwise.
     private(set) var gym = GymProfile()
     private(set) var gymLoaded = false
-    /// Exercises of today's workout he said „nem esik jól" about — the chip stays lit when the sheet reopens.
-    private(set) var discomforts: Set<UUID> = []
+    /// Exercises of today's workout he said „nem esik jól" about. Read from the session, which is saved with every
+    /// change, so the chip stays true across the sheet reopening and the app relaunching.
+    var discomforts: Set<UUID> {
+        Set(session?.exercises.values.filter { $0.discomfort == true }.map(\.id) ?? [])
+    }
+    /// Gym writes run one after another: each re-reads the profile first, and two overlapping ones would each
+    /// write back a profile missing the other's change.
+    private var gymWrite: Task<String?, Never>?
 
     func loadGym() async {
         guard let client, !gymLoaded else { return }
@@ -176,30 +182,47 @@ final class EdzesStore {
         return await saveGym { $0.applying(edit) }
     }
 
-    /// *Visszavonom*.
-    func undoMissing(_ edit: MissingEdit) async {
-        if case .ask = edit { return }
-        _ = await saveGym { $0.reverting(edit) }
+    /// *Visszavonom*. The sentence to show when it could not be saved, nil on success.
+    func undoMissing(_ edit: MissingEdit) async -> String? {
+        if case .ask = edit { return nil }
+        return await saveGym { $0.reverting(edit) }
     }
 
-    /// `change` is applied to the profile as read from the server, never to the empty one the store starts with.
-    func saveGym(_ change: (GymProfile) -> GymProfile) async -> String? {
+    /// `change` is applied to the profile **as the server has it right now** — re-read before every write, so an
+    /// edit made on another device or in an earlier run is never written over. A refused save leaves the profile as
+    /// the server last said it. Writes are serialised (`gymWrite`).
+    func saveGym(_ change: @escaping (GymProfile) -> GymProfile) async -> String? {
+        let previous = gymWrite
+        let write = Task { @MainActor [weak self] () -> String? in
+            _ = await previous?.value
+            guard let self else { return nil }
+            return await self.writeGym(change)
+        }
+        gymWrite = write
+        return await write.value
+    }
+
+    private func writeGym(_ change: (GymProfile) -> GymProfile) async -> String? {
         guard let client else { return "Most nem érem el a termed beállításait." }
-        // The save replaces the whole profile: writing over one that was never read would wipe what he set
-        // elsewhere.
-        await loadGym()
-        guard gymLoaded else { return "Most nem érem el a termed beállításait." }
-        let before = gym
-        let next = change(gym)
+        let fresh: GymProfile
+        do {
+            fresh = try await client.gymProfile()
+        } catch TrainFetchError.offline {
+            return "Ehhez internet kell, és most nincs."
+        } catch {
+            return "Most nem érem el a termed beállításait."
+        }
+        gymLoaded = true
+        let next = change(fresh)
         gym = next
         do {
             gym = try await client.saveGymProfile(next)
             return nil
         } catch TrainFetchError.offline {
-            gym = before
+            gym = fresh
             return "Ehhez internet kell, és most nincs."
         } catch {
-            gym = before
+            gym = fresh
             return "A termed beállítását most nem sikerült elmenteni."
         }
     }
@@ -211,7 +234,10 @@ final class EdzesStore {
             if on { try await client.markDiscomfort(workoutId: workoutId, exerciseId: exerciseId) }
             else { try await client.clearDiscomfort(workoutId: workoutId, exerciseId: exerciseId) }
         } catch { return false }
-        if on { discomforts.insert(exerciseId) } else { discomforts.remove(exerciseId) }
+        if var updated = self.session {
+            updated.setDiscomfort(on, for: exerciseId)
+            update(updated)
+        }
         return true
     }
 
@@ -226,7 +252,6 @@ final class EdzesStore {
     /// The workout is over: the session leaves the phone's memory and its file.
     func endWorkout() {
         session = nil
-        discomforts = []
         if let sessionFile { try? FileManager.default.removeItem(at: sessionFile) }
     }
 
