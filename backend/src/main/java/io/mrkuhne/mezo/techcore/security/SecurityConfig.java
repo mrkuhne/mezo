@@ -6,6 +6,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -46,6 +47,9 @@ public class SecurityConfig {
                 // (management.server.port); EndpointRequest matches nothing on the app port,
                 // so /actuator/* there falls through to authenticated() → 401.
                 .requestMatchers(EndpointRequest.to("health", "prometheus")).permitAll()
+                // mezo-r36n9.97.1: exercise demo images (classpath:/static/exercises) — public, the
+                // iPhone app loads them without an Authorization header.
+                .requestMatchers(HttpMethod.GET, "/exercises/**").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(o -> o.jwt(jwt -> {}));
         return http.build();

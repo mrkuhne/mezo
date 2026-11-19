@@ -168,7 +168,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### auth
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-11-13, done) ·
-  [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-10-11, done) ·
+  [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-11-19, done) ·
   [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
@@ -694,7 +694,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-17, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-11-17, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-11-17, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-11-18, done) ·
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-11-19, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-11, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
@@ -1737,11 +1737,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     useEditableNumber.ts, useRecoveryBetter.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts,
     weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutReviewDerive.ts, workoutState.ts
   - **root:** InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 129 IT + 40 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 130 IT + 40 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
-    `ExerciseCatalogSoftDeleteIT`, `ExerciseHistoryResolverRangeIT`, `ExerciseRecordContractIT`,
+    `ExerciseCatalogSoftDeleteIT`, `ExerciseHistoryResolverRangeIT`, `ExerciseImagesIT`, `ExerciseRecordContractIT`,
     `ExerciseRecordServiceIT`, `ExerciseSetLegRepositoryIT`, `ExerciseTechniqueApiIT`, `ExerciseVolumeFlagIT`,
     `FailingWeeklyEngineIT`, `GoalPresetBackfillSqlIT`, `GoalPresetCarryIT`, `GymScheduleContractIT`,
     `GymSignalCalculatorIT`, `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoPlanEvaluateContractIT`,

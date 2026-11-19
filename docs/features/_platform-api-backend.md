@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-18
+updated: 2026-11-19
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -413,6 +413,8 @@ cd frontend && pnpm generate:api           # regenerate src/data/_client/api.gen
 ---
 
 ## 9. Decisions, gotchas & deferred
+
+- **Static content (`mezo-r36n9.97.1`, 2026-11-19).** The backend now serves `classpath:/static/exercises/**` at `/exercises/**` (Spring's default static handler, `spring.web.resources.cache.cachecontrol.max-age=7d`); the ingress routes `/exercises` to the backend. First step of retiring the web app (decision #52).
 
 - **Contract-first is the rule, not a guideline.** Never hand-write boundary DTOs; never re-add validation the spec can express. Both generated artifacts (`api/openapi.yml`, `frontend/src/data/_client/api.gen.ts`) are committed and regenerated together in one green commit; breaking changes are allowed *within* Phase 2 since FE+BE ship together. Spec → `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`; convention → `docs/references/api_contract_conventions.md`.
 - **SSE endpoints in the contract-first flow (V0.4 precedent, `mezo-fnnq.4`; the live `tool` event added mezo-280).** A streaming operation **stays in the contract fragment** (single source of truth; its event payload schemas — `StreamDelta`, `StreamToolCall`, `StreamError` — generate both FE types and backend `api.dto` models) but goes under a **dedicated tag** (`CompanionStream`), and the generated `<Tag>Api` interface is **deliberately left unimplemented** — an interface no bean implements contributes no mappings, so it is inert. The controller is **hand-written** (`CompanionStreamController`: own `@PostMapping(produces = TEXT_EVENT_STREAM_VALUE)` + `@Valid @RequestBody` on the generated request DTO, returning `Flux<ServerSentEvent<Object>>` — MVC adapts it via reactor-core, which Spring AI already brings) because the generator cannot express a reactive SSE return type. Both ArchUnit guards carry a **documented allowlist entry** (`ArchitectureTest.HAND_WRITTEN_CONTROLLER_ALLOWLIST`; the LLM fake's forced-failure sentinels are likewise allowlisted in the raw-exception rule). Every event `data:` line is JSON; pre-stream failures (400/401/404) surface as ordinary `SystemMessageList` JSON — clients send `Accept: text/event-stream, application/json`. This is the ONE sanctioned exception to "controllers implement the generated interface"; reuse the same shape for any future streaming endpoint.

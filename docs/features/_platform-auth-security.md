@@ -2,7 +2,7 @@
 title: Auth & Security
 type: feature-platform
 status: done
-updated: 2026-10-11
+updated: 2026-11-19
 tags: [platform, auth, backend, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth
@@ -183,7 +183,7 @@ Entity: `…/feature/auth/entity/InviteEntity.java` (`isUsed()`/`isExpired(now)`
 
 `RegisterRequest.password`/`ChangePasswordRequest.newPassword` are `minLength: 8, maxLength: 72` (chars) — enforced again server-side in bytes (`AuthService.assertBcryptSafe`, since BCrypt throws past 72 *bytes* and multi-byte Hungarian UTF-8 can blow the char-length check without blowing the byte one). DTOs are **generated** into `io.mrkuhne.mezo.api.dto` (BE) and `components['schemas']` in `frontend/src/data/_client/api.gen.ts` (FE) — never hand-written.
 
-**Public allowlist** (`SecurityConfig.java`): `/api/auth/login`, `/api/auth/register`, `/actuator/health` and `/actuator/prometheus` — **on the management port only** (`management.server.port`, 8081, cluster-internal; `EndpointRequest.to("health","prometheus")`; on the app port `/actuator/*` is not mapped and answers 401). **Everything else** `authenticated()`.
+**Public allowlist** (`SecurityConfig.java`): `/api/auth/login`, `/api/auth/register`, `GET /exercises/**` (static demo stills, since `mezo-r36n9.97.1`), `/actuator/health` and `/actuator/prometheus` — **on the management port only** (`management.server.port`, 8081, cluster-internal; `EndpointRequest.to("health","prometheus")`; on the app port `/actuator/*` is not mapped and answers 401). **Everything else** `authenticated()`.
 
 **Admin endpoints** (S3, `mezo-qw37.3`) — contract source: [`api/feature/admin/admin.yml`](../../api/feature/admin/admin.yml). Every method on `AdminController` opens with `currentUser.requireOwner()` (403 `AUTH_FORBIDDEN` for a non-owner caller) before `AdminService` runs the domain rule.
 | Verb | Path | Body → Response | Domain rule / errors |
@@ -409,6 +409,8 @@ cd frontend && VITE_USE_MOCK=true pnpm test     # mock mode
 ---
 
 ## 9. Decisions, gotchas & deferred
+
+- **Public exercise stills (`mezo-r36n9.97.1`, 2026-11-19).** `SecurityConfig` permits `GET /exercises/**` without a token: the 248 demo JPEGs moved from the web app into the backend's static resources and the iPhone's image loader sends no `Authorization` header. Not personal data; a missing file answers 404, not 401 (`ExerciseImagesIT`).
 
 **Gotchas:**
 - HS256 header must be set **explicitly** on encode (Nimbus + symmetric secret) — see §4.

@@ -18,6 +18,12 @@ spring:
       # via GlobalExceptionHandler.handleMaxUploadSize (safety net), never a 500.
       max-file-size: 6MB
       max-request-size: 12MB # 12MB: the photo import (mezo-d8tr) sends up to TWO 5 MB photos in one request.
+  web:
+    resources:
+      cache:
+        # Exercise images (static/exercises, mezo-r36n9.97.1) are immutable per filename.
+        cachecontrol:
+          max-age: 7d
   mvc:
     async:
       # SSE chat turns (companion V0.4): Gemini streams can exceed the container's ~30s
