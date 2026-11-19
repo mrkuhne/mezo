@@ -30,6 +30,8 @@ enum EdzesTab: String, CaseIterable {
 /// A sub-page of the room, opened from a card.
 enum EdzesPage: String, Identifiable {
     case blockLoad
+    /// The block builder and the weekly review (mezo-r36n9.83, `ios/Boop/EdzesTerv/`).
+    case builder, review
     var id: String { rawValue }
 }
 
@@ -40,6 +42,7 @@ struct EdzesRoom: View {
     @Environment(\.closeRoom) private var closeRoom
     @Environment(\.openPlace) private var openPlace
     @Environment(\.trainClient) private var train
+    @Environment(\.planClient) private var plan
     @Environment(\.serverCache) private var cache
     @Environment(\.workoutFolder) private var workoutFolder
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
@@ -48,6 +51,8 @@ struct EdzesRoom: View {
     @State private var store: EdzesStore?
     @State private var toast: String?
     @State private var page: EdzesPage?
+    /// This week's proposal for the Blokk tab's entrance card (mezo-r36n9.83).
+    @State private var weekReview: WeekReviewModel?
     /// Which of the workout's own surfaces is up. The session itself lives in the store, so
     /// closing the player („kis méretre") leaves the workout running.
     @State private var phase: WorkoutPhase = .hidden
@@ -102,6 +107,15 @@ struct EdzesRoom: View {
             switch p {
             case .blockLoad:
                 if let block { BlockLoadPage(block: block, hue: hue, age: store?.blockAgeText) { page = nil } }
+            case .builder:
+                if let plan {
+                    BlockBuilderPage(model: BlockBuilderModel(client: plan)) {
+                        page = nil
+                        Task { await store?.loadBlock(); await weekReview?.load() }
+                    }
+                }
+            case .review:
+                if let weekReview { WeekReviewDeck(model: weekReview) { page = nil; Task { await weekReview.load() } } }
             }
         }
         .fullScreenCover(isPresented: Binding(get: { phase == .briefing && workout != nil },
@@ -151,6 +165,8 @@ struct EdzesRoom: View {
             // The catalog is only needed by the swap sheet, but it is one cached read and the gym is exactly
             // where the network is not: better here than at the moment a machine turns out to be occupied.
             await store?.loadCatalog()
+            if weekReview == nil, let plan { weekReview = WeekReviewModel(client: plan) }
+            await weekReview?.load()
             if blockDay == nil { blockDay = block?.days.first(where: \.isCurrent)?.day ?? block?.days.first?.day }
         }
     }
@@ -437,6 +453,10 @@ struct EdzesRoom: View {
 
     @ViewBuilder private var blokk: some View {
         if let b = block {
+            if let weekReview, plan != nil {
+                WeekReviewEntrance(model: weekReview, hue: hue,
+                                   openReview: { page = .review }, openBuilder: { page = .builder })
+            }
             blockLoadCard(b)
             weekCarousel(b)
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }

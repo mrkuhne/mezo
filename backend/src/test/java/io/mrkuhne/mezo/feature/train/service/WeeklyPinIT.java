@@ -114,7 +114,7 @@ class WeeklyPinIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void aKeptLineStillPinsTheRowADayEditReMinted() {
+    void aKeptLineStillPinsTheRowAfterADayEdit() {
         MesocycleEntity meso = run();
         WorkoutSessionEntity day = todaysDay(meso);
         ExerciseEntity row = exercise(day);
@@ -127,7 +127,8 @@ class WeeklyPinIT extends AbstractIntegrationTest {
                 .repMin(6).repMax(8).targetRIR(0).type(GymExerciseInput.TypeEnum.COMPOUND).build()));
 
         TodayExercise pinned = only();
-        assertThat(pinned.getId()).isNotEqualTo(row.getId()); // a new row, the same exercise
+        // the same one-exercise list is saved in place (mezo-r36n9.83): the row keeps its id
+        assertThat(pinned.getId()).isEqualTo(row.getId());
         assertThat(pinned.getProgression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.HOLD);
         assertThat(pinned.getProgression().getTargetWeightKg()).isEqualByComparingTo("60");
     }

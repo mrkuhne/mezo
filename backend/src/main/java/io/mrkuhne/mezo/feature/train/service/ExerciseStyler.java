@@ -87,6 +87,41 @@ public class ExerciseStyler {
         return stability;
     }
 
+    /**
+     * A run's block style changed (mezo-r36n9.83): re-stamps the EXISTING rows in place under the new block
+     * style — ids, order and technique picks untouched, an exercise's own style and the owner's overrides
+     * respected exactly as on a save (the rows are their own carry-over source, so nothing needs carrying).
+     * Rows that do not count toward volume keep their fixed prescription. Returns the stability lookup.
+     */
+    public CatalogAttributes.Lookup restampRows(List<ExerciseEntity> rows, TrainingStyle block) {
+        List<GymExerciseJson> current = rows.stream().map(mapper::toExerciseJson).toList();
+        CatalogAttributes.Lookup stability = lookup(current, block);
+        for (int i = 0; i < rows.size(); i++) {
+            if (!rows.get(i).isCountsTowardVolume()) {
+                continue;
+            }
+            GymExerciseJson e = current.get(i);
+            applyTo(rows.get(i), StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props));
+        }
+        return stability;
+    }
+
+    /**
+     * Clears, in place, every stored technique pick / challenge flag of {@code rows} that no longer passes
+     * {@link TechniqueRules} against its catalog row — the run-wide re-stamp (mezo-r36n9.83) touches no pick,
+     * so a stale one is cleared as a carried pick is on a save, never a 400. No catalog read without a pick.
+     */
+    public void clearInvalidPicks(List<ExerciseEntity> rows) {
+        List<GymExerciseJson> current = rows.stream().map(mapper::toExerciseJson).toList();
+        List<GymExerciseJson> unsent = current.stream().map(e -> e.withTechnique(null, null, null)).toList();
+        List<GymExerciseJson> cleared = clearInvalidCarried(current, unsent);
+        for (int i = 0; i < rows.size(); i++) {
+            if (cleared.get(i) != current.get(i)) {
+                applyTechniqueTo(rows.get(i), cleared.get(i));
+            }
+        }
+    }
+
     /** Stability of every catalog id that can matter: none at all when nothing is styled (no query). */
     public CatalogAttributes.Lookup lookupRows(Collection<ExerciseEntity> rows, boolean anyBlockStyled) {
         return catalogAttributes.load(rows.stream()

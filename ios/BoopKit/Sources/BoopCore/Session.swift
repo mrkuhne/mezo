@@ -21,10 +21,13 @@ public final class Session {
     /// The authenticated client (token middleware attached); screens share it.
     public let client: Client
     @ObservationIgnored let tokens: TokenStore
+    /// The same transport, base URL and token for the calls decoded by hand (the block builder, mezo-r36n9.83).
+    public let raw: RawJSONClient
 
     public init(tokens: TokenStore = KeychainTokenStore(), transport: any ClientTransport = makeTransport(), baseURL: URL = BoopConfig.apiBaseURL) {
         self.tokens = tokens
         self.client = makeClient(baseURL: baseURL, tokens: tokens, transport: transport)
+        self.raw = RawJSONClient(transport: transport, baseURL: baseURL, token: { tokens.read() })
     }
 
     public func bootstrap() async {

@@ -58,6 +58,8 @@ public interface TrainMapper {
     @Mapping(target = "volumePerMuscle", ignore = true)
     @Mapping(target = "days", ignore = true)
     @Mapping(target = "trainingStyle", source = "trainingStyle", qualifiedByName = "styleDto")
+    // the EFFECTIVE mode (run's own, else the server default) is stamped in TrainService (mezo-r36n9.83)
+    @Mapping(target = "weeklyReviewMode", ignore = true)
     MesocycleResponse toResponse(MesocycleEntity entity);
 
     @Mapping(target = "current", source = "currentSets")

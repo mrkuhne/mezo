@@ -714,5 +714,17 @@
     "miert": "A technika időt spórol: egy technikás sorozat nagyjából annyit ér, mint több sima, fele idő alatt. Egy plusz sorozat hosszabb edzést és több fáradtságot hozna, haszon nélkül.",
     "levaltotta": "Az a lehetőség, hogy a technikás sorozat a meglévők mellé, pluszban kerüljön.",
     "kovetkezmeny": "A technikás sorozat a napi és a gyakorlatonkénti felső korlátnál kettőnek számít, a heti sorozatszámban egynek (mezo-r36n9.80)."
+  },
+  "d-2026-11-19-futo-blokk-beallitasai": {
+    "cim": "A futó blokkon is menthető az edzésmód, a technikák és a heti átnézés",
+    "datum": "2026-11-19",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A blokképítő a futó blokkodon is el tudja menteni az edzésmódot és a technikák be- vagy kikapcsolását, és a heti javaslat nálad átáll arra, hogy te hagyod jóvá (egyenként vagy egyben, átnézés nélkül is). Ehhez a szerver kap egy kis bővítést.",
+    "miert": "Enélkül a heti átnézés csak megmutatná, mi lépett életbe magától — elfogadó gombok nélkül elveszne a lényege, és a technikákat sem tudnád a telefonról beállítani.",
+    "levaltotta": "A szerver nélküli változat: az edzésmód és a technika a futó blokkon csak látszik, a heti pakli csak visszanézhető.",
+    "kovetkezmeny": "Kb. egy nappal hosszabb munka; az első saját heti átnézésed a telepítés utáni hétfőn jön (mezo-r36n9.83)."
   }
 }

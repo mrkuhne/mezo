@@ -66,9 +66,9 @@ public class WeekProposalQueryService {
         return toDtos(found, meso);
     }
 
-    /** Maps with the configured mode and the run's tiers (for proposals stored before S3). */
+    /** Maps with the run's effective mode (mezo-r36n9.83) and the run's tiers (for proposals stored before S3). */
     List<WeekProposal> toDtos(List<MesoWeekProposalEntity> proposals, MesocycleEntity meso) {
-        String mode = props.weeklyReview().mode();
+        String mode = props.weeklyReview().modeFor(meso.getWeeklyReviewMode());
         Function<String, String> tierOf = group ->
             PriorityTier.of(meso.getMusclePriorities(), group).name().toLowerCase(Locale.ROOT);
         return proposals.stream().map(p -> mapper.toDto(p, mode, tierOf)).toList();

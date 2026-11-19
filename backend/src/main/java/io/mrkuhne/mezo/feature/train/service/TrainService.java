@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.MesocycleSettingsUpdateRequest;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.VolumeBaseline;
@@ -128,6 +129,7 @@ public class TrainService {
 
         return mesos.stream().map(m -> {
             MesocycleResponse r = mapper.toResponse(m);
+            r.setWeeklyReviewMode(effectiveReviewMode(m));
             r.setHasReport(reported.contains(m.getId()));
             Map<String, VolumeProfile> volume = volumeByMeso.get(m.getId());
             List<MesoDay> days = daysByMeso.get(m.getId());
@@ -384,9 +386,69 @@ public class TrainService {
     }
 
     /**
+     * Partial update of a running block's settings (mezo-r36n9.83); an absent (or null) field keeps its value,
+     * so a block style can be changed but never cleared here. A new style re-stamps every exercise row of the
+     * run's template days IN PLACE ({@link ExerciseStyler#restampRows}) — never soft-delete + re-insert, which
+     * would re-mint the ids a pending week proposal's lines point at. The techniques flag only flips: picks
+     * stay stored and are ignored while it is off. The review mode applies to proposals generated after the
+     * switch; a pending one stays pending (it expires at the week boundary as before). Archived = 409.
+     */
+    @Transactional
+    public MesocycleResponse updateSettings(UUID createdBy, UUID id, MesocycleSettingsUpdateRequest req) {
+        // The weekly proposal's lock order: the run row first, read only through that lock.
+        MesocycleEntity m = mesocycleRepository.findLockedByIdAndCreatedByAndDeletedFalse(id, createdBy)
+            .orElseThrow(OwnershipGuard::notFound);
+        if ("archived".equals(m.getStatus())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error(ExerciseTechniqueService.RUN_NOT_EDITABLE).build(), HttpStatus.CONFLICT);
+        }
+        if (req.getTechniquesEnabled() != null) {
+            m.setTechniquesEnabled(req.getTechniquesEnabled());
+        }
+        if (req.getWeeklyReviewMode() != null) {
+            m.setWeeklyReviewMode(req.getWeeklyReviewMode());
+        }
+        if (req.getTrainingStyle() != null) {
+            String wire = mapper.styleWire(req.getTrainingStyle());
+            if (!wire.equals(m.getTrainingStyle())) {
+                m.setTrainingStyle(wire);
+                restampRun(createdBy, m, TrainingStyle.fromWire(wire));
+            }
+        }
+        return assembleResponse(createdBy, m);
+    }
+
+    /** Re-stamps the run's template-day rows under {@code block}, day by day, then re-syncs the ledger. */
+    private void restampRun(UUID createdBy, MesocycleEntity m, TrainingStyle block) {
+        List<UUID> dayIds = workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(m.getId())).stream()
+            .filter(s -> s.getTemplateSessionId() == null).map(WorkoutSessionEntity::getId).toList();
+        if (dayIds.isEmpty()) {
+            return;
+        }
+        Map<UUID, List<ExerciseEntity>> byDay = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, dayIds).stream()
+            .collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId, LinkedHashMap::new, Collectors.toList()));
+        for (List<ExerciseEntity> rows : byDay.values()) {
+            styler.restampRows(rows, block);
+            // The picks were not touched here: one that became invalid under the catalog is cleared,
+            // exactly as a day save clears an invalid carried pick, never a 400 on the settings change.
+            styler.clearInvalidPicks(rows);
+            exerciseRepository.saveAll(rows);
+        }
+        volumeLedger.sync(createdBy, m.getId());
+    }
+
+    /**
      * Full-list day replace. Training style (mezo-r36n9.79): the style fields a client omits are
      * carried over from the day's old rows (same identity, first unmatched) and every row is
      * re-stamped under the run's style — a no-op for an unstyled run.
+     *
+     * <p>Ids (mezo-r36n9.83): when the new list is the SAME exercises in the same order — equal length and,
+     * at every index, the same identity (catalog id, else exact name; {@link #sameIdentity}) — the stored
+     * rows are updated IN PLACE (id, created_at, order kept), so a pending week proposal's lines and an
+     * open workout's logged sets keep pointing at them. Any other list (reorder, add, remove, swap) keeps
+     * the soft-delete + re-insert path with new ids.
      */
     @Transactional
     public MesoDay replaceDayExercises(UUID createdBy, UUID mesoId, UUID dayId, List<GymExerciseInput> inputs) {
@@ -406,9 +468,17 @@ public class TrainService {
             fresh.add(toExerciseEntity(createdBy, dayId, inputs.get(i), i));
         }
         CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, block, inputs);
-        techniqueGuard.validateRows(fresh); // before the soft-delete: a 400 leaves the day untouched
-        exerciseRepository.deleteAll(old);
-        List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
+        techniqueGuard.validateRows(fresh); // before any write: a 400 leaves the day untouched
+        List<ExerciseEntity> saved;
+        if (alignedByIdentity(old, fresh)) {
+            for (int i = 0; i < old.size(); i++) {
+                copyEditable(fresh.get(i), old.get(i));
+            }
+            saved = exerciseRepository.saveAll(old);
+        } else {
+            exerciseRepository.deleteAll(old);
+            saved = exerciseRepository.saveAll(fresh);
+        }
         volumeLedger.sync(createdBy, mesoId);
         return toDay(day, saved, mediaByCatalogOf(saved), block, stability);
     }
@@ -472,7 +542,55 @@ public class TrainService {
             createdBy);
     }
 
-    /** Full-list replace, same soft-delete + re-insert pattern as {@link #replaceDayExercises}. */
+    /** Same exercises, same order: equal length and the same identity at every index (mezo-r36n9.83). */
+    private static boolean alignedByIdentity(List<ExerciseEntity> old, List<ExerciseEntity> fresh) {
+        if (old.size() != fresh.size()) {
+            return false;
+        }
+        for (int i = 0; i < old.size(); i++) {
+            if (!sameIdentity(old.get(i), fresh.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** The carry-over / records identity: catalog id, else exact name (as {@code ExerciseStyler}). */
+    private static boolean sameIdentity(ExerciseEntity a, ExerciseEntity b) {
+        return a.getCatalogId() != null
+            ? a.getCatalogId().equals(b.getCatalogId())
+            : b.getCatalogId() == null && java.util.Objects.equals(a.getName(), b.getName());
+    }
+
+    /**
+     * Copies every column a day save writes ({@link #toExerciseEntity} + styling) from the freshly built row
+     * onto the stored one. Untouched: id, createdBy, createdAt, deleted, workoutSessionId, and the columns a
+     * day save never sets — note (the durable per-exercise note) and the mid-workout markers
+     * (replacesExerciseId, addedInWorkoutId, savedToPlan), which keep their stored values.
+     */
+    private static void copyEditable(ExerciseEntity from, ExerciseEntity to) {
+        to.setName(from.getName());
+        to.setMuscle(from.getMuscle());
+        to.setWarmupSets(from.getWarmupSets());
+        to.setWorkingSets(from.getWorkingSets());
+        to.setRepMin(from.getRepMin());
+        to.setRepMax(from.getRepMax());
+        to.setTargetRir(from.getTargetRir());
+        to.setAnchorWeightKg(from.getAnchorWeightKg());
+        to.setType(from.getType());
+        to.setCountsTowardVolume(from.isCountsTowardVolume());
+        to.setWarning(from.getWarning());
+        to.setCatalogId(from.getCatalogId());
+        to.setTrainingStyle(from.getTrainingStyle());
+        to.setRestSec(from.getRestSec());
+        to.setOverrides(from.getOverrides() == null ? null : new ArrayList<>(from.getOverrides()));
+        to.setTechnique(from.getTechnique());
+        to.setTechniqueSource(from.getTechniqueSource());
+        to.setChallenge(from.isChallenge());
+        to.setOrderIndex(from.getOrderIndex());
+    }
+
+    /** Full-list replace, soft-delete + re-insert (the misaligned branch of {@link #replaceDayExercises}). */
     private CustomWorkoutResponse replaceCustomExercises(
             UUID createdBy, WorkoutSessionEntity template, List<GymExerciseInput> inputs) {
         List<ExerciseEntity> old = exerciseRepository
@@ -546,9 +664,16 @@ public class TrainService {
         return e;
     }
 
+    /** The run's own weekly review mode, else the server default (mezo-r36n9.83). */
+    private MesocycleResponse.WeeklyReviewModeEnum effectiveReviewMode(MesocycleEntity m) {
+        return MesocycleResponse.WeeklyReviewModeEnum.fromValue(
+            volumeProperties.weeklyReview().modeFor(m.getWeeklyReviewMode()));
+    }
+
     /** Single-aggregate variant of the list stitching — write paths return the same shape as GET. */
     private MesocycleResponse assembleResponse(UUID createdBy, MesocycleEntity m) {
         MesocycleResponse r = mapper.toResponse(m);
+        r.setWeeklyReviewMode(effectiveReviewMode(m));
         // Lombok's @Builder on the generated DTO ignores the contract's `default: false`, so every
         // assembly must state hasReport explicitly or it goes out null (mezo-meyc.2).
         r.setHasReport(reportRepository
