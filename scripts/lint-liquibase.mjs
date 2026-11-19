@@ -51,6 +51,9 @@ const GRANDFATHERED = {
   // mezo-r36n9.102: released (deployed) with five ix_ indexes; 202611191800_mezo-r36n9.102_penz_naming.sql
   // renames them in the live schema.
   '202611191400_mezo-r36n9.102_penz.sql': new Set(['index-prefix']),
+  // mezo-r36n9.66: released (deployed, v3.15.0) with an ix_ index; 202611191900_mezo-r36n9.66_discomfort_index_naming.sql
+  // renames it in the live schema.
+  '202611171020_mezo-r36n9.66_exercise_discomfort.sql': new Set(['index-prefix']),
   // mezo-r36n9.2: released (deployed) with unnamed inline CHECKs on daily_metric / wearable_workout;
   // 202611100100_mezo-r36n9.2_wearable_check_naming.sql renames them in the live schema.
   '202611092310_mezo-r36n9.2_wearable_tables.sql': new Set(['inline-check']),
