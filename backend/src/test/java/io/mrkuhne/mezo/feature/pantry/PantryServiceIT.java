@@ -201,6 +201,97 @@ class PantryServiceIT extends AbstractIntegrationTest {
             .isEqualTo(PantryCatalogEntity.STATUS_DRAFT);
     }
 
+    /** An AI-estimated food as the quick-add leaves it: the author's own draft, source ai_estimate. */
+    private PantryCatalogEntity estimatedFood(String name) {
+        PantryCatalogEntity c = catalogPopulator.createFoodDefinition(owner, name, null);
+        c.setStatus(PantryCatalogEntity.STATUS_DRAFT);
+        c.setSource("ai_estimate");
+        c.setServingAmount(java.math.BigDecimal.valueOf(100));
+        c.setServingUnit("g");
+        c.setKcal(java.math.BigDecimal.valueOf(354));
+        return catalogRepository.saveAndFlush(c);
+    }
+
+    /** „Pontosítom" by typing (mezo-r36n9.63): the owner's own numbers replace the estimate on the SAME food. */
+    @Test
+    void testUpdateItem_shouldClearEstimatedWhenFactsTyped() {
+        PantryCatalogEntity estimate = estimatedFood("Kurkuma");
+        UUID shelfRow = catalogService.ensureItem(owner, estimate.getId()).getId();
+        assertThat(service.getPantry(user(owner)).getIngredients().get(0).getEstimated()).isTrue();
+
+        PantryItemRequest typed = foodReq();
+        typed.setName("Kurkuma");
+        typed.setKcal(java.math.BigDecimal.valueOf(312));
+        // the phone echoes what it read, including the old source — that is not a claim about the new facts
+        typed.setSource(io.mrkuhne.mezo.api.dto.PantrySource.AI_ESTIMATE);
+        var response = service.updateItem(user(owner), shelfRow, typed);
+
+        PantryCatalogEntity after = catalogRepository.findById(estimate.getId()).orElseThrow();
+        assertThat(after.getSource()).isEqualTo("manual");
+        assertThat(after.getStatus()).isEqualTo(PantryCatalogEntity.STATUS_VERIFIED);
+        assertThat(after.getKcal()).isEqualByComparingTo("312");
+        assertThat(response.getEstimated()).isFalse();
+        assertThat(response.getCatalogId()).isEqualTo(estimate.getId()); // the same food, never a second one
+        assertThat(service.getPantry(user(owner)).getIngredients()).hasSize(1)
+            .first().satisfies(i -> assertThat(i.getEstimated()).isFalse());
+    }
+
+    /** A price-only edit says nothing about the facts: the estimate stays an estimate. */
+    @Test
+    void testUpdateItem_shouldKeepEstimatedWhenOnlyStateFieldsChange() {
+        PantryCatalogEntity estimate = estimatedFood("Szumák");
+        UUID shelfRow = catalogService.ensureItem(owner, estimate.getId()).getId();
+
+        service.updateItem(user(owner), shelfRow, priceOnlyReq("Szumák", 990));
+
+        PantryCatalogEntity after = catalogRepository.findById(estimate.getId()).orElseThrow();
+        assertThat(after.getSource()).isEqualTo("ai_estimate");
+        assertThat(after.getStatus()).isEqualTo(PantryCatalogEntity.STATUS_DRAFT);
+    }
+
+    /** „Pontosítom" by a reader (barcode / label photo): its own source and the barcode land on the same row. */
+    @Test
+    void testUpdateItem_shouldTakeReaderSourceAndBarcode() {
+        PantryCatalogEntity estimate = estimatedFood("Zabital");
+        UUID shelfRow = catalogService.ensureItem(owner, estimate.getId()).getId();
+        long rowsBefore = catalogRepository.count();
+
+        PantryItemRequest scanned = foodReq();
+        scanned.setName("Zabital");
+        scanned.setKcal(java.math.BigDecimal.valueOf(46));
+        scanned.setSource(io.mrkuhne.mezo.api.dto.PantrySource.OPENFOODFACTS);
+        scanned.setBarcode(" 5999000111222 ");
+        var response = service.updateItem(user(owner), shelfRow, scanned);
+
+        PantryCatalogEntity after = catalogRepository.findById(estimate.getId()).orElseThrow();
+        assertThat(after.getSource()).isEqualTo("openfoodfacts");
+        assertThat(after.getBarcode()).isEqualTo("5999000111222");
+        assertThat(after.getKcal()).isEqualByComparingTo("46");
+        assertThat(after.getStatus()).isEqualTo(PantryCatalogEntity.STATUS_VERIFIED);
+        assertThat(response.getBarcode()).isEqualTo("5999000111222");
+        assertThat(response.getEstimated()).isFalse();
+        assertThat(catalogRepository.count()).isEqualTo(rowsBefore); // no second row
+    }
+
+    /** A barcode another of the author's foods already carries is a 409, never a unique-index 500. */
+    @Test
+    void testUpdateItem_shouldAnswer409WhenBarcodeBelongsToAnotherOwnFood() {
+        PantryCatalogEntity taken = catalogPopulator.createFoodDefinition(owner, "Zabital barista", null);
+        taken.setBarcode("5999000111222");
+        catalogRepository.saveAndFlush(taken);
+        PantryCatalogEntity estimate = estimatedFood("Zabital");
+        UUID shelfRow = catalogService.ensureItem(owner, estimate.getId()).getId();
+
+        PantryItemRequest scanned = foodReq();
+        scanned.setName("Zabital");
+        scanned.setBarcode("5999000111222");
+
+        assertThatThrownBy(() -> service.updateItem(user(owner), shelfRow, scanned))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessageContaining("PANTRY_CATALOG_BARCODE_TAKEN");
+        assertThat(catalogRepository.findById(estimate.getId()).orElseThrow().getBarcode()).isNull();
+    }
+
     /** kcal present, protein/carbs/fat NULL — the shape the zero-fill fabricates values for. */
     private PantryCatalogEntity nullMacroFoodDefinition(UUID author, String name) {
         PantryCatalogEntity c = new PantryCatalogEntity();

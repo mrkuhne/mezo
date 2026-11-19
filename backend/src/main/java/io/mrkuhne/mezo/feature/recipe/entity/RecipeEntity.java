@@ -136,6 +136,10 @@ public class RecipeEntity extends OwnedEntity {
     @Column(name = "lactose_free")
     private Boolean lactoseFree;
 
+    /** The client's idempotency key for the create (mezo-dguzv); null on rows created without one. */
+    @Column(name = "client_ref", columnDefinition = "uuid", updatable = false)
+    private UUID clientRef;
+
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("lineOrder")
     private List<RecipeIngredientEntity> lines = new ArrayList<>();

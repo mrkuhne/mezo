@@ -1,0 +1,38 @@
+openapi: 3.0.3
+info: { title: mezo recipe-cooked fragment, version: 1.0.0 }
+tags:
+  - name: RecipeCooked
+    description: >-
+      „Ezt főztem" (Boop Étel, mezo-r36n9.63): the owner says, types or photographs what he cooked from, and
+      the answer is a review DRAFT in the recipe-import shape, each ingredient matched against his pantry.
+      Stateless — nothing is saved and the shelf is not touched; the photos are shown to the AI only and never
+      stored. The AI only proposes: an exact name match is `matched`, an AI pick is always `confirm`, and a
+      line nothing fits is `missing`. Nothing said or shown is ever followed as an instruction.
+paths:
+  /api/recipe/cooked:
+    post:
+      tags: [RecipeCooked]
+      operationId: cookedRecipe
+      summary: Build a recipe review draft from what was cooked — typed/dictated text and/or up to 6 photos, matched to the pantry
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  maxLength: 4000
+                  description: 'What he cooked from, and how much (typed or dictated). At least one of text / photos is required.'
+                photos:
+                  type: array
+                  maxItems: 6
+                  items: { type: string, format: binary }
+                  description: 'Packaging, a scale display, a handwritten note, the counter. JPEG, PNG or WebP.'
+      responses:
+        '200': { description: 'The draft; result is null when no ingredient could be read', content: { application/json: { schema: { $ref: '#/components/schemas/RecipeImportResponse' } } } }
+        '400': { description: 'Neither text nor a photo; over-long text; too many photos; a photo that is not a JPEG/PNG/WebP picture, is empty or over the size cap; or the photos together over the total cap', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '502': { description: 'The AI could not be reached or failed while reading the capture', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: 'The AI is not available', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }

@@ -134,6 +134,16 @@ public class FeaturesConfiguration {
      *  (the SSRF-guarded WebPageClient) — a missing piece degrades to a clean 503. */
     public static final String RECIPE_IMPORT_SWITCH = "mezo.feature.recipe-import.enabled";
 
+    /** „Ezt főztem" (mezo-r36n9.63): a recipe draft from what was said / typed / photographed, matched
+     *  to the pantry. Off => the controller bean is gone. The capture read needs COMPANION_SWITCH (the
+     *  RecipeCookedLlm adapter lives there) — without it the operation answers a clean 503. */
+    public static final String RECIPE_COOKED_SWITCH = "mezo.feature.recipe-cooked.enabled";
+
+    /** The one-tap pantry quick-add (mezo-r36n9.63): off => the controller bean is gone (404). Binding
+     *  an existing shared food needs no AI; estimating a missing one additionally needs
+     *  COMPANION_SWITCH (the PantryEstimateLlm adapter lives there) — without it that step is a 503. */
+    public static final String PANTRY_QUICK_ADD_SWITCH = "mezo.feature.pantry-quick-add.enabled";
+
     /** Meal coach verdicts (mezo-mr4n): gates ONLY the LLM prose over a logged meal's score — the
      *  deterministic score and its breakdown stay on regardless. Verdicts additionally need
      *  COMPANION_SWITCH (the MealCoachLlm adapter lives there). */

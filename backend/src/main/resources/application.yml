@@ -17,7 +17,10 @@ spring:
       # effective, message-bearing limit; a container-cap breach still degrades to a clean 400
       # via GlobalExceptionHandler.handleMaxUploadSize (safety net), never a 500.
       max-file-size: 6MB
-      max-request-size: 12MB # 12MB: the photo import (mezo-d8tr) sends up to TWO 5 MB photos in one request.
+      # 32MB: „Ezt főztem" (mezo-r36n9.63) sends up to SIX photos in one request; its own, message-bearing
+      # total cap is mezo.recipe-cooked.max-total-bytes (24 MB) and must stay BELOW this container cap.
+      # Every other upload keeps its own service-side per-photo check (5 MB), so nothing else grew.
+      max-request-size: 32MB
   web:
     resources:
       cache:
@@ -338,6 +341,17 @@ mezo:
     max-prompt-chars: 24000
     # At/below this per-line match confidence a row is flagged for review (boundary-inclusive).
     confidence-threshold: 0.6
+  recipe-cooked:
+    # „Ezt főztem" (mezo-r36n9.63) — what was said / typed / photographed becomes a review draft matched
+    # to the pantry. The per-photo cap and the accepted picture types are recipe-import's (one rule for
+    # every recipe photo); the photos only ever go to the AI and are never stored.
+    max-photos: 6
+    # All photos of one capture together (bytes) — keep below spring.servlet.multipart.max-request-size.
+    max-total-bytes: 24000000
+    # Pantry candidates offered to the AI per ingredient line (the lexical shortlist).
+    shortlist-size: 8
+    # Typed/dictated text accepted (chars); the contract's own ceiling is 4000.
+    max-text-chars: 4000
   pantry-suggestion:
     # Deterministic Kamra swap heuristics (Fuel P6) — binds onto PantrySuggestionProperties
     # Max suggestions surfaced on the Kamra
@@ -409,6 +423,14 @@ mezo:
     # Recipe import (Boop B4) — URL / photo / pasted text -> review draft. A page's own structured
     # recipe needs no AI; the AI reads need the companion switch, the URL fetch the pantry-scrape one.
     recipe-import:
+      enabled: true
+    # „Ezt főztem" (mezo-r36n9.63) — a recipe draft from a spoken/typed/photographed capture, matched to
+    # the pantry. Off: the operation is not served. The capture read needs the companion switch too.
+    recipe-cooked:
+      enabled: true
+    # One-tap pantry quick-add (mezo-r36n9.63) — a food by name alone: the shared catalog's food when
+    # one matches, an AI estimate otherwise (that step needs the companion switch too). Off: 404.
+    pantry-quick-add:
       enabled: true
     # Meal coach verdicts (mezo-mr4n) — LLM prose (tagline/summary/improve) over the deterministic
     # meal score; needs the companion switch too (the MealCoachLlm adapter bean). Off: the coach

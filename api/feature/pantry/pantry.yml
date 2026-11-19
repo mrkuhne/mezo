@@ -5,6 +5,11 @@ tags:
     description: Pantry (Kamra) — food + supplement inventory (single pantry_item table, kind-projected)
   - name: PantryImport
     description: Pantry import — OpenFoodFacts lookup + confirmed-draft import (separate tag so the whole feature is bean-gated via mezo.feature.pantry-import.enabled)
+  - name: PantryQuickAdd
+    description: >-
+      One-tap „+ Kamrába" (mezo-r36n9.63): a food named on a recipe review reaches the shelf without a form —
+      the shared catalog's own food when one carries that name, an AI estimate otherwise. Separate tag so the
+      operation is bean-gated via mezo.feature.pantry-quick-add.enabled.
 paths:
   /api/pantry:
     get:
@@ -75,6 +80,47 @@ paths:
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Unknown or deleted catalog entry, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  # A food's OWN score (mezo-r36n9.63) — the recipe breakdown's twin (GET /api/recipe/{id}/breakdown):
+  # the same engine, the same MealBreakdown envelope, judged per the food's basis amount on the dimensions
+  # that need no meal around them (micro, who, fat_quality, nova, energy_density). Deterministic only —
+  # summary/improve stay null/empty. The list rows carry the total as `score`, so a list needs no call here.
+  /api/pantry/{id}/breakdown:
+    get:
+      tags: [Pantry]
+      operationId: getPantryItemBreakdown
+      summary: The score breakdown of one food on the caller's shelf, addressed by the shelf item id
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses:
+        '200': { description: 'Breakdown (breakdown null when the item is not a food, has no energy data, or no dimension could be computed)', content: { application/json: { schema: { $ref: '#/components/schemas/PantryBreakdownResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Not found (missing or somebody else''s shelf item)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/pantry/catalog/{id}/breakdown:
+    get:
+      tags: [Pantry]
+      operationId: getPantryCatalogBreakdown
+      summary: The score breakdown of one shared catalog food, addressed by the catalog id (a food not on the shelf yet)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses:
+        '200': { description: 'Breakdown (breakdown null when the entry is not a food, has no energy data, or no dimension could be computed)', content: { application/json: { schema: { $ref: '#/components/schemas/PantryBreakdownResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Unknown or deleted catalog entry, or somebody else''s unreviewed one', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  # Two segments under /api/pantry, so it never falls into the PUT/DELETE /api/pantry/{id} pattern:
+  # with the switch off the route answers a plain 404.
+  /api/pantry/items/quick-add:
+    post:
+      tags: [PantryQuickAdd]
+      operationId: quickAddPantryItem
+      summary: Put a food on the caller's shelf by name alone — the shared catalog's food when one matches, an AI-estimated food otherwise; idempotent on the name
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PantryQuickAddRequest' } } }
+      responses:
+        '200': { description: 'The caller''s pantry item (created or pre-existing); estimated says whether its facts are an unreviewed AI estimate', content: { application/json: { schema: { $ref: '#/components/schemas/PantryItemResponse' } } } }
+        '400': { description: Validation error (blank or over-long name), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'PANTRY_QUICK_ADD_NAME_TAKEN — the name belongs to something this operation must not bind (a supplement, somebody else''s unreviewed food, a deleted entry): add it through the normal form', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '502': { description: 'PANTRY_QUICK_ADD_ESTIMATE_FAILED — the AI estimate was unreadable or implausible; nothing was created', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: 'PANTRY_QUICK_ADD_LLM_UNAVAILABLE — no shared food carries the name and the AI is not available', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   # Import paths live OUTSIDE /api/pantry/* on purpose: a static segment under /api/pantry would
   # fall into the PUT/DELETE /api/pantry/{id} pattern when the import switch is off (405, not 404)
   # — the same collision the fuel intake 'entry' segment avoids.
@@ -224,6 +270,15 @@ components:
           description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
           additionalProperties: { type: string }
         barcode: { type: string, nullable: true, description: 'EAN/UPC of the product, when known' }
+        estimated: { type: boolean, description: 'True while the food''s facts are an unreviewed AI estimate (a quick-add nobody has confirmed yet) — the „becsült" tag. Always sent.' }
+        score:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: >-
+            The food's own score 0..1 (mezo-r36n9.63) — the total of GET /api/pantry/{id}/breakdown. null =
+            no score (no energy data, or nothing any dimension could read): never a fabricated number.
     SupplementStashResponse:
       type: object
       required: [id, name, brand, type, category, dose, form, protocol, timing, taken, macros, catalogId, catalogEditable]
@@ -273,7 +328,11 @@ components:
         catalogId: { type: string, format: uuid, nullable: true }
         name: { type: string }
         brand: { type: string, nullable: true }
+        # On an update of an AI-estimated food (mezo-r36n9.63) this names where the NEW facts come from
+        # (openfoodfacts / photo / manual …). Absent — or the old ai_estimate echoed back — while a fact
+        # changes means the owner typed them: the stored source becomes manual.
         source: { allOf: [ { $ref: '#/components/schemas/PantrySource' } ], nullable: true }
+        barcode: { type: string, nullable: true, maxLength: 32, description: 'EAN/UPC of the product (a definition field). Absent = leave as it is; 409 when another of the author''s foods carries it.' }
         category: { type: string, nullable: true, enum: [vegetables, fruits, meat, fish, eggs, dairy, cheese, legumes, grains, pasta, bakery, nuts_seeds, oils_fats, condiments, snacks, beverages, supplement, other] }
         notes: { type: string, nullable: true }
         per: { type: number, nullable: true }
@@ -316,6 +375,21 @@ components:
           description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
           additionalProperties: { type: string }
         barcode: { type: string, nullable: true, description: 'EAN/UPC of the product, when known' }
+        estimated: { type: boolean, description: 'True while the food''s facts are an unreviewed AI estimate (a quick-add nobody has confirmed yet). Always sent.' }
+        # The definition's basis and headline facts (mezo-r36n9.63), so a caller that just added or updated a
+        # food can bind a recipe row to it and prefill a facts form without re-reading the whole pantry.
+        # Honest nulls: null = the definition carries no value, never 0.
+        per: { type: number, nullable: true, description: 'Basis amount the facts refer to (100 for a per-100-g food)' }
+        unit: { type: string, nullable: true, description: 'Basis unit (g, ml, db …) — the unit a recipe row takes once it is bound to this food' }
+        kcal: { type: number, nullable: true }
+        proteinG: { type: number, nullable: true }
+        carbsG: { type: number, nullable: true }
+        fatG: { type: number, nullable: true }
+    PantryQuickAddRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120, description: 'The food''s name as said or written; it is also the idempotency key (normalised)' }
     PantrySharedFrom:
       type: object
       required: [authorName]
@@ -357,6 +431,23 @@ components:
           description: 'Allergen state per EU-14 key: contains | traces | unknown. A missing key is unknown, never free-of.'
           additionalProperties: { type: string }
         barcode: { type: string, nullable: true, description: 'EAN/UPC of the product, when known' }
+        estimated: { type: boolean, description: 'True while the food''s facts are an unreviewed AI estimate. Search returns verified entries only, so this is false there today. Always sent.' }
+        score:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: >-
+            The food's own score 0..1 (mezo-r36n9.63) — the total of GET /api/pantry/catalog/{id}/breakdown.
+            null for a non-food entry and for a food with no score (no energy data, nothing computable).
+    # The food breakdown (mezo-r36n9.63): the envelope schema is the meal fragment's MealBreakdown — a
+    # cross-fragment $ref resolved at merge time, exactly like RecipeBreakdownResponse.
+    PantryBreakdownResponse:
+      type: object
+      properties:
+        breakdown:
+          nullable: true
+          allOf: [ { $ref: '#/components/schemas/MealBreakdown' } ]
     PantryLookupResponse:
       type: object
       required: [results]
@@ -475,4 +566,6 @@ components:
         reason: { type: string }
     PantrySource:
       type: string
-      enum: [kifli.hu, myprotein.hu, tesco.hu, auchan.hu, gymbeam.hu, web, manual, lidl, nutriversum, herbahaz, nutrifit, decathlon, openfoodfacts, photo]
+      # ai_estimate (mezo-r36n9.63): the facts are an AI estimate from the quick-add. A CLOSED enum on the
+      # wire — a client generated before this value cannot decode a shelf that carries it.
+      enum: [kifli.hu, myprotein.hu, tesco.hu, auchan.hu, gymbeam.hu, web, manual, lidl, nutriversum, herbahaz, nutrifit, decathlon, openfoodfacts, photo, ai_estimate]

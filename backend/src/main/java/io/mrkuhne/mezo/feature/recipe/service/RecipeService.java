@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -48,12 +49,37 @@ public class RecipeService {
 
     @Transactional
     public RecipeResponse create(UUID userId, RecipeRequest req) {
+        if (req.getClientRef() != null) {
+            return createIdempotent(userId, req, req.getClientRef());
+        }
         RecipeEntity recipe = new RecipeEntity();
         recipe.setCreatedBy(userId); // server-side ownership — never from the client
         mapper.applyScalars(recipe, req);
         rebuildLines(userId, recipe, req.getIngredients());
         RecipeEntity saved = repository.save(recipe); // cascade=ALL persists the lines
         return withFit(saved, mapper.toResponse(saved), pantryByIdFor(List.of(saved)));
+    }
+
+    /**
+     * The retry path (mezo-dguzv, the meal create's shape): the recipe for a repeated {@code clientRef} is
+     * returned as it is — never a second one, and never rewritten by the repeat — and only the call that
+     * really created it fills the fields and the lines. The header is claimed with
+     * {@code INSERT … ON CONFLICT DO NOTHING}, so a concurrent request with the same ref waits on the index
+     * until this transaction commits (header AND lines together), then reads the finished recipe.
+     */
+    private RecipeResponse createIdempotent(UUID userId, RecipeRequest req, UUID ref) {
+        var existing = repository.findByCreatedByAndClientRefAndDeletedFalse(userId, ref);
+        if (existing.isPresent()) {
+            return withFit(existing.get(), mapper.toResponse(existing.get()), pantryByIdFor(List.of(existing.get())));
+        }
+        int created = repository.insertIfClientRefAbsent(userId, req.getName(), req.getCategory(), ref);
+        RecipeEntity recipe = repository.findByCreatedByAndClientRefAndDeletedFalse(userId, ref).orElseThrow();
+        if (created == 1) {
+            mapper.applyScalars(recipe, req);
+            rebuildLines(userId, recipe, req.getIngredients());
+            recipe = repository.saveAndFlush(recipe);
+        }
+        return withFit(recipe, mapper.toResponse(recipe), pantryByIdFor(List.of(recipe)));
     }
 
     // Reads stay annotated by exception: the mapper walks the recipe's LAZY lines and
@@ -258,6 +284,44 @@ public class RecipeService {
         line.setUnit(req.getUnit());
         line.setNote(req.getNote());
         line.setLineOrder(index);
+        snapshot(line, c);
+        return line;
+    }
+
+    /**
+     * The owner's recipes follow a food whose NUMBERS he just replaced (mezo-r36n9.63 — „Pontosítom" on
+     * an estimated food, or any facts edit): every line of HIS recipes that uses his shelf row for that
+     * definition gets a fresh snapshot. Amount, unit, note and order are untouched, and so is every other
+     * line — a recipe saved on an estimate shows the precise numbers afterwards. Other users' recipes and
+     * logged meals (history, ADR 0026) are never touched.
+     *
+     * <p>Runs in its OWN transaction: the caller is an after-commit listener, where the finished
+     * transaction's resources are still bound to the thread and a joined write would never be committed.
+     * The template-breakdown cache needs no reset here — its numeric staleness compare regenerates it.
+     *
+     * @return how many lines were refreshed
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int refreshLinesOn(UUID userId, UUID catalogId) {
+        PantryItemEntity item = pantryItemRepository
+            .findByCreatedByAndCatalog_IdAndDeletedFalse(userId, catalogId).orElse(null);
+        if (item == null) {
+            return 0; // not on his shelf: none of his recipe lines can point at it
+        }
+        int refreshed = 0;
+        for (RecipeEntity recipe : repository.findOwnedUsingPantryItem(userId, item.getId())) {
+            for (RecipeIngredientEntity line : recipe.getLines()) {
+                if (item.getId().equals(line.getPantryItemId())) {
+                    snapshot(line, item.getCatalog()); // dirty-checked; flushed on commit
+                    refreshed++;
+                }
+            }
+        }
+        return refreshed;
+    }
+
+    /** The per-basis snapshot of a definition onto a line — the ONE place a line freezes a food's numbers. */
+    private static void snapshot(RecipeIngredientEntity line, PantryCatalogEntity c) {
         // Snapshot = the pantry item's per-basis macros at compose time (stable basis for contribution).
         line.setSnapshotName(c.getName());
         line.setSnapshotPer(orDefault(c.getServingAmount(), BigDecimal.ONE));
@@ -272,7 +336,6 @@ public class RecipeService {
         line.setSnapshotSugarG(c.getSugarG());
         line.setSnapshotSaltG(c.getSaltG());
         line.setSnapshotSaturatedFatG(c.getSaturatedFatG());
-        return line;
     }
 
     /** Owner-scoped, not-deleted lookup; missing/foreign/deleted are indistinguishable 400s. */

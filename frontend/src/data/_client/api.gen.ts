@@ -1685,6 +1685,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pantry/{id}/breakdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The score breakdown of one food on the caller's shelf, addressed by the shelf item id */
+        get: operations["getPantryItemBreakdown"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pantry/catalog/{id}/breakdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The score breakdown of one shared catalog food, addressed by the catalog id (a food not on the shelf yet) */
+        get: operations["getPantryCatalogBreakdown"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pantry/items/quick-add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put a food on the caller's shelf by name alone — the shared catalog's food when one matches, an AI-estimated food otherwise; idempotent on the name */
+        post: operations["quickAddPantryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pantry-import/lookup": {
         parameters: {
             query?: never;
@@ -1869,6 +1920,23 @@ export interface paths {
         put?: never;
         /** Read a recipe from a photo (cookbook page, screenshot) into a review draft; the photo is not kept */
         post: operations["importRecipeFromPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/cooked": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Build a recipe review draft from what was cooked — typed/dictated text and/or up to 6 photos, matched to the pantry */
+        post: operations["cookedRecipe"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8617,6 +8685,10 @@ export interface components {
             } | null;
             /** @description EAN/UPC of the product, when known */
             barcode?: string | null;
+            /** @description True while the food's facts are an unreviewed AI estimate (a quick-add nobody has confirmed yet) — the „becsült" tag. Always sent. */
+            estimated?: boolean;
+            /** @description The food's own score 0..1 (mezo-r36n9.63) — the total of GET /api/pantry/{id}/breakdown. null = no score (no energy data, or nothing any dimension could read): never a fabricated number. */
+            score?: number | null;
         };
         SupplementStashResponse: {
             /** Format: uuid */
@@ -8660,6 +8732,8 @@ export interface components {
             name: string;
             brand?: string | null;
             source?: components["schemas"]["PantrySource"] | null;
+            /** @description EAN/UPC of the product (a definition field). Absent = leave as it is; 409 when another of the author's foods carries it. */
+            barcode?: string | null;
             /** @enum {string|null} */
             category?: "vegetables" | "fruits" | "meat" | "fish" | "eggs" | "dairy" | "cheese" | "legumes" | "grains" | "pasta" | "bakery" | "nuts_seeds" | "oils_fats" | "condiments" | "snacks" | "beverages" | "supplement" | "other" | null;
             notes?: string | null;
@@ -8705,6 +8779,20 @@ export interface components {
             } | null;
             /** @description EAN/UPC of the product, when known */
             barcode?: string | null;
+            /** @description True while the food's facts are an unreviewed AI estimate (a quick-add nobody has confirmed yet). Always sent. */
+            estimated?: boolean;
+            /** @description Basis amount the facts refer to (100 for a per-100-g food) */
+            per?: number | null;
+            /** @description Basis unit (g, ml, db …) — the unit a recipe row takes once it is bound to this food */
+            unit?: string | null;
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+        };
+        PantryQuickAddRequest: {
+            /** @description The food's name as said or written; it is also the idempotency key (normalised) */
+            name: string;
         };
         PantrySharedFrom: {
             authorName: string;
@@ -8742,6 +8830,13 @@ export interface components {
             } | null;
             /** @description EAN/UPC of the product, when known */
             barcode?: string | null;
+            /** @description True while the food's facts are an unreviewed AI estimate. Search returns verified entries only, so this is false there today. Always sent. */
+            estimated?: boolean;
+            /** @description The food's own score 0..1 (mezo-r36n9.63) — the total of GET /api/pantry/catalog/{id}/breakdown. null for a non-food entry and for a food with no score (no energy data, nothing computable). */
+            score?: number | null;
+        };
+        PantryBreakdownResponse: {
+            breakdown?: components["schemas"]["MealBreakdown"] | null;
         };
         PantryLookupResponse: {
             results: components["schemas"]["PantryLookupResult"][];
@@ -8849,7 +8944,7 @@ export interface components {
             reason: string;
         };
         /** @enum {string} */
-        PantrySource: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "gymbeam.hu" | "web" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts" | "photo";
+        PantrySource: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "gymbeam.hu" | "web" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts" | "photo" | "ai_estimate";
         RecipeMacros: {
             kcal: number;
             p: number;
@@ -8917,6 +9012,11 @@ export interface components {
             steps?: string[] | null;
             /** @description Where the recipe was imported from. Absent = leave as it is. */
             sourceUrl?: string | null;
+            /**
+             * Format: uuid
+             * @description Idempotency key for the CREATE (unique per owner; mezo-dguzv): a retried or double-tapped create with the same ref returns the first recipe unchanged, never a second one. Ignored on update.
+             */
+            clientRef?: string | null;
             ingredients: components["schemas"]["RecipeIngredientRequest"][];
         };
         RecipeResponse: {
@@ -8998,6 +9098,19 @@ export interface components {
         /** @description What an ingredient row matched (by name). catalogId is null when it matched nothing; confidence is derived deterministically (never taken from the AI); needsReview is true for every unmatched or low-confidence row. */
         RecipeImportMatch: {
             /**
+             * @description The row's face on the review (mezo-r36n9.63). matched = an exact name match whose amount converted cleanly; confirm = the AI's pick, or an exact match whose amount is doubtful — never saved without the owner's tap; missing = nothing in the pantry fits (catalogId is null).
+             * @enum {string}
+             */
+            state: "matched" | "confirm" | "missing";
+            /** @description True when the matched food is already on the owner's shelf; false = it reaches the shelf when the recipe is saved (always false when nothing matched). */
+            onShelf: boolean;
+            /** @description The matched food's basis unit (g, ml, db …). Once a row has a food, the line's `unit` IS this unit and `amount` is already converted into it. null when nothing matched (the line keeps the unit as said). */
+            basisUnit?: string | null;
+            /** @description True when the said amount could not be converted cleanly into the food's basis unit (spoons or millilitres against a gram food, a piece, a can, or no amount at all — then `amount` is 0). The amount is a prefill to check, and the row is `confirm`. */
+            amountDoubt: boolean;
+            /** @description Other pantry foods the row could be (the „Másik" list), best first. Empty when there are none. */
+            alternatives: components["schemas"]["RecipeImportAlternative"][];
+            /**
              * Format: uuid
              * @description The catalog food the row's name matched (null = matched nothing). A preview writes nothing: the food reaches the owner's shelf only when the recipe is saved with this id as the ingredient's catalogId.
              */
@@ -9005,7 +9118,16 @@ export interface components {
             confidence: number;
             needsReview: boolean;
         };
-        /** @description A Receptműhely draft line plus what it matched and the text it was read from. */
+        /** @description A pantry food offered instead of the row's match; picking it binds the row to catalogId. */
+        RecipeImportAlternative: {
+            /** Format: uuid */
+            catalogId: string;
+            name: string;
+            brand?: string | null;
+            /** @description The food's basis unit — the unit the row takes when this food is picked */
+            basisUnit: string;
+        };
+        /** @description A Receptműhely draft line plus what it matched and the text it was read from. `amount` is 0 only when match.amountDoubt is true and nothing was stated — a value to type, never to save. */
         RecipeImportLine: components["schemas"]["WorkshopDraftLine"] & {
             match: components["schemas"]["RecipeImportMatch"];
             /** @description The ingredient line as the page, photo or text wrote it */
@@ -19744,6 +19866,155 @@ export interface operations {
             };
         };
     };
+    getPantryItemBreakdown: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Breakdown (breakdown null when the item is not a food, has no energy data, or no dimension could be computed) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryBreakdownResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found (missing or somebody else's shelf item) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getPantryCatalogBreakdown: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Breakdown (breakdown null when the entry is not a food, has no energy data, or no dimension could be computed) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryBreakdownResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown or deleted catalog entry, or somebody else's unreviewed one */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    quickAddPantryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PantryQuickAddRequest"];
+            };
+        };
+        responses: {
+            /** @description The caller's pantry item (created or pre-existing); estimated says whether its facts are an unreviewed AI estimate */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryItemResponse"];
+                };
+            };
+            /** @description Validation error (blank or over-long name) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description PANTRY_QUICK_ADD_NAME_TAKEN — the name belongs to something this operation must not bind (a supplement, somebody else's unreviewed food, a deleted entry): add it through the normal form */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description PANTRY_QUICK_ADD_ESTIMATE_FAILED — the AI estimate was unreadable or implausible; nothing was created */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description PANTRY_QUICK_ADD_LLM_UNAVAILABLE — no shared food carries the name and the AI is not available */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     lookupPantryItem: {
         parameters: {
             query: {
@@ -20424,6 +20695,71 @@ export interface operations {
                 };
             };
             /** @description The AI answer could not be read */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI is not available */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    cookedRecipe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** @description What he cooked from, and how much (typed or dictated). At least one of text / photos is required. */
+                    text?: string;
+                    /** @description Packaging, a scale display, a handwritten note, the counter. JPEG, PNG or WebP. */
+                    photos?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description The draft; result is null when no ingredient could be read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImportResponse"];
+                };
+            };
+            /** @description Neither text nor a photo; over-long text; too many photos; a photo that is not a JPEG/PNG/WebP picture, is empty or over the size cap; or the photos together over the total cap */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The AI could not be reached or failed while reading the capture */
             502: {
                 headers: {
                     [name: string]: unknown;
