@@ -38,6 +38,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [notification](#notification) | ✓ | 2 | [_platform-notifications](features/_platform-notifications.md) |
 | [nutrition](#nutrition) | ✓ | 2 | [fuel](features/fuel.md) |
 | [pantry](#pantry) | ✓ | 1 | [pantry](features/pantry.md) |
+| [penz](#penz) | ✓ | 1 | · |
 | [people](#people) | ✓ | 1 | [me](features/me.md) |
 | [proactive](#proactive) | ✓ | 2 | [contextual-feed-evaluation](features/contextual-feed-evaluation.md), [proactive](features/proactive.md) |
 | [progression](#progression) | ✓ | 1 | [growth](features/growth.md) |
@@ -982,6 +983,36 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **populators:** `DatabasePopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
     `UserPopulator`
 
+### penz
+
+*BE + API* · read next: **none — no HOW doc exists for this feature yet**
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/penz`
+  - **entities→tables:** `PenzAccountEntity`→`penz_account`, `PenzApiKeyEntity`→`penz_api_key`,
+    `PenzCategoryEntity`→`penz_category`, `PenzFxRateEntity`→`penz_fx_rate`, `PenzMonthCloseEntity`→`penz_month_close`,
+    `PenzRecurringRuleEntity`→`penz_recurring_rule`, `PenzSettingsEntity`→`penz_settings`,
+    `PenzSmsMessageEntity`→`penz_sms_message`, `PenzTransactionEntity`→`penz_transaction`
+  - **repositories:** `PenzAccountRepository`, `PenzApiKeyRepository`, `PenzCategoryRepository`,
+    `PenzFxRateRepository`, `PenzMonthCloseRepository`, `PenzRecurringRuleRepository`, `PenzSettingsRepository`,
+    `PenzSmsMessageRepository`, `PenzTransactionRepository`
+  - **services:** `FrankfurterClient`, `PenzAccountService`, `PenzCategoryService`, `PenzErrors`, `PenzFxService`,
+    `PenzMonthCloseService`, `PenzMonths`, `PenzRecurringRuleService`, `PenzSettingsService`, `PenzTransactionService`
+  - **controllers→contract:** `PenzController`→`PenzApi`
+  - **mappers:** `PenzMapper`
+  - **config:** `PenzProperties`
+- **Contract** `api/feature/penz/penz.yml` — 23 operations
+  - **endpoints:** GET /api/penz/settings · PUT /api/penz/settings · GET /api/penz/accounts · POST /api/penz/accounts ·
+    PUT /api/penz/accounts/{id} · POST /api/penz/accounts/{id}/archive · GET /api/penz/categories ·
+    POST /api/penz/categories · PUT /api/penz/categories/{id} · GET /api/penz/transactions ·
+    POST /api/penz/transactions · PUT /api/penz/transactions/{id} · DELETE /api/penz/transactions/{id} ·
+    POST /api/penz/transactions/{id}/reviewed · POST /api/penz/transfers · GET /api/penz/recurring-rules ·
+    POST /api/penz/recurring-rules · PUT /api/penz/recurring-rules/{id} · DELETE /api/penz/recurring-rules/{id} ·
+    GET /api/penz/allowance · GET /api/penz/month-closes · GET /api/penz/month-closes/open ·
+    POST /api/penz/month-closes/{month}
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/penz` — 2 IT + 1 unit
+  - **ITs:** `PenzApiIT`, `PenzMonthCloseServiceIT`
+  - **populators:** `DatabasePopulator`, `PenzPopulator`
+
 ### people
 
 *BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed)
@@ -1392,13 +1423,13 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
   `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `MesoTemplatePopulator`, `NeedsPopulator`,
   `NotificationPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
-  `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`,
-  `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`, `QuestPopulator`, `ReadinessChoicePopulator`,
-  `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
-  `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`,
-  `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`,
-  `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
-  `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
+  `PatternEventPopulator`, `PatternPopulator`, `PenzPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`,
+  `PlannedSkipPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`, `QuestPopulator`,
+  `ReadinessChoicePopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`,
+  `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`,
+  `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`,
+  `WaterLogPopulator`, `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`,
+  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
 - **`ResetDatabase` TRUNCATE list** — 1 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `character_council_quota`
 
@@ -1413,6 +1444,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
+- **Contract fragment** `api/feature/penz/penz-sms.yml` — tags `PenzSms`; no backend controller implements the matching `<Tag>Api`
 - **Feature doc** [`docs/features/_platform-api-backend.md`](features/_platform-api-backend.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `medication`
+- **Features with no `docs/features/` doc:** `medication`, `penz`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
