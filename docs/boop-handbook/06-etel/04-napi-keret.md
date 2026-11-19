@@ -2,7 +2,7 @@
 cim: Napi keret, víz és heti kép
 szint: Funkció
 terulet: Étel
-allapot: Tervezve
+allapot: Élesben
 hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B4]
@@ -14,7 +14,11 @@ osszefoglalo: A Ma fül megmutatja, mennyi fér még bele a napba és mit egyél
 - **„Következő étkezés” tipp:** a maradék keretből Boop konkrét javaslatot ad (például: „vacsorára egy fehérjedús tál fér
   bele, kb. 600 kcal”), lehetőleg a saját receptjeidből.
 - **Víz:** egy koppintással rögzítesz egy pohár vizet, látod a napi vízcélt.
-- **Hét fül:** a hét napjai a célhoz mérve — melyik nap volt a keretben, melyik alatta vagy felette.
+- **Hét fül:** a fejléc egy mondatban mondja a hét átlagát („Napi átlag 2 380 kalória”, például) és hogy a keret alatt vagy
+  fölött zártál-e. Alatta „A hét egy mondatban”: egyetlen megfigyelés (a fehérje elmaradása, a keret fölötti napok vagy a
+  kihagyott étkezések), három szám (kalória- és fehérje-átlag a céllal, az étkezések pontszámának átlaga), kalória- és
+  fehérje-oszlopok a célvonallal, a napok soronként címkékkel és a nap pontszámával, végül a hét részletei címkéken.
+  Egy napra koppintva a négy makró sávval a célhoz képest és a nap étkezései pontszámmal.
 - **Étrendi beállítások:** makróarány (kiegyensúlyozott, zsírszegény, szénhidrátszegény, szénhidrátdús vagy egyéni),
   fehérjeszint (alacsony / közepes / magas), napi víz- és rostcél.
 
@@ -29,7 +33,9 @@ osszefoglalo: A Ma fül megmutatja, mennyi fér még bele a napba és mit egyél
 4. Kímélő módban (betegség, utazás) a cél enyhül vagy eltűnik — lásd [Kihagyás és kímélő mód](08-kihagyas-kimelo.md).
 5. **Új a B4-ben:** a napi étkezési terv (idősávok az ébredés, lefekvés és az edzések köré, kerettel sávonként, recept-javaslattal)
    ma csak a webes felület kódjában él. A Boophoz ez a háttérrendszerbe költözik, és onnan jön a „következő étkezés” tipp is.
-6. Az étrendi beállítások mentése újraszámolja az aktív célt; mentés előtt élő előnézet mutatja az új számokat.
+6. **A heti megfigyelés** szabályból jön, nem az AI-tól: csak a lezárt, nem kímélő napokat nézi (a mai nap és a kímélő
+   napok az átlagokba sem számítanak), és két értékelt nap alatt nem mond semmit.
+7. Az étrendi beállítások mentése újraszámolja az aktív célt; mentés előtt élő előnézet mutatja az új számokat.
 
 ## Miért így
 - „Egy kiszolgált cél” szabály: a hős-szám, a pontozás, az AI és a Boop összefoglaló ugyanazt a napi célt látja.
@@ -60,7 +66,6 @@ osszefoglalo: A Ma fül megmutatja, mennyi fér még bele a napba és mit egyél
 | `meal` | Az elfogyasztott étkezések, ebből jön az „eddig” |
 
 ## Mi jön még
-- B4: szerveroldali napi keret és „következő étkezés” tipp.
 - B7: élő javaslatkártyák („Egyél ma +300 kalóriát — hosszabb lesz az edzés”), mindig jóváhagyással.
 
 ## Mi marad ki
