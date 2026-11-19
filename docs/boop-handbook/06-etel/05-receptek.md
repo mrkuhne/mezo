@@ -1,58 +1,75 @@
 ---
-cim: Receptek és receptműhely
+cim: Receptek, „Ezt főztem” és receptműhely
 szint: Funkció
 terulet: Étel
-allapot: Tervezve
+allapot: Élesben
 hol: [iPhone app, Háttérrendszer, AI]
 szulo: 00-attekintes
 szakasz: [B4]
-osszefoglalo: A saját receptjeid egy helyen, pontszámmal; az AI-val beszélgetve új receptet raksz össze a kamrádból, vagy behúzol egyet egy weboldalról.
+osszefoglalo: A saját receptjeid pontszámmal és címkékkel; új receptet elmondod, lefotózod vagy linkből húzol be, és Boop a kamrádhoz köti a hozzávalókat.
 ---
 
 ## Mit csinál
-A **Receptek** fülön:
+**A Receptek fül:**
 
-- a saját receptjeid listája (név, kategória: reggeli / ebéd / vacsora / nasi, adagszám, elkészítési idő, kedvencnek jelölés);
-- minden recept kap egy **sablon-értékelést**: mennyire illik a céljaidhoz, mire jó (például „edzés utánra”), és mit lehetne javítani;
-- a **receptműhely**: beszélgetsz Boopal („legyen fehérjedúsabb, edzés előtti reggeli”), ő pedig minden körben visszaadja a
-  teljes, frissített receptet — csak a kamrádban lévő alapanyagokból, nem kitalált tételekből;
-- **új a Boopban:** recept behúzása egy weboldalról (link beillesztése → vázlat → jóváhagyás);
-- egy recept előzményei: mikor etted.
+- fent négy út egy új recepthez: **Ezt főztem** · Linkből · Fotóból · Receptműhely;
+- „A könyvtárad számokban”: hány recept, átlagos pontszám, hány hordoz jelzést neked;
+- a könyvtár: keresés, szűrés étkezés szerint, receptenként egy sor — név, címkék (kalória, fehérje, idő), külön
+  sorban a sárga érzékenység-jelzés, jobbra a recept saját pontszáma gyűrűben.
+
+**A receptlap:** címkék (étkezés, idő, adag, feldolgozottság), négy makró-csempe egy adagra, „Megeszem 1 adagot”;
+**Boop értékelése**: a pontszám, mire jó („edzés után jó”), egymondatos ítélet, összefoglaló, a szempontok csempéi
+(koppintásra magyarázat) és „Így lenne jobb” tippek; „Amire figyelsz” soronként a figyelt allergénekkel; hozzávalók,
+számozott lépések, és hogy eddig mikor etted.
+
+**„Ezt főztem”:** elmondod (diktálva), beírod és/vagy lefotózod (legfeljebb 6 kép), miből és mennyit főztél. Boop
+kiolvassa a hozzávalókat, és az **átnézőben** minden sor egyike:
+
+- **megvan** — a kamrádból; „Másik” gombbal cserélhető;
+- **erősítsd meg** (sárga) — „Ez az” vagy „Másik”; ide kerül a bizonytalan mennyiség is („2 evőkanál olaj”);
+- **hiányzik** — „+ Kamrába” egy koppintással.
+
+Minden soron ott van, amit eredetileg mondtál, a mennyiség átírható, az egység a kamra-tétel saját egysége.
+„Mind rendben” egyszerre jóváhagy mindent, „Kiveszem” kiveszi a sort. Amíg van bizonytalan sor vagy hiányzó
+mennyiség, a mentés vár. „Mentem” vagy „Mentem, és rögzítem mára” (egy adagot rögtön rögzít is). A link-, fotó- és
+műhely-behúzás átnézője ugyanezt tudja.
 
 ## Hogyan működik
-1. A recept hozzávalói a kamra tételeihez kötődnek, tápérték-pillanatképpel. Ha egy receptet rögzítesz étkezésként, a
-   pontozás hozzávalónként számol, nem egyetlen „átlag-ételként”.
-2. A sablon-értékelés számai szabályokból jönnek; a szöveget (összefoglaló, „mire jó”, javítások) az AI írja, lustán, az első
-   megnyitáskor.
-3. A receptműhely „állapot nélküli” beszélgetés: a telefon minden körben elküldi az eddigi beszélgetést és az aktuális vázlatot,
-   az AI visszaadja a szöveget és a teljes új vázlatot. Egy ellenőrző kiszűri a hibás vagy nem létező tételeket. Mentés a szokásos
-   recept-mentéssel történik.
-4. Célirányok, amiket a műhely ismer: fehérjedús, edzés előtti, edzés utáni, lefekvés előtti, reggeli.
-5. A weboldalas recept-behúzás **ma még nem létezik** (csak termék-behúzás van); a B4 építi meg, a termékoldal-behúzás mintájára.
+1. A szöveg és a fotók az AI-hoz mennek, ami a hozzávaló-sorokat olvassa ki; **a fotókat nem tároljuk**, a diktálás
+   a telefonon marad (hang nem megy fel).
+2. A párosítás: előbb pontos név a kamrádban és a közös listában; ha nincs, egy rövid jelöltlistából az AI választhat,
+   de **csak a listán szereplőt**, és az mindig „erősítsd meg” lesz. Nem pontos egyezés soha nem kötődik a koppintásod
+   nélkül.
+3. A mennyiséget a háttérrendszer a kamra-tétel egységébe váltja (30 deka → 300 g, 2 dl → 200 ml); amit nem lehet
+   biztosan, azt megjelöli.
+4. A recept pontszámát szabályok adják (nyolc szempont), a szöveget (ítélet, összefoglaló, tippek) az AI írja.
+5. Egy dupla koppintás sem hoz létre két receptet.
 
 ## Miért így
-- A receptkönyvtár ma kicsi; a műhely a természetes módja a bővítésnek, és a B6 étrendi tervhez („csak ezek a receptek”)
-  is innen jön az alapanyag.
-- Az AI nem találhat ki alapanyagot — csak a kamrából választhat, így a tápértékek mindig mért adatból jönnek.
+A tulajdonos 2026-11-17-én kérte az „Ezt főztem”-et (spec `2026-11-17-boop-ezt-foztem-design.md`), 2026-11-19-én pedig
+a recept- és kamraoldalak átrendezését: tagolás, ikonok, címkék, látható pontszám és a szempontok, és hogy az
+érzékenység ne törje szét a sort.
 
 ## Beállítások
 | Beállítás | Mit állít | Alapérték |
 |---|---|---|
-| `mezo.feature.recipe-workshop.enabled` | Be/ki kapcsolja a receptműhelyt (a receptek maradnak) | be |
-| `mezo.recipe-workshop.max-lines` | Legfeljebb ennyi hozzávaló egy vázlatban | 30 |
-| `mezo.recipe-workshop.max-steps` | Legfeljebb ennyi elkészítési lépés | 20 |
-| `mezo.recipe-workshop.max-history-turns` | Ennyi korábbi kört lát az AI | 20 |
+| `mezo.feature.recipe-cooked.enabled` | Be/ki kapcsolja az „Ezt főztem”-et | be |
+| `mezo.recipe-cooked.max-photos` | Legfeljebb ennyi fotó egy rögzítésben | 6 |
+| `mezo.recipe-cooked.max-total-bytes` | A fotók együttes legnagyobb mérete | 24 MB |
+| `mezo.recipe-cooked.shortlist-size` | Ennyi kamra-jelöltet kap az AI soronként | 8 |
+| `mezo.feature.recipe-workshop.enabled` | Be/ki kapcsolja a receptműhelyt | be |
 | `mezo.feature.recipe-ai-score.enabled` | Be/ki kapcsolja a recept szöveges értékelését (a szám marad) | be |
 
 ## Adattáblák
 | Tábla | Mit tárol |
 |---|---|
-| `recipe` | A recept: név, kategória, adagszám, idők, címkék, kedvenc, szerep (edzés előtti/utáni), értékelés |
-| `recipe_ingredient` | A recept hozzávalói, kamra-tételhez kötve, tápérték-pillanatképpel |
+| `recipe` | A recept: név, kategória, adagszám, idők, címkék, kedvenc, szerep, és a mentés azonosítója a dupla mentés ellen |
+| `recipe_ingredient` | A hozzávalók, kamra-tételhez kötve, tápérték-pillanatképpel |
 
 ## Mi jön még
-- B4: recept behúzása weboldalról; allergén-összesítés a receptre a hozzávalókból (lásd [Allergének](07-allergenek.md)).
 - B6: „csak ezek a receptek N hétig” étrendi terv és bevásárlólista.
+- A kész étel súlya a recepten, és rögzítés főtt grammra.
 
 ## Mi marad ki
-Nincs.
+Szabadon választható mértékegység egy kamrához kötött soron: az egység a kamra-tételé, hogy a kalória ne lehessen
+hamis.
