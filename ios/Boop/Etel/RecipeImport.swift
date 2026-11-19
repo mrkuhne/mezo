@@ -6,6 +6,23 @@ import BoopDesign
 
 // MARK: - The import review
 
+/// A said amount in the unit of the food it is now bound to — the phone's mirror of the server's rule (`PantryUnits`),
+/// for a row the owner binds himself („Másik", „+ Kamrába"). Grams and millilitres convert inside their own family;
+/// across the two (spoons against a gram food) the number is a 1:1 prefill to check; a piece, a can or no amount at all
+/// stays as said and is doubtful. A doubtful amount is never saved without his look.
+func reviewAmount(_ amount: Double, from said: String, into basis: String) -> (amount: Double, doubt: Bool) {
+    guard amount.isFinite, amount > 0 else { return (0, true) }
+    let from = said.trimmingCharacters(in: .whitespaces).lowercased(), to = basis.trimmingCharacters(in: .whitespaces).lowercased()
+    if from == to { return (amount, false) }
+    let mass: [String: Double] = ["g": 1, "dkg": 10, "dag": 10, "kg": 1000]
+    let volume: [String: Double] = ["ml": 1, "cl": 10, "dl": 100, "l": 1000, "tk": 5, "ek": 15]
+    func rounded(_ v: Double) -> Double { (v * 100).rounded() / 100 }
+    if let f = mass[from], let t = mass[to] { return (rounded(amount * f / t), false) }
+    if let f = volume[from], let t = volume[to] { return (rounded(amount * f / t), false) }
+    if let f = mass[from] ?? volume[from], let t = mass[to] ?? volume[to] { return (rounded(amount * f / t), true) }
+    return (amount, true)
+}
+
 /// One ingredient row on the review screen: what the source said, what it matched, and what the owner decided.
 struct ReviewLine: Identifiable, Equatable {
     enum Mark: Equatable {
@@ -23,6 +40,10 @@ struct ReviewLine: Identifiable, Equatable {
     var pantryItemId: UUID?
     var confirmed = false
     var removed = false
+    /// The food was put on the shelf from this screen with AI-estimated facts („becsült").
+    var estimated = false
+    /// The owner typed that food's facts himself („saját adat").
+    var ownFacts = false
 
     /// The server flags a row at or below this confidence; the phone applies the same line to a row the server did not flag.
     static let doubtful = 0.6
@@ -30,17 +51,19 @@ struct ReviewLine: Identifiable, Equatable {
     var isMatched: Bool { line.catalogId != nil || pantryItemId != nil }
     var mark: Mark {
         if !isMatched { return .unmatched }
-        return line.needsReview || line.confidence <= Self.doubtful ? .lowConfidence : .none
+        return line.state == .confirm || line.amountDoubt || line.needsReview || line.confidence <= Self.doubtful ? .lowConfidence : .none
     }
     var isMarked: Bool { mark != .none }
-    /// A doubtful row that nobody has looked at yet — the only kind that holds the save back.
-    var awaitsConfirmation: Bool { mark == .lowConfidence && !confirmed && !removed }
+    /// A row with a food but no amount: nothing was stated, and the server refuses a zero. It must be typed.
+    var needsAmount: Bool { isMatched && !(line.amount > 0) }
+    /// A doubtful row that nobody has looked at yet, or one still without an amount — the only kinds that hold the save back.
+    var awaitsConfirmation: Bool { !removed && isMatched && (needsAmount || (mark == .lowConfidence && !confirmed)) }
     /// Whether this row goes into the saved recipe.
-    var willSave: Bool { !removed && isMatched && (mark != .lowConfidence || confirmed) }
+    var willSave: Bool { !removed && isMatched && !awaitsConfirmation }
 }
 
-/// The reviewed recipe: the draft every route ends in (a page, pasted text, a photo, the workshop), edited by the owner,
-/// then saved once. The server does not check that a doubtful row was looked at — this type is that check.
+/// The reviewed recipe: the draft every route ends in (a page, pasted text, a photo, the workshop, „Ezt főztem"), edited
+/// by the owner, then saved once. The server does not check that a doubtful row was looked at — this type is that check.
 struct RecipeReview: Equatable {
     var name: String
     var category: String
@@ -48,6 +71,8 @@ struct RecipeReview: Equatable {
     var steps: [String]
     var sourceUrl: String?
     var lines: [ReviewLine]
+    /// The save's idempotency key: every save of this review is the same recipe (a double tap, a lost answer).
+    let clientRef = UUID()
     /// The finished dish's weight when the source stated it.
     private(set) var statedCookedWeightG: Double?
     /// The owner said he knows a large share of the rows is not in the recipe (see `needsLeftOutAcknowledgement`).
@@ -59,13 +84,16 @@ struct RecipeReview: Equatable {
         lines = draft.lines.map { ReviewLine(line: $0) }
     }
 
-    /// A workshop draft: its shelf lines are matched, its estimate lines are not (the server needs a food to save a line).
+    /// A workshop draft: its shelf lines are matched, its estimate lines are missing (the server needs a food to save a
+    /// line) — the phone derives the state, the workshop's contract carries none.
     init(workshop d: WorkshopDraft) {
         name = d.name; category = d.category; servings = d.servings; steps = d.steps; sourceUrl = nil; statedCookedWeightG = nil
         lines = d.lines.map { w in
             let shelf = w.source == "pantry" ? w.pantryItemId : nil
             return ReviewLine(line: ImportedLine(name: w.name, amount: w.amount, unit: w.unit, catalogId: nil,
-                                                 confidence: shelf == nil ? 0 : 1, needsReview: shelf == nil), pantryItemId: shelf)
+                                                 confidence: shelf == nil ? 0 : 1, needsReview: shelf == nil,
+                                                 state: shelf == nil ? .missing : .matched, onShelf: shelf != nil,
+                                                 basisUnit: shelf == nil ? nil : w.unit), pantryItemId: shelf)
         }
     }
 
@@ -91,19 +119,24 @@ struct RecipeReview: Equatable {
             : nil
     }
     var pendingConfirmation: [ReviewLine] { lines.filter(\.awaitsConfirmation) }
+    /// Rows waiting that one „Mind rendben" can clear (a row without an amount cannot be: it must be typed).
+    var confirmableCount: Int { pendingConfirmation.filter { !$0.needsAmount }.count }
     /// Rows the saved recipe will not contain: matched nothing, or taken out by the owner.
     var leftOut: [ReviewLine] { lines.filter { !$0.willSave && !$0.awaitsConfirmation } }
     var savedLines: [ReviewLine] { lines.filter(\.willSave) }
 
     var canSave: Bool { saveBlocker == nil }
 
-    /// Why the save button is held back (nil = it is not). Only an unconfirmed doubtful row and an empty recipe hold it:
-    /// a row that matched nothing blocks nothing, it simply is not saved.
+    /// Why the save button is held back (nil = it is not). Only an unconfirmed doubtful row, a missing amount and an
+    /// empty recipe hold it: a row that matched nothing blocks nothing, it simply is not saved.
     var saveBlocker: String? {
         if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Adj nevet a receptnek." }
         let waiting = pendingConfirmation
         if !waiting.isEmpty {
             let names = waiting.prefix(3).map(\.line.name).joined(separator: ", ")
+            if waiting.allSatisfy(\.needsAmount) {
+                return "Írd be a mennyiséget: \(names)\(waiting.count > 3 ? "…" : ""). Amíg nincs, nem mentem."
+            }
             return waiting.count == 1
                 ? "Nézd át a jelölt hozzávalót: \(names). Ha jó, jelöld meg, vagy vedd ki."
                 : "Nézd át a jelölt hozzávalókat: \(names)\(waiting.count > 3 ? "…" : ""). Ha jók, jelöld meg őket, vagy vedd ki."
@@ -145,6 +178,10 @@ struct RecipeReview: Equatable {
 
     mutating func acknowledgeLeftOut(_ on: Bool = true) { leftOutAcknowledged = on }
     mutating func confirm(_ id: UUID) { update(id) { $0.confirmed = true } }
+    /// „Mind rendben": every waiting row at once — except one that still has no amount.
+    mutating func confirmAll() {
+        for l in lines where l.awaitsConfirmation && !l.needsAmount { update(l.id) { $0.confirmed = true } }
+    }
     mutating func remove(_ id: UUID) { update(id) { $0.removed = true } }
     mutating func restore(_ id: UUID) { update(id) { $0.removed = false } }
     mutating func setAmount(_ id: UUID, _ amount: Double) {
@@ -152,6 +189,41 @@ struct RecipeReview: Equatable {
         guard amount.isFinite, amount > 0 else { return }
         // A changed amount is a new decision: a doubtful row must be looked at again.
         update(id) { $0.line.amount = amount; if $0.mark == .lowConfidence { $0.confirmed = false } }
+    }
+
+    /// „Másik": the row is this food now — its name, its id and its own unit. The owner picked it, so the match is his;
+    /// only an amount that does not convert cleanly into the new unit still needs his look.
+    mutating func relink(_ id: UUID, to choice: FoodChoice, onShelf: Bool = false, allergens: [String: AllergenState]? = nil) {
+        update(id) { l in
+            Self.bind(&l, catalogId: choice.id, name: choice.name, basis: choice.basisUnit, onShelf: onShelf, allergens: allergens)
+            l.estimated = false; l.ownFacts = false
+        }
+    }
+
+    /// „+ Kamrába" worked: the row has the food that was just put on the shelf (tagged „becsült" when its facts are an estimate).
+    mutating func quickAdded(_ id: UUID, row: PantryRow) {
+        guard let catalogId = row.catalogId else { return }
+        update(id) { l in
+            Self.bind(&l, catalogId: catalogId, name: row.name, basis: row.unit ?? "g", onShelf: true, allergens: row.allergens)
+            l.estimated = row.estimated; l.ownFacts = false
+        }
+    }
+
+    /// The owner typed the facts of a food added from this screen: it is his own data now, not an estimate.
+    mutating func factsTyped(_ id: UUID) { update(id) { $0.estimated = false; $0.ownFacts = true } }
+
+    private static func bind(_ l: inout ReviewLine, catalogId: UUID, name: String, basis: String, onShelf: Bool, allergens: [String: AllergenState]?) {
+        // a row that already had a food carries its amount in that food's unit, with the doubt the server found in it
+        let carried = l.isMatched && l.line.amountDoubt
+        let converted = reviewAmount(l.line.amount, from: l.line.unit, into: basis)
+        let doubt = converted.doubt || carried
+        l.line.name = name; l.line.catalogId = catalogId; l.pantryItemId = nil
+        l.line.amount = converted.amount; l.line.unit = basis; l.line.basisUnit = basis
+        l.line.amountDoubt = doubt
+        l.line.state = doubt ? .confirm : .matched
+        l.line.confidence = 1; l.line.needsReview = doubt
+        l.line.onShelf = onShelf; l.line.allergens = allergens
+        l.confirmed = !doubt; l.removed = false
     }
 
     private mutating func update(_ id: UUID, _ change: (inout ReviewLine) -> Void) {
@@ -167,8 +239,82 @@ struct RecipeReview: Equatable {
         NewRecipe(name: name.trimmingCharacters(in: .whitespacesAndNewlines), category: category, servings: max(servings, 1),
                   steps: steps, sourceUrl: sourceUrl,
                   lines: savedLines.map { NewRecipeLine(catalogId: $0.line.catalogId, pantryItemId: $0.line.catalogId == nil ? $0.pantryItemId : nil,
-                                                       amount: $0.line.amount, unit: $0.line.unit) })
+                                                       amount: $0.line.amount, unit: $0.line.unit) },
+                  clientRef: clientRef)
     }
+}
+
+// MARK: - What a review row shows
+
+/// One row's face, as plain values (the view only draws it): the state dot, the said phrase, the facts as pills, the
+/// unit, and what the owner can do with it. No number is ever printed about a food added from this screen.
+struct ReviewRowFace: Equatable {
+    enum Dot: Equatable { case done, ask, add, off }
+    enum Action: Equatable { case confirm, quickAdd, other, remove, restore }
+    struct Pill: Equatable, Identifiable {
+        let text: String
+        let tone: EtelPill.Tone
+        var glyph: String? = nil
+        var id: String { text }
+    }
+    var dot: Dot
+    /// What he said (or the source wrote), shown in quotes on every row that has it.
+    var said: String?
+    var pills: [Pill]
+    var unit: String
+    /// Once the row has a food, its unit is that food's own — a label, not a choice.
+    var unitFixed: Bool
+    /// The row holds the save until he looks: amber border.
+    var needsLook: Bool
+    var actions: [Action]
+    /// The quiet door to the facts of a food added from this screen; nil when it is not such a row.
+    var factsLink: String?
+}
+
+func reviewRowFace(_ l: ReviewLine) -> ReviewRowFace {
+    let said = l.line.sourceText.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }
+    let added = l.estimated || l.ownFacts
+    if l.removed {
+        return ReviewRowFace(dot: .off, said: said, pills: [.init(text: "kivetted", tone: .muted)], unit: l.line.unit, unitFixed: l.isMatched,
+                             needsLook: false, actions: [.restore], factsLink: nil)
+    }
+    var pills: [ReviewRowFace.Pill] = []
+    switch l.mark {
+    case .unmatched:
+        pills.append(.init(text: "nincs a kamrádban", tone: .muted))
+        return ReviewRowFace(dot: .add, said: said, pills: pills, unit: l.line.unit, unitFixed: false, needsLook: false,
+                             actions: [.quickAdd, .other, .remove], factsLink: nil)
+    case .none, .lowConfidence:
+        if l.estimated { pills.append(.init(text: "becsült", tone: .warn)) }
+        if l.ownFacts { pills.append(.init(text: "saját adat", tone: .hue)) }
+        if !l.line.onShelf && !added && l.pantryItemId == nil { pills.append(.init(text: "felveszem a kamrádba", tone: .plain)) }
+        if l.awaitsConfirmation {
+            // an AI pick (or a match the server doubted) asks "is this it?"; an amount that did not convert asks for a look
+            if l.needsAmount { pills.append(.init(text: "írd be a mennyiséget", tone: .warn)) }
+            else if l.line.amountDoubt { pills.append(.init(text: "mennyiség?", tone: .warn)) }
+            if !l.confirmed && (l.line.confidence < 1 || (l.line.needsReview && !l.line.amountDoubt)) {
+                pills.insert(.init(text: "ez az?", tone: .warn), at: pills.count - (l.needsAmount || l.line.amountDoubt ? 1 : 0))
+            }
+        } else if l.mark == .lowConfidence {
+            pills.append(.init(text: "rendben", tone: .hue, glyph: "check-sage"))
+        }
+        let waiting = l.awaitsConfirmation
+        // „Ez az" confirms a doubt; a row that only lacks an amount has nothing to confirm until it is typed
+        let actions: [ReviewRowFace.Action] = waiting ? ((l.confirmed || l.needsAmount ? [] : [.confirm]) + [.other, .remove]) : [.other, .remove]
+        return ReviewRowFace(dot: waiting ? .ask : .done, said: said, pills: pills, unit: l.line.unit, unitFixed: true, needsLook: waiting,
+                             actions: actions, factsLink: added ? (l.ownFacts ? "Tápérték átírása" : "Tápérték megadása") : nil)
+    }
+}
+
+/// The summary over the rows, as pills: how many, how many wait for him, how many are not in the pantry.
+func reviewSummaryPills(_ review: RecipeReview) -> [ReviewRowFace.Pill] {
+    let inPlay = review.lines.filter { !$0.removed }.count
+    let waiting = review.toReviewCount, missing = review.unmatchedLeftOut.count
+    var out: [ReviewRowFace.Pill] = [.init(text: "\(inPlay) hozzávaló", tone: .plain)]
+    if waiting > 0 { out.append(.init(text: "\(waiting) megerősítésre vár", tone: .warn)) }
+    if missing > 0 { out.append(.init(text: "\(missing) nincs a kamrádban", tone: .muted)) }
+    if waiting == 0 && missing == 0 && inPlay > 0 { out.append(.init(text: "mind a kamrádból", tone: .hue, glyph: "check-sage")) }
+    return out
 }
 
 // MARK: - Allergens on the review (before the save, not after)
@@ -222,7 +368,22 @@ func reviewNoDataLines(_ review: RecipeReview, profile: SensitivityProfile?) -> 
 
 // MARK: - The sheet's state
 
-/// The import sheet's state, apart from any view: read a link, pasted text or a photo, review, save once.
+/// The pantry form that opens over the review (a sheet over the sheet), for one row.
+enum ReviewFoodForm: Identifiable, Equatable {
+    /// „+ Kamrába" hit a name it may not bind: the normal add form, with the name filled in.
+    case add(line: UUID, name: String)
+    /// „Minden adat a kamrában": the full form of a food added from this screen.
+    case replace(line: UUID, row: PantryRow)
+    var id: String {
+        switch self {
+        case .add(let line, _): "add-\(line)"
+        case .replace(let line, _): "replace-\(line)"
+        }
+    }
+}
+
+/// The import sheet's state, apart from any view: read a link, pasted text or a photo, review, save once. The review
+/// part serves every entrance (import, the workshop, „Ezt főztem"): confirm, re-pick, one-tap add, typed facts.
 @MainActor @Observable
 final class RecipeImportModel {
     enum Stage: Equatable {
@@ -243,17 +404,63 @@ final class RecipeImportModel {
     private(set) var saving = false
     private(set) var saveProblem: String?
     private(set) var saved: Recipe?
+    /// Rows whose „+ Kamrába" is in flight, and what the last try of a row said when it failed.
+    private(set) var adding: Set<UUID> = []
+    private(set) var addProblems: [UUID: String] = [:]
+    /// The foods put on the shelf from this review, by row (their facts can be typed here).
+    private(set) var added: [UUID: PantryRow] = [:]
+    private(set) var savingFacts: Set<UUID> = []
+    private(set) var factsProblems: [UUID: String] = [:]
+    /// The pantry form open over the review; the host presents it at the sheet's own level.
+    var foodForm: ReviewFoodForm?
     /// What the eyebrow says: where the draft came from.
     let eyebrow: String
 
     private let reader: @Sendable (RecipeImportSource) async throws -> RecipeImportDraft?
     private let saver: @Sendable (NewRecipe) async throws -> Recipe
+    private let adder: @Sendable (String) async throws -> PantryRow
+    private let factsSaver: @Sendable (FoodFacts, PantryRow) async throws -> PantryRow
+    private let searcher: @Sendable (String) async throws -> [PantryRow]
 
     init(mode: Mode, reader: @escaping @Sendable (RecipeImportSource) async throws -> RecipeImportDraft?,
-         saver: @escaping @Sendable (NewRecipe) async throws -> Recipe, review: RecipeReview? = nil, eyebrow: String? = nil) {
+         saver: @escaping @Sendable (NewRecipe) async throws -> Recipe, review: RecipeReview? = nil, eyebrow: String? = nil,
+         adder: @escaping @Sendable (String) async throws -> PantryRow = { _ in throw FoodFetchError.unauthorized },
+         factsSaver: @escaping @Sendable (FoodFacts, PantryRow) async throws -> PantryRow = { _, _ in throw FoodFetchError.unauthorized },
+         searcher: @escaping @Sendable (String) async throws -> [PantryRow] = { _ in [] }) {
         self.mode = mode; self.reader = reader; self.saver = saver; self.review = review
+        self.adder = adder; self.factsSaver = factsSaver; self.searcher = searcher
         self.eyebrow = eyebrow ?? (mode == .link ? "RECEPT LINKRŐL" : mode == .text ? "RECEPT SZÖVEGBŐL" : "RECEPT FOTÓRÓL")
         if review != nil { stage = .review }
+    }
+
+    /// Wired to the signed-in owner's food client (nil = signed out: every call says so).
+    convenience init(mode: Mode, food: FoodClient?, review: RecipeReview? = nil, eyebrow: String? = nil) {
+        self.init(
+            mode: mode,
+            reader: { source in
+                guard let food else { throw FoodFetchError.unauthorized }
+                return try await food.importRecipe(source)
+            },
+            saver: { recipe in
+                guard let food else { throw FoodFetchError.unauthorized }
+                return try await food.createRecipe(recipe)
+            },
+            review: review, eyebrow: eyebrow,
+            adder: { name in
+                guard let food else { throw FoodFetchError.unauthorized }
+                return try await food.quickAddPantry(name: name)
+            },
+            factsSaver: { facts, row in
+                guard let food else { throw FoodFetchError.unauthorized }
+                return try await food.setFacts(facts, of: row)
+            },
+            searcher: { query in
+                guard let food else { throw FoodFetchError.unauthorized }
+                // his own shelf first (it holds his own unreviewed foods), then the shared list behind it
+                let shelf = filterShelf(try await food.pantry().filter { $0.kind == "food" }, query: query, category: nil)
+                let catalog = (try? await food.pantry(query: query).filter { $0.kind == "food" }) ?? []
+                return Array((shelf + catalogOnly(catalog, shelf: shelf)).prefix(12))
+            })
     }
 
     var canRead: Bool {
@@ -289,11 +496,13 @@ final class RecipeImportModel {
         }
     }
 
-    func back() { stage = .input; review = nil; saveProblem = nil }
+    func back() { stage = .input; review = nil; saveProblem = nil; adding = []; addProblems = [:]; added = [:]; factsProblems = [:] }
 
-    /// The one save. A second tap while the first is in flight does nothing; a failure leaves the review as it was.
+    /// The one save. A second tap while the first is in flight does nothing; a failure leaves the review as it was. A
+    /// retry after a lost answer carries the same key, so it is the same recipe.
     func save() async -> Recipe? {
-        guard !saving, let review, review.canSave else { return nil }
+        // a recipe this review already saved is never saved (or handed on) a second time
+        guard !saving, saved == nil, let review, review.canSave else { return nil }
         saving = true; saveProblem = nil
         defer { saving = false }
         do {
@@ -313,9 +522,93 @@ final class RecipeImportModel {
 
     func acknowledgeLeftOut(_ on: Bool) { review?.acknowledgeLeftOut(on) }
     func confirm(_ id: UUID) { review?.confirm(id) }
+    func confirmAll() { review?.confirmAll() }
     func remove(_ id: UUID) { review?.remove(id) }
     func restore(_ id: UUID) { review?.restore(id) }
     func setAmount(_ id: UUID, _ amount: Double) { review?.setAmount(id, amount) }
+
+    /// „Másik": the row takes the picked food (a shelf row or a catalog hit).
+    func relink(_ id: UUID, to row: PantryRow) {
+        guard let choice = FoodChoice(row: row) else { return }
+        review?.relink(id, to: choice, onShelf: row.onShelf, allergens: row.allergens)
+        added[id] = nil; addProblems[id] = nil
+    }
+
+    /// „Másik": one of the row's own alternatives (the server sent no more than its name and unit).
+    func relink(_ id: UUID, to choice: FoodChoice) {
+        review?.relink(id, to: choice)
+        added[id] = nil; addProblems[id] = nil
+    }
+
+    /// What „Másik" searches: his shelf, then the shared list. Empty for a query too short to mean anything.
+    func search(_ query: String) async throws -> [PantryRow] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard q.count >= 2 else { return [] }
+        return try await searcher(q)
+    }
+
+    /// „+ Kamrába": one tap puts the row's food on the shelf. A second tap while it runs does nothing (and the server
+    /// answers a repeat with the same food). A name the quick way may not bind opens the normal add form instead.
+    func quickAdd(_ id: UUID) async {
+        guard let line = review?.lines.first(where: { $0.id == id }), !line.isMatched, !line.removed, !adding.contains(id) else { return }
+        adding.insert(id); addProblems[id] = nil
+        defer { adding.remove(id) }
+        do {
+            let row = try await adder(line.line.name)
+            added[id] = row
+            review?.quickAdded(id, row: row)
+        } catch FoodFetchError.conflict {
+            foodForm = .add(line: id, name: line.line.name)
+        } catch FoodFetchError.offline {
+            addProblems[id] = "Nincs net — a felvételhez kell."
+        } catch FoodFetchError.unavailable {
+            addProblems[id] = "Boop most nem tudja megbecsülni. Nem sikerült felvenni."
+        } catch {
+            addProblems[id] = "Nem sikerült felvenni."
+        }
+    }
+
+    /// The normal add form saved a food for this row (after a name collision).
+    func formAdded(_ id: UUID, row: PantryRow) {
+        added[id] = row
+        review?.quickAdded(id, row: row)
+        foodForm = nil
+    }
+
+    /// The full pantry form replaced the facts of a food added from this screen.
+    func formReplaced(_ id: UUID, row: PantryRow) {
+        added[id] = row
+        review?.factsTyped(id)
+        foodForm = nil
+    }
+
+    /// The four facts as the food has them now (the estimate, or what he typed): what the facts block opens with.
+    func facts(of id: UUID) -> FoodFacts? {
+        added[id].map { FoodFacts(kcal: $0.kcal ?? 0, proteinG: $0.proteinG ?? 0, carbsG: $0.carbsG ?? 0, fatG: $0.fatG ?? 0) }
+    }
+
+    /// „Kész" on the facts block: saves only when he changed a number; the food is his own data from then on.
+    /// Returns false when the save did not go through (the block stays open and says why).
+    func saveFacts(_ id: UUID, _ facts: FoodFacts) async -> Bool {
+        guard let row = added[id], !savingFacts.contains(id) else { return false }
+        guard facts != self.facts(of: id) else { factsProblems[id] = nil; return true }
+        guard [facts.kcal, facts.proteinG, facts.carbsG, facts.fatG].allSatisfy({ $0.isFinite && $0 >= 0 }) else {
+            factsProblems[id] = "Egyik szám sem lehet negatív."
+            return false
+        }
+        savingFacts.insert(id); factsProblems[id] = nil
+        defer { savingFacts.remove(id) }
+        do {
+            added[id] = try await factsSaver(facts, row)
+            review?.factsTyped(id)
+            return true
+        } catch FoodFetchError.offline {
+            factsProblems[id] = "Nincs net — a számok itt maradnak, próbáld újra."
+        } catch {
+            factsProblems[id] = "Nem sikerült elmenteni — próbáld újra."
+        }
+        return false
+    }
 }
 
 /// What the sheet says when a source could not be read.
@@ -348,7 +641,10 @@ struct RecipeImportSheet: View {
     var profile: SensitivityProfile? = nil
     /// Called with the saved recipe once the owner's tap has saved it.
     let onSaved: (Recipe) -> Void
+    /// „Mentem, és rögzítem mára": saved, and one serving goes into today.
+    var onSavedLog: ((Recipe) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showLibrary = false
     @State private var showCamera = false
     @FocusState private var typing: Bool
@@ -358,7 +654,7 @@ struct RecipeImportSheet: View {
             switch model.stage {
             case .input: input
             case .working: working
-            case .review: ReviewBody(model: model, profile: profile, onSaved: onSaved)
+            case .review: ReviewBody(model: model, profile: profile, onSaved: onSaved, onSavedLog: onSavedLog)
             case .empty:
                 notice("Nem találtam ebben receptet.", "Nem hozzávalók és lépések vannak rajta, vagy nem tudtam elolvasni. Próbálj másik oldalt, másold be a szöveget, vagy fotózd le.",
                        action: "Másik forrás") { model.back() }
@@ -366,6 +662,8 @@ struct RecipeImportSheet: View {
                 notice("Nem sikerült beolvasni.", line, action: "Vissza") { model.back() }
             }
         }
+        .reviewFoodForm(model, profile: profile)
+        .scrollDismissesKeyboard(.interactively)
         .mealPhotoLibrary(isPresented: $showLibrary) { data in
             guard let data, let jpeg = MealPhoto.jpeg(from: data) else { return }
             Task { await model.read(.photo(jpeg)) }
@@ -454,206 +752,4 @@ struct RecipeImportSheet: View {
         }
         .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
     }
-}
-
-// MARK: - The review
-
-/// The reviewed draft: name, servings, the ingredient rows with their marks, the weight and the one save button.
-struct ReviewBody: View {
-    @Bindable var model: RecipeImportModel
-    var profile: SensitivityProfile? = nil
-    let onSaved: (Recipe) -> Void
-
-    private let categories: [(key: String, label: String)] = [("breakfast", "Reggeli"), ("lunch", "Ebéd"), ("dinner", "Vacsora"), ("snack", "Nasi")]
-
-    var body: some View {
-        if let review = model.review {
-            VStack(spacing: 12) {
-                headCard(review)
-                ingredientsCard(review)
-                allergenCard(review)
-                weightCard(review)
-                leftOutCard(review)
-                if let blocker = review.saveBlocker {
-                    Text(blocker).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
-                }
-                if let problem = model.saveProblem {
-                    Text(problem).nkFont(13.5).foregroundStyle(Color(hex: 0xF7A8C4)).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
-                }
-                NKPill(model.saving ? "Mentem…" : "Mentem a receptjeim közé") {
-                    Task { if let recipe = await model.save() { onSaved(recipe) } }
-                }
-                .disabled(!review.canSave || model.saving).opacity(review.canSave ? 1 : 0.4)
-            }
-        }
-    }
-
-    private func headCard(_ review: RecipeReview) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TextField("", text: Binding(get: { review.name }, set: { model.review?.name = $0 }), prompt: Text("A recept neve").foregroundStyle(.white.opacity(0.4)))
-                .nkFont(20, design: .serif).foregroundStyle(.white).accessibilityLabel("A recept neve")
-            HStack(spacing: 12) {
-                Stepper(value: Binding(get: { review.servings }, set: { model.review?.servings = $0 }), in: 1...12) {
-                    Text("\(review.servings) adag").nkFont(14, design: .monospaced).foregroundStyle(.white.opacity(0.85))
-                }
-                .tint(.white)
-            }
-            Menu {
-                ForEach(categories, id: \.key) { c in Button(c.label) { model.review?.category = c.key } }
-            } label: {
-                HStack(spacing: 6) {
-                    Text(categories.first { $0.key == review.category }?.label ?? "Ebéd").nkFont(14).foregroundStyle(.white.opacity(0.85))
-                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 11)).foregroundStyle(.white.opacity(0.5))
-                }
-                .padding(.horizontal, 14).padding(.vertical, 8).background(Capsule().fill(.white.opacity(0.1)))
-            }
-            .accessibilityLabel("Étkezés típusa")
-            if let url = review.sourceUrl {
-                HStack(spacing: 8) {
-                    NKGlyph("link-deep", .white.opacity(0.55), size: 14)
-                    Text(url).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(1).truncationMode(.middle)
-                }
-            }
-        }
-        .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
-    }
-
-    private func ingredientsCard(_ review: RecipeReview) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(review.toReviewCount == 0
-                 ? "\(review.steps.count) lépés · a hozzávalókat a kamrádhoz párosítottam"
-                 : "\(review.steps.count) lépés · \(review.toReviewCount) hozzávalót nézz át")
-                .nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
-            ForEach(review.lines) { l in
-                lineRow(l)
-                if l.id != review.lines.last?.id { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-            }
-            if let note = review.leftOutNote {
-                Text(note).nkFont(13).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
-    }
-
-    private func lineRow(_ l: ReviewLine) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
-                NKThumb(image: nil, glyph: "leaf-sage", size: 38)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(l.line.name).nkFont(15, .medium).foregroundStyle(.white.opacity(l.removed ? 0.4 : 1))
-                        .strikethrough(l.removed).fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 6) {
-                        if l.isMatched && !l.removed {
-                            TextField("", value: Binding(get: { l.line.amount }, set: { model.setAmount(l.id, $0) }), format: .number)
-                                .keyboardType(.decimalPad).multilineTextAlignment(.trailing).nkFont(12.5, design: .monospaced)
-                                .foregroundStyle(.white.opacity(0.8)).frame(width: 56).padding(.vertical, 3).padding(.horizontal, 6)
-                                .background(Capsule().fill(.white.opacity(0.08))).accessibilityLabel("\(l.line.name) mennyisége")
-                            Text(l.line.unit).nkFont(12.5, design: .monospaced).foregroundStyle(.white.opacity(0.6))
-                        } else {
-                            Text("\(huAmount(l.line.amount)) \(l.line.unit)").nkFont(12.5, design: .monospaced).foregroundStyle(.white.opacity(0.55))
-                        }
-                    }
-                    let badges = reviewLineBadges(l, profile: profile)
-                    if !badges.isEmpty { FlowRow { ForEach(badges) { RecipeBadgeView(badge: $0) } }.padding(.top, 2) }
-                    if let src = l.line.sourceText, !src.isEmpty, l.isMarked {
-                        Text("Így állt a forrásban: „\(src)”").nkFont(11.5).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                Spacer(minLength: 4)
-                markChip(l)
-            }
-            if l.removed {
-                Button("Visszateszem") { model.restore(l.id) }.nkFont(13).foregroundStyle(.white.opacity(0.7)).buttonStyle(.plain).frame(minHeight: 32)
-            } else if l.mark == .lowConfidence {
-                HStack(spacing: 10) {
-                    if l.confirmed {
-                        Text("Rendben, ez az").nkFont(12.5, .medium).foregroundStyle(.white.opacity(0.6))
-                    } else {
-                        Button { model.confirm(l.id) } label: {
-                            Text("Jó így").nkFont(13, .semibold).foregroundStyle(NK.ground).padding(.horizontal, 14).frame(minHeight: 34)
-                                .background(Capsule().fill(.white.opacity(0.95)))
-                        }
-                        .buttonStyle(.plain).accessibilityLabel("\(l.line.name): jó így")
-                    }
-                    Button("Kiveszem") { model.remove(l.id) }.nkFont(13).foregroundStyle(.white.opacity(0.7)).buttonStyle(.plain).frame(minHeight: 34)
-                        .accessibilityLabel("\(l.line.name) kivétele")
-                }
-            } else if l.mark == .unmatched {
-                Button("Kiveszem") { model.remove(l.id) }.nkFont(13).foregroundStyle(.white.opacity(0.6)).buttonStyle(.plain).frame(minHeight: 32)
-                    .accessibilityLabel("\(l.line.name) kivétele")
-            }
-        }
-        .padding(.vertical, 2)
-    }
-
-    @ViewBuilder private func markChip(_ l: ReviewLine) -> some View {
-        if l.removed {
-            EmptyView()
-        } else if l.mark == .lowConfidence && !l.confirmed {
-            Text("ellenőrizd").nkFont(11, .medium).foregroundStyle(Color(hex: 0xF4C860))
-                .padding(.horizontal, 9).padding(.vertical, 4).background(Capsule().fill(Color(hex: 0xF4C860).opacity(0.14)))
-        } else if l.mark == .unmatched {
-            Text("nincs a kamrádban · kimarad").nkFont(11, .medium).foregroundStyle(.white.opacity(0.65)).multilineTextAlignment(.trailing)
-                .padding(.horizontal, 9).padding(.vertical, 4).background(Capsule().fill(.white.opacity(0.1)))
-        }
-    }
-
-    /// What the owner's rules find in the draft, before he saves; rows with no allergen data say so, never "free of".
-    @ViewBuilder private func allergenCard(_ review: RecipeReview) -> some View {
-        let warnings = reviewAllergenWarnings(review, profile: profile)
-        let silent = reviewNoDataLines(review, profile: profile)
-        if !warnings.isEmpty || !silent.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                NKMono("ALLERGÉNEK")
-                ForEach(warnings) { w in
-                    Text("\(w.text) — \(w.lineNames.joined(separator: ", "))").nkFont(14, .medium).foregroundStyle(.white)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if !warnings.isEmpty {
-                    Text("Tedd bele, cseréld, vagy hagyd ki — a recept így is elmentődik.").nkFont(13).foregroundStyle(.white.opacity(0.7))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if !silent.isEmpty {
-                    Text("Nincs allergén-adat: \(silent.joined(separator: ", ")). Ez nem azt jelenti, hogy nincs benne semmi — csak nem tudom.")
-                        .nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
-        }
-    }
-
-    /// A large share of the rows is not in the recipe: say so plainly and make the owner own it.
-    @ViewBuilder private func leftOutCard(_ review: RecipeReview) -> some View {
-        if let warning = review.leftOutWarning {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(warning).nkFont(14, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                Button { model.acknowledgeLeftOut(!review.leftOutAcknowledged) } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: review.leftOutAcknowledged ? "checkmark.circle.fill" : "circle").nkFont(20)
-                        Text("Tudom, így is mentem").nkFont(14, .medium)
-                    }
-                    .foregroundStyle(.white.opacity(review.leftOutAcknowledged ? 1 : 0.8)).frame(minHeight: 44)
-                }
-                .buttonStyle(.plain).accessibilityAddTraits(review.leftOutAcknowledged ? .isSelected : [])
-            }
-            .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
-        }
-    }
-
-    private func weightCard(_ review: RecipeReview) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            NKMono("ELKÉSZÜLT SÚLY")
-            if review.cookedWeightIsEstimate {
-                Text("Nyersen \(huInt(Int(review.rawWeightG.rounded()))) g. Amit nem lehet grammban mérni (darab, csokor), az nincs benne.")
-                    .nkFont(13).foregroundStyle(.white.opacity(0.65)).fixedSize(horizontal: false, vertical: true)
-            } else {
-                Text("A forrás szerint az elkészült étel \(huInt(Int(review.cookedWeightG.rounded()))) g.")
-                    .nkFont(13).foregroundStyle(.white.opacity(0.65)).fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
-    }
-
-    private func huAmount(_ v: Double) -> String { v == v.rounded() ? "\(Int(v))" : String(format: "%.1f", v) }
 }

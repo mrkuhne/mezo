@@ -148,6 +148,7 @@ func provenanceLines(_ r: PantryRow) -> [String] {
     case "photo"?: source = "címkefotóból olvasva"
     case "manual"?: source = "kézzel felvéve"
     case "web"?: source = "weboldalról olvasva"
+    case "ai_estimate"?: source = "Boop becslése"
     case let s?: source = s
     case nil: source = "nincs adat"
     }
@@ -208,6 +209,9 @@ func shelfStats(_ rows: [PantryRow], profile: SensitivityProfile?) -> [NKStat] {
             NKStat(value: "\(whole)", label: "alig feldolgozott", hot: true),
             NKStat(value: "\(flagged)", label: "jelzéssel neked")]
 }
+
+/// A food whose facts are an unreviewed AI estimate wears the „becsült" tag (row and page) until its facts are replaced.
+func kamraShowsEstimate(_ r: PantryRow) -> Bool { r.estimated }
 
 /// The row's basis, "100 g" / "1 db".
 func shelfBasis(_ r: PantryRow) -> String { "\(huNumber(r.per ?? 100)) \(r.unit ?? "g")" }
@@ -361,6 +365,7 @@ struct EtelKamra: View {
                         if !kind.isEmpty { Text(kind).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(1) }
                     }
                     NKFlowRow(spacing: 6, rowSpacing: 6) {
+                        if kamraShowsEstimate(r) { EtelPill(text: "becsült", tone: .warn) }
                         if let kcal = r.kcal {
                             EtelPill(text: "\(huInt(Int(kcal.rounded()))) kcal / \(shelfBasis(r))")
                         } else {

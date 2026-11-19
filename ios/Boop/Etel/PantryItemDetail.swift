@@ -11,6 +11,8 @@ struct PantryItemDetailSheet: View {
     let store: EtelStore
     let onEat: (LookupItem) -> Void
     let onToast: (String) -> Void
+    /// „Pontosítom" on an estimated food: the room opens that reader on this same food.
+    var onRefine: (PantryAddRoute) -> Void = { _ in }
     @Environment(\.dismiss) private var dismiss
     @State private var adding = false
     @State private var breakdown: MealBreakdown?
@@ -20,6 +22,7 @@ struct PantryItemDetailSheet: View {
     var body: some View {
         NKSheetFrame(hue: .fuel, eyebrow: row.onShelf ? "A KAMRÁDBÓL" : "A KATALÓGUSBÓL", title: row.name) {
             header
+            if kamraShowsEstimate(row) && row.onShelf { refine }
             score
             facts
             nova
@@ -38,6 +41,7 @@ struct PantryItemDetailSheet: View {
             HStack(alignment: .top, spacing: 12) {
                 EtelMedallion(glyph: etelCategoryGlyph(row.category), size: 52, lit: true)
                 NKFlowRow(spacing: 6, rowSpacing: 6) {
+                    if kamraShowsEstimate(row) { EtelPill(text: "becsült", tone: .warn) }
                     EtelPill(text: NewPantryFood.categoryLabel(row.category) ?? "Egyéb", tone: .hue)
                     if let brand = row.brand, !brand.isEmpty { EtelPill(text: brand) }
                     if let n = row.nova { EtelPill(text: "NOVA \(n)", tone: n >= 3 ? .outline : .plain) }
@@ -65,6 +69,42 @@ struct PantryItemDetailSheet: View {
             }
         }
         .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
+    }
+
+    /// An estimated food: say so, and offer the three readers that replace the estimate on this same food.
+    private var refine: some View {
+        EtelSheetCard(label: "PONTOSÍTOM") {
+            NKFlowRow(spacing: 6, rowSpacing: 6) {
+                EtelPill(text: "becsült", tone: .warn)
+                EtelPill(text: "Boop becslése", glyph: "spark-cream")
+                EtelPill(text: "nincs NOVA, nincs allergén-adat", tone: .muted)
+            }
+            Text("Ezt a tápértéket Boop becsülte. Olvasd be a csomagolást, és a pontos számok ugyanehhez az ételhez kerülnek — a receptjeid is ezzel számolnak tovább.")
+                .nkFont(13).foregroundStyle(.white.opacity(0.65)).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                reader("search-ink", "Vonalkód", primary: true) { onRefine(.barcode) }
+                reader("camera-ink", "Címkefotó") { onRefine(.label) }
+                reader("plus-ink", "Kézzel") { onRefine(.manual) }
+            }
+        }
+        .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Color(red: 0.96, green: 0.78, blue: 0.38).opacity(0.45)))
+    }
+
+    private func reader(_ glyph: String, _ title: String, primary: Bool = false, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 7) {
+                NKGlyph(glyph, primary ? NK.ground : .white, size: 18)
+                Text(title).nkFont(12.5, .semibold).foregroundStyle(primary ? NK.ground : .white.opacity(0.9)).lineLimit(1).minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity).frame(height: 64)
+            .background {
+                let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+                if primary { shape.fill(.white.opacity(0.95)) } else { shape.fill(.white.opacity(0.08)).overlay(shape.stroke(.white.opacity(0.14))) }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Pontosítom: \(title)")
     }
 
     /// The food's own score and what it is judged on — only the dimensions a single food can be judged by.

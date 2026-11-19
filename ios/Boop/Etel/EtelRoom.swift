@@ -158,22 +158,17 @@ final class EtelStore {
     }
 
     /// A food's own score, 0…100. The server sends it on the row; nil = too few facts to score.
-    func shelfPoints(_ row: PantryRow) -> Int? {
-        if let s = row.score { return Int((s * 100).rounded()) }
-        #if DEBUG
-        // Simulator review only (mezo-r36n9.101): the server's `score` field is still being built; the preview
-        // shelf gets stand-in values so the rings can be looked at. Removed when the field is wired.
-        if UserDefaults.standard.string(forKey: "preview") != nil { return PantryPreviewScore.points(row) }
-        #endif
-        return nil
+    func shelfPoints(_ row: PantryRow) -> Int? { etelPoints(row.score) }
+
+    /// The dimensions a food is judged on by itself; nil when the server has none for it (or cannot be reached).
+    func shelfBreakdown(_ row: PantryRow) async -> MealBreakdown? {
+        guard let food else { return nil }
+        return try? await food.pantryBreakdown(row)
     }
 
-    /// The dimensions a food is judged on; nil when the server has none for it (or cannot be reached).
-    func shelfBreakdown(_ row: PantryRow) async -> MealBreakdown? {
-        #if DEBUG
-        if UserDefaults.standard.string(forKey: "preview") != nil { return PantryPreviewScore.breakdown(row) }
-        #endif
-        return nil
+    /// A food whose facts were just replaced („Pontosítom"): the shelf shows the new numbers at once.
+    func shelfReplaced(_ row: PantryRow) {
+        if let i = shelf.firstIndex(where: { $0.id != nil && $0.id == row.id }) { shelf[i] = row } else { shelfAdded(row) }
     }
 
     /// A food the owner just put on the shelf: at the top of the list at once (the server returned the stored row).
@@ -516,30 +511,28 @@ enum RecipeSheet: Identifiable {
     case detail(UUID)
     case importer(RecipeImportModel.Mode)
     case workshop
-    #if DEBUG
-    /// Throwaway spike (mezo-r36n9.63): „Ezt főztem" on fixture rows.
-    case cookedSpike(String)
-    #endif
+    /// „Ezt főztem" (mezo-r36n9.63).
+    case cooked(CookedStart)
     var id: String {
         switch self {
         case .detail(let id): "detail-\(id)"
         case .importer(let m): "import-\(m)"
         case .workshop: "workshop"
-        #if DEBUG
-        case .cookedSpike(let s): "cooked-\(s)"
-        #endif
+        case .cooked: "cooked"
         }
     }
 }
 
-/// What the Kamra tab's sheet shows: a food, or one of the four add routes.
+/// What the Kamra tab's sheet shows: a food, one of the four add routes, or „Pontosítom" on a food through one reader.
 enum KamraSheet: Identifiable {
     case item(PantryRow)
     case add(PantryAddRoute)
+    case refine(PantryRow, PantryAddRoute)
     var id: String {
         switch self {
         case .item(let r): "item-\(r.rowKey)"
         case .add(let route): "add-\(route.rawValue)"
+        case .refine(let r, let route): "refine-\(r.rowKey)-\(route.rawValue)"
         }
     }
 }
@@ -550,16 +543,7 @@ struct RecipeImportHost: View {
     let onSaved: (Recipe) -> Void
     let profile: SensitivityProfile?
     init(mode: RecipeImportModel.Mode, food: FoodClient?, profile: SensitivityProfile?, onSaved: @escaping (Recipe) -> Void) {
-        _model = State(initialValue: RecipeImportModel(
-            mode: mode,
-            reader: { source in
-                guard let food else { throw FoodFetchError.unauthorized }
-                return try await food.importRecipe(source)
-            },
-            saver: { recipe in
-                guard let food else { throw FoodFetchError.unauthorized }
-                return try await food.createRecipe(recipe)
-            }))
+        _model = State(initialValue: RecipeImportModel(mode: mode, food: food))
         self.onSaved = onSaved
         self.profile = profile
     }
@@ -603,14 +587,6 @@ struct EtelRoom: View {
 
     private var tab: EtelTab { EtelTab(rawValue: selected) ?? .ma }
 
-    /// Throwaway spike (mezo-r36n9.63): the „Ezt főztem" row shows only in a DEBUG build launched with `-etelCooked YES`.
-    private var cookedSpikeEntrance: (() -> Void)? {
-        #if DEBUG
-        if UserDefaults.standard.bool(forKey: "etelCooked") { return { recipeSheet = .cookedSpike("cooked") } }
-        #endif
-        return nil
-    }
-
     var body: some View {
         let today = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
         let v = etelTabVerdict(tab, today: today, recipes: store.recipesLoaded ? store.recipes : nil, shelf: store.shelfLoaded ? store.shelf : nil)
@@ -630,7 +606,7 @@ struct EtelRoom: View {
                        onSheet: { etelSheet = $0 }, onAsk: { openPlace(.boop) })
             case .receptek:
                 EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },
-                             onCooked: cookedSpikeEntrance,
+                             onCooked: { recipeSheet = .cooked(.input) },
                              onOpen: { recipeSheet = .detail($0.id) }, onRetry: { Task { await reload() } })
             case .kamra:
                 EtelKamra(store: store, onAdd: { kamraSheet = .add($0) }, onOpen: { kamraSheet = .item($0) }, onRetry: { Task { await reload() } },
@@ -670,10 +646,9 @@ struct EtelRoom: View {
                     RecipeImportHost(mode: mode, food: food, profile: store.profile) { saved($0) }
                 case .workshop:
                     RecipeWorkshopSheet(food: food, profile: store.profile) { saved($0) }
-                #if DEBUG
-                case .cookedSpike(let s):
-                    CookedSpikeSheet(stage: s == "cooked" ? .input : .review, openOther: s == "cooked-other")
-                #endif
+                case .cooked(let start):
+                    CookedCaptureSheet(food: food, profile: store.profile, start: start,
+                                       onSaved: { saved($0) }, onSavedLog: { savedAndLogged($0) })
                 }
             }
             .presentationDetents([.large])
@@ -685,7 +660,14 @@ struct EtelRoom: View {
             Group {
                 switch sheet {
                 case .item(let row):
-                    PantryItemDetailSheet(row: row, store: store, onEat: eat, onToast: { toast = $0 })
+                    PantryItemDetailSheet(row: row, store: store, onEat: eat, onToast: { toast = $0 }, onRefine: { refine(row, $0) })
+                case .refine(let row, let route):
+                    PantryAddSheet(route: route, profile: store.profile, replacing: row) { saved in
+                        store.shelfReplaced(saved)
+                        kamraSheet = nil
+                        toast = "\(saved.name): a pontos adatok a kamrádban"
+                        if let food { Task { await store.loadShelf(food: food) } }
+                    }
                 case .add(let route):
                     PantryAddSheet(route: route, profile: store.profile) { added in
                         store.shelfAdded(added)
@@ -737,7 +719,13 @@ struct EtelRoom: View {
             case "import": recipeSheet = .importer(.link)
             case "text": recipeSheet = .importer(.text)
             case "workshop": recipeSheet = .workshop
-            case "cooked", "cooked-review", "cooked-other": recipeSheet = .cookedSpike(which)
+            case "cooked": recipeSheet = .cooked(.input)
+            case "cooked-filled": recipeSheet = .cooked(.filled)
+            case "cooked-review": recipeSheet = .cooked(.review)
+            case "cooked-other": UserDefaults.standard.set("other", forKey: "etelReview"); recipeSheet = .cooked(.review)
+            case "cooked-added": UserDefaults.standard.set("added", forKey: "etelReview"); recipeSheet = .cooked(.review)
+            case "cooked-facts": UserDefaults.standard.set("facts", forKey: "etelReview"); recipeSheet = .cooked(.review)
+            case "kamra-estimated": if let food { await store.loadShelf(food: food); if let r = store.shelf.first(where: \.estimated) { kamraSheet = .item(r) } }
             case "kamra-item": if let food { await store.loadShelf(food: food); if let r = store.shelf.first { kamraSheet = .item(r) } }
             case "kamra-catalog": if let food, let r = (try? await food.pantry(query: "zab"))?.first(where: { !$0.onShelf }) { kamraSheet = .item(r) }
             case "add-link": kamraSheet = .add(.link)
@@ -792,6 +780,25 @@ struct EtelRoom: View {
         }
     }
 
+    /// „Mentem, és rögzítem mára": saved into the library, then one serving logged in one tap (the toast says both).
+    private func savedAndLogged(_ recipe: Recipe) {
+        saved(recipe)
+        Task {
+            let logged = await store.logRecipe(recipe, clientRef: UUID())
+            toast = logged.ok ? "\(recipe.name) elmentve · " + logged.text : "\(recipe.name) elmentve — " + logged.text.lowercased()
+            if logged.ok { await reload() }
+        }
+    }
+
+    /// „Pontosítom" from a food's page: the page closes, then the chosen reader opens on the same food.
+    private func refine(_ row: PantryRow, _ route: PantryAddRoute) {
+        kamraSheet = nil
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            kamraSheet = .refine(row, route)
+        }
+    }
+
     /// A recipe the owner just saved: into the library, the sheet closes, the toast says so.
     private func saved(_ recipe: Recipe) {
         store.recipeSaved(recipe)
@@ -817,34 +824,3 @@ struct EtelRoom: View {
         }
     }
 }
-
-#if DEBUG
-/// Stand-in scores for the simulator review of the Kamra pages (mezo-r36n9.101), derived from the row's own facts so
-/// they look plausible. Never used outside `-preview`; replaced by the server's food score.
-enum PantryPreviewScore {
-    private static func dims(_ r: PantryRow) -> [(String, String, Int?, String)] {
-        let nova: Int? = r.nova.map { [1: 96, 2: 84, 3: 55, 4: 22][$0] ?? 50 }
-        let fibre: Int? = r.fiberG.map { min(98, 40 + Int($0 * 6)) }
-        let who: Int? = (r.sugarG == nil && r.saltG == nil && r.saturatedFatG == nil) ? nil
-            : max(20, 96 - Int((r.sugarG ?? 0) * 2.2) - Int((r.saltG ?? 0) * 18) - Int((r.saturatedFatG ?? 0) * 3))
-        let fat: Int? = r.fatG.map { f in f < 0.5 ? 80 : max(25, 92 - Int(((r.saturatedFatG ?? f * 0.35) / f) * 80)) }
-        let density: Int? = r.kcal.map { max(20, min(97, 110 - Int($0 / 5))) }
-        return [("nova", "Feldolgozottság", nova, "A NOVA-besorolás alapján."),
-                ("who", "WHO", who, "Cukor, só és telített zsír a WHO ajánlásához mérve."),
-                ("micro", "Rost", fibre, "A rosttartalom alapján."),
-                ("fat_quality", "Zsírminőség", fat, "A telített zsír aránya az összes zsírban."),
-                ("energy_density", "Energiasűrűség", density, "Mennyi energia jut 100 grammra.")]
-    }
-
-    static func points(_ r: PantryRow) -> Int? {
-        let known = dims(r).compactMap(\.2)
-        return known.count >= 2 ? known.reduce(0, +) / known.count : nil
-    }
-
-    static func breakdown(_ r: PantryRow) -> MealBreakdown? {
-        guard let total = points(r) else { return nil }
-        return MealBreakdown(value: Double(total) / 100, confidence: 1, tagline: nil, summary: nil,
-                             dimensions: dims(r).compactMap { d in d.2.map { ScoreDimension(id: d.0, label: d.1, weight: 0.2, score: Double($0) / 100, detail: d.3) } })
-    }
-}
-#endif
