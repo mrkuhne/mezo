@@ -33666,8 +33666,13 @@ components:
           description: Defaults to 'unknown'
         received_at:
           type: string
-          format: date-time
+          maxLength: 64
           nullable: true
+          description: >
+            When the phone received the SMS, ISO-8601 with an offset (e.g.
+            2026-11-11T08:17:00+01:00). Kept a plain string on purpose (the old
+            Shortcut contract): an unparseable or missing value means "now",
+            never a 400 that would lose the SMS.
     PenzSmsIngestResponse:
       type: object
       required:
