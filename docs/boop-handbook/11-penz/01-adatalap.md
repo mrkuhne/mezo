@@ -2,7 +2,7 @@
 cim: Az adatalap — a heti maradék kiszámolása
 szint: Funkció
 terulet: Pénz
-allapot: Ellenőrzés
+allapot: Élesben
 hol: [Háttérrendszer, AI]
 szulo: 00-attekintes
 szakasz: [Életpanel]

@@ -1159,5 +1159,15 @@
     ],
     "mit_kapsz": "A Hét fül egy mondatban mondja a heted, kiemeli a legfontosabb megfigyelést, és napokra bontva, címkékkel és pontszámmal mutatja, hogyan álltál.",
     "munkamenet": "boop-etel-fooldal"
+  },
+  "mezo-r36n9.108": {
+    "tipus": "Karbantartás",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.33",
+    "cim": "Pénz: egy számla pénzneme ne változhasson, ha már vannak tételei",
+    "mit_kapsz": "Ha egy számlán már vannak tételek, a pénznemét nem lehet utólag átállítani, így az egyenleg nem tud csendben elcsúszni."
   }
 }

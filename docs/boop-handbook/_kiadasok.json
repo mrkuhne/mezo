@@ -488,5 +488,16 @@
     ],
     "mi_valtozott": "A Hét fül a többi Étel-fül stílusát kapta: a fejléc egy mondatban mondja a hét átlagát, kiemelve áll a hét legfontosabb megfigyelése (például a fehérje elmaradása), három szám, kalória- és fehérje-oszlopok a célvonallal, a napok soronként címkékkel és pontszám-gyűrűvel. Egy napra koppintva a makrók sávval a célhoz képest és a nap étkezései.",
     "verzio": "csak iPhone"
+  },
+  "0d2fd6301": {
+    "tipus": "Új funkció",
+    "cim": "Pénz: az adatalap — a heti maradék kiszámolása és a bank SMS-ek",
+    "datum": "2026-11-19",
+    "szakasz": "Életpanel",
+    "jegyek": [
+      "mezo-r36n9.102"
+    ],
+    "mi_valtozott": "A Pénz terület alapja élesben van, képernyő még nélküle. Boop már tárolni tudja a számláidat, kategóriáidat, tételeidet, ismétlődő kiadásaidat és a hónapzárásokat, és ebből soronként kiszámolja, mennyi maradt a hónapból, a hétből és egy napra. A gyakorlópénz (alapból havi 20 000 Ft) külön sorként jön le, az előző hónap hiánya pedig csak lezárt hónapból jön át, sorrendben. A bank SMS-ét a telefonod parancsikonja egy saját, visszavonható kulccsal küldi be: Boop magától, duplázás nélkül átnézendő tételt csinál belőle, és csak olyan összeget fogad el, ami tényleg szerepel az üzenetben. Egy őr megállítja Boopot, ha olyan összeget mondana, amit nem tud kiszámolt adattal alátámasztani. A régi pénzügyi app adatai a képernyővel együtt költöznek át.",
+    "verzio": "v3.13.0"
   }
 }
