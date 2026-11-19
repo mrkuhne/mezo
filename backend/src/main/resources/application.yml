@@ -33,12 +33,10 @@ spring:
     scheduling:
       pool:
         # Every @Scheduled method shares this pool. At the Boot default of 1, a generation cron
-        # (companion-feed / memoir / weekly — minutes of LLM calls, per user) BLOCKS the
-        # per-minute NotificationDispatchJob tick, and a tick that arrives more than
-        # mezo.notification.catch-up-minutes late drops that minute's pushes for good. 4 keeps
-        # the dispatcher prompt while the clustered dawn crons run. Spring never re-enters a
-        # single @Scheduled method concurrently, so only DIFFERENT (already per-user idempotent)
-        # jobs overlap.
+        # (companion-feed / memoir / weekly — minutes of LLM calls, per user) BLOCKS every other
+        # job until it finishes; 4 keeps the hourly/short jobs prompt while the clustered dawn
+        # crons run. Spring never re-enters a single @Scheduled method concurrently, so only
+        # DIFFERENT (already per-user idempotent) jobs overlap.
         size: 4
   datasource:
     url: jdbc:postgresql://localhost:${DB_PORT:15432}/mezo
@@ -385,10 +383,6 @@ mezo:
     # Napzárás closing ritual (bd mezo-hvmx) — sleep-anchored evening close; off ⇒ /api/ritual 404s.
     ritual:
       enabled: true
-    # Push notifications (bd mezo-h4wp.6) — subscription registration + fan-out; off ⇒ no
-    # notification beans exist and /api/notification/* 404s.
-    notification:
-      enabled: true
     # In-app notification feed + bell (bd mezo-gzhp) — off ⇒ no feed beans, /api/notification/feed
     # 404s, producers' emits no-op through AppNotificationEmitter.
     notification-feed:
@@ -577,11 +571,6 @@ mezo:
       # Nightly habit close: evaluates end-of-day metrics (caffeine cutoff, kitchen close) and
       # quietly marks the rest missed; off = the HabitJob bean does not exist (reads still close lazily)
       habit-job:
-        enabled: true
-      # N2 per-minute push dispatch job (schedule: mezo.notification.dispatch-cron) — resolves
-      # every user's due notifications and sends them; off = the NotificationDispatchJob bean
-      # does not exist.
-      notification-dispatch-job:
         enabled: true
       # mezo-1y3p LLM-log payload retention (schedule: mezo.llm-log.retention.cron);
       # off = the LlmLogRetentionJob bean does not exist. Deliberately independent of
@@ -1380,7 +1369,8 @@ mezo:
         strain-avg-at-least: 5.0
         muscle-needle: "shoulder"
       ignored-nudge:
-        # Rank 8, offers shift_sleep_anchor. category is NotificationCategory's wire value.
+        # Rank 8, offers shift_sleep_anchor. category is the push category whose sends it reads (no
+        # push sender since the web push left, mezo-r36n9.97.7, so it reports notifications_off).
         category: "lights_out"
         min-consecutive-days: 5
         non-compliance-minutes: 60
@@ -2491,6 +2481,12 @@ mezo:
       # S7: the reply listener waits this long after a USER line before the owner answers — a
       # burst of quick lines gets ONE answer, from the newest line's event.
       reply-debounce-ms: 1500
+      # Do-not-disturb window: no ügy opens inside it, an ügy opened in its evening part never
+      # pushes, overnight raises publish at its end (morning-release-cron above). Wraps midnight
+      # when start > end; start == end means no quiet hours. (Was mezo.notification.quiet-hours.)
+      quiet-hours:
+        start: "22:00"
+        end: "07:00"
   proactive:
     # Advice-card retirement (Csapatfal Act III, mezo-a9bo7.24..25): the old daily advice card that
     # a raised flag delivers (InterventionEventListener). Off ⇒ no listener bean, no new card; the
@@ -2777,54 +2773,10 @@ mezo:
     # A job ETTŐL a futástól kezdve a késleltetett ha–akkor terveket (és a hiány-alapú
     # ritual_missed-et) is emittálja a tegnapi napra — külön ütemező nincs (mezo-iizd.7, spec D-3).
     eval-cron: "0 20 0 * * *"
-  # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
-  # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.
-  # The dummy default keeps the context bootable with the notification feature switched off.
-  # Binds onto WebPushProperties.
-  webpush:
-    subject: mailto:daniel.kuhne@intuitech.studio
-    public-key: ${VAPID_PUBLIC:dummy-vapid-public}
-    private-key: ${VAPID_PRIVATE:dummy-vapid-private}
-    default-ttl-seconds: 3600
-    # Connect + read timeout for the outbound push POST (WebPushClient) — a hung push service
-    # must not hold a caller's thread (N2's per-minute dispatch job).
-    timeout-ms: 5000
-  # Push notification content tunables (bd mezo-h4wp.6.1). Binds onto NotificationProperties;
-  # N2 extends the same record rather than inventing a second one.
+  # In-app notification feed tunables (bd mezo-gzhp.1). The browser web push tunables that used
+  # to share this block left with the web app (mezo-r36n9.97.7); the do-not-disturb window moved
+  # to mezo.character.team-chat.quiet-hours.
   notification:
-    # Notification body is truncated to this many chars before it is encrypted + sent.
-    body-max-chars: 300
-    # Medication has no per-day time column (MedicationCycleService only derives which cycle
-    # day it is) — the reminder anchors on this fixed HH:mm instead (spec §6).
-    medication-time: "08:00"
-    # A decision's review has no time of its own, only a due DATE (decision_entry.review_due) —
-    # the decision_review push anchors on this fixed HH:mm instead (spec §5.4, bd mezo-b3pp.4).
-    decision-review-time: "09:00"
-    # How much of an already-generated prose row (companion_message/weekly/memoir) AnchorResolver
-    # excerpts for a push body — cut at a word boundary, never a new LLM call (spec §6).
-    prose-excerpt-chars: 160
-    # N2 per-minute dispatch job (NotificationDispatchJob) schedule — every minute, on the minute.
-    dispatch-cron: "0 * * * * *"
-    # DueEvaluator's BACKWARD firing window width in minutes — a half-open [0, catch-up-minutes)
-    # on (now - fireMinute), i.e. on time plus (width - 1) recovered LATE minutes, so a genuinely
-    # missed cron minute still delivers on the next tick; the push_log dedup (not this) prevents a
-    # double-send. Looking forward instead would fire a minute EARLY and never recover a miss.
-    catch-up-minutes: 2
-    # Grace (minutes) applied to a prose category's anchor when it would otherwise land AT or
-    # BEFORE the minute its own content generator cron runs: memoir (mezo.proactive.memoir.cron,
-    # 19:00), midday (proactive.feed.midday-cron, 12:30) and weekly whenever the user's wake
-    # time is <= proactive.weekly.cron (06:00). Both jobs queue on the SAME size-1 scheduler thread
-    # and each generator makes an LLM call, so at the anchor minute the row provably does not exist
-    # yet and the (default-ON) category would never fire at all. AnchorResolver reads the generator
-    # crons themselves via CronExpression — those minutes are NOT duplicated here. morning needs
-    # no grace by construction (generates 05:45, anchors at wake ~06:00) — that is the pattern.
-    prose-generation-grace-min: 15
-    # W5.2 (bd mezo-b3pp.19): do-not-disturb window — a non-exempt intervention push generated
-    # inside it is DEFERRED to quiet-hours end (possibly next morning), never dropped. Only the
-    # intervention category consults this today; widening it is a separate decision.
-    quiet-hours:
-      start: "22:00"
-      end: "07:00"
     # In-app notification feed (bd mezo-gzhp.1). The two inbox-* values MUST mirror the FE
     # STRONG_SIGNAL constant, the two band-* values the FE strengthWord bands — pinned by
     # AppNotificationServiceIT and the FE insights tests on both sides.

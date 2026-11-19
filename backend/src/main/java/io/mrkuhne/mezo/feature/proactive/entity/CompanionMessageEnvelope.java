@@ -9,8 +9,7 @@ import java.util.Map;
  * Refs are code-collected candidates the model selected by index (never invented).
  * {@code interventionKey} (W5.2, bd mezo-b3pp.19) names the intervention-LIBRARY ENTRY
  * ({@code mezo.companion.interventions[].key}) so the „Segített?" verdict can be rolled up per
- * entry, the per-entry cooldown can be applied, and {@code AnchorResolver} can read the entry's
- * push channel; it is set on pre-S4 {@code intervention} rows and on flag-sourced {@code advice}
+ * entry and the per-entry cooldown can be applied; it is set on pre-S4 {@code intervention} rows and on flag-sourced {@code advice}
  * rows, null everywhere else. {@code setupKey} (S3, bd mezo-d58h.3) names the setup check; set on
  * pre-S4 {@code setup} rows and on setup-sourced {@code advice} rows.
  *

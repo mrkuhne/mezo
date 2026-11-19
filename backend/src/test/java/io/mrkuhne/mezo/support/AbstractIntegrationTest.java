@@ -36,7 +36,6 @@ import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.MesoTemplatePopulator;
 import io.mrkuhne.mezo.support.populator.NeedsPopulator;
-import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryCatalogPopulator;
 import io.mrkuhne.mezo.support.populator.PantryImportPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
@@ -125,7 +124,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     ProtocolPopulator.class, SupplementIntakePopulator.class,
     PersonPopulator.class, MentionPopulator.class,
     TextSignalPopulator.class,
-    LlmLogPopulator.class, NotificationPopulator.class, AppNotificationPopulator.class, LifeGoalPopulator.class,
+    LlmLogPopulator.class, AppNotificationPopulator.class, LifeGoalPopulator.class,
     TestTeamChatQuietHours.class,
     ResetDatabase.class})
 public abstract class AbstractIntegrationTest {

@@ -7,19 +7,25 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.NudgeSendPort;
 import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
-import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 
 /**
  * Spec 2026-09-03 §4 row 7/8 (rank 8, offers {@code shift_sleep_anchor} — wired by a later task):
@@ -31,7 +37,12 @@ import org.springframework.beans.factory.annotation.Autowired;
  * anchor of 23:15 — shifted-hour 23.25. 60 minutes past that is 00:15 (shifted 24.25): a bedtime
  * AT that clock is compliant (boundary), one minute later is not.
  *
- * <p><b>The night pairing.</b> {@code push_log.log_date} (the evening the nudge fired) pairs with
+ * <p><b>No push sender exists</b> since the browser web push left (mezo-r36n9.97.7), so in
+ * production the rule always reports {@code NOTIFICATIONS_OFF}. This class supplies its own
+ * {@link RecordingNudgeSendPort} so the rule's logic stays pinned for the day a push sender (APNs)
+ * provides a real {@link NudgeSendPort} adapter again.
+ *
+ * <p><b>The night pairing.</b> A sent date (the evening the nudge fired) pairs with
  * {@code sleep_log.date} (the FOLLOWING wake morning) one day later — {@link #nudgedNights} seeds
  * both sides of that pairing for a window of consecutive nights ending TODAY (today's sleep row
  * is last night, per the {@code SleepDeficitCalculator} convention).
@@ -41,7 +52,7 @@ class FlagEvaluatorIgnoredNudgeIT extends AbstractIntegrationTest {
     private static final String CATEGORY = "lights_out";
 
     @Autowired private FlagEvaluator evaluator;
-    @Autowired private NotificationPopulator notificationPopulator;
+    @Autowired private RecordingNudgeSendPort sentNudges;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private UserPopulator userPopulator;
@@ -84,7 +95,7 @@ class FlagEvaluatorIgnoredNudgeIT extends AbstractIntegrationTest {
         for (int i = 0; i < n; i++) {
             LocalDate sleepDate = oldestSleepDate.plusDays(i);
             LocalDate pushDate = sleepDate.minusDays(1);
-            notificationPopulator.pushLog(owner, pushDate, "lights_out:" + pushDate, CATEGORY);
+            sentNudges.record(owner, pushDate, CATEGORY);
             if (bedtimes[i] != null) {
                 sleepLogPopulator.createSleepLog(owner, sleepDate, bedtimes[i], "07:00", new BigDecimal("7.0"));
             }
@@ -112,7 +123,7 @@ class FlagEvaluatorIgnoredNudgeIT extends AbstractIntegrationTest {
         LocalDate fourNightsStart = today.minusDays(3);
         for (LocalDate sleepDate = fourNightsStart; !sleepDate.isAfter(today); sleepDate = sleepDate.plusDays(1)) {
             LocalDate pushDate = sleepDate.minusDays(1);
-            notificationPopulator.pushLog(owner, pushDate, "lights_out:" + pushDate, CATEGORY);
+            sentNudges.record(owner, pushDate, CATEGORY);
             sleepLogPopulator.createSleepLog(owner, sleepDate, "00:30", "07:00", new BigDecimal("7.0"));
         }
 
@@ -259,7 +270,7 @@ class FlagEvaluatorIgnoredNudgeIT extends AbstractIntegrationTest {
         LocalDate fourNightsStart = today.minusDays(3);
         for (LocalDate sleepDate = fourNightsStart; !sleepDate.isAfter(today); sleepDate = sleepDate.plusDays(1)) {
             LocalDate pushDate = sleepDate.minusDays(1);
-            notificationPopulator.pushLog(owner, pushDate, "lights_out:" + pushDate, CATEGORY);
+            sentNudges.record(owner, pushDate, CATEGORY);
             sleepLogPopulator.createSleepLog(owner, sleepDate, "00:30", "07:00", new BigDecimal("7.0"));
         }
 
@@ -268,5 +279,30 @@ class FlagEvaluatorIgnoredNudgeIT extends AbstractIntegrationTest {
         assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
         assertThat(verdict.clear().metric()).isEqualTo("nudge_run_nights");
         assertThat(verdict.clear().detail()).startsWith("no_push:");
+    }
+
+    /** A test-only {@link NudgeSendPort}: the sent dates this class records, per user and category. */
+    static class RecordingNudgeSendPort implements NudgeSendPort {
+
+        private final Map<String, Set<LocalDate>> sent = new ConcurrentHashMap<>();
+
+        void record(UUID userId, LocalDate date, String category) {
+            sent.computeIfAbsent(userId + "|" + category, k -> ConcurrentHashMap.newKeySet()).add(date);
+        }
+
+        @Override
+        public Set<LocalDate> sentDates(UUID userId, String category, LocalDate from, LocalDate to) {
+            return sent.getOrDefault(userId + "|" + category, Set.of()).stream()
+                .filter(d -> !d.isBefore(from) && !d.isAfter(to))
+                .collect(Collectors.toSet());
+        }
+    }
+
+    @TestConfiguration
+    static class NudgeSendPortConfig {
+        @Bean
+        RecordingNudgeSendPort recordingNudgeSendPort() {
+            return new RecordingNudgeSendPort();
+        }
     }
 }

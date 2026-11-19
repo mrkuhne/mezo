@@ -6,17 +6,14 @@ import java.util.UUID;
 
 /**
  * Companion-owned read seam (ADR 0012 consumer-owned-port idiom, mirroring
- * {@code journal.service.DecisionContextPort}) for {@code push_log} sends: {@code
- * IgnoredNudgeRule} depends on this, never directly on notification's {@code PushLogRepository}
- * — a direct import would close a {@code companion ↔ notification} feature-slice cycle
- * (notification's {@code AnchorResolver} already imports {@code CompanionProperties}, so
- * companion already sits downstream of notification in that direction), which {@code
- * ArchitectureTest.feature_slices_are_cycle_free} rejects as a NEW cycle rather than freezing it.
+ * {@code journal.service.DecisionContextPort}) for sent pushes: {@code IgnoredNudgeRule} depends
+ * on this, never directly on a push sender's log, so companion never imports a push slice.
  *
- * <p>The notification feature supplies the adapter, gated on {@code NOTIFICATION_SWITCH}; with
- * notification off there is no bean, so the rule consumes this through an {@code ObjectProvider}
- * and degrades to silence — it can never know whether a push was actually sent, and per spec §7
- * (never estimate) that unknown must stay a gate, not an assumption.
+ * <p>No adapter exists today: its only supplier read the browser web push log, which left with
+ * the web app (mezo-r36n9.97.7). A future push sender (APNs) supplies one again. Until then the
+ * rule consumes this through an {@code ObjectProvider} and degrades to {@code NOTIFICATIONS_OFF} —
+ * it can never know whether a push was actually sent, and per spec §7 (never estimate) that
+ * unknown must stay a gate, not an assumption.
  */
 public interface NudgeSendPort {
 
