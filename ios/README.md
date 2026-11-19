@@ -60,6 +60,8 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewColdTap checkin\|este` | simulates a notification tap from a cold launch: the cover is asked for before any view exists |
 | `-previewRefuse YES` | the server refuses the daily loop's writes (check-in, goal, close, journal line) with 400: the quiet "nem sikerült elküldeni · Újra" rows |
 | `-previewHome etel -etelTab Receptek\|Kamra` | opens the Étel room on that tab (`-etelSheet cooked\|cooked-filled\|cooked-review\|kamra-estimated` then opens „Ezt főztem" empty / with text and three photos / read into the review, or an estimated Kamra food; add `-etelReview other\|added\|facts` to the review to open the „Másik" list / quick-add the first missing row / open its facts) |
+| `-previewHome edzes -previewEdzesSwap YES` | starts today's preview workout and opens the player on the swap sheet of the first exercise (`-previewEdzesSwapAt N`: the N-th, from 0 — 3 is the curl that asks which kit is missing); the preview answers suggestions, the gym profile and „nem esik jól" statefully |
+| `-previewEdzesSwapFail YES` | the preview's suggestions answer 503: the swap sheet's fallback line over the plain list |
 | `-previewSwitch terv\|naplo\|boop` | switches to that place after 3 s and back to Ma 3 s later (record the backdrop slide + blend without taps) |
 
 Adding an API operation: add its `operationId` to `BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`

@@ -279,7 +279,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   for `ios/Boop/Edzes/EdzesRoom.swift`, branched beside `EtelRoom()` in `NapView`, because the morning brief
   cannot carry what the training API knows. **The frame is still the kit's** (`NKAreaPage`, the area's own bar,
   the tab set and its badge are unchanged — the owner has seen that page), and every control it had is still
-  there. What is new on **Ma**:
+  there — since 2026-11-19 the room's *Beállítások* action opens *Mi van a termemben* (§ below, `mezo-r36n9.66`) instead of a „soon" toast. What is new on **Ma**:
   - the exercise rows now carry the **real warmup/working split and the weight the engine asks for**
     („2 bemelegítő · 3 sorozat · 6–10 ismétlés", „80 kg × 8"), and a row is ticked when the server has a logged
     set for it. With the hypertrophy engine **off** the server sends only counts, so the rows show counts and
@@ -506,6 +506,48 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   rest between sets is now the plan's own `restSec` on a styled block (else 90 s). Simulator switch:
   `-previewEdzesTechnique YES` (rest drop on the first exercise, the challenge on the second, myo on the last).
 
+- **The reasoned swap sheet (`mezo-r36n9.66`, 2026-11-19; spec
+  [`2026-11-17-boop-gyakorlatvalasztas-design.md`](../superpowers/specs/2026-11-17-boop-gyakorlatvalasztas-design.md)
+  §6.2, look: the approved spike `spike/boop-gyakorlatcsere`)** — *Végleg lecserélem másikra* opens `Edzes/SwapSheet.swift`
+  (full height): the chips *ehhez nincs eszközöm* / *nem esik jól*, a note line with *visszavonom*, **AJÁNLOM** with up to
+  five server-ranked cards (`getExerciseSubstitutes`: name, `izom · típus`, the server's reason sentence, *Legutóbb: …* in the
+  hue — a bodyweight top set reads „N ismétlés", never „0 kg" — or *Ezt még nem csináltad*; the first card lit), *Minden
+  gyakorlat* expanding to a search field over the cached catalogue (same muscle first, accent- and case-blind) where a
+  filtered-out row is dimmed with *nincs hozzá eszközöd* / *legutóbb fájt* and stays pickable, the footer line and *Mi van a
+  termemben ›* (`WorkoutPlayer.onGym`; nil until the gym page lands → a „hamarosan" toast). The outgoing exercise's catalogue
+  row is found **by name** (`catalogRow(named:in:)`, as the technique sheet does); without one both chips are hidden. The
+  equipment chip runs `missingEdit(for:)`: a machine / Smith / specialty row marks that exercise missing, one portable kind is
+  switched off, several ask which one (bench last); un-tapping a lit chip undoes every edit blocking it
+  (`GymProfile.edits(blocking:)`). `EdzesStore.saveGym` (behind `markMissing/undoMissing` and the gym page) **re-reads the
+  profile from the server before every write** and applies the edit to that (an edit from another device or run is never
+  written over; a profile it cannot read is never written — the PUT replaces it whole), runs one write at a time, and on a
+  refusal leaves the profile as the server last said it; both return the sentence to show. `setDiscomfort` records / clears
+  the swap-time discomfort and keeps the flag on the session's exercise (`SessionExercise.discomfort`, saved with the
+  session file), so the chip tells the truth after a relaunch. Each chip re-fetches the suggestions; chips and
+  *visszavonom* ignore a second tap while one is in flight, and when the suggestions cannot be fetched both chips are
+  disabled and dimmed (a change would show no effect). Today's exercises are left
+  out of suggestions and list **by name** — the old filter compared catalogue ids with the workout's row ids and so never
+  excluded anything on a real server. Loading says *Keresem…*; a failed fetch says *„Most nem érem el az ajánlásokat — a
+  teljes listából választhatsz.”* over the plain list. The swap itself is unchanged (online, *Cserélem…*, rows disabled,
+  „… — lecserélve"). Pure parts in `BoopCore/Train/SwapList.swift`. Simulator: `-previewEdzesSwap YES`
+  (+ `-previewEdzesSwapAt N`, `-previewEdzesSwapFail YES`); the preview catalogue now carries the real catalogue's `gear` and
+  type, and `PreviewTransport` answers suggestions with a toy ranker over it, keeping the gym profile and discomforts in memory.
+- **„Mi van a termemben" (`mezo-r36n9.66`, 2026-11-19)** — `Edzes/GymSettings.swift`: the intro sentence, nine switches
+  (the §6.1 labels, `EquipmentKind.label`) and *AMI KONKRÉTAN HIÁNYZIK* with a *mégis van* per marked exercise (names from the
+  cached catalogue; one it no longer has reads „Törölt gyakorlat" but can still be undone). Opens from the room's
+  *Beállítások* action and from the swap sheet's *Mi van a termemben ›* link — the latter **inside the player**
+  (`WorkoutPlayer.gymSheet`, a `PlayerSheet.gym`), because the room cannot present while the player's cover is up. One
+  source of truth: `EdzesStore.gym`. `GymEditor` shows a copy, sends every change through `EdzesStore.saveGym` (profile
+  read from the server first, whole PUT, taken back by the store on a refusal) and re-reads the store's profile; each
+  switch saves at once, a failed save puts the switch back and shows *„Nem sikerült elmenteni · Újra”*, and a profile that
+  could not be read shows no switches at all (*„Most nem érem el a termed beállításait · Újra”*). Simulator:
+  `-previewEdzesGym YES` (+ `-previewEdzesGymSeed YES` two kinds off and one exercise missing, `-previewEdzesGymFail YES`
+  every save refused). `-previewEdzesSwapFail YES` makes the suggestion fetch fail (the plain-list fallback).
+  Opening the swap sheet may **start the workout on the server** (the discomfort and suggestion calls address the workout
+  by its server id, asked for idempotently like the swap itself — `serverWorkoutId`), and opening *Mi van a termemben* from
+  the sheet **replaces the swap sheet** (one sheet at a time inside the player). The after-exercise three questions now go
+  to the server exactly as tapped (`mezo-r36n9.67`, the server stores them 1-based).
+
 - **A set correction reaches the server (`mezo-r36n9.96`, 2026-11-19)** — the correction sheet used to change the
   phone's session only (no `workoutSetEdit` item was ever queued, though the sheet said otherwise). Now the player
   collects the corrected sets while the sheet is open and, when it closes, the room queues one `workoutSetEdit` per
@@ -716,7 +758,7 @@ Added to the `filter.operations` list in B3: `listCheckInsForDay`, `saveCheckIn`
 
 ### B5 API operations (added to the same generator filter) — Edzés, stage 1
 
-29 train operations: `getTodayWorkout`, `startWorkout`, `logWorkoutSet`, `updateWorkoutSet`, `deleteWorkoutSet`, `saveWorkoutFeedback`, `skipWorkoutExercise`, `changeWorkoutExercise`, `addPlanWorkingSets`, `saveExerciseNote`, `saveWorkoutNote`, `finishWorkout`, `listWorkouts`, `getWorkoutDetail`, `getExerciseCatalog`, `getExerciseRecords`, `listMesocycles`, `getMesocycleReport`, `getMesocycleVolumeArc`, `generateMesoPlan`, `createMesoTemplate`, `startMesoTemplate`, `listMesoTemplates`, `getGymSchedule`, `getTodayReadiness`, `chooseTodayReadiness`, `listSportSessions`, `logSportSession`, `getSportSchedule`. **No contract change and no Liquibase** — the training API already existed for the web app.
+34 train operations (29 + the five of `mezo-r36n9.66`, listed last): `getTodayWorkout`, `startWorkout`, `logWorkoutSet`, `updateWorkoutSet`, `deleteWorkoutSet`, `saveWorkoutFeedback`, `skipWorkoutExercise`, `changeWorkoutExercise`, `addPlanWorkingSets`, `saveExerciseNote`, `saveWorkoutNote`, `finishWorkout`, `listWorkouts`, `getWorkoutDetail`, `getExerciseCatalog`, `getExerciseRecords`, `listMesocycles`, `getMesocycleReport`, `getMesocycleVolumeArc`, `generateMesoPlan`, `createMesoTemplate`, `startMesoTemplate`, `listMesoTemplates`, `getGymSchedule`, `getTodayReadiness`, `chooseTodayReadiness`, `listSportSessions`, `logSportSession`, `getSportSchedule`, `getGymProfile`, `putGymProfile`, `markExerciseDiscomfort`, `clearExerciseDiscomfort`, `getExerciseSubstitutes`. **No contract change and no Liquibase** — the training API already existed for the web app.
 
 `TrainClient` (`BoopCore/Train/`) wraps them behind plain value types (`TrainModels.swift`), with two rules the room's honesty rests on: **an absent server value stays `nil`, never `0`** (with the hypertrophy engine off the server sends only warmup/working *counts*, so the set rows carry no weight rather than printing the plan's anchor weight as a per-set target), and **wire enums read leniently**, so a value the server adds later degrades instead of emptying the room. `blockPlan()` returns an optional — no running block is a state the Blokk tab shows, not an error — and merges two reads (the block's MEV/MAV/MRV landmarks and days, plus the volume arc's per-week planned/actual sets).
 

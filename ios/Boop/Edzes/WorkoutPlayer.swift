@@ -55,6 +55,11 @@ struct WorkoutPlayer: View {
     let onSwap: (UUID, CatalogExercise, Bool) async -> String?
     /// Look at today's briefing again — the room puts it over the player and the player stays running.
     let onBriefing: () -> Void
+    /// The reasoned swap's reads and writes: suggestions, the gym, „nem esik jól" (mezo-r36n9.66).
+    var swap = SwapActions()
+    /// *Mi van a termemben ›* on the swap sheet opens this page. It is presented **here**, over the workout: the room
+    /// cannot present anything while the player's cover is up (boop-ios.md §9). Nil: the link says „hamarosan".
+    var gymSheet: (() -> AnyView)? = nil
 
     @State private var kg: Double = 0
     @State private var reps: Int = 0
@@ -109,7 +114,18 @@ struct WorkoutPlayer: View {
         }
         .preferredColorScheme(.dark)
         .nkToast($toast)
-        .onAppear(perform: loadCurrent)
+        .onAppear {
+            loadCurrent()
+            #if DEBUG
+            // `-previewEdzesSwap YES`: the review opens straight on the swap sheet of the first exercise
+            // (`-previewEdzesSwapAt N`: of the N-th, counted from 0).
+            let at = UserDefaults.standard.integer(forKey: "previewEdzesSwapAt")
+            if UserDefaults.standard.bool(forKey: "previewEdzesSwap"), sheet == nil,
+               session.all.indices.contains(at) {
+                sheet = .swap(session.all[at].id)
+            }
+            #endif
+        }
         .onReceive(tick) { now = $0 }
         .onChange(of: session.currentExerciseId) { loadCurrent() }
         // Every set has its own plan — a warm-up and the working sets after it are different weights. Without
@@ -767,7 +783,7 @@ struct WorkoutPlayer: View {
     // MARK: - Sheets
 
     private enum PlayerSheet: Identifiable {
-        case note(UUID), swap(UUID), exerciseMenu(UUID), editSet(UUID), pick, records(UUID), technique(UUID)
+        case note(UUID), swap(UUID), exerciseMenu(UUID), editSet(UUID), pick, records(UUID), technique(UUID), gym
         var id: String {
             switch self {
             case .note(let id): "note-\(id)"
@@ -777,8 +793,12 @@ struct WorkoutPlayer: View {
             case .records(let id): "rec-\(id)"
             case .technique(let id): "tech-\(id)"
             case .pick: "pick"
+            case .gym: "gym"
             }
         }
+        /// The swap is a long list with cards: it opens full height, as on the approved spike.
+        var isSwap: Bool { if case .swap = self { true } else { false } }
+        var isGym: Bool { if case .gym = self { true } else { false } }
     }
 
     @ViewBuilder private func sheet(for sheet: PlayerSheet) -> some View {
@@ -791,9 +811,10 @@ struct WorkoutPlayer: View {
             case .records(let id): recordsSheet(id)
             case .technique(let id): techniqueSheet(id)
             case .pick: pickSheet
+            case .gym: gymSheet?()
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents(sheet.isSwap || sheet.isGym ? [.large] : [.medium, .large])
         .presentationBackground(NK.ground)
         .presentationCornerRadius(34)
         .presentationDragIndicator(.visible)
@@ -947,73 +968,34 @@ struct WorkoutPlayer: View {
         }
     }
 
-    /// The swap: the catalog filtered to the same muscle first, and **the one write in the player that needs a
-    /// connection** — the server mints the replacement row's id and every set after it is addressed by that id.
+    /// The swap (mezo-r36n9.66): the server's reasoned suggestions over the full catalogue, and **the one write
+    /// in the player that needs a connection** — the server mints the replacement row's id and every set after it
+    /// is addressed by that id. The sheet itself lives in `SwapSheet.swift`.
     private func swapSheet(_ id: UUID) -> some View {
-        let e = session.exercises[id]
-        let muscle = e?.muscle ?? ""
-        let same = catalog.filter { $0.muscle == muscle && $0.id != id }
-        let rest = catalog.filter { $0.muscle != muscle && $0.id != id }
-        return NKSheetFrame(hue: hue, eyebrow: e?.name ?? "Gyakorlat", title: "Mire cseréljük?") {
-            if catalog.isEmpty {
-                NKNoFreshData("A gyakorlatlistát most nem érem el")
-            } else {
-                VStack(spacing: 7) {
-                    if swapping {
-                        Text("Cserélem…").nkFont(13).foregroundStyle(.white.opacity(0.6))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    if let swapProblem {
-                        HStack(alignment: .top, spacing: 9) {
-                            NKGlyph("bolt-peach", Color(hex: 0xE8A07A), size: 16)
-                            Text(swapProblem).nkFont(13).foregroundStyle(.white.opacity(0.85))
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.08)))
-                    }
-                    ForEach(same + rest.prefix(30)) { c in
-                        Button {
-                            swapping = true
-                            swapProblem = nil
-                            // A technique set in progress is a set he did: it goes out on the old row first.
-                            if session.technique?.exerciseId == id {
-                                let before = sentIds
-                                _ = session.endTechnique()
-                                sendNew(since: before)
-                            }
-                            Task {
-                                let problem = await onSwap(id, c, false)
-                                swapping = false
-                                swapProblem = problem
-                                if problem == nil { sheet = nil; say("\(c.name) — lecserélve") }
-                            }
-                        } label: {
-                            HStack(spacing: 11) {
-                                NKRemoteThumb(BoopConfig.mediaURL(c.imageStartURL), size: 40)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(c.name).nkFont(14).foregroundStyle(.white).lineLimit(1)
-                                    Text(muscleName(c.muscle)).nkFont(11, design: .monospaced)
-                                        .foregroundStyle(.white.opacity(0.45))
-                                }
-                                Spacer(minLength: 0)
-                                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(.white.opacity(0.35))
-                            }
-                            .padding(.horizontal, 11).padding(.vertical, 8)
-                            .frame(maxWidth: .infinity)
-                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.06)))
-                            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(swapping)
-                    }
-                    Text("A csere a mai edzésre szól, és internetet kér — a szerver adja a cserélt sor azonosítóját.")
-                        .nkFont(12).foregroundStyle(.white.opacity(0.45))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
+        SwapSheet(exerciseId: id, outgoing: session.exercises[id], catalog: catalog,
+                  today: session.all.map(\.name), hue: hue, actions: swap,
+                  swapping: swapping, problem: swapProblem,
+                  onPick: { c in pickSwap(id, c) },
+                  openGym: {
+                      if gymSheet != nil { sheet = .gym } else { sheet = nil; say(soonToast("Mi van a termemben")) }
+                  })
+    }
+
+    private func pickSwap(_ id: UUID, _ c: CatalogExercise) {
+        guard !swapping else { return }
+        swapping = true
+        swapProblem = nil
+        // A technique set in progress is a set he did: it goes out on the old row first.
+        if session.technique?.exerciseId == id {
+            let before = sentIds
+            _ = session.endTechnique()
+            sendNew(since: before)
+        }
+        Task {
+            let problem = await onSwap(id, c, false)
+            swapping = false
+            swapProblem = problem
+            if problem == nil { sheet = nil; say("\(c.name) — lecserélve") }
         }
     }
 

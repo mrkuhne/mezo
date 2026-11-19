@@ -169,4 +169,29 @@ struct TrainOutboxTests {
         #expect(failed.first?.failure != nil)
         #expect(await sender.sent.isEmpty)
     }
+
+    @Test func feedbackIsSentOneBased() async throws {
+        // In the app the answers are 0-based (pump 0-3, joint pain 0-2, workload 0-2); the contract wants
+        // pump 1-4, joint pain 1-3, workload 1-3 — so the wire is one more, whatever was queued before the fix.
+        let stub = StubTransport()
+        stub.on("startWorkout", .json(201, instanceJSON()))
+        stub.on("saveWorkoutFeedback", .status(204))
+        let train = TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: stub), calendar: budapest)
+
+        let start = startItem()
+        guard case .sent = await train.send(start) else { Issue.record("the start must go out first"); return }
+        let feedback = OutboxItem.workoutWrite(
+            .workoutFeedback,
+            payload: TrainPayloadCodec.encode(WorkoutFeedbackPayload(
+                workoutRef: start.id, items: [.init(exerciseId: pressId, pump: 0, jointPain: 2, workload: 1)])),
+            workoutRef: start.id, date: "2026-11-16", capturedAt: time.now)
+        guard case .sent = await train.send(feedback) else { Issue.record("the feedback must be sent"); return }
+
+        let sentBody = stub.sent.first { $0.op == "saveWorkoutFeedback" }?.body ?? ""
+        let items = try JSONSerialization.jsonObject(with: Data(sentBody.utf8)) as? [[String: Any]]
+        #expect(items?.count == 1)
+        #expect(items?.first?["pump"] as? Int == 1)
+        #expect(items?.first?["jointPain"] as? Int == 3)
+        #expect(items?.first?["workload"] as? Int == 2)
+    }
 }

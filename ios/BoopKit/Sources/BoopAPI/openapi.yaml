@@ -1568,6 +1568,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/gym-profile:
+    get:
+      tags:
+        - Train
+      operationId: getGymProfile
+      summary: >-
+        The viewer's gym profile ("Mi van a termemben"); both lists empty when
+        never saved, never 404
+      responses:
+        '200':
+          description: The profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymProfile'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Train
+      operationId: putGymProfile
+      summary: Replace the viewer's gym profile (per-user singleton)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GymProfile'
+      responses:
+        '200':
+          description: Saved profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymProfile'
+        '400':
+          description: >-
+            An off-kind outside the nine owner-facing kinds (field error on
+            offKinds)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/exercises:
     get:
       tags:
@@ -2639,6 +2692,141 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: 'Workout not active, or the replaced exercise has no plan slot (MESO)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/exercises/{exerciseId}/discomfort':
+    post:
+      tags:
+        - Train
+      operationId: markExerciseDiscomfort
+      summary: Remember that an exercise does not feel right (mezo-r36n9.66)
+      description: >-
+        The swap-time "nem esik jól" note, keyed by the exercise's identity and
+        the workout's day. Idempotent per day.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Done
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The workout is not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Train
+      operationId: clearExerciseDiscomfort
+      summary: Take back today's discomfort note on an exercise (mezo-r36n9.66)
+      description: Removes the workout day's note only; older notes keep counting.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Done
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The workout is not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/exercises/{exerciseId}/substitutes':
+    get:
+      tags:
+        - Train
+      operationId: getExerciseSubstitutes
+      summary: >-
+        Ranked, reasoned swap suggestions for one exercise of an active workout
+        (mezo-r36n9.66)
+      description: >-
+        Up to five same-muscle alternatives with one Hungarian reason sentence
+        each, ranked by role, today's discomfort, the running block's goal and
+        trackability; plus the quiet labels of exercises left out (no equipment
+        / hurt before). A swap-time discomfort note on the outgoing exercise
+        steers the ranking.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Suggestions and labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseSubstitutesResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The workout is not active
           content:
             application/json:
               schema:
@@ -15286,6 +15474,29 @@ components:
             $ref: '#/components/schemas/CheckInPlanItem'
         adaptive:
           $ref: '#/components/schemas/CheckInAdaptiveItem'
+    GymProfile:
+      type: object
+      required:
+        - offKinds
+        - missingExerciseIds
+      properties:
+        offKinds:
+          type: array
+          description: >-
+            Kit kinds the gym does not have - barbell, dumbbell, kettlebell,
+            cable, machine, smith, bench, pullup-bar, specialty (never
+            bodyweight)
+          items:
+            type: string
+            maxLength: 16
+        missingExerciseIds:
+          type: array
+          description: >-
+            Catalogue exercises the gym cannot do even though the kit exists
+            (e.g. a missing hack-squat machine)
+          items:
+            type: string
+            format: uuid
     MesocycleResponse:
       type: object
       required:
@@ -16937,6 +17148,108 @@ components:
         lengthenedFriendly:
           type: boolean
           description: Whether the exercise loads the muscle well at long length.
+        gear:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: >-
+            Kit the exercise needs (barbell, dumbbell, kettlebell, cable,
+            machine, smith, bench, pullup-bar, bodyweight, specialty); null on
+            user-authored rows (mezo-r36n9.66).
+        pattern:
+          type: string
+          nullable: true
+          description: Movement pattern (spec 2026-11-17 §6.1); null on user-authored rows.
+        secondaryMuscles:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: Up to three assisting muscles; null on user-authored rows.
+        joints:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: >-
+            Joints the movement loads (shoulder, elbow, wrist, lower-back, hip,
+            knee, ankle); null on user-authored rows.
+        lengthened:
+          type: boolean
+          nullable: true
+          description: >-
+            Loads the muscle at a stretch; null on user-authored rows. Distinct
+            from lengthenedFriendly.
+        demand:
+          type: string
+          nullable: true
+          description: Systemic demand low | medium | high; null on user-authored rows.
+    ExerciseSubstitutesResponse:
+      type: object
+      required:
+        - suggestions
+        - labels
+      properties:
+        suggestions:
+          type: array
+          description: 'Ordered best-fit first, 0..5'
+          items:
+            $ref: '#/components/schemas/ExerciseSubstitute'
+        labels:
+          type: array
+          description: >-
+            Candidates left out of the suggestions, with the quiet label the
+            full list shows
+          items:
+            $ref: '#/components/schemas/ExerciseSubstituteLabel'
+    ExerciseSubstitute:
+      type: object
+      required:
+        - exercise
+        - reasonText
+        - signals
+      properties:
+        exercise:
+          $ref: '#/components/schemas/ExerciseCatalogItem'
+        reasonText:
+          type: string
+          description: 'One Hungarian sentence, ending with a full stop'
+        signals:
+          type: array
+          description: Stable signal codes that put the suggestion where it is
+          items:
+            type: string
+        lastTopSet:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/LastTopSet'
+    LastTopSet:
+      type: object
+      required:
+        - weightKg
+        - reps
+      properties:
+        weightKg:
+          type: number
+          nullable: true
+          description: null for a bodyweight set
+        reps:
+          type: integer
+    ExerciseSubstituteLabel:
+      type: object
+      required:
+        - catalogId
+        - label
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+        label:
+          type: string
+          enum:
+            - NO_EQUIPMENT
+            - HURT_BEFORE
     CatalogExerciseCreateRequest:
       type: object
       required:

@@ -67,6 +67,41 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testGetExerciseCatalog_shouldCarrySelectionAttributes_onMasterRowsAndNullOnUserRows() {
+        HttpHeaders auth = ownerAuthHeaders();
+        String slug = "attr-it-" + UUID.randomUUID().toString().substring(0, 8);
+        postForBody("/api/train/exercises",
+            io.mrkuhne.mezo.api.dto.CatalogExerciseCreateRequest.builder()
+                .name("Attr IT " + slug)
+                .muscle(io.mrkuhne.mezo.api.dto.CatalogExerciseCreateRequest.MuscleEnum.GLUTE)
+                .type(io.mrkuhne.mezo.api.dto.CatalogExerciseCreateRequest.TypeEnum.COMPOUND)
+                .stim(java.math.BigDecimal.valueOf(0.5)).fatigue(java.math.BigDecimal.valueOf(0.5)).build(),
+            auth, HttpStatus.CREATED, ExerciseCatalogItem.class);
+
+        List<ExerciseCatalogItem> items =
+            getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class);
+
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.getSlug()).isEqualTo("barbell-bench-press");
+            assertThat(i.getGear()).contains("barbell", "bench");
+            assertThat(i.getPattern()).isEqualTo("horizontal-push");
+            assertThat(i.getDemand()).isNotNull();
+            assertThat(i.getLengthened()).isNotNull();
+            assertThat(i.getJoints()).isNotNull();
+            assertThat(i.getSecondaryMuscles()).isNotNull();
+        });
+        assertThat(items).filteredOn(i -> Boolean.TRUE.equals(i.getAuthoredByMe())).isNotEmpty()
+            .allSatisfy(i -> {
+                assertThat(i.getGear()).isNull();
+                assertThat(i.getPattern()).isNull();
+                assertThat(i.getSecondaryMuscles()).isNull();
+                assertThat(i.getJoints()).isNull();
+                assertThat(i.getLengthened()).isNull();
+                assertThat(i.getDemand()).isNull();
+            });
+    }
+
+    @Test
     void testReplaceDayExercises_shouldPersistCatalogId_whenProvided() {
         HttpHeaders auth = ownerAuthHeaders();
         UUID catalogId = catalogIdOf(auth, "hip-thrust");

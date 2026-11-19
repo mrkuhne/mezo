@@ -113,11 +113,7 @@ final class EdzesStore {
         // the queue may not have drained. The server's start is **idempotent on the template day** — it returns
         // the open instance rather than making a second one — so asking for it here is safe and is the only way
         // a swap works on the first exercise of a session.
-        var workoutId = await client.knownWorkoutId(for: session.ref) ?? today?.value.open?.id
-        if workoutId == nil, let template = today?.value.templateSessionId {
-            workoutId = try? await client.startWorkout(templateSessionId: template, ref: session.ref).id
-        }
-        guard let workoutId else {
+        guard let workoutId = await serverWorkoutId(client, session) else {
             return "Az edzés még nem ért fel a szerverre. Próbáld újra, amint van net."
         }
         let old = session.exercises[id]
@@ -140,6 +136,109 @@ final class EdzesStore {
         } catch {
             return "A cserét a szerver most nem fogadta el."
         }
+    }
+
+    /// The server's own id for the running workout, asking for it when the queue has not learned it yet. The
+    /// start is idempotent on the template day, so asking is safe (see `swapExercise`).
+    private func serverWorkoutId(_ client: TrainClient, _ session: WorkoutSession) async -> UUID? {
+        var workoutId = await client.knownWorkoutId(for: session.ref) ?? today?.value.open?.id
+        if workoutId == nil, let template = today?.value.templateSessionId {
+            workoutId = try? await client.startWorkout(templateSessionId: template, ref: session.ref).id
+        }
+        return workoutId
+    }
+
+    // MARK: - The reasoned swap (mezo-r36n9.66, spec §6.2)
+
+    /// „Mi van a termemben": what his gym lacks. Everything counts as available until the server says otherwise.
+    private(set) var gym = GymProfile()
+    private(set) var gymLoaded = false
+    /// Exercises of today's workout he said „nem esik jól" about. Read from the session, which is saved with every
+    /// change, so the chip stays true across the sheet reopening and the app relaunching.
+    var discomforts: Set<UUID> {
+        Set(session?.exercises.values.filter { $0.discomfort == true }.map(\.id) ?? [])
+    }
+    /// Gym writes run one after another: each re-reads the profile first, and two overlapping ones would each
+    /// write back a profile missing the other's change.
+    private var gymWrite: Task<String?, Never>?
+
+    func loadGym() async {
+        guard let client, !gymLoaded else { return }
+        if let fresh = try? await client.gymProfile() { gym = fresh; gymLoaded = true }
+    }
+
+    /// Ranked, reasoned alternatives for one exercise of the running workout; nil when they cannot be fetched
+    /// (the sheet then falls back to the plain same-muscle list).
+    func substitutes(for exerciseId: UUID) async -> Substitutes? {
+        guard let client, let session, let workoutId = await serverWorkoutId(client, session) else { return nil }
+        return try? await client.substitutes(workoutId: workoutId, exerciseId: exerciseId)
+    }
+
+    /// „Ehhez nincs eszközöm": switch one kind off or mark one machine missing, at once on the phone and then on
+    /// the server. Returns the sentence to show when it could not be saved (the change is then taken back), nil
+    /// on success. `.ask` is a question for the sheet, never saved.
+    func markMissing(_ edit: MissingEdit) async -> String? {
+        if case .ask = edit { return nil }
+        return await saveGym { $0.applying(edit) }
+    }
+
+    /// *Visszavonom*. The sentence to show when it could not be saved, nil on success.
+    func undoMissing(_ edit: MissingEdit) async -> String? {
+        if case .ask = edit { return nil }
+        return await saveGym { $0.reverting(edit) }
+    }
+
+    /// `change` is applied to the profile **as the server has it right now** — re-read before every write, so an
+    /// edit made on another device or in an earlier run is never written over. A refused save leaves the profile as
+    /// the server last said it. Writes are serialised (`gymWrite`).
+    func saveGym(_ change: @escaping (GymProfile) -> GymProfile) async -> String? {
+        let previous = gymWrite
+        let write = Task { @MainActor [weak self] () -> String? in
+            _ = await previous?.value
+            guard let self else { return nil }
+            return await self.writeGym(change)
+        }
+        gymWrite = write
+        return await write.value
+    }
+
+    private func writeGym(_ change: (GymProfile) -> GymProfile) async -> String? {
+        guard let client else { return "Most nem érem el a termed beállításait." }
+        let fresh: GymProfile
+        do {
+            fresh = try await client.gymProfile()
+        } catch TrainFetchError.offline {
+            return "Ehhez internet kell, és most nincs."
+        } catch {
+            return "Most nem érem el a termed beállításait."
+        }
+        gymLoaded = true
+        let next = change(fresh)
+        gym = next
+        do {
+            gym = try await client.saveGymProfile(next)
+            return nil
+        } catch TrainFetchError.offline {
+            gym = fresh
+            return "Ehhez internet kell, és most nincs."
+        } catch {
+            gym = fresh
+            return "A termed beállítását most nem sikerült elmenteni."
+        }
+    }
+
+    /// „Nem esik jól" on (or off again) for one exercise of today's workout. True when the server took it.
+    func setDiscomfort(_ on: Bool, exerciseId: UUID) async -> Bool {
+        guard let client, let session, let workoutId = await serverWorkoutId(client, session) else { return false }
+        do {
+            if on { try await client.markDiscomfort(workoutId: workoutId, exerciseId: exerciseId) }
+            else { try await client.clearDiscomfort(workoutId: workoutId, exerciseId: exerciseId) }
+        } catch { return false }
+        if var updated = self.session {
+            updated.setDiscomfort(on, for: exerciseId)
+            update(updated)
+        }
+        return true
     }
 
     /// Put the session back where it was — used when the player closes and when the app

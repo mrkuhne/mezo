@@ -65,6 +65,8 @@ struct EdzesRoom: View {
     /// The missions he let go of on the briefing screen. Kept here so the choice survives that screen closing
     /// and reopening before he starts.
     @State private var released: Set<UUID> = []
+    /// „Mi van a termemben" (mezo-r36n9.66), from the Beállítások action. The workout player presents its own copy.
+    @State private var showGym = false
 
     /// `hidden` is not „no workout": the session may well be running, minimised.
     private enum WorkoutPhase { case hidden, briefing, playing, ceremony }
@@ -92,7 +94,7 @@ struct EdzesRoom: View {
                    photo: areaPhoto(hue), glyph: areaGlyph(hue),
                    tabs: tabs, selectedTab: $selected,
                    actions: [NKAreaAction(glyph: "search-ink", label: "Keresés") { toast = soonToast("Keresés · Edzés") },
-                             NKAreaAction(glyph: "repeat-deep", label: "Beállítások") { toast = soonToast("Edzés beállításai") }],
+                             NKAreaAction(glyph: "repeat-deep", label: "Beállítások") { showGym = true }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
                    onAsk: { openPlace(.boop) }) {
             content
@@ -101,6 +103,12 @@ struct EdzesRoom: View {
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
+        .sheet(isPresented: $showGym) {
+            if let store {
+                GymSheet(store: store, hue: hue)
+                    .presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
+            }
+        }
         // The per-user folders are built when the session signs in, which can land a render
         // after this room first appears — so the store is pointed at it whenever it arrives,
         // not once in `.task`. Without this a workout in progress was never written down.
@@ -155,7 +163,15 @@ struct EdzesRoom: View {
                               },
                               // Looking at today's plan again mid-workout: the briefing goes over the
                               // player and the session keeps running underneath.
-                              onBriefing: { phase = .briefing })
+                              onBriefing: { phase = .briefing },
+                              swap: SwapActions(
+                                  gym: { store.gym },
+                                  discomforted: { store.discomforts.contains($0) },
+                                  substitutes: { await store.substitutes(for: $0) },
+                                  markMissing: { await store.markMissing($0) },
+                                  undoMissing: { await store.undoMissing($0) },
+                                  setDiscomfort: { on, id in await store.setDiscomfort(on, exerciseId: id) }),
+                              gymSheet: { AnyView(GymSheet(store: store, hue: hue)) })
             }
         }
         .fullScreenCover(isPresented: Binding(get: { phase == .ceremony && store?.session != nil },
@@ -174,6 +190,16 @@ struct EdzesRoom: View {
             // The catalog is only needed by the swap sheet, but it is one cached read and the gym is exactly
             // where the network is not: better here than at the moment a machine turns out to be occupied.
             await store?.loadCatalog()
+            // What his gym lacks, so the swap sheet's chip opens lit when it should.
+            await store?.loadGym()
+            #if DEBUG
+            // `-previewEdzesGym YES` (mezo-r36n9.66): straight onto „Mi van a termemben".
+            if UserDefaults.standard.bool(forKey: "previewEdzesGym") { showGym = true }
+            // `-previewEdzesSwap YES` (mezo-r36n9.66): straight into the player, which opens the swap sheet.
+            if UserDefaults.standard.bool(forKey: "previewEdzesSwap") {
+                if store?.session != nil { phase = .playing } else if workout != nil { beginWorkout() }
+            }
+            #endif
             if weekReview == nil, let plan { weekReview = WeekReviewModel(client: plan) }
             async let preload: Void = prepareBuilder(fresh: false)
             await weekReview?.load()

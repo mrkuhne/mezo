@@ -22,7 +22,11 @@ osszefoglalo: A gyakorlat-katalógus videóval, a rekordjaid, a lezárt edzések
 - **izomterhelés-térkép:** melyik izomcsoport mennyit dolgozott a héten.
 
 ## Hogyan működik
-1. A katalógus egy beépített gyakorlatlistából töltődik, és saját gyakorlattal bővíthető.
+1. A katalógus egy beépített gyakorlatlistából töltődik, és saját gyakorlattal bővíthető. **Minden beépített gyakorlatról
+   hat dolgot tudunk (2026-11-19 óta)**, ezekből áll össze a gyakorlatcsere ajánlása: **mivel csinálják** (rúd, gép, kéziszer,
+   saját testsúly…), **milyen mozdulat** (nyomás, húzás, hajlítás…), **mely más izmok dolgoznak mellette**, **mely ízületeket
+   terheli**, **nyújtott helyzetben terhel-e**, és **mennyire igényes** (kicsi, közepes, nagy). A saját gyakorlataidnál ezek
+   üresek: azokat az ajánlás sosem szűri ki eszköz miatt, és a mondatuk mindig ugyanaz: „Saját gyakorlat — erről még keveset tudok.”
 2. A rekordok az elvégzett sorozatokból számolódnak.
 3. **Lezáráskor** a jelentés ugyanabban a lépésben „befagy”, így később nem változik. Utána a háttérben az AI megírja az
    értékelést, és visszaírja a jelentésbe.
@@ -39,7 +43,7 @@ A befagyasztott jelentés őszinte összehasonlítást ad két blokk között. A
 ## Adattáblák
 | Tábla | Mit tárol |
 |---|---|
-| `exercise_catalog` | A gyakorlat-katalógus (név, izomcsoport, típus, videó, képek) |
+| `exercise_catalog` | A gyakorlat-katalógus (név, izomcsoport, típus, videó, képek, és a hat tulajdonság: eszközök, mozdulat, mellékizmok, ízületek, nyújtott helyzet, igényesség) |
 | `mesocycle_report` | A befagyasztott zárójelentés és az AI-értékelés |
 | `muscle_group_volume_log` | A heti volumen, a volumen-ívhez |
 | `exercise_set` | Az elvégzett sorozatok, a rekordokhoz |

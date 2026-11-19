@@ -7,11 +7,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Exercise catalog row — a hybrid table (since mezo-52zg): rows with {@code createdBy == null}
@@ -99,4 +102,31 @@ public class ExerciseCatalogEntity {
     @NotNull
     @Column(name = "lengthened_friendly", nullable = false)
     private Boolean lengthenedFriendly = false;
+
+    // Selection attributes (mezo-r36n9.66): loader-owned on master rows; NULL on user-authored rows.
+
+    /** Finer, multi-valued kit list the swap filters on ("Mi van a termemben"); distinct from {@link #equipment}. */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "gear", columnDefinition = "varchar(16)[]")
+    private List<String> gear;
+
+    /** One of the 21 movement patterns (spec §6.1). */
+    @Column(name = "pattern")
+    private String pattern;
+
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "secondary_muscles", columnDefinition = "varchar(24)[]")
+    private List<String> secondaryMuscles;
+
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "joints", columnDefinition = "varchar(16)[]")
+    private List<String> joints;
+
+    /** Loads the muscle at a stretch; distinct from {@link #lengthenedFriendly}. */
+    @Column(name = "lengthened")
+    private Boolean lengthened;
+
+    /** {@code low|medium|high} systemic demand. */
+    @Column(name = "demand")
+    private String demand;
 }

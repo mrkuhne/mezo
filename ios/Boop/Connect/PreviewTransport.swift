@@ -34,7 +34,7 @@ struct PreviewTransport: ClientTransport {
             return (HTTPResponse(status: .badRequest), nil)
         }
         var sent = ""
-        if (["setSessionTime", "addFocus", "sendMessage", "changeWorkoutExercise"] + Self.foodWriteOps).contains(operationID), let body {
+        if (["setSessionTime", "addFocus", "sendMessage", "changeWorkoutExercise", "putGymProfile"] + Self.foodWriteOps).contains(operationID), let body {
             sent = String(decoding: try await Data(collecting: body, upTo: 1 << 16), as: UTF8.self)
         }
         if let reply = Self.morningReply(operationID, request, sent: sent) { return reply }
@@ -592,7 +592,9 @@ struct PreviewTransport: ClientTransport {
     private static let trainOps: Set<String> = ["getTodayWorkout", "listWorkouts", "getExerciseCatalog",
                                                 "getExerciseRecords", "listMesocycles", "getMesocycleVolumeArc",
                                                 "changeWorkoutExercise", "startWorkout", "logWorkoutSet",
-                                                "saveWorkoutFeedback", "skipWorkoutExercise", "finishWorkout"]
+                                                "saveWorkoutFeedback", "skipWorkoutExercise", "finishWorkout",
+                                                "getGymProfile", "putGymProfile", "markExerciseDiscomfort",
+                                                "clearExerciseDiscomfort", "getExerciseSubstitutes"]
     /// What the review has swapped so far: the plan's index → the replacement the sheet asked for.
     nonisolated(unsafe) private static var swapped: [Int: (name: String, muscle: String, slug: String)] = [:]
 
@@ -652,6 +654,29 @@ struct PreviewTransport: ClientTransport {
                 .joined(separator: ",")
             let today = #"{"templateSessionId":"\#(previewSessionId)","dayLabel":"Hét","title":"Vállak és hát","durationEst":68,"exercises":[\#(list)],"weekDoneDates":[]}"#
             return json(#"{"exerciseId":"\#(previewExerciseId(index))","today":\#(today)}"#)
+        case "getGymProfile": return json(previewGymJSON)
+        case "putGymProfile":
+            // `-previewEdzesGymFail YES`: the save is refused, and the switch goes back with its *Újra* row.
+            if UserDefaults.standard.bool(forKey: "previewEdzesGymFail") { return (HTTPResponse(status: .serviceUnavailable), nil) }
+            // Remember what was saved, so the swap sheet re-ranks and the settings page reads it back.
+            if let data = sent.data(using: .utf8),
+               let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                previewGym = (Set(body["offKinds"] as? [String] ?? []), Set(body["missingExerciseIds"] as? [String] ?? []))
+            }
+            return json(previewGymJSON)
+        case "markExerciseDiscomfort", "clearExerciseDiscomfort":
+            if let i = (0..<previewDay.count).first(where: { request.path?.contains(previewExerciseId($0)) == true }) {
+                if op == "markExerciseDiscomfort" { previewSore.insert(i) } else { previewSore.remove(i) }
+            }
+            return (HTTPResponse(status: .noContent), nil)
+        case "getExerciseSubstitutes":
+            // `-previewEdzesSwapFail YES`: the suggestions cannot be fetched, and the sheet falls back.
+            if UserDefaults.standard.bool(forKey: "previewEdzesSwapFail") {
+                return (HTTPResponse(status: .serviceUnavailable), nil)
+            }
+            guard let i = (0..<previewDay.count).first(where: { request.path?.contains(previewExerciseId($0)) == true })
+            else { return (HTTPResponse(status: .notFound), nil) }
+            return json(previewSubstitutes(for: i))
         case "listWorkouts": return json("[]")
         default: return json("{}")
         }
@@ -873,7 +898,24 @@ struct PreviewTransport: ClientTransport {
     }
 
     /// The swap sheet's list: today's own exercises plus a handful of real alternatives per muscle.
-    private static var previewCatalog: String {
+    /// The kit and the role of every row of the review's catalogue — copied from the real catalogue
+    /// (`content/exercise-catalog.json`), so the swap sheet's chips behave as they will on his phone.
+    private static let previewKit: [String: (type: String, gear: [String])] = [
+        "Weighted Pull-Up": ("compound", ["pullup-bar"]), "Barbell Row": ("compound", ["barbell"]),
+        "Cable Rear-Delt Fly": ("isolation", ["cable"]), "Incline DB Curl": ("isolation", ["dumbbell", "bench"]),
+        "Lateral Raise": ("isolation", ["dumbbell"]), "Lat Pulldown · Neutral": ("compound", ["cable"]),
+        "Chin-Up": ("compound", ["pullup-bar"]), "T-Bar Row": ("compound", ["specialty"]),
+        "Seated Cable Row · Neutral": ("compound", ["cable"]), "Single-Arm DB Row": ("compound", ["dumbbell", "bench"]),
+        "Face Pull": ("isolation", ["cable"]), "Bent-Over Reverse Fly": ("isolation", ["dumbbell"]),
+        "Cable Lateral Raise": ("isolation", ["cable"]), "Preacher Curl": ("isolation", ["specialty"]),
+        "Cable Curl": ("isolation", ["cable"]), "Machine High Row": ("compound", ["machine"]),
+        "Machine Pullover": ("isolation", ["machine"]), "Machine Lateral Raise": ("isolation", ["machine"]),
+        "Reverse Pec Deck": ("isolation", ["machine"]),
+    ]
+
+    private struct PreviewRow { let name: String, muscle: String, slug: String, id: String }
+
+    private static var previewRows: [PreviewRow] {
         let extras: [(String, String, String)] = [
             ("Lat Pulldown · Neutral", "back-wide", "lat-pulldown-neutral"),
             ("Chin-Up", "back-wide", "chin-up"),
@@ -885,13 +927,105 @@ struct PreviewTransport: ClientTransport {
             ("Cable Lateral Raise", "shoulder-side", "cable-lateral-raise"),
             ("Preacher Curl", "biceps-short", "preacher-curl"),
             ("Cable Curl", "biceps-long", "cable-curl"),
+            ("Machine High Row", "back-mid", "machine-high-row"),
+            ("Machine Pullover", "back-wide", "machine-pullover"),
+            ("Machine Lateral Raise", "shoulder-side", "machine-lateral-raise"),
+            ("Reverse Pec Deck", "shoulder-rear", "reverse-pec-deck"),
         ]
-        let own = previewDay.enumerated().map { i, e in (e.name, e.muscle, e.slug, previewExerciseId(i)) }
-        let rest = extras.enumerated().map { i, e in (e.0, e.1, e.2, String(format: "c1c2c3d4-02%02d-4a2b-9c3d-111122223333", i)) }
-        let rows = (own + rest).map { r in
-            #"{"id":"\#(r.3)","slug":"\#(r.2)","name":"\#(r.0)","muscle":"\#(r.1)","type":"compound","stim":0.8,"fatigue":0.5,"imageStartUrl":"/exercises/\#(r.2)-a.jpg","imageEndUrl":"/exercises/\#(r.2)-b.jpg","editable":false,"mediaEditable":false,"authoredByMe":false}"#
+        let own = previewDay.enumerated().map { i, e in PreviewRow(name: e.name, muscle: e.muscle, slug: e.slug, id: previewExerciseId(i)) }
+        let rest = extras.enumerated().map { i, e in
+            PreviewRow(name: e.0, muscle: e.1, slug: e.2, id: String(format: "c1c2c3d4-02%02d-4a2b-9c3d-111122223333", i))
         }
-        return "[" + rows.joined(separator: ",") + "]"
+        return own + rest
+    }
+
+    private static func previewRowJSON(_ r: PreviewRow) -> String {
+        let kit = previewKit[r.name] ?? ("compound", [])
+        let gear = "[" + kit.gear.map { #""\#($0)""# }.joined(separator: ",") + "]"
+        return #"{"id":"\#(r.id)","slug":"\#(r.slug)","name":"\#(r.name)","muscle":"\#(r.muscle)","type":"\#(kit.type)","stim":0.8,"fatigue":0.5,"imageStartUrl":"/exercises/\#(r.slug)-a.jpg","imageEndUrl":"/exercises/\#(r.slug)-b.jpg","editable":false,"mediaEditable":false,"authoredByMe":false,"gear":\#(gear)}"#
+    }
+
+    private static var previewCatalog: String {
+        "[" + previewRows.map(previewRowJSON).joined(separator: ",") + "]"
+    }
+
+    // MARK: The reasoned swap's review answers (mezo-r36n9.66)
+
+    /// What the review's gym lacks (kinds off, catalogue ids missing) and which of today's exercises he said
+    /// „nem esik jól" about. Both start empty, like his real profile.
+    /// `-previewEdzesGymSeed YES`: two kinds off and one machine missing, as after a few swaps.
+    nonisolated(unsafe) private static var previewGym: (off: Set<String>, missing: Set<String>) =
+        UserDefaults.standard.bool(forKey: "previewEdzesGymSeed")
+        ? (["smith", "specialty"], [previewExerciseId(0)]) : ([], [])
+    nonisolated(unsafe) private static var previewSore: Set<Int> = []
+    /// Invented history: a top set for some rows (the chin-up's is bodyweight — no weight, never „0 kg") and two
+    /// rows that hurt last time.
+    private static let previewHistory: [String: (kg: Double?, reps: Int)] = [
+        "Lat Pulldown · Neutral": (57.5, 10), "Chin-Up": (nil, 9), "Seated Cable Row · Neutral": (65, 10),
+        "Face Pull": (22.5, 15), "Cable Curl": (20, 12), "Machine High Row": (70, 10), "Cable Lateral Raise": (7.5, 15),
+    ]
+    private static let previewHurt: Set<String> = ["Bent-Over Reverse Fly", "Single-Arm DB Row"]
+
+    private static var previewGymJSON: String {
+        let off = previewGym.off.sorted().map { #""\#($0)""# }.joined(separator: ",")
+        let missing = previewGym.missing.sorted().map { #""\#($0)""# }.joined(separator: ",")
+        return #"{"offKinds":[\#(off)],"missingExerciseIds":[\#(missing)]}"#
+    }
+
+    /// A toy ranker in the server's shape (the real one is `ExerciseSubstituteRanker`): the same muscle, widened to
+    /// the body region when that leaves too few; what the gym lacks or what hurt is left out and labelled; after
+    /// „nem esik jól" guided kit comes first; history breaks ties.
+    private static func previewSubstitutes(for index: Int) -> String {
+        let useTechnique = UserDefaults.standard.bool(forKey: "previewEdzesTechnique")
+        func current(_ i: Int) -> (name: String, muscle: String) {
+            if let s = swapped[i] { return (s.name, s.muscle) }
+            if useTechnique, let t = techniqueDay[i] { return (t.0.name, t.0.muscle) }
+            return (previewDay[i].name, previewDay[i].muscle)
+        }
+        let out = current(index)
+        let today = Set((0..<previewDay.count).map { current($0).name })
+        let rows = previewRows.filter { !today.contains($0.name) }
+        let outType = previewKit[out.name]?.type ?? "compound"
+        func gear(_ name: String) -> [String] { previewKit[name]?.gear ?? [] }
+        func lacks(_ r: PreviewRow) -> Bool {
+            previewGym.missing.contains(r.id) || gear(r.name).contains { previewGym.off.contains($0) }
+        }
+        let outLacks = gear(out.name).contains { previewGym.off.contains($0) }
+            || previewRows.contains { $0.name == out.name && previewGym.missing.contains($0.id) }
+        var pool = rows.filter { $0.muscle == out.muscle }
+        if pool.filter({ !lacks($0) && !previewHurt.contains($0.name) }).count < 3 {
+            let region = out.muscle.split(separator: "-").first.map(String.init) ?? out.muscle
+            pool += rows.filter { $0.muscle != out.muscle && $0.muscle.hasPrefix(region) }
+        }
+        let sore = previewSore.contains(index)
+        func guided(_ r: PreviewRow) -> Bool { gear(r.name).contains { $0 == "machine" || $0 == "cable" } }
+        func score(_ r: PreviewRow) -> Int {
+            var s = previewKit[r.name]?.type == outType ? 40 : 0
+            if sore && guided(r) { s += 30 }
+            if guided(r) { s += 10 }
+            if previewHistory[r.name] != nil { s += 8 }
+            return s
+        }
+        let picks = pool.filter { !lacks($0) && !previewHurt.contains($0.name) }.sorted { score($0) > score($1) }.prefix(5)
+        let items = picks.map { r -> String in
+            let type = previewKit[r.name]?.type ?? "compound"
+            var sentence = type == outType ? "Ugyanazt a munkát végzi a tervben"
+                : "Ugyanazt az izmot éri, de \(type == "compound" ? "összetett" : "izolált") mozgásként"
+            if sore && guided(r) { sentence += ", vezetett mozgás, kíméletesebb az ízületnek" }
+            else if guided(r) { sentence += ", stabil, könnyű benne terhelni — izomépítéshez jó" }
+            else if previewHistory[r.name] != nil { sentence += ", ezt már csináltad, így látod, hol tartasz" }
+            else if outLacks { sentence += ", és ehhez van eszközöd" }
+            let last = previewHistory[r.name].map { h in
+                #"{"weightKg":\#(h.kg.map { nkRound($0) } ?? "null"),"reps":\#(h.reps)}"#
+            } ?? "null"
+            return #"{"exercise":\#(previewRowJSON(r)),"reasonText":"\#(sentence).","signals":["same-role"],"lastTopSet":\#(last)}"#
+        }
+        let labels = rows.compactMap { r -> String? in
+            if lacks(r) { return #"{"catalogId":"\#(r.id)","label":"NO_EQUIPMENT"}"# }
+            if previewHurt.contains(r.name) { return #"{"catalogId":"\#(r.id)","label":"HURT_BEFORE"}"# }
+            return nil
+        }
+        return #"{"suggestions":[\#(items.joined(separator: ","))],"labels":[\#(labels.joined(separator: ","))]}"#
     }
 
     /// His history on today's exercises — enough for the records sheet, and for one of the missions to be a

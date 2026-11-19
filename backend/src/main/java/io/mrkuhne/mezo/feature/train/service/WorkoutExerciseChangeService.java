@@ -235,7 +235,8 @@ public class WorkoutExerciseChangeService {
             .orElseThrow(OwnershipGuard::notFound);
     }
 
-    private WorkoutSessionEntity activeInstanceOrThrow(UUID createdBy, UUID workoutId) {
+    /** The user's active (not finished) instance; 404 if not theirs, 409 if finished. */
+    WorkoutSessionEntity activeInstanceOrThrow(UUID createdBy, UUID workoutId) {
         WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
         if (!"active".equals(instance.getStatus())) {
             throw new SystemRuntimeErrorException(
