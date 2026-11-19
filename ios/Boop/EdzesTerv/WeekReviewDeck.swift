@@ -232,6 +232,12 @@ private struct ReviewChangeTile: View {
                 if off { Text("marad \(from)").nkFont(13, .medium).foregroundStyle(.white.opacity(0.7)).lineLimit(1) }
             }
             .accessibilityElement(children: .combine)
+            if let note = line.note {
+                HStack(alignment: .top, spacing: 8) {
+                    PlanMark(.spark, color: planHue.glow, size: 14).padding(.top, 2)
+                    Text(note).nkFont(13).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
             if !line.reasons.isEmpty {
                 NKFlowRow(spacing: 6, rowSpacing: 6) {
                     ForEach(Array(zip(line.reasons, knownCodes)), id: \.0) { text, code in
