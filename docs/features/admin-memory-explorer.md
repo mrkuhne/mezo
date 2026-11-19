@@ -1,18 +1,16 @@
 ---
 title: RAG memory explorer — owner console part 2
 type: feature-domain
-status: done
+status: retired
 updated: 2026-11-19
 tags: [admin, companion, memory, rag, pgvector, knowledge-graph, backend, frontend, data-layer, design]
-key_files:
-  - api/feature/admin-memory/admin-memory.yml
-  - backend/src/main/java/io/mrkuhne/mezo/feature/admin/service/AdminMemoryService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/admin/repository/AdminAlertQuery.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryProjectionService.java
+key_files: []
 related: [admin-hub, companion, insights, _platform-auth-security, _platform-data-layer, _platform-design-system]
 ---
 
 # RAG memory explorer — Feature Documentation
+
+> **Retired 2026-11-19 (#52, `mezo-r36n9.97.4`).** The web app was switched off and this area's server code left with it. The doc is kept as history; the code it describes is in git history.
 
 > **2026-11-11 — `AdminAlertQuery.embeddingCallsSince` (Boop B0, `mezo-lb2yb`).** The shared alert query gained an embedding-traffic read (total / errors / last error code for one model) used by the new `embedding_down` owner alert; the explorer's own health counts are unchanged. See [`admin-hub.md`](admin-hub.md).
 
@@ -355,6 +353,7 @@ scripts/gen-codemap.mjs --check`, `pnpm build`.
 
 ## 9. Decisions, gotchas & deferred
 
+- **Server side removed 2026-11-19 (#52, `mezo-r36n9.97.4`).** The server side (`feature/admin` memory controller/services) and the contract fragment `api/feature/admin-memory/` were removed with the web app, together with the `mezo.admin.memory.*` keys and the `mezo.feature.admin-memory.enabled` switch. The companion helpers it read (`MemoryProjectionService`, `MemoryHealthQuery`, `MemoryNeighborQuery`, `MemoryPromptTraceQuery`, `GraphStructureQuery`) stay in the kept companion area for slice B8 to keep or cut. No table was dropped.
 - **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
