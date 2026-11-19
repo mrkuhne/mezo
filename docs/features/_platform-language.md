@@ -358,6 +358,7 @@ F5 translated a domain of about 130 source files with nine parallel builders. Wh
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web-only generator switches off (2026-11-19, `mezo-r36n9.97.8`).** `application.yml` sets `mezo.feature.{feed-reactions,team-chat,team-edition}.enabled` and `mezo.techcore.cron.{feed,challenge,weekly-suggestion,setup-check}-job.enabled` to false; the test profile keeps its own values and kept-code ITs opt back in per class.
 - **`application.yml` trimmed (2026-11-19, `mezo-r36n9.97.4`).** The web-only `mezo.admin.*`, `mezo.telemetry.*` blocks and the tutorial / admin / screen-telemetry switches left with their areas; nothing about language settings changed.
 - **XP-world keys out (2026-11-19, `mezo-r36n9.97.5`).** The `mezo.{progression,quest,activity,gamification}.*` blocks, their switches, the `quest-job` cron switch and `mezo.lifegoal.xp-per-hit` left `application.yml`; the `QUEST_*`/`ACTIVITY_*`/`GAMIFICATION_*` keys left both message bundles (parity kept). Nothing about language settings changed.
 - **Web push keys out (2026-11-19, `mezo-r36n9.97.7`).** `mezo.webpush.*`, `mezo.notification.*` (all but `feed`) and the `notification` / `notification-dispatch-job` switches left `application.yml`; the team chat's quiet window moved to `mezo.character.team-chat.quiet-hours`; `WEBPUSH_KEY_INVALID`/`WEBPUSH_SIGN_FAILED`/`WEBPUSH_ENCRYPT_FAILED`/`NOTIFICATION_UNKNOWN_CATEGORY` left both message bundles (parity kept). Nothing about language settings changed.

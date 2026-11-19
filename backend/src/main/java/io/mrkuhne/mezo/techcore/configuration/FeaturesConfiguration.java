@@ -170,6 +170,13 @@ public class FeaturesConfiguration {
      *  (schedules: mezo.proactive.feed.*-cron). */
     public static final String FEED_JOB_SWITCH = "mezo.techcore.cron.feed-job.enabled";
 
+    /** Companion-feed event reactions (mezo-gst9 task 9) — the sleep/weight reaction cards that
+     *  CompanionMessageEventListener writes after a sleep or weight log. Off ⇒ that listener bean
+     *  does not exist (no LLM call on a log). Separate from {@link #FEED_JOB_SWITCH} because the
+     *  trigger is an iPhone write, not a cron; off since the web retirement (mezo-r36n9.97.8),
+     *  when the feed lost its only screen. */
+    public static final String FEED_REACTIONS_SWITCH = "mezo.feature.feed-reactions.enabled";
+
     /** W1 Monday weekly-suggestion job — techcore cron zone (schedule: mezo.proactive.weekly.cron). */
     public static final String WEEKLY_SUGGESTION_JOB_SWITCH = "mezo.techcore.cron.weekly-suggestion-job.enabled";
 
