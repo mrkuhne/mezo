@@ -1032,5 +1032,15 @@
       "Alapok"
     ],
     "mit_kapsz": "Nem fut többé a napi hírfolyam, a kihívások és a többi, csak a weben látott háttérmunka; a havi AI-költség kb. a felére csökken."
+  },
+  "mezo-r36n9.94": {
+    "cim": "Edzés: technika- és kihívás-választó a blokképítőben",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A Napok fülön a technikát és a nap kihívását egy felugró listából választod, mindegyikhez rövid leírással; a sor nem ugrál, és látszik, mit tett oda Boop.",
+    "munkamenet": "boop-blokk-epito"
   }
 }

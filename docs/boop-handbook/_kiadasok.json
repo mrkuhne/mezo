@@ -412,5 +412,16 @@
       "mezo-r36n9.84"
     ],
     "mi_valtozott": "Edzés közben a gyakorlat neve alatt címke mutatja, ha ma technika vagy kihívás jár rá. A technikás utolsó sorozatnál egy lépéskártya vezet végig (például: bukásig, 30 mp pihenő, kisebb súly ugyanannyi ismétléssel); a pihenő a kártyán számol vissza és magától továbblép, a kisebb súlyt a ténylegesen emelt súlyból számolja. A myo mini-sorozatok addig jönnek, amíg egy már nem éri el a 3 ismétlést, és bármikor abbahagyhatod. A kihívás saját képernyő: egy kör, amire minden félismétlésnél rákoppintasz, mellette a megdöntendő csúcs; új csúcsnál aranyra vált. A sorozat a lépéseivel együtt, egyben kerül a szerverre. A sorozatok közti pihenő stílusos blokkban a szerver által előírt idő. Az első kihívások a hétfői (11. 23.) heti javaslattal érkeznek, a technikák a 3. héttől."
+  },
+  "b1f2d3584": {
+    "tipus": "Új funkció",
+    "cim": "Blokképítő: technika- és kihívás-választó",
+    "datum": "2026-11-19",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.94"
+    ],
+    "mi_valtozott": "A Napok fülön minden gyakorlatnál egyetlen címke mutatja a technikát vagy a kihívást, így a sor nem ugrál. Rákoppintva felugrik a választó: az öt technika (ami nem választható, az halványan, az okával), alatta a nap kihívása, és egy „i” gomb rövid leírásokkal. Amit Boop tett oda a heti javaslatban, azon „Boop” jelzés van, amíg át nem állítod; a heti átnézés csempéin pedig megjelenik Boop egymondatos indoklása, ha van.",
+    "verzio": ""
   }
 }

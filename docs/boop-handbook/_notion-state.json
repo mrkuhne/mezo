@@ -1225,7 +1225,7 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "cad9dfc0ad3c"
+      "hash": "6fe949696023"
     },
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
@@ -1266,6 +1266,14 @@
     "dontesek:d-2026-11-19-web-leall": {
       "page_id": "41d8968e-752b-818f-92a8-df7b2f13b082",
       "hash": "4770c058da65"
+    },
+    "jegyek:mezo-r36n9.94": {
+      "page_id": "41d8968e-752b-819a-9d00-d0e682599608",
+      "hash": "5e56f39b684f"
+    },
+    "kiadasok:b1f2d3584": {
+      "page_id": "41d8968e-752b-812d-9d53-f27b7e2f36bb",
+      "hash": "2936b9326f18"
     }
   }
 }
