@@ -118,19 +118,20 @@ public class MesoPlanEvaluateService {
         for (WorkoutSessionEntity s : templateDays) {
             List<PlanEvaluator.PlanExercise> list = new ArrayList<>();
             List<ExerciseEntity> rows = bySession.getOrDefault(s.getId(), List.of());
+            int dayIndex = s.getOrderIndex() == null ? 0 : s.getOrderIndex();   // as TemplatePlan
             for (int i = 0; i < rows.size(); i++) {
                 ExerciseEntity e = rows.get(i);
                 if (optsIn) {
-                    PlannedTechnique stored = EvaluatorTechniques.storedTechnique(s.getOrderIndex(), i, e);
+                    PlannedTechnique stored = EvaluatorTechniques.storedTechnique(dayIndex, i, e);
                     if (stored != null) storedTechniques.add(stored);
-                    if (e.isChallenge()) storedChallenges.add(EvaluatorTechniques.challenge(s.getOrderIndex(), i));
+                    if (e.isChallenge()) storedChallenges.add(EvaluatorTechniques.challenge(dayIndex, i));
                 }
                 String group = e.getMuscle() == null || e.getMuscle().isBlank() ? null : MuscleGroup.of(e.getMuscle());
                 list.add(new PlanEvaluator.PlanExercise(group, e.getWorkingSets() == null ? 0 : e.getWorkingSets(),
                     e.getWarmupSets() == null ? 0 : e.getWarmupSets(), e.isCountsTowardVolume(),
                     TechniqueRules.capExtra(e, run.isTechniquesEnabled(), techniqueProps.capWeight())));
             }
-            days.add(new PlanEvaluator.PlanDay(s.getDayLabel(), list, s.getOrderIndex()));
+            days.add(new PlanEvaluator.PlanDay(s.getDayLabel(), list, dayIndex));
         }
         List<String> phaseCurve = run.getPhaseCurve() == null ? List.of() : run.getPhaseCurve();
 

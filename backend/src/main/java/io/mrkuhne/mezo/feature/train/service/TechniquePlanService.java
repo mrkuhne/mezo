@@ -157,7 +157,7 @@ public class TechniquePlanService {
         List<TechniquePlanner.PlanDay> days = new ArrayList<>();
         Map<UUID, ExerciseEntity> rowsById = new HashMap<>();
         for (WorkoutSessionEntity s : templateDays) {
-            int dayIndex = s.getOrderIndex();
+            int dayIndex = s.getOrderIndex() == null ? 0 : s.getOrderIndex();   // as TemplatePlan
             List<ExerciseEntity> rows = bySession.getOrDefault(s.getId(), List.of());
             List<TechniquePlanner.PlanRow> planRows = new ArrayList<>(rows.size());
             for (int i = 0; i < rows.size(); i++) {
@@ -256,7 +256,7 @@ public class TechniquePlanService {
         return weekday >= 0 && sportWeekdays.contains(weekday);
     }
 
-    private static CatalogAttributes.Lookup stabilityOf(CatalogAttributes.AttrsLookup attrs) {
+    static CatalogAttributes.Lookup stabilityOf(CatalogAttributes.AttrsLookup attrs) {
         return new CatalogAttributes.Lookup(attrs.byId().entrySet().stream()
             .filter(e -> e.getValue().stable()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet()));
     }

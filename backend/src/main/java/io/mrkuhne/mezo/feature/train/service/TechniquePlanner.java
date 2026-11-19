@@ -107,7 +107,8 @@ public final class TechniquePlanner {
             int left = allowance(day, in);
             for (PlanRow r : day.rows()) {
                 if (!owned(r) || !hasTechnique(r)) continue;
-                techniques.add(new Pick(r.dayIndex(), r.exerciseIndex(), r.id(), r.technique(), r.source(), null));
+                techniques.add(new Pick(r.dayIndex(), r.exerciseIndex(), r.id(), r.technique(),
+                    r.source() == null ? SOURCE_OWNER : r.source(), null));
                 boolean groupFull = r.group() != null
                     && perGroup.getOrDefault(r.group(), 0) >= in.cfg().maxPerMuscleWeek();
                 if (r.group() != null) perGroup.merge(r.group(), 1, Integer::sum);
@@ -233,9 +234,13 @@ public final class TechniquePlanner {
         return unmodifiable(zero);
     }
 
-    /** An owner / AI pick: never moved by the planner. */
+    /**
+     * An owner / AI pick: never moved by the planner. A row carrying a technique or a challenge without any source
+     * counts as owned too (only the planner's own picks are the planner's), as {@link TechniqueLines} reads it.
+     */
     private static boolean owned(PlanRow r) {
-        return SOURCE_OWNER.equals(r.source()) || "ai".equals(r.source());
+        if (SOURCE_OWNER.equals(r.source()) || "ai".equals(r.source())) return true;
+        return r.source() == null && (hasTechnique(r) || r.challenge());
     }
 
     /** A stored challenge the planner did not place (owner, ai or no source): it wins, the planner only moves its own. */

@@ -311,6 +311,26 @@ class WeekProposalTechniqueIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void techniqueAddIsKeptOnAChallengeRow() {
+        Chest c = chest(3, NO_DELOAD, true);
+        ExerciseEntity fly = fresh(c.cableFly());
+        fly.setChallenge(true); // the row became the day's challenge after the line was built
+        fly.setTechniqueSource("planner");
+        exerciseRepository.saveAndFlush(fly);
+        MesoWeekProposalEntity proposal = new MesoWeekProposalEntity();
+        proposal.setCreatedBy(owner);
+        WeekProposalLineJson add = new WeekProposalLineJson("a1", fly.getId(), "Cable Fly", 0, "chest",
+            WeekProposalLineJson.KIND_TECHNIQUE, 3, 2, List.of("emphasis"), null, "Hét", null, null, "none",
+            "rest_drop", false, null, null, null, null);
+
+        assertThat(proposals.applySetLine(proposal, add).decision()).isEqualTo("kept");
+        ExerciseEntity after = fresh(c.cableFly());
+        assertThat(after.getTechnique()).isNull();
+        assertThat(after.isChallenge()).isTrue();
+        assertThat(after.getWorkingSets()).isEqualTo(3);
+    }
+
+    @Test
     void techniqueLineIsKeptOnAnUnsourcedPick() {
         Chest c = chest(3, NO_DELOAD, true);
         ExerciseEntity fly = fresh(c.cableFly());

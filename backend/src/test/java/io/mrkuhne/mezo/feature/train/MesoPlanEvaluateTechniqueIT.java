@@ -36,7 +36,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * The evaluator shows the technique plan (mezo-r36n9.81, T3 Task 4): a draft with a style and the techniques flag
  * gets the planner's picks per path week (from week 3) and counts its own picks against the caps; a run shows the
  * STORED picks for its current week and the projection after; a block that does not opt in is unchanged (the
- * planner fields are absent from the JSON).
+ * planner keys are present but JSON null: every path week's techniques / challenges and the techniqueWarnings).
  */
 class MesoPlanEvaluateTechniqueIT extends ApiIntegrationTest {
 

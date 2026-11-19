@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.ExerciseTechniqueUpdateRequest;
 import io.mrkuhne.mezo.api.dto.GymExercise;
+import io.mrkuhne.mezo.feature.train.config.TrainTechniqueProperties;
+import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
@@ -22,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * The owner's mid-run technique / challenge pick on one run exercise (mezo-r36n9.80): owned run, the
  * exercise belongs to it, the run's block flag is on, then {@link TechniqueRules}. A challenge clears
- * itself from the day's other rows (at most one a day); none + no challenge clears the pick.
+ * itself from the day's other rows (at most one a day); none + no challenge clears the pick. Clearing or replacing
+ * a planner technique (mezo-r36n9.81) gives back the straight set it replaced while the caps allow.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,6 +38,9 @@ public class ExerciseTechniqueService {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
     private final CatalogAttributes catalogAttributes;
+    private final ExerciseStyler styler;
+    private final VolumeProperties volumeProps;
+    private final TrainTechniqueProperties techniqueProps;
     private final TrainMapper mapper;
 
     @Transactional
@@ -57,11 +63,19 @@ public class ExerciseTechniqueService {
         }
         Technique technique = Technique.fromWire(mapper.techniqueWire(request.getTechnique()));
         boolean challenge = Boolean.TRUE.equals(request.getChallenge());
-        Optional<String> error = TechniqueRules.check(technique, challenge,
-            catalogAttributes.loadAttrs(java.util.Collections.singletonList(row.getCatalogId()))
-                .of(row.getCatalogId()));
+        CatalogAttributes.AttrsLookup attrs =
+            catalogAttributes.loadAttrs(java.util.Collections.singletonList(row.getCatalogId()));
+        Optional<String> error = TechniqueRules.check(technique, challenge, attrs.of(row.getCatalogId()));
         if (error.isPresent()) {
             throw TechniqueGuard.fail(error.get(), row.getName());
+        }
+        // T2/T3 seam (mezo-r36n9.81): a planner technique replaced one straight set; when he clears or replaces it,
+        // the set comes back while the caps allow (as the weekly proposal's removal line does)
+        Technique stored = Technique.fromWire(row.getTechnique());
+        boolean plannerTechniqueGoes = TechniquePlanner.SOURCE_PLANNER.equals(row.getTechniqueSource())
+            && stored != Technique.NONE && technique != stored;
+        if (plannerTechniqueGoes && givesSetBack(createdBy, meso, row, attrs, technique, challenge)) {
+            row.setWorkingSets(row.getWorkingSets() + 1);
         }
         boolean active = technique != Technique.NONE || challenge;
         row.setTechnique(technique == Technique.NONE ? null : technique.wire());
@@ -81,5 +95,46 @@ public class ExerciseTechniqueService {
                 });
         }
         return mapper.toGymExercise(row);
+    }
+
+    /**
+     * The straight set a planner technique replaced may come back: never on an all-out row; the row's cap weight
+     * after (one more set, plus the technique set's extra while it still carries a technique or challenge) within
+     * the exercise cap, and with the day's other counting rows of its group within the session cap.
+     */
+    private boolean givesSetBack(UUID createdBy, MesocycleEntity meso, ExerciseEntity row,
+                                 CatalogAttributes.AttrsLookup attrs, Technique technique, boolean challenge) {
+        if (row.getWorkingSets() == null) {
+            return false;
+        }
+        io.mrkuhne.mezo.api.dto.TrainingStyle style = styler.effective(row.getTrainingStyle(), row.getType(),
+            row.getCatalogId(), TrainingStyle.fromWire(meso.getTrainingStyle()),
+            TechniquePlanService.stabilityOf(attrs), row.isCountsTowardVolume());
+        if (style != null && TrainingStyle.fromWire(style.getValue()) == TrainingStyle.ALLOUT) {
+            return false;
+        }
+        int capWeight = techniqueProps.capWeight();
+        int weightAfter = row.getWorkingSets() + 1
+            + TechniqueRules.capExtra(technique, challenge, true, capWeight);
+        if (weightAfter > volumeProps.bands().exerciseCap()) {
+            return false;
+        }
+        String group = row.getMuscle() == null || row.getMuscle().isBlank() ? null : MuscleGroup.of(row.getMuscle());
+        if (group == null) {
+            return true;
+        }
+        int dayWeight = weightAfter;
+        for (ExerciseEntity o : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                createdBy, List.of(row.getWorkoutSessionId()))) {
+            if (o.getId().equals(row.getId()) || !o.isCountsTowardVolume() || o.getMuscle() == null
+                    || o.getMuscle().isBlank() || !group.equals(MuscleGroup.of(o.getMuscle()))) {
+                continue;
+            }
+            // a challenge moving here leaves its old row this same request
+            boolean otherChallenge = o.isChallenge() && !challenge;
+            dayWeight += (o.getWorkingSets() == null ? 0 : o.getWorkingSets())
+                + TechniqueRules.capExtra(Technique.fromWire(o.getTechnique()), otherChallenge, true, capWeight);
+        }
+        return dayWeight <= volumeProps.bands().sessionCap();
     }
 }

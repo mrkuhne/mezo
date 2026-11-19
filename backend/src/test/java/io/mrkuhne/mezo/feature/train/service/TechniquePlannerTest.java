@@ -334,6 +334,19 @@ class TechniquePlannerTest {
     }
 
     @Test
+    void techniqueWithoutSourceCountsAsOwners() {
+        // a legacy row with a technique but no source: kept as the owner's, consumes allowance, never re-planned
+        PlanRow legacy = new PlanRow(0, 2, id(0, 2), "legs", true, 3, "compound", 10, MACHINE,
+            TrainingStyle.BALANCED, Technique.DROP, null, false);
+        PlanDay d = sportDay(0, row(0, 0, "chest"), row(0, 1, "back"), legacy);
+        Week w = TechniquePlanner.plan(input(3, Map.of(), d));
+        assertThat(w.techniques()).extracting(Pick::exerciseIndex, Pick::technique, Pick::source, Pick::reason)
+            .containsExactly(org.assertj.core.groups.Tuple.tuple(2, Technique.DROP, "owner", null));
+        assertThat(w.remainingByDay()).containsEntry(0, 0);
+        assertThat(w.perGroup()).containsEntry("legs", 1);
+    }
+
+    @Test
     void challengeRowGetsNoTechnique() {
         PlanDay d = day(0, attrs(row(0, 0, "chest"), LENGTHENED), row(0, 1, "back"));
         Week w = TechniquePlanner.plan(input(3, Map.of(), d));

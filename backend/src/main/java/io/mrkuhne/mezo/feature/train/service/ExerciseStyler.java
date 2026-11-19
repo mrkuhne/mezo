@@ -181,7 +181,8 @@ public class ExerciseStyler {
             }
             boolean sentNone = in.trainingStyle() == null && in.restSec() == null && in.overrides() == null;
             // Technique fields (mezo-r36n9.80): a client that sends none of them (the frozen web client) keeps
-            // the stored pick; one that sends any is taken as-is, so an explicit "none" / false clears it.
+            // the stored pick; one that sends any is taken as-is, so an explicit "none" / false clears it. What it
+            // sends becomes the owner's, unless it only echoes a planner pick back (then it stays the planner's).
             boolean techniqueSent = in.technique() != null || in.techniqueSource() != null || in.challenge() != null;
             GymExerciseJson base = new GymExerciseJson(in.id(), in.name(), in.muscle(), in.warmupSets(),
                 in.workingSets(), in.repMin(), in.repMax(), in.targetRir(), in.anchorWeightKg(), in.type(),
@@ -192,9 +193,26 @@ public class ExerciseStyler {
             GymExerciseJson merged = techniqueSent
                 ? base.withTechnique(in.technique(), in.techniqueSource(), in.challenge())
                 : base.withTechnique(match.technique(), match.techniqueSource(), match.challenge());
-            out.add(techniqueSent ? withOwnerSource(merged) : merged);
+            if (!techniqueSent) {
+                out.add(merged);
+            } else if (echoesPlannerPick(in, match)) {
+                // T2/T3 seam (mezo-r36n9.81): a client echoing the planner's pick back unchanged keeps it the planner's
+                out.add(merged.withTechnique(merged.technique(), TechniquePlanner.SOURCE_PLANNER, merged.challenge()));
+            } else {
+                out.add(withOwnerSource(merged));
+            }
         }
         return out;
+    }
+
+    /**
+     * The request sends exactly the technique and challenge of a stored planner pick (none / null alike): an echo,
+     * not the owner's change, so the pick stays the planner's to move. Any real change makes it the owner's.
+     */
+    private static boolean echoesPlannerPick(GymExerciseJson in, GymExerciseJson match) {
+        return TechniquePlanner.SOURCE_PLANNER.equals(match.techniqueSource())
+            && Technique.fromWire(in.technique()) == Technique.fromWire(match.technique())
+            && Boolean.TRUE.equals(in.challenge()) == Boolean.TRUE.equals(match.challenge());
     }
 
     private static boolean techniqueSent(GymExerciseJson in) {

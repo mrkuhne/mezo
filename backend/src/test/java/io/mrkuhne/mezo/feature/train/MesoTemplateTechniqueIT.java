@@ -336,6 +336,60 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
             .isEqualTo("owner");
     }
 
+    /** A started flagged run whose Cable Fly carries a planner rest-drop (one straight set given back). */
+    private MesocycleResponse runWithPlannerPick(HttpHeaders auth) {
+        MesoTemplateResponse t = postForBody(TEMPLATES, request(true, List.of(
+            ex("Cable Fly", "chest-mid", catalog("cable-fly")))), auth, HttpStatus.OK, MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + t.getId() + "/start", start(), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+        jdbcTemplate.update("update exercise set technique = 'rest_drop', technique_source = 'planner', "
+            + "working_sets = 2 where name = 'Cable Fly' and is_deleted = false and workout_session_id = ?",
+            run.getDays().get(0).getId());
+        return run;
+    }
+
+    @Test
+    void echoedPlannerPickStaysPlanner() {
+        UUID owner = ownerId();
+        MesocycleResponse run = runWithPlannerPick(ownerAuthHeaders());
+        MesoDay day = run.getDays().get(0);
+        // an iOS-style edit of another field: the planner's technique fields echoed back as they came
+        List<GymExerciseInput> inputs = new ArrayList<>(day.getExercises().stream()
+            .map(MesoTemplateTechniqueIT::webInput).toList());
+        inputs.get(0).setWorkingSets(2);
+        inputs.get(0).setTechnique(Technique.REST_DROP);
+        inputs.get(0).setTechniqueSource(TechniqueSource.PLANNER);
+        inputs.get(0).setChallenge(false);
+
+        MesoDay edited = trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs);
+
+        assertThat(edited.getExercises().get(0).getTechnique()).isEqualTo(Technique.REST_DROP);
+        assertThat(edited.getExercises().get(0).getTechniqueSource()).isEqualTo(TechniqueSource.PLANNER);
+        assertThat(jdbcTemplate.queryForObject(
+            "select technique_source from exercise where name = 'Cable Fly' and is_deleted = false", String.class))
+            .isEqualTo("planner");
+    }
+
+    @Test
+    void ownerChangeOfPlannerPickBecomesOwner() {
+        UUID owner = ownerId();
+        MesocycleResponse run = runWithPlannerPick(ownerAuthHeaders());
+        MesoDay day = run.getDays().get(0);
+        List<GymExerciseInput> inputs = new ArrayList<>(day.getExercises().stream()
+            .map(MesoTemplateTechniqueIT::webInput).toList());
+        inputs.get(0).setWorkingSets(2);
+        inputs.get(0).setTechnique(Technique.DROP); // his own change, even if the client echoes "planner"
+        inputs.get(0).setTechniqueSource(TechniqueSource.PLANNER);
+
+        MesoDay edited = trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs);
+
+        assertThat(edited.getExercises().get(0).getTechnique()).isEqualTo(Technique.DROP);
+        assertThat(edited.getExercises().get(0).getTechniqueSource()).isEqualTo(TechniqueSource.OWNER);
+        assertThat(jdbcTemplate.queryForObject(
+            "select technique_source from exercise where name = 'Cable Fly' and is_deleted = false", String.class))
+            .isEqualTo("owner");
+    }
+
     @Test
     void runDayEditWithTwoChallengesRejected() {
         UUID owner = ownerId();

@@ -440,7 +440,8 @@ public class WeekProposalService {
 
     /**
      * The row still carries what the line moves away from: its technique, or for a challenge line its flag — and a
-     * challenge is only placed on a row without a technique (one row never carries both).
+     * challenge is only placed on a row without a technique, a technique only on a row that is not the challenge
+     * (one row never carries both).
      */
     private static boolean holdsFromTechnique(ExerciseEntity e, WeekProposalLineJson line) {
         Technique from = Technique.fromWire(line.fromTechnique());
@@ -450,6 +451,10 @@ public class WeekProposalService {
                 return false;
             }
             return e.isChallenge() == (from == Technique.PARTIALS);
+        }
+        boolean adding = Technique.fromWire(line.toTechnique()) != Technique.NONE;
+        if (adding && e.isChallenge()) {
+            return false; // the row became a challenge since: a technique never joins it
         }
         return Technique.fromWire(e.getTechnique()) == from;
     }

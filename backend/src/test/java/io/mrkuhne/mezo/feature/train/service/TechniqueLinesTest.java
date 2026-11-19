@@ -291,6 +291,24 @@ class TechniqueLinesTest {
     }
 
     @Test
+    void lineWithoutALandmarkGroupNamesTheCoarseGroupOrIsSkipped() {
+        PlanRow grouped = row(0, 0, "chest", 3);
+        PlanRow groupless = row(1, 0, null, 3);
+        Input in = input(day(0, grouped), day(1, groupless));
+        List<TemplatePlan.Row> plan = plan(in).stream()
+            .map(t -> new TemplatePlan.Row(t.exercise(), t.dayIndex(), null, t.dayName(), t.capExtra())).toList();
+
+        TechniqueLines.Result r = TechniqueLines.lines(plan, in,
+            week(List.of(technique(grouped, Technique.REST_DROP, "emphasis")), List.of(challenge(groupless))),
+            working(in));
+
+        assertThat(r.lines()).singleElement().satisfies(l -> {
+            assertThat(l.exerciseId()).isEqualTo(grouped.id());
+            assertThat(l.muscleGroup()).isEqualTo("chest");
+        });
+    }
+
+    @Test
     void rowsOutsideTheTemplatePlanGetNoLine() {
         PlanRow warmup = row(0, 0, "chest", 3);
         PlanRow counted = row(0, 1, "chest", 3);

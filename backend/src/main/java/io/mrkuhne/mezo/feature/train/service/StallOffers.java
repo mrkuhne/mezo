@@ -32,7 +32,8 @@ import java.util.UUID;
  *   <li><b>rep range</b> — the group's latest counting row (same order) that is heavy, balanced or volume (never
  *       all-out) and carries no {@code repRange} override moves one step along heavy → balanced, volume → balanced,
  *       balanced → volume: a {@code rep_range} line with the style table's range for its class. A row already in
- *       that range is skipped. Any tier;</li>
+ *       that range (or one without a stored rep range) is skipped. The line's group is the landmark group, else
+ *       the row's coarse group. Any tier;</li>
  *   <li><b>one-week reduction</b> — only for a HOLD / NONE decision outside Tartás, and not in a week whose restore
  *       gave the group sets back (no ratchet): {@link SetSlots#pickDown} over
  *       the group's rows without a technique or challenge (stored or picked this week) gives one set, with a
@@ -160,6 +161,7 @@ final class StallOffers {
             TemplatePlan.Row planRow = planById.get(r.id());
             ExerciseEntity e = planRow.exercise();
             if (e.getOverrides() != null && e.getOverrides().contains(OVERRIDE_REP_RANGE)) continue;
+            if (e.getRepMin() == null || e.getRepMax() == null) continue;   // the line's from range is required
             boolean stable = r.attrs().stable();
             ExerciseClass cls = ExerciseClass.of(r.type(), stable);
             if (cls == null) continue;
@@ -168,7 +170,8 @@ final class StallOffers {
                 continue;
             }
             return Optional.of(new WeekProposalLineJson(UUID.randomUUID().toString(), r.id(), e.getName(),
-                planRow.dayIndex(), planRow.group(), WeekProposalLineJson.KIND_REP_RANGE, e.getRepMax(),
+                planRow.dayIndex(), planRow.group() != null ? planRow.group() : r.group(),
+                WeekProposalLineJson.KIND_REP_RANGE, e.getRepMax(),
                 stamp.repMax(), List.of(REASON_STALLED), null, planRow.dayName(), null, null, null, null, null,
                 e.getRepMin(), e.getRepMax(), stamp.repMin(), stamp.repMax()));
         }

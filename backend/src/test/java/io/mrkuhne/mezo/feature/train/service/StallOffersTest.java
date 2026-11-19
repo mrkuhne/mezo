@@ -291,6 +291,31 @@ class StallOffersTest {
         assertThat(r.reductions()).hasSize(1);
     }
 
+    @Test
+    void storedRowWithoutARepRangeGetsNoRangeLine() {
+        Input in = input(day(0, free(0, 0, "back", TrainingStyle.BALANCED)));
+        List<TemplatePlan.Row> plan = plan(in, 6, 10, null);
+        plan.get(0).exercise().setRepMin(null);
+
+        StallOffers.Result r = offers(in, week(in, 2), plan, Lever.HOLD, PriorityTier.GROW);
+
+        assertThat(r.repRangeLines()).isEmpty();
+        assertThat(r.reductions()).hasSize(1);
+    }
+
+    @Test
+    void rangeLineWithoutALandmarkGroupNamesTheCoarseGroup() {
+        PlanRow row = free(0, 0, "back", TrainingStyle.BALANCED);
+        Input in = input(day(0, row));
+        List<TemplatePlan.Row> plan = plan(in, 6, 10, null).stream()
+            .map(t -> new TemplatePlan.Row(t.exercise(), t.dayIndex(), null, t.dayName(), t.capExtra())).toList();
+
+        StallOffers.Result r = offers(in, week(in, 2), plan, Lever.HOLD, PriorityTier.GROW);
+
+        assertThat(r.repRangeLines()).singleElement()
+            .satisfies(l -> assertThat(l.muscleGroup()).isEqualTo("back"));
+    }
+
     // ── (c) reduction ──────────────────────────────────────────────────────────────────────────
 
     @Test

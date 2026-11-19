@@ -26,7 +26,8 @@ import java.util.UUID;
  *       ({@code challenge = true}); a technique on the new challenge row is removed first.</li>
  * </ul>
  * A row holding an owner / AI pick, or a technique / challenge without the planner as its source, never gets a line.
- * Lines come by day, removals first on each day (they free allowance), then by exercise position.
+ * A row with no muscle group at all (no landmark group and no coarse group) gets no line. Lines come by day,
+ * removals first on each day (they free allowance), then by exercise position.
  */
 final class TechniqueLines {
 
@@ -89,7 +90,9 @@ final class TechniqueLines {
         List<Step> steps = new ArrayList<>();
         int seq = 0;
         for (TechniquePlanner.PlanRow r : allRows) {
-            if (!planById.containsKey(r.id()) || !plannerMay(r)) continue;
+            if (!planById.containsKey(r.id()) || !plannerMay(r) || lineGroup(planById.get(r.id()), r) == null) {
+                continue;   // a line always names a muscle group
+            }
             Technique want = picked.getOrDefault(r.id(), Technique.NONE);
             boolean has = hasTechnique(r);
             if (!has && want != Technique.NONE) {
@@ -149,7 +152,7 @@ final class TechniqueLines {
             sets.put(id, to);
             TemplatePlan.Row planRow = planById.get(id);
             lines.add(new WeekProposalLineJson(UUID.randomUUID().toString(), id, planRow.exercise().getName(),
-                planRow.dayIndex(), planRow.group(), WeekProposalLineJson.KIND_TECHNIQUE, from, to,
+                planRow.dayIndex(), lineGroup(planRow, r), WeekProposalLineJson.KIND_TECHNIQUE, from, to,
                 step.reason() == null ? List.of() : List.of(step.reason()), null, planRow.dayName(), null, null,
                 fromTechnique.wire(), step.to().wire(), challengeLine, null, null, null, null));
         }
@@ -177,6 +180,11 @@ final class TechniqueLines {
             dayWeight += sets.get(r.id()) + (extra.get(r.id()) ? capExtra : 0);
         }
         return dayWeight <= in.sessionCap();
+    }
+
+    /** The line's muscle group: the landmark group, else the planner's coarse group; null only without a muscle. */
+    private static String lineGroup(TemplatePlan.Row planRow, TechniquePlanner.PlanRow r) {
+        return planRow.group() != null ? planRow.group() : r.group();
     }
 
     /** Why a planner technique goes: the deficit's smaller allowance, else a sport day's, else emphasis moved. */
