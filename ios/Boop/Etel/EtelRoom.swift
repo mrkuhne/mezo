@@ -745,6 +745,7 @@ struct EtelRoom: View {
             case "add-manual": kamraSheet = .add(.manual)
             case "add-barcode": kamraSheet = .add(.barcode)
             case "usuals": composer = MealStart(entrance: .usual)
+            case "compose": composer = MealStart(entrance: .pick)
             case "sensitivity": etelSheet = .sensitivity
             case "diet": etelSheet = .diet
             case "rhythm": etelSheet = .rhythm

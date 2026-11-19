@@ -299,7 +299,18 @@ struct PreviewTransport: ClientTransport {
         case "recipeLogs":
             return json(#"{"recentLogs":[{"mealId":"\#(seedMealId)","slot":"lunch","loggedAt":"\#(ISO8601DateFormatter().string(from: Date().addingTimeInterval(-3 * 86400)))","kcal":660,"p":50,"c":75,"f":15,"score":0.78},{"mealId":"\#(UUID().uuidString.lowercased())","slot":"dinner","loggedAt":"\#(ISO8601DateFormatter().string(from: Date().addingTimeInterval(-9 * 86400)))","kcal":640,"p":48,"c":70,"f":16,"score":0.71}]}"#)
         case "getRecipeBreakdown":
-            return json(#"{"fitsFor":["post_workout"],"breakdown":{"value":0.78,"confidence":0.9,"tagline":"Jó fehérjeforrás, kiegyensúlyozott tányér","summary":"A recept fehérjében erős, a zsír mértékletes, és nincs benne feldolgozott összetevő.","dimensions":[{"id":"macro","label":"Makrók","weight":0.5,"score":0.82,"detail":"A fehérje a recept energiájának 28%-a, a szénhidrát 45%, a zsír 27%.","coverage":1},{"id":"micro","label":"Rost","weight":0.25,"score":0.7,"detail":"Adagonként 7 g rost.","coverage":0.8},{"id":"nova","label":"Feldolgozottság","weight":0.25,"score":0.95,"detail":"Minden összetevő nyers vagy minimálisan feldolgozott.","coverage":1}],"improve":[],"tools":[]}}"#)
+            func dim(_ id: String, _ label: String, _ w: Double, _ score: Double, _ detail: String, _ note: String? = nil) -> String {
+                #"{"id":"\#(id)","label":"\#(label)","weight":\#(w),"score":\#(score),"detail":"\#(detail)","coverage":1\#(note.map { #","note":"\#($0)""# } ?? "")}"#
+            }
+            let dims = [dim("macro", "Makrók", 0.25, 0.82, "A fehérje a recept energiájának 28%-a, a szénhidrát 45%, a zsír 27%.", "A fehérje aránya pont ott van, ahol egy edzés utáni tányérnál szeretném."),
+                        dim("micro", "Rost", 0.1, 0.7, "Adagonként 7 g rost."),
+                        dim("who", "WHO", 0.15, 0.88, "Hozzáadott cukor nincs, a só 0,9 g, a telített zsír az energia 6%-a."),
+                        dim("fat_quality", "Zsírminőség", 0.1, 0.74, "A zsír kétharmada telítetlen."),
+                        dim("nova", "Feldolgozottság", 0.15, 0.95, "Minden összetevő nyers vagy minimálisan feldolgozott."),
+                        dim("plant_diversity", "Növényi változatosság", 0.1, 0.5, "Két különböző növényi összetevő van benne.", "Egy marék zöld vagy egy színes zöldség sokat dobna rajta."),
+                        dim("energy_density", "Energiasűrűség", 0.05, 0.8, "1,3 kcal jut egy grammra."),
+                        dim("portion", "Adagméret", 0.1, 0.77, "Egy adag a reggeli kereted 92%-a.")].joined(separator: ",")
+            return json(#"{"fitsFor":["post_workout","lunch"],"breakdown":{"value":0.78,"confidence":0.9,"tagline":"Jó fehérjeforrás, kiegyensúlyozott tányér","summary":"A recept fehérjében erős, a zsír mértékletes, és nincs benne feldolgozott összetevő. A növényi oldala a leggyengébb: kevés benne a különböző zöldség.","dimensions":[\#(dims)],"improve":[{"text":"Tegyél mellé egy marék spenótot vagy paradicsomot.","impact":"+ növényi változatosság"},{"text":"A rizs felét cseréld barna rizsre.","impact":"+ rost"}],"tools":[]}}"#)
         case "workshopTurn":
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
             let asked = (obj?["message"] as? String ?? "").replacingOccurrences(of: "\"", with: "")

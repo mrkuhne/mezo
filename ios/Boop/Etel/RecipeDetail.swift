@@ -146,8 +146,15 @@ struct RecipeDetailSheet: View {
             case .unavailable:
                 HStack(spacing: 14) {
                     EtelScoreRing(points: etelPoints(r.fit), size: 64)
-                    Text("A pontszám részleteit most nem tudom megmutatni.").nkFont(13.5).foregroundStyle(.white.opacity(0.6))
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("A pontszám részleteit most nem érem el.").nkFont(13.5).foregroundStyle(.white.opacity(0.6))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button { breakdownState = .loading; Task { await loadExtras(r) } } label: {
+                            Text("Újra").nkFont(13, .semibold).foregroundStyle(.white).padding(.horizontal, 14).frame(height: 34)
+                                .background(Capsule().stroke(.white.opacity(0.4)))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             case .ready:
                 if let b = breakdown?.breakdown {
@@ -162,13 +169,33 @@ struct RecipeDetailSheet: View {
                             }
                         }
                     }
-                    if let line = [b.summary, b.tagline].compactMap({ $0 }).first(where: { !$0.isEmpty }) {
-                        Text(line).nkFont(14).lineSpacing(2).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+                    if let tagline = b.tagline, !tagline.isEmpty {
+                        Text(tagline).nkFont(18, design: .serif).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
                     }
-                    DimensionGrid(entries: recipeBreakdownRows(b)) { entry in
-                        dimension = DimensionSelection(entry: entry, mealTitle: r.name, coachNote: nil)
+                    if let summary = b.summary, !summary.isEmpty {
+                        Text(summary).nkFont(14).lineSpacing(3).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
                     }
-                    Text("Koppints egy szempontra, és megmutatom, miért annyi.").nkFont(12).foregroundStyle(.white.opacity(0.45))
+                    VStack(alignment: .leading, spacing: 8) {
+                        NKMono("SZEMPONTOK")
+                        DimensionGrid(entries: recipeBreakdownRows(b)) { entry in
+                            dimension = DimensionSelection(entry: entry, mealTitle: r.name, coachNote: entry.dimension?.note)
+                        }
+                        Text("Koppints egy szempontra, és megmutatom, miért annyi.").nkFont(12).foregroundStyle(.white.opacity(0.45))
+                    }
+                    if !b.improve.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            NKMono("ÍGY LENNE JOBB")
+                            ForEach(Array(b.improve.enumerated()), id: \.offset) { _, tip in
+                                HStack(alignment: .top, spacing: 10) {
+                                    NKGlyph("spark-cream", Hue.fuel.glow, size: 15).padding(.top, 2)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(tip.text).nkFont(14).lineSpacing(2).foregroundStyle(.white.opacity(0.88)).fixedSize(horizontal: false, vertical: true)
+                                        if !tip.impact.isEmpty { EtelPill(text: tip.impact, tone: .hue) }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 } else {
                     Text("Ehhez a recepthez még nincs pontszám — nincs benne kalória, amiből számolni lehetne.")
                         .nkFont(13.5).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
@@ -275,8 +302,11 @@ struct RecipeDetailSheet: View {
         guard let food = store.currentFood else { breakdownState = .unavailable; logsProblem = true; return }
         async let l: Result<[RecipeLog], Error> = { do { return .success(try await food.recipeLogs(r.id)) } catch { return .failure(error) } }()
         async let b: Result<RecipeBreakdown, Error> = { do { return .success(try await food.recipeBreakdown(r.id)) } catch { return .failure(error) } }()
-        switch await l { case .success(let v): logs = v; logsProblem = false; case .failure: logsProblem = true }
-        switch await b { case .success(let v): breakdown = v; breakdownState = .ready; case .failure: breakdownState = .unavailable }
+        let (gotLogs, gotBreakdown) = await (l, b)
+        // A load the sheet restarted (the library refreshed under it) must not leave its cancellation as "unavailable".
+        if Task.isCancelled { return }
+        switch gotLogs { case .success(let v): logs = v; logsProblem = false; case .failure: logsProblem = true }
+        switch gotBreakdown { case .success(let v): breakdown = v; breakdownState = .ready; case .failure: breakdownState = .unavailable }
     }
 
     private func log(_ r: Recipe) async {
