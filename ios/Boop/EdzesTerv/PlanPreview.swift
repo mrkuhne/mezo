@@ -238,7 +238,18 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             }
             return ["week": w + 1, "phase": phase, "total": ms.values.reduce(0, +), "muscles": ms]
         }
-        return ["deficit": true, "sportDays": [0, 2, 4], "suggestedSportGroups": [], "muscles": muscles, "days": dayEvals, "path": path]
+        // FIXTURE recommendations: stable + lengthened → half reps, stable → rest-drop.
+        let catalog = Dictionary(uniqueKeysWithValues: Self.catalog.map { ($0["id"] as! String, $0["lengthenedFriendly"] as? Bool ?? false) })
+        var recs: [[String: Any]] = []
+        for (d, day) in days.enumerated() {
+            for (e, ex) in ((day["exercises"] as? [[String: Any]]) ?? []).enumerated() {
+                guard let cat = ex["catalogId"] as? String, let long = catalog[cat] else { continue }
+                recs.append(["dayIndex": d, "exerciseIndex": e, "technique": long ? "partials" : "rest_drop",
+                             "reason": long ? "lengthened_safe" : "stable_machine", "challengeFit": long])
+            }
+        }
+        return ["deficit": true, "sportDays": [0, 2, 4], "suggestedSportGroups": [], "muscles": muscles, "days": dayEvals, "path": path,
+                "recommendations": recs]
     }
 
     struct Line { let id, exercise, exerciseName, day, muscle, kind: String; let from, to: Double; let reasons: [String]; let dayIndex: Int }
@@ -266,6 +277,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
                     var row: [String: Any] = ["id": l.id, "exerciseId": l.exercise, "exerciseName": l.exerciseName, "dayIndex": l.dayIndex,
                                               "dayName": l.day, "muscleGroup": l.muscle, "kind": l.kind, "from": l.from, "to": l.to,
                                               "reasons": l.reasons]
+                    if l.id == "a" { row["note"] = "A lehúzásnál a hát a sorozat végén még friss — itt fér el a legjobban egy pihenős drop." }
                     if proposalStatus == "auto_applied" { row["decision"] = "accepted" } else if let d = decisions[l.id] { row["decision"] = d }
                     return row
                 },

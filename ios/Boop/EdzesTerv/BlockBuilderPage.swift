@@ -80,6 +80,8 @@ struct BlockBuilderPage: View {
                 TechniquePicker(exercise: ex,
                                 choose: { model.draft?.setTechnique(day: pick.day, exercise: pick.exercise, $0) },
                                 challenge: { model.draft?.setChallenge(day: pick.day, exercise: pick.exercise, $0) },
+                                recommendation: model.recommendation(day: pick.day, exercise: pick.exercise),
+                                aiNote: model.aiNotes[ex.id],
                                 onClose: { picking = nil })
             }
         }
@@ -626,13 +628,17 @@ private struct BuilderTechniqueChip: View {
     }
 
     private var label: String {
-        if exercise.challenge { return "Kihívás a végén" }
-        return exercise.technique == .none ? "+ technika vagy kihívás" : exercise.technique.name
+        switch (exercise.technique, exercise.challenge) {
+        case (.none, false): return "+ technika vagy kihívás"
+        case (.none, true): return "Kihívás a végén"
+        case (let t, false): return t.name
+        case (let t, true): return "\(t.name) + kihívás"
+        }
     }
 
     private var color: Color {
-        if exercise.challenge { return planWarn }
-        return exercise.technique == .none ? .white.opacity(0.55) : planHue.glow
+        if exercise.technique != .none { return planHue.glow }
+        return exercise.challenge ? planWarn : .white.opacity(0.55)
     }
 
     static func mark(_ technique: SetTechnique) -> PlanMark.Kind {

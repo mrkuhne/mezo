@@ -29,6 +29,8 @@ public final class BlockBuilderModel {
     public private(set) var evaluationStale = false
     public private(set) var evaluationError: PlanFetchError?
     public private(set) var saveState: SaveState = .idle
+    /// The weekly AI's one-line reasons, by exercise id (from this week's proposal lines that carry a note).
+    public private(set) var aiNotes: [String: String] = [:]
 
     private let client: PlanClient
     private let debounce: Duration
@@ -63,6 +65,12 @@ public final class BlockBuilderModel {
             async let items = client.catalog()
             guard let b = try await block else { phase = .noBlock; return }
             catalog = (try? await items) ?? []
+            // Best effort: the AI's sentences ride on the week's proposal; no proposal or no net is simply no sentence.
+            if let proposals = try? await client.weekProposals(blockId: b.id) {
+                aiNotes = proposals.flatMap(\.lines).reduce(into: [:]) { out, line in
+                    if let note = line.note?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty { out[line.exerciseId] = note }
+                }
+            }
             let d = BlockDraft(block: b, catalog: catalog)
             original = d
             draft = d
@@ -97,6 +105,13 @@ public final class BlockBuilderModel {
     }
 
     public func muscle(_ key: String) -> WireMuscleEvaluation? { evaluation?.muscles.first { $0.muscle == key } }
+
+    /// The server's recommendation for one exercise of the draft, if it sent one.
+    public func recommendation(day: Int, exercise: Int) -> TechniqueRecommendation? {
+        guard let r = evaluation?.recommendations?.first(where: { $0.dayIndex == day && $0.exerciseIndex == exercise }),
+              let t = SetTechnique(rawValue: r.technique) else { return nil }
+        return TechniqueRecommendation(technique: t, reason: techniqueReasonText(r.reason), challengeFit: r.challengeFit ?? false)
+    }
     public func day(_ index: Int) -> WireDayEvaluation? { evaluation?.days.first { $0.dayIndex == index } }
 
     /// A muscle's sets on one day, from the evaluator's spread.
@@ -273,4 +288,24 @@ public final class WeekReviewModel {
 
     public func submitFinal() async -> Bool { guard let review else { return false }; return await submit(review.finalRequest()) }
     public func acceptEverything() async -> Bool { await submit(WeekReview.acceptEverything) }
+}
+
+/// What the picker shows as „Boop ajánlása" for one exercise.
+public struct TechniqueRecommendation: Equatable, Sendable {
+    public let technique: SetTechnique
+    /// One Hungarian sentence on why.
+    public let reason: String
+    public let challengeFit: Bool
+}
+
+/// The Hungarian sentence for a recommendation reason code; a known-generic sentence for a code this build does not know.
+public func techniqueReasonText(_ code: String?) -> String {
+    switch code ?? "" {
+    case "stable_machine": "Gépen vagy kábelen stabil, ezért a bukásig vitt sorozat után biztonságosan lehet folytatni."
+    case "isolation_pump": "Kis izomra ható, könnyen visszaállítható gyakorlat: a rövid pihenős mini-sorozatok itt adnak a legtöbbet."
+    case "lengthened_safe": "A nyújtott helyzet itt biztonságos, és ott nő az izom a legjobban: a félismétlés ide illik."
+    case "compound_heavy": "Nagy, összetett mozgás: egy pihenős drop több munkát ad anélkül, hogy a technika szétesne."
+    case "free_weight": "Szabadsúlyos gyakorlat: bukásig vinni nem biztonságos, ezért itt nem javaslunk technikát."
+    default: "Ehhez a gyakorlathoz ez illik a legjobban a tulajdonságai alapján."
+    }
 }

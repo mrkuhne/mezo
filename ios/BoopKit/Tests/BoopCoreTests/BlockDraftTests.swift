@@ -49,14 +49,14 @@ struct BlockDraftTests {
         #expect(d.days[0].exercises[1].allowedTechniques.contains(.partials))
     }
 
-    @Test func oneChallengeADayAndItReplacesTheTechnique() {
+    @Test func oneChallengeADayAndItKeepsTheTechnique() {
         var d = PlanFixtures.draft
         d.techniquesEnabled = true
         d.toggleChallenge(day: 0, exercise: 0)
         #expect(!d.days[0].exercises[0].challenge, "not lengthened: cannot take the challenge")
         d.cycleTechnique(day: 0, exercise: 1)
         d.toggleChallenge(day: 0, exercise: 1)
-        #expect(d.days[0].exercises[1].challenge && d.days[0].exercises[1].technique == .none)
+        #expect(d.days[0].exercises[1].challenge && d.days[0].exercises[1].technique == .restDrop, "both may sit together")
         d.toggleChallenge(day: 0, exercise: 1)
         #expect(!d.days[0].exercises[1].challenge)
         #expect(d.techniqueCount(1) == 1)
@@ -169,7 +169,7 @@ struct BlockDraftTests {
         d.techniquesEnabled = true
         d.toggleChallenge(day: 0, exercise: 1)
         d.setTechnique(day: 0, exercise: 1, .myo)
-        #expect(d.days[0].exercises[1].technique == .myo && !d.days[0].exercises[1].challenge)
+        #expect(d.days[0].exercises[1].technique == .myo && d.days[0].exercises[1].challenge, "the challenge stays")
         d.setTechnique(day: 0, exercise: 0, .partials)
         #expect(d.days[0].exercises[0].technique == .none, "not lengthened: half reps not offered")
         #expect(d.days[0].exercises[0].unavailableReason(.partials) != nil)
@@ -182,7 +182,7 @@ struct BlockDraftTests {
         var d = PlanFixtures.draft
         d.techniquesEnabled = true
         d.setChallenge(day: 0, exercise: 1, true)
-        #expect(d.days[0].exercises[1].challenge && d.days[0].exercises[1].technique == .none)
+        #expect(d.days[0].exercises[1].challenge)
         d.setChallenge(day: 0, exercise: 0, true)
         #expect(!d.days[0].exercises[0].challenge, "not lengthened")
         #expect(d.days[0].exercises[0].challengeUnavailableReason != nil)

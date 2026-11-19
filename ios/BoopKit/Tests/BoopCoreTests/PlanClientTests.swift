@@ -47,6 +47,9 @@ struct PlanClientTests {
     private func loadedBuilder(_ stub: StubTransport) async -> BlockBuilderModel {
         stub.on("listMesocycles", .json(200, PlanFixtures.blocksJSON()))
         stub.on("getExerciseCatalog", .json(200, PlanFixtures.catalogJSON))
+        stub.on("listWeekProposals", .json(200, PlanFixtures.proposalJSON().replacingOccurrences(
+            of: #""kind":"reps","from":12,"to":13,"reasons":["reserve_left"]"#,
+            with: #""kind":"reps","from":12,"to":13,"reasons":["ai_suggested"],"note":"A bicepsz itt gyorsan regenerálódik.""#)))
         stub.on("evaluateMesoPlan", .json(200, PlanFixtures.evaluationJSON))
         let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), debounce: .milliseconds(20))
         await m.load()
@@ -59,6 +62,24 @@ struct PlanClientTests {
         #expect(m.outside.map(\.muscle) == ["back", "biceps"])
         #expect(m.sets("back", day: 1) == 3)
         #expect(!m.hasChanges)
+    }
+
+    @Test func aiNotesAndRecommendationsReachThePicker() async throws {
+        let stub = StubTransport()
+        stub.on("listMesocycles", .json(200, PlanFixtures.blocksJSON()))
+        stub.on("getExerciseCatalog", .json(200, PlanFixtures.catalogJSON))
+        stub.on("listWeekProposals", .json(200, PlanFixtures.proposalJSON().replacingOccurrences(
+            of: #""kind":"reps","from":12,"to":13,"reasons":["reserve_left"]"#,
+            with: #""kind":"reps","from":12,"to":13,"reasons":["ai_suggested"],"note":"A bicepsz itt gyorsan regenerálódik.""#)))
+        let withRecs = PlanFixtures.evaluationJSON.replacingOccurrences(of: #""techniqueWarnings":[]"#,
+            with: #""techniqueWarnings":[],"recommendations":[{"dayIndex":0,"exerciseIndex":1,"technique":"partials","reason":"lengthened_safe","challengeFit":true},{"dayIndex":0,"exerciseIndex":0,"technique":"future_thing","reason":"x"}]"#)
+        stub.on("evaluateMesoPlan", .json(200, withRecs))
+        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub))
+        await m.load()
+        #expect(m.aiNotes[PlanFixtures.rowB] == "A bicepsz itt gyorsan regenerálódik.")
+        let r = try #require(m.recommendation(day: 0, exercise: 1))
+        #expect(r.technique == .partials && r.challengeFit && r.reason.contains("nyújtott"))
+        #expect(m.recommendation(day: 0, exercise: 0) == nil, "an unknown technique is not recommended")
     }
 
     @Test func noBlockState() async {

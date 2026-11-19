@@ -260,38 +260,34 @@ public struct BlockDraft: Equatable, Sendable {
         days[day].exercises[exercise].technique = options[(i + 1) % options.count]
     }
 
-    /// Picks a technique from the picker. An offered one only; picking a technique takes the day's challenge off this
-    /// exercise (the challenge is its own half-rep finish, spec §11 q6).
+    /// Picks a technique from the picker (an offered one only). The day's challenge stays: since 2026-11-19 an exercise
+    /// may carry both — the technique first, then the half-rep challenge (owner decision #52).
     public mutating func setTechnique(day: Int, exercise: Int, _ technique: SetTechnique) {
         guard techniquesEnabled, days.indices.contains(day), days[day].exercises.indices.contains(exercise),
               days[day].exercises[exercise].allowedTechniques.contains(technique) else { return }
         days[day].exercises[exercise].technique = technique
-        if technique != .none { days[day].exercises[exercise].challenge = false }
     }
 
-    /// Puts the day's challenge on this exercise (taking it from any other that day, and replacing its technique) or
-    /// takes it off.
+    /// Puts the day's challenge on this exercise (taking it from any other that day; its technique stays) or takes it off.
     public mutating func setChallenge(day: Int, exercise: Int, _ on: Bool) {
         guard techniquesEnabled, days.indices.contains(day), days[day].exercises.indices.contains(exercise) else { return }
         if on {
             guard days[day].exercises[exercise].canTakeChallenge else { return }
             for e in days[day].exercises.indices { days[day].exercises[e].challenge = false }
             days[day].exercises[exercise].challenge = true
-            days[day].exercises[exercise].technique = .none
         } else {
             days[day].exercises[exercise].challenge = false
         }
     }
 
-    /// One challenge a day: picking a new one takes it from the old; tapping the same one clears it. The challenge
-    /// is half reps after the last set, so it replaces any other technique on that exercise (spec §11 q6).
+    /// One challenge a day: picking a new one takes it from the old; tapping the same one clears it. A technique on the
+    /// exercise stays (owner decision #52).
     public mutating func toggleChallenge(day: Int, exercise: Int) {
         guard techniquesEnabled, days.indices.contains(day), days[day].exercises.indices.contains(exercise),
               days[day].exercises[exercise].canTakeChallenge else { return }
         let was = days[day].exercises[exercise].challenge
         for e in days[day].exercises.indices { days[day].exercises[e].challenge = false }
         days[day].exercises[exercise].challenge = !was
-        if !was { days[day].exercises[exercise].technique = .none }
     }
 
     public func techniqueCount(_ day: Int) -> Int {

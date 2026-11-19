@@ -192,6 +192,16 @@ public struct WirePathWeek: Decodable, Equatable, Sendable {
     }
 }
 
+/// The server's rule-based technique recommendation for one exercise (mezo-r36n9.98).
+public struct WireRecommendation: Decodable, Equatable, Sendable {
+    public let dayIndex: Int
+    public let exerciseIndex: Int
+    /// `rest_drop`, `drop`, `myo`, `partials` or `none` — read leniently.
+    public let technique: String
+    public let reason: String?
+    public let challengeFit: Bool?
+}
+
 public struct WireEvaluation: Decodable, Equatable, Sendable {
     public let deficit: Bool
     public let sportDays: [Int]
@@ -199,6 +209,8 @@ public struct WireEvaluation: Decodable, Equatable, Sendable {
     public let muscles: [WireMuscleEvaluation]
     public let days: [WireDayEvaluation]
     public let path: [WirePathWeek]
+    /// Absent until the server sends it; never fails a response.
+    public let recommendations: [WireRecommendation]?
 }
 
 // MARK: - The weekly proposal
