@@ -45,6 +45,14 @@ tags:
       check-in's "Jobban" ends it and applies the return rule (continue / resume
       the week / step back one week), shifting the active meso calendar; "Mégsem
       vagyok jól" undoes that on the same day.
+  - name: TrainWeekProposal
+    description: >-
+      Volume engine v2 S3 (mezo-r36n9.78, spec 2026-11-17 §6.4/§6.6) — the
+      weekly volume proposal of a run: set / weight / rep lines with reason
+      codes, grouped per muscle. In auto mode it is applied at once (read-only
+      record); in manual mode the user decides line by line (accept / keep).
+      Nothing is force-decided: a pending proposal expires at the next week
+      boundary.
   - name: Goal
     description: Goal domain — goal-rooted timeline (trajectory + quality guards + window)
   - name: BiometricProfile
@@ -850,6 +858,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/settings':
+    put:
+      tags:
+        - Train
+      operationId: updateMesocycleSettings
+      summary: >-
+        Change a running block's settings — training style, techniques flag,
+        weekly review mode (mezo-r36n9.83)
+      description: >-
+        Every field is optional; an absent field keeps the stored value. A new
+        trainingStyle re-stamps every exercise of the run's days in place (ids
+        kept, owner overrides respected). techniquesEnabled only flips the block
+        flag: stored technique picks are never deleted, they are simply ignored
+        while it is off. weeklyReviewMode applies to proposals generated after
+        the switch; a pending proposal stays pending.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesocycleSettingsUpdateRequest'
+      responses:
+        '200':
+          description: Updated mesocycle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The run is archived (TRAIN_RUN_NOT_EDITABLE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/report':
     get:
       tags:
@@ -948,6 +1015,104 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/evaluation':
+    get:
+      tags:
+        - Train
+      operationId: getMesocycleEvaluation
+      summary: >-
+        Read-only evaluation of a run's plan (its template days) — the path is
+        the volume arc's planned line
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The run's plan evaluation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoPlanEvaluation'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/exercises/{exerciseId}/technique':
+    put:
+      tags:
+        - Train
+      operationId: updateExerciseTechnique
+      summary: >-
+        Set or clear the technique/challenge of one exercise in a running
+        mesocycle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseTechniqueUpdateRequest'
+      responses:
+        '200':
+          description: Updated exercise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymExercise'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Techniques disabled on this run
           content:
             application/json:
               schema:
@@ -1062,6 +1227,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MesoPlanGenerateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/meso-plans/evaluate:
+    post:
+      tags:
+        - Train
+      operationId: evaluateMesoPlan
+      summary: >-
+        Measure a draft mesocycle plan against the muscle-group volume bands
+        (read-only, deterministic, never blocks a save)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoPlanEvaluateRequest'
+      responses:
+        '200':
+          description: The plan's evaluation — nothing is persisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoPlanEvaluation'
         '400':
           description: Validation error
           content:
@@ -3301,6 +3499,112 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: No ended period (TRAIN_RECOVERY_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/week-proposals':
+    get:
+      tags:
+        - TrainWeekProposal
+      operationId: listWeekProposals
+      summary: >-
+        This week's weekly proposal first, then pending tier changes of the
+        current week, newest first
+      description: >-
+        This calendar week's weekly proposal (any status) first, then the run's
+        still-pending tier-change proposals of the current week, newest first.
+        Empty when the run is not active, the gate is off or none exists.
+        Opening it generates the week's proposal when due (like opening the
+        day).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Proposals of the run
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeekProposal'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: The run is not the caller's (TRAIN_MESO_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions':
+    post:
+      tags:
+        - TrainWeekProposal
+      operationId: decideWeekProposal
+      summary: >-
+        Accept or keep proposal lines (per line, or the rest in one go); returns
+        the updated proposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: proposalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeekProposalDecisionRequest'
+      responses:
+        '200':
+          description: The proposal after the decisions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeekProposal'
+        '400':
+          description: >-
+            Empty request (no decisions and no rest flag), unknown line id, both
+            rest flags set, one line asked twice with different decisions, or a
+            decided line asked to change (TRAIN_WEEK_PROPOSAL_DECISION_INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such proposal on the caller's run (TRAIN_WEEK_PROPOSAL_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The proposal is no longer pending, or its week has passed
+            (TRAIN_WEEK_PROPOSAL_CLOSED); a retry that only repeats the stored
+            decisions (no rest flag) returns 200 instead
           content:
             application/json:
               schema:
@@ -15462,7 +15766,13 @@ components:
         - style
         - phaseCurve
         - hasReport
+        - weeklyReviewMode
       properties:
+        techniquesEnabled:
+          type: boolean
+          description: >-
+            Block flag; techniques and the challenge are prescribed only when
+            true.
         id:
           type: string
           format: uuid
@@ -15499,6 +15809,15 @@ components:
             Sparse per-coarse-muscle priority tier map (emphasize/maintain;
             absent key = grow); null/empty = all grow (mezo-3m5m)
           additionalProperties:
+            type: string
+        sportGroups:
+          type: array
+          nullable: true
+          description: >-
+            Coarse muscle groups a sport (e.g. volleyball) already loads; lowers
+            their volume band (mezo-r36n9.77). Keys of the landmark table,
+            normalised de-duplicated in table order; null/empty = none
+          items:
             type: string
         startDate:
           type: string
@@ -15547,6 +15866,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MesoDay'
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: >-
+            Block training style; null = no style (unstyled block behaves as
+            before).
+        weeklyReviewMode:
+          type: string
+          enum:
+            - auto
+            - manual
+          description: >-
+            EFFECTIVE weekly review mode of the run (mezo-r36n9.83): its own
+            setting, else the server default. auto = the weekly volume proposal
+            is applied at once; manual = it waits for line-by-line decisions.
     MesoTemplateResponse:
       type: object
       required:
@@ -15557,6 +15892,11 @@ components:
         - days
         - runCount
       properties:
+        techniquesEnabled:
+          type: boolean
+          description: >-
+            Block flag; techniques and the challenge are prescribed only when
+            true.
         id:
           type: string
           format: uuid
@@ -15582,6 +15922,15 @@ components:
             Sparse per-coarse-muscle priority tier map (emphasize/maintain;
             absent key = grow); null/empty = all grow (mezo-3m5m)
           additionalProperties:
+            type: string
+        sportGroups:
+          type: array
+          nullable: true
+          description: >-
+            Coarse muscle groups a sport (e.g. volleyball) already loads; lowers
+            their volume band (mezo-r36n9.77). Keys of the landmark table,
+            normalised de-duplicated in table order; null/empty = none
+          items:
             type: string
         weeks:
           type: integer
@@ -15618,6 +15967,13 @@ components:
         runCount:
           type: integer
           description: Number of mesocycle runs started from this template
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: >-
+            Block training style; null = no style (unstyled block behaves as
+            before).
     VolumeRecompute:
       type: object
       required:
@@ -15883,6 +16239,21 @@ components:
         - targetRIR
         - type
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+          description: Intensity technique on the last working set; null = none.
+        techniqueSource:
+          allOf:
+            - $ref: '#/components/schemas/TechniqueSource'
+          nullable: true
+          description: Who set the technique; null = none.
+        challenge:
+          type: boolean
+          description: >-
+            Proactive "depth" challenge flag (partials challenge on the last
+            working set).
         id:
           type: string
           format: uuid
@@ -15938,6 +16309,30 @@ components:
           description: >-
             Demo still (end position); alternated with imageStartUrl to convey
             the movement
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Per-exercise style; null = inherit the block style.
+        effectiveTrainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          readOnly: true
+          description: >-
+            The style in force for this exercise (own style, else the block's);
+            null = unstyled.
+        restSec:
+          type: integer
+          minimum: 30
+          maximum: 600
+          nullable: true
+          description: Rest between sets in seconds; null = derived from the style.
+        overrides:
+          type: array
+          description: Style-prescription fields the user has taken over by hand.
+          items:
+            $ref: '#/components/schemas/StyleOverride'
     MesoPlanGenerateRequest:
       type: object
       required:
@@ -15974,6 +16369,321 @@ components:
           description: >-
             Free-text goal steering exercise choice (e.g. "röplabda mellett,
             vállra figyelve")
+    MesoPlanEvaluateRequest:
+      type: object
+      required:
+        - weeks
+        - phaseCurve
+        - days
+      properties:
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: >-
+            Draft's block training style; with techniquesEnabled it turns the
+            technique planner projection on.
+        techniquesEnabled:
+          type: boolean
+          nullable: true
+          description: Draft's technique flag; absent/false = no planner output.
+        weeks:
+          type: integer
+          minimum: 1
+          maximum: 16
+        phaseCurve:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - MEV
+              - MAV
+              - MRV
+              - Deload
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoDayInput'
+        musclePriorities:
+          type: object
+          nullable: true
+          description: Sparse per-muscle tier map; absent = grow
+          additionalProperties:
+            type: string
+        sportGroups:
+          type: array
+          nullable: true
+          description: >-
+            Coarse muscle groups a sport already loads; null = none (the
+            evaluation then suggests groups from the sport schedule)
+          items:
+            type: string
+        sessionMinutesTarget:
+          type: integer
+          nullable: true
+          minimum: 10
+          maximum: 300
+          description: Target session length; per-day overTarget is null when absent
+    VolumeBandView:
+      type: object
+      required:
+        - low
+        - high
+        - limit
+        - sportAdjusted
+      properties:
+        low:
+          type: integer
+        high:
+          type: integer
+        limit:
+          type: integer
+        sportAdjusted:
+          type: boolean
+    DaySetSpread:
+      type: object
+      required:
+        - dayIndex
+        - sets
+      properties:
+        dayIndex:
+          type: integer
+        sets:
+          type: integer
+    PlanProposalEdit:
+      type: object
+      required:
+        - dayIndex
+        - exerciseIndex
+        - delta
+      properties:
+        dayIndex:
+          type: integer
+        exerciseIndex:
+          type: integer
+        delta:
+          type: integer
+    MuscleEvaluation:
+      type: object
+      required:
+        - muscle
+        - tier
+        - band
+        - weeklySets
+        - fit
+        - diff
+        - spread
+        - proposal
+        - proposalBlocked
+      properties:
+        muscle:
+          type: string
+        tier:
+          type: string
+          enum:
+            - emphasize
+            - grow
+            - maintain
+        band:
+          $ref: '#/components/schemas/VolumeBandView'
+        weeklySets:
+          type: integer
+        fit:
+          type: string
+          enum:
+            - below
+            - inside
+            - above
+        diff:
+          type: integer
+          description: >-
+            Sets short of the band floor (positive) or over its top (negative);
+            0 inside
+        spread:
+          type: array
+          items:
+            $ref: '#/components/schemas/DaySetSpread'
+        proposal:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanProposalEdit'
+        proposalBlocked:
+          type: boolean
+    SessionCapWarning:
+      type: object
+      required:
+        - muscle
+        - sets
+        - cap
+      properties:
+        muscle:
+          type: string
+        sets:
+          type: integer
+        cap:
+          type: integer
+    ExerciseCapWarning:
+      type: object
+      required:
+        - exerciseIndex
+        - sets
+        - cap
+      properties:
+        exerciseIndex:
+          type: integer
+          description: Index in the day's exercise list
+        sets:
+          type: integer
+        cap:
+          type: integer
+    DayEvaluation:
+      type: object
+      required:
+        - dayIndex
+        - day
+        - minutesEstimate
+        - sessionCapWarnings
+        - exerciseCapWarnings
+        - sportSameDay
+      properties:
+        dayIndex:
+          type: integer
+        day:
+          type: string
+        minutesEstimate:
+          type: integer
+        overTarget:
+          type: boolean
+          nullable: true
+        sessionCapWarnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionCapWarning'
+        exerciseCapWarnings:
+          type: array
+          description: >-
+            Counting exercises of the day above the per-exercise working-set cap
+            (may be empty)
+          items:
+            $ref: '#/components/schemas/ExerciseCapWarning'
+        sportSameDay:
+          type: boolean
+    VolumePathWeek:
+      type: object
+      required:
+        - week
+        - phase
+        - total
+        - muscles
+      properties:
+        week:
+          type: integer
+        phase:
+          type: string
+        total:
+          type: integer
+        muscles:
+          type: object
+          additionalProperties:
+            type: integer
+        techniques:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannedTechnique'
+          description: >-
+            Technique picks of this week (stored picks for the current week,
+            planner projection for later weeks); null when the block does not
+            opt in.
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannedChallenge'
+          description: >-
+            The day challenges (partial-rep add-on) of this week; null when the
+            block does not opt in.
+    PlannedTechnique:
+      type: object
+      required:
+        - dayIndex
+        - exerciseIndex
+        - technique
+        - source
+      properties:
+        dayIndex:
+          type: integer
+        exerciseIndex:
+          type: integer
+        technique:
+          $ref: '#/components/schemas/Technique'
+        source:
+          $ref: '#/components/schemas/TechniqueSource'
+    PlannedChallenge:
+      type: object
+      required:
+        - dayIndex
+        - exerciseIndex
+      properties:
+        dayIndex:
+          type: integer
+        exerciseIndex:
+          type: integer
+    TechniqueWarning:
+      type: object
+      required:
+        - code
+        - dayIndex
+      properties:
+        code:
+          type: string
+          enum:
+            - owner_over_allowance
+            - no_challenge_candidate
+        dayIndex:
+          type: integer
+        exerciseIndex:
+          type: integer
+          nullable: true
+    MesoPlanEvaluation:
+      type: object
+      required:
+        - deficit
+        - sportDays
+        - suggestedSportGroups
+        - muscles
+        - days
+        - path
+      properties:
+        deficit:
+          type: boolean
+        sportDays:
+          type: array
+          items:
+            type: integer
+          description: Distinct weekdays (0=Hét..6=Vas) of the user's sport schedule
+        suggestedSportGroups:
+          type: array
+          items:
+            type: string
+        muscles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MuscleEvaluation'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayEvaluation'
+        path:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumePathWeek'
+        techniqueWarnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/TechniqueWarning'
+          description: >-
+            Technique planner notes (owner picks over the allowance, a day
+            without a challenge candidate); null when the block does not opt in.
     MesoPlanGenerateResponse:
       type: object
       required:
@@ -16010,6 +16720,11 @@ components:
         - phaseCurve
         - days
       properties:
+        techniquesEnabled:
+          type: boolean
+          description: >-
+            Block flag; techniques and the challenge are prescribed only when
+            true.
         title:
           type: string
           minLength: 1
@@ -16033,6 +16748,16 @@ components:
             Sparse per-coarse-muscle priority tier map (emphasize/maintain;
             absent key = grow); null/empty = all grow (mezo-3m5m)
           additionalProperties:
+            type: string
+        sportGroups:
+          type: array
+          nullable: true
+          description: >-
+            Coarse muscle groups a sport (e.g. volleyball) already loads; lowers
+            their volume band (mezo-r36n9.77). Keys of the landmark table,
+            normalised de-duplicated in table order; absent on a PUT keeps the
+            stored list, [] clears it
+          items:
             type: string
         weeks:
           type: integer
@@ -16067,6 +16792,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MesoDayInput'
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: >-
+            Block training style; null = no style (unstyled block behaves as
+            before).
     MesoTemplateStartRequest:
       type: object
       required:
@@ -16081,6 +16813,34 @@ components:
           enum:
             - active
             - planned
+    MesocycleSettingsUpdateRequest:
+      type: object
+      description: >-
+        Partial update of a running block's settings (mezo-r36n9.83); every
+        absent field keeps its value.
+      properties:
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: >-
+            New block style; re-stamps the run's exercises. Absent OR null keeps
+            the stored style — a block style cannot be cleared through this
+            operation.
+        techniquesEnabled:
+          type: boolean
+          nullable: true
+          description: >-
+            Block techniques flag. Off keeps the stored picks (ignored while
+            off); on makes them live again.
+        weeklyReviewMode:
+          type: string
+          nullable: true
+          pattern: ^(auto|manual)$
+          description: >-
+            The run's own weekly review mode (auto|manual); absent or null keeps
+            it. Applies to proposals generated after the switch — a pending
+            proposal stays pending until decided or the week boundary.
     MusclePrioritiesUpdateRequest:
       type: object
       properties:
@@ -16089,8 +16849,19 @@ components:
           nullable: true
           description: >-
             Sparse per-coarse-muscle priority tier map (emphasize/maintain;
-            absent key = grow); null/empty = all grow (mezo-3m5m)
+            absent key = grow); absent or empty CLEARS the map to all grow
+            (unlike sportGroups, which keeps when absent) (mezo-3m5m)
           additionalProperties:
+            type: string
+        sportGroups:
+          type: array
+          nullable: true
+          description: >-
+            Coarse muscle groups a sport (e.g. volleyball) already loads; lowers
+            their volume band (mezo-r36n9.77). Keys of the landmark table,
+            normalised de-duplicated in table order; absent keeps the stored
+            list, [] clears it
+          items:
             type: string
     MesoRerunResponse:
       type: object
@@ -16404,6 +17175,21 @@ components:
         - targetRIR
         - type
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+          description: Intensity technique on the last working set; null = none.
+        techniqueSource:
+          allOf:
+            - $ref: '#/components/schemas/TechniqueSource'
+          nullable: true
+          description: Who set the technique; null = none.
+        challenge:
+          type: boolean
+          description: >-
+            Proactive "depth" challenge flag (partials challenge on the last
+            working set).
         name:
           type: string
           minLength: 1
@@ -16451,6 +17237,22 @@ components:
             Whether this exercise's sets count as hypertrophy volume; false for
             the fix-zárás closing block and plyometrics (mezo-gbo7). Absent =
             true.
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Per-exercise style; null = inherit the block style.
+        restSec:
+          type: integer
+          minimum: 30
+          maximum: 600
+          nullable: true
+          description: Rest between sets in seconds; null = derived from the style.
+        overrides:
+          type: array
+          description: Style-prescription fields the user has taken over by hand.
+          items:
+            $ref: '#/components/schemas/StyleOverride'
     CustomWorkoutResponse:
       type: object
       required:
@@ -16553,6 +17355,13 @@ components:
           description: >-
             The author's display name for user-authored rows; null on master
             rows
+        equipment:
+          $ref: '#/components/schemas/Equipment'
+        stability:
+          $ref: '#/components/schemas/Stability'
+        lengthenedFriendly:
+          type: boolean
+          description: Whether the exercise loads the muscle well at long length.
     CatalogExerciseCreateRequest:
       type: object
       required:
@@ -16616,6 +17425,15 @@ components:
           type: string
           nullable: true
           maxLength: 500
+        equipment:
+          $ref: '#/components/schemas/Equipment'
+        stability:
+          $ref: '#/components/schemas/Stability'
+        lengthenedFriendly:
+          type: boolean
+          description: >-
+            Whether the exercise loads the muscle well at long length. Absent on
+            create = false; absent on update = unchanged.
     CatalogVideoRequest:
       type: object
       properties:
@@ -16711,6 +17529,11 @@ components:
         - repRecords
         - recentTopSets
       properties:
+        partialsBest:
+          type: array
+          description: Best partials-leg reps per parent weight (derived).
+          items:
+            $ref: '#/components/schemas/PartialsBestEntry'
         catalogId:
           type: string
           format: uuid
@@ -16932,6 +17755,27 @@ components:
         - targetRIR
         - type
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+          description: Intensity technique on the last working set; null = none.
+        techniqueSource:
+          allOf:
+            - $ref: '#/components/schemas/TechniqueSource'
+          nullable: true
+          description: Who set the technique; null = none.
+        challenge:
+          type: boolean
+          description: >-
+            Proactive "depth" challenge flag (partials challenge on the last
+            working set).
+        challengeBest:
+          type: integer
+          nullable: true
+          description: >-
+            Best partials reps at the challenge set's prescribed weight; null
+            when none.
         id:
           type: string
           format: uuid
@@ -17031,12 +17875,44 @@ components:
             Whether a "Mezociklusra is" change may target this exercise (false
             for rows added only for this workout and for the fixed closing
             block).
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: Per-exercise style; null = inherit the block style.
+        effectiveTrainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          readOnly: true
+          description: >-
+            The style in force for this exercise (own style, else the block's);
+            null = unstyled.
+        restSec:
+          type: integer
+          minimum: 30
+          maximum: 600
+          nullable: true
+          description: Rest between sets in seconds; null = derived from the style.
+        overrides:
+          type: array
+          description: Style-prescription fields the user has taken over by hand.
+          items:
+            $ref: '#/components/schemas/StyleOverride'
     PrescribedSet:
       type: object
       required:
         - kind
         - targetReps
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        legs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrescribedLeg'
         kind:
           type: string
           enum:
@@ -17050,6 +17926,154 @@ components:
         targetRIR:
           type: integer
           nullable: true
+        restSec:
+          type: integer
+          nullable: true
+          description: Rest after this set in seconds; set only on styled blocks.
+    Technique:
+      type: string
+      enum:
+        - none
+        - rest_drop
+        - drop
+        - myo
+        - partials
+      description: Intensity technique applied to the last working set of an exercise.
+    TechniqueSource:
+      type: string
+      enum:
+        - owner
+        - planner
+        - ai
+      description: Who set the technique (planner/ai reserved for later slices).
+    SetLegKind:
+      type: string
+      enum:
+        - drop
+        - mini
+        - partials
+      description: Kind of a technique leg hanging off a parent set.
+    PrescribedLeg:
+      type: object
+      required:
+        - kind
+        - toFailure
+        - restBeforeSec
+      properties:
+        kind:
+          $ref: '#/components/schemas/SetLegKind'
+        weightKg:
+          type: number
+          nullable: true
+        reps:
+          type: integer
+          nullable: true
+        minReps:
+          type: integer
+          nullable: true
+          description: Myo mini-sets stop when a set falls below this.
+        toFailure:
+          type: boolean
+        restBeforeSec:
+          type: integer
+        dropPercent:
+          type: integer
+          nullable: true
+          description: Drop leg load as percent of the parent weight actually lifted.
+    SetLeg:
+      type: object
+      required:
+        - legIndex
+        - kind
+      properties:
+        legIndex:
+          type: integer
+        kind:
+          $ref: '#/components/schemas/SetLegKind'
+        weightKg:
+          type: number
+          nullable: true
+        reps:
+          type: integer
+          nullable: true
+        restSec:
+          type: integer
+          nullable: true
+    SetLegInput:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/SetLegKind'
+        weightKg:
+          type: number
+          minimum: 0
+          maximum: 999
+          nullable: true
+        reps:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        restSec:
+          type: integer
+          minimum: 0
+          maximum: 600
+          nullable: true
+    PartialsBestEntry:
+      type: object
+      required:
+        - weightKg
+        - reps
+      properties:
+        weightKg:
+          type: number
+        reps:
+          type: integer
+    ExerciseTechniqueUpdateRequest:
+      type: object
+      required:
+        - technique
+        - challenge
+      properties:
+        technique:
+          $ref: '#/components/schemas/Technique'
+        challenge:
+          type: boolean
+    TrainingStyle:
+      type: string
+      enum:
+        - balanced
+        - volume
+        - heavy
+        - allout
+      description: Block-level training style (volume/intensity profile).
+    Equipment:
+      type: string
+      enum:
+        - machine
+        - cable
+        - dumbbell
+        - barbell
+        - bodyweight
+        - kettlebell
+        - other
+      description: Catalog equipment class. Absent on create = other.
+    Stability:
+      type: string
+      enum:
+        - stable
+        - free
+      description: Catalog stability class. Absent on create = free.
+    StyleOverride:
+      type: string
+      enum:
+        - repRange
+        - workingSets
+        - targetRir
+        - restSec
+      description: A style-prescribed field the user has overridden.
     ProgressionSignal:
       type: object
       description: >-
@@ -17444,6 +18468,14 @@ components:
         - exerciseId
         - setIndex
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        legs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SetLeg'
         id:
           type: string
           format: uuid
@@ -17499,6 +18531,15 @@ components:
         - weightKg
         - reps
       properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        legs:
+          type: array
+          maxItems: 6
+          items:
+            $ref: '#/components/schemas/SetLegInput'
         exerciseId:
           type: string
           format: uuid
@@ -17570,6 +18611,13 @@ components:
         - weightKg
         - reps
       properties:
+        legs:
+          type: array
+          maxItems: 6
+          nullable: true
+          description: 'Absent = legs untouched; [] = clear; list = replace.'
+          items:
+            $ref: '#/components/schemas/SetLegInput'
         weightKg:
           type: number
           minimum: 0
@@ -18674,6 +19722,248 @@ components:
           allOf:
             - $ref: '#/components/schemas/RecoveryComeback'
           nullable: true
+    WeekProposalReason:
+      type: string
+      description: >-
+        Why a line (or a muscle that holds) is what it is; Hungarian wording is
+        the client's
+      enum:
+        - all_sets_done
+        - felt_easy
+        - deficit_pace
+        - room_in_band
+        - soreness_cleared
+        - top_of_rep_range
+        - reserve_left
+        - next_plate
+        - grind
+        - too_much
+        - sets_missed
+        - tier_maintain
+        - deload
+        - no_slot
+        - above_band
+        - joint_pain
+        - soreness
+        - at_ceiling
+        - deload_restore
+        - stalled
+        - tier_change
+        - technique_week
+        - emphasis
+        - deficit_allowance
+        - sport_day
+        - challenge
+        - ai_suggested
+    WeekProposalLine:
+      type: object
+      required:
+        - id
+        - exerciseId
+        - exerciseName
+        - dayIndex
+        - muscleGroup
+        - kind
+        - from
+        - to
+        - reasons
+      properties:
+        id:
+          type: string
+          description: Stable line id within the proposal
+        exerciseId:
+          type: string
+          format: uuid
+        exerciseName:
+          type: string
+        dayIndex:
+          type: integer
+          description: Template day index the exercise sits on
+        dayName:
+          type: string
+          nullable: true
+        muscleGroup:
+          type: string
+        kind:
+          type: string
+          enum:
+            - sets
+            - weight
+            - reps
+            - technique
+            - rep_range
+          description: >-
+            Weight and reps lines are a preview (read-time prescription); sets,
+            technique and rep_range lines write on accept. technique lines carry
+            from/to = working sets before/after, fromTechnique/toTechnique the
+            change (challenge true = a partials add-on that keeps the sets).
+            rep_range lines carry from/to = rep max, plus the four rep bounds.
+        from:
+          type: number
+          description: Value before the change (sets; kg or reps)
+        to:
+          type: number
+          description: Value after the change (sets; kg or reps)
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalReason'
+        fromTechnique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        toTechnique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+        challenge:
+          type: boolean
+          nullable: true
+          description: 'True on a challenge move (technique partials, sets unchanged)'
+        fromRepMin:
+          type: integer
+          nullable: true
+        fromRepMax:
+          type: integer
+          nullable: true
+        toRepMin:
+          type: integer
+          nullable: true
+        toRepMax:
+          type: integer
+          nullable: true
+        decision:
+          type: string
+          nullable: true
+          enum:
+            - accepted
+            - kept
+          description: Absent while undecided
+    WeekProposalMuscle:
+      type: object
+      required:
+        - muscle
+        - tier
+        - sportAdjusted
+        - setsBefore
+        - setsAfter
+        - lineCount
+        - reasons
+      properties:
+        muscle:
+          type: string
+        tier:
+          type: string
+          enum:
+            - emphasize
+            - grow
+            - maintain
+        bandLow:
+          type: integer
+          nullable: true
+        bandHigh:
+          type: integer
+          nullable: true
+        sportAdjusted:
+          type: boolean
+          description: The band was lowered because a sport already loads the group
+        setsBefore:
+          type: integer
+          description: Weekly sets of the group before the proposal
+        setsAfter:
+          type: integer
+          description: Weekly sets if every line were applied
+        lineCount:
+          type: integer
+          description: 0 = the muscle stays where it was; reasons say why
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalReason'
+    WeekProposal:
+      type: object
+      required:
+        - id
+        - mesocycleId
+        - week
+        - kind
+        - status
+        - mode
+        - createdAt
+        - lines
+        - muscles
+      properties:
+        id:
+          type: string
+          format: uuid
+        mesocycleId:
+          type: string
+          format: uuid
+        week:
+          type: integer
+          description: Run week the proposal is for
+        kind:
+          type: string
+          enum:
+            - weekly
+            - tier_change
+        status:
+          type: string
+          enum:
+            - pending
+            - applied
+            - auto_applied
+            - expired
+            - superseded
+        mode:
+          type: string
+          enum:
+            - auto
+            - manual
+        createdAt:
+          type: string
+          format: date-time
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalLine'
+        muscles:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalMuscle'
+    WeekProposalLineDecision:
+      type: object
+      required:
+        - lineId
+        - decision
+      properties:
+        lineId:
+          type: string
+        decision:
+          type: string
+          enum:
+            - accepted
+            - kept
+    WeekProposalDecisionRequest:
+      type: object
+      description: >-
+        Per-line decisions and/or one of the rest flags (not both flags);
+        undecided lines stay pending
+      properties:
+        decisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekProposalLineDecision'
+        acceptRest:
+          type: boolean
+          description: Accept every still-undecided line
+        keepRest:
+          type: boolean
+          description: Keep every still-undecided line
     ExpenditureExplanationResponse:
       type: object
       description: >-

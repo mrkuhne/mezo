@@ -2,7 +2,7 @@
 cim: Intenzitás-technikák és a napi kihívás
 szint: Funkció
 terulet: Edzés
-allapot: Részben kész
+allapot: Élesben
 hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B5]
@@ -71,6 +71,11 @@ Ha egy izom két hete nem fejlődik, a rendszer **egyetlen** javaslatot tesz, eb
 5. **Edzés közben** a napi edzés az utolsó sorozatnál megmutatja a lépéseket: az alapsorozatot, majd a drop súlyát (a ténylegesen emelhető
    legközelebbi, de nem nagyobb súlyra kerekítve), a pihenőket és hogy bukásig kell-e menni. A futó blokkban egy gyakorlat technikája a blokk napjain
    menet közben is átállítható (a már elkezdett edzésen nem).
+   **A telefonon (2026-11-19):** a gyakorlat neve alatt címke mondja, mi a mai különlegesség („PIHENŐS DROP”, „KIHÍVÁS”);
+   a technikás sorozatnál egy lépéskártya vezet végig („1 · Bukásig”, „2 · 30 mp pihenő”, „3 · 40 kg, ugyanannyi”), a pihenő a
+   kártyán belül számol vissza és magától továbblép, a kisebb súlyt a ténylegesen emelt súlyból számolja és előre beírja. A kihívás
+   saját képernyő: egy nagy kör, amire minden félismétlésnél rákoppintasz, mellette a megdöntendő csúcs; ha megdöntöd, aranyra vált.
+   Az „Elég volt” gombbal bármikor megállhatsz — amit addig csináltál, az mentve van. Részletek: [Natív edzéslejátszó](03-edzeslejatszo.md).
 6. **A napló** a sorozat alatt rögzíti, mit csináltál valójában (a drop súlyát és ismétlését, a mini-sorozatokat, a félismétlések számát). A naplózás a
    blokk beállításától függetlenül mindig működik: azt írjuk fel, amit csináltál. Egy webes szerkesztés sosem törli a már rögzített részeket.
 
@@ -104,7 +109,6 @@ Ha egy izom két hete nem fejlődik, a rendszer **egyetlen** javaslatot tesz, eb
 
 ## Mi jön még
 - A mesterséges intelligencia finomítása a technikákkal (T4).
-- Edzés közben a lépések megjelenítése a telefonon (a beállítás a blokképítőben már megvan: a Blokk fülön a Technikák kapcsoló, a Napok fülön gyakorlatonként a technika és a nap kihívása, 2026-11-19).
 - Az AI-összesítők (a Boop-társ kimutatásai) még nem számolják a technikák plusz részeit az összes súlyba.
 
 ## Mi marad ki
