@@ -34,6 +34,14 @@ The owner opens Edzés → Blokk on his real running block and can
 
 All of them go into the Boop generator filter (`BoopAPI/openapi-generator-config.yaml`) in one late, isolated commit.
 
+**T3 adds enum values in parallel** (bd comment on `.83`, 2026-11-19): `WeekProposalLine.kind` + `technique|rep_range`
+(optional `fromTechnique/toTechnique/challenge/fromRepMin…toRepMax`), six new reason codes, evaluate request
+`trainingStyle/techniquesEnabled`, evaluation per-week techniques/challenges + `techniqueWarnings`. The generated
+client decodes enums **strictly** (an unknown value fails the whole response), so the two proposal operations and the
+evaluator are decoded by hand in `TrainClient+Plan` with lenient enums (unknown kind → generic tile, unknown reason →
+no pill), and the synced contract is refreshed from main right before merge. A test feeds a response with unknown
+values and expects a rendered deck.
+
 ## The gap — needs the owner's pick (see the question at the end)
 
 Three things the approved screens promise **cannot be saved on a running block today**:
