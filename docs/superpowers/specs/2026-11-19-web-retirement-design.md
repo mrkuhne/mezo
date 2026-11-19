@@ -1,6 +1,6 @@
 # Retiring the web app and the web-only server areas (design)
 
-Status: for owner approval · 2026-11-19 · owner decision of the same day (this conversation)
+Status: **approved by the owner 2026-11-19** ("Igen, így jóváhagyom") · decision #52
 
 ## 1. Intent
 
@@ -155,8 +155,10 @@ deleted). No replacement card: the owner asks a session for web-only settings un
 3. **Web off:** frontend deployment, ingress `/`, deploy and CI jobs, `frontend/` deleted, contract-drift trimmed.
 4. **Leaf areas out:** `tutorial`, `telemetry`, `admin`.
 5. **XP world out:** `gamification`, `quest`, `progression`, `activity` (incl. the `train` → `progression` cut).
-6. **Daily-life areas out:** `habit`, `lifegoal`, `needs`, `ritual`, `medication` (incl. companion/character/
-   proactive/meal/dayclose reads).
+6. **Owner checkpoint, then daily-life areas out.** Before any code of `habit`, `lifegoal`, `needs`, `ritual`,
+   `medication` is touched, the owner sees where the iPhone app stands at that moment and decides **area by
+   area** whether it goes; an area he keeps stays untouched (code, jobs and tests) and is recorded as kept. Then the
+   chosen ones go, incl. their companion/character/proactive/meal/dayclose reads.
 7. **Web push out**, APNs registration kept.
 8. **Web-only generators off, then the bell out** (§4.3), and docs/rules/Notion close-out.
 
@@ -177,6 +179,10 @@ Steps 4–7 touch different packages and may run as parallel sessions once 3 is 
 
 ## 6. Owner answers (2026-11-19)
 
+- **"What if the iPhone needs them later?"** (owner, before approving): the areas the Boop plan already excludes
+  (XP world, quests, admin, tutorial, web push) go now; the ones that might conceivably return (habits, life goals,
+  medication cycle, rituals, needs rings) only after the step-6 checkpoint, one by one with his OK. Data stays in
+  every case; code is recoverable from git.
 - **Settings only the web has today** (the weight goal, sport/gym week): **"Kérésre megcsinálod."** The web goes
   off as planned; until the Plan slice (B6) gives the iPhone these screens, the owner asks and a session makes the
   change through the existing backend endpoints of the kept `goal` / `train` areas (which is why those endpoints
