@@ -13,6 +13,8 @@ key_files:
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
+> **2026-11-19 — reviewed after `mezo-r36n9.66`:** the new `exercise_discomfort` / `gym_profile` changesets under `backend/src/main/resources/db/changelog/1.1.0/script` are train-owned and not part of the character dossier; no character behaviour changed (see [`train.md`](train.md) §4).
+
 > **2026-11-19 — reviewed after T3 (`mezo-r36n9.81`, one small change).** `CharacterSignalReads` now flags working sets that carry an intensity technique (`DetectorInput.SetPoint.technique`) and `RirCalibrationDetector` skips them (planner-placed techniques make them reachable without a manual pick); nothing else in the character feature changed ([`train.md`](train.md) §4 *Technique planner and challenge*).
 
 > **2026-11-19 — reviewed after `mezo-r36n9.63` (no character change).** The shared `1.1.0/script` folder gained `202611191400_mezo-r36n9.63_pantry_source_ai_estimate.sql` (one more allowed `pantry_catalog.source` value) and `202611191410_mezo-r36n9.63_recipe_client_ref.sql` (`recipe.client_ref`); neither touches a character table, and `CharacterSignalReads` reads pantry names only.
