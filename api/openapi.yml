@@ -19832,6 +19832,12 @@ components:
         toRepMax:
           type: integer
           nullable: true
+        note:
+          type: string
+          nullable: true
+          description: >-
+            The AI's one-line Hungarian reason on an ai_suggested technique /
+            challenge line (T4); null otherwise
         decision:
           type: string
           nullable: true

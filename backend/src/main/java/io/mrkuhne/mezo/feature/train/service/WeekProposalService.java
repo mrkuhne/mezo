@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,7 +68,6 @@ public class WeekProposalService {
     private static final String MODE_AUTO = "auto";
     /** Manual-mode audit prefix: the week's change is a proposal until he decides it. */
     static final String PROPOSAL_PREFIX = "javaslat: ";
-    private static final String SOURCE_AI = "ai";
     /** The row override a rep-range line marks, so later style stamps keep the new range (T3). */
     private static final String OVERRIDE_REP_RANGE = "repRange";
 
@@ -86,6 +86,7 @@ public class WeekProposalService {
     private final TechniquePlanService techniquePlanService;
     private final TrainStyleProperties styleProps;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * What happened to one muscle group this week: the audit's {@code Change} is built from it.
@@ -157,6 +158,9 @@ public class WeekProposalService {
             // nothing to review: closed at once (every line vacuously decided), so it never pends.
             if (draft.proposal().getLines().isEmpty()) {
                 close(draft.proposal(), MesoWeekProposalEntity.STATUS_APPLIED);
+            } else if (!isDeloadPhase(run, calWeek) && techniquePlanService.optsIn(run)) {
+                // T4: the waiting review may be refined by the AI after this transaction commits (never inline)
+                eventPublisher.publishEvent(new TechniqueRefineRequested(createdBy, draft.proposal().getId()));
             }
             stamp(run, calWeek, draft.outcomes().values().stream().map(WeekProposalService::proposedChange).toList());
             return;
@@ -426,16 +430,16 @@ public class WeekProposalService {
     }
 
     /**
-     * A planner line may write the row: no owner / AI source, and a technique or challenge it carries is the
-     * planner's own (a null source counts as the owner's, as in {@link TechniqueLines}).
+     * A machine line may write the row: no owner source, and a technique or challenge it carries is the planner's or
+     * an accepted AI line's (a null source counts as the owner's, as in {@link TechniqueLines}).
      */
     private static boolean plannerMayWrite(ExerciseEntity e) {
         String source = e.getTechniqueSource();
-        if (TechniquePlanner.SOURCE_OWNER.equals(source) || SOURCE_AI.equals(source)) {
+        if (TechniquePlanner.SOURCE_OWNER.equals(source)) {
             return false;
         }
         boolean carries = e.getTechnique() != null || e.isChallenge();
-        return !carries || TechniquePlanner.SOURCE_PLANNER.equals(source);
+        return !carries || TechniqueLines.machine(source);
     }
 
     /**
@@ -459,7 +463,10 @@ public class WeekProposalService {
         return Technique.fromWire(e.getTechnique()) == from;
     }
 
-    /** A technique line's write: the challenge flag or the technique (with the sets), source planner while it carries one. */
+    /**
+     * A technique line's write: the challenge flag or the technique (with the sets); while the row carries one its
+     * source is {@code ai} for an AI-suggested line (T4), else {@code planner}.
+     */
     private static void writeTechnique(ExerciseEntity e, WeekProposalLineJson line) {
         Technique to = Technique.fromWire(line.toTechnique());
         if (Boolean.TRUE.equals(line.challenge())) {
@@ -469,7 +476,8 @@ public class WeekProposalService {
             e.setWorkingSets(line.to());
         }
         boolean carries = e.getTechnique() != null || e.isChallenge();
-        e.setTechniqueSource(carries ? TechniquePlanner.SOURCE_PLANNER : null);
+        e.setTechniqueSource(!carries ? null
+            : line.aiSuggested() ? TechniquePlanner.SOURCE_AI : TechniquePlanner.SOURCE_PLANNER);
     }
 
     /**

@@ -148,8 +148,7 @@ class TechniqueLinesTest {
         PlanRow ownerTech = held(row(0, 1, "chest", 3), Technique.MYO, "owner", false);
         PlanRow ownerChallenge = held(row(0, 0, "chest", 3), Technique.NONE, "owner", true);
         PlanRow unsourcedChallenge = held(row(1, 0, "chest", 3), Technique.NONE, null, true);
-        PlanRow aiTech = held(row(1, 1, "chest", 3), Technique.REST_DROP, "ai", false);
-        Input in = input(day(0, ownerChallenge, ownerTech), day(1, unsourcedChallenge, aiTech));
+        Input in = input(day(0, ownerChallenge, ownerTech), day(1, unsourcedChallenge));
 
         // even a (buggy) planner pick on them, or no pick at all, writes nothing
         TechniqueLines.Result r = run(in, week(
@@ -159,6 +158,48 @@ class TechniqueLinesTest {
 
         assertThat(r.lines()).isEmpty();
         assertThat(r.working()).isEqualTo(working(in));
+    }
+
+    @Test
+    void keptAiPickGetsNoLine() {
+        PlanRow aiTech = held(row(0, 1, "chest", 2), Technique.REST_DROP, "ai", false);
+        Input in = input(day(0, row(0, 0, "back", 3), aiTech));
+
+        TechniqueLines.Result r = run(in, week(List.of(new Pick(0, 1, aiTech.id(), Technique.REST_DROP,
+            TechniquePlanner.SOURCE_AI, null)), List.of()));
+
+        assertThat(r.lines()).isEmpty();
+    }
+
+    @Test
+    void aiPickNoLongerKeptIsRemovedWithItsSetBack() {
+        PlanRow aiTech = held(row(0, 1, "chest", 2), Technique.REST_DROP, "ai", false);
+        Input in = input(true, 5, 8, day(0, row(0, 0, "back", 3), aiTech));
+
+        TechniqueLines.Result r = run(in, week(List.of(), List.of()));
+
+        assertThat(r.lines()).singleElement().satisfies(l -> {
+            assertThat(l.exerciseId()).isEqualTo(aiTech.id());
+            assertThat(l.fromTechnique()).isEqualTo("rest_drop");
+            assertThat(l.toTechnique()).isEqualTo("none");
+            assertThat(l.to()).isEqualTo(3);
+            assertThat(l.reasons()).containsExactly(TechniqueLines.REASON_DEFICIT_ALLOWANCE);
+        });
+    }
+
+    @Test
+    void aiSuggestedPickBecomesAnAiLine() {
+        PlanRow a = row(0, 1, "chest", 3);
+        Input in = input(day(0, row(0, 0, "back", 3), a));
+
+        TechniqueLines.Result r = run(in, week(List.of(new Pick(0, 1, a.id(), Technique.MYO,
+            TechniquePlanner.SOURCE_AI, TechniquePlanner.REASON_AI_SUGGESTED)), List.of()));
+
+        assertThat(r.lines()).singleElement().satisfies(l -> {
+            assertThat(l.toTechnique()).isEqualTo("myo");
+            assertThat(l.to()).isEqualTo(2);
+            assertThat(l.aiSuggested()).isTrue();
+        });
     }
 
     @Test

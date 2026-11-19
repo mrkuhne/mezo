@@ -82,6 +82,7 @@ public class WeekProposalMapper {
             .fromRepMax(l.fromRepMax())
             .toRepMin(l.toRepMin())
             .toRepMax(l.toRepMax())
+            .note(l.note())
             .decision(l.decision() == null ? null : WeekProposalLine.DecisionEnum.fromValue(l.decision()));
     }
 

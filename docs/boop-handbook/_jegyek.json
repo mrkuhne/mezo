@@ -854,7 +854,8 @@
       "Edzés",
       "AI és memória"
     ],
-    "mit_kapsz": "Az AI a meglévő szabályok keretein belül finomítja a technikajavaslatokat; a terhelésről sosem ő dönt."
+    "mit_kapsz": "Kézi heti átnézésnél Boop a múlt heted alapján áthelyezheti vagy kicserélheti a technikát és a napi kihívást — csak a szabályokon belül, indokkal; a terhelésről sosem ő dönt, és ha nem működik, a gépi terv marad.",
+    "munkamenet": "engine-t4-ai"
   },
   "mezo-r36n9.83": {
     "cim": "Edzés: blokképítő és heti átnézés a telefonon",

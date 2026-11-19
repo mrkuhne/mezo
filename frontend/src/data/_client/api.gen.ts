@@ -7963,6 +7963,8 @@ export interface components {
             fromRepMax?: number | null;
             toRepMin?: number | null;
             toRepMax?: number | null;
+            /** @description The AI's one-line Hungarian reason on an ai_suggested technique / challenge line (T4); null otherwise */
+            note?: string | null;
             /**
              * @description Absent while undecided
              * @enum {string|null}

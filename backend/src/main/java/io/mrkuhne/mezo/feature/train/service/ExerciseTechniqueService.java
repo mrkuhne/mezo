@@ -72,7 +72,7 @@ public class ExerciseTechniqueService {
         // T2/T3 seam (mezo-r36n9.81): a planner technique replaced one straight set; when he clears or replaces it,
         // the set comes back while the caps allow (as the weekly proposal's removal line does)
         Technique stored = Technique.fromWire(row.getTechnique());
-        boolean plannerTechniqueGoes = TechniquePlanner.SOURCE_PLANNER.equals(row.getTechniqueSource())
+        boolean plannerTechniqueGoes = TechniqueLines.machine(row.getTechniqueSource())
             && stored != Technique.NONE && technique != stored;
         if (plannerTechniqueGoes && givesSetBack(createdBy, meso, row, attrs, technique, challenge)) {
             row.setWorkingSets(row.getWorkingSets() + 1);

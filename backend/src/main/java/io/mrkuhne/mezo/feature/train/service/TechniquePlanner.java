@@ -22,17 +22,25 @@ import java.util.UUID;
  * (2) techniques from {@code startWeek} on, nothing at all in a deload week (challenges every other week);
  * (3) Hangsúly groups first, then Építés, Tartás never; (4) per day {@code maxPerDay}, {@code maxPerDayReduced} in a
  * deficit or on a sport day, and {@code maxPerMuscleWeek} technique exercises per group a week; (5) a high-rep
- * isolation gets myo, a machine / cable exercise rest-drop, anything else none; (7) owner / AI picks are kept as
- * they are and consume allowance first. Candidates are taken by tier, then latest day first, then latest exercise
- * first — so a muscle trained three times gets its technique on its two last days.
+ * isolation gets myo, a machine / cable exercise rest-drop, anything else none; (7) owner picks are kept as they
+ * are and consume allowance first. Candidates are taken by tier, then latest day first, then latest exercise first —
+ * so a muscle trained three times gets its technique on its two last days.
+ *
+ * <p>An accepted AI pick (source {@code ai}, T4 {@code mezo-r36n9.82}, owner decision 2026-11-19 "marad, amíg
+ * szabályos") is kept like the owner's — after the owner's picks, before the planner's — but only while it is still
+ * valid: eligible (rule 1), from the start week, within the day's and the muscle's allowance. An AI challenge is kept
+ * while its row is still a challenge candidate. An AI pick that is no longer valid is simply not kept, so the
+ * proposal's lines remove (or replace) it; the planner never flips a valid one back to its default.
  */
 public final class TechniquePlanner {
 
     public static final String SOURCE_PLANNER = "planner";
     public static final String SOURCE_OWNER = "owner";
+    public static final String SOURCE_AI = "ai";
     public static final String REASON_EMPHASIS = "emphasis";
     public static final String REASON_TECHNIQUE_WEEK = "technique_week";
     public static final String REASON_CHALLENGE = "challenge";
+    public static final String REASON_AI_SUGGESTED = "ai_suggested";
     public static final String WARN_OWNER_OVER_ALLOWANCE = "owner_over_allowance";
     public static final String WARN_NO_CHALLENGE_CANDIDATE = "no_challenge_candidate";
 
@@ -80,7 +88,8 @@ public final class TechniquePlanner {
         List<Warning> warnings = new ArrayList<>();
         Set<UUID> challengeIds = new HashSet<>();
         for (PlanDay day : in.days()) {
-            List<Pick> ownerChallenges = day.rows().stream().filter(TechniquePlanner::ownerChallenge)
+            List<Pick> ownerChallenges = day.rows().stream()
+                .filter(r -> ownerChallenge(r) || (aiChallenge(r) && challengeValid(r, day, in)))
                 .map(r -> new Pick(r.dayIndex(), r.exerciseIndex(), r.id(), Technique.PARTIALS,
                     r.source() == null ? SOURCE_OWNER : r.source(), null))
                 .toList();
@@ -121,12 +130,30 @@ public final class TechniquePlanner {
             remaining.put(day.dayIndex(), left);
         }
 
+        // T4: accepted AI picks, kept while still valid (after the owner's, before the planner's)
+        Set<UUID> keptAi = new HashSet<>();
+        if (in.week() >= in.cfg().startWeek()) {
+            for (PlanDay day : in.days()) {
+                for (PlanRow r : day.rows()) {
+                    if (!aiHeld(r) || r.group() == null) continue;
+                    if (!eligible(r, day, in, challengeIds.contains(r.id()), challengeIds)) continue;
+                    if (remaining.get(day.dayIndex()) <= 0) continue;
+                    if (perGroup.getOrDefault(r.group(), 0) >= in.cfg().maxPerMuscleWeek()) continue;
+                    techniques.add(new Pick(r.dayIndex(), r.exerciseIndex(), r.id(), r.technique(), SOURCE_AI, null));
+                    keptAi.add(r.id());
+                    remaining.merge(day.dayIndex(), -1, Integer::sum);
+                    perGroup.merge(r.group(), 1, Integer::sum);
+                }
+            }
+        }
+
         if (in.week() >= in.cfg().startWeek()) {
             record Candidate(PlanRow row, PriorityTier tier, Technique technique) {}
             List<Candidate> candidates = new ArrayList<>();
             for (PlanDay day : in.days()) {
                 for (PlanRow r : day.rows()) {
-                    if (owned(r) || !eligible(r, day, in, challengeIds.contains(r.id()), challengeIds)) continue;
+                    if (owned(r) || keptAi.contains(r.id())
+                            || !eligible(r, day, in, challengeIds.contains(r.id()), challengeIds)) continue;
                     PriorityTier tier = tier(in, r.group());
                     if (tier == PriorityTier.MAINTAIN) continue;
                     defaultTechnique(r, in.cfg()).ifPresent(t -> candidates.add(new Candidate(r, tier, t)));
@@ -179,6 +206,11 @@ public final class TechniquePlanner {
         return eligible(row, day, in, row.challenge(), challengeIds);
     }
 
+    /** Rule 1 against a given set of the day's challenge rows (the AI merger's moved challenges, T4). */
+    static boolean eligible(PlanRow row, PlanDay day, Input in, Set<UUID> challengeIds) {
+        return eligible(row, day, in, challengeIds.contains(row.id()), challengeIds);
+    }
+
     private static boolean eligible(PlanRow row, PlanDay day, Input in, boolean isChallenge, Set<UUID> challengeIds) {
         if (!row.counts() || row.group() == null || isChallenge || !row.attrs().stable()) return false;
         if (row.effectiveStyle() == TrainingStyle.ALLOUT) return false;
@@ -198,9 +230,9 @@ public final class TechniquePlanner {
         return withTechnique <= in.exerciseCap() && after <= in.sessionCap();
     }
 
-    /** The row's set count without a planner technique: a planner-held row gave one set back for it. */
+    /** The row's set count without a machine technique: a planner- or AI-held row gave one set back for it. */
     private static int plainSets(PlanRow row) {
-        return plannerHeld(row) ? row.workingSets() + 1 : row.workingSets();
+        return plannerHeld(row) || aiHeld(row) ? row.workingSets() + 1 : row.workingSets();
     }
 
     /** What the row weighs against the caps as it stands (a technique or challenge set weighs capWeight). */
@@ -212,11 +244,19 @@ public final class TechniquePlanner {
     /** §6.6: the day's first stable + lengthened-friendly counting row, Hangsúly first, then Építés, then the rest. */
     private static Optional<PlanRow> challengeCandidate(PlanDay day, Input in) {
         return day.rows().stream()
-            .filter(r -> r.counts() && r.attrs().stable() && r.attrs().lengthenedFriendly())
+            .filter(r -> challengeValid(r, day, in))
             .filter(r -> !owned(r))
-            .filter(r -> !(day.sportDay() && r.group() != null && in.sportGroups().contains(r.group())))
             .min(Comparator.comparing((PlanRow r) -> tier(in, r.group()))
                 .thenComparingInt(PlanRow::exerciseIndex));
+    }
+
+    /**
+     * §6.6 on one row: it counts, it is stable and lengthened-friendly, and it is not a sport-loaded group on a
+     * sport day. The AI may move the challenge only onto such a row (T4).
+     */
+    public static boolean challengeValid(PlanRow r, PlanDay day, Input in) {
+        return r.counts() && r.attrs().stable() && r.attrs().lengthenedFriendly()
+            && !(day.sportDay() && r.group() != null && in.sportGroups().contains(r.group()));
     }
 
     /** A row without a coarse group ranks with the rest (Tartás) and never gets a technique. */
@@ -224,7 +264,7 @@ public final class TechniquePlanner {
         return group == null ? PriorityTier.MAINTAIN : PriorityTier.of(in.priorities(), group);
     }
 
-    private static int allowance(PlanDay day, Input in) {
+    static int allowance(PlanDay day, Input in) {
         return in.deficit() || day.sportDay() ? in.cfg().maxPerDayReduced() : in.cfg().maxPerDay();
     }
 
@@ -235,17 +275,27 @@ public final class TechniquePlanner {
     }
 
     /**
-     * An owner / AI pick: never moved by the planner. A row carrying a technique or a challenge without any source
-     * counts as owned too (only the planner's own picks are the planner's), as {@link TechniqueLines} reads it.
+     * An owner pick: never moved by the planner. A row carrying a technique or a challenge without any source counts
+     * as owned too (only the machine's own picks are the machine's), as {@link TechniqueLines} reads it.
      */
-    private static boolean owned(PlanRow r) {
-        if (SOURCE_OWNER.equals(r.source()) || "ai".equals(r.source())) return true;
+    static boolean owned(PlanRow r) {
+        if (SOURCE_OWNER.equals(r.source())) return true;
         return r.source() == null && (hasTechnique(r) || r.challenge());
     }
 
-    /** A stored challenge the planner did not place (owner, ai or no source): it wins, the planner only moves its own. */
+    /** A stored challenge the owner placed (owner or no source): it wins, the planner only moves the machine's. */
     private static boolean ownerChallenge(PlanRow r) {
-        return r.challenge() && !SOURCE_PLANNER.equals(r.source());
+        return r.challenge() && (r.source() == null || SOURCE_OWNER.equals(r.source()));
+    }
+
+    /** A stored challenge an accepted AI line placed (T4). */
+    private static boolean aiChallenge(PlanRow r) {
+        return r.challenge() && SOURCE_AI.equals(r.source());
+    }
+
+    /** A technique an accepted AI line placed (T4). */
+    static boolean aiHeld(PlanRow r) {
+        return SOURCE_AI.equals(r.source()) && hasTechnique(r);
     }
 
     /** Days by dayIndex, each day's rows by exerciseIndex — the rules never depend on the caller's order. */

@@ -25,7 +25,10 @@ import java.util.UUID;
  *   <li><b>challenge</b> — a planner challenge placed or taken away: {@code none ⇄ partials}, sets unchanged
  *       ({@code challenge = true}); a technique on the new challenge row is removed first.</li>
  * </ul>
- * A row holding an owner / AI pick, or a technique / challenge without the planner as its source, never gets a line.
+ * A row holding an owner pick, or a technique / challenge without the planner or the AI as its source, never gets a
+ * line. Since T4 an accepted AI pick (source {@code ai}) is the machine's too: a kept AI pick in the week means no
+ * line, an AI pick missing from the week is removed, and picks the AI merger changed (source {@code ai}, reason
+ * {@code ai_suggested}) become lines like the planner's.
  * A row with no muscle group at all (no landmark group and no coarse group) gets no line. Lines come by day,
  * removals first on each day (they free allowance), then by exercise position.
  */
@@ -62,12 +65,12 @@ final class TechniqueLines {
         plan.forEach(r -> planById.put(r.exercise().getId(), r));
         Map<UUID, Technique> picked = new HashMap<>();
         Map<UUID, String> pickReason = new HashMap<>();
-        week.techniques().stream().filter(p -> TechniquePlanner.SOURCE_PLANNER.equals(p.source())).forEach(p -> {
+        week.techniques().stream().filter(p -> machine(p.source())).forEach(p -> {
             picked.put(p.id(), p.technique());
             pickReason.put(p.id(), p.reason());
         });
         Set<UUID> challenged = new HashSet<>();
-        week.challenges().stream().filter(p -> TechniquePlanner.SOURCE_PLANNER.equals(p.source()))
+        week.challenges().stream().filter(p -> machine(p.source()))
             .forEach(p -> challenged.add(p.id()));
 
         Map<Integer, Boolean> sportDay = new HashMap<>();
@@ -195,10 +198,15 @@ final class TechniqueLines {
         return TechniquePlanner.REASON_EMPHASIS;
     }
 
-    /** The planner may write this row: no owner / AI source, and whatever it carries is the planner's own. */
+    /** The machine may write this row: no owner source, and whatever it carries is the planner's or the AI's. */
     private static boolean plannerMay(TechniquePlanner.PlanRow r) {
-        if ((hasTechnique(r) || r.challenge()) && !TechniquePlanner.SOURCE_PLANNER.equals(r.source())) return false;
-        return !TechniquePlanner.SOURCE_OWNER.equals(r.source()) && !"ai".equals(r.source());
+        if ((hasTechnique(r) || r.challenge()) && !machine(r.source())) return false;
+        return !TechniquePlanner.SOURCE_OWNER.equals(r.source());
+    }
+
+    /** The planner's or an accepted AI line's source (T4): the machine's own picks. */
+    static boolean machine(String source) {
+        return TechniquePlanner.SOURCE_PLANNER.equals(source) || TechniquePlanner.SOURCE_AI.equals(source);
     }
 
     private static boolean hasTechnique(TechniquePlanner.PlanRow r) {

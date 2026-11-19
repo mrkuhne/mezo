@@ -232,7 +232,7 @@ public class ExerciseStyler {
                 out.add(merged);
             } else if (echoesPlannerPick(in, match)) {
                 // T2/T3 seam (mezo-r36n9.81): a client echoing the planner's pick back unchanged keeps it the planner's
-                out.add(merged.withTechnique(merged.technique(), TechniquePlanner.SOURCE_PLANNER, merged.challenge()));
+                out.add(merged.withTechnique(merged.technique(), match.techniqueSource(), merged.challenge()));
             } else {
                 out.add(withOwnerSource(merged));
             }
@@ -245,7 +245,7 @@ public class ExerciseStyler {
      * not the owner's change, so the pick stays the planner's to move. Any real change makes it the owner's.
      */
     private static boolean echoesPlannerPick(GymExerciseJson in, GymExerciseJson match) {
-        return TechniquePlanner.SOURCE_PLANNER.equals(match.techniqueSource())
+        return TechniqueLines.machine(match.techniqueSource())
             && Technique.fromWire(in.technique()) == Technique.fromWire(match.technique())
             && Boolean.TRUE.equals(in.challenge()) == Boolean.TRUE.equals(match.challenge());
     }
