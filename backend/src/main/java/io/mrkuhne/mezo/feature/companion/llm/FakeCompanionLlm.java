@@ -415,6 +415,15 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  carrying this marker makes that line answer "none" (the runners-up are still named). A said
      *  text carrying {@link #FAIL_COMPLETE} fails the whole call, which is the degrade path. */
     public static final String COOKED_PICK_NONE = "[fake-pick-none]";
+
+    /** The pantry quick-add estimate (mezo-r36n9.63) is canned: these per-100-g facts for any name… */
+    public static final String ESTIMATE_CANNED_ANSWER =
+            "{\"basisUnit\":\"g\",\"kcal\":354,\"proteinG\":7.8,\"carbsG\":64.9,\"fatG\":9.9,"
+                    + "\"fiberG\":21.1,\"sugarG\":3.2,\"saltG\":0.1,\"saturatedFatG\":3.1}";
+    /** …except a name carrying this word, which gets an answer whose energy contradicts its macros. */
+    public static final String ESTIMATE_IMPLAUSIBLE_NAME = "fakerosszbecsles";
+    private static final String ESTIMATE_IMPLAUSIBLE_ANSWER =
+            "{\"basisUnit\":\"g\",\"kcal\":50,\"proteinG\":5,\"carbsG\":10,\"fatG\":60}";
     private static final Pattern COOKED_PICK_LINE = Pattern.compile("^LINE (\\d+) said: (.*)$");
     private static final Pattern COOKED_PICK_CANDIDATE = Pattern.compile("^\\s+- ([0-9a-f-]{36}) \\|");
 
@@ -1332,6 +1341,11 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(io.mrkuhne.mezo.feature.recipe.service.RecipeCookedSelection.SYSTEM_PROMPT)) {
             return cookedPickAnswer(userMessage);
+        }
+        // Pantry quick-add estimate (mezo-r36n9.63): the user message is only the food's NAME, so the
+        // answer is canned — plausible per-100-g facts, or a self-contradicting one for the marker name.
+        if (systemPrompt.startsWith(io.mrkuhne.mezo.feature.pantry.service.PantryQuickAddService.SYSTEM_PROMPT)) {
+            return userMessage.contains(ESTIMATE_IMPLAUSIBLE_NAME) ? ESTIMATE_IMPLAUSIBLE_ANSWER : ESTIMATE_CANNED_ANSWER;
         }
         // Receptműhely turn (mezo-92pb): sentinel planted in the user message is returned verbatim;
         // no sentinel -> prompt echo -> unparseable -> 502, as the ITs assert.

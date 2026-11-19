@@ -208,7 +208,17 @@ public interface PantryMapper {
             .catalogEditable(catalogEditable)
             .allergens(allergensToWire(c.getAllergens()))
             .barcode(c.getBarcode())
+            .estimated(estimated(c))
             .build();
+    }
+
+    /**
+     * The „becsült" tag (mezo-r36n9.63): the facts are an AI estimate nobody has confirmed. Both halves
+     * matter — the source says where the numbers came from, the draft status that no human has stood
+     * behind them yet; the owner typing or scanning real facts clears both (PantryService#updateItem).
+     */
+    static boolean estimated(PantryCatalogEntity c) {
+        return "ai_estimate".equals(c.getSource()) && PantryCatalogEntity.STATUS_DRAFT.equals(c.getStatus());
     }
 
     default PantryStock toStock(PantryItemEntity e) {
@@ -276,6 +286,11 @@ public interface PantryMapper {
             .category(c.getCategory())
             .allergens(allergensToWire(c.getAllergens()))
             .barcode(c.getBarcode())
+            .estimated(estimated(c))
+            // Basis + headline facts (mezo-r36n9.63): honest nulls, exactly as the definition carries them.
+            .per(c.getServingAmount())
+            .unit(c.getServingUnit())
+            .kcal(c.getKcal()).proteinG(c.getProteinG()).carbsG(c.getCarbsG()).fatG(c.getFatG())
             .build();
     }
 
@@ -298,6 +313,7 @@ public interface PantryMapper {
             .authorName(authorName)
             .allergens(allergensToWire(c.getAllergens()))
             .barcode(c.getBarcode())
+            .estimated(estimated(c))
             .build();
     }
 

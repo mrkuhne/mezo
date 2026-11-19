@@ -139,6 +139,11 @@ public class FeaturesConfiguration {
      *  RecipeCookedLlm adapter lives there) — without it the operation answers a clean 503. */
     public static final String RECIPE_COOKED_SWITCH = "mezo.feature.recipe-cooked.enabled";
 
+    /** The one-tap pantry quick-add (mezo-r36n9.63): off => the controller bean is gone (404). Binding
+     *  an existing shared food needs no AI; estimating a missing one additionally needs
+     *  COMPANION_SWITCH (the PantryEstimateLlm adapter lives there) — without it that step is a 503. */
+    public static final String PANTRY_QUICK_ADD_SWITCH = "mezo.feature.pantry-quick-add.enabled";
+
     /** Meal coach verdicts (mezo-mr4n): gates ONLY the LLM prose over a logged meal's score — the
      *  deterministic score and its breakdown stay on regardless. Verdicts additionally need
      *  COMPANION_SWITCH (the MealCoachLlm adapter lives there). */

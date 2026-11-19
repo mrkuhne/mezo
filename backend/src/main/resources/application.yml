@@ -428,6 +428,10 @@ mezo:
     # the pantry. Off: the operation is not served. The capture read needs the companion switch too.
     recipe-cooked:
       enabled: true
+    # One-tap pantry quick-add (mezo-r36n9.63) — a food by name alone: the shared catalog's food when
+    # one matches, an AI estimate otherwise (that step needs the companion switch too). Off: 404.
+    pantry-quick-add:
+      enabled: true
     # Meal coach verdicts (mezo-mr4n) — LLM prose (tagline/summary/improve) over the deterministic
     # meal score; needs the companion switch too (the MealCoachLlm adapter bean). Off: the coach
     # endpoints answer 200 with an empty verdict list, the score itself is unaffected.
