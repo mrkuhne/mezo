@@ -76,7 +76,7 @@ public class TechniqueAiRefiner {
     private final PlatformTransactionManager transactionManager;
 
     /** What the read step hands to the model call and the write step. */
-    record Prepared(UUID proposalId, List<TemplatePlan.Row> plan, TechniquePlanner.Input input,
+    record Prepared(UUID proposalId, UUID mesoId, List<TemplatePlan.Row> plan, TechniquePlanner.Input input,
                     TechniquePlanner.Week week, Map<UUID, Integer> working, Set<String> techniqueLineIds,
                     TechniqueLlm.Request request) {}
 
@@ -138,7 +138,7 @@ public class TechniqueAiRefiner {
         Set<String> techniqueLineIds = lines.stream().filter(TechniqueAiRefiner::techniqueLine)
             .map(WeekProposalLineJson::id).collect(Collectors.toSet());
         TechniqueLlm.Request request = request(createdBy, run, week, plan, input, proposed);
-        return new Prepared(proposalId, plan, input, proposed, Map.copyOf(working), techniqueLineIds, request);
+        return new Prepared(proposalId, run.getId(), plan, input, proposed, Map.copyOf(working), techniqueLineIds, request);
     }
 
     /** Pending, and no technique line decided yet (a decided one means he is already reviewing it). */
@@ -327,6 +327,10 @@ public class TechniqueAiRefiner {
     // ── write ───────────────────────────────────────────────────────────────────
 
     private void write(UUID createdBy, Prepared prep, TechniqueMerger.Merged merged) {
+        // the run-row lock every decision takes: a decision and this rewrite of the lines never interleave
+        if (mesocycleRepository.findLockedByIdAndCreatedByAndDeletedFalse(prep.mesoId(), createdBy).isEmpty()) {
+            return;
+        }
         MesoWeekProposalEntity proposal = proposalRepository.findById(prep.proposalId())
             .filter(p -> createdBy.equals(p.getCreatedBy())).orElse(null);
         if (proposal == null || !refinable(proposal)) {
@@ -339,8 +343,11 @@ public class TechniqueAiRefiner {
             return;   // the review changed since we read it
         }
         TechniqueLines.Result result = TechniqueLines.lines(prep.plan(), prep.input(), merged.week(), prep.working());
+        // an unchanged line keeps its stored id (a client holding the review can still decide it); AI lines are new
+        List<WeekProposalLineJson> old = lines.stream().filter(TechniqueAiRefiner::techniqueLine).toList();
         List<WeekProposalLineJson> fresh = result.lines().stream()
-            .map(l -> merged.notes().containsKey(l.exerciseId()) ? l.withAiNote(merged.notes().get(l.exerciseId())) : l)
+            .map(l -> merged.notes().containsKey(l.exerciseId()) ? l.withAiNote(merged.notes().get(l.exerciseId()))
+                : old.stream().filter(o -> sameMove(o, l)).findFirst().orElse(l))
             .toList();
 
         List<WeekProposalLineJson> next = new ArrayList<>();
@@ -366,6 +373,14 @@ public class TechniqueAiRefiner {
         proposal.setGroups(adjustGroups(proposal.getGroups(), lines, next));
         proposalRepository.save(proposal);
         log.info("technique AI refined proposal {}: {} row(s) changed", prep.proposalId(), merged.notes().size());
+    }
+
+    /** The same technique move on the same row (the regenerated twin of a stored line). */
+    private static boolean sameMove(WeekProposalLineJson a, WeekProposalLineJson b) {
+        return Objects.equals(a.exerciseId(), b.exerciseId())
+            && Objects.equals(Boolean.TRUE.equals(a.challenge()), Boolean.TRUE.equals(b.challenge()))
+            && Objects.equals(a.fromTechnique(), b.fromTechnique()) && Objects.equals(a.toTechnique(), b.toTechnique())
+            && Objects.equals(a.from(), b.from()) && Objects.equals(a.to(), b.to());
     }
 
     /** The muscles' sets-after follow the technique lines' set changes (a technique gives one straight set back). */

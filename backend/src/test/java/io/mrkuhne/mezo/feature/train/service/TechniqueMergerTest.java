@@ -134,6 +134,18 @@ class TechniqueMergerTest {
     }
 
     @Test
+    void aMaintainMuscleNeverGetsATechnique() {
+        PlanRow legs = row(0, 0, "legs");
+        Input in = new Input(3, false, List.of(day(0, legs)), Map.of("legs", "maintain"), Set.of(), false, 5, 8, 2,
+            CFG);
+
+        TechniqueMerger.Merged m = TechniqueMerger.merge(in, week(List.of(), List.of()),
+            changes(new Change(legs.id(), "myo", "Tartás izom.")));
+
+        assertThat(m.changed()).isFalse();
+    }
+
+    @Test
     void beforeTheStartWeekNoTechniqueIsAdded() {
         PlanRow a = row(0, 0, "chest");
         Input in = input(2, false, day(0, a));

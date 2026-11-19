@@ -98,6 +98,8 @@ class TechniqueAiRefinerIT extends AbstractIntegrationTest {
     void aiSwapBecomesAnAiLineWithItsNoteAndAcceptWritesTheAiSource() {
         Chest c = chest("manual", true);
         MesoWeekProposalEntity built = build(c);
+        String challengeLineId = techniqueLines(built).stream().filter(l -> Boolean.TRUE.equals(l.challenge()))
+            .findFirst().orElseThrow().id();
         when(llm.refine(any())).thenReturn(Optional.of(flyToDrop(c)));
 
         refiner.refine(owner, built.getId());
@@ -108,6 +110,7 @@ class TechniqueAiRefinerIT extends AbstractIntegrationTest {
         assertThat(lines).filteredOn(l -> l.exerciseId().equals(c.pecDeck().getId())).singleElement()
             .satisfies(l -> {
                 assertThat(l.challenge()).isTrue();
+                assertThat(l.id()).isEqualTo(challengeLineId);   // untouched line keeps its id
                 assertThat(l.reasons()).containsExactly("challenge");
                 assertThat(l.note()).isNull();
             });

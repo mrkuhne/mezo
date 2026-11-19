@@ -135,7 +135,7 @@ public final class TechniquePlanner {
         if (in.week() >= in.cfg().startWeek()) {
             for (PlanDay day : in.days()) {
                 for (PlanRow r : day.rows()) {
-                    if (!aiHeld(r) || r.group() == null) continue;
+                    if (!aiHeld(r) || r.group() == null || tier(in, r.group()) == PriorityTier.MAINTAIN) continue;
                     if (!eligible(r, day, in, challengeIds.contains(r.id()), challengeIds)) continue;
                     if (remaining.get(day.dayIndex()) <= 0) continue;
                     if (perGroup.getOrDefault(r.group(), 0) >= in.cfg().maxPerMuscleWeek()) continue;

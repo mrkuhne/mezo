@@ -22,7 +22,8 @@ import java.util.UUID;
  *       challenge candidate ({@link TechniquePlanner#challengeValid}), never onto or away from an owner's pick; a
  *       machine technique on the new challenge row is cleared. One move per day.</li>
  *   <li><b>Technique changes</b>, removals first (they free allowance): {@code rest_drop | myo | drop | none} on a row
- *       that is not the owner's and not a challenge; a technique only from the start week on an eligible row
+ *       that is not the owner's and not a challenge; a technique only from the start week on an eligible row of a
+ *       group that is not Tartás
  *       ({@link TechniquePlanner#eligible}); an added technique must fit the day's allowance and the muscle's
  *       weekly limit counted on the result (the owner's picks included). A kind swap keeps the counts.</li>
  *   <li>Every accepted change needs a non-blank reason (trimmed, at most {@link #MAX_NOTE} characters); unknown
@@ -108,6 +109,7 @@ public final class TechniqueMerger {
                 continue;
             }
             if (in.week() < in.cfg().startWeek() || r.group() == null
+                    || PriorityTier.of(in.priorities(), r.group()) == PriorityTier.MAINTAIN   // rule 3: Tartás never
                     || !TechniquePlanner.eligible(r, at.day(), in, challengeIds)) continue;
             if (current == null) {   // an add: must fit the day's allowance and the muscle's weekly limit
                 long onDay = techniques.values().stream().filter(p -> p.dayIndex() == r.dayIndex()).count();
