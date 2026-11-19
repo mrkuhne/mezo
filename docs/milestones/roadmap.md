@@ -77,6 +77,14 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   [train style and techniques](../superpowers/specs/2026-11-17-train-style-and-techniques-design.md), plan
   [T3](../superpowers/plans/2026-11-19-train-style-t3-planner-and-challenge.md);
   [`train.md`](../features/train.md) §4 `#### Technique planner and challenge`, §9.
+- **2026-11-19 — Boop: block builder + weekly review (`mezo-r36n9.83`).**
+  The volume engine's two phone screens, on Edzés → Blokk of the native app: the **block builder** (Izmok · Napok · Blokk,
+  every number from `POST /api/train/meso-plans/evaluate`, style / techniques / review-mode switches, ordered save) and the
+  **weekly review deck** (accept / keep per exercise, *Elfogadom átnézés nélkül*). New server op
+  `PUT /api/train/mesocycles/{id}/settings` (style, techniques switch, per-run `weekly_review_mode` overriding the server
+  default) — owner decision #51. The app reads these calls through a hand-written lenient JSON client so the technique
+  planner's new enum values never break a response. Plan
+  [2026-11-19-boop-blokk-epito](../superpowers/plans/2026-11-19-boop-blokk-epito.md).
 
 - **2026-11-18 — Train style T2: the technique model (`mezo-r36n9.80`).**
   A planned exercise can now carry an **intensity technique** — the owner's *pihenős drop* (rest-drop), a drop set,

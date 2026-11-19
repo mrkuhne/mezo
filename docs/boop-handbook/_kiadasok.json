@@ -369,5 +369,16 @@
     ],
     "mi_valtozott": "Egy gyakorlathoz mostantól technika tartozhat (pihenős drop, drop set, myo set, félismétlések), vagy lehet a nap kihívása. Csak stabil gyakorlatra kerülhet, a félismétlés és a kihívás csak olyanra, amelyet nyújtott helyzetben is biztonságos ismételni; minden mást a szerver elutasít. A technika a meglévő utolsó sorozatot váltja ki, a terhelő heteken él, a könnyített héten és a kímélő napokon nem. A napi edzés az utolsó sorozatnál lépésenként előírja, mit kell csinálni (például: bukásig, 30 mp pihenő, 30 %-kal kisebb súly, ugyanannyi ismétlés), a kihívásnál ott a megdöntendő szám; a napló a technika részeit is rögzíti. A rekordokba, a következő edzés alapjába és a heti sorozatszámba ezek a részek nem számítanak bele, a szándékos bukás nem számít túl nehéznek. Csak bekapcsolt blokkban működik: a futó blokkod és a webes blokkok változatlanok. Képernyő és automatikus elhelyezés még nincs hozzá.",
     "verzio": "v3.4.0"
+  },
+  "8e61aa28c": {
+    "tipus": "Új funkció",
+    "cim": "Edzés: blokképítő és heti átnézés a telefonon",
+    "datum": "2026-11-19",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.83"
+    ],
+    "mi_valtozott": "Az Edzés → Blokk fülön a futó blokkodat izmonként, naponként és a teljes blokkra állíthatod: szint, sorozatszám, technika, a nap kihívása, edzésmód, technikák be/ki, és hogy a heti javaslatot te hagyod-e jóvá. Minden számot a szerver tervmérője ad, egyetlen fő gomb van (Igazítsd a sávba / Mentés). Hétfőn a heti javaslat egy kártyapakliban jön: izmonként egy kártya, gyakorlatonként elfogadod vagy megtartod, a végén összegzés — vagy egy gombbal elfogadod átnézés nélkül. A blokkon most még a magától érvényesülő mód él; a jóváhagyást a Blokk fülön kapcsolod be. A szerver egy nap mentésénél megtartja a gyakorlatok azonosítóját, így a még eldöntetlen heti sorok nem vesznek el.",
+    "verzio": "v3.5.0"
   }
 }

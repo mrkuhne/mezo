@@ -266,6 +266,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/mesocycles/{id}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change a running block's settings — training style, techniques flag, weekly review mode (mezo-r36n9.83)
+         * @description Every field is optional; an absent field keeps the stored value. A new trainingStyle re-stamps every exercise of the run's days in place (ids kept, owner overrides respected). techniquesEnabled only flips the block flag: stored technique picks are never deleted, they are simply ignored while it is off. weeklyReviewMode applies to proposals generated after the switch; a pending proposal stays pending.
+         */
+        put: operations["updateMesocycleSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/mesocycles/{id}/report": {
         parameters: {
             query?: never;
@@ -6442,6 +6462,11 @@ export interface components {
             days?: components["schemas"]["MesoDay"][];
             /** @description Block training style; null = no style (unstyled block behaves as before). */
             trainingStyle?: components["schemas"]["TrainingStyle"] | null;
+            /**
+             * @description EFFECTIVE weekly review mode of the run (mezo-r36n9.83): its own setting, else the server default. auto = the weekly volume proposal is applied at once; manual = it waits for line-by-line decisions.
+             * @enum {string}
+             */
+            weeklyReviewMode: "auto" | "manual";
         };
         MesoTemplateResponse: {
             /** @description Block flag; techniques and the challenge are prescribed only when true. */
@@ -6772,6 +6797,15 @@ export interface components {
             startDate: string;
             /** @enum {string} */
             status: "active" | "planned";
+        };
+        /** @description Partial update of a running block's settings (mezo-r36n9.83); every absent field keeps its value. */
+        MesocycleSettingsUpdateRequest: {
+            /** @description New block style; re-stamps the run's exercises. Absent OR null keeps the stored style — a block style cannot be cleared through this operation. */
+            trainingStyle?: components["schemas"]["TrainingStyle"] | null;
+            /** @description Block techniques flag. Off keeps the stored picks (ignored while off); on makes them live again. */
+            techniquesEnabled?: boolean | null;
+            /** @description The run's own weekly review mode (auto|manual); absent or null keeps it. Applies to proposals generated after the switch — a pending proposal stays pending until decided or the week boundary. */
+            weeklyReviewMode?: string | null;
         };
         MusclePrioritiesUpdateRequest: {
             /** @description Sparse per-coarse-muscle priority tier map (emphasize/maintain; absent key = grow); absent or empty CLEARS the map to all grow (unlike sportGroups, which keeps when absent) (mezo-3m5m) */
@@ -15070,6 +15104,68 @@ export interface operations {
             };
             /** @description Not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateMesocycleSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesocycleSettingsUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated mesocycle */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The run is archived (TRAIN_RUN_NOT_EDITABLE) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

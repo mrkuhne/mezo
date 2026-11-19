@@ -393,17 +393,20 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         });
     }
 
-    /** A day re-saved during the deload week re-mints its rows: they are found by identity and restored. */
+    /**
+     * A day re-saved during the deload week with its exercises REORDERED re-mints its rows (a same-order save
+     * keeps the ids, mezo-r36n9.83): they are found by identity and restored.
+     */
     @Test
     void aDayEditedDuringTheDeloadIsStillRestored() {
         MesocycleEntity meso = run(3, DELOAD_IN_WEEK_3, Map.of("quad", "maintain"));
         WorkoutSessionEntity mon = day(meso, "Hétfő", 0);
-        ExerciseEntity squat = exercise(mon, "Guggolás", "quad", 4);
-        ExerciseEntity ext = exercise(mon, "Lábnyújtás", "quad", 3);
+        ExerciseEntity squat = exerciseAt(mon, "Guggolás", "quad", 4, 0);
+        ExerciseEntity ext = exerciseAt(mon, "Lábnyújtás", "quad", 3, 1);
         workoutService.getToday(owner, null);
-        // the same two exercises re-saved through the real day edit: new rows, halved sets
+        // the same two exercises re-saved, swapped, through the real day edit: new rows, halved sets
         trainService.replaceDayExercises(owner, meso.getId(), mon.getId(), List.of(
-            input("Guggolás", sets(squat)), input("Lábnyújtás", sets(ext))));
+            input("Lábnyújtás", sets(ext)), input("Guggolás", sets(squat))));
         List<ExerciseEntity> reminted = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(owner, List.of(mon.getId()));
         assertThat(reminted).extracting(ExerciseEntity::getId).doesNotContain(squat.getId(), ext.getId());
@@ -415,10 +418,10 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         List<ExerciseEntity> after = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(owner, List.of(mon.getId()));
         assertThat(after).extracting(ExerciseEntity::getName, ExerciseEntity::getWorkingSets)
-            .containsExactly(tuple("Guggolás", 4), tuple("Lábnyújtás", 3));
+            .containsExactly(tuple("Lábnyújtás", 3), tuple("Guggolás", 4));
         assertThat(setLines(weekly(meso, 4)))
             .extracting(WeekProposalLineJson::exerciseId, WeekProposalLineJson::from, WeekProposalLineJson::to)
-            .containsExactly(tuple(after.get(0).getId(), 2, 4), tuple(after.get(1).getId(), 2, 3));
+            .containsExactlyInAnyOrder(tuple(after.get(1).getId(), 2, 4), tuple(after.get(0).getId(), 2, 3));
         assertThat(setLines(weekly(meso, 4))).allSatisfy(l -> assertThat(l.reasons()).containsExactly("deload_restore"));
     }
 

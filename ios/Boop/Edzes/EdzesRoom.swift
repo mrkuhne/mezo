@@ -30,6 +30,8 @@ enum EdzesTab: String, CaseIterable {
 /// A sub-page of the room, opened from a card.
 enum EdzesPage: String, Identifiable {
     case blockLoad
+    /// The block builder and the weekly review (mezo-r36n9.83, `ios/Boop/EdzesTerv/`).
+    case builder, review
     var id: String { rawValue }
 }
 
@@ -40,6 +42,7 @@ struct EdzesRoom: View {
     @Environment(\.closeRoom) private var closeRoom
     @Environment(\.openPlace) private var openPlace
     @Environment(\.trainClient) private var train
+    @Environment(\.planClient) private var plan
     @Environment(\.serverCache) private var cache
     @Environment(\.workoutFolder) private var workoutFolder
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
@@ -48,6 +51,12 @@ struct EdzesRoom: View {
     @State private var store: EdzesStore?
     @State private var toast: String?
     @State private var page: EdzesPage?
+    /// This week's proposal for the Blokk tab's entrance card (mezo-r36n9.83).
+    @State private var weekReview: WeekReviewModel?
+    /// The builder, loaded in the background when the room opens, so it opens without a spinner (owner, 2026-11-19).
+    @State private var builder: BlockBuilderModel?
+    /// The builder and the review zoom out of the button / card that opened them.
+    @Namespace private var planZoom
     /// Which of the workout's own surfaces is up. The session itself lives in the store, so
     /// closing the player („kis méretre") leaves the workout running.
     @State private var phase: WorkoutPhase = .hidden
@@ -102,6 +111,19 @@ struct EdzesRoom: View {
             switch p {
             case .blockLoad:
                 if let block { BlockLoadPage(block: block, hue: hue, age: store?.blockAgeText) { page = nil } }
+            case .builder:
+                if let plan {
+                    BlockBuilderPage(model: builder ?? BlockBuilderModel(client: plan)) {
+                        page = nil
+                        Task { await store?.loadBlock(); await weekReview?.load(); await prepareBuilder(fresh: true) }
+                    }
+                    .navigationTransition(.zoom(sourceID: PlanZoom.builder, in: planZoom))
+                }
+            case .review:
+                if let weekReview {
+                    WeekReviewDeck(model: weekReview) { page = nil; Task { await weekReview.load() } }
+                        .navigationTransition(.zoom(sourceID: PlanZoom.review, in: planZoom))
+                }
             }
         }
         .fullScreenCover(isPresented: Binding(get: { phase == .briefing && workout != nil },
@@ -151,8 +173,21 @@ struct EdzesRoom: View {
             // The catalog is only needed by the swap sheet, but it is one cached read and the gym is exactly
             // where the network is not: better here than at the moment a machine turns out to be occupied.
             await store?.loadCatalog()
+            if weekReview == nil, let plan { weekReview = WeekReviewModel(client: plan) }
+            async let preload: Void = prepareBuilder(fresh: false)
+            await weekReview?.load()
+            await preload
             if blockDay == nil { blockDay = block?.days.first(where: \.isCurrent)?.day ?? block?.days.first?.day }
         }
+    }
+
+    /// Loads the builder's block, catalog and evaluation ahead of the tap. `fresh` starts over after the builder closed
+    /// (what he saved is now the server's).
+    private func prepareBuilder(fresh: Bool) async {
+        guard let plan else { return }
+        let failed: Bool = { if case .failed = builder?.phase { true } else { false } }()
+        if fresh || builder == nil || failed { builder = BlockBuilderModel(client: plan) }
+        if builder?.phase == .loading { await builder?.load() }
     }
 
     /// The tab set and the badge are the page's own, unchanged: a session planned for today and
@@ -437,6 +472,10 @@ struct EdzesRoom: View {
 
     @ViewBuilder private var blokk: some View {
         if let b = block {
+            if let weekReview, plan != nil {
+                WeekReviewEntrance(model: weekReview, hue: hue, zoom: planZoom,
+                                   openReview: { page = .review }, openBuilder: { page = .builder })
+            }
             blockLoadCard(b)
             weekCarousel(b)
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }

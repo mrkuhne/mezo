@@ -3,7 +3,7 @@ cim: Heti volumen és terhelés-csökkentő hét
 szint: Kis funkció
 terulet: Edzés
 allapot: Részben kész
-hol: [Háttérrendszer]
+hol: [iPhone app, Háttérrendszer]
 szulo: 04-progresszio-motor
 szakasz: [B5]
 osszefoglalo: A gyakorlatra beírt sorozatszám az igazság — az edzés pontosan annyit ír elő; a szerver minden izomcsoportnak sávot ad (a sport által terhelt lábaknak lejjebb tolva), megméri vele a tervet, és hétről hétre legfeljebb egy-két sorozatot tol át, amit tényleg megcsináltál alapján; a heti javaslat gyakorlatonként, indokkal látszik, és egyenként vagy egyben elfogadható.
@@ -30,7 +30,7 @@ arra az izomcsoportra kisebb sávot kér: az alja eggyel, a teteje kettővel lej
 (röplabdánál a combfeszítőt, a combhajlítót, a farizmot és a vádlit) — de magától nem alkalmazza. Például: egy 8–12-es Építés sáv
 sportos lábnál 7–10 lesz.
 
-**A terv mérése mentés előtt (2026-11-18, a telefon képernyői még hátra).** A szerver az összerakott tervet megméri:
+**A terv mérése mentés előtt (2026-11-18; a telefonon a blokképítő használja, 2026-11-19).** A szerver az összerakott tervet megméri:
 - **Izmonként** megmondja, a sávon belül van-e, alatta vagy fölötte, és mennyivel; ha kell, **konkrét javítást** ad (melyik napon,
   melyik gyakorlaton hány sorozat több vagy kevesebb) úgy, hogy soha ne menjen gyakorlatonként öt, izomcsoportonként egy napon
   nyolc sorozat fölé. Ha emiatt nincs hová tenni a hiányzó sorozatot, kimondja: **új gyakorlat kell**.
@@ -84,8 +84,10 @@ Ha egy héten nincs mit átnézni (minden izom tart, nincs súly- vagy ismétlé
 **A „marad” egy súlyemelésnél a múlt heti súlyt tartja.** Ha egy súly- vagy ismétlésemelést megtartasz, azon a héten az edzés a múlt
 heti súlyt és ismétlést kéri annál a gyakorlatnál (akkor is, ha közben a napot átszerkesztetted); a következő héten újra javasol.
 
-**Kézi mód — a szerveren kész, de még ki van kapcsolva.** Kézi módban a heti változás megvárja a döntésedet. Amíg a telefonon
-nincs meg a jóváhagyó képernyő, **minden magától érvényesül** (mintha mindent elfogadnál), a lista pedig utólag megnézhető.
+**Kézi mód — a telefonról, blokkonként (2026-11-19).** Kézi módban a heti változás megvárja a döntésedet. A blokképítő Blokk
+fülén kapcsolod be („A heti javaslatot én hagyom jóvá”), az átnézés pedig az Edzés → Blokk fül kártyáján és pakliján megy (lásd:
+Blokképítő és heti átnézés). Ahol a blokkon nincs saját beállítás, ott a szerver alapértéke él (magától érvényesül), a lista
+pedig utólag megnézhető.
 
 **Ha futam közben szintet vagy sportot váltasz (2026-11-18),** a szerver rögtön megnézi, kicsúszott-e a sávjából az az izom, **amelyiken
 változtattál**, és ha igen, azonnal javasol: sorozatot tesz hozzá vagy vesz el konkrét gyakorlatokon, a korlátokon belül. Most, magától
@@ -142,7 +144,7 @@ jön technika-sor. A tervezési előnézet **hétről hétre** mutatja a technik
 | `mezo.volume.evaluator.session-overhead-minutes` | … ráhagyás egy edzésre (készülődés, pihenők közötti szünetek) | 6 perc |
 | `mezo.volume.sport-groups-by-sport` | Melyik izomcsoportot terheli egy sport (a javaslathoz) | röplabda: comb, combhajlító, far, vádli |
 | `mezo.volume.signals.*` | Mikor számít soknak a munka, erősnek a fájdalom, magasnak az izomláz (1–10-es skálán) | 3 / 2 / 7 |
-| `mezo.volume.weekly-review.mode` | A heti változás magától érvényesül-e (`auto`) vagy jóváhagyásra vár (`manual` — a szerveren kész, a telefon képernyőjéig nem kapcsoljuk be) | magától |
+| `mezo.volume.weekly-review.mode` | A szerver alapértéke: a heti változás magától érvényesül-e (`auto`) vagy jóváhagyásra vár (`manual`); a blokk saját kapcsolója (`mesocycle.weekly_review_mode`) felülírja | magától |
 | `mezo.volume.baselines.*` | Izomcsoportonkénti minimum / optimális / maximum heti sorozat (például mell 8 / 14 / 20) | lásd konfiguráció |
 
 ## Adattáblák

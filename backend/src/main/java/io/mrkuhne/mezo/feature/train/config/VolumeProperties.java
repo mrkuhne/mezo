@@ -65,7 +65,12 @@ public record VolumeProperties(
     /** Weekly review proposal mode. */
     public record WeeklyReview(
         @NotNull @Pattern(regexp = "auto|manual") String mode
-    ) {}
+    ) {
+        /** The effective mode of a run: its own setting when it has one, else this default (mezo-r36n9.83). */
+        public String modeFor(String runMode) {
+            return runMode != null ? runMode : mode;
+        }
+    }
 
     /** RP intermediate weekly-set landmarks for one coarse muscle group. */
     public record Baseline(

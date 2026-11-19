@@ -726,5 +726,17 @@
     "miert": "Így a technika ott van, ahol a legtöbbet ér, és sosem sok egy izomnak vagy egy napnak. Az új heti két gyakorlatos határ megakadályozza, hogy egy sokat edzett izom minden napon technikát kapjon.",
     "levaltotta": "A kézi elhelyezés mint egyetlen út: eddig csak te tehettél technikát a tervbe.",
     "kovetkezmeny": "A technikás sorozat egy sima sorozatot vált ki, és ha a rendszer elveszi a technikát, a sorozat visszakerül (ha belefér a korlátokba). Az AI finomítás (T4) és a telefonos képernyők később jönnek (mezo-r36n9.81)."
+  },
+  "d-2026-11-19-futo-blokk-beallitasai": {
+    "cim": "A futó blokkon is menthető az edzésmód, a technikák és a heti átnézés",
+    "datum": "2026-11-19",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A blokképítő a futó blokkodon is el tudja menteni az edzésmódot és a technikák be- vagy kikapcsolását, és a heti javaslat nálad átáll arra, hogy te hagyod jóvá (egyenként vagy egyben, átnézés nélkül is). Ehhez a szerver kap egy kis bővítést.",
+    "miert": "Enélkül a heti átnézés csak megmutatná, mi lépett életbe magától — elfogadó gombok nélkül elveszne a lényege, és a technikákat sem tudnád a telefonról beállítani.",
+    "levaltotta": "A szerver nélküli változat: az edzésmód és a technika a futó blokkon csak látszik, a heti pakli csak visszanézhető.",
+    "kovetkezmeny": "Kb. egy nappal hosszabb munka; az első saját heti átnézésed a telepítés utáni hétfőn jön (mezo-r36n9.83)."
   }
 }
