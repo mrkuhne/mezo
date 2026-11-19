@@ -10,7 +10,7 @@ import BoopAPI
 /// outbox kinds. Every call throws `TrainFetchError`, and `offline` is the one the room answers with its cached
 /// last-known-good read plus how old it is.
 public struct TrainClient: Sendable {
-    private let client: Client
+    let client: Client
     private let cal: Calendar
     /// Workout ids learned in this run (see the `OutboxSender` extension below). A reference type, so every copy
     /// of this struct shares it — the sender and the player must agree on which workout a queued set belongs to.
@@ -290,7 +290,7 @@ public struct TrainClient: Sendable {
                         type: .init(wire: c._type.rawValue), stim: c.stim, fatigue: c.fatigue,
                         videoURL: c.videoUrl, imageStartURL: c.imageStartUrl, imageEndURL: c.imageEndUrl,
                         editable: c.editable, mediaEditable: c.mediaEditable,
-                        authoredByMe: c.authoredByMe, authorName: c.authorName)
+                        authoredByMe: c.authoredByMe, authorName: c.authorName, gear: c.gear)
     }
 
     static func map(_ r: Components.Schemas.ExerciseRecordResponse) -> ExerciseRecord {
@@ -312,7 +312,7 @@ public struct TrainClient: Sendable {
 
     /// One place where a transport or HTTP failure becomes a `TrainFetchError`, so no call site invents its own
     /// mapping. The network cases are what the room answers from its cache.
-    private func call<T>(_ work: () async throws -> T) async throws -> T {
+    func call<T>(_ work: () async throws -> T) async throws -> T {
         do { return try await work() }
         catch let e as TrainFetchError { throw e }
         catch {

@@ -109,6 +109,11 @@ filter:
     - saveWorkoutFeedback
     - skipWorkoutExercise
     - changeWorkoutExercise
+    - getGymProfile
+    - putGymProfile
+    - markExerciseDiscomfort
+    - clearExerciseDiscomfort
+    - getExerciseSubstitutes
     - addPlanWorkingSets
     - saveExerciseNote
     - saveWorkoutNote

@@ -592,7 +592,9 @@ struct PreviewTransport: ClientTransport {
     private static let trainOps: Set<String> = ["getTodayWorkout", "listWorkouts", "getExerciseCatalog",
                                                 "getExerciseRecords", "listMesocycles", "getMesocycleVolumeArc",
                                                 "changeWorkoutExercise", "startWorkout", "logWorkoutSet",
-                                                "saveWorkoutFeedback", "skipWorkoutExercise", "finishWorkout"]
+                                                "saveWorkoutFeedback", "skipWorkoutExercise", "finishWorkout",
+                                                "getGymProfile", "putGymProfile", "markExerciseDiscomfort",
+                                                "clearExerciseDiscomfort", "getExerciseSubstitutes"]
     /// What the review has swapped so far: the plan's index → the replacement the sheet asked for.
     nonisolated(unsafe) private static var swapped: [Int: (name: String, muscle: String, slug: String)] = [:]
 
@@ -652,6 +654,34 @@ struct PreviewTransport: ClientTransport {
                 .joined(separator: ",")
             let today = #"{"templateSessionId":"\#(previewSessionId)","dayLabel":"Hét","title":"Vállak és hát","durationEst":68,"exercises":[\#(list)],"weekDoneDates":[]}"#
             return json(#"{"exerciseId":"\#(previewExerciseId(index))","today":\#(today)}"#)
+        case "getGymProfile": return json(#"{"offKinds":[],"missingExerciseIds":[]}"#)
+        case "putGymProfile":
+            // Echo what was sent, so the settings page shows what it saved.
+            return json(sent.isEmpty ? #"{"offKinds":[],"missingExerciseIds":[]}"# : sent)
+        case "markExerciseDiscomfort", "clearExerciseDiscomfort":
+            return (HTTPResponse(status: .noContent), nil)
+        case "getExerciseSubstitutes":
+            // Invented answers for the approved spike's two slots: the bench press and the hack squat. Even
+            // exercises of the preview day get the bench slot, odd ones the hack-squat slot.
+            let odd = (0..<previewDay.count).first(where: { request.path?.contains(previewExerciseId($0)) == true })
+                .map { $0 % 2 == 1 } ?? false
+            func item(_ n: Int, _ name: String, _ slug: String, _ muscle: String, _ gear: String) -> String {
+                #"{"id":"d1d2d3d4-01\#(String(format: "%02d", n))-4a2b-9c3d-111122223333","slug":"\#(slug)","name":"\#(name)","muscle":"\#(muscle)","type":"compound","stim":0.8,"fatigue":0.5,"editable":false,"mediaEditable":false,"authoredByMe":false,"gear":\#(gear)}"#
+            }
+            if odd {
+                return json(#"""
+                {"suggestions":[
+                 {"exercise":\#(item(1, "Leg Press", "leg-press", "quads", #"["machine"]"#)),"reasonText":"Ugyanazt a munkát végzi a tervben, vezetett mozgás, kíméletesebb az ízületnek.","signals":["same-role","guided"],"lastTopSet":{"weightKg":180,"reps":10}},
+                 {"exercise":\#(item(2, "Bulgarian Split Squat", "bulgarian-split-squat", "quads", #"["dumbbell"]"#)),"reasonText":"Ugyanazt az izmot éri, szabadsúlyos mozgásként.","signals":["same-muscle"],"lastTopSet":null}],
+                 "labels":[{"catalogId":"d1d2d3d4-0103-4a2b-9c3d-111122223333","label":"NO_EQUIPMENT"}]}
+                """#)
+            }
+            return json(#"""
+            {"suggestions":[
+             {"exercise":\#(item(4, "Machine Chest Press", "machine-chest-press", "chest-mid", #"["machine"]"#)),"reasonText":"Ugyanazt a munkát végzi a tervben, stabil, könnyű benne terhelni - izomépítéshez jó.","signals":["same-role","guided"],"lastTopSet":{"weightKg":55,"reps":11}},
+             {"exercise":\#(item(5, "DB Bench Press", "db-bench-press", "chest-mid", #"["dumbbell","bench"]"#)),"reasonText":"Ugyanazt a munkát végzi a tervben, és ezt már csináltad.","signals":["same-role","history"],"lastTopSet":{"weightKg":26,"reps":10}}],
+             "labels":[{"catalogId":"d1d2d3d4-0106-4a2b-9c3d-111122223333","label":"HURT_BEFORE"}]}
+            """#)
         case "listWorkouts": return json("[]")
         default: return json("{}")
         }

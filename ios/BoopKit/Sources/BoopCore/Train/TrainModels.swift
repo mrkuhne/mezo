@@ -447,15 +447,18 @@ public struct CatalogExercise: Codable, Equatable, Sendable, Identifiable {
     public var mediaEditable: Bool
     public var authoredByMe: Bool
     public var authorName: String?
+    /// The kit the movement needs (`barbell`, `machine`, …); nil on a user-authored row, which is never filtered
+    /// by kit. (`gear`, not `equipment`: the server's `equipment` is the single primary kind.)
+    public var gear: [String]?
     public init(id: UUID, slug: String, name: String, muscle: String, type: ExerciseType, stim: Double,
                 fatigue: Double, videoURL: String? = nil, imageStartURL: String? = nil, imageEndURL: String? = nil,
                 editable: Bool = false, mediaEditable: Bool = false, authoredByMe: Bool = false,
-                authorName: String? = nil) {
+                authorName: String? = nil, gear: [String]? = nil) {
         self.id = id; self.slug = slug; self.name = name; self.muscle = muscle; self.type = type
         self.stim = stim; self.fatigue = fatigue; self.videoURL = videoURL
         self.imageStartURL = imageStartURL; self.imageEndURL = imageEndURL
         self.editable = editable; self.mediaEditable = mediaEditable
-        self.authoredByMe = authoredByMe; self.authorName = authorName
+        self.authoredByMe = authoredByMe; self.authorName = authorName; self.gear = gear
     }
 }
 
