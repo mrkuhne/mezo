@@ -731,11 +731,11 @@ struct PreviewTransport: ClientTransport {
         4: (.init(name: "Cable Lateral Raise", muscle: "shoulder-side", slug: "cable-lateral-raise",
                   warmups: 0, working: 2, repMin: 12, repMax: 20, last: 7.5, target: 7.5, lastReps: 15, targetReps: 15,
                   lever: "hold", rationale: "Tartjuk a súlyt.", note: nil, warning: nil),
-            "myo", false),
+            "myo", true),   // a technique and the challenge on one set (owner 2026-11-19)
     ]
 
-    private static func techniqueSet(_ technique: String, target: Double, reps: Int) -> String {
-        let legs: String
+    private static func techniqueSet(_ technique: String, target: Double, reps: Int, challenge: Bool = false) -> String {
+        var legs: String
         switch technique {
         case "rest_drop":
             let drop = ((target * 0.7) / 2.5).rounded(.down) * 2.5
@@ -745,6 +745,9 @@ struct PreviewTransport: ClientTransport {
             legs = "[" + Array(repeating: mini, count: 4).joined(separator: ",") + "]"
         default:
             legs = #"[{"kind":"partials","toFailure":true,"restBeforeSec":0}]"#
+        }
+        if challenge && technique != "partials" {
+            legs = String(legs.dropLast()) + #",{"kind":"partials","toFailure":true,"restBeforeSec":0}]"#
         }
         let rir = technique == "myo" ? 1 : (technique == "partials" ? 1 : 0)
         return #"{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":\#(reps),"targetRIR":\#(rir),"restSec":90,"technique":"\#(technique)","legs":\#(legs)}"#
@@ -777,9 +780,10 @@ struct PreviewTransport: ClientTransport {
         }
         var flags = ""
         if let technique, !work.isEmpty {
-            work[work.count - 1] = techniqueSet(technique.technique, target: target, reps: e.targetReps)
+            work[work.count - 1] = techniqueSet(technique.technique, target: target, reps: e.targetReps,
+                                                challenge: technique.challenge)
             flags = technique.challenge
-                ? #","technique":"partials","techniqueSource":"planner","challenge":true,"challengeBest":7"#
+                ? #","technique":"\#(technique.technique)","techniqueSource":"planner","challenge":true,"challengeBest":7"#
                 : #","technique":"\#(technique.technique)","techniqueSource":"planner","challenge":false"#
         }
         let sets = "[" + (warm + work).joined(separator: ",") + "]"

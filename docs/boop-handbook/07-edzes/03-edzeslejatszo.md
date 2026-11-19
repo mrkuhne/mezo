@@ -70,6 +70,8 @@ játékosít, és egy edzés itt nincs leosztályozva ötből.
   emeltél** (30%-kal kevesebb, lefelé a legközelebbi 2,5 kg-ra), az ismétlést abból, amennyit csináltál. Myo szettnél a mini-sorozatok
   addig jönnek, amíg egy már nem éri el a 3 ismétlést.
 - **„Elég volt”**: bármikor abbahagyhatod; a sorozat azzal mentődik, amit addig megcsináltál.
+- **Technika és kihívás egy gyakorlaton** (2026-11-19 óta lehet): előbb a technika lépései jönnek, utána a kihívás
+  félismétlései. Ha a technikát korábban abbahagyod (vagy egy myo mini-sorozat már nem jön ki), a kihívás akkor is jön.
 - **A kihívás** az utolsó teljes sorozat után, pihenő nélkül jön: egy nagy kör, amire minden félismétlésnél rákoppintasz, mellette
   a csúcsod. Ha megdöntöd, aranyra vált, és a „Hogy ment?” résznél ott áll: „Új csúcs: 9 félismétlés · eddig 7”.
 - A sorozat **egyben megy fel a szerverre**, a lépéseivel együtt, amikor a technika véget ért. A rekordokba és a következő edzés

@@ -122,7 +122,12 @@ public struct SessionExercise: Codable, Sendable, Equatable, Identifiable {
     public var liveTechnique: SetTechnique? { planned.first(where: \.isTechnique)?.technique }
 
     /// The challenge is live only when today's prescription carries its half reps.
-    public var liveChallenge: Bool { isChallenge && liveTechnique == .partials }
+    /// Live when today's technique set ends in the half reps — on its own (the challenge's technique is partials)
+    /// or **after another technique's steps** (owner 2026-11-19, `mezo-r36n9.98`: a technique and the challenge may
+    /// sit on one exercise).
+    public var liveChallenge: Bool {
+        isChallenge && planned.contains { $0.isTechnique && $0.legs.last?.kind == .partials }
+    }
 
     /// The most half reps logged today on this exercise.
     public var partialsToday: Int? { logged.compactMap(\.partials).max() }
@@ -165,8 +170,19 @@ public struct TechniqueRun: Codable, Sendable, Equatable {
     public var restEndsAt: Date?
     public var restTotal: TimeInterval?
 
+    /// Where he is in `plan`. Usually the number of steps done, but stopping a technique early jumps over its
+    /// remaining steps straight to the challenge's half reps. Optional so a run saved by an older build restores.
+    public var position: Int?
+    public var at: Int { position ?? legs.count }
+
     /// The step he is on, or `nil` when every one is done.
-    public var next: PrescribedLeg? { plan.indices.contains(legs.count) ? plan[legs.count] : nil }
+    public var next: PrescribedLeg? { plan.indices.contains(at) ? plan[at] : nil }
+
+    /// The challenge's half reps still ahead, after the technique's own steps.
+    var challengeAhead: Int? {
+        guard at < plan.count else { return nil }
+        return plan[at...].firstIndex { $0.kind == .partials }
+    }
 }
 
 /// The workout in progress. `Codable` throughout, because the player must survive the phone
@@ -293,14 +309,35 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
     @discardableResult
     public mutating func logLeg(kg: Double?, reps: Int, now: Date = Date()) -> WorkoutStep {
         guard var run = technique, let next = run.next else { return step }
+        let here = run.at       // read before the append: `at` falls back to the number of steps done
         run.legs.append(LoggedLeg(kind: next.kind, weightKg: next.kind == .partials ? nil : kg,
                                   reps: max(0, reps),
                                   restSec: next.restBeforeSec > 0 ? next.restBeforeSec : nil))
         run.restEndsAt = nil
-        technique = run
+        run.position = here + 1
         let fellShort = next.kind == .mini && next.minReps.map { reps < $0 } == true
-        if run.next == nil || fellShort { return completeTechnique(now: now) }
+        if fellShort {
+            // The myo set ends here — but a challenge after it still comes.
+            guard let challenge = run.challengeAhead else { technique = run; return completeTechnique(now: now) }
+            run.position = challenge
+        }
+        technique = run
+        if run.next == nil { return completeTechnique(now: now) }
         return beginNextLeg(now: now)
+    }
+
+    /// „Elég volt" inside the technique's own steps: they stop here; the challenge's half reps, when the set has
+    /// them, still come. On the half reps themselves it ends the set.
+    @discardableResult
+    public mutating func stopTechniqueSteps(now: Date = Date()) -> WorkoutStep {
+        guard var run = technique else { return step }
+        if run.next?.kind != .partials, let challenge = run.challengeAhead {
+            run.position = challenge
+            run.restEndsAt = nil
+            technique = run
+            return beginNextLeg(now: now)
+        }
+        return completeTechnique(now: now)
     }
 
     /// „Elég volt" — stop here: the set is logged with the steps done so far.

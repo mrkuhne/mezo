@@ -37,14 +37,18 @@ enum TechniqueLines {
         switch technique {
         case .myo:
             // Four identical mini-sets would be eight lines; they read as one rest and one repeating step.
-            guard let mini = plan.legs.first else { break }
+            let minis = plan.legs.filter { $0.kind == .mini }
+            guard let mini = minis.first else { break }
             if mini.restBeforeSec > 0 { lines.append("\(mini.restBeforeSec) mp pihenő") }
             let range = mini.minReps.map { "\($0)–\(mini.reps ?? $0)" } ?? "\(mini.reps ?? 4)"
-            let done = run?.legs.count ?? 0
-            lines.append("\(range) ismétlés · \(min(done + 1, plan.legs.count)). / \(plan.legs.count) mini szett")
+            let done = run.map { $0.legs.filter { $0.kind == .mini }.count } ?? 0
+            lines.append("\(range) ismétlés · \(min(done + 1, minis.count)). / \(minis.count) mini szett")
+            // The challenge after the myo set (owner 2026-11-19: a technique and the challenge on one exercise).
+            if plan.legs.last?.kind == .partials { lines.append(legLine(plan.legs.last!, main: nil)) }
             if let run {
                 let resting = run.restEndsAt.map { $0 > Date() } ?? false
-                current = mini.restBeforeSec > 0 ? (resting ? 1 : 2) : 1
+                if run.next?.kind == .partials { current = lines.count - 1 }
+                else { current = mini.restBeforeSec > 0 ? (resting ? 1 : 2) : 1 }
             }
         default:
             var stepIndex: [Int] = []          // the line each leg's own step sits on
@@ -55,8 +59,8 @@ enum TechniqueLines {
                 stepIndex.append(lines.count)
                 lines.append(legLine(leg, main: run?.main))
             }
-            if let run, plan.legs.indices.contains(run.legs.count) {
-                let i = run.legs.count
+            if let run, plan.legs.indices.contains(run.at) {
+                let i = run.at
                 let resting = run.restEndsAt.map { $0 > Date() } ?? false
                 current = resting && restIndex[i] >= 0 ? restIndex[i] : stepIndex[i]
             }
@@ -82,7 +86,7 @@ enum TechniqueLines {
         case .mini:
             return "\(leg.reps ?? 4) ismétlés"
         case .partials:
-            return "Félismétlések, amennyi megy"
+            return "Kihívás: félismétlések, amennyi megy"
         }
     }
 
@@ -91,16 +95,19 @@ enum TechniqueLines {
         if let logged, let t = logged.technique {
             let legs = logged.legs ?? []
             if t == .partials { return "+ \(logged.partials ?? 0) félismétlés" }
-            if legs.isEmpty { return "\(t.name.lowercased()) · megállt a főrész után" }
-            let parts = legs.map { leg in
+            let steps = legs.filter { $0.kind != .partials }
+            let half = logged.partials.map { " · + \($0) félismétlés" } ?? ""
+            if steps.isEmpty { return "\(t.name.lowercased()) · megállt a főrész után\(half)" }
+            let parts = steps.map { leg in
                 [leg.weightKg.map { WorkoutPlayer.plain($0) }, leg.reps.map { "\($0)" }]
                     .compactMap { $0 }.joined(separator: " × ")
             }
-            return "\(t.name.lowercased()) · \(parts.joined(separator: " · "))"
+            return "\(t.name.lowercased()) · \(parts.joined(separator: " · "))\(half)"
         }
         guard let plan, plan.isTechnique, let t = plan.technique else { return nil }
         if t == .partials { return "utána félismétlések, amennyi megy" }
-        return "\(t.name.lowercased()) az utolsó sorozaton"
+        let then = plan.legs.last?.kind == .partials ? ", utána a kihívás" : ""
+        return "\(t.name.lowercased()) az utolsó sorozaton\(then)"
     }
 }
 

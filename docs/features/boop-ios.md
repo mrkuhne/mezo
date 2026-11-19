@@ -497,7 +497,10 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   (`PartialsCounter`): a ring he taps, the best to beat, gold when beaten; the debrief says „Új csúcs: 9 félismétlés ·
   eddig 7". **The set is queued once, when the technique is over**, with `technique` + `legs` (the parent row stays
   the main part, T2's rule); a skip / postpone / switch / finish mid-technique closes it first, and the player sends
-  whatever sets are new by diffing logged ids (`sendNew`). A set added in the gym never repeats the technique. The
+  whatever sets are new by diffing logged ids (`sendNew`). A set added in the gym never repeats the technique. **Technique + challenge on one set** (owner 2026-11-19,
+  `mezo-r36n9.98`/`.99`): the set's legs are the technique's, then a `partials` leg; `liveChallenge` = the technique
+  set ends in partials; `TechniqueRun.position` lets „Elég volt" (`stopTechniqueSteps`) or a short myo mini jump over
+  the remaining technique steps to the challenge. The
   rest between sets is now the plan's own `restSec` on a styled block (else 90 s). Simulator switch:
   `-previewEdzesTechnique YES` (rest drop on the first exercise, the challenge on the second, myo on the last).
 
