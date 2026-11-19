@@ -616,7 +616,7 @@ struct EtelRoom: View {
         let v = etelTabVerdict(tab, today: today, recipes: store.recipesLoaded ? store.recipes : nil, shelf: store.shelfLoaded ? store.shelf : nil)
         NKAreaPage(hue: .fuel, name: "Étel", eyebrow: "Étel · \(tab.rawValue.lowercased())", level: store.day == nil ? nil : v.level,
                    display: etelDayPoints(store.day).map { "\($0)" },
-                   headline: v.headline, sentence: v.sentence, photo: NKPhoto.konyha, glyph: "bowl-cream",
+                   headline: v.headline, sentence: v.sentence, glyph: "bowl-cream",
                    tabs: etelTabs(pending: store.pending.count), selectedTab: $selected,
                    actions: [NKAreaAction(glyph: "plus-ink", label: "Étkezés rögzítése") { composer = MealStart(entrance: .pick) },
                              NKAreaAction(glyph: "repeat-deep", label: "Frissítés") { Task { await reload() } }],
