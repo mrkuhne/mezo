@@ -1225,7 +1225,7 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "6fe949696023"
+      "hash": "43c04245d99d"
     },
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
@@ -1301,7 +1301,19 @@
     },
     "jegyek:mezo-r36n9.98": {
       "page_id": "41d8968e-752b-8105-a390-c584f6d7a6bf",
-      "hash": "4c2188dafca0"
+      "hash": "f47e3decbee9"
+    },
+    "dontesek:d-2026-11-19-technika-es-kihivas-egyutt": {
+      "page_id": "41d8968e-752b-8121-982b-e4881f8ed379",
+      "hash": "fe452ff396d8"
+    },
+    "dontesek:d-2026-11-19-technika-ajanlas": {
+      "page_id": "41d8968e-752b-81fa-8308-d1e0af3b7fe2",
+      "hash": "e44487fbe36e"
+    },
+    "kiadasok:179b27e86": {
+      "page_id": "41d8968e-752b-8107-9be9-f0e6f79d1923",
+      "hash": "f11b0255293a"
     }
   }
 }

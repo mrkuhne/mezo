@@ -454,5 +454,16 @@
     ],
     "mi_valtozott": "Amikor a heti javaslatot kézi módban te nézed át, Boop a háttérben megnézi a múlt hetedet (mit emeltél, sikerült-e a technika, fájt-e ízület, volt-e izomláz, megállt-e egy izom), és a gépi technika- és kihívássorokat áthelyezheti vagy kicserélheti — csak oda, ahová a szabályok amúgy is engednék, a napi és heti kereten belül, a Tartás izmokra soha. Minden változtatás egy rövid magyar indoklással és „Boop javaslata” jelöléssel jön, és te döntesz róla. A saját választásaidhoz nem nyúl; ha az AI nem működik, a gépi terv marad. Az elfogadott Boop-választás megmarad, amíg szabályos. Automata módban, a blokképítőben és a blokk indulásakor nincs AI. Az első ilyen átnézésed hétfőn (november 23-án) jön.",
     "verzio": "v3.7.0"
+  },
+  "179b27e86": {
+    "tipus": "Új funkció",
+    "cim": "Edzés: technika és kihívás együtt, Boop ajánlása a választóban",
+    "datum": "2026-11-19",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.98"
+    ],
+    "mi_valtozott": "Egy gyakorlaton most már technika és a nap kihívása is lehet: előbb a technika, utána a félismétléses kihívás, és a megdöntendő számot csak az ugyanígy végzett korábbi alkalmakhoz méri. A blokképítő választójának tetején Boop ajánlása áll: a gyakorlat tulajdonságai alapján melyik technika illik hozzá és miért, alatta — ha van — a heti AI egymondatos véleménye, és egy „Ezt választom” gomb.",
+    "verzio": "v3.9.0"
   }
 }
