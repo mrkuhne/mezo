@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.config.TrainTechniqueProperties;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -28,6 +29,7 @@ import java.util.UUID;
 public final class TechniquePlanner {
 
     public static final String SOURCE_PLANNER = "planner";
+    public static final String SOURCE_OWNER = "owner";
     public static final String REASON_EMPHASIS = "emphasis";
     public static final String REASON_TECHNIQUE_WEEK = "technique_week";
     public static final String REASON_CHALLENGE = "challenge";
@@ -69,7 +71,8 @@ public final class TechniquePlanner {
     private static final Comparator<Pick> BY_POSITION =
         Comparator.comparingInt(Pick::dayIndex).thenComparingInt(Pick::exerciseIndex);
 
-    public static Week plan(Input in) {
+    public static Week plan(Input input) {
+        Input in = ordered(input);
         if (in.deloadWeek()) {
             return new Week(List.of(), List.of(), List.of(), zeroAllowance(in), Map.of());
         }
@@ -77,8 +80,9 @@ public final class TechniquePlanner {
         List<Warning> warnings = new ArrayList<>();
         Set<UUID> challengeIds = new HashSet<>();
         for (PlanDay day : in.days()) {
-            List<Pick> ownerChallenges = day.rows().stream().filter(r -> r.challenge() && owned(r))
-                .map(r -> new Pick(r.dayIndex(), r.exerciseIndex(), r.id(), Technique.PARTIALS, r.source(), null))
+            List<Pick> ownerChallenges = day.rows().stream().filter(TechniquePlanner::ownerChallenge)
+                .map(r -> new Pick(r.dayIndex(), r.exerciseIndex(), r.id(), Technique.PARTIALS,
+                    r.source() == null ? SOURCE_OWNER : r.source(), null))
                 .toList();
             if (!ownerChallenges.isEmpty()) {
                 challenges.addAll(ownerChallenges);
@@ -104,10 +108,12 @@ public final class TechniquePlanner {
             for (PlanRow r : day.rows()) {
                 if (!owned(r) || !hasTechnique(r)) continue;
                 techniques.add(new Pick(r.dayIndex(), r.exerciseIndex(), r.id(), r.technique(), r.source(), null));
+                boolean groupFull = r.group() != null
+                    && perGroup.getOrDefault(r.group(), 0) >= in.cfg().maxPerMuscleWeek();
                 if (r.group() != null) perGroup.merge(r.group(), 1, Integer::sum);
-                if (left > 0) {
-                    left--;
-                } else {
+                boolean dayFull = left <= 0;
+                if (!dayFull) left--;
+                if (dayFull || groupFull) {
                     warnings.add(new Warning(WARN_OWNER_OVER_ALLOWANCE, day.dayIndex(), r.exerciseIndex()));
                 }
             }
@@ -182,7 +188,7 @@ public final class TechniquePlanner {
         int groupWeight = 0;
         for (PlanRow r : day.rows()) {
             if (!r.counts() || !row.group().equals(r.group())) continue;
-            last = r;
+            if (last == null || r.exerciseIndex() > last.exerciseIndex()) last = r;   // order-independent
             groupWeight += capWeightOf(r, challengeIds.contains(r.id()), in);
         }
         if (last == null || !last.id().equals(row.id())) return false;
@@ -206,7 +212,7 @@ public final class TechniquePlanner {
     private static Optional<PlanRow> challengeCandidate(PlanDay day, Input in) {
         return day.rows().stream()
             .filter(r -> r.counts() && r.attrs().stable() && r.attrs().lengthenedFriendly())
-            .filter(r -> !(owned(r) && hasTechnique(r)))
+            .filter(r -> !owned(r))
             .filter(r -> !(day.sportDay() && r.group() != null && in.sportGroups().contains(r.group())))
             .min(Comparator.comparing((PlanRow r) -> tier(in, r.group()))
                 .thenComparingInt(PlanRow::exerciseIndex));
@@ -227,8 +233,25 @@ public final class TechniquePlanner {
         return unmodifiable(zero);
     }
 
+    /** An owner / AI pick: never moved by the planner. */
     private static boolean owned(PlanRow r) {
-        return "owner".equals(r.source()) || "ai".equals(r.source());
+        return SOURCE_OWNER.equals(r.source()) || "ai".equals(r.source());
+    }
+
+    /** A stored challenge the planner did not place (owner, ai or no source): it wins, the planner only moves its own. */
+    private static boolean ownerChallenge(PlanRow r) {
+        return r.challenge() && !SOURCE_PLANNER.equals(r.source());
+    }
+
+    /** Days by dayIndex, each day's rows by exerciseIndex — the rules never depend on the caller's order. */
+    private static Input ordered(Input in) {
+        List<PlanDay> days = in.days().stream()
+            .sorted(Comparator.comparingInt(PlanDay::dayIndex))
+            .map(d -> new PlanDay(d.dayIndex(), d.sportDay(),
+                d.rows().stream().sorted(Comparator.comparingInt(PlanRow::exerciseIndex)).toList()))
+            .toList();
+        return new Input(in.week(), in.deloadWeek(), days, in.priorities(), in.sportGroups(), in.deficit(),
+            in.exerciseCap(), in.sessionCap(), in.capWeight(), in.cfg());
     }
 
     private static boolean plannerHeld(PlanRow r) {
@@ -240,6 +263,6 @@ public final class TechniquePlanner {
     }
 
     private static <K, V> Map<K, V> unmodifiable(Map<K, V> m) {
-        return java.util.Collections.unmodifiableMap(new LinkedHashMap<>(m));
+        return Collections.unmodifiableMap(new LinkedHashMap<>(m));
     }
 }

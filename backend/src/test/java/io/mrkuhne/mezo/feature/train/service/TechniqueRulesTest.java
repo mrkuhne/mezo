@@ -11,6 +11,14 @@ class TechniqueRulesTest {
     private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine");
 
     @Test
+    void testAttrs_nullOrUnknownEquipment_shouldReadAsOther() {
+        assertThat(new CatalogAttributes.Attrs(true, false, null).equipment()).isEqualTo("other");
+        assertThat(new CatalogAttributes.Attrs(true, false, "rope").equipment()).isEqualTo("other");
+        assertThat(new CatalogAttributes.Attrs(true, false, "cable").equipment()).isEqualTo("cable");
+        assertThat(CatalogAttributes.Attrs.FREE.equipment()).isEqualTo("other");
+    }
+
+    @Test
     void testCheck_freeExercise_shouldReject() {
         assertThat(TechniqueRules.check(Technique.DROP, false, CatalogAttributes.Attrs.FREE))
             .contains("TRAIN_TECHNIQUE_NOT_STABLE");

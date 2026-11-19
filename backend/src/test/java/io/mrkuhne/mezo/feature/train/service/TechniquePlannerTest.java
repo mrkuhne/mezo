@@ -120,6 +120,8 @@ class TechniquePlannerTest {
         assertThat(w.techniques()).isEmpty();
         assertThat(w.challenges()).isEmpty();
         assertThat(w.warnings()).isEmpty();
+        assertThat(w.remainingByDay()).containsExactly(Map.entry(0, 0));
+        assertThat(w.perGroup()).isEmpty();
     }
 
     // ---- rule 1 / 5 / 6: eligibility and which technique ---------------------------------------------------------
@@ -259,6 +261,30 @@ class TechniquePlannerTest {
         assertThat(w.remainingByDay()).containsEntry(0, 0);
     }
 
+    @Test
+    void ownerOverMuscleWeekWarns() {
+        PlanDay d0 = day(0, owner(row(0, 0, "chest"), Technique.DROP, false));
+        PlanDay d1 = day(1, owner(row(1, 0, "chest"), Technique.DROP, false));
+        PlanDay d2 = day(2, owner(row(2, 0, "chest"), Technique.DROP, false));
+        Week w = TechniquePlanner.plan(input(3, Map.of(), d0, d1, d2));
+        assertThat(w.techniques()).hasSize(3).extracting(Pick::source).containsOnly("owner");
+        assertThat(w.warnings()).filteredOn(x -> x.code().equals("owner_over_allowance"))
+            .containsExactly(new Warning("owner_over_allowance", 2, 0));
+        assertThat(w.perGroup()).containsEntry("chest", 3);
+    }
+
+    @Test
+    void rowOrderOfTheCallerDoesNotMatter() {
+        PlanDay sorted = day(0, row(0, 0, "chest"), row(0, 1, "chest"));
+        PlanDay shuffled = day(0, row(0, 1, "chest"), row(0, 0, "chest"));
+        assertThat(TechniquePlanner.plan(input(3, Map.of(), shuffled)))
+            .isEqualTo(TechniquePlanner.plan(input(3, Map.of(), sorted)));
+        assertThat(at(TechniquePlanner.plan(input(3, Map.of(), shuffled)).techniques())).containsExactly(new int[] {0, 1});
+        Input in = input(3, Map.of(), shuffled);
+        assertThat(TechniquePlanner.eligible(shuffled.rows().get(0), shuffled, in)).isTrue();
+        assertThat(TechniquePlanner.eligible(shuffled.rows().get(1), shuffled, in)).isFalse();
+    }
+
     // ---- the challenge -------------------------------------------------------------------------------------------
 
     @Test
@@ -280,6 +306,31 @@ class TechniquePlannerTest {
         Week w = TechniquePlanner.plan(input(1, emph("chest"), d));
         assertThat(w.challenges()).extracting(Pick::exerciseIndex, Pick::source)
             .containsExactly(org.assertj.core.groups.Tuple.tuple(1, "owner"));
+    }
+
+    @Test
+    void ownerRowWithoutPickIsNeverTheChallenge() {
+        PlanDay d = day(0, owner(attrs(row(0, 0, "chest"), LENGTHENED), Technique.NONE, false), row(0, 1, "back"));
+        Week w = TechniquePlanner.plan(input(1, Map.of(), d));
+        assertThat(w.challenges()).isEmpty();
+        assertThat(w.warnings()).containsExactly(new Warning("no_challenge_candidate", 0, null));
+    }
+
+    @Test
+    void challengeWithoutSourceCountsAsOwners() {
+        PlanRow legacy = new PlanRow(0, 1, id(0, 1), "back", true, 3, "compound", 10, MACHINE,
+            TrainingStyle.BALANCED, Technique.NONE, null, true);
+        PlanDay d = day(0, attrs(row(0, 0, "chest"), LENGTHENED), legacy);
+        Week w = TechniquePlanner.plan(input(3, Map.of(), d));
+        assertThat(w.challenges()).extracting(Pick::exerciseIndex, Pick::source, Pick::reason)
+            .containsExactly(org.assertj.core.groups.Tuple.tuple(1, "owner", null));
+        // the planner's own stored challenge is re-planned, not kept
+        PlanRow plannerHeld = new PlanRow(0, 1, id(0, 1), "back", true, 3, "compound", 10, LENGTHENED,
+            TrainingStyle.BALANCED, Technique.NONE, "planner", true);
+        Week replanned = TechniquePlanner.plan(input(3, Map.of(), day(0, attrs(row(0, 0, "chest"), LENGTHENED),
+            plannerHeld)));
+        assertThat(replanned.challenges()).extracting(Pick::exerciseIndex, Pick::source)
+            .containsExactly(org.assertj.core.groups.Tuple.tuple(0, "planner"));
     }
 
     @Test
