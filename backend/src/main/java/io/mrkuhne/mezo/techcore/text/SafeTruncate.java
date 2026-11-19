@@ -1,12 +1,8 @@
 package io.mrkuhne.mezo.techcore.text;
 
 /**
- * Surrogate-safe string truncation, extracted from {@code
- * io.mrkuhne.mezo.feature.notification.service.PushSender#truncateBody} for cross-slice reuse
- * (bd mezo-gzhp.1): the notification outbox lives in {@code feature.appnotification}, which must
- * not depend on {@code feature.notification} (that dependency runs the other way — see
- * {@code ArchitectureTest.feature_slices_are_cycle_free}), so this pure helper moved to
- * {@code techcore} where both slices can share it.
+ * Surrogate-safe string truncation, shared across slices from {@code techcore} (bd mezo-gzhp.1;
+ * first written for the since-retired web push sender, mezo-r36n9.97.7).
  */
 public final class SafeTruncate {
 

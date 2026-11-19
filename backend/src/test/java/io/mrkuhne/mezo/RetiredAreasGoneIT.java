@@ -36,6 +36,9 @@ import org.springframework.util.ClassUtils;
  * <p>Task 4 (mezo-r36n9.97.4): {@code tutorial}, {@code telemetry}, {@code admin}.
  * <p>Task 5 (mezo-r36n9.97.5): the XP world — {@code gamification}, {@code quest}, {@code progression},
  * {@code activity}.
+ * <p>Task 7 (mezo-r36n9.97.7): browser web push — {@code techcore.webpush} and the web-push half of
+ * {@code feature.notification} (subscriptions, prefs, schedule, dispatch job, sender). That package
+ * itself stays for the iPhone's APNs device registration, so its entries are CLASS-name prefixes.
  */
 @TestPropertySource(properties = {
     // tutorial (mezo-gb1s.1)
@@ -74,10 +77,28 @@ import org.springframework.util.ClassUtils;
     "mezo.activity.daily-cap=100",
     "mezo.feature.gamification.enabled=true",
     "mezo.gamification.saver-price=200",
+    // browser web push (mezo-r36n9.97.7): subscriptions/prefs/schedule, dispatch job, VAPID signer
+    "mezo.feature.notification.enabled=true",
+    "mezo.techcore.cron.notification-dispatch-job.enabled=true",
+    "mezo.webpush.subject=mailto:retired@example.invalid",
+    "mezo.webpush.public-key=retired-public",
+    "mezo.webpush.private-key=retired-private",
+    "mezo.webpush.default-ttl-seconds=3600",
+    "mezo.webpush.timeout-ms=5000",
+    "mezo.notification.body-max-chars=300",
+    "mezo.notification.medication-time=08:00",
+    "mezo.notification.decision-review-time=09:00",
+    "mezo.notification.prose-excerpt-chars=160",
+    "mezo.notification.dispatch-cron=0 * * * * *",
+    "mezo.notification.catch-up-minutes=2",
+    "mezo.notification.prose-generation-grace-min=15",
+    "mezo.notification.quiet-hours.start=22:00",
+    "mezo.notification.quiet-hours.end=07:00",
 })
 class RetiredAreasGoneIT extends ApiIntegrationTest {
 
-    /** Package prefixes of removed areas; no bean of any of them may exist. */
+    /** Package (or, inside a kept package, class-name) prefixes of removed areas; no bean of any of
+     *  them may exist. */
     static final List<String> RETIRED_PACKAGES = List.of(
         "io.mrkuhne.mezo.feature.tutorial.",
         "io.mrkuhne.mezo.feature.telemetry.",
@@ -85,7 +106,23 @@ class RetiredAreasGoneIT extends ApiIntegrationTest {
         "io.mrkuhne.mezo.feature.gamification.",
         "io.mrkuhne.mezo.feature.quest.",
         "io.mrkuhne.mezo.feature.progression.",
-        "io.mrkuhne.mezo.feature.activity.");
+        "io.mrkuhne.mezo.feature.activity.",
+        "io.mrkuhne.mezo.techcore.webpush.",
+        "io.mrkuhne.mezo.feature.notification.service.PushSender",
+        "io.mrkuhne.mezo.feature.notification.service.PushDispatchExecutor",
+        "io.mrkuhne.mezo.feature.notification.service.PushSubscriptionService",
+        "io.mrkuhne.mezo.feature.notification.service.NotificationDispatchJob",
+        "io.mrkuhne.mezo.feature.notification.service.NotificationPrefService",
+        "io.mrkuhne.mezo.feature.notification.service.NotificationScheduleService",
+        "io.mrkuhne.mezo.feature.notification.service.NudgeSendPushLogAdapter",
+        "io.mrkuhne.mezo.feature.notification.service.AnchorResolver",
+        "io.mrkuhne.mezo.feature.notification.service.DueEvaluator",
+        "io.mrkuhne.mezo.feature.notification.controller.NotificationController",
+        "io.mrkuhne.mezo.feature.notification.config.NotificationProperties",
+        "io.mrkuhne.mezo.feature.notification.repository.PushSubscriptionRepository",
+        "io.mrkuhne.mezo.feature.notification.repository.PushLogRepository",
+        "io.mrkuhne.mezo.feature.notification.repository.NotificationPrefRepository",
+        "io.mrkuhne.mezo.feature.notification.repository.NotificationScheduleRepository");
 
     /** One representative route per removed area (or contract fragment) — each must 404 for the owner. */
     record RetiredRoute(HttpMethod method, String path, String jsonBody) {
@@ -105,7 +142,9 @@ class RetiredAreasGoneIT extends ApiIntegrationTest {
         RetiredRoute.get("/api/gamification/profile"),
         RetiredRoute.get("/api/quest/history?from=2026-11-01&to=2026-11-19"),
         RetiredRoute.get("/api/progression/profile"),
-        RetiredRoute.get("/api/activity/history?from=2026-11-01&to=2026-11-19"));
+        RetiredRoute.get("/api/activity/history?from=2026-11-01&to=2026-11-19"),
+        RetiredRoute.get("/api/notification/pref"),
+        new RetiredRoute(HttpMethod.POST, "/api/notification/test", null));
 
     @Autowired private ConfigurableApplicationContext context;
 

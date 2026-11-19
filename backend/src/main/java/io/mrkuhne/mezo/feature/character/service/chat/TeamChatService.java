@@ -22,7 +22,6 @@ import io.mrkuhne.mezo.feature.proactive.service.AdviceActionCatalog;
 import io.mrkuhne.mezo.feature.proactive.service.AdviceApplyService;
 import io.mrkuhne.mezo.feature.proactive.service.AdvicePick;
 import io.mrkuhne.mezo.feature.proactive.service.InterventionService;
-import io.mrkuhne.mezo.feature.notification.config.NotificationProperties;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -110,7 +109,6 @@ public class TeamChatService {
     private final CompanionFlagLogRepository flagLogs;
     private final CompanionFlagTraceRepository flagTraces;
     private final UserFanOut userFanOut;
-    private final NotificationProperties notificationProperties;
     private final TeamChatQuietHours quietHours;
     private final ObjectProvider<TeamChatService> self;
     private final ApplicationEventPublisher events;
@@ -380,8 +378,8 @@ public class TeamChatService {
         if (inQuietHours(now)) {
             return;
         }
-        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
-        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
+        LocalTime quietStart = LocalTime.parse(properties.quietHours().start());
+        LocalTime quietEnd = LocalTime.parse(properties.quietHours().end());
         if (!quietStart.isAfter(quietEnd)) {
             return;
         }

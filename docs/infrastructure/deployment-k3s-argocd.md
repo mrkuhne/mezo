@@ -77,14 +77,12 @@ argocd/
 - Host hardening: SSH key only, `ufw` (allow 22 from Tailscale, 80/443 public), automatic OS security updates.
 - Secrets live in k8s `Secret` objects (graduate to Sealed Secrets / SOPS before committing any secret to git — never commit plaintext secrets).
 - DB has no public port; only reachable inside the cluster network.
-- **No NetworkPolicy exists today — every pod has unrestricted egress.** Recorded explicitly here
-  because the push-notification backend (`techcore/webpush`, [`_platform-notifications.md`](../features/_platform-notifications.md))
-  depends on it: the backend pod needs outbound HTTPS to the push services themselves —
-  **`*.push.apple.com`** (Apple's Web Push relay, required for iOS home-screen PWAs) and
-  **`fcm.googleapis.com`** (the transport some Web Push subscriptions route through). If a
-  NetworkPolicy is ever introduced, it **must** allowlist this egress explicitly, or push silently
-  stops working with no error surfaced anywhere (a `WebPushClient.send` connection failure just
-  maps to `WebPushResult.FAILED`, logged, and the fan-out moves on).
+- **No NetworkPolicy exists today — every pod has unrestricted egress.** The browser web push
+  backend that needed outbound HTTPS to `*.push.apple.com` / `fcm.googleapis.com` was retired
+  2026-11-19 (`mezo-r36n9.97.7`, [`_platform-notifications.md`](../features/_platform-notifications.md)).
+  A future APNs sender will need egress to `api.push.apple.com` (443); allowlist it if a
+  NetworkPolicy is ever introduced. The `VAPID_PUBLIC`/`VAPID_PRIVATE` keys of the `mezo-app`
+  secret are no longer referenced by the Deployment.
 
 ## Cost
 

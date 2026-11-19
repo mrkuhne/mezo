@@ -10,7 +10,6 @@ import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,25 +39,6 @@ class DecisionEntryPersistenceIT extends AbstractIntegrationTest {
         assertThat(found.getReviewDue()).isEqualTo(LocalDate.parse("2026-09-19"));
         assertThat(found.getReviewedAt()).isNull();
         assertThat(found.getOutcomeRating()).isNull();
-    }
-
-    @Test
-    void testFindByReviewDue_shouldReturnOnlyUnreviewedDecisionsDueThatExactDay_whenMixed() {
-        UUID owner = userPopulator.createUser("decision-due@test.local").getId();
-        DecisionEntryEntity dueToday = populator.createDecision(owner, LocalDate.parse("2026-07-21"),
-            "Ma esedékes.", LocalDate.parse("2026-08-20"), "ctx");
-        populator.createDecision(owner, LocalDate.parse("2026-07-22"),
-            "Holnap esedékes.", LocalDate.parse("2026-08-21"), "ctx");
-        DecisionEntryEntity alreadyReviewed = populator.createDecision(owner,
-            LocalDate.parse("2026-07-20"), "Már átnézve.", LocalDate.parse("2026-08-20"), "ctx");
-        alreadyReviewed.setReviewedAt(java.time.Instant.parse("2026-08-20T07:00:00Z"));
-        alreadyReviewed.setOutcomeRating((short) 4);
-        repository.saveAndFlush(alreadyReviewed);
-
-        List<DecisionEntryEntity> due = repository
-            .findByCreatedByAndReviewDueAndReviewedAtIsNullAndDeletedFalse(owner, LocalDate.parse("2026-08-20"));
-
-        assertThat(due).extracting(DecisionEntryEntity::getId).containsExactly(dueToday.getId());
     }
 
     @Test

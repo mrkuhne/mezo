@@ -33,7 +33,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [meal](#meal) | ✓ | 3 | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · |
 | [needs](#needs) | ✓ | 1 | [needs](features/needs.md) |
-| [notification](#notification) | ✓ | 2 | [_platform-notifications](features/_platform-notifications.md) |
+| [notification](#notification) | ✓ | 1 | [_platform-notifications](features/_platform-notifications.md) |
 | [nutrition](#nutrition) | ✓ | 2 | [fuel](features/fuel.md) |
 | [pantry](#pantry) | ✓ | 1 | [pantry](features/pantry.md) |
 | [people](#people) | ✓ | 1 | [me](features/me.md) |
@@ -57,10 +57,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **controllers→contract:** `NotificationFeedController`→`NotificationFeedApi`
   - **config:** `NotificationFeedProperties`
   - **other:** `AppNotificationKind`
-- **Contract** `api/feature/notification/notification.yml` — 9 operations
-  - **endpoints:** POST /api/notification/subscription · DELETE /api/notification/subscription ·
-    POST /api/notification/test · GET /api/notification/pref · PUT /api/notification/pref · GET /api/notification/feed ·
-    POST /api/notification/feed/read-all · POST /api/notification/feed/{id}/read · PUT /api/notification/schedule
+- **Contract** `api/feature/notification/notification.yml` — 3 operations
+  - **endpoints:** GET /api/notification/feed · POST /api/notification/feed/read-all ·
+    POST /api/notification/feed/{id}/read
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/appnotification` — 4 IT + 1 unit
   - **ITs:** `AppNotificationRepositoryIT`, `AppNotificationServiceIT`, `NotificationFeedApiIT`, `PatternEmitIT`
   - **populators:** `AppNotificationPopulator`, `CheckInPopulator`, `SleepLogPopulator`, `UserPopulator`
@@ -522,10 +521,10 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `FlagLogPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`, `GraphPopulator`, `HabitPopulator`,
     `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`,
     `LlmLogPopulator`, `MealPopulator`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`,
-    `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `NotificationPopulator`,
-    `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`,
-    `PlannedSkipPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`,
-    `RitualPopulator`, `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`,
+    `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `PantryItemPopulator`,
+    `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`,
+    `PredictionPopulator`, `ProtocolPopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`,
+    `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`,
     `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
     `WeeklyScorePopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
 
@@ -847,33 +846,14 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 *BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-11-19, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/notification`
-  - **sub-features:** `domain`
-  - **entities→tables:** `ApnsDeviceEntity`→`apns_device`, `NotificationPrefEntity`→`notification_pref`,
-    `NotificationScheduleEntity`→`notification_schedule`, `PushLogEntity`→`push_log`,
-    `PushSubscriptionEntity`→`push_subscription`
-  - **repositories:** `ApnsDeviceRepository`, `NotificationPrefRepository`, `NotificationScheduleRepository`,
-    `PushLogRepository`, `PushSubscriptionRepository`
-  - **services:** `AnchorResolver`, `ApnsDeviceService`, `DueEvaluator`, `NotificationDispatchJob`,
-    `NotificationPrefService`, `NotificationScheduleService`, `NudgeSendPushLogAdapter`, `PushDispatchExecutor`,
-    `PushSender`, `PushSubscriptionService`
-  - **controllers→contract:** `DeviceController`→`DeviceApi`, `NotificationController`→`NotificationApi`
-  - **config:** `NotificationProperties`
-  - **other:** `AnchorSet`, `CategoryPref`, `DueItem`, `NotificationCategory`, `ScheduleEntry`
+  - **entities→tables:** `ApnsDeviceEntity`→`apns_device`
+  - **repositories:** `ApnsDeviceRepository`
+  - **services:** `ApnsDeviceService`
+  - **controllers→contract:** `DeviceController`→`DeviceApi`
 - **Contract** `api/feature/device/device.yml` — 2 operations
   - **endpoints:** PUT /api/devices/apns · DELETE /api/devices/apns/{deviceId}
-- **Contract** `api/feature/notification/notification.yml` — 9 operations
-  - **endpoints:** POST /api/notification/subscription · DELETE /api/notification/subscription ·
-    POST /api/notification/test · GET /api/notification/pref · PUT /api/notification/pref · GET /api/notification/feed ·
-    POST /api/notification/feed/read-all · POST /api/notification/feed/{id}/read · PUT /api/notification/schedule
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/notification` — 15 IT + 6 unit
-  - **ITs:** `AnchorResolverDecisionIT`, `AnchorResolverFeedIT`, `AnchorResolverIT`, `AnchorResolverInterventionIT`,
-    `AnchorResolverRitualSwitchOffIT`, `ApnsDeviceContractIT`, `NotificationApiIT`, `NotificationDispatchJobIT`,
-    `NotificationPrefApiIT`, `NotificationPrefRepositoryIT`, `NotificationScheduleApiIT`, `PushSenderIT`,
-    `PushSubscriptionRebindIT`, `PushSubscriptionRepositoryIT`, `PushSubscriptionServiceIT`
-  - **populators:** `AppNotificationPopulator`, `CompanionMessagePopulator`, `DatabasePopulator`, `JournalPopulator`,
-    `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `NotificationPopulator`,
-    `PlannedSkipPopulator`, `SleepGoalPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
-    `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/notification` — 2 IT + 0 unit
+  - **ITs:** `ApnsDeviceContractIT`, `DeviceRegistrationStillWorksIT`
 
 ### nutrition
 
@@ -1272,8 +1252,6 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **security:** `CorsProperties`, `CurrentUserId`, `LlmActorContext`, `SecurityConfig`
 - **text:** `SafeTruncate`, `TextFold`
 - **time:** `CapturedAtWindow`
-- **webpush:** `Aes128GcmEncryptor`, `VapidSigner`, `WebPushClient`, `WebPushProperties`, `WebPushResult`,
-  `WebPushSubscriptionKeys`
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`
 
@@ -1288,14 +1266,13 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
   `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
   `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
-  `MesoTemplatePopulator`, `NeedsPopulator`, `NotificationPopulator`, `PantryCatalogPopulator`,
-  `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
-  `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
-  `ProtocolPopulatorIT`, `ReadinessChoicePopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`,
-  `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`,
-  `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`,
-  `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
-  `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
+  `MesoTemplatePopulator`, `NeedsPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
+  `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`,
+  `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`, `ReadinessChoicePopulator`, `RecipePopulator`,
+  `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
+  `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`,
+  `UserPopulator`, `WaterLogPopulator`, `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`,
+  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
 - **`ResetDatabase` TRUNCATE list** — 1 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `character_council_quota`
 

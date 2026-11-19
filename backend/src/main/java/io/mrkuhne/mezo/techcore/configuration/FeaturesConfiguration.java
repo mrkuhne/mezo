@@ -272,13 +272,6 @@ public class FeaturesConfiguration {
     public static final String COMPANION_PROVENANCE_RETENTION_JOB_SWITCH =
         "mezo.techcore.cron.companion-provenance-retention-job.enabled";
 
-    /** Push notifications (bd mezo-h4wp.6) — off ⇒ no notification beans, /api/notification/* 404s. */
-    public static final String NOTIFICATION_SWITCH = "mezo.feature.notification.enabled";
-
-    /** Per-minute push dispatch job (N2; schedule: mezo.notification.dispatch-cron) — techcore cron zone. */
-    public static final String NOTIFICATION_DISPATCH_JOB_SWITCH =
-            "mezo.techcore.cron.notification-dispatch-job.enabled";
-
     /** Meso end-of-run AI evaluation (mezo-meyc.3) — gates {@code MesoReviewGate}, the marker
      *  {@code MesocycleReportService.getReport} reads for {@code aiEvalEnabled}; off ⇒ the FE hides
      *  the AI section and never polls a {@code pending} that will never resolve. The real generator

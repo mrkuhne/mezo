@@ -3355,6 +3355,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 ## 9. Decisions, gotchas & deferred
 
 - **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
+- **No push for intervention cards any more (2026-11-19, `mezo-r36n9.97.7`).** The browser web push that anchored on the card row (`AnchorResolver`) was retired; the card's `channel`/`quietHoursExempt` are still read by the team chat. Push references in this doc describe the retired system.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **(a) All TEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The

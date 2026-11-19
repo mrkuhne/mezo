@@ -25,9 +25,6 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaisedEvent;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagTraceCopy;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
-import io.mrkuhne.mezo.feature.notification.domain.AnchorSet;
-import io.mrkuhne.mezo.feature.notification.domain.NotificationCategory;
-import io.mrkuhne.mezo.feature.notification.service.AnchorResolver;
 import io.mrkuhne.mezo.feature.proactive.service.AdvicePriority;
 import io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -78,7 +75,6 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
     @Autowired private CompanionFlagTraceRepository flagTraces;
     @Autowired private ApplicationEventPublisher publisher;
     @Autowired private TransactionTemplate tx;
-    @Autowired private AnchorResolver anchorResolver;
     @Autowired private TestTeamChatQuietHours quietHours;
 
     /** A fixed local clock time today in the team chat's zone — push tests must not depend on the
@@ -783,7 +779,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
 
     // An after-midnight raise waits until morning; the morning thread and its push use that time.
     @Test
-    void afterMidnightQuietOpen_waitsUntilMorning_andItsAnchorIsAfterTheQuietEnd() {
+    void afterMidnightQuietOpen_waitsUntilMorning() {
         quietHours.enforce(); // this test is ABOUT the window; every time below is explicit
         UUID owner = owner();
         raiseSleepDebtLog(owner);
@@ -793,16 +789,8 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT, todayAt(7, 0)).orElseThrow();
 
         assertThat(threads.findById(thread.getId()).orElseThrow().getPushed()).isTrue();
-        AppNotificationEntity push = teamChatPushes(owner).getFirst();
-        push.setOccurredAt(todayAt(7, 0));
-        appNotifications.saveAndFlush(push);
-
-        AnchorSet anchors = anchorResolver.resolve(owner, LocalDate.now(properties.zone()));
-
-        assertThat(anchors.backendAnchors())
-                .filteredOn(a -> a.category() == NotificationCategory.INTERVENTION && a.url().startsWith("/mezo/elo"))
-                .singleElement()
-                .satisfies(a -> assertThat(a.minuteOfDay()).isGreaterThanOrEqualTo(7 * 60));
+        assertThat(teamChatPushes(owner)).singleElement()
+                .satisfies(n -> assertThat(n.getRefId()).isEqualTo(thread.getId()));
     }
 
     // ---- final review I3: a feed-channel library entry never pushes. ----
