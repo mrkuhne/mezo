@@ -30,7 +30,10 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
   Csütörtök 5”), a kártya alján pedig mindig ott van, **miért ez a sáv** (a szint és a sport alapján), és ha az izom kilóg a sávjából, egy **konkrét javaslat** („+1 Lehúzás
   (hétfő)”) **Elfogadom** és **miért?** gombbal.
 - **Napok** — naponként egy lap: becsült edzéshossz, aznap van-e sport, izomcsoportonkénti sorozatszám, gyakorlatonként egy
-  léptető (1–8 sorozat), a gyakorlat technikája egy címkén (koppintásra vált), és a nap **kihívása** egy zászlóval. Ha egy izomra
+  léptető (1–8 sorozat) és egyetlen címke a technikáról vagy a kihívásról. A címkére koppintva felugrik a **választó**: az öt
+  technika (ami annál a gyakorlatnál nem választható, az halványan, az okával), alatta **a nap kihívása** (naponta egy
+  gyakorlaton), és egy **„i” gomb**, ami mindegyik alá kiír egy rövid leírást. Amit Boop tett oda a heti javaslatban, azon
+  **„Boop”** jelzés van, amíg át nem állítod. Ha egy izomra
   egy napon túl sok jut, sárgán szól.
 - **Blokk** — az **edzésmód** négy közül (Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két sorozat bukásig), két kapcsoló
   (**Technikák** be/ki, **A heti javaslatot én hagyom jóvá**), a blokk heteinek sorozatszáma és izmonként az út hétről hétre.
@@ -52,7 +55,9 @@ alkalmazza a javaslatot). Ha a „Két sorozat bukásig” módról váltanál, 
 4. A heti javaslatot a szerver hétfőn, az első megnyitáskor rakja össze. **Ha a blokkon be van kapcsolva a jóváhagyás**, a javaslat
    megvárja a döntésedet; amit a hét végéig nem döntesz el, az nem lép életbe. Kikapcsolva magától életbe lép, és csak
    visszanézheted.
-5. Ha egy új szerver-oldali változás olyan javaslat-fajtát vagy okot küld, amit a telefon még nem ismer, a csempe akkor is
+5. **Boop maga is javasol** technikát és kihívást: ezek a heti átnézésben külön sorként jönnek (a kihívás minden terhelő
+   héten, a technika a blokk 3. hetétől), és ha a mesterséges intelligencia finomította, egy mondatban meg is indokolja a csempén.
+6. Ha egy új szerver-oldali változás olyan javaslat-fajtát vagy okot küld, amit a telefon még nem ismer, a csempe akkor is
    megjelenik (egyszerű „mennyiről mennyire” formában), csak címke nélkül — sosem tűnik el a pakli miatta.
 
 ## Miért így
