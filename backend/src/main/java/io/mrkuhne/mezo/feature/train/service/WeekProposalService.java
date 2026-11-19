@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
+import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
@@ -83,6 +84,7 @@ public class WeekProposalService {
     private final MuscleProgressReader muscleProgress;
     private final LoadLinePreview loadLinePreview;
     private final TechniquePlanService techniquePlanService;
+    private final TrainStyleProperties styleProps;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
 
     /**
@@ -182,7 +184,8 @@ public class WeekProposalService {
             .forEach(r -> byGroup.computeIfAbsent(r.group(), k -> new ArrayList<>()).add(r));
 
         Map<String, GroupSignals> signals = signalReader.read(createdBy, meso, calWeek);
-        // Styled runs only (empty otherwise): groups whose every exercise held for the stall window — audit only.
+        // Styled runs only (empty otherwise): groups whose every exercise held for the stall window — audited, and
+        // given one offer when the run opts in to the planner (T3).
         Set<String> stalledGroups = muscleProgress.stalledGroups(createdBy, meso, calWeek - 1);
         boolean deficit = energyBalance.isInDeficit(createdBy, LocalDate.now());
         boolean deloadPhase = isDeloadPhase(meso, calWeek);
@@ -251,6 +254,15 @@ public class WeekProposalService {
                 keptOwn.contains(group), stalledGroups.contains(group)));
         });
 
+        // T3: the stall offers and the planner's technique lines, on the working copy after the set decisions.
+        // A stall reduction is a set line (merged into the row's set line) with a restore entry for next week.
+        PlannerStep step = plannerStep(createdBy, meso, calWeek, deloadPhase, plan, working, stalledGroups, outcomes);
+        String stalled = code(Reason.STALLED);
+        step.reductions().forEach(r -> {
+            move(r.exerciseId(), r.to() - r.from(), working, fromSets, lineReasons, List.of(stalled));
+            restore.add(r.restore());
+        });
+
         Map<UUID, TemplatePlan.Row> rowById = plan.stream()
             .collect(Collectors.toMap(r -> r.exercise().getId(), r -> r, (a, b) -> a));
         List<WeekProposalLineJson> lines = new ArrayList<>();
@@ -264,8 +276,9 @@ public class WeekProposalService {
                 row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS, from, to, lineReasons.get(id), null,
                 row.dayName(), null, null, null, null, null, null, null, null, null));
         });
-        // T3: the planner's technique / challenge lines after the set lines, on the working copy.
-        lines.addAll(techniqueLines(createdBy, meso, calWeek, deloadPhase, plan, working));
+        // T3: the technique / challenge and rep-range lines after the set lines; working takes their set changes.
+        lines.addAll(step.lines());
+        working.putAll(step.working());
         // Weight / rep lines after the set and technique lines: a preview of the week's load progression, never written.
         lines.addAll(loadLinePreview.lines(createdBy, meso, calWeek, plan, deloadPhase));
         List<WeekProposalGroupJson> groups = outcomes.values().stream()
@@ -285,27 +298,43 @@ public class WeekProposalService {
         return new Draft(proposalRepository.save(proposal), outcomes);
     }
 
+    /** The T3 step's output: reductions for the caller to apply as set lines, the lines after them, the sets after. */
+    private record PlannerStep(List<StallOffers.Reduction> reductions, List<WeekProposalLineJson> lines,
+                               Map<UUID, Integer> working) {
+        static final PlannerStep NONE = new PlannerStep(List.of(), List.of(), Map.of());
+    }
+
     /**
-     * The planner's technique lines (mezo-r36n9.81) for a run that opts in, outside a deload week, from week 2 on:
-     * the week planned on the working copy of sets, then {@link TechniqueLines}; {@code working} takes their set
-     * changes. A run that does not opt in costs no query. A planner failure is logged and the week simply has no
-     * technique lines — it must never fail the weekly build (and so {@code getToday}).
+     * The T3 step (mezo-r36n9.81) for a run that opts in, outside a deload week, from week 2 on: the week planned on
+     * the working copy of sets, the stall offers of the stalled groups ({@link StallOffers}), then
+     * {@link TechniqueLines} on the working copy after the reductions; the rep-range lines follow the technique
+     * lines. Pure until the caller applies it. A run that does not opt in costs no query. A failure is logged and the
+     * week simply has no technique lines and no stall offers — it must never fail the weekly build (and so
+     * {@code getToday}); the set decisions stand.
      */
-    private List<WeekProposalLineJson> techniqueLines(UUID createdBy, MesocycleEntity meso, int calWeek,
-                                                      boolean deloadPhase, List<TemplatePlan.Row> plan,
-                                                      Map<UUID, Integer> working) {
+    private PlannerStep plannerStep(UUID createdBy, MesocycleEntity meso, int calWeek, boolean deloadPhase,
+                                    List<TemplatePlan.Row> plan, Map<UUID, Integer> working,
+                                    Set<String> stalledGroups, Map<String, GroupOutcome> outcomes) {
         if (deloadPhase || calWeek < 2 || !techniquePlanService.optsIn(meso)) {
-            return List.of();
+            return PlannerStep.NONE;
         }
         try {
             TechniquePlanner.Input input = techniquePlanService.snapshotRun(createdBy, meso, calWeek, working);
-            TechniqueLines.Result result = TechniqueLines.lines(plan, input, TechniquePlanner.plan(input), working);
-            working.putAll(result.working());
-            return result.lines();
+            Map<String, StallOffers.Decision> stalled = new TreeMap<>();
+            stalledGroups.stream().filter(outcomes::containsKey).forEach(g -> stalled.put(g, new StallOffers.Decision(
+                outcomes.get(g).result().lever(), PriorityTier.of(meso.getMusclePriorities(), g))));
+            StallOffers.Result offers = StallOffers.offers(stalled, plan, input, TechniquePlanner.plan(input),
+                working, styleProps);
+            Map<UUID, Integer> reduced = new HashMap<>(working);
+            offers.reductions().forEach(r -> reduced.put(r.exerciseId(), r.to()));
+            TechniqueLines.Result result = TechniqueLines.lines(plan, input, offers.week(), reduced);
+            List<WeekProposalLineJson> lines = new ArrayList<>(result.lines());
+            lines.addAll(offers.repRangeLines());
+            return new PlannerStep(offers.reductions(), List.copyOf(lines), result.working());
         } catch (RuntimeException e) {
-            log.warn("technique planning failed for run {} week {} (no technique lines): {}", meso.getId(), calWeek,
-                e.toString());
-            return List.of();
+            log.warn("technique planning / stall offers failed for run {} week {} (none this week): {}", meso.getId(),
+                calWeek, e.toString());
+            return PlannerStep.NONE;
         }
     }
 
