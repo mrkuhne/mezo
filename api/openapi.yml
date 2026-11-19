@@ -4712,6 +4712,78 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/pantry/{id}/breakdown':
+    get:
+      tags:
+        - Pantry
+      operationId: getPantryItemBreakdown
+      summary: >-
+        The score breakdown of one food on the caller's shelf, addressed by the
+        shelf item id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: >-
+            Breakdown (breakdown null when the item is not a food, has no energy
+            data, or no dimension could be computed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PantryBreakdownResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found (missing or somebody else's shelf item)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/pantry/catalog/{id}/breakdown':
+    get:
+      tags:
+        - Pantry
+      operationId: getPantryCatalogBreakdown
+      summary: >-
+        The score breakdown of one shared catalog food, addressed by the catalog
+        id (a food not on the shelf yet)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: >-
+            Breakdown (breakdown null when the entry is not a food, has no
+            energy data, or no dimension could be computed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PantryBreakdownResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'Unknown or deleted catalog entry, or somebody else''s unreviewed one'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/pantry/items/quick-add:
     post:
       tags:
@@ -21772,6 +21844,15 @@ components:
             True while the food's facts are an unreviewed AI estimate (a
             quick-add nobody has confirmed yet) — the „becsült" tag. Always
             sent.
+        score:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: >-
+            The food's own score 0..1 (mezo-r36n9.63) — the total of GET
+            /api/pantry/{id}/breakdown. null = no score (no energy data, or
+            nothing any dimension could read): never a fabricated number.
     SupplementStashResponse:
       type: object
       required:
@@ -22198,6 +22279,22 @@ components:
             True while the food's facts are an unreviewed AI estimate. Search
             returns verified entries only, so this is false there today. Always
             sent.
+        score:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: >-
+            The food's own score 0..1 (mezo-r36n9.63) — the total of GET
+            /api/pantry/catalog/{id}/breakdown. null for a non-food entry and
+            for a food with no score (no energy data, nothing computable).
+    PantryBreakdownResponse:
+      type: object
+      properties:
+        breakdown:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MealBreakdown'
     PantryLookupResponse:
       type: object
       required:

@@ -318,6 +318,64 @@ public class MealScoringService {
     }
 
     /**
+     * ONE food judged by itself (mezo-r36n9.63) — the food surface, next to the meal and the template
+     * ones. It scores only the dimensions that say something about a food on its own: fibre
+     * ({@code micro}), sugar and salt ({@code who}), saturated fat ({@code fat_quality}), processing
+     * ({@code nova}) and energy density. Macro balance, plant diversity, context and portion are
+     * properties of a MEAL (what else is on the plate, when, how much) and are not part of it.
+     *
+     * <p>The SAME dimension code as the other two surfaces (STANDARD rubric, config targets), so a
+     * food's row reads exactly as it would inside a recipe; the total is the engine's normal
+     * weighting renormalised over the dimensions that could be computed. Honesty rules unchanged: a
+     * missing fact degrades its dimension (weight 0, "nincs adat") and never counts as a 0; a food with
+     * no energy, or with nothing any dimension can read, has NO score ({@code null}).
+     *
+     * <p>{@code food} is the line for the food's own basis amount, built by the caller like any other
+     * {@link ScoredLine}. Every dimension except energy density is scale-free, so the amount only
+     * matters for that one (it needs a gram mass, and at least the configured minimum of it).
+     */
+    public MealBreakdownJson foodBreakdown(ScoredLine food) {
+        return foodBreakdown(messages.pinned(), food);
+    }
+
+    /** Many foods in one go — one language lookup for the whole list (a shelf, a search result). */
+    public List<MealBreakdownJson> foodBreakdowns(List<ScoredLine> foods) {
+        UserMessages t = messages.pinned();
+        List<MealBreakdownJson> out = new ArrayList<>(foods.size());
+        for (ScoredLine food : foods) {
+            out.add(food == null ? null : foodBreakdown(t, food));
+        }
+        return out;
+    }
+
+    private MealBreakdownJson foodBreakdown(UserMessages t, ScoredLine food) {
+        List<ScoredLine> lines = List.of(food);
+        double kcal = sum(lines, ScoredLine::kcal);
+        if (kcal <= 0) {
+            return null;
+        }
+        DailyTargets base = DailyTargets.fromConfig(targets);
+        List<Dim> live = Stream.of(
+            microDim(t, lines, kcal, base), whoDim(t, lines, kcal, props.who(), base),
+            fatQualityDim(t, lines, kcal), novaDim(t, lines, kcal, props.nova()),
+            energyDensityDim(t, lines, kcal))
+            .map(Dim::coverageWeighted).toList();
+        double weightSum = live.stream().mapToDouble(d -> d.effectiveWeight).sum();
+        if (weightSum == 0) {
+            return null;
+        }
+        double value = live.stream().mapToDouble(d -> d.effectiveWeight * d.score).sum() / weightSum;
+        double confidence = live.stream().mapToDouble(d -> d.effectiveWeight * d.coverage).sum() / weightSum;
+        List<Dimension> dims = live.stream().map(d -> d.renormalized(weightSum).toJson()).toList();
+        List<ToolRow> tools = List.of(
+            new ToolRow("read", "pantry_catalog.facts"),
+            new ToolRow("compute", "guidelineFit(who, fat_quality)"),
+            new ToolRow("compute", "foodFit(weights_renormalized)"));
+        return new MealBreakdownJson(round2(value), round2(confidence), null, null, dims, List.of(),
+            tools, FORMULA_VERSION);
+    }
+
+    /**
      * Classifies a logged meal's training role (mezo-ta8p). PRE_WORKOUT when the meal falls in
      * {@code [start - preLeadMin, start)} of any workout (plan-based; looks forward). POST_WORKOUT
      * when it falls in {@code [end, end + postTrailMin]} of a workout that was actually DONE.

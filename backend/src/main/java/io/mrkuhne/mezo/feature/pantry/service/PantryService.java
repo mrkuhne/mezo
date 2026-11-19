@@ -38,6 +38,7 @@ public class PantryService {
     private final PantryMapper mapper;
     private final AppUserRepository appUserRepository;
     private final ApplicationEventPublisher events;
+    private final PantryFoodScoreService foodScoreService;
 
     private static final String SOURCE_AI_ESTIMATE = "ai_estimate";
 
@@ -53,11 +54,21 @@ public class PantryService {
         List<PantryItemEntity> items = repository.findByCreatedByAndDeletedFalseOrderByNameAsc(user.getId());
         Map<UUID, String> names =
             catalogService.authorNames(items.stream().map(PantryItemEntity::getCatalog).toList());
+        // Each food's own score (mezo-r36n9.63), computed fresh from the definition — one pass for the shelf.
+        List<PantryItemEntity> foods = items.stream().filter(e -> "food".equals(e.getCatalog().getKind())).toList();
+        List<java.math.BigDecimal> scores =
+            foodScoreService.scores(foods.stream().map(PantryItemEntity::getCatalog).toList());
+        List<io.mrkuhne.mezo.api.dto.IngredientResponse> ingredients = new java.util.ArrayList<>(foods.size());
+        for (int i = 0; i < foods.size(); i++) {
+            PantryItemEntity e = foods.get(i);
+            var row = mapper.toIngredientResponse(e,
+                catalogService.sharedFromName(user.getId(), e.getCatalog(), names),
+                catalogService.editable(user, e.getCatalog()));
+            row.setScore(scores.get(i));
+            ingredients.add(row);
+        }
         return PantryResponse.builder()
-            .ingredients(items.stream().filter(e -> "food".equals(e.getCatalog().getKind()))
-                .map(e -> mapper.toIngredientResponse(e,
-                    catalogService.sharedFromName(user.getId(), e.getCatalog(), names),
-                    catalogService.editable(user, e.getCatalog()))).toList())
+            .ingredients(ingredients)
             .stash(items.stream().filter(e -> !"food".equals(e.getCatalog().getKind()))
                 .map(e -> mapper.toSupplementResponse(e,
                     catalogService.sharedFromName(user.getId(), e.getCatalog(), names),
