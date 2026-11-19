@@ -1029,7 +1029,7 @@
     },
     "jegyek:mezo-r36n9.84": {
       "page_id": "41c8968e-752b-8117-af23-ed71df2e3473",
-      "hash": "535f74655df4"
+      "hash": "e59bd16efae2"
     },
     "jegyek:mezo-r36n9.83": {
       "page_id": "41c8968e-752b-8174-b0bf-d3c07a348fc7",
@@ -1037,7 +1037,7 @@
     },
     "jegyek:mezo-r36n9.82": {
       "page_id": "41c8968e-752b-8197-b6d0-e39c2342b9c5",
-      "hash": "ac3bb60de31b"
+      "hash": "7d3faabe2614"
     },
     "jegyek:mezo-r36n9.81": {
       "page_id": "41c8968e-752b-81bb-9fa1-cc91d6cbb02c",
@@ -1242,6 +1242,14 @@
     "kiadasok:f6e1d4cf1": {
       "page_id": "41d8968e-752b-81be-8118-e1c598d84485",
       "hash": "2b9c7a059866"
+    },
+    "dontesek:d-2026-11-19-web-leall": {
+      "page_id": "41d8968e-752b-818f-92a8-df7b2f13b082",
+      "hash": "4770c058da65"
+    },
+    "jegyek:mezo-r36n9.97": {
+      "page_id": "41d8968e-752b-81e4-b638-dcb53441330c",
+      "hash": "e7d00e1e290e"
     }
   }
 }
