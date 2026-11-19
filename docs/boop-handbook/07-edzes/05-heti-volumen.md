@@ -111,6 +111,12 @@ például visszaváltasz). Például: a hát Építésről Hangsúlyra vált, 11
 6. A jelenleg futó blokkodat az első indításkor a rendszer egyszer átváltotta az új módra úgy, hogy pontosan azt kapod, amit előző nap
    mutatott neked az app — nem ugrik meg semmi.
 
+**Technika- és kihívás-sorok (2026-11-19).** Technikás blokkban a heti javaslatban új sorfajta is megjelenik: **technika** — például „Péntek ·
+Csípőtolás: 3 → 2 sorozat, myo set”, mert a technika egy sima sorozatot vált ki (a részletek: [Technikák](15-technikak.md)). Ugyanígy érkezik a
+napi kihívás áthelyezése. Ha egy izom megállt, a javaslat tehet egy **ismétlés-tartomány** sort (például „8–10 → 12–15 ismétlés”) vagy egy hétre
+**eggyel kevesebb sorozatot**, amit a következő hét visszahoz. Egyenként elfogadható vagy megtartható, mint a többi sor; könnyített héten nem
+jön technika-sor. A tervezési előnézet **hétről hétre** mutatja a technikákat és a kihívásokat is.
+
 ## Miért így
 - A tulajdonos döntése (2026-11-17): az app **javasol, te döntesz**, és a te elfogadott számod az igazság.
 - A „minimum – optimális – maximum” heti sorozat bevett modell (RP-táblázat); a számok beállíthatók, nem kőbe vésettek.

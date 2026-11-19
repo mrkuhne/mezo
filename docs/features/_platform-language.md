@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-18
+updated: 2026-11-19
 tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
   - frontend/src/shared/i18n
@@ -15,6 +15,8 @@ key_files:
   - backend/src/main/resources
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
+
+> **2026-11-19 — reviewed after T3 (`mezo-r36n9.81`, no language-layer change).** The train technique planner added message keys to the existing `messages_*.properties` bundles only; no mechanism changed.
 
 > **2026-11-18 — `mezo-r36n9.78` (no language change).** Four new error keys in `messages_hu`/`messages_en` (train, volume engine v2 S3, both bundles in parity): `TRAIN_MESO_NOT_FOUND` (404 on `GET …/week-proposals`), `TRAIN_WEEK_PROPOSAL_NOT_FOUND` (404), `TRAIN_WEEK_PROPOSAL_CLOSED` (409) and `TRAIN_WEEK_PROPOSAL_DECISION_INVALID` (400) on the decisions endpoint. The proposal's reason codes are enum values; their Hungarian wording is the client's. The bundle mechanics below are unchanged.
 > **2026-11-18 — `mezo-r36n9.77` (no language change).** Two new error keys `TRAIN_SPORT_GROUP_INVALID` and `TRAIN_MESO_PHASE_CURVE_LENGTH` in `messages_hu`/`messages_en` (train, S2); the bundle mechanics below are unchanged.

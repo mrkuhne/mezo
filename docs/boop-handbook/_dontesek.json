@@ -714,5 +714,17 @@
     "miert": "A technika időt spórol: egy technikás sorozat nagyjából annyit ér, mint több sima, fele idő alatt. Egy plusz sorozat hosszabb edzést és több fáradtságot hozna, haszon nélkül.",
     "levaltotta": "Az a lehetőség, hogy a technikás sorozat a meglévők mellé, pluszban kerüljön.",
     "kovetkezmeny": "A technikás sorozat a napi és a gyakorlatonkénti felső korlátnál kettőnek számít, a heti sorozatszámban egynek (mezo-r36n9.80)."
+  },
+  "d-2026-11-19-technika-tervezo": {
+    "cim": "A technikákat és a napi kihívást a rendszer maga helyezi el",
+    "datum": "2026-11-19",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Ha egy blokknak van edzésstílusa és a technikák be vannak kapcsolva, a rendszer maga dönt a technikákról: a 3. héttől az utolsó terhelő hétig, a Hangsúly izmoknál először, a Tartásnál soha; naponta legfeljebb kettő (egy, ha fogyókúra vagy sportnap van), izmonként hetente legfeljebb két technikás gyakorlat. A napi kihívás az első héttől megy. A te saját választásodat soha nem írja felül, de beleszámít a keretbe.",
+    "miert": "Így a technika ott van, ahol a legtöbbet ér, és sosem sok egy izomnak vagy egy napnak. Az új heti két gyakorlatos határ megakadályozza, hogy egy sokat edzett izom minden napon technikát kapjon.",
+    "levaltotta": "A kézi elhelyezés mint egyetlen út: eddig csak te tehettél technikát a tervbe.",
+    "kovetkezmeny": "A technikás sorozat egy sima sorozatot vált ki, és ha a rendszer elveszi a technikát, a sorozat visszakerül (ha belefér a korlátokba). Az AI finomítás (T4) és a telefonos képernyők később jönnek (mezo-r36n9.81)."
   }
 }
