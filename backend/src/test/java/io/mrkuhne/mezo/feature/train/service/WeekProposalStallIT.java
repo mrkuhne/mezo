@@ -86,7 +86,11 @@ class WeekProposalStallIT extends AbstractIntegrationTest {
 
     /** One completed instance per week 1–3, each exercise one identical top set. */
     private void holdThreeWeeks(ExerciseEntity... rows) {
-        for (int w = 1; w <= 3; w++) {
+        holdWeeks(3, rows);
+    }
+
+    private void holdWeeks(int weeks, ExerciseEntity... rows) {
+        for (int w = 1; w <= weeks; w++) {
             WorkoutSessionEntity inst = train.createWorkoutInstance(owner, day,
                 meso.getStartDate().plusDays(7L * (w - 1) + 1), "completed");
             for (ExerciseEntity e : rows) {
@@ -205,6 +209,36 @@ class WeekProposalStallIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void reductionNeverRatchets() {
+        run(List.of("MEV", "MEV", "MAV", "MAV", "MRV", "MRV"), Map.of("back", "grow"), true); // week 6 loads too
+        ExerciseEntity rowing = row("Evezés", 0);
+        rowing.setOverrides(List.of("repRange"));
+        rowing = train.save(rowing);
+        holdWeeks(5, rowing); // still stalled and HOLD in weeks 5 and 6
+
+        workoutService.getToday(owner, null); // week 4: 3 → 2
+        assertThat(fresh(rowing()).getWorkingSets()).isEqualTo(2);
+
+        buildAndApply(5); // the restore gives it back; no reduction in the same week
+        MesoWeekProposalEntity w5 = weekly(5);
+        assertThat(lines(w5, WeekProposalLineJson.KIND_SETS)).singleElement().satisfies(l -> {
+            assertThat(l.from()).isEqualTo(2);
+            assertThat(l.to()).isEqualTo(3);
+            assertThat(l.reasons()).containsExactly("deload_restore");
+        });
+        assertThat(w5.getRestore()).isNull();
+        assertThat(fresh(rowing()).getWorkingSets()).isEqualTo(3);
+
+        buildAndApply(6); // stalled again: one week off from 3, never below
+        assertThat(lines(weekly(6), WeekProposalLineJson.KIND_SETS)).singleElement().satisfies(l -> {
+            assertThat(l.from()).isEqualTo(3);
+            assertThat(l.to()).isEqualTo(2);
+            assertThat(l.reasons()).containsExactly("stalled");
+        });
+        assertThat(fresh(rowing()).getWorkingSets()).isEqualTo(2);
+    }
+
+    @Test
     void reductionNotForMaintain() {
         run(NO_DELOAD, Map.of("back", "maintain"), true);
         ExerciseEntity rowing = row("Evezés", 0);
@@ -271,6 +305,13 @@ class WeekProposalStallIT extends AbstractIntegrationTest {
         assertThat(p.getLines()).filteredOn(l -> l.reasons() != null && l.reasons().contains("stalled")).isEmpty();
         assertThat(p.getRestore()).isNull();
         assertThat(fresh(rowing).getWorkingSets()).isEqualTo(3);
+    }
+
+    private void buildAndApply(int week) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            MesocycleEntity run = mesocycleRepository.findById(meso.getId()).orElseThrow();
+            proposals.apply(proposals.build(owner, run, week).proposal());
+        });
     }
 
     // ── fixtures ──────────────────────────────────────────────────────────────────────────────

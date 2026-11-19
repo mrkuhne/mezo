@@ -322,7 +322,8 @@ public class WeekProposalService {
             TechniquePlanner.Input input = techniquePlanService.snapshotRun(createdBy, meso, calWeek, working);
             Map<String, StallOffers.Decision> stalled = new TreeMap<>();
             stalledGroups.stream().filter(outcomes::containsKey).forEach(g -> stalled.put(g, new StallOffers.Decision(
-                outcomes.get(g).result().lever(), PriorityTier.of(meso.getMusclePriorities(), g))));
+                outcomes.get(g).result().lever(), PriorityTier.of(meso.getMusclePriorities(), g),
+                outcomes.get(g).restored() > outcomes.get(g).before())));
             StallOffers.Result offers = StallOffers.offers(stalled, plan, input, TechniquePlanner.plan(input),
                 working, styleProps);
             Map<UUID, Integer> reduced = new HashMap<>(working);

@@ -33,7 +33,8 @@ import java.util.UUID;
  *       all-out) and carries no {@code repRange} override moves one step along heavy → balanced, volume → balanced,
  *       balanced → volume: a {@code rep_range} line with the style table's range for its class. A row already in
  *       that range is skipped. Any tier;</li>
- *   <li><b>one-week reduction</b> — only for a HOLD / NONE decision outside Tartás: {@link SetSlots#pickDown} over
+ *   <li><b>one-week reduction</b> — only for a HOLD / NONE decision outside Tartás, and not in a week whose restore
+ *       gave the group sets back (no ratchet): {@link SetSlots#pickDown} over
  *       the group's rows without a technique or challenge (stored or picked this week) gives one set, with a
  *       {@link RestoreEntryJson} so next week's restore gives it back.</li>
  * </ol>
@@ -47,8 +48,11 @@ final class StallOffers {
 
     private StallOffers() {}
 
-    /** A stalled group's weekly set decision and its tier. */
-    record Decision(Lever lever, PriorityTier tier) {}
+    /**
+     * A stalled group's weekly set decision, its tier, and whether this week's restore gave sets back to it (then
+     * no reduction: taking the given-back set again would cancel the restore and ratchet the group down).
+     */
+    record Decision(Lever lever, PriorityTier tier, boolean restoredThisWeek) {}
 
     /** One set given up for a week on {@code exerciseId}; {@code restore} is next week's give-back. */
     record Reduction(UUID exerciseId, int from, int to, RestoreEntryJson restore) {}
@@ -101,7 +105,8 @@ final class StallOffers {
                 continue;
             }
             Decision d = entry.getValue();
-            if ((d.lever() == Lever.HOLD || d.lever() == Lever.NONE) && d.tier() != PriorityTier.MAINTAIN) {
+            if ((d.lever() == Lever.HOLD || d.lever() == Lever.NONE) && d.tier() != PriorityTier.MAINTAIN
+                    && !d.restoredThisWeek()) {
                 reductionOffer(rows, planById, working, techniques, challenged).ifPresent(reductions::add);
             }
         }
@@ -128,6 +133,7 @@ final class StallOffers {
                 }
             }
         }
+        if (input.week() < input.cfg().startWeek()) return false;   // rule 2: no technique before the start week
         if (perGroup.getOrDefault(group, 0) >= input.cfg().maxPerMuscleWeek()) return false;
         for (TechniquePlanner.PlanRow r : rows) {
             if (!plannerMay(r) || challenged.contains(r.id())) continue;

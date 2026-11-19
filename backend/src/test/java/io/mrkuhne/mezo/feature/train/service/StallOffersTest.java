@@ -107,7 +107,7 @@ class StallOffersTest {
 
     private static StallOffers.Result offers(Input in, Week week, List<TemplatePlan.Row> plan, Lever lever,
                                              PriorityTier tier) {
-        return StallOffers.offers(Map.of("back", new Decision(lever, tier)), plan, in, week, working(in), P);
+        return StallOffers.offers(Map.of("back", new Decision(lever, tier, false)), plan, in, week, working(in), P);
     }
 
     // ── (a) technique ──────────────────────────────────────────────────────────────────────────
@@ -129,6 +129,29 @@ class StallOffersTest {
         assertThat(r.week().remainingByDay()).containsEntry(1, 0).containsEntry(0, 1);
         assertThat(r.week().perGroup()).containsEntry("back", 1);
         assertThat(r.repRangeLines()).isEmpty();
+        assertThat(r.reductions()).isEmpty();
+    }
+
+    @Test
+    void noTechniqueBeforeTheStartWeek() {
+        PlanRow row = machine(0, 0, "back", TrainingStyle.BALANCED);
+        Input week4 = input(day(0, row));
+        Input week2 = new Input(2, false, week4.days(), week4.priorities(), Set.of(), false, 5, 8, 2, CFG);
+
+        StallOffers.Result r = offers(week2, week(week2, 1), plan(week2, 6, 10, null), Lever.HOLD, PriorityTier.GROW);
+
+        assertThat(r.week().techniques()).isEmpty();
+        assertThat(r.repRangeLines()).hasSize(1); // falls through to the range change
+    }
+
+    @Test
+    void noReductionInAWeekThatGaveSetsBack() {
+        PlanRow row = sets(free(0, 0, "back", TrainingStyle.ALLOUT), 3);
+        Input in = input(day(0, row));
+
+        StallOffers.Result r = StallOffers.offers(Map.of("back", new Decision(Lever.HOLD, PriorityTier.GROW, true)),
+            plan(in, 6, 10, null), in, week(in, 2), working(in), P);
+
         assertThat(r.reductions()).isEmpty();
     }
 

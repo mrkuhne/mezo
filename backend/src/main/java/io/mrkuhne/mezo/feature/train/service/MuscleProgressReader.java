@@ -60,9 +60,6 @@ public class MuscleProgressReader {
             return Set.of();
         }
         int stallWeeks = props.stallWeeks();
-        if (uptoWeek <= stallWeeks) {
-            return Set.of(); // needs stallWeeks + 1 weeks of data
-        }
         // A deload week is never a hold (T3, mezo-r36n9.81): deload weeks are dropped and the loading weeks
         // renumbered consecutively, so the week after a deload is compared with the week before it.
         Map<Integer, Integer> loadingWeek = new HashMap<>();
@@ -74,7 +71,7 @@ public class MuscleProgressReader {
         }
         int uptoLoading = loading; // a deload uptoWeek ends the window at the last loading week before it
         if (uptoLoading <= stallWeeks) {
-            return Set.of();
+            return Set.of(); // needs stallWeeks + 1 loading weeks of data
         }
         Map<UUID, Integer> weekOfInstance = new HashMap<>();
         for (WorkoutSessionEntity s : workoutSessionRepository
