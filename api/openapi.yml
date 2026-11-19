@@ -858,6 +858,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/settings':
+    put:
+      tags:
+        - Train
+      operationId: updateMesocycleSettings
+      summary: >-
+        Change a running block's settings — training style, techniques flag,
+        weekly review mode (mezo-r36n9.83)
+      description: >-
+        Every field is optional; an absent field keeps the stored value. A new
+        trainingStyle re-stamps every exercise of the run's days in place (ids
+        kept, owner overrides respected). techniquesEnabled only flips the block
+        flag: stored technique picks are never deleted, they are simply ignored
+        while it is off. weeklyReviewMode applies to proposals generated after
+        the switch; a pending proposal stays pending.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesocycleSettingsUpdateRequest'
+      responses:
+        '200':
+          description: Updated mesocycle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The run is archived (TRAIN_RUN_NOT_EDITABLE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/report':
     get:
       tags:
@@ -15707,6 +15766,7 @@ components:
         - style
         - phaseCurve
         - hasReport
+        - weeklyReviewMode
       properties:
         techniquesEnabled:
           type: boolean
@@ -15813,6 +15873,15 @@ components:
           description: >-
             Block training style; null = no style (unstyled block behaves as
             before).
+        weeklyReviewMode:
+          type: string
+          enum:
+            - auto
+            - manual
+          description: >-
+            EFFECTIVE weekly review mode of the run (mezo-r36n9.83): its own
+            setting, else the server default. auto = the weekly volume proposal
+            is applied at once; manual = it waits for line-by-line decisions.
     MesoTemplateResponse:
       type: object
       required:
@@ -16669,6 +16738,34 @@ components:
           enum:
             - active
             - planned
+    MesocycleSettingsUpdateRequest:
+      type: object
+      description: >-
+        Partial update of a running block's settings (mezo-r36n9.83); every
+        absent field keeps its value.
+      properties:
+        trainingStyle:
+          allOf:
+            - $ref: '#/components/schemas/TrainingStyle'
+          nullable: true
+          description: >-
+            New block style; re-stamps the run's exercises. Absent OR null keeps
+            the stored style — a block style cannot be cleared through this
+            operation.
+        techniquesEnabled:
+          type: boolean
+          nullable: true
+          description: >-
+            Block techniques flag. Off keeps the stored picks (ignored while
+            off); on makes them live again.
+        weeklyReviewMode:
+          type: string
+          nullable: true
+          pattern: ^(auto|manual)$
+          description: >-
+            The run's own weekly review mode (auto|manual); absent or null keeps
+            it. Applies to proposals generated after the switch — a pending
+            proposal stays pending until decided or the week boundary.
     MusclePrioritiesUpdateRequest:
       type: object
       properties:

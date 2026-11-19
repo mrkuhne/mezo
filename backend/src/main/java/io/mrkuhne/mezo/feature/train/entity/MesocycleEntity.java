@@ -106,6 +106,10 @@ public class MesocycleEntity extends OwnedEntity {
     @Column(name = "training_style")
     private String trainingStyle;
 
+    /** The run's own weekly review mode (auto|manual, DB CHECK); null = the server default (mezo-r36n9.83). */
+    @Column(name = "weekly_review_mode")
+    private String weeklyReviewMode;
+
     @NotNull
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "phase_curve", nullable = false, columnDefinition = "text[]")

@@ -158,7 +158,7 @@ public class TierChangeProposalService {
         proposal.setGroups(groups);
         proposal = proposalRepository.save(proposal);
 
-        if (MODE_AUTO.equals(props.weeklyReview().mode())) {
+        if (MODE_AUTO.equals(props.weeklyReview().modeFor(run.getWeeklyReviewMode()))) {
             weekProposalService.apply(proposal);
             volumeLedger.sync(createdBy, run.getId());
             appendAdjustments(createdBy, run, proposal, bandsBefore, bandsAfter);

@@ -143,7 +143,7 @@ public class WeekProposalService {
             return;
         }
         Draft draft = build(createdBy, run, calWeek);
-        if (!MODE_AUTO.equals(props.weeklyReview().mode())) {
+        if (!MODE_AUTO.equals(props.weeklyReview().modeFor(run.getWeeklyReviewMode()))) {
             // Manual: the proposal waits. Nothing written, so the ledger and its provenance stay as they
             // are; the week is still recorded, its audit worded as a proposal. A week with no line has
             // nothing to review: closed at once (every line vacuously decided), so it never pends.

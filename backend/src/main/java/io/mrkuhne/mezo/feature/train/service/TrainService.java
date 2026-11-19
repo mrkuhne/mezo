@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.MesocycleSettingsUpdateRequest;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.VolumeBaseline;
@@ -128,6 +129,7 @@ public class TrainService {
 
         return mesos.stream().map(m -> {
             MesocycleResponse r = mapper.toResponse(m);
+            r.setWeeklyReviewMode(effectiveReviewMode(m));
             r.setHasReport(reported.contains(m.getId()));
             Map<String, VolumeProfile> volume = volumeByMeso.get(m.getId());
             List<MesoDay> days = daysByMeso.get(m.getId());
@@ -384,6 +386,58 @@ public class TrainService {
     }
 
     /**
+     * Partial update of a running block's settings (mezo-r36n9.83); an absent (or null) field keeps its value,
+     * so a block style can be changed but never cleared here. A new style re-stamps every exercise row of the
+     * run's template days IN PLACE ({@link ExerciseStyler#restampRows}) — never soft-delete + re-insert, which
+     * would re-mint the ids a pending week proposal's lines point at. The techniques flag only flips: picks
+     * stay stored and are ignored while it is off. The review mode applies to proposals generated after the
+     * switch; a pending one stays pending (it expires at the week boundary as before). Archived = 409.
+     */
+    @Transactional
+    public MesocycleResponse updateSettings(UUID createdBy, UUID id, MesocycleSettingsUpdateRequest req) {
+        // The weekly proposal's lock order: the run row first, read only through that lock.
+        MesocycleEntity m = mesocycleRepository.findLockedByIdAndCreatedByAndDeletedFalse(id, createdBy)
+            .orElseThrow(OwnershipGuard::notFound);
+        if ("archived".equals(m.getStatus())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error(ExerciseTechniqueService.RUN_NOT_EDITABLE).build(), HttpStatus.CONFLICT);
+        }
+        if (req.getTechniquesEnabled() != null) {
+            m.setTechniquesEnabled(req.getTechniquesEnabled());
+        }
+        if (req.getWeeklyReviewMode() != null) {
+            m.setWeeklyReviewMode(req.getWeeklyReviewMode());
+        }
+        if (req.getTrainingStyle() != null) {
+            String wire = mapper.styleWire(req.getTrainingStyle());
+            if (!wire.equals(m.getTrainingStyle())) {
+                m.setTrainingStyle(wire);
+                restampRun(createdBy, m, TrainingStyle.fromWire(wire));
+            }
+        }
+        return assembleResponse(createdBy, m);
+    }
+
+    /** Re-stamps the run's template-day rows under {@code block}, day by day, then re-syncs the ledger. */
+    private void restampRun(UUID createdBy, MesocycleEntity m, TrainingStyle block) {
+        List<UUID> dayIds = workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(m.getId())).stream()
+            .filter(s -> s.getTemplateSessionId() == null).map(WorkoutSessionEntity::getId).toList();
+        if (dayIds.isEmpty()) {
+            return;
+        }
+        Map<UUID, List<ExerciseEntity>> byDay = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, dayIds).stream()
+            .collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId, LinkedHashMap::new, Collectors.toList()));
+        for (List<ExerciseEntity> rows : byDay.values()) {
+            styler.restampRows(rows, block);
+            techniqueGuard.validateRows(rows);
+            exerciseRepository.saveAll(rows);
+        }
+        volumeLedger.sync(createdBy, m.getId());
+    }
+
+    /**
      * Full-list day replace. Training style (mezo-r36n9.79): the style fields a client omits are
      * carried over from the day's old rows (same identity, first unmatched) and every row is
      * re-stamped under the run's style — a no-op for an unstyled run.
@@ -546,9 +600,16 @@ public class TrainService {
         return e;
     }
 
+    /** The run's own weekly review mode, else the server default (mezo-r36n9.83). */
+    private MesocycleResponse.WeeklyReviewModeEnum effectiveReviewMode(MesocycleEntity m) {
+        return MesocycleResponse.WeeklyReviewModeEnum.fromValue(
+            volumeProperties.weeklyReview().modeFor(m.getWeeklyReviewMode()));
+    }
+
     /** Single-aggregate variant of the list stitching — write paths return the same shape as GET. */
     private MesocycleResponse assembleResponse(UUID createdBy, MesocycleEntity m) {
         MesocycleResponse r = mapper.toResponse(m);
+        r.setWeeklyReviewMode(effectiveReviewMode(m));
         // Lombok's @Builder on the generated DTO ignores the contract's `default: false`, so every
         // assembly must state hasReport explicitly or it goes out null (mezo-meyc.2).
         r.setHasReport(reportRepository

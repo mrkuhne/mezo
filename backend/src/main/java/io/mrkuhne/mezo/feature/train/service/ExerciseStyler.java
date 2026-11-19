@@ -87,6 +87,25 @@ public class ExerciseStyler {
         return stability;
     }
 
+    /**
+     * A run's block style changed (mezo-r36n9.83): re-stamps the EXISTING rows in place under the new block
+     * style — ids, order and technique picks untouched, an exercise's own style and the owner's overrides
+     * respected exactly as on a save (the rows are their own carry-over source, so nothing needs carrying).
+     * Rows that do not count toward volume keep their fixed prescription. Returns the stability lookup.
+     */
+    public CatalogAttributes.Lookup restampRows(List<ExerciseEntity> rows, TrainingStyle block) {
+        List<GymExerciseJson> current = rows.stream().map(mapper::toExerciseJson).toList();
+        CatalogAttributes.Lookup stability = lookup(current, block);
+        for (int i = 0; i < rows.size(); i++) {
+            if (!rows.get(i).isCountsTowardVolume()) {
+                continue;
+            }
+            GymExerciseJson e = current.get(i);
+            applyTo(rows.get(i), StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props));
+        }
+        return stability;
+    }
+
     /** Stability of every catalog id that can matter: none at all when nothing is styled (no query). */
     public CatalogAttributes.Lookup lookupRows(Collection<ExerciseEntity> rows, boolean anyBlockStyled) {
         return catalogAttributes.load(rows.stream()
