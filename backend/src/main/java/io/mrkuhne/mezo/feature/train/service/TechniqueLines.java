@@ -134,8 +134,9 @@ final class TechniqueLines {
                 case CHANGE -> technique.put(id, step.to());
                 case REMOVE -> {
                     technique.put(id, Technique.NONE);
-                    boolean stillExtra = challenge.get(id);
-                    int weightAfter = from + 1 + (stillExtra ? capExtra : 0);
+                    // weighed with the row's FINAL challenge state: it may become this week's challenge next
+                    boolean challengeAfter = challenged.contains(id);
+                    int weightAfter = from + 1 + (challengeAfter ? capExtra : 0);
                     if (r.effectiveStyle() != TrainingStyle.ALLOUT
                             && fitsOneMore(r, weightAfter, input, allRows, sets, extra, capExtra)) {
                         to = from + 1;
@@ -149,8 +150,8 @@ final class TechniqueLines {
             TemplatePlan.Row planRow = planById.get(id);
             lines.add(new WeekProposalLineJson(UUID.randomUUID().toString(), id, planRow.exercise().getName(),
                 planRow.dayIndex(), planRow.group(), WeekProposalLineJson.KIND_TECHNIQUE, from, to,
-                step.reason() == null ? List.of() : List.of(step.reason()), null, planRow.dayName(), null, null, fromTechnique.wire(), step.to().wire(),
-                challengeLine, null, null, null, null));
+                step.reason() == null ? List.of() : List.of(step.reason()), null, planRow.dayName(), null, null,
+                fromTechnique.wire(), step.to().wire(), challengeLine, null, null, null, null));
         }
 
         Map<UUID, Integer> after = new LinkedHashMap<>(working);
@@ -167,7 +168,7 @@ final class TechniqueLines {
     private static boolean fitsOneMore(TechniquePlanner.PlanRow row, int rowWeightAfter, TechniquePlanner.Input in,
                                        List<TechniquePlanner.PlanRow> allRows, Map<UUID, Integer> sets,
                                        Map<UUID, Boolean> extra, int capExtra) {
-        if (sets.get(row.id()) + 1 > in.exerciseCap()) return false;
+        if (rowWeightAfter > in.exerciseCap()) return false;   // by cap weight, as SetSlots.pickUp
         if (row.group() == null) return true;
         int dayWeight = rowWeightAfter;
         for (TechniquePlanner.PlanRow r : allRows) {

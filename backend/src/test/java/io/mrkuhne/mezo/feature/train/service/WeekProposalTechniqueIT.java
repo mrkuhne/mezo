@@ -293,6 +293,42 @@ class WeekProposalTechniqueIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void challengeLineIsKeptOnATechniqueRow() {
+        Chest c = chest(3, NO_DELOAD, true);
+        ExerciseEntity fly = fresh(c.cableFly());
+        fly.setTechnique("rest_drop");
+        fly.setTechniqueSource("planner");
+        exerciseRepository.saveAndFlush(fly);
+        MesoWeekProposalEntity proposal = new MesoWeekProposalEntity();
+        proposal.setCreatedBy(owner);
+        WeekProposalLineJson on = new WeekProposalLineJson("c1", fly.getId(), "Cable Fly", 0, "chest",
+            WeekProposalLineJson.KIND_TECHNIQUE, 3, 3, List.of("challenge"), null, "Hét", null, null, "none",
+            "partials", true, null, null, null, null);
+
+        // its technique's removal was kept: the challenge must not land next to the technique
+        assertThat(proposals.applySetLine(proposal, on).decision()).isEqualTo("kept");
+        assertThat(fresh(c.cableFly()).isChallenge()).isFalse();
+    }
+
+    @Test
+    void techniqueLineIsKeptOnAnUnsourcedPick() {
+        Chest c = chest(3, NO_DELOAD, true);
+        ExerciseEntity fly = fresh(c.cableFly());
+        fly.setTechnique("myo");
+        fly.setTechniqueSource(null);
+        exerciseRepository.saveAndFlush(fly);
+        MesoWeekProposalEntity proposal = new MesoWeekProposalEntity();
+        proposal.setCreatedBy(owner);
+        WeekProposalLineJson remove = new WeekProposalLineJson("t1", fly.getId(), "Cable Fly", 0, "chest",
+            WeekProposalLineJson.KIND_TECHNIQUE, 3, 4, List.of("emphasis"), null, "Hét", null, null, "myo",
+            "none", false, null, null, null, null);
+
+        assertThat(proposals.applySetLine(proposal, remove).decision()).isEqualTo("kept");
+        assertThat(fresh(c.cableFly()).getTechnique()).isEqualTo("myo");
+        assertThat(fresh(c.cableFly()).getWorkingSets()).isEqualTo(3);
+    }
+
+    @Test
     void repRangeLineWritesTheRangeAndMarksTheOverride() {
         Chest c = chest(3, NO_DELOAD, true);
         ExerciseEntity fly = fresh(c.cableFly()); // rep range 6–8 from the populator

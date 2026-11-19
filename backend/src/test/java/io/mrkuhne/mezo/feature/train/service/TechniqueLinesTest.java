@@ -252,6 +252,31 @@ class TechniqueLinesTest {
     }
 
     @Test
+    void removalOntoTheNewChallengeWeighsTheChallenge() {
+        // day at exactly the session cap 8: 2 (+1 technique) + 5 = 8. The technique row becomes the challenge:
+        // plain 3 + 1 (challenge extra) + 5 = 9 would break it → the technique goes, the set does not come back
+        PlanRow moving = held(row(0, 1, "chest", 2), Technique.REST_DROP, "planner", false);
+        Input in = input(day(0, row(0, 0, "chest", 5), moving));
+
+        TechniqueLines.Result r = run(in, week(List.of(), List.of(challenge(moving))));
+
+        assertThat(r.lines()).extracting(WeekProposalLineJson::fromTechnique, WeekProposalLineJson::toTechnique,
+                WeekProposalLineJson::from, WeekProposalLineJson::to)
+            .containsExactly(tuple("rest_drop", "none", 2, 2), tuple("none", "partials", 2, 2));
+    }
+
+    @Test
+    void removalOntoTheNewChallengeKeepsTheExerciseCapByWeight() {
+        // exercise cap 5: plain 4 + 1 (challenge extra) = 5 fits; plain 5 + 1 = 6 does not
+        PlanRow fits = held(row(0, 0, "chest", 3), Technique.REST_DROP, "planner", false);
+        assertThat(run(input(day(0, fits)), week(List.of(), List.of(challenge(fits)))).lines().get(0).to())
+            .isEqualTo(4);
+        PlanRow over = held(row(0, 0, "chest", 4), Technique.REST_DROP, "planner", false);
+        assertThat(run(input(day(0, over)), week(List.of(), List.of(challenge(over)))).lines().get(0).to())
+            .isEqualTo(4);
+    }
+
+    @Test
     void linesAreByDayRemovalsFirst() {
         PlanRow add0 = row(0, 2, "chest", 3);
         PlanRow remove0 = held(row(0, 3, "back", 2), Technique.MYO, "planner", false);

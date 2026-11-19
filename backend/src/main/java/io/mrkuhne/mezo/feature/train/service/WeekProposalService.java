@@ -359,8 +359,7 @@ public class WeekProposalService {
                 }).orElse(false);
             case WeekProposalLineJson.KIND_TECHNIQUE -> ownRow(proposal, line)
                 .filter(e -> Objects.equals(e.getWorkingSets(), line.from()))
-                .filter(e -> !TechniquePlanner.SOURCE_OWNER.equals(e.getTechniqueSource())
-                    && !SOURCE_AI.equals(e.getTechniqueSource()))
+                .filter(WeekProposalService::plannerMayWrite)
                 .filter(e -> holdsFromTechnique(e, line))
                 .map(e -> {
                     writeTechnique(e, line);
@@ -396,10 +395,30 @@ public class WeekProposalService {
         return true;
     }
 
-    /** The row still carries what the line moves away from: its technique, or for a challenge line its flag. */
+    /**
+     * A planner line may write the row: no owner / AI source, and a technique or challenge it carries is the
+     * planner's own (a null source counts as the owner's, as in {@link TechniqueLines}).
+     */
+    private static boolean plannerMayWrite(ExerciseEntity e) {
+        String source = e.getTechniqueSource();
+        if (TechniquePlanner.SOURCE_OWNER.equals(source) || SOURCE_AI.equals(source)) {
+            return false;
+        }
+        boolean carries = e.getTechnique() != null || e.isChallenge();
+        return !carries || TechniquePlanner.SOURCE_PLANNER.equals(source);
+    }
+
+    /**
+     * The row still carries what the line moves away from: its technique, or for a challenge line its flag — and a
+     * challenge is only placed on a row without a technique (one row never carries both).
+     */
     private static boolean holdsFromTechnique(ExerciseEntity e, WeekProposalLineJson line) {
         Technique from = Technique.fromWire(line.fromTechnique());
         if (Boolean.TRUE.equals(line.challenge())) {
+            boolean placing = Technique.fromWire(line.toTechnique()) == Technique.PARTIALS;
+            if (placing && Technique.fromWire(e.getTechnique()) != Technique.NONE) {
+                return false;
+            }
             return e.isChallenge() == (from == Technique.PARTIALS);
         }
         return Technique.fromWire(e.getTechnique()) == from;
