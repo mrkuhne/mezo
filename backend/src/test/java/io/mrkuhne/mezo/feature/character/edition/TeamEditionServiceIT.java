@@ -37,6 +37,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * IT for {@link TeamEditionService} (Task 5, csapatfal H1 spec 2026-09-24 §3): {@code run} is
@@ -47,6 +48,8 @@ import org.springframework.test.context.ActiveProfiles;
  * Spring's test-context cache, see {@code CharacterObservationJobIT}'s wrapper idiom instead).
  */
 @ActiveProfiles("companion-fake")
+// Off in production since the web retirement (mezo-r36n9.97.8); this class still covers the kept code.
+@TestPropertySource(properties = "mezo.feature.team-edition.enabled=true")
 class TeamEditionServiceIT extends AbstractIntegrationTest {
 
     private static final LocalDate DAY = LocalDate.of(2026, 9, 24);

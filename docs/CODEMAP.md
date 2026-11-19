@@ -990,7 +990,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 111 IT + 11 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 112 IT + 11 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
     `ChallengeGeneratorIT`, `ChallengeGeneratorMemoryDisabledIT`, `ChallengeGeneratorMemoryIT`, `ChallengeJobIT`,
     `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `ChallengePregenerateJobIT`,
@@ -1017,8 +1017,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `ProactiveMemoirArchiveSwitchOffIT`, `ProactiveMemoryBlockIT`, `ProactiveMemoryUsePersistenceIT`,
     `QuestionAnswerIT`, `QuestionPropertiesIT`, `ReflectionDigestMorningIT`, `RetroLoggingProbeIT`,
     `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`, `SetupCheckServiceIT`,
-    `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`, `SportSlotSkipAdapterIT`, `WeeklyLessonServiceIT`,
-    `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`,
+    `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`, `SportSlotSkipAdapterIT`, `WebOnlyGeneratorsOffIT`,
+    `WeeklyLessonServiceIT`, `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`,
     `WeeklyReviewGeneratorMemoryDisabledIT`, `WeeklyReviewGeneratorMemoryIT`, `WeeklySuggestionGeneratorIT`,
     `WeeklySuggestionGeneratorMemoryDisabledIT`, `WeeklySuggestionGeneratorMemoryIT`, `WeeklySuggestionJobIT`,
     `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`, `WeeklySuggestionPersistenceIT`, `WeightDiagnosisIT`

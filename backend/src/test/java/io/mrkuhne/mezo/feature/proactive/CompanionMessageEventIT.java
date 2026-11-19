@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Event-driven companion-feed triggers (mezo-gst9, task 9): POST a sleep/weight log ->
@@ -34,6 +35,8 @@ import org.springframework.test.context.ActiveProfiles;
  * grace period before asserting absence.
  */
 @ActiveProfiles("companion-fake")
+// Off in production since the web retirement (mezo-r36n9.97.8); this class still covers the kept code.
+@TestPropertySource(properties = "mezo.feature.feed-reactions.enabled=true")
 class CompanionMessageEventIT extends ApiIntegrationTest {
 
     @Autowired private io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm fake;
