@@ -3,7 +3,7 @@
 How to run mezo's tests on a resource-constrained local machine, why the **backend** suite
 can fail there for non-code reasons, and how to get a reliable green signal anyway.
 
-> **TL;DR** — The frontend suite runs fine locally. The **backend integration suite is heavy**
+> **TL;DR** — The **backend integration suite is heavy**
 > (Spring Boot + Testcontainers Postgres) and OOM-dies under memory pressure on a 16 GB box.
 > **The authoritative full-backend gate is CI** (`.github/workflows/ci.yml`, `test-backend` on a
 > clean `ubuntu-latest` runner). Locally, run **focused foreground gates**; run the full suite
@@ -25,41 +25,12 @@ a real Postgres (a Testcontainers container, or the docker-compose DB). This is 
 - **Tell-tale signs:** `vm.swapusage` used ≫ physical RAM; `docker info` hangs (Docker itself is
   memory-starved); the surefire log shows a high `Tests run:` count then the VM-terminated error.
 
-The **frontend** vitest suite has none of this (no Docker, light JVM-less runtime) — it stays green.
+## Retired: the web frontend gates (2026-11-19, #52)
 
-## pnpm is pinned by `packageManager`, not by a CI input (mezo-q8oy)
-
-`frontend/package.json` carries `"packageManager": "pnpm@11.25.0"`, and `pnpm/action-setup`
-reads it (`package_json_file: frontend/package.json`, no `version:` input). One pin, so CI and
-every local shell resolve the same pnpm instead of two numbers that must be kept equal by hand.
-
-Two pnpm-10/11 behaviours are load-bearing here:
-
-- **Settings moved out of `package.json`.** The `pnpm` field is ignored (with a warning); the
-  settings root is `frontend/pnpm-workspace.yaml`. Its `packages: ['.']` marks frontend/ as that
-  root — it is *not* declaring a monorepo.
-- **Dependency build scripts are blocked by default, and pnpm 11 makes an ignored build an
-  error** (`ERR_PNPM_IGNORED_BUILDS`). `allowBuilds: {msw: true, sharp: true}` is therefore
-  required for `pnpm install` to succeed at all. (pnpm 11 renamed pnpm 10's
-  `onlyBuiltDependencies` to `allowBuilds` — it rewrites the file for you if you use the old
-  name.) Under an older pnpm the same gap would install "successfully" with no msw service
-  worker and no sharp binary.
-
-**pnpm 11 needs Node ≥ 22.13**, and the workflows pinned `node-version: 20` — so the first CI
-run failed inside `actions/setup-node`'s own pnpm cache probe:
-
-```
-Error [ERR_UNKNOWN_BUILTIN_MODULE]: No such built-in module: node:sqlite
-##[error]warn: This version of pnpm requires at least Node.js v22.13
-```
-
-That exposed a second, older divergence: the dev machine has been on **Node 22** while CI ran
-**Node 20**, and nothing declared or checked it. Both are now **22**, and
-`frontend/package.json` carries `"engines": { "node": ">=22.13" }` so the requirement is stated
-in the repo rather than discovered from a CI stack trace.
-
-The upgrade left `pnpm-lock.yaml` **byte-identical** (still `lockfileVersion: '9.0'`, same
-resolutions), so it does not churn every open branch.
+The web app (`frontend/`) was switched off and deleted (`mezo-r36n9.97.3`). Its gates went with it:
+the dual-mode vitest suite (`test-frontend`), the Playwright layout harness (`test-layout`), the
+pnpm/Node pin notes and the frontend half of contract-drift. Their history — why the mode had to be
+pinned explicitly, why the layout harness used a per-worktree port — is in git history of this file.
 
 ## The gate model
 
@@ -80,9 +51,8 @@ resolutions), so it does not churn every open branch.
      `-Dmezo.test.use-testcontainers=true`** — each fork then owns a private Postgres; against the
      shared fixed `mezo_test` DB forks would truncate each other's rows. CI uses 2 (a fork peaks
      at ~3.5 GB RSS + ~1 GB Postgres on a 4 vCPU / 16 GB runner); the 128 GB machine runs 3+.
-  3. *Scoped jobs:* `test-backend` runs its suite only when the push/PR touches `backend/`,
-     `api/` or `.github/`; `test-frontend` and `test-layout` only for `frontend/`, `api/` or
-     `.github/` (`.github/scripts/ci-scope.sh`). The jobs still start and end green otherwise, so
+  3. *Scoped job:* `test-backend` runs its suite only when the push/PR touches `backend/`,
+     `api/` or `.github/` (`.github/scripts/ci-scope.sh`). The job still starts and ends green otherwise, so
      `require-checks.sh` keeps seeing a successful check run. Fail-safe: on a push the
      diff base is the newest ancestor with a finished **green** `ci` run, not the previous commit — cancelled and red runs in between
      fall inside the diffed range, so a red main cannot be painted green by a docs-only commit.
@@ -95,29 +65,6 @@ resolutions), so it does not churn every open branch.
      -Dmezo.test.use-testcontainers=true -DargLine="-Xmx3g"
   ```
   Foreground focused runs complete; long **background full-suite** runs are the ones that get killed.
-
-### The frontend dual-mode gate: which mode am I actually in? (mezo-h4wp.6.3)
-
-`isMockMode()` (`frontend/src/data/_client/mode.ts`) is `import.meta.env.VITE_USE_MOCK !== 'false'`
-— **anything other than the literal string `false`, including UNSET, means MOCK mode.** What makes a
-bare `pnpm test` run in real mode is not a default but the **gitignored `frontend/.env`**
-(`VITE_USE_MOCK=false`), which Vite loads into `import.meta.env` for vitest too.
-
-Consequences, each of which has already burned us:
-
-- **A `git worktree` / fresh clone has no `.env`** → its `pnpm test` silently runs **mock mode**.
-  Comparing a branch (main checkout, real mode) against `origin/main` (a scratch worktree, mock
-  mode) compares two *different modes* and manufactures phantom "merge regressions". When you
-  bisect or A/B across checkouts, **always pass the mode explicitly**:
-  `VITE_USE_MOCK=false pnpm test` / `VITE_USE_MOCK=true pnpm test`.
-- **CI checkouts have no `.env` either.** `ci.yml`'s `test-frontend` step used to run bare
-  `pnpm test` for its "real mode" leg, so it was running **mock mode twice** and the real-mode half
-  of the CLAUDE.md gate was vacuous. Both legs now set `VITE_USE_MOCK` explicitly — keep it that
-  way, and never "simplify" the `false` leg back to a bare `pnpm test`.
-- **Real mode has no synchronous first frame.** `useDualQuery` only seeds `initialData` in mock
-  mode; in real mode the first render is `isPending` with the `realEmpty` ghost. Any test that
-  renders a page gated on a pending read (e.g. Today's `sleepGoalPending` skeleton) must use
-  `findBy*`, not `getBy*` — a `getBy*` there passes in mock mode and fails in real mode.
 
 ## The pre-merge re-check (`premerge.yml`) — why a green PR can still redden main
 
@@ -143,7 +90,8 @@ no longer exists. Two incidents came from exactly that:
 
 Closing this by construction (branch protection's *"Require branches to be up to date"*, or a
 merge queue) costs a **full CI cycle immediately before every merge**. Measured cost of one
-`ci.yml` run:
+`ci.yml` run (before the web app was retired; `test-frontend` and `test-layout` are gone since
+2026-11-19, #52):
 
 | job | duration |
 |---|---|
@@ -176,36 +124,6 @@ cannot drift) and contract-drift. It also refuses to proceed when
 This is a *narrowing*, not a proof: main can still move between the green premerge run and the
 merge. It shrinks the window from "whenever CI last happened to run" to "the last few minutes".
 
-## Layout-invariant gate (`test-layout`)
-
-The frontend carries a small **non-screenshot** Playwright harness at `frontend/tests/layout/`
-(`layout.spec.ts` + `playwright.config.ts`). It boots the app in **mock mode** on a
-**per-worktree port** (no backend needed) and asserts **layout invariants at real phone
-viewports** — that content is *reachable*: either it fits, or the page scrolls to it, never
-clipped into nothing by an `overflow: hidden` ancestor.
-
-```bash
-cd frontend && pnpm test:layout      # ~36s locally, 38 tests
-```
-
-**Why it exists as its own gate.** This bug class is invisible to both other suites:
-
-- **jsdom (`test-frontend`/vitest) computes no layout at all** — a clipped island measures fine;
-- the retired screenshot goldens ran at **440×956**, taller than a real phone (iPhone 15 Pro ≈
-  852 CSS px). The keret-hero regression cleared 956 by 1.5 px and clipped **66 px at 852** —
-  green goldens, broken phone (mezo-gllr).
-
-> **The port is derived from the worktree path** (`43000 + sha1(worktree) % 1000`; override with
-> `VISUAL_PORT`), and `reuseExistingServer` is **off**. It used to be a hardcoded `4318` with reuse
-> **on**, which meant a vite dev server left running by *another* worktree or agent session was
-> adopted in silence — Playwright then drove the other tree's UI with no warning. It bit twice in
-> the mezo-iizd.9 round (mezo-sdbm). With the fix, an occupied port fails loudly. Starting our own
-> server costs ~2s.
-
-**On failure:** the CI `test-layout` job uploads a **`layout-failures`** artifact (retention 7
-days) with the Playwright output for each failing test; locally the same lands in
-`frontend/test-results/`.
-
 ## Retired: the two-platform screenshot-golden gate (mezo-ryb6)
 
 Until 2026-09-07 the repo also ran `test-visual` (ubuntu) and `test-visual-darwin` (macOS):
@@ -223,8 +141,8 @@ renders in the global `AppHeader` on every screen. Each incident cost a full re-
 checks** (the conflicted-PR trap, see `require-checks.sh`).
 
 The cost was structural, not incidental: any global chrome element makes every golden a hostage of
-every mock fixture. What survives is `test-layout` above, which asserts *behaviour* (reachability)
-rather than pixels, and so cannot rot this way.
+every mock fixture. What survived it was `test-layout`, which asserted *behaviour* (reachability)
+rather than pixels — itself retired with the web app (2026-11-19, #52).
 
 If a pixel-level gate is ever wanted again, the lesson to carry over is to **mask volatile chrome**
 (the harness already had a `mask:` mechanism for OS-rendered date/time controls) rather than
@@ -305,14 +223,13 @@ pressure — prefer running Maven remotely (A.2).
 ### B. Remote development from another machine
 Edit/run the project on the beefy box from a lightweight laptop:
 - **VS Code Remote-SSH** or **JetBrains Gateway** → connect over Tailscale SSH (`<you>@<beefy-host>`);
-  the toolchain (JDK, Maven, Docker, pnpm) runs remotely, the UI is local.
+  the toolchain (JDK, Maven, Docker) runs remotely, the UI is local.
 
-### C. Reach the running dev servers from another device (e.g. the PWA on a phone)
-Bind the dev servers to all interfaces and hit them over the tailnet:
-- Frontend: `pnpm dev --host` (Vite serves on `0.0.0.0:5180`); backend already listens on `:8090`.
-- From the phone/other machine (also on the tailnet): `http://<dev-host>.<tailnet>.ts.net:5180`
-  (point `VITE_API_URL` at `http://<dev-host>...:8090`). Tailscale handles the private routing;
-  no LAN/firewall fiddling.
+### C. Reach the running backend from another device
+The backend already listens on `:8090`; from another machine on the tailnet use
+`http://<dev-host>.<tailnet>.ts.net:8090`. Tailscale handles the private routing; no LAN/firewall
+fiddling. (The web dev server this section used to describe was retired with the web app,
+2026-11-19, #52.)
 
 > Which of A/B/C fits depends on your exact setup (a 2nd Mac? a cloud VM? just CI?) — this covers the
 > common paths; narrow it down and I'll tighten the relevant one.

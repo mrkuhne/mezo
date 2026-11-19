@@ -10,8 +10,8 @@
 // Why: `api/openapi.yml` is generated AND committed, and CI's contract-drift job
 // regenerates it with a lockfile-exact toolchain and fails on any difference. So the
 // generator's version is part of that artifact's identity. (The web app's generated
-// `api.gen.ts` and its `frontend` toolchain left with the web app, retired 2026-11-19, #52.) When the d20-fuel-mely merge (efa5a1bb5) committed an
-// openapi.yml produced by a STALE node_modules — a serializer that quotes strings
+// `api.gen.ts` and its `frontend` toolchain left with the web app, retired 2026-11-19, #52.)
+// When the d20-fuel-mely merge (efa5a1bb5) committed an openapi.yml produced by a STALE node_modules — a serializer that quotes strings
 // differently — every open PR failed contract-drift through no fault of its own,
 // until a canonical regeneration healed it (224637b36). mezo-a5m2.
 //

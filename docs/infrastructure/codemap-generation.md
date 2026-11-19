@@ -12,7 +12,7 @@ it honest.
 Agents were spending most of a session's budget *finding* things. The trigger for this tooling
 was a Hermes run that burned ~45 exploration turns (~50 min) just orienting itself before it
 could start planning (`mezo-zjtm.3`). The map collapses that into a single read: one block per
-feature naming its backend package, tables, endpoints, hooks, UI surfaces and tests, plus the
+feature naming its backend package, tables, endpoints and tests, plus the
 feature doc to read next.
 
 The house rule that follows from it is in [`AGENTS.md`](../../AGENTS.md) and in both domain
@@ -23,7 +23,7 @@ then read the matching `docs/features/<x>.md` §10 — do not grep the tree to o
 
 | | |
 |---|---|
-| **In scope (WHERE)** | Directory and package paths, class names, `@Table` names, contract fragment paths, method + path endpoint lines, hook names, file lists, IT/populator names, doc links |
+| **In scope (WHERE)** | Directory and package paths, class names, `@Table` names, contract fragment paths, method + path endpoint lines, IT/populator names, doc links |
 | **Out of scope (HOW)** | Behaviour, data flow, rationale, recipes, contracts-in-prose — all of that belongs in `docs/features/<x>.md` §1–§9, which every block links to |
 
 Consequence: the map never needs a human edit, because everything in it is mechanically
@@ -35,11 +35,11 @@ belongs in the feature doc instead.
 `scripts/gen-codemap.mjs` (~330 lines, zero dependencies — `node:fs`/`node:path`/`node:child_process`
 only). No LLM is involved; extraction is convention + regex, so the output is deterministic.
 
-**Feature keys** are the union of the directory names under
-`backend/src/main/java/io/mrkuhne/mezo/feature/`, `frontend/src/data/` and
-`frontend/src/features/`. The backend/contract naming space is domain-shaped (`meal`, `pantry`,
-`biometrics`) and the frontend space is tab-shaped (`fuel`, `me`, `today`); the map does not
-force them together — a block simply states which spaces it exists in.
+**Feature keys** are the directory names under
+`backend/src/main/java/io/mrkuhne/mezo/feature/`; a block states which of the two spaces —
+backend package and contract fragment — it exists in. (The frontend `data/` and `features/`
+spaces left with the web app, retired 2026-11-19, #52; a `status: retired` feature doc is not
+reported as unaligned.)
 
 **Two bindings do the cross-space work, so there is no alias table to maintain:**
 
@@ -58,8 +58,7 @@ silently dropped — that section is a worklist, not noise.
 Other conventions it relies on: `feature/<x>/{entity,service,controller,repository,mapper,config,event}/`
 sub-packages (anything else at that level is reported as a sub-feature); `@Table(name = "…")`
 on mapped entities (an `entity/` class without one is an embedded json/value type and is listed
-under *other*); the `data/hooks.ts` re-export barrel as the source of hook names;
-`features/<x>/{pages,sheets,components,logic}/`; `*IT.java` for integration tests;
+under *other*); `*IT.java` for integration tests;
 `*Populator` types referenced from a feature's tests.
 
 ## Determinism and the freshness gate
