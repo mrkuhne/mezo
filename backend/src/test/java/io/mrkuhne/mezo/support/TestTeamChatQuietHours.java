@@ -2,7 +2,6 @@ package io.mrkuhne.mezo.support;
 
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatQuietHours;
-import io.mrkuhne.mezo.feature.notification.config.NotificationProperties;
 import java.time.Instant;
 import org.springframework.boot.test.context.TestComponent;
 import org.springframework.context.annotation.Primary;
@@ -22,8 +21,8 @@ public class TestTeamChatQuietHours extends TeamChatQuietHours {
 
     private volatile boolean enforced;
 
-    public TestTeamChatQuietHours(NotificationProperties notificationProperties, TeamChatProperties properties) {
-        super(notificationProperties, properties);
+    public TestTeamChatQuietHours(TeamChatProperties properties) {
+        super(properties);
     }
 
     /** Apply the real, configured quiet window for the rest of this test. */

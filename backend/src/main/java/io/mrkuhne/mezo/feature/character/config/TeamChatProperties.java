@@ -1,10 +1,12 @@
 package io.mrkuhne.mezo.feature.character.config;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.time.ZoneId;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -40,4 +42,15 @@ public record TeamChatProperties(
         /** S7: how long the reply listener waits after a USER line before answering, so a burst
          *  of quick lines gets ONE answer (the newest line's event answers them all). Bound from
          *  {@code reply-debounce-ms}. */
-        @Name("reply-debounce-ms") @Min(0) @Max(10000) long replyDebounceMillis) {}
+        @Name("reply-debounce-ms") @Min(0) @Max(10000) long replyDebounceMillis,
+        /** The do-not-disturb window ({@code TeamChatQuietHours}): no ügy opens inside it and an
+         *  ügy opened in its evening part never pushes. Moved here unchanged from the retired web
+         *  push's {@code mezo.notification.quiet-hours} (mezo-r36n9.97.7). */
+        @NotNull @Valid QuietHours quietHours) {
+
+    /** Wraps midnight when start > end (the 22:00→07:00 default); start == end means "no quiet
+     *  hours". */
+    public record QuietHours(
+            @NotBlank @Pattern(regexp = "([01]\\d|2[0-3]):[0-5]\\d") String start,
+            @NotBlank @Pattern(regexp = "([01]\\d|2[0-3]):[0-5]\\d") String end) {}
+}

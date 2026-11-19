@@ -16,8 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  *  W5.1 flag — a raised flag must never be undeliverable. Every {@link FlagKey} constant now has
  *  a library entry (the S4 {@code logging_gap}/{@code missed_workouts} additions and the S6 batch
  *  B six closed the last gaps). Config + binding only; {@code InterventionService} (candidate
- *  selection) and {@code AnchorResolver} (push anchoring) are the library's consumers, covered by
- *  their own IT/unit suites, not here. */
+ *  selection) is the library's consumer, covered by its own IT/unit suites, not here. */
 class InterventionConfigIT extends AbstractIntegrationTest {
 
     @Autowired CompanionProperties companionProperties;

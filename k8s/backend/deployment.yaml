@@ -175,23 +175,6 @@ spec:
               value: ecs
             - name: MEZO_MANAGEMENT_PORT
               value: "8081"
-            # H2 Web Push N1 (mezo-h4wp.6.1): the VAPID keypair backing every push we
-            # sign. Both halves live in the mezo-app SealedSecret — the private one is
-            # secret, the public one is not, but it is kept beside it so the pair can
-            # never drift apart (a mismatched pair fails as a GENERIC push-service error,
-            # not a loud one — see docs/features/_platform-notifications.md).
-            # (The web frontend that baked the public half into its bundle was retired
-            # 2026-11-19, #52.)
-            - name: VAPID_PUBLIC
-              valueFrom:
-                secretKeyRef:
-                  name: mezo-app
-                  key: VAPID_PUBLIC
-            - name: VAPID_PRIVATE
-              valueFrom:
-                secretKeyRef:
-                  name: mezo-app
-                  key: VAPID_PRIVATE
           # startupProbe gives Spring Boot + Liquibase time to come up before
           # liveness/readiness start judging it. /actuator/health lives on the management
           # port (mezo-ibxy) — a broken management server = an unhealthy pod, on purpose.

@@ -27,7 +27,7 @@ import org.hibernate.type.SqlTypes;
  * a bug: it is a different session.
  *
  * <p><b>Trap:</b> {@code dayOfWeek} is 0=Hét..6=Vas (the legacy slot-table convention, NOT ISO —
- * see {@code AnchorResolver}'s "Trap #1" comment, which this exact confusion has bitten before).
+ * this exact confusion has bitten before).
  * Every call site converts a {@link LocalDate} with {@code date.getDayOfWeek().getValue() - 1}.
  *
  * <p>{@code createdBy}, {@code is_deleted} and {@code created_at} come from {@link OwnedEntity}.

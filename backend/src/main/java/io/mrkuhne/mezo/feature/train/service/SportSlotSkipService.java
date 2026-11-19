@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>A skip is identified by the slot's IDENTITY — weekday + clock time — not by
  * {@code sport_schedule_slot.id}; see {@link SportSlotSkipEntity}'s javadoc for why. Every caller
  * converts a {@link LocalDate} to the legacy 0=Hét..6=Vas convention with
- * {@code date.getDayOfWeek().getValue() - 1} — NOT ISO (the {@code AnchorResolver} "Trap #1").
+ * {@code date.getDayOfWeek().getValue() - 1} — NOT ISO.
  *
  * <p>Kihagyás S1 (mezo-q4xt2.1): every read here is a UNION with {@code planned_skip} SPORT rows —
  * a user-declared sport skip hides the slot exactly like an advice skip does, everywhere this

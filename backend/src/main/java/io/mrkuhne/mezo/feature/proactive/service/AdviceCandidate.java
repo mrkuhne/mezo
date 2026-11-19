@@ -10,8 +10,8 @@ import java.util.List;
  * @param adviceKey       the SEVERITY key — the flag key or setup-check key {@link AdvicePriority}
  *                        ranks. Never null.
  * @param interventionKey the intervention-library ENTRY key on a flag-sourced candidate (the
- *                        per-entry cooldown, the {@code intervention:<key>} effectiveness rollup
- *                        and {@code AnchorResolver}'s push channel gate all read this); null on a
+ *                        per-entry cooldown and the {@code intervention:<key>} effectiveness
+ *                        rollup read this); null on a
  *                        setup-sourced one.
  * @param setupKey        the setup-check key on a setup-sourced candidate; null on a flag-sourced one.
  * @param eyebrow         the card's eyebrow — the source's own ("Mezo · észrevétel" /
