@@ -1225,7 +1225,11 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "463734c13b3a"
+      "hash": "cad9dfc0ad3c"
+    },
+    "kiadasok:78e52679e": {
+      "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
+      "hash": "72e49809db0d"
     }
   }
 }

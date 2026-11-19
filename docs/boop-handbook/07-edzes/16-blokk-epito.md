@@ -38,8 +38,9 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
 Az építő és a pakli abból a gombból, illetve kártyából **nagyul ki**, amire koppintottál, és lefelé húzva oda zsugorodik vissza; az
 építő már a Blokk fül megnyitásakor betölt a háttérben, így várakozás nélkül nyílik.
 
-Egyetlen fő gomb van: amíg valamelyik izom kilóg, **„Igazítsd a sávba”** (minden kilógó izomra alkalmazza a javaslatot), utána
-**„Mentés”**.
+Egyetlen fő gomb van: ha változtattál valamit, **„Mentés”** — így soha nem kell elfogadnod egy sorozat-javaslatot ahhoz,
+hogy egy beállítást elments; ha nincs mit menteni, de valamelyik izom kilóg, **„Igazítsd a sávba”** (minden kilógó izomra
+alkalmazza a javaslatot). Ha a „Két sorozat bukásig” módról váltanál, előtte szól, hogy a gyakorlatok két sorozaton maradnak.
 
 ## Hogyan működik
 1. A telefon lekéri a futó blokkot és a gyakorlatok adatait (melyik stabil, melyiknél biztonságos a félismétlés).

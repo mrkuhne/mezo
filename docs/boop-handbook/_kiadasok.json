@@ -380,5 +380,16 @@
     ],
     "mi_valtozott": "Az Edzés → Blokk fülön a futó blokkodat izmonként, naponként és a teljes blokkra állíthatod: szint, sorozatszám, technika, a nap kihívása, edzésmód, technikák be/ki, és hogy a heti javaslatot te hagyod-e jóvá. Minden számot a szerver tervmérője ad, egyetlen fő gomb van (Igazítsd a sávba / Mentés). Hétfőn a heti javaslat egy kártyapakliban jön: izmonként egy kártya, gyakorlatonként elfogadod vagy megtartod, a végén összegzés — vagy egy gombbal elfogadod átnézés nélkül. A blokkon most még a magától érvényesülő mód él; a jóváhagyást a Blokk fülön kapcsolod be. A szerver egy nap mentésénél megtartja a gyakorlatok azonosítóját, így a még eldöntetlen heti sorok nem vesznek el.",
     "verzio": "v3.5.0"
+  },
+  "78e52679e": {
+    "tipus": "Javítás",
+    "cim": "Blokképítő: miért ez a sáv, gyorsabb nyitás, kinagyuló átmenet",
+    "datum": "2026-11-19",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.83"
+    ],
+    "mi_valtozott": "Az izmok kártyáján kis címkéken látszik a sáv és hogy melyik napon hány sorozat van, alul pedig mindig ott a magyarázat, miért éppen ez a sáv. Az építő már a Blokk fül megnyitásakor betölt, így várakozás és villanás nélkül nyílik. Az építő és a heti pakli abból a gombból, illetve kártyából nagyul ki, amire koppintottál, és lefelé húzva oda zsugorodik vissza.",
+    "verzio": ""
   }
 }
