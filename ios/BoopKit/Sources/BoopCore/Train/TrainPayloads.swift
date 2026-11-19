@@ -41,12 +41,32 @@ public struct WorkoutSetPayload: Codable, Equatable, Sendable {
     public var kind: SetKind
     public var targetWeightKg: Double?
     public var targetReps: Int?
+    /// The technique's wire value and the steps after the main part (T2). Optional, so a set queued by an older
+    /// build still decodes.
+    public var technique: String?
+    public var legs: [WorkoutLegPayload]?
     public init(workoutRef: UUID, exerciseId: UUID, setIndex: Int, weightKg: Double, reps: Int, rir: Int? = nil,
                 side: String? = nil, note: String? = nil, kind: SetKind = .working,
-                targetWeightKg: Double? = nil, targetReps: Int? = nil) {
+                targetWeightKg: Double? = nil, targetReps: Int? = nil, technique: String? = nil,
+                legs: [WorkoutLegPayload]? = nil) {
         self.workoutRef = workoutRef; self.exerciseId = exerciseId; self.setIndex = setIndex
         self.weightKg = weightKg; self.reps = reps; self.rir = rir; self.side = side; self.note = note
         self.kind = kind; self.targetWeightKg = targetWeightKg; self.targetReps = targetReps
+        self.technique = technique; self.legs = legs
+    }
+}
+
+/// One step after a technique set's main part, as it travels in the queue.
+public struct WorkoutLegPayload: Codable, Equatable, Sendable {
+    public var kind: String
+    public var weightKg: Double?
+    public var reps: Int?
+    public var restSec: Int?
+    public init(kind: String, weightKg: Double? = nil, reps: Int? = nil, restSec: Int? = nil) {
+        self.kind = kind; self.weightKg = weightKg; self.reps = reps; self.restSec = restSec
+    }
+    public init(_ leg: LoggedLeg) {
+        self.init(kind: leg.kind.rawValue, weightKg: leg.weightKg, reps: leg.reps, restSec: leg.restSec)
     }
 }
 
@@ -59,10 +79,12 @@ public struct WorkoutSetEditPayload: Codable, Equatable, Sendable {
     public var rir: Int?
     public var side: String?
     public var note: String?
+    /// `nil` = leave the set's steps as they are on the server.
+    public var legs: [WorkoutLegPayload]?
     public init(workoutRef: UUID, setId: UUID, weightKg: Double, reps: Int, rir: Int? = nil,
-                side: String? = nil, note: String? = nil) {
+                side: String? = nil, note: String? = nil, legs: [WorkoutLegPayload]? = nil) {
         self.workoutRef = workoutRef; self.setId = setId; self.weightKg = weightKg; self.reps = reps
-        self.rir = rir; self.side = side; self.note = note
+        self.rir = rir; self.side = side; self.note = note; self.legs = legs
     }
 }
 

@@ -873,7 +873,8 @@
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Edzés közben a gyakorlatnál és a sorozatnál látod a technikát és a kihívást, a naplóban megjelennek a technikás sorozatok, és a blokkban beállíthatod őket."
+    "mit_kapsz": "Edzés közben a gyakorlatnál és a sorozatnál látod a technikát és a kihívást, a naplóban megjelennek a technikás sorozatok, és a blokkban beállíthatod őket.",
+    "munkamenet": "player-technique"
   },
   "mezo-r36n9.86": {
     "cim": "Egy ritkán elbukó automata ellenőrzés a szerveren",
@@ -932,6 +933,24 @@
       "Edzés"
     ],
     "mit_kapsz": "Megbízhatóbb ellenőrzés minden kiadásnál: egy, a csapat-csevegést vizsgáló teszt néha ok nélkül elbukik, ezt kell kijavítani."
+  },
+  "mezo-r36n9.95": {
+    "cim": "Étel: egy dátumhoz kötött teszt javítása",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Az étel-rögzítés egyik automatikus ellenőrzése újra megbízhatóan fut; neked nem változik semmi."
+  },
+  "mezo-r36n9.96": {
+    "cim": "Edzés: a javított sorozat a szerverre is jusson fel",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha edzés közben kijavítasz egy már rögzített sorozatot, a javítás a szerverre is felkerül, nem csak a telefonon változik."
   },
   "mezo-r36n9.97": {
     "cim": "A webes app leállítása és a csak-webes szerverrészek kivezetése",

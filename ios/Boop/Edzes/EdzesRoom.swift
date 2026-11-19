@@ -416,13 +416,17 @@ struct EdzesRoom: View {
     }
 
     private func enqueueSet(_ exerciseId: UUID, _ set: SessionSet) {
-        guard let session = store?.session else { return }
-        let plan = session.exercises[exerciseId]?.plan(at: max(0, (session.exercises[exerciseId]?.logged.count ?? 1) - 1))
+        guard let session = store?.session, let exercise = session.exercises[exerciseId] else { return }
+        // The set's own place in the exercise, found by id: a technique set is appended only when its last step
+        // is done, and a skip or a switch can be what finishes it.
+        let index = exercise.logged.firstIndex { $0.id == set.id } ?? max(0, exercise.logged.count - 1)
+        let plan = exercise.plan(at: index)
         let payload = WorkoutSetPayload(
             workoutRef: session.ref, exerciseId: exerciseId,
-            setIndex: max(0, (session.exercises[exerciseId]?.logged.count ?? 1) - 1),
+            setIndex: index,
             weightKg: set.kg ?? 0, reps: set.reps, rir: set.rir, kind: set.kind,
-            targetWeightKg: plan?.targetKg, targetReps: plan?.targetReps)
+            targetWeightKg: plan?.targetKg, targetReps: plan?.targetReps,
+            technique: set.technique?.rawValue, legs: set.legs?.map(WorkoutLegPayload.init))
         enqueue(.workoutWrite(.workoutSet, payload: TrainPayloadCodec.encode(payload),
                               workoutRef: session.ref, date: brief?.date ?? "", capturedAt: set.at))
     }

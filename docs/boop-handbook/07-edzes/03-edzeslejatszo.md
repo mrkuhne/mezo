@@ -58,6 +58,21 @@ játékosít, és egy edzés itt nincs leosztályozva ötből.
 5. **Gyakorlat-megjegyzés**, amit legközelebb előre betölt.
 6. **Befejezés** záró megjegyzéssel, majd összegzés.
 
+**Technika és kihívás edzés közben (2026-11-19):**
+
+- Ha egy gyakorlaton ma **technika** van vagy ez a **nap kihívása**, a neve alatt címke mutatja („PIHENŐS DROP”, „MYO SET”,
+  „KIHÍVÁS”), a sorozatok táblázatában pedig a technikás sorozat alatt egy sor jelzi előre.
+- **A technikás sorozatnál** egy lépéskártya mondja, mi jön: például „1 · Bukásig”, „2 · 30 mp pihenő”, „3 · 40 kg, ugyanannyi”.
+  A rövid pihenő a kártyán számol vissza, és magától lép tovább (vagy „Kezdem”). A kisebb súlyt **abból számolja, amit ténylegesen
+  emeltél** (30%-kal kevesebb, lefelé a legközelebbi 2,5 kg-ra), az ismétlést abból, amennyit csináltál. Myo szettnél a mini-sorozatok
+  addig jönnek, amíg egy már nem éri el a 3 ismétlést.
+- **„Elég volt”**: bármikor abbahagyhatod; a sorozat azzal mentődik, amit addig megcsináltál.
+- **A kihívás** az utolsó teljes sorozat után, pihenő nélkül jön: egy nagy kör, amire minden félismétlésnél rákoppintasz, mellette
+  a csúcsod. Ha megdöntöd, aranyra vált, és a „Hogy ment?” résznél ott áll: „Új csúcs: 9 félismétlés · eddig 7”.
+- A sorozat **egyben megy fel a szerverre**, a lépéseivel együtt, amikor a technika véget ért. A rekordokba és a következő edzés
+  súlyába csak a főrész számít.
+- **A sorozatok közti pihenő** stílusos blokkban annyi, amennyit a szerver előír (máskor 90 másodperc).
+
 ## Hogyan működik
 1. A telefon lekéri a mai edzést: a háttérrendszer kiszámolja minden gyakorlat előírt sorozatait (bemelegítés + munkasorozatok),
    az indoklást és a múlt heti viszonyítást (lásd [Progresszió-motor](04-progresszio-motor.md)).
