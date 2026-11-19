@@ -1129,5 +1129,15 @@
     "szulo": "mezo-r36n9.33",
     "allapot": "Később",
     "mit_kapsz": "Néhány elkészült munkadarab nem került fel a tábládra, így számodra nem is létezik. Ez pótolja őket, hogy a Jegyek tábla tényleg mindent mutasson."
+  },
+  "mezo-r36n9.101": {
+    "cim": "Étel: a főoldal új, melegebb elrendezése",
+    "tipus": "Funkció",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Az Étel főoldala egy pillantásra megmutatja, mi számít most, hogyan áll a napod egy görbén, mennyi fér még bele, és egy koppintással rögzíthetsz étkezést.",
+    "munkamenet": "boop-etel-fooldal"
   }
 }

@@ -73,8 +73,35 @@ components:
       description: >-
         What an ingredient row matched (by name). catalogId is null when it matched nothing; confidence is derived
         deterministically (never taken from the AI); needsReview is true for every unmatched or low-confidence row.
-      required: [confidence, needsReview]
+      required: [confidence, needsReview, state, onShelf, amountDoubt, alternatives]
       properties:
+        state:
+          type: string
+          enum: [matched, confirm, missing]
+          description: >-
+            The row's face on the review (mezo-r36n9.63). matched = an exact name match whose amount converted
+            cleanly; confirm = the AI's pick, or an exact match whose amount is doubtful — never saved without
+            the owner's tap; missing = nothing in the pantry fits (catalogId is null).
+        onShelf:
+          type: boolean
+          description: 'True when the matched food is already on the owner''s shelf; false = it reaches the shelf when the recipe is saved (always false when nothing matched).'
+        basisUnit:
+          type: string
+          nullable: true
+          description: >-
+            The matched food's basis unit (g, ml, db …). Once a row has a food, the line's `unit` IS this unit and
+            `amount` is already converted into it. null when nothing matched (the line keeps the unit as said).
+        amountDoubt:
+          type: boolean
+          description: >-
+            True when the said amount could not be converted cleanly into the food's basis unit (spoons or
+            millilitres against a gram food, a piece, a can, or no amount at all — then `amount` is 0). The
+            amount is a prefill to check, and the row is `confirm`.
+        alternatives:
+          type: array
+          maxItems: 3
+          description: 'Other pantry foods the row could be (the „Másik" list), best first. Empty when there are none.'
+          items: { $ref: '#/components/schemas/RecipeImportAlternative' }
         catalogId:
           type: string
           format: uuid
@@ -84,8 +111,19 @@ components:
             reaches the owner's shelf only when the recipe is saved with this id as the ingredient's catalogId.
         confidence: { type: number, minimum: 0, maximum: 1 }
         needsReview: { type: boolean }
+    RecipeImportAlternative:
+      type: object
+      description: A pantry food offered instead of the row's match; picking it binds the row to catalogId.
+      required: [catalogId, name, basisUnit]
+      properties:
+        catalogId: { type: string, format: uuid }
+        name: { type: string }
+        brand: { type: string, nullable: true }
+        basisUnit: { type: string, description: 'The food''s basis unit — the unit the row takes when this food is picked' }
     RecipeImportLine:
-      description: A Receptműhely draft line plus what it matched and the text it was read from.
+      description: >-
+        A Receptműhely draft line plus what it matched and the text it was read from. `amount` is 0 only when
+        match.amountDoubt is true and nothing was stated — a value to type, never to save.
       allOf:
         - $ref: '#/components/schemas/WorkshopDraftLine'
         - type: object

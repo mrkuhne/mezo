@@ -64,7 +64,7 @@ struct FoodPreviewTests {
         #expect(library.first { $0.allergens["milk"] == .contains } != nil)
         let first = library[0]
         #expect(try await food.recipeLogs(first.id).count == 2)
-        #expect(try await food.recipeBreakdown(first.id).breakdown?.dimensions.count == 3)
+        #expect(try await food.recipeBreakdown(first.id).breakdown?.dimensions.count == 8)
         #expect(try await food.recipeImage(first.id) != nil)
         try await food.setRecipeImage(Data([1, 2, 3]), recipeId: first.id)
         try await food.deleteRecipeImage(first.id)

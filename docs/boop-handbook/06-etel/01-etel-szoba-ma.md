@@ -1,48 +1,52 @@
 ---
-cim: Az Étel szoba ma (B2 váz)
+cim: Az Étel szoba Ma füle
 szint: Funkció
 terulet: Étel
 allapot: Élesben
 hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
-szakasz: [S3, B2]
-osszefoglalo: Ma a Fuel gömbről nyíló egyszerű szoba mutatja, mennyit ettél a célhoz képest, a „+” lapon pedig már ott az Étkezés csempe.
+szakasz: [B4]
+osszefoglalo: Egy pillantásra megmutatja, mi számít most, hogyan áll a napod egy görbén, mennyi fér még bele, és egy koppintással rögzíthetsz étkezést.
 ---
 
 ## Mit csinál
-Ami az iPhone-on ma már megvan az ételből:
+Az Étel szoba (a kezdőlap Étel gömbjéről nyílik) saját alsó sávval jön: Ma · Receptek · Kamra · Hét · Boop. A **Ma**
+fül fentről lefelé:
 
-- **A reggeli összefoglalóban** szerepel az étel: mennyi kalóriát ettél eddig a napi célhoz képest, és a napi útvonalon
-  az étkezések (S3).
-- **A Fuel szoba**: a Ma oldalon a Fuel gömbre (vagy a lencsesor sorára, vagy az útvonal egy állomására) koppintva
-  megnyílik a szoba ugyanazzal a négy részes vázzal, mint a többi: 1 A szint (szám és felirat), 2 a hét (az ételnél
-  még egy őszinte „hamarosan” sor), 3 a napok mögötte, 4 Mit tehetsz.
-- **A „+” lap** felső kártyája az „Étkezés” — „Boop kiszámolja, és megmondja, belefér-e” — négy gombbal: Fotó,
-  Szöveg, Vonalkód, Recept. Alatta egy szövegmező: „Mondd vagy írd: ebéd, csirke rizzsel…”. Ezek **még csak keretek**:
-  koppintásra „hamarosan” üzenet jön.
+- **Fejléc:** a festett zöld táj (fotó nélkül), a gömbben a mai étkezéseid átlagpontszáma, alatta egy mondat:
+  „1 980 kalória van még hátra” (például) és hogy melyik makró van a legmesszebb.
+- **Ami ma számít:** Boop egyetlen tippje kiemelve, ha recepthez köthető, „Megnézem a receptet” gombbal.
+- **Rögzítés egy koppintással:** Fotó · Leírom · Vonalkód · Szokásos.
+- **Ma eddig:** három szám — kalória (a kereteddel), fehérje (kiemelve), étkezések a tervből.
+- **A nap menete:** egy görbe. Folytonos vonal, amit megettél; szaggatott, ahová a mai terv visz; fölötte a kereted.
+- **Makrók:** mindháromnál mennyi van meg és mennyi fér még bele.
+- **A mai étkezések:** sorok. A megevett étkezés koppintásra helyben kinyílik a nyolc szemponttal és Boop
+  megjegyzésével; az éppen aktuális étkezés mutatja a javaslatot és a Megeszem / Kihagyom gombot, a későbbiek
+  egy csendes sor, ami koppintásra nyílik.
+- **Víz** (+250 / +500) és **kiegészítők** (Bevettem), alul „Kérdezd meg Boopot az étkezésedről”.
 
 ## Hogyan működik
-A telefon a reggeli összefoglalót kéri le a háttérrendszertől. Az összefoglaló az étel-napot a meglévő napi étel-nézetből
-veszi (célok, elfogyasztott mennyiség, étkezések), és egy sorba sűríti: „eddig ennyi a célhoz képest”. A telefon ezt
-mutatja a gömbön és a szobában. Írni még semmit nem lehet a Boopból — étkezést ma a webes appban rögzítesz, és a Boop
-a következő frissítéskor látja.
+A telefon a háttérrendszertől kéri a napot (célok, elfogyasztott, étkezések) és a napi tervet (étkezési ablakok,
+keretek, javaslat, tipp). A görbét a telefon rajzolja: a megevett étkezések időpontja szerint összeadva, „most”-tól
+a terv nyitott ablakainak kereteivel. Minden blokk magában töltődik és magában jelez hibát, egy lassú rész nem
+üríti ki az oldalt. A keret túllépése negatív szám normál színnel, soha nem piros, és semmi nem számol sorozatot.
 
 ## Miért így
-A B2 szakasz (Gerinc) feladata az új váz volt: Ma · Terv · Napló · Boop + „+”, a szobák közös sablonja és a „+” lap
-kerete. A valódi étel-funkciók a B4-ben épülnek, ezért a keret őszintén „hamarosan”-t mond, nem tesz úgy, mintha működne.
+A tulajdonos 2026-11-19-én kérte, hogy az Étel szoba az Élet-vázlat meleg elrendezését kapja: kevés kártya, sok
+egymondatos tény, egy görbe a napról. A paradicsomos fotót ugyanaznap kérte kivenni a fejlécből.
 
 ## Beállítások
-Nincs.
+Nincs saját; a keretek és az ablakok az [étrend-beállításokból](04-napi-keret.md) jönnek.
 
 ## Adattáblák
 | Tábla | Mit tárol |
 |---|---|
-| `boop_brief` | A napi reggeli összefoglaló, benne az étel-sor |
-| `meal` | Az étkezések, amelyekből az „eddig ennyi” összeadódik |
+| `meal`, `meal_item` | Az étkezések, ebből adódik össze a nap és a görbe |
+| `water_log` | A víz bejegyzései |
+| `supplement_intake` | A kiegészítők bevétele |
 
 ## Mi jön még
-B4: a Fuel szoba helyére a teljes Étel szoba lép a belső fülekkel (Ma · Receptek · Kamra · Hét), és a „+” lap
-étkezés-gombjai élesednek.
+A Hét fül ugyanerre az elrendezésre kerül.
 
 ## Mi marad ki
 Nincs.

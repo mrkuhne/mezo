@@ -137,10 +137,13 @@ struct MealComposerTests {
 
     @Test func savingAConfirmationCardRemovesIt() async throws {
         let outbox = box()
-        let id = try await outbox.enqueueMeal(draft: MealCapture(text: "vacsora"), photoRef: nil, capturedAt: moment)
+        // The outbox reads the real clock and drops a capture older than a week, so the capture is stamped with the
+        // real "now" (a fixed `moment` made this test fail by the calendar from 2026-11-14 on).
+        let today = Date()
+        let id = try await outbox.enqueueMeal(draft: MealCapture(text: "vacsora"), photoRef: nil, capturedAt: today)
         await outbox.flush()
         let card = try #require(await outbox.pendingDrafts().first)
-        let m = model(outbox: outbox)
+        let m = model(outbox: outbox, clock: today)
         m.adopt(card, photo: nil)
         #expect(m.stage == .draft && m.cardId == id)
         _ = await m.save()

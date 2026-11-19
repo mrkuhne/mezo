@@ -195,9 +195,66 @@ class RecipeImportIT extends ApiIntegrationTest {
         assertThat(mismatch.getMatch().getCatalogId()).isEqualTo(catalogId);
         assertThat(mismatch.getMatch().getConfidence()).isEqualByComparingTo("0.5");
         assertThat(mismatch.getMatch().getNeedsReview()).isTrue();
-        assertThat(mismatch.getUnit()).isEqualTo("ml");              // nothing assumed against the g row
+        // Since mezo-r36n9.63 a row with a food carries that food's basis unit: the 30 ml is prefilled
+        // as 30 g and FLAGGED, so it can never be saved unseen.
+        assertThat(mismatch.getUnit()).isEqualTo("g");
         assertThat(mismatch.getAmount()).isEqualByComparingTo("30");
+        assertThat(mismatch.getMatch().getAmountDoubt()).isTrue();
+        assertThat(mismatch.getMatch().getState()).isEqualTo(io.mrkuhne.mezo.api.dto.RecipeImportMatch.StateEnum.CONFIRM);
         assertThat(mismatch.getKcal()).isNull();
+    }
+
+    @Test
+    void testImportText_shouldFillStateAndBasisUnit() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID catalogId = createFoodItem(auth, "Csirkemell").getCatalogId();
+        RecipeImportTextRequest req = new RecipeImportTextRequest();
+        req.setText("[fake-recipe-import:{\"name\":\"Állapotok\",\"servings\":2,\"category\":\"lunch\","
+            + "\"ingredients\":[\"200 g csirkemell\",\"1 db ismeretlen csoda\",\"csirkemell\"],\"steps\":[]}]");
+
+        List<RecipeImportLine> lines = postForBody("/api/recipe/import/text", req, auth, HttpStatus.OK,
+            RecipeImportResponse.class).getResult().getLines();
+
+        var matched = lines.get(0).getMatch();
+        assertThat(matched.getState()).isEqualTo(io.mrkuhne.mezo.api.dto.RecipeImportMatch.StateEnum.MATCHED);
+        assertThat(matched.getCatalogId()).isEqualTo(catalogId);
+        assertThat(matched.getBasisUnit()).isEqualTo("g");
+        assertThat(matched.getOnShelf()).isTrue();
+        assertThat(matched.getAmountDoubt()).isFalse();
+        assertThat(matched.getAlternatives()).isEmpty(); // the import routes offer none
+
+        var missing = lines.get(1).getMatch();
+        assertThat(missing.getState()).isEqualTo(io.mrkuhne.mezo.api.dto.RecipeImportMatch.StateEnum.MISSING);
+        assertThat(missing.getBasisUnit()).isNull();
+        assertThat(missing.getOnShelf()).isFalse();
+        assertThat(lines.get(1).getUnit()).isEqualTo("db"); // no food yet: the unit stays as written
+        assertThat(lines.get(1).getAmount()).isEqualByComparingTo("1");
+
+        var noAmount = lines.get(2); // the food is known, the amount was never written
+        assertThat(noAmount.getMatch().getState()).isEqualTo(io.mrkuhne.mezo.api.dto.RecipeImportMatch.StateEnum.CONFIRM);
+        assertThat(noAmount.getMatch().getAmountDoubt()).isTrue();
+        assertThat(noAmount.getMatch().getConfidence()).isEqualByComparingTo("0.5");
+        assertThat(noAmount.getAmount()).isEqualByComparingTo("0");
+        assertThat(noAmount.getUnit()).isEqualTo("g");
+    }
+
+    @Test
+    void testImportText_shouldConvertDekaIntoBasis() {
+        HttpHeaders auth = ownerAuthHeaders();
+        createFoodItem(auth, "Rizs");
+        RecipeImportTextRequest req = new RecipeImportTextRequest();
+        req.setText("[fake-recipe-import:{\"name\":\"Rizses\",\"servings\":2,\"category\":\"lunch\","
+            + "\"ingredients\":[\"30 dkg rizs\",\"0,5 kg rizs\"],\"steps\":[]}]");
+
+        List<RecipeImportLine> lines = postForBody("/api/recipe/import/text", req, auth, HttpStatus.OK,
+            RecipeImportResponse.class).getResult().getLines();
+
+        assertThat(lines.get(0).getAmount()).isEqualByComparingTo("300");
+        assertThat(lines.get(0).getUnit()).isEqualTo("g");
+        assertThat(lines.get(0).getMatch().getAmountDoubt()).isFalse();
+        assertThat(lines.get(0).getMatch().getState()).isEqualTo(io.mrkuhne.mezo.api.dto.RecipeImportMatch.StateEnum.MATCHED);
+        assertThat(lines.get(1).getAmount()).isEqualByComparingTo("500");
+        assertThat(lines.get(1).getMatch().getAmountDoubt()).isFalse();
     }
 
     @Test

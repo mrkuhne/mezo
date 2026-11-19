@@ -403,6 +403,30 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern RECIPE_IMPORT_SENTINEL =
             Pattern.compile("\\[fake-recipe-import:(\\{.*})]", Pattern.DOTALL);
 
+    /** Scripted „Ezt főztem" read (mezo-r36n9.63): {@code [fake-cooked:{json}]} planted in the typed
+     *  note or — decoded from the bytes — any of the photos; the payload is returned verbatim. No
+     *  sentinel -> prompt echo -> the caller reads "nothing usable". */
+    public static final Pattern COOKED_SENTINEL =
+            Pattern.compile("\\[fake-cooked:(\\{.*})]", Pattern.DOTALL);
+
+    /** The „Ezt főztem" PICK call has nowhere to plant a payload (its user message is built by the
+     *  server from parsed names and pantry ids), so the fake answers it deterministically: for every
+     *  line it chooses the FIRST candidate listed and names the next two as runners-up. A said text
+     *  carrying this marker makes that line answer "none" (the runners-up are still named). A said
+     *  text carrying {@link #FAIL_COMPLETE} fails the whole call, which is the degrade path. */
+    public static final String COOKED_PICK_NONE = "[fake-pick-none]";
+
+    /** The pantry quick-add estimate (mezo-r36n9.63) is canned: these per-100-g facts for any name… */
+    public static final String ESTIMATE_CANNED_ANSWER =
+            "{\"basisUnit\":\"g\",\"kcal\":354,\"proteinG\":7.8,\"carbsG\":64.9,\"fatG\":9.9,"
+                    + "\"fiberG\":21.1,\"sugarG\":3.2,\"saltG\":0.1,\"saturatedFatG\":3.1}";
+    /** …except a name carrying this word, which gets an answer whose energy contradicts its macros. */
+    public static final String ESTIMATE_IMPLAUSIBLE_NAME = "fakerosszbecsles";
+    private static final String ESTIMATE_IMPLAUSIBLE_ANSWER =
+            "{\"basisUnit\":\"g\",\"kcal\":50,\"proteinG\":5,\"carbsG\":10,\"fatG\":60}";
+    private static final Pattern COOKED_PICK_LINE = Pattern.compile("^LINE (\\d+) said: (.*)$");
+    private static final Pattern COOKED_PICK_CANDIDATE = Pattern.compile("^\\s+- ([0-9a-f-]{36}) \\|");
+
     /** Scripted workshop turn (mezo-92pb): {@code [fake-workshop:{json}]} payload returned verbatim. */
     private static final Pattern WORKSHOP_SENTINEL =
             Pattern.compile("\\[fake-workshop:(\\{.*})]", Pattern.DOTALL);
@@ -1282,6 +1306,20 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (recipeImport.find()) {
             return recipeImport.group(1);
         }
+        // „Ezt főztem" (mezo-r36n9.63): the read is scripted by a sentinel in the typed note; the pick
+        // is answered deterministically from the candidates the server listed.
+        Matcher cooked = COOKED_SENTINEL.matcher(userMessage);
+        if (cooked.find()) {
+            return cooked.group(1);
+        }
+        if (systemPrompt.startsWith(io.mrkuhne.mezo.feature.recipe.service.RecipeCookedSelection.SYSTEM_PROMPT)) {
+            return cookedPickAnswer(userMessage);
+        }
+        // Pantry quick-add estimate (mezo-r36n9.63): the user message is only the food's NAME, so the
+        // answer is canned — plausible per-100-g facts, or a self-contradicting one for the marker name.
+        if (systemPrompt.startsWith(io.mrkuhne.mezo.feature.pantry.service.PantryQuickAddService.SYSTEM_PROMPT)) {
+            return userMessage.contains(ESTIMATE_IMPLAUSIBLE_NAME) ? ESTIMATE_IMPLAUSIBLE_ANSWER : ESTIMATE_CANNED_ANSWER;
+        }
         // Receptműhely turn (mezo-92pb): sentinel planted in the user message is returned verbatim;
         // no sentinel -> prompt echo -> unparseable -> 502, as the ITs assert.
         Matcher workshop = WORKSHOP_SENTINEL.matcher(userMessage);
@@ -1300,6 +1338,37 @@ public class FakeCompanionLlm implements CompanionLlm {
                 + " history=[" + ChatHistory.render(history) + "]"
                 + " user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));
+    }
+
+    /** The deterministic „Ezt főztem" pick: first candidate chosen, the next two runners-up (see
+     *  {@link #COOKED_PICK_NONE}). Reads the line/candidate layout {@code RecipeCookedSelection} writes. */
+    private static String cookedPickAnswer(String userMessage) {
+        List<String> picks = new ArrayList<>();
+        String line = null;
+        boolean none = false;
+        List<String> ids = new ArrayList<>();
+        // A trailing head row flushes the last real line (its own entry is never emitted).
+        for (String row : (userMessage + "\nLINE 0 said: end").split("\n")) {
+            Matcher head = COOKED_PICK_LINE.matcher(row);
+            if (head.matches()) {
+                if (line != null) {
+                    String chosen = none || ids.isEmpty() ? "null" : "\"" + ids.get(0) + "\"";
+                    List<String> rest = none ? ids : ids.subList(Math.min(1, ids.size()), ids.size());
+                    String runners = rest.stream().limit(2).map(id -> "\"" + id + "\"")
+                            .collect(java.util.stream.Collectors.joining(","));
+                    picks.add("{\"line\":" + line + ",\"chosen\":" + chosen + ",\"runnersUp\":[" + runners + "]}");
+                }
+                line = head.group(1);
+                none = head.group(2).contains(COOKED_PICK_NONE);
+                ids = new ArrayList<>();
+                continue;
+            }
+            Matcher candidate = COOKED_PICK_CANDIDATE.matcher(row);
+            if (candidate.find()) {
+                ids.add(candidate.group(1));
+            }
+        }
+        return "{\"picks\":[" + String.join(",", picks) + "]}";
     }
 
     @Override
@@ -1333,6 +1402,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             Matcher recipe = RECIPE_IMPORT_SENTINEL.matcher(decoded); // Boop B4 recipe photo
             if (recipe.find()) {
                 return recipe.group(1);
+            }
+            Matcher cooked = COOKED_SENTINEL.matcher(decoded); // „Ezt főztem" capture photo
+            if (cooked.find()) {
+                return cooked.group(1);
             }
         }
         return complete(systemPrompt, userMessage);
