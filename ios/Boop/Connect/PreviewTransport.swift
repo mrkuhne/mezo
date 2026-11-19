@@ -716,8 +716,43 @@ struct PreviewTransport: ClientTransport {
             .replacingOccurrences(of: "°", with: "")
     }
 
+    /// `-previewEdzesTechnique YES` (mezo-r36n9.84): today's first exercise carries the owner's rest drop, the
+    /// second is the day's challenge with a best of 7, the last a myo set — the three moments of the player, each
+    /// reached in a few taps. Names are real stable catalog rows; every number is invented.
+    private static let techniqueDay: [Int: (PreviewExercise, technique: String, challenge: Bool)] = [
+        0: (.init(name: "Lat Pulldown · Neutral", muscle: "back-wide", slug: "lat-pulldown-neutral",
+                  warmups: 0, working: 2, repMin: 8, repMax: 12, last: 57.5, target: 60, lastReps: 10, targetReps: 10,
+                  lever: "weight", rationale: "Múlt héten 57,5 kg × 10 ment → +2,5 kg.", note: nil, warning: nil),
+            "rest_drop", false),
+        1: (.init(name: "Preacher Curl", muscle: "biceps-short", slug: "preacher-curl",
+                  warmups: 0, working: 2, repMin: 10, repMax: 15, last: 30, target: 30, lastReps: 11, targetReps: 11,
+                  lever: "hold", rationale: "Tartjuk a súlyt, a tartomány közepén vagy.", note: nil, warning: nil),
+            "partials", true),
+        4: (.init(name: "Cable Lateral Raise", muscle: "shoulder-side", slug: "cable-lateral-raise",
+                  warmups: 0, working: 2, repMin: 12, repMax: 20, last: 7.5, target: 7.5, lastReps: 15, targetReps: 15,
+                  lever: "hold", rationale: "Tartjuk a súlyt.", note: nil, warning: nil),
+            "myo", false),
+    ]
+
+    private static func techniqueSet(_ technique: String, target: Double, reps: Int) -> String {
+        let legs: String
+        switch technique {
+        case "rest_drop":
+            let drop = ((target * 0.7) / 2.5).rounded(.down) * 2.5
+            legs = #"[{"kind":"drop","weightKg":\#(nkRound(drop)),"reps":\#(reps),"toFailure":false,"restBeforeSec":30,"dropPercent":30}]"#
+        case "myo":
+            let mini = #"{"kind":"mini","weightKg":\#(nkRound(target)),"reps":5,"minReps":3,"toFailure":false,"restBeforeSec":20}"#
+            legs = "[" + Array(repeating: mini, count: 4).joined(separator: ",") + "]"
+        default:
+            legs = #"[{"kind":"partials","toFailure":true,"restBeforeSec":0}]"#
+        }
+        let rir = technique == "myo" ? 1 : (technique == "partials" ? 1 : 0)
+        return #"{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":\#(reps),"targetRIR":\#(rir),"restSec":90,"technique":"\#(technique)","legs":\#(legs)}"#
+    }
+
     private static func previewExercise(_ raw: PreviewExercise, index: Int, plain: Bool) -> String {
-        var e = raw
+        let technique = UserDefaults.standard.bool(forKey: "previewEdzesTechnique") ? techniqueDay[index] : nil
+        var e = technique?.0 ?? raw
         if let s = swapped[index] { e = PreviewExercise(name: s.name, muscle: s.muscle, slug: s.slug,
                                                         warmups: raw.warmups, working: raw.working,
                                                         repMin: raw.repMin, repMax: raw.repMax,
@@ -737,14 +772,21 @@ struct PreviewTransport: ClientTransport {
             let w = (target * (k == 0 ? 0.5 : 0.75) / 2.5).rounded() * 2.5
             return #"{"kind":"warmup","targetWeightKg":\#(nkRound(max(2.5, w))),"targetReps":\#(k == 0 ? 8 : 5)}"#
         }
-        let work = (0..<e.working).map { _ in
+        var work = (0..<e.working).map { _ in
             #"{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":\#(e.targetReps),"targetRIR":2}"#
+        }
+        var flags = ""
+        if let technique, !work.isEmpty {
+            work[work.count - 1] = techniqueSet(technique.technique, target: target, reps: e.targetReps)
+            flags = technique.challenge
+                ? #","technique":"partials","techniqueSource":"planner","challenge":true,"challengeBest":7"#
+                : #","technique":"\#(technique.technique)","techniqueSource":"planner","challenge":false"#
         }
         let sets = "[" + (warm + work).joined(separator: ",") + "]"
         let delta = e.lever == "weight" ? #","deltaKg":\#(nkRound(target - last))"#
             : (e.lever == "rep" ? #","deltaReps":\#(e.targetReps - e.lastReps)"# : "")
         let progression = #","progression":{"lever":"\#(e.lever)"\#(delta),"targetWeightKg":\#(nkRound(target)),"targetReps":\#(e.targetReps),"rationale":"\#(e.rationale)"}"#
-        return head + #","anchorWeightKg":\#(nkRound(last)),"prescribedSets":\#(sets),"lastWeek":{"weightKg":\#(nkRound(last)),"reps":\#(e.lastReps),"rir":2},"rationale":"\#(e.rationale)""# + progression + "}"
+        return head + #","anchorWeightKg":\#(nkRound(last)),"prescribedSets":\#(sets),"lastWeek":{"weightKg":\#(nkRound(last)),"reps":\#(e.lastReps),"rir":2},"rationale":"\#(e.rationale)""# + progression + flags + "}"
     }
 
     /// The swap sheet's list: today's own exercises plus a handful of real alternatives per muscle.

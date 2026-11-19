@@ -40,10 +40,15 @@ public enum BlockStyle: String, CaseIterable, Sendable, Equatable {
 }
 
 /// What may sit on an exercise's last set (T2). The wire spells `rest_drop`.
-public enum SetTechnique: String, CaseIterable, Sendable, Equatable {
+public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
     case none, restDrop = "rest_drop", drop, myo, partials
 
     public init(wire: String?) { self = SetTechnique(rawValue: wire ?? "none") ?? .none }
+
+    /// Lenient like every wire enum: a technique the server adds later reads as straight sets.
+    public init(from decoder: Decoder) throws {
+        self.init(wire: try decoder.singleValueContainer().decode(String.self))
+    }
 
     public var name: String {
         switch self {

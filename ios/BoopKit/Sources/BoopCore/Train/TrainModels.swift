@@ -28,8 +28,71 @@ public struct PrescribedSet: Codable, Equatable, Sendable {
     public var targetKg: Double?
     public var targetReps: Int?
     public var targetRIR: Int?
-    public init(kind: SetKind, targetKg: Double? = nil, targetReps: Int? = nil, targetRIR: Int? = nil) {
+    /// The rest after this set, in seconds — only a block with a training style prescribes one (T1).
+    public var restSec: Int?
+    /// The intensity technique on this set (T2) — only ever the last working set; `nil` = straight set.
+    public var technique: SetTechnique?
+    /// What comes after the main part of a technique set, in order. Empty on a straight set.
+    public var legs: [PrescribedLeg]
+
+    public init(kind: SetKind, targetKg: Double? = nil, targetReps: Int? = nil, targetRIR: Int? = nil,
+                restSec: Int? = nil, technique: SetTechnique? = nil, legs: [PrescribedLeg] = []) {
         self.kind = kind; self.targetKg = targetKg; self.targetReps = targetReps; self.targetRIR = targetRIR
+        self.restSec = restSec; self.technique = technique == SetTechnique.none ? nil : technique; self.legs = legs
+    }
+
+    /// A technique set the player walks through step by step: a technique **and** something after the main part.
+    public var isTechnique: Bool { technique != nil && !legs.isEmpty }
+
+    enum CodingKeys: String, CodingKey { case kind, targetKg, targetReps, targetRIR, restSec, technique, legs }
+
+    // Written by hand so a cached plan from before T2 (no `legs` key) still reads.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try c.decode(SetKind.self, forKey: .kind)
+        targetKg = try c.decodeIfPresent(Double.self, forKey: .targetKg)
+        targetReps = try c.decodeIfPresent(Int.self, forKey: .targetReps)
+        targetRIR = try c.decodeIfPresent(Int.self, forKey: .targetRIR)
+        restSec = try c.decodeIfPresent(Int.self, forKey: .restSec)
+        technique = try c.decodeIfPresent(SetTechnique.self, forKey: .technique)
+        legs = try c.decodeIfPresent([PrescribedLeg].self, forKey: .legs) ?? []
+    }
+}
+
+/// What one step after a technique set's main part is: the lighter weight of a drop, a myo mini-set, or the half
+/// reps of the challenge.
+public enum LegKind: String, Codable, Equatable, Sendable {
+    case drop, mini, partials
+    public init(wire: String?) { self = LegKind(rawValue: (wire ?? "").lowercased()) ?? .drop }
+}
+
+/// One prescribed step after the main part (T2 `PrescribedLeg`). Every number is optional: the server may know
+/// the drop percent but not a real weight to snap it to.
+public struct PrescribedLeg: Codable, Equatable, Sendable {
+    public var kind: LegKind
+    public var weightKg: Double?
+    public var reps: Int?
+    /// Myo: the mini-sets stop when one falls below this.
+    public var minReps: Int?
+    public var toFailure: Bool
+    public var restBeforeSec: Int
+    /// A drop's load as a percent off the main part's weight.
+    public var dropPercent: Int?
+    public init(kind: LegKind, weightKg: Double? = nil, reps: Int? = nil, minReps: Int? = nil,
+                toFailure: Bool = false, restBeforeSec: Int = 0, dropPercent: Int? = nil) {
+        self.kind = kind; self.weightKg = weightKg; self.reps = reps; self.minReps = minReps
+        self.toFailure = toFailure; self.restBeforeSec = restBeforeSec; self.dropPercent = dropPercent
+    }
+}
+
+/// One performed step after the main part, as it is logged (T2 `SetLeg`).
+public struct LoggedLeg: Codable, Equatable, Sendable {
+    public var kind: LegKind
+    public var weightKg: Double?
+    public var reps: Int?
+    public var restSec: Int?
+    public init(kind: LegKind, weightKg: Double? = nil, reps: Int? = nil, restSec: Int? = nil) {
+        self.kind = kind; self.weightKg = weightKg; self.reps = reps; self.restSec = restSec
     }
 }
 
@@ -92,13 +155,20 @@ public struct PlannedExercise: Codable, Equatable, Sendable, Identifiable {
     public var replacedByName: String?
     /// Whether a „Mezociklusra is" change may target this row at all.
     public var planSlot: Bool
+    /// The technique on the exercise's last working set (T2/T3); `nil` = straight sets.
+    public var technique: SetTechnique?
+    /// Today's challenge exercise: half reps after the last full set (T3).
+    public var challenge: Bool
+    /// The half-rep count to beat at the challenge set's weight; `nil` when there is none yet.
+    public var challengeBest: Int?
 
     public init(id: UUID, name: String, muscle: String, type: ExerciseType, sets: [PrescribedSet],
                 warmupCount: Int, workingCount: Int, repMin: Int, repMax: Int, targetRIR: Int,
                 anchorKg: Double? = nil, rationale: String? = nil, progression: Progression? = nil,
                 lastWeek: LastWeekSet? = nil, note: String? = nil, warning: String? = nil,
                 videoURL: String? = nil, imageStartURL: String? = nil, imageEndURL: String? = nil,
-                replacesName: String? = nil, replacedByName: String? = nil, planSlot: Bool = true) {
+                replacesName: String? = nil, replacedByName: String? = nil, planSlot: Bool = true,
+                technique: SetTechnique? = nil, challenge: Bool = false, challengeBest: Int? = nil) {
         self.id = id; self.name = name; self.muscle = muscle; self.type = type; self.sets = sets
         self.warmupCount = warmupCount; self.workingCount = workingCount
         self.repMin = repMin; self.repMax = repMax; self.targetRIR = targetRIR
@@ -106,6 +176,42 @@ public struct PlannedExercise: Codable, Equatable, Sendable, Identifiable {
         self.lastWeek = lastWeek; self.note = note; self.warning = warning
         self.videoURL = videoURL; self.imageStartURL = imageStartURL; self.imageEndURL = imageEndURL
         self.replacesName = replacesName; self.replacedByName = replacedByName; self.planSlot = planSlot
+        self.technique = technique == SetTechnique.none ? nil : technique
+        self.challenge = challenge; self.challengeBest = challengeBest
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, muscle, type, sets, warmupCount, workingCount, repMin, repMax, targetRIR, anchorKg, rationale
+        case progression, lastWeek, note, warning, videoURL, imageStartURL, imageEndURL, replacesName, replacedByName
+        case planSlot, technique, challenge, challengeBest
+    }
+
+    // Written by hand so a plan cached before T2 (no `challenge` key) still reads.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try c.decode(UUID.self, forKey: .id), name: try c.decode(String.self, forKey: .name),
+            muscle: try c.decode(String.self, forKey: .muscle), type: try c.decode(ExerciseType.self, forKey: .type),
+            sets: try c.decode([PrescribedSet].self, forKey: .sets),
+            warmupCount: try c.decode(Int.self, forKey: .warmupCount),
+            workingCount: try c.decode(Int.self, forKey: .workingCount),
+            repMin: try c.decode(Int.self, forKey: .repMin), repMax: try c.decode(Int.self, forKey: .repMax),
+            targetRIR: try c.decode(Int.self, forKey: .targetRIR),
+            anchorKg: try c.decodeIfPresent(Double.self, forKey: .anchorKg),
+            rationale: try c.decodeIfPresent(String.self, forKey: .rationale),
+            progression: try c.decodeIfPresent(Progression.self, forKey: .progression),
+            lastWeek: try c.decodeIfPresent(LastWeekSet.self, forKey: .lastWeek),
+            note: try c.decodeIfPresent(String.self, forKey: .note),
+            warning: try c.decodeIfPresent(String.self, forKey: .warning),
+            videoURL: try c.decodeIfPresent(String.self, forKey: .videoURL),
+            imageStartURL: try c.decodeIfPresent(String.self, forKey: .imageStartURL),
+            imageEndURL: try c.decodeIfPresent(String.self, forKey: .imageEndURL),
+            replacesName: try c.decodeIfPresent(String.self, forKey: .replacesName),
+            replacedByName: try c.decodeIfPresent(String.self, forKey: .replacedByName),
+            planSlot: try c.decodeIfPresent(Bool.self, forKey: .planSlot) ?? true,
+            technique: try c.decodeIfPresent(SetTechnique.self, forKey: .technique),
+            challenge: try c.decodeIfPresent(Bool.self, forKey: .challenge) ?? false,
+            challengeBest: try c.decodeIfPresent(Int.self, forKey: .challengeBest))
     }
 }
 
@@ -122,12 +228,17 @@ public struct LoggedSet: Codable, Equatable, Sendable, Identifiable {
     public var note: String?
     public var skipped: Bool
     public var doneAt: Date?
+    /// The technique it was done with, and the steps after its main part (T2).
+    public var technique: SetTechnique?
+    public var legs: [LoggedLeg]?
     public init(id: UUID, exerciseId: UUID, setIndex: Int, kind: SetKind = .working, weightKg: Double? = nil,
                 reps: Int? = nil, rir: Int? = nil, side: String? = nil, note: String? = nil,
-                skipped: Bool = false, doneAt: Date? = nil) {
+                skipped: Bool = false, doneAt: Date? = nil, technique: SetTechnique? = nil,
+                legs: [LoggedLeg]? = nil) {
         self.id = id; self.exerciseId = exerciseId; self.setIndex = setIndex; self.kind = kind
         self.weightKg = weightKg; self.reps = reps; self.rir = rir; self.side = side
         self.note = note; self.skipped = skipped; self.doneAt = doneAt
+        self.technique = technique == SetTechnique.none ? nil : technique; self.legs = legs
     }
 }
 
