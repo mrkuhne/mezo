@@ -23,10 +23,21 @@ public class CatalogAttributes {
 
     private final ExerciseCatalogRepository exerciseCatalogRepository;
 
-    /** Attributes of one exercise that gate the set techniques (mezo-r36n9.80). */
-    public record Attrs(boolean stable, boolean lengthenedFriendly) {
-        /** No catalog link: counts as free, never lengthened-friendly. */
-        public static final Attrs FREE = new Attrs(false, false);
+    /**
+     * Attributes of one exercise that gate the set techniques (mezo-r36n9.80) and pick the planner's default
+     * technique (mezo-r36n9.81): {@code equipment} is one of
+     * {@code machine|cable|dumbbell|barbell|bodyweight|kettlebell|other}; null or unknown reads as {@code other}.
+     */
+    public record Attrs(boolean stable, boolean lengthenedFriendly, String equipment) {
+        private static final Set<String> EQUIPMENT =
+            Set.of("machine", "cable", "dumbbell", "barbell", "bodyweight", "kettlebell", "other");
+
+        /** No catalog link: counts as free, never lengthened-friendly, equipment {@code other}. */
+        public static final Attrs FREE = new Attrs(false, false, "other");
+
+        public Attrs {
+            equipment = equipment != null && EQUIPMENT.contains(equipment) ? equipment : "other";
+        }
     }
 
     /** The catalog ids that are {@code stable}; everything else (null, unknown, free) is free. */
@@ -50,7 +61,7 @@ public class CatalogAttributes {
     }
 
     /**
-     * Style-independent, batched read of stability + lengthened-friendliness (mezo-r36n9.80): one query
+     * Style-independent, batched read of stability + lengthened-friendliness + equipment (mezo-r36n9.80/.81): one query
      * for the ids (nulls ignored), none when there is nothing to look up. User-owned catalog rows count
      * with their own values.
      */
@@ -61,7 +72,8 @@ public class CatalogAttributes {
         }
         return new AttrsLookup(exerciseCatalogRepository.findByIdIn(ids).stream()
             .collect(Collectors.toUnmodifiableMap(ExerciseCatalogEntity::getId,
-                c -> new Attrs("stable".equals(c.getStability()), Boolean.TRUE.equals(c.getLengthenedFriendly())))));
+                c -> new Attrs("stable".equals(c.getStability()), Boolean.TRUE.equals(c.getLengthenedFriendly()),
+                    c.getEquipment()))));
     }
 
     /** One query for the given ids (nulls ignored); no query at all when there is nothing to look up. */

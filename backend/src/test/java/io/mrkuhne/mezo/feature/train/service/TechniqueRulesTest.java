@@ -7,8 +7,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class TechniqueRulesTest {
-    private static final CatalogAttributes.Attrs STABLE = new CatalogAttributes.Attrs(true, false);
-    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true);
+    private static final CatalogAttributes.Attrs STABLE = new CatalogAttributes.Attrs(true, false, "machine");
+    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine");
 
     @Test
     void testCheck_freeExercise_shouldReject() {

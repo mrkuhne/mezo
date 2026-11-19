@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test;
 class TechniquePrescriberTest {
     private static final TrainTechniqueProperties CFG = new TrainTechniqueProperties(
         new TrainTechniqueProperties.Drop(0, 30, 30), new TrainTechniqueProperties.Drop(0, 20, 0),
-        new TrainTechniqueProperties.Myo(1, 5, 3, 20, 4), new TrainTechniqueProperties.Partials(0), 2);
+        new TrainTechniqueProperties.Myo(1, 5, 3, 20, 4), new TrainTechniqueProperties.Partials(0), 2,
+        new TrainTechniqueProperties.Planner(3, 2, 1, 2, 15));
     private static final Set<BigDecimal> REAL = Set.of(bd("20"), bd("25"), bd("27.5"), bd("30"), bd("32"), bd("40"));
 
     private static BigDecimal bd(String s) { return new BigDecimal(s); }
