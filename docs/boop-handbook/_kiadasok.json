@@ -433,5 +433,15 @@
       "mezo-r36n9.96"
     ],
     "mi_valtozott": "Ha edzés közben kijavítasz egy már rögzített sorozatot, a javítás a javító lap bezárásakor sorba áll, és amint van net, a szerveren is ugyanazt a sorozatot írja át. Korábban a javítás csak a telefonon látszott, a szerver és a következő heti terv a régi számmal számolt."
+  },
+  "20bad910a": {
+    "tipus": "Új funkció",
+    "cim": "Edzés: technika és kihívás egy sorozaton",
+    "datum": "2026-11-19",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.99"
+    ],
+    "mi_valtozott": "Ha egy gyakorlaton technika és kihívás is van, a telefon edzés közben előbb a technika lépéseit vezeti végig, utána jön a kihívás félismétléseinek számlálója a megdöntendő csúccsal. Ha a technikát korábban abbahagyod, vagy egy myo mini-sorozat már nem jön ki, a kihívás akkor is jön. A gyakorlat neve alatt mindkét címke látszik. Élőben akkor jelenik meg, amikor a szerver is megkapja ezt a változást."
   }
 }
