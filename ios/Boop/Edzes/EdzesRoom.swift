@@ -147,6 +147,7 @@ struct EdzesRoom: View {
                               onMinimise: { phase = .hidden },
                               onFinish: { phase = .ceremony },
                               onLogged: { exerciseId, set in enqueueSet(exerciseId, set) },
+                              onEdited: { exerciseId, set in enqueueEdit(exerciseId, set) },
                               onExerciseDone: { exerciseId, feedback in enqueueFeedback(exerciseId, feedback) },
                               onSkipped: { exerciseId in enqueueSkip(exerciseId) },
                               onSwap: { id, replacement, wholeBlock in
@@ -429,6 +430,17 @@ struct EdzesRoom: View {
             technique: set.technique?.rawValue, legs: set.legs?.map(WorkoutLegPayload.init))
         enqueue(.workoutWrite(.workoutSet, payload: TrainPayloadCodec.encode(payload),
                               workoutRef: session.ref, date: brief?.date ?? "", capturedAt: set.at))
+    }
+
+    /// A correction names the set by exercise and position: the set itself may still be in the queue, and the
+    /// correction waits behind it there (same group), so the server's id for it exists by the time it is sent.
+    private func enqueueEdit(_ exerciseId: UUID, _ set: SessionSet) {
+        guard let session = store?.session, let exercise = session.exercises[exerciseId],
+              let index = exercise.logged.firstIndex(where: { $0.id == set.id }) else { return }
+        let payload = WorkoutSetEditPayload(workoutRef: session.ref, exerciseId: exerciseId, setIndex: index,
+                                            weightKg: set.kg ?? 0, reps: set.reps, rir: set.rir)
+        enqueue(.workoutWrite(.workoutSetEdit, payload: TrainPayloadCodec.encode(payload),
+                              workoutRef: session.ref, date: brief?.date ?? "", capturedAt: Date()))
     }
 
     private func enqueueFeedback(_ exerciseId: UUID, _ feedback: ExerciseFeedback) {

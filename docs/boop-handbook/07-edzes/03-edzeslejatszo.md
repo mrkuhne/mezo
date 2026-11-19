@@ -33,6 +33,9 @@ osszefoglalo: Edzés közben a telefon sorozatról sorozatra vezet — előírt 
   sorozat után — **soha nem sorozatok között**. Két sorozat közt csak a pihenő van.
 - **Edzés közben megteheted:** sorozatot hozzáadsz vagy elveszel, egy kész sorozatot javítasz, gyakorlatot kihagysz
   (az összegzés nem büntet érte), későbbre teszel, **másik gyakorlatra cserélsz**, jegyzetet írsz, vagy korábban befejezed.
+- **Egy kész sorozat javítása** (koppints a sorára) azonnal érvényes a telefonon, és amikor a javító lapot bezárod,
+  sorba áll, hogy felmenjen a szerverre is — ugyanazt a sorozatot írja át, nem vesz fel újat (2026-11-19 óta; korábban
+  csak a telefonon változott). A technikás sorozat lépései a javítástól nem változnak.
 - **A csere internetet kér.** Ez az egyetlen ilyen a lejátszóban: a cserélt gyakorlatnak a szerver ad azonosítót,
   és minden utána rögzített sorozat ahhoz tartozik. Ha nincs net, a lap ott helyben meg is mondja, miért nem ment,
   és addig marad nyitva.
