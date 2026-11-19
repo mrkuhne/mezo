@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.support;
 
+import io.mrkuhne.mezo.support.populator.PenzPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.boot.test.context.TestComponent;
 public class DatabasePopulator {
 
     private final UserPopulator userPopulator;
+    private final PenzPopulator penzPopulator;
 
     /**
      * Find-or-create an app user for the given email and return its id. Used to
@@ -22,5 +24,10 @@ public class DatabasePopulator {
      */
     public UUID populateUser(String email) {
         return userPopulator.createUser(email).getId();
+    }
+
+    /** Boop Pénz rows (accounts, categories, transactions, cached rates, closes). */
+    public PenzPopulator penz() {
+        return penzPopulator;
     }
 }
