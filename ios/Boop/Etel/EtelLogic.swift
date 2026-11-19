@@ -456,9 +456,10 @@ func etelStats(day: FoodDay, plan: FuelPlan?) -> [NKStat] {
 
 /// What the head says on each tab: Ma and Hét speak about the day, Receptek about the library, Kamra about the shelf
 /// (the orb keeps the day's level everywhere — it is the area's, not the tab's).
-func etelTabVerdict(_ tab: EtelTab, today: EtelVerdict, recipes: [Recipe]?, shelf: [PantryRow]?) -> EtelVerdict {
+func etelTabVerdict(_ tab: EtelTab, today: EtelVerdict, recipes: [Recipe]?, shelf: [PantryRow]?, week: HetWeek? = nil) -> EtelVerdict {
     switch tab {
-    case .ma, .het: return today
+    case .ma: return today
+    case .het: return week.map { hetVerdict($0, level: today.level) } ?? EtelVerdict(headline: "Betöltöm a hetedet", sentence: "Egy pillanat.", level: today.level)
     case .receptek:
         guard let recipes else { return EtelVerdict(headline: "Betöltöm a receptjeidet", sentence: "Egy pillanat.", level: today.level) }
         if recipes.isEmpty {

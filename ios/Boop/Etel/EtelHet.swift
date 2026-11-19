@@ -135,141 +135,169 @@ func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String, scoreFailur
         scoreGaps: week.days.filter { $0.fuelMode == nil && scoreFailures.contains($0.date) }.count)
 }
 
+// MARK: - What the week says, in words and numbers
+
+/// The one thing worth reading about the week: the protein gap when there is one, else the energy, else the skipped
+/// meals. Only judged days count (today and kímélő days never do). nil when there is too little to say anything.
+func hetObservation(_ w: HetWeek) -> (title: String, sub: String)? {
+    let judged = w.days.filter(\.judged)
+    guard judged.count >= 2 else { return nil }
+    if let target = w.proteinTarget, target > 0 {
+        let short = judged.compactMap { d in d.proteinG.flatMap { $0 < Int(Double(target) * 0.9) ? target - $0 : nil } }
+        if short.count * 2 >= judged.count {
+            let gap = Int((Double(short.reduce(0, +)) / Double(short.count)).rounded())
+            return (short.count == judged.count ? "A fehérje mind a \(judged.count) értékelt napon elmaradt" : "A fehérje \(judged.count) napból \(short.count) alkalommal elmaradt",
+                    "Átlagosan \(gap) g hiányzott a napi \(target) grammból. Egy fehérjedúsabb vacsora a legegyszerűbb pótlás.")
+        }
+    }
+    let over = judged.filter { ($0.kcal ?? 0) > Int(Double($0.target) * 1.1) }.count
+    if over * 2 >= judged.count {
+        return ("\(judged.count) napból \(over) alkalommal a keret fölött jártál", "Nem baj egy-egy ilyen nap; ha a cél a fogyás, a hét átlaga számít.")
+    }
+    if w.skippedDays >= 2 {
+        return ("A héten \(w.skippedDays) napon maradt ki étkezés", "A kihagyott étkezés kerete nem kerül át máshova, ezért aznap kevesebb fér bele.")
+    }
+    return ("A hét rendben van", "\(judged.count) értékelt napból a legtöbb a cél közelében zárult.")
+}
+
+/// The three numbers over the week: energy against the target, protein against the target (the lit one), the score.
+func hetStats(_ w: HetWeek) -> [NKStat] {
+    [NKStat(value: w.averageKcal.map(huInt), unit: "kcal", label: w.waterline.map { "átlag · cél \(huInt($0))" } ?? "napi átlag"),
+     NKStat(value: w.averageProtein.map { "\($0)" }, target: w.proteinTarget.map { "\($0)" }, unit: "g", label: "fehérje átlag", hot: true),
+     NKStat(value: w.averageScore.map { "\($0)" }, unit: "pont", label: "étkezések átlaga")]
+}
+
+/// The head of the Hét tab: the week in one sentence.
+func hetVerdict(_ w: HetWeek?, level: Double?) -> EtelVerdict {
+    guard let w, !w.isEmpty else { return EtelVerdict(headline: "Betöltöm a hetedet", sentence: "Egy pillanat.", level: level) }
+    guard let avg = w.averageKcal else {
+        return EtelVerdict(headline: "Még kevés a rögzítés a héten", sentence: "Egy-két rögzített nap után itt látod, hogyan áll a heted.", level: level)
+    }
+    let sentence = w.waterline.map { avg <= $0 ? "Átlagosan a kereted alatt zártál, \(w.judgedDays) értékelt nap alapján." : "Átlagosan a kereted fölött zártál, \(w.judgedDays) értékelt nap alapján." }
+        ?? "\(w.judgedDays) értékelt nap alapján."
+    return EtelVerdict(headline: "Napi átlag \(huInt(avg)) kalória", sentence: sentence, level: level)
+}
+
+/// "november 18." from "2026-11-18" (the opened day's eyebrow).
+func hetDateLabel(_ ymd: String) -> String {
+    let months = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"]
+    let p = ymd.split(separator: "-").compactMap { Int($0) }
+    guard p.count == 3, (1...12).contains(p[1]) else { return ymd }
+    return "\(months[p[1] - 1]) \(p[2])."
+}
+
 // MARK: - The tab
 
-/// `Hét`: the last seven days (the room reads them ending today), each against its target.
+/// `Hét` on the warm blocks: the week's one observation, its three numbers, the energy and protein bars against the
+/// targets, the days behind them as rows (pills, a score ring), and the week's details as pills.
 struct EtelHet: View {
     let store: EtelStore
     let onOpen: (HetDay) -> Void
     let onRetry: () -> Void
+    private let hue = Hue.fuel
+
+    private var state: NKBlockState {
+        if !store.weekLoaded { return .loading }
+        if let problem = store.weekProblem, store.week == nil {
+            return .failed("Most nem érem el a heted adatait. \(etelProblemLine(problem))", { onRetry() })
+        }
+        return .ready
+    }
+
+    private var week: HetWeek? {
+        store.week.map { hetWeek($0, scores: store.weekScores, today: store.ymd, scoreFailures: store.weekScoreFailures) }
+    }
 
     var body: some View {
-        if !store.weekLoaded {
-            NKDrillSection(number: 1, label: "KALÓRIA · 7 NAP") {
-                VStack(alignment: .leading, spacing: 10) {
-                    RoundedRectangle(cornerRadius: 12).fill(.white.opacity(0.08)).frame(height: 140)
-                    Text("Betöltöm a hetedet.").nkFont(13).foregroundStyle(.white.opacity(0.5))
-                }
-                .redacted(reason: .placeholder).accessibilityLabel("Betöltöm a hetedet")
-            }
-        } else if let problem = store.weekProblem, store.week == nil {
-            NKDrillSection(number: 1, label: "KALÓRIA · 7 NAP") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Most nem érem el a heted adatait.").nkFont(14).foregroundStyle(.white.opacity(0.7))
-                    Text(etelProblemLine(problem)).nkFont(13).foregroundStyle(.white.opacity(0.5))
-                    Button(action: onRetry) {
-                        Text("Újra").nkFont(14, .semibold).foregroundStyle(NK.ground).padding(.horizontal, 18).frame(minHeight: 38)
-                            .background(Capsule().fill(.white.opacity(0.95)))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        } else if let week = store.week {
-            let w = hetWeek(week, scores: store.weekScores, today: store.ymd, scoreFailures: store.weekScoreFailures)
-            if w.isEmpty {
-                NKDrillSection(number: 1, label: "KALÓRIA · 7 NAP") {
-                    Text("Erre a hétre még nincs adat.").nkFont(14).foregroundStyle(.white.opacity(0.7))
-                }
-            } else {
-                kcal(w)
-                protein(w)
-                daysSection(w)
-                totals(w)
+        if let w = week, !w.isEmpty {
+            if let o = hetObservation(w) { NKHighlight(hue: hue, label: "A HÉT EGY MONDATBAN", text: o.title, sub: o.sub) }
+            NKBare("A HÉT SZÁMOKBAN", hue: hue, trailing: "\(w.judgedDays) értékelt nap") { NKStatRow(hetStats(w), hue: hue) }
+            NKBare("KALÓRIA · 7 NAP", hue: hue) { bars(w.kcalValues, w.waterline, w, height: 150, unit: "kcal") }
+            NKBare("FEHÉRJE · 7 NAP", hue: hue) { bars(w.proteinValues, w.proteinTarget, w, height: 130, unit: "g") }
+            NKBare("A NAPOK", hue: hue) { days(w) }
+            NKBare("A HÉT RÉSZLETEI", hue: hue) { details(w) }
+        } else {
+            NKBare("A HETED", hue: hue, state: state) {
+                Text("Erre a hétre még nincs adat. Egy-két rögzített nap után itt látod, hogyan áll a heted.")
+                    .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
-    // MARK: sections
+    // MARK: bars
 
-    private func kcal(_ w: HetWeek) -> some View {
-        NKDrillSection(number: 1, label: "KALÓRIA · 7 NAP") {
-            VStack(alignment: .leading, spacing: 10) {
-                WeekBars(values: w.kcalValues, average: w.waterline.map(Double.init), unit: "", labels: w.labels,
-                         lineLabel: "cél", marked: Set(w.markedIndices))
-                    .frame(height: 150)
-                Text(w.waterlineLine).nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
-                if w.kimeloDays > 0 {
-                    Text("A körvonalas oszlop kímélő nap: azt nem mérem a célhoz.").nkFont(12.5).foregroundStyle(.white.opacity(0.5))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Text("A mai nap még tart, ezért nem számít bele az átlagba.").nkFont(12.5).foregroundStyle(.white.opacity(0.5))
+    private func bars(_ values: [Double?], _ target: Int?, _ w: HetWeek, height: CGFloat, unit: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            WeekBars(values: values, average: target.map(Double.init), unit: "", labels: w.labels, lineLabel: "cél", marked: Set(w.markedIndices))
+                .frame(height: height)
+            NKFlowRow(spacing: 6, rowSpacing: 6) {
+                if let target { EtelPill(text: "a vonal: \(w.targetsVary && unit == "kcal" ? "átlagos " : "")cél \(huInt(target)) \(unit)", glyph: "chart-deep") }
+                if w.kimeloDays > 0 { EtelPill(text: "körvonalas: kímélő nap", tone: .muted) }
+                EtelPill(text: "a mai nap még tart", tone: .muted)
             }
         }
     }
 
-    private func protein(_ w: HetWeek) -> some View {
-        NKDrillSection(number: 2, label: "FEHÉRJE · 7 NAP") {
-            VStack(alignment: .leading, spacing: 10) {
-                WeekBars(values: w.proteinValues, average: w.proteinTarget.map(Double.init), unit: "", labels: w.labels,
-                         lineLabel: "cél", marked: Set(w.markedIndices))
-                    .frame(height: 130)
-                Text(w.proteinTarget.map { "A vonal a napi fehérjecélod: \($0) g." } ?? "Ehhez a héthez nincs fehérjecél-adat.")
-                    .nkFont(13).foregroundStyle(.white.opacity(0.6))
+    // MARK: days
+
+    private func days(_ w: HetWeek) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(w.days.reversed().enumerated()), id: \.element.id) { k, d in
+                if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 56) }
+                dayRow(d, proteinTarget: w.proteinTarget)
             }
         }
     }
 
-    private func daysSection(_ w: HetWeek) -> some View {
-        NKDrillSection(number: 3, label: "A NAPOK MÖGÖTTE") {
-            VStack(spacing: 0) {
-                ForEach(Array(w.days.reversed().enumerated()), id: \.element.id) { k, d in
-                    dayRow(d)
-                    if k < w.days.count - 1 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                }
-            }
-        }
-    }
-
-    private func dayRow(_ d: HetDay) -> some View {
+    /// One day = one row: its weekday mark, the name, its facts as pills, and the day's own score as a ring.
+    private func dayRow(_ d: HetDay, proteinTarget: Int?) -> some View {
         Button { onOpen(d) } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(d.name).nkFont(15, d.isToday ? .semibold : .regular).foregroundStyle(.white)
-                    if !d.note.isEmpty {
-                        Text(d.note).nkFont(12.5).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    Circle().fill(d.isToday ? hue.glow.opacity(0.2) : .white.opacity(0.08))
+                    Text(d.label).nkFont(12.5, .semibold).foregroundStyle(d.isToday ? hue.glow : .white.opacity(0.9))
+                }
+                .frame(width: 44, height: 44).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(d.name).nkFont(15.5, d.isToday ? .semibold : .medium).foregroundStyle(.white)
+                    NKFlowRow(spacing: 6, rowSpacing: 6) {
+                        if let kcal = d.kcal {
+                            EtelPill(text: "\(huInt(kcal)) / \(huInt(d.target)) kcal", tone: d.judged && kcal > Int(Double(d.target) * 1.1) ? .warn : .plain)
+                        } else {
+                            EtelPill(text: d.isToday ? "még nincs rögzítés" : "nincs rögzítés", tone: .muted)
+                        }
+                        if let g = d.proteinG {
+                            EtelPill(text: "\(g) g fehérje", tone: proteinTarget.map { g >= Int(Double($0) * 0.9) ? .hue : .plain } ?? .plain)
+                        }
+                        if d.isToday { EtelPill(text: "még tart", tone: .muted) }
+                        if d.kimelo { EtelPill(text: "kímélő nap", glyph: "heart-cream", tone: .muted) }
+                        if d.skippedKcal > 0 { EtelPill(text: "kihagyva −\(huInt(d.skippedKcal)) kcal", tone: .outline) }
                     }
                 }
-                Spacer(minLength: 6)
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(d.kcal.map { "\(huInt($0)) kcal" } ?? "–").nkFont(12.5, design: .monospaced).foregroundStyle(.white.opacity(0.85))
-                    if let g = d.proteinG { Text("\(g) g fehérje").nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5)) }
-                    if let p = d.scorePoints { Text("\(p) pont").nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5)) }
-                }
-                Image(systemName: "chevron.right").nkFont(12, .semibold).foregroundStyle(.white.opacity(0.35))
+                Spacer(minLength: 4)
+                EtelScoreRing(points: d.scorePoints, size: 38).padding(.top, 2)
             }
-            .padding(.vertical, 11).frame(minHeight: 44).contentShape(Rectangle())
+            .padding(.vertical, 12).frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Megnyitja a napot")
     }
 
-    private func totals(_ w: HetWeek) -> some View {
-        NKDrillSection(number: 4, label: "A HÉT ÖSSZESEN") {
-            VStack(spacing: 12) {
-                total("Átlagos kalória", w.averageKcal.map { "\(huInt($0)) kcal" } ?? "nincs adat",
-                      w.waterline.map { "a cél \(huInt($0)) · \(w.judgedDays) nap alapján" } ?? "\(w.judgedDays) nap alapján")
-                total("Átlagos fehérje", w.averageProtein.map { "\($0) g" } ?? "nincs adat", w.proteinTarget.map { "a cél \($0) g" } ?? "")
-                total("Napi pontszám átlaga", w.averageScore.map { "\($0) / 100" } ?? "nincs adat",
-                      w.scoreGapLine ?? (w.averageScore == nil ? "nincs pontozott étkezés" : "a napok saját étkezéseiből"))
-                total("Kihagyott étkezés", w.skippedDays == 0 ? "nincs" : "\(w.skippedDays) nap",
-                      w.skippedDays == 0 ? "" : "−\(huInt(w.skippedKcal)) kcal a keretből")
-                total("Kímélő nap", w.kimeloDays == 0 ? "nincs" : "\(w.kimeloDays)",
-                      w.kimeloDays == 0 ? "" : "nem értékeltem, és az átlagból kimaradt")
-            }
-        }
-    }
+    // MARK: details
 
-    private func total(_ name: String, _ value: String, _ sub: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(name).nkFont(14.5).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 6)
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(value).nkFont(13.5, design: .monospaced).foregroundStyle(.white)
-                if !sub.isEmpty { Text(sub).nkFont(11.5).foregroundStyle(.white.opacity(0.5)).multilineTextAlignment(.trailing) }
+    private func details(_ w: HetWeek) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            NKFlowRow(spacing: 6, rowSpacing: 6) {
+                EtelPill(text: w.skippedDays == 0 ? "kihagyott étkezés: nincs" : "kihagyott étkezés: \(w.skippedDays) nap · −\(huInt(w.skippedKcal)) kcal",
+                         tone: w.skippedDays == 0 ? .plain : .outline)
+                EtelPill(text: w.kimeloDays == 0 ? "kímélő nap: nincs" : "kímélő nap: \(w.kimeloDays)", tone: .plain)
+                if w.targetsVary { EtelPill(text: "edzésnapokon nagyobb a keret", glyph: "dumbbell-ink") }
+                if let gap = w.scoreGapLine { EtelPill(text: gap, tone: .warn) }
             }
+            Text("A mai nap és a kímélő napok nem számítanak bele az átlagokba.").nkFont(12).foregroundStyle(.white.opacity(0.5))
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -286,18 +314,19 @@ struct HetDaySheet: View {
     private var title: String { day.isToday ? "Ma" : day.name }
 
     var body: some View {
-        NKSheetFrame(hue: .fuel, eyebrow: day.date, title: title) {
-            if !day.note.isEmpty {
-                Text(day.note.prefix(1).uppercased() + day.note.dropFirst()).nkFont(14.5).foregroundStyle(.white.opacity(0.85))
-                    .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
-            }
+        NKSheetFrame(hue: .fuel, eyebrow: hetDateLabel(day.date), title: title) {
             if let d = loaded { content(d) }
             else if let problem {
-                Text(etelProblemLine(problem)).nkFont(14).foregroundStyle(.white.opacity(0.7))
-                    .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
+                EtelSheetCard(label: "A NAP") {
+                    Text(etelProblemLine(problem)).nkFont(14).foregroundStyle(.white.opacity(0.7))
+                }
             } else {
-                Text("Betöltöm a napot.").nkFont(14).foregroundStyle(.white.opacity(0.5)).redacted(reason: .placeholder)
-                    .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
+                EtelSheetCard(label: "A NAP") {
+                    HStack(spacing: 10) {
+                        ProgressView().tint(.white.opacity(0.6)).controlSize(.small)
+                        Text("Betöltöm a napot…").nkFont(13).foregroundStyle(.white.opacity(0.55))
+                    }
+                }
             }
         }
         .task(id: day.date) { await load() }
@@ -318,44 +347,59 @@ struct HetDaySheet: View {
 
     private func content(_ d: FoodDay) -> some View {
         VStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 10) {
-                NKMono("A NAP A CÉLHOZ KÉPEST")
-                ForEach(rows(d), id: \.0) { row in
-                    HStack {
-                        Text(row.0).nkFont(14).foregroundStyle(.white.opacity(0.85))
-                        Spacer(minLength: 6)
-                        Text(row.1).nkFont(13, design: .monospaced).foregroundStyle(.white)
-                    }
+            EtelSheetCard(label: "A NAP A CÉLHOZ KÉPEST", trailing: day.kimelo ? "csak tájékoztató" : nil) {
+                NKFlowRow(spacing: 6, rowSpacing: 6) {
+                    if day.isToday { EtelPill(text: "még tart", tone: .muted) }
+                    if day.kimelo { EtelPill(text: "kímélő nap · nem értékelem", glyph: "heart-cream", tone: .muted) }
+                    if day.skippedKcal > 0 { EtelPill(text: "kihagyva −\(huInt(day.skippedKcal)) kcal", tone: .outline) }
+                    if let p = day.scorePoints { EtelPill(text: "\(p) pont az étkezések átlaga", tone: .hue) }
                 }
-                if day.kimelo { Text("Kímélő nap: a számok csak tájékoztatók.").nkFont(12.5).foregroundStyle(.white.opacity(0.55)) }
+                VStack(spacing: 14) {
+                    bar("Kalória", d.consumed.kcal, d.targets.kcal, "kcal", lit: true)
+                    bar("Fehérje", d.consumed.p, d.targets.p, "g")
+                    bar("Szénhidrát", d.consumed.c, d.targets.c, "g")
+                    bar("Zsír", d.consumed.f, d.targets.f, "g")
+                }
             }
-            .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
-            VStack(alignment: .leading, spacing: 12) {
-                NKMono("ÉTKEZÉSEK · \(d.meals.count)")
+            EtelSheetCard(label: "ÉTKEZÉSEK", trailing: "\(d.meals.count) db") {
                 if d.meals.isEmpty { Text("Erre a napra nincs rögzített étkezés.").nkFont(14).foregroundStyle(.white.opacity(0.6)) }
-                ForEach(d.meals) { m in
-                    HStack(alignment: .firstTextBaseline, spacing: 10) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(draftMealTitle(m)).nkFont(15, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                            Text("\(etelSlotLabel(m.slot)) · \(huInt(Int(m.macros.kcal.rounded()))) kcal · F \(Int(m.macros.p.rounded())) g")
-                                .nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.6))
+                VStack(spacing: 0) {
+                    ForEach(Array(d.meals.enumerated()), id: \.element.id) { k, m in
+                        if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 56) }
+                        HStack(alignment: .top, spacing: 12) {
+                            EtelMedallion(glyph: "bowl-cream", size: 44)
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(draftMealTitle(m)).nkFont(15, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                                NKFlowRow(spacing: 6, rowSpacing: 6) {
+                                    EtelPill(text: etelSlotLabel(m.slot), tone: .hue)
+                                    EtelPill(text: "\(huInt(Int(m.macros.kcal.rounded()))) kcal")
+                                    EtelPill(text: "\(Int(m.macros.p.rounded())) g fehérje")
+                                }
+                            }
+                            Spacer(minLength: 4)
+                            if !day.kimelo { EtelScoreRing(points: mealPoints(m), size: 36).padding(.top, 2) }
                         }
-                        Spacer(minLength: 6)
-                        if !day.kimelo, let p = mealPoints(m) { Text("\(p)").nkFont(15, design: .monospaced).foregroundStyle(.white.opacity(0.85)) }
+                        .padding(.vertical, 11)
+                        .accessibilityElement(children: .combine)
                     }
-                    .accessibilityElement(children: .combine)
                 }
             }
-            .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
         }
     }
 
-    private func rows(_ d: FoodDay) -> [(String, String)] {
-        func line(_ eaten: Double, _ target: Double, _ unit: String) -> String {
-            "\(huInt(Int(eaten.rounded()))) / \(huInt(Int(target.rounded()))) \(unit)"
+    /// One macro of the day: the name, eaten / target, and a bar (never red — over is just a full bar).
+    private func bar(_ name: String, _ eaten: Double, _ target: Double, _ unit: String, lit: Bool = false) -> some View {
+        VStack(spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(name).nkFont(14.5, .medium).foregroundStyle(.white)
+                Spacer(minLength: 8)
+                Text(huInt(Int(eaten.rounded()))).font(.custom(Lagy.outfitFamily, size: 17).weight(.medium))
+                    .foregroundStyle(lit ? Hue.fuel.glow : .white).monospacedDigit()
+                Text("/ \(huInt(Int(target.rounded()))) \(unit)").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+            }
+            NKLevelBar(level: target > 0 ? eaten / target : 0, hue: .fuel)
         }
-        return [("Kalória", line(d.consumed.kcal, d.targets.kcal, "kcal")), ("Fehérje", line(d.consumed.p, d.targets.p, "g")),
-                ("Szénhidrát", line(d.consumed.c, d.targets.c, "g")), ("Zsír", line(d.consumed.f, d.targets.f, "g"))]
+        .accessibilityElement(children: .combine)
     }
 
     private func draftMealTitle(_ m: BoopCore.Meal) -> String {
