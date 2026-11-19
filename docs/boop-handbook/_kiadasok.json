@@ -499,5 +499,21 @@
     ],
     "mi_valtozott": "A Pénz terület alapja élesben van, képernyő még nélküle. Boop már tárolni tudja a számláidat, kategóriáidat, tételeidet, ismétlődő kiadásaidat és a hónapzárásokat, és ebből soronként kiszámolja, mennyi maradt a hónapból, a hétből és egy napra. A gyakorlópénz (alapból havi 20 000 Ft) külön sorként jön le, az előző hónap hiánya pedig csak lezárt hónapból jön át, sorrendben. A bank SMS-ét a telefonod parancsikonja egy saját, visszavonható kulccsal küldi be: Boop magától, duplázás nélkül átnézendő tételt csinál belőle, és csak olyan összeget fogad el, ami tényleg szerepel az üzenetben. Egy őr megállítja Boopot, ha olyan összeget mondana, amit nem tud kiszámolt adattal alátámasztani. A régi pénzügyi app adatai a képernyővel együtt költöznek át.",
     "verzio": "v3.13.0"
+  },
+  "2c91e97e2": {
+    "cim": "Indokolt gyakorlatcsere és „Mi van a termemben”",
+    "datum": "2026-11-19",
+    "verzio": "v3.15.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.66",
+      "mezo-r36n9.67"
+    ],
+    "mi_valtozott": "Ha edzés közben cserélni akarsz egy gyakorlatot, Boop legfeljebb öt ajánlást ad, mindegyik mellett egy mondattal, miért az: ugyanazt a munkát végzi a tervben, kíméli, ami ma fáj, illik a blokk céljához, és látod, hol tartasz benne. Az „ehhez nincs eszközöm” kiveszi, amihez nincs felszerelésed, a „nem esik jól” feljegyzi, és Boop legközelebb is figyelembe veszi; mindkettő visszavonható. A teljes lista továbbra is választható, a kiszűrt gyakorlatok csendes jelöléssel. Az Edzés beállításaiban és a cserelapról is elérhető a „Mi van a termemben”: kilenc kapcsoló és a konkrétan hiányzó gépek listája. Javítás: a gyakorlat utáni három kérdés válaszai most pontosan úgy mentődnek, ahogy megnyomtad."
   }
 }

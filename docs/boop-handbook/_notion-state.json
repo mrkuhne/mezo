@@ -721,7 +721,7 @@
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
-      "hash": "19b9ce5d74f2"
+      "hash": "78d9c0d2a292"
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
@@ -733,7 +733,7 @@
     },
     "kezikonyv:07-edzes/06-gyakorlatok-elozmenyek": {
       "page_id": "4168968e-752b-8189-8150-ca1dc31f807c",
-      "hash": "5a2d621e6487"
+      "hash": "fea8937c5918"
     },
     "kezikonyv:07-edzes/07-apple-watch": {
       "page_id": "4168968e-752b-8155-ad39-d2a3d6ef07bc",
@@ -997,11 +997,11 @@
     },
     "jegyek:mezo-r36n9.67": {
       "page_id": "41b8968e-752b-819e-a5b4-fb65b256756e",
-      "hash": "b6b2e3c8b1c4"
+      "hash": "e99a16579d06"
     },
     "jegyek:mezo-r36n9.66": {
       "page_id": "41b8968e-752b-81e5-8d86-e02df9ba97d8",
-      "hash": "9d01db8d7e8f"
+      "hash": "c39cfc5c3e62"
     },
     "dontesek:d-2026-11-17-gyakorlatvalasztas": {
       "page_id": "41b8968e-752b-812b-8f77-fd24f4822c67",
@@ -1373,7 +1373,31 @@
     },
     "kezikonyv:11-penz/01-adatalap": {
       "page_id": "41d8968e-752b-81a8-9511-dfeddb3c5bfa",
-      "hash": "pending-relations"
+      "hash": "d41e4b31d546"
+    },
+    "jegyek:mezo-r36n9.111": {
+      "page_id": "41d8968e-752b-8184-b6db-ca0c0bffae45",
+      "hash": "4f529412123e"
+    },
+    "jegyek:mezo-r36n9.112": {
+      "page_id": "41d8968e-752b-813b-955a-e8dc29dfcb1b",
+      "hash": "48f60d661bab"
+    },
+    "jegyek:mezo-r36n9.110": {
+      "page_id": "41d8968e-752b-81b1-8a7a-ea104b50d434",
+      "hash": "d607ad980501"
+    },
+    "kiadasok:0d2fd6301": {
+      "page_id": "41d8968e-752b-81e8-af35-d4c217f3df4e",
+      "hash": "803b434d5b6c"
+    },
+    "kiadasok:2c91e97e2": {
+      "page_id": "41d8968e-752b-8195-b598-cddbfad35195",
+      "hash": "f7e337ba85e1"
+    },
+    "kezikonyv:07-edzes/17-mi-van-a-termemben": {
+      "page_id": "41d8968e-752b-8107-9684-d30a7a8e1316",
+      "hash": "86ec354ebab4"
     }
   }
 }

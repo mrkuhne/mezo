@@ -646,7 +646,7 @@
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Amikor edzés közben gyakorlatot cserélsz, Boop legfeljebb öt ajánlást ad, mindegyik mellett egy mondattal, miért az. Az „ehhez nincs eszközöm” és a „nem esik jól” gomb azonnal átrendezi a listát, és visszavonható; a teljes lista továbbra is választható. A „Mi van a termemben” oldalon beállítod, mi hiányzik a termedből.",
+    "mit_kapsz": "Az első rész élesben van: amikor edzés közben gyakorlatot cserélsz, Boop legfeljebb öt ajánlást ad, mindegyik mellett egy mondattal, miért az. Az „ehhez nincs eszközöm” gomb kiveszi, amihez nincs felszerelésed, a „nem esik jól” pedig feljegyzi, és Boop ezt figyelembe veszi; mindkettő visszavonható, és a teljes lista továbbra is választható. A „Mi van a termemben” oldalon beállítod, mi hiányzik a termedből. A következő részek (miért ezt, tervhiányok, tudatos váltás) később jönnek.",
     "munkamenet": "folyadek-74e4af"
   },
   "mezo-r36n9.67": {
@@ -1169,5 +1169,35 @@
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz: egy számla pénzneme ne változhasson, ha már vannak tételei",
     "mit_kapsz": "Ha egy számlán már vannak tételek, a pénznemét nem lehet utólag átállítani, így az egyenleg nem tud csendben elcsúszni."
+  },
+  "mezo-r36n9.111": {
+    "cim": "A „nem esik jól” gomb jobban rendezze át az ajánlásokat",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Most a „nem esik jól” sokszor csak az indoklást változtatja meg, a sorrendet alig, mert a gyakorlat szerepe a tervben erősebben számít. Itt eldöntjük, hogy a kímélet előrébb kerüljön-e — ehhez a te döntésed kell.",
+    "munkamenet": "folyadek-74e4af"
+  },
+  "mezo-r36n9.112": {
+    "cim": "Kisebb csiszolások a gyakorlatcsere után",
+    "tipus": "Karbantartás",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Apró javítások, amiket az átnézés talált: pontosabb hibaüzenetek a cserelapon, ritka egyidejű mentések rendes kezelése, néhány hiányzó teszt. Neked szinte semmi nem látszik belőle, csak kevesebb furcsa helyzet.",
+    "munkamenet": "folyadek-74e4af"
+  },
+  "mezo-r36n9.110": {
+    "cim": "A Pénz alapjának befejező szinkronja a Notionba",
+    "tipus": "Karbantartás",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Pénz"
+    ],
+    "mit_kapsz": "A Pénz alapjáról szóló kiadási sor és kézikönyvoldal pontosan, elírás nélkül jelenik meg a Notionban.",
+    "munkamenet": "folyadek-74e4af"
   }
 }
