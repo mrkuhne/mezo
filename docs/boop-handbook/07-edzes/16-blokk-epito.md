@@ -33,7 +33,10 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
   léptető (1–8 sorozat) és egyetlen címke a technikáról vagy a kihívásról. A címkére koppintva felugrik a **választó**: az öt
   technika (ami annál a gyakorlatnál nem választható, az halványan, az okával), alatta **a nap kihívása** (naponta egy
   gyakorlaton), és egy **„i” gomb**, ami mindegyik alá kiír egy rövid leírást. Amit Boop tett oda a heti javaslatban, azon
-  **„Boop”** jelzés van, amíg át nem állítod. Ha egy izomra
+  **„Boop”** jelzés van, amíg át nem állítod. A lista tetején **Boop ajánlása** áll: a gyakorlat tulajdonságai
+  alapján melyik technika illik hozzá és miért (például gépes, stabil gyakorlatnál pihenős drop), alatta — ha van — a heti AI
+  egymondatos véleménye, és egy „Ezt választom” gomb. **Technika és kihívás együtt is lehet** ugyanazon a gyakorlaton: előbb a
+  technika, utána a félismétléses kihívás; a megdöntendő számot csak az ugyanígy végzett korábbi alkalmakhoz méri. Ha egy izomra
   egy napon túl sok jut, sárgán szól.
 - **Blokk** — az **edzésmód** négy közül (Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két sorozat bukásig), két kapcsoló
   (**Technikák** be/ki, **A heti javaslatot én hagyom jóvá**), a blokk heteinek sorozatszáma és izmonként az út hétről hétre.

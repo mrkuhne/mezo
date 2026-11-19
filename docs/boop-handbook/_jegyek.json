@@ -1066,13 +1066,13 @@
     "mit_kapsz": "Hétfőn, az első kézi heti átnézésednél megnézzük, hogy Boop valóban finomította-e a javaslatot, és minden rendben ment-e."
   },
   "mezo-r36n9.98": {
-    "cim": "Edzés: technika és kihívás együtt, ajánlás a technikaválasztóban",
+    "cim": "Edzés: technika és kihívás együtt, Boop ajánlása a választóban",
     "tipus": "Funkció",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Egy gyakorlaton a technika és a nap kihívása együtt is lehet (előbb a technika, utána a félismétlések), a blokképítő technikaválasztója pedig gyakorlatonként ajánl egyet, egy mondatos indoklással.",
+    "mit_kapsz": "Egy gyakorlatra technikát és a nap kihívását is teheted, és a választó megmondja, melyik technika illik hozzá a legjobban és miért.",
     "munkamenet": "boop-blokk-epito"
   }
 }

@@ -105,9 +105,26 @@ class ExerciseTechniqueApiIT extends ApiIntegrationTest {
         assertThat(jdbcTemplate.queryForObject("select challenge from exercise where id = ?", Boolean.class,
             r.deck().getId())).isTrue();
 
-        String both = putForBody(url(r, r.fly()), body(Technique.DROP, true), auth, HttpStatus.BAD_REQUEST,
-            String.class);
-        assertHasRequestError(both, "TRAIN_TECHNIQUE_ON_CHALLENGE");
+    }
+
+    @Test
+    void techniqueAndChallengeTogether_shouldSaveBoth() {
+        // mezo-r36n9.98: was 400 TRAIN_TECHNIQUE_ON_CHALLENGE; the owner allows both on one exercise
+        Run r = run(owner(), true);
+        HttpHeaders auth = ownerAuthHeaders();
+        putForBody(url(r, r.deck()), body(Technique.NONE, true), auth, HttpStatus.OK, GymExercise.class);
+        GymExercise out = putForBody(url(r, r.fly()), body(Technique.REST_DROP, true), auth, HttpStatus.OK,
+            GymExercise.class);
+
+        assertThat(out.getTechnique()).isEqualTo(Technique.REST_DROP);
+        assertThat(out.getChallenge()).isTrue();
+        assertThat(out.getTechniqueSource()).isEqualTo(TechniqueSource.OWNER);
+        assertThat(jdbcTemplate.queryForObject("select technique from exercise where id = ?", String.class,
+            r.fly().getId())).isEqualTo("rest_drop");
+        assertThat(jdbcTemplate.queryForObject("select challenge from exercise where id = ?", Boolean.class,
+            r.fly().getId())).isTrue();
+        assertThat(jdbcTemplate.queryForObject("select challenge from exercise where id = ?", Boolean.class,
+            r.deck().getId())).isFalse();   // still one challenge a day
     }
 
     @Test

@@ -71,17 +71,30 @@ public class TechniquePlanService {
             WeekProposalService.isDeloadPhase(run, week));
     }
 
+    /**
+     * A block's projection for the evaluator: every week planned, plus the per-exercise technique recommendations
+     * ({@link TechniqueRecommender}, mezo-r36n9.98) — both from ONE snapshot read.
+     */
+    public record Projection(List<TechniquePlanner.Week> weeks, List<TechniqueRecommender.Recommendation> recommendations) {
+        static final Projection EMPTY = new Projection(List.of(), List.of());
+    }
+
     /** Every week 1..weeks of the run planned from its current rows; empty when the run does not opt in. */
     public List<TechniquePlanner.Week> projectRun(UUID createdBy, MesocycleEntity run) {
+        return planRun(createdBy, run).weeks();
+    }
+
+    /** {@link #projectRun} plus the run rows' recommendations; empty when the run does not opt in. */
+    public Projection planRun(UUID createdBy, MesocycleEntity run) {
         if (!optsIn(run)) {
-            return List.of();
+            return Projection.EMPTY;
         }
         Base base = readRun(createdBy, run, null).base();
         List<TechniquePlanner.Week> weeks = new ArrayList<>();
         for (int w = 1; w <= run.getWeeks(); w++) {
             weeks.add(TechniquePlanner.plan(inputFor(base, w, WeekProposalService.isDeloadPhase(run, w))));
         }
-        return List.copyOf(weeks);
+        return new Projection(List.copyOf(weeks), TechniqueRecommender.recommend(base.days(), techniqueProps.planner()));
     }
 
     /** The draft's week as the planner sees it (draft rows get deterministic ids, see {@link #draftRowId}). */
@@ -91,8 +104,13 @@ public class TechniquePlanService {
 
     /** Every week 1..weeks of the draft; empty when the draft does not opt in. */
     public List<TechniquePlanner.Week> projectDraft(UUID userId, MesoPlanEvaluateRequest req) {
+        return planDraft(userId, req).weeks();
+    }
+
+    /** {@link #projectDraft} plus the draft rows' recommendations; empty when the draft does not opt in. */
+    public Projection planDraft(UUID userId, MesoPlanEvaluateRequest req) {
         if (!optsIn(req)) {
-            return List.of();
+            return Projection.EMPTY;
         }
         Base base = readDraft(userId, req);
         List<String> curve = phaseCurve(req);
@@ -100,7 +118,7 @@ public class TechniquePlanService {
         for (int w = 1; w <= req.getWeeks(); w++) {
             weeks.add(TechniquePlanner.plan(inputFor(base, w, WeekProposalService.isDeloadPhase(curve, w))));
         }
-        return List.copyOf(weeks);
+        return new Projection(List.copyOf(weeks), TechniqueRecommender.recommend(base.days(), techniqueProps.planner()));
     }
 
     /**

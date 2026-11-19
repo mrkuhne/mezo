@@ -301,11 +301,11 @@ public struct TechniqueRecommendation: Equatable, Sendable {
 /// The Hungarian sentence for a recommendation reason code; a known-generic sentence for a code this build does not know.
 public func techniqueReasonText(_ code: String?) -> String {
     switch code ?? "" {
-    case "stable_machine": "Gépen vagy kábelen stabil, ezért a bukásig vitt sorozat után biztonságosan lehet folytatni."
-    case "isolation_pump": "Kis izomra ható, könnyen visszaállítható gyakorlat: a rövid pihenős mini-sorozatok itt adnak a legtöbbet."
+    case "stable_machine": "Gépen vagy kábelen stabil: a bukásig vitt sorozat után egy rövid pihenővel biztonságosan folytatható."
+    case "isolation_pump": "Kis izomra ható, magas ismétlésszámú gyakorlat: a rövid pihenős mini-sorozatok itt adnak a legtöbbet."
     case "lengthened_safe": "A nyújtott helyzet itt biztonságos, és ott nő az izom a legjobban: a félismétlés ide illik."
-    case "compound_heavy": "Nagy, összetett mozgás: egy pihenős drop több munkát ad anélkül, hogy a technika szétesne."
-    case "free_weight": "Szabadsúlyos gyakorlat: bukásig vinni nem biztonságos, ezért itt nem javaslunk technikát."
+    case "all_out": "Ezt a gyakorlatot már eleve bukásig viszed, ezért plusz technika nem kell rá."
+    case "no_safe_technique": "Stabil, de egyik technika sem biztonságos rajta — maradj a sima sorozatoknál."
     default: "Ehhez a gyakorlathoz ez illik a legjobban a tulajdonságai alapján."
     }
 }

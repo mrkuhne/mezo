@@ -16684,6 +16684,46 @@ components:
           description: >-
             Technique planner notes (owner picks over the allowance, a day
             without a challenge candidate); null when the block does not opt in.
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/TechniqueRecommendation'
+          description: >-
+            Per-exercise technique recommendation for every exercise that may
+            carry a technique (a stable one); null when the block does not opt
+            in.
+    TechniqueRecommendation:
+      type: object
+      required:
+        - dayIndex
+        - exerciseIndex
+        - technique
+        - reason
+        - challengeFit
+      description: >-
+        Rule-based technique recommendation for one exercise (mezo-r36n9.98),
+        the same rule the technique planner uses.
+      properties:
+        dayIndex:
+          type: integer
+        exerciseIndex:
+          type: integer
+        technique:
+          $ref: '#/components/schemas/Technique'
+        reason:
+          type: string
+          description: >-
+            Why this technique (the phone words it). One of: isolation_pump
+            (high-rep isolation -> myo), stable_machine (machine or cable ->
+            rest_drop), lengthened_safe (stable, safe in the stretched position
+            -> partials), all_out (all-out style already ends at failure ->
+            none), no_safe_technique (stable but none fits -> none). New codes
+            may be added; treat an unknown one as no text.
+        challengeFit:
+          type: boolean
+          description: >-
+            The exercise may carry the day's half-rep challenge (stable and
+            lengthened-friendly).
     MesoPlanGenerateResponse:
       type: object
       required:
@@ -17774,8 +17814,9 @@ components:
           type: integer
           nullable: true
           description: >-
-            Best partials reps at the challenge set's prescribed weight; null
-            when none.
+            Best partials reps at the challenge set's prescribed weight, among
+            earlier sessions of the same setup (the same technique before the
+            half reps, or none); null when none.
         id:
           type: string
           format: uuid
@@ -17980,6 +18021,13 @@ components:
           type: integer
           nullable: true
           description: Drop leg load as percent of the parent weight actually lifted.
+        challenge:
+          type: boolean
+          nullable: true
+          description: >-
+            true on the day challenge's half-rep (partials) leg — the reps
+            compared with challengeBest; it follows the technique's own legs
+            when the exercise carries both (mezo-r36n9.98). null otherwise.
     SetLeg:
       type: object
       required:

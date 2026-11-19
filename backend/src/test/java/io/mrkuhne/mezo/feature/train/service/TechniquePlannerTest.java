@@ -412,4 +412,26 @@ class TechniquePlannerTest {
         }
         assertThat(TechniquePlanner.defaultTechnique(row(0, 0, "x"), CFG)).isEqualTo(Optional.of(Technique.REST_DROP));
     }
+
+    // ---- technique + challenge on one owner row (mezo-r36n9.98) --------------------------------------------------
+
+    @Test
+    void ownerRowWithTechniqueAndChallenge_isKeptAndCountedTwiceAgainstCaps() {
+        PlanRow both = owner(attrs(sets(row(0, 1, "chest"), 3), LENGTHENED), Technique.REST_DROP, true);
+        PlanRow before = sets(row(0, 0, "chest"), 3);
+        Week w = TechniquePlanner.plan(input(3, emph("chest"), day(0, before, both)));
+
+        assertThat(w.challenges()).singleElement().satisfies(p -> {
+            assertThat(p.id()).isEqualTo(both.id());
+            assertThat(p.source()).isEqualTo("owner");
+        });
+        assertThat(w.techniques()).singleElement().satisfies(p -> {
+            assertThat(p.id()).isEqualTo(both.id());
+            assertThat(p.technique()).isEqualTo(Technique.REST_DROP);
+            assertThat(p.source()).isEqualTo("owner");
+        });
+        // the combined row weighs 3 + 1 + 1 = 5: with the 3 plain sets before it the chest day is at 8, so the
+        // earlier row is not the last of its group and nothing else is planned
+        assertThat(w.warnings()).isEmpty();
+    }
 }

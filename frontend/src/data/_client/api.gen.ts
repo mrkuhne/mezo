@@ -6752,6 +6752,18 @@ export interface components {
             path: components["schemas"]["VolumePathWeek"][];
             /** @description Technique planner notes (owner picks over the allowance, a day without a challenge candidate); null when the block does not opt in. */
             techniqueWarnings?: components["schemas"]["TechniqueWarning"][];
+            /** @description Per-exercise technique recommendation for every exercise that may carry a technique (a stable one); null when the block does not opt in. */
+            recommendations?: components["schemas"]["TechniqueRecommendation"][];
+        };
+        /** @description Rule-based technique recommendation for one exercise (mezo-r36n9.98), the same rule the technique planner uses. */
+        TechniqueRecommendation: {
+            dayIndex: number;
+            exerciseIndex: number;
+            technique: components["schemas"]["Technique"];
+            /** @description Why this technique (the phone words it). One of: isolation_pump (high-rep isolation -> myo), stable_machine (machine or cable -> rest_drop), lengthened_safe (stable, safe in the stretched position -> partials), all_out (all-out style already ends at failure -> none), no_safe_technique (stable but none fits -> none). New codes may be added; treat an unknown one as no text. */
+            reason: string;
+            /** @description The exercise may carry the day's half-rep challenge (stable and lengthened-friendly). */
+            challengeFit: boolean;
         };
         MesoPlanGenerateResponse: {
             /**
@@ -7144,7 +7156,7 @@ export interface components {
             techniqueSource?: components["schemas"]["TechniqueSource"] | null;
             /** @description Proactive "depth" challenge flag (partials challenge on the last working set). */
             challenge?: boolean;
-            /** @description Best partials reps at the challenge set's prescribed weight; null when none. */
+            /** @description Best partials reps at the challenge set's prescribed weight, among earlier sessions of the same setup (the same technique before the half reps, or none); null when none. */
             challengeBest?: number | null;
             /** Format: uuid */
             id: string;
@@ -7230,6 +7242,8 @@ export interface components {
             restBeforeSec: number;
             /** @description Drop leg load as percent of the parent weight actually lifted. */
             dropPercent?: number | null;
+            /** @description true on the day challenge's half-rep (partials) leg — the reps compared with challengeBest; it follows the technique's own legs when the exercise carries both (mezo-r36n9.98). null otherwise. */
+            challenge?: boolean | null;
         };
         SetLeg: {
             legIndex: number;

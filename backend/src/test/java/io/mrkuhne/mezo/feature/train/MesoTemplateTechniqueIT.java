@@ -177,11 +177,27 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
             HttpStatus.BAD_REQUEST, String.class);
         assertHasRequestError(two, "TRAIN_TECHNIQUE_TWO_CHALLENGES");
 
+    }
+
+    @Test
+    void techniqueOnChallengeRow_shouldSave() {
+        // mezo-r36n9.98: was 400 TRAIN_TECHNIQUE_ON_CHALLENGE; a technique and the challenge may share a row
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
         GymExerciseInput both = challenge(ex("Cable Fly", "chest-mid", catalog("cable-fly")));
         both.setTechnique(Technique.DROP);
-        String onChallenge = postForBody(TEMPLATES, request(true, List.of(both)), auth,
+        MesoTemplateResponse t = postForBody(TEMPLATES, request(true, List.of(both)), auth,
+            HttpStatus.OK, MesoTemplateResponse.class);
+        var saved = t.getDays().get(0).getExercises().get(0);
+        assertThat(saved.getTechnique()).isEqualTo(Technique.DROP);
+        assertThat(saved.getChallenge()).isTrue();
+
+        // the challenge still needs a lengthened-friendly exercise, technique or not
+        GymExerciseInput unsafe = challenge(ex("Machine Chest Press", "chest-mid", catalog("machine-chest-press")));
+        unsafe.setTechnique(Technique.REST_DROP);
+        String res = postForBody(TEMPLATES, request(true, List.of(unsafe)), auth,
             HttpStatus.BAD_REQUEST, String.class);
-        assertHasRequestError(onChallenge, "TRAIN_TECHNIQUE_ON_CHALLENGE");
+        assertHasRequestError(res, "TRAIN_TECHNIQUE_NOT_LENGTHENED");
     }
 
     @Test
@@ -334,6 +350,31 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
             "select technique_source from exercise where name = 'Cable Fly' and is_deleted = false", String.class))
             .isEqualTo("owner");
+    }
+
+    @Test
+    void runDayEditWithTechniqueAndChallengeOnOneRow_shouldSave() {
+        // mezo-r36n9.98: the day save (PUT …/days/{dayId}/exercises) accepts technique + challenge on one row
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoTemplateResponse t = postForBody(TEMPLATES, request(true, List.of(
+            ex("Cable Fly", "chest-mid", catalog("cable-fly")))), auth, HttpStatus.OK, MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + t.getId() + "/start", start(), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+        MesoDay day = run.getDays().get(0);
+        List<GymExerciseInput> inputs = new ArrayList<>(day.getExercises().stream()
+            .map(MesoTemplateTechniqueIT::webInput).toList());
+        inputs.get(0).setTechnique(Technique.MYO);
+        inputs.get(0).setTechniqueSource(TechniqueSource.OWNER);
+        inputs.get(0).setChallenge(true);
+
+        MesoDay edited = putForBody(MESOCYCLES + "/" + run.getId() + "/days/" + day.getId() + "/exercises", inputs,
+            auth, HttpStatus.OK, MesoDay.class);
+
+        assertThat(edited.getExercises().get(0).getTechnique()).isEqualTo(Technique.MYO);
+        assertThat(edited.getExercises().get(0).getChallenge()).isTrue();
+        assertThat(jdbcTemplate.queryForObject(
+            "select challenge from exercise where name = 'Cable Fly' and is_deleted = false", Boolean.class)).isTrue();
     }
 
     /** A started flagged run whose Cable Fly carries a planner rest-drop (one straight set given back). */
