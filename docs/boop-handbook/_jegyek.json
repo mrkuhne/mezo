@@ -1082,9 +1082,9 @@
       "Alapok"
     ],
     "szulo": "mezo-r36n9.33",
-    "allapot": "Később",
-    "cim": "Pénz 1. · az alapok — a heti maradék kiszámolása",
-    "mit_kapsz": "A pénzed bekerül a Boopba: a számláid, a tételeid, az ismétlődő kiadásaid és a hónapzárás. Ebből számolja ki Boop, mennyi maradt a héten. A banki üzenetekből magától elkapja a költéseidet. Képernyő még nincs — ez az alap, amire a többi épül."
+    "cim": "Pénz 1. · az adatalap — a heti maradék kiszámolása",
+    "mit_kapsz": "A pénzed bekerül a Boopba: a számláid, a tételeid, az ismétlődő kiadásaid és a hónapzárás. Ebből Boop kiszámolja, mennyi maradt a héten és mennyi jut még egy napra, soronként visszakövethetően. A gyakorlópénz külön sor, az előző hónap hiánya csak lezárt hónapból jön át. A bank SMS-ét a telefonod parancsikonja saját kulccsal továbbküldi, és Boop magától, duplázás nélkül felveszi átnézendő tételnek. Egy őr megállítja Boopot, ha olyan összeget mondana, amit nem tud alátámasztani. Képernyő még nincs — ez az alap, amire a többi épül.",
+    "munkamenet": "Pénz L4 adatalap"
   },
   "mezo-r36n9.103": {
     "tipus": "Funkció",

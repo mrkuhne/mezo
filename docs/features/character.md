@@ -26,6 +26,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 # Karakter (user character dossier) — Feature Documentation
 
+> **2026-11-19 — reviewed after Boop Pénz L4 (`mezo-r36n9.102`, no dossier change).** A new changelog script (`202611191400_mezo-r36n9.102_penz.sql`, nine `penz_*` tables) landed in the shared script folder; no Karakter table, detector or signal reads money yet.
+
 > **2026-11-19 — the XP world left the server (`mezo-r36n9.97.5`, #52).** The `quest-completion-calibration` META detector is deleted together with the quest reads of `CharacterMetaReads` (`MetaWindow` has no `quests` any more); its stored claims stay in the database. `get_growth` is gone from `ChatToolDomains`. See [`growth.md`](growth.md) §9.
 
 > **2026-11-13 — Boop B4 Étel (`mezo-r36n9.14`): the digestion disclaimer is softened; no other dossier change.** The `food-digestion` signal now closes with „nem orvosi diagnózis” instead of „nem ételintolerancia-diagnózis” (table in §3, detector list), because the meal coach may now name a sensitivity the owner recorded himself ([`_platform-language.md`](_platform-language.md)); the detector, its guards and thresholds are untouched. The slice's four new `1.1.0` changesets (`pantry_catalog.allergens`/`barcode`, `recipe.allergens`/`steps`/`source_url`, `stored_image`, `client_ref` on `meal`/`water_log`/`supplement_intake`, the `sensitivity_profile` table) add no dossier table; see [`fuel.md`](fuel.md), [`pantry.md`](pantry.md). *(2026-11-16: `mezo-r36n9.48` added a fifth `1.1.0` changeset — `pantry_catalog.lactose_free` / `recipe.lactose_free` — which likewise adds no dossier table.)*
