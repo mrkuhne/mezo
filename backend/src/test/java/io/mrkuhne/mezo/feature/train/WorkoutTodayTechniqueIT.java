@@ -260,4 +260,48 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
         assertThat(careRow.getWorkingSets()).isEqualTo(1); // the care row was lightened
         assertSuppressed(careRow); // and a care row never carries one
     }
+
+    // --- sport-day rule (mezo-r36n9.81, spec §11 Q4) ---
+
+    private void sportDay(Fixture f, boolean today) {
+        MesocycleEntity m = mesocycleRepository.findById(f.day().getMesocycleId()).orElseThrow();
+        m.setSportGroups(List.of("chest"));
+        mesocycleRepository.saveAndFlush(m);
+        int weekday = LocalDate.now().getDayOfWeek().getValue() - 1;
+        train.createScheduleSlot(f.owner(), today ? weekday : (weekday + 1) % 7, "18:00", 60, "training");
+    }
+
+    @Test
+    void sportDayHidesChallenge() {
+        Fixture f = fixture(2, true, null, true, true);
+        sportDay(f, true);
+        assertSuppressed(bench(workoutService.getToday(f.owner(), null)));
+
+        // the same run on a day without a sport slot keeps the challenge
+        jdbc.update("update sport_schedule_slot set day_of_week = ?", (LocalDate.now().getDayOfWeek().getValue()) % 7);
+        TodayExercise rest = bench(workoutService.getToday(f.owner(), null));
+        assertThat(rest.getChallenge()).isTrue();
+        assertThat(working(rest).get(2).getTechnique()).isEqualTo(Technique.PARTIALS);
+    }
+
+    @Test
+    void sportDayHidesPlannerTechniqueOnLoadedGroup() {
+        Fixture f = fixture(2, true, "drop", false, true);
+        f.bench().setTechniqueSource("planner");
+        train.save(f.bench());
+        sportDay(f, true);
+        assertSuppressed(bench(workoutService.getToday(f.owner(), null)));
+        // the stored row is untouched
+        assertThat(f.bench().getTechniqueSource()).isEqualTo("planner");
+    }
+
+    @Test
+    void sportDayKeepsOwnerTechnique() {
+        Fixture f = fixture(2, true, "drop", false, true);
+        sportDay(f, true); // the fixture row is owner-sourced
+        TodayExercise t = bench(workoutService.getToday(f.owner(), null));
+        assertThat(t.getTechnique()).isEqualTo(Technique.DROP);
+        assertThat(t.getTechniqueSource().getValue()).isEqualTo("owner");
+        assertThat(working(t).get(2).getTechnique()).isEqualTo(Technique.DROP);
+    }
 }

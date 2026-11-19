@@ -689,7 +689,8 @@ public class CharacterSignalReads {
                 int skippedSets = (int) all.stream().filter(ExerciseSetEntity::isSkipped).count();
                 List<DetectorInput.SetPoint> setPoints = working.stream()
                         .map(s -> new DetectorInput.SetPoint(s.getSetIndex(), s.getWeightKg(), s.getReps(),
-                                s.getRir(), s.getTargetWeightKg(), s.getTargetReps(), s.isSkipped()))
+                                s.getRir(), s.getTargetWeightKg(), s.getTargetReps(), s.isSkipped(),
+                                s.getTechnique() != null))
                         .toList();
                 ExerciseFeedbackEntity fb = feedbackByExercise.get(entry.getKey());
                 works.add(new DetectorInput.ExerciseWork(name, working.size(), skippedSets, setPoints,

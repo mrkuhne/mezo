@@ -291,6 +291,22 @@ class WorkoutExerciseChangeIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void swapKeepsPlannerSource() {
+        rowA.setTechnique("drop");
+        rowA.setTechniqueSource("planner");
+        exerciseRepository.save(rowA);
+
+        WorkoutExerciseChangeRequest toStable = req("Seated Cable Row", ScopeEnum.MESO, rowA.getId(), 3);
+        toStable.setCatalogId(catalogRepository.findBySlug("seated-cable-row-neutral").orElseThrow().getId());
+        changeService.change(user, instance.getId(), toStable);
+
+        ExerciseEntity kept = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId())).get(0);
+        assertThat(kept.getTechnique()).isEqualTo("drop");
+        assertThat(kept.getTechniqueSource()).isEqualTo("planner");
+    }
+
+    @Test
     void addUnderStyledRunIsStamped() {
         MesocycleEntity meso = mesocycleRepository.findById(day.getMesocycleId()).orElseThrow();
         meso.setTrainingStyle("volume");

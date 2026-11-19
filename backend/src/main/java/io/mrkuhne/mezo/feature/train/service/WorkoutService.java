@@ -153,6 +153,7 @@ public class WorkoutService {
     private final CatalogAttributes catalogAttributes;
     // Weekly pin (volume engine v2 S3): kept weight/rep lines of this week's proposal hold that exercise.
     private final WeeklyPin weeklyPin;
+    private final io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository sportScheduleSlotRepository;
 
     /**
      * Today's kímélő-mód lightening (spec §9.1.4 / §9.1.6): the DTO shown on the hero, plus the
@@ -299,6 +300,7 @@ public class WorkoutService {
         // The rules are checked on write, but catalog attributes can change later (an edited row, a deploy's
         // catalog reload, a template start): re-check the picks at prescription time, one batched read.
         Set<UUID> invalidPicks = techniquesOn ? invalidPicks(entries) : Set.of();
+        Set<UUID> sportSuppressed = techniquesOn ? sportDaySuppressed(createdBy, activeMeso, entries) : Set.of();
         // Weekly pin (volume engine v2 S3, spec §6.4): a weight/rep line he kept in this week's proposal holds
         // that exercise at last week's load — the same hold-only knob readiness and the comeback use. Only on
         // a day of the active run, with the engine and the prescription on; failure-isolated (unpinned).
@@ -373,7 +375,8 @@ public class WorkoutService {
                 // longer allows carry neither technique nor challenge; the echo then says so too (the stored plan
                 // is untouched).
                 if (techniquesOn) {
-                    if (comeback != null || lighten.isPresent() || deloadWeek || invalidPicks.contains(e.getId())) {
+                    if (comeback != null || lighten.isPresent() || deloadWeek || invalidPicks.contains(e.getId())
+                        || sportSuppressed.contains(e.getId())) {
                         t.setTechnique(null);
                         t.setTechniqueSource(null);
                         t.setChallenge(false);
@@ -423,6 +426,33 @@ public class WorkoutService {
             .overloadSummary(overloadSummary)
             .comeback(comeback == null ? null : comeback.dto())
             .build();
+    }
+
+    /**
+     * Sport-day rule (mezo-r36n9.81, spec §11 Q4): on a day he has a sport slot, a row of a sport-loaded group
+     * carries no challenge and no planner-sourced technique (the owner's own technique stands). The slots are read
+     * once, and only when some row of the day carries a challenge or a planner technique.
+     */
+    private Set<UUID> sportDaySuppressed(UUID createdBy, MesocycleEntity run,
+                                         List<SessionExerciseAssembler.Entry> entries) {
+        List<String> groups = run.getSportGroups();
+        if (groups == null || groups.isEmpty()) {
+            return Set.of();
+        }
+        List<ExerciseEntity> candidates = entries.stream().map(SessionExerciseAssembler.Entry::row)
+            .filter(r -> (r.isChallenge() || "planner".equals(r.getTechniqueSource()))
+                && groups.contains(MuscleGroup.of(r.getMuscle())))
+            .toList();
+        if (candidates.isEmpty()) {
+            return Set.of();
+        }
+        int weekday = LocalDate.now().getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas, as sport_schedule_slot
+        boolean sportDay = sportScheduleSlotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(createdBy)
+            .stream().anyMatch(sl -> sl.getDayOfWeek() == weekday);
+        if (!sportDay) {
+            return Set.of();
+        }
+        return candidates.stream().map(ExerciseEntity::getId).collect(java.util.stream.Collectors.toSet());
     }
 
     /** Rows whose stored pick no longer passes {@link TechniqueRules}; one catalog read, none without a pick. */

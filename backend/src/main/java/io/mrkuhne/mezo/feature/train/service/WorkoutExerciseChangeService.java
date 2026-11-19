@@ -168,7 +168,14 @@ public class WorkoutExerciseChangeService {
                 ? new ArrayList<>(replaced.getOverrides()) : null);
             keepTechniqueIfAllowed(row, replaced);
         }
+        String keptSource = row.getTechniqueSource();
         styler.styleRows(List.of(row), List.of(), block);
+        // styleRows labels any pick of a fresh row as the owner's; a swap only carries the slot's pick, so
+        // a planner pick stays the planner's (mezo-r36n9.81).
+        boolean stillActive = (row.getTechnique() != null && !"none".equals(row.getTechnique())) || row.isChallenge();
+        if (replaced != null && stillActive && keptSource != null) {
+            row.setTechniqueSource(keptSource);
+        }
     }
 
     /**
