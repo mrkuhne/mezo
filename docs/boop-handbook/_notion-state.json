@@ -729,7 +729,7 @@
     },
     "kezikonyv:07-edzes/05-heti-volumen": {
       "page_id": "4168968e-752b-813c-9763-e3bda2691265",
-      "hash": "a3f1a348f660"
+      "hash": "63db394a5b96"
     },
     "kezikonyv:07-edzes/06-gyakorlatok-elozmenyek": {
       "page_id": "4168968e-752b-8189-8150-ca1dc31f807c",
@@ -1041,7 +1041,7 @@
     },
     "jegyek:mezo-r36n9.81": {
       "page_id": "41c8968e-752b-81bb-9fa1-cc91d6cbb02c",
-      "hash": "daf927924202"
+      "hash": "212e44be5b6d"
     },
     "jegyek:mezo-r36n9.80": {
       "page_id": "41c8968e-752b-81c0-aadb-d311b0556e21",
@@ -1205,7 +1205,7 @@
     },
     "kezikonyv:07-edzes/15-technikak": {
       "page_id": "41c8968e-752b-8133-8f30-e3411e37f22a",
-      "hash": "43f654915fc0"
+      "hash": "013cb4bd08c0"
     },
     "jegyek:mezo-r36n9.92": {
       "page_id": "41d8968e-752b-819d-bed4-c90e4df96a79",
@@ -1230,6 +1230,18 @@
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
       "hash": "72e49809db0d"
+    },
+    "jegyek:mezo-r36n9.93": {
+      "page_id": "41d8968e-752b-812e-b1c5-ea296af90945",
+      "hash": "4bc28dd068fc"
+    },
+    "dontesek:d-2026-11-19-technika-tervezo": {
+      "page_id": "41d8968e-752b-81ca-9ed5-fd81dfdd4963",
+      "hash": "9e44fb5a8e4f"
+    },
+    "kiadasok:f6e1d4cf1": {
+      "page_id": "41d8968e-752b-81be-8118-e1c598d84485",
+      "hash": "2b9c7a059866"
     }
   }
 }

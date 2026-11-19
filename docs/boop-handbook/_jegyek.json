@@ -923,5 +923,14 @@
     ],
     "mit_kapsz": "Ha a blokképítőben edzésmódot váltasz vagy bekapcsolod a technikákat, a becsült edzéshossz és a figyelmeztetések már mentés előtt ehhez igazodnak.",
     "munkamenet": "boop-blokk-epito"
+  },
+  "mezo-r36n9.93": {
+    "cim": "Karbantartás: egy ritkán elbukó csevegés-teszt rendbetétele",
+    "tipus": "Karbantartás",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Megbízhatóbb ellenőrzés minden kiadásnál: egy, a csapat-csevegést vizsgáló teszt néha ok nélkül elbukik, ezt kell kijavítani."
   }
 }
