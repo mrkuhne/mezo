@@ -50,11 +50,15 @@ struct BlockBuilderPage: View {
                 if model.evaluation == nil {
                     evaluationMissing
                 } else {
-                    switch mode {
-                    case .izmok: BuilderMusclesView(model: model, selected: $muscle)
-                    case .napok: BuilderDaysView(model: model, day: $day)
-                    case .blokk: BuilderBlockView(model: model)
+                    Group {
+                        switch mode {
+                        case .izmok: BuilderMusclesView(model: model, selected: $muscle)
+                        case .napok: BuilderDaysView(model: model, day: $day)
+                        case .blokk: BuilderBlockView(model: model)
+                        }
                     }
+                    // Edits made while a save is on its way would be overwritten by the re-read after it.
+                    .disabled(model.saveState == .saving)
                 }
             }
         }
@@ -117,10 +121,13 @@ struct BlockBuilderPage: View {
 
     private enum Primary { case align, save, saving, done }
 
+    /// Save wins whenever there is something to save — he must never have to accept set changes to keep a style or
+    /// a switch he chose. With nothing to save, the button offers to bring the outside muscles into their bands.
     private var primary: Primary {
         if model.saveState == .saving { return .saving }
-        if !model.outside.isEmpty, model.outside.contains(where: { !$0.proposal.isEmpty }) { return .align }
-        return model.hasChanges ? .save : .done
+        if model.hasChanges { return .save }
+        if model.outside.contains(where: { !$0.proposal.isEmpty }) { return .align }
+        return .done
     }
 
     private var bar: some View {
@@ -161,7 +168,7 @@ struct BlockBuilderPage: View {
                 .overlay(Capsule().stroke(.white.opacity(p == .align ? 0.18 : 0), lineWidth: 1))
             }
             .buttonStyle(.plain)
-            .disabled(p == .done || p == .saving)
+            .disabled(p == .done || p == .saving || (p == .align && !model.canApplyProposals))
         }
         .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 4)
         .background(LinearGradient(colors: [NK.ground.opacity(0), NK.ground.opacity(0.95)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
@@ -314,6 +321,8 @@ private struct BuilderMuscleCard: View {
                                             .padding(.horizontal, 18).padding(.vertical, 9).background(Capsule().fill(.white))
                                     }
                                     .buttonStyle(.plain)
+                                    .disabled(!model.canApplyProposals)
+                                    .opacity(model.canApplyProposals ? 1 : 0.5)
                                 }
                                 Button { withAnimation(.snappy) { why.toggle() } } label: {
                                     Text(why ? "a javaslat" : "miért?").nkFont(14, .medium).foregroundStyle(planHue.glow)
@@ -584,6 +593,8 @@ private struct BuilderTechniqueChip: View {
 
 private struct BuilderBlockView: View {
     let model: BlockBuilderModel
+    /// Leaving „Két sorozat bukásig" keeps every exercise at its two sets — he is asked before.
+    @State private var leavingAllout: BlockStyle?
 
     var body: some View {
         let path = model.evaluation?.path ?? []
@@ -672,7 +683,10 @@ private struct BuilderBlockView: View {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
                 ForEach(BlockStyle.allCases, id: \.self) { item in
                     let on = draft?.style == item
-                    Button { withAnimation(.snappy) { model.draft?.style = item } } label: {
+                    Button {
+                        if draft?.style == .allout, item != .allout { leavingAllout = item }
+                        else { withAnimation(.snappy) { model.draft?.style = item } }
+                    } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 PlanMark(mark(item), color: on ? NK.ground : planHue.glow, size: 20)
@@ -698,6 +712,13 @@ private struct BuilderBlockView: View {
                 .nkFont(11).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
         }
         .sensoryFeedback(.selection, trigger: draft?.style)
+        .confirmationDialog("A sorozatok kettőn maradnak", isPresented: Binding(get: { leavingAllout != nil }, set: { if !$0 { leavingAllout = nil } }),
+                            titleVisibility: .visible) {
+            Button("Váltok") { if let s = leavingAllout { withAnimation(.snappy) { model.draft?.style = s } }; leavingAllout = nil }
+            Button("Mégsem", role: .cancel) { leavingAllout = nil }
+        } message: {
+            Text("A „Két sorozat bukásig” módban minden gyakorlat két sorozatos. Váltás után is kettőn maradnak — a Napok fülön vagy az „Igazítsd a sávba” gombbal emelheted vissza őket.")
+        }
     }
 
     /// The block's two switches: techniques, and who approves the week.

@@ -208,7 +208,7 @@ public struct BlockDraft: Equatable, Sendable {
     /// Apply the evaluator's proposal edits (`dayIndex`/`exerciseIndex` index this draft's order).
     public mutating func apply(_ edits: [WireEdit]) {
         for e in edits where days.indices.contains(e.dayIndex) && days[e.dayIndex].exercises.indices.contains(e.exerciseIndex) {
-            days[e.dayIndex].exercises[e.exerciseIndex].sets = max(1, days[e.dayIndex].exercises[e.exerciseIndex].sets + e.delta)
+            days[e.dayIndex].exercises[e.exerciseIndex].sets = min(8, max(1, days[e.dayIndex].exercises[e.exerciseIndex].sets + e.delta))
         }
     }
 
@@ -271,10 +271,15 @@ public struct BlockDraft: Equatable, Sendable {
             input.restSec = w.restSec
             input.overrides = Array(Set((w.overrides ?? []) + ["workingSets"])).sorted()
         }
+        // The technique trio goes out only for a row whose technique or challenge he changed: an untouched row omits all
+        // three, so the server carries the stored pick and its source (a planner's pick stays the planner's) and may clear
+        // a stored pick that has become invalid instead of refusing the whole day. The evaluator always gets the pick
+        // (it weighs a technique set against the caps).
+        let techniqueChanged = e.technique != SetTechnique(wire: w.technique) || e.challenge != (w.challenge ?? false)
+        guard !forSave || techniqueChanged else { return input }
         input.technique = e.technique == .none ? nil : e.technique.rawValue
         input.challenge = e.challenge
-        let techniqueChanged = e.technique != SetTechnique(wire: w.technique) || e.challenge != (w.challenge ?? false)
-        input.techniqueSource = e.technique == .none && !e.challenge ? nil : (techniqueChanged ? "owner" : (w.techniqueSource ?? "owner"))
+        input.techniqueSource = forSave ? (e.technique == .none && !e.challenge ? nil : "owner") : w.techniqueSource
         return input
     }
 
@@ -308,21 +313,41 @@ public struct BlockDraft: Equatable, Sendable {
         return c
     }
 
-    /// Carry this draft's set / technique edits onto a freshly read block (after a settings save re-stamped its rows),
-    /// matched by exercise id.
-    public func carryEdits(onto fresh: BlockDraft) -> BlockDraft {
+    /// Carry this draft's edits onto a freshly read block, matched by exercise id. Only what he changed against
+    /// `original` moves, and per value: if the server already holds his value it stays; if the server still holds the
+    /// original, his value wins; if the server changed it too (a new style re-stamped the row, a weekly proposal applied),
+    /// his **delta** is added to the server's value — so a style switch to two sets plus his +1 gives 3, not his old 5.
+    public func carryEdits(onto fresh: BlockDraft, original: BlockDraft) -> BlockDraft {
         var out = fresh
         let mine = Dictionary(days.flatMap(\.exercises).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let before = Dictionary(original.days.flatMap(\.exercises).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         for d in out.days.indices {
             for e in out.days[d].exercises.indices {
-                guard let edit = mine[out.days[d].exercises[e].id] else { continue }
-                out.days[d].exercises[e].sets = edit.sets
-                out.days[d].exercises[e].technique = edit.technique
-                out.days[d].exercises[e].challenge = edit.challenge
+                let id = out.days[d].exercises[e].id
+                guard let edit = mine[id], let orig = before[id] else { continue }
+                let server = out.days[d].exercises[e]
+                out.days[d].exercises[e].sets = Self.merge(mine: edit.sets, orig: orig.sets, server: server.sets) {
+                    min(8, max(1, server.sets + (edit.sets - orig.sets)))
+                }
+                if edit.technique != orig.technique || edit.challenge != orig.challenge {
+                    out.days[d].exercises[e].technique = edit.technique
+                    out.days[d].exercises[e].challenge = edit.challenge
+                }
             }
         }
-        out.tiers = tiers
-        out.sportGroups = sportGroups
+        if prioritiesWire != original.prioritiesWire, fresh.prioritiesWire == original.prioritiesWire { out.tiers = tiers }
+        if sportGroups != original.sportGroups, fresh.sportGroups == original.sportGroups { out.sportGroups = sportGroups }
+        if style != original.style, fresh.style == original.style { out.style = style }
+        if techniquesEnabled != original.techniquesEnabled, fresh.techniquesEnabled == original.techniquesEnabled {
+            out.techniquesEnabled = techniquesEnabled
+        }
+        if reviewMode != original.reviewMode, fresh.reviewMode == original.reviewMode { out.reviewMode = reviewMode }
         return out
+    }
+
+    private static func merge(mine: Int, orig: Int, server: Int, both: () -> Int) -> Int {
+        if mine == orig || server == mine { return server }
+        if server == orig { return mine }
+        return both()
     }
 }

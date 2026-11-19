@@ -110,18 +110,48 @@ struct BlockDraftTests {
         d.cycleTechnique(day: 0, exercise: 0)
         let input = d.dayInput(d.days[0], forSave: true).exercises
         #expect(input[0].technique == "rest_drop" && input[0].techniqueSource == "owner" && input[0].challenge == false)
-        #expect(input[1].technique == nil && input[1].techniqueSource == nil)
+        #expect(input[1].technique == nil && input[1].techniqueSource == nil && input[1].challenge == nil)
         let thu = d.dayInput(d.days[1], forSave: true).exercises
-        #expect(thu[1].technique == "rest_drop" && thu[1].techniqueSource == "owner", "an untouched pick keeps its source")
+        #expect(thu[1].technique == nil && thu[1].techniqueSource == nil && thu[1].challenge == nil,
+                "an untouched pick is omitted, so the server keeps it and its source")
     }
 
     @Test func editsCarryOntoAFreshRead() {
-        var d = PlanFixtures.draft
+        let original = PlanFixtures.draft
+        var d = original
         d.step(day: 0, exercise: 1, by: 2)
         d.cycleTier("biceps")
-        let carried = d.carryEdits(onto: PlanFixtures.draft)
+        let carried = d.carryEdits(onto: PlanFixtures.draft, original: original)
         #expect(carried.days[0].exercises[1].sets == 5)
         #expect(carried.tier("biceps") == .emphasize)
+    }
+
+    @Test func onlyRealEditsMoveAndADeltaMeetsAServerChange() throws {
+        let original = PlanFixtures.draft
+        var d = original
+        d.step(day: 0, exercise: 1, by: 1)            // curl 3 → 4, his only edit
+        // The server re-stamped every row to two sets (a switch to „Két sorozat bukásig").
+        var fresh = original
+        for i in fresh.days.indices { for e in fresh.days[i].exercises.indices { fresh.days[i].exercises[e].sets = 2 } }
+        let carried = d.carryEdits(onto: fresh, original: original)
+        #expect(carried.days[0].exercises[1].sets == 3, "his +1 on the server's 2, not his old 4")
+        #expect(carried.days[0].exercises[0].sets == 2, "an untouched row keeps the server's value")
+        #expect(carried.changes(since: fresh).days == [0])
+    }
+
+    @Test func aValueTheServerAlreadyHoldsIsNotAddedTwice() {
+        let original = PlanFixtures.draft
+        var d = original
+        d.step(day: 0, exercise: 1, by: 1)
+        let saved = d                                  // the day reached the server, then something else failed
+        let carried = d.carryEdits(onto: saved, original: original)
+        #expect(carried.days[0].exercises[1].sets == 4)
+    }
+
+    @Test func appliedProposalsStayInTheStepperRange() {
+        var d = PlanFixtures.draft
+        d.apply([WireEdit(dayIndex: 0, exerciseIndex: 0, delta: 9)])
+        #expect(d.days[0].exercises[0].sets == 8)
     }
 
     @Test func coarseMuscleGroupsCatalogKeys() {

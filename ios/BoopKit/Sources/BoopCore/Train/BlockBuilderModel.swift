@@ -22,7 +22,7 @@ public final class BlockBuilderModel {
     }
 
     public private(set) var phase: Phase = .loading
-    public var draft: BlockDraft? { didSet { if draft != oldValue, phase == .ready { scheduleEvaluation() } } }
+    public var draft: BlockDraft? { didSet { if draft != oldValue, phase == .ready, !replacing { scheduleEvaluation() } } }
     public private(set) var original: BlockDraft?
     public private(set) var evaluation: WireEvaluation?
     /// True while the evaluation on screen belongs to an older draft (refresh failed or pending).
@@ -34,6 +34,8 @@ public final class BlockBuilderModel {
     private let debounce: Duration
     private var evaluationTask: Task<Void, Never>?
     private var catalog: [WireCatalogItem] = []
+    /// Set while the model itself swaps the draft (a re-read): that swap asks for one evaluation, not two.
+    private var replacing = false
 
     public init(client: PlanClient, debounce: Duration = .milliseconds(300)) {
         self.client = client
@@ -112,6 +114,8 @@ public final class BlockBuilderModel {
             evaluationStale = false
             evaluationError = nil
         } catch {
+            // A late failure of an older draft must not mark a newer, good answer as stale.
+            guard self.draft?.evaluateRequest() == request else { return }
             evaluationError = error
             evaluationStale = evaluation != nil
         }
@@ -119,14 +123,19 @@ public final class BlockBuilderModel {
 
     // MARK: edits the screens call
 
+    /// Proposals may be applied only against a fresh evaluation: until the server has answered for the edited draft the
+    /// old proposal would be added a second time.
+    public var canApplyProposals: Bool { !evaluationStale && evaluation != nil && saveState != .saving }
+
     public func applyProposal(_ muscle: String) {
-        guard let edits = self.muscle(muscle)?.proposal, !edits.isEmpty else { return }
+        guard canApplyProposals, let edits = self.muscle(muscle)?.proposal, !edits.isEmpty else { return }
         draft?.apply(edits)
     }
 
     /// „Igazítsd a sávba": every muscle outside its band takes its proposal. Edits never collide (one muscle's
     /// proposal touches only its own exercises).
     public func applyAllProposals() {
+        guard canApplyProposals else { return }
         let edits = outside.flatMap(\.proposal)
         guard !edits.isEmpty else { return }
         draft?.apply(edits)
@@ -134,49 +143,59 @@ public final class BlockBuilderModel {
 
     // MARK: saving
 
-    /// Writes only what changed, in this order: block settings → (re-read) → tiers → days. Stops at the first failure
-    /// and says what was saved. A save while offline is refused up front by the screen.
+    /// Writes only what changed, in this order: block settings → (re-read) → tiers → days. Stops at the first failure,
+    /// says what was saved, and keeps every edit that was not saved on screen so he can try again.
     public func save() async {
         guard let draft, let original else { return }
-        let changes = draft.changes(since: original)
-        guard !changes.isEmpty else { saveState = .saved; return }
+        guard !draft.changes(since: original).isEmpty else { saveState = .saved; return }
         saveState = .saving
+        // The re-read after the save evaluates; a pending debounced evaluation of the pre-save draft is moot.
+        evaluationTask?.cancel()
         var saved: [String] = []
         var working = draft
+        var base = original
         do {
-            if changes.settings {
-                let request = WireSettingsRequest(trainingStyle: changes.style ? draft.style?.rawValue : nil,
-                                                  techniquesEnabled: changes.techniquesEnabled ? draft.techniquesEnabled : nil,
-                                                  weeklyReviewMode: changes.reviewMode ? draft.reviewMode.rawValue : nil)
-                let fresh = try await client.saveSettings(blockId: draft.blockId, request)
+            let settingsChanged = draft.changes(since: original).settings
+            if settingsChanged {
+                let c = draft.changes(since: original)
+                let request = WireSettingsRequest(trainingStyle: c.style ? draft.style?.rawValue : nil,
+                                                  techniquesEnabled: c.techniquesEnabled ? draft.techniquesEnabled : nil,
+                                                  weeklyReviewMode: c.reviewMode ? draft.reviewMode.rawValue : nil)
+                let fresh = BlockDraft(block: try await client.saveSettings(blockId: draft.blockId, request), catalog: catalog)
                 saved.append("az edzésmód és a beállítások")
-                // A new style re-stamps the rows: carry the set and technique edits onto what the server now holds.
-                working = draft.carryEdits(onto: BlockDraft(block: fresh, catalog: catalog))
+                // A new style re-stamps the rows: his edits move onto what the server now holds, and what is left to save
+                // is measured against that.
+                working = draft.carryEdits(onto: fresh, original: original)
+                base = fresh
             }
-            if changes.tiers || changes.sportGroups {
+            let rest = working.changes(since: base)
+            if rest.tiers || rest.sportGroups {
                 try await client.savePriorities(blockId: working.blockId,
                                                 WirePrioritiesRequest(musclePriorities: working.prioritiesWire, sportGroups: working.sportGroups))
                 saved.append("az izmok szintje")
             }
-            for index in changes.days where working.days.indices.contains(index) {
+            for index in rest.days where working.days.indices.contains(index) {
                 let day = working.days[index]
                 try await client.saveDay(blockId: working.blockId, dayId: day.id, working.dayInput(day, forSave: true).exercises)
                 saved.append(day.name.lowercased())
             }
             saveState = .saved
-            await reload()
+            await reload(keeping: nil)
         } catch {
             saveState = .failed(saved: saved, error: error)
-            if !saved.isEmpty { await reload() }
+            await reload(keeping: (draft, original))
         }
     }
 
-    /// Re-read the block after a save so the next edit starts from what the server holds (a day save re-mints ids).
-    private func reload() async {
+    /// Re-read the block so the next edit starts from what the server holds (a day save may re-mint ids). With
+    /// `keeping`, the edits that did not reach the server are carried onto the fresh read.
+    private func reload(keeping: (draft: BlockDraft, original: BlockDraft)?) async {
         guard let block = try? await client.runningBlock() else { return }
         let fresh = BlockDraft(block: block, catalog: catalog)
+        replacing = true
         original = fresh
-        draft = fresh
+        draft = keeping.map { $0.draft.carryEdits(onto: fresh, original: $0.original) } ?? fresh
+        replacing = false
         await evaluateNow()
     }
 
@@ -207,11 +226,13 @@ public final class WeekReviewModel {
     public func load() async {
         phase = .loading
         do {
-            guard let block = try await client.runningBlock() else { phase = .nothing; return }
+            guard let block = try await client.runningBlock() else { review = nil; phase = .nothing; return }
             blockTitle = block.shortTitle ?? block.title
             let proposals = try await client.weekProposals(blockId: block.id)
-            // The weekly one first (the server lists it first); a lone tier change is reviewed the same way.
-            guard let p = proposals.first(where: { $0.kind == "weekly" }) ?? proposals.first else { phase = .nothing; return }
+            // What still waits for him first (a pending tier change after the weekly one was applied must stay reachable),
+            // then this week's weekly one, then anything.
+            guard let p = proposals.first(where: { $0.status == "pending" }) ?? proposals.first(where: { $0.kind == "weekly" }) ?? proposals.first
+            else { review = nil; phase = .nothing; return }
             review = WeekReview(p)
             phase = .ready
         } catch {

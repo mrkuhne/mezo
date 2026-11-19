@@ -542,7 +542,7 @@ struct WeekReviewEntrance: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if let review = model.review {
+            if model.phase == .ready, let review = model.review {
                 if review.isOpen {
                     let n = review.reviewMuscles.count
                     NKHighlight(hue: hue, label: "Új hét · jóváhagyásra vár",

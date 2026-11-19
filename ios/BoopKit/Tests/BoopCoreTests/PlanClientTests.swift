@@ -146,6 +146,35 @@ struct PlanClientTests {
         await m.save()
         #expect(m.saveState == .failed(saved: ["az edzésmód és a beállítások", "az izmok szintje"],
                                       error: .rejected("TRAIN_TECHNIQUE_NOT_ALLOWED")))
+        #expect(m.draft?.days[0].exercises[0].technique == .restDrop, "the unsaved edit is still on screen")
+        #expect(m.hasChanges, "so he can save again")
+    }
+
+    @Test func proposalsWaitForAFreshEvaluation() async {
+        let stub = StubTransport()
+        let m = await loadedBuilder(stub)
+        stub.on("evaluateMesoPlan", .json(200, PlanFixtures.evaluationJSON))
+        m.applyAllProposals()
+        let once = m.draft?.days[0].exercises[0].sets
+        m.applyAllProposals()                        // the old evaluation is stale now: no second application
+        #expect(m.draft?.days[0].exercises[0].sets == once)
+        #expect(!m.canApplyProposals)
+    }
+
+    @Test func reviewPrefersWhatIsStillPending() async {
+        let stub = StubTransport()
+        stub.on("listMesocycles", .json(200, PlanFixtures.blocksJSON(mode: "manual")))
+        let applied = String(PlanFixtures.proposalJSON(status: "applied").dropFirst().dropLast())
+        let pendingTier = applied.replacingOccurrences(of: "p0000000-0000-4000-8000-000000000001", with: "p0000000-0000-4000-8000-000000000002")
+            .replacingOccurrences(of: #""kind":"weekly","status":"applied""#, with: #""kind":"tier_change","status":"pending""#)
+        stub.on("listWeekProposals", .json(200, "[\(applied),\(pendingTier)]"))
+        let m = WeekReviewModel(client: PlanFixtures.planClient(stub))
+        await m.load()
+        #expect(m.review?.kind == "tier_change" && m.review?.isOpen == true)
+        stub.on("listMesocycles", .json(200, PlanFixtures.blocksJSON(mode: "manual")))
+        stub.on("listWeekProposals", .json(200, "[]"))
+        await m.load()
+        #expect(m.review == nil && m.phase == .nothing, "a stale card is cleared")
     }
 
     // MARK: the review model
