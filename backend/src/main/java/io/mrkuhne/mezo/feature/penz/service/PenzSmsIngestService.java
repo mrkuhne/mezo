@@ -54,17 +54,20 @@ import tools.jackson.databind.ObjectMapper;
  *       {@code failed/amount_mismatch}.</li>
  *   <li>Conversion at once: account by sender (else default, else first live), the amount into the account's
  *       currency at the booking rate, category by name and kind; no account → stored {@code parsed/no_account};
- *       no rate → stored {@code parsed/fx_unavailable}; otherwise the review transaction (source sms, needs
+ *       no rate → stored {@code parsed/fx_unavailable}; an amount that converts to zero → stored
+ *       {@code parsed/amount_too_small}; otherwise the review transaction (source sms, needs
  *       review) and the SMS flips to {@code converted}. The response says {@code parsed} with its id.</li>
  * </ol>
- * The SMS text and the key are never logged. Adopting a recorded invest buy instead of booking an expense (the
+ * The SMS text and the key are never logged, and the LLM audit row of the parse keeps no payload
+ * ({@link LlmCallContext#FEATURE_PENZ_SMS} is payload-free) — an SMS the model ignores leaves its text nowhere. Adopting a recorded invest buy instead of booking an expense (the
  * old {@code linkSmsToInvestBuy}) is L6.
  */
 @Slf4j
 @Service
 public class PenzSmsIngestService {
 
-    static final String LLM_FEATURE = "penz_sms";
+    /** Payload-free in the LLM audit log ({@link LlmCallContext#keepsPayload}): the SMS text is never kept there. */
+    static final String LLM_FEATURE = LlmCallContext.FEATURE_PENZ_SMS;
     static final String LLM_OPERATION = "parse";
 
     private final PenzSmsMessageRepository messages;
@@ -152,6 +155,10 @@ public class PenzSmsIngestService {
             log.warn("Penz SMS: no FX rate for {} on {}; stored without a transaction", result.currency(),
                 result.date());
             return stored(owner, sms, result, "fx_unavailable", true);
+        }
+        if (plan.amountMinor() <= 0) {
+            // a tiny amount converted into the account currency rounds to nothing: no zero transaction
+            return stored(owner, sms, result, "amount_too_small", true);
         }
         Optional<PenzTransactionEntity> txn = store.storeConverted(sms, result, plan, booking);
         if (txn.isEmpty()) {

@@ -382,8 +382,8 @@ components:
       type: object
       required: [savingsTargetHufMinor, practiceMonthlyHufMinor]
       properties:
-        savingsTargetHufMinor: { type: integer, format: int64, minimum: 0 }
-        practiceMonthlyHufMinor: { type: integer, format: int64, minimum: 0 }
+        savingsTargetHufMinor: { type: integer, format: int64, minimum: 0, maximum: 100000000000 }
+        practiceMonthlyHufMinor: { type: integer, format: int64, minimum: 0, maximum: 100000000000 }
         weekStart: { type: string, pattern: '^monday$', nullable: true }
         emergencyFundMonths: { type: integer, minimum: 0, maximum: 60, nullable: true }
         timezone: { type: string, maxLength: 64, nullable: true }
@@ -411,7 +411,7 @@ components:
         name: { type: string, minLength: 1, maxLength: 80 }
         type: { type: string, pattern: '^(checking|savings|cash|investment)$' }
         currency: { type: string, pattern: '^(HUF|EUR|USD|GBP|CHF)$' }
-        openingBalanceMinor: { type: integer, format: int64, nullable: true }
+        openingBalanceMinor: { type: integer, format: int64, minimum: -100000000000, maximum: 100000000000, nullable: true }
         isDefault: { type: boolean, nullable: true }
         isSavingsTarget: { type: boolean, nullable: true }
         smsSender: { type: string, maxLength: 100, nullable: true }
@@ -432,7 +432,7 @@ components:
         name: { type: string, minLength: 1, maxLength: 60 }
         kind: { type: string, pattern: '^(expense|income)$' }
         icon: { type: string, maxLength: 40, nullable: true }
-        monthlyBudgetHufMinor: { type: integer, format: int64, minimum: 0, nullable: true }
+        monthlyBudgetHufMinor: { type: integer, format: int64, minimum: 0, maximum: 100000000000, nullable: true }
         position: { type: integer, minimum: 0, nullable: true }
     PenzTransactionResponse:
       type: object
@@ -463,7 +463,7 @@ components:
           type: string
           description: 'transfer legs come from POST /api/penz/transfers; on update a transfer leg keeps its kind'
           pattern: '^(expense|income|transfer_out|transfer_in|invest_buy|invest_sell)$'
-        amountMinor: { type: integer, format: int64, minimum: 1 }
+        amountMinor: { type: integer, format: int64, minimum: 1, maximum: 100000000000 }
         currency: { type: string, pattern: '^(HUF|EUR|USD|GBP|CHF)$' }
         categoryId: { type: string, format: uuid, nullable: true }
         date: { type: string, format: date }
@@ -476,7 +476,7 @@ components:
         clientRef: { type: string, format: uuid, nullable: true }
         fromAccountId: { type: string, format: uuid }
         toAccountId: { type: string, format: uuid }
-        amountMinor: { type: integer, format: int64, minimum: 1 }
+        amountMinor: { type: integer, format: int64, minimum: 1, maximum: 100000000000 }
         currency: { type: string, pattern: '^(HUF|EUR|USD|GBP|CHF)$' }
         date: { type: string, format: date }
         note: { type: string, maxLength: 500, nullable: true }
@@ -501,7 +501,7 @@ components:
       properties:
         name: { type: string, minLength: 1, maxLength: 80 }
         kind: { type: string, pattern: '^(expense|income)$' }
-        amountMinor: { type: integer, format: int64, minimum: 1 }
+        amountMinor: { type: integer, format: int64, minimum: 1, maximum: 100000000000 }
         currency: { type: string, pattern: '^(HUF|EUR|USD|GBP|CHF)$' }
         categoryId: { type: string, format: uuid, nullable: true }
         accountId: { type: string, format: uuid }

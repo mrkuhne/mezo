@@ -75,9 +75,16 @@ public class PenzFxService {
         return new Booking(toHufMinor(amountMinor, rate.rate()), rate.rate(), rate.publishedDate());
     }
 
-    /** {@code amountMinor × rate}, HALF_UP to a whole minor unit (the old app's half-away-from-zero for positives). */
+    /**
+     * {@code amountMinor × rate}, HALF_UP to a whole minor unit (the old app's half-away-from-zero for positives).
+     * A twin beyond a {@code long} is a 400 on {@code amountMinor}, never a 500 (the contract caps amounts well below).
+     */
     static long toHufMinor(long amountMinor, BigDecimal rate) {
-        return BigDecimal.valueOf(amountMinor).multiply(rate).setScale(0, RoundingMode.HALF_UP).longValueExact();
+        try {
+            return BigDecimal.valueOf(amountMinor).multiply(rate).setScale(0, RoundingMode.HALF_UP).longValueExact();
+        } catch (ArithmeticException overflow) {
+            throw PenzErrors.field("amountMinor");
+        }
     }
 
     private Rate rateFor(String currency, LocalDate asked) {

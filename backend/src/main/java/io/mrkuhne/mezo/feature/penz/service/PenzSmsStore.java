@@ -35,7 +35,8 @@ public class PenzSmsStore {
 
     /**
      * Stores an SMS that books nothing ({@code ignored}, {@code failed}, or {@code parsed} without an account /
-     * rate). {@code keepText} false drops the text (ignored SMS: OTP codes and the like are never kept).
+     * rate). {@code keepText} false drops the text (ignored SMS: OTP codes and the like are never kept — nor is any
+     * SMS text kept in the LLM audit log, whose {@code penz_sms} rows are payload-free).
      */
     @Transactional
     public Optional<PenzSmsMessageEntity> store(Received sms, Normalized result, String reason, boolean keepText) {

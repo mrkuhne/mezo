@@ -96,4 +96,16 @@ class PenzMonthCloseServiceIT extends AbstractIntegrationTest {
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
                 e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.CONFLICT));
     }
+
+    @Test
+    void aTransferIntoANonHufAccountIs409AndWritesNothing() {
+        penz.account(owner, "Fő", true);
+        penz.account(owner, "Euró megtakarítás", PenzAccountEntity.TYPE_SAVINGS, "EUR", false, true);
+        assertThatThrownBy(() -> service.closeWith(owner, lastMonth, "transferred", 500_000L))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class, e -> {
+                assertThat(e.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                assertThat(e.getMessage()).contains("PENZ_CURRENCY_MISMATCH");
+            });
+        assertThat(transactions.findAllOwned(owner)).isEmpty();
+    }
 }

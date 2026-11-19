@@ -88,8 +88,13 @@ class PenzApiIT extends ApiIntegrationTest {
     }
 
     private PenzAccountResponse createAccount(HttpHeaders h, String name, boolean isDefault) {
-        return postForBody("/api/penz/accounts", new PenzAccountRequest().name(name).type("checking").currency("HUF")
-            .openingBalanceMinor(25_000_000L).isDefault(isDefault), h, HttpStatus.OK, PenzAccountResponse.class);
+        return createAccount(h, name, isDefault, "HUF");
+    }
+
+    private PenzAccountResponse createAccount(HttpHeaders h, String name, boolean isDefault, String currency) {
+        return postForBody("/api/penz/accounts", new PenzAccountRequest().name(name).type("checking")
+            .currency(currency).openingBalanceMinor(25_000_000L).isDefault(isDefault), h, HttpStatus.OK,
+            PenzAccountResponse.class);
     }
 
     private static PenzTransactionRequest expense(UUID accountId, long amountMinor, String currency, LocalDate date) {
@@ -330,6 +335,11 @@ class PenzApiIT extends ApiIntegrationTest {
         List<PenzTransactionResponse> month = getForList("/api/penz/transactions?month=" + month(RATE_DAY),
             u.headers(), HttpStatus.OK, PenzTransactionResponse.class);
         assertThat(month).hasSize(2).allSatisfy(t -> assertThat(t.getAmount().getMinor()).isEqualTo(6_000_000L));
+        // a leg cannot move onto the other leg's account (a self-transfer)
+        String self = putForBody("/api/penz/transactions/" + legs.get(1).getId(), new PenzTransactionRequest()
+            .accountId(main.getId()).kind("transfer_in").amountMinor(6_000_000L).currency("HUF").date(RATE_DAY),
+            u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(self, "PENZ_TRANSFER_SAME_ACCOUNT");
         // a leg cannot change its kind
         putForBody("/api/penz/transactions/" + legs.get(1).getId(), new PenzTransactionRequest()
             .accountId(savings.getId()).kind("income").amountMinor(6_000_000L).currency("HUF").date(RATE_DAY),
@@ -345,12 +355,79 @@ class PenzApiIT extends ApiIntegrationTest {
         assertHasRequestError(same, "PENZ_TRANSFER_SAME_ACCOUNT");
     }
 
+    @Test
+    void aTransferReplayingAPlainTransactionsClientRefIs409() {
+        RegisteredUser u = registerUser("penz transfer ref clash");
+        PenzAccountResponse main = createAccount(u.headers(), "Fő", true);
+        PenzAccountResponse cash = createAccount(u.headers(), "Készpénz", false);
+        UUID ref = UUID.randomUUID();
+        postForBody("/api/penz/transactions", expense(main.getId(), 100_000L, "HUF", RATE_DAY).clientRef(ref),
+            u.headers(), HttpStatus.OK, PenzTransactionResponse.class);
+        postForBody("/api/penz/transactions", expense(main.getId(), 200_000L, "HUF", RATE_DAY), u.headers(),
+            HttpStatus.OK, PenzTransactionResponse.class);
+
+        String err = postForBody("/api/penz/transfers", new PenzTransferRequest().clientRef(ref)
+            .fromAccountId(main.getId()).toAccountId(cash.getId()).amountMinor(5_000L).currency("HUF")
+            .date(RATE_DAY), u.headers(), HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(err, "PENZ_CLIENT_REF_CONFLICT");
+        assertThat(err).doesNotContain("200000");
+    }
+
+    // ---- currency + amount bounds ----
+
+    @Test
+    void aRowsCurrencyMustBeItsAccountsCurrency() {
+        RegisteredUser u = registerUser("penz currency match");
+        PenzAccountResponse huf = createAccount(u.headers(), "Fő", true);
+        PenzAccountResponse eur = createAccount(u.headers(), "Euró", false, "EUR");
+
+        assertHasRequestError(postForBody("/api/penz/transactions", expense(huf.getId(), 1_000L, "EUR", RATE_DAY),
+            u.headers(), HttpStatus.BAD_REQUEST, String.class), "PENZ_CURRENCY_MISMATCH");
+        assertHasRequestError(postForBody("/api/penz/transactions", expense(eur.getId(), 1_000L, "HUF", RATE_DAY),
+            u.headers(), HttpStatus.BAD_REQUEST, String.class), "PENZ_CURRENCY_MISMATCH");
+        assertThat(transactionRows.findAllOwned(u.id())).isEmpty();
+
+        PenzTransactionResponse t = postForBody("/api/penz/transactions", expense(huf.getId(), 1_000L, "HUF",
+            RATE_DAY), u.headers(), HttpStatus.OK, PenzTransactionResponse.class);
+        assertHasRequestError(putForBody("/api/penz/transactions/" + t.getId(), expense(eur.getId(), 1_000L, "HUF",
+            RATE_DAY), u.headers(), HttpStatus.BAD_REQUEST, String.class), "PENZ_CURRENCY_MISMATCH");
+
+        // a transfer: both accounts in one currency, and the transfer in that currency
+        assertHasRequestError(postForBody("/api/penz/transfers", new PenzTransferRequest().fromAccountId(huf.getId())
+            .toAccountId(eur.getId()).amountMinor(1_000L).currency("HUF").date(RATE_DAY), u.headers(),
+            HttpStatus.BAD_REQUEST, String.class), "PENZ_CURRENCY_MISMATCH");
+        PenzAccountResponse cash = createAccount(u.headers(), "Készpénz", false);
+        assertHasRequestError(postForBody("/api/penz/transfers", new PenzTransferRequest().fromAccountId(huf.getId())
+            .toAccountId(cash.getId()).amountMinor(1_000L).currency("EUR").date(RATE_DAY), u.headers(),
+            HttpStatus.BAD_REQUEST, String.class), "PENZ_CURRENCY_MISMATCH");
+
+        assertHasRequestError(postForBody("/api/penz/recurring-rules", new PenzRecurringRuleRequest().name("Bér")
+            .kind("income").amountMinor(100_000L).currency("CHF").accountId(huf.getId()).frequency("monthly")
+            .startDate(RATE_DAY), u.headers(), HttpStatus.BAD_REQUEST, String.class), "PENZ_CURRENCY_MISMATCH");
+    }
+
+    @Test
+    void amountsAboveOneBillionAreRefused() {
+        RegisteredUser u = registerUser("penz amount bounds");
+        PenzAccountResponse acc = createAccount(u.headers(), "Fő", true);
+        String err = postForBody("/api/penz/transactions", expense(acc.getId(), 100_000_000_001L, "HUF", RATE_DAY),
+            u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        assertThat(err).contains("amountMinor");
+        postForBody("/api/penz/transactions", expense(acc.getId(), 100_000_000_000L, "HUF", RATE_DAY), u.headers(),
+            HttpStatus.OK, PenzTransactionResponse.class);
+        postForBody("/api/penz/accounts", new PenzAccountRequest().name("Sok").type("checking").currency("HUF")
+            .openingBalanceMinor(-100_000_000_001L), u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        postForBody("/api/penz/transfers", new PenzTransferRequest().fromAccountId(acc.getId())
+            .toAccountId(createAccount(u.headers(), "Készpénz", false).getId()).amountMinor(100_000_000_001L)
+            .currency("HUF").date(RATE_DAY), u.headers(), HttpStatus.BAD_REQUEST, String.class);
+    }
+
     // ---- FX ----
 
     @Test
     void aForeignAmountIsBookedOnceAndTheRateIsFetchedOnce() {
         RegisteredUser u = registerUser("penz fx cache");
-        PenzAccountResponse acc = createAccount(u.headers(), "Fő", true);
+        PenzAccountResponse acc = createAccount(u.headers(), "Euró", true, "EUR");
         stubRate("EUR", RATE_DAY, "385.27");
 
         PenzTransactionResponse t = postForBody("/api/penz/transactions", expense(acc.getId(), 1_250L, "EUR", RATE_DAY),
@@ -366,7 +443,7 @@ class PenzApiIT extends ApiIntegrationTest {
             PenzTransactionResponse.class);
         // a second owner on the same day also hits the global cache
         RegisteredUser other = registerUser("penz fx cache other");
-        PenzAccountResponse otherAcc = createAccount(other.headers(), "Fő", true);
+        PenzAccountResponse otherAcc = createAccount(other.headers(), "Euró", true, "EUR");
         postForBody("/api/penz/transactions", expense(otherAcc.getId(), 999L, "EUR", RATE_DAY), other.headers(),
             HttpStatus.OK, PenzTransactionResponse.class);
         FX.verify(1, getRequestedFor(urlPathEqualTo("/" + RATE_DAY)));
@@ -385,7 +462,7 @@ class PenzApiIT extends ApiIntegrationTest {
     @Test
     void aWeekendAsksTheLastPublishedRate() {
         RegisteredUser u = registerUser("penz fx weekend");
-        PenzAccountResponse acc = createAccount(u.headers(), "Fő", true);
+        PenzAccountResponse acc = createAccount(u.headers(), "Dollár", true, "USD");
         LocalDate saturday = LocalDate.of(2026, 10, 17);
         LocalDate friday = saturday.minusDays(1);
         FX.stubFor(get(urlPathEqualTo("/" + saturday)).willReturn(aResponse()
@@ -402,7 +479,7 @@ class PenzApiIT extends ApiIntegrationTest {
     @Test
     void providerDownFallsBackToARecentCachedRate() {
         RegisteredUser u = registerUser("penz fx fallback");
-        PenzAccountResponse acc = createAccount(u.headers(), "Fő", true);
+        PenzAccountResponse acc = createAccount(u.headers(), "Euró", true, "EUR");
         penz.fxRate("EUR", RATE_DAY.minusDays(3), "384.10");
         penz.fxRate("EUR", RATE_DAY.minusDays(9), "370.00"); // older than the 7-day window: never used
         stubProviderDown();
@@ -419,7 +496,7 @@ class PenzApiIT extends ApiIntegrationTest {
     @Test
     void noRateAnywhereIs503AndNothingIsWritten() {
         RegisteredUser u = registerUser("penz fx none");
-        PenzAccountResponse acc = createAccount(u.headers(), "Fő", true);
+        PenzAccountResponse acc = createAccount(u.headers(), "Euró", true, "EUR");
         penz.fxRate("EUR", RATE_DAY.minusDays(9), "370.00"); // outside the window
         stubProviderDown();
 
@@ -429,7 +506,8 @@ class PenzApiIT extends ApiIntegrationTest {
         assertThat(transactionRows.findAllOwned(u.id())).isEmpty();
 
         // a HUF write never needs the provider
-        postForBody("/api/penz/transactions", expense(acc.getId(), 1_000L, "HUF", RATE_DAY), u.headers(),
+        PenzAccountResponse huf = createAccount(u.headers(), "Fő", false);
+        postForBody("/api/penz/transactions", expense(huf.getId(), 1_000L, "HUF", RATE_DAY), u.headers(),
             HttpStatus.OK, PenzTransactionResponse.class);
     }
 

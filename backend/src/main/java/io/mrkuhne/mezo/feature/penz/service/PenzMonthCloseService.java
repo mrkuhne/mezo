@@ -29,7 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
  * has no close. Closing stores the final remaining figure (HUF minor units) and splits it into leftover and
  * deficit: a deficit, or nothing left, always closes as {@code none}; a leftover closes as {@code kept} or
  * {@code transferred} — the latter writes a HUF transfer pair dated the month's last day from the default
- * account into the savings-target account (409 {@code PENZ_NO_SAVINGS_TARGET_ACCOUNT} when either is missing).
+ * account into the savings-target account (409 {@code PENZ_NO_SAVINGS_TARGET_ACCOUNT} when either is missing,
+ * 409 {@code PENZ_CURRENCY_MISMATCH} when either is not a HUF account).
  * Months close oldest first: an earlier open month is 409 {@code PENZ_EARLIER_MONTH_OPEN}.
  *
  * <p>The remaining figure is the allowance engine's {@code remaining} of the month ({@link #remainingFor}), with
@@ -109,6 +110,9 @@ public class PenzMonthCloseService {
                 .stream().filter(PenzAccountEntity::isDefaultAccount).findFirst()
                 .filter(a -> !a.getId().equals(target.getId()))
                 .orElseThrow(() -> PenzErrors.conflict("PENZ_NO_SAVINGS_TARGET_ACCOUNT"));
+            if (!PenzFxService.HUF.equals(source.getCurrency()) || !PenzFxService.HUF.equals(target.getCurrency())) {
+                throw PenzErrors.conflict("PENZ_CURRENCY_MISMATCH"); // the leftover is forints: HUF accounts only
+            }
             pairId = transactionService.writeTransfer(owner, source.getId(), target.getId(), leftover,
                 PenzFxService.HUF, new Booking(leftover, null, null), month.atEndOfMonth(),
                 "Hónapzárás " + month, null);

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.penz.service;
 import io.mrkuhne.mezo.api.dto.PenzTransactionRequest;
 import io.mrkuhne.mezo.api.dto.PenzTransactionResponse;
 import io.mrkuhne.mezo.api.dto.PenzTransferRequest;
+import io.mrkuhne.mezo.feature.penz.entity.PenzAccountEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
 import io.mrkuhne.mezo.feature.penz.mapper.PenzMapper;
 import io.mrkuhne.mezo.feature.penz.repository.PenzTransactionRepository;
@@ -30,6 +31,10 @@ import org.springframework.transaction.annotation.Transactional;
  * duplicate) returns the stored row. A transfer is two rows — {@code transfer_out} on the source account,
  * {@code transfer_in} on the target — sharing {@code transfer_pair_id}; the client ref sits on the out leg.
  * Updating a leg moves amount, currency, date and note on both legs; deleting a leg deletes its pair.
+ *
+ * <p>A row's currency is ALWAYS its account's currency (400 {@code PENZ_CURRENCY_MISMATCH}) — the balance of an
+ * account sums its rows in its own currency, so a row in another one would be skipped by it (legacy rows only).
+ * A foreign purchase on a HUF account is entered as the forints it cost (the SMS ingest converts the same way).
  */
 @Service
 @RequiredArgsConstructor
@@ -73,7 +78,7 @@ public class PenzTransactionService {
                 return mapper.toResponse(replay.get());
             }
         }
-        accounts.require(owner, req.getAccountId());
+        requireCurrency(accounts.require(owner, req.getAccountId()), req.getCurrency());
         if (req.getCategoryId() != null) {
             categories.require(owner, req.getCategoryId());
         }
@@ -94,11 +99,25 @@ public class PenzTransactionService {
     @Transactional
     public PenzTransactionResponse update(UUID owner, UUID id, PenzTransactionRequest req) {
         PenzTransactionEntity row = require(owner, id);
-        accounts.require(owner, req.getAccountId());
+        PenzAccountEntity account = accounts.require(owner, req.getAccountId());
         boolean transfer = row.getTransferPairId() != null && TRANSFER_KINDS.contains(row.getKind());
         if (transfer ? !row.getKind().equals(req.getKind()) : TRANSFER_KINDS.contains(req.getKind())) {
             throw PenzErrors.field("kind");
         }
+        List<PenzTransactionEntity> legs = transfer
+            ? repository.findByCreatedByAndTransferPairIdAndDeletedFalse(owner, row.getTransferPairId()) : List.of();
+        if (transfer) {
+            for (PenzTransactionEntity other : legs) {
+                if (other.getId().equals(row.getId())) {
+                    continue;
+                }
+                if (other.getAccountId().equals(req.getAccountId())) {
+                    throw PenzErrors.badRequest("PENZ_TRANSFER_SAME_ACCOUNT"); // a leg onto the other leg's account
+                }
+                requireCurrency(accounts.require(owner, other.getAccountId()), req.getCurrency());
+            }
+        }
+        requireCurrency(account, req.getCurrency());
         boolean rebook = needsHufRecompute(row.getAmountMinor(), row.getCurrency(), row.getDate(),
             req.getAmountMinor(), req.getCurrency(), req.getDate());
         Booking booking = rebook
@@ -106,8 +125,7 @@ public class PenzTransactionService {
             : new Booking(row.getAmountHufMinor(), row.getFxRate(), row.getFxRateDate());
         Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
         if (transfer) {
-            for (PenzTransactionEntity leg : repository.findByCreatedByAndTransferPairIdAndDeletedFalse(owner,
-                    row.getTransferPairId())) {
+            for (PenzTransactionEntity leg : legs) {
                 setAmount(leg, req.getAmountMinor(), req.getCurrency(), booking);
                 leg.setDate(req.getDate());
                 leg.setNote(blankToNull(req.getNote()));
@@ -136,7 +154,10 @@ public class PenzTransactionService {
         return mapper.toResponse(repository.saveAndFlush(row));
     }
 
-    /** Soft delete; a transfer leg takes its pair with it. */
+    /**
+     * Soft delete; a transfer leg takes its pair with it. A month close's transfer leg may be deleted too — the close
+     * keeps its stored figures and its (now dangling) pair id.
+     */
     @Transactional
     public void delete(UUID owner, UUID id) {
         PenzTransactionEntity row = require(owner, id);
@@ -167,11 +188,13 @@ public class PenzTransactionService {
             Optional<PenzTransactionEntity> replay = repository.findByCreatedByAndClientRefAndDeletedFalse(owner,
                 req.getClientRef());
             if (replay.isPresent()) {
-                return legs(owner, replay.get().getTransferPairId());
+                return legs(owner, requirePairId(replay.get()));
             }
         }
-        accounts.require(owner, req.getFromAccountId());
-        accounts.require(owner, req.getToAccountId());
+        // L4: both accounts share the transfer's currency; a cross-currency transfer (each leg in its own
+        // account's currency at its own amount) is a later slice
+        requireCurrency(accounts.require(owner, req.getFromAccountId()), req.getCurrency());
+        requireCurrency(accounts.require(owner, req.getToAccountId()), req.getCurrency());
         Booking booking = fx.book(req.getCurrency(), req.getAmountMinor(), req.getDate(), settings.today(owner));
         UUID pairId = writeTransfer(owner, req.getFromAccountId(), req.getToAccountId(), req.getAmountMinor(),
             req.getCurrency(), booking, req.getDate(), blankToNull(req.getNote()), req.getClientRef());
@@ -192,7 +215,7 @@ public class PenzTransactionService {
         out.setClientRef(clientRef);
         PenzTransactionEntity stored = store(out);
         if (!pairId.equals(stored.getTransferPairId())) {
-            return stored.getTransferPairId(); // a concurrent duplicate of this client ref won the race
+            return requirePairId(stored); // a concurrent duplicate of this client ref won the race
         }
         repository.saveAndFlush(leg(owner, toAccountId, PenzTransactionEntity.KIND_TRANSFER_IN, amountMinor, currency,
             booking, date, note, pairId));
@@ -204,6 +227,24 @@ public class PenzTransactionService {
     public PenzTransactionEntity require(UUID owner, UUID id) {
         return repository.findByIdAndCreatedByAndDeletedFalse(id, owner)
             .orElseThrow(() -> PenzErrors.notFound("PENZ_TRANSACTION_NOT_FOUND"));
+    }
+
+    /** 400 {@code PENZ_CURRENCY_MISMATCH} unless {@code currency} is the account's own currency. */
+    static void requireCurrency(PenzAccountEntity account, String currency) {
+        if (!account.getCurrency().equals(currency)) {
+            throw PenzErrors.badRequest("PENZ_CURRENCY_MISMATCH");
+        }
+    }
+
+    /**
+     * The pair id of the row a transfer's client ref replayed; 409 {@code PENZ_CLIENT_REF_CONFLICT} when that ref
+     * belongs to a plain transaction (never query the legs with a null pair id — that is every non-transfer row).
+     */
+    private static UUID requirePairId(PenzTransactionEntity replayed) {
+        if (replayed.getTransferPairId() == null) {
+            throw PenzErrors.conflict("PENZ_CLIENT_REF_CONFLICT");
+        }
+        return replayed.getTransferPairId();
     }
 
     private List<PenzTransactionResponse> legs(UUID owner, UUID pairId) {

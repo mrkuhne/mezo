@@ -115,7 +115,7 @@ minor unit (the old app kept the fraction; 1/100 Ft is invisible).
   close would store now). Closing stores `final_remaining_minor` (the engine's `remaining`, previous deficit only
   from a closed month) and splits it: deficit or zero → `none`; a leftover → `kept` or `transferred` (a HUF transfer
   pair dated the month's last day, default account → savings-target account; 409 `PENZ_NO_SAVINGS_TARGET_ACCOUNT`
-  when either is missing). **Months close oldest first** — 409 `PENZ_EARLIER_MONTH_OPEN` otherwise — because the
+  when either is missing, 409 `PENZ_CURRENCY_MISMATCH` when either is not a HUF account). **Months close oldest first** — 409 `PENZ_EARLIER_MONTH_OPEN` otherwise — because the
   next month's `previousDeficit` reads the stored close and closing out of order would freeze it without the earlier
   deficit. Other guards: 400 `PENZ_MONTH_NOT_OVER`, 409 `PENZ_MONTH_ALREADY_CLOSED`.
 - **Accounts** (`AccountRules.planSave`, old `planAccountSave`): exactly one non-archived default, exactly one savings
@@ -123,8 +123,13 @@ minor unit (the old app kept the fraction; 1/100 Ft is invisible).
   partial unique indexes never see two holders; archiving the last active account is 409 `PENZ_LAST_ACTIVE_ACCOUNT`.
 - **Transactions** (`PenzTransactionService`): `clientRef` writes are idempotent (native insert + read-back); a
   transfer is a `transfer_out` + `transfer_in` pair sharing `transfer_pair_id` (editing a leg moves both, deleting a
-  leg deletes both); an update re-books the HUF twin **only** when amount, currency or date changed (old
-  `needsHufRecompute`).
+  leg deletes both — a month close's leg included, the close keeps its figures); an update re-books the HUF twin
+  **only** when amount, currency or date changed (old `needsHufRecompute`). **A row's currency is its account's
+  currency** (transactions, transfer legs, recurring rules: 400 `PENZ_CURRENCY_MISMATCH`) — the balance sums rows in
+  the account's currency and would skip a stranger; a transfer needs both accounts in its currency (cross-currency
+  transfers are a later slice). A leg moved onto the other leg's account is 400 `PENZ_TRANSFER_SAME_ACCOUNT`; a
+  transfer replaying a plain transaction's `clientRef` is 409 `PENZ_CLIENT_REF_CONFLICT`. Amounts are capped at
+  1 billion major units (`maximum: 100000000000` minor in the contract; a HUF twin beyond a `long` is a 400).
 
 ### 3.4 The bank-SMS ingest
 
@@ -157,19 +162,22 @@ short transaction — the LLM and FX calls happen before, outside any transactio
 3. **Pre-filter** — `looksLikeMoney` miss → stored `ignored / no_amount`, **text dropped**, no model call.
 4. **LLM parse** — penz-owned port `PenzSmsLlm`, adapter `companion/llm/PenzSmsLlmAdapter` (cheap tier, call tagged
    `penz_sms/parse`, prompt marker `BOOP_PENZ_SMS_V1` in `SmsPrompt`; scripted fake under `companion-fake`; companion
-   off ⇒ no bean ⇒ `failed / llm_error`), then the ported `normalizeParsed` guards (`SmsIngestLogic`).
+   off ⇒ no bean ⇒ `failed / llm_error`), then the ported `normalizeParsed` guards (`SmsIngestLogic`). The LLM audit
+   row keeps **no payload** (`LlmCallContext.FEATURE_PENZ_SMS` is payload-free: cost, tokens and size only, stamped
+   scrubbed at write) — an SMS the model ignores (a one-time code next to an amount) leaves its text nowhere.
 5. **Amount cross-check** (`SmsAmountCheck`) — the parsed amount must literally be in the SMS: HUF through
    `HufAmountGuard.containsAmount`, EUR / USD / GBP / CHF by the same literal rule next to the code or symbol; else
    `failed / amount_mismatch`.
 6. **Convert at once** (`SmsConversion`) — account by `sms_sender` match (trimmed, case-insensitive), else the
    default, else the first non-archived (none → `parsed / no_account`); the transaction is in the **account's**
    currency (the original amount follows the merchant in the note when converted), its HUF twin booked by the FX
-   policy (no rate → `parsed / fx_unavailable`, no transaction); category by name + kind, case-insensitive; note =
+   policy (no rate → `parsed / fx_unavailable`, no transaction; an amount that converts to zero →
+   `parsed / amount_too_small`, no transaction); category by name + kind, case-insensitive; note =
    merchant; `source = sms`, `needs_review = true`, `sms_message_id` unique. The SMS row flips to `converted`.
 
 `ignored` SMS drop their text; `failed` ones keep it for review. Response:
 `{status: parsed|ignored|failed|duplicate, transactionId?, reason?}` with reasons `no_amount`, `not_a_transaction`,
-`llm_error`, `amount_mismatch`, `bad_*`, `no_account`, `fx_unavailable`.
+`llm_error`, `amount_mismatch`, `bad_*`, `no_account`, `fx_unavailable`, `amount_too_small`.
 
 **The iOS Shortcut recipe** (the old app's contract, kept): a personal automation on *Message received* (from the
 bank's sender) → **Get Contents of URL**: method `POST`, URL `https://<server>/api/penz/sms/ingest`, headers
@@ -244,7 +252,8 @@ Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (
 Error codes (both bundles): `PENZ_ACCOUNT_NOT_FOUND`, `PENZ_CATEGORY_NOT_FOUND`, `PENZ_CATEGORY_NAME_TAKEN`,
 `PENZ_TRANSACTION_NOT_FOUND`, `PENZ_RECURRING_RULE_NOT_FOUND`, `PENZ_TRANSFER_SAME_ACCOUNT`, `PENZ_FX_UNAVAILABLE`,
 `PENZ_MONTH_NOT_OVER`, `PENZ_EARLIER_MONTH_OPEN`, `PENZ_MONTH_ALREADY_CLOSED`, `PENZ_LAST_ACTIVE_ACCOUNT`,
-`PENZ_NO_SAVINGS_TARGET_ACCOUNT`, `PENZ_SMS_KEY_NOT_FOUND`, `PENZ_SMS_KEY_INVALID`, `PENZ_SMS_RATE_LIMITED`.
+`PENZ_NO_SAVINGS_TARGET_ACCOUNT`, `PENZ_SMS_KEY_NOT_FOUND`, `PENZ_SMS_KEY_INVALID`, `PENZ_SMS_RATE_LIMITED`,
+`PENZ_CURRENCY_MISMATCH`, `PENZ_CLIENT_REF_CONFLICT`.
 
 ### 4.3 Tables
 

@@ -53,6 +53,7 @@ class PenzSmsIngestApiIT extends ApiIntegrationTest {
     @Autowired private PenzTransactionRepository transactions;
     @Autowired private PenzApiKeyRepository apiKeys;
     @Autowired private FakeCompanionLlm fakeLlm;
+    @Autowired private io.mrkuhne.mezo.support.populator.PenzPopulator penz;
 
     private static String sms(String tag) {
         return "MBH Bank: Kartyas vasarlas -15 500 HUF, ALDI 152 BUDAPEST " + tag + ". Egyenleg: 412 380 HUF";
@@ -374,6 +375,28 @@ class PenzSmsIngestApiIT extends ApiIntegrationTest {
         assertThat(msg.getAmountMinor()).isEqualTo(1_550_000L);
         assertThat(msg.getTransactionId()).isNull();
         assertThat(monthOf(u.headers())).isEmpty();
+    }
+
+    @Test
+    void anAmountThatConvertsToNothingStaysParsedWithNoTransaction() {
+        RegisteredUser u = registerUser("penz sms too small");
+        postForBody("/api/penz/accounts", new PenzAccountRequest().name("Font").type("checking").currency("GBP")
+            .isDefault(true), u.headers(), HttpStatus.OK, PenzAccountResponse.class);
+        penz.fxRate("EUR", DAY, "1"); // invented rates: 1 GBP = 400 EUR here
+        penz.fxRate("GBP", DAY, "400");
+        String key = createKey(u.headers());
+        // 0,01 EUR on a GBP account: 1 minor × 1 / 400 rounds to 0 — a zero transaction is not booked
+        String text = scripted("MBH Bank: Kartyas vasarlas -0,01 EUR, ALDI", """
+            {"is_transaction":true,"direction":"debit","amount":0.01,"currency":"EUR","merchant":"Aldi"}""");
+        PenzSmsIngestResponse r = ingest(keyHeaders(key), text);
+        assertThat(r.getStatus()).isEqualTo(PenzSmsIngestResponse.StatusEnum.PARSED);
+        assertThat(r.getReason()).isEqualTo("amount_too_small");
+        assertThat(r.getTransactionId()).isNull();
+        PenzSmsMessageEntity msg = stored(u.id(), text);
+        assertThat(msg.getStatus()).isEqualTo("parsed");
+        assertThat(msg.getReason()).isEqualTo("amount_too_small");
+        assertThat(transactions.findAllOwned(u.id())).isEmpty();
+        assertThat(ingest(keyHeaders(key), text).getStatus()).isEqualTo(PenzSmsIngestResponse.StatusEnum.DUPLICATE);
     }
 
     @Test

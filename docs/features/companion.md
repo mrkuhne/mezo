@@ -4770,7 +4770,9 @@ but it is documented here because both recording adapters live in `feature/compa
   `conversation_history`, `user_message`, `response_text`) of rows older than
   `mezo.llm-log.retention.payload-days` (90) and stamps `payload_scrubbed_at`; token counters,
   `cost_usd` and `pricing_snapshot` are kept forever. The detail view (`/me/ai-usage/:id`) renders
-  the honest scrubbed state instead of a silently empty payload.
+  the honest scrubbed state instead of a silently empty payload. **Payload-free features**
+  (`LlmCallContext.keepsPayload()` false — only `penz_sms`, the Pénz bank-SMS parse, mezo-r36n9.102) never
+  persist the four columns at all: `LlmLogWriter` keeps `payload_bytes` and stamps `payload_scrubbed_at` at write.
 - **Reading it:** usage/cost aggregates **must exclude `status = 'ERROR'`** — an ERROR row carries no
   provider-reported usage or cost, but its request-side counters (image counts, embedding batch size
   + dimensions) do survive. A **`CANCELLED`** row (`mezo-1rz9` — the SSE client disconnected

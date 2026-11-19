@@ -32865,10 +32865,12 @@ components:
           type: integer
           format: int64
           minimum: 0
+          maximum: 100000000000
         practiceMonthlyHufMinor:
           type: integer
           format: int64
           minimum: 0
+          maximum: 100000000000
         weekStart:
           type: string
           pattern: ^monday$
@@ -32946,6 +32948,8 @@ components:
         openingBalanceMinor:
           type: integer
           format: int64
+          minimum: -100000000000
+          maximum: 100000000000
           nullable: true
         isDefault:
           type: boolean
@@ -33005,6 +33009,7 @@ components:
           type: integer
           format: int64
           minimum: 0
+          maximum: 100000000000
           nullable: true
         position:
           type: integer
@@ -33108,6 +33113,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          maximum: 100000000000
         currency:
           type: string
           pattern: ^(HUF|EUR|USD|GBP|CHF)$
@@ -33148,6 +33154,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          maximum: 100000000000
         currency:
           type: string
           pattern: ^(HUF|EUR|USD|GBP|CHF)$
@@ -33230,6 +33237,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          maximum: 100000000000
         currency:
           type: string
           pattern: ^(HUF|EUR|USD|GBP|CHF)$

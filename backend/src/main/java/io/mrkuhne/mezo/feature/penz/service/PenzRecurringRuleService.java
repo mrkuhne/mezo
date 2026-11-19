@@ -77,7 +77,8 @@ public class PenzRecurringRuleService {
         if (req.getEndDate() != null && req.getEndDate().isBefore(req.getStartDate())) {
             throw PenzErrors.field("endDate");
         }
-        accounts.require(owner, req.getAccountId());
+        // the rule's currency is its account's (400 PENZ_CURRENCY_MISMATCH), like every transaction it books
+        PenzTransactionService.requireCurrency(accounts.require(owner, req.getAccountId()), req.getCurrency());
         if (req.getCategoryId() != null) {
             categories.require(owner, req.getCategoryId());
         }

@@ -65,6 +65,15 @@ class PenzFxServiceTest {
 
     // it('returns 1 for HUF without fetching')
     @Test
+    void aTwinBeyondALongIsATyped400NotA500() {
+        assertThatThrownBy(() -> PenzFxService.toHufMinor(Long.MAX_VALUE, new BigDecimal("400")))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class, e -> {
+                assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                assertThat(e.getMessages().getFirst().getCode()).isEqualTo("VALIDATION_INVALID_VALUE");
+            });
+    }
+
+    @Test
     void hufIsRateOneWithoutFetching() {
         assertThat(fx.book("HUF", 1_299_000L, DAY, TODAY)).isEqualTo(new Booking(1_299_000L, null, null));
         verifyNoInteractions(rates, client);
