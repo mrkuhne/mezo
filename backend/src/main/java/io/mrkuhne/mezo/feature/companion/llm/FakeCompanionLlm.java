@@ -614,6 +614,18 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final String DAY_LINE_CANNED_ANSWER = "Részben sikerült a cél, és este is maradt energiád — pihenj jól.";
     public static final String CHECKIN_LINE_CANNED_ANSWER = "Délutánra feljebb ment az energiád, mint reggel volt.";
 
+    /** Mirror of penz SmsPrompt.MARKER (Boop Pénz L4, mezo-r36n9.102) — LITERAL, like the day-close mirrors. */
+    public static final String PENZ_SMS_MARKER_MIRROR = "BOOP_PENZ_SMS_V1";
+    /** Scripts the SMS parse: {@code [fake-penz-sms:<base64 of the JSON answer>]} anywhere in the SMS text. */
+    private static final Pattern PENZ_SMS_SCRIPT = Pattern.compile("\\[fake-penz-sms:([A-Za-z0-9+/=]+)]");
+    /** The unscripted parse reads the first forint figure of the SMS text: {@code -15 500 HUF} → 15500. */
+    private static final Pattern PENZ_SMS_HUF = Pattern.compile("SMS text:.*?(\\d{1,3}(?:[ .]\\d{3})+|\\d+)\\s?(?:HUF|Ft)\\b",
+            Pattern.DOTALL);
+    public static final String PENZ_SMS_MERCHANT = "Fake Bolt";
+    public static final String PENZ_SMS_CATEGORY = "Élelmiszer";
+    private final java.util.concurrent.atomic.AtomicInteger penzSmsCalls = new java.util.concurrent.atomic.AtomicInteger();
+    public int penzSmsCallCount() { return penzSmsCalls.get(); }
+
     /** Default Boop brief answer — valid, complete, Hungarian, Boop voice. */
     public static final String BOOP_CANNED_ANSWER = """
             {"forma":{"headline":"Jó formában vagy","sentence":"Kipihented magad, ma bírni fogod a terhelést."},
@@ -832,6 +844,22 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.Map<String, java.util.UUID> feedActors = new java.util.concurrent.ConcurrentHashMap<>();
     public java.util.UUID feedActor(String kind) { return feedActors.get(kind); }
 
+    /** The bank-SMS parse: a scripted answer, else a debit of the first forint figure, else not a transaction. */
+    private static String penzSmsAnswer(String userMessage) {
+        Matcher scripted = PENZ_SMS_SCRIPT.matcher(userMessage);
+        if (scripted.find()) {
+            return new String(Base64.getDecoder().decode(scripted.group(1)), StandardCharsets.UTF_8);
+        }
+        Matcher huf = PENZ_SMS_HUF.matcher(userMessage);
+        if (!huf.find()) {
+            return "{\"is_transaction\":false}";
+        }
+        String amount = huf.group(1).replaceAll("[^0-9]", "");
+        return "{\"is_transaction\":true,\"direction\":\"debit\",\"amount\":" + amount
+                + ",\"currency\":\"HUF\",\"merchant\":\"" + PENZ_SMS_MERCHANT + "\",\"date\":\"\",\"category\":\""
+                + PENZ_SMS_CATEGORY + "\"}";
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -863,6 +891,10 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (dayLine) {
             return DAY_LINE_CANNED_ANSWER;
+        }
+        if (systemPrompt.startsWith(PENZ_SMS_MARKER_MIRROR)) {
+            penzSmsCalls.incrementAndGet();
+            return penzSmsAnswer(userMessage);
         }
         if (systemPrompt.startsWith(CHECKIN_LINE_MARKER_MIRROR)) {
             return CHECKIN_LINE_CANNED_ANSWER;
