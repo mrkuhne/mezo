@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-18
+updated: 2026-11-19
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-11-19 — reviewed after T4 (`mezo-r36n9.82`, one switch added).** `FeaturesConfiguration.TECHNIQUE_AI_SWITCH` (`mezo.feature.technique-ai.enabled`) gates the train technique AI adapter; no techcore mechanism changed ([`train.md`](train.md) §Technique AI refinement).
 
 > **2026-11-18 — `mezo-r36n9.78` (train volume engine v2 S3).** New fragment `api/feature/train/train-week-proposal.yml` (tag **`TrainWeekProposal`** → `TrainWeekProposalApi`, own thin `WeekProposalController`) registered in `api/generate/merge.yml`: `GET /api/train/mesocycles/{id}/week-proposals` (`listWeekProposals`) and `POST /api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions` (`decideWeekProposal`). A separate tag because the generated interfaces have no default methods — a new op on `TrainApi` would not compile before its handler (the existing "a tag is what a controller binds to" pattern). `messages_hu/en` gained `TRAIN_MESO_NOT_FOUND`, `TRAIN_WEEK_PROPOSAL_NOT_FOUND`, `TRAIN_WEEK_PROPOSAL_CLOSED`, `TRAIN_WEEK_PROPOSAL_DECISION_INVALID`. No platform-contract change — owned by [`train.md`](train.md) §4 `#### Volume engine v2` *S3*.
 > **2026-11-18 — `mezo-r36n9.77` (train volume engine v2 S2).** `api/feature/train/train.yml` gained `POST /api/train/meso-plans/evaluate`, `GET /api/train/mesocycles/{id}/evaluation` and `sportGroups`; `messages_hu/en` gained `TRAIN_SPORT_GROUP_INVALID` and `TRAIN_MESO_PHASE_CURVE_LENGTH`. No platform-contract change — owned by [`train.md`](train.md) §4 `#### Volume engine v2`.
