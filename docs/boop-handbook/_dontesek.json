@@ -738,5 +738,17 @@
     "miert": "Enélkül a heti átnézés csak megmutatná, mi lépett életbe magától — elfogadó gombok nélkül elveszne a lényege, és a technikákat sem tudnád a telefonról beállítani.",
     "levaltotta": "A szerver nélküli változat: az edzésmód és a technika a futó blokkon csak látszik, a heti pakli csak visszanézhető.",
     "kovetkezmeny": "Kb. egy nappal hosszabb munka; az első saját heti átnézésed a telepítés utáni hétfőn jön (mezo-r36n9.83)."
+  },
+  "d-2026-11-19-technika-a-lejatszoban": {
+    "cim": "Így néz ki a technika és a kihívás edzés közben",
+    "datum": "2026-11-19",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Jóváhagytad a szimulátoros mintát: címke a gyakorlat neve alatt, lépéskártya a technikás sorozatnál visszaszámláló pihenővel és előre beírt kisebb súllyal, a kihívás külön képernyőn egy koppintós körrel és a megdöntendő csúccsal.",
+    "miert": "Edzés közben egy pillantásból kell látni, mi a következő lépés, és nem szabad semmit fejben számolni.",
+    "levaltotta": "A technika mint a gyakorlat menüjében elrejtett leírás.",
+    "kovetkezmeny": "A telefonra került (mezo-r36n9.84); az első éles kihívás a hétfői heti javaslat után jön."
   }
 }

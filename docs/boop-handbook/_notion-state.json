@@ -721,7 +721,7 @@
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
-      "hash": "e679ccddc162"
+      "hash": "aba6bc2b9b37"
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
@@ -1029,7 +1029,7 @@
     },
     "jegyek:mezo-r36n9.84": {
       "page_id": "41c8968e-752b-8117-af23-ed71df2e3473",
-      "hash": "535f74655df4"
+      "hash": "18fae0467921"
     },
     "jegyek:mezo-r36n9.83": {
       "page_id": "41c8968e-752b-8174-b0bf-d3c07a348fc7",
@@ -1037,7 +1037,7 @@
     },
     "jegyek:mezo-r36n9.82": {
       "page_id": "41c8968e-752b-8197-b6d0-e39c2342b9c5",
-      "hash": "ac3bb60de31b"
+      "hash": "7d3faabe2614"
     },
     "jegyek:mezo-r36n9.81": {
       "page_id": "41c8968e-752b-81bb-9fa1-cc91d6cbb02c",
@@ -1205,7 +1205,7 @@
     },
     "kezikonyv:07-edzes/15-technikak": {
       "page_id": "41c8968e-752b-8133-8f30-e3411e37f22a",
-      "hash": "013cb4bd08c0"
+      "hash": "d329e5cb820e"
     },
     "jegyek:mezo-r36n9.92": {
       "page_id": "41d8968e-752b-819d-bed4-c90e4df96a79",
@@ -1242,6 +1242,22 @@
     "kiadasok:f6e1d4cf1": {
       "page_id": "41d8968e-752b-81be-8118-e1c598d84485",
       "hash": "2b9c7a059866"
+    },
+    "jegyek:mezo-r36n9.96": {
+      "page_id": "41d8968e-752b-819b-a587-e888a7917d57",
+      "hash": "e5a2e554ce74"
+    },
+    "jegyek:mezo-r36n9.95": {
+      "page_id": "41d8968e-752b-8147-99c5-d13a30b33cb1",
+      "hash": "c6a9701e0ee9"
+    },
+    "dontesek:d-2026-11-19-technika-a-lejatszoban": {
+      "page_id": "41d8968e-752b-81ac-9df6-f6e974ac1595",
+      "hash": "8ab3a260a4b8"
+    },
+    "kiadasok:a87993934": {
+      "page_id": "41d8968e-752b-81d5-8afb-e72481ff8e44",
+      "hash": "43bdfda85bda"
     }
   }
 }

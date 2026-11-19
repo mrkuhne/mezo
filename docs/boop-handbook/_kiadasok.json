@@ -402,5 +402,15 @@
     ],
     "mi_valtozott": "Ha egy blokknak van edzésstílusa és a technikák be vannak kapcsolva, a rendszer maga dönti el, hová kerül technika: a 3. héttől az utolsó terhelő hétig, a Hangsúly izmoknál először, a Tartásnál soha; naponta legfeljebb kettő (fogyás alatt vagy sportos napon egy), izmonként hetente legfeljebb kettő. Magas ismétlésű izolációra myo sorozat, gépre és kábelre a pihenős drop kerül, és a technika egy sima sorozatot vált ki. Minden edzésnapnak van kihívása az 1. héttől (a könnyített héten nincs): az első stabil, nyújtott helyzetben biztonságos gyakorlat. A változások a heti javaslat soraiként jönnek; ha egy izom két hétig nem fejlődik, egy ajánlatot kap (technika, más ismétléstartomány vagy egyhetes könnyítés, ami visszaáll). A blokképítő hétről hétre mutatja a tervet. A saját beállításaidat a rendszer soha nem írja felül. A futó blokkodon a stílust és a technikákat már bekapcsoltad, így a hétfői (2. heti) javaslatban jönnek az első kihívások, a technikák pedig a 3. héttől.",
     "verzio": "v3.6.0"
+  },
+  "a87993934": {
+    "tipus": "Új funkció",
+    "cim": "Edzés: technika és kihívás edzés közben",
+    "datum": "2026-11-19",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.84"
+    ],
+    "mi_valtozott": "Edzés közben a gyakorlat neve alatt címke mutatja, ha ma technika vagy kihívás jár rá. A technikás utolsó sorozatnál egy lépéskártya vezet végig (például: bukásig, 30 mp pihenő, kisebb súly ugyanannyi ismétléssel); a pihenő a kártyán számol vissza és magától továbblép, a kisebb súlyt a ténylegesen emelt súlyból számolja. A myo mini-sorozatok addig jönnek, amíg egy már nem éri el a 3 ismétlést, és bármikor abbahagyhatod. A kihívás saját képernyő: egy kör, amire minden félismétlésnél rákoppintasz, mellette a megdöntendő csúcs; új csúcsnál aranyra vált. A sorozat a lépéseivel együtt, egyben kerül a szerverre. A sorozatok közti pihenő stílusos blokkban a szerver által előírt idő. Az első kihívások a hétfői (11. 23.) heti javaslattal érkeznek, a technikák a 3. héttől."
   }
 }
