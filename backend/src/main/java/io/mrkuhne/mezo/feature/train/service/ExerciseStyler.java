@@ -106,6 +106,22 @@ public class ExerciseStyler {
         return stability;
     }
 
+    /**
+     * Clears, in place, every stored technique pick / challenge flag of {@code rows} that no longer passes
+     * {@link TechniqueRules} against its catalog row — the run-wide re-stamp (mezo-r36n9.83) touches no pick,
+     * so a stale one is cleared as a carried pick is on a save, never a 400. No catalog read without a pick.
+     */
+    public void clearInvalidPicks(List<ExerciseEntity> rows) {
+        List<GymExerciseJson> current = rows.stream().map(mapper::toExerciseJson).toList();
+        List<GymExerciseJson> unsent = current.stream().map(e -> e.withTechnique(null, null, null)).toList();
+        List<GymExerciseJson> cleared = clearInvalidCarried(current, unsent);
+        for (int i = 0; i < rows.size(); i++) {
+            if (cleared.get(i) != current.get(i)) {
+                applyTechniqueTo(rows.get(i), cleared.get(i));
+            }
+        }
+    }
+
     /** Stability of every catalog id that can matter: none at all when nothing is styled (no query). */
     public CatalogAttributes.Lookup lookupRows(Collection<ExerciseEntity> rows, boolean anyBlockStyled) {
         return catalogAttributes.load(rows.stream()

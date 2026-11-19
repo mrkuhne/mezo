@@ -431,7 +431,9 @@ public class TrainService {
             .collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId, LinkedHashMap::new, Collectors.toList()));
         for (List<ExerciseEntity> rows : byDay.values()) {
             styler.restampRows(rows, block);
-            techniqueGuard.validateRows(rows);
+            // The picks were not touched here: one that became invalid under the catalog is cleared,
+            // exactly as a day save clears an invalid carried pick, never a 400 on the settings change.
+            styler.clearInvalidPicks(rows);
             exerciseRepository.saveAll(rows);
         }
         volumeLedger.sync(createdBy, m.getId());
@@ -441,6 +443,12 @@ public class TrainService {
      * Full-list day replace. Training style (mezo-r36n9.79): the style fields a client omits are
      * carried over from the day's old rows (same identity, first unmatched) and every row is
      * re-stamped under the run's style — a no-op for an unstyled run.
+     *
+     * <p>Ids (mezo-r36n9.83): when the new list is the SAME exercises in the same order — equal length and,
+     * at every index, the same identity (catalog id, else exact name; {@link #sameIdentity}) — the stored
+     * rows are updated IN PLACE (id, created_at, order kept), so a pending week proposal's lines and an
+     * open workout's logged sets keep pointing at them. Any other list (reorder, add, remove, swap) keeps
+     * the soft-delete + re-insert path with new ids.
      */
     @Transactional
     public MesoDay replaceDayExercises(UUID createdBy, UUID mesoId, UUID dayId, List<GymExerciseInput> inputs) {
@@ -460,9 +468,17 @@ public class TrainService {
             fresh.add(toExerciseEntity(createdBy, dayId, inputs.get(i), i));
         }
         CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, block, inputs);
-        techniqueGuard.validateRows(fresh); // before the soft-delete: a 400 leaves the day untouched
-        exerciseRepository.deleteAll(old);
-        List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
+        techniqueGuard.validateRows(fresh); // before any write: a 400 leaves the day untouched
+        List<ExerciseEntity> saved;
+        if (alignedByIdentity(old, fresh)) {
+            for (int i = 0; i < old.size(); i++) {
+                copyEditable(fresh.get(i), old.get(i));
+            }
+            saved = exerciseRepository.saveAll(old);
+        } else {
+            exerciseRepository.deleteAll(old);
+            saved = exerciseRepository.saveAll(fresh);
+        }
         volumeLedger.sync(createdBy, mesoId);
         return toDay(day, saved, mediaByCatalogOf(saved), block, stability);
     }
@@ -526,7 +542,55 @@ public class TrainService {
             createdBy);
     }
 
-    /** Full-list replace, same soft-delete + re-insert pattern as {@link #replaceDayExercises}. */
+    /** Same exercises, same order: equal length and the same identity at every index (mezo-r36n9.83). */
+    private static boolean alignedByIdentity(List<ExerciseEntity> old, List<ExerciseEntity> fresh) {
+        if (old.size() != fresh.size()) {
+            return false;
+        }
+        for (int i = 0; i < old.size(); i++) {
+            if (!sameIdentity(old.get(i), fresh.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** The carry-over / records identity: catalog id, else exact name (as {@code ExerciseStyler}). */
+    private static boolean sameIdentity(ExerciseEntity a, ExerciseEntity b) {
+        return a.getCatalogId() != null
+            ? a.getCatalogId().equals(b.getCatalogId())
+            : b.getCatalogId() == null && java.util.Objects.equals(a.getName(), b.getName());
+    }
+
+    /**
+     * Copies every column a day save writes ({@link #toExerciseEntity} + styling) from the freshly built row
+     * onto the stored one. Untouched: id, createdBy, createdAt, deleted, workoutSessionId, and the columns a
+     * day save never sets — note (the durable per-exercise note) and the mid-workout markers
+     * (replacesExerciseId, addedInWorkoutId, savedToPlan), which keep their stored values.
+     */
+    private static void copyEditable(ExerciseEntity from, ExerciseEntity to) {
+        to.setName(from.getName());
+        to.setMuscle(from.getMuscle());
+        to.setWarmupSets(from.getWarmupSets());
+        to.setWorkingSets(from.getWorkingSets());
+        to.setRepMin(from.getRepMin());
+        to.setRepMax(from.getRepMax());
+        to.setTargetRir(from.getTargetRir());
+        to.setAnchorWeightKg(from.getAnchorWeightKg());
+        to.setType(from.getType());
+        to.setCountsTowardVolume(from.isCountsTowardVolume());
+        to.setWarning(from.getWarning());
+        to.setCatalogId(from.getCatalogId());
+        to.setTrainingStyle(from.getTrainingStyle());
+        to.setRestSec(from.getRestSec());
+        to.setOverrides(from.getOverrides() == null ? null : new ArrayList<>(from.getOverrides()));
+        to.setTechnique(from.getTechnique());
+        to.setTechniqueSource(from.getTechniqueSource());
+        to.setChallenge(from.isChallenge());
+        to.setOrderIndex(from.getOrderIndex());
+    }
+
+    /** Full-list replace, soft-delete + re-insert (the misaligned branch of {@link #replaceDayExercises}). */
     private CustomWorkoutResponse replaceCustomExercises(
             UUID createdBy, WorkoutSessionEntity template, List<GymExerciseInput> inputs) {
         List<ExerciseEntity> old = exerciseRepository

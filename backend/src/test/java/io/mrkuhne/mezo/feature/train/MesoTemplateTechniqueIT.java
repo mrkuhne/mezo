@@ -336,6 +336,39 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
             .isEqualTo("owner");
     }
 
+    /** mezo-r36n9.83: a same-list save goes in place — a technique 400 must still leave every row untouched. */
+    @Test
+    void sameListDayEditRefusedByTechniqueLeavesTheRowsUntouched() {
+        UUID owner = ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoTemplateResponse t = postForBody(TEMPLATES, request(true, List.of(
+            tech(ex("Cable Fly", "chest-mid", catalog("cable-fly")), Technique.DROP),
+            ex("Barbell Bench Press", "chest-mid", catalog("barbell-bench-press")))), auth,
+            HttpStatus.OK, MesoTemplateResponse.class);
+        MesocycleResponse run = postForBody(TEMPLATES + "/" + t.getId() + "/start", start(), auth,
+            HttpStatus.OK, MesocycleResponse.class);
+        MesoDay day = run.getDays().get(0);
+        List<UUID> ids = day.getExercises().stream().map(GymExercise::getId).toList();
+        int flySets = day.getExercises().get(0).getWorkingSets();
+
+        List<GymExerciseInput> inputs = new ArrayList<>(day.getExercises().stream()
+            .map(MesoTemplateTechniqueIT::webInput).toList());
+        inputs.get(0).setWorkingSets(flySets + 1);
+        inputs.get(1).setTechnique(Technique.MYO); // a free movement: refused
+        assertThatThrownBy(() -> trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getMessages().get(0).getCode())
+                .isEqualTo("TRAIN_TECHNIQUE_NOT_STABLE"));
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+            "select id, working_sets, technique from exercise where workout_session_id = ? and is_deleted = false"
+                + " order by order_index", day.getId());
+        assertThat(rows).extracting(r -> r.get("id")).containsExactlyElementsOf(ids);
+        assertThat(rows.get(0).get("working_sets")).isEqualTo(flySets);
+        assertThat(rows.get(0).get("technique")).isEqualTo("drop");
+        assertThat(rows.get(1).get("technique")).isNull();
+    }
+
     @Test
     void runDayEditWithTwoChallengesRejected() {
         UUID owner = ownerId();

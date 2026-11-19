@@ -367,6 +367,78 @@ class TrainServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testReplaceDayExercises_shouldUpdateInPlaceAndKeepIds_whenSameExercisesSameOrder() {
+        // mezo-r36n9.83: a same-list save (one value changed) keeps every row id, so a pending week
+        // proposal's lines and an open workout's sets keep pointing at the rows.
+        UUID user = databasePopulator.populateUser("replace-inplace@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Helyben", "active");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Hét", "Pull", 0, "planned");
+        ExerciseEntity a = trainPopulator.createExercise(user, day.getId(), "Evezés", 0);
+        ExerciseEntity b = trainPopulator.createExercise(user, day.getId(), "Lehúzás", 1);
+
+        MesoDay updated = trainService.replaceDayExercises(user, meso.getId(), day.getId(), List.of(
+            GymExerciseInput.builder().name("Evezés").muscle("hát").warmupSets(2).workingSets(5).repMin(6)
+                .repMax(8).targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND).build(),
+            GymExerciseInput.builder().name("Lehúzás").muscle("hát").warmupSets(1).workingSets(3).repMin(10)
+                .repMax(12).targetRIR(2).type(GymExerciseInput.TypeEnum.ISOLATION).warning("vigyázz").build()));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(updated.getExercises()).extracting(e -> e.getId()).containsExactly(a.getId(), b.getId());
+        List<ExerciseEntity> rows = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId()));
+        assertThat(rows).extracting(ExerciseEntity::getId).containsExactly(a.getId(), b.getId());
+        assertThat(rows).extracting(ExerciseEntity::getWorkingSets).containsExactly(5, 3);
+        assertThat(rows.get(1).getRepMin()).isEqualTo(10);
+        assertThat(rows.get(1).getType()).isEqualTo("isolation");
+        assertThat(rows.get(1).getWarning()).isEqualTo("vigyázz");
+        assertThat(rows.get(1).getWarmupSets()).isEqualTo(1);
+        assertThat(rows).extracting(ExerciseEntity::getOrderIndex).containsExactly(0, 1);
+        Number softDeleted = (Number) entityManager.createNativeQuery(
+                "select count(*) from exercise where workout_session_id = ?1 and is_deleted = true")
+            .setParameter(1, day.getId())
+            .getSingleResult();
+        assertThat(softDeleted.longValue()).isZero();
+    }
+
+    @Test
+    void testReplaceDayExercises_shouldReMintRows_whenReorderedOrAdded() {
+        UUID user = databasePopulator.populateUser("replace-remint@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Újra", "active");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Hét", "Pull", 0, "planned");
+        ExerciseEntity a = trainPopulator.createExercise(user, day.getId(), "Evezés", 0);
+        ExerciseEntity b = trainPopulator.createExercise(user, day.getId(), "Lehúzás", 1);
+        GymExerciseInput rowA = GymExerciseInput.builder().name("Evezés").muscle("hát").warmupSets(2)
+            .workingSets(3).repMin(6).repMax(8).targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND).build();
+        GymExerciseInput rowB = GymExerciseInput.builder().name("Lehúzás").muscle("hát").warmupSets(2)
+            .workingSets(3).repMin(6).repMax(8).targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND).build();
+        GymExerciseInput rowC = GymExerciseInput.builder().name("Face pull").muscle("váll").warmupSets(1)
+            .workingSets(2).repMin(12).repMax(15).targetRIR(1).type(GymExerciseInput.TypeEnum.ISOLATION).build();
+
+        // reordered: the soft-delete + re-insert path, new ids in the new order
+        trainService.replaceDayExercises(user, meso.getId(), day.getId(), List.of(rowB, rowA));
+        entityManager.flush();
+        entityManager.clear();
+        List<ExerciseEntity> reordered = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId()));
+        assertThat(reordered).extracting(ExerciseEntity::getName).containsExactly("Lehúzás", "Evezés");
+        assertThat(reordered).extracting(ExerciseEntity::getId).doesNotContain(a.getId(), b.getId());
+
+        // one added: also re-minted
+        trainService.replaceDayExercises(user, meso.getId(), day.getId(), List.of(rowB, rowA, rowC));
+        entityManager.flush();
+        entityManager.clear();
+        List<ExerciseEntity> added = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId()));
+        assertThat(added).extracting(ExerciseEntity::getName).containsExactly("Lehúzás", "Evezés", "Face pull");
+        assertThat(added).extracting(ExerciseEntity::getId)
+            .doesNotContainAnyElementsOf(reordered.stream().map(ExerciseEntity::getId).toList());
+        assertThat(added).extracting(ExerciseEntity::getOrderIndex).containsExactly(0, 1, 2);
+    }
+
+    @Test
     void testReplaceDayExercises_shouldResolveCountsTowardVolume_forAllFourInputOutcomes() {
         // mezo-gbo7: explicit flag always wins; an absent flag defaults to exempt only for plyo.
         UUID user = databasePopulator.populateUser("counts-toward-volume@test.local");
