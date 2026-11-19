@@ -4,9 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.mrkuhne.mezo.api.dto.SaveCheckInRequest;
-import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
-import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInService;
 import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource;
 import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource.Note;
@@ -14,7 +13,6 @@ import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeEmbeddingAdapter;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
-import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
@@ -36,7 +34,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = "mezo.companion.embedding.note-min-chars=80")
 class NoteVectorLifecycleIT extends AbstractIntegrationTest {
 
-    private static final String KIND = NarrativeNoteSource.ACTIVITY_NOTE;
+    private static final String KIND = NarrativeNoteSource.CHECKIN_NOTE;
 
     private static final String LONG_NOTE =
             "Ma este végre leültem és átgondoltam a hetet, sokkal nyugodtabb voltam mint általában, "
@@ -45,14 +43,13 @@ class NoteVectorLifecycleIT extends AbstractIntegrationTest {
     @Autowired private MemoryEmbeddingWriter writer;
     @Autowired private NoteEmbeddingCatchUp noteEmbeddingCatchUp;
     @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
-    @Autowired private ActivityLogRepository activityLogRepository;
+    @Autowired private CheckInRepository checkInRepository;
     @Autowired private CheckInService checkInService;
     @Autowired private UserPopulator userPopulator;
-    @Autowired private ActivityPopulator activityPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
 
     private Note note(UUID owner, LocalDate day, String text) {
-        ActivityLogEntity entry = activityPopulator.activity(owner, day, text, "mindset", 10, "AI");
+        CheckInEntity entry = checkInPopulator.createCheckIn(owner, day, "18:00", 3, 4, text);
         return new Note(entry.getId(), entry.getCreatedBy(), text, day);
     }
 
@@ -240,20 +237,20 @@ class NoteVectorLifecycleIT extends AbstractIntegrationTest {
         // is the only way to reach this, and that is exactly why the sweep, not an event, is fix.
         UUID owner = userPopulator.createUser().getId();
         LocalDate day = LocalDate.now().minusDays(1);
-        ActivityLogEntity activity = activityPopulator.activity(owner, day, LONG_NOTE, "mindset", 10, "AI");
+        CheckInEntity source = checkInPopulator.createCheckIn(owner, day, "18:00", 3, 4, LONG_NOTE);
         noteEmbeddingCatchUp.run(owner, day);
         assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
-                NarrativeNoteSource.ACTIVITY_NOTE, activity.getId())).isTrue();
+                NarrativeNoteSource.CHECKIN_NOTE, source.getId())).isTrue();
 
-        activityLogRepository.delete(activity); // @SQLDelete → soft delete
+        checkInRepository.delete(source); // @SQLDelete → soft delete
         noteEmbeddingCatchUp.run(owner, day);
 
         // findByKindAndRefId cannot tell a soft delete from "never existed" — assert through the
         // including-deleted finder per the brief.
         assertThat(memoryEmbeddingRepository.findByKindAndRefId(
-                NarrativeNoteSource.ACTIVITY_NOTE, activity.getId())).isEmpty();
+                NarrativeNoteSource.CHECKIN_NOTE, source.getId())).isEmpty();
         assertThat(memoryEmbeddingRepository.findByKindAndRefIdIncludingDeleted(
-                NarrativeNoteSource.ACTIVITY_NOTE, activity.getId()))
+                NarrativeNoteSource.CHECKIN_NOTE, source.getId()))
                 .hasValueSatisfying(row -> assertThat(row.isDeleted()).isTrue());
     }
 
@@ -262,16 +259,16 @@ class NoteVectorLifecycleIT extends AbstractIntegrationTest {
         // Guard against a re-embed-every-night regression: an unchanged note must cost nothing.
         UUID owner = userPopulator.createUser().getId();
         LocalDate day = LocalDate.now().minusDays(1);
-        ActivityLogEntity activity = activityPopulator.activity(owner, day, LONG_NOTE, "mindset", 10, "AI");
+        CheckInEntity source = checkInPopulator.createCheckIn(owner, day, "18:00", 3, 4, LONG_NOTE);
         noteEmbeddingCatchUp.run(owner, day);
         UUID rowIdBefore = memoryEmbeddingRepository
-                .findByKindAndRefId(NarrativeNoteSource.ACTIVITY_NOTE, activity.getId()).orElseThrow().getId();
+                .findByKindAndRefId(NarrativeNoteSource.CHECKIN_NOTE, source.getId()).orElseThrow().getId();
 
         int written = noteEmbeddingCatchUp.run(owner, day);
 
         assertThat(written).isZero();
         assertThat(memoryEmbeddingRepository
-                .findByKindAndRefId(NarrativeNoteSource.ACTIVITY_NOTE, activity.getId()).orElseThrow().getId())
+                .findByKindAndRefId(NarrativeNoteSource.CHECKIN_NOTE, source.getId()).orElseThrow().getId())
                 .isEqualTo(rowIdBefore);
     }
 
@@ -283,19 +280,19 @@ class NoteVectorLifecycleIT extends AbstractIntegrationTest {
         // independent and may refresh its full-source chunks; this assertion concerns OLD storage.
         UUID owner = userPopulator.createUser().getId();
         LocalDate day = LocalDate.now().minusDays(1);
-        ActivityLogEntity activity = activityPopulator.activity(owner, day, LONG_NOTE, "mindset", 10, "AI");
+        CheckInEntity source = checkInPopulator.createCheckIn(owner, day, "18:00", 3, 4, LONG_NOTE);
         noteEmbeddingCatchUp.run(owner, day);
         UUID rowIdBefore = memoryEmbeddingRepository
-                .findByKindAndRefId(NarrativeNoteSource.ACTIVITY_NOTE, activity.getId()).orElseThrow().getId();
+                .findByKindAndRefId(NarrativeNoteSource.CHECKIN_NOTE, source.getId()).orElseThrow().getId();
 
-        ActivityLogEntity live = activityLogRepository.findById(activity.getId()).orElseThrow();
-        live.setText("fáradt"); // well below note-min-chars (80)
-        activityLogRepository.saveAndFlush(live);
+        CheckInEntity live = checkInRepository.findById(source.getId()).orElseThrow();
+        live.setNote("fáradt"); // well below note-min-chars (80)
+        checkInRepository.saveAndFlush(live);
         int written = noteEmbeddingCatchUp.run(owner, day);
 
         assertThat(written).isZero();
         MemoryEmbeddingEntity row = memoryEmbeddingRepository
-                .findByKindAndRefId(NarrativeNoteSource.ACTIVITY_NOTE, activity.getId()).orElseThrow();
+                .findByKindAndRefId(NarrativeNoteSource.CHECKIN_NOTE, source.getId()).orElseThrow();
         assertThat(row.getId()).isEqualTo(rowIdBefore); // not reaped
         assertThat(row.getContent()).isEqualTo(LONG_NOTE); // and not re-embedded — stale on purpose
     }
@@ -307,16 +304,16 @@ class NoteVectorLifecycleIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         LocalDate day = LocalDate.now().minusDays(1);
         String failingText = FakeEmbeddingAdapter.FAIL_EMBED + " " + LONG_NOTE;
-        ActivityLogEntity failing = activityPopulator.activity(owner, day, failingText, "mindset", 10, "AI");
-        ActivityLogEntity ok = activityPopulator.activity(owner, day, LONG_NOTE, "mindset", 10, "AI");
+        CheckInEntity failing = checkInPopulator.createCheckIn(owner, day, "08:00", 3, 4, failingText);
+        CheckInEntity ok = checkInPopulator.createCheckIn(owner, day, "18:00", 3, 4, LONG_NOTE);
 
         int[] written = new int[1];
         assertThatCode(() -> written[0] = noteEmbeddingCatchUp.run(owner, day)).doesNotThrowAnyException();
 
         assertThat(written[0]).isEqualTo(1);
         assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
-                NarrativeNoteSource.ACTIVITY_NOTE, ok.getId())).isTrue();
+                NarrativeNoteSource.CHECKIN_NOTE, ok.getId())).isTrue();
         assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
-                NarrativeNoteSource.ACTIVITY_NOTE, failing.getId())).isFalse();
+                NarrativeNoteSource.CHECKIN_NOTE, failing.getId())).isFalse();
     }
 }

@@ -34,6 +34,8 @@ import org.springframework.util.ClassUtils;
  * with every removed key present, and nothing of a retired package comes back.
  *
  * <p>Task 4 (mezo-r36n9.97.4): {@code tutorial}, {@code telemetry}, {@code admin}.
+ * <p>Task 5 (mezo-r36n9.97.5): the XP world — {@code gamification}, {@code quest}, {@code progression},
+ * {@code activity}.
  */
 @TestPropertySource(properties = {
     // tutorial (mezo-gb1s.1)
@@ -58,6 +60,20 @@ import org.springframework.util.ClassUtils;
     "mezo.admin.memory.statement-timeout=PT5S",
     "mezo.admin.memory.replay-feature-label=admin_replay",
     "mezo.admin.alerts.cost-spike-factor=2.0",
+    // the XP world (mezo-r36n9.97.5): progression engine, daily quests + QuestJob, activity log, coins
+    "mezo.feature.progression.enabled=true",
+    "mezo.progression.curve.base=100",
+    "mezo.progression.gym.pr-bonus-xp=40",
+    "mezo.feature.quest.enabled=true",
+    "mezo.techcore.cron.quest-job.enabled=true",
+    "mezo.quest.generate-cron=0 35 6 * * *",
+    "mezo.quest.finalize-cron=0 5 0 * * *",
+    "mezo.quest.reroll-per-day=1",
+    "mezo.quest.flavor.enabled=true",
+    "mezo.feature.activity.enabled=true",
+    "mezo.activity.daily-cap=100",
+    "mezo.feature.gamification.enabled=true",
+    "mezo.gamification.saver-price=200",
 })
 class RetiredAreasGoneIT extends ApiIntegrationTest {
 
@@ -65,7 +81,11 @@ class RetiredAreasGoneIT extends ApiIntegrationTest {
     static final List<String> RETIRED_PACKAGES = List.of(
         "io.mrkuhne.mezo.feature.tutorial.",
         "io.mrkuhne.mezo.feature.telemetry.",
-        "io.mrkuhne.mezo.feature.admin.");
+        "io.mrkuhne.mezo.feature.admin.",
+        "io.mrkuhne.mezo.feature.gamification.",
+        "io.mrkuhne.mezo.feature.quest.",
+        "io.mrkuhne.mezo.feature.progression.",
+        "io.mrkuhne.mezo.feature.activity.");
 
     /** One representative route per removed area (or contract fragment) — each must 404 for the owner. */
     record RetiredRoute(HttpMethod method, String path, String jsonBody) {
@@ -81,7 +101,11 @@ class RetiredAreasGoneIT extends ApiIntegrationTest {
             "{\"events\":[{\"screen\":\"/ma\",\"occurredAt\":\"2026-11-19T08:00:00Z\"}]}"),
         RetiredRoute.get("/api/admin/overview"),
         RetiredRoute.get("/api/admin/data/tables"),
-        RetiredRoute.get("/api/admin/memory/health"));
+        RetiredRoute.get("/api/admin/memory/health"),
+        RetiredRoute.get("/api/gamification/profile"),
+        RetiredRoute.get("/api/quest/history?from=2026-11-01&to=2026-11-19"),
+        RetiredRoute.get("/api/progression/profile"),
+        RetiredRoute.get("/api/activity/history?from=2026-11-01&to=2026-11-19"));
 
     @Autowired private ConfigurableApplicationContext context;
 

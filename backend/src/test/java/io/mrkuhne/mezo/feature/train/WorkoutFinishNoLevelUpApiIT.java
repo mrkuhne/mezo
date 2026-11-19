@@ -18,11 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 /**
- * Contract IT for the gym finish → progression trigger (T6): with the progression switch ON,
- * finishing a gym instance that has logged sets returns a populated {@code levelUp} (source GYM,
- * positive totalXp, a chest skill gain). Drives the GENERATED contract over HTTP.
+ * Contract IT for the gym finish after the XP world left the server (mezo-r36n9.97.5): finishing a
+ * gym instance that has logged sets still completes it, and the optional {@code levelUp} — kept in
+ * the contract only because the iPhone's contract copy still lists it — is never populated. Drives
+ * the GENERATED contract over HTTP (the iPhone's finishWorkout path).
  */
-class WorkoutFinishLevelUpApiIT extends ApiIntegrationTest {
+class WorkoutFinishNoLevelUpApiIT extends ApiIntegrationTest {
 
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private ExerciseRepository exerciseRepository;
@@ -34,7 +35,7 @@ class WorkoutFinishLevelUpApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testFinishWorkout_shouldReturnLevelUp_whenActiveInstanceHasLoggedSets() {
+    void testFinishWorkout_shouldCompleteWithoutLevelUp_whenActiveInstanceHasLoggedSets() {
         UUID owner = ownerId();
         MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
         // finishWorkout's ownedInstanceOrThrow only accepts INSTANCE rows (templateSessionId != null),
@@ -54,14 +55,7 @@ class WorkoutFinishLevelUpApiIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.OK, WorkoutInstanceResponse.class);
 
         assertThat(body.getStatus()).isEqualTo(WorkoutInstanceResponse.StatusEnum.COMPLETED);
-        assertThat(body.getLevelUp()).isNotNull();
-        assertThat(body.getLevelUp().getSource())
-            .isEqualTo(io.mrkuhne.mezo.api.dto.LevelUpResult.SourceEnum.GYM);
-        assertThat(body.getLevelUp().getTotalXp()).isGreaterThan(0L);
-        assertThat(body.getLevelUp().getGains()).anySatisfy(
-            gn -> assertThat(gn.getSkillKey()).isEqualTo("chest"));
-        // the finishing instance counts toward the completed-only streak in the same transaction:
-        // 'completed' is set before applyGym and the streak's JPQL read auto-flushes it (mezo-iz4kt)
-        assertThat(body.getLevelUp().getRobustness().getStreakWeeks()).isGreaterThanOrEqualTo(1);
+        assertThat(body.getSets()).hasSize(1);
+        assertThat(body.getLevelUp()).isNull();
     }
 }

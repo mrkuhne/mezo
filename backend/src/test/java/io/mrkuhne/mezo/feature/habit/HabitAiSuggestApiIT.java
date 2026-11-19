@@ -8,7 +8,6 @@ import io.mrkuhne.mezo.api.dto.HabitSuggestion;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.habit.service.HabitCatalogService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
-import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,21 +38,17 @@ class HabitAiSuggestApiIT extends ApiIntegrationTest {
 
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private HabitCatalogService habitCatalogService;
-    @Autowired private SkillProgressPopulator skillProgressPopulator;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
     }
 
     /** Grounds every test in the same fixture: the seed catalog's MORNING/EVENING chains (+ their
-     *  seed defs, for the non-duplication instruction) and two LIFE skills with real XP — the
-     *  grounded skillKey whitelist the adapter validates suggestions against. */
+     *  seed defs, for the non-duplication instruction). The skillKey whitelist is the fixed LIFE
+     *  taxonomy (SkillTaxonomy.LIFE) since the XP world left (mezo-r36n9.97.5). */
     @BeforeEach
-    void seedCatalogAndSkills() {
-        UUID owner = ownerId();
-        habitCatalogService.ensureCatalog(owner);
-        skillProgressPopulator.createSkill(owner, "mindset", "LIFE", 50, 3);
-        skillProgressPopulator.createSkill(owner, "recovery", "LIFE", 30, 2);
+    void seedCatalog() {
+        habitCatalogService.ensureCatalog(ownerId());
     }
 
     @Test

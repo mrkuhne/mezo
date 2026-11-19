@@ -11,12 +11,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Check-in side of the W1.5 note sweep's {@code checkin_note} source — see
- * {@link NarrativeNoteSource}. Unlike {@code activity.service.ActivityNoteSourceAdapter}, this
- * adapter lives IN companion (not in {@code biometrics.checkin.service}) and imports
- * {@link CheckInRepository} directly: {@code feature.activity} already depends on
- * {@code feature.companion} (so a companion → activity edge would close a cycle, forcing the
- * inversion), but {@code feature.biometrics} has NO existing dependency on {@code
- * feature.companion} — while {@code feature.companion} already reaches {@code feature.biometrics}
+ * {@link NarrativeNoteSource}. This adapter lives IN companion (not in
+ * {@code biometrics.checkin.service}) and imports {@link CheckInRepository} directly:
+ * {@code feature.biometrics} has NO existing dependency on {@code feature.companion} — while {@code feature.companion} already reaches {@code feature.biometrics}
  * transitively (companion → meal → goal → biometrics, the goal↔biometrics leg being a pre-existing
  * frozen cycle). Implementing {@link NarrativeNoteSource} from INSIDE {@code
  * biometrics.checkin.service} would add the missing biometrics → companion leg and close a NEW,

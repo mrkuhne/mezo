@@ -16,7 +16,6 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 | Feature | BE | API | Docs |
 |---|---|---|---|
-| [activity](#activity) | ✓ | 1 | [growth](features/growth.md) |
 | [appnotification](#appnotification) | ✓ | 1 | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | [_platform-auth-security](features/_platform-auth-security.md), [_platform-language](features/_platform-language.md) |
 | [biometrics](#biometrics) | ✓ | 6 | [me](features/me.md) |
@@ -25,7 +24,6 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [dayclose](#dayclose) | ✓ | 1 | [boop-ios](features/boop-ios.md), [dayclose](features/dayclose.md) |
 | [fuel](#fuel) | ✓ | 2 | [fuel](features/fuel.md) |
-| [gamification](#gamification) | ✓ | 1 | [growth](features/growth.md) |
 | [goal](#goal) | ✓ | 1 | [goal-engine](features/goal-engine.md), [me](features/me.md) |
 | [habit](#habit) | ✓ | 1 | [habit](features/habit.md) |
 | [intention](#intention) | ✓ | 1 | [intention](features/intention.md) |
@@ -40,34 +38,12 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [pantry](#pantry) | ✓ | 1 | [pantry](features/pantry.md) |
 | [people](#people) | ✓ | 1 | [me](features/me.md) |
 | [proactive](#proactive) | ✓ | 2 | [contextual-feed-evaluation](features/contextual-feed-evaluation.md), [proactive](features/proactive.md) |
-| [progression](#progression) | ✓ | 1 | [growth](features/growth.md) |
-| [quest](#quest) | ✓ | 1 | [growth](features/growth.md) |
 | [recipe](#recipe) | ✓ | 3 | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | [ritual](features/ritual.md) |
 | [train](#train) | ✓ | 5 | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md) |
 | [wearable](#wearable) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
 
 ## Features
-
-### activity
-
-*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-19, done)
-
-- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/activity`
-  - **entities→tables:** `ActivityLogEntity`→`activity_log`
-  - **repositories:** `ActivityLogRepository`
-  - **services:** `ActivityClassifier`, `ActivityLedgerAdapter`, `ActivityNoteSourceAdapter`, `ActivityService`,
-    `DailyActivityAdapter`
-  - **controllers→contract:** `ActivityController`→`ActivityApi`
-  - **mappers:** `ActivityMapper`
-  - **config:** `ActivityProperties`
-  - **other:** `ActivityExtract`
-- **Contract** `api/feature/activity/activity.yml` — 4 operations
-  - **endpoints:** POST /api/activity · GET /api/activity/day/{date} · POST /api/activity/{id}/category ·
-    GET /api/activity/history
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/activity` — 4 IT + 0 unit
-  - **ITs:** `ActivityApiIT`, `ActivityClassifierIT`, `ActivityHistoryApiIT`, `ActivityLogEntityIT`
-  - **populators:** `ActivityPopulator`, `QuestPopulator`, `UserPopulator`
 
 ### appnotification
 
@@ -235,14 +211,14 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `MotivationFollowThroughDetector`, `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`,
     `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `PainMapDetector`, `PeopleMoodLinkDetector`,
     `PredictionCalibrationDetector`, `PriorShowing`, `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`,
-    `ProteinTrainingMismatchDetector`, `QuestCompletionCalibrationDetector`, `RestartPatternDetector`,
-    `RetroLoggingRatioDetector`, `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`,
-    `SelfCalibrationDetector`, `SleepNeedDetector`, `SleepPerformanceChainDetector`, `SorenessRecoveryDetector`,
-    `SportInterferenceDetector`, `StackSkipPatternDetector`, `StreakBreakResponseDetector`, `TeamCharacter`,
-    `TeamChatActionsEnvelope`, `TeamChatBudget`, `TeamChatCast`, `TeamChatContext`, `TeamChatContextBlock`,
-    `TeamChatExceptionMatcher`, `TeamChatExceptionService`, `TeamChatExpiryJob`, `TeamChatInterventionKeyAdapter`,
-    `TeamChatKnowledgeAdapter`, `TeamChatKnowledgePort`, `TeamChatLines`, `TeamChatPushPolicy`, `TeamChatQuietHours`,
-    `TeamChatReads`, `TeamChatReplyDecision`, `TeamChatReplyDraft`, `TeamChatReplyService`, `TeamChatReplyVoiceWriter`,
+    `ProteinTrainingMismatchDetector`, `RestartPatternDetector`, `RetroLoggingRatioDetector`, `RirCalibrationDetector`,
+    `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`, `SleepNeedDetector`,
+    `SleepPerformanceChainDetector`, `SorenessRecoveryDetector`, `SportInterferenceDetector`,
+    `StackSkipPatternDetector`, `StreakBreakResponseDetector`, `TeamCharacter`, `TeamChatActionsEnvelope`,
+    `TeamChatBudget`, `TeamChatCast`, `TeamChatContext`, `TeamChatContextBlock`, `TeamChatExceptionMatcher`,
+    `TeamChatExceptionService`, `TeamChatExpiryJob`, `TeamChatInterventionKeyAdapter`, `TeamChatKnowledgeAdapter`,
+    `TeamChatKnowledgePort`, `TeamChatLines`, `TeamChatPushPolicy`, `TeamChatQuietHours`, `TeamChatReads`,
+    `TeamChatReplyDecision`, `TeamChatReplyDraft`, `TeamChatReplyService`, `TeamChatReplyVoiceWriter`,
     `TeamChatService`, `TeamChatVoiceWriter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`,
     `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
 - **Contract** `api/feature/character/character.yml` — 23 operations
@@ -284,7 +260,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `LearnedFactPopulator`, `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`,
     `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `PantryItemPopulator`,
     `PatternEventPopulator`, `PatternPopulator`, `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
-    `QuestPopulator`, `RecoveryPeriodPopulator`, `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
+    `RecoveryPeriodPopulator`, `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
     `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
     `WeeklyReviewPopulator`
 
@@ -397,26 +373,25 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `FactMergeJob`, `FactMergeJudge`, `FactMergePlanner`, `FactMergeService`, `FactOwner`, `FakeCompanionLlm`,
     `FakeEmbeddingAdapter`, `FakeFactMerge`, `FeedContextTools`, `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`,
     `ForgottenMemoriesEnvelope`, `FuelModeText`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`,
-    `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`, `GrowthTools`,
-    `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`,
-    `KnowledgeBackfillRunner`, `LateEatingRule`, `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`,
-    `LifeGoalProposePort`, `LifeGoalSource`, `LifeGoalText`, `LifeGoalTools`, `LlmModelRouter`, `LlmRoundUsage`,
-    `LlmRoundUsageAdvisor`, `LlmUsageExtractor`, `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`,
-    `MealDraftLlmAdapter`, `MealRhythmDriftRule`, `MedicationTools`, `MemoryCandidate`, `MemoryContext`,
-    `MemoryContextItem`, `MemoryEmbeddingWriter`, `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`,
-    `MesoPlanLlmAdapter`, `MissedWorkoutsRule`, `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`,
-    `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`, `OpenAiCompanionLlm`, `OpenAiEmbeddingAdapter`,
-    `OpenAiUsageExtractor`, `OutputLanguageDirective`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`,
-    `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PersistentPainRule`,
-    `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`,
-    `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
-    `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`,
-    `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`,
-    `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`, `SleepShotLlmAdapter`,
-    `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`, `SustainedStressRule`,
-    `TechniqueLlmAdapter`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `TodayActivitySource`,
-    `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`,
-    `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`, `WeekReviewSource`
+    `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`, `HabitSuggestLlmAdapter`,
+    `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`, `KnowledgeBackfillRunner`,
+    `LateEatingRule`, `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`,
+    `LifeGoalText`, `LifeGoalTools`, `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`,
+    `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`,
+    `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`,
+    `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`,
+    `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`,
+    `OpenAiCompanionLlm`, `OpenAiEmbeddingAdapter`, `OpenAiUsageExtractor`, `OutputLanguageDirective`,
+    `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`,
+    `PatternEvidenceEnvelope`, `PersistentPainRule`, `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`,
+    `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`,
+    `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`, `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`,
+    `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`,
+    `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`,
+    `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`,
+    `SustainedStressRule`, `TechniqueLlmAdapter`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `ToolCallAudit`,
+    `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`,
+    `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -541,17 +516,16 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `TextSignalNameNormalizationIT`, `TextSignalSeriesIT`, `ToneJudgeEvalIT`, `ToolCatalogueIT`, `ToolSelectionEvalIT`,
     `TrainingNoteMentionSweepIT`, `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`, `TurnMemoryServiceIT`,
     `TurnPipelineIT`, `TurnVerdictCheckIT`
-  - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `BiometricProfilePopulator`,
+  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `BiometricProfilePopulator`,
     `CalendarEventPopulator`, `CheckInPopulator`, `CompanionMessagePopulator`, `CompanionPreferencesPopulator`,
     `DailyMetricPopulator`, `DailySummaryPopulator`, `DatabasePopulator`, `DayReviewPopulator`, `FeedbackPopulator`,
-    `FlagLogPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`, `GraphPopulator`,
-    `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
-    `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MealSlotTemplatePopulator`,
-    `MedicationDosePopulator`, `MedicationPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`,
-    `MentionPopulator`, `NotificationPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
-    `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
-    `QuestPopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`,
-    `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`,
+    `FlagLogPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`, `GraphPopulator`, `HabitPopulator`,
+    `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`,
+    `LlmLogPopulator`, `MealPopulator`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`,
+    `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `NotificationPopulator`,
+    `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`,
+    `PlannedSkipPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`,
+    `RitualPopulator`, `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`,
     `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
     `WeeklyScorePopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
 
@@ -603,27 +577,6 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `SlotPlanEvaluateLlmUnavailableApiIT`, `SlotPlanEvaluateSwitchOffApiIT`, `SlotTemplateApiIT`
   - **populators:** `DatabasePopulator`, `MealSlotTemplatePopulator`, `PantryItemPopulator`, `ProtocolPopulator`,
     `SupplementIntakePopulator`
-
-### gamification
-
-*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-19, done)
-
-- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/gamification`
-  - **entities→tables:** `CoinEventEntity`→`coin_event`, `GamificationProfileEntity`→`gamification_profile`,
-    `OwnedTitleEntity`→`owned_title`
-  - **repositories:** `CoinEventRepository`, `GamificationProfileRepository`, `OwnedTitleRepository`
-  - **services:** `GamificationAccountAdapter`, `GamificationService`
-  - **controllers→contract:** `GamificationController`→`GamificationApi`
-  - **config:** `GamificationProperties`
-  - **other:** `AccountLevelCurve`, `GamificationDemoData`, `TitleCatalog`
-- **Contract** `api/feature/gamification/gamification.yml` — 5 operations
-  - **endpoints:** GET /api/gamification/profile · GET /api/gamification/day/{date} ·
-    POST /api/gamification/title/{key}/buy · POST /api/gamification/title/{key}/equip ·
-    POST /api/gamification/saver/buy
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/gamification` — 6 IT + 1 unit
-  - **ITs:** `GamificationApiIT`, `GamificationCoinIT`, `GamificationEntityIT`, `GamificationStreakIT`,
-    `GamificationSwitchOffIT`, `TitleCatalogIT`
-  - **populators:** `GamificationPopulator`, `UserPopulator`
 
 ### goal
 
@@ -691,7 +644,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **controllers→contract:** `HabitController`→`HabitApi`
   - **mappers:** `HabitMapper`
   - **config:** `HabitProperties`
-  - **other:** `HabitCatalog`
+  - **other:** `HabitCatalog`, `SkillTaxonomy`
 - **Contract** `api/feature/habit/habit.yml` — 14 operations
   - **endpoints:** GET /api/habit/day/{date} · POST /api/habit/{key}/check · DELETE /api/habit/{key}/check ·
     GET /api/habit/summary · GET /api/habit/formation/{key} · GET /api/habit/catalog · POST /api/habit/chain ·
@@ -702,9 +655,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `HabitCatalogBootstrapIT`, `HabitCatalogIT`, `HabitChainDefEntityIT`, `HabitDayEntityIT`, `HabitEvaluatorIT`,
     `HabitJobIT`, `HabitServiceIT`, `HabitTargetsSleepIT`
   - **populators:** `DatabasePopulator`, `FuelSettingsPopulator`, `HabitPopulator`, `MealPopulator`,
-    `PantryItemPopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
-    `SleepGoalPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`,
-    `WeightLogPopulator`
+    `PantryItemPopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`, `SleepGoalPopulator`,
+    `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WeightLogPopulator`
 
 ### intention
 
@@ -763,27 +715,26 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **repositories:** `LifeGoalPillarDayRepository`, `LifeGoalPillarRepository`, `LifeGoalRepository`
   - **services:** `LifeGoalCompanionAdapter`, `LifeGoalEvalJob`, `LifeGoalPillarService`, `LifeGoalProgressService`,
     `LifeGoalProposeService`, `LifeGoalService`, `LifeGoalSignalService`, `LifeGoalTemplateProposer`,
-    `LifeGoalTriggerListener`, `LifeGoalTriggerRules`, `LifeGoalTriggerService`, `LifeGoalXpService`
+    `LifeGoalTriggerListener`, `LifeGoalTriggerRules`, `LifeGoalTriggerService`
   - **controllers→contract:** `LifeGoalController`→`LifeGoalApi`
   - **mappers:** `LifeGoalMapper`
   - **config:** `LifeGoalProperties`
-  - **other:** `ActivitySignalSource`, `IfThenPlanJson`, `LifeGoalScorer`, `LifeGoalSeedData`, `MetricSignalSource`,
-    `NeedsRingSignalSource`, `PillarDayScore`, `PillarRuleJson`, `PillarSourceJson`, `PlanTriggerJson`,
-    `SignalCatalog`, `SignalCatalogEntry`, `SignalSource`, `SignalWindow`, `SocialMentionsSignalSource`,
-    `WeightGoalSignalSource`
+  - **other:** `IfThenPlanJson`, `LifeGoalScorer`, `LifeGoalSeedData`, `MetricSignalSource`, `NeedsRingSignalSource`,
+    `PillarDayScore`, `PillarRuleJson`, `PillarSourceJson`, `PlanTriggerJson`, `SignalCatalog`, `SignalCatalogEntry`,
+    `SignalSource`, `SignalWindow`, `SocialMentionsSignalSource`, `WeightGoalSignalSource`
 - **Contract** `api/feature/lifegoal/lifegoal.yml` — 12 operations
   - **endpoints:** GET /api/life-goals · POST /api/life-goals · GET /api/life-goals/signals ·
     POST /api/life-goals/propose · GET /api/life-goals/{id} · PUT /api/life-goals/{id} · DELETE /api/life-goals/{id} ·
     POST /api/life-goals/{id}/status · PUT /api/life-goals/{id}/pillars · GET /api/life-goals/today ·
     GET /api/life-goals/{id}/progress · POST /api/life-goals/{id}/evaluate
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 18 IT + 3 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 17 IT + 3 unit
   - **ITs:** `LifeGoalApiIT`, `LifeGoalCompanionAdapterCompanionOffIT`, `LifeGoalCompanionAdapterIT`,
     `LifeGoalEntityIT`, `LifeGoalEvalJobIT`, `LifeGoalEvalJobSwitchOffIT`, `LifeGoalEvaluateApiIT`,
     `LifeGoalPillarApiIT`, `LifeGoalProgressApiIT`, `LifeGoalProgressServiceSummaryIT`, `LifeGoalProposeIT`,
-    `LifeGoalSeedDataIT`, `LifeGoalSignalsLivenessIT`, `LifeGoalTodayApiIT`, `LifeGoalTriggerIT`, `LifeGoalXpIT`,
-    `SignalSourceIT`, `WeightGoalSignalSourceIT`
+    `LifeGoalSeedDataIT`, `LifeGoalSignalsLivenessIT`, `LifeGoalTodayApiIT`, `LifeGoalTriggerIT`, `SignalSourceIT`,
+    `WeightGoalSignalSourceIT`
   - **populators:** `CheckInPopulator`, `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`, `RitualPopulator`,
-    `TrainPopulator`, `UserPopulator`
+    `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`
 
 ### llmlog
 
@@ -1029,18 +980,18 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `DiagnosisService`, `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`,
     `FatigueEvidenceCollector`, `FeatureAbandonmentDetector`, `FeedContext`, `FeedContextAssembler`,
     `FeedContinuityService`, `FeedEvidenceAssembler`, `FeedGenerationService`, `FeedMessageKindService`,
-    `FeedMessagePrompts`, `FlatFeedbackDetector`, `GeneratedFeedMessage`, `GrowthDigestBlock`,
-    `HighlightCitationSourceAdapter`, `HydrationShortfallProbe`, `InterventionEventListener`, `InterventionService`,
-    `LightenTomorrowAdapter`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`,
-    `OneTimeQuestionService`, `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`,
-    `PlanFeasibilityCalculator`, `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`,
-    `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`,
-    `ProactiveMemoryBlock`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`,
-    `QuestionAnswerListener`, `QuestionAnswerService`, `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`,
-    `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`, `WeeklyLessonService`,
-    `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`,
-    `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`,
-    `WeightDecomposition`, `WeightDecompositionInputsAssembler`
+    `FeedMessagePrompts`, `FlatFeedbackDetector`, `GeneratedFeedMessage`, `HighlightCitationSourceAdapter`,
+    `HydrationShortfallProbe`, `InterventionEventListener`, `InterventionService`, `LightenTomorrowAdapter`,
+    `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`, `OneTimeQuestionService`,
+    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`,
+    `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`,
+    `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`, `ProactiveMemoryBlock`,
+    `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`, `QuestionAnswerListener`,
+    `QuestionAnswerService`, `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`,
+    `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`,
+    `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`,
+    `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`, `WeightDecomposition`,
+    `WeightDecompositionInputsAssembler`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
   - **config:** `ContextualFeedProperties`, `DiagnosisProperties`, `ProactiveProperties`, `QuestionProperties`,
@@ -1059,7 +1010,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 112 IT + 11 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 111 IT + 11 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
     `ChallengeGeneratorIT`, `ChallengeGeneratorMemoryDisabledIT`, `ChallengeGeneratorMemoryIT`, `ChallengeJobIT`,
     `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `ChallengePregenerateJobIT`,
@@ -1074,12 +1025,12 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`, `ExperimentProposalGeneratorMemoryDisabledIT`,
     `ExperimentProposalGeneratorMemoryIT`, `FatigueEvidenceCollectorIT`, `FeatureAbandonmentDetectorIT`,
     `FeedContextAssemblerIT`, `FeedContinuityIT`, `FeedEvidenceAssemblerIT`, `FeedGenerationServiceIT`,
-    `FlatFeedbackDetectorIT`, `ForgottenPatternProactiveIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`,
-    `HydrationPropertiesIT`, `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`,
-    `InterventionSwitchOffIT`, `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`,
-    `MemoirGeneratorMemoryIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`,
-    `OneTimeQuestionServiceIT`, `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`,
-    `PredictionGeneratorIT`, `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
+    `FlatFeedbackDetectorIT`, `ForgottenPatternProactiveIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
+    `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`,
+    `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`, `MemoirGeneratorMemoryIT`,
+    `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`, `OneTimeQuestionServiceIT`,
+    `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`,
+    `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
     `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`,
     `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
     `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveFeedLazyRetryIT`, `ProactiveMemoirArchiveIT`,
@@ -1091,65 +1042,15 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `WeeklyReviewGeneratorMemoryDisabledIT`, `WeeklyReviewGeneratorMemoryIT`, `WeeklySuggestionGeneratorIT`,
     `WeeklySuggestionGeneratorMemoryDisabledIT`, `WeeklySuggestionGeneratorMemoryIT`, `WeeklySuggestionJobIT`,
     `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`, `WeeklySuggestionPersistenceIT`, `WeightDiagnosisIT`
-  - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
-    `CheckInPopulator`, `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `DailySummaryPopulator`,
-    `DatabasePopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`, `GoalPopulator`,
-    `GraphPopulator`, `HabitPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
-    `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`,
-    `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `PantryItemPopulator`,
+  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`, `CheckInPopulator`,
+    `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
+    `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`, `GoalPopulator`, `GraphPopulator`,
+    `HabitPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`,
+    `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
+    `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `PantryItemPopulator`,
     `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`,
-    `QuestPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`,
-    `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
-
-### progression
-
-*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-19, done)
-
-- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/progression`
-  - **sub-features:** `activity`, `gym`, `habit`, `lifegoal`, `needs`, `quest`, `run`, `sport`
-  - **entities→tables:** `LevelUpEventEntity`→`level_up_event`, `PerkUnlockEntity`→`perk_unlock`,
-    `SkillProgressEntity`→`skill_progress`
-  - **repositories:** `LevelUpEventRepository`, `PerkUnlockRepository`, `SkillProgressRepository`
-  - **services:** `AchievementService`, `GrowthWeekService`, `ProgressionService`, `TraitCalculator`
-  - **controllers→contract:** `ProgressionController`→`ProgressionApi`
-  - **mappers:** `LevelUpResultMapper`
-  - **config:** `ProgressionProperties`
-  - **other:** `AccountProgressPort`, `ActivityLedgerSource`, `ActivitySignal`, `GymSignal`, `HabitSignal`,
-    `LevelUpResult`, `LifeGoalSignal`, `NeedsSignal`, `PerkCatalog`, `ProgressionCurve`, `ProgressionGate`,
-    `ProgressionTaxonomy`, `QuestLedgerSource`, `QuestSignal`, `RobustnessSource`, `RunSignal`, `SportSignal`,
-    `TrainingCommitmentSource`
-- **Contract** `api/feature/progression/progression.yml` — 3 operations
-  - **endpoints:** GET /api/progression/profile · GET /api/progression/growth-week/{date} ·
-    GET /api/progression/achievements
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/progression` — 18 IT + 2 unit
-  - **ITs:** `AchievementsApiIT`, `GrowthWeekApiIT`, `PerkCatalogIT`, `ProfileSavingsIT`, `ProfileTraitsIT`,
-    `ProgressionActivityIT`, `ProgressionHabitIT`, `ProgressionLifeGoalIT`, `ProgressionPersistenceIT`,
-    `ProgressionPopulatorIT`, `ProgressionProfileApiIT`, `ProgressionProfileServiceIT`,
-    `ProgressionProfileSwitchOffApiIT`, `ProgressionPropertiesIT`, `ProgressionQuestIT`, `ProgressionRunIT`,
-    `ProgressionServiceIT`, `ProgressionSportIT`
-  - **populators:** `ActivityPopulator`, `DatabasePopulator`, `LevelUpEventPopulator`, `QuestPopulator`,
-    `SkillProgressPopulator`, `UserPopulator`
-
-### quest
-
-*BE + API* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-11-19, done)
-
-- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/quest`
-  - **entities→tables:** `DailyQuestEntity`→`daily_quest`
-  - **repositories:** `DailyQuestRepository`
-  - **services:** `QuestEvaluator`, `QuestFlavor`, `QuestJob`, `QuestLedgerAdapter`, `QuestSelector`, `QuestService`,
-    `TodayQuestAdapter`
-  - **controllers→contract:** `QuestController`→`QuestApi`
-  - **mappers:** `QuestDisplay`, `QuestMapper`
-  - **config:** `QuestProperties`
-  - **other:** `QuestCatalog`, `QuestTargetEnvelope`
-- **Contract** `api/feature/quest/quest.yml` — 3 operations
-  - **endpoints:** GET /api/quest/day/{date} · POST /api/quest/{id}/reroll · GET /api/quest/history
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/quest` — 10 IT + 0 unit
-  - **ITs:** `DailyQuestEntityIT`, `QuestActivityCompletionIT`, `QuestAdaptiveDifficultyIT`, `QuestApiIT`,
-    `QuestCatalogIT`, `QuestEvaluatorIT`, `QuestFlavorIT`, `QuestHistoryApiIT`, `QuestJobIT`, `QuestSelectorIT`
-  - **populators:** `CheckInPopulator`, `GoalPopulator`, `QuestPopulator`, `RecoveryPeriodPopulator`, `UserPopulator`,
-    `WeightLogPopulator`
+    `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
+    `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
 
 ### recipe
 
@@ -1205,7 +1106,6 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/train.md](features/train.md) (updated 2026-11-19, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
-  - **sub-features:** `signal`
   - **entities→tables:** `ExerciseCatalogEntity`→`exercise_catalog`, `ExerciseEntity`→`exercise`,
     `ExerciseFeedbackEntity`→`exercise_feedback`, `ExerciseSetEntity`→`exercise_set`,
     `ExerciseSetLegEntity`→`exercise_set_leg`, `ExerciseWeightGapEntity`→`exercise_weight_gap`,
@@ -1255,12 +1155,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **config:** `ClosingBlockProperties`, `HypertrophyProperties`, `MesoPlanProperties`, `ReadinessProperties`,
     `TimingProperties`, `TrainProperties`, `TrainStyleProperties`, `TrainTechniqueProperties`, `VolumeProperties`
   - **events/listeners:** `MesocycleClosed`
-  - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `GymSignalCalculator`,
-    `HypertrophyDriveGate`, `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`,
-    `ProvenanceEnvelope`, `RestoreEntryJson`, `RunSignalCalculator`, `RunningBlockStructure`, `RunningSeedData`,
-    `SportSignalCalculator`, `TrainSeedData`, `TrainingCommitmentCalculator`, `TrainingStreakCalculator`,
-    `VolumeAmountMigrationRunner`, `VolumeBaselineJson`, `VolumeProgressionGate`, `VolumeRecomputeJson`,
-    `WeekProposalGroupJson`, `WeekProposalLineJson`
+  - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `HypertrophyDriveGate`,
+    `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`, `ProvenanceEnvelope`,
+    `RestoreEntryJson`, `RunningBlockStructure`, `RunningSeedData`, `TrainSeedData`, `VolumeAmountMigrationRunner`,
+    `VolumeBaselineJson`, `VolumeProgressionGate`, `VolumeRecomputeJson`, `WeekProposalGroupJson`,
+    `WeekProposalLineJson`
 - **Contract** `api/feature/train/train-readiness.yml` — 3 operations
   - **endpoints:** GET /api/train/readiness/today · POST /api/train/readiness/today ·
     DELETE /api/train/readiness/today
@@ -1299,27 +1198,26 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/train/running-blocks · PUT /api/train/running-blocks/{id} · DELETE /api/train/running-blocks/{id} ·
     POST /api/train/running-blocks/{id}/activate · POST /api/train/running-blocks/{id}/close ·
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 131 IT + 42 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 127 IT + 42 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
     `ExerciseCatalogSoftDeleteIT`, `ExerciseHistoryResolverRangeIT`, `ExerciseImagesIT`, `ExerciseRecordContractIT`,
     `ExerciseRecordServiceIT`, `ExerciseSetLegRepositoryIT`, `ExerciseTechniqueApiIT`, `ExerciseVolumeFlagIT`,
     `FailingWeeklyEngineIT`, `GoalPresetBackfillSqlIT`, `GoalPresetCarryIT`, `GymScheduleContractIT`,
-    `GymSignalCalculatorIT`, `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoPlanEvaluateContractIT`,
-    `MesoPlanEvaluateTechniqueIT`, `MesoPlanGenerateAiIT`, `MesoPlanGenerateContractIT`, `MesoPlanPropertiesBindingIT`,
-    `MesoReviewSwitchOffIT`, `MesoTemplateIT`, `MesoTemplateSportGroupsIT`, `MesoTemplateStyleIT`,
-    `MesoTemplateTechniqueIT`, `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`,
-    `MesoWeekProposalRepositoryIT`, `MesocycleCloseReportIT`, `MesocycleSettingsApiIT`, `MusclePrioritiesCarryIT`,
-    `MuscleProgressReaderIT`, `PartialsBestIT`, `PlannedSkipConsumersIT`, `PlannedSkipContractIT`,
-    `PlannedSkipPersistenceIT`, `PrescribedSetsFoundationIT`, `ProvenanceRoundTripIT`, `ReadinessContractIT`,
-    `ReadinessLightenIT`, `ReadinessServiceIT`, `RecoveryApiIT`, `RecoveryCentralReadIT`, `RecoveryFuelDaysIT`,
-    `RecoveryPeriodPersistenceIT`, `RunSessionLevelUpApiIT`, `RunSignalCalculatorIT`, `RunningContractIT`,
-    `ScheduleGoalRecomputeIT`, `SetLegLogIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`,
-    `SportServiceIT`, `SportSessionRangeIT`, `SportSignalCalculatorIT`, `SportSlotSkipContractIT`,
-    `SportSlotSkipPersistenceIT`, `TechniqueAiRefinerIT`, `TechniqueExclusionIT`, `TechniquePlanServiceIT`,
-    `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`,
-    `TrainStylePropertiesIT`, `TrainTechniquePropertiesIT`, `TrainingStreakCalculatorIT`,
+    `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoPlanEvaluateContractIT`, `MesoPlanEvaluateTechniqueIT`,
+    `MesoPlanGenerateAiIT`, `MesoPlanGenerateContractIT`, `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`,
+    `MesoTemplateIT`, `MesoTemplateSportGroupsIT`, `MesoTemplateStyleIT`, `MesoTemplateTechniqueIT`,
+    `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`, `MesoWeekProposalRepositoryIT`,
+    `MesocycleCloseReportIT`, `MesocycleSettingsApiIT`, `MusclePrioritiesCarryIT`, `MuscleProgressReaderIT`,
+    `PartialsBestIT`, `PlannedSkipConsumersIT`, `PlannedSkipContractIT`, `PlannedSkipPersistenceIT`,
+    `PrescribedSetsFoundationIT`, `ProvenanceRoundTripIT`, `ReadinessContractIT`, `ReadinessLightenIT`,
+    `ReadinessServiceIT`, `RecoveryApiIT`, `RecoveryCentralReadIT`, `RecoveryFuelDaysIT`,
+    `RecoveryPeriodPersistenceIT`, `RunSessionNoLevelUpApiIT`, `RunningContractIT`, `ScheduleGoalRecomputeIT`,
+    `SetLegLogIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`, `SportServiceIT`,
+    `SportSessionRangeIT`, `SportSlotSkipContractIT`, `SportSlotSkipPersistenceIT`, `TechniqueAiRefinerIT`,
+    `TechniqueExclusionIT`, `TechniquePlanServiceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`,
+    `TrainSeedDataIT`, `TrainServiceIT`, `TrainStylePropertiesIT`, `TrainTechniquePropertiesIT`,
     `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`,
     `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
     `WeekProposalApiAutoIT`, `WeekProposalApiIT`, `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`,
@@ -1328,7 +1226,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `WeekProposalTierChangeApiIT`, `WeekProposalTierChangeIT`, `WeekProposalTierIT`, `WeeklyPinIT`,
     `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`, `WeeklySignalReaderIT`,
     `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`,
-    `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`, `WorkoutExerciseChangeIT`, `WorkoutFinishLevelUpApiIT`,
+    `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`, `WorkoutExerciseChangeIT`, `WorkoutFinishNoLevelUpApiIT`,
     `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`,
     `WorkoutTimingBackfillIT`, `WorkoutTimingIT`, `WorkoutTodayAmountIT`, `WorkoutTodayAmountSwitchOffIT`,
     `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutTodayStyleIT`, `WorkoutTodayStyleSwitchOffIT`,
@@ -1380,22 +1278,21 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`
 
 - **Backend base classes:** `AbstractIntegrationTest.java` (service-level) · `ApiIntegrationTest.java` (HTTP-level, verb helpers + `ownerAuthHeaders()`)
-- **populators (`support/populator/`):** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`,
-  `ApnsDevicePopulator`, `AppNotificationPopulator`, `BiometricProfilePopulator`, `BoopBriefPopulator`,
-  `CalendarEventPopulator`, `ChallengePopulator`, `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`,
-  `CharacterReplyPopulator`, `CheckInPopulator`, `CompanionMessagePopulator`, `CompanionPreferencesPopulator`,
-  `CreatedAtBackdater`, `DailyMetricPopulator`, `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`,
-  `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`,
-  `GoalPlanLinkPopulator`, `GoalPopulator`, `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`,
-  `HealthSamplePopulator`, `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
-  `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MealRhythmFixtureIT`,
-  `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
-  `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `MesoTemplatePopulator`, `NeedsPopulator`,
-  `NotificationPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
-  `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`,
-  `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`, `QuestPopulator`, `ReadinessChoicePopulator`,
-  `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
-  `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`,
+- **populators (`support/populator/`):** `AiConversationPopulator`, `AiMessagePopulator`, `ApnsDevicePopulator`,
+  `AppNotificationPopulator`, `BiometricProfilePopulator`, `BoopBriefPopulator`, `CalendarEventPopulator`,
+  `ChallengePopulator`, `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`,
+  `CheckInPopulator`, `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `CreatedAtBackdater`,
+  `DailyMetricPopulator`, `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`,
+  `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
+  `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `HealthSamplePopulator`, `IntentionPopulator`,
+  `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
+  `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
+  `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
+  `MesoTemplatePopulator`, `NeedsPopulator`, `NotificationPopulator`, `PantryCatalogPopulator`,
+  `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
+  `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
+  `ProtocolPopulatorIT`, `ReadinessChoicePopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`,
+  `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`,
   `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`,
   `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
   `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`

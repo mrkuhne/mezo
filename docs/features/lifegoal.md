@@ -18,6 +18,8 @@ related: [goal-engine, growth, companion, me, today, train, ../research/entities
 
 # Life goals — Feature Documentation
 
+> **2026-11-19 — the XP world left the server (`mezo-r36n9.97.5`, #52).** A `hit` pillar-day no longer grants XP (`LifeGoalXpService` and `mezo.lifegoal.xp-per-hit` are gone), and the `activity` signal source (`ActivitySignalSource`) left with the activity log: an existing `type=activity` pillar finds no source and evaluates as honest `no_data`. The `activity_*` catalog entries, templates and seed pillars are untouched until the owner checkpoint on this area. The skill-key list moved to `feature/habit/SkillTaxonomy`. See [`growth.md`](growth.md) §9.
+
 > One-line: general-purpose life goals ("Célok") at route `/me/goals` (the Én **Célok** tab since `mezo-lhqw7` — a tab page: no back chip, an `.ent-head` row; the weight-goal `/me/goals/weight` page's back chip is „Célok” → `/me/goals`), tagged to a
 > PERMAH dimension and measured by 1–5 pillars drawn from a closed signal catalog.
 > **Status: slice 3 (`mezo-iizd.5`–`.7` engine, `.9`/`.4`/`.12` embedding) — ✅ backend CRUD/lifecycle/

@@ -6,11 +6,6 @@ import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
-import io.mrkuhne.mezo.feature.progression.ProgressionGate;
-import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
-import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
-import io.mrkuhne.mezo.feature.progression.sport.SportSignal;
-import io.mrkuhne.mezo.feature.train.signal.SportSignalCalculator;
 import io.mrkuhne.mezo.feature.train.entity.SportEventEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
@@ -27,7 +22,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,10 +44,6 @@ public class SportService {
     private final SportScheduleSlotRepository slotRepository;
     private final SportEventRepository eventRepository;
     private final TrainMapper mapper;
-    private final SportSignalCalculator sportSignalCalculator;
-    private final ProgressionService progressionService;
-    private final LevelUpResultMapper levelUpResultMapper;
-    private final ObjectProvider<ProgressionGate> progressionGate;
     private final GoalRecomputePort goalRecomputePort;
     private final ApplicationEventPublisher eventPublisher;
     // The kcal estimate's body inputs come through train's own port — biometrics provides the
@@ -77,13 +67,8 @@ public class SportService {
         s.setNotes(req.getNotes());
         applyKcal(createdBy, s, req.getKcalOverride());
 
-        // Award progression XP + attach the level-up when the engine is switched on (mirrors
-        // RunningService.logSession): same @Transactional, idempotent on the saved session id.
+        // levelUp stays absent: the XP world left the server (mezo-r36n9.97.5).
         SportSessionResponse base = mapper.toResponse(sportSessionRepository.save(s));
-        if (progressionGate.getIfAvailable() != null) {
-            SportSignal signal = sportSignalCalculator.compute(createdBy, s.getId());
-            base.setLevelUp(levelUpResultMapper.toDto(progressionService.applySport(createdBy, signal)));
-        }
         // mezo-iizd.7 (spec D-4): a ha–akkor triggerek AFTER_COMMIT reagálnak; a listener @Async
         // és nyeli a saját hibáit, tehát ez a válasz sem lassulni, sem bukni nem tud tőle.
         eventPublisher.publishEvent(new SportSessionLoggedEvent(createdBy, s.getDate()));

@@ -39,9 +39,9 @@ public interface WeeklyScoreRepository extends JpaRepository<WeeklyScoreEntity, 
      *   <li>rhythm — nothing of its own: it averages the prior days' base scores, so it moves only
      *       when one of the tables above moves.</li>
      * </ul>
-     * {@code habit_day}, {@code activity_log} and {@code daily_quest} are kept although no
-     * dimension reads XP any more: the week response still renders {@code xp} per day, and dropping
-     * them would let a week's rendered XP go stale behind a cached score.
+     * {@code habit_day} is kept although no dimension reads XP any more: the week response still
+     * renders {@code xp} per day (habit XP only, since the XP world left — mezo-r36n9.97.5), and
+     * dropping it would let a week's rendered XP go stale behind a cached score.
      *
      * <p><b>What is out, and the limitations.</b>
      * <ul>
@@ -90,12 +90,6 @@ public interface WeeklyScoreRepository extends JpaRepository<WeeklyScoreEntity, 
                 union all
                 select max(created_at) from habit_day
                     where created_by = :userId and is_deleted = false and habit_date between :from and :to
-                union all
-                select max(created_at) from activity_log
-                    where created_by = :userId and is_deleted = false and occurred_on between :from and :to
-                union all
-                select max(created_at) from daily_quest
-                    where created_by = :userId and is_deleted = false and quest_date between :from and :to
             ) t
             """, nativeQuery = true)
     Instant latestScoreInputWrittenAt(

@@ -19,7 +19,7 @@ final class ChatToolDomains {
             Map.entry("get_recipes", "fuel"), Map.entry("get_protocol", "fuel"),
             Map.entry("get_training_log", "edzes"), Map.entry("get_training_plan", "edzes"),
             Map.entry("get_exercise_records", "edzes"),
-            Map.entry("get_goal", "cel"), Map.entry("get_growth", "cel"), Map.entry("get_daily_practice", "cel"),
+            Map.entry("get_goal", "cel"), Map.entry("get_daily_practice", "cel"),
             Map.entry("get_life_goals", "cel"),
             Map.entry("get_insights", "mintak"), Map.entry("find_similar_past_days", "mintak"),
             Map.entry("compare_periods", "mintak"),

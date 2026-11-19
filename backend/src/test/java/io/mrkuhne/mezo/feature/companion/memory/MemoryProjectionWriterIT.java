@@ -61,11 +61,6 @@ class MemoryProjectionWriterIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testSyncNote_shouldUpdateAndSuppressProjection_whenActivityNoteChangesThenDeletes() {
-        assertNoteLifecycle(NarrativeNoteSource.ACTIVITY_NOTE);
-    }
-
-    @Test
     void testSyncNote_shouldUpdateAndSuppressProjection_whenCheckInNoteChangesThenDeletes() {
         assertNoteLifecycle(NarrativeNoteSource.CHECKIN_NOTE);
     }

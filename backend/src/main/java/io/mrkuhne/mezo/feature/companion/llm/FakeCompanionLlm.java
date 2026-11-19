@@ -599,13 +599,6 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern CHALLENGE_SENTINEL =
             Pattern.compile("\\[fake-challenge:(\\{.*\\})]", Pattern.DOTALL);
 
-    /** Mirror of ActivityClassifier.CLASSIFY_MARKER (feature/activity) — LITERAL, cycle rule. */
-    public static final String ACTIVITY_MARKER_MIRROR = "TEVEKENYSEG-BESOROLAS-FELADAT";
-
-    /** Scripted classification (E2): {@code [fake-activity:{…}]} planted in the entry text. */
-    public static final Pattern ACTIVITY_SENTINEL =
-            Pattern.compile("\\[fake-activity:(\\{.*\\}|[^\\]]*)]", Pattern.DOTALL);
-
     /** Mirror of BoopPrompts.MARKER (feature/boop) — LITERAL, cycle rule (boop is a leaf feature;
      *  nothing imports it back). Drift is caught by BoopVerdictWriterIT's canned-answer assertions. */
     public static final String BOOP_BRIEF_MARKER_MIRROR = "BOOP_BRIEF_V1";
@@ -633,15 +626,6 @@ public class FakeCompanionLlm implements CompanionLlm {
                       {"text":"Este edzés vár rád.","link":"day"}],
              "tonightTip":"Ma este fél tizenegy körül bújj ágyba.",
              "nextMealTip":"Ebédnél egyél egy nagyobb adag fehérjét."}""";
-
-    /** Mirror of QuestFlavor.FLAVOR_MARKER (feature/quest) — LITERAL, cycle rule. */
-    public static final String QUEST_FLAVOR_MARKER_MIRROR = "KULDETES-IZESITES-FELADAT";
-
-    /** Scripted flavor rewrite (E3): {@code [fake-quest-flavor:[…]]} planted in a quest title.
-     *  GREEDY — the payload is a JSON array of objects. Default [] = no rewrite, so unscripted
-     *  cron runs keep catalog copy deterministically. */
-    public static final Pattern QUEST_FLAVOR_SENTINEL =
-            Pattern.compile("\\[fake-quest-flavor:(\\[.*\\]|[^\\]]*)]", Pattern.DOTALL);
 
     /** Mirror of PlacementEngine.SYSTEM_PROMPT_MARKER (feature/fuel) — LITERAL, not an import,
      *  same drift-safety rationale as every other mirror here. */
@@ -674,7 +658,7 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  all, so an unknown value never reaches the prompt text to be sentinel-matched). {@code hint}
      *  carries a contract {@code @Size(max = 200)}, so payloads must stay compact; {@link
      *  #SUGGEST_COUNT_SENTINEL} is the compact alternative for multi-item scripts. GREEDY array
-     *  alternative (like {@code QUEST_FLAVOR_SENTINEL}), PLUS a raw-text fallback alternative so a
+     *  alternative, PLUS a raw-text fallback alternative so a
      *  deliberately broken payload (e.g. {@code [fake-habit-suggest:not-json]}) still matches and
      *  reaches the caller's JSON parser verbatim, exercising the degrade-to-empty path instead of
      *  silently falling through to the default. Default = one valid minimal suggestion so the
@@ -1116,17 +1100,6 @@ public class FakeCompanionLlm implements CompanionLlm {
                         + "\"forma\":{\"headline\":\"\"},\"brief\":[]}";
             }
             return BOOP_CANNED_ANSWER;
-        }
-        if (systemPrompt.startsWith(ACTIVITY_MARKER_MIRROR)) {
-            Matcher m = ACTIVITY_SENTINEL.matcher(userMessage);
-            // default = valid confident classification so the un-scripted happy path categorizes
-            return m.find() ? m.group(1)
-                    : "{\"skillKey\":\"learning\",\"confidence\":0.9,\"xpSuggestion\":15,"
-                            + "\"durationMin\":null,\"amountHuf\":null}";
-        }
-        if (systemPrompt.startsWith(QUEST_FLAVOR_MARKER_MIRROR)) {
-            Matcher m = QUEST_FLAVOR_SENTINEL.matcher(userMessage);
-            return m.find() ? m.group(1) : "[]";
         }
         if (systemPrompt.startsWith(STACK_PLACEMENT_MARKER_MIRROR)) {
             Matcher m = STACK_PLACEMENT_SENTINEL.matcher(userMessage);

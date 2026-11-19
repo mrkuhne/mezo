@@ -2,16 +2,13 @@ package io.mrkuhne.mezo.feature.lifegoal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.activity.entity.ActivityExtract;
-import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
-import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalPillarEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarRuleJson;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarSourceJson;
 import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalPillarDayRepository;
 import io.mrkuhne.mezo.feature.lifegoal.service.LifeGoalEvalJob;
-import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
+import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.LifeGoalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -35,35 +32,28 @@ import org.springframework.test.context.TestPropertySource;
 })
 class LifeGoalEvalJobIT extends AbstractIntegrationTest {
 
-    private static final int XP_PER_HIT = 5;
-
     @Autowired private LifeGoalEvalJob job;
     @Autowired private LifeGoalPopulator lifeGoalPopulator;
     @Autowired private UserPopulator userPopulator;
-    @Autowired private ActivityLogRepository activityLogRepository;
+    @Autowired private WaterLogPopulator waterLogPopulator;
     @Autowired private LifeGoalPillarDayRepository dayRepository;
-    @Autowired private SkillProgressRepository skillProgressRepository;
 
     private final LocalDate today = LocalDate.now();
 
     private LifeGoalPillarEntity focusPillar(LifeGoalEntity goal) {
         return lifeGoalPopulator.pillar(goal, "Fókusz", "habit",
-            new PillarSourceJson("activity", null, "productivity", "minutes", null, null),
+            new PillarSourceJson("metric", "DAILY_WATER_ML", null, null, null, null),
             new PillarRuleJson(new BigDecimal("30"), "gte", 4, null, null, null, null, null, null, null));
     }
 
-    private void activity(UUID owner, LocalDate on, int durationMin) {
-        ActivityLogEntity e = new ActivityLogEntity();
-        e.setCreatedBy(owner);
-        e.setOccurredOn(on);
-        e.setText("fókuszblokk");
-        e.setSkillKey("productivity");
-        e.setExtracted(new ActivityExtract(durationMin, null));
-        activityLogRepository.saveAndFlush(e);
+    /** One day's signal: a water log (the pillar reads DAILY_WATER_ML). Until mezo-r36n9.97.5 this
+     *  was an activity-log entry; the activity source left with the XP world. */
+    private void activity(UUID owner, LocalDate on, int amount) {
+        waterLogPopulator.createWaterLog(owner, on, amount);
     }
 
     @Test
-    void testRunEval_shouldWriteTheSameRowsAndXp_whenRunTwice() {
+    void testRunEval_shouldWriteTheSameRows_whenRunTwice() {
         UUID owner = userPopulator.createUser("lifegoal-job@test.hu").getId();
         LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
         LifeGoalPillarEntity pillar = focusPillar(goal);
@@ -76,8 +66,6 @@ class LifeGoalEvalJobIT extends AbstractIntegrationTest {
             List.of(pillar.getId()), today.minusDays(3), today.minusDays(1));
         assertThat(rows).hasSize(3);
         assertThat(rows).filteredOn(r -> "hit".equals(r.getStatus())).hasSize(1);
-        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(owner, "recovery")
-            .orElseThrow().getCumulativeXp()).isEqualTo(XP_PER_HIT);
     }
 
     @Test
@@ -91,7 +79,6 @@ class LifeGoalEvalJobIT extends AbstractIntegrationTest {
 
         assertThat(dayRepository.findByPillarIdInAndDayBetweenAndDeletedFalseOrderByDayAsc(
             List.of(pillar.getId()), today.minusDays(3), today.minusDays(1))).isEmpty();
-        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(owner, "recovery")).isEmpty();
     }
 
     @Test
@@ -99,7 +86,7 @@ class LifeGoalEvalJobIT extends AbstractIntegrationTest {
         UUID brokenOwner = userPopulator.createUser("lifegoal-job-broken@test.hu").getId();
         LifeGoalEntity brokenGoal = lifeGoalPopulator.goal(brokenOwner, "active");
         LifeGoalPillarEntity brokenPillar = lifeGoalPopulator.pillar(brokenGoal, "Fókusz", "habit",
-            new PillarSourceJson("activity", null, "productivity", "bogus", null, null),
+            new PillarSourceJson("metric", "BOGUS_METRIC", null, null, null, null), // throws on evaluation
             new PillarRuleJson(new BigDecimal("30"), "gte", 4, null, null, null, null, null, null, null));
         activity(brokenOwner, today.minusDays(1), 40);
 
@@ -117,7 +104,5 @@ class LifeGoalEvalJobIT extends AbstractIntegrationTest {
             List.of(healthyPillar.getId()), today.minusDays(3), today.minusDays(1));
         assertThat(healthyRows).hasSize(3);
         assertThat(healthyRows).filteredOn(r -> "hit".equals(r.getStatus())).hasSize(1);
-        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(healthyOwner, "recovery")
-            .orElseThrow().getCumulativeXp()).isEqualTo(XP_PER_HIT);
     }
 }

@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.support;
 
 import io.mrkuhne.mezo.TestcontainersConfiguration;
-import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.AppNotificationPopulator;
@@ -11,8 +10,6 @@ import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.CreatedAtBackdater;
 import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
-import io.mrkuhne.mezo.support.populator.GamificationPopulator;
-import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.DayReviewPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
@@ -47,13 +44,11 @@ import io.mrkuhne.mezo.support.populator.PeriodSummaryPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
-import io.mrkuhne.mezo.support.populator.LevelUpEventPopulator;
 import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.support.populator.RitualPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
-import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.PlannedSkipPopulator;
@@ -108,7 +103,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     WeeklySuggestionPopulator.class, MemoirPopulator.class, WeeklyReviewPopulator.class,
     DiagnosisPopulator.class, WeeklyScorePopulator.class, DayReviewPopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
-    QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,
+    HabitPopulator.class,
     IntentionPopulator.class, RitualPopulator.class, NeedsPopulator.class, JournalPopulator.class,
     TrainPopulator.class, SportSlotSkipPopulator.class, PlannedSkipPopulator.class, io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator.class, WorkoutDayAdjustmentPopulator.class, ReadinessChoicePopulator.class, MesoTemplatePopulator.class, RunningPopulator.class, GoalPopulator.class,
     GoalPlanLinkPopulator.class, GoalSuggestionPopulator.class, GraphPopulator.class,
@@ -127,8 +122,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     FuelSettingsPopulator.class, MealSlotTemplatePopulator.class,
     MedicationPopulator.class, MedicationDosePopulator.class,
     ProtocolPopulator.class, SupplementIntakePopulator.class,
-    SkillProgressPopulator.class, LevelUpEventPopulator.class,
-    PersonPopulator.class, MentionPopulator.class, GamificationPopulator.class,
+    PersonPopulator.class, MentionPopulator.class,
     TextSignalPopulator.class,
     LlmLogPopulator.class, NotificationPopulator.class, AppNotificationPopulator.class, LifeGoalPopulator.class,
     TestTeamChatQuietHours.class,

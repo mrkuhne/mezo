@@ -3,7 +3,6 @@ package io.mrkuhne.mezo.feature.train.repository;
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -16,9 +15,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface RunSessionLogRepository extends JpaRepository<RunSessionLogEntity, UUID> {
 
     List<RunSessionLogEntity> findByCreatedByAndDeletedFalseOrderByDateDesc(UUID createdBy);
-
-    /** Ownership-scoped lookup (used by RunSignalCalculator to resolve a just-saved run log). */
-    Optional<RunSessionLogEntity> findByIdAndCreatedBy(UUID id, UUID createdBy);
 
     /** Logs on/after {@code from} — the companion snapshot's last-N-days digest. */
     List<RunSessionLogEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(

@@ -2,13 +2,11 @@ package io.mrkuhne.mezo.feature.companion.embedding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
-import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
-import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
@@ -39,9 +37,8 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
     @Autowired private NoteEmbeddingCatchUp noteEmbeddingCatchUp;
     @Autowired private io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository canonicalItems;
     @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
-    @Autowired private ActivityLogRepository activityLogRepository;
+    @Autowired private CheckInRepository checkInRepository;
     @Autowired private UserPopulator userPopulator;
-    @Autowired private ActivityPopulator activityPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @MockitoSpyBean private MemoryEmbeddingWriter memoryEmbeddingWriter;
 
@@ -49,7 +46,6 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
     void testRun_shouldIgnoreWhitespaceOnlyNotes_whenMinimumLengthIsOne() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        activityPopulator.activity(owner, yesterday, " \n\t ", "mindset", 0, "AI");
         checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, " \n\t ");
         assertThat(noteEmbeddingCatchUp.run(owner, yesterday)).isZero();
         assertThat(memoryEmbeddingRepository.findAll()).isEmpty();
@@ -60,26 +56,21 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
     void testRun_shouldEmbedShortAndLongNotes_whenNotesExist() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        ActivityLogEntity activity = activityPopulator.activity(owner, yesterday, LONG_NOTE, "mindset", 10, "AI");
-        activityPopulator.activity(owner, yesterday, SHORT_NOTE, "mindset", 10, "AI");
         CheckInEntity checkIn = checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, LONG_NOTE);
         checkInPopulator.createCheckIn(owner, yesterday, "08:00", 3, 4, SHORT_NOTE);
 
         int written = noteEmbeddingCatchUp.run(owner, yesterday);
 
-        assertThat(written).isEqualTo(4);
-        assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
-                MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE, activity.getId())).isTrue();
+        assertThat(written).isEqualTo(2);
         assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
                 MemoryEmbeddingEntity.KIND_CHECKIN_NOTE, checkIn.getId())).isTrue();
-        assertThat(memoryEmbeddingRepository.count()).isEqualTo(4);
+        assertThat(memoryEmbeddingRepository.count()).isEqualTo(2);
     }
 
     @Test
     void testRun_shouldWriteNothingNew_whenRunTwice() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        activityPopulator.activity(owner, yesterday, LONG_NOTE, "mindset", 10, "AI");
         checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, LONG_NOTE);
 
         noteEmbeddingCatchUp.run(owner, yesterday);
@@ -97,9 +88,8 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
         // per-candidate transaction+query was avoided. This proves the call itself never happens.
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        activityPopulator.activity(owner, yesterday, LONG_NOTE, "mindset", 10, "AI");
         checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, LONG_NOTE);
-        noteEmbeddingCatchUp.run(owner, yesterday); // first-write both notes
+        noteEmbeddingCatchUp.run(owner, yesterday); // first-write the note
         Mockito.clearInvocations(memoryEmbeddingWriter);
 
         int written = noteEmbeddingCatchUp.run(owner, yesterday);
@@ -113,14 +103,14 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
     void testRun_shouldBackfillOldHistory_whenRowsPredateTheSummaryWindow() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        ActivityLogEntity ancient = activityPopulator.activity(
-                owner, yesterday.minusDays(400), LONG_NOTE, "mindset", 10, "AI");
+        CheckInEntity ancient = checkInPopulator.createCheckIn(
+                owner, yesterday.minusDays(400), "18:00", 3, 4, LONG_NOTE);
 
         int written = noteEmbeddingCatchUp.run(owner, yesterday);
 
         assertThat(written).isEqualTo(1);
         assertThat(memoryEmbeddingRepository.findByKindAndRefId(
-                MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE, ancient.getId()))
+                MemoryEmbeddingEntity.KIND_CHECKIN_NOTE, ancient.getId()))
                 .get().extracting(MemoryEmbeddingEntity::getOccurredOn)
                 .isEqualTo(yesterday.minusDays(400));
     }
@@ -129,8 +119,8 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
     void testRun_shouldSkipSoftDeletedSources_whenAnEntryWasDeleted() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        ActivityLogEntity deleted = activityPopulator.activity(owner, yesterday, LONG_NOTE, "mindset", 10, "AI");
-        activityLogRepository.delete(deleted); // @SQLDelete → soft delete
+        CheckInEntity deleted = checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, LONG_NOTE);
+        checkInRepository.delete(deleted); // @SQLDelete → soft delete
 
         int written = noteEmbeddingCatchUp.run(owner, yesterday);
 
@@ -143,7 +133,7 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         UUID other = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        activityPopulator.activity(other, yesterday, LONG_NOTE, "mindset", 10, "AI");
+        checkInPopulator.createCheckIn(other, yesterday, "18:00", 3, 4, LONG_NOTE);
 
         int written = noteEmbeddingCatchUp.run(owner, yesterday);
 

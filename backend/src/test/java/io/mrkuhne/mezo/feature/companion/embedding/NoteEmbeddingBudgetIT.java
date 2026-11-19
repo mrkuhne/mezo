@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
-import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
@@ -30,14 +29,13 @@ class NoteEmbeddingBudgetIT extends AbstractIntegrationTest {
     @Autowired private NoteEmbeddingCatchUp noteEmbeddingCatchUp;
     @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
     @Autowired private UserPopulator userPopulator;
-    @Autowired private ActivityPopulator activityPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
 
     @Test
-    void testRun_shouldStopAtTheBudget_whenBothSourcesHaveCandidates() {
+    void testRun_shouldStopAtTheBudget_whenSeveralNotesAreCandidates() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        activityPopulator.activity(owner, yesterday, LONG_NOTE, "mindset", 10, "AI");
+        checkInPopulator.createCheckIn(owner, yesterday, "08:00", 3, 4, LONG_NOTE);
         checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, LONG_NOTE);
 
         int written = noteEmbeddingCatchUp.run(owner, yesterday);
@@ -50,7 +48,7 @@ class NoteEmbeddingBudgetIT extends AbstractIntegrationTest {
     void testRun_shouldConvergeOnTheRemainder_whenRunAgainTheNextNight() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        activityPopulator.activity(owner, yesterday, LONG_NOTE, "mindset", 10, "AI");
+        checkInPopulator.createCheckIn(owner, yesterday, "08:00", 3, 4, LONG_NOTE);
         checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, LONG_NOTE);
 
         int firstNight = noteEmbeddingCatchUp.run(owner, yesterday);

@@ -172,7 +172,7 @@ public record DetectorInput(LocalDate day,
 
     /** One closed Életjel day. The six domains are 0..100. {@code streakDays} is the streak as of
      *  THAT day, snapshotted by {@code NeedsService.closeNew} — the only per-day streak history in
-     *  the system ({@code GamificationProfileEntity} carries live state only). An unclosed day has
+     *  the system. An unclosed day has
      *  NO row here; per the domain's own rule that is a streak break, not a zero. */
     public record NeedsDayPoint(LocalDate date, int energia, int hidratacio, int pihenes,
                                 int mozgas, int lelek, int rend, int greenCount,
@@ -227,15 +227,14 @@ public record DetectorInput(LocalDate day,
                                       boolean refined) {}
     public record PredictionPoint(LocalDate validFrom, LocalDate validTo, String status,
                                   BigDecimal confidence, String metricKey) {}
-    public record QuestPoint(LocalDate questDate, String slot, String status) {}
     /** kind = "experiment" (date = generatedAt) | "challenge" (date = workoutDate); status is the
      *  source row's own status string; outcomeGood null = no verdict recorded. */
     public record ProposalOutcomePoint(LocalDate date, String kind, String status, Boolean outcomeGood) {}
     /** The system-side (AI-meta) series, gathered by {@code CharacterMetaReads}. */
     public record MetaWindow(List<TriageDecisionPoint> triageDecisions, List<PredictionPoint> predictions,
-                             List<QuestPoint> quests, List<ProposalOutcomePoint> proposalOutcomes) {
+                             List<ProposalOutcomePoint> proposalOutcomes) {
         public static MetaWindow empty() {
-            return new MetaWindow(List.of(), List.of(), List.of(), List.of());
+            return new MetaWindow(List.of(), List.of(), List.of());
         }
     }
 

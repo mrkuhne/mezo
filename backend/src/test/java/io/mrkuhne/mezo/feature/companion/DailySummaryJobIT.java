@@ -3,7 +3,6 @@ package io.mrkuhne.mezo.feature.companion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryJob;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
@@ -11,7 +10,6 @@ import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
-import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -47,21 +45,15 @@ class DailySummaryJobIT extends AbstractIntegrationTest {
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private AiConversationPopulator aiConversationPopulator;
     @Autowired private AiMessagePopulator aiMessagePopulator;
-    @Autowired private ActivityPopulator activityPopulator;
 
     @Test
     void testRun_shouldEmbedSubstantiveNotes_whenNotesExist() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        String longNote = "Ma este végre leültem és átgondoltam a hetet, sokkal nyugodtabb voltam "
-                + "mint általában, és ez a séta után jött meg igazán.";
-        ActivityLogEntity activity = activityPopulator.activity(owner, yesterday, longNote, "mindset", 10, "AI");
         var checkIn = checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, "fáradt");
 
         dailySummaryJob.run();
 
-        assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
-                MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE, activity.getId())).isTrue();
         assertThat(memoryEmbeddingRepository.findByKindAndRefId(
                 MemoryEmbeddingEntity.KIND_CHECKIN_NOTE, checkIn.getId()))
                 .get().extracting(MemoryEmbeddingEntity::getContent).isEqualTo("fáradt");

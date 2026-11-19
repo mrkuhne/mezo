@@ -17,9 +17,6 @@ public class FeaturesConfiguration {
      */
     public static final String SCHEDULING_SWITCH = "mezo.techcore.scheduling.enabled";
 
-    /** Gamified progression (post-workout level-up + XP). First production feature switch. */
-    public static final String PROGRESSION_SWITCH = "mezo.feature.progression.enabled";
-
     /** Phase-3 companion (LLM chat + AI memory). Gates every CompanionLlm bean (ADR 0008). */
     public static final String COMPANION_SWITCH = "mezo.feature.companion.enabled";
 
@@ -203,20 +200,6 @@ public class FeaturesConfiguration {
      *  ensured at the END of every template gym day of the active meso on GET /workouts/today. */
     public static final String CLOSING_BLOCK_SWITCH = "mezo.feature.closing-block.enabled";
 
-    /** Daily quests (gamified growth E1, ADR 0010). Gates the whole /api/quest surface + services. */
-    public static final String QUEST_SWITCH = "mezo.feature.quest.enabled";
-
-    /** Daily-quest crons (morning generate backstop + nightly finalize) — techcore cron zone (schedules: mezo.quest.*-cron). */
-    public static final String QUEST_JOB_SWITCH = "mezo.techcore.cron.quest-job.enabled";
-
-    /** Activity log (gamified growth E2). Gates the whole /api/activity surface + services;
-     *  the AI classifier additionally requires COMPANION_SWITCH (it calls the CompanionLlm port). */
-    public static final String ACTIVITY_SWITCH = "mezo.feature.activity.enabled";
-
-    /** E3 quest flavor copy — sub-switch of quest; the LLM rewrites title/why on the MORNING CRON
-     *  only (never targets/XP — ADR 0010). Requires COMPANION_SWITCH too (CompanionLlm port). */
-    public static final String QUEST_FLAVOR_SWITCH = "mezo.quest.flavor.enabled";
-
     /** Habit engine (morning/evening routine chains, mezo-d1jb). Gates /api/habit + services. */
     public static final String HABIT_SWITCH = "mezo.feature.habit.enabled";
 
@@ -252,8 +235,8 @@ public class FeaturesConfiguration {
 
     /** Stack placement LLM fallback (mezo-vx9v) — gates ONLY the LLM placement fallback for
      *  unknown supplements; the deterministic rule table runs regardless. The adapter bean
-     *  additionally needs COMPANION_SWITCH (both condition the same bean, array-AND'ed exactly
-     *  like ACTIVITY_SWITCH/COMPANION_SWITCH); off/absent on either degrades placement to the
+     *  additionally needs COMPANION_SWITCH (both condition the same bean, array-AND'ed);
+     *  off/absent on either degrades placement to the
      *  deterministic 'fallback' zone. */
     public static final String STACK_PLACEMENT_LLM_SWITCH = "mezo.feature.stack-placement-llm.enabled";
 
@@ -264,9 +247,6 @@ public class FeaturesConfiguration {
      *  endpoint to a clean 503. */
     public static final String SLOT_TEMPLATE_AI_SWITCH = "mezo.feature.slot-template-ai.enabled";
 
-    /** Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
-     *  and the AccountProgressPort adapter is absent (progression awards fire no coin hook). */
-    public static final String GAMIFICATION_SWITCH = "mezo.feature.gamification.enabled";
 
     /** LLM call audit log (bd mezo-2zyu) — off ⇒ the injected LlmCallRecorder is the no-op, so no
      *  adapter can publish an audit event and no llm_log_history row is ever written. */

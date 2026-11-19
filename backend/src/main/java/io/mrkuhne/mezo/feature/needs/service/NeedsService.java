@@ -8,25 +8,22 @@ import io.mrkuhne.mezo.feature.needs.config.NeedsProperties;
 import io.mrkuhne.mezo.feature.needs.entity.NeedsDayEntity;
 import io.mrkuhne.mezo.feature.needs.mapper.NeedsMapper;
 import io.mrkuhne.mezo.feature.needs.repository.NeedsDayRepository;
-import io.mrkuhne.mezo.feature.progression.ProgressionGate;
-import io.mrkuhne.mezo.feature.progression.needs.NeedsSignal;
-import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Napi Életjel-ring zárás (mezo-dhzk): one row per user+date, idempotent per date, awarding
- * per-ring + all-green bonus XP onto the recovery LIFE skill through the shared progression
- * tail, and rolling a same-user all-green streak forward/reset. Gated {@code NEEDS_SWITCH}.
+ * Napi Életjel-ring zárás (mezo-dhzk): one row per user+date, idempotent per date, stamping the
+ * per-ring + all-green bonus XP on the row, and rolling a same-user all-green streak forward/reset.
+ * Gated {@code NEEDS_SWITCH}. The award onto the progression engine left with the XP world
+ * (mezo-r36n9.97.5); {@code xpAwarded} is only the row's own record now.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,8 +33,6 @@ public class NeedsService {
     private final NeedsDayRepository repository;
     private final NeedsMapper mapper;
     private final NeedsProperties props;
-    private final ObjectProvider<ProgressionGate> progressionGate;
-    private final ProgressionService progressionService;
 
     @Transactional
     public NeedsCloseResponse close(UUID userId, NeedsCloseRequest req) {
@@ -89,11 +84,6 @@ public class NeedsService {
         row.setXpAwarded(xp);
         row.setStreakDays(streakDays);
         row = repository.saveAndFlush(row);
-
-        if (xp > 0 && progressionGate.getIfAvailable() != null) {
-            progressionService.applyNeeds(userId,
-                new NeedsSignal(row.getId(), xp, "Életjelek — életben tartva", req.getDate()));
-        }
 
         return mapper.toCloseResponse(row);
     }

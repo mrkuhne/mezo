@@ -79,7 +79,7 @@ public class LlmLogPopulator {
     /**
      * Back-dated call for the period-rollup tests — {@code @CreationTimestamp} stamps
      * {@code created_at} on INSERT, so the only way to place a row in the past is to rewrite the
-     * column afterwards (same trick as {@code LevelUpEventPopulator#createEventAt}).
+     * column afterwards.
      */
     public LlmLogEntity logAt(Instant createdAt, UUID createdBy, CallKind kind, String feature,
             String servedModel, int promptTokens, int candidatesTokens, PricingSnapshot pricingSnapshot,
