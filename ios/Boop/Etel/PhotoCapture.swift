@@ -58,3 +58,31 @@ private struct MealPhotoLibrary: ViewModifier {
             }
     }
 }
+
+extension View {
+    /// The photo library as a sheet, several at once (at most `limit`); `onPick` gets the pictures it could read, in order.
+    func photoLibrary(isPresented: Binding<Bool>, limit: Int, onPick: @escaping ([Data]) -> Void) -> some View {
+        modifier(MultiPhotoLibrary(isPresented: isPresented, limit: limit, onPick: onPick))
+    }
+}
+
+private struct MultiPhotoLibrary: ViewModifier {
+    @Binding var isPresented: Bool
+    let limit: Int
+    let onPick: ([Data]) -> Void
+    @State private var items: [PhotosPickerItem] = []
+
+    func body(content: Content) -> some View {
+        content
+            .photosPicker(isPresented: $isPresented, selection: $items, maxSelectionCount: max(1, limit), matching: .images)
+            .onChange(of: items) { _, chosen in
+                guard !chosen.isEmpty else { return }
+                items = []
+                Task {
+                    var out: [Data] = []
+                    for item in chosen { if let data = try? await item.loadTransferable(type: Data.self) { out.append(data) } }
+                    onPick(out)
+                }
+            }
+    }
+}

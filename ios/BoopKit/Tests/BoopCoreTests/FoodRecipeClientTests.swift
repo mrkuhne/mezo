@@ -123,8 +123,8 @@ struct FoodRecipeClientTests {
     @Test func anImportLineCarriesItsMatchedFoodsAllergens() async throws {
         stub.on("importRecipeFromUrl", .json(200, #"""
         {"result":{"name":"Feta","category":"lunch","servings":2,"steps":[],"lines":[
-          {"source":"pantry","name":"Feta","amount":100,"unit":"g","match":{"catalogId":"\#(catalogId)","confidence":1,"needsReview":false},"allergens":{"milk":"contains"}},
-          {"source":"estimate","name":"Kapor","amount":1,"unit":"csokor","match":{"confidence":0,"needsReview":true},"allergens":null}]}}
+          {"source":"pantry","name":"Feta","amount":100,"unit":"g","match":{"state":"matched","onShelf":false,"amountDoubt":false,"alternatives":[],"catalogId":"\#(catalogId)","confidence":1,"needsReview":false},"allergens":{"milk":"contains"}},
+          {"source":"estimate","name":"Kapor","amount":1,"unit":"csokor","match":{"state":"missing","onShelf":false,"amountDoubt":false,"alternatives":[],"confidence":0,"needsReview":true},"allergens":null}]}}
         """#))
         let d = try #require(try await food().importRecipe(.url("https://x.hu/r")))
         #expect(d.lines[0].allergens == ["milk": .contains])
@@ -138,5 +138,76 @@ struct FoodRecipeClientTests {
             _ = try await food().save(MealDraft(date: "2026-11-13", slot: "lunch", title: "x", items: []), clientRef: UUID(), capturedAt: Date())
         }
         // …while a recipe save nobody queues reads the same 400 as a refusal (aRefusedRecipeSaveThrowsRejected)
+    }
+
+    // MARK: „Ezt főztem" (mezo-r36n9.63)
+
+    private var cookedJSON: String {
+        #"""
+        {"result":{"name":"Kurkumás csirkés rizs","category":"lunch","servings":4,"steps":[],"needsReview":true,"lines":[
+          {"source":"pantry","name":"Csirkemell filé, friss","amount":500,"unit":"g","sourceText":"fél kiló csirkemell",
+           "match":{"state":"matched","onShelf":true,"basisUnit":"g","amountDoubt":false,"alternatives":[],"catalogId":"\#(catalogId)","confidence":1,"needsReview":false}},
+          {"source":"pantry","name":"Olívaolaj, extra szűz","amount":30,"unit":"g","sourceText":"két evőkanál olaj",
+           "match":{"state":"confirm","onShelf":false,"basisUnit":"g","amountDoubt":true,"alternatives":[{"catalogId":"\#(pantryId)","name":"Napraforgóolaj","brand":"Pelda","basisUnit":"ml"}],"catalogId":"\#(catalogId)","confidence":0.5,"needsReview":true}},
+          {"source":"estimate","name":"Kurkuma","amount":0,"unit":"tk","sourceText":"egy kis kurkuma",
+           "match":{"state":"missing","onShelf":false,"basisUnit":null,"amountDoubt":true,"alternatives":[],"confidence":0,"needsReview":true}}]}}
+        """#
+    }
+
+    @Test func testCooked_sendsMultipartWithTextAndEveryPhoto() async throws {
+        stub.on("cookedRecipe", .json(200, cookedJSON))
+        _ = try await food().cooked(text: "  fél kiló csirkemell  ", photos: [Data("a".utf8), Data("b".utf8), Data("c".utf8)])
+        let sent = try #require(stub.sent.last)
+        #expect(sent.path == "/api/recipe/cooked")
+        let body = (sent.body ?? "").lowercased()
+        #expect(body.components(separatedBy: #"name="text""#).count - 1 == 1)
+        #expect(body.contains("fél kiló csirkemell"))
+        #expect(body.components(separatedBy: #"name="photos""#).count - 1 == 3)
+        // the server refuses a photo part that does not name an image type
+        #expect(body.components(separatedBy: "content-type: image/jpeg").count - 1 == 3)
+        #expect(!body.contains("application/octet-stream"))
+    }
+
+    @Test func testCooked_photosAloneSendNoTextPart() async throws {
+        stub.on("cookedRecipe", .json(200, cookedJSON))
+        _ = try await food().cooked(text: "   ", photos: [Data("a".utf8)])
+        #expect((stub.sent.last?.body ?? "").contains(#"name="text""#) == false)
+        // neither a text nor a photo never leaves the phone
+        await #expect(throws: FoodFetchError.rejected) { _ = try await food().cooked(text: nil, photos: []) }
+        #expect(stub.ops == ["cookedRecipe"])
+    }
+
+    @Test func testCooked_decodesStateAlternativesAndDoubt() async throws {
+        stub.on("cookedRecipe", .json(200, cookedJSON))
+        let d = try #require(try await food().cooked(text: "x", photos: []))
+        #expect(d.lines.map(\.state) == [.matched, .confirm, .missing])
+        #expect(d.lines[0].onShelf && !d.lines[1].onShelf)
+        #expect(d.lines[0].sourceText == "fél kiló csirkemell")
+        #expect(d.lines[1].amountDoubt && d.lines[1].amount == 30 && d.lines[1].unit == "g" && d.lines[1].basisUnit == "g")
+        #expect(d.lines[1].alternatives == [FoodChoice(id: UUID(uuidString: pantryId)!, name: "Napraforgóolaj", brand: "Pelda", basisUnit: "ml")])
+        #expect(d.lines[2].catalogId == nil && d.lines[2].amount == 0 && d.lines[2].basisUnit == nil)
+    }
+
+    @Test func testCooked_nullResultIsNil() async throws {
+        stub.on("cookedRecipe", .json(200, #"{"result":null}"#))
+        #expect(try await food().cooked(text: "asdf", photos: []) == nil)
+    }
+
+    @Test func testCooked_refusalsAndAnUnavailableModelStayApart() async throws {
+        stub.on("cookedRecipe", .status(400))
+        await #expect(throws: FoodFetchError.rejected) { _ = try await food().cooked(text: "x", photos: []) }
+        stub.on("cookedRecipe", .status(503))
+        await #expect(throws: FoodFetchError.unavailable) { _ = try await food().cooked(text: "x", photos: []) }
+        stub.on("cookedRecipe", .status(502))
+        await #expect(throws: FoodFetchError.unavailable) { _ = try await food().cooked(text: "x", photos: []) }
+    }
+
+    @Test func testCreateRecipe_sendsClientRef() async throws {
+        stub.on("createRecipe", .json(201, recipeJSON()))
+        let ref = UUID()
+        _ = try await food().createRecipe(NewRecipe(name: "x", category: "lunch", servings: 1,
+                                                    lines: [NewRecipeLine(catalogId: UUID(uuidString: catalogId)!, amount: 1, unit: "g")], clientRef: ref))
+        let body = (try? JSONSerialization.jsonObject(with: Data((stub.sent.last?.body ?? "").utf8))) as? [String: Any]
+        #expect(body?["clientRef"] as? String == ref.uuidString.lowercased())
     }
 }

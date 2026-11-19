@@ -66,6 +66,12 @@ tags:
       Pantry import — OpenFoodFacts lookup + confirmed-draft import (separate
       tag so the whole feature is bean-gated via
       mezo.feature.pantry-import.enabled)
+  - name: PantryQuickAdd
+    description: >-
+      One-tap „+ Kamrába" (mezo-r36n9.63): a food named on a recipe review
+      reaches the shelf without a form — the shared catalog's own food when one
+      carries that name, an AI estimate otherwise. Separate tag so the operation
+      is bean-gated via mezo.feature.pantry-quick-add.enabled.
   - name: Recipe
     description: >-
       Recipes (Receptek) — owned recipe + recipe_ingredient aggregate; lines
@@ -78,6 +84,15 @@ tags:
       where each ingredient row says what it matched. A page's own
       machine-readable recipe is read first, the AI reads the page only when
       there is none. Nothing the page says is ever followed as an instruction.
+  - name: RecipeCooked
+    description: >-
+      „Ezt főztem" (Boop Étel, mezo-r36n9.63): the owner says, types or
+      photographs what he cooked from, and the answer is a review DRAFT in the
+      recipe-import shape, each ingredient matched against his pantry. Stateless
+      — nothing is saved and the shelf is not touched; the photos are shown to
+      the AI only and never stored. The AI only proposes: an exact name match is
+      `matched`, an AI pick is always `confirm`, and a line nothing fits is
+      `missing`. Nothing said or shown is ever followed as an instruction.
   - name: RecipeImage
     description: >-
       The owner's own photo of a recipe (Boop B4, decision 20): the recipe has
@@ -4688,6 +4703,139 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/pantry/{id}/breakdown':
+    get:
+      tags:
+        - Pantry
+      operationId: getPantryItemBreakdown
+      summary: >-
+        The score breakdown of one food on the caller's shelf, addressed by the
+        shelf item id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: >-
+            Breakdown (breakdown null when the item is not a food, has no energy
+            data, or no dimension could be computed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PantryBreakdownResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found (missing or somebody else's shelf item)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/pantry/catalog/{id}/breakdown':
+    get:
+      tags:
+        - Pantry
+      operationId: getPantryCatalogBreakdown
+      summary: >-
+        The score breakdown of one shared catalog food, addressed by the catalog
+        id (a food not on the shelf yet)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: >-
+            Breakdown (breakdown null when the entry is not a food, has no
+            energy data, or no dimension could be computed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PantryBreakdownResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'Unknown or deleted catalog entry, or somebody else''s unreviewed one'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/pantry/items/quick-add:
+    post:
+      tags:
+        - PantryQuickAdd
+      operationId: quickAddPantryItem
+      summary: >-
+        Put a food on the caller's shelf by name alone — the shared catalog's
+        food when one matches, an AI-estimated food otherwise; idempotent on the
+        name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PantryQuickAddRequest'
+      responses:
+        '200':
+          description: >-
+            The caller's pantry item (created or pre-existing); estimated says
+            whether its facts are an unreviewed AI estimate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PantryItemResponse'
+        '400':
+          description: Validation error (blank or over-long name)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            PANTRY_QUICK_ADD_NAME_TAKEN — the name belongs to something this
+            operation must not bind (a supplement, somebody else's unreviewed
+            food, a deleted entry): add it through the normal form
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: >-
+            PANTRY_QUICK_ADD_ESTIMATE_FAILED — the AI estimate was unreadable or
+            implausible; nothing was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: >-
+            PANTRY_QUICK_ADD_LLM_UNAVAILABLE — no shared food carries the name
+            and the AI is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/pantry-import/lookup:
     get:
       tags:
@@ -5220,6 +5368,70 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '502':
           description: The AI answer could not be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: The AI is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/recipe/cooked:
+    post:
+      tags:
+        - RecipeCooked
+      operationId: cookedRecipe
+      summary: >-
+        Build a recipe review draft from what was cooked — typed/dictated text
+        and/or up to 6 photos, matched to the pantry
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  maxLength: 4000
+                  description: >-
+                    What he cooked from, and how much (typed or dictated). At
+                    least one of text / photos is required.
+                photos:
+                  type: array
+                  maxItems: 6
+                  items:
+                    type: string
+                    format: binary
+                  description: >-
+                    Packaging, a scale display, a handwritten note, the counter.
+                    JPEG, PNG or WebP.
+      responses:
+        '200':
+          description: The draft; result is null when no ingredient could be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeImportResponse'
+        '400':
+          description: >-
+            Neither text nor a photo; over-long text; too many photos; a photo
+            that is not a JPEG/PNG/WebP picture, is empty or over the size cap;
+            or the photos together over the total cap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: The AI could not be reached or failed while reading the capture
           content:
             application/json:
               schema:
@@ -20949,6 +21161,21 @@ components:
           type: string
           nullable: true
           description: 'EAN/UPC of the product, when known'
+        estimated:
+          type: boolean
+          description: >-
+            True while the food's facts are an unreviewed AI estimate (a
+            quick-add nobody has confirmed yet) — the „becsült" tag. Always
+            sent.
+        score:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: >-
+            The food's own score 0..1 (mezo-r36n9.63) — the total of GET
+            /api/pantry/{id}/breakdown. null = no score (no energy data, or
+            nothing any dimension could read): never a fabricated number.
     SupplementStashResponse:
       type: object
       required:
@@ -21081,6 +21308,13 @@ components:
           allOf:
             - $ref: '#/components/schemas/PantrySource'
           nullable: true
+        barcode:
+          type: string
+          nullable: true
+          maxLength: 32
+          description: >-
+            EAN/UPC of the product (a definition field). Absent = leave as it
+            is; 409 when another of the author's foods carries it.
         category:
           type: string
           nullable: true
@@ -21224,6 +21458,45 @@ components:
           type: string
           nullable: true
           description: 'EAN/UPC of the product, when known'
+        estimated:
+          type: boolean
+          description: >-
+            True while the food's facts are an unreviewed AI estimate (a
+            quick-add nobody has confirmed yet). Always sent.
+        per:
+          type: number
+          nullable: true
+          description: Basis amount the facts refer to (100 for a per-100-g food)
+        unit:
+          type: string
+          nullable: true
+          description: >-
+            Basis unit (g, ml, db …) — the unit a recipe row takes once it is
+            bound to this food
+        kcal:
+          type: number
+          nullable: true
+        proteinG:
+          type: number
+          nullable: true
+        carbsG:
+          type: number
+          nullable: true
+        fatG:
+          type: number
+          nullable: true
+    PantryQuickAddRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: >-
+            The food's name as said or written; it is also the idempotency key
+            (normalised)
     PantrySharedFrom:
       type: object
       required:
@@ -21323,6 +21596,28 @@ components:
           type: string
           nullable: true
           description: 'EAN/UPC of the product, when known'
+        estimated:
+          type: boolean
+          description: >-
+            True while the food's facts are an unreviewed AI estimate. Search
+            returns verified entries only, so this is false there today. Always
+            sent.
+        score:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: >-
+            The food's own score 0..1 (mezo-r36n9.63) — the total of GET
+            /api/pantry/catalog/{id}/breakdown. null for a non-food entry and
+            for a food with no score (no energy data, nothing computable).
+    PantryBreakdownResponse:
+      type: object
+      properties:
+        breakdown:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MealBreakdown'
     PantryLookupResponse:
       type: object
       required:
@@ -21674,6 +21969,7 @@ components:
         - decathlon
         - openfoodfacts
         - photo
+        - ai_estimate
     RecipeMacros:
       type: object
       required:
@@ -21846,6 +22142,14 @@ components:
           maxLength: 2048
           pattern: '^https?://.+'
           description: Where the recipe was imported from. Absent = leave as it is.
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            Idempotency key for the CREATE (unique per owner; mezo-dguzv): a
+            retried or double-tapped create with the same ref returns the first
+            recipe unchanged, never a second one. Ignored on update.
         ingredients:
           type: array
           minItems: 1
@@ -22089,7 +22393,52 @@ components:
       required:
         - confidence
         - needsReview
+        - state
+        - onShelf
+        - amountDoubt
+        - alternatives
       properties:
+        state:
+          type: string
+          enum:
+            - matched
+            - confirm
+            - missing
+          description: >-
+            The row's face on the review (mezo-r36n9.63). matched = an exact
+            name match whose amount converted cleanly; confirm = the AI's pick,
+            or an exact match whose amount is doubtful — never saved without the
+            owner's tap; missing = nothing in the pantry fits (catalogId is
+            null).
+        onShelf:
+          type: boolean
+          description: >-
+            True when the matched food is already on the owner's shelf; false =
+            it reaches the shelf when the recipe is saved (always false when
+            nothing matched).
+        basisUnit:
+          type: string
+          nullable: true
+          description: >-
+            The matched food's basis unit (g, ml, db …). Once a row has a food,
+            the line's `unit` IS this unit and `amount` is already converted
+            into it. null when nothing matched (the line keeps the unit as
+            said).
+        amountDoubt:
+          type: boolean
+          description: >-
+            True when the said amount could not be converted cleanly into the
+            food's basis unit (spoons or millilitres against a gram food, a
+            piece, a can, or no amount at all — then `amount` is 0). The amount
+            is a prefill to check, and the row is `confirm`.
+        alternatives:
+          type: array
+          maxItems: 3
+          description: >-
+            Other pantry foods the row could be (the „Másik" list), best first.
+            Empty when there are none.
+          items:
+            $ref: '#/components/schemas/RecipeImportAlternative'
         catalogId:
           type: string
           format: uuid
@@ -22104,10 +22453,34 @@ components:
           maximum: 1
         needsReview:
           type: boolean
+    RecipeImportAlternative:
+      type: object
+      description: >-
+        A pantry food offered instead of the row's match; picking it binds the
+        row to catalogId.
+      required:
+        - catalogId
+        - name
+        - basisUnit
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        brand:
+          type: string
+          nullable: true
+        basisUnit:
+          type: string
+          description: >-
+            The food's basis unit — the unit the row takes when this food is
+            picked
     RecipeImportLine:
       description: >-
         A Receptműhely draft line plus what it matched and the text it was read
-        from.
+        from. `amount` is 0 only when match.amountDoubt is true and nothing was
+        stated — a value to type, never to save.
       allOf:
         - $ref: '#/components/schemas/WorkshopDraftLine'
         - type: object

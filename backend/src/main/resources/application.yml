@@ -17,7 +17,10 @@ spring:
       # effective, message-bearing limit; a container-cap breach still degrades to a clean 400
       # via GlobalExceptionHandler.handleMaxUploadSize (safety net), never a 500.
       max-file-size: 6MB
-      max-request-size: 12MB # 12MB: the photo import (mezo-d8tr) sends up to TWO 5 MB photos in one request.
+      # 32MB: „Ezt főztem" (mezo-r36n9.63) sends up to SIX photos in one request; its own, message-bearing
+      # total cap is mezo.recipe-cooked.max-total-bytes (24 MB) and must stay BELOW this container cap.
+      # Every other upload keeps its own service-side per-photo check (5 MB), so nothing else grew.
+      max-request-size: 32MB
   web:
     resources:
       cache:
@@ -262,6 +265,17 @@ mezo:
     max-prompt-chars: 24000
     # At/below this per-line match confidence a row is flagged for review (boundary-inclusive).
     confidence-threshold: 0.6
+  recipe-cooked:
+    # „Ezt főztem" (mezo-r36n9.63) — what was said / typed / photographed becomes a review draft matched
+    # to the pantry. The per-photo cap and the accepted picture types are recipe-import's (one rule for
+    # every recipe photo); the photos only ever go to the AI and are never stored.
+    max-photos: 6
+    # All photos of one capture together (bytes) — keep below spring.servlet.multipart.max-request-size.
+    max-total-bytes: 24000000
+    # Pantry candidates offered to the AI per ingredient line (the lexical shortlist).
+    shortlist-size: 8
+    # Typed/dictated text accepted (chars); the contract's own ceiling is 4000.
+    max-text-chars: 4000
   pantry-suggestion:
     # Deterministic Kamra swap heuristics (Fuel P6) — binds onto PantrySuggestionProperties
     # Max suggestions surfaced on the Kamra
@@ -272,6 +286,11 @@ mezo:
     # Shared personal feed context; rollback by setting this switch false (ADR 0050/0051).
     contextual-feed:
       enabled: true
+    # Companion-feed sleep/weight reaction cards (CompanionMessageEventListener) — an LLM call after
+    # every sleep or weight log; off ⇒ the listener bean does not exist.
+    # OFF since the web retirement (mezo-r36n9.97.8, spec 2026-11-19 §4.3): its output was shown only on the web; code kept for B8.
+    feed-reactions:
+      enabled: false
     # Hypertrophy Drive — pre-populated prescribed sets + dynamic recommendation on GET /workouts/today.
     hypertrophy-drive:
       enabled: true
@@ -331,6 +350,14 @@ mezo:
     # recipe needs no AI; the AI reads need the companion switch, the URL fetch the pantry-scrape one.
     recipe-import:
       enabled: true
+    # „Ezt főztem" (mezo-r36n9.63) — a recipe draft from a spoken/typed/photographed capture, matched to
+    # the pantry. Off: the operation is not served. The capture read needs the companion switch too.
+    recipe-cooked:
+      enabled: true
+    # One-tap pantry quick-add (mezo-r36n9.63) — a food by name alone: the shared catalog's food when
+    # one matches, an AI estimate otherwise (that step needs the companion switch too). Off: 404.
+    pantry-quick-add:
+      enabled: true
     # Meal coach verdicts (mezo-mr4n) — LLM prose (tagline/summary/improve) over the deterministic
     # meal score; needs the companion switch too (the MealCoachLlm adapter bean). Off: the coach
     # endpoints answer 200 with an empty verdict list, the score itself is unaffected.
@@ -359,14 +386,16 @@ mezo:
       enabled: true
     # Esti kiadás (mezo-a9bo7 H1, csapatfal) — a napi csapat-üzenőfal összefoglaló; needs the
     # character + companion switches too (the collector reads companion/proactive sources).
+    # OFF since the web retirement (mezo-r36n9.97.8, spec 2026-11-19 §4.3): its output was shown only on the web; code kept for B8.
     team-edition:
-      enabled: true
+      enabled: false
     # Csapatfal Act III (mezo-a9bo7.21..25) — the all-day team chat: a raised coaching rule opens
     # an ügy owned by one character, its clear resolves it. Switched on together with
     # mezo.proactive.advice-card.enabled=false below (mezo-a9bo7.25) — the chat is now the
     # teendő's only home; needs the character, companion, proactive and intervention switches too.
+    # OFF since the web retirement (mezo-r36n9.97.8, spec 2026-11-19 §4.3): its output was shown only on the web; code kept for B8.
     team-chat:
-      enabled: true
+      enabled: false
     # Habit engine (bd mezo-d1jb) — fixed morning/evening routine chains; off ⇒ the /api/habit
     # surface 404s and no habit beans exist (reads still close lazily on GET).
     habit:
@@ -532,17 +561,20 @@ mezo:
         enabled: true
       # Companion-feed morning/midday/evening crons (schedules: mezo.proactive.feed.*-cron);
       # off = the CompanionMessageJob bean does not exist (the lazy GET still serves)
+      # OFF since the web retirement (mezo-r36n9.97.8, spec 2026-11-19 §4.3): its output was shown only on the web; code kept for B8.
       feed-job:
-        enabled: true
+        enabled: false
       # S3 (mezo-d58h.3) daily setup-check pass (schedule: mezo.proactive.setup-checks.cron);
       # off = the SetupCheckJob bean does not exist (SetupCheckService itself is unaffected —
       # a direct call still works, same as FlagSweepJob vs FlagService)
+      # OFF since the web retirement (mezo-r36n9.97.8, spec 2026-11-19 §4.3): its output was shown only on the web; code kept for B8.
       setup-check-job:
-        enabled: true
+        enabled: false
       # W1 Monday weekly-suggestion pre-generation (schedule: mezo.proactive.weekly.cron);
       # off = the WeeklySuggestionJob bean does not exist
+      # OFF since the web retirement (mezo-r36n9.97.8, spec 2026-11-19 §4.3): its output was shown only on the web; code kept for B8.
       weekly-suggestion-job:
-        enabled: true
+        enabled: false
       # Monday weekly-review generation (mezo-p2tr, schedule: mezo.proactive.weekly-review.cron)
       # for the JUST-FINISHED week; off = the WeeklyReviewJob bean does not exist
       weekly-review-job:
@@ -566,8 +598,9 @@ mezo:
       # Workout challenges midnight pre-generation + daily outcome backstop (schedules:
       # mezo.proactive.challenge.generate-cron / outcome-cron); off = the ChallengeJob bean does not
       # exist (the lazy GET still generates on workout open)
+      # OFF since the web retirement (mezo-r36n9.97.8, spec 2026-11-19 §4.3): its output was shown only on the web; code kept for B8.
       challenge-job:
-        enabled: true
+        enabled: false
       # Nightly habit close: evaluates end-of-day metrics (caffeine cutoff, kitchen close) and
       # quietly marks the rest missed; off = the HabitJob bean does not exist (reads still close lazily)
       habit-job:

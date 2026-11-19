@@ -24,7 +24,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(
-        name = {FeaturesConfiguration.COMPANION_SWITCH, FeaturesConfiguration.PROACTIVE_SWITCH},
+        name = {FeaturesConfiguration.COMPANION_SWITCH, FeaturesConfiguration.PROACTIVE_SWITCH,
+                FeaturesConfiguration.FEED_REACTIONS_SWITCH},
         havingValue = "true")
 public class CompanionMessageEventListener {
 

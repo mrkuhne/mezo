@@ -66,6 +66,11 @@ public interface PantryMapper {
         c.setNova(r.getNova() == null ? null : r.getNova().shortValue());
         c.setForm(r.getForm());
         c.setCaffeine(r.getCaffeine());
+        c.setBarcode(blankToNull(r.getBarcode()));
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.strip();
     }
 
     /**
@@ -96,6 +101,7 @@ public interface PantryMapper {
         if (r.getNova() != null) c.setNova(r.getNova().shortValue());
         setIfPresent(r.getForm(), c::setForm);
         setIfPresent(r.getCaffeine(), c::setCaffeine);
+        setIfPresent(blankToNull(r.getBarcode()), c::setBarcode);
     }
 
     /**
@@ -126,7 +132,8 @@ public interface PantryMapper {
                     .equals(c.getMicros() == null ? List.of() : c.getMicros()))
             || (r.getNova() != null && !Short.valueOf(r.getNova().shortValue()).equals(c.getNova()))
             || (r.getForm() != null && !r.getForm().equals(c.getForm()))
-            || (r.getCaffeine() != null && !r.getCaffeine().equals(c.getCaffeine()));
+            || (r.getCaffeine() != null && !r.getCaffeine().equals(c.getCaffeine()))
+            || (blankToNull(r.getBarcode()) != null && !blankToNull(r.getBarcode()).equals(c.getBarcode()));
     }
 
     private static boolean numDiffers(BigDecimal requested, BigDecimal stored) {
@@ -208,7 +215,17 @@ public interface PantryMapper {
             .catalogEditable(catalogEditable)
             .allergens(allergensToWire(c.getAllergens()))
             .barcode(c.getBarcode())
+            .estimated(estimated(c))
             .build();
+    }
+
+    /**
+     * The „becsült" tag (mezo-r36n9.63): the facts are an AI estimate nobody has confirmed. Both halves
+     * matter — the source says where the numbers came from, the draft status that no human has stood
+     * behind them yet; the owner typing or scanning real facts clears both (PantryService#updateItem).
+     */
+    static boolean estimated(PantryCatalogEntity c) {
+        return "ai_estimate".equals(c.getSource()) && PantryCatalogEntity.STATUS_DRAFT.equals(c.getStatus());
     }
 
     default PantryStock toStock(PantryItemEntity e) {
@@ -276,6 +293,11 @@ public interface PantryMapper {
             .category(c.getCategory())
             .allergens(allergensToWire(c.getAllergens()))
             .barcode(c.getBarcode())
+            .estimated(estimated(c))
+            // Basis + headline facts (mezo-r36n9.63): honest nulls, exactly as the definition carries them.
+            .per(c.getServingAmount())
+            .unit(c.getServingUnit())
+            .kcal(c.getKcal()).proteinG(c.getProteinG()).carbsG(c.getCarbsG()).fatG(c.getFatG())
             .build();
     }
 
@@ -298,6 +320,7 @@ public interface PantryMapper {
             .authorName(authorName)
             .allergens(allergensToWire(c.getAllergens()))
             .barcode(c.getBarcode())
+            .estimated(estimated(c))
             .build();
     }
 

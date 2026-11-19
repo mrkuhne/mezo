@@ -430,8 +430,12 @@ public struct NewRecipe: Equatable, Sendable {
     public var steps: [String]
     public var sourceUrl: String?
     public var lines: [NewRecipeLine]
-    public init(name: String, category: String, servings: Int, steps: [String] = [], sourceUrl: String? = nil, lines: [NewRecipeLine]) {
+    /// The save's idempotency key: a repeated create with the same key returns the first recipe (a double tap, a lost answer).
+    public var clientRef: UUID
+    public init(name: String, category: String, servings: Int, steps: [String] = [], sourceUrl: String? = nil, lines: [NewRecipeLine],
+                clientRef: UUID = UUID()) {
         self.name = name; self.category = category; self.servings = servings; self.steps = steps; self.sourceUrl = sourceUrl; self.lines = lines
+        self.clientRef = clientRef
     }
 }
 
@@ -478,22 +482,56 @@ public enum RecipeImportSource: Sendable, Equatable {
     case photo(Data)
 }
 
+/// The face a review row wears (mezo-r36n9.63): `matched` = an exact name match whose amount converted cleanly;
+/// `confirm` = the AI's pick, or a match whose amount is doubtful — never saved without the owner's tap; `missing` =
+/// nothing in the pantry fits.
+public enum MatchState: String, Sendable { case matched, confirm, missing }
+
+/// One pantry food a review row could be bound to (the „Másik" list, a search hit).
+public struct FoodChoice: Equatable, Sendable, Identifiable {
+    /// The catalog id.
+    public var id: UUID
+    public var name: String
+    public var brand: String?
+    public var basisUnit: String
+    public init(id: UUID, name: String, brand: String? = nil, basisUnit: String) {
+        self.id = id; self.name = name; self.brand = brand; self.basisUnit = basisUnit
+    }
+}
+
 public struct ImportedLine: Equatable, Sendable {
     public var name: String
+    /// Once the row has a food this is already converted into the food's basis unit. 0 = nothing was stated: a value
+    /// to type, never to save.
     public var amount: Double
     public var unit: String
     /// The catalog food the line matched; nil = matched nothing. It reaches the shelf only when the recipe is saved with it.
     public var catalogId: UUID?
     public var confidence: Double
     public var needsReview: Bool
+    /// What he said, or what the page / photo wrote.
     public var sourceText: String?
     /// The matched food's allergen states (lowercase keys). nil = the row matched nothing, so there is no data at all;
     /// a key absent from the map says nothing either — neither is ever "free of".
     public var allergens: [String: AllergenState]?
+    public var state: MatchState
+    /// The matched food is already on his shelf; false = it gets there when the recipe is saved.
+    public var onShelf: Bool
+    /// The matched food's basis unit; nil when nothing matched (the line keeps the unit as said).
+    public var basisUnit: String?
+    /// The said amount did not convert cleanly into the food's unit (spoons against grams, a piece, no amount).
+    public var amountDoubt: Bool
+    /// Other foods the row could be, best first (at most three).
+    public var alternatives: [FoodChoice]
+
+    /// `state` nil = derived the way the server derives it from the confidence (an older fixture, a workshop row).
     public init(name: String, amount: Double, unit: String, catalogId: UUID? = nil, confidence: Double, needsReview: Bool, sourceText: String? = nil,
-                allergens: [String: AllergenState]? = nil) {
+                allergens: [String: AllergenState]? = nil, state: MatchState? = nil, onShelf: Bool = false, basisUnit: String? = nil,
+                amountDoubt: Bool = false, alternatives: [FoodChoice] = []) {
         self.name = name; self.amount = amount; self.unit = unit; self.catalogId = catalogId; self.confidence = confidence
         self.needsReview = needsReview; self.sourceText = sourceText; self.allergens = allergens
+        self.state = state ?? (catalogId == nil ? .missing : (needsReview || amountDoubt || confidence <= 0.6 ? .confirm : .matched))
+        self.onShelf = onShelf; self.basisUnit = basisUnit; self.amountDoubt = amountDoubt; self.alternatives = alternatives
     }
 }
 
@@ -536,6 +574,10 @@ public struct PantryRow: Equatable, Sendable {
     public var barcode: String?
     /// The owner who first added the shared definition, when it is not the signed-in owner.
     public var sharedFrom: String?
+    /// The food's own score, 0…1 (the meal engine's food-only dimensions); nil when it has too few facts to score.
+    public var score: Double?
+    /// The facts are an unreviewed AI estimate (a quick-add nobody has confirmed yet): shown with the „becsült" tag.
+    public var estimated: Bool
 
     /// One stable key for lists: the shelf row, else the catalog row.
     public var rowKey: String { id?.uuidString ?? catalogId?.uuidString ?? name }
@@ -544,12 +586,29 @@ public struct PantryRow: Equatable, Sendable {
                 unit: String? = nil, kcal: Double? = nil, proteinG: Double? = nil, carbsG: Double? = nil, fatG: Double? = nil,
                 fiberG: Double? = nil, sugarG: Double? = nil, saltG: Double? = nil, saturatedFatG: Double? = nil, nova: Int? = nil,
                 allergens: [String: AllergenState] = [:], onShelf: Bool = true, source: String? = nil, category: String? = nil,
-                barcode: String? = nil, sharedFrom: String? = nil) {
+                barcode: String? = nil, sharedFrom: String? = nil, score: Double? = nil, estimated: Bool = false) {
+        self.score = score; self.estimated = estimated
         self.id = id; self.catalogId = catalogId; self.name = name; self.brand = brand; self.kind = kind; self.per = per
         self.unit = unit; self.kcal = kcal; self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG
         self.fiberG = fiberG; self.sugarG = sugarG; self.saltG = saltG; self.saturatedFatG = saturatedFatG; self.nova = nova
         self.allergens = allergens; self.onShelf = onShelf; self.source = source; self.category = category
         self.barcode = barcode; self.sharedFrom = sharedFrom
+    }
+}
+
+/// The four facts the owner can type onto a food from the review, on the food's own basis (per 100 g / ml).
+public struct FoodFacts: Equatable, Sendable {
+    public var kcal: Double, proteinG: Double, carbsG: Double, fatG: Double
+    public init(kcal: Double, proteinG: Double, carbsG: Double, fatG: Double) {
+        self.kcal = kcal; self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG
+    }
+}
+
+extension FoodChoice {
+    /// A shelf or catalog row as a choice; nil when it has no catalog id to bind.
+    public init?(row: PantryRow) {
+        guard let id = row.catalogId else { return nil }
+        self.init(id: id, name: row.name, brand: row.brand, basisUnit: row.unit ?? "g")
     }
 }
 
@@ -647,6 +706,13 @@ public struct NewPantryFood: Equatable, Sendable {
         ("other", "Egyéb"),
     ]
     public static func categoryLabel(_ key: String?) -> String? { categories.first { $0.key == key }?.label }
+
+    /// A food already on the shelf as the form's starting point („Pontosítom" by hand): its own name and facts.
+    public init(replacing row: PantryRow) {
+        self.init(name: row.name, brand: row.brand, barcode: row.barcode, category: row.category, per: row.per ?? 100, unit: row.unit ?? "g",
+                  kcal: row.kcal, proteinG: row.proteinG, carbsG: row.carbsG, fatG: row.fatG, fiberG: row.fiberG, sugarG: row.sugarG,
+                  saltG: row.saltG, saturatedFatG: row.saturatedFatG, nova: row.nova, allergens: row.allergens, origin: .manual)
+    }
 }
 
 /// One supplement on the owner's stash: the name the protocol rows carry no text for.
@@ -738,5 +804,7 @@ public enum FoodFetchError: Error, Equatable, Sendable {
     case notFound
     /// The server refused the request as invalid.
     case rejected
+    /// The thing already belongs to something else (a quick-add name, a barcode, a food name): 409.
+    case conflict
     case server
 }

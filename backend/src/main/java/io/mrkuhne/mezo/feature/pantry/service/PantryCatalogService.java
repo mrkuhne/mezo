@@ -54,6 +54,7 @@ public class PantryCatalogService {
     private final AppUserRepository appUserRepository;
     private final PantryMapper mapper;
     private final PlatformTransactionManager transactionManager;
+    private final PantryFoodScoreService foodScoreService;
 
     /** Global search: master + every user's live definitions, name OR brand, case-insensitive, max 50. */
     @Transactional(readOnly = true)
@@ -65,9 +66,16 @@ public class PantryCatalogService {
             ? catalogRepository.searchAll(like, Limit.of(SEARCH_LIMIT))
             : catalogRepository.searchByKind(like, kind, Limit.of(SEARCH_LIMIT));
         Map<UUID, String> names = authorNames(hits);
-        return hits.stream()
-            .map(c -> mapper.toCatalogEntry(c, c.isMaster() ? null : names.get(c.getCreatedBy())))
-            .toList();
+        // Each food hit's own score (mezo-r36n9.63); a non-food entry has none.
+        List<java.math.BigDecimal> scores = foodScoreService.scores(hits);
+        List<PantryCatalogEntry> out = new java.util.ArrayList<>(hits.size());
+        for (int i = 0; i < hits.size(); i++) {
+            PantryCatalogEntity c = hits.get(i);
+            PantryCatalogEntry entry = mapper.toCatalogEntry(c, c.isMaster() ? null : names.get(c.getCreatedBy()));
+            entry.setScore(scores.get(i));
+            out.add(entry);
+        }
+        return out;
     }
 
     /**

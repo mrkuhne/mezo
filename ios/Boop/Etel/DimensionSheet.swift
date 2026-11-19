@@ -17,7 +17,7 @@ struct DimensionSheet: View {
             VStack(alignment: .leading, spacing: 0) {
                 ZStack(alignment: .bottomLeading) {
                     Color.clear.frame(height: 170)
-                        .overlay { NKPhotoSky(hue: .fuel, photo: NKPhoto.konyha) }
+                        .overlay { NKPhotoSky(hue: .fuel, photo: nil) }
                         .clipped()
                         .mask(LinearGradient(stops: [.init(color: .black, location: 0.34), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
                     VStack(alignment: .leading, spacing: 6) {

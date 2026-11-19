@@ -124,6 +124,67 @@ class RecipeApiIT extends ApiIntegrationTest {
         assertThat(list.getRecipes()).extracting(RecipeResponse::getName).contains("Túrós tál");
     }
 
+    /** A double tap on save / a retried request (mezo-dguzv): the same clientRef stores ONE recipe. */
+    @Test
+    void testCreateRecipe_shouldReturnSameRecipeOnRepeatedClientRef() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Csirkemell", "110", "23", "0", "1.5");
+        RecipeRequest req = recipeReq(food);
+        req.setClientRef(UUID.randomUUID());
+        req.setSteps(List.of("Keverd össze."));
+
+        RecipeResponse first = postForBody("/api/recipe", req, auth, HttpStatus.CREATED, RecipeResponse.class);
+        req.setName("Másodszorra más néven"); // the repeat never rewrites the first
+        RecipeResponse second = postForBody("/api/recipe", req, auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        assertThat(second.getId()).isEqualTo(first.getId());
+        assertThat(second.getName()).isEqualTo("Túrós tál");
+        assertThat(first.getIngredients()).hasSize(1);
+        assertThat(second.getIngredients()).hasSize(1);
+        assertThat(first.getMacros().getKcal()).isEqualByComparingTo("220");
+        assertThat(second.getMacros().getKcal()).isEqualByComparingTo("220");
+        assertThat(first.getServings()).isEqualTo(2);
+        assertThat(first.getTags()).containsExactly("magas-fehérje");
+        assertThat(first.getSteps()).containsExactly("Keverd össze.");
+        assertThat(first.getMezoFit().getScore()).isNotNull();
+        RecipeListResponse list = getForBody("/api/recipe", auth, HttpStatus.OK, RecipeListResponse.class);
+        assertThat(list.getRecipes()).hasSize(1);
+    }
+
+    @Test
+    void testCreateRecipe_shouldCreateTwiceWithoutClientRef() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Csirkemell", "110", "23", "0", "1.5");
+
+        RecipeResponse first = postForBody("/api/recipe", recipeReq(food), auth, HttpStatus.CREATED, RecipeResponse.class);
+        RecipeResponse second = postForBody("/api/recipe", recipeReq(food), auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        assertThat(second.getId()).isNotEqualTo(first.getId());
+        assertThat(getForBody("/api/recipe", auth, HttpStatus.OK, RecipeListResponse.class).getRecipes()).hasSize(2);
+    }
+
+    /** The key is per owner: somebody else's identical ref is a different recipe; and a failed create leaves no husk. */
+    @Test
+    void testCreateRecipe_shouldScopeClientRefToTheOwnerAndLeaveNothingOnAFailedCreate() {
+        HttpHeaders anna = registerUser("Anna").headers();
+        HttpHeaders bela = registerUser("Béla").headers();
+        UUID ref = UUID.randomUUID();
+        RecipeRequest hers = recipeReq(createFood(anna, "Csirkemell", "110", "23", "0", "1.5"));
+        hers.setClientRef(ref);
+        RecipeRequest his = recipeReq(createFood(bela, "Csirkemell", "110", "23", "0", "1.5"));
+        his.setClientRef(ref);
+
+        RecipeResponse a = postForBody("/api/recipe", hers, anna, HttpStatus.CREATED, RecipeResponse.class);
+        RecipeResponse b = postForBody("/api/recipe", his, bela, HttpStatus.CREATED, RecipeResponse.class);
+
+        assertThat(b.getId()).isNotEqualTo(a.getId());
+
+        RecipeRequest bad = recipeReq(UUID.randomUUID()); // an ingredient that is nobody's
+        bad.setClientRef(UUID.randomUUID());
+        postForBody("/api/recipe", bad, anna, HttpStatus.BAD_REQUEST, String.class);
+        assertThat(getForBody("/api/recipe", anna, HttpStatus.OK, RecipeListResponse.class).getRecipes()).hasSize(1);
+    }
+
     @Test
     void testListRecipes_shouldCarryNutrients_whenALineCarriesFrozenFacts() {
         HttpHeaders auth = ownerAuthHeaders();

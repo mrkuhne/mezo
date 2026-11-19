@@ -36,7 +36,10 @@ import org.springframework.test.context.TestPropertySource;
  * konzílium, in its own cycle) instead of a tautology.
  */
 @ActiveProfiles("companion-fake")
-@TestPropertySource(properties = "mezo.character.council-budget.cycle-calls=3")
+@TestPropertySource(properties = {
+    "mezo.character.council-budget.cycle-calls=3",
+    // Off in production since the web retirement (mezo-r36n9.97.8); this class still covers the kept code.
+    "mezo.feature.team-edition.enabled=true"})
 class EditionVoiceWriterIT extends AbstractIntegrationTest {
 
     @Autowired private EditionVoiceWriter writer;

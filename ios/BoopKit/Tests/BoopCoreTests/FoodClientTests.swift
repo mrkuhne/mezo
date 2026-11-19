@@ -318,7 +318,7 @@ struct FoodClientTests {
 
     @Test func recipeImportReturnsNilWhenNothingReadable() async throws {
         stub.on("importRecipeFromUrl", .json(200, #"{"result":null}"#))
-        stub.on("importRecipeFromText", .json(200, #"{"result":{"name":"Gulyás","category":"lunch","servings":4,"steps":["Főzd meg."],"needsReview":true,"lines":[{"source":"estimate","name":"marhahús","amount":500,"unit":"g","match":{"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.9,"needsReview":false},"sourceText":"50 dkg marhahús"}]}}"#))
+        stub.on("importRecipeFromText", .json(200, #"{"result":{"name":"Gulyás","category":"lunch","servings":4,"steps":["Főzd meg."],"needsReview":true,"lines":[{"source":"estimate","name":"marhahús","amount":500,"unit":"g","match":{"state":"matched","onShelf":false,"amountDoubt":false,"alternatives":[],"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.9,"needsReview":false},"sourceText":"50 dkg marhahús"}]}}"#))
         let f = try food()
         #expect(try await f.importRecipe(.url("https://pelda.hu/r")) == nil)
         let d = try #require(try await f.importRecipe(.text("Gulyás: 50 dkg marhahús")))

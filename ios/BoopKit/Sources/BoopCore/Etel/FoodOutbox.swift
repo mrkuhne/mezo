@@ -49,7 +49,7 @@ public struct MealDraftSender: OutboxSender {
             switch e {
             case .offline: return .offline
             case .unauthorized, .unavailable, .server: return .retryLater
-            case .rejected, .notFound: return .failed("A szerver nem fogadta el a rögzítést.")
+            case .rejected, .notFound, .conflict: return .failed("A szerver nem fogadta el a rögzítést.")
             }
         } catch {
             // The draft could not be written down: not the item's fault, try again.

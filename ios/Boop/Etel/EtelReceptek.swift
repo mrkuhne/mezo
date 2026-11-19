@@ -67,47 +67,138 @@ func recipeAllergenLine(_ r: Recipe, profile: SensitivityProfile?) -> String? {
 }
 
 
+// MARK: - What the library is, in numbers
+
+/// The slots the library actually holds, in the day's order, with their counts.
+func recipeSlots(_ recipes: [Recipe]) -> [(key: String, label: String, count: Int)] {
+    let order = ["breakfast", "lunch", "dinner", "snack"]
+    var counts: [String: Int] = [:]
+    for r in recipes { counts[r.category, default: 0] += 1 }
+    return counts.sorted { a, b in (order.firstIndex(of: a.key) ?? 99, a.key) < (order.firstIndex(of: b.key) ?? 99, b.key) }
+        .map { ($0.key, etelSlotLabel($0.key), $0.value) }
+}
+
+/// The mean score of the scored recipes, 0…100; nil when none has one.
+func recipeMeanPoints(_ recipes: [Recipe]) -> Int? {
+    let points = recipes.compactMap { etelPoints($0.fit) }
+    guard !points.isEmpty else { return nil }
+    return Int((Double(points.reduce(0, +)) / Double(points.count)).rounded())
+}
+
+/// The three numbers over the library: how many, how good on average, how many carry a flag for him.
+func recipeStats(_ recipes: [Recipe], profile: SensitivityProfile?) -> [NKStat] {
+    let flagged = recipes.filter { !recipeBadges($0, profile: profile).isEmpty }.count
+    return [NKStat(value: "\(recipes.count)", label: "recept"),
+            NKStat(value: recipeMeanPoints(recipes).map { "\($0)" }, unit: "pont", label: "átlagos pontszám", hot: true),
+            NKStat(value: "\(flagged)", label: "jelzéssel neked")]
+}
+
+/// The total time of a recipe in words; nil when neither part is known.
+func recipeTimeText(_ r: Recipe) -> String? {
+    guard r.prepMins != nil || r.cookMins != nil else { return nil }
+    return "\((r.prepMins ?? 0) + (r.cookMins ?? 0)) perc"
+}
+
+/// What a recipe is good for, in his words (the server's `fitsFor` keys).
+func recipeFitLabel(_ key: String) -> String {
+    switch key {
+    case "breakfast": "reggelire jó"
+    case "lunch": "ebédre jó"
+    case "dinner": "vacsorára jó"
+    case "snack": "nasinak jó"
+    case "pre_workout": "edzés előtt jó"
+    case "post_workout": "edzés után jó"
+    default: key.replacingOccurrences(of: "_", with: " ")
+    }
+}
+
+// MARK: - The ways to a new recipe
+
+/// One tile of „ÚJ RECEPT".
+struct RecipeEntrance: Identifiable, Equatable {
+    enum Route: Equatable { case cooked, link, photo, workshop }
+    let route: Route
+    let glyph: String
+    let title: String
+    let sub: String
+    var lit = false
+    var id: String { title }
+}
+
+/// „Ezt főztem" first and lit (mezo-r36n9.63), then the link (with its text mode), the photo and the workshop.
+let recipeEntrances: [RecipeEntrance] = [
+    RecipeEntrance(route: .cooked, glyph: "bowl-cream", title: "Ezt főztem", sub: "elmondom, miből és mennyit", lit: true),
+    RecipeEntrance(route: .link, glyph: "link-deep", title: "Linkből", sub: "receptoldalról vagy szövegből"),
+    RecipeEntrance(route: .photo, glyph: "camera-ink", title: "Fotóból", sub: "könyvből vagy képernyőről"),
+    RecipeEntrance(route: .workshop, glyph: "chat-ink", title: "Receptműhely", sub: "Boop kitalál egyet neked"),
+]
+
 // MARK: - The tab
 
-/// The `Receptek` tab of the Étel room: three ways to a new recipe, then the library — one recipe per row (owner,
-/// 2026-11-13), a thumbnail, the full name with its sensitivity badge beside it, and the numbers in full underneath.
+/// The `Receptek` tab of the Étel room on the warm blocks: the ways to a new recipe as tiles, the library in three
+/// numbers, then the library itself — one recipe per row, its facts as pills and its own score as a ring.
 struct EtelReceptek: View {
     let store: EtelStore
     let onImport: (RecipeImportModel.Mode) -> Void
     let onWorkshop: () -> Void
+    /// „Ezt főztem" (mezo-r36n9.63): the first way to a new recipe.
+    let onCooked: () -> Void
     let onOpen: (Recipe) -> Void
     let onRetry: () -> Void
     @State private var query = ""
+    @State private var slot: String?
+    private let hue = Hue.fuel
 
     var body: some View {
-        NKDrillSection(number: 1, label: "ÚJ RECEPT") {
-            VStack(spacing: 10) {
-                importRow("link-deep", "Beillesztek egy linket", "a receptoldalról vagy a szövegből kiolvasom", primary: true) { onImport(.link) }
-                importRow("camera-ink", "Lefotózom a receptet", "könyvből vagy képernyőről") { onImport(.photo) }
-                importRow("chat-ink", "Receptműhely", "Boop kitalál egyet a szabályaid szerint", action: onWorkshop)
-            }
+        NKBare("ÚJ RECEPT", hue: hue) { entrances }
+        if store.recipesLoaded, store.recipesProblem == nil, !store.recipes.isEmpty {
+            NKBare("A KÖNYVTÁRAD SZÁMOKBAN", hue: hue) { NKStatRow(recipeStats(store.recipes, profile: store.profile), hue: hue) }
         }
-        NKDrillSection(number: 2, label: "A KÖNYVTÁRAD" + (store.recipesLoaded && store.recipesProblem == nil ? " · \(store.recipes.count) RECEPT" : "")) { library }
+        NKBare("A KÖNYVTÁRAD", hue: hue, state: libraryState) { library }
+    }
+
+    private var libraryState: NKBlockState {
+        if !store.recipesLoaded { return .loading }
+        if let problem = store.recipesProblem, store.recipes.isEmpty {
+            return .failed("Most nem érem el a receptjeidet. \(etelProblemLine(problem))", { onRetry() })
+        }
+        return .ready
     }
 
     // MARK: new recipe
 
-    private func importRow(_ glyph: String, _ title: String, _ sub: String, primary: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle().fill(primary ? .white.opacity(0.9) : .white.opacity(0.08))
-                    NKGlyph(glyph, primary ? NK.ground : .white, size: 17)
+    private var entrances: some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+            ForEach(recipeEntrances) { e in
+                entrance(e.glyph, e.title, e.sub, lit: e.lit) {
+                    switch e.route {
+                    case .cooked: onCooked()
+                    case .link: onImport(.link)
+                    case .photo: onImport(.photo)
+                    case .workshop: onWorkshop()
+                    }
                 }
-                .frame(width: 40, height: 40)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).nkFont(15.5, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                    Text(sub).nkFont(13).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 4)
-                Image(systemName: "chevron.right").nkFont(13, .semibold).foregroundStyle(.white.opacity(0.4))
             }
-            .frame(minHeight: 44).contentShape(Rectangle())
+        }
+    }
+
+    private func entrance(_ glyph: String, _ title: String, _ sub: String, lit: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 10) {
+                EtelMedallion(glyph: glyph, size: 36, lit: lit)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).nkFont(15, .semibold).foregroundStyle(.white).lineLimit(1).fixedSize().layoutPriority(1)
+                    Text(sub).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(2).multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(14).frame(maxWidth: .infinity, alignment: .topLeading).frame(height: 116, alignment: .topLeading)
+            .background {
+                let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
+                shape.fill(lit ? hue.glow.opacity(0.12) : .white.opacity(0.06))
+                    .overlay(shape.stroke(lit ? hue.glow.opacity(0.45) : .white.opacity(0.12)))
+            }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -116,80 +207,55 @@ struct EtelReceptek: View {
     // MARK: library
 
     @ViewBuilder private var library: some View {
-        if !store.recipesLoaded {
-            VStack(alignment: .leading, spacing: 14) {
-                ForEach(0..<3, id: \.self) { _ in
-                    HStack(spacing: 12) {
-                        RoundedRectangle(cornerRadius: 13).fill(.white.opacity(0.08)).frame(width: 44, height: 44)
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Recept neve itt").nkFont(15, .medium)
-                            Text("480 kcal · 46 g fehérje · 2 adag").nkFont(11.5, design: .monospaced)
-                        }
-                    }
-                }
-            }
-            .foregroundStyle(.white.opacity(0.4)).redacted(reason: .placeholder).accessibilityLabel("Betöltöm a receptjeidet")
-        } else if let problem = store.recipesProblem, store.recipes.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Most nem érem el a receptjeidet.").nkFont(14).foregroundStyle(.white.opacity(0.7))
-                Text(etelProblemLine(problem)).nkFont(13).foregroundStyle(.white.opacity(0.5))
-                Button(action: onRetry) {
-                    Text("Újra").nkFont(14, .semibold).foregroundStyle(NK.ground).padding(.horizontal, 18).frame(minHeight: 38)
-                        .background(Capsule().fill(.white.opacity(0.95)))
-                }
-                .buttonStyle(.plain)
-            }
-        } else if store.recipes.isEmpty {
-            Text("Még nincs mentett recepted. Hozz be egyet fent: egy linkkel, egy fotóval, vagy kérd Boop-tól.")
+        if store.recipes.isEmpty {
+            Text("Még nincs mentett recepted. Hozz be egyet fent: egy linkkel, egy fotóval, vagy kérd Booptól.")
                 .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
         } else {
-            let shown = filterRecipes(store.recipes, query: query)
-            VStack(spacing: 0) {
-                searchField.padding(.bottom, 6)
+            let slots = recipeSlots(store.recipes)
+            let shown = filterRecipes(store.recipes, query: query).filter { slot == nil || $0.category == slot }
+            VStack(alignment: .leading, spacing: 0) {
+                EtelSearchField(query: $query, prompt: "Keresés a receptek között").padding(.bottom, 10)
+                if slots.count > 1 {
+                    EtelFilterChips(chips: [(nil, "Mind · \(store.recipes.count)")] + slots.map { (Optional($0.key), "\($0.label) · \($0.count)") },
+                                    selected: $slot)
+                        .padding(.bottom, 6)
+                }
                 if shown.isEmpty {
-                    Text("Ilyen nevű receptet nem találok.").nkFont(14).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 12)
+                    Text("Ilyen receptet nem találok.").nkFont(14).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 12)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 ForEach(Array(shown.enumerated()), id: \.element.id) { k, r in
+                    if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 70) }
                     recipeRow(r)
-                    if k < shown.count - 1 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                 }
             }
         }
     }
 
-    private var searchField: some View {
-        HStack(spacing: 10) {
-            NKGlyph("search-ink", .white.opacity(0.6), size: 16)
-            TextField("", text: $query, prompt: Text("Keresés a receptek között").foregroundStyle(.white.opacity(0.45)))
-                .nkFont(15).foregroundStyle(.white).submitLabel(.search).accessibilityLabel("Keresés a receptek között")
-        }
-        .padding(.horizontal, 16).frame(minHeight: 46)
-        .background(Capsule().fill(.white.opacity(0.08)))
-        .overlay(Capsule().stroke(.white.opacity(0.12)))
-    }
-
-    /// One recipe = one row: nothing on it is cut — the name wraps to a second line, the numbers wrap rather than shorten.
+    /// One recipe = one row: the name on its own line (it wraps, never cut), its facts as pills under it, the flags
+    /// that matter to him on a line of their own, and the recipe's own score as a ring.
     private func recipeRow(_ r: Recipe) -> some View {
         let badges = recipeBadges(r, profile: store.profile)
+        let s = r.perServing
         return Button { onOpen(r) } label: {
-            HStack(spacing: 12) {
-                NKThumb(image: store.recipeImages[r.id].map { Image(uiImage: $0) }, glyph: "bowl-sage", size: 44)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(r.name).nkFont(15, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                        if let first = badges.first { RecipeBadgeView(badge: first) }
-                        Spacer(minLength: 0)
-                    }
-                    // every other flag (a recipe can carry an allergen and a processed-food flag at once)
-                    if badges.count > 1 { FlowRow { ForEach(Array(badges.dropFirst())) { RecipeBadgeView(badge: $0) } } }
-                    Text(recipeRowFacts(r)).nkFont(11.5, design: .monospaced).foregroundStyle(.white.opacity(0.6))
+            HStack(alignment: .top, spacing: 12) {
+                NKThumb(image: store.recipeImages[r.id].map { Image(uiImage: $0) }, glyph: "bowl-sage", size: 58)
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(r.name).nkFont(15.5, .medium).foregroundStyle(.white).multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
+                    NKFlowRow(spacing: 6, rowSpacing: 6) {
+                        EtelPill(text: "\(huInt(Int(s.kcal.rounded()))) kcal")
+                        EtelPill(text: "\(Int(s.p.rounded())) g fehérje", tone: .hue)
+                        if let time = recipeTimeText(r) { EtelPill(text: time, glyph: "clock-ink") }
+                    }
+                    if !badges.isEmpty {
+                        NKFlowRow(spacing: 6, rowSpacing: 6) { ForEach(badges) { EtelPill(badge: $0) } }
+                    }
                 }
                 Spacer(minLength: 4)
-                Image(systemName: "chevron.right").nkFont(13, .semibold).foregroundStyle(.white.opacity(0.4))
+                EtelScoreRing(points: etelPoints(r.fit), size: 40).padding(.top, 2)
             }
-            .padding(.vertical, 11).frame(minHeight: 44).contentShape(Rectangle())
+            .padding(.vertical, 13).frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)

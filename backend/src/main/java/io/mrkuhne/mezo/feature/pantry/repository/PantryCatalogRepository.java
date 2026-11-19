@@ -66,6 +66,16 @@ public interface PantryCatalogRepository extends JpaRepository<PantryCatalogEnti
     List<PantryCatalogEntity> findByDeletedFalseAndStatusOrderByNameAsc(String status);
 
     /**
+     * The foods ONE user may be matched against (mezo-r36n9.63): every live verified food plus that
+     * user's OWN drafts — so a food he quick-added yesterday (an unreviewed estimate) matches today,
+     * while a stranger's draft never does. Used where the owner confirms every non-exact match himself
+     * („Ezt főztem", the pantry quick-add); the auto-matching AI paths keep the verified-only index above.
+     */
+    @Query("select c from PantryCatalogEntity c where c.deleted = false and c.kind = 'food' "
+        + "and (c.status = 'verified' or c.createdBy = :userId) order by c.name asc")
+    List<PantryCatalogEntity> findLiveFoodsVisibleTo(@Param("userId") UUID userId);
+
+    /**
      * Master rows (loader-owned), soft-deleted ones INCLUDED — deliberately unfiltered, like
      * {@link #findByNaturalKey}: the entity carries no {@code @SQLRestriction} precisely so a
      * dead master row stays visible to whoever needs to revive or count it, and every caller

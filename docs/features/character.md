@@ -15,6 +15,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 > **2026-11-19 — reviewed after T3 (`mezo-r36n9.81`, one small change).** `CharacterSignalReads` now flags working sets that carry an intensity technique (`DetectorInput.SetPoint.technique`) and `RirCalibrationDetector` skips them (planner-placed techniques make them reachable without a manual pick); nothing else in the character feature changed ([`train.md`](train.md) §4 *Technique planner and challenge*).
 
+> **2026-11-19 — reviewed after `mezo-r36n9.63` (no character change).** The shared `1.1.0/script` folder gained `202611191400_mezo-r36n9.63_pantry_source_ai_estimate.sql` (one more allowed `pantry_catalog.source` value) and `202611191410_mezo-r36n9.63_recipe_client_ref.sql` (`recipe.client_ref`); neither touches a character table, and `CharacterSignalReads` reads pantry names only.
+
 > **2026-11-18 — reviewed after `mezo-r36n9.78` (no character change).** The shared `1.1.0/script` folder gained `202611181400_mezo-r36n9.78_week_proposal_groups.sql` (`groups jsonb` on `meso_week_proposal`, owned by [`train.md`](train.md)); nothing about the character dossier changed.
 
 > **2026-11-18 — reviewed after T1 (`mezo-r36n9.79`):** a train-owned Liquibase changeset landed in the shared `1.1.0/script` folder; nothing about the character dossier changed.
@@ -1312,6 +1314,7 @@ investigating.
 ## 9. Decisions, gotchas & deferred
 
 - **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
+- **Team chat and evening edition switched off (2026-11-19, `mezo-r36n9.97.8`, spec 2026-11-19 §4.3).** `mezo.feature.team-chat.enabled=false` and `mezo.feature.team-edition.enabled=false` in `application.yml`: both were shown only on the web csapatfal, and their LLM-written lines are not read by the chat, the memory or the iPhone (team-chat facts are captured only from the user's own web replies). The test profile keeps `team-chat=true`; edition ITs opt back in per class. **Still on, noted for B8:** konzílium / observation / monthly / portrait (they write the claims and portrait digests of the [Karakter] chat block), reply evaluation (user replies are memory notes), maturity snapshot. Guard: `WebOnlyGeneratorsOffIT`.
 - **Quiet window moved (2026-11-19, `mezo-r36n9.97.7`).** The team chat's do-not-disturb window is now `TeamChatProperties.quietHours` (`mezo.character.team-chat.quiet-hours`, default 22:00–07:00, unchanged behaviour); `NotificationProperties` left with the browser web push.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 

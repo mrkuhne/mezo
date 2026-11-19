@@ -21,23 +21,12 @@ struct MealCard: View {
     var coach: MealCoach? = nil
     let onDimension: (DimensionSelection) -> Void
 
-    private var title: String {
-        if let t = meal.title, !t.isEmpty { return t }
-        let names = meal.items.map(\.name)
-        return names.isEmpty ? (slotLabel.isEmpty ? "Étkezés" : slotLabel) : names.prefix(3).joined(separator: ", ")
-    }
+    private var title: String { mealTitle(meal, slotLabel: slotLabel) }
 
     private var timeText: String {
         let f = DateFormatter(); f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "hu_HU")
         return f.string(from: meal.loggedAt)
     }
-
-    /// The coach's sentence; before it arrives (or with the coach off), the envelope's own, if it has one.
-    private var words: String? {
-        [coach?.summary, coach?.tagline, meal.breakdown?.summary, meal.breakdown?.tagline].compactMap { $0 }.first { !$0.isEmpty }
-    }
-
-    private var tips: [GlucoseTip] { coach?.glucoseTips ?? [] }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -54,24 +43,7 @@ struct MealCard: View {
                 }
                 .accessibilityElement(children: .combine)
                 Text(title).nkFont(19, design: .serif).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                Text("\(huInt(Int(meal.macros.kcal.rounded()))) kcal · F \(Int(meal.macros.p.rounded())) g · Sz \(Int(meal.macros.c.rounded())) g · Zs \(Int(meal.macros.f.rounded())) g")
-                    .nkFont(12.5, design: .monospaced).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
-                DimensionGrid(entries: dimensionRow(meal)) { entry in
-                    onDimension(DimensionSelection(entry: entry, mealTitle: title, coachNote: coach?.dimensionNotes[entry.id]))
-                }
-                if let words {
-                    Text(words).nkFont(14).lineSpacing(2).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
-                }
-                ForEach(Array(tips.enumerated()), id: \.offset) { _, tip in
-                    HStack(alignment: .top, spacing: 8) {
-                        NKGlyph("bolt-sun", .white.opacity(0.8), size: 14).padding(.top, 2)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(tip.title).nkFont(13.5, .medium).foregroundStyle(.white.opacity(0.85))
-                            Text(tip.body).nkFont(13.5).foregroundStyle(.white.opacity(0.7))
-                        }
-                        .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+                MealDetail(meal: meal, title: title, coach: coach, onDimension: onDimension)
             }
             .padding(18)
         }
@@ -81,8 +53,47 @@ struct MealCard: View {
     }
 }
 
+/// What stands under a logged meal's name: its numbers, all eight dimensions (a tap explains one), the coach's
+/// words and the glucose tips. The card and the Ma page's opened row both draw it.
+struct MealDetail: View {
+    let meal: BoopCore.Meal
+    let title: String
+    var coach: MealCoach? = nil
+    let onDimension: (DimensionSelection) -> Void
+
+    /// The coach's sentence; before it arrives (or with the coach off), the envelope's own, if it has one.
+    private var words: String? {
+        [coach?.summary, coach?.tagline, meal.breakdown?.summary, meal.breakdown?.tagline].compactMap { $0 }.first { !$0.isEmpty }
+    }
+
+    private var tips: [GlucoseTip] { coach?.glucoseTips ?? [] }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("\(huInt(Int(meal.macros.kcal.rounded()))) kcal · F \(Int(meal.macros.p.rounded())) g · Sz \(Int(meal.macros.c.rounded())) g · Zs \(Int(meal.macros.f.rounded())) g")
+                .nkFont(12.5, design: .monospaced).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
+            DimensionGrid(entries: dimensionRow(meal)) { entry in
+                onDimension(DimensionSelection(entry: entry, mealTitle: title, coachNote: coach?.dimensionNotes[entry.id]))
+            }
+            if let words {
+                Text(words).nkFont(14).lineSpacing(2).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(Array(tips.enumerated()), id: \.offset) { _, tip in
+                HStack(alignment: .top, spacing: 8) {
+                    NKGlyph("bolt-sun", .white.opacity(0.8), size: 14).padding(.top, 2)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(tip.title).nkFont(13.5, .medium).foregroundStyle(.white.opacity(0.85))
+                        Text(tip.body).nkFont(13.5).foregroundStyle(.white.opacity(0.7))
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+}
+
 /// All eight dimensions, always: four across, two rows (two across at the narrowest widths, so no name is cut).
-private struct DimensionGrid: View {
+struct DimensionGrid: View {
     let entries: [DimensionEntry]
     let onTap: (DimensionEntry) -> Void
     @State private var width: CGFloat = 300
@@ -101,7 +112,7 @@ private struct DimensionGrid: View {
                         Capsule().fill(.white.opacity(0.1)).frame(height: 3)
                             .overlay(alignment: .leading) {
                                 GeometryReader { g in
-                                    Capsule().fill(.white.opacity(0.75)).frame(width: g.size.width * Double(e.points ?? 0) / 100)
+                                    Capsule().fill(Hue.fuel.glow.opacity(0.9)).frame(width: g.size.width * Double(e.points ?? 0) / 100)
                                 }
                             }
                         Text(e.name).nkFont(9.5).foregroundStyle(.white.opacity(0.55)).lineLimit(2).minimumScaleFactor(0.7)

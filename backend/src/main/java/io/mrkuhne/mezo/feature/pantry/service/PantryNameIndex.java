@@ -118,8 +118,9 @@ public final class PantryNameIndex {
         return keys;
     }
 
-    /** Accent-free, punctuation-free, single-spaced lowercase — applied to BOTH sides. */
-    private static String normalize(String raw) {
+    /** Accent-free, punctuation-free, single-spaced lowercase — applied to BOTH sides.
+     *  Package-visible: {@link PantryMatcher} and {@link PantryUnits} fold with the SAME rules. */
+    static String normalize(String raw) {
         if (raw == null) {
             return "";
         }
@@ -138,7 +139,7 @@ public final class PantryNameIndex {
         return draft.equals(serving.isEmpty() ? DEFAULT_SERVING_UNIT : serving);
     }
 
-    private static String canonicalUnit(String raw) {
+    static String canonicalUnit(String raw) {
         String normalized = normalize(raw);
         return UNIT_SYNONYMS.getOrDefault(normalized, normalized);
     }
