@@ -3,7 +3,7 @@ cim: Edzésstílus
 szint: Funkció
 terulet: Edzés
 allapot: Részben kész
-hol: [Háttérrendszer]
+hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B5]
 osszefoglalo: Egy edzésblokkhoz választhatsz stílust — a gyakorlatok ismétlés-tartományát, tartalékát és pihenőjét a stílus állítja be, a motor pedig hétről hétre fokozza az erőfeszítést.
@@ -68,9 +68,9 @@ blokkban számít, aminek van stílusa.
 | `exercise_set` | Az edzett ismétlés-tartomány pillanatképe sorozatonként |
 
 ## Mi jön még
-A motor már él a háttérrendszerben; a stílus kiválasztása a blokk-építőben és a pihenő, tartalék megjelenítése az edzés közben a Boop
-képernyőin jön. Utána az intenzitás-technikák (stabil gyakorlatokon), az elakadás utáni javaslatok és a stílus futó blokkban történő váltása,
-valamint egy mód a stílus levételére.
+A stílust a telefonon, a blokképítő Blokk fülén választod ki — a futó blokkon is (2026-11-19; a váltás a blokk gyakorlatait
+azonnal átállítja, a te kézi beállításaid maradnak). Hátra van: a pihenő és a tartalék megjelenítése edzés közben, az elakadás
+utáni javaslatok, és egy mód a stílus levételére (most csak cserélni lehet).
 
 ## Mi marad ki
 A webes app nem kapja meg (befagyasztott). Az elakadási javaslatok egyelőre nincsenek; az elakadás csak a heti javaslat naplójában jelenik meg.

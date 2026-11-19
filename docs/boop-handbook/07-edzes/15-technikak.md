@@ -3,7 +3,7 @@ cim: Intenzitás-technikák és a napi kihívás
 szint: Funkció
 terulet: Edzés
 allapot: Részben kész
-hol: [Háttérrendszer]
+hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B5]
 osszefoglalo: Egy gyakorlat utolsó sorozata helyett technikát (pihenős drop, drop set, myo set, félismétlések) vagy a nap kihívását írhatod elő; az edzés közben a rendszer lépésről lépésre megmondja, a napló pedig rögzíti.
@@ -72,10 +72,10 @@ ha a kettő ütközik, a **kihívás nyer**. Egy napon legfeljebb **egy kihívá
 ## Mi jön még
 - A technikák **automatikus elhelyezése** és a kihívás felajánlása (T3).
 - A mesterséges intelligencia használata a technikákkal (T4).
-- A telefonos képernyők: a blokk-építőben a beállítás, edzés közben a lépések megjelenítése.
+- Edzés közben a lépések megjelenítése a telefonon (a beállítás a blokképítőben már megvan: a Blokk fülön a Technikák kapcsoló, a Napok fülön gyakorlatonként a technika és a nap kihívása, 2026-11-19).
 - Az AI-összesítők (a Boop-társ kimutatásai) még nem számolják a technikák plusz részeit az összes súlyba.
 - A tervezési előnézet még nem számol kettővel a napi határoknál.
 
 ## Mi marad ki
-A webes app nem kapja meg (befagyasztott). Technika csak a bekapcsolt blokkokban él: a futó blokk és a webes blokkok változatlanok.
+A webes app nem kapja meg (befagyasztott). Technika csak a bekapcsolt blokkokban él; a futó blokkon a blokképítőben kapcsolható be. A webes blokkok változatlanok.
 Automatikus technika-elhelyezés és AI egyelőre nincs.

@@ -2,8 +2,8 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-17
-tags: [ios, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
+updated: 2026-11-19
+tags: [ios, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
   - ios/BoopKit/Sources
@@ -455,6 +455,33 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   review answers `startWorkout`, the set/feedback/skip/finish writes and `changeWorkoutExercise` statefully, so
   the swap can be walked without a server.
 
+- **The block builder and the weekly review (`mezo-r36n9.83`, shipped 2026-11-19; plan
+  [`2026-11-19-boop-blokk-epito.md`](../superpowers/plans/2026-11-19-boop-blokk-epito.md), look: the approved spike
+  `spike/boop-blokk-epito`)** — on Edzés → **Blokk**: an entrance card (`WeekReviewEntrance`) with this week's proposal
+  (*Átnézem* / *Elfogadom átnézés nélkül* = `acceptRest`; read-only "életbe lépett" once applied/auto-applied; nothing for the
+  week when there is no proposal) and *Blokk szerkesztése*. Code: `ios/Boop/EdzesTerv/`, models in `BoopCore/Train/`.
+  - **Builder** (`BlockBuilderPage`, full-screen cover at page level): own bar **Izmok · Napok · Blokk**, the scope in the
+    head („EGY HÉT · IZMONKÉNT" / „A TELJES BLOKK · 6 HÉT"), one primary button — *Igazítsd a sávba* (every outside muscle's
+    proposal) while any outside muscle has one, else *Mentés*. **Every number is the server evaluator's**: `BlockBuilderModel`
+    keeps a `BlockDraft` and re-POSTs it to `evaluateMesoPlan` 300 ms after the last edit; an answer for an older draft is
+    dropped, a failed one keeps the last numbers on screen ("frissül…"). Izmok: body map, a card per banded muscle (tier
+    switch, half dial, spread, proposal + *Elfogadom* / *miért?*). Napok: day pills with minutes, steppers 1–8, technique pill
+    cycling the exercise's allowed list (free weights: "szabadsúly · nincs technika"; half reps only when lengthened-friendly),
+    one challenge flag a day (it clears the exercise's technique), session-cap warnings with the server's cap. Blokk: style
+    four-way choice, the *Technikák* and *A heti javaslatot én hagyom jóvá* switches, week totals + per-muscle path, technique
+    weeks (the planner's count when sent, else every loading week while on). **Save** writes only what changed, in order
+    settings → re-read (a new style re-stamps rows) → tiers → changed days (`replaceDayExercises`, style trio carried by omission
+    except `workingSets` joins `overrides` on a styled row, technique trio sent as drafted), stops at the first failure and says
+    what was saved, then re-reads (a day save re-mints ids). Leaving with unsaved edits asks first.
+  - **Weekly review deck** (`WeekReviewDeck`): a card per changing muscle (body order), a tile per line (kind mark, day + kind
+    pills, from → to loudest, reason pills — 27 codes, unknown → no pill; unknown kind → plain from → to), per-tile accept /
+    keep, card-level *Elfogadom mind* / *A többi marad*, the "nem változik" card, the summary card (ring, three tiles,
+    per-muscle result, where it lands in the week). **Decisions are local until the summary** sends them once with `keepRest`
+    for anything undecided; a 409 (week closed) re-reads and says so. A closed proposal opens read-only.
+  - States: no running block, loading, load error with *Újra*, offline, decision expired, smallest width (SE 3rd gen), reduced
+    motion (no deck/ring animation), VoiceOver labels on steppers, dial, tiles. DEBUG review without sign-in:
+    `-previewBlokk YES` (+ `-previewBlokkOpen epito|het`, `-previewBlokkTab napok|blokk`, `-previewBlokkCard N`,
+    `-previewBlokkState empty|loading|error|offline|applied`) over `PlanPreviewTransport` — whose evaluator is a fixture.
 - **The Étel room (B4 Étel, shipped 2026-11-13, `mezo-r36n9.14`; spec [`2026-11-13-boop-b4-etel-design.md`](../superpowers/specs/2026-11-13-boop-b4-etel-design.md) — owner decisions 8–21, plan [`2026-11-13-boop-b4-etel.md`](../superpowers/plans/2026-11-13-boop-b4-etel.md)).** The Fuel orb on Ma opens `EtelRoom` (`Etel/EtelRoom.swift`, kit `NKDrillPage` in the fuel hue with a food photo head `NKPhoto.konyha`, four capsule tabs **Ma · Receptek · Kamra · Hét**, last tab kept in `@SceneStorage`). One `EtelStore` (`Etel/EtelRoom.swift`, logic in pure `EtelLogic.swift`) loads day / plan / coach / photos / supplement stash independently, so one failing read never blanks the room. All server calls go through `FoodClient` (`BoopCore/Etel/`); the model types in `FoodModels.swift`. The server owns the rules (day plan, scoring, sensitivities); the phone shows them and never recomputes a verdict.
   - **Ma tab** (`EtelMa`, `MealCard`, `DimensionSheet`): five numbered sections — **1** the day's budget (kcal headline + three macro bars; a kímélő GUIDANCE day shows "ma nincs kalóriakeret" and a "Kikapcsolom" button instead), **2** the day's plan (logged meals as photo cards with score and macros; the open windows from `GET /api/fuel/plan/{date}` with the MOST badge, the suggested recipe or ingredient tip, *Megeszem* / *Kihagyom* / camera), **3** the next-meal tip (*Megnézem a receptet* switches to Receptek when the window has a recipe; *Most nem* dismisses it locally), **4** víz (+250 / +500 ml, idempotent writes), **5** kiegészítők (one-tap group tick). A meal card opens the eight-dimension sheet (macro, micro, who, fat quality, NOVA, plant diversity, **energy density**, context — "Adag" is a recipe-only dimension; each shows what it measures, the server's own detail and the coach note). The processed-food line appears only as the coach's one quiet sentence when NOVA 3–4 carry more than half the meal's kcal; the phone adds no NOVA badge of its own. The headline wraps to two lines on long numbers (kit 38 pt); under 230 pt content width the dimension grid goes to two columns.
   - **Capture is offline-first** (`Etel/Composer.swift`, `PendingMeals.swift`, `PhotoCapture.swift`; `BoopCore/Etel/{MealDraft,FoodOutbox}.swift`). Five entrances — **Fotó · Szöveg · Vonalkód · Recept · Kamra** (plus **Szokásos**, below) — end in ONE editable draft (name, amount, delete per line; totals; sensitivity and "nincs adat" notes) and **nothing is saved without the owner's tap on *Mentem***. The draft is computed by the model through `draftMealFromAi` (a barcode-only capture never calls the model — the scanned product becomes the line). With no network the capture is parked in the **same `Outbox` as B3** (new `OutboxKind.mealDraft`; one queue, one backoff / age / failed machinery, flushed on foreground, net back and background; each meal is its own order group): the photo is stored as `meal-<uuid>.jpg` beside `queue.json` (the payload carries only the id), and when the net returns the draft is computed and parked as a **confirmation card** ("Jóváhagyásra vár" with *Mentem · Átnézem · Elvetem*) — the sender never saves a meal on its own. The capture keeps its own `capturedAt`, sent with the **phone's UTC offset, never `Z`** (`FlexibleISO8601Transcoder` writes the offset for every generated-client date; the server dates the meal by that offset, so a 00:30 Budapest meal sent as `Z` would land on the previous day) and a stable `clientRef`, so a retry after a lost answer creates no duplicate (§4, [`fuel.md`](fuel.md)). A capture older than 7 days is shown as failed with its values and photo kept (**Újra**), a refused save (400) says which shelf/recipe-tied lines may have been deleted and stays editable; a failed photo upload never fails or discards the meal (`hasPhoto` tells). The draft's lookup state is spoken honestly (`draftNotice`): lookup failed ≠ "unknown code" ≠ "no food found". Photos are JPEG downscaled to 1600 px (ImageIO); the camera needs `NSCameraUsageDescription` (`INFOPLIST_KEY_` in the app target, the only `project.pbxproj` change of the slice) and falls back to the photo library when it is absent or the device has no camera.
@@ -656,6 +683,20 @@ Added to the `filter.operations` list in B3: `listCheckInsForDay`, `saveCheckIn`
 - **The server's start is idempotent on the template day** — `POST /api/train/workouts` answers *201 with the open instance* when one exists, so a replayed start never creates a second workout. The two 409s (`TRAIN_WORKOUT_OPEN_ELSEWHERE`, `TRAIN_DAY_DONE_THIS_WEEK`) are refusals with a meaning, not retries: the item fails with the server's own code and the room says what happened.
 - **A queued write names a local `workoutRef`, never a server id**, because the workout may not exist yet when a set is logged without signal. `OutboxItem.groupRef` (appended, optional) carries it and is the item's **order group** — one workout is one chain, and a second session is a separate group, so one stuck session never holds another back. This is the first group keyed by something other than the date. The id is resolved at send time (what the run learned → today's open workout → today's completed workout) and **no queued payload is ever rewritten**.
 
+### Block builder + weekly review — the hand-decoded calls (`mezo-r36n9.83`, 2026-11-19)
+
+The builder and the review **do not use the generated client**. The generated code decodes every enum strictly, and the
+technique planner (T3) adds proposal line kinds (`technique`, `rep_range`), reason codes and evaluation fields while these
+screens are live — one unknown value would fail the whole response. So `RawJSONClient` (`BoopCore/Train/PlanTransport.swift`)
+sends JSON over the **same** `ClientTransport`, base URL and bearer token as the generated client (`Session.raw`), and
+`PlanWire.swift` declares hand-written `Decodable` shapes whose enums are plain `String`s. `PlanClient` wraps 8 operations:
+`listMesocycles`, `getExerciseCatalog`, `evaluateMesoPlan`, `listWeekProposals`, `decideWeekProposal`, `replaceDayExercises`,
+`updateMesocycleMusclePriorities`, and the new **`updateMesocycleSettings`** (`PUT /api/train/mesocycles/{id}/settings`
+`{trainingStyle?, techniquesEnabled?, weeklyReviewMode?}`, absent = keep; the run's own review mode overrides
+`mezo.volume.weekly-review.mode`; `MesocycleResponse.weeklyReviewMode` is the effective mode — `docs/features/train.md` §4).
+**The BoopAPI generator filter is untouched.** Typed failures: `PlanFetchError` (`offline`, `unauthorized`, `notFound`,
+`rejected(code)` for 400, `conflict(code)` for 409, `server`).
+
 `ServerCache` (`BoopCore/ServerCache.swift`, `mezo-vxjj9`) is the read side's last-known-good cache: one JSON file per endpoint-and-day wrapping the payload and the instant it was fetched, so a screen can say how old what it shows is. It is read-only toward the server — no sender, no retry, no link to the outbox — and past `maxAge` a hit is not a hit (`get` returns nil and the caller says „nincs friss adat"). A corrupt entry is removed and reads as absent, unlike the outbox, which sets bad elements *aside* because those are the owner's unsent words. Its folder is `cache`, a third per-user folder beside `ledger` and `outbox`.
 
 ### Formulas (S3 — product calls; the code is the truth: `BoopScores`, `EnergyCurveModel`)
@@ -741,6 +782,13 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 ## 9. Decisions, gotchas & deferred
 
 
+- **Block builder traps (2026-11-19, `mezo-r36n9.83`).** (1) An overload trap cost a 51 GB runaway test: inside
+  `RawJSONClient`, a generic `send<B: Encodable, T: Decodable>(…, body: B)` calling a raw `send(…, body: Data)` resolved to
+  **itself** (`Data` is `Encodable` and `Decodable`) and recursed, re-encoding an ever-growing body. The raw one is now
+  `sendRaw`. Run kit/app tests with `-test-timeouts-enabled YES -maximum-test-execution-time-allowance 60`. (2) The app has
+  its own `ReviewLine` type; the deck spells `BoopCore.ReviewLine`. (3) The evaluator's `dayIndex`/`exerciseIndex` index the
+  **request's** order — the draft sends days and exercises in block order, so proposals apply by index; never sort the
+  draft. (4) `replaceDayExercises` re-mints exercise ids: always re-read the block after a save before the next edit.
 - **Dates with fractional seconds (2026-11-11, `mezo-r36n9.25`).** Java `Instant`s reach the app with microseconds (the brief's `generatedAt`). The generated client is built with `FlexibleISO8601Transcoder` (`BoopCore/APIClient.swift`) that reads both forms; the runtime default rejected fractions and every live brief failed ("akadt el"). Test fixtures must include a fractional stamp (`MorningClientTests.loadReadsFractionalSecondTimestamps`).
 - **Napkelte traps (S2.5):** the orb shader needs exactly four colours (`orbPalette` pads — three crashed it);
   a `LivingOrb` inside a tap target swallows the tap (`allowsHitTesting(false)` on the orb, tap on the column);
@@ -842,6 +890,8 @@ B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet}.swift` · `ios/Boop/Captu
 `ios/Boop/Nap/{MaPhases,MaDrill,ProposalDesk,RoomSwipeBack}.swift` · `ios/BoopKit/Sources/BoopCore/Morning/{DayPhase,DayPlan,Proposals}.swift` ·
 `ios/BoopKit/Sources/BoopDesign/Napkelte/{SpineBar,Proposal,Drill}.swift` ·
 B1: `ios/BoopKit/Sources/BoopCore/Health/{HealthKitReader,HealthReader,HealthSync,HealthBackground,SleepNightBuilder,WorkoutMapper}.swift` · `…/Push/PushRegistrar.swift` · `ios/Boop/App/{BoopAppDelegate,BackgroundSyncHost}.swift` · `ios/Boop.entitlements` · `ios/Boop-Paid.entitlements` · `backend/…/feature/wearable/service/{HealthSampleService,WearableDeletionService,WorkoutReconciler}.java` · `backend/…/feature/biometrics/sleep/service/SleepNightMerge.java` · `api/feature/device/device.yml` · `scripts/ops/boop-b1-merge-accounts*.sql`
+
+Blokképítő + heti átnézés: `ios/Boop/EdzesTerv/{BlockBuilderPage,WeekReviewDeck,PlanKit,PlanEnvironment,PlanPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Train/{PlanTransport,PlanWire,PlanClient,BlockDraft,WeekReview,BlockBuilderModel}.swift` · `backend/…/feature/train/service/{TrainService#updateSettings,ExerciseStyler#restampRows}`
 
 L0/b (az élő fal): `ios/BoopKit/Sources/BoopCore/Morning/{Wall,WallSources}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Wall.swift` · `ios/Boop/Nap/{MaWall,MaPhases,MaiView}.swift`
 
