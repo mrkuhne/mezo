@@ -63,6 +63,7 @@ filter:
     - importRecipeFromUrl
     - importRecipeFromText
     - importRecipeFromPhoto
+    - cookedRecipe
     - getPantry
     - searchPantryCatalog
     - lookupPantryItem
@@ -83,6 +84,10 @@ filter:
     - importPantryItem
     - createPantryItem
     - addPantryItemFromCatalog
+    - updatePantryItem
+    - quickAddPantryItem
+    - getPantryItemBreakdown
+    - getPantryCatalogBreakdown
     - setDietSettings
     - previewDietSettings
     - getFuelSettings
