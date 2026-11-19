@@ -345,8 +345,12 @@ extension TrainClient: OutboxSender {
     /// Workout ids learned in this run: local group ref → the server's own workout id.
     actor Memo {
         private var workouts: [UUID: UUID] = [:]
+        /// Set ids the server minted in this run: "ref|exercise|index" → the server's own set id.
+        private var sets: [String: UUID] = [:]
         func id(for ref: UUID) -> UUID? { workouts[ref] }
         func keep(_ id: UUID, for ref: UUID) { workouts[ref] = id }
+        func setId(_ ref: UUID, _ exercise: UUID, _ index: Int) -> UUID? { sets["\(ref)|\(exercise)|\(index)"] }
+        func keepSet(_ id: UUID, _ ref: UUID, _ exercise: UUID, _ index: Int) { sets["\(ref)|\(exercise)|\(index)"] = id }
     }
 
     public func send(_ item: OutboxItem) async -> OutboxSendResult {
@@ -453,7 +457,12 @@ extension TrainClient: OutboxSender {
             body.legs = p.legs?.compactMap(Self.legInput)
         }
         switch try await client.logWorkoutSet(path: .init(id: workout.wire), body: .json(body)) {
-        case .created: return .sent(nil)
+        case .created(let created):
+            // A later correction of this set addresses the server's own id for it.
+            if let r = try? created.body.json, let id = UUID(uuidString: r.id) {
+                await memo.keepSet(id, p.workoutRef, p.exerciseId, p.setIndex)
+            }
+            return .sent(nil)
         case .conflict: return .retryLater
         case .notFound: return .failed("TRAIN_WORKOUT_NOT_FOUND")
         case .badRequest: return Self.map(400)
@@ -466,11 +475,12 @@ extension TrainClient: OutboxSender {
         guard let p = TrainPayloadCodec.decode(WorkoutSetEditPayload.self, from: item.payload)
         else { return malformed("set correction") }
         guard let workout = await workoutId(for: p.workoutRef) else { return .retryLater }
+        guard let setId = try await serverSetId(for: p, workout: workout) else { return .failed("TRAIN_SET_NOT_FOUND") }
         // `legs` absent = the server leaves them untouched; a correction of the main part never wipes its steps.
         var body = Components.Schemas.SetUpdateRequest(weightKg: p.weightKg, reps: p.reps, rir: p.rir,
                                                        side: p.side, note: p.note)
         if let legs = p.legs { body.legs = legs.compactMap(Self.legInput) }
-        switch try await client.updateWorkoutSet(path: .init(id: workout.wire, setId: p.setId.wire),
+        switch try await client.updateWorkoutSet(path: .init(id: workout.wire, setId: setId.wire),
                                                  body: .json(body)) {
         case .ok: return .sent(nil)
         case .conflict: return .retryLater
@@ -479,6 +489,22 @@ extension TrainClient: OutboxSender {
         case .unauthorized: return Self.map(401)
         case .undocumented(let code, _): return Self.map(code)
         }
+    }
+
+    /// The server's id for the corrected set. A correction is queued **behind** the set it corrects (same group),
+    /// so by now that set is on the server: its id was remembered when it was logged in this run, and after a
+    /// relaunch it is read back from the workout — by exercise and position, the only names the phone has for it.
+    private func serverSetId(for p: WorkoutSetEditPayload, workout: UUID) async throws -> UUID? {
+        if let given = p.setId { return given }
+        guard let exercise = p.exerciseId, let index = p.setIndex else { return nil }
+        if let known = await memo.setId(p.workoutRef, exercise, index) { return known }
+        guard case .ok(let ok) = try await client.getWorkoutDetail(path: .init(id: workout.wire)),
+              let detail = try? ok.body.json else { return nil }
+        let found = detail.exercises.first { UUID(uuidString: $0.exerciseId) == exercise }?
+            .sets.first { $0.setIndex == index }
+        guard let id = found.flatMap({ UUID(uuidString: $0.id) }) else { return nil }
+        await memo.keepSet(id, p.workoutRef, exercise, index)
+        return id
     }
 
     static func legInput(_ l: WorkoutLegPayload) -> Components.Schemas.SetLegInput? {

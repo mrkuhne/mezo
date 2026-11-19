@@ -70,10 +70,14 @@ public struct WorkoutLegPayload: Codable, Equatable, Sendable {
     }
 }
 
-/// Correcting a set that is already on the server (`setId` is the server's own id for it).
+/// Correcting a set he already logged. The phone rarely knows the server's id for it — the set may still have been
+/// in the queue when he corrected it — so it names the set by **exercise and position**, and `TrainClient` resolves
+/// the server's id at send time. `setId` is used as-is when given (a set read back from the server).
 public struct WorkoutSetEditPayload: Codable, Equatable, Sendable {
     public var workoutRef: UUID
-    public var setId: UUID
+    public var setId: UUID?
+    public var exerciseId: UUID?
+    public var setIndex: Int?
     public var weightKg: Double
     public var reps: Int
     public var rir: Int?
@@ -81,9 +85,11 @@ public struct WorkoutSetEditPayload: Codable, Equatable, Sendable {
     public var note: String?
     /// `nil` = leave the set's steps as they are on the server.
     public var legs: [WorkoutLegPayload]?
-    public init(workoutRef: UUID, setId: UUID, weightKg: Double, reps: Int, rir: Int? = nil,
+    public init(workoutRef: UUID, setId: UUID? = nil, exerciseId: UUID? = nil, setIndex: Int? = nil,
+                weightKg: Double, reps: Int, rir: Int? = nil,
                 side: String? = nil, note: String? = nil, legs: [WorkoutLegPayload]? = nil) {
-        self.workoutRef = workoutRef; self.setId = setId; self.weightKg = weightKg; self.reps = reps
+        self.workoutRef = workoutRef; self.setId = setId; self.exerciseId = exerciseId; self.setIndex = setIndex
+        self.weightKg = weightKg; self.reps = reps
         self.rir = rir; self.side = side; self.note = note; self.legs = legs
     }
 }

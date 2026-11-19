@@ -950,7 +950,8 @@
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Ha edzés közben kijavítasz egy már rögzített sorozatot, a javítás a szerverre is felkerül, nem csak a telefonon változik."
+    "mit_kapsz": "Ha edzés közben kijavítasz egy már rögzített sorozatot, a javítás a szerverre is felkerül, nem csak a telefonon változik.",
+    "munkamenet": "player-technique"
   },
   "mezo-r36n9.97": {
     "cim": "A webes app leállítása és a csak-webes szerverrészek kivezetése",

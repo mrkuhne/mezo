@@ -47,6 +47,8 @@ struct WorkoutPlayer: View {
     /// The writes that must reach the server. The player does not know what an outbox is; the room turns these
     /// into queued items.
     let onLogged: (UUID, SessionSet) -> Void
+    /// A set he corrected, once the correction sheet closes — the room queues it for the server.
+    let onEdited: (UUID, SessionSet) -> Void
     let onExerciseDone: (UUID, ExerciseFeedback) -> Void
     let onSkipped: (UUID) -> Void
     /// The swap, which needs a connection. Returns the sentence to show when it could not be done.
@@ -60,6 +62,8 @@ struct WorkoutPlayer: View {
     @State private var touched = false
     /// The half reps he has counted so far in the partials moment.
     @State private var partials = 0
+    /// Sets corrected while the correction sheet is open; sent once, when it closes, not on every tap.
+    @State private var edited: Set<UUID> = []
     @State private var feedback = ExerciseFeedback()
     @State private var sheet: PlayerSheet?
     @State private var swapping = false
@@ -115,7 +119,7 @@ struct WorkoutPlayer: View {
         // Each step of a technique set has its own numbers: the drop's lighter weight, a mini-set's few reps.
         .onChange(of: session.technique?.legs.count) { loadCurrent() }
         .onChange(of: session.technique == nil) { loadCurrent() }
-        .sheet(item: $sheet) { sheet(for: $0) }
+        .sheet(item: $sheet, onDismiss: sendEdits) { sheet(for: $0) }
     }
 
     // MARK: - The top
@@ -732,6 +736,20 @@ struct WorkoutPlayer: View {
     static func questionsFirst(_ step: WorkoutStep) -> Bool { if case .debrief = step { true } else { false } }
     static let questionsFirstLine = "A sorozat mentve — előbb a három kérdés"
 
+    /// A correction of a logged set: applied on the phone at once, sent when the sheet closes.
+    private func correct(_ setId: UUID, kg: Double?, reps: Int, rir: Int?) {
+        session.edit(setId: setId, kg: kg, reps: reps, rir: rir)
+        edited.insert(setId)
+    }
+
+    private func sendEdits() {
+        guard !edited.isEmpty else { return }
+        for e in session.all {
+            for set in e.logged where edited.contains(set.id) { onEdited(e.id, set) }
+        }
+        edited = []
+    }
+
     /// Every logged set's id — the player sends whatever is new after a tap, whichever way it was finished (a
     /// step, „elég volt", or a skip or switch that closes a technique set half done).
     private var sentIds: Set<UUID> { Set(session.loggedSets.map(\.id)) }
@@ -804,21 +822,21 @@ struct WorkoutPlayer: View {
                                   hue: hue,
                                   onSet: { typed in
                                       if let v = Self.decimal(typed) {
-                                          session.edit(setId: setId, kg: max(0, v), reps: set.reps, rir: set.rir)
+                                          correct(setId, kg: max(0, v), reps: set.reps, rir: set.rir)
                                       }
                                   },
-                                  onDown: { session.edit(setId: setId, kg: max(0, (set.kg ?? 0) - 2.5), reps: set.reps, rir: set.rir) },
-                                  onUp: { session.edit(setId: setId, kg: (set.kg ?? 0) + 2.5, reps: set.reps, rir: set.rir) })
+                                  onDown: { correct(setId, kg: max(0, (set.kg ?? 0) - 2.5), reps: set.reps, rir: set.rir) },
+                                  onUp: { correct(setId, kg: (set.kg ?? 0) + 2.5, reps: set.reps, rir: set.rir) })
                         NKStepper(label: "Ismétlés", value: "\(set.reps)", hue: hue,
                                   onSet: { typed in
                                       if let v = Int(typed.filter(\.isNumber)), v > 0 {
-                                          session.edit(setId: setId, kg: set.kg, reps: v, rir: set.rir)
+                                          correct(setId, kg: set.kg, reps: v, rir: set.rir)
                                       }
                                   },
-                                  onDown: { session.edit(setId: setId, kg: set.kg, reps: max(1, set.reps - 1), rir: set.rir) },
-                                  onUp: { session.edit(setId: setId, kg: set.kg, reps: set.reps + 1, rir: set.rir) })
+                                  onDown: { correct(setId, kg: set.kg, reps: max(1, set.reps - 1), rir: set.rir) },
+                                  onUp: { correct(setId, kg: set.kg, reps: set.reps + 1, rir: set.rir) })
                     }
-                    Text("A javítás azonnal érvényes — a szerver a sor saját azonosítóját frissíti, nem vesz fel újat.")
+                    Text("A javítás azonnal érvényes, és amint van net, a szerverre is felmegy — ugyanazt a sorozatot írja át, nem vesz fel újat.")
                         .nkFont(12).foregroundStyle(.white.opacity(0.5))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
