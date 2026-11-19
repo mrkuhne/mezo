@@ -811,5 +811,17 @@
     "miert": "Főzés után három-négy hiányzó fűszer felvétele ne törje meg a recept rögzítését, de ahol van pontos adat, azt használjuk, a becslés pedig legyen láthatóan megjelölve.",
     "levaltotta": "Azt, hogy a nem talált hozzávaló kimarad a mentett receptből.",
     "kovetkezmeny": "A kamrában megjelennek becsült tételek; ezek tápértéke pontatlanabb, amíg nem pontosítod őket. Az „Ezt főztem” funkció az iPhone appba épül, a webes appba nem."
+  },
+  "d-2026-11-19-etel-fejlec-foto-nelkul": {
+    "cim": "Az Étel fejlécében nincs fotó, csak a festett táj",
+    "datum": "2026-11-19",
+    "suly": "Kicsi",
+    "terulet": [
+      "Étel"
+    ],
+    "valasztas": "Az Étel szoba fejléce és a szempont-magyarázó lap a paradicsomos konyhafotó helyett a zöld, festett tájat mutatja, mint a többi fotó nélküli terület.",
+    "miert": "A tulajdonos kérte: „vegyük ki a paradicsomos képet”.",
+    "levaltotta": "Azt, hogy az Étel fejlécén a konyhafotó áll (a „fotó az égen” szabály ennél a területnél).",
+    "kovetkezmeny": "Az Étel fejléce nyugodtabb; a többi terület fotója nem változik. A tányérok, receptek és étkezések saját fotója marad."
   }
 }
