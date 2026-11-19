@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -61,6 +62,7 @@ import org.springframework.transaction.annotation.Transactional;
  * is stamped from the principal, so cross-user data never leaks. Per house rule
  * (spring_patterns.md) only the write methods carry method-level {@code @Transactional}.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TrainService {
@@ -82,6 +84,8 @@ public class TrainService {
     private final VolumeLedger volumeLedger;
     private final TierChangeProposalService tierChangeProposals;
     private final VolumeProperties volumeProperties;
+    // mezo-r36n9.81: week 1's planner challenges on a styled + techniques-enabled run at start.
+    private final TechniquePlanService techniquePlanService;
     // mezo-meyc.3: fires only on a REAL close (never the idempotent re-close or fill-if-null
     // branches) — the companion AI-review generator's AFTER_COMMIT trigger (S3 task 15).
     private final ApplicationEventPublisher eventPublisher;
@@ -270,6 +274,12 @@ public class TrainService {
             for (int e = 0; e < exercises.size(); e++) {
                 exerciseRepository.save(toExerciseEntity(createdBy, savedDay.getId(), exercises.get(e), e));
             }
+        }
+        // Week 1's planner challenges (mezo-r36n9.81) — a no-op unless the run opts in; never blocks the start.
+        try {
+            techniquePlanService.placeStartChallenges(createdBy, saved);
+        } catch (RuntimeException ex) {
+            log.warn("week-1 challenge placement failed for run {}, starting without them", saved.getId(), ex);
         }
         // The volume log is derived from the plan (volume engine v2): only an ACTIVE run carries
         // rows — a planned run stays profile-less until activation (sync is a no-op for it).
