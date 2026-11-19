@@ -63,6 +63,19 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-19 — Boop Pénz L4: the money foundation (`mezo-r36n9.102`).**
+  Backend only, no screen. A money value type (minor units + currency + a HUF twin computed once at write time from
+  the frankfurter.dev ECB rate of the row's date and stored, global per-date rate cache, 7-day fallback, else 503
+  `PENZ_FX_UNAVAILABLE`); nine `penz_*` tables; accounts, categories, transactions, transfers, recurring rules
+  materialized on read and an oldest-first month close; the allowance engine ported as pure functions against the old
+  Finance Tracker's vitest oracle, with *Gyakorlás* (practice money, default 20 000 Ft / month) and the previous
+  month's deficit (from a real close) as their own lines, and the week's `perDay`; the bank-SMS ingest of the iOS
+  Shortcut behind its own API-key filter chain (per-key rate limit, cheap-tier LLM parse, amount cross-check,
+  immediate server-side conversion to a review transaction, replay-safe); the Hungarian amount guard that downgrades
+  generated text naming a figure the engine did not compute. Out of L4: the importer (`mezo-r36n9.107`), savings
+  goals / purchase plans (L5), invest-buy adoption on SMS (L6). Plan
+  [2026-11-19-boop-penz-plan](../superpowers/plans/2026-11-19-boop-penz-plan.md) §2; [`penz.md`](../features/penz.md).
+
 - **2026-11-19 — Train style T4: the AI refines the technique plan (`mezo-r36n9.82`).**
   When a manual weekly review of a styled, techniques-enabled run waits, an AI (train-owned port `TechniqueLlm`, adapter
   in companion, switch `mezo.feature.technique-ai.enabled`) may move or swap techniques and the day's challenge inside

@@ -63,6 +63,8 @@ const SLICE_CODE = { // Kézikönyv "Szakasz" code → Jegyek "Szakasz" option
   // `szakasz` is not in this map is silently published with no slice tag and no ticket relation, which is how
   // the first three of these went up bare.
   'Kezdőlap': 'Kezdőlap',
+  // The life areas (Élet, epic mezo-r36n9.33): Pénz and its siblings publish under this slice.
+  'Életpanel': 'Életpanel',
 };
 const STATE_COLOR = { 'Élesben': 'green_bg', 'Részben kész': 'yellow_bg', 'Ellenőrzés': 'purple_bg', 'Tervezve': 'blue_bg', 'Kihagyva': 'gray_bg' };
 const STATE_ICON = { 'Élesben': '✅', 'Részben kész': '🟡', 'Ellenőrzés': '🔍', 'Tervezve': '🗺️', 'Kihagyva': '🚫' };

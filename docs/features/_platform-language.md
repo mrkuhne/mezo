@@ -26,6 +26,8 @@ related: [_platform-auth-security, _platform-design-system, companion, settings,
 
 # Language — Feature Documentation
 
+> **2026-11-19 — Boop Pénz L4 (`mezo-r36n9.102`, no language-layer change).** Seventeen `PENZ_*` error codes (incl. `PENZ_CURRENCY_MISMATCH` and `PENZ_CLIENT_REF_CONFLICT` from the review round) were added to both `messages_hu.properties` and `messages_en.properties` (see [`penz.md`](penz.md) §4.2); the SMS ingest's principal carries the key owner, so the message language resolves as for a JWT user.
+
 > **2026-11-19 — `mezo-r36n9.98` (no language-layer change).** The `TRAIN_TECHNIQUE_ON_CHALLENGE` key was removed from `messages_hu`/`messages_en` (a technique and the challenge may now share an exercise); no mechanism changed.
 
 > **2026-11-19 — reviewed after T4 (`mezo-r36n9.82`, no language-layer change).** Only the `mezo.feature.technique-ai.enabled` switch was added to `application.yml`; the AI's Hungarian prompt lives in the adapter, not in a message bundle.

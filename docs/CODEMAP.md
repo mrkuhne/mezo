@@ -21,7 +21,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [biometrics](#biometrics) | ✓ | 6 | [me](features/me.md) |
 | [boop](#boop) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
 | [character](#character) | ✓ | 1 | [character](features/character.md) |
-| [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
+| [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [penz](features/penz.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [dayclose](#dayclose) | ✓ | 1 | [boop-ios](features/boop-ios.md), [dayclose](features/dayclose.md) |
 | [fuel](#fuel) | ✓ | 2 | [fuel](features/fuel.md) |
 | [goal](#goal) | ✓ | 1 | [goal-engine](features/goal-engine.md), [me](features/me.md) |
@@ -36,6 +36,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [notification](#notification) | ✓ | 1 | [_platform-notifications](features/_platform-notifications.md) |
 | [nutrition](#nutrition) | ✓ | 2 | [fuel](features/fuel.md) |
 | [pantry](#pantry) | ✓ | 1 | [pantry](features/pantry.md) |
+| [penz](#penz) | ✓ | 2 | [penz](features/penz.md) |
 | [people](#people) | ✓ | 1 | [me](features/me.md) |
 | [proactive](#proactive) | ✓ | 2 | [contextual-feed-evaluation](features/contextual-feed-evaluation.md), [proactive](features/proactive.md) |
 | [recipe](#recipe) | ✓ | 4 | [recipe](features/recipe.md) |
@@ -271,6 +272,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed) ·
+  [docs/features/penz.md](features/penz.md) (updated 2026-11-19, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
   [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-19, mixed)
 
@@ -382,9 +384,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`,
     `OpenAiCompanionLlm`, `OpenAiEmbeddingAdapter`, `OpenAiUsageExtractor`, `OutputLanguageDirective`,
     `PantryEstimateLlmAdapter`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`,
-    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PersistentPainRule`, `PersonalRecordTools`,
-    `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`,
-    `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
+    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PenzSmsLlmAdapter`, `PersistentPainRule`,
+    `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`,
+    `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
     `RecipeCookedLlmAdapter`, `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`,
     `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`,
     `ScoreBreakdownEnvelope`, `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`,
@@ -920,6 +922,47 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **populators:** `DatabasePopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
     `UserPopulator`
 
+### penz
+
+*BE + API* · read next: [docs/features/penz.md](features/penz.md) (updated 2026-11-19, done)
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/penz`
+  - **entities→tables:** `PenzAccountEntity`→`penz_account`, `PenzApiKeyEntity`→`penz_api_key`,
+    `PenzCategoryEntity`→`penz_category`, `PenzFxRateEntity`→`penz_fx_rate`, `PenzMonthCloseEntity`→`penz_month_close`,
+    `PenzRecurringRuleEntity`→`penz_recurring_rule`, `PenzSettingsEntity`→`penz_settings`,
+    `PenzSmsMessageEntity`→`penz_sms_message`, `PenzTransactionEntity`→`penz_transaction`
+  - **repositories:** `PenzAccountRepository`, `PenzApiKeyRepository`, `PenzCategoryRepository`,
+    `PenzFxRateRepository`, `PenzMonthCloseRepository`, `PenzRecurringRuleRepository`, `PenzSettingsRepository`,
+    `PenzSmsMessageRepository`, `PenzTransactionRepository`
+  - **services:** `FrankfurterClient`, `PenzAccountService`, `PenzAllowanceService`, `PenzCategoryService`,
+    `PenzEngineInputs`, `PenzErrors`, `PenzFxService`, `PenzMonthCloseService`, `PenzMonths`,
+    `PenzRecurringMaterializer`, `PenzRecurringRuleService`, `PenzSettingsService`, `PenzSmsIngestService`,
+    `PenzSmsKeyService`, `PenzSmsLlm`, `PenzSmsRateLimiter`, `PenzSmsStore`, `PenzTransactionService`
+  - **controllers→contract:** `PenzController`→`PenzApi`, `PenzSmsController`→`PenzSmsApi`
+  - **mappers:** `PenzMapper`
+  - **config:** `PenzProperties`, `PenzSmsApiKeyFilter`, `PenzSmsSecurityConfig`
+  - **other:** `AccountBalance`, `AccountInput`, `AccountRules`, `AllowanceEngine`, `AllowanceLine`,
+    `AllowanceLineKey`, `AllowanceSettings`, `Balances`, `BookedAmount`, `CategoryBudgets`, `CloseOutcome`,
+    `EmergencyFund`, `Frequency`, `FxConversion`, `GuardVerdict`, `HufAmountGuard`, `Money`, `MonthCloseInput`,
+    `MonthCloseRules`, `MonthlyAllowance`, `PenzDates`, `PenzSmsKeys`, `Recurrence`, `RecurringRuleInput`, `RuleKind`,
+    `SmsAmountCheck`, `SmsConversion`, `SmsIngestLogic`, `SmsPrompt`, `TxnInput`, `TxnKind`, `WeekPortion`,
+    `WeeklyAllowance`
+- **Contract** `api/feature/penz/penz-sms.yml` — 4 operations
+  - **endpoints:** POST /api/penz/sms/ingest · GET /api/penz/sms/keys · POST /api/penz/sms/keys ·
+    DELETE /api/penz/sms/keys/{id}
+- **Contract** `api/feature/penz/penz.yml` — 23 operations
+  - **endpoints:** GET /api/penz/settings · PUT /api/penz/settings · GET /api/penz/accounts · POST /api/penz/accounts ·
+    PUT /api/penz/accounts/{id} · POST /api/penz/accounts/{id}/archive · GET /api/penz/categories ·
+    POST /api/penz/categories · PUT /api/penz/categories/{id} · GET /api/penz/transactions ·
+    POST /api/penz/transactions · PUT /api/penz/transactions/{id} · DELETE /api/penz/transactions/{id} ·
+    POST /api/penz/transactions/{id}/reviewed · POST /api/penz/transfers · GET /api/penz/recurring-rules ·
+    POST /api/penz/recurring-rules · PUT /api/penz/recurring-rules/{id} · DELETE /api/penz/recurring-rules/{id} ·
+    GET /api/penz/allowance · GET /api/penz/month-closes · GET /api/penz/month-closes/open ·
+    POST /api/penz/month-closes/{month}
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/penz` — 4 IT + 19 unit
+  - **ITs:** `PenzAllowanceApiIT`, `PenzApiIT`, `PenzMonthCloseServiceIT`, `PenzSmsIngestApiIT`
+  - **populators:** `DatabasePopulator`, `PenzPopulator`
+
 ### people
 
 *BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed)
@@ -1279,12 +1322,13 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
   `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
   `MesoTemplatePopulator`, `NeedsPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
-  `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`,
-  `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`, `ReadinessChoicePopulator`, `RecipePopulator`,
-  `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
-  `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`,
-  `UserPopulator`, `WaterLogPopulator`, `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`,
-  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
+  `PatternEventPopulator`, `PatternPopulator`, `PenzPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`,
+  `PlannedSkipPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`,
+  `ReadinessChoicePopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`,
+  `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`,
+  `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`,
+  `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
+  `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
 - **`ResetDatabase` TRUNCATE list** — 1 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `character_council_quota`
 

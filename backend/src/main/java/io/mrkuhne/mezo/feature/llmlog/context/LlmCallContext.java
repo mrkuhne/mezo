@@ -37,6 +37,21 @@ public record LlmCallContext(String feature, String operation, String entityKind
     /** Document embedding for the memory store — vectors, never read by a person. */
     public static final String FEATURE_EMBED_MEMORY = "embed_memory";
 
+    /**
+     * Boop Pénz's bank-SMS parse (mezo-r36n9.102). Lives here because it is payload-free (see
+     * {@link #keepsPayload}): the prompt carries the raw SMS — one-time codes and balances among the texts the
+     * model then ignores — and Pénz promises an ignored SMS text is never kept.
+     */
+    public static final String FEATURE_PENZ_SMS = "penz_sms";
+
+    /**
+     * False for a call whose prompt and answer must never be persisted in the audit log — the row keeps cost,
+     * tokens and the true payload size, and is stamped scrubbed at write time. Only {@link #FEATURE_PENZ_SMS}.
+     */
+    public boolean keepsPayload() {
+        return !FEATURE_PENZ_SMS.equals(feature);
+    }
+
     /** True when this context is the admin explorer's dry-run replay. */
     public boolean isAdminReplay() {
         return FEATURE_ADMIN_REPLAY.equals(feature);

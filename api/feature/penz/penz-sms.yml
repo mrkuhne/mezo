@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info: { title: mezo penz sms fragment, version: 1.0.0 }
+tags:
+  - name: PenzSms
+    description: >
+      Boop Pénz L4 (mezo-r36n9.102, spec §10.1.7) — the bank-SMS path of the iOS Shortcut. The ingest is
+      authenticated by a per-user API key (`mzp_` + base64url of 32 random bytes; stored as its SHA-256 hex and
+      last four characters), sent as `X-Api-Key: <key>` or `Authorization: Bearer mzp_...` — never a JWT. The key's
+      owner is the principal. Rate limited per key (429 with Retry-After). A parsed SMS becomes a transaction
+      server-side at once (source sms, needsReview true); the same SMS again answers `duplicate` and never doubles.
+      Keys are managed with the normal JWT; the plaintext key is returned ONCE, at creation.
+paths:
+  /api/penz/sms/ingest:
+    post:
+      tags: [PenzSms]
+      operationId: ingestPenzSms
+      summary: Ingest one bank SMS from the iOS Shortcut (API-key auth)
+      security:
+        - penzApiKey: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzSmsIngestRequest' } } }
+      responses:
+        '200':
+          description: What happened to the SMS
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzSmsIngestResponse' } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing, unknown or revoked API key', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '429': { description: 'Too many SMS for this key (Retry-After header)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/sms/keys:
+    get:
+      tags: [PenzSms]
+      operationId: listPenzSmsKeys
+      summary: The caller's SMS API keys (never the key itself)
+      responses:
+        '200':
+          description: Keys, newest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PenzSmsKeyResponse' } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    post:
+      tags: [PenzSms]
+      operationId: createPenzSmsKey
+      summary: Create an SMS API key — the plaintext is in this response only
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzSmsKeyCreateRequest' } } }
+      responses:
+        '200':
+          description: The key, with its plaintext once
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzSmsKeyCreatedResponse' } } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/sms/keys/{id}:
+    delete:
+      tags: [PenzSms]
+      operationId: revokePenzSmsKey
+      summary: Revoke an SMS API key (it stops working at once)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Revoked }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such key of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+components:
+  schemas:
+    PenzSmsIngestRequest:
+      type: object
+      description: The iOS Shortcut contract of the old app, kept as is (snake_case received_at).
+      required: [text]
+      properties:
+        text: { type: string, minLength: 1, maxLength: 1000 }
+        sender: { type: string, maxLength: 100, nullable: true, description: "Defaults to 'unknown'" }
+        received_at:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: >
+            When the phone received the SMS, ISO-8601 with an offset (e.g. 2026-11-11T08:17:00+01:00). Kept a plain
+            string on purpose (the old Shortcut contract): an unparseable or missing value means "now", never a 400
+            that would lose the SMS.
+    PenzSmsIngestResponse:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [parsed, ignored, failed, duplicate] }
+        transactionId: { type: string, format: uuid, nullable: true }
+        reason: { type: string, nullable: true }
+    PenzSmsKeyResponse:
+      type: object
+      required: [id, name, last4, revoked, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        last4: { type: string }
+        revoked: { type: boolean }
+        lastUsedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+    PenzSmsKeyCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+    PenzSmsKeyCreatedResponse:
+      type: object
+      required: [key, plaintext]
+      properties:
+        key: { $ref: '#/components/schemas/PenzSmsKeyResponse' }
+        plaintext: { type: string, description: 'mzp_<base64url 32 bytes> — shown once, never stored' }

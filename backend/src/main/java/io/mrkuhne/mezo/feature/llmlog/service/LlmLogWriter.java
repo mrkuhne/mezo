@@ -79,7 +79,7 @@ public class LlmLogWriter {
         entity.setFinishReason(record.finishReason());
         applyTokens(entity, record.tokens());
         applyEmbed(entity, record.embed());
-        applyPayload(entity, record);
+        applyPayload(entity, record, context);
         applyImages(entity, record);
         applyCost(entity, record, event.startedAt());
 
@@ -117,8 +117,11 @@ public class LlmLogWriter {
      * Each payload column is capped at {@code mezo.llm-log.max-payload-chars} so one runaway prompt
      * cannot bloat the table; {@code payload_bytes} keeps the TRUE pre-truncation UTF-8 size, which
      * is what makes the cut visible instead of silent.
+     *
+     * <p>A payload-free context ({@link LlmCallContext#keepsPayload}, e.g. the Pénz bank-SMS parse) keeps only the
+     * size: the four columns stay null and the row is stamped scrubbed now, as the retention job would later.
      */
-    private void applyPayload(LlmLogEntity entity, LlmCallRecord record) {
+    private void applyPayload(LlmLogEntity entity, LlmCallRecord record, LlmCallContext context) {
         int cap = llmLogProperties.maxPayloadChars();
         long bytes = utf8Length(record.systemPrompt())
             + utf8Length(record.conversationHistory())
@@ -126,6 +129,10 @@ public class LlmLogWriter {
             + utf8Length(record.responseText());
 
         entity.setPayloadBytes((int) Math.min(bytes, Integer.MAX_VALUE));
+        if (!context.keepsPayload()) {
+            entity.setPayloadScrubbedAt(Instant.now());
+            return;
+        }
         entity.setSystemPrompt(cap(record.systemPrompt(), cap));
         entity.setConversationHistory(cap(record.conversationHistory(), cap));
         entity.setUserMessage(cap(record.userMessage(), cap));

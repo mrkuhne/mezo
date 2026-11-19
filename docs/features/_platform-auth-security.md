@@ -14,6 +14,8 @@ related: [_platform-data-layer, _platform-api-backend, _platform-notifications, 
 
 # Auth & Security — Feature Documentation
 
+> **2026-11-19 — Boop Pénz L4 (`mezo-r36n9.102`): a second filter chain for one path.** `feature/penz/config/PenzSmsSecurityConfig` registers a `SecurityFilterChain` ordered before the main JWT chain and matching **only** `/api/penz/sms/ingest`. Its `PenzSmsApiKeyFilter` (not a bean, so it exists in no other chain) authenticates a per-user API key (`X-Api-Key`, or `Authorization: Bearer` only for a `mzp_…` token; SHA-256 lookup, revoked rejected, `last_used_at` stamped; else 401 `PENZ_SMS_KEY_INVALID` before the body is read), applies a per-key in-memory rate limit (429 + `Retry-After`), and sets the key's owner as a `JwtAuthenticationToken` over an unsigned in-memory `Jwt` (subject = owner, authority `PENZ_SMS_INGEST`) so `CurrentUser`'s status check and `created_by` resolve exactly as for a JWT. A JWT on that path is 401; a key anywhere else is 401. Details: [`penz.md`](penz.md) §3.4.
+
 > One-line: the multi-user account model (S1, `mezo-qw37`) — invite-gated registration → 30-day HS256 JWT → resource-server filter → per-request `CurrentUser` status check → server-side `created_by`. **Status: ✅ backend done (S1); ✅ FE persisted token + `AuthGate` boot state machine.** This is a *platform* feature — no route/tab of its own; it sits under every authenticated screen, gating what renders before any view mounts.
 
 ---

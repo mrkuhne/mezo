@@ -171,6 +171,36 @@ class LlmLogWriterIT extends AbstractIntegrationTest {
         assertThat(row.getPayloadBytes()).isGreaterThanOrEqualTo(70_000);
     }
 
+    /**
+     * Boop Pénz L4 (mezo-r36n9.102): the bank-SMS parse carries the raw SMS (OTP codes and the like among the
+     * ignored ones), so its payload is never kept — the row keeps cost, tokens and the true payload size, and is
+     * stamped scrubbed at write time.
+     */
+    @Test
+    void testPersist_shouldKeepNoPayload_whenFeatureIsPayloadFree() {
+        LlmCallRecord rec = LlmCallRecord.builder()
+            .callKind(CallKind.CHAT).requestedModel("gemini-2.5-flash").servedModel("gemini-2.5-flash")
+            .status(CallStatus.SUCCESS).latencyMs(10)
+            .tokens(new TokenUsage(1_000, 100, 0, 0, 1_100))
+            .systemPrompt("sys").conversationHistory("").userMessage("Kod: 482913, vasarlas 15 500 HUF")
+            .responseText("{\"is_transaction\":false}")
+            .context(new LlmCallContext(LlmCallContext.FEATURE_PENZ_SMS, "parse", null, null))
+            .build();
+
+        llmLogWriter.persist(new LlmCallEvent(rec, ownerId(), Instant.parse("2026-11-19T10:00:00Z")));
+
+        LlmLogEntity row = llmLogRepository.findAll().getFirst();
+        assertThat(row.getFeature()).isEqualTo("penz_sms");
+        assertThat(row.getSystemPrompt()).isNull();
+        assertThat(row.getConversationHistory()).isNull();
+        assertThat(row.getUserMessage()).isNull();
+        assertThat(row.getResponseText()).isNull();
+        assertThat(row.getPayloadScrubbedAt()).isNotNull();
+        assertThat(row.getPayloadBytes()).isPositive();
+        assertThat(row.getTotalTokens()).isEqualTo(1_100);
+        assertThat(row.getCostUsd()).isNotNull();
+    }
+
     /** Non-chat pipelines have no conversation to lose — the column must stay null (mezo-q71s). */
     @Test
     void testPersist_shouldLeaveConversationHistoryNull_whenRecordHasNone() {

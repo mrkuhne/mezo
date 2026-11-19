@@ -22,6 +22,7 @@ Epic: `mezo-r36n9` · tükör jegy: `mezo-r36n9.29`.
 | `08-adatok/` | Apple Health és adatok — szinkron, naptár, források |
 | `09-boop/` | Boop — a beszélgetés |
 | `10-ai/` | AI és memória — emlékezet, éjszakai konzílium, javaslatok „miért?” |
+| `11-penz/` | Pénz — a heti maradék, a költések, a hónapzárás, később befektetések és gyakorlás |
 
 Minden mappában egy `00-attekintes.md` (szint: **Fő szekció**), alatta **Funkció** és **Kis funkció** oldalak.
 
