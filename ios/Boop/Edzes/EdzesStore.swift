@@ -152,7 +152,7 @@ final class EdzesStore {
 
     /// „Mi van a termemben": what his gym lacks. Everything counts as available until the server says otherwise.
     private(set) var gym = GymProfile()
-    private var gymLoaded = false
+    private(set) var gymLoaded = false
     /// Exercises of today's workout he said „nem esik jól" about — the chip stays lit when the sheet reopens.
     private(set) var discomforts: Set<UUID> = []
 
@@ -183,7 +183,7 @@ final class EdzesStore {
     }
 
     /// `change` is applied to the profile as read from the server, never to the empty one the store starts with.
-    private func saveGym(_ change: (GymProfile) -> GymProfile) async -> String? {
+    func saveGym(_ change: (GymProfile) -> GymProfile) async -> String? {
         guard let client else { return "Most nem érem el a termed beállításait." }
         // The save replaces the whole profile: writing over one that was never read would wipe what he set
         // elsewhere.

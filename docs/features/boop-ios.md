@@ -527,6 +527,17 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   „… — lecserélve"). Pure parts in `BoopCore/Train/SwapList.swift`. Simulator: `-previewEdzesSwap YES`
   (+ `-previewEdzesSwapAt N`, `-previewEdzesSwapFail YES`); the preview catalogue now carries the real catalogue's `gear` and
   type, and `PreviewTransport` answers suggestions with a toy ranker over it, keeping the gym profile and discomforts in memory.
+- **„Mi van a termemben" (`mezo-r36n9.66`, 2026-11-19)** — `Edzes/GymSettings.swift`: the intro sentence, nine switches
+  (the §6.1 labels, `EquipmentKind.label`) and *AMI KONKRÉTAN HIÁNYZIK* with a *mégis van* per marked exercise (names from the
+  cached catalogue; one it no longer has reads „Törölt gyakorlat" but can still be undone). Opens from the room's
+  *Beállítások* action and from the swap sheet's *Mi van a termemben ›* link — the latter **inside the player**
+  (`WorkoutPlayer.gymSheet`, a `PlayerSheet.gym`), because the room cannot present while the player's cover is up. One
+  source of truth: `EdzesStore.gym`. `GymEditor` shows a copy, sends every change through `EdzesStore.saveGym` (profile
+  read from the server first, whole PUT, taken back by the store on a refusal) and re-reads the store's profile; each
+  switch saves at once, a failed save puts the switch back and shows *„Nem sikerült elmenteni · Újra”*, and a profile that
+  could not be read shows no switches at all (*„Most nem érem el a termed beállításait · Újra”*). Simulator:
+  `-previewEdzesGym YES` (+ `-previewEdzesGymSeed YES` two kinds off and one exercise missing, `-previewEdzesGymFail YES`
+  every save refused).
 
 - **A set correction reaches the server (`mezo-r36n9.96`, 2026-11-19)** — the correction sheet used to change the
   phone's session only (no `workoutSetEdit` item was ever queued, though the sheet said otherwise). Now the player

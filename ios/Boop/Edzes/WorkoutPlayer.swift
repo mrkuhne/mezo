@@ -57,8 +57,9 @@ struct WorkoutPlayer: View {
     let onBriefing: () -> Void
     /// The reasoned swap's reads and writes: suggestions, the gym, „nem esik jól" (mezo-r36n9.66).
     var swap = SwapActions()
-    /// *Mi van a termemben ›* on the swap sheet. Nil until the gym page exists: the link then says „hamarosan".
-    var onGym: (() -> Void)? = nil
+    /// *Mi van a termemben ›* on the swap sheet opens this page. It is presented **here**, over the workout: the room
+    /// cannot present anything while the player's cover is up (boop-ios.md §9). Nil: the link says „hamarosan".
+    var gymSheet: (() -> AnyView)? = nil
 
     @State private var kg: Double = 0
     @State private var reps: Int = 0
@@ -782,7 +783,7 @@ struct WorkoutPlayer: View {
     // MARK: - Sheets
 
     private enum PlayerSheet: Identifiable {
-        case note(UUID), swap(UUID), exerciseMenu(UUID), editSet(UUID), pick, records(UUID), technique(UUID)
+        case note(UUID), swap(UUID), exerciseMenu(UUID), editSet(UUID), pick, records(UUID), technique(UUID), gym
         var id: String {
             switch self {
             case .note(let id): "note-\(id)"
@@ -792,10 +793,12 @@ struct WorkoutPlayer: View {
             case .records(let id): "rec-\(id)"
             case .technique(let id): "tech-\(id)"
             case .pick: "pick"
+            case .gym: "gym"
             }
         }
         /// The swap is a long list with cards: it opens full height, as on the approved spike.
         var isSwap: Bool { if case .swap = self { true } else { false } }
+        var isGym: Bool { if case .gym = self { true } else { false } }
     }
 
     @ViewBuilder private func sheet(for sheet: PlayerSheet) -> some View {
@@ -808,9 +811,10 @@ struct WorkoutPlayer: View {
             case .records(let id): recordsSheet(id)
             case .technique(let id): techniqueSheet(id)
             case .pick: pickSheet
+            case .gym: gymSheet?()
             }
         }
-        .presentationDetents(sheet.isSwap ? [.large] : [.medium, .large])
+        .presentationDetents(sheet.isSwap || sheet.isGym ? [.large] : [.medium, .large])
         .presentationBackground(NK.ground)
         .presentationCornerRadius(34)
         .presentationDragIndicator(.visible)
@@ -973,8 +977,7 @@ struct WorkoutPlayer: View {
                   swapping: swapping, problem: swapProblem,
                   onPick: { c in pickSwap(id, c) },
                   openGym: {
-                      sheet = nil
-                      if let onGym { onGym() } else { say(soonToast("Mi van a termemben")) }
+                      if gymSheet != nil { sheet = .gym } else { sheet = nil; say(soonToast("Mi van a termemben")) }
                   })
     }
 

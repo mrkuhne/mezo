@@ -656,6 +656,8 @@ struct PreviewTransport: ClientTransport {
             return json(#"{"exerciseId":"\#(previewExerciseId(index))","today":\#(today)}"#)
         case "getGymProfile": return json(previewGymJSON)
         case "putGymProfile":
+            // `-previewEdzesGymFail YES`: the save is refused, and the switch goes back with its *Újra* row.
+            if UserDefaults.standard.bool(forKey: "previewEdzesGymFail") { return (HTTPResponse(status: .serviceUnavailable), nil) }
             // Remember what was saved, so the swap sheet re-ranks and the settings page reads it back.
             if let data = sent.data(using: .utf8),
                let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -951,7 +953,10 @@ struct PreviewTransport: ClientTransport {
 
     /// What the review's gym lacks (kinds off, catalogue ids missing) and which of today's exercises he said
     /// „nem esik jól" about. Both start empty, like his real profile.
-    nonisolated(unsafe) private static var previewGym: (off: Set<String>, missing: Set<String>) = ([], [])
+    /// `-previewEdzesGymSeed YES`: two kinds off and one machine missing, as after a few swaps.
+    nonisolated(unsafe) private static var previewGym: (off: Set<String>, missing: Set<String>) =
+        UserDefaults.standard.bool(forKey: "previewEdzesGymSeed")
+        ? (["smith", "specialty"], [previewExerciseId(0)]) : ([], [])
     nonisolated(unsafe) private static var previewSore: Set<Int> = []
     /// Invented history: a top set for some rows (the chin-up's is bodyweight — no weight, never „0 kg") and two
     /// rows that hurt last time.
