@@ -66,6 +66,11 @@ public interface PantryMapper {
         c.setNova(r.getNova() == null ? null : r.getNova().shortValue());
         c.setForm(r.getForm());
         c.setCaffeine(r.getCaffeine());
+        c.setBarcode(blankToNull(r.getBarcode()));
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.strip();
     }
 
     /**
@@ -96,6 +101,7 @@ public interface PantryMapper {
         if (r.getNova() != null) c.setNova(r.getNova().shortValue());
         setIfPresent(r.getForm(), c::setForm);
         setIfPresent(r.getCaffeine(), c::setCaffeine);
+        setIfPresent(blankToNull(r.getBarcode()), c::setBarcode);
     }
 
     /**
@@ -126,7 +132,8 @@ public interface PantryMapper {
                     .equals(c.getMicros() == null ? List.of() : c.getMicros()))
             || (r.getNova() != null && !Short.valueOf(r.getNova().shortValue()).equals(c.getNova()))
             || (r.getForm() != null && !r.getForm().equals(c.getForm()))
-            || (r.getCaffeine() != null && !r.getCaffeine().equals(c.getCaffeine()));
+            || (r.getCaffeine() != null && !r.getCaffeine().equals(c.getCaffeine()))
+            || (blankToNull(r.getBarcode()) != null && !blankToNull(r.getBarcode()).equals(c.getBarcode()));
     }
 
     private static boolean numDiffers(BigDecimal requested, BigDecimal stored) {

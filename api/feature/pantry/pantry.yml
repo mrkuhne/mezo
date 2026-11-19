@@ -296,7 +296,11 @@ components:
         catalogId: { type: string, format: uuid, nullable: true }
         name: { type: string }
         brand: { type: string, nullable: true }
+        # On an update of an AI-estimated food (mezo-r36n9.63) this names where the NEW facts come from
+        # (openfoodfacts / photo / manual …). Absent — or the old ai_estimate echoed back — while a fact
+        # changes means the owner typed them: the stored source becomes manual.
         source: { allOf: [ { $ref: '#/components/schemas/PantrySource' } ], nullable: true }
+        barcode: { type: string, nullable: true, maxLength: 32, description: 'EAN/UPC of the product (a definition field). Absent = leave as it is; 409 when another of the author''s foods carries it.' }
         category: { type: string, nullable: true, enum: [vegetables, fruits, meat, fish, eggs, dairy, cheese, legumes, grains, pasta, bakery, nuts_seeds, oils_fats, condiments, snacks, beverages, supplement, other] }
         notes: { type: string, nullable: true }
         per: { type: number, nullable: true }

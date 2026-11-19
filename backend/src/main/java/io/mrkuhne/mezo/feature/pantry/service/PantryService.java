@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.pantry.config.PantryImportProperties;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.event.PantryFactsChangedEvent;
 import io.mrkuhne.mezo.feature.pantry.mapper.PantryMapper;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryImportRepository;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,9 @@ public class PantryService {
     private final PantryImportProperties importProperties;
     private final PantryMapper mapper;
     private final AppUserRepository appUserRepository;
+    private final ApplicationEventPublisher events;
+
+    private static final String SOURCE_AI_ESTIMATE = "ai_estimate";
 
     /**
      * The caller's shelf joined to the shared definitions (S4, mezo-qw37.4), projected by kind:
@@ -149,7 +154,17 @@ public class PantryService {
                     throw new SystemRuntimeErrorException(
                         SystemMessage.error("PANTRY_CATALOG_NAME_TAKEN").build(), HttpStatus.CONFLICT);
                 });
+            requireBarcodeFree(c, req);
+            boolean wasEstimate = SOURCE_AI_ESTIMATE.equals(c.getSource());
+            List<Object> factsBefore = facts(c);
             mapper.applyDefinitionPartial(c, req); // dirty-checked, flushed on commit
+            // The facts of an AI estimate were just replaced by a human (mezo-r36n9.63): typed in, or
+            // read off a barcode / a label by one of the readers. The reader names its own source; a
+            // request that names none — or merely echoes the old value back — is the owner typing, so
+            // the row stops claiming to be an estimate.
+            if (wasEstimate && SOURCE_AI_ESTIMATE.equals(c.getSource())) {
+                c.setSource("manual");
+            }
             // A draft is an UNREVIEWED import candidate; the author actually editing its facts is
             // the confirmation gesture the manual-review badge asks for, so it promotes the row
             // (mezo-qooi). Deliberately author-only: passing requireEditable as a bystander OWNER
@@ -158,9 +173,43 @@ public class PantryService {
                 && user.getId().equals(c.getCreatedBy())) {
                 c.setStatus(PantryCatalogEntity.STATUS_VERIFIED);
             }
+            if (!factsBefore.equals(facts(c))) {
+                // The editor's own recipes froze these numbers per line; they follow after commit.
+                events.publishEvent(new PantryFactsChangedEvent(c.getId(), user.getId()));
+            }
         }
         mapper.applyUserFieldsPartial(e, req);
         return mapper.toItemResponse(e);
+    }
+
+    /** The numbers a recipe line snapshots, scale-normalised so 100 and 100.0 compare equal. */
+    private static List<Object> facts(PantryCatalogEntity c) {
+        return java.util.Arrays.asList(
+            norm(c.getServingAmount()), c.getServingUnit(), norm(c.getKcal()), norm(c.getProteinG()),
+            norm(c.getCarbsG()), norm(c.getFatG()), norm(c.getFiberG()), norm(c.getSugarG()),
+            norm(c.getSaltG()), norm(c.getSaturatedFatG()));
+    }
+
+    private static java.math.BigDecimal norm(java.math.BigDecimal v) {
+        return v == null ? null : v.stripTrailingZeros();
+    }
+
+    /**
+     * A product barcode is unique per author among live definitions
+     * ({@code uq_pantry_catalog_owner_barcode}); taking one that another of the author's foods carries
+     * is a 409 rather than a unique-index 500.
+     */
+    private void requireBarcodeFree(PantryCatalogEntity c, PantryItemRequest req) {
+        String barcode = req.getBarcode() == null || req.getBarcode().isBlank() ? null : req.getBarcode().strip();
+        if (barcode == null || barcode.equals(c.getBarcode()) || c.getCreatedBy() == null) {
+            return;
+        }
+        catalogRepository.findByCreatedByAndBarcodeAndDeletedFalse(c.getCreatedBy(), barcode)
+            .filter(other -> !other.getId().equals(c.getId()))
+            .ifPresent(other -> {
+                throw new SystemRuntimeErrorException(
+                    SystemMessage.error("PANTRY_CATALOG_BARCODE_TAKEN").build(), HttpStatus.CONFLICT);
+            });
     }
 
     /**

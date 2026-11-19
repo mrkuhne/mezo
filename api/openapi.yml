@@ -21904,6 +21904,13 @@ components:
           allOf:
             - $ref: '#/components/schemas/PantrySource'
           nullable: true
+        barcode:
+          type: string
+          nullable: true
+          maxLength: 32
+          description: >-
+            EAN/UPC of the product (a definition field). Absent = leave as it
+            is; 409 when another of the author's foods carries it.
         category:
           type: string
           nullable: true

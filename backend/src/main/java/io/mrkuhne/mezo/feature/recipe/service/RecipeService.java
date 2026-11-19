@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -258,6 +259,44 @@ public class RecipeService {
         line.setUnit(req.getUnit());
         line.setNote(req.getNote());
         line.setLineOrder(index);
+        snapshot(line, c);
+        return line;
+    }
+
+    /**
+     * The owner's recipes follow a food whose NUMBERS he just replaced (mezo-r36n9.63 — „Pontosítom" on
+     * an estimated food, or any facts edit): every line of HIS recipes that uses his shelf row for that
+     * definition gets a fresh snapshot. Amount, unit, note and order are untouched, and so is every other
+     * line — a recipe saved on an estimate shows the precise numbers afterwards. Other users' recipes and
+     * logged meals (history, ADR 0026) are never touched.
+     *
+     * <p>Runs in its OWN transaction: the caller is an after-commit listener, where the finished
+     * transaction's resources are still bound to the thread and a joined write would never be committed.
+     * The template-breakdown cache needs no reset here — its numeric staleness compare regenerates it.
+     *
+     * @return how many lines were refreshed
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int refreshLinesOn(UUID userId, UUID catalogId) {
+        PantryItemEntity item = pantryItemRepository
+            .findByCreatedByAndCatalog_IdAndDeletedFalse(userId, catalogId).orElse(null);
+        if (item == null) {
+            return 0; // not on his shelf: none of his recipe lines can point at it
+        }
+        int refreshed = 0;
+        for (RecipeEntity recipe : repository.findOwnedUsingPantryItem(userId, item.getId())) {
+            for (RecipeIngredientEntity line : recipe.getLines()) {
+                if (item.getId().equals(line.getPantryItemId())) {
+                    snapshot(line, item.getCatalog()); // dirty-checked; flushed on commit
+                    refreshed++;
+                }
+            }
+        }
+        return refreshed;
+    }
+
+    /** The per-basis snapshot of a definition onto a line — the ONE place a line freezes a food's numbers. */
+    private static void snapshot(RecipeIngredientEntity line, PantryCatalogEntity c) {
         // Snapshot = the pantry item's per-basis macros at compose time (stable basis for contribution).
         line.setSnapshotName(c.getName());
         line.setSnapshotPer(orDefault(c.getServingAmount(), BigDecimal.ONE));
@@ -272,7 +311,6 @@ public class RecipeService {
         line.setSnapshotSugarG(c.getSugarG());
         line.setSnapshotSaltG(c.getSaltG());
         line.setSnapshotSaturatedFatG(c.getSaturatedFatG());
-        return line;
     }
 
     /** Owner-scoped, not-deleted lookup; missing/foreign/deleted are indistinguishable 400s. */
