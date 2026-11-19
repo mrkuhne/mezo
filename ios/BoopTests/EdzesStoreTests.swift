@@ -226,3 +226,62 @@ struct EdzesMaLogicTests {
         #expect(muscleName("tibialis") == "tibialis")
     }
 }
+
+/// The reasoned swap's store side (mezo-r36n9.66): the gym is never overwritten blind, a refusal is taken back.
+@MainActor
+struct EdzesSwapTests {
+    let transport = ScriptedTransport()
+
+    func store() -> EdzesStore {
+        EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                   cache: nil)
+    }
+
+    @Test func noEquipmentNeverWritesOverAProfileItCouldNotRead() async {
+        // The save replaces the whole profile: with the read failing, writing would wipe what he set elsewhere.
+        transport.on("getGymProfile") { _ in throw URLError(.notConnectedToInternet) }
+        transport.on("putGymProfile", 200, #"{"offKinds":["cable"],"missingExerciseIds":[]}"#)
+        let s = store()
+        let problem = await s.markMissing(.kind(.cable))
+        #expect(problem != nil)
+        #expect(transport.count("putGymProfile") == 0)
+        #expect(s.gym == GymProfile())
+    }
+
+    @Test func noEquipmentKeepsWhatWasThereAndAddsTheKind() async {
+        transport.on("getGymProfile", 200, #"{"offKinds":["barbell"],"missingExerciseIds":[]}"#)
+        transport.on("putGymProfile") { body in (200, body) }
+        let s = store()
+        #expect(await s.markMissing(.kind(.cable)) == nil)
+        #expect(s.gym.offKinds == ["barbell", "cable"])
+        await s.undoMissing(.kind(.cable))
+        #expect(s.gym.offKinds == ["barbell"])
+    }
+
+    @Test func aRefusedSaveTakesTheChangeBack() async {
+        transport.on("getGymProfile", 200, #"{"offKinds":[],"missingExerciseIds":[]}"#)
+        transport.on("putGymProfile", 400)
+        let s = store()
+        #expect(await s.markMissing(.kind(.dumbbell)) != nil)
+        #expect(s.gym == GymProfile())
+    }
+
+    @Test func theAskIsAQuestionNotASave() async {
+        let s = store()
+        #expect(await s.markMissing(.ask([.dumbbell, .bench])) == nil)
+        #expect(transport.count("putGymProfile") == 0)
+    }
+
+    @Test func withoutARunningWorkoutThereIsNothingToSuggestOrRecord() async {
+        let s = store()
+        #expect(await s.substitutes(for: UUID()) == nil)
+        #expect(await s.setDiscomfort(true, exerciseId: UUID()) == false)
+        #expect(s.discomforts.isEmpty)
+    }
+
+    @Test func aBodyweightTopSetNeverReadsAsZeroKilos() {
+        #expect(SwapSheet.lastText(kg: nil, reps: 12) == "12 ismétlés")
+        #expect(SwapSheet.lastText(kg: 57.5, reps: 10) == "57,5 kg × 10")
+        #expect(SwapSheet.typeName(.isolation) == "izolált")
+    }
+}

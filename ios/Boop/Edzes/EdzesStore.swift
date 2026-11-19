@@ -113,11 +113,7 @@ final class EdzesStore {
         // the queue may not have drained. The server's start is **idempotent on the template day** — it returns
         // the open instance rather than making a second one — so asking for it here is safe and is the only way
         // a swap works on the first exercise of a session.
-        var workoutId = await client.knownWorkoutId(for: session.ref) ?? today?.value.open?.id
-        if workoutId == nil, let template = today?.value.templateSessionId {
-            workoutId = try? await client.startWorkout(templateSessionId: template, ref: session.ref).id
-        }
-        guard let workoutId else {
+        guard let workoutId = await serverWorkoutId(client, session) else {
             return "Az edzés még nem ért fel a szerverre. Próbáld újra, amint van net."
         }
         let old = session.exercises[id]
@@ -142,6 +138,83 @@ final class EdzesStore {
         }
     }
 
+    /// The server's own id for the running workout, asking for it when the queue has not learned it yet. The
+    /// start is idempotent on the template day, so asking is safe (see `swapExercise`).
+    private func serverWorkoutId(_ client: TrainClient, _ session: WorkoutSession) async -> UUID? {
+        var workoutId = await client.knownWorkoutId(for: session.ref) ?? today?.value.open?.id
+        if workoutId == nil, let template = today?.value.templateSessionId {
+            workoutId = try? await client.startWorkout(templateSessionId: template, ref: session.ref).id
+        }
+        return workoutId
+    }
+
+    // MARK: - The reasoned swap (mezo-r36n9.66, spec §6.2)
+
+    /// „Mi van a termemben": what his gym lacks. Everything counts as available until the server says otherwise.
+    private(set) var gym = GymProfile()
+    private var gymLoaded = false
+    /// Exercises of today's workout he said „nem esik jól" about — the chip stays lit when the sheet reopens.
+    private(set) var discomforts: Set<UUID> = []
+
+    func loadGym() async {
+        guard let client, !gymLoaded else { return }
+        if let fresh = try? await client.gymProfile() { gym = fresh; gymLoaded = true }
+    }
+
+    /// Ranked, reasoned alternatives for one exercise of the running workout; nil when they cannot be fetched
+    /// (the sheet then falls back to the plain same-muscle list).
+    func substitutes(for exerciseId: UUID) async -> Substitutes? {
+        guard let client, let session, let workoutId = await serverWorkoutId(client, session) else { return nil }
+        return try? await client.substitutes(workoutId: workoutId, exerciseId: exerciseId)
+    }
+
+    /// „Ehhez nincs eszközöm": switch one kind off or mark one machine missing, at once on the phone and then on
+    /// the server. Returns the sentence to show when it could not be saved (the change is then taken back), nil
+    /// on success. `.ask` is a question for the sheet, never saved.
+    func markMissing(_ edit: MissingEdit) async -> String? {
+        if case .ask = edit { return nil }
+        return await saveGym { $0.applying(edit) }
+    }
+
+    /// *Visszavonom*.
+    func undoMissing(_ edit: MissingEdit) async {
+        if case .ask = edit { return }
+        _ = await saveGym { $0.reverting(edit) }
+    }
+
+    /// `change` is applied to the profile as read from the server, never to the empty one the store starts with.
+    private func saveGym(_ change: (GymProfile) -> GymProfile) async -> String? {
+        guard let client else { return "Most nem érem el a termed beállításait." }
+        // The save replaces the whole profile: writing over one that was never read would wipe what he set
+        // elsewhere.
+        await loadGym()
+        guard gymLoaded else { return "Most nem érem el a termed beállításait." }
+        let before = gym
+        let next = change(gym)
+        gym = next
+        do {
+            gym = try await client.saveGymProfile(next)
+            return nil
+        } catch TrainFetchError.offline {
+            gym = before
+            return "Ehhez internet kell, és most nincs."
+        } catch {
+            gym = before
+            return "A termed beállítását most nem sikerült elmenteni."
+        }
+    }
+
+    /// „Nem esik jól" on (or off again) for one exercise of today's workout. True when the server took it.
+    func setDiscomfort(_ on: Bool, exerciseId: UUID) async -> Bool {
+        guard let client, let session, let workoutId = await serverWorkoutId(client, session) else { return false }
+        do {
+            if on { try await client.markDiscomfort(workoutId: workoutId, exerciseId: exerciseId) }
+            else { try await client.clearDiscomfort(workoutId: workoutId, exerciseId: exerciseId) }
+        } catch { return false }
+        if on { discomforts.insert(exerciseId) } else { discomforts.remove(exerciseId) }
+        return true
+    }
+
     /// Put the session back where it was — used when the player closes and when the app
     /// comes back. Saving on every change is deliberate: a set he did is never lost to a
     /// crash, and the file is tiny.
@@ -153,6 +226,7 @@ final class EdzesStore {
     /// The workout is over: the session leaves the phone's memory and its file.
     func endWorkout() {
         session = nil
+        discomforts = []
         if let sessionFile { try? FileManager.default.removeItem(at: sessionFile) }
     }
 

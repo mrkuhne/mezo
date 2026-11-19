@@ -155,7 +155,14 @@ struct EdzesRoom: View {
                               },
                               // Looking at today's plan again mid-workout: the briefing goes over the
                               // player and the session keeps running underneath.
-                              onBriefing: { phase = .briefing })
+                              onBriefing: { phase = .briefing },
+                              swap: SwapActions(
+                                  gym: { store.gym },
+                                  discomforted: { store.discomforts.contains($0) },
+                                  substitutes: { await store.substitutes(for: $0) },
+                                  markMissing: { await store.markMissing($0) },
+                                  undoMissing: { await store.undoMissing($0) },
+                                  setDiscomfort: { on, id in await store.setDiscomfort(on, exerciseId: id) }))
             }
         }
         .fullScreenCover(isPresented: Binding(get: { phase == .ceremony && store?.session != nil },
@@ -174,6 +181,14 @@ struct EdzesRoom: View {
             // The catalog is only needed by the swap sheet, but it is one cached read and the gym is exactly
             // where the network is not: better here than at the moment a machine turns out to be occupied.
             await store?.loadCatalog()
+            // What his gym lacks, so the swap sheet's chip opens lit when it should.
+            await store?.loadGym()
+            #if DEBUG
+            // `-previewEdzesSwap YES` (mezo-r36n9.66): straight into the player, which opens the swap sheet.
+            if UserDefaults.standard.bool(forKey: "previewEdzesSwap") {
+                if store?.session != nil { phase = .playing } else if workout != nil { beginWorkout() }
+            }
+            #endif
             if weekReview == nil, let plan { weekReview = WeekReviewModel(client: plan) }
             async let preload: Void = prepareBuilder(fresh: false)
             await weekReview?.load()
