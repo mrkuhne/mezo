@@ -26,13 +26,17 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
 
 **A blokképítő** („Blokk szerkesztése”) egy teljes képernyő saját, háromgombos sávval:
 - **Izmok** — a test képe, alatta izmonként egy kártya: a szint (Tartás · Építés · Hangsúly) egy kapcsolón, egy félköríves mérőn
-  a sáv és a te heti számod, hol vannak a sorozatok a héten, és ha az izom kilóg a sávjából, egy **konkrét javaslat** („+1 Lehúzás
+  a sáv és a te heti számod, alatta kis címkéken a sáv és hogy melyik napon hány sorozat van (például „Sáv 14–22 · Hétfő 6 ·
+  Csütörtök 5”), a kártya alján pedig mindig ott van, **miért ez a sáv** (a szint és a sport alapján), és ha az izom kilóg a sávjából, egy **konkrét javaslat** („+1 Lehúzás
   (hétfő)”) **Elfogadom** és **miért?** gombbal.
 - **Napok** — naponként egy lap: becsült edzéshossz, aznap van-e sport, izomcsoportonkénti sorozatszám, gyakorlatonként egy
   léptető (1–8 sorozat), a gyakorlat technikája egy címkén (koppintásra vált), és a nap **kihívása** egy zászlóval. Ha egy izomra
   egy napon túl sok jut, sárgán szól.
 - **Blokk** — az **edzésmód** négy közül (Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két sorozat bukásig), két kapcsoló
   (**Technikák** be/ki, **A heti javaslatot én hagyom jóvá**), a blokk heteinek sorozatszáma és izmonként az út hétről hétre.
+
+Az építő és a pakli abból a gombból, illetve kártyából **nagyul ki**, amire koppintottál, és lefelé húzva oda zsugorodik vissza; az
+építő már a Blokk fül megnyitásakor betölt a háttérben, így várakozás nélkül nyílik.
 
 Egyetlen fő gomb van: amíg valamelyik izom kilóg, **„Igazítsd a sávba”** (minden kilógó izomra alkalmazza a javaslatot), utána
 **„Mentés”**.

@@ -302,15 +302,13 @@ private struct BuilderMuscleCard: View {
                             }
                             .accessibilityHidden(true)
                         }
-                    Text("a sáv \(m.band.low)–\(m.band.high)\(m.band.sportAdjusted ? " · a sport miatt lejjebb" : "")\(spread(m).isEmpty ? "" : " · \(spread(m))")")
-                        .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
-                        .multilineTextAlignment(.center)
+                    bandPills(m, tier: tier)
 
                     if !inside {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(alignment: .top, spacing: 10) {
                                 PlanMark(why ? .target : .spark, color: planWarn, size: 18).padding(.top, 1)
-                                Text(why ? whyText(tier) : proposalText(m, draft))
+                                Text(why ? proposalRule : proposalText(m, draft))
                                     .nkFont(13).foregroundStyle(.white.opacity(0.85))
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -332,11 +330,8 @@ private struct BuilderMuscleCard: View {
                         }
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(planWarn.opacity(0.1)))
-                    } else {
-                        Text("Rendben van. A Napok nézetben állíthatod a sorozatokat, a mérő azonnal követi.")
-                            .nkFont(13).foregroundStyle(.white.opacity(0.55))
-                            .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                     }
+                    bandReason(m, tier: tier, inside: inside)
                 }
                 .padding(20)
             }
@@ -358,11 +353,52 @@ private struct BuilderMuscleCard: View {
         }
     }
 
-    /// „hétfő 6 · csütörtök 5" — where this muscle's sets sit in the week.
-    private func spread(_ m: WireMuscleEvaluation) -> String {
-        guard let days = model.draft?.days else { return "" }
-        return m.spread.filter { $0.sets > 0 && days.indices.contains($0.dayIndex) }
-            .map { "\(days[$0.dayIndex].name.lowercased()) \($0.sets)" }.joined(separator: " · ")
+    /// The band and where the week's sets sit, as pills: „Sáv 2–5" in the tier's colour, then one pill a day („Kedd 2").
+    private func bandPills(_ m: WireMuscleEvaluation, tier: MuscleTier) -> some View {
+        let days = model.draft?.days ?? []
+        let spread = m.spread.filter { $0.sets > 0 && days.indices.contains($0.dayIndex) }
+        return NKFlowRow(spacing: 6, rowSpacing: 6) {
+            PlanPill("Sáv \(m.band.low)–\(m.band.high)", color: planTierColor(tier == .maintain ? .grow : tier), mark: .target)
+            ForEach(spread, id: \.dayIndex) { s in
+                PlanPill("\(days[s.dayIndex].name) \(s.sets)", mark: .calendar)
+            }
+            if m.band.sportAdjusted { PlanPill("a sport miatt lejjebb", color: planWarn, mark: .spark) }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Why this muscle has this band — always on the card, in his numbers.
+    private func bandReason(_ m: WireMuscleEvaluation, tier: MuscleTier, inside: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("MIÉRT EZ A SÁV").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(planHue.glow)
+            Text(reasonText(m, tier: tier, inside: inside))
+                .nkFont(13).foregroundStyle(.white.opacity(0.75))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.05)))
+    }
+
+    private func reasonText(_ m: WireMuscleEvaluation, tier: MuscleTier, inside: Bool) -> String {
+        let low = m.band.low, high = m.band.high
+        let base: String
+        switch tier {
+        case .maintain:
+            base = "Tartás szinten vagy: heti \(low)–\(high) sorozat megtartja, amit eddig felépítettél, ha a súly marad. Ennél több most nem kell, kevesebbnél már veszíthetsz belőle."
+        case .grow:
+            base = "Építés szinten vagy: heti \(low) sorozattól nő az izom, \(high) fölött már inkább csak fáraszt."
+        case .emphasize:
+            base = "Hangsúly szinten vagy: heti \(low)–\(high) sorozat — innen építjük a legtöbbet, a teteje az, amit egy héten még jól visel."
+        }
+        let sport = m.band.sportAdjusted ? " A sport is terheli, ezért a sáv lejjebb van." : ""
+        let ok = inside ? " Most rendben van; a Napok nézetben állíthatod a sorozatokat, a mérő azonnal követi." : ""
+        return base + sport + ok
+    }
+
+    /// The rule behind the proposal („miért?" in the proposal box).
+    private var proposalRule: String {
+        "A javaslat a legkevesebb sorozatú gyakorlatot tölti fel először, és sosem tesz egy gyakorlatra ötnél, egy edzésen egy izomra nyolcnál több sorozatot."
     }
 
     private func proposalText(_ m: WireMuscleEvaluation, _ draft: BlockDraft) -> String {
@@ -375,13 +411,6 @@ private struct BuilderMuscleCard: View {
         return "Javaslat: " + parts.joined(separator: " · ")
     }
 
-    private func whyText(_ tier: MuscleTier) -> String {
-        switch tier {
-        case .emphasize: "Hangsúlynál a sáv teteje a határ: innen építjük a legtöbbet. A javaslat egy gyakorlatra legfeljebb öt, egy edzésen egy izomra legfeljebb nyolc sorozatot tesz."
-        case .grow: "Építésnél ennyi kell ahhoz, hogy nőjön, de ne fáradj el tőle. A javaslat a legkevesebb sorozatú gyakorlatot tölti fel először."
-        case .maintain: "Tartásnál a harmada is megtartja, amid van, ha a súly megmarad. Ennél kevesebbnél már veszíthetsz belőle."
-        }
-    }
 }
 
 /// Tartás · Építés · Hangsúly as one switch, the chosen one lit in its own colour.

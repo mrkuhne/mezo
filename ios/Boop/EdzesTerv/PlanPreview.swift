@@ -23,33 +23,41 @@ enum PlanPreview {
 }
 
 struct PlanPreviewRoot: View {
-    enum Route { case hub, builder, review }
-    @State private var route: Route = {
+    @State private var page: EdzesPage? = {
         switch UserDefaults.standard.string(forKey: "previewBlokkOpen") {
         case "epito": .builder
         case "het": .review
-        default: .hub
+        default: nil
         }
     }()
     @State private var review = WeekReviewModel(client: PlanPreview.client)
+    @State private var builder = BlockBuilderModel(client: PlanPreview.client)
+    @Namespace private var zoom
 
     var body: some View {
         ZStack {
             NK.ground.ignoresSafeArea()
-            switch route {
-            case .hub:
-                NKAreaSubPage(hue: planHue, crumb: "Edzés", eyebrow: "Blokk", title: "V-forma és kar",
-                              sentence: "Hathetes blokk, a *hát* és a *bicepsz* a hangsúly.", onBack: nil) {
-                    WeekReviewEntrance(model: review, hue: planHue, openReview: { route = .review }, openBuilder: { route = .builder })
-                }
-                .task { await review.load() }
+            NKAreaSubPage(hue: planHue, crumb: "Edzés", eyebrow: "Blokk", title: "V-forma és kar",
+                          sentence: "Hathetes blokk, a *hát* és a *bicepsz* a hangsúly.", onBack: nil) {
+                WeekReviewEntrance(model: review, hue: planHue, zoom: zoom, openReview: { page = .review }, openBuilder: { page = .builder })
+            }
+        }
+        .task { async let b: Void = builder.load(); await review.load(); await b }
+        .fullScreenCover(item: $page) { p in
+            switch p {
             case .builder:
-                BlockBuilderPage(model: BlockBuilderModel(client: PlanPreview.client),
+                BlockBuilderPage(model: builder,
                                  initialMode: BlockBuilderPage.Mode(rawValue: (UserDefaults.standard.string(forKey: "previewBlokkTab") ?? "").capitalized) ?? .izmok) {
-                    route = .hub
+                    page = nil
+                    builder = BlockBuilderModel(client: PlanPreview.client)
+                    Task { await builder.load() }
                 }
+                .navigationTransition(.zoom(sourceID: PlanZoom.builder, in: zoom))
             case .review:
-                WeekReviewDeck(model: review) { route = .hub; Task { await review.load() } }
+                WeekReviewDeck(model: review) { page = nil; Task { await review.load() } }
+                    .navigationTransition(.zoom(sourceID: PlanZoom.review, in: zoom))
+            case .blockLoad:
+                EmptyView()
             }
         }
         .preferredColorScheme(.dark)

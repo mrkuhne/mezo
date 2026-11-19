@@ -531,11 +531,17 @@ private struct ReviewSummaryCard: View {
 
 // MARK: - The entrance on the Blokk tab
 
+/// The zoom sources: the builder grows out of its button, the deck out of the week's card (owner, 2026-11-19 —
+/// not slid up from the bottom; a full page zooms out of what was tapped, like the home ring's orbs).
+enum PlanZoom: String { case builder, review }
+
 /// The card on Edzés → Blokk: the week waiting for approval (Átnézem / Elfogadom átnézés nélkül), what took effect,
 /// and the way into the builder. Shows nothing for the week when there is no proposal.
 struct WeekReviewEntrance: View {
     let model: WeekReviewModel
     let hue: Hue
+    /// The namespace the builder and the deck zoom out of.
+    let zoom: Namespace.ID
     let openReview: @MainActor @Sendable () -> Void
     let openBuilder: @MainActor @Sendable () -> Void
     @State private var accepting = false
@@ -554,15 +560,18 @@ struct WeekReviewEntrance: View {
                                               accepting = true
                                               Task { await model.acceptEverything(); accepting = false }
                                           }])
+                    .matchedTransitionSource(id: PlanZoom.review, in: zoom)
                     if let e = model.sendError { Text(planErrorText(e)).nkFont(13).foregroundStyle(planWarn) }
                 } else if review.status == "applied" || review.status == "auto_applied" {
                     NKHighlight(hue: hue, label: "A \(review.week). hét",
                                 text: review.status == "auto_applied" ? "Magától életbe lépett" : "Indulhat, a hét számai élnek",
                                 sub: "\(review.lines.filter { review.decision($0.id) != .kept }.count) változás lépett életbe.",
                                 actions: [NKHighlightAction("Megnézem", weight: .secondary, action: openReview)])
+                    .matchedTransitionSource(id: PlanZoom.review, in: zoom)
                 }
             }
             NKActions([NKAction(glyph: "dumbbell-ink", title: "Blokk szerkesztése", primary: true, action: openBuilder)], hue: hue)
+                .matchedTransitionSource(id: PlanZoom.builder, in: zoom)
         }
     }
 
