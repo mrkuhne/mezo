@@ -11,7 +11,6 @@ struct NapView: View {
     /// Opened from the ring's day orb with the day's own sheet already up (nil = no sheet).
     /// The way back to the home screen's ring (nil = Ma is the place's own root).
     var onHome: (@MainActor @Sendable () -> Void)? = nil
-    @Environment(\.openURL) private var openURL
     @Environment(\.openAccount) private var openAccount
     @Environment(HealthLink.self) private var link: HealthLink?
     @Environment(MorningStore.self) private var morning: MorningStore?
@@ -143,8 +142,6 @@ struct NapView: View {
                 NKBoopCard(pre: "A naptárad még üres nálam. Add hozzá a Google-fiókod az iPhone-on: ",
                            em: "Beállítások › Naptár › Fiókok", post: ", és onnan én is látom.")
             }
-            NKBoopCard(pre: "Az edzés- és étrendtervedet ", em: "a webes appban", post: " állítsd be ezzel a fiókkal, onnan én viszem.",
-                       action: "Megnyitom") { openURL(BoopConfig.webAppURL) }
             Color.clear.frame(height: 90)
         }
     }

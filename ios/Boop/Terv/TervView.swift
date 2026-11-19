@@ -5,10 +5,9 @@ import BoopDesign
 /// "12,4" — one decimal, Hungarian comma.
 func hungarianKg(_ kg: Double) -> String { String(format: "%.1f", locale: Locale(identifier: "hu_HU"), kg) }
 
-/// Terv, for now: today's weight and session from the brief, and the way to the web app where the plans live.
+/// Terv, for now: today's weight and session from the brief.
 struct TervView: View {
     @Environment(MorningStore.self) private var morning: MorningStore?
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
         PlacePage(hue: .fuel, title: "Terv", line: "Amihez Boop a napjaidat igazítja") {
@@ -21,8 +20,6 @@ struct TervView: View {
                     card("MAI EDZÉS", s.title, when)
                 }
             }
-            NKBoopCard(pre: "Az edzés- és étrendtervedet ", em: "a webes appban", post: " állítsd be, ide hamarosan átköltözik.",
-                       action: "Megnyitom") { openURL(BoopConfig.webAppURL) }
         }
     }
 

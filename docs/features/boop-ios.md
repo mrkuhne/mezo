@@ -813,6 +813,7 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web-app links removed (2026-11-19, `mezo-r36n9.97.2`, decision #52).** `BoopConfig.webAppURL` is gone: the Terv and Nap "a webes appban" cards and the account sheet's "Webes app" row no longer exist, with no replacement card. Web-only settings are changed by a session on the owner's request until a later slice adds screens.
 
 - **Block builder traps (2026-11-19, `mezo-r36n9.83`).** (1) An overload trap cost a 51 GB runaway test: inside
   `RawJSONClient`, a generic `send<B: Encodable, T: Decodable>(…, body: B)` calling a raw `send(…, body: Data)` resolved to
