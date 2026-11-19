@@ -55,4 +55,6 @@ inputs:
   - inputFile: ../feature/device/device.yml
   - inputFile: ../feature/dayclose/dayclose.yml
   - inputFile: ../feature/sensitivity/sensitivity.yml
+  - inputFile: ../feature/penz/penz.yml
+  - inputFile: ../feature/penz/penz-sms.yml
 output: ../openapi.yml

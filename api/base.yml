@@ -18,3 +18,9 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    # Boop Pénz SMS ingest (mezo-r36n9.102): per-user API key, only on POST /api/penz/sms/ingest.
+    # Declared here because openapi-merge-cli keeps the base's securitySchemes only.
+    penzApiKey:
+      type: apiKey
+      in: header
+      name: X-Api-Key

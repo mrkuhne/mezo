@@ -1,0 +1,560 @@
+openapi: 3.0.3
+info: { title: mezo penz fragment, version: 1.0.0 }
+tags:
+  - name: Penz
+    description: >
+      Boop Pénz L4 (mezo-r36n9.102) — the money foundation: settings, accounts, categories, transactions (with
+      transfer pairs), recurring rules, the weekly allowance and the month close. Money travels as PenzMoney —
+      minor units (1/100 of the major unit for EVERY currency, HUF included) in its own currency plus the HUF
+      twin computed ONCE at write time from the ECB reference rate of the transaction's own date (frankfurter.dev)
+      and stored, never re-derived. Writes in a non-HUF currency answer 503 PENZ_FX_UNAVAILABLE when no rate is
+      reachable (provider down and no cached rate within 7 days before the date).
+paths:
+  /api/penz/settings:
+    get:
+      tags: [Penz]
+      operationId: getPenzSettings
+      summary: The caller's money settings (created with the defaults on first access)
+      responses:
+        '200':
+          description: The settings
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzSettingsResponse' } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    put:
+      tags: [Penz]
+      operationId: putPenzSettings
+      summary: Replace the caller's money settings
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzSettingsRequest' } } }
+      responses:
+        '200':
+          description: The stored settings
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzSettingsResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/accounts:
+    get:
+      tags: [Penz]
+      operationId: listPenzAccounts
+      summary: The caller's accounts (archived ones only when asked)
+      parameters:
+        - { name: includeArchived, in: query, required: false, schema: { type: boolean, default: false } }
+      responses:
+        '200':
+          description: Accounts, default first, then by name
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PenzAccountResponse' } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    post:
+      tags: [Penz]
+      operationId: createPenzAccount
+      summary: Create an account (isDefault / isSavingsTarget move the flag off every other account)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountRequest' } } }
+      responses:
+        '200':
+          description: The created account
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/accounts/{id}:
+    put:
+      tags: [Penz]
+      operationId: updatePenzAccount
+      summary: Update an account
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountRequest' } } }
+      responses:
+        '200':
+          description: The updated account
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No such account of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/accounts/{id}/archive:
+    post:
+      tags: [Penz]
+      operationId: archivePenzAccount
+      summary: Archive an account (its transactions stay; it leaves the default lists)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The archived account
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountResponse' } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No such account of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/categories:
+    get:
+      tags: [Penz]
+      operationId: listPenzCategories
+      summary: The caller's categories (the 15 Hungarian defaults are seeded on first access)
+      responses:
+        '200':
+          description: Categories by kind, then position
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PenzCategoryResponse' } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    post:
+      tags: [Penz]
+      operationId: createPenzCategory
+      summary: Create a category
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzCategoryRequest' } } }
+      responses:
+        '200':
+          description: The created category
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzCategoryResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: A category of this kind already has this name, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/categories/{id}:
+    put:
+      tags: [Penz]
+      operationId: updatePenzCategory
+      summary: Update a category
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzCategoryRequest' } } }
+      responses:
+        '200':
+          description: The updated category
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzCategoryResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No such category of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: A category of this kind already has this name, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/transactions:
+    get:
+      tags: [Penz]
+      operationId: listPenzTransactions
+      summary: The caller's transactions of one month, newest first
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+        - { name: needsReview, in: query, required: false, schema: { type: boolean } }
+      responses:
+        '200':
+          description: Transactions of the month
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PenzTransactionResponse' } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    post:
+      tags: [Penz]
+      operationId: createPenzTransaction
+      summary: Record a transaction — idempotent on clientRef (a replay returns the stored row)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzTransactionRequest' } } }
+      responses:
+        '200':
+          description: The stored transaction
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzTransactionResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Unknown account or category of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/transactions/{id}:
+    put:
+      tags: [Penz]
+      operationId: updatePenzTransaction
+      summary: Update a transaction (a transfer leg moves amount, date and note on both legs)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzTransactionRequest' } } }
+      responses:
+        '200':
+          description: The updated transaction
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzTransactionResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No such transaction of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [Penz]
+      operationId: deletePenzTransaction
+      summary: Delete a transaction (soft; a transfer leg takes its pair with it)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No such transaction of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/transactions/{id}/reviewed:
+    post:
+      tags: [Penz]
+      operationId: markPenzTransactionReviewed
+      summary: Mark a transaction as reviewed (clears needsReview)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The transaction
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzTransactionResponse' } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No such transaction of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/transfers:
+    post:
+      tags: [Penz]
+      operationId: createPenzTransfer
+      summary: Move money between two own accounts — a transfer_out + transfer_in pair, idempotent on clientRef
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzTransferRequest' } } }
+      responses:
+        '200':
+          description: The two legs, transfer_out first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PenzTransactionResponse' } }
+        '400': { description: Validation failure (e.g. the same account on both sides), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Unknown account of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/recurring-rules:
+    get:
+      tags: [Penz]
+      operationId: listPenzRecurringRules
+      summary: The caller's recurring income and fixed costs
+      responses:
+        '200':
+          description: Rules by name
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PenzRecurringRuleResponse' } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    post:
+      tags: [Penz]
+      operationId: createPenzRecurringRule
+      summary: Create a recurring rule
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzRecurringRuleRequest' } } }
+      responses:
+        '200':
+          description: The created rule
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzRecurringRuleResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Unknown account or category of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/recurring-rules/{id}:
+    put:
+      tags: [Penz]
+      operationId: updatePenzRecurringRule
+      summary: Update a recurring rule
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzRecurringRuleRequest' } } }
+      responses:
+        '200':
+          description: The updated rule
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzRecurringRuleResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No such rule of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '503': { description: No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [Penz]
+      operationId: deletePenzRecurringRule
+      summary: Delete a recurring rule (soft; transactions it produced stay)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No such rule of the caller, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/allowance:
+    get:
+      tags: [Penz]
+      operationId: getPenzAllowance
+      summary: The month's free money, the week's budget and what is left — with every line of the derivation
+      parameters:
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: The allowance for the month and week containing the date
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzAllowanceResponse' } } }
+        '400': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '501': { description: Not built yet (PENZ_NOT_IMPLEMENTED) — the engine lands in a later phase of L4, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/month-closes:
+    get:
+      tags: [Penz]
+      operationId: listPenzMonthCloses
+      summary: The caller's closed months, newest first
+      responses:
+        '200':
+          description: Closed months
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PenzMonthCloseResponse' } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/month-closes/open:
+    get:
+      tags: [Penz]
+      operationId: listOpenPenzMonths
+      summary: Past months that have transactions and no close yet, oldest first (closed = false)
+      responses:
+        '200':
+          description: Open months
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PenzMonthCloseResponse' } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/month-closes/{month}:
+    post:
+      tags: [Penz]
+      operationId: closePenzMonth
+      summary: Close a past month — leftover transferred to the savings-target account, kept, or none (a deficit)
+      parameters:
+        - name: month
+          in: path
+          required: true
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PenzMonthCloseRequest' } } }
+      responses:
+        '200':
+          description: The close
+          content: { application/json: { schema: { $ref: '#/components/schemas/PenzMonthCloseResponse' } } }
+        '400': { description: Validation failure, or the month is not over yet, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: Already closed, or no savings-target account for a transfer, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '501': { description: Not built yet (PENZ_NOT_IMPLEMENTED) — the remaining figure needs the engine of a later phase, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+components:
+  schemas:
+    PenzMoney:
+      type: object
+      description: >
+        An amount in minor units (1/100 of the major unit for every currency, HUF included: 15 500 Ft = 1550000)
+        in its own ISO-4217 currency, plus its HUF twin (stored at write time, never re-derived).
+      required: [minor, currency, hufMinor]
+      properties:
+        minor: { type: integer, format: int64 }
+        currency: { type: string }
+        hufMinor: { type: integer, format: int64 }
+    PenzMonthOverride:
+      type: object
+      properties:
+        savingsTargetHufMinor: { type: integer, format: int64, nullable: true }
+        categoryBudgets:
+          type: object
+          description: categoryId -> monthly budget in HUF minor units
+          additionalProperties: { type: integer, format: int64 }
+    PenzSettingsResponse:
+      type: object
+      required: [savingsTargetHufMinor, practiceMonthlyHufMinor, weekStart, emergencyFundMonths, timezone, monthOverrides]
+      properties:
+        savingsTargetHufMinor: { type: integer, format: int64 }
+        practiceMonthlyHufMinor: { type: integer, format: int64, description: 'Gyakorlás monthly cap (spec §10.1.2)' }
+        weekStart: { type: string, enum: [monday] }
+        emergencyFundMonths: { type: integer }
+        timezone: { type: string }
+        monthOverrides:
+          type: object
+          description: "'YYYY-MM' -> override"
+          additionalProperties: { $ref: '#/components/schemas/PenzMonthOverride' }
+    PenzSettingsRequest:
+      type: object
+      required: [savingsTargetHufMinor, practiceMonthlyHufMinor]
+      properties:
+        savingsTargetHufMinor: { type: integer, format: int64, minimum: 0 }
+        practiceMonthlyHufMinor: { type: integer, format: int64, minimum: 0 }
+        weekStart: { type: string, pattern: '^monday$', nullable: true }
+        emergencyFundMonths: { type: integer, minimum: 0, maximum: 60, nullable: true }
+        timezone: { type: string, maxLength: 64, nullable: true }
+        monthOverrides:
+          type: object
+          nullable: true
+          additionalProperties: { $ref: '#/components/schemas/PenzMonthOverride' }
+    PenzAccountResponse:
+      type: object
+      required: [id, name, type, currency, openingBalanceMinor, isDefault, isSavingsTarget, archived]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        type: { type: string, enum: [checking, savings, cash, investment] }
+        currency: { type: string }
+        openingBalanceMinor: { type: integer, format: int64, description: In the account's own currency }
+        isDefault: { type: boolean }
+        isSavingsTarget: { type: boolean }
+        archived: { type: boolean }
+        smsSender: { type: string, nullable: true }
+    PenzAccountRequest:
+      type: object
+      required: [name, type, currency]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        type: { type: string, pattern: '^(checking|savings|cash|investment)$' }
+        currency: { type: string, pattern: '^(HUF|EUR|USD|GBP|CHF)$' }
+        openingBalanceMinor: { type: integer, format: int64, nullable: true }
+        isDefault: { type: boolean, nullable: true }
+        isSavingsTarget: { type: boolean, nullable: true }
+        smsSender: { type: string, maxLength: 100, nullable: true }
+    PenzCategoryResponse:
+      type: object
+      required: [id, name, kind, position]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        kind: { type: string, enum: [expense, income] }
+        icon: { type: string, nullable: true }
+        monthlyBudgetHufMinor: { type: integer, format: int64, nullable: true }
+        position: { type: integer }
+    PenzCategoryRequest:
+      type: object
+      required: [name, kind]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        kind: { type: string, pattern: '^(expense|income)$' }
+        icon: { type: string, maxLength: 40, nullable: true }
+        monthlyBudgetHufMinor: { type: integer, format: int64, minimum: 0, nullable: true }
+        position: { type: integer, minimum: 0, nullable: true }
+    PenzTransactionResponse:
+      type: object
+      required: [id, accountId, kind, amount, date, source, needsReview]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        kind: { type: string, enum: [expense, income, transfer_out, transfer_in, invest_buy, invest_sell] }
+        amount: { $ref: '#/components/schemas/PenzMoney' }
+        fxRate: { type: number, nullable: true, description: 'HUF per one unit of the currency; null for HUF' }
+        fxRateDate: { type: string, format: date, nullable: true, description: 'The ECB publication date of the rate used' }
+        categoryId: { type: string, format: uuid, nullable: true }
+        date: { type: string, format: date }
+        note: { type: string, nullable: true }
+        source: { type: string, enum: [manual, sms, recurring] }
+        needsReview: { type: boolean }
+        recurringRuleId: { type: string, format: uuid, nullable: true }
+        transferPairId: { type: string, format: uuid, nullable: true }
+        smsMessageId: { type: string, format: uuid, nullable: true }
+        clientRef: { type: string, format: uuid, nullable: true }
+    PenzTransactionRequest:
+      type: object
+      required: [accountId, kind, amountMinor, currency, date]
+      properties:
+        clientRef: { type: string, format: uuid, nullable: true, description: 'Idempotency key of a phone write (ignored on update)' }
+        accountId: { type: string, format: uuid }
+        kind:
+          type: string
+          description: 'transfer legs come from POST /api/penz/transfers; on update a transfer leg keeps its kind'
+          pattern: '^(expense|income|transfer_out|transfer_in|invest_buy|invest_sell)$'
+        amountMinor: { type: integer, format: int64, minimum: 1 }
+        currency: { type: string, pattern: '^(HUF|EUR|USD|GBP|CHF)$' }
+        categoryId: { type: string, format: uuid, nullable: true }
+        date: { type: string, format: date }
+        note: { type: string, maxLength: 500, nullable: true }
+        needsReview: { type: boolean, nullable: true }
+    PenzTransferRequest:
+      type: object
+      required: [fromAccountId, toAccountId, amountMinor, currency, date]
+      properties:
+        clientRef: { type: string, format: uuid, nullable: true }
+        fromAccountId: { type: string, format: uuid }
+        toAccountId: { type: string, format: uuid }
+        amountMinor: { type: integer, format: int64, minimum: 1 }
+        currency: { type: string, pattern: '^(HUF|EUR|USD|GBP|CHF)$' }
+        date: { type: string, format: date }
+        note: { type: string, maxLength: 500, nullable: true }
+    PenzRecurringRuleResponse:
+      type: object
+      required: [id, name, kind, amount, accountId, frequency, startDate, active]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        kind: { type: string, enum: [expense, income] }
+        amount: { $ref: '#/components/schemas/PenzMoney' }
+        categoryId: { type: string, format: uuid, nullable: true }
+        accountId: { type: string, format: uuid }
+        frequency: { type: string, enum: [weekly, monthly, yearly] }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, nullable: true }
+        lastMaterializedDate: { type: string, format: date, nullable: true }
+        active: { type: boolean }
+    PenzRecurringRuleRequest:
+      type: object
+      required: [name, kind, amountMinor, currency, accountId, frequency, startDate]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        kind: { type: string, pattern: '^(expense|income)$' }
+        amountMinor: { type: integer, format: int64, minimum: 1 }
+        currency: { type: string, pattern: '^(HUF|EUR|USD|GBP|CHF)$' }
+        categoryId: { type: string, format: uuid, nullable: true }
+        accountId: { type: string, format: uuid }
+        frequency: { type: string, pattern: '^(weekly|monthly|yearly)$' }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, nullable: true }
+        active: { type: boolean, nullable: true }
+    PenzAllowanceLine:
+      type: object
+      required: [key, amount]
+      properties:
+        key:
+          type: string
+          enum: [recurringIncome, oneOffIncome, fixedCosts, savingsTarget, practice, invested, previousDeficit, free, spent, remaining]
+        amount: { $ref: '#/components/schemas/PenzMoney' }
+    PenzAllowanceMonth:
+      type: object
+      required: [month, free, spent, remaining]
+      properties:
+        month: { type: string, description: "'YYYY-MM'" }
+        free: { $ref: '#/components/schemas/PenzMoney' }
+        spent: { $ref: '#/components/schemas/PenzMoney' }
+        remaining: { $ref: '#/components/schemas/PenzMoney' }
+    PenzAllowanceWeek:
+      type: object
+      required: [start, end, budget, spent, remaining, perDay]
+      properties:
+        start: { type: string, format: date }
+        end: { type: string, format: date }
+        budget: { $ref: '#/components/schemas/PenzMoney' }
+        spent: { $ref: '#/components/schemas/PenzMoney' }
+        remaining: { $ref: '#/components/schemas/PenzMoney' }
+        perDay: { $ref: '#/components/schemas/PenzMoney' }
+    PenzAllowanceResponse:
+      type: object
+      required: [date, month, week, lines]
+      properties:
+        date: { type: string, format: date }
+        month: { $ref: '#/components/schemas/PenzAllowanceMonth' }
+        week: { $ref: '#/components/schemas/PenzAllowanceWeek' }
+        lines:
+          type: array
+          description: The derivation, in order — free = recurringIncome + oneOffIncome − fixedCosts − savingsTarget − practice − invested − previousDeficit; remaining = free − spent
+          items: { $ref: '#/components/schemas/PenzAllowanceLine' }
+    PenzMonthCloseResponse:
+      type: object
+      required: [month, closed]
+      properties:
+        month: { type: string, description: "'YYYY-MM'" }
+        closed: { type: boolean }
+        finalRemaining: { $ref: '#/components/schemas/PenzMoney' }
+        deficit: { $ref: '#/components/schemas/PenzMoney' }
+        leftoverAction: { type: string, nullable: true, enum: [transferred, kept, none] }
+        transferPairId: { type: string, format: uuid, nullable: true }
+        closedAt: { type: string, format: date-time, nullable: true }
+    PenzMonthCloseRequest:
+      type: object
+      required: [leftoverAction]
+      properties:
+        leftoverAction: { type: string, pattern: '^(transferred|kept|none)$' }
