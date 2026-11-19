@@ -281,7 +281,7 @@
     },
     "jegyek:mezo-r36n9.30": {
       "page_id": "4168968e-752b-815e-b4c2-c1d35163f5f8",
-      "hash": "19b1f7d95167"
+      "hash": "e8723f7979d9"
     },
     "jegyek:mezo-r36n9.31": {
       "page_id": "4168968e-752b-81af-a508-dc9a83b4e5f3",
@@ -669,11 +669,11 @@
     },
     "kezikonyv:06-etel/01-etel-szoba-ma": {
       "page_id": "4168968e-752b-8195-9564-d1ced1b8d194",
-      "hash": "da2664b9f020"
+      "hash": "d087739b7a69"
     },
     "kezikonyv:06-etel/02-etkezes-rogzitese": {
       "page_id": "4168968e-752b-8164-b1d7-d8aa78d82e63",
-      "hash": "a7287207cd35"
+      "hash": "91fd9fcba703"
     },
     "kezikonyv:06-etel/03-etkezes-ertekelese": {
       "page_id": "4168968e-752b-81ee-b603-ce33a392a527",
@@ -685,11 +685,11 @@
     },
     "kezikonyv:06-etel/05-receptek": {
       "page_id": "4168968e-752b-816b-af92-d893e20f59e2",
-      "hash": "82969007c86c"
+      "hash": "7d884bf8f26c"
     },
     "kezikonyv:06-etel/06-kamra": {
       "page_id": "4168968e-752b-81cc-96d5-c3f0fa42540c",
-      "hash": "90894e018289"
+      "hash": "3c262020731f"
     },
     "kezikonyv:06-etel/07-allergenek": {
       "page_id": "4168968e-752b-81eb-8603-dfc38fa7a4e8",
@@ -1065,7 +1065,7 @@
     },
     "jegyek:mezo-r36n9.63": {
       "page_id": "41c8968e-752b-8141-be92-ce0a72d47e0f",
-      "hash": "f664e0ba70ef"
+      "hash": "fb4fcd0b74b3"
     },
     "jegyek:mezo-r36n9.76": {
       "page_id": "41c8968e-752b-811a-bcea-e25e958b906d",
@@ -1337,11 +1337,19 @@
     },
     "jegyek:mezo-r36n9.101": {
       "page_id": "41d8968e-752b-813f-8ca5-c71cfea43a01",
-      "hash": "fdedccd71ca4"
+      "hash": "ee7abed39c40"
     },
     "dontesek:d-2026-11-17-plusz-gomb-okos-lepcso": {
       "page_id": "41b8968e-752b-81fb-a9e0-e503a9b77066",
       "hash": "f502b39101d5"
+    },
+    "dontesek:d-2026-11-19-etel-fejlec-foto-nelkul": {
+      "page_id": "41d8968e-752b-81a5-9c96-e46c1467ab0b",
+      "hash": "7953e3a52e96"
+    },
+    "kiadasok:5dba75565": {
+      "page_id": "41d8968e-752b-8114-932e-caf8cd935140",
+      "hash": "b0580b2333e4"
     }
   }
 }

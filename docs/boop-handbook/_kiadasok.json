@@ -465,5 +465,17 @@
     ],
     "mi_valtozott": "Egy gyakorlaton most már technika és a nap kihívása is lehet: előbb a technika, utána a félismétléses kihívás, és a megdöntendő számot csak az ugyanígy végzett korábbi alkalmakhoz méri. A blokképítő választójának tetején Boop ajánlása áll: a gyakorlat tulajdonságai alapján melyik technika illik hozzá és miért, alatta — ha van — a heti AI egymondatos véleménye, és egy „Ezt választom” gomb.",
     "verzio": "v3.9.0"
+  },
+  "5dba75565": {
+    "tipus": "Új funkció",
+    "cim": "Étel: új főoldal, rögzítő, receptek és kamra, „Ezt főztem”",
+    "datum": "2026-11-19",
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.101",
+      "mezo-r36n9.63"
+    ],
+    "mi_valtozott": "Az Étel szoba új, melegebb elrendezést kapott fotó nélküli fejléccel: a Ma fülön kiemelt tipp, gyors rögzítés, a nap görbéje, makrók és étkezés-sorok. A rögzítő egyszerre fogad fotót és szöveget, a vázlathoz utólag recept, kamra-tétel, vonalkód vagy újabb szöveg adható, az időpont visszamenőleg megadható, és a fotón szkennelés fut. A Receptek és a Kamra címkékkel, ikonokkal és saját pontszám-gyűrűvel jelenik meg; a receptlap mutatja Boop teljes értékelését a szempontokkal és tippekkel, a kamra-tétel a saját öt szempontos pontszámát. Új: „Ezt főztem” — elmondod vagy lefotózod, miből főztél, Boop a kamrádhoz köti a hozzávalókat, a hiányzót egy koppintással felveszi (becsült jelzéssel, később pontosítható).",
+    "verzio": "v3.12.0"
   }
 }
