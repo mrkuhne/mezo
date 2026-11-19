@@ -3200,6 +3200,11 @@ mezo:
       myo:       { main-reserve: 1, mini-reps: 5, mini-min-reps: 3, mini-rest-sec: 20, max-minis: 4 }
       partials:  { main-reserve: 0 }
       cap-weight: 2
+      # Default technique planner (mezo-r36n9.81, spec §6.5): techniques from start-week to the last non-deload
+      # week; per training day max-per-day (max-per-day-reduced in a deficit or on a sport day), at most
+      # max-per-muscle-week technique exercises per muscle group a week; an isolation whose rep max is at least
+      # myo-rep-top gets myo-reps, otherwise a machine / cable exercise gets rest-drop.
+      planner: { start-week: 3, max-per-day: 2, max-per-day-reduced: 1, max-per-muscle-week: 2, myo-rep-top: 15 }
     # Workout-timing tuning (mezo-1jm8) — measurement clips + profile-learner seeds.
     # Binds onto TimingProperties.
     timing:

@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.api.dto.MesoPlanEvaluateRequest;
 import io.mrkuhne.mezo.api.dto.MesoPlanEvaluation;
 import io.mrkuhne.mezo.api.dto.MuscleEvaluation;
 import io.mrkuhne.mezo.api.dto.PlanProposalEdit;
+import io.mrkuhne.mezo.api.dto.PlannedChallenge;
+import io.mrkuhne.mezo.api.dto.PlannedTechnique;
 import io.mrkuhne.mezo.api.dto.SessionCapWarning;
 import io.mrkuhne.mezo.api.dto.VolumeBandView;
 import io.mrkuhne.mezo.api.dto.VolumePathWeek;
@@ -58,19 +60,24 @@ public class MesoPlanEvaluateService {
     private final ExerciseRepository exerciseRepository;
     private final VolumeArcService volumeArcService;
     private final TrainTechniqueProperties techniqueProps;
+    private final TechniquePlanService techniquePlanService;
 
     @Transactional(readOnly = true)
     public MesoPlanEvaluation evaluate(UUID userId, MesoPlanEvaluateRequest req) {
         Map<String, String> priorities = PriorityTier.normalize(req.getMusclePriorities());
         List<String> sportGroups = SportGroups.normalize(req.getSportGroups(), props.baselines().keySet());
 
+        boolean optsIn = techniquePlanService.optsIn(req);
         List<PlanEvaluator.PlanDay> days = new ArrayList<>();
         for (MesoDayInput d : req.getDays()) {
             List<PlanEvaluator.PlanExercise> list = new ArrayList<>();
             for (GymExerciseInput x : d.getExercises() == null ? List.<GymExerciseInput>of() : d.getExercises()) {
                 String group = x.getMuscle() == null || x.getMuscle().isBlank() ? null : MuscleGroup.of(x.getMuscle());
                 list.add(new PlanEvaluator.PlanExercise(group, x.getWorkingSets(), x.getWarmupSets(),
-                    !Boolean.FALSE.equals(x.getCountsTowardVolume())));
+                    !Boolean.FALSE.equals(x.getCountsTowardVolume()),
+                    TechniqueRules.capExtra(x.getTechnique() == null ? Technique.NONE
+                            : Technique.fromWire(x.getTechnique().getValue()),
+                        Boolean.TRUE.equals(x.getChallenge()), optsIn, techniqueProps.capWeight())));
             }
             days.add(new PlanEvaluator.PlanDay(d.getDay(), list));
         }
@@ -86,7 +93,9 @@ public class MesoPlanEvaluateService {
         PlanEvaluator.Result result = PlanEvaluator.evaluate(new PlanEvaluator.Input(req.getWeeks(), phaseCurve, days,
             priorities, sportGroups == null ? Set.of() : new HashSet<>(sportGroups), deficit,
             req.getSessionMinutesTarget(), sportWeekdays(slots), props));
-        return toResponse(deficit, result, slots, sportGroups == null, null, null);
+        EvaluatorTechniques.Shown shown = optsIn
+            ? EvaluatorTechniques.ofProjection(techniquePlanService.projectDraft(userId, req)) : null;
+        return toResponse(deficit, result, slots, sportGroups == null, null, null, shown);
     }
 
     @Transactional(readOnly = true)
@@ -102,16 +111,27 @@ public class MesoPlanEvaluateService {
                 templateDays.stream().map(WorkoutSessionEntity::getId).toList())
                 .forEach(e -> bySession.computeIfAbsent(e.getWorkoutSessionId(), k -> new ArrayList<>()).add(e));
         }
+        boolean optsIn = techniquePlanService.optsIn(run);
         List<PlanEvaluator.PlanDay> days = new ArrayList<>();
+        List<PlannedTechnique> storedTechniques = new ArrayList<>();
+        List<PlannedChallenge> storedChallenges = new ArrayList<>();
         for (WorkoutSessionEntity s : templateDays) {
             List<PlanEvaluator.PlanExercise> list = new ArrayList<>();
-            for (ExerciseEntity e : bySession.getOrDefault(s.getId(), List.of())) {
+            List<ExerciseEntity> rows = bySession.getOrDefault(s.getId(), List.of());
+            int dayIndex = s.getOrderIndex() == null ? 0 : s.getOrderIndex();   // as TemplatePlan
+            for (int i = 0; i < rows.size(); i++) {
+                ExerciseEntity e = rows.get(i);
+                if (optsIn) {
+                    PlannedTechnique stored = EvaluatorTechniques.storedTechnique(dayIndex, i, e);
+                    if (stored != null) storedTechniques.add(stored);
+                    if (e.isChallenge()) storedChallenges.add(EvaluatorTechniques.challenge(dayIndex, i));
+                }
                 String group = e.getMuscle() == null || e.getMuscle().isBlank() ? null : MuscleGroup.of(e.getMuscle());
                 list.add(new PlanEvaluator.PlanExercise(group, e.getWorkingSets() == null ? 0 : e.getWorkingSets(),
                     e.getWarmupSets() == null ? 0 : e.getWarmupSets(), e.isCountsTowardVolume(),
                     TechniqueRules.capExtra(e, run.isTechniquesEnabled(), techniqueProps.capWeight())));
             }
-            days.add(new PlanEvaluator.PlanDay(s.getDayLabel(), list, s.getOrderIndex()));
+            days.add(new PlanEvaluator.PlanDay(s.getDayLabel(), list, dayIndex));
         }
         List<String> phaseCurve = run.getPhaseCurve() == null ? List.of() : run.getPhaseCurve();
 
@@ -122,8 +142,12 @@ public class MesoPlanEvaluateService {
             run.getMusclePriorities(),
             run.getSportGroups() == null ? Set.of() : new HashSet<>(run.getSportGroups()),
             deficit, null, sportWeekdays(slots), props));
+        EvaluatorTechniques.Shown shown = optsIn
+            ? EvaluatorTechniques.ofRun(techniquePlanService.projectRun(userId, run), run.getCurrentWeek(),
+                storedTechniques, storedChallenges)
+            : null;
         return toResponse(deficit, result, slots, run.getSportGroups() == null,
-            volumeArcService.plannedPath(userId, run, run.getCurrentWeek()), run);
+            volumeArcService.plannedPath(userId, run, run.getCurrentWeek()), run, shown);
     }
 
     private static Set<Integer> sportWeekdays(List<SportScheduleSlotEntity> slots) {
@@ -133,7 +157,8 @@ public class MesoPlanEvaluateService {
     }
 
     private MesoPlanEvaluation toResponse(boolean deficit, PlanEvaluator.Result r, List<SportScheduleSlotEntity> slots,
-                                          boolean suggest, Map<String, int[]> plannedPath, MesocycleEntity run) {
+                                          boolean suggest, Map<String, int[]> plannedPath, MesocycleEntity run,
+                                          EvaluatorTechniques.Shown shown) {
         Set<String> suggested = new HashSet<>();
         if (suggest) {
             slots.stream().map(SportScheduleSlotEntity::getSport).distinct().forEach(sport ->
@@ -161,9 +186,12 @@ public class MesoPlanEvaluateService {
             .sportSameDay(d.sportSameDay()).build()).toList();
         List<VolumePathWeek> path = plannedPath == null
             ? r.path().stream().map(w -> VolumePathWeek.builder().week(w.week()).phase(w.phase()).total(w.total())
-                .muscles(new TreeMap<>(w.sets())).build()).toList()
+                .techniques(null).challenges(null).muscles(new TreeMap<>(w.sets())).build()).toList()
             : plannedPathWeeks(run, plannedPath);
+        // a block that does not opt in keeps the planner fields null (see the null-defaulted builders above)
+        if (shown != null) shown.applyTo(path);
         return MesoPlanEvaluation.builder()
+            .techniqueWarnings(shown == null ? null : shown.warnings())
             .deficit(deficit)
             .sportDays(List.copyOf(sportWeekdays(slots)))
             .suggestedSportGroups(props.baselines().keySet().stream().filter(suggested::contains).toList())
@@ -181,7 +209,7 @@ public class MesoPlanEvaluateService {
                 total += e.getValue()[w - 1];
             }
             weeks.add(VolumePathWeek.builder().week(w).phase(w - 1 < curve.size() ? curve.get(w - 1) : VolumePath.MISSING_PHASE)
-                .total(total).muscles(sets).build());
+                .total(total).techniques(null).challenges(null).muscles(sets).build());
         }
         return weeks;
     }

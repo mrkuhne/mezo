@@ -7,8 +7,16 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class TechniqueRulesTest {
-    private static final CatalogAttributes.Attrs STABLE = new CatalogAttributes.Attrs(true, false);
-    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true);
+    private static final CatalogAttributes.Attrs STABLE = new CatalogAttributes.Attrs(true, false, "machine");
+    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine");
+
+    @Test
+    void testAttrs_nullOrUnknownEquipment_shouldReadAsOther() {
+        assertThat(new CatalogAttributes.Attrs(true, false, null).equipment()).isEqualTo("other");
+        assertThat(new CatalogAttributes.Attrs(true, false, "rope").equipment()).isEqualTo("other");
+        assertThat(new CatalogAttributes.Attrs(true, false, "cable").equipment()).isEqualTo("cable");
+        assertThat(CatalogAttributes.Attrs.FREE.equipment()).isEqualTo("other");
+    }
 
     @Test
     void testCheck_freeExercise_shouldReject() {

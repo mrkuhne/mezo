@@ -37,7 +37,7 @@ public class RirCalibrationDetector implements CharacterDetector {
                     DetectorInput.SetPoint a = sets.get(i);
                     DetectorInput.SetPoint b = sets.get(i + 1);
                     if (a.rir() == null || a.reps() == null || b.reps() == null
-                            || a.skipped() || b.skipped()
+                            || a.skipped() || b.skipped() || a.technique() || b.technique()
                             || a.weightKg() == null || b.weightKg() == null
                             || a.weightKg().compareTo(b.weightKg()) != 0) {
                         continue;

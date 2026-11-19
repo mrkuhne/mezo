@@ -40,9 +40,18 @@ public record DetectorInput(LocalDate day,
                                Integer worstJointPain,
                                Integer pump,
                                Integer workload) {}
-    /** One logged working set, ordered by setIndex. Nullable fields were not logged. */
+    /**
+     * One logged working set, ordered by setIndex. Nullable fields were not logged. {@code technique} marks a set
+     * logged as a deliberate technique set (drop / myo / partials ...): it goes to failure by design, so it is not a
+     * sample for RIR calibration (mezo-r36n9.81).
+     */
     public record SetPoint(int setIndex, BigDecimal weightKg, Integer reps, Integer rir,
-                           BigDecimal targetWeightKg, Integer targetReps, boolean skipped) {}
+                           BigDecimal targetWeightKg, Integer targetReps, boolean skipped, boolean technique) {
+        public SetPoint(int setIndex, BigDecimal weightKg, Integer reps, Integer rir,
+                        BigDecimal targetWeightKg, Integer targetReps, boolean skipped) {
+            this(setIndex, weightKg, reps, rir, targetWeightKg, targetReps, skipped, false);
+        }
+    }
     public record SportPoint(LocalDate date, String sport, BigDecimal rpe,
                              Integer shoulderStrain, Integer jumpCount, Integer intensity) {}
     public record RunPoint(LocalDate date, Integer rpeActual, Integer hrRecoverySec,

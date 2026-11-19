@@ -28,7 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
  * Which coarse muscle groups of a STYLED run have stalled (mezo-r36n9.79, spec §6.7.4): the logged top
  * set per exercise identity per start-date-anchored week, over the run's completed instances, counting
  * working sets of volume-counting exercises only (each set resolved through its own {@code exerciseId},
- * soft-deleted rows included — same reading as {@link WeeklySignalReader}). Detection only. An unstyled
+ * soft-deleted rows included — same reading as {@link WeeklySignalReader}). Deload-phase weeks are skipped and
+ * the loading weeks renumbered, so a lighter deload week never reads as a hold (T3). Detection only. An unstyled
  * run is never queried.
  */
 @Slf4j
@@ -59,8 +60,18 @@ public class MuscleProgressReader {
             return Set.of();
         }
         int stallWeeks = props.stallWeeks();
-        if (uptoWeek <= stallWeeks) {
-            return Set.of(); // needs stallWeeks + 1 weeks of data
+        // A deload week is never a hold (T3, mezo-r36n9.81): deload weeks are dropped and the loading weeks
+        // renumbered consecutively, so the week after a deload is compared with the week before it.
+        Map<Integer, Integer> loadingWeek = new HashMap<>();
+        int loading = 0;
+        for (int w = 1; w <= uptoWeek; w++) {
+            if (!WeekProposalService.isDeloadPhase(run, w)) {
+                loadingWeek.put(w, ++loading);
+            }
+        }
+        int uptoLoading = loading; // a deload uptoWeek ends the window at the last loading week before it
+        if (uptoLoading <= stallWeeks) {
+            return Set.of(); // needs stallWeeks + 1 loading weeks of data
         }
         Map<UUID, Integer> weekOfInstance = new HashMap<>();
         for (WorkoutSessionEntity s : workoutSessionRepository
@@ -69,8 +80,9 @@ public class MuscleProgressReader {
                 continue;
             }
             int week = MesoWeeks.weekOf(run.getStartDate(), s.getDate(), Integer.MAX_VALUE);
-            if (week >= 1 && week <= uptoWeek && !s.getDate().isBefore(run.getStartDate())) {
-                weekOfInstance.put(s.getId(), week);
+            if (week >= 1 && week <= uptoWeek && !s.getDate().isBefore(run.getStartDate())
+                    && loadingWeek.containsKey(week)) {
+                weekOfInstance.put(s.getId(), loadingWeek.get(week));
             }
         }
         if (weekOfInstance.isEmpty()) {
@@ -102,7 +114,7 @@ public class MuscleProgressReader {
         top.forEach((group, byIdentity) -> {
             Map<String, List<TopSet>> series = new HashMap<>();
             byIdentity.forEach((k, byWeek) -> series.put(k, List.copyOf(byWeek.values())));
-            if (MuscleStallDetector.stalled(series, stallWeeks, uptoWeek)) {
+            if (MuscleStallDetector.stalled(series, stallWeeks, uptoLoading)) {
                 stalled.add(group);
             }
         });

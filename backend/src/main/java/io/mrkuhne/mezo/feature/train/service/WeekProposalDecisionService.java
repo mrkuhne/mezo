@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -95,8 +96,7 @@ public class WeekProposalDecisionService {
                 decided.add(line); // already decided (a repeat is a no-op) or left undecided
             } else if (WeekProposalLineJson.DECISION_ACCEPTED.equals(want)) {
                 WeekProposalLineJson result = weekProposalService.applySetLine(proposal, line);
-                if (WeekProposalLineJson.KIND_SETS.equals(line.kind())
-                        && WeekProposalLineJson.DECISION_ACCEPTED.equals(result.decision())) {
+                if (changesSets(line) && WeekProposalLineJson.DECISION_ACCEPTED.equals(result.decision())) {
                     written.add(result);
                 }
                 decided.add(result);
@@ -116,6 +116,12 @@ public class WeekProposalDecisionService {
             proposalRepository.save(proposal);
         }
         return queryService.toDtos(List.of(proposal), run).get(0);
+    }
+
+    /** A line whose acceptance moves the row's working sets: a set line, or a technique line taking / giving a set. */
+    private static boolean changesSets(WeekProposalLineJson line) {
+        return WeekProposalLineJson.KIND_SETS.equals(line.kind())
+            || WeekProposalLineJson.KIND_TECHNIQUE.equals(line.kind()) && !Objects.equals(line.from(), line.to());
     }
 
     /**

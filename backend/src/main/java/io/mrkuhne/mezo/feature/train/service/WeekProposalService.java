@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
+import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoWeekProposalEntity;
@@ -37,6 +38,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +57,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Idempotent per calendar week twice over: {@code volume_recompute.lastRun} and the partial
  * unique index on a run's weekly proposal. Gate off: does nothing.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WeekProposalService {
@@ -64,6 +67,9 @@ public class WeekProposalService {
     private static final String MODE_AUTO = "auto";
     /** Manual-mode audit prefix: the week's change is a proposal until he decides it. */
     static final String PROPOSAL_PREFIX = "javaslat: ";
+    private static final String SOURCE_AI = "ai";
+    /** The row override a rep-range line marks, so later style stamps keep the new range (T3). */
+    private static final String OVERRIDE_REP_RANGE = "repRange";
 
     private final MesocycleRepository mesocycleRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
@@ -77,6 +83,8 @@ public class WeekProposalService {
     private final VolumeProperties props;
     private final MuscleProgressReader muscleProgress;
     private final LoadLinePreview loadLinePreview;
+    private final TechniquePlanService techniquePlanService;
+    private final TrainStyleProperties styleProps;
     private final ObjectProvider<VolumeProgressionGate> volumeGate;
 
     /**
@@ -176,7 +184,8 @@ public class WeekProposalService {
             .forEach(r -> byGroup.computeIfAbsent(r.group(), k -> new ArrayList<>()).add(r));
 
         Map<String, GroupSignals> signals = signalReader.read(createdBy, meso, calWeek);
-        // Styled runs only (empty otherwise): groups whose every exercise held for the stall window — audit only.
+        // Styled runs only (empty otherwise): groups whose every exercise held for the stall window — audited, and
+        // given one offer when the run opts in to the planner (T3).
         Set<String> stalledGroups = muscleProgress.stalledGroups(createdBy, meso, calWeek - 1);
         boolean deficit = energyBalance.isInDeficit(createdBy, LocalDate.now());
         boolean deloadPhase = isDeloadPhase(meso, calWeek);
@@ -245,6 +254,15 @@ public class WeekProposalService {
                 keptOwn.contains(group), stalledGroups.contains(group)));
         });
 
+        // T3: the stall offers and the planner's technique lines, on the working copy after the set decisions.
+        // A stall reduction is a set line (merged into the row's set line) with a restore entry for next week.
+        PlannerStep step = plannerStep(createdBy, meso, calWeek, deloadPhase, plan, working, stalledGroups, outcomes);
+        String stalled = code(Reason.STALLED);
+        step.reductions().forEach(r -> {
+            move(r.exerciseId(), r.to() - r.from(), working, fromSets, lineReasons, List.of(stalled));
+            restore.add(r.restore());
+        });
+
         Map<UUID, TemplatePlan.Row> rowById = plan.stream()
             .collect(Collectors.toMap(r -> r.exercise().getId(), r -> r, (a, b) -> a));
         List<WeekProposalLineJson> lines = new ArrayList<>();
@@ -256,12 +274,16 @@ public class WeekProposalService {
             TemplatePlan.Row row = rowById.get(id);
             lines.add(new WeekProposalLineJson(UUID.randomUUID().toString(), id, row.exercise().getName(),
                 row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS, from, to, lineReasons.get(id), null,
-                row.dayName(), null, null));
+                row.dayName(), null, null, null, null, null, null, null, null, null));
         });
-        // Weight / rep lines after the set lines: a preview of the week's load progression, never written.
+        // T3: the technique / challenge and rep-range lines after the set lines; working takes their set changes.
+        lines.addAll(step.lines());
+        working.putAll(step.working());
+        // Weight / rep lines after the set and technique lines: a preview of the week's load progression, never written.
         lines.addAll(loadLinePreview.lines(createdBy, meso, calWeek, plan, deloadPhase));
         List<WeekProposalGroupJson> groups = outcomes.values().stream()
-            .map(o -> groupJson(o, PriorityTier.of(meso.getMusclePriorities(), o.group()), bands.get(o.group())))
+            .map(o -> groupJson(o, PriorityTier.of(meso.getMusclePriorities(), o.group()), bands.get(o.group()),
+                sum(byGroup.get(o.group()), working)))
             .toList();
 
         MesoWeekProposalEntity proposal = new MesoWeekProposalEntity();
@@ -274,6 +296,47 @@ public class WeekProposalService {
         proposal.setRestore(restore.isEmpty() ? null : restore);
         proposal.setGroups(groups);
         return new Draft(proposalRepository.save(proposal), outcomes);
+    }
+
+    /** The T3 step's output: reductions for the caller to apply as set lines, the lines after them, the sets after. */
+    private record PlannerStep(List<StallOffers.Reduction> reductions, List<WeekProposalLineJson> lines,
+                               Map<UUID, Integer> working) {
+        static final PlannerStep NONE = new PlannerStep(List.of(), List.of(), Map.of());
+    }
+
+    /**
+     * The T3 step (mezo-r36n9.81) for a run that opts in, outside a deload week, from week 2 on: the week planned on
+     * the working copy of sets, the stall offers of the stalled groups ({@link StallOffers}), then
+     * {@link TechniqueLines} on the working copy after the reductions; the rep-range lines follow the technique
+     * lines. Pure until the caller applies it. A run that does not opt in costs no query. A failure is logged and the
+     * week simply has no technique lines and no stall offers — it must never fail the weekly build (and so
+     * {@code getToday}); the set decisions stand.
+     */
+    private PlannerStep plannerStep(UUID createdBy, MesocycleEntity meso, int calWeek, boolean deloadPhase,
+                                    List<TemplatePlan.Row> plan, Map<UUID, Integer> working,
+                                    Set<String> stalledGroups, Map<String, GroupOutcome> outcomes) {
+        if (deloadPhase || calWeek < 2 || !techniquePlanService.optsIn(meso)) {
+            return PlannerStep.NONE;
+        }
+        try {
+            TechniquePlanner.Input input = techniquePlanService.snapshotRun(createdBy, meso, calWeek, working);
+            Map<String, StallOffers.Decision> stalled = new TreeMap<>();
+            stalledGroups.stream().filter(outcomes::containsKey).forEach(g -> stalled.put(g, new StallOffers.Decision(
+                outcomes.get(g).result().lever(), PriorityTier.of(meso.getMusclePriorities(), g),
+                outcomes.get(g).restored() > outcomes.get(g).before())));
+            StallOffers.Result offers = StallOffers.offers(stalled, plan, input, TechniquePlanner.plan(input),
+                working, styleProps);
+            Map<UUID, Integer> reduced = new HashMap<>(working);
+            offers.reductions().forEach(r -> reduced.put(r.exerciseId(), r.to()));
+            TechniqueLines.Result result = TechniqueLines.lines(plan, input, offers.week(), reduced);
+            List<WeekProposalLineJson> lines = new ArrayList<>(result.lines());
+            lines.addAll(offers.repRangeLines());
+            return new PlannerStep(offers.reductions(), List.copyOf(lines), result.working());
+        } catch (RuntimeException e) {
+            log.warn("technique planning / stall offers failed for run {} week {} (none this week): {}", meso.getId(),
+                calWeek, e.toString());
+            return PlannerStep.NONE;
+        }
     }
 
     /**
@@ -306,26 +369,107 @@ public class WeekProposalService {
     }
 
     /**
-     * Accepts one line. A set line writes its {@code to} onto the exercise row only while that row (the
+     * Accepts one line, by kind. A set line writes its {@code to} onto the exercise row only while that row (the
      * owner's, still there) holds the line's {@code from}; a vanished or since-moved row is recorded
-     * {@code kept} and nothing is written (his own edit stands). A weight / rep line is accepted without a
-     * write (the session's read-time prescription carries it). The caller re-syncs the ledger after a write.
+     * {@code kept} and nothing is written (his own edit stands). A technique line (T3) writes only while the row
+     * still holds its {@code from} sets and {@code fromTechnique} (the challenge flag for a challenge line) and
+     * carries no owner / AI pick; a rep-range line only while the row holds {@code fromRepMin}–{@code fromRepMax}.
+     * A weight / rep line is accepted without a write (the session's read-time prescription carries it). The caller
+     * re-syncs the ledger after a write.
      *
      * @return the line with its decision
      */
     WeekProposalLineJson applySetLine(MesoWeekProposalEntity proposal, WeekProposalLineJson line) {
-        if (!WeekProposalLineJson.KIND_SETS.equals(line.kind())) {
-            return line.withDecision(WeekProposalLineJson.DECISION_ACCEPTED); // load line: no write
+        boolean written = switch (line.kind() == null ? "" : line.kind()) {
+            case WeekProposalLineJson.KIND_SETS -> ownRow(proposal, line)
+                .filter(e -> Objects.equals(e.getWorkingSets(), line.from()))
+                .map(e -> {
+                    e.setWorkingSets(line.to());
+                    return save(e);
+                }).orElse(false);
+            case WeekProposalLineJson.KIND_TECHNIQUE -> ownRow(proposal, line)
+                .filter(e -> Objects.equals(e.getWorkingSets(), line.from()))
+                .filter(WeekProposalService::plannerMayWrite)
+                .filter(e -> holdsFromTechnique(e, line))
+                .map(e -> {
+                    writeTechnique(e, line);
+                    return save(e);
+                }).orElse(false);
+            case WeekProposalLineJson.KIND_REP_RANGE -> ownRow(proposal, line)
+                .filter(e -> Objects.equals(e.getRepMin(), line.fromRepMin())
+                    && Objects.equals(e.getRepMax(), line.fromRepMax()))
+                .map(e -> {
+                    e.setRepMin(line.toRepMin());
+                    e.setRepMax(line.toRepMax());
+                    List<String> overrides = e.getOverrides() == null ? new ArrayList<>()
+                        : new ArrayList<>(e.getOverrides());
+                    if (!overrides.contains(OVERRIDE_REP_RANGE)) {
+                        overrides.add(OVERRIDE_REP_RANGE);
+                    }
+                    e.setOverrides(overrides);
+                    return save(e);
+                }).orElse(false);
+            default -> true; // weight / rep preview line: accepted, nothing to write
+        };
+        return line.withDecision(written ? WeekProposalLineJson.DECISION_ACCEPTED : WeekProposalLineJson.DECISION_KEPT);
+    }
+
+    /** The line's exercise row, while it exists and belongs to the proposal's owner. */
+    private Optional<ExerciseEntity> ownRow(MesoWeekProposalEntity proposal, WeekProposalLineJson line) {
+        return exerciseRepository.findById(line.exerciseId())
+            .filter(e -> proposal.getCreatedBy().equals(e.getCreatedBy()));
+    }
+
+    private boolean save(ExerciseEntity e) {
+        exerciseRepository.save(e);
+        return true;
+    }
+
+    /**
+     * A planner line may write the row: no owner / AI source, and a technique or challenge it carries is the
+     * planner's own (a null source counts as the owner's, as in {@link TechniqueLines}).
+     */
+    private static boolean plannerMayWrite(ExerciseEntity e) {
+        String source = e.getTechniqueSource();
+        if (TechniquePlanner.SOURCE_OWNER.equals(source) || SOURCE_AI.equals(source)) {
+            return false;
         }
-        Optional<ExerciseEntity> row = exerciseRepository.findById(line.exerciseId())
-            .filter(e -> proposal.getCreatedBy().equals(e.getCreatedBy()))
-            .filter(e -> Objects.equals(e.getWorkingSets(), line.from()));
-        if (row.isEmpty()) {
-            return line.withDecision(WeekProposalLineJson.DECISION_KEPT);
+        boolean carries = e.getTechnique() != null || e.isChallenge();
+        return !carries || TechniquePlanner.SOURCE_PLANNER.equals(source);
+    }
+
+    /**
+     * The row still carries what the line moves away from: its technique, or for a challenge line its flag — and a
+     * challenge is only placed on a row without a technique, a technique only on a row that is not the challenge
+     * (one row never carries both).
+     */
+    private static boolean holdsFromTechnique(ExerciseEntity e, WeekProposalLineJson line) {
+        Technique from = Technique.fromWire(line.fromTechnique());
+        if (Boolean.TRUE.equals(line.challenge())) {
+            boolean placing = Technique.fromWire(line.toTechnique()) == Technique.PARTIALS;
+            if (placing && Technique.fromWire(e.getTechnique()) != Technique.NONE) {
+                return false;
+            }
+            return e.isChallenge() == (from == Technique.PARTIALS);
         }
-        row.get().setWorkingSets(line.to());
-        exerciseRepository.save(row.get());
-        return line.withDecision(WeekProposalLineJson.DECISION_ACCEPTED);
+        boolean adding = Technique.fromWire(line.toTechnique()) != Technique.NONE;
+        if (adding && e.isChallenge()) {
+            return false; // the row became a challenge since: a technique never joins it
+        }
+        return Technique.fromWire(e.getTechnique()) == from;
+    }
+
+    /** A technique line's write: the challenge flag or the technique (with the sets), source planner while it carries one. */
+    private static void writeTechnique(ExerciseEntity e, WeekProposalLineJson line) {
+        Technique to = Technique.fromWire(line.toTechnique());
+        if (Boolean.TRUE.equals(line.challenge())) {
+            e.setChallenge(to == Technique.PARTIALS);
+        } else {
+            e.setTechnique(to == Technique.NONE ? null : to.wire());
+            e.setWorkingSets(line.to());
+        }
+        boolean carries = e.getTechnique() != null || e.isChallenge();
+        e.setTechniqueSource(carries ? TechniquePlanner.SOURCE_PLANNER : null);
     }
 
     /**
@@ -547,7 +691,11 @@ public class WeekProposalService {
      * Shared with {@link TierChangeProposalService} (no band fix in a deload week).
      */
     static boolean isDeloadPhase(MesocycleEntity meso, int calWeek) {
-        List<String> phaseCurve = meso.getPhaseCurve();
+        return isDeloadPhase(meso.getPhaseCurve(), calWeek);
+    }
+
+    /** The same rule on a bare phase curve (a run's or a draft's); null or out of bounds is not a deload. */
+    static boolean isDeloadPhase(List<String> phaseCurve, int calWeek) {
         int idx = calWeek - 1;
         if (phaseCurve == null || idx < 0 || idx >= phaseCurve.size()) {
             return false;
@@ -610,7 +758,8 @@ public class WeekProposalService {
     }
 
     /** The stored per-muscle outcome: the contract reason codes under the same conditions {@link #reasonText} uses. */
-    private static WeekProposalGroupJson groupJson(GroupOutcome o, PriorityTier tier, VolumeBands.Band band) {
+    private static WeekProposalGroupJson groupJson(GroupOutcome o, PriorityTier tier, VolumeBands.Band band,
+                                                   int setsAfter) {
         List<String> reasons = new ArrayList<>();
         if (o.restored() > o.before()) {
             reasons.add(code(Reason.DELOAD_RESTORE));
@@ -624,7 +773,7 @@ public class WeekProposalService {
         }
         return new WeekProposalGroupJson(o.group(), tier.name().toLowerCase(Locale.ROOT),
             band == null ? null : band.low(), band == null ? null : band.high(),
-            band != null && band.sportAdjusted(), o.before(), o.after(), reasons.stream().distinct().toList());
+            band != null && band.sportAdjusted(), o.before(), setsAfter, reasons.stream().distinct().toList());
     }
 
     private static String reasonText(GroupOutcome o) {

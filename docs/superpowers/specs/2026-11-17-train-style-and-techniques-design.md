@@ -2,7 +2,7 @@
 
 - **Date:** 2026-11-17
 - **Issue:** `mezo-r36n9.65` (epic `mezo-r36n9`)
-- **Status:** design, awaiting owner approval. **T1 (style + progression) built 2026-11-18** (`mezo-r36n9.79`, plan [`2026-11-18-train-style-t1-style-and-progression.md`](../plans/2026-11-18-train-style-t1-style-and-progression.md)); **T2 (the technique model) built 2026-11-18** (`mezo-r36n9.80`, plan [`2026-11-18-train-style-t2-technique-model.md`](../plans/2026-11-18-train-style-t2-technique-model.md)); T3 and the Boop screens open.
+- **Status:** design, awaiting owner approval. **T1 (style + progression) built 2026-11-18** (`mezo-r36n9.79`, plan [`2026-11-18-train-style-t1-style-and-progression.md`](../plans/2026-11-18-train-style-t1-style-and-progression.md)); **T2 (the technique model) built 2026-11-18** (`mezo-r36n9.80`, plan [`2026-11-18-train-style-t2-technique-model.md`](../plans/2026-11-18-train-style-t2-technique-model.md)); **T3 (the planner and the challenge) built 2026-11-19** (`mezo-r36n9.81`, plan [`2026-11-19-train-style-t3-planner-and-challenge.md`](../plans/2026-11-19-train-style-t3-planner-and-challenge.md)); T4 and the Boop screens open.
 - **Builds on:** [`2026-11-17-train-volume-engine-v2-design.md`](2026-11-17-train-volume-engine-v2-design.md)
   ("v2" below). This document is its extension, asked for by the owner the same day; the two are one programme.
 - **Scope:** backend engine + contract; the Boop screens (builder additions, the active-workout indication) as part

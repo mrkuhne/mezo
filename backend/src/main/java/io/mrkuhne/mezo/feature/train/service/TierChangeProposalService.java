@@ -134,7 +134,7 @@ public class TierChangeProposalService {
                 int from = sets(row);
                 lines.add(new WeekProposalLineJson(UUID.randomUUID().toString(), row.exercise().getId(),
                     row.exercise().getName(), row.dayIndex(), row.group(), WeekProposalLineJson.KIND_SETS,
-                    from, from + edit.delta(), reasons, null, row.dayName(), null, null));
+                    from, from + edit.delta(), reasons, null, row.dayName(), null, null, null, null, null, null, null, null, null));
                 after += edit.delta();
             }
             List<String> groupReasons = new ArrayList<>(reasons);

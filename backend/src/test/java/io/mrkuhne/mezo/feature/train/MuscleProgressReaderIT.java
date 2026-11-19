@@ -87,4 +87,35 @@ class MuscleProgressReaderIT extends AbstractIntegrationTest {
 
         assertThat(reader.stalledGroups(owner, meso, 3)).isEmpty();
     }
+
+    /** A deload week is not a hold: it is dropped and the loading weeks around it are compared (T3 Task 6). */
+    @Test
+    void midBlockDeloadWeekNotAHold() {
+        meso = train.activeMesoStartedWeeksAgo(owner, 4, 6, List.of("MEV", "MAV", "MRV", "Deload", "MEV", "MAV"));
+        day = train.createWorkoutSession(owner, meso.getId(), "Hát nap", "gym", 0, "active");
+        style("balanced");
+        ExerciseEntity row = row("Evezés", "back-mid");
+        log(row, 1, "60", 8);
+        log(row, 2, "60", 8);
+        log(row, 3, "60", 8);
+        log(row, 4, "40", 8); // the deload: lighter
+        log(row, 5, "62.5", 8);
+
+        assertThat(reader.stalledGroups(owner, meso, 5)).isEmpty(); // week 5 beat week 3
+        assertThat(reader.stalledGroups(owner, meso, 4)).containsExactly("back"); // = loading week 3: 1-3 held
+    }
+
+    @Test
+    void holdsAcrossADeloadWeekAreAStall() {
+        meso = train.activeMesoStartedWeeksAgo(owner, 4, 6, List.of("MEV", "MAV", "MRV", "Deload", "MEV", "MAV"));
+        day = train.createWorkoutSession(owner, meso.getId(), "Hát nap", "gym", 0, "active");
+        style("balanced");
+        ExerciseEntity row = row("Evezés", "back-mid");
+        log(row, 2, "60", 8);
+        log(row, 3, "60", 8);
+        log(row, 4, "40", 8); // the deload: lighter — compared with it, week 5 would read as "moved"
+        log(row, 5, "60", 8);
+
+        assertThat(reader.stalledGroups(owner, meso, 5)).containsExactly("back");
+    }
 }

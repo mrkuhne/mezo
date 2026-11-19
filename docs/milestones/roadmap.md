@@ -63,6 +63,20 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-19 — Train style T3: the technique planner and the challenge (`mezo-r36n9.81`).**
+  In a block that has a training style **and** techniques enabled, the engine now decides where the intensity techniques
+  go: from week 3 to the last loading week, `emphasize` groups first, `maintain` never, at most 2 a day (1 in a deficit or
+  on a sport day) and at most 2 technique exercises per muscle a week; myo for high-rep isolation, the owner's rest-drop
+  on machine/cable; a planner technique replaces one straight set (sets − 1, given back on removal within the caps). The
+  **daily challenge** (lengthened partials) is placed from week 1 on the day's first stable, stretch-safe exercise. Picks
+  land as `technique` lines of the weekly proposal (auto applies, manual decides), run start writes week 1's challenges,
+  and the evaluator shows techniques / challenges / warnings week by week (also for a draft). A stalled muscle gets one
+  offer: a technique, else a rep-range change, else a one-week reduction that comes back. The owner's own picks are never
+  overwritten but count; a sport day suppresses the challenge and planner techniques on sport-loaded groups at read time.
+  **Deferred on purpose:** AI refinement (T4), the Boop screens. Spec
+  [train style and techniques](../superpowers/specs/2026-11-17-train-style-and-techniques-design.md), plan
+  [T3](../superpowers/plans/2026-11-19-train-style-t3-planner-and-challenge.md);
+  [`train.md`](../features/train.md) §4 `#### Technique planner and challenge`, §9.
 - **2026-11-19 — Boop: block builder + weekly review (`mezo-r36n9.83`).**
   The volume engine's two phone screens, on Edzés → Blokk of the native app: the **block builder** (Izmok · Napok · Blokk,
   every number from `POST /api/train/meso-plans/evaluate`, style / techniques / review-mode switches, ordered save) and the

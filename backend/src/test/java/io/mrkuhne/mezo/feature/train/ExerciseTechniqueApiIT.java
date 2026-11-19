@@ -123,6 +123,69 @@ class ExerciseTechniqueApiIT extends ApiIntegrationTest {
         assertThat(out.getChallenge()).isFalse();
         assertThat(jdbcTemplate.queryForObject("select technique from exercise where id = ?", String.class,
             r.fly().getId())).isNull();
+        assertThat(out.getWorkingSets()).isEqualTo(3); // his own pick gave no set away: none comes back
+    }
+
+    /** The planner's rest-drop on Cable Fly (2 sets: one straight set given for it); Bench Press at {@code benchSets}. */
+    private Run runWithPlannerTechnique(int benchSets) {
+        Run r = run(owner(), true);
+        jdbcTemplate.update("update exercise set technique = 'rest_drop', technique_source = 'planner', "
+            + "working_sets = 2 where id = ?", r.fly().getId());
+        jdbcTemplate.update("update exercise set working_sets = ? where id = ?", benchSets, r.bench().getId());
+        return r;
+    }
+
+    private Integer storedSets(ExerciseEntity e) {
+        return jdbcTemplate.queryForObject("select working_sets from exercise where id = ?", Integer.class, e.getId());
+    }
+
+    @Test
+    void clearingPlannerTechniqueGivesSetBack() {
+        Run r = runWithPlannerTechnique(1); // chest that day after: 3 + 3 + 1 = 7 ≤ 8
+        HttpHeaders auth = ownerAuthHeaders();
+
+        GymExercise out = putForBody(url(r, r.fly()), body(Technique.NONE, false), auth, HttpStatus.OK,
+            GymExercise.class);
+
+        assertThat(out.getTechnique()).isNull();
+        assertThat(out.getTechniqueSource()).isNull();
+        assertThat(out.getWorkingSets()).isEqualTo(3);
+        assertThat(storedSets(r.fly())).isEqualTo(3);
+    }
+
+    @Test
+    void replacingPlannerTechniqueGivesSetBackWeighedWithHisTechnique() {
+        Run r = runWithPlannerTechnique(1);
+        jdbcTemplate.update("update exercise set working_sets = 1 where id = ?", r.deck().getId());
+
+        GymExercise mine = putForBody(url(r, r.fly()), body(Technique.MYO, false), ownerAuthHeaders(),
+            HttpStatus.OK, GymExercise.class);
+
+        assertThat(mine.getTechnique()).isEqualTo(Technique.MYO);
+        assertThat(mine.getTechniqueSource()).isEqualTo(TechniqueSource.OWNER);
+        assertThat(mine.getWorkingSets()).isEqualTo(3); // 3 + 1 extra (his myo) + 1 + 1 = 6 ≤ 8
+    }
+
+    @Test
+    void clearingPlannerTechniqueAtCapKeepsSets() {
+        Run r = runWithPlannerTechnique(3); // chest that day after: 3 + 3 + 3 = 9 > 8
+        HttpHeaders auth = ownerAuthHeaders();
+
+        GymExercise out = putForBody(url(r, r.fly()), body(Technique.NONE, false), auth, HttpStatus.OK,
+            GymExercise.class);
+
+        assertThat(out.getTechnique()).isNull();
+        assertThat(out.getWorkingSets()).isEqualTo(2);
+        assertThat(storedSets(r.fly())).isEqualTo(2);
+
+        // a challenge-only planner row (no technique) never had a set to give back
+        jdbcTemplate.update("update exercise set challenge = true, technique_source = 'planner', working_sets = 2 "
+            + "where id = ?", r.deck().getId());
+        jdbcTemplate.update("update exercise set working_sets = 1 where id = ?", r.bench().getId());
+        GymExercise deck = putForBody(url(r, r.deck()), body(Technique.NONE, false), auth, HttpStatus.OK,
+            GymExercise.class);
+        assertThat(deck.getChallenge()).isFalse();
+        assertThat(deck.getWorkingSets()).isEqualTo(2);
     }
 
     @Test

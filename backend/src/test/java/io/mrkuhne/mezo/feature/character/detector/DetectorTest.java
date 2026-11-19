@@ -247,6 +247,26 @@ class DetectorTest {
     }
 
     @Test
+    void rirCalibrationSkipsTechniqueSets() {
+        RirCalibrationDetector d = new RirCalibrationDetector();
+        // The same 3 over-events, but every first set of a pair was logged as a technique set
+        List<DetectorInput.SetPoint> sets = new java.util.ArrayList<>();
+        int[][] pairs = {{10, 2}, {10, 3}, {9, 2}};
+        int idx = 0;
+        for (int[] p : pairs) {
+            sets.add(new DetectorInput.SetPoint(idx++, new BigDecimal("100"), p[0], p[1], null, null, false, true));
+            sets.add(new DetectorInput.SetPoint(idx++, new BigDecimal("100"), p[0] - 3, null, null, null, false, false));
+        }
+        DetectorInput.ExerciseWork work = new DetectorInput.ExerciseWork(
+                "Bench press", 6, 0, sets, null, null, null);
+        DetectorInput.GymDay day = new DetectorInput.GymDay(DAY, List.of(work));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(day), List.of(), List.of(), List.of(), null,
+                emptyTrend()));
+        assertThat(fired).isEmpty();
+    }
+
+    @Test
     void rirCalibration_quietWithoutNewGymData() {
         RirCalibrationDetector d = new RirCalibrationDetector();
         // Same sets but GymDay dated DAY.minusDays(1), no entry for DAY
