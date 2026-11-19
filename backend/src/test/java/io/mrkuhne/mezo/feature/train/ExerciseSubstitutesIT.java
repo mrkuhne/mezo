@@ -97,6 +97,32 @@ class ExerciseSubstitutesIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testSubstitutes_shouldLabelOtherMuscleExercises_whenTheirKitIsOff() {
+        putForBody("/api/train/gym-profile", new GymProfile().offKinds(List.of("machine")).missingExerciseIds(List.of()),
+            auth, HttpStatus.OK, GymProfile.class);
+
+        ExerciseSubstitutesResponse res = read();
+
+        assertThat(res.getLabels()).anySatisfy(l -> {
+            assertThat(l.getCatalogId()).isEqualTo(catalog("Leg Press").getId());
+            assertThat(l.getLabel()).isEqualTo(ExerciseSubstituteLabel.LabelEnum.NO_EQUIPMENT);
+        });
+    }
+
+    @Test
+    void testSubstitutes_shouldReturn200WithLabels_whenEveryKitKindIsOff() {
+        putForBody("/api/train/gym-profile", new GymProfile().offKinds(List.of("barbell", "dumbbell", "kettlebell",
+            "cable", "machine", "smith", "bench", "pullup-bar", "specialty")).missingExerciseIds(List.of()),
+            auth, HttpStatus.OK, GymProfile.class);
+
+        ExerciseSubstitutesResponse res = read();
+
+        // only bodyweight (never switchable) can survive
+        assertThat(res.getSuggestions()).allSatisfy(s -> assertThat(s.getExercise().getGear()).containsExactly("bodyweight"));
+        assertThat(res.getLabels()).isNotEmpty();
+    }
+
+    @Test
     void testSubstitutes_shouldLabelHurtBefore_whenStrongJointPainWasReported() {
         ExerciseEntity past = pastRow("DB Bench Press");
         WorkoutSessionEntity done = trainPopulator.completedInstanceWithWorkingSet(
@@ -153,7 +179,10 @@ class ExerciseSubstitutesIT extends ApiIntegrationTest {
     void testSubstitutes_shouldReturn200_whenTheOutgoingExerciseIsCustom() {
         ExerciseEntity custom = trainPopulator.createExercise(user, day.getId(), "Saját húzás", 5);
 
-        getForBody(uri(instance, custom), auth, HttpStatus.OK, ExerciseSubstitutesResponse.class);
+        ExerciseSubstitutesResponse res =
+            getForBody(uri(instance, custom), auth, HttpStatus.OK, ExerciseSubstitutesResponse.class);
+
+        assertThat(res.getSuggestions()).allSatisfy(s -> assertThat(s.getExercise().getMuscle()).isEqualTo("hát"));
     }
 
     @Test

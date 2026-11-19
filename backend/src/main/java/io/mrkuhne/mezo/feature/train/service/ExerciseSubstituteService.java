@@ -87,11 +87,12 @@ public class ExerciseSubstituteService {
             .toList();
 
         GymAvailability gym = gymProfileService.availability(userId);
-        Map<UUID, PainLevel> pain = discomfortHistory.levels(userId, relevant, today);
+        // Labels cover the whole user-visible pool (the full searchable list); history only the rankable rows.
+        Map<UUID, PainLevel> pain = discomfortHistory.levels(userId, pool, today);
         Map<UUID, ExerciseSetEntity> topSets = topSets(userId, relevant);
 
         List<Candidate> candidates = new ArrayList<>();
-        for (ExerciseCatalogEntity c : relevant) {
+        for (ExerciseCatalogEntity c : pool) {
             candidates.add(candidate(c, gym.available(c), pain.getOrDefault(c.getId(), PainLevel.NONE),
                 topSets.containsKey(c.getId())));
         }
@@ -108,11 +109,11 @@ public class ExerciseSubstituteService {
 
         Result result = ExerciseSubstituteRanker.rank(out, candidates, ctx);
 
-        Map<UUID, ExerciseCatalogEntity> byId = relevant.stream()
+        Map<UUID, ExerciseCatalogEntity> byId = pool.stream()
             .collect(Collectors.toMap(ExerciseCatalogEntity::getId, Function.identity()));
         List<ExerciseCatalogItem> items = exerciseCatalogService.toItems(viewer,
             result.suggestions().stream().map(r -> byId.get(r.id())).toList());
-        String painJointHu = painJoints.stream().map(JOINT_HU::get).filter(Objects::nonNull).findFirst().orElse(null);
+        String painJointHu = painJointHu(painJoints, out.joints());
         List<ExerciseSubstitute> suggestions = new ArrayList<>();
         for (int i = 0; i < result.suggestions().size(); i++) {
             Ranked r = result.suggestions().get(i);
@@ -124,7 +125,7 @@ public class ExerciseSubstituteService {
                 .lastTopSet(lastTopSet(topSets.get(r.id()))));
         }
         List<ExerciseSubstituteLabel> labels = new ArrayList<>();
-        for (ExerciseCatalogEntity c : relevant) { // pool order: deterministic
+        for (ExerciseCatalogEntity c : pool) { // pool order: deterministic
             ExerciseSubstituteRanker.Label label = result.labels().get(c.getId());
             if (label != null) {
                 labels.add(new ExerciseSubstituteLabel().catalogId(c.getId())
@@ -132,6 +133,13 @@ public class ExerciseSubstituteService {
             }
         }
         return new ExerciseSubstitutesResponse().suggestions(suggestions).labels(labels);
+    }
+
+    /** A painful joint the outgoing exercise loads wins; else the first mapped painful joint; else null. */
+    private static String painJointHu(Set<String> painJoints, List<String> outJoints) {
+        String joint = painJoints.stream().filter(j -> outJoints != null && outJoints.contains(j)).findFirst()
+            .orElse(painJoints.stream().filter(JOINT_HU::containsKey).findFirst().orElse(null));
+        return joint == null ? null : JOINT_HU.get(joint);
     }
 
     private static Candidate candidate(ExerciseCatalogEntity c, boolean available, PainLevel pain, boolean doneBefore) {
