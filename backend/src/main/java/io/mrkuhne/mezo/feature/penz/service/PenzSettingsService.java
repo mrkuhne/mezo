@@ -83,6 +83,12 @@ public class PenzSettingsService {
         });
     }
 
+    /** The owner's money timezone (Europe/Budapest when the stored one is unusable). */
+    @Transactional
+    public ZoneId zone(UUID owner) {
+        return validZoneOrDefault(ensure(owner).getTimezone());
+    }
+
     /** The owner's today, in the owner's money timezone. */
     @Transactional
     public LocalDate today(UUID owner) {

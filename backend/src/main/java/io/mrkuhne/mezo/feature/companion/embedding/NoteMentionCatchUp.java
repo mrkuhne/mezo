@@ -22,8 +22,8 @@ import org.springframework.stereotype.Component;
  * árassza el "mai" említésekkel a feedet. A bean a companionban él (companion→people él már
  * létezik; people→companion ciklust zárna), kapuzás PEOPLE ∧ COMPANION.
  *
- * <p>{@code notesToEmbed} szemantikájának ellenőrzése (mezo-06o0.1, Task 4): mind
- * {@code ActivityLogRepository.findNoteCandidates}, mind {@code CheckInRepository.findNoteCandidates}
+ * <p>{@code notesToEmbed} szemantikájának ellenőrzése (mezo-06o0.1, Task 4): a
+ * {@code CheckInRepository.findNoteCandidates} (az activity-log forrás mezo-r36n9.97.5 óta nincs)
  * kizárólag {@code createdBy}/{@code through}/{@code minChars(length)}-re szűr — NINCS
  * embedding-státusz predikátum a lekérdezésben; a "still-unembedded" jelleg ({@code
  * NoteEmbeddingCatchUp}-ban) a HÍVÓ oldalon, a {@code storedByRef} tartalom-összevetéssel valósul

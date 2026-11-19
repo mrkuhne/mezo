@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.Medal;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
-import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetLegEntity;
@@ -18,7 +17,6 @@ import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.MedalService;
 import io.mrkuhne.mezo.feature.train.service.OneRepMax;
 import io.mrkuhne.mezo.feature.train.service.WeeklySignalReader;
-import io.mrkuhne.mezo.feature.train.signal.GymSignalCalculator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -34,14 +32,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Every reader of spec §6.4's table (mezo-r36n9.80): records, e1RM and the per-set medals read the parent row only;
- * tonnage ({@code SESSION_VOLUME}, records' volumes, the gym signal) adds drop/mini legs but never partials; a
+ * tonnage ({@code SESSION_VOLUME}, records' volumes) adds drop/mini legs but never partials; a
  * technique set is one weekly set, never a grind, and never the progression reference while straight sets exist.
  */
 class TechniqueExclusionIT extends AbstractIntegrationTest {
 
     @Autowired ExerciseRecordService records;
     @Autowired MedalService medals;
-    @Autowired GymSignalCalculator gymSignal;
     @Autowired WeeklySignalReader signalReader;
     @Autowired ExerciseHistoryResolver resolver;
     @Autowired TrainPopulator train;
@@ -139,9 +136,6 @@ class TechniqueExclusionIT extends AbstractIntegrationTest {
         assertThat(r.getTotalVolume()).isEqualByComparingTo("1600");
         assertThat(r.getBestSessionVolume().getVolumeKg()).isEqualByComparingTo("800");
         assertThat(medals.list(owner)).filteredOn(m -> m.getType() == Medal.TypeEnum.SESSION_VOLUME).isEmpty();
-        GymSignal signal = gymSignal.compute(owner, second.getId());
-        assertThat(signal.volumeByMuscle().get("chest")).isEqualTo(800L);
-        assertThat(signal.workSetCount()).isEqualTo(1);
     }
 
     @Test
@@ -174,10 +168,6 @@ class TechniqueExclusionIT extends AbstractIntegrationTest {
             .filter(x -> x.getName().equals("Fekvenyomás")).findFirst().orElseThrow();
         assertThat(benchRec.getBestSessionVolume().getVolumeKg()).isEqualByComparingTo("2880");
         assertThat(benchRec.getTotalVolume()).isEqualByComparingTo("5280");
-
-        GymSignal signal = gymSignal.compute(owner, second.getId());
-        assertThat(signal.volumeByMuscle().get("chest")).isEqualTo(2880L + 420L);
-        assertThat(signal.workSetCount()).isEqualTo(4);
     }
 
     @Test

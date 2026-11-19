@@ -4,14 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.LifeGoalTodayResponse;
 import io.mrkuhne.mezo.api.dto.PillarDayStatus;
-import io.mrkuhne.mezo.feature.activity.entity.ActivityExtract;
-import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
-import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalPillarEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarRuleJson;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarSourceJson;
+import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.LifeGoalPopulator;
 import java.math.BigDecimal;
@@ -26,7 +24,7 @@ class LifeGoalTodayApiIT extends ApiIntegrationTest {
 
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private LifeGoalPopulator lifeGoalPopulator;
-    @Autowired private ActivityLogRepository activityLogRepository;
+    @Autowired private WaterLogPopulator waterLogPopulator;
 
     private final LocalDate today = LocalDate.now();
 
@@ -34,19 +32,15 @@ class LifeGoalTodayApiIT extends ApiIntegrationTest {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
     }
 
-    private void activity(UUID owner, LocalDate on, int durationMin) {
-        ActivityLogEntity e = new ActivityLogEntity();
-        e.setCreatedBy(owner);
-        e.setOccurredOn(on);
-        e.setText("test entry");
-        e.setSkillKey("productivity");
-        e.setExtracted(new ActivityExtract(durationMin, null));
-        activityLogRepository.saveAndFlush(e);
+    /** One day's signal: a water log (the pillar reads DAILY_WATER_ML). Until mezo-r36n9.97.5 this
+     *  was an activity-log entry; the activity source left with the XP world. */
+    private void activity(UUID owner, LocalDate on, int amount) {
+        waterLogPopulator.createWaterLog(owner, on, amount);
     }
 
     private LifeGoalPillarEntity activityPillar(LifeGoalEntity goal) {
         return lifeGoalPopulator.pillar(goal, "Fokusz", "habit",
-            new PillarSourceJson("activity", null, "productivity", "minutes", null, null),
+            new PillarSourceJson("metric", "DAILY_WATER_ML", null, null, null, null),
             new PillarRuleJson(new BigDecimal("30"), "gte", 4, null, null, null, null, null, null, null));
     }
 

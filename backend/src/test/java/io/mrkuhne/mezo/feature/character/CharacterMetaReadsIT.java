@@ -14,7 +14,6 @@ import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.ExperimentRepository;
 import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
-import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -26,7 +25,6 @@ import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
-import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -42,7 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * IT for {@code CharacterMetaReads} (mezo-1gim.15): the system-side (AI-meta) read composer —
- * triage decisions, predictions, quests and proposal outcomes, each bounded above by {@code day}
+ * triage decisions, predictions and proposal outcomes, each bounded above by {@code day}
  * for catch-up honesty.
  */
 @ActiveProfiles("companion-fake")
@@ -59,7 +57,6 @@ class CharacterMetaReadsIT extends ApiIntegrationTest {
     @Autowired private PatternEventRepository patternEventRepository;
     @Autowired private PredictionPopulator predictionPopulator;
     @Autowired private PredictionRepository predictionRepository;
-    @Autowired private QuestPopulator questPopulator;
     @Autowired private ExperimentPopulator experimentPopulator;
     @Autowired private ExperimentRepository experimentRepository;
     @Autowired private ChallengePopulator challengePopulator;
@@ -172,18 +169,6 @@ class CharacterMetaReadsIT extends ApiIntegrationTest {
     }
 
     @Test
-    void gather_quests_inWindow_includingRerolled_boundedByDay() {
-        questPopulator.activityQuest(owner, DAY, "reading", 10, DailyQuestEntity.STATUS_OFFERED);
-        questPopulator.activityQuest(owner, DAY.minusDays(1), "reading", 10, DailyQuestEntity.STATUS_REROLLED);
-        questPopulator.activityQuest(owner, DAY.plusDays(1), "reading", 10, DailyQuestEntity.STATUS_OFFERED);
-
-        List<DetectorInput.QuestPoint> q = metaReads.gather(owner, from(), DAY).quests();
-
-        assertThat(q).extracting(DetectorInput.QuestPoint::status).containsExactlyInAnyOrder("offered", "rerolled");
-        assertThat(q).allSatisfy(x -> assertThat(x.slot()).isEqualTo("GROWTH"));
-    }
-
-    @Test
     void gather_proposalOutcomes_experimentsByGeneratedAt_challengesByWorkoutDate() {
         ExperimentEntity done = experimentPopulator.experiment(owner, ExperimentEntity.STATUS_COMPLETED, "sleep_avg", "up");
         done.setOutcomeGood(Boolean.TRUE);
@@ -216,7 +201,6 @@ class CharacterMetaReadsIT extends ApiIntegrationTest {
         DetectorInput.MetaWindow w = metaReads.gather(owner, from(), DAY);
         assertThat(w.triageDecisions()).isEmpty();
         assertThat(w.predictions()).isEmpty();
-        assertThat(w.quests()).isEmpty();
         assertThat(w.proposalOutcomes()).isEmpty();
     }
 }

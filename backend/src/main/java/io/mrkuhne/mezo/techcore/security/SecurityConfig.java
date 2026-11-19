@@ -34,6 +34,10 @@ public class SecurityConfig {
         this.corsProperties = corsProperties;
     }
 
+    /**
+     * The main JWT chain — everything except {@code /api/penz/sms/ingest}, which has its own API-key chain
+     * ordered before this one ({@code feature.penz.config.PenzSmsSecurityConfig}, mezo-r36n9.102).
+     */
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource)
         throws Exception {

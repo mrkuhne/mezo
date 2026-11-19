@@ -19,8 +19,8 @@ public class PersonalRecordTools {
     @Tool(name = "list_personal_sources", description = "A részletes személyes adatforrások katalógusa. "
             + "domain nélkül a domainek; domain=all minden forrás neve; konkrét domain a forrásokat, "
             + "dátummezőt és szülőkapcsolatokat adja. offset=0; nextOffset folytatja a katalógust. Domainek: activity, biometrics, character, companion, "
-            + "fuel, gamification, goal, habit, intention, journal, lifegoal, meal, medication, needs, "
-            + "nutrition, pantry, people, proactive, progression, quest, recipe, ritual, train. "
+            + "fuel, goal, habit, intention, journal, lifegoal, meal, medication, needs, "
+            + "nutrition, pantry, people, proactive, recipe, ritual, train. "
             + "Használd, amikor részletes vagy régi adat kell, és a forrás nevét/kapcsolatait keresed. "
             + "A domain-összefoglalókban nem szereplő adatokhoz is innen indulj.")
     public String sources(@ToolParam(required = false, description = "all vagy a leírásban felsorolt domain; üres: domainek") String domain,

@@ -599,13 +599,6 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern CHALLENGE_SENTINEL =
             Pattern.compile("\\[fake-challenge:(\\{.*\\})]", Pattern.DOTALL);
 
-    /** Mirror of ActivityClassifier.CLASSIFY_MARKER (feature/activity) — LITERAL, cycle rule. */
-    public static final String ACTIVITY_MARKER_MIRROR = "TEVEKENYSEG-BESOROLAS-FELADAT";
-
-    /** Scripted classification (E2): {@code [fake-activity:{…}]} planted in the entry text. */
-    public static final Pattern ACTIVITY_SENTINEL =
-            Pattern.compile("\\[fake-activity:(\\{.*\\}|[^\\]]*)]", Pattern.DOTALL);
-
     /** Mirror of BoopPrompts.MARKER (feature/boop) — LITERAL, cycle rule (boop is a leaf feature;
      *  nothing imports it back). Drift is caught by BoopVerdictWriterIT's canned-answer assertions. */
     public static final String BOOP_BRIEF_MARKER_MIRROR = "BOOP_BRIEF_V1";
@@ -621,6 +614,18 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final String DAY_LINE_CANNED_ANSWER = "Részben sikerült a cél, és este is maradt energiád — pihenj jól.";
     public static final String CHECKIN_LINE_CANNED_ANSWER = "Délutánra feljebb ment az energiád, mint reggel volt.";
 
+    /** Mirror of penz SmsPrompt.MARKER (Boop Pénz L4, mezo-r36n9.102) — LITERAL, like the day-close mirrors. */
+    public static final String PENZ_SMS_MARKER_MIRROR = "BOOP_PENZ_SMS_V1";
+    /** Scripts the SMS parse: {@code [fake-penz-sms:<base64 of the JSON answer>]} anywhere in the SMS text. */
+    private static final Pattern PENZ_SMS_SCRIPT = Pattern.compile("\\[fake-penz-sms:([A-Za-z0-9+/=]+)]");
+    /** The unscripted parse reads the first forint figure of the SMS text: {@code -15 500 HUF} → 15500. */
+    private static final Pattern PENZ_SMS_HUF = Pattern.compile("SMS text:.*?(\\d{1,3}(?:[ .]\\d{3})+|\\d+)\\s?(?:HUF|Ft)\\b",
+            Pattern.DOTALL);
+    public static final String PENZ_SMS_MERCHANT = "Fake Bolt";
+    public static final String PENZ_SMS_CATEGORY = "Élelmiszer";
+    private final java.util.concurrent.atomic.AtomicInteger penzSmsCalls = new java.util.concurrent.atomic.AtomicInteger();
+    public int penzSmsCallCount() { return penzSmsCalls.get(); }
+
     /** Default Boop brief answer — valid, complete, Hungarian, Boop voice. */
     public static final String BOOP_CANNED_ANSWER = """
             {"forma":{"headline":"Jó formában vagy","sentence":"Kipihented magad, ma bírni fogod a terhelést."},
@@ -633,15 +638,6 @@ public class FakeCompanionLlm implements CompanionLlm {
                       {"text":"Este edzés vár rád.","link":"day"}],
              "tonightTip":"Ma este fél tizenegy körül bújj ágyba.",
              "nextMealTip":"Ebédnél egyél egy nagyobb adag fehérjét."}""";
-
-    /** Mirror of QuestFlavor.FLAVOR_MARKER (feature/quest) — LITERAL, cycle rule. */
-    public static final String QUEST_FLAVOR_MARKER_MIRROR = "KULDETES-IZESITES-FELADAT";
-
-    /** Scripted flavor rewrite (E3): {@code [fake-quest-flavor:[…]]} planted in a quest title.
-     *  GREEDY — the payload is a JSON array of objects. Default [] = no rewrite, so unscripted
-     *  cron runs keep catalog copy deterministically. */
-    public static final Pattern QUEST_FLAVOR_SENTINEL =
-            Pattern.compile("\\[fake-quest-flavor:(\\[.*\\]|[^\\]]*)]", Pattern.DOTALL);
 
     /** Mirror of PlacementEngine.SYSTEM_PROMPT_MARKER (feature/fuel) — LITERAL, not an import,
      *  same drift-safety rationale as every other mirror here. */
@@ -674,7 +670,7 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  all, so an unknown value never reaches the prompt text to be sentinel-matched). {@code hint}
      *  carries a contract {@code @Size(max = 200)}, so payloads must stay compact; {@link
      *  #SUGGEST_COUNT_SENTINEL} is the compact alternative for multi-item scripts. GREEDY array
-     *  alternative (like {@code QUEST_FLAVOR_SENTINEL}), PLUS a raw-text fallback alternative so a
+     *  alternative, PLUS a raw-text fallback alternative so a
      *  deliberately broken payload (e.g. {@code [fake-habit-suggest:not-json]}) still matches and
      *  reaches the caller's JSON parser verbatim, exercising the degrade-to-empty path instead of
      *  silently falling through to the default. Default = one valid minimal suggestion so the
@@ -848,6 +844,22 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.Map<String, java.util.UUID> feedActors = new java.util.concurrent.ConcurrentHashMap<>();
     public java.util.UUID feedActor(String kind) { return feedActors.get(kind); }
 
+    /** The bank-SMS parse: a scripted answer, else a debit of the first forint figure, else not a transaction. */
+    private static String penzSmsAnswer(String userMessage) {
+        Matcher scripted = PENZ_SMS_SCRIPT.matcher(userMessage);
+        if (scripted.find()) {
+            return new String(Base64.getDecoder().decode(scripted.group(1)), StandardCharsets.UTF_8);
+        }
+        Matcher huf = PENZ_SMS_HUF.matcher(userMessage);
+        if (!huf.find()) {
+            return "{\"is_transaction\":false}";
+        }
+        String amount = huf.group(1).replaceAll("[^0-9]", "");
+        return "{\"is_transaction\":true,\"direction\":\"debit\",\"amount\":" + amount
+                + ",\"currency\":\"HUF\",\"merchant\":\"" + PENZ_SMS_MERCHANT + "\",\"date\":\"\",\"category\":\""
+                + PENZ_SMS_CATEGORY + "\"}";
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -879,6 +891,10 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (dayLine) {
             return DAY_LINE_CANNED_ANSWER;
+        }
+        if (systemPrompt.startsWith(PENZ_SMS_MARKER_MIRROR)) {
+            penzSmsCalls.incrementAndGet();
+            return penzSmsAnswer(userMessage);
         }
         if (systemPrompt.startsWith(CHECKIN_LINE_MARKER_MIRROR)) {
             return CHECKIN_LINE_CANNED_ANSWER;
@@ -1116,17 +1132,6 @@ public class FakeCompanionLlm implements CompanionLlm {
                         + "\"forma\":{\"headline\":\"\"},\"brief\":[]}";
             }
             return BOOP_CANNED_ANSWER;
-        }
-        if (systemPrompt.startsWith(ACTIVITY_MARKER_MIRROR)) {
-            Matcher m = ACTIVITY_SENTINEL.matcher(userMessage);
-            // default = valid confident classification so the un-scripted happy path categorizes
-            return m.find() ? m.group(1)
-                    : "{\"skillKey\":\"learning\",\"confidence\":0.9,\"xpSuggestion\":15,"
-                            + "\"durationMin\":null,\"amountHuf\":null}";
-        }
-        if (systemPrompt.startsWith(QUEST_FLAVOR_MARKER_MIRROR)) {
-            Matcher m = QUEST_FLAVOR_SENTINEL.matcher(userMessage);
-            return m.find() ? m.group(1) : "[]";
         }
         if (systemPrompt.startsWith(STACK_PLACEMENT_MARKER_MIRROR)) {
             Matcher m = STACK_PLACEMENT_SENTINEL.matcher(userMessage);

@@ -18,6 +18,9 @@ import org.springframework.validation.annotation.Validated;
  *                                    asked date is used; none → {@code PENZ_FX_UNAVAILABLE} (503).
  * @param practiceMonthlyDefaultMinor the Gyakorlás monthly cap a new settings row starts with, HUF minor units
  *                                    (2 000 000 = 20 000 Ft).
+ * @param smsPerMinute                SMS-ingest calls one API key may make in any rolling minute; the next one
+ *                                    answers 429 {@code PENZ_SMS_RATE_LIMITED} with Retry-After.
+ * @param smsPerDay                   SMS-ingest calls one API key may make per UTC day.
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.penz")
@@ -27,5 +30,7 @@ public record PenzProperties(
         @DefaultValue("5000") @Min(100) @Max(30_000) int readTimeoutMs,
         @DefaultValue("mezo/1.0 (boop-penz)") @NotBlank String userAgent,
         @DefaultValue("7") @Min(0) @Max(31) int fxFallbackDays,
-        @DefaultValue("2000000") @Min(0) long practiceMonthlyDefaultMinor) {
+        @DefaultValue("2000000") @Min(0) long practiceMonthlyDefaultMinor,
+        @DefaultValue("20") @Min(1) @Max(10_000) int smsPerMinute,
+        @DefaultValue("500") @Min(1) @Max(100_000) int smsPerDay) {
 }

@@ -82,7 +82,7 @@ public class EditionCandidateCollector {
     private static final int PAIR_MIN_N = 5;
 
     /** Nincs megosztott ZoneId bean/constant a repóban (Task 4 döntés) — a helyi idiómát követi
-     *  ({@code TrainingStreakCalculator}, {@code MedicationCycleService}: saját fájl-szintű
+     *  ({@code MedicationCycleService}: saját fájl-szintű
      *  konstans), mert a megosztott létező konstansok más feature-ökben élnek, amikbe a character
      *  réteg nem függ bele. */
     private static final ZoneId EDITION_ZONE = ZoneId.of("Europe/Budapest");

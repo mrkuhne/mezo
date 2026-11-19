@@ -9,8 +9,10 @@ import io.mrkuhne.mezo.api.dto.PenzCategoryResponse;
 import io.mrkuhne.mezo.api.dto.PenzMoney;
 import io.mrkuhne.mezo.api.dto.PenzMonthCloseResponse;
 import io.mrkuhne.mezo.api.dto.PenzRecurringRuleResponse;
+import io.mrkuhne.mezo.api.dto.PenzSmsKeyResponse;
 import io.mrkuhne.mezo.api.dto.PenzTransactionResponse;
 import io.mrkuhne.mezo.feature.penz.entity.PenzAccountEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzApiKeyEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzCategoryEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzMonthCloseEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzRecurringRuleEntity;
@@ -62,6 +64,9 @@ public interface PenzMapper {
     @Mapping(target = "leftoverAction",
         expression = "java(PenzMonthCloseResponse.LeftoverActionEnum.fromValue(e.getLeftoverAction()))")
     PenzMonthCloseResponse toResponse(PenzMonthCloseEntity e);
+
+    /** An SMS API key as listed: never the key itself, nor its hash. */
+    PenzSmsKeyResponse toResponse(PenzApiKeyEntity e);
 
     /**
      * A month with transactions and no close yet, with the figures a close would store now: the engine's

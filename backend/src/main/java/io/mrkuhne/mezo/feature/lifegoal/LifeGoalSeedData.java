@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
  * (Spanyol B2) for the owner as opt-in demo data — {@code @Profile("demofixtures")} only, the
  * {@link io.mrkuhne.mezo.feature.goal.GoalSeedData} idiom. Idempotent: no-op if any life goal
  * already exists. Every pillar below is checked against {@code SignalCatalog.ENTRIES} (source
- * shape + allowed {@code kinds}) and {@code ProgressionTaxonomy} (skill key) so a seeded pillar
+ * shape + allowed {@code kinds}) and {@code SkillTaxonomy} (skill key) so a seeded pillar
  * would also survive {@code PUT /api/life-goals/{id}/pillars} — the frontend mock seed (Task 7)
  * mirrors this data field-for-field.
  */

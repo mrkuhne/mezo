@@ -61,7 +61,6 @@ public class WeeklySuggestionGenerator {
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
-    private final GrowthDigestBlock growthDigestBlock;
     private final PromptPersona promptPersona;
     /** Memória mindenhol S8 (mezo-eq85.8): same lazy idiom as the [Karakter] dossier's
      *  {@code ObjectProvider} in the other two generators — see {@code MemoirGenerator
@@ -146,8 +145,7 @@ public class WeeklySuggestionGenerator {
                 + facts
                 + mem.block()
                 + "\n\nELŐZŐ HÉT NAPJAI (legfrissebb elöl):\n" + narratives
-                + (patterns.isBlank() ? "" : "\n\nMINTÁK:\n" + patterns)
-                + growthDigestBlock.render(userId, weekStart.minusWeeks(1));
+                + (patterns.isBlank() ? "" : "\n\nMINTÁK:\n" + patterns);
     }
 
     /**

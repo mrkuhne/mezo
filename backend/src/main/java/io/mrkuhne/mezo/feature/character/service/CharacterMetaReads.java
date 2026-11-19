@@ -10,7 +10,6 @@ import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.ChallengeRepository;
 import io.mrkuhne.mezo.feature.proactive.repository.ExperimentRepository;
 import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
-import io.mrkuhne.mezo.feature.quest.repository.DailyQuestRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,7 +24,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * The system-side (AI-meta) read composer for the detector framework (round-4 spec §6.2): what the
- * companion proposed and how it went — fact/pattern triage decisions, predictions, quests,
+ * companion proposed and how it went — fact/pattern triage decisions, predictions,
  * experiment and challenge outcomes. Split from {@link CharacterSignalReads} (already 28
  * dependencies) because these sources describe THE SYSTEM, and the detectors reading them
  * (szkeptikus-owned, META dimension) make claims about the system, never about the user.
@@ -52,7 +51,6 @@ public class CharacterMetaReads {
     private final LearnedFactRepository learnedFactRepository;
     private final PatternEventRepository patternEventRepository;
     private final PredictionRepository predictionRepository;
-    private final DailyQuestRepository dailyQuestRepository;
     private final ExperimentRepository experimentRepository;
     private final ChallengeRepository challengeRepository;
 
@@ -62,7 +60,6 @@ public class CharacterMetaReads {
         return new DetectorInput.MetaWindow(
                 gatherTriage(owner, fromInstant, toExclusive),
                 gatherPredictions(owner, from, to),
-                gatherQuests(owner, from, to),
                 gatherProposalOutcomes(owner, from, to, fromInstant, toExclusive));
     }
 
@@ -98,13 +95,6 @@ public class CharacterMetaReads {
                 .map(p -> new DetectorInput.PredictionPoint(p.getValidFrom(), p.getValidTo(), p.getStatus(),
                         p.getConfidence(), p.getMetricKey()))
                 .sorted(Comparator.comparing(DetectorInput.PredictionPoint::validTo))
-                .toList();
-    }
-
-    private List<DetectorInput.QuestPoint> gatherQuests(UUID owner, LocalDate from, LocalDate to) {
-        return dailyQuestRepository.findByCreatedByAndQuestDateBetweenOrderByQuestDateDesc(owner, from, to).stream()
-                .map(q -> new DetectorInput.QuestPoint(q.getQuestDate(), q.getSlot(), q.getStatus()))
-                .sorted(Comparator.comparing(DetectorInput.QuestPoint::questDate))
                 .toList();
     }
 

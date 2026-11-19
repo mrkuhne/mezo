@@ -3,8 +3,6 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
-import io.mrkuhne.mezo.feature.companion.TodayActivitySource;
-import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalSeriesService;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
@@ -90,12 +88,8 @@ public class MetricSeriesService {
     private final RitualDayRepository ritualDayRepository;
     private final MentionRepository mentionRepository;
     private final CompanionProperties properties;
-    // activity/quest a companiontól függ (LLM-hívók) — a napi-XP olvasás ezért porton át jön
-    // (TodayActivitySource/TodayQuestSource minta), különben szelet-ciklus zárulna.
-    private final ObjectProvider<TodayActivitySource> todayActivitySource;
-    private final ObjectProvider<TodayQuestSource> todayQuestSource;
     // Reflexió (mezo-eq85.1): the TEXT_* series live behind the reflection switch, so the bean can
-    // legitimately be absent. ObjectProvider (the TodayActivitySource idiom) keeps this service
+    // legitimately be absent. ObjectProvider keeps this service
     // constructible either way — switch off ⇒ the four metrics report no data, honestly.
     private final ObjectProvider<TextSignalSeriesService> textSignalSeriesService;
     // Check-in 2.0 follow-up B: DayScoreService itself reads this service (sleep/XP series), so
@@ -735,25 +729,16 @@ public class MetricSeriesService {
         return series;
     }
 
-    /** Napi össz-XP (activity + habit + completed quest); 0 XP-s nap nem adatpont (DAILY_KCAL-minta).
-     *  Az activity/quest oldal portokon át jön; hiányzó bean (kapcsoló ki) = nincs az a forrás. */
+    /** Napi szokás-XP (a habit_day saját xp_awarded oszlopa); 0 XP-s nap nem adatpont
+     *  (DAILY_KCAL-minta). Az activity- és küldetés-XP az XP-világgal együtt kikerült
+     *  (mezo-r36n9.97.5). */
     private Map<LocalDate, Double> dailyXp(UUID userId, LocalDate from, LocalDate to) {
         Map<LocalDate, Double> series = new HashMap<>();
-        TodayActivitySource activities = todayActivitySource.getIfAvailable();
-        if (activities != null) {
-            activities.awardedXpByDay(userId, from, to).forEach((day, xp) ->
-                    series.merge(day, xp.doubleValue(), Double::sum));
-        }
         habitDayRepository.findByCreatedByAndHabitDateBetween(userId, from, to).forEach(h -> {
             if (h.getXpAwarded() != null && h.getXpAwarded() > 0) {
                 series.merge(h.getHabitDate(), h.getXpAwarded().doubleValue(), Double::sum);
             }
         });
-        TodayQuestSource quests = todayQuestSource.getIfAvailable();
-        if (quests != null) {
-            quests.completedXpByDay(userId, from, to).forEach((day, xp) ->
-                    series.merge(day, xp.doubleValue(), Double::sum));
-        }
         return series;
     }
 

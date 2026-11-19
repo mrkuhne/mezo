@@ -14,7 +14,6 @@ import io.mrkuhne.mezo.feature.character.detector.LoggingGapDetector;
 import io.mrkuhne.mezo.feature.character.detector.MentionContextShiftDetector;
 import io.mrkuhne.mezo.feature.character.detector.PeopleMoodLinkDetector;
 import io.mrkuhne.mezo.feature.character.detector.PredictionCalibrationDetector;
-import io.mrkuhne.mezo.feature.character.detector.QuestCompletionCalibrationDetector;
 import io.mrkuhne.mezo.feature.character.detector.UnderLoggingDetector;
 import io.mrkuhne.mezo.feature.character.detector.WeekendGapDetector;
 import io.mrkuhne.mezo.feature.character.service.CharacterMetaReads;
@@ -50,7 +49,6 @@ class CharacterApiSwitchOffIT extends ApiIntegrationTest {
         assertThat(context.getBeanProvider(ChatTopicShiftDetector.class).getIfAvailable()).isNull();
         assertThat(context.getBeanProvider(KnowledgeRejectionPatternDetector.class).getIfAvailable()).isNull();
         assertThat(context.getBeanProvider(PredictionCalibrationDetector.class).getIfAvailable()).isNull();
-        assertThat(context.getBeanProvider(QuestCompletionCalibrationDetector.class).getIfAvailable()).isNull();
         assertThat(context.getBeanProvider(ExperimentOutcomeLedgerDetector.class).getIfAvailable()).isNull();
         assertThat(context.getBeanProvider(CharacterMetaReads.class).getIfAvailable()).isNull();
         assertThat(context.getBeansOfType(CharacterDetector.class)).isEmpty();

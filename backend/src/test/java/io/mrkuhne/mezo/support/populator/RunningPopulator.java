@@ -89,7 +89,7 @@ public class RunningPopulator {
 
     /**
      * Block whose structure holds one week with a single {@code w1-sprint} prescribed session of
-     * kind {@code sprint} — the deterministic fixture for {@code RunSignalCalculator} kind
+     * kind {@code sprint} — the deterministic fixture for kind
      * resolution. {@code startDate}/{@code endDate} are required (NOT NULL) on the entity.
      */
     public RunningBlockEntity createSprintBlock(UUID createdBy) {

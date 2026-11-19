@@ -31,7 +31,6 @@ final class ToolDomains {
         Map.entry("compare_periods", "insights"),
         Map.entry("get_goal", "goal"),
         Map.entry("get_life_goals", "lifegoal"),
-        Map.entry("get_growth", "growth"),
         Map.entry("find_similar_past_days", "memory"),
         Map.entry("search_personal_memory", "memory"),
         Map.entry("get_conversation_history", "memory"),

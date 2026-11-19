@@ -12,6 +12,8 @@ related: [companion, today, insights, train, me, character, _platform-api-backen
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
 
+> **2026-11-19 — the XP world left the server (`mezo-r36n9.97.5`, #52).** The weekly suggestion and memoir prompts no longer carry the `NÖVEKEDÉS` growth digest — `GrowthDigestBlock` is deleted. See [`growth.md`](growth.md) §9.
+
 > **2026-11-10 — Boop S3 (`mezo-r36n9.7`).** The native iPhone app's morning brief is **separate** from the companion messages described here: it has its own table (`boop_brief`) and endpoint (`GET /api/boop/brief`), is computed on demand per local day, and adds **no new `companion_message` kind** — the web app's feed and its kind filters are unchanged. Details: [`boop-ios.md`](boop-ios.md) §3–§4.
 
 > **2026-11-18 — `mezo-r36n9.80` (T2 techniques).** `ChallengeOutcomeEvaluator` (the workout *depth* challenge) now scores from the newest **non-technique** set of the session, so a deliberate failure set (drop/partials) cannot win it for free; covered by `ChallengeOutcomeIT`. Owned by [`train`](train.md) §4 *Intensity techniques*.

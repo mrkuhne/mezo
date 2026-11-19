@@ -135,16 +135,6 @@
     "expectedTools": ["get_goal"]
   },
   {
-    "id": "growth-1",
-    "question": "Mennyit fejlődtem eddig összesen a rendszerben, és most milyen fokozatnál állok?",
-    "expectedTools": ["get_growth"]
-  },
-  {
-    "id": "growth-2",
-    "question": "Hányadik napja megyek megszakítás nélkül, és mit sikerült már ezzel kivívnom?",
-    "expectedTools": ["get_growth"]
-  },
-  {
     "id": "practice-1",
     "question": "Mi mindent kellene még ma bepipálnom, mielőtt nyugovóra térek?",
     "expectedTools": ["get_daily_practice"]
@@ -207,13 +197,7 @@
   {
     "id": "ambiguous-goal-growth-genuine",
     "question": "Hogy állok a céljaimmal mostanában?",
-    "expectedTools": ["get_goal", "get_growth"],
-    "note": "genuinely ambiguous — 'céljaimmal' can mean the active weight/fitness goal (get_goal) or gamification targets like achievement thresholds (get_growth's 9 jelvények use elért/cél too); a multi-tool expected-set is honest here, not a widened net"
-  },
-  {
-    "id": "ambiguous-goal-growth-sharpened",
-    "question": "Milyen jelvényekhez állok most a legközelebb?",
-    "expectedTools": ["get_growth"],
-    "note": "same goal/growth vocabulary collision as ambiguous-goal-growth-genuine, but sharpened toward achievements specifically ('jelvényekhez') — shows the ambiguity is resolvable with the right phrasing, not inherent to the concept"
+    "expectedTools": ["get_goal"],
+    "note": "was a goal/growth ambiguity; get_growth left with the XP world (mezo-r36n9.97.5), so 'céljaimmal' now resolves to the active goal alone"
   }
 ]

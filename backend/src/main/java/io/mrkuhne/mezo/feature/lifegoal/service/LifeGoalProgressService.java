@@ -68,7 +68,6 @@ public class LifeGoalProgressService {
     private final LifeGoalPillarDayRepository pillarDayRepository;
     private final List<SignalSource> sources;
     private final SignalCatalog signalCatalog;
-    private final LifeGoalXpService xpService;
 
     /** Tárolt sorok győznek; hiányzó nap olvasáskor számolódik (NEM íródik). from > to → 400. */
     @Transactional(readOnly = true)
@@ -113,10 +112,7 @@ public class LifeGoalProgressService {
         if (!LifeGoalEntity.STATUS_ACTIVE.equals(goal.getStatus())) {
             return;
         }
-        // Newest-first (yesterday, -2, -3): a backfill pass (late logging flipping an older day)
-        // must not visit that day last and re-fire the gamification streak roll out of order —
-        // GamificationAccountAdapter.onXpAwarded rolls the streak on every award, so award order
-        // must track calendar order, most recent closed day first.
+        // Newest-first (yesterday, -2, -3): the three closed days the nightly rewrite window covers.
         List<LocalDate> closedDays = List.of(today.minusDays(1), today.minusDays(2), today.minusDays(3));
         LocalDate latestClosed = today.minusDays(1);
         LocalDate wideFrom = latestClosed.minusDays(PROGRESS_WINDOW_DAYS);
@@ -125,7 +121,6 @@ public class LifeGoalProgressService {
             for (LocalDate day : closedDays) {
                 PillarDayScore score = LifeGoalScorer.scoreDay(pillar.getKind(), pillar.getRule(), day, window);
                 upsertPillarDay(pillar, day, score);
-                xpService.awardIfHit(pillar, day, score.status());
             }
         }
     }
