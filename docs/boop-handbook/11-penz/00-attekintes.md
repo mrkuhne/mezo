@@ -2,7 +2,7 @@
 cim: Pénz
 szint: Fő szekció
 terulet: Pénz
-allapot: Tervezve
+allapot: Részben kész
 hol: [iPhone app, Háttérrendszer, AI]
 szulo:
 szakasz: [Életpanel]
