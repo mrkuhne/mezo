@@ -903,5 +903,25 @@
     ],
     "mit_kapsz": "Amikor Boop a heti edzésmunkádról beszél, a csökkentett súlyú és a mini-sorozatok is beleszámítanak az összsúlyba, ugyanúgy, ahogy az érmeknél és a rekordoknál.",
     "munkamenet": "engine-t2-technique"
+  },
+  "mezo-r36n9.91": {
+    "cim": "Edzés: a heti javaslat naplója a mostani módot mutatja, nem azt, amiben készült",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha átváltod a jóváhagyás módját, a korábbi heti javaslatok naplója is azt fogja mutatni, amiben valóban készültek. A képernyőket nem érinti.",
+    "munkamenet": "boop-blokk-epito"
+  },
+  "mezo-r36n9.92": {
+    "cim": "Edzés: a blokképítő mérése már mentés előtt számol az edzésmóddal",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha a blokképítőben edzésmódot váltasz vagy bekapcsolod a technikákat, a becsült edzéshossz és a figyelmeztetések már mentés előtt ehhez igazodnak.",
+    "munkamenet": "boop-blokk-epito"
   }
 }

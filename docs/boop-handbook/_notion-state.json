@@ -729,7 +729,7 @@
     },
     "kezikonyv:07-edzes/05-heti-volumen": {
       "page_id": "4168968e-752b-813c-9763-e3bda2691265",
-      "hash": "faaecc48f405"
+      "hash": "a3f1a348f660"
     },
     "kezikonyv:07-edzes/06-gyakorlatok-elozmenyek": {
       "page_id": "4168968e-752b-8189-8150-ca1dc31f807c",
@@ -1041,7 +1041,7 @@
     },
     "jegyek:mezo-r36n9.81": {
       "page_id": "41c8968e-752b-81bb-9fa1-cc91d6cbb02c",
-      "hash": "77ffcb07279e"
+      "hash": "daf927924202"
     },
     "jegyek:mezo-r36n9.80": {
       "page_id": "41c8968e-752b-81c0-aadb-d311b0556e21",
@@ -1173,7 +1173,7 @@
     },
     "kezikonyv:07-edzes/14-edzesstilus": {
       "page_id": "41c8968e-752b-81c4-a675-e42be7ead430",
-      "hash": "8caed6cc8701"
+      "hash": "4973b713286b"
     },
     "jegyek:mezo-r36n9.90": {
       "page_id": "41c8968e-752b-8184-90df-f39bbc3d1d5c",
@@ -1205,7 +1205,27 @@
     },
     "kezikonyv:07-edzes/15-technikak": {
       "page_id": "41c8968e-752b-8133-8f30-e3411e37f22a",
-      "hash": "a667a8a3eb0f"
+      "hash": "43f654915fc0"
+    },
+    "jegyek:mezo-r36n9.92": {
+      "page_id": "41d8968e-752b-819d-bed4-c90e4df96a79",
+      "hash": "0ac02cf340aa"
+    },
+    "jegyek:mezo-r36n9.91": {
+      "page_id": "41d8968e-752b-81f9-a291-ea9d8cc7798a",
+      "hash": "2f75d35b8ae8"
+    },
+    "dontesek:d-2026-11-19-futo-blokk-beallitasai": {
+      "page_id": "41d8968e-752b-81ed-ae78-df217ab700ac",
+      "hash": "1917cb4ab19a"
+    },
+    "kiadasok:8e61aa28c": {
+      "page_id": "41d8968e-752b-81fd-a5d5-ea0ceab28d8f",
+      "hash": "1b2f787d5518"
+    },
+    "kezikonyv:07-edzes/16-blokk-epito": {
+      "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
+      "hash": "463734c13b3a"
     }
   }
 }
