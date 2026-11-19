@@ -750,5 +750,17 @@
     "miert": "Edzés közben egy pillantásból kell látni, mi a következő lépés, és nem szabad semmit fejben számolni.",
     "levaltotta": "A technika mint a gyakorlat menüjében elrejtett leírás.",
     "kovetkezmeny": "A telefonra került (mezo-r36n9.84); az első éles kihívás a hétfői heti javaslat után jön."
+  },
+  "d-2026-11-19-web-leall": {
+    "cim": "A webes app leáll, a csak-webes szerverrészek kikerülnek",
+    "datum": "2026-11-19",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "A webes appot leállítjuk, és kivezetjük a szerverről azokat a részeket, amiket csak a web használt (pontok, szintek, érmek, küldetések, adminfelület, bemutató, böngészős push, csak-webes háttérmunkák). Az adatok mind megmaradnak. A szokások, életcélok, rituálék, igény-körök és a gyógyszer-ciklus csak egy ellenőrzési pont után, egyenként a jóváhagyásoddal mennek. A súlycélt és a heti beosztást kérésre módosítjuk, amíg az iPhone meg nem kapja hozzájuk a képernyőt.",
+    "miert": "„A webes appban már semmit nem fogok használni, csak az iphone appot.” A web minden szerverváltoztatásnál plusz munka, a csak-webes háttérmunkák pénzbe kerülnek, és Boop olyan régi adatokból is merített, amiket már nem vezetsz.",
+    "levaltotta": "A 2026-11-17-i döntés: a web változatlanul fut tovább, csak nem fejlesztjük.",
+    "kovetkezmeny": "Nyolc lépés, mindegyik után zöld főág; a havi AI-költség kb. a felére csökken (mezo-r36n9.97)."
   }
 }
