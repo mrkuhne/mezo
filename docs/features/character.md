@@ -15,7 +15,7 @@ key_files:
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
-> **2026-11-19 — reviewed after T3 (`mezo-r36n9.81`, one small change).** `CharacterSignalReads` now skips working sets that carry an intensity technique (planner-placed techniques make them reachable without a manual pick), like the RIR calibration; nothing else in the character feature changed ([`train.md`](train.md) §4 *Technique planner and challenge*).
+> **2026-11-19 — reviewed after T3 (`mezo-r36n9.81`, one small change).** `CharacterSignalReads` now flags working sets that carry an intensity technique (`DetectorInput.SetPoint.technique`) and `RirCalibrationDetector` skips them (planner-placed techniques make them reachable without a manual pick); nothing else in the character feature changed ([`train.md`](train.md) §4 *Technique planner and challenge*).
 
 > **2026-11-18 — reviewed after `mezo-r36n9.78` (no character change).** The shared `1.1.0/script` folder gained `202611181400_mezo-r36n9.78_week_proposal_groups.sql` (`groups jsonb` on `meso_week_proposal`, owned by [`train.md`](train.md)); nothing about the character dossier changed.
 
