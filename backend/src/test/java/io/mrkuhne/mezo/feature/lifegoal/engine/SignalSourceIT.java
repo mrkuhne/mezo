@@ -2,9 +2,6 @@ package io.mrkuhne.mezo.feature.lifegoal.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.activity.entity.ActivityExtract;
-import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
-import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarSourceJson;
 import io.mrkuhne.mezo.feature.needs.entity.NeedsDayEntity;
@@ -22,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 class SignalSourceIT extends AbstractIntegrationTest {
 
     @Autowired private List<SignalSource> sources;
-    @Autowired private ActivityLogRepository activityLogRepository;
     @Autowired private NeedsDayRepository needsDayRepository;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private DatabasePopulator databasePopulator;
@@ -38,55 +34,12 @@ class SignalSourceIT extends AbstractIntegrationTest {
             .orElseThrow(() -> new IllegalStateException("No SignalSource supports " + source));
     }
 
-    private ActivityLogEntity activity(UUID userId, LocalDate on, String skillKey, Integer durationMin) {
-        ActivityLogEntity e = new ActivityLogEntity();
-        e.setCreatedBy(userId);
-        e.setOccurredOn(on);
-        e.setText("test entry");
-        e.setSkillKey(skillKey);
-        e.setExtracted(new ActivityExtract(durationMin, null));
-        return activityLogRepository.saveAndFlush(e);
-    }
-
     @Test
-    void activity_minutes_sums_per_day() {
-        UUID userId = ownerId();
-        activity(userId, day, "productivity", 20);
-        activity(userId, day, "productivity", 40);
-
+    void activity_source_isNoLongerSupported_afterTheXpWorldLeft() {
+        // mezo-r36n9.97.5: the activity log left the server; an existing type=activity pillar
+        // finds no SignalSource and evaluates as honest no_data (LifeGoalProgressService#windowFor).
         PillarSourceJson src = new PillarSourceJson("activity", null, "productivity", "minutes", null, null);
-        SignalWindow w = pick(src).window(userId, src, day, day);
-        assertThat(w.values().get(day)).isEqualByComparingTo("60");
-    }
-
-    @Test
-    void activity_minutes_ignores_other_skill_keys() {
-        UUID userId = ownerId();
-        activity(userId, day, "productivity", 20);
-        activity(userId, day, "recovery", 999);
-
-        PillarSourceJson src = new PillarSourceJson("activity", null, "productivity", "minutes", null, null);
-        SignalWindow w = pick(src).window(userId, src, day, day);
-        assertThat(w.values().get(day)).isEqualByComparingTo("20");
-    }
-
-    @Test
-    void activity_count_counts_entries() {
-        UUID userId = ownerId();
-        activity(userId, day, "productivity", 20);
-        activity(userId, day, "productivity", 40);
-
-        PillarSourceJson src = new PillarSourceJson("activity", null, "productivity", "count", null, null);
-        SignalWindow w = pick(src).window(userId, src, day, day);
-        assertThat(w.values().get(day)).isEqualByComparingTo("2");
-    }
-
-    @Test
-    void activity_day_without_rows_has_no_key() {
-        UUID userId = ownerId();
-        PillarSourceJson src = new PillarSourceJson("activity", null, "productivity", "minutes", null, null);
-        SignalWindow w = pick(src).window(userId, src, day, day);
-        assertThat(w.values()).doesNotContainKey(day);
+        assertThat(sources).noneMatch(s -> s.supports(src));
     }
 
     @Test

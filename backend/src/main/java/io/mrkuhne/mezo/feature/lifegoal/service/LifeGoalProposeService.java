@@ -14,7 +14,7 @@ import io.mrkuhne.mezo.feature.companion.LifeGoalProposePort.PillarProposal;
 import io.mrkuhne.mezo.feature.companion.LifeGoalProposePort.Proposal;
 import io.mrkuhne.mezo.feature.lifegoal.catalog.SignalCatalog;
 import io.mrkuhne.mezo.feature.lifegoal.mapper.LifeGoalMapper;
-import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
+import io.mrkuhne.mezo.feature.habit.SkillTaxonomy;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -46,8 +46,8 @@ public class LifeGoalProposeService {
     private final LifeGoalMapper mapper;
 
     public LifeGoalProposeResponse propose(UUID userId, LifeGoalProposeRequest req) {
-        Set<String> skills = new HashSet<>(ProgressionTaxonomy.LIFE);
-        skills.addAll(ProgressionTaxonomy.ATHLETIC);
+        Set<String> skills = new HashSet<>(SkillTaxonomy.LIFE);
+        skills.addAll(SkillTaxonomy.ATHLETIC);
         LifeGoalProposePort p = port.getIfAvailable();
         Optional<Proposal> ai = p == null ? Optional.empty()
             : p.propose(userId, req.getTitle(), req.getWhyText(), catalog.promptText(), catalog.ids(), skills);

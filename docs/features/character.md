@@ -10,8 +10,6 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java
   - backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql
   - backend/src/main/resources/db/changelog/1.1.0/script
-  - frontend/src/data/character
-  - frontend/src/features/character
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
@@ -29,6 +27,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 > **2026-11-17 — reviewed after `mezo-7ahl8`:** two derived queries with no caller anywhere (main or tests) were removed — `CharacterClaimRepository.findByIdAndCreatedByAndStatus` and `CharacterConferenceRepository.findFirstByCreatedByOrderByGeneratedAtDesc`. No behaviour changed.
 
 # Karakter (user character dossier) — Feature Documentation
+
+> **2026-11-19 — the XP world left the server (`mezo-r36n9.97.5`, #52).** The `quest-completion-calibration` META detector is deleted together with the quest reads of `CharacterMetaReads` (`MetaWindow` has no `quests` any more); its stored claims stay in the database. `get_growth` is gone from `ChatToolDomains`. See [`growth.md`](growth.md) §9.
 
 > **2026-11-13 — Boop B4 Étel (`mezo-r36n9.14`): the digestion disclaimer is softened; no other dossier change.** The `food-digestion` signal now closes with „nem orvosi diagnózis” instead of „nem ételintolerancia-diagnózis” (table in §3, detector list), because the meal coach may now name a sensitivity the owner recorded himself ([`_platform-language.md`](_platform-language.md)); the detector, its guards and thresholds are untouched. The slice's four new `1.1.0` changesets (`pantry_catalog.allergens`/`barcode`, `recipe.allergens`/`steps`/`source_url`, `stored_image`, `client_ref` on `meal`/`water_log`/`supplement_intake`, the `sensitivity_profile` table) add no dossier table; see [`fuel.md`](fuel.md), [`pantry.md`](pantry.md). *(2026-11-16: `mezo-r36n9.48` added a fifth `1.1.0` changeset — `pantry_catalog.lactose_free` / `recipe.lactose_free` — which likewise adds no dossier table.)*
 
@@ -502,7 +502,7 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   `TeamChatServiceIT.parallelOpens_neverExceedThePushPolicy`, which fails without the lock), and
   a push can never outlive a rolled-back ügy. Before the budget, a library entry with
   `channel: feed` never pushes (`AdvicePick.pushAllowed()`). An overnight raise is not opened or
-  pushed until `mezo.notification.quiet-hours` ends; a still-raised flag is opened
+  pushed until `mezo.character.team-chat.quiet-hours` ends; a still-raised flag is opened
   with the morning publication timestamp and then follows the ordinary daily push budget.
 - **Budget & safety caps (`TeamChatProperties`, `mezo.character.team-chat.*`):**
   `zone: Europe/Budapest` (the day boundary for the line cap and the push budget);
@@ -1311,6 +1311,8 @@ investigating.
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
+- **Quiet window moved (2026-11-19, `mezo-r36n9.97.7`).** The team chat's do-not-disturb window is now `TeamChatProperties.quietHours` (`mezo.character.team-chat.quiet-hours`, default 22:00–07:00, unchanged behaviour); `NotificationProperties` left with the browser web push.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **Team chat quiet window is OFF in integration tests (`mezo-tielp`):** the open path's one

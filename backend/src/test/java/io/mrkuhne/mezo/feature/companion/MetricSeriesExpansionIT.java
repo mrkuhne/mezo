@@ -15,7 +15,6 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
-import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
@@ -24,7 +23,6 @@ import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
-import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.RitualPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
@@ -68,8 +66,6 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
     @Autowired private HabitPopulator habitPopulator;
     @Autowired private HabitDayRepository habitDayRepository;
     @Autowired private RitualPopulator ritualPopulator;
-    @Autowired private ActivityPopulator activityPopulator;
-    @Autowired private QuestPopulator questPopulator;
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
     @Autowired private RunningPopulator runningPopulator;
@@ -241,21 +237,17 @@ class MetricSeriesExpansionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testSeries_shouldSumXpAcrossSources_whenActivityHabitAndQuestAwardXp() {
+    void testSeries_shouldSumHabitXp_whenHabitAwardsXp() {
         UUID owner = userPopulator.createUser().getId();
-        activityPopulator.activity(owner, DAY, "Olvasás", "mindset", 15, "AI");
         HabitDayEntity habit = habitPopulator.row(owner, DAY, "wake_on_time", "done");
         habit.setXpAwarded(10);
         habitDayRepository.saveAndFlush(habit);
-        questPopulator.quest(owner, DAY, "FUELBIO", "hydrate", "vitality", "LIFE",
-                "water_ml", new BigDecimal("500"), 20, "completed");
-        questPopulator.quest(owner, DAY, "BODY", "stretch", "vitality", "LIFE",
-                "minutes", new BigDecimal("10"), 20, "offered"); // nem completed → nem számít
 
         Map<LocalDate, Double> series = metricSeriesService.series(
                 owner, MetricKey.DAILY_XP, DAY, DAY);
 
-        assertThat(series.get(DAY)).isEqualTo(45.0);
+        // activity- és küldetés-XP az XP-világgal kikerült (mezo-r36n9.97.5) — csak a szokás-XP
+        assertThat(series.get(DAY)).isEqualTo(10.0);
     }
 
     @Test

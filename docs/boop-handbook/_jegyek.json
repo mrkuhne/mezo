@@ -457,10 +457,10 @@
     "terulet": [
       "Alapok"
     ],
-    "mit_kapsz": "A Pénz terület terve: öt oldal (Ma, Pénzem, Költés, Gyakorlás, Boop), négy időtáv, heti maradék a Költés főszámaként, a day trading papír-próbaként, és a régi pénzügyi app beköltöztetése a Boopba. Terv kész, a te jóváhagyásodra vár.",
+    "mit_kapsz": "A Pénz terület terve és kinézete elkészült, és jóváhagytad. Négy munkadarabra bontva (Pénz 1–4.) várja, hogy A Terv elkészüljön, utána indulhat az építés.",
     "munkamenet": "boop-life-dashboard",
     "szulo": "mezo-r36n9.33",
-    "allapot": "Vár rád"
+    "allapot": "Lezárva"
   },
   "mezo-r36n9.46": {
     "cim": "Notion: egy lemaradt jegy felküldése a táblára",
@@ -1074,6 +1074,61 @@
     ],
     "mit_kapsz": "Egy gyakorlatra technikát és a nap kihívását is teheted, és a választó megmondja, melyik technika illik hozzá a legjobban és miért.",
     "munkamenet": "boop-blokk-epito"
+  },
+  "mezo-r36n9.102": {
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.33",
+    "allapot": "Később",
+    "cim": "Pénz 1. · az alapok — a heti maradék kiszámolása",
+    "mit_kapsz": "A pénzed bekerül a Boopba: a számláid, a tételeid, az ismétlődő kiadásaid és a hónapzárás. Ebből számolja ki Boop, mennyi maradt a héten. A banki üzenetekből magától elkapja a költéseidet. Képernyő még nincs — ez az alap, amire a többi épül."
+  },
+  "mezo-r36n9.103": {
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.33",
+    "allapot": "Később",
+    "cim": "Pénz 2. · a terület — Ma és Költés oldal",
+    "mit_kapsz": "Megnyitod a Pénz területet, és nagyban látod, mennyi maradt a héten, meg hogy honnan jön ez a szám. A Ma oldalon megmondja, van-e ma dolgod. Készpénzt pár másodperc alatt felviszel, akkor is, ha nincs net. A Pénzem és a Gyakorlás oldal ilyenkor még őszintén kiírja, hogy ő még nem készült el."
+  },
+  "mezo-r36n9.104": {
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.33",
+    "allapot": "Később",
+    "cim": "Pénz 3. · a vagyonod és a napi hírek",
+    "mit_kapsz": "Látod a befektetéseidet időtávok szerint szétosztva, és hogy a hosszú rekesz hány évnyi fix kiadásodat fedezi. Minden reggel megkapod, mi mozdult, ami téged érint — forintban, forrásokkal, és megnyitható elemzéssel, amiben az is benne van, mennyire biztos és hol tévedhet."
+  },
+  "mezo-r36n9.105": {
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.33",
+    "allapot": "Később",
+    "cim": "Pénz 4. · Gyakorlás és a befektetési javaslatok",
+    "mit_kapsz": "A day trading gyakorlóhelye: terv mielőtt belépsz, egy sor utána, és heti visszanézés Booptól arról, mi működött és mi volt a hét hibája — valódi pénz nélkül. És amikor nagyobb összeged van, Boop előáll egy felosztással, időtávonként két-három konkrét lehetőséggel, amin te igazítasz."
+  },
+  "mezo-r36n9.106": {
+    "cim": "Notion: hiányzó jegyek pótlása a tábládon",
+    "tipus": "Karbantartás",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.33",
+    "allapot": "Később",
+    "mit_kapsz": "Néhány elkészült munkadarab nem került fel a tábládra, így számodra nem is létezik. Ez pótolja őket, hogy a Jegyek tábla tényleg mindent mutasson."
   },
   "mezo-r36n9.101": {
     "cim": "Étel: a főoldal új, melegebb elrendezése",

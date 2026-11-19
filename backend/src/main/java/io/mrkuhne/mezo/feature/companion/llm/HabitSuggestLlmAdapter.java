@@ -1,18 +1,16 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
-import io.mrkuhne.mezo.api.dto.ProgressionProfileResponse;
-import io.mrkuhne.mezo.api.dto.SkillLevel;
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.habit.SkillTaxonomy;
 import io.mrkuhne.mezo.feature.habit.entity.HabitChainEntity;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDefEntity;
 import io.mrkuhne.mezo.feature.habit.service.HabitCatalogService;
 import io.mrkuhne.mezo.feature.habit.service.HabitSuggestPort;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
-import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.List;
 import java.util.Locale;
@@ -40,8 +38,9 @@ import tools.jackson.databind.ObjectMapper;
  *
  * <p>Propose-only (ADR 0019): the model only ever proposes; nothing here writes a {@code
  * habit_def} row — accepting a suggestion goes through the normal {@code createHabitDef} path.
- * Every proposal is grounded in and STRICTLY validated against the caller's own data (existing
- * LIFE skills with real XP, existing chain keys) so a hallucinated identifier can never reach the
+ * Every proposal is grounded in and STRICTLY validated against the fixed LIFE skill taxonomy
+ * ({@link SkillTaxonomy#LIFE} — the category vocabulary habits are filed under; until mezo-r36n9.97.5
+ * it was the caller's LIFE skills with real progression XP) and the caller's own chain keys, so a hallucinated identifier can never reach the
  * client; xp is clamp-rejected to the contract's 5..15 band. Runs on the SMART tier ({@link
  * CompanionLlm#completeSmart}, ADR 0008) — this is a one-shot propose call, not a chat turn.
  * Defensive parsing all the way down (the {@code HypothesisPipelineService#propose} pattern): a
@@ -84,7 +83,6 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
     private final CompanionProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
-    private final ProgressionService progressionService;
     private final GoalRepository goalRepository;
     /** HabitCatalogService carries its own HABIT_SWITCH gate (companion↔habit switch-independence
      *  idiom, the {@code ContextSnapshotAssembler#habitService} precedent) — this adapter's own
@@ -99,14 +97,10 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
         HabitCatalogService habitCatalogService = habitCatalogServiceProvider.getObject();
         List<HabitChainEntity> chains = habitCatalogService.chains(userId);
         List<HabitDefEntity> defs = habitCatalogService.activeOrderedWithoutBootstrap(userId);
-        List<SkillLevel> groundedSkills = groundedLifeSkills(progressionService.getProfile(userId));
-
-        Set<String> groundedSkillKeys =
-                groundedSkills.stream().map(SkillLevel::getSkillKey).collect(Collectors.toSet());
         Set<String> chainKeys =
                 chains.stream().map(HabitChainEntity::getChainKey).collect(Collectors.toSet());
 
-        String context = buildContext(userId, chains, defs, groundedSkills, chainKeys, chainKey, hint);
+        String context = buildContext(userId, chains, defs, chainKeys, chainKey, hint);
         String prompt =
                 promptPersona.render(userId, String.format(Locale.ROOT, SYSTEM_PROMPT, properties.habitSuggest().maxSuggestions()));
 
@@ -114,7 +108,7 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
                 .filter(Objects::nonNull)
                 .filter(s -> s.title() != null && !s.title().isBlank())
                 .filter(s -> s.skillKey() != null && !s.skillKey().isBlank())
-                .filter(s -> groundedSkillKeys.contains(s.skillKey()))
+                .filter(s -> SkillTaxonomy.LIFE.contains(s.skillKey()))
                 .filter(s -> s.chainKey() != null && chainKeys.contains(s.chainKey()))
                 .filter(s -> s.xp() >= MIN_XP && s.xp() <= MAX_XP)
                 .limit(properties.habitSuggest().maxSuggestions())
@@ -147,9 +141,9 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
     }
 
     private String buildContext(UUID userId, List<HabitChainEntity> chains, List<HabitDefEntity> defs,
-            List<SkillLevel> groundedSkills, Set<String> chainKeys, String chainKey, String hint) {
+            Set<String> chainKeys, String chainKey, String hint) {
         StringBuilder b = new StringBuilder();
-        b.append(skillsBlock(groundedSkills)).append('\n');
+        b.append("[Skillek] ").append(String.join(", ", SkillTaxonomy.LIFE)).append('\n');
         b.append(goalBlock(userId)).append('\n');
         b.append(routinesBlock(chains, defs));
         // Never echo unvalidated input into the prompt: an unknown/stale chainKey (the caller's
@@ -162,15 +156,6 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
             b.append("\n[Szándék] ").append(hint);
         }
         return b.toString();
-    }
-
-    private static String skillsBlock(List<SkillLevel> groundedSkills) {
-        if (groundedSkills.isEmpty()) {
-            return "[Skillek] " + NO_DATA;
-        }
-        return "[Skillek] " + groundedSkills.stream()
-                .map(s -> s.getSkillKey() + " L" + s.getLevel())
-                .collect(Collectors.joining(", "));
     }
 
     private String goalBlock(UUID userId) {
@@ -200,14 +185,5 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
             return "nincs még szokás";
         }
         return defs.stream().map(HabitDefEntity::getTitle).collect(Collectors.joining(", "));
-    }
-
-    /** Highest-level-with-real-XP LIFE skills — the 0-XP taxonomy ghosts excluded (the {@code
-     *  ContextSnapshotAssembler#topSkills} precedent): a skill the user has never touched must not
-     *  read as a fabricated grounding fact, AND doubles as the suggestion's skillKey whitelist. */
-    private static List<SkillLevel> groundedLifeSkills(ProgressionProfileResponse profile) {
-        return profile.getLife().stream()
-                .filter(s -> s.getCumulativeXp() != null && s.getCumulativeXp() > 0)
-                .toList();
     }
 }

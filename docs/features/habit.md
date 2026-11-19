@@ -2,21 +2,17 @@
 title: Habit — Morning & Evening Routine Engine
 type: feature-domain
 status: done
-updated: 2026-11-17
+updated: 2026-11-19
 tags: [today, nap, me, growth, fuel, train, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/habit
-  - frontend/src/data/habit
-  - frontend/src/features/today/logic/habitAction.ts
-  - frontend/src/features/today/pages/NapRutinPage.tsx
-  - frontend/src/features/me/pages/RutinHubPage.tsx
-  - frontend/src/features/me/pages/HabitPage.tsx
-  - frontend/src/features/me/logic/habitFormation.ts
   - api/feature/habit/habit.yml
 related: [today, growth, me, fuel, train, intention, _platform-data-layer, _platform-api-backend]
 ---
 
 # Habit — Morning & Evening Routine Engine
+
+> **2026-11-19 — the XP world left the server (`mezo-r36n9.97.5`, #52).** Completing or un-checking a habit no longer awards or reverts progression XP; the contract's `levelUps` arrays are always empty, and the row still stamps its own `xp_awarded`. The skill-key list habits are validated against moved unchanged from `progression/ProgressionTaxonomy` to `feature/habit/SkillTaxonomy`. See [`growth.md`](growth.md) §9.
 
 > **2026-10-10 — Folyadék F2 · Nap (`mezo-n4wf5.2`).** The Rutin tab (`/nap/rutin`) and the six routine-builder surfaces (`/nap/rutin/epites`, `…/lanc/:chainKey`, `…/szokasok`, `…/szokas/:habitKey`, `…/szerkesztes`, `…/uj`, plus `AiSuggestSheet` and `ChainEditSheet`) are rebuilt on the Folyadék kit. A chain is a **row of linked drops** that fill as you tick; strength, automaticity and context are **levels in vessels**, not rings; the hub's date header became links. Small shared pieces of the builder pages live in the new `frontend/src/features/me/components/routineBits.tsx` (`RecipeVessels`, `RecipeSentence`, the fallback back control); page rules are `.nr2-*` in `frontend/src/styles/folyadek-nap-rutin.css` and `.rb-*` in `frontend/src/styles/folyadek-nap-epites.css`. `ScoreRing`, the old arc, `Stepper`, `DayNavigator` and the ghost states are no longer used by these pages. Catalog, evaluator, XP tail, contracts and every write are unchanged. Look: [Folyadék style bible](../design_2.0/2026-10-09-folyadek-style-bible.md); build target [`vilagos/nap.js`](../design_2.0/prototypes/vilagos/nap.js) (`rutin`, `rutinEpites`, `lanc`, `szokasok`, `szokas`, `szerk`, `rutinUj`); deviations in [`vilagos/HANDOFF.md`](../design_2.0/prototypes/vilagos/HANDOFF.md).
 
@@ -335,6 +331,7 @@ Either way, then:
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **Decisions:** spec §2 **D1–D9** — own `feature/habit` domain (the quest mirror, D2), per-habit LIFE-skill XP via the `HABIT` source (D3), habit-strength + perfect-day, no hard streak (D4), Today surface + Growth Rutin tab (D5), wake/bed anchors + `HabitProperties` for everything else (D6 — **anchors re-sourced from the sleep goal via `SleepAnchorPort` in `mezo-dbsr`**; the old `HabitProperties.defaultWake`/`defaultBed` keys are gone, no-goal bed default now 22:00, §5 — and since **`mezo-53su` the caffeine cutoff is re-sourced from Fuel's `CaffeineCutoffPort`**, `HabitProperties.caffeineCutoff` + `mezo.habit.caffeine-cutoff` removed; and since **`mezo-67rb` the M5 run-branch cutoff was wake-anchored** — `SleepAnchorPort` wake `+ mezo.habit.workout-window-hours` (6) — **before `mezo-u6jx` retired it for date-presence**: the weigh-in/stim/run wall-clock compares are gone entirely, so `HabitProperties.weighInCutoff`/`morningWindowEnd`/`workoutWindowHours` + their `mezo.habit.*` yml keys are now **removed** (the `mezo-53su`/`mezo-67rb` removal precedent) — see the [honest-derivation fix spec](../superpowers/specs/2026-08-05-habit-honest-derivation-fix-design.md)), the three closure classes (D7), same-day MANUAL un-check with direct decrement (D8), mock parity that also moves the account XP total (D9). **D5's Today half has now been superseded five times over** — [ADR 0014](../decisions/0014-today-daypart-faces.md) (`mezo-j7u4`: rows on a daypart face, not a `RoutineCard`), then ADR 0022 / 0025 / 0026, and finally **[ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md) + [ADR 0033](../decisions/0033-mozaik-2-tile-language.md)** (`mezo-d20`: a hub tile that opens `/nap/rutin`, its own full page). **The domain contract has been unchanged through every one of them** — that is the point worth remembering: five view rewrites, zero catalog/evaluator/XP-tail changes. ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md) is the tone contract (no failure state, no break-punishment) and is still enforced in code, now by `NapRutinPage`'s `tickAction`.

@@ -2,7 +2,6 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.api.dto.LevelUpResult;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
@@ -130,7 +129,7 @@ class SportContractIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testLogSportSession_shouldReturn201WithLevelUp_whenCrossWithoutVolleyballFields() {
+    void testLogSportSession_shouldReturn201WithoutLevelUp_whenCrossWithoutVolleyballFields() {
         SportSessionResponse created = postForBody("/api/train/sport-sessions",
             SportSessionCreateRequest.builder().sport("cross").duration(45).rounds(8)
                 .rpe(new BigDecimal("8")).build(),
@@ -139,8 +138,7 @@ class SportContractIT extends ApiIntegrationTest {
         assertThat(created.getSport()).isEqualTo("cross");
         assertThat(created.getRounds()).isEqualTo(8);
         assertThat(created.getSetsPlayed()).isNull();
-        assertThat(created.getLevelUp()).isNotNull();
-        assertThat(created.getLevelUp().getSource()).isEqualTo(LevelUpResult.SourceEnum.SPORT);
+        assertThat(created.getLevelUp()).isNull(); // the XP world left (mezo-r36n9.97.5)
     }
 
     @Test

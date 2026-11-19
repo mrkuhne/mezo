@@ -1,14 +1,13 @@
 package io.mrkuhne.mezo.feature.character.service.chat;
 
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
-import io.mrkuhne.mezo.feature.notification.config.NotificationProperties;
 import java.time.Instant;
 import java.time.LocalTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * The csapatfal's reading of the do-not-disturb window ({@code mezo.notification.quiet-hours},
+ * The csapatfal's reading of the do-not-disturb window ({@code mezo.character.team-chat.quiet-hours},
  * in the team chat's zone): no ügy opens inside it, and an ügy opened in its evening part never
  * pushes. Wrap-aware — only a window that wraps midnight (start after end) is a quiet window here;
  * a same-day window or start == end ("no quiet hours") never blocks.
@@ -22,13 +21,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TeamChatQuietHours {
 
-    private final NotificationProperties notificationProperties;
     private final TeamChatProperties properties;
 
     /** {@code at} falls inside the quiet window. */
     public boolean contains(Instant at) {
-        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
-        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
+        LocalTime quietStart = LocalTime.parse(properties.quietHours().start());
+        LocalTime quietEnd = LocalTime.parse(properties.quietHours().end());
         if (!quietStart.isAfter(quietEnd)) {
             return false;
         }
@@ -37,11 +35,11 @@ public class TeamChatQuietHours {
     }
 
     /** Spec D3 / final review C1: {@code at} falls in the part of the quiet window BEFORE local
-     *  midnight (the {@code AnchorResolver.interventionFireMinute} reading) — the feed-anchored
-     *  push path defers the after-midnight part's rings to the window's end instead. */
+     *  midnight — an ügy opened then never pushes; the after-midnight part's raises are published
+     *  at the window's end instead. */
     public boolean inEvening(Instant at) {
-        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
-        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
+        LocalTime quietStart = LocalTime.parse(properties.quietHours().start());
+        LocalTime quietEnd = LocalTime.parse(properties.quietHours().end());
         if (!quietStart.isAfter(quietEnd)) {
             return false;
         }

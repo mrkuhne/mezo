@@ -2,21 +2,31 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-11-11
+updated: 2026-11-19
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
-  - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
   - backend/src/main/java/io/mrkuhne/mezo/feature/notification
   - backend/src/main/java/io/mrkuhne/mezo/feature/appnotification
   - api/feature/notification/notification.yml
-  - frontend/public/push-sw.js
-  - frontend/src/data/notification
-  - frontend/src/features/me/pages/NotificationFeedPage.tsx
-  - frontend/src/features/notification/logic
 related: [proactive, today, ritual, me, fuel, insights, journal, companion, _platform-api-backend]
 ---
 
 # Push Notifications Platform — Feature Documentation
+
+> **2026-11-19 — Browser web push retired (`mezo-r36n9.97.7`, decision #52).** The web app was the
+> only push subscriber, so the whole web push half left the server: `techcore/webpush` (VAPID signer,
+> encryptor, client), the subscription / prefs / schedule API (`/api/notification/{subscription,test,
+> pref,schedule}`), `AnchorResolver` + `DueEvaluator` + the per-minute `NotificationDispatchJob`, the
+> 22-key `NotificationCategory` catalog, `NotificationProperties` (`mezo.notification.*` except
+> `feed`), the two switches and the four message codes, and the `VAPID_PUBLIC`/`VAPID_PRIVATE` env of
+> the backend Deployment. **What remains of `feature/notification`:** the iPhone's APNs device
+> registration only (`DeviceController` → `ApnsDeviceService` → `apns_device`, contract
+> `api/feature/device/device.yml`; still nothing sends) — see §5. The in-app feed (`feature/appnotification`,
+> §2a/§3a) is unchanged. The csapatfal's quiet window moved, unchanged, to
+> `mezo.character.team-chat.quiet-hours`. The tables `push_subscription`, `notification_pref`,
+> `push_log`, `notification_schedule` and their rows stay (no Liquibase change). **Everything below about
+> web push, categories, anchors, the dispatcher and the schedule describes the retired system** and is
+> kept as history.
 
 > **2026-10-12 — Folyadék F5 · Fuel wording (`mezo-n4wf5.5`).** The two FE-written categories read their text from the message catalog when the snapshot is BUILT, so the stored (and pushed) text is in the language the app speaks at that app open. `fuel_slot` title: „Kiegészítők · {idősáv}" / "Supplements · {zone}" (`m().fuelLogika.dayPlan.stack(STACK_ZONE_LABEL[zone])`, e.g. „Kiegészítők · Edzés előtt"; an unknown future zone falls back to its raw key) — the old „Stack · reggeli slot" form and the writer's own `FUEL_WINDOW_LABEL` map are gone. `checkin` body: `m().frame.reminders.checkinBody` (HU text unchanged; the `CHECKIN_BODY` constant is gone). The settings row for `fuel_slot` reads „Fuel és kiegészítők / A kiegészítőid minden idősávjánál" (EN "Fuel & supplements / At each of your supplement times"). The deleted-item fallback of `projectStackDay` is „(törölt kamra-tétel)" / "(deleted pantry item)". Schedule, times, deeplinks and categories are unchanged.
 
@@ -1242,6 +1252,22 @@ one of the 12 current producer IT classes had to have this annotation dropped).
 
 ## 9. Decisions, gotchas & deferred
 
+- **2026-11-19 — Browser web push retired (`mezo-r36n9.97.7`, #52).** Removed: `techcore/webpush/**`,
+  `NotificationController`, `NotificationPref*`/`NotificationSchedule*`/`PushLog*`/`PushSubscription*`
+  entities + repositories, `AnchorResolver`, `DueEvaluator`, `NotificationDispatchJob`,
+  `PushDispatchExecutor`, `PushSender`, `PushSubscriptionService`, `NotificationPrefService`,
+  `NotificationScheduleService`, `NudgeSendPushLogAdapter`, `feature/notification/{domain,config}/**`,
+  the web push operations of `notification.yml`, `NOTIFICATION_SWITCH` /
+  `NOTIFICATION_DISPATCH_JOB_SWITCH`, `mezo.webpush.*`, `mezo.notification.*` (all but `feed`), the
+  `WEBPUSH_*` / `NOTIFICATION_UNKNOWN_CATEGORY` messages and the VAPID env. Kept: APNs device
+  registration (`DeviceController`, `ApnsDeviceService`, `ApnsDeviceEntity`, `ApnsDeviceRepository`),
+  guarded by `DeviceRegistrationStillWorksIT`; `RetiredAreasGoneIT` proves no web push bean, route or
+  job comes back even with every removed key set. Side effects: the companion `ignored_nudge` flag
+  has no `NudgeSendPort` adapter any more, so it reports `notifications_off` until an APNs sender
+  supplies one (its IT pins the logic with a test-only port); team chat reads its quiet window from
+  `mezo.character.team-chat.quiet-hours`. Tables and rows stay.
+
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **The header panel's two CSS rules MUST stay `.app-head > …`-qualified, and the scrim's
   `z-index` MUST stay low (mezo-g9fz).** Both are stacking/specificity traps in the shell header,
   and both were hit while building the panel:
@@ -1597,21 +1623,14 @@ These rules are enforced by convention + this doc, not by a runtime check — a 
 
 ## 10. Key files
 
-**Backend — `techcore/webpush` (the protocol, zero new dependencies, unchanged since N1)**
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/webpush/{WebPushProperties,VapidSigner,Aes128GcmEncryptor,WebPushClient,WebPushResult,WebPushSubscriptionKeys}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/techcore/webpush/{VapidSignerTest,VapidSignerCodecTest,Aes128GcmEncryptorTest,WebPushClientIT,WebPushPropertiesTest,TestWebPush}.java`
-
-**Backend — `feature/notification`**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/{NotificationCategory,AnchorSet,CategoryPref,DueItem,ScheduleEntry}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/service/{DueEvaluator,AnchorResolver,NotificationDispatchJob,PushDispatchExecutor,NotificationPrefService,NotificationScheduleService,PushSubscriptionService,PushSender}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/entity/{PushSubscriptionEntity,NotificationPrefEntity,PushLogEntity,NotificationScheduleEntity}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/repository/{PushSubscriptionRepository,NotificationPrefRepository,PushLogRepository,NotificationScheduleRepository}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/controller/NotificationController.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/config/NotificationProperties.java` — `mezo.notification.{body-max-chars,medication-time,decision-review-time,prose-excerpt-chars,dispatch-cron,catch-up-minutes,prose-generation-grace-min,quiet-hours.{start,end}}` (`decision-review-time` is W1.4, bd `mezo-b3pp.4`, default 09:00, §3c/§4; `prose-generation-grace-min` reads the generator crons from `mezo.proactive.*` — see §9 trap #6; `quiet-hours` is W5.2, bd `mezo-b3pp.19`, default `22:00`/`07:00`, the nested `QuietHours` record, §3d/§4 — today only `intervention` consults it)
-- Migrations: `202607291000_mezo-h4wp.6.1_create_push_subscription.sql`, `202607291400_mezo-h4wp.6.2_create_notification_pref_and_push_log.sql`, `202607291500_mezo-h4wp.6.3_create_notification_schedule.sql` (all under `db/changelog/1.0.0/script/`, registered in `1.0.0/1.0.0_master.yml`)
-- `backend/src/main/resources/messages_hu.properties` / `messages_en.properties` — `WEBPUSH_KEY_INVALID`/`WEBPUSH_SIGN_FAILED`/`WEBPUSH_ENCRYPT_FAILED`/`NOTIFICATION_UNKNOWN_CATEGORY`
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `NOTIFICATION_SWITCH`, `NOTIFICATION_DISPATCH_JOB_SWITCH`
-- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/notification/{AnchorResolverIT,AnchorResolverRitualSwitchOffIT,AnchorResolverDecisionIT,AnchorResolverInterventionIT,DueEvaluatorTest,NotificationApiIT,NotificationCategoryTest,NotificationDispatchJobIT,NotificationPrefApiIT,NotificationPrefRepositoryIT,NotificationScheduleApiIT,PushSenderIT,PushSubscriptionRepositoryIT,PushSubscriptionServiceIT}.java` (`AnchorResolverDecisionIT` is W1.4, bd `mezo-b3pp.4`, §3c/§8; `AnchorResolverInterventionIT` is W5.2, bd `mezo-b3pp.19`, §3d/§8 — each is the only file in this list owned by its own driving slice, not the N/F slices), `feature/notification/service/{AnchorResolverExcerptTest,InterventionFireMinuteTest,PushSenderTruncationTest}.java`; `support/populator/NotificationPopulator.java`; `support/ResetDatabase.java` (`notification_pref`/`push_log`/`notification_schedule` in the TRUNCATE list)
+**Backend — `feature/notification` (since 2026-11-19, `mezo-r36n9.97.7`: APNs device registration only)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/controller/DeviceController.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/service/ApnsDeviceService.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/entity/ApnsDeviceEntity.java`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/repository/ApnsDeviceRepository.java`
+- `api/feature/device/device.yml`; migration `202611111120_mezo-r36n9.11_apns_device.sql` (`db/changelog/1.1.0/script/`)
+- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/notification/{ApnsDeviceContractIT,DeviceRegistrationStillWorksIT}.java`; `support/populator/ApnsDevicePopulator.java`; `backend/src/test/java/io/mrkuhne/mezo/RetiredAreasGoneIT.java` (the web push removal guard)
+- The retired web push files (`techcore/webpush/**`, the N1/N2/N3 services, entities, controller, properties and tests) are in git history before `mezo-r36n9.97.7`.
 
 **Backend — `feature/appnotification` in-app feed (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`; moved
 out of `feature/notification` in F2 to break a `companion`↔`notification`↔`proactive` package

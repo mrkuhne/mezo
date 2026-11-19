@@ -35,7 +35,7 @@ public enum MetricKey {
     MEDICATION_DOSE_MG("Gyógyszer-dózis", "Gyógyszer-napló", MetricDomain.FUEL),
     HABITS_DONE("kész szokások", "Szokás-követő", MetricDomain.MIND),
     RITUAL_CLOSED("esti lezárás", "Esti lezárás rituálé", MetricDomain.MIND, MetricValueKind.BINARY),
-    DAILY_XP("napi XP", "Activity + szokás + küldetés XP", MetricDomain.MIND),
+    DAILY_XP("napi XP", "Szokás XP", MetricDomain.MIND),
     SOCIAL_MENTIONS("társas említések", "People-említések (kurált névlista)", MetricDomain.MIND),
     RUN_HR_RECOVERY_S("pulzus-visszaállás", "Futás-napló (pulzus-visszaállás)", MetricDomain.TRAIN),
     WEEKEND("hétvége", "naptár (származtatott)", MetricDomain.OTHER, MetricValueKind.BINARY),

@@ -31,10 +31,9 @@ import org.springframework.stereotype.Component;
  *
  * <p><b>Three data sources, three traps.</b>
  * <ol>
- *   <li>Sent pushes are {@code push_log} rows, reached through {@link NudgeSendPort} — a
- *       companion-owned port ({@code IgnoredNudgeRule} never imports {@code PushLogRepository}
- *       directly, which would close a {@code companion ↔ notification} feature-slice cycle; see
- *       the port's own javadoc).</li>
+ *   <li>Sent pushes are read through {@link NudgeSendPort} — a companion-owned port with no
+ *       adapter since the browser web push left (mezo-r36n9.97.7), so the rule reports
+ *       {@code NOTIFICATIONS_OFF} until a push sender supplies one (see the port's javadoc).</li>
  *   <li>Observed bedtime is {@link MetricKey#BEDTIME_HOUR}, whose extractor
  *       ({@code MetricSeriesService.clockHour}) adds +24 to clock hours below 12, so a 00:30
  *       bedtime reads as 24.5 and post-midnight bedtimes sort on the SAME number line as
@@ -49,8 +48,8 @@ import org.springframework.stereotype.Component;
  * </ol>
  *
  * <p><b>The night pairing.</b> {@code sleep_log.date} is the WAKE morning — the
- * {@code SleepDeficitCalculator} convention, "today's row is last night" — while
- * {@code push_log.log_date} is the calendar day the evening push actually fired. So the push sent
+ * {@code SleepDeficitCalculator} convention, "today's row is last night" — while a sent date
+ * from {@link NudgeSendPort} is the calendar day the evening push actually fired. So the push sent
  * on day D pairs with the {@code BEDTIME_HOUR} value dated D+1, the morning that night's sleep
  * gets logged under; the window's newest paired night is the one whose sleep is dated
  * {@code today} (last night, already logged this morning) and whose push fired {@code
@@ -85,7 +84,7 @@ public class IgnoredNudgeRule implements FlagRule {
         }
         NudgeSendPort pushPort = nudgeSendPort.getIfAvailable();
         if (pushPort == null) {
-            // notification off: cannot know whether anything was sent
+            // no push sender: cannot know whether anything was sent
             return FlagVerdict.unavailable(FlagKey.IGNORED_NUDGE,
                 UnavailableReason.NOTIFICATIONS_OFF);
         }
@@ -99,7 +98,7 @@ public class IgnoredNudgeRule implements FlagRule {
         LocalDate oldestPushDate = oldestSleepDate.minusDays(1);
         LocalDate newestPushDate = newestSleepDate.minusDays(1);
 
-        // Trap 1: push_log has no date-range finder in this repository — read through the port.
+        // Trap 1: sent pushes are read through the port, never a push slice directly.
         Set<LocalDate> sentDates =
             pushPort.sentDates(userId, cfg.category(), oldestPushDate, newestPushDate);
         Map<LocalDate, Double> bedtimeSeries =

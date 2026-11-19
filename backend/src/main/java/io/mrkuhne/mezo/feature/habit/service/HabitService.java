@@ -16,11 +16,6 @@ import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDefEntity;
 import io.mrkuhne.mezo.feature.habit.mapper.HabitMapper;
 import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
-import io.mrkuhne.mezo.feature.progression.ProgressionGate;
-import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
-import io.mrkuhne.mezo.feature.progression.habit.HabitSignal;
-import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
-import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -37,7 +32,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -46,11 +40,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Habit day lifecycle (bd mezo-d1jb, ADR 0010): a day materializes lazily on the first today-read,
- * derived habits complete off honest signals (evaluated intraday + at closure, awarded once through
- * progression atomically with the status flip), and past pending days close quietly — kept if the
- * signal fired, else missed (no failure ceremony). Manual habits are user-checked/unchecked (today
- * or yesterday — the backfill window); uncheck reverts the XP so a re-check can re-award. Gated
- * {@code HABIT_SWITCH}.
+ * derived habits complete off honest signals (evaluated intraday + at closure), and past pending
+ * days close quietly — kept if the signal fired, else missed (no failure ceremony). Manual habits
+ * are user-checked/unchecked (today or yesterday — the backfill window). Gated {@code HABIT_SWITCH}.
+ * The XP award and the {@code levelUps} payload left with the XP world (mezo-r36n9.97.5): the
+ * contract's {@code levelUps} arrays are always empty, {@code xpAwarded} is still stamped on the row.
  *
  * <p>Definitions come from {@link HabitCatalogService} (mezo-n5e9.1) — the DB-backed, per-user
  * catalog that lazily bootstraps from the {@link HabitCatalog} JSON seed on first read.
@@ -78,9 +72,6 @@ public class HabitService {
     private final HabitCatalogService catalogService;
     private final HabitEvaluator evaluator;
     private final HabitMapper mapper;
-    private final ProgressionService progressionService;
-    private final LevelUpResultMapper levelUpResultMapper;
-    private final ObjectProvider<ProgressionGate> progressionGate;
     private final HabitProperties properties;
     private final HabitTargets habitTargets;
 
@@ -93,10 +84,9 @@ public class HabitService {
         if (rows.isEmpty() && date.equals(LocalDate.now())) {
             rows = ensureRows(userId, date, defs);
         }
-        List<LevelUpResult> levelUps = new ArrayList<>();
         if (date.equals(LocalDate.now())) {
             closeStaleRows(userId, staleRows(userId, date), date);
-            levelUps.addAll(evaluateIntraday(userId, rows));
+            evaluateIntraday(userId, rows);
         }
         Map<String, Integer> strengths = strengthByKey(userId, date);
         Map<String, HabitDayEntity> byKey = new HashMap<>();
@@ -111,7 +101,7 @@ public class HabitService {
                         strengths.get(def.getHabitKey()), wakeHint(userId, date, def, row));
                 })
                 .toList())
-            .levelUps(levelUps.stream().map(levelUpResultMapper::toDto).toList())
+            .levelUps(List.of())
             .build();
     }
 
@@ -170,11 +160,11 @@ public class HabitService {
             && !HabitDayEntity.STATUS_MISSED.equals(row.getStatus())) {
             throw conflict("HABIT_ALREADY_DONE");
         }
-        List<LevelUpResult> levelUps = complete(row, def, HabitDayEntity.SOURCE_MANUAL);
+        complete(row, def, HabitDayEntity.SOURCE_MANUAL);
         String chainKey = chainKeyById(userId).get(def.getChainId());
         return HabitWriteResponse.builder()
             .habit(mapper.toResponse(def, chainKey, row, null, null))
-            .levelUps(levelUps.stream().map(levelUpResultMapper::toDto).toList())
+            .levelUps(List.of())
             .build();
     }
 
@@ -189,7 +179,6 @@ public class HabitService {
             || !HabitDayEntity.SOURCE_MANUAL.equals(row.getSource())) {
             throw conflict("HABIT_NOT_DONE");
         }
-        progressionService.revertHabit(userId, row.getId(), def.getSkillKey(), row.getXpAwarded());
         row.setStatus(HabitDayEntity.STATUS_PENDING);
         row.setDoneAt(null);
         row.setXpAwarded(0);
@@ -382,8 +371,7 @@ public class HabitService {
         }
     }
 
-    private List<LevelUpResult> evaluateIntraday(UUID userId, List<HabitDayEntity> rows) {
-        List<LevelUpResult> levelUps = new ArrayList<>();
+    private void evaluateIntraday(UUID userId, List<HabitDayEntity> rows) {
         for (HabitDayEntity row : rows) {
             if (!HabitDayEntity.STATUS_PENDING.equals(row.getStatus())) {
                 continue;
@@ -394,24 +382,17 @@ public class HabitService {
                 continue;
             }
             if (evaluator.satisfied(def.getMetric(), row.getCreatedBy(), row.getHabitDate())) {
-                levelUps.addAll(complete(row, def, HabitDayEntity.SOURCE_DERIVED));
+                complete(row, def, HabitDayEntity.SOURCE_DERIVED);
             }
         }
-        return levelUps;
     }
 
-    private List<LevelUpResult> complete(HabitDayEntity row, HabitDefEntity def, String source) {
+    private void complete(HabitDayEntity row, HabitDefEntity def, String source) {
         row.setStatus(HabitDayEntity.STATUS_DONE);
         row.setDoneAt(Instant.now());
         row.setXpAwarded(def.getXp());
         row.setSource(source);
         repository.save(row);
-        if (progressionGate.getIfAvailable() != null) {
-            return List.of(progressionService.applyHabit(row.getCreatedBy(),
-                new HabitSignal(row.getId(), def.getSkillKey(), def.getXp(), def.getTitle(),
-                    row.getHabitDate())));
-        }
-        return List.of();
     }
 
     private List<HabitDayEntity> ensureRows(UUID userId, LocalDate date) {

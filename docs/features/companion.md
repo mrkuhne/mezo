@@ -9,13 +9,15 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/llmlog
   - api/feature/companion/companion.yml
   - api/feature/memory-retrieval/memory-retrieval.yml
-  - frontend/src/data/insights/chatHooks.ts
-  - frontend/src/data/insights/memoryFeedbackHooks.ts
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
 related: [dayclose, boop-ios, insights, proactive, today, me, character, _platform-api-backend, _platform-auth-security, _platform-notifications, _platform-language, journal, ritual]
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-11-19 — browser web push left the server (`mezo-r36n9.97.7`, #52).** The `ignored_nudge` flag reads sent pushes through `NudgeSendPort`, whose only adapter read the web push log; with no adapter it reports `notifications_off` until an APNs sender supplies one (`FlagEvaluatorIgnoredNudgeIT` pins the rule with a test-only port). References below to `AnchorResolver` (intervention push anchoring) describe the retired web push.
+
+> **2026-11-19 — the XP world left the server (`mezo-r36n9.97.5`, #52).** Gone from the companion: the `get_growth` tool (`GrowthTools`), the `[Növekedés]` snapshot block (the chat snapshot is nine blocks, the morning one eight), the quest count of `[Napi gyakorlat]` (it now opens with the habit chain), the quest and activity lines of `get_daily_practice`, the `TodayQuestSource`/`TodayActivitySource` ports, the XP-world `read_personal_records` sources (`skill_progress`, `level_up_event`, `perk_unlock`, `daily_quest`, `gamification_profile`, `coin_event`, `owned_title` — `activity_log` stays readable because old `activity_note` memories point at it), the fake LLM's activity/quest-flavor scripts, and the activity-log note source of the nightly note sweep (already written `activity_note` vectors stay). `DAILY_XP` now sums habit XP only. Habit AI suggestions are grounded on the fixed LIFE taxonomy (`habit/SkillTaxonomy`) instead of the user's LIFE skills with progression XP. See [`growth.md`](growth.md) §9.
 
 > **2026-11-19 — reviewed after T4 (`mezo-r36n9.82`, one adapter added).** `companion/llm/TechniqueLlmAdapter` implements the train-owned `TechniqueLlm` port (SMART one-shot, audit `train_technique / refine`, degrade to empty), the `MesoPlanLlmAdapter` idiom; nothing else in companion changed ([`train.md`](train.md) §Technique AI refinement).
 
@@ -9204,6 +9206,9 @@ and the `tests/layout/chat-memory.spec.ts` Playwright spec (320px, no horizontal
 reduced-motion branch) cover the FE surface — full detail: [`insights.md`](insights.md) §8.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Admin readers gone (2026-11-19, `mezo-r36n9.97.4`).** The owner console's RAG memory explorer left with the web app; `MemoryProjectionService`, `MemoryHealthQuery`, `MemoryNeighborQuery`, `MemoryPromptTraceQuery` and `GraphStructureQuery` now have no production caller and stay for slice B8 to keep or cut. Likewise the llmlog aggregate queries the admin hub read (`AiDraftOutcomeRepository#aggregateByFeatureSince`, several `LlmLogRepository` rows).
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 
 **Check-in 2.0 (`mezo-ck2`, 2026-09-28) — decisions, deviations, follow-ups.** NULL is never a
 value in any rule, metric or renderer (legacy rows are read as-is). `persistent_pain` offers

@@ -28,7 +28,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: backend
-          image: ghcr.io/mrkuhne/mezo-backend:3.9.0
+          image: ghcr.io/mrkuhne/mezo-backend:3.10.3
           ports:
             - name: http
               containerPort: 8090
@@ -170,42 +170,11 @@ spec:
             # redundant with that default, kept deliberately as a production safeguard.
             - name: MEZO_FEATURE_LLM_LOG_ENABLED
               value: "true"
-            # Admin hub insights + data browser (mezo-d5iy): OWNER-only installation
-            # counters, per-user footprint/cost, and the read-only data browser.
-            - name: MEZO_FEATURE_ADMIN_INSIGHTS_ENABLED
-              value: "true"
-            # RAG memory explorer (mezo-4qyt): OWNER-only per-user retrieval runs,
-            # dry-run replay, knowledge graph, vector map and store health.
-            - name: MEZO_FEATURE_ADMIN_MEMORY_ENABLED
-              value: "true"
-            # Lean screen-event telemetry (mezo-o5cz): default-OFF in application.yml, ON
-            # here — this is the ONLY place it is enabled. Ingest writes one row per route
-            # change; the nightly job (03:45) hard-deletes past 90 days.
-            - name: MEZO_FEATURE_SCREEN_TELEMETRY_ENABLED
-              value: "true"
             # mezo-ibxy: observability. ECS JSON logs for VictoriaLogs; actuator on 8081.
             - name: MEZO_LOG_FORMAT
               value: ecs
             - name: MEZO_MANAGEMENT_PORT
               value: "8081"
-            # H2 Web Push N1 (mezo-h4wp.6.1): the VAPID keypair backing every push we
-            # sign. Both halves live in the mezo-app SealedSecret — the private one is
-            # secret, the public one is not, but it is kept beside it so the pair can
-            # never drift apart (a mismatched pair fails as a GENERIC push-service error,
-            # not a loud one — see docs/features/_platform-notifications.md).
-            # The frontend gets the same public half from the VITE_VAPID_PUBLIC repo
-            # variable at build time (.github/workflows/deploy.yml) — sealing alone is
-            # not enough, the browser needs it baked into the bundle.
-            - name: VAPID_PUBLIC
-              valueFrom:
-                secretKeyRef:
-                  name: mezo-app
-                  key: VAPID_PUBLIC
-            - name: VAPID_PRIVATE
-              valueFrom:
-                secretKeyRef:
-                  name: mezo-app
-                  key: VAPID_PRIVATE
           # startupProbe gives Spring Boot + Liquibase time to come up before
           # liveness/readiness start judging it. /actuator/health lives on the management
           # port (mezo-ibxy) — a broken management server = an unhealthy pod, on purpose.

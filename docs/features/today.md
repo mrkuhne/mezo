@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-11-17
+updated: 2026-11-19
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs, napom]
 # 8 load-bearing paths. A napom's entry points are pages (NapomPage), components (napom/*),
 
@@ -11,13 +11,6 @@ tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs, napo
 # settings.md's; backend biometrics (check-in included) is me.md's — both named in the body.
 # quickinput stays: this is its only feature doc (CODEMAP would orphan it).
 key_files:
-  - frontend/src/features/today/pages
-  - frontend/src/features/today/components
-  - frontend/src/features/today/logic
-  - frontend/src/app/router.tsx
-  - frontend/src/data/today
-  - frontend/src/features/quickinput
-  - frontend/src/data/me/liveDay.ts
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewWarmupJob.java
 related: [_platform-data-layer, _platform-design-system, me, insights, companion, proactive, train, growth, habit, intention, ritual, needs]
 ---
@@ -468,6 +461,7 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Folyadék F2 (`mezo-n4wf5.2`, 2026-10-10) — decisions and trades.**
   - **Mai's big number is the average of the six életjel** (owner). The app serves no day score
     before the overnight close, and the approved prototype's „72 of 100" had no source during the

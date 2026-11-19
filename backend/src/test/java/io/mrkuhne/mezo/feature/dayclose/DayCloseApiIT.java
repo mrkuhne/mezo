@@ -125,6 +125,7 @@ class DayCloseApiIT extends ApiIntegrationTest {
             CheckInResponse.class);
 
         int before = fakeLlm.dayCloseLineCallCount();
+        int promptsBefore = fakeLlm.userMessages().size();
         DayCloseLineResponse first = postForBody("/api/day-close/" + today + "/checkin-line",
             new CheckInLineRequest().slot("14:00"), u.headers(), HttpStatus.OK, DayCloseLineResponse.class);
         DayCloseLineResponse second = postForBody("/api/day-close/" + today + "/checkin-line",
@@ -134,7 +135,11 @@ class DayCloseApiIT extends ApiIntegrationTest {
         assertThat(second.getLine()).isEqualTo(first.getLine());
         assertThat(fakeLlm.dayCloseLineCallCount()).isEqualTo(before + 1);
         // the prompt cites the energy against the earlier check-in of the day
-        assertThat(fakeLlm.lastUserMessage()).contains("energia 7").contains("06:30");
+        // mezo-xz9ij: the fake LLM is shared by the whole context, so lastUserMessage() can be another
+        // call's prompt (an async staleness prompt won the race on CI). Look only at the prompts recorded
+        // since this test's own call.
+        List<String> ownPrompts = fakeLlm.userMessages().subList(promptsBefore, fakeLlm.userMessages().size());
+        assertThat(ownPrompts).anySatisfy(prompt -> assertThat(prompt).contains("energia 7").contains("06:30"));
 
         postForBody("/api/day-close/" + today + "/checkin-line", new CheckInLineRequest().slot("10:00"),
             u.headers(), HttpStatus.BAD_REQUEST, String.class);

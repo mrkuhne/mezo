@@ -1,17 +1,13 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
-import io.mrkuhne.mezo.api.dto.GamificationProfileResponse;
-import io.mrkuhne.mezo.api.dto.GrowthWeekResponse;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.HabitSummaryResponse;
 import io.mrkuhne.mezo.api.dto.IntentionDayResponse;
 import io.mrkuhne.mezo.api.dto.IntentionFocusResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
-import io.mrkuhne.mezo.api.dto.ProgressionProfileResponse;
 import io.mrkuhne.mezo.api.dto.ProtocolResponse;
 import io.mrkuhne.mezo.api.dto.RitualDayResponse;
-import io.mrkuhne.mezo.api.dto.SkillLevel;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
@@ -24,13 +20,11 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
-import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.tools.FuelModeText;
 import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
-import io.mrkuhne.mezo.feature.gamification.service.GamificationService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
@@ -41,8 +35,6 @@ import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
-import io.mrkuhne.mezo.feature.progression.service.GrowthWeekService;
-import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.ritual.service.RitualService;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -70,7 +62,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -100,8 +91,6 @@ public class ContextSnapshotAssembler {
     /** dayOfWeek 0=Hétfő..6=Vasárnap (GymScheduleSlotEntity convention). */
     private static final List<String> HU_DAYS = List.of("H", "K", "Sze", "Cs", "P", "Szo", "V");
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
-    /** [Növekedés]'s skill highlight cap — terse, not a full profile dump. */
-    private static final int TOP_SKILLS_LIMIT = 3;
     // mezo-a64t: display precision belongs to the QUANTITY, not to the call site — a body weight is
     // one decimal wherever it appears ([Profil] measurement, súlytrend, [Cél] start → target), a
     // weekly rate two, sleep hours one. That binding lives in ToolText.huWeight/huRate/huHours, so
@@ -142,10 +131,6 @@ public class ContextSnapshotAssembler {
     private final SleepLogRepository sleepLogRepository;
     private final CheckInRepository checkInRepository;
     private final SleepAnchorPort sleepAnchorPort;
-    private final ObjectProvider<GamificationService> gamificationService;
-    private final ProgressionService progressionService;
-    private final GrowthWeekService growthWeekService;
-    private final ObjectProvider<TodayQuestSource> todayQuestSource;
     private final ObjectProvider<HabitService> habitService;
     private final ObjectProvider<IntentionService> intentionService;
     private final ObjectProvider<RitualService> ritualService;
@@ -154,7 +139,7 @@ public class ContextSnapshotAssembler {
     private final CompanionProperties properties;
 
     /**
-     * The chat-turn variant — ten blocks, {@code [Emberek]} ({@link PeopleSnapshotBlock}) sitting
+     * The chat-turn variant — nine blocks, {@code [Emberek]} ({@link PeopleSnapshotBlock}) sitting
      * between {@code [Napi gyakorlat]} and {@code [Mai üzemanyag]}. Chat-only: see
      * {@link #renderWithoutBiometrics} for why the morning message never sees the circle.
      */
@@ -164,7 +149,6 @@ public class ContextSnapshotAssembler {
                 + goalBlock(userId, today) + '\n'
                 + lifeGoalLine(userId, today)
                 + trainBlock(userId, today) + '\n'
-                + growthBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
                 + peopleLine(userId, today)
                 + fuelBlock(userId, today) + '\n'
@@ -191,8 +175,8 @@ public class ContextSnapshotAssembler {
     }
 
     /**
-     * The morning-message variant (companion-feed, spec §3): nine blocks — the same composition
-     * as {@link #render}'s ten minus the [Emberek] circle (mezo-x6oa: that would be the
+     * The morning-message variant (companion-feed, spec §3): eight blocks — the same composition
+     * as {@link #render}'s nine minus the [Emberek] circle (mezo-x6oa: that would be the
      * companion bringing people up unprompted) — and it strips weight/sleep entirely at the
      * source. The morning message is generated BEFORE those get logged for the day, and a prompt
      * prohibition alone is not enough (the model would still see and could still leak the
@@ -204,7 +188,6 @@ public class ContextSnapshotAssembler {
                 + goalBlock(userId, today) + '\n'
                 + lifeGoalLine(userId, today)
                 + trainBlock(userId, today) + '\n'
-                + growthBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
                 + fuelBlock(userId, today) + '\n'
                 + medicationBlock(userId, today) + '\n'
@@ -514,82 +497,18 @@ public class ContextSnapshotAssembler {
     }
 
     /**
-     * [Növekedés]: account level + coins + streak (Gamification — a fresh account's level 1 /
-     * 0 coins is a real ghost, not fabricated; GAMIFICATION_SWITCH-gated, so the bean can be
-     * absent while COMPANION_SWITCH stays on — read defensively via {@link ObjectProvider}),
-     * the highest-earned skills (Progression — the taxonomy's level-1/0-XP ghost rows are
-     * filtered out; an untouched skill would otherwise read as a fabricated fact), and this
-     * week's XP/quest rollup (GrowthWeek — honest zeros, a real computed window, the
-     * goalBlock/fuelBlock precedent).
-     */
-    private String growthBlock(UUID userId, LocalDate today) {
-        GamificationService gamification = gamificationService.getIfAvailable();
-        GamificationProfileResponse gami = gamification == null ? null : gamification.getProfile(userId);
-        ProgressionProfileResponse prog = progressionService.getProfile(userId);
-        GrowthWeekResponse week = growthWeekService.growthWeek(userId, today);
-        StringBuilder b = new StringBuilder("[Növekedés] szint ");
-        if (gami == null) {
-            b.append(NO_DATA);
-        } else {
-            b.append(gami.getLevel())
-                    .append(" (").append(gami.getTotalXp()).append(" XP), ")
-                    .append(gami.getCoins()).append(" érme, ")
-                    .append(gami.getStreakDays()).append(" napos sorozat");
-        }
-        List<SkillLevel> top = topSkills(prog);
-        b.append("; top skill: ").append(top.isEmpty() ? NO_DATA : top.stream()
-                .map(s -> s.getSkillKey() + " L" + s.getLevel())
-                .collect(Collectors.joining(", ")));
-        b.append("; e heti XP: ").append(week.getLifeXp())
-                .append(" (küldetés ").append(week.getQuestCompleted()).append('/')
-                .append(week.getQuestClosed()).append(" zárva)");
-        return b.toString();
-    }
-
-    /** Highest-level skills with real XP (0-XP taxonomy ghosts excluded), across all 3 kinds. */
-    private static List<SkillLevel> topSkills(ProgressionProfileResponse prog) {
-        List<SkillLevel> all = new ArrayList<>();
-        all.addAll(prog.getAthletic());
-        all.addAll(prog.getMuscle());
-        all.addAll(prog.getLife());
-        return all.stream()
-                .filter(s -> s.getCumulativeXp() != null && s.getCumulativeXp() > 0)
-                .sorted(Comparator.comparingInt(SkillLevel::getLevel).reversed()
-                        .thenComparing(Comparator.comparingLong(SkillLevel::getCumulativeXp).reversed()))
-                .limit(TOP_SKILLS_LIMIT)
-                .toList();
-    }
-
-    /**
-     * [Napi gyakorlat]: today's quest completion count via {@link TodayQuestSource} — a port
-     * companion owns so the read stays quest → companion (never back: quest already depends on
-     * companion for {@code QuestFlavor}'s AI rewriting, so a direct import here would form a
-     * 2-slice cycle; {@code progression.QuestLedgerSource} is the precedent) and deliberately
-     * bypasses {@link io.mrkuhne.mezo.feature.quest.service.QuestService#getDay}, which lazily
-     * generates today's rows and awards XP on derived-quest evaluation ({@code @Transactional},
-     * not read-only; the {@link #todayLine} / {@link #tomorrowLine} precedent above applies
-     * equally: a read that fires writes on every chat turn would violate this assembler's
-     * read-only contract) — plus habit-chain strength ({@link HabitService#summary}, already
-     * read-only), the standing creed / today's foci / evening reflection (Intention), and whether
-     * today's napzárás is closed (Ritual). {@code HabitService}/{@code IntentionService}/
+     * [Napi gyakorlat]: habit-chain strength ({@link HabitService#summary}, read-only), the
+     * standing creed / today's foci / evening reflection (Intention), and whether today's
+     * napzárás is closed (Ritual). {@code HabitService}/{@code IntentionService}/
      * {@code RitualService} each carry their own feature switch (HABIT_SWITCH/INTENTION_SWITCH/
      * RITUAL_SWITCH) independent of COMPANION_SWITCH, so each is read defensively via
-     * {@link ObjectProvider} — the {@link #todayQuestSource} precedent. Honest absence per part,
-     * never fabricated.
+     * {@link ObjectProvider}. Honest absence per part, never fabricated. (The daily-quest count
+     * and the [Növekedés] XP block left with the XP world, mezo-r36n9.97.5.)
      */
     private String practiceBlock(UUID userId, LocalDate today) {
-        TodayQuestSource questSource = todayQuestSource.getIfAvailable();
-        TodayQuestSource.Stats quest = questSource == null ? null : questSource.todayStats(userId, today);
-        StringBuilder b = new StringBuilder("[Napi gyakorlat] küldetés: ");
-        if (quest == null || quest.total() == 0) {
-            b.append(NO_DATA);
-        } else {
-            b.append(quest.completed()).append('/').append(quest.total());
-        }
-
         HabitService habitSvc = habitService.getIfAvailable();
         HabitSummaryResponse habits = habitSvc == null ? null : habitSvc.summary(userId);
-        b.append("; szokás-lánc: ");
+        StringBuilder b = new StringBuilder("[Napi gyakorlat] szokás-lánc: ");
         if (habits == null) {
             b.append(NO_DATA);
         } else {

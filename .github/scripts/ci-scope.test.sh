@@ -16,10 +16,19 @@ assert_eq() { # <actual> <expected> <name>
 # ── touches_scope ──
 printf 'docs/a.md\nios/Boop/App.swift\n' | touches_scope backend/ api/; assert_rc $? 1 "docs + ios only => backend out of scope"
 printf 'docs/a.md\nbackend/pom.xml\n' | touches_scope backend/ api/; assert_rc $? 0 "one backend file => in scope"
-printf 'api/feature/train.yml\n' | touches_scope frontend/ api/; assert_rc $? 0 "contract change => frontend in scope"
+printf 'api/feature/train.yml\n' | touches_scope backend/ api/; assert_rc $? 0 "contract change => backend in scope"
 printf '.github/workflows/ci.yml\n' | touches_scope backend/; assert_rc $? 0 "a CI change is always in scope"
 printf 'backendish/file\n' | touches_scope backend/; assert_rc $? 1 "prefix match needs the slash"
 printf '' | touches_scope backend/; assert_rc $? 1 "empty diff => out of scope"
+
+# ── files_touch_scope: a diff bigger than the pipe buffer must not lose the match (mezo-r36n9.97.9) ──
+# The old `printf "$files" | touches_scope` died with SIGPIPE (rc 141) under pipefail once touches_scope
+# returned on its first match before printf had written everything — 2738 files on ci run 44534368951,
+# so a commit touching .github/ was judged out of scope and test-backend skipped its suite.
+BIG=$(printf '.github/workflows/ci.yml\n'; for i in $(seq 1 20000); do printf 'docs/features/file-%05d.md\n' "$i"; done)
+files_touch_scope "$BIG" backend/ api/; assert_rc $? 0 "huge diff with an early in-scope file => in scope"
+BIG_OUT=$(for i in $(seq 1 20000); do printf 'docs/features/file-%05d.md\n' "$i"; done)
+files_touch_scope "$BIG_OUT" backend/ api/; assert_rc $? 1 "huge diff with nothing in scope => out of scope"
 
 # ── green_shas: only finished green runs count ──
 RUNS='{"workflow_runs":[{"id":4,"head_sha":"ddd","status":"in_progress","conclusion":null},

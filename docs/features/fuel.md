@@ -5,8 +5,6 @@ status: done
 updated: 2026-11-19
 tags: [fuel, frontend, data-layer, boop, b4-etel, day-plan, meal-photos, client-ref]
 key_files:
-  - frontend/src/features/fuel
-  - frontend/src/data/fuel
   - api/feature/fuel/fuel.yml
   - api/feature/meal/meal.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/fuel
@@ -64,7 +62,7 @@ Driving design: **[`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`]
 
 **Where the pieces come from.**
 - Kit — `@/shared/ui/folyadek` (CSS `styles/folyadek-kit.css`, `.fo-`). F5 added `Stat` / `StatGrid`, `Switch`, `SearchField`, `RemoveChips`, `Note tone`, `Chips plain` and the **`Hero graphic` slot** (the graphic stands BETWEEN the label and the verdict, in DOM order).
-- Fuel-shared liquid pieces — `@/features/fuel/components/folyadek` (`vessels.tsx`, `macros.tsx`, `chips.tsx`, `rows.tsx`; CSS `styles/folyadek-fuel-kozos.css`, `.fx-`; the macro / water colours are `:root` tokens `--fx-protein --fx-carb --fx-fat --fx-fiber --fx-water --fx-lilac`). The prototype-helper → React mapping table is that folder's [`README.md`](../../frontend/src/features/fuel/components/folyadek/README.md): `DayBowl`, `BowlGauge`, `PourBowl`, `SlotCup` / `PlainCup`, `Pot`, `Glass`, `Dial`, `MacroVials`, `MealCells`, `M3`, `Nutri`, `MacroTriple`, `ScoreChip`, `GlyChip` / `GlyMini` / `GlyBand`, `LineTags`, `ItemRow`, `EditLine`, `Kv`, `Tip`, `Lgd`, `Tot`, `NumG`, `Strip`, `SplitBar`.
+- Fuel-shared liquid pieces — `@/features/fuel/components/folyadek` (`vessels.tsx`, `macros.tsx`, `chips.tsx`, `rows.tsx`; CSS `styles/folyadek-fuel-kozos.css`, `.fx-`; the macro / water colours are `:root` tokens `--fx-protein --fx-carb --fx-fat --fx-fiber --fx-water --fx-lilac`). The prototype-helper → React mapping table is that folder's `README.md` (`frontend/src/features/fuel/components/folyadek/README.md`, retired web app — in git history): `DayBowl`, `BowlGauge`, `PourBowl`, `SlotCup` / `PlainCup`, `Pot`, `Glass`, `Dial`, `MacroVials`, `MealCells`, `M3`, `Nutri`, `MacroTriple`, `ScoreChip`, `GlyChip` / `GlyMini` / `GlyBand`, `LineTags`, `ItemRow`, `EditLine`, `Kv`, `Tip`, `Lgd`, `Tot`, `NumG`, `Strip`, `SplitBar`.
 - **CSS architecture.** One stylesheet per build area, each with its own class prefix, plus the shared one — nothing of Fuel lives in `styles/prototype.css` any more (the old `fmx-` / `fsx-` / `ftx-` / `fkx-` / `fkk-` / `fset-` / `fsl-` / `flp-` / `fln-` / `fwl-` / `fcx-` / `fkp-` / `stk-` blocks are deleted with a zero-usage proof):
 
 | Area | Stylesheet (`frontend/src/styles/`) | Prefix | Catalog (`shared/i18n/messages/`) |
@@ -671,6 +669,7 @@ When Slice C lands, add MSW handlers so real-mode hook tests exercise `fuelApi`,
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Folyadék F5 (`mezo-n4wf5.5`, 2026-10-12) — gotchas paid for in this slice** (lessons F5.1–F5.17 in the [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md) appendix):
   - **Never reorder a hero with CSS `order`.** A graphic between the label and the verdict goes in the kit's `Hero graphic` slot (DOM order = reading order); ten local `.f?-ghero` / `.f?-hero` reorder tricks were folded into it. Some pages still pass `className="f?-ghero"` as a plain styling hook — it must not carry `order`.
   - **One recipe per thing.** A catalog sentence with a bold run goes through `SafeMarkdown` (`**…**`); a note in a state tone is `Note tone`; removable chips are `RemoveChips`; a tinted result line is `Tot`. A piece missing from the kit is built locally with the area prefix and REPORTED, then folded — not copied into a second area.

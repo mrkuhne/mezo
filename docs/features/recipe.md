@@ -7,12 +7,6 @@ tags: [fuel, recipe, frontend, data-layer, backend, llm, allergens, boop, b4-ete
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
   - api/feature/recipe
-  - frontend/src/data/fuel/recipeHooks.ts
-  - frontend/src/data/fuel/recipeApi.ts
-  - frontend/src/features/fuel/pages/FuelRecipesPage.tsx
-  - frontend/src/features/fuel/pages/RecipeDetailPage.tsx
-  - frontend/src/features/fuel/pages/RecipeEditorPage.tsx
-  - frontend/src/features/fuel/pages/RecipeWorkshopPage.tsx
 related: [fuel, pantry, boop-ios, _platform-data-layer, companion]
 ---
 
@@ -113,6 +107,7 @@ Backend: `RecipeImageIT`, `RecipeApiIT`, `RecipeServiceIT`, `RecipeRepositoryIT`
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **After a save or a delete the form does not stay behind the user (Folyadék F1 final review, `mezo-n4wf5.1`, 2026-10-09).** With a history-based back, a post-mutation `navigate(...)` that PUSHED left the editor — or the deleted record — one Vissza away. The leave now replaces the current entry or pops (`useLeaveAfterMutation` in `shared/hooks/useBackNav.ts`, rules in `shared/lib/backNav.ts`; see [`_platform-design-system.md`](_platform-design-system.md)). Destinations are unchanged. `RecipeEditorPage` edit-save and `RecipeWorkshopPage` „Recept frissítése" POP back onto the recipe's page they are only ever opened from (`leave.back`), so one Vissza from there is the list; the create-saves and `RecipeDetailPage`'s delete REPLACE the current entry with `/fuel/recipes`. Pinned by `tests/layout/navigation.spec.ts` („Vissza after a save or a delete…").

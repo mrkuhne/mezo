@@ -5,8 +5,6 @@ status: done
 updated: 2026-11-19
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
-  - frontend/src/features/train
-  - frontend/src/data/train
   - api/feature/train/train.yml
   - api/feature/train/train-readiness.yml
   - api/feature/train/train-skip.yml
@@ -21,6 +19,8 @@ related: [_platform-data-layer, _platform-design-system, today, fuel, me, compan
 > **2026-11-17 — reviewed after `mezo-7ahl8`:** four derived queries with no caller anywhere (main or tests) were removed from `WorkoutSessionRepository`, `RecoveryPeriodRepository`, `ExerciseFeedbackRepository` and `ExerciseSetRepository`. No behaviour changed; the queries `getToday` uses (§9 `completedWorkout`) are untouched.
 
 # Train — Feature Documentation
+
+> **2026-11-19 — the XP world left the server (`mezo-r36n9.97.5`, #52).** Finishing a gym workout, logging a run and logging a sport session no longer award progression XP: `WorkoutService`/`RunningService`/`SportService` dropped their progression collaborators, the optional `levelUp` on `WorkoutInstanceResponse`/`RunSessionLogResponse`/`SportSessionResponse` is never populated (kept in the contract only because the iPhone's contract copy lists it), and the XP signal calculators `feature/train/signal/*` are deleted (with the repository finders only they used). Medals are train's own and unchanged. See [`growth.md`](growth.md) §9.
 
 > **2026-10-11 — Folyadék F4 · Edzés közben (`mezo-n4wf5.4`).** The whole in-workout flow is on the Folyadék kit: the Eligazítás, the session page (ONE exercise on top with its set grid, the others as rows — focus is view state, `logic/sessionFocus.ts`), the floating dock, every session sheet (`fo-sheet`), both closing ceremonies (a cup that fills in one rAF pass; the sport path shows its XP on the screen and raises no level-up overlay) and the review with its one-exercise view. Behaviour is unchanged except the approved items listed in §2 *The Folyadék face of the in-workout flow*. The old skin (`train session`, `train ceremony`, `uveg edzes session`, `uveg edzes zaras` — 1 106 rules) left `prototype.css` with a zero-usage proof per rule. `GlassBox`, `VoiceField` and the level-up overlay are not converted (other domains use them).
 
@@ -443,7 +443,7 @@ A repeatable workout template that needs **no active mesocycle** — for ad-hoc/
 ### Active workout (`ActiveWorkoutPage.tsx`, `/train/session`)
 #### The Folyadék face of the in-workout flow (F4, `mezo-n4wf5.4`, 2026-10-11)
 
-**Build target and canon.** The F4 routes of `docs/design_2.0/prototypes/vilagos/edzes.js` (`#w-edzes-indulas`, `-session`, `-cer`, `-sportcer`, `-review`; every state is a route arg, every sheet opens from `-session`). Rules: the [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md) (appendix F4.1–F4.11); deviations of the built app: [`vilagos/HANDOFF.md`](../design_2.0/prototypes/vilagos/HANDOFF.md) §„2026-10-11 — F4 · Edzés közben"; the piece map (prototype helper → React piece → props), the area/file ownership table, the wording table and the structural traps: [`components/folyadek/README.md`](../../frontend/src/features/train/components/folyadek/README.md) chapter F4.
+**Build target and canon.** The F4 routes of `docs/design_2.0/prototypes/vilagos/edzes.js` (`#w-edzes-indulas`, `-session`, `-cer`, `-sportcer`, `-review`; every state is a route arg, every sheet opens from `-session`). Rules: the [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md) (appendix F4.1–F4.11); deviations of the built app: [`vilagos/HANDOFF.md`](../design_2.0/prototypes/vilagos/HANDOFF.md) §„2026-10-11 — F4 · Edzés közben"; the piece map (prototype helper → React piece → props), the area/file ownership table, the wording table and the structural traps: `components/folyadek/README.md` (`frontend/src/features/train/components/folyadek/README.md`, retired web app — in git history) chapter F4.
 
 **What changed in behaviour — the approved items only.** (1) The session is a **focused-exercise layout** instead of a card list. (2) **Technika** is the exercise's own video (no button without one). (3) The **sport closing screen shows its XP itself** and raises no level-up overlay. (4) The idle dock is the done work as a level. Everything else — phases, the start, the per-exercise cursor, the set / edit / delete writes, medals, rest, the debrief, notes, swap / add, the finish, the closing note — is the same code path as before; the paragraphs under this block are its record.
 
@@ -1184,6 +1184,8 @@ Both modes and both layers must stay green.
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
+- **No push anchors on sessions (2026-11-19, `mezo-r36n9.97.7`).** The browser web push that anchored gym/sport reminders (`AnchorResolver`) was retired; train code only lost comments pointing at it. The 0=Hét..6=Vas slot convention trap stays documented on `SportSlotSkipEntity`/`SportSlotSkipService`.
 - **Exercise-selection research, not approved product behavior.** The [personalized exercise selection digest](../research/concepts/personalized-exercise-selection.md) records Nippard's goal/equipment/comfort/progression criteria and where the current catalog, generator, swap flow and readiness logic could use them. It does not change today's selection rules or promise a specific exercise ranking.
 
 - **Volume engine v2 (`mezo-r36n9.65`, S1, 2026-11-18) — decisions and traps** (the engine itself: §4 `#### Volume engine v2`; deviations from the spec: its §12).

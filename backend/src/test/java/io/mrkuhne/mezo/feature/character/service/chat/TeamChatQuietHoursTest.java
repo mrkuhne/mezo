@@ -3,7 +3,6 @@ package io.mrkuhne.mezo.feature.character.service.chat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
-import io.mrkuhne.mezo.feature.notification.config.NotificationProperties;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -20,10 +19,9 @@ class TeamChatQuietHoursTest {
 
     private static TeamChatQuietHours window(String start, String end) {
         TeamChatProperties properties = new TeamChatProperties(ZONE, 7, 12, 2, new BigDecimal("1.00"),
-                "0 10 4 * * *", "0 20 * * * *", "0 0 7 * * *", 4, 20, 30, 4, 0);
-        NotificationProperties notification = new NotificationProperties(160, "09:00", "20:00", 240,
-                "0 * * * * *", 5, 5, new NotificationProperties.QuietHours(start, end));
-        return new TeamChatQuietHours(notification, properties);
+                "0 10 4 * * *", "0 20 * * * *", "0 0 7 * * *", 4, 20, 30, 4, 0,
+                new TeamChatProperties.QuietHours(start, end));
+        return new TeamChatQuietHours(properties);
     }
 
     private static Instant at(int hour, int minute) {

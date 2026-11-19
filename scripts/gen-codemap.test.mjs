@@ -27,7 +27,7 @@ function write(root, rel, content) {
 const BE = 'backend/src/main/java/io/mrkuhne/mezo/feature';
 const BE_TEST = 'backend/src/test/java/io/mrkuhne/mezo/feature';
 
-/** A repo skeleton with one fully-wired `demo` feature across all four spaces. */
+/** A repo skeleton with one fully-wired `demo` feature across both spaces (backend + contract). */
 function makeFixture() {
   const root = mkdtempSync(path.join(tmpdir(), 'codemap-'));
 
@@ -58,18 +58,6 @@ function makeFixture() {
     '',
   ].join('\n'));
 
-  write(root, 'frontend/src/data/demo/demoHooks.ts', 'export function useDemo() {}\n');
-  write(root, 'frontend/src/data/demo/demoApi.ts', 'export const demoApi = {}\n');
-  write(root, 'frontend/src/data/demo/demoHooks.test.ts', 'test("x", () => {})\n');
-  write(root, 'frontend/src/data/hooks.ts',
-    "export { useDemo, useDemoActions } from '@/data/demo/demoHooks'\n");
-
-  write(root, 'frontend/src/features/demo/pages/DemoPage.tsx', 'export function DemoPage() {}\n');
-  write(root, 'frontend/src/features/demo/sheets/DemoSheet.tsx', 'export function DemoSheet() {}\n');
-  write(root, 'frontend/src/features/demo/components/DemoCard.tsx', 'export function DemoCard() {}\n');
-  write(root, 'frontend/src/features/demo/logic/demoCalc.ts', 'export const calc = 1\n');
-  write(root, 'frontend/src/features/demo/pages/DemoPage.test.tsx', 'test("x", () => {})\n');
-
   write(root, `${BE_TEST}/demo/DemoIT.java`,
     'class DemoIT extends ApiIntegrationTest {\n  @Autowired DemoPopulator demoPopulator;\n}\n');
 
@@ -80,7 +68,6 @@ function makeFixture() {
     'updated: 2026-08-20',
     'key_files:',
     `  - ${BE}/demo`,
-    '  - frontend/src/features/demo',
     'related: [today]',
     '---',
     '',
@@ -131,28 +118,15 @@ test('the contract fragment is bound to the feature via its tag, with method+pat
   }
 });
 
-test('FE hook names come from the data/hooks.ts barrel, not from the module files', () => {
+test('a leftover frontend/ tree is not mapped — the web app is retired (#52)', () => {
   const root = makeFixture();
   try {
+    write(root, 'frontend/src/data/ghost/ghostHooks.ts', 'export function useGhost() {}\n');
+    write(root, 'frontend/src/features/ghost/pages/GhostPage.tsx', 'export function GhostPage() {}\n');
     const body = buildBody(root);
-    assert.ok(body.includes('`useDemo`'), 'barrel-exported hook is listed');
-    assert.ok(body.includes('`useDemoActions`'), 'every name on the export line is listed');
-    assert.ok(body.includes('demoApi.ts'), 'data module files are listed');
-    assert.ok(!body.includes('demoHooks.test.ts'), 'colocated tests are excluded from the file list');
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('FE UI files are grouped by the pages/sheets/components/logic convention', () => {
-  const root = makeFixture();
-  try {
-    const body = buildBody(root);
-    assert.match(body, /pages:.*DemoPage\.tsx/);
-    assert.match(body, /sheets:.*DemoSheet\.tsx/);
-    assert.match(body, /components:.*DemoCard\.tsx/);
-    assert.match(body, /logic:.*demoCalc\.ts/);
-    assert.ok(!body.includes('DemoPage.test.tsx'), 'colocated tests are excluded');
+    assert.ok(!/^### ghost\b/m.test(body), 'a frontend-only directory does not become a feature block');
+    assert.ok(!body.includes('frontend/'), 'no frontend path appears anywhere in the map');
+    assert.ok(!body.includes('FE data') && !body.includes('FE ui'), 'no FE columns or sections');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -196,6 +170,19 @@ test('a contract fragment whose tag no-one implements is reported under Unaligne
     const unaligned = body.slice(body.indexOf('## Unaligned'));
     assert.ok(body.includes('## Unaligned'), 'the Unaligned section exists');
     assert.ok(unaligned.includes('api/feature/orphan/orphan.yml'), 'the orphan fragment is listed there');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a retired feature doc with no key_files is not reported under Unaligned', () => {
+  const root = makeFixture();
+  try {
+    write(root, 'docs/features/gone.md', [
+      '---', 'title: Gone', 'status: retired', 'updated: 2026-11-19', 'key_files: []', '---', '', '# Gone', '',
+    ].join('\n'));
+    const body = buildBody(root);
+    assert.ok(!body.slice(body.indexOf('## Unaligned')).includes('docs/features/gone.md'));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

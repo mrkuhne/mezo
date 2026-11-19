@@ -3,7 +3,7 @@
     "Hand-curated map: our exercise-catalog slug -> the free-exercise-db exercise NAME",
     "(yuhonas/free-exercise-db, Unlicense/public domain). Consumed by",
     "scripts/import-exercise-images.mjs, which resolves the name to the dataset id and",
-    "downloads that exercise's two frames into frontend/public/exercises/{slug}-a|b.jpg.",
+    "downloads that exercise's two frames into backend/src/main/resources/static/exercises/{slug}-a|b.jpg.",
     "",
     "EVERY ENTRY IS HAND-VERIFIED. Do NOT fuzzy-match this file: on our catalog a token-overlap",
     "matcher confidently paired Pull-Up -> Scapular Pull-Up, Cable Fly -> Cable Rear Delt Fly and",

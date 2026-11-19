@@ -3,10 +3,10 @@
 # ci-scope.sh — should this ci.yml job do its expensive work on this commit? (mezo-dubmh)
 # =============================================================================
 #
-# The web frontend is frozen (owner decision #48, 2026-11-17) and most pushes to main are
-# iOS / docs / tracker commits. Before this script every one of them still ran the full
-# backend suite (~59 min) AND both frontend suites (~33 + 8 min) against code they had
-# not touched.
+# Most pushes to main are iOS / docs / tracker commits. Before this script every one of
+# them still ran the full backend suite (~59 min) AND the (since retired, 2026-11-19 #52)
+# web frontend suites (~33 + 8 min) against code they had not touched. Today only
+# test-backend calls it (`backend/ api/`).
 #
 # A job calls this with the path prefixes it cares about; the script writes `run=true|false`
 # to $GITHUB_OUTPUT and the job's expensive steps carry `if: steps.scope.outputs.run == 'true'`.
@@ -47,6 +47,15 @@ touches_scope() {
   return 1
 }
 
+# args: <newline-separated paths> <path prefixes...>. Exit 0 if any path is in scope.
+# A here-string, never `printf | touches_scope`: touches_scope returns on its first match, and under
+# pipefail a writer still holding more than a pipe buffer of paths then dies with SIGPIPE (141) — the
+# pipeline reads as "not in scope" and the job skips work it owed (mezo-r36n9.97.9).
+files_touch_scope() {
+  local files="$1"; shift
+  touches_scope "$@" <<< "$files"
+}
+
 # stdin: the workflow-runs API payload (newest first). stdout: head shas of green runs.
 green_shas() {
   jq -r '.workflow_runs[]? | select(.status == "completed" and .conclusion == "success") | .head_sha'
@@ -79,7 +88,7 @@ decide() { # args: path prefixes. stdout: "true <reason>" or "false <reason>"
     *) echo "true unhandled event '${EVENT:-}'"; return ;;
   esac
   files=$(git diff --name-only "$range" 2>/dev/null) || { echo "true could not diff ${range}"; return; }
-  if printf '%s\n' "$files" | touches_scope "$@"; then
+  if files_touch_scope "$files" "$@"; then
     echo "true ${range} touches: $*"
   else
     echo "false ${range} touches none of: $*"

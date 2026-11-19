@@ -819,6 +819,9 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 
 ## 9. Decisions, gotchas & deferred
 
+- **Contract copy re-synced after the web-only areas left (2026-11-19, `mezo-r36n9.97.4`).** `openapi.yaml` lost the tutorial, telemetry and admin hub operations (none in the filter); `node scripts/check-ios-contract.mjs` (in the cheap gates) proves all 121 filter operations are still in `api/openapi.yml`.
+- **Contract copy re-synced after the XP world left (2026-11-19, `mezo-r36n9.97.5`).** `openapi.yaml` lost the gamification, quest, progression and activity operations (none in the filter) and their schemas; the optional `levelUp`/`medals` on `WorkoutInstanceResponse` stay (the app never reads them, and the server no longer fills `levelUp`). `check-ios-contract.mjs` still finds all 121 filter operations.
+- **Contract copy re-synced after browser web push left (2026-11-19, `mezo-r36n9.97.7`).** `openapi.yaml` lost the web push subscription/test/pref/schedule operations and schemas (none in the filter); `registerApnsDevice`/`unregisterApnsDevice` and the server's `apns_device` registration are unchanged (`DeviceRegistrationStillWorksIT`). `check-ios-contract.mjs` still finds all 121 filter operations.
 - **Web-app links removed (2026-11-19, `mezo-r36n9.97.2`, decision #52).** `BoopConfig.webAppURL` is gone: the Terv and Nap "a webes appban" cards and the account sheet's "Webes app" row no longer exist, with no replacement card. Web-only settings are changed by a session on the owner's request until a later slice adds screens. Terv with no weight and no session shows an `NKNotLiveYet` card ("A terveid ide költöznek", 2026-11-19).
 
 - **Block builder traps (2026-11-19, `mezo-r36n9.83`).** (1) An overload trap cost a 51 GB runaway test: inside

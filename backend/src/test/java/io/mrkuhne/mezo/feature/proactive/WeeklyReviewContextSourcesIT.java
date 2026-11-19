@@ -2,14 +2,12 @@ package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.activity.entity.ActivityExtract;
-import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
-import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarRuleJson;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarSourceJson;
 import io.mrkuhne.mezo.feature.proactive.service.WeeklyReviewContextSources;
+import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.LifeGoalPopulator;
 import java.math.BigDecimal;
@@ -24,7 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * The weekly review gather payload's ÉLETCÉLOK block (mezo-iizd.9, mezo-a9os) — the life-goal
  * engine's ALREADY-COMPUTED trend, rendered as facts for the model to explain.
  *
- * <p>No mocks (house rule): the goal, its pillar and the activity row are real entities, so the
+ * <p>No mocks (house rule): the goal, its pillar and the water log are real entities, so the
  * arrow and hit-day numbers asserted here are the ones the real engine derives.
  *
  * <p><b>The window shape is the CRON's, and the block now measures it exactly.</b>
@@ -46,7 +44,7 @@ class WeeklyReviewContextSourcesIT extends ApiIntegrationTest {
 
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private LifeGoalPopulator lifeGoalPopulator;
-    @Autowired private ActivityLogRepository activityLogRepository;
+    @Autowired private WaterLogPopulator waterLogPopulator;
     @Autowired private WeeklyReviewContextSources contextSources;
 
     private UUID ownerId() {
@@ -65,21 +63,16 @@ class WeeklyReviewContextSourcesIT extends ApiIntegrationTest {
     private LifeGoalEntity activeGoalWithOneHitDay(UUID owner) {
         LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
         lifeGoalPopulator.pillar(goal, "Fokusz", "habit",
-            new PillarSourceJson("activity", null, "productivity", "minutes", null, null),
+            new PillarSourceJson("metric", "DAILY_WATER_ML", null, null, null, null),
             new PillarRuleJson(new BigDecimal("30"), "gte", 4, null, null, null, null, null, null, null));
         seedHitOn(owner, LocalDate.now().minusDays(1));
         return goal;
     }
 
-    /** Writes one qualifying activity row on {@code day}, for the fixture goal's pillar. */
+    /** Writes one qualifying water log on {@code day}, for the fixture goal's DAILY_WATER_ML pillar
+     *  (an activity-log row until the activity source left with the XP world, mezo-r36n9.97.5). */
     private void seedHitOn(UUID owner, LocalDate day) {
-        ActivityLogEntity e = new ActivityLogEntity();
-        e.setCreatedBy(owner);
-        e.setOccurredOn(day);
-        e.setText("test entry");
-        e.setSkillKey("productivity");
-        e.setExtracted(new ActivityExtract(40, null));
-        activityLogRepository.saveAndFlush(e);
+        waterLogPopulator.createWaterLog(owner, day, 40);
     }
 
     @Test
@@ -119,7 +112,7 @@ class WeeklyReviewContextSourcesIT extends ApiIntegrationTest {
         UUID owner = ownerId();
         LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
         lifeGoalPopulator.pillar(goal, "Fokusz", "habit",
-            new PillarSourceJson("activity", null, "productivity", "minutes", null, null),
+            new PillarSourceJson("metric", "DAILY_WATER_ML", null, null, null, null),
             new PillarRuleJson(new BigDecimal("30"), "gte", 4, null, null, null, null, null, null, null));
         seedHitOn(owner, LocalDate.now());
 
@@ -141,9 +134,9 @@ class WeeklyReviewContextSourcesIT extends ApiIntegrationTest {
         UUID owner = ownerId();
         LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
         lifeGoalPopulator.pillar(goal, "Fokusz", "habit",
-            new PillarSourceJson("activity", null, "productivity", "minutes", null, null),
+            new PillarSourceJson("metric", "DAILY_WATER_ML", null, null, null, null),
             new PillarRuleJson(new BigDecimal("30"), "gte", 4, null, null, null, null, null, null, null));
-        // deliberately NO activity row — nothing was measured in the window
+        // deliberately NO water log — nothing was measured in the window
 
         String payload = renderReviewedWeek(owner);
 
@@ -163,7 +156,7 @@ class WeeklyReviewContextSourcesIT extends ApiIntegrationTest {
         UUID owner = ownerId();
         LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "parked");
         lifeGoalPopulator.pillar(goal, "Fokusz", "habit",
-            new PillarSourceJson("activity", null, "productivity", "minutes", null, null),
+            new PillarSourceJson("metric", "DAILY_WATER_ML", null, null, null, null),
             new PillarRuleJson(new BigDecimal("30"), "gte", 4, null, null, null, null, null, null, null));
 
         assertThat(renderReviewedWeek(owner)).doesNotContain("ÉLETCÉLOK");

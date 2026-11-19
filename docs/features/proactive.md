@@ -2,17 +2,17 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-11-17
+updated: 2026-11-19
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
   - api/feature/proactive/proactive.yml
-  - frontend/src/data/today
-  - frontend/src/features/today/pages/NapMezoPage.tsx
 related: [companion, today, insights, train, me, character, _platform-api-backend, _platform-notifications]
 ---
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
+
+> **2026-11-19 — the XP world left the server (`mezo-r36n9.97.5`, #52).** The weekly suggestion and memoir prompts no longer carry the `NÖVEKEDÉS` growth digest — `GrowthDigestBlock` is deleted. See [`growth.md`](growth.md) §9.
 
 > **2026-11-10 — Boop S3 (`mezo-r36n9.7`).** The native iPhone app's morning brief is **separate** from the companion messages described here: it has its own table (`boop_brief`) and endpoint (`GET /api/boop/brief`), is computed on demand per local day, and adds **no new `companion_message` kind** — the web app's feed and its kind filters are unchanged. Details: [`boop-ios.md`](boop-ios.md) §3–§4.
 
@@ -2739,8 +2739,8 @@ every other proactive read:
 **Contract crossing the seam:** `EffectLinkService.GatedEffect` (record: `subjectKind`, `subjectKey`,
 `metric`, `subjectLabel`, `metricLabel`, `higher`, `strengthBand`, `subjectDays`, `topicKey`) and
 `PersonFactEntity` rows (via `promptFacts`) — no new wire contract, everything stays server-side
-prompt text; the only FE-visible surface is the `Effect`-kind ref (§6 below, [`RefTag.tsx`](
-../../frontend/src/shared/ui/RefTag.tsx) `'effect' → t-chain/'hatás'`).
+prompt text; the only FE-visible surface is the `Effect`-kind ref (§6 below, `RefTag.tsx` (`frontend/src/shared/ui/RefTag.tsx`, retired web app — in git history)
+`'effect' → t-chain/'hatás'`).
 
 ## 6. How to use it (consume)
 
@@ -3354,6 +3354,8 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
+- **No push for intervention cards any more (2026-11-19, `mezo-r36n9.97.7`).** The browser web push that anchored on the card row (`AnchorResolver`) was retired; the card's `channel`/`quietHoursExempt` are still read by the team chat. Push references in this doc describe the retired system.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **(a) All TEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The

@@ -148,7 +148,6 @@ public class MemoirGenerator {
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
-    private final GrowthDigestBlock growthDigestBlock;
     private final AppNotificationEmitter appNotificationEmitter;
     /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
     private final ObjectProvider<CharacterPromptSource> characterPromptSource;
@@ -288,7 +287,6 @@ public class MemoirGenerator {
 
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append(characterBlock(userId));
-        payload.append(growthDigestBlock.render(userId, weekStart));
         // Memória mindenhol S8 (mezo-eq85.8): the week's own narratives ARE the query — the
         // memoir is a consolidation of exactly this week, so what it retrieves should be memories
         // that resonate with what actually happened, not a re-derivation of the week from scratch.

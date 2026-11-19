@@ -25,11 +25,6 @@ import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetLegEntity;
-import io.mrkuhne.mezo.feature.progression.ProgressionGate;
-import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
-import io.mrkuhne.mezo.feature.train.signal.GymSignalCalculator;
-import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
-import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
@@ -91,15 +86,9 @@ public class WorkoutService {
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
-    // Progression collaborators (T6): the gym finish awards XP behind the feature switch. The gate
-    // bean exists ONLY when mezo.feature.progression.enabled=true, so an absent provider ⇔ switch off.
-    private final GymSignalCalculator gymSignalCalculator;
-    private final ProgressionService progressionService;
-    private final LevelUpResultMapper levelUpResultMapper;
-    private final ObjectProvider<ProgressionGate> progressionGate;
     // Hypertrophy Drive (P1): the recommendation engine + its feature gate. The gate bean exists ONLY
-    // when mezo.feature.hypertrophy-drive.enabled=true, so an absent provider ⇔ switch off (mirrors
-    // progressionGate); off ⇒ getToday attaches no prescribedSets and the FE falls back to the logger.
+    // when mezo.feature.hypertrophy-drive.enabled=true, so an absent provider ⇔ switch off;
+    // off ⇒ getToday attaches no prescribedSets and the FE falls back to the logger.
     private final SetRecommendationService setRecommendationService;
     private final ExerciseHistoryResolver historyResolver;
     private final WeightGapService weightGapService;
@@ -1048,15 +1037,9 @@ public class WorkoutService {
             log.warn("Timing derivation failed for session {} — finishing the workout anyway",
                 instance.getId(), e);
         }
+        // levelUp stays absent: the XP world left the server (mezo-r36n9.97.5); the optional field
+        // is kept only because the iPhone's contract copy still lists it.
         WorkoutInstanceResponse base = toInstanceResponse(createdBy, instance);
-        // Progression runs ONLY when the feature switch is on (gate bean present) and only here in
-        // finishWorkout — never via the shared toInstanceResponse, so start/resume stay levelUp-free.
-        // Atomic with the completion (same @Transactional); applyGym is idempotent on the instance id,
-        // so a re-finish returns the stored payload without double-awarding.
-        if (progressionGate.getIfAvailable() != null) {
-            GymSignal signal = gymSignalCalculator.compute(createdBy, instance.getId());
-            base.setLevelUp(levelUpResultMapper.toDto(progressionService.applyGym(createdBy, signal)));
-        }
         // Same rationale as logSet above: medals are derived and decorative, the finish/completion
         // write must not roll back because the medal replay blew up.
         try {

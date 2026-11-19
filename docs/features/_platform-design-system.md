@@ -1,18 +1,10 @@
 ---
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg → Folyadék)
 type: feature-platform
-status: in-progress
-updated: 2026-11-17
+status: retired
+updated: 2026-11-19
 tags: [platform, design, frontend]
-key_files:
-  - frontend/src/styles/prototype.css
-  - frontend/src/shared/ui/mozaik
-  - frontend/src/shared/ui/clay
-  - frontend/src/shared/ui/folyadek
-  - frontend/src/styles/folyadek.css
-  - frontend/src/styles/folyadek-frame.css
-  - frontend/src/app
-  - frontend/src/shared/lib/theme.ts
+key_files: []
 related: [_platform-data-layer, _platform-notifications, _platform-language, today, train, me, fuel, growth, ritual]
 ---
 > **2026-10-12 — Folyadék F5 · Fuel (`mezo-n4wf5.5`) — the kit's third domain, and the first slice that ships bilingual.** Every Fuel page, sheet and the meal ceremony is built from `shared/ui/folyadek` ([`fuel.md`](fuel.md), [`pantry.md`](pantry.md), [`recipe.md`](recipe.md)). **The kit grew** (`shared/ui/folyadek/f5.test.tsx` + `f5fold.test.tsx` pin the additions): **`Hero graphic`** — one slot for the hero's graphic BETWEEN the label and the verdict (a bowl, vials, a week of vessels, a number beside its vessel); the node keeps its own class and margins, the DOM order is label → graphic → verdict (class `has-g`), `children` stay the body under the text, and nothing is reordered with CSS `order`; **`Stat` / `StatGrid`** (`Stat.tsx`: a number tile that is itself a vessel — with `pct` the tile fills to that level in `color`; a button with `onClick`; `three` = three across); **`Switch`** (`role="switch"`, 46 × 28 track) and **`SearchField`** (lens bubble, input, a clear button once it holds text — its label is the kit catalog's `clearSearch`), both in `Switch.tsx`; **`RemoveChips`** (`Pick.tsx`: what is switched on right now, one button per chip, the caller names the action per chip); **`Note tone`** (`warn` / `bad` — a note that says a state, never a local warning class); **`Chips plain`** (word chips without the leading drop); and **`useSvgId`** is exported from the barrel for domain-shared SVG pieces. **Domain-shared** (`features/fuel/components/folyadek`, README = the prototype-helper → React-piece table, as in Edzés): the day bowl and its gauge, pour bowl, cups, pot, glass, the clock `Dial` (the one allowed circle: a real clock), macro vials / cells, score and glycemic chips, `ItemRow`, `EditLine`, `LineTags`, `Kv`, `Tip`, `Lgd`, `Tot`, `NumG`, `Strip`, `SplitBar`; macro and water colours are `--fx-*` tokens on `:root`. **Page rules** in one sheet per build area, each with its own prefix: `styles/folyadek-fuel-{kozos,mai,log,etkezes,tanulas,kieg,trendek,kamra,recept,beallitas}.css` (`.fx-` `.fa-` `.fg-` `.fe-` `.ft-` `.fk-` `.fr-` `.fp-` `.fc-` `.fb-`). **`prototype.css` lost the old Fuel skin** (20 963 → 15 236 lines: 2 849 dead rules, each removed with a per-class zero-usage proof plus a runtime proof over 124 routes) — the `fmx-` / `fsx-` / `ftx-` / `fkx-` families, the five `uveg fuel *` blocks, the meal ceremony (`fcx-`), the learning families (`fwl-` / `fln-`) and the pre-Üveg Fuel families; `shared/ui/mozaik/prototypeCssStructure.test.ts` pins them as gone (`RETIRED_FUEL_BLOCKS`), registers the ten sheets with their prefixes (`FUEL_SHEETS`) and re-points what the old guards protected; `features/fuel/components/stackCssContract.test.ts` now pins the Kiegészítők sheet (`.fk-`) instead of the deleted `.stk-*` block. Fuel's own centred `GlassBox` (`features/fuel/components/GlassBox.tsx`) is deleted — `shared/ui/mozaik/GlassBox` is the only one. **Shell:** the quick-log button also hides on the Fuel pages that draw the kit's floating foot (`AppLayout` `fuelFootPage`: the add wizard, the recipe editor new / edit). **Layout:** `tests/layout/fuel-folyadek.spec.ts` (20 routes × 390 / 320 × hu / en: no sideways scroll, one hero, the right frame, no retired class, every sprite id resolves, no Hungarian letters in English). The Fuel settings pages are Folyadék inside, but the Settings shell around them keeps its own look until its slice. Lessons: style bible appendix F5.
@@ -114,6 +106,8 @@ related: [_platform-data-layer, _platform-notifications, _platform-language, tod
 
 
 # Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0) — Feature Documentation
+
+> **Retired 2026-11-19 (#52, `mezo-r36n9.97.3`).** This area existed only in the web app, which was switched off. The doc is kept as history; the code it describes is in git history.
 
 > **2026-10-12 — reviewed after the F5 integration (`mezo-n4wf5.5`).** The old Fuel skin left `prototype.css` (20 963 → 15 236 lines); the kit gained the `Hero graphic` slot, `Stat` / `StatGrid`, `Switch`, `SearchField`, `RemoveChips`, `Note tone`, `Chips plain`; the quick-log button hides on Fuel pages with their own foot; the app-root providers live in `app/providers/AppProviders.tsx` and a language switch remounts only what is inside `LanguageBoundary` — see the F5 note in the header block and §3.
 
@@ -1064,6 +1058,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history. Everything this doc describes lived only in the web app, so it is `status: retired` and kept as history.
 - **Gradient-clipped text is invisible to a colour sweep (Folyadék F1 final review, `mezo-n4wf5.1`, 2026-10-09).**
   A `background-clip: text` numeral or wordmark takes its colour from literal gradient stops, not from `color`, so the
   light re-skin's token sweep walked past it and pale Üveg stops (cream / lavender / gold) were left on white. Fixed

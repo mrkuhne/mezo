@@ -1,22 +1,16 @@
 ---
 title: Admin hub — owner console
 type: feature-domain
-status: done
-updated: 2026-11-13
+status: retired
+updated: 2026-11-19
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
-key_files:
-  - api/feature/admin/admin.yml
-  - api/feature/admin-insights/admin-insights.yml
-  - api/feature/admin-data/admin-data.yml
-  - api/feature/llm-usage/llm-usage.yml
-  - api/feature/ai-drafts/ai-drafts.yml
-  - backend/src/main/java/io/mrkuhne/mezo/feature/admin
-  - frontend/src/features/admin
-  - frontend/src/data/admin
+key_files: []
 related: [_platform-auth-security, me, _platform-api-backend, _platform-data-layer, _platform-design-system, admin-memory-explorer]
 ---
 
 # Admin hub — Feature Documentation
+
+> **Retired 2026-11-19 (#52, `mezo-r36n9.97.4`).** The web app was switched off and this area's server code left with it. The doc is kept as history; the code it describes is in git history.
 
 > **2026-11-13:** the `recipe_import` LLM-call slug (Boop B4 recipe import) is labelled „Recept beolvasás” in `admin/lib/labels.ts` (the completeness test requires every backend slug).
 
@@ -462,6 +456,8 @@ AiUsageHero/AiUserFilter.test.tsx`, `AdminLayout.test.tsx`, `Sparkline.test.tsx`
 
 ## 9. Decisions, gotchas & deferred
 
+- **Server side removed 2026-11-19 (#52, `mezo-r36n9.97.4`).** The owner console's server side (`feature/admin`: overview, users-insight, usage, alerts, feature board, data browser, screen-usage panel) and its contract fragments `api/feature/admin-insights/`, `api/feature/admin-data/` were removed with the web app, and the `mezo.admin.*` / `mezo.feature.admin-insights.enabled` keys left `application.yml` and the k8s deployment. **Kept:** the invite / account admin API (`api/feature/admin/admin.yml`, implemented by `feature/auth` `AdminController`/`AdminService` — see [`_platform-auth-security.md`](_platform-auth-security.md)), the LLM-usage read (`llmlog`) and the AI-draft outcome write. The tables it read stay untouched; nothing was dropped.
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **Hungarian number agreement (Check-in 2.0 follow-up C, 2026-09-28).** The memory explorer's sampled-vector banner no longer prints a fixed „a …-ból": `huArticle`/`huFrom` (`shared/lib/huNum.ts`) pick „a"/„az" and -ból/-ből from how the number is read aloud („az 1842-ből"); see [`admin-memory-explorer.md`](admin-memory-explorer.md). Copy only — no route, hook or contract moved.

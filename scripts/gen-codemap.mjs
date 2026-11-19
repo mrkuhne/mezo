@@ -9,14 +9,14 @@
 // ── What this produces ───────────────────────────────────────────────────────
 // One block per feature answering WHERE: which backend package, entities and
 // their tables, services/controllers/repositories/mappers, which contract
-// fragment and endpoints, which FE data module + barrel hooks, which FE
-// pages/sheets/components/logic, which ITs and populators, and which
-// docs/features/<x>.md to read next. It never answers HOW — that lives in the
-// feature docs' §1–§9, which every block links to.
+// fragment and endpoints, which ITs and populators, and which
+// docs/features/<x>.md to read next. Two spaces only: backend + contract. (The web
+// frontend's FE-data / FE-ui spaces left with the web app, retired 2026-11-19, #52.)
+// It never answers HOW — that lives in the feature docs' §1–§9, which every block
+// links to.
 //
 // ── How it extracts (convention + regex only, no LLM, no parser) ─────────────
-//   • feature keys  = union of backend feature/*, frontend/src/data/*,
-//                     frontend/src/features/* directory names
+//   • feature keys  = backend feature/* directory names
 //   • api fragments bind to a feature through their operation `tags: [X]` and
 //     the controller that `implements XApi` — so no name alias table is needed
 //   • docs bind through their `key_files:` frontmatter paths
@@ -46,9 +46,6 @@ const BE_FEATURE = 'backend/src/main/java/io/mrkuhne/mezo/feature';
 const BE_TEST_FEATURE = 'backend/src/test/java/io/mrkuhne/mezo/feature';
 const BE_TECHCORE = 'backend/src/main/java/io/mrkuhne/mezo/techcore';
 const BE_SUPPORT = 'backend/src/test/java/io/mrkuhne/mezo/support';
-const FE_DATA = 'frontend/src/data';
-const FE_FEATURES = 'frontend/src/features';
-const FE_SHARED = 'frontend/src/shared';
 const DOCS_FEATURES = 'docs/features';
 
 const BODY_MARKER = '<!-- CODEMAP:BODY -->';
@@ -144,44 +141,6 @@ function collectApi(root) {
   return out;
 }
 
-/** FE data layer: per-domain module files + the names each domain exports via data/hooks.ts. */
-function collectFeData(root) {
-  const barrel = new Map();
-  for (const line of read(abs(root, `${FE_DATA}/hooks.ts`)).split('\n')) {
-    const m = line.match(/^export\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'@\/data\/([^/']+)\//);
-    if (!m) continue;
-    const names = m[1].split(',').map((s) => s.trim().split(/\s+as\s+/).pop()).filter(Boolean);
-    barrel.set(m[2], [...(barrel.get(m[2]) ?? []), ...names]);
-  }
-  const out = new Map();
-  for (const name of subdirs(abs(root, FE_DATA))) {
-    if (name.startsWith('_')) continue;
-    out.set(name, {
-      dir: `${FE_DATA}/${name}`,
-      files: walk(abs(root, `${FE_DATA}/${name}`)).filter((f) => !isTestFile(f)),
-      hooks: uniq(barrel.get(name) ?? []),
-    });
-  }
-  return out;
-}
-
-/** FE UI layer: `features/<domain>/{pages,sheets,components,logic}` file lists. */
-function collectFeUi(root) {
-  const out = new Map();
-  for (const name of subdirs(abs(root, FE_FEATURES))) {
-    const dir = abs(root, `${FE_FEATURES}/${name}`);
-    const groups = { pages: [], sheets: [], components: [], logic: [], root: [] };
-    for (const rel of walk(dir)) {
-      if (isTestFile(rel)) continue;
-      const top = rel.includes(path.sep) ? rel.split(path.sep)[0] : 'root';
-      (groups[top] ?? groups.root).push(path.basename(rel));
-    }
-    for (const k of Object.keys(groups)) groups[k] = uniq(groups[k]);
-    out.set(name, { dir: `${FE_FEATURES}/${name}`, ...groups });
-  }
-  return out;
-}
-
 /** Backend tests: ITs per feature package + the populators those tests reference. */
 function collectBackendTests(root) {
   const out = new Map();
@@ -229,8 +188,6 @@ function collectDocs(root) {
 function collect(root) {
   const backend = collectBackend(root);
   const api = collectApi(root);
-  const feData = collectFeData(root);
-  const feUi = collectFeUi(root);
   const beTests = collectBackendTests(root);
   const docs = collectDocs(root);
 
@@ -244,9 +201,9 @@ function collect(root) {
     }
   }
 
-  const keys = uniq([...backend.keys(), ...feData.keys(), ...feUi.keys()]);
+  const keys = uniq([...backend.keys()]);
   const features = new Map(keys.map((k) => [k, {
-    key: k, backend: backend.get(k), feData: feData.get(k), feUi: feUi.get(k),
+    key: k, backend: backend.get(k),
     tests: beTests.get(k), fragments: [], docs: [],
   }]));
 
@@ -260,7 +217,7 @@ function collect(root) {
   // Docs bind by key_files prefix: a key_file inside a feature's own paths.
   for (const feat of features.values()) {
     const roots = [
-      feat.backend?.pkg, feat.feData?.dir, feat.feUi?.dir, feat.tests?.dir,
+      feat.backend?.pkg, feat.tests?.dir,
       ...feat.fragments.map((f) => f.rel),
     ].filter(Boolean);
     for (const doc of docs) {
@@ -307,7 +264,7 @@ function wrapped(label, items, { sep = ', ', indent = '  ', head = null } = {}) 
 const code = (xs) => xs.map((x) => x.split('\u2192').map((p) => `\`${p}\``).join('\u2192'));
 
 function renderFeature(feat) {
-  const spaces = [feat.backend && 'BE', feat.fragments.length && 'API', feat.feData && 'FE-data', feat.feUi && 'FE-ui']
+  const spaces = [feat.backend && 'BE', feat.fragments.length && 'API']
     .filter(Boolean).join(' + ') || '—';
   // The heading stays a bare `### <key>` so the index anchors never drift; the
   // spaces marker rides on the intro line together with the doc links.
@@ -337,22 +294,6 @@ function renderFeature(feat) {
     L.push(...wrapped('endpoints', frag.ops.map((o) => `${o.method} ${o.path}`), { sep: ' · ' }));
   }
 
-  if (feat.feData) {
-    L.push(`- **FE data** \`${feat.feData.dir}\``);
-    L.push(...wrapped('hooks (via `@/data/hooks`)', code(feat.feData.hooks)));
-    L.push(...wrapped('modules', feat.feData.files));
-  }
-
-  const u = feat.feUi;
-  if (u) {
-    L.push(`- **FE ui** \`${u.dir}\``);
-    L.push(...wrapped('pages', u.pages));
-    L.push(...wrapped('sheets', u.sheets));
-    L.push(...wrapped('components', u.components));
-    L.push(...wrapped('logic', u.logic));
-    L.push(...wrapped('root', u.root));
-  }
-
   const t = feat.tests;
   if (t) {
     L.push(`- **Tests** \`${t.dir}\` — ${t.its.length} IT + ${t.units.length} unit`);
@@ -373,13 +314,7 @@ function renderCrossCutting(root, model) {
   }
   L.push('');
 
-  L.push(`### shared (domain-free FE primitives) — \`${FE_SHARED}\``, '');
-  for (const pkg of subdirs(abs(root, FE_SHARED))) {
-    L.push(...wrapped(pkg, walk(abs(root, `${FE_SHARED}/${pkg}`)).filter((f) => !isTestFile(f)), { indent: '' }));
-  }
-  L.push('');
-
-  L.push(`### test infrastructure — \`${BE_SUPPORT}\`, \`frontend/src/test\``, '');
+  L.push(`### test infrastructure — \`${BE_SUPPORT}\``, '');
   L.push('- **Backend base classes:** `AbstractIntegrationTest.java` (service-level) · `ApiIntegrationTest.java` (HTTP-level, verb helpers + `ownerAuthHeaders()`)');
   L.push(...wrapped('populators (`support/populator/`)',
     code(filesIn(abs(root, `${BE_SUPPORT}/populator`)).map((f) => path.basename(f, '.java'))), { indent: '' }));
@@ -389,7 +324,6 @@ function renderCrossCutting(root, model) {
     L.push(`- **\`ResetDatabase\` TRUNCATE list** — ${tables.length} tables; a new owned domain table MUST be added here in the same change:`);
     L.push(...wrapped('tables', code(tables)));
   }
-  L.push('- **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`');
   L.push('');
 
   L.push('### scripts', '');
@@ -401,7 +335,8 @@ function renderCrossCutting(root, model) {
 function renderUnaligned(model) {
   const L = ['## Unaligned', '',
     'Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.', ''];
-  const unboundDocs = model.docs.filter((d) => !d.bound);
+  // A retired doc (status: retired) describes code that is gone — history, not a binding gap.
+  const unboundDocs = model.docs.filter((d) => !d.bound && d.status !== 'retired');
   const undocumented = [...model.features.values()].filter((f) => !f.docs.length).map((f) => f.key);
   if (!model.orphanFragments.length && !unboundDocs.length && !undocumented.length) {
     L.push('_None — every contract fragment and feature doc binds to a feature block, and every feature has a doc._', '');
@@ -428,15 +363,15 @@ export function buildBody(root = REPO_ROOT) {
   const L = [];
   L.push('## How to read this map', '');
   L.push('This file answers **WHERE** — which directory, class, table, endpoint, hook, file or test belongs to a feature. It never answers **HOW**: for behaviour, data flow, contracts and extension recipes read the linked `docs/features/<x>.md` (§1–§9 explain the feature; §10 is its file map).', '');
-  L.push('Orientation recipe: find the feature block below → note its backend package, contract fragment and FE directories → open the linked feature doc → only then open code. Do not grep the tree to orient.', '');
-  L.push('Naming spaces differ by design: the backend/contract space is domain-shaped (`meal`, `pantry`, `biometrics`), the frontend space is tab-shaped (`fuel`, `me`, `today`). A block shows the spaces it exists in; the feature docs link across them.', '');
+  L.push('Orientation recipe: find the feature block below → note its backend package and contract fragment → open the linked feature doc → only then open code. Do not grep the tree to orient.', '');
+  L.push('Two spaces: the backend package and its contract fragment(s), both domain-shaped (`meal`, `pantry`, `biometrics`). The iPhone app (`ios/`) is not mapped here; the web app was retired 2026-11-19 (#52) and its code is in git history.', '');
 
   L.push('## Feature index', '');
-  L.push('| Feature | BE | API | FE data | FE ui | Docs |');
-  L.push('|---|---|---|---|---|---|');
+  L.push('| Feature | BE | API | Docs |');
+  L.push('|---|---|---|---|');
   for (const f of feats) {
     const tick = (x) => (x ? '✓' : '·');
-    L.push(`| [${f.key}](#${f.key}) | ${tick(f.backend)} | ${f.fragments.length || '·'} | ${tick(f.feData)} | ${tick(f.feUi)} | ${f.docs.map((d) => `[${d.file.replace(/\.md$/, '')}](features/${d.file})`).join(', ') || '·'} |`);
+    L.push(`| [${f.key}](#${f.key}) | ${tick(f.backend)} | ${f.fragments.length || '·'} | ${f.docs.map((d) => `[${d.file.replace(/\.md$/, '')}](features/${d.file})`).join(', ') || '·'} |`);
   }
   L.push('');
 

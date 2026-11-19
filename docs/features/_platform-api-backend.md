@@ -10,9 +10,6 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore
   - backend/pom.xml
   - backend/src/main/resources/messages_hu.properties
-  - frontend/src/data/_client/api.ts
-  - frontend/src/data/fuel/pantryApi.ts
-  - frontend/src/data/hooks.ts
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
 
@@ -420,6 +417,10 @@ cd frontend && pnpm generate:api           # regenerate src/data/_client/api.gen
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web-only areas leave the server (2026-11-19, `mezo-r36n9.97.4`, #52).** `feature/tutorial`, `feature/telemetry` and `feature/admin` are gone with their fragments (`tutorial`, `telemetry`, `admin-insights`, `admin-data`, `admin-memory`) and `FeaturesConfiguration` switches; `api/feature/admin/admin.yml` (invites/users, served by `feature/auth`) stays. `RetiredAreasGoneIT` guards that no bean, route or job of a retired area returns, and `scripts/check-ios-contract.mjs` (cheap gates) fails when a fragment the iPhone filter needs is removed. Tables stay; no Liquibase change.
+- **The XP world leaves the server (2026-11-19, `mezo-r36n9.97.5`, #52).** `feature/gamification`, `feature/quest`, `feature/progression` and `feature/activity` are gone with their fragments (removed from `api/generate/merge.yml`), their `FeaturesConfiguration` switches (`PROGRESSION_`/`QUEST_`/`QUEST_JOB_`/`QUEST_FLAVOR_`/`ACTIVITY_`/`GAMIFICATION_SWITCH`) and their `QUEST_*`/`ACTIVITY_*`/`GAMIFICATION_*` message keys. The optional `levelUp` on the train responses stays in the contract (the iPhone's copy lists it) and is never populated; `LevelUpResult`/`Medal` already lived in `train.yml`. `RetiredAreasGoneIT` covers the four packages. Tables stay; no Liquibase change.
+- **Browser web push leaves the server (2026-11-19, `mezo-r36n9.97.7`, #52).** `techcore/webpush/**` and the web push half of `feature/notification` (subscription/test/pref/schedule operations, `NotificationController`, `AnchorResolver`/`DueEvaluator`/`NotificationDispatchJob`/`PushDispatchExecutor`/`PushSender`, the pref/schedule/push-log/subscription entities, `NotificationProperties`) are gone, with `NOTIFICATION_SWITCH`/`NOTIFICATION_DISPATCH_JOB_SWITCH`, `mezo.webpush.*`, `mezo.notification.*` except `feed`, and the `WEBPUSH_*`/`NOTIFICATION_UNKNOWN_CATEGORY` message keys. The §4g description below is history. `notification.yml` keeps only the in-app feed operations; the iPhone's APNs registration (`api/feature/device/`, `DeviceController`) is unchanged. `RetiredAreasGoneIT` covers the removed classes and routes. Tables stay; no Liquibase change.
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Static content (`mezo-r36n9.97.1`, 2026-11-19).** The backend now serves `classpath:/static/exercises/**` at `/exercises/**` (Spring's default static handler, `spring.web.resources.cache.cachecontrol.max-age=7d`); the ingress routes `/exercises` to the backend. First step of retiring the web app (decision #52).
 
 - **Contract-first is the rule, not a guideline.** Never hand-write boundary DTOs; never re-add validation the spec can express. Both generated artifacts (`api/openapi.yml`, `frontend/src/data/_client/api.gen.ts`) are committed and regenerated together in one green commit; breaking changes are allowed *within* Phase 2 since FE+BE ship together. Spec → `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`; convention → `docs/references/api_contract_conventions.md`.

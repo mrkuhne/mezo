@@ -91,21 +91,6 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
     List<WorkoutSessionEntity> findDoneInstancesBetween(
         @Param("createdBy") UUID createdBy, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
-    /**
-     * Dates of the owner's COMPLETED gym workout instances, unbounded — the progression
-     * robustness streak's gym input (a completed instance counts as a training day in its ISO
-     * week). Same completed-only done-state as {@link #findDoneInstanceDates} (mezo-cd8s): an
-     * auto-closed empty ('skipped') or still-open ('active') instance is not training (mezo-iz4kt).
-     */
-    @Query("""
-        SELECT s.date FROM WorkoutSessionEntity s
-        WHERE s.createdBy = :createdBy
-          AND s.templateSessionId IS NOT NULL
-          AND s.date IS NOT NULL
-          AND s.status = 'completed'
-        """)
-    List<LocalDate> findCompletedInstanceDates(@Param("createdBy") UUID createdBy);
-
     /** The owner's ACTIVE instances dated strictly before a day — the lazy auto-close scan set. */
     List<WorkoutSessionEntity> findByCreatedByAndStatusAndDateBeforeAndTemplateSessionIdIsNotNull(
         UUID createdBy, String status, LocalDate date);

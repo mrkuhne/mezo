@@ -17,9 +17,6 @@ public class FeaturesConfiguration {
      */
     public static final String SCHEDULING_SWITCH = "mezo.techcore.scheduling.enabled";
 
-    /** Gamified progression (post-workout level-up + XP). First production feature switch. */
-    public static final String PROGRESSION_SWITCH = "mezo.feature.progression.enabled";
-
     /** Phase-3 companion (LLM chat + AI memory). Gates every CompanionLlm bean (ADR 0008). */
     public static final String COMPANION_SWITCH = "mezo.feature.companion.enabled";
 
@@ -213,20 +210,6 @@ public class FeaturesConfiguration {
      *  ensured at the END of every template gym day of the active meso on GET /workouts/today. */
     public static final String CLOSING_BLOCK_SWITCH = "mezo.feature.closing-block.enabled";
 
-    /** Daily quests (gamified growth E1, ADR 0010). Gates the whole /api/quest surface + services. */
-    public static final String QUEST_SWITCH = "mezo.feature.quest.enabled";
-
-    /** Daily-quest crons (morning generate backstop + nightly finalize) — techcore cron zone (schedules: mezo.quest.*-cron). */
-    public static final String QUEST_JOB_SWITCH = "mezo.techcore.cron.quest-job.enabled";
-
-    /** Activity log (gamified growth E2). Gates the whole /api/activity surface + services;
-     *  the AI classifier additionally requires COMPANION_SWITCH (it calls the CompanionLlm port). */
-    public static final String ACTIVITY_SWITCH = "mezo.feature.activity.enabled";
-
-    /** E3 quest flavor copy — sub-switch of quest; the LLM rewrites title/why on the MORNING CRON
-     *  only (never targets/XP — ADR 0010). Requires COMPANION_SWITCH too (CompanionLlm port). */
-    public static final String QUEST_FLAVOR_SWITCH = "mezo.quest.flavor.enabled";
-
     /** Habit engine (morning/evening routine chains, mezo-d1jb). Gates /api/habit + services. */
     public static final String HABIT_SWITCH = "mezo.feature.habit.enabled";
 
@@ -262,8 +245,8 @@ public class FeaturesConfiguration {
 
     /** Stack placement LLM fallback (mezo-vx9v) — gates ONLY the LLM placement fallback for
      *  unknown supplements; the deterministic rule table runs regardless. The adapter bean
-     *  additionally needs COMPANION_SWITCH (both condition the same bean, array-AND'ed exactly
-     *  like ACTIVITY_SWITCH/COMPANION_SWITCH); off/absent on either degrades placement to the
+     *  additionally needs COMPANION_SWITCH (both condition the same bean, array-AND'ed);
+     *  off/absent on either degrades placement to the
      *  deterministic 'fallback' zone. */
     public static final String STACK_PLACEMENT_LLM_SWITCH = "mezo.feature.stack-placement-llm.enabled";
 
@@ -274,9 +257,6 @@ public class FeaturesConfiguration {
      *  endpoint to a clean 503. */
     public static final String SLOT_TEMPLATE_AI_SWITCH = "mezo.feature.slot-template-ai.enabled";
 
-    /** Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
-     *  and the AccountProgressPort adapter is absent (progression awards fire no coin hook). */
-    public static final String GAMIFICATION_SWITCH = "mezo.feature.gamification.enabled";
 
     /** LLM call audit log (bd mezo-2zyu) — off ⇒ the injected LlmCallRecorder is the no-op, so no
      *  adapter can publish an audit event and no llm_log_history row is ever written. */
@@ -301,13 +281,6 @@ public class FeaturesConfiguration {
      *  {@link #COMPANION_SWITCH} exactly like {@link #MEMORY_RETRIEVAL_RETENTION_JOB_SWITCH}. */
     public static final String COMPANION_PROVENANCE_RETENTION_JOB_SWITCH =
         "mezo.techcore.cron.companion-provenance-retention-job.enabled";
-
-    /** Push notifications (bd mezo-h4wp.6) — off ⇒ no notification beans, /api/notification/* 404s. */
-    public static final String NOTIFICATION_SWITCH = "mezo.feature.notification.enabled";
-
-    /** Per-minute push dispatch job (N2; schedule: mezo.notification.dispatch-cron) — techcore cron zone. */
-    public static final String NOTIFICATION_DISPATCH_JOB_SWITCH =
-            "mezo.techcore.cron.notification-dispatch-job.enabled";
 
     /** Meso end-of-run AI evaluation (mezo-meyc.3) — gates {@code MesoReviewGate}, the marker
      *  {@code MesocycleReportService.getReport} reads for {@code aiEvalEnabled}; off ⇒ the FE hides
@@ -399,39 +372,6 @@ public class FeaturesConfiguration {
      *  either way. */
     public static final String TIMING_PROFILE_SWITCH = "mezo.feature.timing-profile.enabled";
 
-    /** Mezo-kalauz seen-store (mezo-gb1s.1). */
-    public static final String TUTORIAL_SWITCH = "mezo.feature.tutorial.enabled";
-
     /** Monday adaptive-review job (diet-plan slice 5) — weekly_correction goal suggestions. */
     public static final String ADAPTIVE_REVIEW_JOB_SWITCH = "mezo.techcore.cron.adaptive-review-job.enabled";
-
-    /**
-     * Admin hub insights + data browser ({@code /api/admin/overview}, {@code /api/admin/data/**}).
-     * Off: those endpoints 404; the existing invite/account admin API is unaffected (mezo-d5iy).
-     */
-    public static final String ADMIN_INSIGHTS_SWITCH = "mezo.feature.admin-insights.enabled";
-
-    /**
-     * RAG memory explorer ({@code /api/admin/users/*}{@code /memory/**}, mezo-4qyt). Off ⇒ those
-     * endpoints 404 and no admin-memory bean exists; the admin hub's own endpoints are unaffected.
-     * A given endpoint ADDITIONALLY needs {@link #COMPANION_SWITCH} (runs, replay, vectors,
-     * health) or {@link #KNOWLEDGE_GRAPH_SWITCH} (the graph endpoint) — the controller consumes
-     * those beans through {@code ObjectProvider} and answers 404 ADMIN_MEMORY_DISABLED when one
-     * is absent, rather than failing to start.
-     */
-    public static final String ADMIN_MEMORY_SWITCH = "mezo.feature.admin-memory.enabled";
-
-    /**
-     * Lean screen-event telemetry (bd mezo-o5cz, spec 2026-09-07). Off ⇒ {@code
-     * POST /api/telemetry/screen-events} 404s, no ScreenEventService / TelemetryController /
-     * ScreenEventRetentionJob bean exists, and nothing is ever written to {@code screen_event}.
-     * The frontend's telemetry client swallows the 404 (and every other failure) silently —
-     * telemetry must never degrade the app.
-     *
-     * <p>The OWNER-only READ side ({@code GET /api/admin/usage/screens}) is deliberately NOT
-     * gated by this: it sits on {@link #ADMIN_INSIGHTS_SWITCH} like every other admin panel, and
-     * with telemetry off it simply reads an empty table (zeros) instead of the admin hub gaining
-     * a second, differently-gated 404.
-     */
-    public static final String SCREEN_TELEMETRY_SWITCH = "mezo.feature.screen-telemetry.enabled";
 }

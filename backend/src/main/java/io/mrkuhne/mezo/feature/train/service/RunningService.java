@@ -4,11 +4,6 @@ import io.mrkuhne.mezo.api.dto.RunSessionLogRequest;
 import io.mrkuhne.mezo.api.dto.RunSessionLogResponse;
 import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
 import io.mrkuhne.mezo.api.dto.RunningBlockUpsertRequest;
-import io.mrkuhne.mezo.feature.progression.ProgressionGate;
-import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
-import io.mrkuhne.mezo.feature.progression.run.RunSignal;
-import io.mrkuhne.mezo.feature.train.signal.RunSignalCalculator;
-import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.mapper.RunningMapper;
@@ -20,7 +15,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,13 +34,6 @@ public class RunningService {
     private final RunningBlockRepository blockRepository;
     private final RunSessionLogRepository logRepository;
     private final RunningMapper mapper;
-    // Progression collaborators (T4): logging a run awards XP behind the feature switch — the same
-    // house pattern as the gym path (WorkoutService). The gate bean exists ONLY when
-    // mezo.feature.progression.enabled=true, so an absent provider ⇔ switch off.
-    private final RunSignalCalculator runSignalCalculator;
-    private final ProgressionService progressionService;
-    private final LevelUpResultMapper levelUpResultMapper;
-    private final ObjectProvider<ProgressionGate> progressionGate;
     private final GoalRecomputePort goalRecomputePort;
     // Body inputs for the kcal estimate, through train's own port (ADR 0012 — no new slice cycle).
     private final AthleteBodyPort athleteBodyPort;
@@ -136,15 +123,9 @@ public class RunningService {
         e.setDurationMin(req.getDurationMin());
         e.setNotes(req.getNotes());
         estimate(userId, e);
-        RunSessionLogResponse base = mapper.toResponse(logRepository.save(e));
-        // Progression runs ONLY when the feature switch is on (gate bean present) and only here in
-        // logSession — never via the GET list path. Atomic with the save (same @Transactional);
-        // applyRun is idempotent on the saved log id, so a re-log returns the stored payload.
-        if (progressionGate.getIfAvailable() != null) {
-            RunSignal signal = runSignalCalculator.compute(userId, e.getId());
-            base.setLevelUp(levelUpResultMapper.toDto(progressionService.applyRun(userId, signal)));
-        }
-        return base;
+        // levelUp stays absent: the XP world left the server (mezo-r36n9.97.5); the field is kept
+        // only because the iPhone's contract copy still lists it as optional.
+        return mapper.toResponse(logRepository.save(e));
     }
 
     /**

@@ -1,20 +1,16 @@
 ---
 title: Mezo-kalauz (in-app page guides)
 type: feature
-status: mixed
-updated: 2026-10-12
+status: retired
+updated: 2026-11-19
 tags: [tutorial, onboarding, frontend, backend]
-key_files:
-  - frontend/src/features/tutorial
-  - frontend/src/shared/ui/kalauz
-  - frontend/src/shared/lib/tutorialSeen.ts
-  - frontend/src/data/tutorial
-  - backend/src/main/java/io/mrkuhne/mezo/feature/tutorial
-  - api/feature/tutorial/tutorial-progress.yml
+key_files: []
 related: [today, train, insights, me, fuel, _platform-design-system, _platform-data-layer, _platform-auth-security]
 ---
 
 # Mezo-kalauz — In-App Page Guides
+
+> **Retired 2026-11-19 (#52, `mezo-r36n9.97.4`).** The web app was switched off and this area's server code left with it. The doc is kept as history; the code it describes is in git history.
 
 > **2026-10-12 — Folyadék F5 · Fuel (`mezo-n4wf5.5`).** The eight Fuel guides (`registry/fuel.ts`) are rewritten to the pages as built and to the new words, and **every one has its `version` raised** — an owner who saw the old card sees the new one once more (a card that describes the live page wrongly is re-shown, bible F1.10). Today's set: `fuel` (`/fuel`, v3 — the day's bowl and the five vials), `fuel-log-uj` (`/fuel/log/uj`, v3), `fuel-terv` (`/fuel/trendek`, v3 — seven vessels, the score on the ten scale), `fuel-konyha` (`/fuel/konyha`, v2 — the empty pot invites to the Műhely), `fuel-stack` (`/fuel/stack`, v3 — capsules by time of day, „idősáv" instead of „zóna"), `fuel-receptek` (`/fuel/recipes`, v3 — six filter pills), `fuel-kamra` (`/fuel/kamra`, v2 — five filter pills, the hero's three buttons), `fuel-gyogyszer` (`/fuel/gyogyszer`, v3 — „gyakoriság", the cycle as a capsule row). Words: „stack" → kiegészítők, „Vacsi" → Vacsora, „AI" → Mezo, „kadencia" → gyakoriság, „adherencia" is gone. Glossary (`fogalmak.ts`): the `stack` KEY stays (cards reference it) but its shown term is „protokoll" with „idősáv" in the definition; `pontszam` now says a score between 0 and 10. Anchors in use: `fuel-log`, `log-forrasok` (`FuelLogModes` + `MealComposer`), `trendek-heti`, `konyha-felvetel`, `stack-hero`, `receptek-tabs`, `kamra-tabs`; `fuel-gyogyszer` stays anchor-less. **The kalauz is still Hungarian only** — the registry holds literal Hungarian text and does not read the message catalog; making it bilingual is a later slice.
 
@@ -195,7 +191,7 @@ TutorialProvider (route-aware, mounted once in AppLayout)
 `created_by` where `is_deleted = false`), one `jsonb` column (`progress`, keyed by guide id →
 `TutorialProgressEntryJson`), soft-delete (`is_deleted`), `updated_at`.
 
-**Contract** ([`api/feature/tutorial/tutorial-progress.yml`](../../api/feature/tutorial/tutorial-progress.yml),
+**Contract** (`api/feature/tutorial/tutorial-progress.yml` (removed, in git history),
 tag `TutorialProgress`):
 
 | Method | Path | Behavior |
@@ -354,6 +350,8 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 
 ## 9. Decisions, gotchas & deferred
 
+- **Server side removed 2026-11-19 (#52, `mezo-r36n9.97.4`).** The server side (`feature/tutorial`: the per-user seen-store `GET/PUT/DELETE /api/tutorial/progress`) and the contract fragment `api/feature/tutorial/` were removed with the web app, together with the `mezo.feature.tutorial.enabled` switch. The `tutorial_progress` table and its rows stay untouched; nothing was dropped.
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - Decisions D1–D11 and the full UX/architecture rationale live in the spec
   ([`docs/superpowers/specs/2026-09-02-mezo-kalauz-tutorial-design.md`](../superpowers/specs/2026-09-02-mezo-kalauz-tutorial-design.md))
   — this doc doesn't restate them.

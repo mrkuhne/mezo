@@ -44,8 +44,8 @@ import org.springframework.transaction.annotation.Transactional;
  * the spec §4 severity order live in {@link AdviceCardService}, so a higher-severity raise later
  * in the day supersedes the card this method produced.
  *
- * <p>The push half is NOT here: {@code AnchorResolver} anchors on the card row and applies
- * quiet-hours deferral + the channel gate (feed = no push).
+ * <p>No push half: the browser web push that anchored on the card row left with the web app
+ * (mezo-r36n9.97.7).
  */
 @Slf4j
 @Service

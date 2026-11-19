@@ -36,12 +36,10 @@ spring:
     scheduling:
       pool:
         # Every @Scheduled method shares this pool. At the Boot default of 1, a generation cron
-        # (companion-feed / memoir / weekly — minutes of LLM calls, per user) BLOCKS the
-        # per-minute NotificationDispatchJob tick, and a tick that arrives more than
-        # mezo.notification.catch-up-minutes late drops that minute's pushes for good. 4 keeps
-        # the dispatcher prompt while the clustered dawn crons run. Spring never re-enters a
-        # single @Scheduled method concurrently, so only DIFFERENT (already per-user idempotent)
-        # jobs overlap.
+        # (companion-feed / memoir / weekly — minutes of LLM calls, per user) BLOCKS every other
+        # job until it finishes; 4 keeps the hourly/short jobs prompt while the clustered dawn
+        # crons run. Spring never re-enters a single @Scheduled method concurrently, so only
+        # DIFFERENT (already per-user idempotent) jobs overlap.
         size: 4
   datasource:
     url: jdbc:postgresql://localhost:${DB_PORT:15432}/mezo
@@ -99,80 +97,6 @@ mezo:
     owner-name: ${MEZO_OWNER_NAME:Owner}
     # mezo-5h9: refuse to boot with dev-default owner password / JWT secret. true in k8s.
     strict: ${MEZO_AUTH_STRICT:false}
-  admin:
-    # Admin hub insights + data browser tunables (mezo-d5iy). featureMap says, for every
-    # non-LLM feature, which owned table proves the feature was used and which column
-    # carries the moment of use.
-    report-zone: Europe/Budapest
-    # SET LOCAL statement_timeout for every native/dynamic query the admin hub itself runs
-    # (AdminRowQuery / AdminAlertQuery) — the RAG explorer keeps its own separate knob below.
-    statement-timeout: 5s
-    browser:
-      max-page-size: 200
-    feature-map:
-      train:
-        table: workout_session
-        timestamp-column: started_at
-      food:
-        table: meal
-        timestamp-column: logged_at
-      sleep:
-        table: sleep_log
-        timestamp-column: date
-      journal:
-        table: journal_entry
-        timestamp-column: occurred_on
-      habits:
-        table: habit_day
-        timestamp-column: habit_date
-      water:
-        table: water_log
-        timestamp-column: log_date
-      weight:
-        table: weight_log
-        timestamp-column: date
-    # artifact_kind (message_feedback) -> feature slug (llm_log_history.feature / featureMap key)
-    # for the Funkciók scorecard (mezo-l096.1). All seven pairs verified at the real generation
-    # call sites (recon 2026-09-08).
-    artifact-feature-map:
-      chat_message: companion_chat
-      feed_message: proactive_feed
-      weekly_suggestion: proactive_weekly
-      weekly_review: proactive_weekly_review
-      memoir: proactive_memoir
-      prediction: proactive_prediction
-      day_review: day_review
-      meal_coach: meal_coach
-      recipe_breakdown: recipe_breakdown
-    # RAG memory explorer tunables (mezo-4qyt). NOTE the deliberate omissions: the RRF
-    # constant, the per-retriever fusion weights and the graph decay factor are the
-    # companion's (mezo.companion.memory-platform.fusion / mezo.companion.graph) and are
-    # READ from there, never mirrored here.
-    memory:
-      # Server-side PCA output dims handed to the client's UMAP (payload: ~0.6 MB / 3000 items).
-      pca-target-dims: 50
-      # Above this many ready vectors the map samples newest + most salient first and says so.
-      vector-sample-threshold: 5000
-      # Default k for the pgvector neighbour probe.
-      neighbor-default-k: 10
-      # SET LOCAL statement_timeout for every native/dynamic query in this slice, like the hub's 5s.
-      statement-timeout: PT5S
-      # Run-list page size clamp; an oversized request is clamped, never rejected.
-      runs-max-page-size: 100
-      # /health edge-weight histogram buckets over the 0..1 weight range.
-      edge-weight-histogram-buckets: 10
-      # llm_log_history.feature the dry-run replay bills under; must equal
-      # LlmCallContext.FEATURE_ADMIN_REPLAY (AdminMemoryPropertiesTest pins them together).
-      replay-feature-label: admin_replay
-    # Owner status-band alert rule thresholds (mezo-kjwa). Rule evaluation itself is a later
-    # slice; these are just the tunable knobs it will read.
-    alerts:
-      cost-spike-factor: 2.0
-      cost-spike-min-usd: 0.50
-      llm-error-rate-pct: 20
-      llm-error-min-calls: 5
-      job-missed-after-hours: 26
-      tester-quiet-days: 7
   cors:
     # Browser origins allowed to call the API. The Vite dev server (:5180) is the default;
     # add the deployed frontend origin per environment. Server-to-server callers send no Origin
@@ -362,9 +286,6 @@ mezo:
     # Shared personal feed context; rollback by setting this switch false (ADR 0050/0051).
     contextual-feed:
       enabled: true
-    # Gamified progression engine (post-workout level-up + XP). No matchIfMissing — declared explicitly.
-    progression:
-      enabled: true
     # Hypertrophy Drive — pre-populated prescribed sets + dynamic recommendation on GET /workouts/today.
     hypertrophy-drive:
       enabled: true
@@ -468,14 +389,6 @@ mezo:
     # teendő's only home; needs the character, companion, proactive and intervention switches too.
     team-chat:
       enabled: true
-    # Gamified growth E1 (ADR 0010) — daily quests (catalog-driven, derived completion).
-    # Off => the /api/quest surface 404s and no quest beans exist.
-    quest:
-      enabled: true
-    # Gamified growth E2 — activity log (bd mezo-jzca): free-text life-activity logging with AI
-    # categorization onto the LIFE band; off ⇒ /api/activity surface 404s and no activity beans.
-    activity:
-      enabled: true
     # Habit engine (bd mezo-d1jb) — fixed morning/evening routine chains; off ⇒ the /api/habit
     # surface 404s and no habit beans exist (reads still close lazily on GET).
     habit:
@@ -491,10 +404,6 @@ mezo:
       enabled: true
     # Napzárás closing ritual (bd mezo-hvmx) — sleep-anchored evening close; off ⇒ /api/ritual 404s.
     ritual:
-      enabled: true
-    # Push notifications (bd mezo-h4wp.6) — subscription registration + fan-out; off ⇒ no
-    # notification beans exist and /api/notification/* 404s.
-    notification:
       enabled: true
     # In-app notification feed + bell (bd mezo-gzhp) — off ⇒ no feed beans, /api/notification/feed
     # 404s, producers' emits no-op through AppNotificationEmitter.
@@ -512,9 +421,6 @@ mezo:
     # Diet preferences (Diet Plan slice 1): macro split + protein tier + water/fiber singleton.
     diet-settings:
       enabled: true
-    # Mezo-kalauz seen-store (mezo-gb1s.1): per-user guide-progress singleton.
-    tutorial:
-      enabled: true
     # Stack placement LLM fallback (mezo-vx9v) — zone suggestion for supplements the rule
     # table does not know; needs the companion switch too (CompanionLlm bean), otherwise
     # placement degrades to the deterministic 'fallback' zone.
@@ -524,10 +430,6 @@ mezo:
     # (draft) meal-slot template; nothing persisted. Needs the companion switch too (adapter
     # bean), otherwise the endpoint answers 503.
     slot-template-ai:
-      enabled: true
-    # Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
-    # and the AccountProgressPort adapter is absent (progression awards fire no coin hook).
-    gamification:
       enabled: true
     # LLM call audit log (bd mezo-2zyu) — ON by default (mezo-ozri.1, spec §2 L1): a future model
     # router and per-user USD cap would both be built on this measurement, so with it off they would
@@ -560,20 +462,6 @@ mezo:
     # AI pillar proposal (propose-only): off ⇒ POST /api/life-goals/propose answers from the rule template.
     lifegoal-ai-propose:
       enabled: true
-    # Admin hub insights + data browser (mezo-d5iy) — /api/admin/overview, /api/admin/data/**.
-    # Off ⇒ those endpoints 404; the existing invite/account admin API is unaffected.
-    admin-insights:
-      enabled: false
-    # RAG memory explorer (mezo-4qyt) — /api/admin/users/{id}/memory/**. Off ⇒ those endpoints
-    # 404; the admin hub's own endpoints are unaffected.
-    admin-memory:
-      enabled: false
-    # Lean screen-event telemetry (mezo-o5cz) — off (the DEFAULT, spec T2): POST
-    # /api/telemetry/screen-events 404s, no ingest/retention bean exists, screen_event stays
-    # empty and the admin "Képernyők" panel reads zeros. Enabled explicitly in
-    # k8s/backend/deployment.yaml, nowhere else.
-    screen-telemetry:
-      enabled: false
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
@@ -702,18 +590,9 @@ mezo:
       # exist (the lazy GET still generates on workout open)
       challenge-job:
         enabled: true
-      # Daily-quest crons: morning generate backstop + nightly finalize (schedules: mezo.quest.*-cron);
-      # off = the QuestJob bean does not exist (the lazy GET path still serves)
-      quest-job:
-        enabled: true
       # Nightly habit close: evaluates end-of-day metrics (caffeine cutoff, kitchen close) and
       # quietly marks the rest missed; off = the HabitJob bean does not exist (reads still close lazily)
       habit-job:
-        enabled: true
-      # N2 per-minute push dispatch job (schedule: mezo.notification.dispatch-cron) — resolves
-      # every user's due notifications and sends them; off = the NotificationDispatchJob bean
-      # does not exist.
-      notification-dispatch-job:
         enabled: true
       # mezo-1y3p LLM-log payload retention (schedule: mezo.llm-log.retention.cron);
       # off = the LlmLogRetentionJob bean does not exist. Deliberately independent of
@@ -734,22 +613,6 @@ mezo:
       # days; tool_calls, the ask half, is never touched by this job regardless).
       companion-provenance-retention-job:
         enabled: true
-  # Lean screen-event telemetry (mezo-o5cz, spec 2026-09-07 §5) — binds TelemetryProperties.
-  # Bound regardless of mezo.feature.screen-telemetry.enabled: the switch gates BEANS, these are
-  # the numbers those beans read, so a typo here is a startup failure, not a silent default.
-  telemetry:
-    # Rows older than this are HARD-deleted (no soft delete — a screen view is disposable).
-    retention-days: 90
-    # 03:45 — inside the dawn cron cluster but on its own minute (02:20/02:40/03:00 SUN,
-    # 03:10 feedback-learning, 03:20 graph, 03:40 llm-log retention). One bounded DELETE.
-    retention-cron: "0 45 3 * * *"
-    # Largest accepted batch; a bigger one is a 400 TELEMETRY_BATCH_TOO_LARGE, never a silent
-    # truncation. The FE flushes far below this (a handful of route changes per interval).
-    batch-max: 50
-    # Per-user ingest budget in EVENTS per rolling minute (in-memory token bucket; single replica).
-    rate-limit-per-minute: 120
-    # The client clock is trusted but pinned into now +/- this many hours (spec T4).
-    occurred-at-clamp-hours: 24
   # Boop Apple Health + calendar ingestion (mezo-r36n9.2) — binds WearableProperties. A batch over
   # its cap is a 400 WEARABLE_BATCH_TOO_LARGE; the iOS client sends 30 nights / 60 days / 100
   # workouts / 500 samples per call, well below these, and the calendar backfill (60 past days,
@@ -1528,7 +1391,8 @@ mezo:
         strain-avg-at-least: 5.0
         muscle-needle: "shoulder"
       ignored-nudge:
-        # Rank 8, offers shift_sleep_anchor. category is NotificationCategory's wire value.
+        # Rank 8, offers shift_sleep_anchor. category is the push category whose sends it reads (no
+        # push sender since the web push left, mezo-r36n9.97.7, so it reports notifications_off).
         category: "lights_out"
         min-consecutive-days: 5
         non-compliance-minutes: 60
@@ -2639,6 +2503,12 @@ mezo:
       # S7: the reply listener waits this long after a USER line before the owner answers — a
       # burst of quick lines gets ONE answer, from the newest line's event.
       reply-debounce-ms: 1500
+      # Do-not-disturb window: no ügy opens inside it, an ügy opened in its evening part never
+      # pushes, overnight raises publish at its end (morning-release-cron above). Wraps midnight
+      # when start > end; start == end means no quiet hours. (Was mezo.notification.quiet-hours.)
+      quiet-hours:
+        start: "22:00"
+        end: "07:00"
   proactive:
     # Advice-card retirement (Csapatfal Act III, mezo-a9bo7.24..25): the old daily advice card that
     # a raised flag delivers (InterventionEventListener). Off ⇒ no listener bean, no new card; the
@@ -2879,72 +2749,10 @@ mezo:
             group2: 0.88
             group3: 0.7
             group4: 0.45
-  progression:
-    # Level threshold curve: xpThreshold(n) = round(base * (n-1)^exp); Lv2=100, Lv3≈303, Lv5≈919.
-    curve:
-      base: 100
-      exp: 1.6
-    # Streak robustness — family-agnostic (gym/run/sport all feed the training-week streak).
-    robustness:
-      per-week-xp: 25         # robustness XP per consecutive training week (streak-only v1)
-    # Gym-path XP weights (display-only economy in v1; tune freely without touching code).
-    gym:
-      volume-unit: 100          # kg·reps that equal one volume XP unit
-      volume-xp-per-unit: 10    # muscle XP per volume unit (per the day's logged muscles)
-      e1rm-xp-per-kg: 2         # max_strength XP per kg of best Epley e1RM
-      pr-bonus-xp: 40           # max_strength XP per RECORD-tier medal earned in the session
-      target-medal-xp: 5        # strength_endurance XP per TARGET_HIT medal earned in the session
-      target-medal-cap: 12      # max TARGET_HIT medals paid per workout (targetMedalXp cap)
-      strength-endurance-xp-per-set: 8  # per logged work set (non-skipped, reps present)
-      bodyweight-xp-per-rep: 1  # flat XP per rep for weightless sets (no e1RM/volume)
-    # Run-path XP weights.
-    run:
-      sprint-xp-per-round: 25     # sprint_speed per completed sprint round
-      anaerobic-xp-per-round: 15  # anaerobic_capacity per completed sprint round
-      steady-xp-per-min: 4        # strength_endurance per steady minute
-      aerobic-xp-per-min: 5       # aerobic_capacity per steady minute
-      rpe-xp-per-point: 6         # explosiveness / effort proxy per RPE point
-      hr-recovery-bonus-xp: 30    # one-off aerobic bonus when HR-recovery is logged
-    # Sport-path XP weights (athletic only; per-kind skill mapping in applySport).
-    sport:
-      xp-per-set: 12              # volleyball volume → vertical_jump/agility/coordination
-      xp-per-round: 14            # cross/TRX volume → anaerobic_capacity/strength_endurance/core_stability
-      xp-per-min: 4               # duration → aerobic_capacity (volleyball) / mobility (TRX)
-      rpe-xp-per-point: 6         # RPE → explosiveness / effort skills
-    # Radar aggregation (fixed axis grouping in v1; only the Erő muscle blend is tunable).
-    radar:
-      strength-muscle-blend: 0.5   # Erő = max_strength*(1-w) + muscle-level-mean*w
-  # Daily quests (gamified growth E1, ADR 0010). XP amounts live in content/quest-catalog.json.
-  quest:
-    reroll-per-day: 1               # autonomy valve (ADR 0010) — a shop item may raise it later (E4)
-    generate-cron: "0 35 6 * * *"   # morning backstop so quests exist even if Today is never opened
-    finalize-cron: "0 5 0 * * *"    # 00:05 — evaluate + quietly expire yesterday's offered quests
-    cron-presence-days: 7           # the morning cron only backstops users seen (last_seen_at) in this window
-    # Adaptive difficulty (E3, ADR 0010 — rule-based, no LLM in the economy): per-slot 28-day
-    # completion ratio bands the allowed difficulty tiers; <min-sample closed quests = all tiers.
-    adaptive:
-      window-days: 28
-      min-sample: 5
-      high-ratio: 0.85
-      low-ratio: 0.50
-    # E3 flavor copy: the companion rewrites quest title/why in its own voice on the morning
-    # cron; lazy generation and rerolls keep catalog copy; any LLM failure keeps catalog copy.
-    flavor:
-      enabled: true
-  # Activity-log tuning (E2, ADR 0010): the LLM proposes, the server disposes — XP clamped into
-  # [xp-min, xp-max], per-skill and per-day caps bound the honor system; below the confidence
-  # threshold the entry lands uncategorized and the client prompts for a manual category.
-  activity:
-    xp-min: 5
-    xp-max: 25
-    per-skill-daily-cap: 40
-    daily-cap: 100
-    confidence-threshold: 0.6
-    default-xp: 10
   # Habit engine tuning (mezo-d1jb, ADR 0010): every target window/cutoff is config, never code.
-  # Binds onto HabitProperties; the close cron fires after the quest finalize.
+  # Binds onto HabitProperties.
   habit:
-    close-cron: "0 10 0 * * *"    # 00:10 — after the quest finalize
+    close-cron: "0 10 0 * * *"    # 00:10
     wake-window-min: 45
     protein-target-g: 25
     bed-grace-min: 30
@@ -2983,61 +2791,14 @@ mezo:
   # Binds feature/lifegoal/config/LifeGoalProperties (mezo-iizd) — pillar cap per goal.
   lifegoal:
     max-pillars: 5
-    # XP per `hit` pillár-nap (mezo-iizd.6) — a pillér saját skill_key-ére, idempotensen
-    # (source_type=LIFE_GOAL, kulcs: UUID.nameUUIDFromBytes("lifegoal:<pillarId>:<day>")).
-    xp-per-hit: 5
     # 00:20 — a habit close (00:10) UTÁN, hogy a nap metrikái már véglegesek legyenek.
     # A job ETTŐL a futástól kezdve a késleltetett ha–akkor terveket (és a hiány-alapú
     # ritual_missed-et) is emittálja a tegnapi napra — külön ütemező nincs (mezo-iizd.7, spec D-3).
     eval-cron: "0 20 0 * * *"
-  # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
-  # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.
-  # The dummy default keeps the context bootable with the notification feature switched off.
-  # Binds onto WebPushProperties.
-  webpush:
-    subject: mailto:daniel.kuhne@intuitech.studio
-    public-key: ${VAPID_PUBLIC:dummy-vapid-public}
-    private-key: ${VAPID_PRIVATE:dummy-vapid-private}
-    default-ttl-seconds: 3600
-    # Connect + read timeout for the outbound push POST (WebPushClient) — a hung push service
-    # must not hold a caller's thread (N2's per-minute dispatch job).
-    timeout-ms: 5000
-  # Push notification content tunables (bd mezo-h4wp.6.1). Binds onto NotificationProperties;
-  # N2 extends the same record rather than inventing a second one.
+  # In-app notification feed tunables (bd mezo-gzhp.1). The browser web push tunables that used
+  # to share this block left with the web app (mezo-r36n9.97.7); the do-not-disturb window moved
+  # to mezo.character.team-chat.quiet-hours.
   notification:
-    # Notification body is truncated to this many chars before it is encrypted + sent.
-    body-max-chars: 300
-    # Medication has no per-day time column (MedicationCycleService only derives which cycle
-    # day it is) — the reminder anchors on this fixed HH:mm instead (spec §6).
-    medication-time: "08:00"
-    # A decision's review has no time of its own, only a due DATE (decision_entry.review_due) —
-    # the decision_review push anchors on this fixed HH:mm instead (spec §5.4, bd mezo-b3pp.4).
-    decision-review-time: "09:00"
-    # How much of an already-generated prose row (companion_message/weekly/memoir) AnchorResolver
-    # excerpts for a push body — cut at a word boundary, never a new LLM call (spec §6).
-    prose-excerpt-chars: 160
-    # N2 per-minute dispatch job (NotificationDispatchJob) schedule — every minute, on the minute.
-    dispatch-cron: "0 * * * * *"
-    # DueEvaluator's BACKWARD firing window width in minutes — a half-open [0, catch-up-minutes)
-    # on (now - fireMinute), i.e. on time plus (width - 1) recovered LATE minutes, so a genuinely
-    # missed cron minute still delivers on the next tick; the push_log dedup (not this) prevents a
-    # double-send. Looking forward instead would fire a minute EARLY and never recover a miss.
-    catch-up-minutes: 2
-    # Grace (minutes) applied to a prose category's anchor when it would otherwise land AT or
-    # BEFORE the minute its own content generator cron runs: memoir (mezo.proactive.memoir.cron,
-    # 19:00), midday (proactive.feed.midday-cron, 12:30) and weekly whenever the user's wake
-    # time is <= proactive.weekly.cron (06:00). Both jobs queue on the SAME size-1 scheduler thread
-    # and each generator makes an LLM call, so at the anchor minute the row provably does not exist
-    # yet and the (default-ON) category would never fire at all. AnchorResolver reads the generator
-    # crons themselves via CronExpression — those minutes are NOT duplicated here. morning needs
-    # no grace by construction (generates 05:45, anchors at wake ~06:00) — that is the pattern.
-    prose-generation-grace-min: 15
-    # W5.2 (bd mezo-b3pp.19): do-not-disturb window — a non-exempt intervention push generated
-    # inside it is DEFERRED to quiet-hours end (possibly next morning), never dropped. Only the
-    # intervention category consults this today; widening it is a separate decision.
-    quiet-hours:
-      start: "22:00"
-      end: "07:00"
     # In-app notification feed (bd mezo-gzhp.1). The two inbox-* values MUST mirror the FE
     # STRONG_SIGNAL constant, the two band-* values the FE strengthWord bands — pinned by
     # AppNotificationServiceIT and the FE insights tests on both sides.
@@ -3047,15 +2808,6 @@ mezo:
       inbox-max-p: 0.15
       band-promising: 0.3
       band-strong: 0.6
-  # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
-  # AccountProgressPort adapter fires. Binds onto GamificationProperties.
-  gamification:
-    saver-price: 200
-    max-savers: 2
-    level-up-coins: 50
-    quest-coins: 10
-    all3-coins: 20
-    milestone-coins: { 7: 50, 30: 150, 100: 500 }
   # Check-in 2.0 question plan (mezo-ck2, spec §2.2–2.3). Binds onto CheckInPlanProperties and is
   # served by GET /api/biometrics/checkin/plan — trimming a question is a config change + deploy,
   # no frontend release. Item ids: energy mood stress body mental (the core five, always first)

@@ -2,15 +2,11 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-11-17
+updated: 2026-11-19
 tags: [today, habit, growth, intention, proactive, companion, backend, frontend, data-layer, progression, needs, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
-  - frontend/src/features/ritual
-  - frontend/src/data/ritual
   - api/feature/ritual/ritual.yml
-  - frontend/src/features/today/pages/NapHubPage.tsx
-  - frontend/src/styles/folyadek-nap-rogzites.css
   - docs/design_2.0/prototypes/napzaras.html
 related: [dayclose, today, habit, growth, intention, proactive, _platform-design-system, needs, companion, journal]
 ---
@@ -227,6 +223,7 @@ const { events, checkinsDone, thinDay, closingNote } = useDayRecap(date)  // pur
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Decision (owner, 2026-10-10, Folyadék F2) — Napzárás is light.** The dark takeover was the ritual's signature since the first build; the Folyadék identity is light only (bible §1.1), and the evening is told by the dusk liquid instead. Consequences: `useForceTheme('dark')` left `RitualPage`; the per-act sky tokens, the stars and the confetti are gone; the test that pinned the dark lock pins „not dark" now. Removing a lock is a decision, not a refactor (bible appendix F2).
 - **Decision (F2) — the hand-off lands on the evening routine.** „Esti rutin indítása" navigates to `/nap/rutin?dp=este`, where the evening chain leads, instead of `/nap` — Mai no longer has a daypart face to preselect.
 - **Deviations from the prototype (F2):** no title bar (the route stays chrome-free), act 2's surface is the day arc's own shape, the confetti is dropped, act 6's jar carries no text. List: [`vilagos/HANDOFF.md`](../design_2.0/prototypes/vilagos/HANDOFF.md).

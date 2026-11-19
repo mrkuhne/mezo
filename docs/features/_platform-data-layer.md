@@ -1,22 +1,16 @@
 ---
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
-status: done
-updated: 2026-10-11
+status: retired
+updated: 2026-11-19
 tags: [platform, data-layer, frontend]
-key_files:
-  - frontend/src/data/hooks.ts
-  - frontend/src/data/train/trainHooks.ts
-  - frontend/src/data/me/goalHooks.ts
-  - frontend/src/data/fuel/pantryHooks.ts
-  - frontend/src/data/gamification
-  - frontend/src/data/_client/mode.ts
-  - frontend/src/data/_client/api.ts
-  - frontend/src/app/providers/QueryProvider.tsx
+key_files: []
 related: [_platform-api-backend, _platform-auth-security, _platform-notifications, train, me, goal-engine, growth, ritual, journal, companion, insights]
 ---
 
 # Platform · Data Layer & Dual-Mode — Feature Documentation
+
+> **Retired 2026-11-19 (#52, `mezo-r36n9.97.3`).** This area existed only in the web app, which was switched off. The doc is kept as history; the code it describes is in git history.
 
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** `data/train/recoveryHooks.ts` (`useRecovery` via `useDualQuery`, key `['train','recovery', localDate]`, 8 write hooks that replace the cache with the answered state); `skipHooks.invalidateAfterWrite(qc)` is now exported and reused; `useTrain().plannedSkips` also carries synthetic `DAY` rows from the recovery state; `trainHooks.ts` exposes `useActiveMesoWeek({enabled})`. See [`train.md`](train.md) §2.
 
@@ -313,6 +307,7 @@ pnpm build                      # tsc -b && vite build
 
 ## 9. Decisions, gotchas & deferred
 
+- **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history. Everything this doc describes lived only in the web app, so it is `status: retired` and kept as history.
 - **Decision (spec, not a numbered ADR)**: TanStack Query as the FE data layer with hook signatures unchanged; `VITE_USE_MOCK` keeps not-yet-wired hooks on mock so the app runs end-to-end between slices (`docs/superpowers/specs/2026-06-10-phase2-backend-design.md` §3, decision `mezo-gqi`). The only numbered ADR is `docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md` (unrelated). **This doc is the durable home for the dual-mode rationale.**
 - **Code default = mock, configured default = real**: `mode.ts` reads `VITE_USE_MOCK !== 'false'` so a *missing* env var never breaks the visual baselines or dev. **But** `frontend/.env.example` ships `VITE_USE_MOCK=false`, and `CLAUDE.md` says dev runs REAL by default (backend on `:8090`). The code default and the configured default diverge — the example env makes real mode the working default; mock is the deliberate fallback for the visual baselines/demos.
 - **Gotcha — synchronous `initialData` parity**: mock mode must use `initialData` (not just `queryFn`) so the first render is synchronous and matches Phase-1 `useState`; otherwise the visual baselines/component tests would catch a loading frame.
