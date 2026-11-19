@@ -1056,14 +1056,14 @@
     "munkamenet": "player-technique"
   },
   "mezo-r36n9.100": {
-    "cim": "Edzés: Boop indoklása a heti átnézésben",
-    "tipus": "Funkció",
+    "cim": "Edzés: Boop első élő technika-finomításának ellenőrzése",
+    "tipus": "Karbantartás",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés",
       "AI és memória"
     ],
-    "mit_kapsz": "A heti átnézésben a „Boop javaslata” sor mellett azt is látod, miért javasolja Boop a technika vagy a kihívás áthelyezését."
+    "mit_kapsz": "Hétfőn, az első kézi heti átnézésednél megnézzük, hogy Boop valóban finomította-e a javaslatot, és minden rendben ment-e."
   },
   "mezo-r36n9.98": {
     "cim": "Edzés: technika és kihívás együtt, ajánlás a technikaválasztóban",
