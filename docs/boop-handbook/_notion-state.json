@@ -681,7 +681,7 @@
     },
     "kezikonyv:06-etel/04-napi-keret": {
       "page_id": "4168968e-752b-8109-800f-e787a78acfe6",
-      "hash": "03c3715cc3fb"
+      "hash": "a2f331fdb982"
     },
     "kezikonyv:06-etel/05-receptek": {
       "page_id": "4168968e-752b-816b-af92-d893e20f59e2",
@@ -1350,6 +1350,14 @@
     "kiadasok:5dba75565": {
       "page_id": "41d8968e-752b-8114-932e-caf8cd935140",
       "hash": "b0580b2333e4"
+    },
+    "jegyek:mezo-r36n9.109": {
+      "page_id": "41d8968e-752b-81c5-b456-d99b4dfd6ac9",
+      "hash": "853f42a92f40"
+    },
+    "kiadasok:ae4beab19": {
+      "page_id": "41d8968e-752b-8197-9796-ebe6f90599aa",
+      "hash": "3d9e49acfcab"
     }
   }
 }

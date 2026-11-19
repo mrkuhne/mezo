@@ -1149,5 +1149,15 @@
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · a régi pénzügyi app adatainak átköltöztetése",
     "mit_kapsz": "Amikor a Pénz oldal elkészül, a régi pénzügyi appodban rögzített számláid és tételeid egyszer, egy megbeszélt napon átköltöznek a Boopba, így nem kell semmit újra beírnod. Előtte megnézzük, mennyi adat van a régi appban, és csak a jóváhagyásoddal írunk az éles adatbázisba."
+  },
+  "mezo-r36n9.109": {
+    "cim": "Étel: a Hét fül új, melegebb elrendezése",
+    "tipus": "Funkció",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "A Hét fül egy mondatban mondja a heted, kiemeli a legfontosabb megfigyelést, és napokra bontva, címkékkel és pontszámmal mutatja, hogyan álltál.",
+    "munkamenet": "boop-etel-fooldal"
   }
 }

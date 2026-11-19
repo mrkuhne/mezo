@@ -31,8 +31,8 @@ osszefoglalo: A Ma fül megmutatja, mennyi fér még bele a napba és mit egyél
    a szénhidrát kapja a maradékot.
 3. Ha nincs aktív cél, egy rögzített tartalék napi cél érvényes.
 4. Kímélő módban (betegség, utazás) a cél enyhül vagy eltűnik — lásd [Kihagyás és kímélő mód](08-kihagyas-kimelo.md).
-5. **Új a B4-ben:** a napi étkezési terv (idősávok az ébredés, lefekvés és az edzések köré, kerettel sávonként, recept-javaslattal)
-   ma csak a webes felület kódjában él. A Boophoz ez a háttérrendszerbe költözik, és onnan jön a „következő étkezés” tipp is.
+5. **A napi étkezési terv** (idősávok az ébredés, lefekvés és az edzések köré, kerettel sávonként, recept-javaslattal) a
+   háttérrendszerben él, és onnan jön a „következő étkezés” tipp is.
 6. **A heti megfigyelés** szabályból jön, nem az AI-tól: csak a lezárt, nem kímélő napokat nézi (a mai nap és a kímélő
    napok az átlagokba sem számítanak), és két értékelt nap alatt nem mond semmit.
 7. Az étrendi beállítások mentése újraszámolja az aktív célt; mentés előtt élő előnézet mutatja az új számokat.

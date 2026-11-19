@@ -477,5 +477,16 @@
     ],
     "mi_valtozott": "Az Étel szoba új, melegebb elrendezést kapott fotó nélküli fejléccel: a Ma fülön kiemelt tipp, gyors rögzítés, a nap görbéje, makrók és étkezés-sorok. A rögzítő egyszerre fogad fotót és szöveget, a vázlathoz utólag recept, kamra-tétel, vonalkód vagy újabb szöveg adható, az időpont visszamenőleg megadható, és a fotón szkennelés fut. A Receptek és a Kamra címkékkel, ikonokkal és saját pontszám-gyűrűvel jelenik meg; a receptlap mutatja Boop teljes értékelését a szempontokkal és tippekkel, a kamra-tétel a saját öt szempontos pontszámát. Új: „Ezt főztem” — elmondod vagy lefotózod, miből főztél, Boop a kamrádhoz köti a hozzávalókat, a hiányzót egy koppintással felveszi (becsült jelzéssel, később pontosítható).",
     "verzio": "v3.12.0"
+  },
+  "ae4beab19": {
+    "tipus": "Kinézet",
+    "cim": "Étel: a Hét fül új elrendezése",
+    "datum": "2026-11-19",
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.109"
+    ],
+    "mi_valtozott": "A Hét fül a többi Étel-fül stílusát kapta: a fejléc egy mondatban mondja a hét átlagát, kiemelve áll a hét legfontosabb megfigyelése (például a fehérje elmaradása), három szám, kalória- és fehérje-oszlopok a célvonallal, a napok soronként címkékkel és pontszám-gyűrűvel. Egy napra koppintva a makrók sávval a célhoz képest és a nap étkezései.",
+    "verzio": "csak iPhone"
   }
 }
