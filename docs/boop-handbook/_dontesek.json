@@ -739,6 +739,19 @@
     "levaltotta": "A szerver nélküli változat: az edzésmód és a technika a futó blokkon csak látszik, a heti pakli csak visszanézhető.",
     "kovetkezmeny": "Kb. egy nappal hosszabb munka; az első saját heti átnézésed a telepítés utáni hétfőn jön (mezo-r36n9.83)."
   },
+  "d-2026-11-19-ai-technika-marad": {
+    "cim": "Az elfogadott AI-technika megmarad, amíg szabályos",
+    "datum": "2026-11-19",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés",
+      "AI és memória"
+    ],
+    "valasztas": "Ha elfogadod Boop egyik technika-javaslatát, az a következő heteken is megmarad. A rendszer csak akkor javasolja levenni, ha a szabályok már nem engedik (fogyókúra, sportnap, a gyakorlat már nem az izom utolsó gyakorlata). Ha Boop épp nem elérhető, nem ugrik vissza a gépi alapra.",
+    "miert": "Így nem ugrálnak a sorok oda-vissza a heti átnézésben, ha a mesterséges intelligencia épp nem működik.",
+    "levaltotta": "„Minden héten újradönt” (kiesés esetén visszaállna a gépi alapra, oda-vissza sorok) és „Mint a saját választásom” (fogyásban és sportnapon is ott maradna a plusz terhelés).",
+    "kovetkezmeny": "Boop javaslatai csak a kézi heti átnézésben jönnek; automata módban, a blokképítőben és a blokk indulásakor a gépi terv megy (mezo-r36n9.82)."
+  },
   "d-2026-11-19-technika-a-lejatszoban": {
     "cim": "Így néz ki a technika és a kihívás edzés közben",
     "datum": "2026-11-19",

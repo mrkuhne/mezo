@@ -378,6 +378,11 @@ mezo:
     # deterministic frames; needs the companion switch too. Off -> deterministic filler, llmUsed=false.
     meso-plan-ai:
       enabled: true
+    # Technique AI refinement (T4, mezo-r36n9.82) — after a manual weekly review is built, the model may move
+    # techniques / the day's challenge inside the planner's eligible set (validated by TechniqueMerger); needs the
+    # companion switch too. Off -> the planner's technique lines stand.
+    technique-ai:
+      enabled: true
     # Fuel P6 pantry import — gates the OpenFoodFacts lookup/import endpoints (off -> 404);
     # the import feed + suggestions in GET /api/pantry stay on regardless.
     pantry-import:

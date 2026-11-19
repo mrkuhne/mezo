@@ -63,6 +63,15 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-19 — Train style T4: the AI refines the technique plan (`mezo-r36n9.82`).**
+  When a manual weekly review of a styled, techniques-enabled run waits, an AI (train-owned port `TechniqueLlm`, adapter
+  in companion, switch `mezo.feature.technique-ai.enabled`) may move or swap techniques and the day's challenge inside
+  the planner's eligible set, with a one-line Hungarian reason per change; the pure `TechniqueMerger` drops anything
+  invalid and the code default stands when the AI is off or fails. It runs after the commit, in the background (`getToday`
+  never waits). Accepted AI picks get source `ai` and are kept while the rules allow (owner decision 2026-11-19); the
+  proposal line gains an optional `note`. No AI in auto mode, the builder or run start. Production AI calls were failing
+  (provider credits) at ship time, so the fallback is what runs until that is fixed.
+
 - **2026-11-19 — Train style T3: the technique planner and the challenge (`mezo-r36n9.81`).**
   In a block that has a training style **and** techniques enabled, the engine now decides where the intensity techniques
   go: from week 3 to the last loading week, `emphasize` groups first, `maintain` never, at most 2 a day (1 in a deficit or

@@ -308,6 +308,11 @@ public class FeaturesConfiguration {
     /** Meso plan generator — Gemini exercise pick on POST /api/train/meso-plans/generate. Off → deterministic filler only. */
     public static final String MESO_PLAN_AI_SWITCH = "mezo.feature.meso-plan-ai.enabled";
 
+    /** Technique AI refinement (T4, mezo-r36n9.82) — the model may move techniques / the challenge inside the
+     *  planner's frame on a pending manual weekly review; needs COMPANION_SWITCH too (the adapter lives there).
+     *  Off → the deterministic planner's lines stand. */
+    public static final String TECHNIQUE_AI_SWITCH = "mezo.feature.technique-ai.enabled";
+
     /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
     public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
 

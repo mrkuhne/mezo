@@ -6,7 +6,7 @@ allapot: Élesben
 hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B5]
-osszefoglalo: Egy gyakorlat utolsó sorozata helyett technikát (pihenős drop, drop set, myo set, félismétlések) vagy a nap kihívását írhatod elő, de a rendszer is elhelyezi őket a stílusos, technikás blokkban; edzés közben lépésről lépésre megmondja, a napló pedig rögzíti.
+osszefoglalo: Egy gyakorlat utolsó sorozata helyett technikát (pihenős drop, drop set, myo set, félismétlések) vagy a nap kihívását írhatod elő, de a rendszer is elhelyezi őket a stílusos, technikás blokkban, és Boop a kézi heti átnézésben finomíthatja; edzés közben lépésről lépésre megmondja, a napló pedig rögzíti.
 ---
 
 ## Mit csinál
@@ -48,6 +48,19 @@ már túl sok a technika, ezt jelzi, de nem töröl semmit).
 **Hol látod.** A blokk-építő a tervezéskor **hétről hétre** megmutatja, hol lesz technika és kihívás, és figyelmeztet (például ha egy napra nem
 talált kihívást). A futó blokkban a változás a **heti javaslat soraiként** érkezik: automata módban magától életbe lép, kézi módban te
 fogadod el. Ha közben te átírtad az adott gyakorlatot, a te számod marad.
+
+## Boop finomítja (2026-11-19)
+A gépi elhelyezést a **mesterséges intelligencia finomíthatja**, amikor a heti javaslatot **kézi módban te nézed át**. A javaslat elkészülte után,
+a háttérben megnézi a múlt hetedet (mit és mennyit emeltél, sikerült-e a technika, fájt-e ízület, volt-e izomláz, megállt-e egy izom), és
+**áthelyezheti vagy kicserélheti** a technikát, illetve a napi kihívást — de csak oda, ahová a szabályok amúgy is engednék, a napi és heti kereten
+belül. Minden változtatás egy rövid magyar indoklással és **„Boop javaslata”** jelöléssel jelenik meg; te döntesz róla, mint bármelyik sorról.
+- **A te választásodhoz soha nem nyúl.**
+- **Ha nem működik** (kikapcsolva, hiba, nincs válasz, vagy minden ötlete szabálytalan), a gépi terv marad, pontosan úgy, mint eddig.
+- **A Ma képernyő nem vár rá**; ha közben már döntöttél egy technikasorról, az AI ötlete elvész, semmit nem ír át.
+- **Automata módban, a blokképítőben és a blokk indulásakor nincs AI** — ott a gépi alapterv megy.
+- **Az elfogadott AI-választás megmarad, amíg szabályos** (tulajdonosi döntés, 2026-11-19): ha később már nem fér bele (fogyókúra, sportnap, a
+  gyakorlat már nem az izom utolsó gyakorlata), a rendszer javasolja levenni; ha az AI épp nem elérhető, nem ugrál vissza a gépi alapra.
+- Például: „A kábeles tárogatáson a klasszikus drop jobban ment.” (kitalált példa)
 
 ## Megállt a fejlődés: egy ajánlat
 Ha egy izom két hete nem fejlődik, a rendszer **egyetlen** javaslatot tesz, ebben a sorrendben (az első, ami szóba jöhet):
@@ -97,20 +110,22 @@ Ha egy izom két hete nem fejlődik, a rendszer **egyetlen** javaslatot tesz, eb
 | `mezo.train.technique.myo` | Myo: aktiváló tartalék, mini-ismétlés, alsó határ, pihenő, mini-sorozatok száma | 1 · 5 · 3 · 20 mp · 4 |
 | `mezo.train.technique.partials` | Félismétlések: tartalék | 0 |
 | `mezo.train.technique.cap-weight` | Hány sorozatnak számít a technikás sorozat a napi határoknál | 2 |
+| `mezo.feature.technique-ai.enabled` | Boop finomíthatja-e a technikákat a kézi heti átnézésben | be |
 | `mezo.train.technique.planner` | Automatikus elhelyezés: kezdő hét, naponta legfeljebb, naponta legfeljebb (fogyókúrában vagy sportnapon), izmonként hetente legfeljebb, a myo-hoz szükséges ismétlésszám | 3 · 2 · 1 · 2 · 15 |
 
 ## Adattáblák
 | Tábla | Mit tárol |
 |---|---|
 | `meso_template`, `mesocycle` | A blokk „technikák bekapcsolva” jelzése |
-| `exercise` | A gyakorlat technikája, ki állította be (te vagy a rendszer), és hogy kihívás-e |
+| `exercise` | A gyakorlat technikája, ki állította be (te, a rendszer vagy Boop javaslata), és hogy kihívás-e |
+| `meso_week_proposal` | A heti javaslat sorai, köztük Boop indoklása a javasolt technika-sornál |
 | `exercise_set` | A sorozat technikája |
 | `exercise_set_leg` | A technikás sorozat részei: drop, mini-sorozat, félismétlés — súly, ismétlés, pihenő |
 
 ## Mi jön még
-- A mesterséges intelligencia finomítása a technikákkal (T4).
+- Boop indoklásának megjelenítése a heti átnézés képernyőjén (most a „Boop javaslata” jelölés látszik).
 - Az AI-összesítők (a Boop-társ kimutatásai) még nem számolják a technikák plusz részeit az összes súlyba.
 
 ## Mi marad ki
 A webes app nem kapja meg (befagyasztott). Technika csak a bekapcsolt blokkokban él; a futó blokkon a blokképítőben kapcsolható be. A webes blokkok változatlanok.
-Az AI-finomítás egyelőre nincs.
+Az AI automata módban, a blokképítőben és a blokk indulásakor nem finomít.

@@ -127,7 +127,7 @@ final class StallOffers {
         for (TechniquePlanner.PlanRow r : rows) {   // latest first
             for (int i = 0; i < techniques.size(); i++) {
                 TechniquePlanner.Pick p = techniques.get(i);
-                if (p.id().equals(r.id()) && TechniquePlanner.SOURCE_PLANNER.equals(p.source())) {
+                if (p.id().equals(r.id()) && TechniqueLines.machine(p.source())) {
                     techniques.set(i, new TechniquePlanner.Pick(p.dayIndex(), p.exerciseIndex(), p.id(),
                         p.technique(), p.source(), REASON_STALLED));
                     return true;
@@ -209,10 +209,10 @@ final class StallOffers {
         });
     }
 
-    /** The planner may place a technique here: no owner / AI source, and anything it carries is the planner's. */
+    /** The planner may place a technique here: no owner source, and anything it carries is the machine's (T4). */
     private static boolean plannerMay(TechniquePlanner.PlanRow r) {
-        if ((hasTechnique(r) || r.challenge()) && !TechniquePlanner.SOURCE_PLANNER.equals(r.source())) return false;
-        return !TechniquePlanner.SOURCE_OWNER.equals(r.source()) && !"ai".equals(r.source());
+        if ((hasTechnique(r) || r.challenge()) && !TechniqueLines.machine(r.source())) return false;
+        return !TechniquePlanner.SOURCE_OWNER.equals(r.source());
     }
 
     private static boolean hasTechnique(TechniquePlanner.PlanRow r) {

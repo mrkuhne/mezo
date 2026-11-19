@@ -251,6 +251,41 @@ class TechniquePlannerTest {
         assertThat(w.warnings()).extracting(Warning::code).doesNotContain("owner_over_allowance");
     }
 
+    // ---- T4: accepted AI picks ------------------------------------------------------------------------------------
+
+    private static PlanRow ai(PlanRow r, Technique t) {
+        return new PlanRow(r.dayIndex(), r.exerciseIndex(), r.id(), r.group(), r.counts(), r.workingSets(), r.type(),
+            r.repMax(), r.attrs(), r.effectiveStyle(), t, "ai", r.challenge());
+    }
+
+    @Test
+    void validAiPickIsKeptAndNotFlippedToTheDefault() {
+        // the default would be rest_drop on this machine row; the accepted AI drop stays
+        PlanDay d = day(0, row(0, 0, "back"), ai(sets(row(0, 1, "chest"), 2), Technique.DROP));
+        Week w = TechniquePlanner.plan(input(3, emph("chest"), d));
+        assertThat(w.techniques()).anySatisfy(p -> {
+            assertThat(p.id()).isEqualTo(id(0, 1));
+            assertThat(p.technique()).isEqualTo(Technique.DROP);
+            assertThat(p.source()).isEqualTo(TechniquePlanner.SOURCE_AI);
+        });
+    }
+
+    @Test
+    void aiPickOverTheDeficitAllowanceIsNotKept() {
+        PlanDay d = day(0, owner(row(0, 0, "back"), Technique.MYO, false),
+            ai(sets(row(0, 1, "chest"), 2), Technique.DROP));
+        Week w = TechniquePlanner.plan(deficit(input(3, emph("chest"), d)));
+        assertThat(w.techniques()).extracting(Pick::id).containsExactly(id(0, 0));
+    }
+
+    @Test
+    void aiPickOnAnIneligibleRowIsNotKept() {
+        // a later chest row makes the AI row no longer the group's last exercise that day
+        PlanDay d = day(0, ai(sets(row(0, 0, "chest"), 2), Technique.DROP), row(0, 1, "chest"));
+        Week w = TechniquePlanner.plan(input(3, emph("chest"), d));
+        assertThat(w.techniques()).noneMatch(p -> p.id().equals(id(0, 0)));
+    }
+
     @Test
     void ownerOverAllowanceWarns() {
         PlanDay d = sportDay(0, owner(row(0, 0, "chest"), Technique.DROP, false),

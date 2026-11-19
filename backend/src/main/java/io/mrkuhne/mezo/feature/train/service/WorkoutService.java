@@ -430,7 +430,7 @@ public class WorkoutService {
 
     /**
      * Sport-day rule (mezo-r36n9.81, spec §11 Q4): on a day he has a sport slot, a row of a sport-loaded group
-     * carries no challenge and no planner-sourced technique (the owner's own technique stands). The slots are read
+     * carries no challenge and no machine-sourced (planner / AI) technique (the owner's own technique stands). The slots are read
      * once, and only when some row of the day carries a challenge or a planner technique.
      */
     private Set<UUID> sportDaySuppressed(UUID createdBy, MesocycleEntity run,
@@ -440,7 +440,7 @@ public class WorkoutService {
             return Set.of();
         }
         List<ExerciseEntity> candidates = entries.stream().map(SessionExerciseAssembler.Entry::row)
-            .filter(r -> (r.isChallenge() || "planner".equals(r.getTechniqueSource()))
+            .filter(r -> (r.isChallenge() || TechniqueLines.machine(r.getTechniqueSource()))
                 && groups.contains(MuscleGroup.of(r.getMuscle())))
             .toList();
         if (candidates.isEmpty()) {

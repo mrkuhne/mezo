@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-11-17
+updated: 2026-11-19
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -16,6 +16,8 @@ related: [dayclose, boop-ios, insights, proactive, today, me, character, _platfo
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-11-19 — reviewed after T4 (`mezo-r36n9.82`, one adapter added).** `companion/llm/TechniqueLlmAdapter` implements the train-owned `TechniqueLlm` port (SMART one-shot, audit `train_technique / refine`, degrade to empty), the `MesoPlanLlmAdapter` idiom; nothing else in companion changed ([`train.md`](train.md) §Technique AI refinement).
 
 > **2026-11-13 — recipe import port (`mezo-r36n9.14`).** `feature/companion/llm/RecipeImportLlmAdapter` bridges the recipe-owned `RecipeImportLlm` port (text + multi-image) to `CompanionLlm`; `FakeCompanionLlm` answers `[fake-recipe-import:{json}]` in page/pasted text or photo bytes. LLM-call feature slug `recipe_import` (labelled in `admin/lib/labels.ts`).
 
