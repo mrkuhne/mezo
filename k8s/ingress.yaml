@@ -32,6 +32,13 @@ spec:
                 name: backend
                 port:
                   number: 8090
+          - path: /exercises
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8090
           - path: /
             pathType: Prefix
             backend:

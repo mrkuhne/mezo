@@ -28,10 +28,10 @@ import { fileURLToPath } from 'node:url'
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const MAP_FILE = join(REPO, 'scripts/data/exercise-image-map.json')
 const CATALOG_FILE = join(REPO, 'backend/src/main/resources/content/exercise-catalog.json')
-const OUT_DIR = join(REPO, 'frontend/public/exercises')
+const OUT_DIR = join(REPO, 'backend/src/main/resources/static/exercises')
 const DATASET = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json'
 const RAW = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises'
-/** Public URL prefix the catalog rows store — same-origin, served from frontend/public. */
+/** Public URL prefix the catalog rows store — same-origin, served by the backend from classpath:/static. */
 const PUBLIC_PREFIX = '/exercises'
 
 const force = process.argv.includes('--force')
