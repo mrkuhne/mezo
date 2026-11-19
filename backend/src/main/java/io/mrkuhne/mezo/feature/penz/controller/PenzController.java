@@ -17,7 +17,7 @@ import io.mrkuhne.mezo.api.dto.PenzTransactionResponse;
 import io.mrkuhne.mezo.api.dto.PenzTransferRequest;
 import io.mrkuhne.mezo.feature.penz.service.PenzAccountService;
 import io.mrkuhne.mezo.feature.penz.service.PenzCategoryService;
-import io.mrkuhne.mezo.feature.penz.service.PenzErrors;
+import io.mrkuhne.mezo.feature.penz.service.PenzAllowanceService;
 import io.mrkuhne.mezo.feature.penz.service.PenzMonthCloseService;
 import io.mrkuhne.mezo.feature.penz.service.PenzRecurringRuleService;
 import io.mrkuhne.mezo.feature.penz.service.PenzSettingsService;
@@ -40,6 +40,7 @@ public class PenzController implements PenzApi {
     private final PenzTransactionService transactions;
     private final PenzRecurringRuleService rules;
     private final PenzMonthCloseService monthCloses;
+    private final PenzAllowanceService allowance;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -137,11 +138,9 @@ public class PenzController implements PenzApi {
         rules.delete(currentUserId.get(), id);
     }
 
-    /** The allowance engine lands in a later phase of L4 — declared in the contract, 501 until then. */
     @Override
     public PenzAllowanceResponse getPenzAllowance(LocalDate date) {
-        currentUserId.get();
-        throw PenzErrors.notImplemented();
+        return allowance.allowance(currentUserId.get(), date);
     }
 
     @Override

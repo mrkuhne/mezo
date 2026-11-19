@@ -6,12 +6,15 @@ import io.mrkuhne.mezo.api.dto.PenzSettingsResponse;
 import io.mrkuhne.mezo.feature.penz.config.PenzProperties;
 import io.mrkuhne.mezo.feature.penz.entity.PenzSettingsEntity;
 import io.mrkuhne.mezo.feature.penz.repository.PenzSettingsRepository;
+import io.mrkuhne.mezo.feature.penz.service.engine.AllowanceSettings;
 import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
@@ -86,16 +89,36 @@ public class PenzSettingsService {
         return LocalDate.now(clock().withZone(validZoneOrDefault(ensure(owner).getTimezone())));
     }
 
-    private PenzSettingsResponse toResponse(PenzSettingsEntity e) {
-        Map<String, PenzMonthOverride> overrides = e.getMonthOverrides() == null || e.getMonthOverrides().isBlank()
+    /**
+     * What the allowance engine reads from the owner's settings: the monthly savings target, the Gyakorlás cap
+     * ({@code practice_monthly_minor}) and every month's own savings target from {@code month_overrides}.
+     */
+    @Transactional
+    public AllowanceSettings allowanceSettings(UUID owner) {
+        PenzSettingsEntity e = ensure(owner);
+        Map<YearMonth, Long> savingsOverrides = new HashMap<>();
+        overrides(e).forEach((month, o) -> {
+            if (o.getSavingsTargetHufMinor() != null) {
+                savingsOverrides.put(YearMonth.parse(month), o.getSavingsTargetHufMinor());
+            }
+        });
+        return new AllowanceSettings(e.getSavingsTargetMinor(), e.getPracticeMonthlyMinor(), savingsOverrides);
+    }
+
+    private Map<String, PenzMonthOverride> overrides(PenzSettingsEntity e) {
+        return e.getMonthOverrides() == null || e.getMonthOverrides().isBlank()
             ? Map.of() : objectMapper.readValue(e.getMonthOverrides(), OVERRIDES);
+    }
+
+    private PenzSettingsResponse toResponse(PenzSettingsEntity e) {
+        Map<String, PenzMonthOverride> overrides = overrides(e);
         return new PenzSettingsResponse()
             .savingsTargetHufMinor(e.getSavingsTargetMinor())
             .practiceMonthlyHufMinor(e.getPracticeMonthlyMinor())
             .weekStart(PenzSettingsResponse.WeekStartEnum.fromValue(e.getWeekStart()))
             .emergencyFundMonths(e.getEmergencyFundMonths())
             .timezone(e.getTimezone())
-            .monthOverrides(new java.util.HashMap<>(overrides));
+            .monthOverrides(new HashMap<>(overrides));
     }
 
     private static ZoneId validZone(String zone) {

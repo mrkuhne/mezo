@@ -26,10 +26,4 @@ public final class PenzErrors {
         return new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_INVALID_VALUE", field).build(),
             HttpStatus.BAD_REQUEST);
     }
-
-    /** A declared endpoint whose computation lands in a later phase of L4 (the allowance engine). */
-    public static SystemRuntimeErrorException notImplemented() {
-        return new SystemRuntimeErrorException(SystemMessage.error("PENZ_NOT_IMPLEMENTED").build(),
-            HttpStatus.NOT_IMPLEMENTED);
-    }
 }

@@ -8,14 +8,16 @@ import io.mrkuhne.mezo.feature.penz.repository.PenzAccountRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzMonthCloseRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzTransactionRepository;
 import io.mrkuhne.mezo.feature.penz.service.PenzFxService.Booking;
+import io.mrkuhne.mezo.feature.penz.service.engine.CloseOutcome;
+import io.mrkuhne.mezo.feature.penz.service.engine.MonthCloseInput;
+import io.mrkuhne.mezo.feature.penz.service.engine.MonthCloseRules;
+import io.mrkuhne.mezo.feature.penz.service.engine.MonthlyAllowance;
 import java.time.Instant;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,9 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code transferred} — the latter writes a HUF transfer pair dated the month's last day from the default
  * account into the savings-target account (409 {@code PENZ_NO_SAVINGS_TARGET_ACCOUNT} when either is missing).
  *
- * <p><b>Phase 3:</b> the remaining figure comes from the allowance engine, which lands in a later phase of L4;
- * until then {@link #remainingFor} answers 501 {@code PENZ_NOT_IMPLEMENTED} and {@link #close} with it. The
- * close mechanics themselves ({@link #closeWith}) are built and tested now.
+ * <p>The remaining figure is the allowance engine's {@code remaining} of the month ({@link #remainingFor}), with
+ * the previous deficit taken only from a CLOSED previous month (old {@code summarizeClose}). Open months carry the
+ * figures a close would store right now ({@code finalRemaining}, {@code deficit} per
+ * {@link MonthCloseRules#closeOutcome}); the close persists them, so the next month's {@code previousDeficit}
+ * line reads the stored {@code deficit_minor}.
  */
 @Service
 @RequiredArgsConstructor
@@ -46,6 +50,7 @@ public class PenzMonthCloseService {
     private final PenzAccountRepository accounts;
     private final PenzTransactionService transactionService;
     private final PenzSettingsService settings;
+    private final PenzAllowanceService allowance;
     private final PenzMapper mapper;
 
     @Transactional(readOnly = true)
@@ -62,13 +67,14 @@ public class PenzMonthCloseService {
         if (withData.isEmpty()) {
             return List.of();
         }
-        Set<String> closed = repository.findByCreatedByAndDeletedFalseOrderByMonthDesc(owner).stream()
-            .map(PenzMonthCloseEntity::getMonth).collect(Collectors.toSet());
+        List<MonthCloseInput> closed = repository.findByCreatedByAndDeletedFalseOrderByMonthDesc(owner).stream()
+            .map(c -> new MonthCloseInput(YearMonth.parse(c.getMonth()), c.getDeficitMinor())).toList();
+        List<YearMonth> open = MonthCloseRules.monthsToClose(current.atDay(1), YearMonth.parse(withData.getFirst()),
+            closed);
+        List<MonthlyAllowance> figures = allowance.monthlies(owner, open);
         List<PenzMonthCloseResponse> out = new ArrayList<>();
-        for (YearMonth m = YearMonth.parse(withData.getFirst()); m.isBefore(current); m = m.plusMonths(1)) {
-            if (!closed.contains(m.toString())) {
-                out.add(mapper.openMonth(m.toString()));
-            }
+        for (MonthlyAllowance a : figures) {
+            out.add(mapper.openMonth(a.month(), MonthCloseRules.closeOutcome(a), a.remainingMinor()));
         }
         return out;
     }
@@ -79,20 +85,18 @@ public class PenzMonthCloseService {
         return closeWith(owner, m, leftoverAction, remainingFor(owner, m));
     }
 
-    /**
-     * PHASE 3 — the month's final remaining figure (HUF minor units) from the allowance engine. Not built yet:
-     * the engine lands in a later phase of L4 and this method is where it plugs in.
-     */
+    /** The month's final remaining figure (HUF minor units): the allowance engine's {@code remaining}. */
     long remainingFor(UUID owner, YearMonth month) {
-        throw PenzErrors.notImplemented();
+        return allowance.monthly(owner, month).remainingMinor();
     }
 
     /** Stores the close of {@code month} with an already-computed remaining figure (see the class doc). */
     @Transactional
     PenzMonthCloseResponse closeWith(UUID owner, YearMonth month, String requestedAction, long remainingHufMinor) {
         requireClosable(owner, month.toString());
-        long leftover = Math.max(0, remainingHufMinor);
-        long deficit = Math.max(0, -remainingHufMinor);
+        CloseOutcome outcome = MonthCloseRules.closeOutcome(remainingHufMinor);
+        long leftover = outcome.leftoverMinor();
+        long deficit = outcome.deficitMinor();
         String action = deficit > 0 || leftover == 0 ? ACTION_NONE
             : ACTION_TRANSFERRED.equals(requestedAction) ? ACTION_TRANSFERRED : ACTION_KEPT;
         UUID pairId = null;

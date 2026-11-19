@@ -53,4 +53,25 @@ public interface PenzTransactionRepository extends OwnedRepository<PenzTransacti
                        @Param("note") String note, @Param("source") String source,
                        @Param("needsReview") boolean needsReview, @Param("transferPairId") UUID transferPairId,
                        @Param("clientRef") UUID clientRef);
+
+    /**
+     * Materializes one occurrence of a recurring rule (source {@code recurring}, {@code needs_review} false) unless
+     * the rule already has a live row on that date — the partial unique index
+     * {@code uq_penz_transaction_recurring_rule_id_date}. Returns 1 when written, 0 when it was already there.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+        insert into penz_transaction (created_by, account_id, kind, amount_minor, currency, amount_huf_minor,
+                                      fx_rate, fx_rate_date, category_id, date, source, needs_review,
+                                      recurring_rule_id)
+        values (:createdBy, :accountId, :kind, :amountMinor, :currency, :amountHufMinor,
+                :fxRate, :fxRateDate, :categoryId, :date, 'recurring', false, :recurringRuleId)
+        on conflict (recurring_rule_id, date) where recurring_rule_id is not null and is_deleted = false do nothing
+        """, nativeQuery = true)
+    int insertRecurringIfAbsent(@Param("createdBy") UUID createdBy, @Param("accountId") UUID accountId,
+                                @Param("kind") String kind, @Param("amountMinor") long amountMinor,
+                                @Param("currency") String currency, @Param("amountHufMinor") long amountHufMinor,
+                                @Param("fxRate") BigDecimal fxRate, @Param("fxRateDate") LocalDate fxRateDate,
+                                @Param("categoryId") UUID categoryId, @Param("date") LocalDate date,
+                                @Param("recurringRuleId") UUID recurringRuleId);
 }

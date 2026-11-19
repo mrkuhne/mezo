@@ -49,6 +49,24 @@ public class PenzFxService {
      */
     @Transactional
     public Booking book(String currency, long amountMinor, LocalDate date, LocalDate today) {
+        return bookInternal(currency, amountMinor, date, today);
+    }
+
+    /**
+     * {@link #book} for a background write that must not fail the request it rides on (the recurring
+     * materialization): empty instead of {@code PENZ_FX_UNAVAILABLE}. The failure is caught INSIDE this bean, so it
+     * never crosses a transactional proxy and never marks the caller's transaction rollback-only.
+     */
+    @Transactional
+    public Optional<Booking> tryBook(String currency, long amountMinor, LocalDate date, LocalDate today) {
+        try {
+            return Optional.of(bookInternal(currency, amountMinor, date, today));
+        } catch (SystemRuntimeErrorException unavailable) {
+            return Optional.empty();
+        }
+    }
+
+    private Booking bookInternal(String currency, long amountMinor, LocalDate date, LocalDate today) {
         if (HUF.equals(currency)) {
             return new Booking(amountMinor, null, null);
         }

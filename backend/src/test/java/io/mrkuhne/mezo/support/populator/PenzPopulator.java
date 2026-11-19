@@ -4,12 +4,14 @@ import io.mrkuhne.mezo.feature.penz.entity.PenzAccountEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzCategoryEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzFxRateEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzMonthCloseEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzRecurringRuleEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzSettingsEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
 import io.mrkuhne.mezo.feature.penz.repository.PenzAccountRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzCategoryRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzFxRateRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzMonthCloseRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzRecurringRuleRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzSettingsRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzTransactionRepository;
 import java.math.BigDecimal;
@@ -32,6 +34,7 @@ public class PenzPopulator {
     private final PenzCategoryRepository categoryRepository;
     private final PenzTransactionRepository transactionRepository;
     private final PenzMonthCloseRepository monthCloseRepository;
+    private final PenzRecurringRuleRepository recurringRuleRepository;
     private final PenzFxRateRepository fxRateRepository;
 
     public PenzSettingsEntity settings(UUID owner, long savingsTargetMinor) {
@@ -83,6 +86,41 @@ public class PenzPopulator {
         e.setCurrency("HUF");
         e.setAmountHufMinor(amountMinor);
         e.setDate(date);
+        return transactionRepository.saveAndFlush(e);
+    }
+
+    /** A monthly-or-other recurring rule with its HUF twin given (no FX lookup). */
+    public PenzRecurringRuleEntity recurringRule(UUID owner, UUID accountId, UUID categoryId, String kind,
+                                                 long amountMinor, String currency, long amountHufMinor,
+                                                 String frequency, LocalDate startDate, boolean active) {
+        PenzRecurringRuleEntity e = new PenzRecurringRuleEntity();
+        e.setCreatedBy(owner);
+        e.setName("Ismétlődő " + kind);
+        e.setKind(kind);
+        e.setAmountMinor(amountMinor);
+        e.setCurrency(currency);
+        e.setAmountHufMinor(amountHufMinor);
+        e.setCategoryId(categoryId);
+        e.setAccountId(accountId);
+        e.setFrequency(frequency);
+        e.setStartDate(startDate);
+        e.setActive(active);
+        return recurringRuleRepository.saveAndFlush(e);
+    }
+
+    /** A transaction already linked to a recurring rule on {@code date} (as another writer would leave it). */
+    public PenzTransactionEntity recurringTransaction(UUID owner, UUID accountId, UUID ruleId, String kind,
+                                                      LocalDate date) {
+        PenzTransactionEntity e = new PenzTransactionEntity();
+        e.setCreatedBy(owner);
+        e.setAccountId(accountId);
+        e.setKind(kind);
+        e.setAmountMinor(1L);
+        e.setCurrency("HUF");
+        e.setAmountHufMinor(1L);
+        e.setDate(date);
+        e.setSource("recurring");
+        e.setRecurringRuleId(ruleId);
         return transactionRepository.saveAndFlush(e);
     }
 

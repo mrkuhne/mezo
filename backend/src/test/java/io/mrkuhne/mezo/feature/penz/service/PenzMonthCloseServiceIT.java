@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Boop Pénz L4 (mezo-r36n9.102): the month-close mechanics with an already-computed remaining figure — the
- * figure itself comes from the allowance engine of a later phase. Amounts are invented.
+ * figure itself (the allowance engine's remaining) is proven over HTTP in PenzAllowanceApiIT. Amounts are invented.
  */
 @Transactional
 class PenzMonthCloseServiceIT extends AbstractIntegrationTest {

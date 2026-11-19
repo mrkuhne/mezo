@@ -45,7 +45,7 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * Boop Pénz L4 (mezo-r36n9.102): /api/penz over HTTP — CRUD, ownership isolation, client-ref idempotency,
- * transfer pairs, the one FX policy (cache, fallback, 503) and the not-yet-built engine endpoints (501).
+ * transfer pairs, the one FX policy (cache, fallback, 503), the account flag rules and the month-close guards.
  * frankfurter.dev is stubbed with WireMock (never called live). Amounts are invented.
  */
 class PenzApiIT extends ApiIntegrationTest {
@@ -153,6 +153,12 @@ class PenzApiIT extends ApiIntegrationTest {
             .extracting(PenzAccountResponse::getId).containsExactly(first.getId());
         assertThat(getForList("/api/penz/accounts?includeArchived=true", a.headers(), HttpStatus.OK,
             PenzAccountResponse.class)).hasSize(2);
+        // archiving the default moved the flag to the remaining account; the last active one cannot go
+        assertThat(getForList("/api/penz/accounts", a.headers(), HttpStatus.OK, PenzAccountResponse.class))
+            .singleElement().satisfies(acc -> assertThat(acc.getIsDefault()).isTrue());
+        String last = postForBody("/api/penz/accounts/" + first.getId() + "/archive", null, a.headers(),
+            HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(last, "PENZ_LAST_ACTIVE_ACCOUNT");
 
         // user B sees nothing of A's and cannot touch A's rows
         assertThat(getForList("/api/penz/accounts?includeArchived=true", b.headers(), HttpStatus.OK,
@@ -458,15 +464,7 @@ class PenzApiIT extends ApiIntegrationTest {
             PenzRecurringRuleResponse.class)).isEmpty();
     }
 
-    // ---- allowance + month close (engine-dependent parts: 501 until a later phase) ----
-
-    @Test
-    void allowanceAnswers501UntilTheEngineLands() {
-        RegisteredUser u = registerUser("penz allowance");
-        String err = getForBody("/api/penz/allowance?date=" + RATE_DAY, u.headers(), HttpStatus.NOT_IMPLEMENTED,
-            String.class);
-        assertHasRequestError(err, "PENZ_NOT_IMPLEMENTED");
-    }
+    // ---- month close (the allowance itself: PenzAllowanceApiIT) ----
 
     @Test
     void openMonthsAndTheCloseGuards() {
@@ -484,6 +482,9 @@ class PenzApiIT extends ApiIntegrationTest {
         assertThat(open).extracting(PenzMonthCloseResponse::getMonth).containsExactly(
             current.minusMonths(3).toString(), current.minusMonths(1).toString());
         assertThat(open).allSatisfy(m -> assertThat(m.getClosed()).isFalse());
+        // three months ago: −1 000 Ft spent − 20 000 Ft Gyakorlás, nothing earned
+        assertThat(open.getFirst().getFinalRemaining().getHufMinor()).isEqualTo(-2_100_000L);
+        assertThat(open.getFirst().getDeficit().getHufMinor()).isEqualTo(2_100_000L);
         assertThat(getForList("/api/penz/month-closes", u.headers(), HttpStatus.OK, PenzMonthCloseResponse.class))
             .singleElement().satisfies(c -> {
                 assertThat(c.getClosed()).isTrue();
@@ -497,11 +498,14 @@ class PenzApiIT extends ApiIntegrationTest {
         String closed = postForBody("/api/penz/month-closes/" + current.minusMonths(2), keep, u.headers(),
             HttpStatus.CONFLICT, String.class);
         assertHasRequestError(closed, "PENZ_MONTH_ALREADY_CLOSED");
-        String engine = postForBody("/api/penz/month-closes/" + current.minusMonths(1), keep, u.headers(),
-            HttpStatus.NOT_IMPLEMENTED, String.class);
-        assertHasRequestError(engine, "PENZ_NOT_IMPLEMENTED");
         postForBody("/api/penz/month-closes/" + current.minusMonths(1), Map.of("leftoverAction", "spent"),
             u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        // an empty month still owes the Gyakorlás line (default 20 000 Ft): it closes with that deficit
+        PenzMonthCloseResponse empty = postForBody("/api/penz/month-closes/" + current.minusMonths(1), keep,
+            u.headers(), HttpStatus.OK, PenzMonthCloseResponse.class);
+        assertThat(empty.getFinalRemaining().getHufMinor()).isEqualTo(-2_000_000L);
+        assertThat(empty.getDeficit().getHufMinor()).isEqualTo(2_000_000L);
+        assertThat(empty.getLeftoverAction()).isEqualTo(PenzMonthCloseResponse.LeftoverActionEnum.NONE);
     }
 
     @Test

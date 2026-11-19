@@ -53,6 +53,18 @@ public final class Recurrence {
         return occurrencesInRange(rule, from, today);
     }
 
+    /**
+     * The monthly HUF equivalent of a rule's amount (old {@code recurringMath.ts monthlyHufMinor}): weekly ×52/12,
+     * yearly /12, monthly as is; rounded half up like the old {@code Math.round} (amounts are positive).
+     */
+    public static long monthlyHufMinor(Frequency frequency, long amountHufMinor) {
+        return switch (frequency) {
+            case WEEKLY -> Math.round(amountHufMinor * 52 / 12.0);
+            case YEARLY -> Math.round(amountHufMinor / 12.0);
+            case MONTHLY -> amountHufMinor;
+        };
+    }
+
     private static LocalDate monthlyDate(LocalDate start, YearMonth ym) {
         return ym.atDay(Math.min(start.getDayOfMonth(), ym.lengthOfMonth()));
     }

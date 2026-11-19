@@ -50,7 +50,7 @@ paths:
     post:
       tags: [Penz]
       operationId: createPenzAccount
-      summary: Create an account (isDefault / isSavingsTarget move the flag off every other account)
+      summary: Create an account (isDefault / isSavingsTarget move the flag off every other account; the first account is the default, the first savings account the savings target)
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountRequest' } } }
@@ -77,11 +77,12 @@ paths:
         '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: 'No such account of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/accounts/{id}/archive:
     post:
       tags: [Penz]
       operationId: archivePenzAccount
-      summary: Archive an account (its transactions stay; it leaves the default lists)
+      summary: Archive an account (its transactions stay; it leaves the default lists; a default or savings-target flag moves to the first other active account that can hold it)
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -90,6 +91,7 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzAccountResponse' } } }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: 'No such account of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/categories:
     get:
       tags: [Penz]
@@ -287,15 +289,18 @@ paths:
       tags: [Penz]
       operationId: getPenzAllowance
       summary: The month's free money, the week's budget and what is left — with every line of the derivation
+      description: >-
+        Due recurring occurrences are written as transactions first. week.perDay = max(0, week.remaining) / the days
+        left in the Monday-start week counting the date itself (floored to a whole minor unit). previousDeficit is
+        the deficit the previous month's close stored (0 while that month is open).
       parameters:
-        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: date, in: query, required: false, description: "Defaults to today in the owner's money timezone", schema: { type: string, format: date } }
       responses:
         '200':
           description: The allowance for the month and week containing the date
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzAllowanceResponse' } } }
         '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '501': { description: 'Not built yet (PENZ_NOT_IMPLEMENTED) — the engine lands in a later phase of L4', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/month-closes:
     get:
       tags: [Penz]
@@ -312,7 +317,7 @@ paths:
     get:
       tags: [Penz]
       operationId: listOpenPenzMonths
-      summary: Past months that have transactions and no close yet, oldest first (closed = false)
+      summary: Past months that have transactions and no close yet, oldest first (closed = false), with the finalRemaining and deficit a close would store now
       responses:
         '200':
           description: Open months
@@ -340,7 +345,6 @@ paths:
         '400': { description: 'Validation failure, or the month is not over yet', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '409': { description: 'Already closed, or no savings-target account for a transfer', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '501': { description: 'Not built yet (PENZ_NOT_IMPLEMENTED) — the remaining figure needs the engine of a later phase', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
     PenzMoney:

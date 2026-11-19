@@ -18,7 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Recurring income and fixed costs (Boop Pénz L4, mezo-r36n9.102; the old app's RecurringRule). The HUF twin
  * is booked through the one FX policy at {@code min(startDate, today)} and stored; it is re-booked only when the
- * amount, currency or start date changes. Materializing rules into transactions is not part of this slice.
+ * amount, currency or start date changes. Materializing rules into transactions is
+ * {@link PenzRecurringMaterializer}'s job.
+ *
+ * <p>Edits never rewrite or backfill history (old {@code recurringMath.ts}): an edit of the schedule or the amount
+ * leaves {@code last_materialized_date} alone, so it applies only to occurrences after it. Pausing only flips
+ * {@code active}; RESUMING skips the paused period — {@code last_materialized_date} becomes yesterday (the owner's
+ * today − 1), so materialization restarts from today.
  */
 @Service
 @RequiredArgsConstructor
@@ -91,6 +97,15 @@ public class PenzRecurringRuleService {
         row.setFrequency(req.getFrequency());
         row.setStartDate(req.getStartDate());
         row.setEndDate(req.getEndDate());
-        row.setActive(req.getActive() == null || req.getActive());
+        boolean active = req.getActive() == null || req.getActive();
+        if (row.getId() != null && !row.isActive() && active) {
+            row.setLastMaterializedDate(resumedLastMaterialized(settings.today(owner)));
+        }
+        row.setActive(active);
+    }
+
+    /** Resuming a paused rule: {@code last_materialized_date} = yesterday (old {@code rulePatchForToggle}). */
+    static LocalDate resumedLastMaterialized(LocalDate today) {
+        return today.minusDays(1);
     }
 }

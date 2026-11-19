@@ -43,12 +43,17 @@ public class PenzTransactionService {
     private final PenzCategoryService categories;
     private final PenzSettingsService settings;
     private final PenzFxService fx;
+    private final PenzRecurringMaterializer materializer;
     private final PenzMapper mapper;
 
-    /** One month's live transactions, newest first; {@code needsReview} filters when given. */
-    @Transactional(readOnly = true)
+    /**
+     * One month's live transactions, newest first; {@code needsReview} filters when given. Due recurring
+     * occurrences are materialized first, so the list shows them.
+     */
+    @Transactional
     public List<PenzTransactionResponse> list(UUID owner, String month, Boolean needsReview) {
         YearMonth m = PenzMonths.requireMonth(month);
+        materializer.materializeDue(owner, settings.today(owner));
         return repository.findByCreatedByAndDateBetweenAndDeletedFalseOrderByDateDescCreatedAtDesc(
                 owner, PenzMonths.first(m), PenzMonths.last(m)).stream()
             .filter(t -> needsReview == null || t.isNeedsReview() == needsReview)
@@ -94,8 +99,8 @@ public class PenzTransactionService {
         if (transfer ? !row.getKind().equals(req.getKind()) : TRANSFER_KINDS.contains(req.getKind())) {
             throw PenzErrors.field("kind");
         }
-        boolean rebook = row.getAmountMinor() != req.getAmountMinor()
-            || !row.getCurrency().equals(req.getCurrency()) || !row.getDate().equals(req.getDate());
+        boolean rebook = needsHufRecompute(row.getAmountMinor(), row.getCurrency(), row.getDate(),
+            req.getAmountMinor(), req.getCurrency(), req.getDate());
         Booking booking = rebook
             ? fx.book(req.getCurrency(), req.getAmountMinor(), req.getDate(), settings.today(owner))
             : new Booking(row.getAmountHufMinor(), row.getFxRate(), row.getFxRateDate());
@@ -242,6 +247,15 @@ public class PenzTransactionService {
         row.setAmountHufMinor(booking.hufMinor());
         row.setFxRate(booking.rate());
         row.setFxRateDate(booking.rateDate());
+    }
+
+    /**
+     * Editing the amount, the currency or the date invalidates the stored HUF twin (the old app's
+     * {@code needsHufRecompute}); any other edit keeps it — history is never re-derived.
+     */
+    static boolean needsHufRecompute(long oldAmountMinor, String oldCurrency, LocalDate oldDate,
+                                     long newAmountMinor, String newCurrency, LocalDate newDate) {
+        return oldAmountMinor != newAmountMinor || !oldCurrency.equals(newCurrency) || !oldDate.equals(newDate);
     }
 
     private static String blankToNull(String s) {

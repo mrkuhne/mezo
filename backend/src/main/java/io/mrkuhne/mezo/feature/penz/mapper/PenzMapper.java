@@ -1,6 +1,10 @@
 package io.mrkuhne.mezo.feature.penz.mapper;
 
 import io.mrkuhne.mezo.api.dto.PenzAccountResponse;
+import io.mrkuhne.mezo.api.dto.PenzAllowanceLine;
+import io.mrkuhne.mezo.api.dto.PenzAllowanceMonth;
+import io.mrkuhne.mezo.api.dto.PenzAllowanceResponse;
+import io.mrkuhne.mezo.api.dto.PenzAllowanceWeek;
 import io.mrkuhne.mezo.api.dto.PenzCategoryResponse;
 import io.mrkuhne.mezo.api.dto.PenzMoney;
 import io.mrkuhne.mezo.api.dto.PenzMonthCloseResponse;
@@ -11,8 +15,14 @@ import io.mrkuhne.mezo.feature.penz.entity.PenzCategoryEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzMonthCloseEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzRecurringRuleEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
+import io.mrkuhne.mezo.feature.penz.service.engine.AllowanceLine;
+import io.mrkuhne.mezo.feature.penz.service.engine.CloseOutcome;
+import io.mrkuhne.mezo.feature.penz.service.engine.MonthlyAllowance;
+import io.mrkuhne.mezo.feature.penz.service.engine.WeeklyAllowance;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -53,9 +63,29 @@ public interface PenzMapper {
         expression = "java(PenzMonthCloseResponse.LeftoverActionEnum.fromValue(e.getLeftoverAction()))")
     PenzMonthCloseResponse toResponse(PenzMonthCloseEntity e);
 
-    /** A month with transactions and no close yet — its figures need the allowance engine (later phase). */
-    default PenzMonthCloseResponse openMonth(String month) {
-        return new PenzMonthCloseResponse().month(month).closed(false);
+    /**
+     * A month with transactions and no close yet, with the figures a close would store now: the engine's
+     * remaining (previous deficit only from a CLOSED previous month) and the deficit it would carry over.
+     */
+    default PenzMonthCloseResponse openMonth(YearMonth month, CloseOutcome outcome, long remainingHufMinor) {
+        return new PenzMonthCloseResponse().month(month.toString()).closed(false)
+            .finalRemaining(huf(remainingHufMinor)).deficit(huf(outcome.deficitMinor()));
+    }
+
+    /** The allowance of {@code date}: month figures, week figures (+ the per-day figure) and the 10 lines. */
+    default PenzAllowanceResponse allowance(LocalDate date, MonthlyAllowance m, WeeklyAllowance w, long perDayHufMinor) {
+        return new PenzAllowanceResponse()
+            .date(date)
+            .month(new PenzAllowanceMonth().month(m.month().toString()).free(huf(m.freeMinor()))
+                .spent(huf(m.spentMinor())).remaining(huf(m.remainingMinor())))
+            .week(new PenzAllowanceWeek().start(w.weekStart()).end(w.weekEnd()).budget(huf(w.budgetMinor()))
+                .spent(huf(w.spentMinor())).remaining(huf(w.remainingMinor())).perDay(huf(perDayHufMinor)))
+            .lines(m.lines().stream().map(this::line).toList());
+    }
+
+    default PenzAllowanceLine line(AllowanceLine l) {
+        return new PenzAllowanceLine().key(PenzAllowanceLine.KeyEnum.fromValue(l.key().wireKey()))
+            .amount(huf(l.amountMinor()));
     }
 
     default PenzMoney money(long minor, String currency, long hufMinor) {
