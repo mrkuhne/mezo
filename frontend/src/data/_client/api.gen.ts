@@ -6696,9 +6696,9 @@ export interface components {
             muscles: {
                 [key: string]: number;
             };
-            /** @description Technique picks of this week (stored picks for the current week, planner projection for later weeks); absent when the block does not opt in. */
+            /** @description Technique picks of this week (stored picks for the current week, planner projection for later weeks); null when the block does not opt in. */
             techniques?: components["schemas"]["PlannedTechnique"][];
-            /** @description The day challenges (partial-rep add-on) of this week; absent when the block does not opt in. */
+            /** @description The day challenges (partial-rep add-on) of this week; null when the block does not opt in. */
             challenges?: components["schemas"]["PlannedChallenge"][];
         };
         PlannedTechnique: {
@@ -6725,7 +6725,7 @@ export interface components {
             muscles: components["schemas"]["MuscleEvaluation"][];
             days: components["schemas"]["DayEvaluation"][];
             path: components["schemas"]["VolumePathWeek"][];
-            /** @description Technique planner notes (owner picks over the allowance, a day without a challenge candidate); absent when the block does not opt in. */
+            /** @description Technique planner notes (owner picks over the allowance, a day without a challenge candidate); null when the block does not opt in. */
             techniqueWarnings?: components["schemas"]["TechniqueWarning"][];
         };
         MesoPlanGenerateResponse: {

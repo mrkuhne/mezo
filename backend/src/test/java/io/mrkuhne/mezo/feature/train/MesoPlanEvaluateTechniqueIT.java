@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -74,9 +76,7 @@ class MesoPlanEvaluateTechniqueIT extends ApiIntegrationTest {
             draft(TrainingStyle.BALANCED, null, day("Hét", pecDeck(), cableFly())),
             draft(null, true, day("Hét", pecDeck(), cableFly())))) {
             String json = postForBody(EVALUATE, req, ownerAuthHeaders(), HttpStatus.OK, String.class);
-            assertThat(json).doesNotContainPattern("\"techniques\":\\s*\\[")
-                .doesNotContainPattern("\"challenges\":\\s*\\[")
-                .doesNotContainPattern("\"techniqueWarnings\":\\s*\\[");
+            assertUnflaggedShape(json);
         }
     }
 
@@ -151,10 +151,21 @@ class MesoPlanEvaluateTechniqueIT extends ApiIntegrationTest {
             startRun(TrainingStyle.BALANCED, null, day("Hét", pecDeck(), cableFly())))) {
             String json = getForBody("/api/train/mesocycles/" + run.getId() + "/evaluation", ownerAuthHeaders(),
                 HttpStatus.OK, String.class);
-            assertThat(json).doesNotContainPattern("\"techniques\":\\s*\\[")
-                .doesNotContainPattern("\"challenges\":\\s*\\[")
-                .doesNotContainPattern("\"techniqueWarnings\":\\s*\\[");
+            assertUnflaggedShape(json);
         }
+    }
+
+    /** An unflagged block: every path week's techniques / challenges and the techniqueWarnings are JSON null. */
+    private void assertUnflaggedShape(String json) {
+        JsonNode root = JsonMapper.builder().build().readTree(json);
+        assertThat(root.has("techniqueWarnings")).isTrue();
+        assertThat(root.get("techniqueWarnings").isNull()).isTrue();
+        assertThat(root.get("path")).isNotEmpty().allSatisfy(week -> {
+            assertThat(week.has("techniques")).isTrue();
+            assertThat(week.get("techniques").isNull()).isTrue();
+            assertThat(week.has("challenges")).isTrue();
+            assertThat(week.get("challenges").isNull()).isTrue();
+        });
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────────

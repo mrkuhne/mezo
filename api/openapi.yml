@@ -16524,15 +16524,15 @@ components:
             $ref: '#/components/schemas/PlannedTechnique'
           description: >-
             Technique picks of this week (stored picks for the current week,
-            planner projection for later weeks); absent when the block does not
+            planner projection for later weeks); null when the block does not
             opt in.
         challenges:
           type: array
           items:
             $ref: '#/components/schemas/PlannedChallenge'
           description: >-
-            The day challenges (partial-rep add-on) of this week; absent when
-            the block does not opt in.
+            The day challenges (partial-rep add-on) of this week; null when the
+            block does not opt in.
     PlannedTechnique:
       type: object
       required:
@@ -16614,8 +16614,7 @@ components:
             $ref: '#/components/schemas/TechniqueWarning'
           description: >-
             Technique planner notes (owner picks over the allowance, a day
-            without a challenge candidate); absent when the block does not opt
-            in.
+            without a challenge candidate); null when the block does not opt in.
     MesoPlanGenerateResponse:
       type: object
       required:
