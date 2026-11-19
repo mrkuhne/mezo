@@ -132,8 +132,7 @@ phone before the web deployment is deleted.
 ### 4.5 iPhone: the web links go
 
 The two "állítsd be a webes appban" cards and the account sheet's "Webes app" row are removed (`webAppURL`
-deleted). Where a card explained something still missing on the iPhone, it is replaced only if the owner decides
-so (§6 Q1). Requires `xcodebuild test`, a build and an install on the phone.
+deleted). No replacement card: the owner asks a session for web-only settings until B6 (§6). Requires `xcodebuild test`, a build and an install on the phone.
 
 ### 4.6 Repository, CI, deploy, docs
 
