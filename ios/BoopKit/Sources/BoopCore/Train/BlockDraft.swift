@@ -60,6 +60,17 @@ public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
         }
     }
 
+    /// One or two sentences on what it is — the picker's info text.
+    public var about: String {
+        switch self {
+        case .none: "Minden sorozat ugyanúgy megy, technika nélkül."
+        case .restDrop: "Az utolsó sorozat bukásig, 30 mp pihenő, aztán 30%-kal kisebb súllyal ugyanannyi ismétlés. Kevesebb idő alatt ugyanannyi munka."
+        case .drop: "Az utolsó sorozat bukásig, majd pihenő nélkül 20%-kal kisebb súllyal újra bukásig."
+        case .myo: "Az utolsó sorozat majdnem bukásig, aztán 20 mp-es pihenőkkel 3–5 ismétléses mini-sorozatok, amíg megy."
+        case .partials: "Az utolsó teljes sorozat után azonnal félismétlések a nyújtott helyzetben, amennyi megy. Csak ott, ahol ez biztonságos."
+        }
+    }
+
     public var steps: [String] {
         switch self {
         case .none: []
@@ -119,6 +130,14 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     }
 
     public var canTakeChallenge: Bool { stable && lengthened && judged }
+
+    /// Why a technique is not offered on this exercise, in his words; nil when it is.
+    public func unavailableReason(_ technique: SetTechnique) -> String? {
+        if allowedTechniques.contains(technique) { return nil }
+        if !judged { return "Ez a gyakorlat nem számít bele a sorozatokba." }
+        if !stable { return "Szabadsúlyos gyakorlaton nincs technika." }
+        return "Ennél a gyakorlatnál a nyújtott helyzet ismétlése nem biztonságos."
+    }
 }
 
 public struct DraftDay: Identifiable, Equatable, Sendable {
@@ -225,6 +244,15 @@ public struct BlockDraft: Equatable, Sendable {
         guard options.count > 1 else { return }
         let i = options.firstIndex(of: ex.technique) ?? 0
         days[day].exercises[exercise].technique = options[(i + 1) % options.count]
+    }
+
+    /// Picks a technique from the picker. An offered one only; picking a technique takes the day's challenge off this
+    /// exercise (the challenge is its own half-rep finish, spec §11 q6).
+    public mutating func setTechnique(day: Int, exercise: Int, _ technique: SetTechnique) {
+        guard techniquesEnabled, days.indices.contains(day), days[day].exercises.indices.contains(exercise),
+              days[day].exercises[exercise].allowedTechniques.contains(technique) else { return }
+        days[day].exercises[exercise].technique = technique
+        if technique != .none { days[day].exercises[exercise].challenge = false }
     }
 
     /// One challenge a day: picking a new one takes it from the old; tapping the same one clears it. The challenge

@@ -161,4 +161,20 @@ struct BlockDraftTests {
         #expect(coarseMuscle("hamstring") == "ham")
         #expect(coarseMuscle("abs") == "core")
     }
+
+    @Test func pickerSetsOnlyOfferedTechniquesAndClearsTheChallenge() {
+        var d = PlanFixtures.draft
+        d.setTechnique(day: 0, exercise: 1, .myo)
+        #expect(d.days[0].exercises[1].technique == .none, "techniques off")
+        d.techniquesEnabled = true
+        d.toggleChallenge(day: 0, exercise: 1)
+        d.setTechnique(day: 0, exercise: 1, .myo)
+        #expect(d.days[0].exercises[1].technique == .myo && !d.days[0].exercises[1].challenge)
+        d.setTechnique(day: 0, exercise: 0, .partials)
+        #expect(d.days[0].exercises[0].technique == .none, "not lengthened: half reps not offered")
+        #expect(d.days[0].exercises[0].unavailableReason(.partials) != nil)
+        #expect(d.days[1].exercises[0].unavailableReason(.drop) == "Szabadsúlyos gyakorlaton nincs technika.")
+        #expect(d.days[0].exercises[1].unavailableReason(.partials) == nil)
+        for t in SetTechnique.allCases { #expect(!t.about.isEmpty) }
+    }
 }
