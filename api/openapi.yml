@@ -17571,7 +17571,9 @@ components:
       properties:
         partialsBest:
           type: array
-          description: Best partials-leg reps per parent weight (derived).
+          description: >-
+            Best partials-leg reps per parent weight (derived), plain challenge
+            sets only (no other technique before the half reps).
           items:
             $ref: '#/components/schemas/PartialsBestEntry'
         catalogId:

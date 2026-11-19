@@ -7063,7 +7063,7 @@ export interface components {
             date: string;
         };
         ExerciseRecordResponse: {
-            /** @description Best partials-leg reps per parent weight (derived). */
+            /** @description Best partials-leg reps per parent weight (derived), plain challenge sets only (no other technique before the half reps). */
             partialsBest?: components["schemas"]["PartialsBestEntry"][];
             /**
              * Format: uuid
