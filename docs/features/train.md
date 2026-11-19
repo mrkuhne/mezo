@@ -1185,6 +1185,7 @@ Both modes and both layers must stay green.
 ## 9. Decisions, gotchas & deferred
 
 - **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
+- **No push anchors on sessions (2026-11-19, `mezo-r36n9.97.7`).** The browser web push that anchored gym/sport reminders (`AnchorResolver`) was retired; train code only lost comments pointing at it. The 0=Hét..6=Vas slot convention trap stays documented on `SportSlotSkipEntity`/`SportSlotSkipService`.
 - **Exercise-selection research, not approved product behavior.** The [personalized exercise selection digest](../research/concepts/personalized-exercise-selection.md) records Nippard's goal/equipment/comfort/progression criteria and where the current catalog, generator, swap flow and readiness logic could use them. It does not change today's selection rules or promise a specific exercise ranking.
 
 - **Volume engine v2 (`mezo-r36n9.65`, S1, 2026-11-18) — decisions and traps** (the engine itself: §4 `#### Volume engine v2`; deviations from the spec: its §12).

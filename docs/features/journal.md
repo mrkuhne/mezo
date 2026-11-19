@@ -913,6 +913,7 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
 ## 9. Decisions, gotchas & deferred
 
 - **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
+- **Decision-review push gone (2026-11-19, `mezo-r36n9.97.7`).** The browser web push that reminded on `review_due` was retired, so `DecisionEntryRepository.findByCreatedByAndReviewDueAndReviewedAtIsNullAndDeletedFalse` (its only reader) and its persistence test are gone. Review due dates are still stored and shown.
 - **Decision — update-in-place re-embed, not delete+insert (spec deviation, mechanical not
   design).** Spec §5.1 describes edits re-embedding via "delete+insert on the `(kind, ref_id)`
   key". `uq_memory_embedding_kind_ref_id` spans **soft-deleted** rows (the index has no
