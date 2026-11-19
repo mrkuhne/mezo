@@ -2,7 +2,6 @@ package io.mrkuhne.mezo.feature.companion.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
@@ -12,22 +11,17 @@ import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
-import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
-import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
-import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
-import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.IntentionPopulator;
-import io.mrkuhne.mezo.support.populator.LevelUpEventPopulator;
 import io.mrkuhne.mezo.support.populator.LifeGoalPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
@@ -35,11 +29,9 @@ import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
-import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.support.populator.RitualPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
-import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
@@ -79,15 +71,12 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private FuelTools fuelTools;
     @Autowired private GoalTools goalTools;
     @Autowired private MedicationTools medicationTools;
-    @Autowired private GrowthTools growthTools;
     @Autowired private PracticeTools practiceTools;
     @Autowired private InsightsTools insightsTools;
     @Autowired private LifeGoalTools lifeGoalTools;
-    @Autowired private QuestPopulator questPopulator;
     @Autowired private HabitPopulator habitPopulator;
     @Autowired private IntentionPopulator intentionPopulator;
     @Autowired private RitualPopulator ritualPopulator;
-    @Autowired private ActivityPopulator activityPopulator;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private GoalPlanLinkPopulator goalPlanLinkPopulator;
     @Autowired private MedicationPopulator medicationPopulator;
@@ -109,9 +98,6 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private ProtocolPopulator protocolPopulator;
     @Autowired private SupplementIntakePopulator supplementIntakePopulator;
     @Autowired private RecipePopulator recipePopulator;
-    @Autowired private SkillProgressPopulator skillProgressPopulator;
-    @Autowired private LevelUpEventPopulator levelUpEventPopulator;
-    @Autowired private GamificationPopulator gamificationPopulator;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private LifeGoalPopulator lifeGoalPopulator;
 
@@ -1604,116 +1590,21 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetGrowth_shouldRenderAccountLevelAndSeededSkillLines_whenScopeSkills() {
-        UUID owner = userPopulator.createUser().getId();
-        skillProgressPopulator.createSkill(owner, "max_strength", "ATHLETIC", 1200, 3);
-        skillProgressPopulator.createSkill(owner, "cooking", "LIFE", 300, 2);
-
-        String out = growthTools.getGrowth("skills", ctx(owner));
-
-        // totalXp=1500 walks the account curve (80,120,160,200,240,280,320,...) to level 8 —
-        // the REAL GamificationService computation, not a placeholder.
-        assertThat(out).startsWith("Fejlődés: 8. szint, 1500 XP")
-                .contains("Athletic: max_strength: Lv 3 (1200 XP)")
-                .contains("Life: cooking: Lv 2 (300 XP)")
-                .doesNotContain("Izom:"); // no muscle skill seeded -> no ghost line
-        assertThat(audit.toRefsEnvelope().refs())
-                .containsExactly(new RefsEnvelope.Ref("Growth", "skills"));
-    }
-
-    @Test
-    void testGetGrowth_shouldRenderNincsAdat_whenScopeSkillsAndNoProgressionRows() {
-        assertThat(growthTools.getGrowth("skills", ctx(userPopulator.createUser().getId())))
-                .isEqualTo("Fejlődés: nincs adat");
-        assertThat(audit.toRefsEnvelope()).isNull();
-    }
-
-    @Test
-    void testGetGrowth_shouldDefaultScopeToSkills_whenScopeNull() {
-        assertThat(growthTools.getGrowth(null, ctx(userPopulator.createUser().getId())))
-                .isEqualTo("Fejlődés: nincs adat");
-    }
-
-    @Test
-    void testGetGrowth_shouldRenderWeeklyRollupWithLifeXp_whenScopeWeek() {
-        UUID owner = userPopulator.createUser().getId();
-        LevelUpResult payload = new LevelUpResult("HABIT", "Meditáció", null, null, 150,
-                List.of(new LevelUpResult.Gain("cooking", "LIFE", "cooking", null, 150, 1, 2, 0, 50)),
-                List.of(), List.of(), new LevelUpResult.Robustness(0, 0));
-        levelUpEventPopulator.createEvent(owner, "HABIT", UUID.randomUUID(), payload);
-        LocalDate weekStart = LocalDate.now().with(DayOfWeek.MONDAY);
-
-        String out = growthTools.getGrowth("week", ctx(owner));
-
-        assertThat(out).startsWith("Heti növekedés (" + weekStart + "):")
-                .contains("LIFE XP: 150");
-        assertThat(audit.toRefsEnvelope().refs())
-                .containsExactly(new RefsEnvelope.Ref("Growth", "week-" + weekStart));
-    }
-
-    @Test
-    void testGetGrowth_shouldRenderBadgesWithRealProgress_whenScopeAchievements() {
-        UUID owner = userPopulator.createUser().getId();
-        skillProgressPopulator.createSkill(owner, "cooking", "LIFE", 12000, 6);
-
-        String out = growthTools.getGrowth("achievements", ctx(owner));
-
-        // life_lv5 (target 5) and life_xp_10k (target 10000) both cross their target from the
-        // single seeded LIFE row — the REAL AchievementService derive-on-read computation.
-        assertThat(out).startsWith("Eredmények:")
-                .contains("LIFE Lv 5: 6/5 (elérve)")
-                .contains("10 000 LIFE XP: 12000/10000 (elérve)");
-        assertThat(audit.toRefsEnvelope().refs())
-                .containsExactly(new RefsEnvelope.Ref("Growth", "achievements"));
-    }
-
-    @Test
-    void testGetGrowth_shouldRenderEquippedAndOwnedTitles_whenScopeTitles() {
-        UUID owner = userPopulator.createUser().getId();
-        gamificationPopulator.ownedTitle(owner, "lendulet");
-
-        String out = growthTools.getGrowth("titles", ctx(owner));
-
-        // display names resolved from the TitleCatalog (content/gamification-titles.json), not the
-        // raw catalog keys ("ujonc"/"lendulet") — the account is born equipped with the default
-        // title (TitleCatalog.DEFAULT_TITLE_KEY="ujonc" -> "Az Újonc"); "lendulet" -> "A Lendület".
-        assertThat(out).isEqualTo("Címek: felszerelt — Az Újonc; birtokolt: A Lendület");
-        assertThat(audit.toRefsEnvelope().refs())
-                .containsExactly(new RefsEnvelope.Ref("Growth", "titles"));
-    }
-
-    @Test
-    void testGetGrowth_shouldFallBackToRawKey_whenScopeTitlesAndOwnedKeyMissingFromCatalog() {
-        UUID owner = userPopulator.createUser().getId();
-        gamificationPopulator.ownedTitle(owner, "nem-letezo-cim");
-
-        String out = growthTools.getGrowth("titles", ctx(owner));
-
-        // honest degrade: an owned key absent from the static TitleCatalog content renders as the
-        // raw key rather than crashing or silently dropping the entry.
-        assertThat(out).isEqualTo("Címek: felszerelt — Az Újonc; birtokolt: nem-letezo-cim");
-    }
-
-    @Test
-    void testGetDailyPractice_shouldComposeQuestHabitIntentionRitualAndActivity_whenAllSeeded() {
+    void testGetDailyPractice_shouldComposeHabitIntentionAndRitual_whenAllSeeded() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();
         intentionPopulator.creed(owner, "Mindig tartsd a szavad.");
         intentionPopulator.focus(owner, today, "Reggeli edzés befejezése");
-        questPopulator.quest(owner, today, DailyQuestEntity.SLOT_BODY, "test_quest",
-                "recovery", "LIFE", "manual", null, 20, DailyQuestEntity.STATUS_COMPLETED);
         habitPopulator.row(owner, today, "morning_pushups", HabitDayEntity.STATUS_DONE);
         ritualPopulator.closedDay(owner, today);
-        activityPopulator.activity(owner, today, "Olvastam 20 percet", "learning", 15, ActivityLogEntity.BY_AI);
 
         String out = practiceTools.getDailyPractice(null, ctx(owner));
 
         assertThat(out).startsWith("Napi gyakorlat (" + today + "):")
-                .contains("Küldetések: 1/1 lezárva")
+                .doesNotContain("Küldetések").doesNotContain("Tevékenységek")
                 .contains("Szokások (ma állapot szerint): reggeli 0, esti 0 tökéletes nap (30 nap); morning_pushups: 1/28")
                 .contains("Szándék: hitvallás — Mindig tartsd a szavad.; mai fókusz: Reggeli edzés befejezése")
-                .contains("Napzárás: zárva")
-                .contains("Tevékenységek: Olvastam 20 percet (15 XP)");
+                .contains("Napzárás: zárva");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Practice", today.toString()));
     }
@@ -1726,11 +1617,9 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         String out = practiceTools.getDailyPractice(null, ctx(owner));
 
         assertThat(out).startsWith("Napi gyakorlat (" + today + "):"
-                + "\nKüldetések: nincs adat"
                 + "\nSzokások (ma állapot szerint): reggeli 0, esti 0 tökéletes nap (30 nap)"
                 + "\nSzándék: hitvallás — nincs adat; mai fókusz: nincs adat"
-                + "\nNapzárás: nyitva"
-                + "\nTevékenységek: nincs adat");
+                + "\nNapzárás: nyitva");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Practice", today.toString()));
     }
@@ -1838,7 +1727,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         ritualPopulator.openDay(owner, LocalDate.now(), "Ma fontos volt a pihenés.");
         assertThat(practiceTools.getDailyPractice(null, ctx(owner)))
-                .contains("Ma fontos volt a pihenés.", "read_personal_records", "daily_quest", "habit_day");
+                .contains("Ma fontos volt a pihenés.", "read_personal_records", "habit_day")
+                .doesNotContain("daily_quest");
     }
 
     @Test

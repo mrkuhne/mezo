@@ -9,7 +9,6 @@ import io.mrkuhne.mezo.api.dto.MedalListResponse;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
-import io.mrkuhne.mezo.feature.progression.config.ProgressionProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -19,7 +18,6 @@ import io.mrkuhne.mezo.feature.train.service.MedalService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -46,7 +44,6 @@ class MedalApiIT extends ApiIntegrationTest {
     @Autowired private ExerciseSetRepository exerciseSetRepository;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private MedalService medalService;
-    @Autowired private ProgressionProperties progressionProperties;
 
     /** Find-or-create yields the demodata-seeded owner's id — the principal behind ownerAuthHeaders(). */
     private UUID ownerId() {
@@ -450,7 +447,7 @@ class MedalApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testFinishWorkout_shouldPayThePrBonusPerRecordMedal_whenRecordsWereBroken() {
+    void testFinishWorkout_shouldReturnRecordMedalsWithoutLevelUp_whenRecordsWereBroken() {
         UUID owner = ownerId();
         MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
         WorkoutSessionEntity template =
@@ -481,17 +478,9 @@ class MedalApiIT extends ApiIntegrationTest {
         assertThat(body.getMedals()).allSatisfy(
             m -> assertThat(m.getTier()).isEqualTo(Medal.TierEnum.RECORD));
 
-        BigDecimal bestE1rm = new BigDecimal("102.50")
-            .multiply(BigDecimal.valueOf(38)).divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
-        ProgressionProperties.Gym gym = progressionProperties.gym();
-        long plainE1rmXp = (long) bestE1rm.intValue() * gym.e1rmXpPerKg();
-        long expectedBonus = 2L * gym.prBonusXp();
-
-        assertThat(body.getLevelUp()).isNotNull();
-        assertThat(body.getLevelUp().getGains()).anySatisfy(g -> {
-            assertThat(g.getSkillKey()).isEqualTo("max_strength");
-            assertThat(g.getXpGained()).isEqualTo(plainE1rmXp + expectedBonus);
-        });
+        // the XP world left the server (mezo-r36n9.97.5): the optional levelUp field stays in the
+        // iPhone's contract copy but is never populated
+        assertThat(body.getLevelUp()).isNull();
     }
 
     @Test
@@ -517,53 +506,8 @@ class MedalApiIT extends ApiIntegrationTest {
             "/api/train/workouts/" + active.getId() + "/finish", null,
             ownerAuthHeaders(), HttpStatus.OK, WorkoutInstanceResponse.class);
 
-        assertThat(second.getLevelUp().getTotalXp()).isEqualTo(first.getLevelUp().getTotalXp());
-        assertThat(second.getLevelUp().getGains()).isEqualTo(first.getLevelUp().getGains());
-    }
-
-    @Test
-    void testFinishWorkout_shouldSaturateTheTargetBonus_whenTheSessionBeatsTheTargetMedalCap() {
-        ProgressionProperties.Gym gym = progressionProperties.gym();
-        int setCount = gym.targetMedalCap() + 3; // strictly ABOVE the cap — the point of the test
-
-        UUID owner = ownerId();
-        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Hyp 04", "active");
-        WorkoutSessionEntity template =
-            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "push", 0, "planned");
-        ExerciseEntity bench = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
-        WorkoutSessionEntity active =
-            trainPopulator.createWorkoutInstance(owner, template, DAY_1, "active");
-        // Every set is identical (100 kg × 8) and exactly on its prescribed target. A tie beats
-        // nothing, so WEIGHT / REPS_AT_WEIGHT / E1RM never fire (the first set only establishes the
-        // baseline silently); with no PRIOR session there is no volume baseline either, so
-        // SESSION_VOLUME cannot fire. The session therefore earns TARGET_HIT medals and NOTHING
-        // else — no RECORD-tier medal can perturb max_strength and muddy the arithmetic below.
-        // Distinct doneAt per set keeps the replay order total.
-        for (int i = 0; i < setCount; i++) {
-            trainPopulator.createTargetedSet(owner, bench.getId(), active.getId(), i,
-                "100.00", 8, "100.00", 8, middayOf(DAY_1).plusSeconds(60L * i));
-        }
-
-        WorkoutInstanceResponse body = postForBody(
-            "/api/train/workouts/" + active.getId() + "/finish", null,
-            ownerAuthHeaders(), HttpStatus.OK, WorkoutInstanceResponse.class);
-
-        // the fixture really does clear the cap, and really does earn TARGET-tier medals only
-        assertThat(body.getMedals()).hasSize(setCount)
-            .allSatisfy(m -> assertThat(m.getTier()).isEqualTo(Medal.TierEnum.TARGET));
-
-        // bodyweightRepCount is 0 here (every set is weighted), so that term drops out
-        long capped = (long) setCount * gym.strengthEnduranceXpPerSet()
-            + gym.targetMedalCap().longValue() * gym.targetMedalXp();
-        long uncapped = (long) setCount * gym.strengthEnduranceXpPerSet()
-            + (long) setCount * gym.targetMedalXp();
-
-        assertThat(body.getLevelUp()).isNotNull();
-        assertThat(body.getLevelUp().getGains()).anySatisfy(g -> {
-            assertThat(g.getSkillKey()).isEqualTo("strength_endurance");
-            // isNotEqualTo(uncapped) is the tooth: it fails both if Math.min never saturated AND
-            // if a future tuning made the fixture degenerate (setCount <= cap ⇒ capped == uncapped)
-            assertThat(g.getXpGained()).isEqualTo(capped).isNotEqualTo(uncapped);
-        });
+        assertThat(second.getMedals()).isEqualTo(first.getMedals());
+        assertThat(first.getLevelUp()).isNull();
+        assertThat(second.getLevelUp()).isNull();
     }
 }

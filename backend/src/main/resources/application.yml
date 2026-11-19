@@ -274,9 +274,6 @@ mezo:
     # Shared personal feed context; rollback by setting this switch false (ADR 0050/0051).
     contextual-feed:
       enabled: true
-    # Gamified progression engine (post-workout level-up + XP). No matchIfMissing — declared explicitly.
-    progression:
-      enabled: true
     # Hypertrophy Drive — pre-populated prescribed sets + dynamic recommendation on GET /workouts/today.
     hypertrophy-drive:
       enabled: true
@@ -372,14 +369,6 @@ mezo:
     # teendő's only home; needs the character, companion, proactive and intervention switches too.
     team-chat:
       enabled: true
-    # Gamified growth E1 (ADR 0010) — daily quests (catalog-driven, derived completion).
-    # Off => the /api/quest surface 404s and no quest beans exist.
-    quest:
-      enabled: true
-    # Gamified growth E2 — activity log (bd mezo-jzca): free-text life-activity logging with AI
-    # categorization onto the LIFE band; off ⇒ /api/activity surface 404s and no activity beans.
-    activity:
-      enabled: true
     # Habit engine (bd mezo-d1jb) — fixed morning/evening routine chains; off ⇒ the /api/habit
     # surface 404s and no habit beans exist (reads still close lazily on GET).
     habit:
@@ -425,10 +414,6 @@ mezo:
     # (draft) meal-slot template; nothing persisted. Needs the companion switch too (adapter
     # bean), otherwise the endpoint answers 503.
     slot-template-ai:
-      enabled: true
-    # Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
-    # and the AccountProgressPort adapter is absent (progression awards fire no coin hook).
-    gamification:
       enabled: true
     # LLM call audit log (bd mezo-2zyu) — ON by default (mezo-ozri.1, spec §2 L1): a future model
     # router and per-user USD cap would both be built on this measurement, so with it off they would
@@ -588,10 +573,6 @@ mezo:
       # mezo.proactive.challenge.generate-cron / outcome-cron); off = the ChallengeJob bean does not
       # exist (the lazy GET still generates on workout open)
       challenge-job:
-        enabled: true
-      # Daily-quest crons: morning generate backstop + nightly finalize (schedules: mezo.quest.*-cron);
-      # off = the QuestJob bean does not exist (the lazy GET path still serves)
-      quest-job:
         enabled: true
       # Nightly habit close: evaluates end-of-day metrics (caffeine cutoff, kitchen close) and
       # quietly marks the rest missed; off = the HabitJob bean does not exist (reads still close lazily)
@@ -2750,72 +2731,10 @@ mezo:
             group2: 0.88
             group3: 0.7
             group4: 0.45
-  progression:
-    # Level threshold curve: xpThreshold(n) = round(base * (n-1)^exp); Lv2=100, Lv3≈303, Lv5≈919.
-    curve:
-      base: 100
-      exp: 1.6
-    # Streak robustness — family-agnostic (gym/run/sport all feed the training-week streak).
-    robustness:
-      per-week-xp: 25         # robustness XP per consecutive training week (streak-only v1)
-    # Gym-path XP weights (display-only economy in v1; tune freely without touching code).
-    gym:
-      volume-unit: 100          # kg·reps that equal one volume XP unit
-      volume-xp-per-unit: 10    # muscle XP per volume unit (per the day's logged muscles)
-      e1rm-xp-per-kg: 2         # max_strength XP per kg of best Epley e1RM
-      pr-bonus-xp: 40           # max_strength XP per RECORD-tier medal earned in the session
-      target-medal-xp: 5        # strength_endurance XP per TARGET_HIT medal earned in the session
-      target-medal-cap: 12      # max TARGET_HIT medals paid per workout (targetMedalXp cap)
-      strength-endurance-xp-per-set: 8  # per logged work set (non-skipped, reps present)
-      bodyweight-xp-per-rep: 1  # flat XP per rep for weightless sets (no e1RM/volume)
-    # Run-path XP weights.
-    run:
-      sprint-xp-per-round: 25     # sprint_speed per completed sprint round
-      anaerobic-xp-per-round: 15  # anaerobic_capacity per completed sprint round
-      steady-xp-per-min: 4        # strength_endurance per steady minute
-      aerobic-xp-per-min: 5       # aerobic_capacity per steady minute
-      rpe-xp-per-point: 6         # explosiveness / effort proxy per RPE point
-      hr-recovery-bonus-xp: 30    # one-off aerobic bonus when HR-recovery is logged
-    # Sport-path XP weights (athletic only; per-kind skill mapping in applySport).
-    sport:
-      xp-per-set: 12              # volleyball volume → vertical_jump/agility/coordination
-      xp-per-round: 14            # cross/TRX volume → anaerobic_capacity/strength_endurance/core_stability
-      xp-per-min: 4               # duration → aerobic_capacity (volleyball) / mobility (TRX)
-      rpe-xp-per-point: 6         # RPE → explosiveness / effort skills
-    # Radar aggregation (fixed axis grouping in v1; only the Erő muscle blend is tunable).
-    radar:
-      strength-muscle-blend: 0.5   # Erő = max_strength*(1-w) + muscle-level-mean*w
-  # Daily quests (gamified growth E1, ADR 0010). XP amounts live in content/quest-catalog.json.
-  quest:
-    reroll-per-day: 1               # autonomy valve (ADR 0010) — a shop item may raise it later (E4)
-    generate-cron: "0 35 6 * * *"   # morning backstop so quests exist even if Today is never opened
-    finalize-cron: "0 5 0 * * *"    # 00:05 — evaluate + quietly expire yesterday's offered quests
-    cron-presence-days: 7           # the morning cron only backstops users seen (last_seen_at) in this window
-    # Adaptive difficulty (E3, ADR 0010 — rule-based, no LLM in the economy): per-slot 28-day
-    # completion ratio bands the allowed difficulty tiers; <min-sample closed quests = all tiers.
-    adaptive:
-      window-days: 28
-      min-sample: 5
-      high-ratio: 0.85
-      low-ratio: 0.50
-    # E3 flavor copy: the companion rewrites quest title/why in its own voice on the morning
-    # cron; lazy generation and rerolls keep catalog copy; any LLM failure keeps catalog copy.
-    flavor:
-      enabled: true
-  # Activity-log tuning (E2, ADR 0010): the LLM proposes, the server disposes — XP clamped into
-  # [xp-min, xp-max], per-skill and per-day caps bound the honor system; below the confidence
-  # threshold the entry lands uncategorized and the client prompts for a manual category.
-  activity:
-    xp-min: 5
-    xp-max: 25
-    per-skill-daily-cap: 40
-    daily-cap: 100
-    confidence-threshold: 0.6
-    default-xp: 10
   # Habit engine tuning (mezo-d1jb, ADR 0010): every target window/cutoff is config, never code.
-  # Binds onto HabitProperties; the close cron fires after the quest finalize.
+  # Binds onto HabitProperties.
   habit:
-    close-cron: "0 10 0 * * *"    # 00:10 — after the quest finalize
+    close-cron: "0 10 0 * * *"    # 00:10
     wake-window-min: 45
     protein-target-g: 25
     bed-grace-min: 30
@@ -2854,9 +2773,6 @@ mezo:
   # Binds feature/lifegoal/config/LifeGoalProperties (mezo-iizd) — pillar cap per goal.
   lifegoal:
     max-pillars: 5
-    # XP per `hit` pillár-nap (mezo-iizd.6) — a pillér saját skill_key-ére, idempotensen
-    # (source_type=LIFE_GOAL, kulcs: UUID.nameUUIDFromBytes("lifegoal:<pillarId>:<day>")).
-    xp-per-hit: 5
     # 00:20 — a habit close (00:10) UTÁN, hogy a nap metrikái már véglegesek legyenek.
     # A job ETTŐL a futástól kezdve a késleltetett ha–akkor terveket (és a hiány-alapú
     # ritual_missed-et) is emittálja a tegnapi napra — külön ütemező nincs (mezo-iizd.7, spec D-3).
@@ -2918,15 +2834,6 @@ mezo:
       inbox-max-p: 0.15
       band-promising: 0.3
       band-strong: 0.6
-  # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
-  # AccountProgressPort adapter fires. Binds onto GamificationProperties.
-  gamification:
-    saver-price: 200
-    max-savers: 2
-    level-up-coins: 50
-    quest-coins: 10
-    all3-coins: 20
-    milestone-coins: { 7: 50, 30: 150, 100: 500 }
   # Check-in 2.0 question plan (mezo-ck2, spec §2.2–2.3). Binds onto CheckInPlanProperties and is
   # served by GET /api/biometrics/checkin/plan — trimming a question is a config change + deploy,
   # no frontend release. Item ids: energy mood stress body mental (the core five, always first)

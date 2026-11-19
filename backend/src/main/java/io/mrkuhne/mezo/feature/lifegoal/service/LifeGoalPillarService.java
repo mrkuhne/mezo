@@ -13,7 +13,7 @@ import io.mrkuhne.mezo.feature.lifegoal.entity.PillarSourceJson;
 import io.mrkuhne.mezo.feature.lifegoal.mapper.LifeGoalMapper;
 import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalPillarDayRepository;
 import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalPillarRepository;
-import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
+import io.mrkuhne.mezo.feature.habit.SkillTaxonomy;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -48,10 +48,10 @@ public class LifeGoalPillarService {
 
     private static final Set<String> SKILLS = new HashSet<>();
     static {
-        SKILLS.addAll(ProgressionTaxonomy.LIFE);
-        SKILLS.addAll(ProgressionTaxonomy.ATHLETIC);
-        SKILLS.addAll(ProgressionTaxonomy.MUSCLE);
-        SKILLS.add(ProgressionTaxonomy.ROBUSTNESS);
+        SKILLS.addAll(SkillTaxonomy.LIFE);
+        SKILLS.addAll(SkillTaxonomy.ATHLETIC);
+        SKILLS.addAll(SkillTaxonomy.MUSCLE);
+        SKILLS.add(SkillTaxonomy.ROBUSTNESS);
     }
 
     private final LifeGoalPillarRepository pillarRepository;

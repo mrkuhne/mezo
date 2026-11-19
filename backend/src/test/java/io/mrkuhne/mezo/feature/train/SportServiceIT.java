@@ -3,7 +3,6 @@ package io.mrkuhne.mezo.feature.train;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.mrkuhne.mezo.api.dto.LevelUpResult;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
@@ -144,15 +143,15 @@ class SportServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testLogSportSession_shouldReturnVolleyballLevelUp_whenProgressionEnabled() {
+    void testLogSportSession_shouldReturnNoLevelUp_whenVolleyballLogged() {
         UUID owner = databasePopulator.populateUser("sportlvl@test.local");
 
         SportSessionResponse res = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
             .duration(90).setsPlayed(5).rpe(new BigDecimal("7")).shoulderStrain(6).build());
 
         assertThat(res.getSport()).isEqualTo("volleyball");
-        assertThat(res.getLevelUp()).isNotNull();
-        assertThat(res.getLevelUp().getSource()).isEqualTo(LevelUpResult.SourceEnum.SPORT);
+        // the XP world left (mezo-r36n9.97.5): the optional levelUp is never populated
+        assertThat(res.getLevelUp()).isNull();
     }
 
     @Test
@@ -165,7 +164,7 @@ class SportServiceIT extends AbstractIntegrationTest {
         assertThat(res.getSport()).isEqualTo("cross");
         assertThat(res.getRounds()).isEqualTo(8);
         assertThat(res.getSetsPlayed()).isNull();
-        assertThat(res.getLevelUp()).isNotNull();
+        assertThat(res.getLevelUp()).isNull();
     }
 
     // ---- kcal: the personalised MET estimate + the user's override (mezo-88iwa.9) -------------

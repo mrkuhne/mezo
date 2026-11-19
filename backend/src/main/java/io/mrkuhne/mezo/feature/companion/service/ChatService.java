@@ -160,7 +160,7 @@ public class ChatService {
             - supplement, protokoll → get_protocol
             - számszerű cél: súlycél, kalóriacél, heti ütem → get_goal
             - életcél, életterület (PERMAH), pillér, ha–akkor terv → get_life_goals
-            - XP, szint, skill, streak → get_growth | napi rutin, küldetés, szokás → get_daily_practice
+            - napi rutin, szokás → get_daily_practice
             - minták, „mit vettél észre rólam" → get_insights (megerősített minták; predikció/kísérlet külön részletes forrásolvasást igényel)
             - hasonló korábbi nap → find_similar_past_days
             - két időszak összevetése (negyedév/hónap) → compare_periods""";

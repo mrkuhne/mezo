@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.BiometricProfileResponse;
 import io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest;
-import io.mrkuhne.mezo.api.dto.GamificationProfileResponse;
 import io.mrkuhne.mezo.api.dto.HabitDayResponse;
 import io.mrkuhne.mezo.api.dto.LogWeightRequest;
 import io.mrkuhne.mezo.api.dto.MeResponse;
@@ -20,7 +19,7 @@ import org.springframework.http.HttpStatus;
 /**
  * S2 (mezo-qw37.2): a freshly registered USER lands on a clean slate — no owner fixtures — and
  * the surfaces that used to lean on the demodata seeders bootstrap themselves lazily per user
- * (gamification ghost profile, habit catalog import). The second test walks the OnboardingPage's
+ * (habit catalog import). The second test walks the OnboardingPage's
  * exact three-call sequence against the real contracts.
  */
 class AuthOnboardingIT extends ApiIntegrationTest {
@@ -28,13 +27,6 @@ class AuthOnboardingIT extends ApiIntegrationTest {
     @Test
     void testFreshUser_shouldGetLazyBootstrapsAndNoOwnerFixtures_whenFirstTouch() {
         RegisteredUser anna = registerUser("Anna");
-
-        GamificationProfileResponse gam = getForBody("/api/gamification/profile",
-            anna.headers(), HttpStatus.OK, GamificationProfileResponse.class);
-        assertThat(gam.getCoins()).isZero();
-        assertThat(gam.getStreakDays()).isZero();
-        assertThat(gam.getLevel()).isEqualTo(1);
-        assertThat(gam.getEquippedTitleKey()).isEqualTo("ujonc");
 
         HabitDayResponse day = getForBody("/api/habit/day/" + LocalDate.now(),
             anna.headers(), HttpStatus.OK, HabitDayResponse.class);

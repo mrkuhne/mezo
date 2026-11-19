@@ -12,7 +12,6 @@ import io.mrkuhne.mezo.api.dto.HabitWriteResponse;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
 import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
 import io.mrkuhne.mezo.feature.habit.service.HabitService;
-import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
@@ -35,7 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Day lifecycle (bd mezo-d1jb): lazy per-day materialization (today only), intraday derived
- * completion (awarded once through progression), manual check/uncheck with same-day revert, and
+ * completion, manual check/uncheck with same-day revert, and
  * the past-day closure honesty pass (END_OF_DAY / bedtime-next-day / quiet-miss — ADR 0010). Data
  * is deterministic (populators + backdated signals); wall-clock-sensitive branches are not asserted.
  */
@@ -50,7 +49,6 @@ class HabitServiceIT extends AbstractIntegrationTest {
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private HabitPopulator habitPopulator;
-    @Autowired private LevelUpEventRepository levelUpEventRepository;
     @Autowired private AppNotificationRepository appNotificationRepository;
 
     private UUID owner() {
@@ -83,10 +81,13 @@ class HabitServiceIT extends AbstractIntegrationTest {
             assertThat(h.getKey()).isEqualTo("protein_breakfast");
             assertThat(h.getStatus().getValue()).isEqualTo("done");
         });
-        assertThat(first.getLevelUps()).isNotEmpty();
+        // the XP award left with the XP world (mezo-r36n9.97.5): levelUps is always empty now
+        assertThat(first.getLevelUps()).isEmpty();
 
         HabitDayResponse second = habitService.getDay(owner, today);
-        assertThat(second.getLevelUps()).isEmpty(); // idempotent
+        assertThat(second.getLevelUps()).isEmpty();
+        assertThat(second.getHabits()).filteredOn(h -> h.getKey().equals("protein_breakfast"))
+            .singleElement().satisfies(h -> assertThat(h.getStatus().getValue()).isEqualTo("done"));
     }
 
     /**
@@ -174,7 +175,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
         HabitWriteResponse res = habitService.check(owner, "morning_sunlight", today);
         assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
-        assertThat(res.getLevelUps()).isNotEmpty();
+        assertThat(res.getLevelUps()).isEmpty(); // the XP world left (mezo-r36n9.97.5)
 
         assertThatThrownBy(() -> habitService.check(owner, "morning_sunlight", today))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
@@ -207,7 +208,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
         assertThat(reverted.getStatus().getValue()).isEqualTo("pending");
 
         HabitWriteResponse again = habitService.check(owner, "morning_sunlight", today);
-        assertThat(again.getLevelUps()).isNotEmpty(); // re-award works after revert
+        assertThat(again.getHabit().getStatus().getValue()).isEqualTo("done"); // re-check works after revert
     }
 
     /**
@@ -224,9 +225,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
         HabitWriteResponse res = habitService.check(owner, "morning_sunlight", yesterday);
 
         assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
-        assertThat(res.getLevelUps()).isNotEmpty();
-        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
-            .hasSize(1); // XP attributed to YESTERDAY, not today
+        assertThat(doneRows(owner, yesterday)).hasSize(1); // the YESTERDAY row flipped, not today's
         // done rows guard unchanged for the past day too
         assertThatThrownBy(() -> habitService.check(owner, "morning_sunlight", yesterday))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
@@ -270,8 +269,8 @@ class HabitServiceIT extends AbstractIntegrationTest {
         habitService.check(owner, "morning_sunlight", yesterday);
         habitService.closePast(owner, LocalDate.now()); // simulates the next day's cron/open
 
-        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
-            .hasSize(1); // only the one manual award — no unrelated DERIVED habits got completed
+        assertThat(doneRows(owner, yesterday))
+            .hasSize(1); // only the one manual check — no unrelated DERIVED habits got completed
     }
 
     /**
@@ -287,7 +286,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
 
         var reverted = habitService.uncheck(owner, "morning_sunlight", yesterday);
         assertThat(reverted.getStatus().getValue()).isEqualTo("pending");
-        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday)).isEmpty();
+        assertThat(doneRows(owner, yesterday)).isEmpty();
 
         habitService.closePast(owner, LocalDate.now());
         assertThat(byKey(repository.findByCreatedByAndHabitDate(owner, yesterday),
@@ -299,9 +298,8 @@ class HabitServiceIT extends AbstractIntegrationTest {
      * closePast only closes PENDING rows, so it must skip the done row — no double-close,
      * no second award for THIS habit. Since final review finding 1, check() on a past date only
      * materializes the checked key's own row (not the whole catalog), so closePast afterward has
-     * no other pending rows to touch for yesterday here. The race assertion still scopes to
-     * morning_sunlight's own row via sourceRefId rather than the day's total award count, to stay
-     * robust to that scope.
+     * no other pending rows to touch for yesterday here. The race assertion scopes to
+     * morning_sunlight's own row (still the MANUAL done row).
      */
     @Test
     void testClosePastAfterCheck_shouldKeepDoneAndSingleAward_whenCheckWonTheRace() {
@@ -315,9 +313,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
         HabitDayEntity sunlight = byKey(repository.findByCreatedByAndHabitDate(owner, yesterday),
             "morning_sunlight");
         assertThat(sunlight.getStatus()).isEqualTo("done");
-        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
-            .filteredOn(e -> sunlight.getId().equals(e.getSourceRefId()))
-            .hasSize(1); // exactly one award for morning_sunlight — no double-close, no second award
+        assertThat(sunlight.getSource()).isEqualTo(HabitDayEntity.SOURCE_MANUAL); // closePast never re-closed it
     }
 
     /**
@@ -334,8 +330,13 @@ class HabitServiceIT extends AbstractIntegrationTest {
         HabitWriteResponse res = habitService.check(owner, "morning_sunlight", yesterday);
 
         assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
-        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
-            .hasSize(1);
+        assertThat(doneRows(owner, yesterday)).hasSize(1);
+    }
+
+    private List<HabitDayEntity> doneRows(UUID owner, LocalDate date) {
+        return repository.findByCreatedByAndHabitDate(owner, date).stream()
+            .filter(r -> HabitDayEntity.STATUS_DONE.equals(r.getStatus()))
+            .toList();
     }
 
     @Test

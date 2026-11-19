@@ -26,13 +26,12 @@ class HabitApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testCheckHabit_shouldAwardThenConflict_whenCheckedTwice() {
+    void testCheckHabit_shouldCompleteThenConflict_whenCheckedTwice() {
         HabitCheckRequest body = HabitCheckRequest.builder().date(LocalDate.now()).build();
         HabitWriteResponse res = postForBody("/api/habit/morning_sunlight/check", body,
             ownerAuthHeaders(), HttpStatus.OK, HabitWriteResponse.class);
         assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
-        assertThat(res.getLevelUps()).isNotEmpty();
-        assertThat(res.getLevelUps().getFirst().getSource().getValue()).isEqualTo("HABIT");
+        assertThat(res.getLevelUps()).isEmpty(); // the XP world left (mezo-r36n9.97.5)
 
         String err = postForBody("/api/habit/morning_sunlight/check", body,
             ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
@@ -107,7 +106,7 @@ class HabitApiIT extends ApiIntegrationTest {
 
         assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
         assertThat(res.getHabit().getXp()).isEqualTo(10);
-        assertThat(res.getLevelUps()).isNotEmpty();
+        assertThat(res.getLevelUps()).isEmpty();
     }
 
     @Test

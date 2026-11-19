@@ -34,9 +34,8 @@ import org.springframework.stereotype.Service;
  * ExperimentProposalGenerator}, {@code WeeklySuggestionGenerator}) derive it as {@code
  * LocalDate.now(MEDICATION_ZONE)} since mezo-ned9 — they used to hand in a zero-arg (JVM-default,
  * i.e. UTC on CI/containers) {@code LocalDate.now()} and reproduced the same one-day drift;
- * {@code ContextSnapshotOwnerZoneIT} pins that. Owner-local like {@code
- * TrainingStreakCalculator.TZ}; if per-user timezones ever become real ({@code
- * AppUserEntity.timezone}), both move together.
+ * {@code ContextSnapshotOwnerZoneIT} pins that. Owner-local; if per-user timezones ever become
+ * real ({@code AppUserEntity.timezone}), this moves with them.
  */
 @Service
 @RequiredArgsConstructor

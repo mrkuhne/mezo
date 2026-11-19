@@ -1831,9 +1831,8 @@ class DetectorTest {
     }
 
     private static DetectorInput.MetaWindow meta(List<DetectorInput.TriageDecisionPoint> t,
-            List<DetectorInput.PredictionPoint> p, List<DetectorInput.QuestPoint> q,
-            List<DetectorInput.ProposalOutcomePoint> o) {
-        return new DetectorInput.MetaWindow(t, p, q, o);
+            List<DetectorInput.PredictionPoint> p, List<DetectorInput.ProposalOutcomePoint> o) {
+        return new DetectorInput.MetaWindow(t, p, o);
     }
 
     private static DetectorInput.TriageDecisionPoint triage(LocalDate d, String category, String decision, boolean refined) {
@@ -1843,10 +1842,6 @@ class DetectorTest {
     private static DetectorInput.PredictionPoint prediction(LocalDate validTo, String status, String confidence) {
         return new DetectorInput.PredictionPoint(validTo.minusDays(6), validTo, status,
                 confidence == null ? null : new BigDecimal(confidence), "sleep_avg");
-    }
-
-    private static DetectorInput.QuestPoint quest(LocalDate d, String slot, String status) {
-        return new DetectorInput.QuestPoint(d, slot, status);
     }
 
     private static DetectorInput.ProposalOutcomePoint outcome(LocalDate d, String kind, String status, Boolean good) {
@@ -1862,7 +1857,7 @@ class DetectorTest {
                 triage(DAY, "fuel", "rejected", false), triage(DAY, "fuel", "rejected", false),
                 triage(DAY, "fuel", "rejected", false), triage(DAY, "fuel", "rejected", false),
                 triage(DAY, "life", "rejected", false));
-        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(t, List.of(), List.of(), List.of())).build());
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(t, List.of(), List.of())).build());
 
         List<DetectorSignal> fired = new KnowledgeRejectionPatternDetector().detect(in);
 
@@ -1881,7 +1876,7 @@ class DetectorTest {
         List<DetectorInput.TriageDecisionPoint> t = List.of(
                 triage(DAY, "fuel", "rejected", false), triage(DAY, "fuel", "rejected", false),
                 triage(DAY, "fuel", "rejected", false), triage(DAY, "fuel", "rejected", false));
-        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(t, List.of(), List.of(), List.of())).build());
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(t, List.of(), List.of())).build());
 
         assertThat(new KnowledgeRejectionPatternDetector().detect(in)).isEmpty();
     }
@@ -1896,7 +1891,7 @@ class DetectorTest {
         t.add(triage(DAY, "fuel", "rejected", false));
         t.add(triage(DAY, "fuel", "rejected", false));
         t.add(triage(DAY, "life", "rejected", false));                       // as of DAY: 5/9 = 56% → vegyes|fuel
-        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(t, List.of(), List.of(), List.of())).build());
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(t, List.of(), List.of())).build());
 
         List<DetectorSignal> fired = new KnowledgeRejectionPatternDetector().detect(in);
 
@@ -1916,7 +1911,7 @@ class DetectorTest {
                 prediction(DAY.minusDays(1), "missed", "0.80"), prediction(DAY.minusDays(1), "missed", "0.80"),
                 prediction(DAY.minusDays(1), "missed", "0.80"),
                 prediction(DAY.minusDays(1), "pending", "0.80"), prediction(DAY.minusDays(1), "pending", null));
-        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), p, List.of(), List.of())).build());
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), p, List.of())).build());
 
         List<DetectorSignal> fired = new PredictionCalibrationDetector().detect(in);
 
@@ -1935,7 +1930,7 @@ class DetectorTest {
         List<DetectorInput.PredictionPoint> p = List.of(
                 prediction(DAY.minusDays(1), "validated", null), prediction(DAY.minusDays(1), "validated", "0.60"),
                 prediction(DAY.minusDays(1), "missed", null), prediction(DAY.minusDays(1), "missed", null));
-        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), p, List.of(), List.of())).build());
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), p, List.of())).build());
 
         List<DetectorSignal> fired = new PredictionCalibrationDetector().detect(in);
 
@@ -1952,69 +1947,13 @@ class DetectorTest {
                 prediction(DAY.minusDays(1), "validated", "0.8"), prediction(DAY.minusDays(1), "missed", "0.8"),
                 prediction(DAY.minusDays(1), "missed", "0.8"));
         assertThat(new PredictionCalibrationDetector().detect(
-                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), few, List.of(), List.of())).build()))).isEmpty();
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), few, List.of())).build()))).isEmpty();
 
         List<DetectorInput.PredictionPoint> open = List.of(
                 prediction(DAY, "validated", "0.8"), prediction(DAY, "validated", "0.8"),
                 prediction(DAY, "missed", "0.8"), prediction(DAY, "missed", "0.8"));
         assertThat(new PredictionCalibrationDetector().detect(
-                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), open, List.of(), List.of())).build()))).isEmpty();
-    }
-
-    // ── quest-completion-calibration ────────────────────────────────────────────
-
-    @Test
-    void questCalibration_firesWhenASlotLandsLow() {
-        List<DetectorInput.QuestPoint> q = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
-            q.add(quest(DAY.minusDays(1), "GROWTH", i < 2 ? "completed" : "expired"));   // 2/6 = 33% → alacsony
-        }
-        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), q, List.of())).build());
-
-        List<DetectorSignal> fired = new QuestCompletionCalibrationDetector().detect(in);
-
-        assertThat(fired).singleElement().satisfies(s -> {
-            assertThat(s.detectorKey()).isEqualTo("quest-completion-calibration");
-            assertThat(s.expertKey()).isEqualTo("szkeptikus");
-            assertThat(s.summary()).contains("BODY: kevés quest (0)").contains("FUELBIO: kevés quest (0)")
-                    .contains("GROWTH 2/6 (33%)").contains("GROWTH slotban a nehézség-kalibrációm túllőtt")
-                    .contains("85% / 50%").contains("szövegét nem olvasom");
-            assertThat(s.salience()).isEqualTo(4);
-        });
-    }
-
-    @Test
-    void questCalibration_todayAndRerolledAreExcluded_thinSlotsStaySilent() {
-        List<DetectorInput.QuestPoint> today = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
-            today.add(quest(DAY, "GROWTH", "expired"));
-        }
-        assertThat(new QuestCompletionCalibrationDetector().detect(
-                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), today, List.of())).build()))).isEmpty();
-
-        List<DetectorInput.QuestPoint> rerolled = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
-            rerolled.add(quest(DAY.minusDays(1), "BODY", i < 2 ? "completed" : i < 4 ? "expired" : "rerolled"));  // n = 4 → kevés
-        }
-        assertThat(new QuestCompletionCalibrationDetector().detect(
-                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), rerolled, List.of())).build()))).isEmpty();
-    }
-
-    @Test
-    void questCalibration_bandShiftFires_highBandWorded() {
-        List<DetectorInput.QuestPoint> q = new ArrayList<>();
-        for (int i = 1; i <= 5; i++) {
-            q.add(quest(DAY.minusDays(i + 1), "BODY", "completed"));        // as of DAY-1: 5/5 → magas
-        }
-        q.add(quest(DAY.minusDays(1), "BODY", "expired"));                   // as of DAY: 5/6 = 83% → közép
-        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), q, List.of())).build());
-
-        List<DetectorSignal> fired = new QuestCompletionCalibrationDetector().detect(in);
-
-        assertThat(fired).singleElement().satisfies(s -> {
-            assertThat(s.summary()).contains("BODY 5/6 (83%)").doesNotContain("túllőtt");
-            assertThat(s.salience()).isEqualTo(3);
-        });
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), open, List.of())).build()))).isEmpty();
     }
 
     // ── experiment-outcome-ledger ───────────────────────────────────────────────
@@ -2024,7 +1963,7 @@ class DetectorTest {
         List<DetectorInput.ProposalOutcomePoint> o = List.of(
                 outcome(DAY, "challenge", "hit", true), outcome(DAY, "challenge", "miss", false),
                 outcome(DAY, "challenge", "miss", false), outcome(DAY, "experiment", "completed", null));
-        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), List.of(), o)).build());
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), o)).build());
 
         List<DetectorSignal> fired = new ExperimentOutcomeLedgerDetector().detect(in);
 
@@ -2043,7 +1982,7 @@ class DetectorTest {
         List<DetectorInput.ProposalOutcomePoint> o = List.of(
                 outcome(DAY, "experiment", "dismissed", null), outcome(DAY, "experiment", "dismissed", null),
                 outcome(DAY, "experiment", "dismissed", null), outcome(DAY, "experiment", "completed", true));
-        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), List.of(), o)).build());
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), o)).build());
 
         List<DetectorSignal> fired = new ExperimentOutcomeLedgerDetector().detect(in);
 
@@ -2059,12 +1998,12 @@ class DetectorTest {
         List<DetectorInput.ProposalOutcomePoint> thin = List.of(
                 outcome(DAY, "challenge", "hit", true), outcome(DAY, "challenge", "miss", false));
         assertThat(new ExperimentOutcomeLedgerDetector().detect(
-                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), List.of(), thin)).build()))).isEmpty();
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), thin)).build()))).isEmpty();
 
         List<DetectorInput.ProposalOutcomePoint> old = List.of(
                 outcome(DAY.minusDays(3), "challenge", "hit", true), outcome(DAY.minusDays(3), "challenge", "hit", true),
                 outcome(DAY.minusDays(3), "challenge", "miss", false));
         assertThat(new ExperimentOutcomeLedgerDetector().detect(
-                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), List.of(), old)).build()))).isEmpty();
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), old)).build()))).isEmpty();
     }
 }

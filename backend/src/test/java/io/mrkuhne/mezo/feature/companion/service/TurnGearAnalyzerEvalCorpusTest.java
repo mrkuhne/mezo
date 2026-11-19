@@ -44,7 +44,8 @@ class TurnGearAnalyzerEvalCorpusTest {
 
         assertThat(total)
             .as("the tool-selection corpus should not have shrunk under this guard")
-            .isGreaterThanOrEqualTo(42);
+            // 39 since the get_growth cases left with the XP world (mezo-r36n9.97.5)
+            .isGreaterThanOrEqualTo(39);
         assertThat(offenders)
             .as("every tool-selection case is a data-bearing question by construction; a CHAT gear "
                 + "would strip its tools and answer it from nothing. Add the missing stem to "
