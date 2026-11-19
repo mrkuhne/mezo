@@ -78,6 +78,15 @@ tags:
       where each ingredient row says what it matched. A page's own
       machine-readable recipe is read first, the AI reads the page only when
       there is none. Nothing the page says is ever followed as an instruction.
+  - name: RecipeCooked
+    description: >-
+      „Ezt főztem" (Boop Étel, mezo-r36n9.63): the owner says, types or
+      photographs what he cooked from, and the answer is a review DRAFT in the
+      recipe-import shape, each ingredient matched against his pantry. Stateless
+      — nothing is saved and the shelf is not touched; the photos are shown to
+      the AI only and never stored. The AI only proposes: an exact name match is
+      `matched`, an AI pick is always `confirm`, and a line nothing fits is
+      `missing`. Nothing said or shown is ever followed as an instruction.
   - name: RecipeImage
     description: >-
       The owner's own photo of a recipe (Boop B4, decision 20): the recipe has
@@ -5229,6 +5238,70 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '502':
           description: The AI answer could not be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: The AI is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/recipe/cooked:
+    post:
+      tags:
+        - RecipeCooked
+      operationId: cookedRecipe
+      summary: >-
+        Build a recipe review draft from what was cooked — typed/dictated text
+        and/or up to 6 photos, matched to the pantry
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  maxLength: 4000
+                  description: >-
+                    What he cooked from, and how much (typed or dictated). At
+                    least one of text / photos is required.
+                photos:
+                  type: array
+                  maxItems: 6
+                  items:
+                    type: string
+                    format: binary
+                  description: >-
+                    Packaging, a scale display, a handwritten note, the counter.
+                    JPEG, PNG or WebP.
+      responses:
+        '200':
+          description: The draft; result is null when no ingredient could be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeImportResponse'
+        '400':
+          description: >-
+            Neither text nor a photo; over-long text; too many photos; a photo
+            that is not a JPEG/PNG/WebP picture, is empty or over the size cap;
+            or the photos together over the total cap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: The AI could not be reached or failed while reading the capture
           content:
             application/json:
               schema:
@@ -22764,7 +22837,52 @@ components:
       required:
         - confidence
         - needsReview
+        - state
+        - onShelf
+        - amountDoubt
+        - alternatives
       properties:
+        state:
+          type: string
+          enum:
+            - matched
+            - confirm
+            - missing
+          description: >-
+            The row's face on the review (mezo-r36n9.63). matched = an exact
+            name match whose amount converted cleanly; confirm = the AI's pick,
+            or an exact match whose amount is doubtful — never saved without the
+            owner's tap; missing = nothing in the pantry fits (catalogId is
+            null).
+        onShelf:
+          type: boolean
+          description: >-
+            True when the matched food is already on the owner's shelf; false =
+            it reaches the shelf when the recipe is saved (always false when
+            nothing matched).
+        basisUnit:
+          type: string
+          nullable: true
+          description: >-
+            The matched food's basis unit (g, ml, db …). Once a row has a food,
+            the line's `unit` IS this unit and `amount` is already converted
+            into it. null when nothing matched (the line keeps the unit as
+            said).
+        amountDoubt:
+          type: boolean
+          description: >-
+            True when the said amount could not be converted cleanly into the
+            food's basis unit (spoons or millilitres against a gram food, a
+            piece, a can, or no amount at all — then `amount` is 0). The amount
+            is a prefill to check, and the row is `confirm`.
+        alternatives:
+          type: array
+          maxItems: 3
+          description: >-
+            Other pantry foods the row could be (the „Másik" list), best first.
+            Empty when there are none.
+          items:
+            $ref: '#/components/schemas/RecipeImportAlternative'
         catalogId:
           type: string
           format: uuid
@@ -22779,10 +22897,34 @@ components:
           maximum: 1
         needsReview:
           type: boolean
+    RecipeImportAlternative:
+      type: object
+      description: >-
+        A pantry food offered instead of the row's match; picking it binds the
+        row to catalogId.
+      required:
+        - catalogId
+        - name
+        - basisUnit
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        brand:
+          type: string
+          nullable: true
+        basisUnit:
+          type: string
+          description: >-
+            The food's basis unit — the unit the row takes when this food is
+            picked
     RecipeImportLine:
       description: >-
         A Receptműhely draft line plus what it matched and the text it was read
-        from.
+        from. `amount` is 0 only when match.amountDoubt is true and nothing was
+        stated — a value to type, never to save.
       allOf:
         - $ref: '#/components/schemas/WorkshopDraftLine'
         - type: object

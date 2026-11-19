@@ -2,11 +2,11 @@ package io.mrkuhne.mezo.feature.recipe.service;
 
 import io.mrkuhne.mezo.api.dto.RecipeImportDraft;
 import io.mrkuhne.mezo.api.dto.RecipeImportLine;
-import io.mrkuhne.mezo.api.dto.RecipeImportMatch;
 import io.mrkuhne.mezo.api.dto.WorkshopDraft;
 import io.mrkuhne.mezo.api.dto.WorkshopDraftLine;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.pantry.service.HtmlNutritionStripper;
 import io.mrkuhne.mezo.feature.pantry.service.PantryNameIndex;
 import io.mrkuhne.mezo.feature.pantry.service.WebPageClient;
@@ -24,7 +24,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.ObjectProvider;
@@ -49,11 +51,7 @@ import org.springframework.web.multipart.MultipartFile;
 @ConditionalOnProperty(name = FeaturesConfiguration.RECIPE_IMPORT_SWITCH, havingValue = "true")
 public class RecipeImportService {
 
-    /** Confidence of a strict name+unit match whose amount the source actually stated. */
-    static final double MATCHED = 1.0;
-    /** Name matched, but the unit does not agree with the catalog row (or no quantity was stated): confirm the amount. */
-    static final double MISMATCH = 0.5;
-
+    private final PantryItemRepository pantryItemRepository;
     private final ObjectProvider<WebPageClient> pageClient;
     private final HtmlNutritionStripper stripper;
     private final RecipeJsonLdParser jsonLdParser;
@@ -133,10 +131,12 @@ public class RecipeImportService {
         // kept, macro-less estimate row and is overlaid with its name match below.
         WorkshopDraft shared = validator.sanitize(rawDraft, id -> Optional.empty(), (n, u) -> Optional.empty(), true);
 
+        Set<UUID> shelfIds = pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(userId).stream()
+            .map(item -> item.getCatalog().getId()).collect(Collectors.toSet());
         List<RecipeImportLine> lines = new ArrayList<>();
         boolean anyReview = false;
         for (int i = 0; i < shared.getLines().size(); i++) {
-            RecipeImportLine line = withMatch(shared.getLines().get(i), ingredients.get(i), index);
+            RecipeImportLine line = withMatch(shared.getLines().get(i), ingredients.get(i), index, shelfIds);
             anyReview |= line.getMatch().getNeedsReview();
             lines.add(line);
         }
@@ -155,48 +155,18 @@ public class RecipeImportService {
 
     /**
      * Name match (normalised full-name equality) fills in the food; the unit decides the confidence:
-     * name + agreeing unit + a stated quantity = high, name + unit that does not agree (or no stated
-     * quantity) = 0.5 and flagged. On a unit mismatch the line keeps the amount and unit exactly as the
-     * source wrote them — nothing is converted or assumed against the catalog row — so the owner must
-     * confirm the amount; the matched food is already named. No match = 0, kept as an estimate row.
+     * the amount decides the confidence. Since mezo-r36n9.63 the row is built by {@link RecipeDraftLines}
+     * — the builder „Ezt főztem" uses too — so once a row has a food its unit IS that food's basis unit
+     * and the amount is converted into it; an amount that does not convert cleanly, or was not stated, is
+     * flagged ({@code amountDoubt}, confidence 0.5, state {@code confirm}) for the owner to check. No
+     * match = 0 / {@code missing}, kept as an estimate row with the amount and unit as the source wrote
+     * them. This route offers no alternatives.
      */
-    private RecipeImportLine withMatch(WorkshopDraftLine l, ParsedIngredient src, PantryNameIndex index) {
+    private RecipeImportLine withMatch(WorkshopDraftLine l, ParsedIngredient src, PantryNameIndex index,
+            Set<UUID> shelfIds) {
         PantryCatalogEntity hit = index.matchByName(src.name()).orElse(null);
-        double confidence = 0.0;
-        String name = l.getName();
-        String unit = l.getUnit();
-        if (hit != null) {
-            boolean unitOk = PantryNameIndex.unitAgrees(src.unit(), hit.getServingUnit());
-            confidence = unitOk && src.amountStated() ? MATCHED : MISMATCH;
-            name = hit.getName();
-            if (unitOk) {
-                unit = hit.getServingUnit() == null || hit.getServingUnit().isBlank() ? "g" : hit.getServingUnit();
-            }
-        }
-        RecipeImportMatch match = new RecipeImportMatch();
-        match.setCatalogId(hit == null ? null : hit.getId());
-        match.setConfidence(BigDecimal.valueOf(confidence));
-        // Boundary-inclusive like the scrape: at or below the threshold the row is flagged.
-        match.setNeedsReview(confidence <= props.confidenceThreshold());
-        RecipeImportLine out = new RecipeImportLine();
-        out.setSource(hit == null ? "estimate" : "pantry");
-        out.setPantryItemId(null); // a preview never creates the shelf row; see match.catalogId
-        out.setName(name);
-        out.setAmount(l.getAmount());
-        out.setUnit(unit);
-        out.setKcal(l.getKcal());
-        out.setProteinG(l.getProteinG());
-        out.setCarbsG(l.getCarbsG());
-        out.setFatG(l.getFatG());
-        out.setMatch(match);
-        out.setSourceText(src.sourceText());
-        // What the matched food says about allergens, so the review can warn BEFORE the save; no match = no data (null).
-        if (hit != null) {
-            java.util.Map<String, String> states = new java.util.LinkedHashMap<>();
-            hit.getAllergens().forEach((key, state) -> states.put(key, state.wire()));
-            out.setAllergens(states);
-        }
-        return out;
+        return RecipeDraftLines.line(l, src, hit, true, hit != null && shelfIds.contains(hit.getId()),
+            List.of(), props.confidenceThreshold());
     }
 
     private static String pageTitle(String html) {
