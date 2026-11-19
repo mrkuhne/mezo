@@ -6,8 +6,7 @@ updated: 2026-11-19
 tags: [fuel, recipe, frontend, data-layer, backend, llm, allergens, boop, b4-etel]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
-  - api/feature/recipe/recipe.yml
-  - api/feature/recipe/recipe-cooked.yml
+  - api/feature/recipe
   - frontend/src/data/fuel/recipeHooks.ts
   - frontend/src/data/fuel/recipeApi.ts
   - frontend/src/features/fuel/pages/FuelRecipesPage.tsx
