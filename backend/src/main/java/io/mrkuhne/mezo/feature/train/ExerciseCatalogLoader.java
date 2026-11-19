@@ -45,7 +45,7 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
     // finer, multi-valued kit list the swap filters on ("Mi van a termemben"); EQUIPMENT above is
     // the single primary kind of mezo-r36n9.79. `lengthened` (loaded at a stretch) is a different
     // notion from `lengthenedFriendly` (safe for lengthened partials) and is kept apart.
-    static final Set<String> GEAR = Set.of(
+    public static final Set<String> GEAR = Set.of(
         "barbell", "dumbbell", "kettlebell", "cable", "machine", "smith", "bench", "pullup-bar",
         "bodyweight", "specialty");
     static final Set<String> PATTERNS = Set.of(

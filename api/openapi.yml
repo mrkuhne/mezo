@@ -1568,6 +1568,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/gym-profile:
+    get:
+      tags:
+        - Train
+      operationId: getGymProfile
+      summary: >-
+        The viewer's gym profile ("Mi van a termemben"); both lists empty when
+        never saved, never 404
+      responses:
+        '200':
+          description: The profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymProfile'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Train
+      operationId: putGymProfile
+      summary: Replace the viewer's gym profile (per-user singleton)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GymProfile'
+      responses:
+        '200':
+          description: Saved profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymProfile'
+        '400':
+          description: >-
+            An off-kind outside the nine owner-facing kinds (field error on
+            offKinds)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/exercises:
     get:
       tags:
@@ -15286,6 +15339,29 @@ components:
             $ref: '#/components/schemas/CheckInPlanItem'
         adaptive:
           $ref: '#/components/schemas/CheckInAdaptiveItem'
+    GymProfile:
+      type: object
+      required:
+        - offKinds
+        - missingExerciseIds
+      properties:
+        offKinds:
+          type: array
+          description: >-
+            Kit kinds the gym does not have - barbell, dumbbell, kettlebell,
+            cable, machine, smith, bench, pullup-bar, specialty (never
+            bodyweight)
+          items:
+            type: string
+            maxLength: 16
+        missingExerciseIds:
+          type: array
+          description: >-
+            Catalogue exercises the gym cannot do even though the kit exists
+            (e.g. a missing hack-squat machine)
+          items:
+            type: string
+            format: uuid
     MesocycleResponse:
       type: object
       required:
