@@ -2937,6 +2937,26 @@ mezo:
     # apply when this is blank (= the unstyled block of before). balanced | volume | heavy | allout (lower-case;
     # allout also forces its working-sets: 2 over the skeleton volume).
     default-training-style: balanced
+    # Split catalogue per training-day count (mezo-r36n9.113): the first entry of each count is the default the
+    # generator has always used; the others are offered as candidates. Types: Full|Upper|Lower|Push|Pull|Legs,
+    # exactly one per training day. Every entry keeps each group >=2x/week and <= session-cap per day (asserted
+    # in SplitCatalogTest).
+    splits:
+      2:
+        - { key: full2, label: "Teljes test ×2", types: [Full, Full] }
+      3:
+        - { key: full3, label: "Teljes test ×3", types: [Full, Full, Full] }
+        - { key: ulf, label: "Felső / Alsó / Teljes test", types: [Upper, Lower, Full] }
+      4:
+        - { key: ul2, label: "Felső / Alsó", types: [Upper, Lower, Upper, Lower] }
+        - { key: full4, label: "Teljes test ×4", types: [Full, Full, Full, Full] }
+      5:
+        - { key: ulppl, label: "Felső / Alsó / Toló / Húzó / Láb", types: [Upper, Lower, Push, Pull, Legs] }
+        - { key: ulul_f, label: "Felső / Alsó ×2 + Teljes test", types: [Upper, Lower, Upper, Lower, Full] }
+        - { key: pplul, label: "Toló / Húzó / Láb / Felső / Alsó", types: [Push, Pull, Legs, Upper, Lower] }
+      6:
+        - { key: ppl2, label: "Toló / Húzó / Láb ×2", types: [Push, Pull, Legs, Push, Pull, Legs] }
+        - { key: ul3, label: "Felső / Alsó ×3", types: [Upper, Lower, Upper, Lower, Upper, Lower] }
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
     deload-fraction: 0.5    # deload target = round(prevSets * this)

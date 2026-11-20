@@ -86,6 +86,17 @@ class MesoPlanSkeletonTest {
     }
 
     @Test
+    void fiveArgBuildUnchanged() {
+        for (int n = 2; n <= 6; n++) {
+            var days = MesoPlanSkeleton.DAY_ORDER.subList(0, n);
+            var old = MesoPlanSkeleton.build(days, 6, Map.of("back", "emphasize"), RP, BANDS);
+            var explicit = MesoPlanSkeleton.build(days, 6, Map.of("back", "emphasize"), RP, BANDS,
+                MesoPlanSkeleton.SPLIT_DAYS.get(n), MesoPlanSkeleton.SPLIT_LABEL.get(n));
+            assertThat(old).isEqualTo(explicit);
+        }
+    }
+
+    @Test
     void phaseCurve_shouldRampThenDeload() {
         assertThat(MesoPlanSkeleton.phaseCurve(6)).containsExactly("MEV", "MEV", "MAV", "MAV", "MRV", "Deload");
         assertThat(MesoPlanSkeleton.phaseCurve(4)).containsExactly("MEV", "MAV", "MRV", "Deload");

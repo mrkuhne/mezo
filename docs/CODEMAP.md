@@ -1251,8 +1251,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `Prescription`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`, `ReadinessService`, `RecoveryFuelMode`,
     `RecoveryPeriodService`, `RecoveryReturnPolicy`, `RecoveryReturnService`, `RunningService`,
     `SessionExerciseAssembler`, `SessionTimingCalculator`, `SetLegService`, `SetRecommendationService`, `SetSlots`,
-    `SetTonnage`, `SportGroups`, `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `StallOffers`,
-    `StyleContext`, `StyleStamper`, `StyleTable`, `SubstituteReads`, `SubstituteReason`, `Technique`,
+    `SetTonnage`, `SplitCatalog`, `SportGroups`, `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`,
+    `StallOffers`, `StyleContext`, `StyleStamper`, `StyleTable`, `SubstituteReads`, `SubstituteReason`, `Technique`,
     `TechniqueAiRefiner`, `TechniqueGuard`, `TechniqueLines`, `TechniqueLlm`, `TechniqueMerger`,
     `TechniquePlanService`, `TechniquePlanner`, `TechniquePrescriber`, `TechniqueRecommender`,
     `TechniqueRefineRequested`, `TechniqueRules`, `TechniqueWeights`, `TemplatePlan`, `TierChangeProposalService`,
@@ -1317,7 +1317,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/train/running-blocks · PUT /api/train/running-blocks/{id} · DELETE /api/train/running-blocks/{id} ·
     POST /api/train/running-blocks/{id}/activate · POST /api/train/running-blocks/{id}/close ·
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 133 IT + 51 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 133 IT + 52 unit
   - **ITs:** `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`,
     `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`,
     `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
