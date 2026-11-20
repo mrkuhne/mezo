@@ -309,7 +309,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     number "ennyit tudsz befektetni" is not computed by the server yet, so it is the engine's `perDay`, never an invented
     figure. `NKInfoRow` "Honnan tudom, van-e dolgod?" spells the rule out; menu *A PÉNZ TERÜLET* (Kiadás live; Nagyobb
     összeg · Havi stratégia · Kimutatás open "later" sheets); ask row. Since L6 the news digest sits between the info
-    row and the menu (below). **Gyakorlás** is `NKNotLiveYet` (L7) with what will be there and what must happen first.
+    row and the menu (below). **Gyakorlás** was `NKNotLiveYet` until L7 (below).
   - **The kit, additive only:** `NKBare(_:hue:glyph:…)` carries the section glyph (spike `sectionGlyph`; no caller
     changed); `NKGlyph` draws Pénz's coin `e-penz` (the spike's), now the area's eyebrow glyph and the bar's Pénzem
     icon; `NKAreaPage` honours `-previewScroll` like the tab pages. The two-button row (`PenzActionRow`, equal widths,
@@ -393,6 +393,48 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **Review (DEBUG)**: `-penzPortfolio full|empty|stale|unpriced|error`, `-penzDigest ready|pending|quiet|unhealthy|failed|limited|error`,
     `-penzPage news1|news2|news3|sleeve|sleeve-short|sleeve-mid`, `-penzSheet record|event|allocation`; the preview
     refuses the symbol `NOPE`, a sell above the value, and a non-forint buy dated on a Sunday (no FX rate).
+- **Pénz L7 — Gyakorlás, Termékjegyzék, javaslatok, Havi stratégia (`mezo-r36n9.105`, built 2026-11-20, not yet
+  deployed; contracts `api/feature/penz/penz-practice.yml` + `penz-proposals.yml`, build notes
+  `docs/superpowers/plans/2026-11-20-boop-penz-l7-build.md`; look = the approved spike's Pénz → Gyakorlás tab and Ma
+  menu).** The Gyakorlás tab is no longer `NKNotLiveYet`; screens in `Penz/PenzGyakorlas.swift` (tab + journal page),
+  `PenzPracticeSheets.swift` (sheets), `PenzProposalViews.swift` (proposal, strategy, catalog); logic and wire in
+  `BoopCore/Penz/Penz{Practice,Proposal}{Wire,Client,Logic}.swift` + `PenzStore+Practice.swift`. All figures and copy
+  are the server's (the weekly review is deterministic, no model); the phone only lays them out and sends what he typed.
+  - **Gyakorlás** (paper trading, never real money): highlight = the week's headline/sub (or "még nincs lezárt
+    kereskedés a héten") → *Új kereskedés* · *A teljes napló* → stats (month P/L "papíron" · average R · cap used /
+    cap) → the week's cumulative curve → *A HÉT KERESKEDÉSEI* (closed, open and planned) → *AMIT A HÉTEN LÁTOK* (the
+    commonest mistake tag and its cost in Ft, setup table, ≤ 3 observations) → the noise line under 50 tagged closes
+    → `NKInfoRow` "Mit jelent az R, és miért papíron megy?". Menu: Új terv · Címkék · A keret · Élesre fordítás (an
+    honest "not built, your switch later" sheet).
+  - **Plan before, one line after:** the plan sheet (`PenzTradePlanSheet`: instrument, long/short, why, stop —
+    required —, quantity, optional entry/target) creates a *plan*; the trade sheet (`PenzTradeSheet`) opens it (typed
+    entry price + date; the cap is checked here), records a last typed close, closes it (typed exit, ≥ 1 of the eight
+    tag chips, a mistake toggle, one line ≤ 140), or cancels a plan. No market data: every price is typed. The journal
+    page lists all trades.
+  - **The cap** is `penz_settings.practice_monthly_minor` — the same figure as Költés's *Gyakorlás* line; the *A keret*
+    sheet shows used/left and links to the Költés lines editor.
+  - **Proposals:** *Befektetnék* (Ma), *Felosztást kérek* (Pénzem) and the menu's *Nagyobb összeg* open `PenzAmountSheet`
+    → `POST /api/penz/proposals {lump_sum}` → the proposal sub-page (`NKAreaSubPage`, crumb "Pénz · Javaslat"): the
+    split per horizon with its rules, two–three approved options per sleeve with the server's yearly cost (always
+    labelled with the sleeve's proposed amount), ±10 000 Ft steppers / typed amounts, *Elfogadom* (sends his per-sleeve
+    amounts and product choices) → the accepted plan is a checklist he ticks himself (`steps/{i}`); ticking records
+    nothing in Pénzem — the real buy goes through *Befektetést rögzítek*. Open proposals sit on Pénz Ma as the **shared**
+    `NKProposalCard` (Elfogadom opens the page, Most nem = dismiss) with `NKWhyBody` behind *miért?* — no second card
+    component, no wall source, no push.
+  - **Havi stratégia** (menu): `GET /api/penz/strategy` → the investable figure with its inputs → *Kérek javaslatot*
+    (`POST /api/penz/proposals {monthly}`); asked only on demand. **Termékjegyzék** (`PenzCatalogPage`, from the proposal
+    page's "Honnan vannak a termékek?" and the menu): Boop's researched suggestions grouped by horizon with one-tap
+    *Jóváhagyom* / *Nem kell*, then the approved list; every fee line carries "ellenőrizve: <date>" and its source. The
+    model never adds a product; only approved rows appear in a proposal.
+  - **Data / cache:** new `ServerCache` keys `penz/practice`, `penz/proposals`, `penz/catalog`. All L7 writes are online
+    (never the outbox). Coded rejections: `PlanTransport` now maps a **422 that names its rule** to
+    `.rejected(code)` (`PENZ_PRACTICE_CAP_EXCEEDED`, `PENZ_PAPER_TRADE_INVALID_STOP`, …), a **409** to `.conflict(code)`
+    (`PENZ_PAPER_TRADE_STATE`, `PENZ_PROPOSAL_STATE`, …), beside the existing 400/503/429 mappings; `penzErrorText` /
+    `penzCapExceededText` / `penzProposalCreateErrorText` say them in Hungarian and what he typed is kept.
+  - **Review (DEBUG)**, invented figures from `Penz/PenzPreviewL7.swift` (writes kept for the run; an entry above the cap
+    answers 422): `-penzPractice full|quiet|empty|error`, `-penzProposals open|accepted|none`;
+    `-penzSheet newTrade|tags|cap|live|trade|trade-plan|trade-closed|why`; `-penzPage journal|strategy|catalog|proposal|proposal-accepted`
+    (with `-previewHome penz -penzTab Gyakorlás|Ma`).
 - **The Edzés room (B5 phase 1, `mezo-r36n9.15`)** — the same page, with its own data. Edzés left `AreaRoom`
   for `ios/Boop/Edzes/EdzesRoom.swift`, branched beside `EtelRoom()` in `NapView`, because the morning brief
   cannot carry what the training API knows. **The frame is still the kit's** (`NKAreaPage`, the area's own bar,

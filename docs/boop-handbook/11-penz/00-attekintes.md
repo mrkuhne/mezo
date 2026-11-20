@@ -22,8 +22,9 @@ Négy lépésben épül:
   készpénzes költés rögzítése net nélkül is, a „mire gyűjtök” rész — lásd: *A terület*.
 - **3. lépés — portfólió és hírek** (kész): a befektetéseid időtávok szerint, és minden nap, mi mozdult meg, ami
   téged érint, forintban és megnyitható elemzéssel — lásd: *A vagyonod és a napi hírek*.
-- **4. lépés — gyakorlás és javaslatok**: gyakorló kereskedés valódi pénz nélkül, és Boop javaslata, mit kezdj egy
-  nagyobb összeggel.
+- **4. lépés — gyakorlás és javaslatok** (megépült, ellenőrzés és élesítés vár rá): gyakorló kereskedés valódi pénz
+  nélkül — terv előbb, egy sor utána, heti visszanézés, havi 20 000 Ft-os keret —, egy jóváhagyott termékjegyzék, és
+  Boop felosztása időtávonként egy nagyobb összegre vagy havi stratégiára — lásd: *Gyakorlás és javaslatok*.
 
 ## Hogyan működik
 A számolás mindig a háttérrendszerben történik, a régi app kipróbált szabályai szerint — a régi app összes
@@ -40,7 +41,7 @@ Nincs.
 Lásd: *Az adatalap*.
 
 ## Mi jön még
-A 4. lépés.
+A 4. lépés élesítése, utána az „élesre fordítás” — a te kapcsolóddal, később.
 
 ## Mi marad ki
 Banki összekötés, automatikus vásárlás vagy utalás — soha. Értesítés pénzügyi hírekről — nem lesz.
