@@ -13,6 +13,7 @@ import BoopDesign
 //   -previewBlokkOpen epito|het            straight into the builder / the review deck
 //   -previewBlokkTab napok|blokk           the builder's tab
 //   -previewBlokkState empty|loading|error|offline|applied
+//   -previewBlokkSuggest fail              the add/swap suggestions read answers 503
 //
 // The evaluator below is a FIXTURE: it imitates the server's answer so the steppers move the numbers on screen. The
 // app itself never computes a band — it asks `POST /api/train/meso-plans/evaluate`.
@@ -76,6 +77,9 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
         try await Task.sleep(for: .milliseconds(state == "loading" ? 600_000 : 350))
         if state == "offline" { throw URLError(.notConnectedToInternet) }
         if state == "error" { return (HTTPResponse(status: .internalServerError), nil) }
+        if operationID == "getBlockExerciseSuggestions", UserDefaults.standard.string(forKey: "previewBlokkSuggest") == "fail" {
+            return (HTTPResponse(status: .serviceUnavailable), nil)
+        }
         var sent: [String: Any]? = nil
         var sentArray: [[String: Any]]? = nil
         if let body {
@@ -89,6 +93,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             case "listMesocycles": return state == "empty" ? [] : [block]
             case "getExerciseCatalog": return Self.catalog
             case "evaluateMesoPlan": return sent.map(Self.evaluate)
+            case "getBlockExerciseSuggestions": return Self.suggestions(sent ?? [:])
             case "listWeekProposals": return state == "empty" ? [] : [proposal()]
             case "decideWeekProposal":
                 if let s = sent {
@@ -177,6 +182,27 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
     static var catalog: [[String: Any]] { [
         ["id": "c-stable", "name": "stable", "stability": "stable", "lengthenedFriendly": false],
         ["id": "c-long", "name": "lengthened", "stability": "stable", "lengthenedFriendly": true]] }
+
+    /// FIXTURE for the add/swap read: invented picks with real catalogue names, reasons from the server's fixed phrase table.
+    static func suggestions(_ req: [String: Any]) -> [String: Any] {
+        func pick(_ id: String, _ name: String, _ muscle: String, _ type: String, _ reason: String, _ signals: [String],
+                  top: [String: Any]? = nil, rx: [String: Any]? = nil) -> [String: Any] {
+            ["exercise": ["id": id, "name": name, "muscle": muscle, "type": type, "stability": "stable", "lengthenedFriendly": false],
+             "reasonText": reason, "signals": signals, "lastTopSet": top as Any? ?? NSNull(), "prescription": rx as Any? ?? NSNull()]
+        }
+        let same = "Ugyanazt a munkát végzi a tervben, ezt már csináltad, így látod, hol tartasz."
+        let rx: [String: Any] = ["workingSets": 3, "repMin": 8, "repMax": 12, "targetRIR": 2, "restSec": 90]
+        let adding = req["mode"] as? String == "add"
+        return [
+            "suggestions": [
+                pick("c0000000-0000-4000-8000-0000000000a1", "Chest Supported Row", "back-mid", "compound", same, ["same-role"],
+                     top: ["weightKg": 52.5, "reps": 10], rx: rx),
+                pick("c0000000-0000-4000-8000-0000000000a2", adding ? "Lat Pulldown" : "Seated Cable Row", adding ? "back-wide" : "back-mid",
+                     "compound", "Ugyanazt a munkát végzi a tervben.", ["same-role", "UNDER_BAND"], rx: rx),
+                pick("c0000000-0000-4000-8000-0000000000a3", "Straight-Arm Pulldown", "back-wide", "isolation",
+                     "Ugyanazt a munkát végzi a tervben.", ["same-role"])],
+            "labels": [["catalogId": "c0000000-0000-4000-8000-0000000000a3", "label": "NO_EQUIPMENT"]]]
+    }
 
     private static let landmarks: [String: (Int, Int, Int)] = [
         "back": (10, 16, 22), "biceps": (6, 10, 14), "shoulder": (8, 12, 18), "chest": (8, 14, 20),
