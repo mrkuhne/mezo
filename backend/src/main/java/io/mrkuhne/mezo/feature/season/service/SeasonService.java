@@ -15,10 +15,12 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -72,7 +74,7 @@ public class SeasonService {
             return s;
         }
         SeasonDraftJson draft = s.getDraft();
-        SeasonNumbersJson before = liveNumbers(owner, draft);
+        SeasonNumbersJson before = previewService.liveNumbers(owner, draft).orElse(null);
         int sleepBase = previewService.sleepBase(owner); // before the previous season lets go of the sleep goal
         SeasonPreviewService.Computed after = previewService.compute(owner, s, draft);
 
@@ -103,6 +105,7 @@ public class SeasonService {
     @Transactional
     public SeasonEntity apply(UUID owner, UUID id, SeasonDraftJson draft, String fingerprint) {
         SeasonEntity s = previewService.requireEditable(owner, id);
+        requireBlockDaysUnchanged(owner, s, draft);
         if (fingerprint == null || !fingerprint.equals(previewService.fingerprint(owner, s))) {
             throw new SystemRuntimeErrorException(SystemMessage.error("SEASON_PREVIEW_STALE").build(), HttpStatus.CONFLICT);
         }
@@ -128,10 +131,17 @@ public class SeasonService {
         return s;
     }
 
-    /** Closes a season (its goal and the weekly slots stay as they are). */
+    /**
+     * Closes a season (its goal and the weekly slots stay as they are). An active season hands the sleep goal back:
+     * when its minutes are still the season's derived need, they return to the base (anchor kept), so the next
+     * season's need does not stack on this one's.
+     */
     @Transactional
     public SeasonEntity close(UUID owner, UUID id) {
         SeasonEntity s = requireOwned(owner, id);
+        if (SeasonEntity.STATUS_ACTIVE.equals(s.getStatus())) {
+            restoreSleepBase(owner, s);
+        }
         if (!SeasonEntity.STATUS_CLOSED.equals(s.getStatus())) {
             s.setStatus(SeasonEntity.STATUS_CLOSED);
             s.setClosedSummary(summary(s));
@@ -189,6 +199,30 @@ public class SeasonService {
             new SeasonDraftJson.Block("adopt", mesoId, null)));
     }
 
+    /**
+     * Spec §5.12-1: while the season's block runs, its weekdays are the gym slots' — the gym DAYS are locked (409
+     * {@code SEASON_BLOCK_DAYS_LOCKED}); the gym time, sport, pace, target and length stay changeable. Previews stay
+     * allowed (the phone disables the control).
+     */
+    private void requireBlockDaysUnchanged(UUID owner, SeasonEntity s, SeasonDraftJson draft) {
+        if (!SeasonEntity.STATUS_ACTIVE.equals(s.getStatus()) || trainPort.activeMesocycle(owner).isEmpty()) {
+            return;
+        }
+        Set<Integer> now = new HashSet<>(previewService.currentDraft(owner, s).gymDaysOrEmpty());
+        if (!now.equals(new HashSet<>(draft.gymDaysOrEmpty()))) {
+            throw new SystemRuntimeErrorException(SystemMessage.error("SEASON_BLOCK_DAYS_LOCKED").build(),
+                HttpStatus.CONFLICT);
+        }
+    }
+
+    private void restoreSleepBase(UUID owner, SeasonEntity s) {
+        SeasonSleepPort.SleepGoal sleep = sleepPort.get(owner);
+        if (s.getSleepBaseMin() != null && s.getSleepNeedMin() != null && sleep.isSet()
+            && sleep.targetMinutes() == s.getSleepNeedMin()) {
+            sleepPort.setTargetMinutes(owner, s.getSleepBaseMin());
+        }
+    }
+
     private void writeSleep(UUID owner, SeasonDraftJson draft, int needMin) {
         if (draft.sleepAnchor() != null) {
             sleepPort.write(owner, needMin, draft.sleepAnchor().anchor(), draft.sleepAnchor().time());
@@ -197,14 +231,6 @@ public class SeasonService {
         }
     }
 
-    /** The live state's numbers (the revision's "before"); null when the live goal cannot be projected. */
-    private SeasonNumbersJson liveNumbers(UUID owner, SeasonDraftJson draft) {
-        try {
-            return previewService.previewDraft(owner, draft).before();
-        } catch (SystemRuntimeErrorException e) {
-            return null;
-        }
-    }
 
     private void revision(UUID owner, SeasonEntity s, SeasonDraftJson draft, SeasonNumbersJson before,
                           SeasonNumbersJson after) {

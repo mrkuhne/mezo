@@ -18,7 +18,11 @@ public interface SeasonGoalPort {
                       BigDecimal startWeightKg, BigDecimal targetWeightKg, List<String> guards) {
     }
 
-    record GoalView(UUID id, String status, GoalFields fields) {
+    /**
+     * @param balanceAdjustmentKcal accepted adaptive correction (kcal/day), or null
+     * @param segmentOverrides      accepted per-week overrides as text (fingerprint input), or null
+     */
+    record GoalView(UUID id, String status, GoalFields fields, Integer balanceAdjustmentKcal, String segmentOverrides) {
     }
 
     /** One day type's served targets. */

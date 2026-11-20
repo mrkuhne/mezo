@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 class SeasonApiIT extends ApiIntegrationTest {
 
     @Autowired private SeasonFixture fixture;
+    @Autowired private io.mrkuhne.mezo.support.populator.GoalPopulator goalPopulator;
 
     @Test
     void fullFlow() {
@@ -88,6 +89,22 @@ class SeasonApiIT extends ApiIntegrationTest {
         String notEditable = postForBody("/api/seasons/" + created.getId() + "/preview", change, u.headers(),
             HttpStatus.CONFLICT, String.class);
         assertHasRequestError(notEditable, "SEASON_NOT_EDITABLE");
+    }
+
+    @Test
+    void activateWithAnIncoherentLiveGoalIs200() {
+        RegisteredUser u = registerUser("EvadLegacy");
+        fixture.owner(u.email());
+        goalPopulator.createLegacyIncoherentGoal(u.id(), null); // a live goal the engine cannot project
+
+        SeasonDraft draft = getForBody("/api/seasons/draft", u.headers(), HttpStatus.OK, SeasonDraft.class);
+        draft.setTrajectory(SeasonDraft.TrajectoryEnum.MAINTAIN);
+        draft.setTargetWeightKg(null);
+        SeasonResponse created = postForBody("/api/seasons", draft, u.headers(), HttpStatus.CREATED, SeasonResponse.class);
+
+        SeasonResponse active = postForBody("/api/seasons/" + created.getId() + "/activate", null, u.headers(),
+            HttpStatus.OK, SeasonResponse.class);
+        assertThat(active.getStatus()).isEqualTo(SeasonResponse.StatusEnum.ACTIVE);
     }
 
     @Test

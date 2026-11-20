@@ -14,7 +14,7 @@ import java.util.Optional;
 
 /**
  * The state a season preview was computed against (spec §5.3, Review Focus 2) — pure. SHA-256 over the season's
- * status and window, its goal, the weekly slots, the latest weight trend point and weigh-in, the sleep goal and the
+ * status, window and accepted draft, its goal (accepted adjustment and overrides included), the weekly slots, the latest weight trend point and weigh-in, the sleep goal and the
  * running block. Any of them moving between the preview and the accept makes the accept a 409
  * {@code SEASON_PREVIEW_STALE}, so a preview opened before a weigh-in is never applied after it.
  */
@@ -28,9 +28,11 @@ public final class SeasonFingerprint {
                             SeasonSleepPort.SleepGoal sleep, Optional<SeasonTrainPort.Block> block) {
         StringBuilder b = new StringBuilder();
         b.append("season|").append(s.getId()).append('|').append(s.getStatus()).append('|').append(s.getStartDate())
-            .append('|').append(s.getWeeks()).append('|').append(s.getSleepNeedMin()).append('\n');
+            .append('|').append(s.getWeeks()).append('|').append(s.getSleepNeedMin()).append('|').append(s.getDraft())
+            .append('\n');
         goal.ifPresent(g -> b.append("goal|").append(g.id()).append('|').append(g.status()).append('|')
-            .append(g.fields()).append('\n'));
+            .append(g.fields()).append('|').append(g.balanceAdjustmentKcal()).append('|').append(g.segmentOverrides())
+            .append('\n'));
         b.append("slots|").append(slots.gymDays()).append('|').append(slots.gymTime()).append('|')
             .append(slots.sport()).append('\n');
         SeasonMetricsPort.TrendPoint last = trend.isEmpty() ? null : trend.get(trend.size() - 1);

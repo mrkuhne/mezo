@@ -84,6 +84,7 @@ public class SeasonMapper {
             .band(band(n.bandLowKg(), n.bandHighKg()))
             .gymPerWeek(n.gymPerWeek())
             .sportPerWeek(n.sportPerWeek())
+            .weekKcal(n.weekKcal())
             .build();
     }
 

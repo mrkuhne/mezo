@@ -40,6 +40,7 @@ class SeasonPortsIT extends AbstractIntegrationTest {
     @Autowired private BiometricProfilePopulator profilePopulator;
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository gymRepo;
 
     @Test
     void replaceSlotsRecomputesGoal() {
@@ -79,6 +80,32 @@ class SeasonPortsIT extends AbstractIntegrationTest {
         assertThat(g.anchor()).isEqualTo("WAKE");
         assertThat(g.anchorTime()).isEqualTo("06:30");
         assertThat(g.isSet()).isTrue();
+    }
+
+
+    @Test
+    void replaceSlotsKeepsEachDaysOwnTimeUnlessTheTimeIsChanged() {
+        UUID owner = databasePopulator.populateUser("season-ports-times@test.local");
+        trainPopulator.createGymSlot(owner, 0, "17:30");
+        trainPopulator.createGymSlot(owner, 5, "10:00");
+        assertThat(trainPort.currentSchedule(owner).gymTime()).isNull(); // mixed times → no single time
+
+        trainPort.replaceSlots(owner, draftAt(List.of(0, 2, 5), null));
+        assertThat(times(owner)).containsExactly("0@17:30", "2@17:30", "5@10:00");
+
+        trainPort.replaceSlots(owner, draftAt(List.of(0, 2, 5), "07:00")); // an explicit new time moves them all
+        assertThat(times(owner)).containsExactly("0@07:00", "2@07:00", "5@07:00");
+        assertThat(trainPort.currentSchedule(owner).gymTime()).isEqualTo("07:00");
+    }
+
+    private List<String> times(UUID owner) {
+        return gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner).stream()
+            .map(g -> g.getDayOfWeek() + "@" + g.getTime()).toList();
+    }
+
+    private static SeasonDraftJson draftAt(List<Integer> gymDays, String gymTime) {
+        return new SeasonDraftJson("Évad", "cut", null, null, null, LocalDate.now(), 8, gymDays, gymTime, List.of(),
+            null, List.of(), null);
     }
 
     private static SeasonDraftJson draft(List<Integer> gymDays) {

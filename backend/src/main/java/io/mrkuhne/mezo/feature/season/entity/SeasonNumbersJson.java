@@ -22,6 +22,7 @@ public record SeasonNumbersJson(
     BigDecimal bandLowKg,      // maintain only
     BigDecimal bandHighKg,     // maintain only
     int gymPerWeek,
-    int sportPerWeek
+    int sportPerWeek,
+    Integer weekKcal           // trainDay × active days + restDay × the rest (trainDay × 7 without a rest day)
 ) {
 }

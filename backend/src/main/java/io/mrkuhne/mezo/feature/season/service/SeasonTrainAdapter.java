@@ -56,7 +56,7 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
             .stream()
             .map(s -> new SeasonDraftJson.SportSlot(s.getDayOfWeek(), s.getTime(), s.getDurationMin(), s.getSport()))
             .toList();
-        return new Schedule(List.copyOf(days), gym.isEmpty() ? null : gym.get(0).getTime(), sport);
+        return new Schedule(List.copyOf(days), commonTime(gym), sport);
     }
 
     @Override
@@ -85,11 +85,17 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
         List<GymScheduleSlotEntity> gymNow = gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner);
         List<SportScheduleSlotEntity> sportNow = sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner);
         List<GymScheduleSlotInput> gym = new ArrayList<>();
+        // A draft time that differs from today's single shared time is an explicit change and moves every day;
+        // otherwise a weekday that already has a slot keeps its own time, and a new weekday takes the draft's
+        // time, else the first existing slot's.
+        String shared = commonTime(gymNow);
+        boolean timeChanged = draft.gymTime() != null && !draft.gymTime().equals(shared);
         for (Integer day : new TreeSet<>(draft.gymDaysOrEmpty())) {
-            String time = draft.gymTime() != null ? draft.gymTime()
-                : gymNow.stream().filter(g -> g.getDayOfWeek().equals(day)).map(GymScheduleSlotEntity::getTime)
-                    .findFirst()
-                    .orElse(gymNow.isEmpty() ? FALLBACK_GYM_TIME : gymNow.get(0).getTime());
+            Optional<String> own = gymNow.stream().filter(g -> g.getDayOfWeek().equals(day))
+                .map(GymScheduleSlotEntity::getTime).findFirst();
+            String time = timeChanged ? draft.gymTime()
+                : own.orElse(draft.gymTime() != null ? draft.gymTime()
+                    : gymNow.isEmpty() ? FALLBACK_GYM_TIME : gymNow.get(0).getTime());
             gym.add(GymScheduleSlotInput.builder().dayOfWeek(day).time(time).build());
         }
         List<SportScheduleSlotInput> sport = new ArrayList<>();
@@ -127,6 +133,15 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
     @Override
     public UUID templateOf(UUID owner, UUID mesocycleId) {
         return mesoTemplateService.rerun(owner, mesocycleId).getTemplateId();
+    }
+
+    /** The one time every gym slot shares, or null when there is none or they differ. */
+    private static String commonTime(List<GymScheduleSlotEntity> gym) {
+        if (gym.isEmpty()) {
+            return null;
+        }
+        String first = gym.get(0).getTime();
+        return gym.stream().allMatch(g -> first.equals(g.getTime())) ? first : null;
     }
 
     private static List<DraftSlot> slots(SeasonDraftJson draft) {

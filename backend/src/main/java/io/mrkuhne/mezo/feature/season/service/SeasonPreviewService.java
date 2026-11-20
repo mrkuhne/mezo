@@ -73,6 +73,23 @@ public class SeasonPreviewService {
     /** No season yet (the new-season summary): before = the live goal, the current slots and the sleep goal. */
     @Transactional(readOnly = true)
     public Preview previewDraft(UUID owner, SeasonDraftJson draft) {
+        return draftPreview(owner, draft);
+    }
+
+    /**
+     * The live state's numbers (a revision's "before"), or empty when the live goal cannot be projected. Not
+     * transactional and never rethrows: a failure inside must not mark the CALLER's transaction rollback-only, which
+     * a {@link SystemRuntimeErrorException} crossing {@link #previewDraft}'s transactional proxy would do.
+     */
+    public Optional<SeasonNumbersJson> liveNumbers(UUID owner, SeasonDraftJson draft) {
+        try {
+            return Optional.of(draftPreview(owner, draft).before());
+        } catch (SystemRuntimeErrorException e) {
+            return Optional.empty();
+        }
+    }
+
+    private Preview draftPreview(UUID owner, SeasonDraftJson draft) {
         Optional<SeasonGoalPort.GoalView> live = goalPort.liveActive(owner);
         SeasonDraftJson liveSchedule = withLiveSchedule(owner, draft);
         Computed before = live
@@ -187,8 +204,22 @@ public class SeasonPreviewService {
         }
         SeasonNumbersJson numbers = new SeasonNumbersJson(t.trainDay().kcal(), restDay, t.trainDay().proteinG(),
             t.trainDay().carbsG(), need, SleepNeedRule.bedtime(anchor, anchorTime, need), targetDate, weeksToTarget,
-            verdict, kgPerWeek, bandLow, bandHigh, gym, sport);
+            verdict, kgPerWeek, bandLow, bandHigh, gym, sport,
+            weekKcal(t.trainDay().kcal(), restDay, SeasonDraftMath.activeDays(schedule)));
         return new Computed(numbers, warnings(fields, verdict, t.guards()), fields);
+    }
+
+    /**
+     * The week's total planned intake: a training day's target on every day with gym or sport, a rest day's on the
+     * rest; seven training days without a rest day. It moves when a session lands on a former rest day even though
+     * neither day's own target does.
+     */
+    static int weekKcal(int trainDayKcal, Integer restDayKcal, int activeDays) {
+        if (restDayKcal == null) {
+            return trainDayKcal * 7;
+        }
+        int active = Math.min(7, activeDays);
+        return trainDayKcal * active + restDayKcal * (7 - active);
     }
 
     private SeasonDraftJson withLiveSchedule(UUID owner, SeasonDraftJson d) {

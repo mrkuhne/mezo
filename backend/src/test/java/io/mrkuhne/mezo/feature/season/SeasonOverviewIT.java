@@ -152,6 +152,35 @@ class SeasonOverviewIT extends AbstractIntegrationTest {
         assertThat(o.getSeason().getMesocycleId()).isEqualTo(meso.getId());
     }
 
+
+    @Test
+    void projectionStopsAtTheTargetAndStaysFlat() {
+        UUID owner = fixture.owner("season-overview-flat@test.local");
+        // 84 → 82 at 0.4 kg/week: the target is reached in week 5 of a 12-week season.
+        activate(owner, new SeasonDraftJson("Őszi évad", "cut", new BigDecimal("82.0"), null, new BigDecimal("0.4"),
+            LocalDate.now(), 12, SeasonFixture.GYM, "17:30", SeasonFixture.SPORT,
+            new SeasonDraftJson.SleepAnchor("WAKE", "06:30"), List.of(), null));
+
+        SeasonOverview o = overviewService.overview(owner);
+
+        List<java.math.BigDecimal> kg = o.getWeight().getProjection().stream().map(p -> p.getKg()).toList();
+        assertThat(kg.get(kg.size() - 1)).isEqualByComparingTo("82.0");
+        assertThat(kg).allSatisfy(k -> assertThat(k).isGreaterThanOrEqualTo(new BigDecimal("82.0")));
+    }
+
+    @Test
+    void overviewPastTheGoalsTargetKeepsComputing() {
+        UUID owner = fixture.owner("season-overview-pasttarget@test.local");
+        activate(owner, new SeasonDraftJson("Őszi évad", "cut", new BigDecimal("82.0"), null, new BigDecimal("0.4"),
+            LocalDate.now().minusWeeks(7), 12, SeasonFixture.GYM, "17:30", SeasonFixture.SPORT,
+            new SeasonDraftJson.SleepAnchor("WAKE", "06:30"), List.of(), null));
+
+        SeasonOverview o = overviewService.overview(owner);
+
+        assertThat(o.getHead().getWeek()).isEqualTo(8);
+        assertThat(o.getPillars().getFood().getTrainDayKcal()).isPositive();
+    }
+
     private void activate(UUID owner, SeasonDraftJson d) {
         seasonService.activate(owner, seasonService.create(owner, d).getId());
         em.flush();

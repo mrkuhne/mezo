@@ -10,7 +10,8 @@ import java.util.UUID;
 /** What the season needs from training (consumer-owned port): the weekly slots, their energy, the block. */
 public interface SeasonTrainPort {
 
-    /** The current weekly rhythm in the draft's shape. {@code gymTime} = the first gym slot's time, or null. */
+    /** The current weekly rhythm in the draft's shape. {@code gymTime} = the time every gym slot shares, or null when
+     *  they differ (or there is none). */
     record Schedule(List<Integer> gymDays, String gymTime, List<SeasonDraftJson.SportSlot> sport) {
     }
 

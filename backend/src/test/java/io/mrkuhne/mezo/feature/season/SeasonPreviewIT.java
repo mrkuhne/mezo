@@ -36,6 +36,7 @@ class SeasonPreviewIT extends AbstractIntegrationTest {
     @Autowired private SleepGoalRepository sleepGoalRepository;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private EntityManager em;
+    @Autowired private io.mrkuhne.mezo.support.populator.GoalPopulator goalPopulator;
 
     @Test
     void sameDraftGivesEqualBeforeAfter() {
@@ -143,6 +144,76 @@ class SeasonPreviewIT extends AbstractIntegrationTest {
         assertThat(p.before().gymPerWeek()).isEqualTo(4);
         assertThat(p.after().gymPerWeek()).isEqualTo(4);
         assertThat(p.after().sleepNeedMin()).isEqualTo(486);
+    }
+
+
+    @Test
+    void addingSportDayRaisesWeekKcal() {
+        UUID owner = fixture.owner("season-preview-weekkcal-sport@test.local");
+        SeasonEntity season = fixture.plannedSeason(owner, SeasonFixture.draft());
+        List<SeasonDraftJson.SportSlot> withSaturday = new java.util.ArrayList<>(SeasonFixture.SPORT);
+        withSaturday.add(new SeasonDraftJson.SportSlot(5, "10:00", 90, "volleyball"));
+
+        Preview p = previewService.preview(owner, season.getId(),
+            SeasonFixture.draft("cut", new BigDecimal("80.0"), null, SeasonFixture.GYM, withSaturday));
+
+        assertThat(p.before().weekKcal()).isEqualTo(p.before().trainDayKcal() * 4 + p.before().restDayKcal() * 3);
+        assertThat(p.after().weekKcal() - p.before().weekKcal())
+            .isEqualTo(p.before().trainDayKcal() - p.before().restDayKcal());
+    }
+
+    @Test
+    void fifthGymSessionRaisesWeekKcal() {
+        UUID owner = fixture.owner("season-preview-weekkcal-gym@test.local");
+        SeasonEntity season = fixture.plannedSeason(owner, SeasonFixture.draft());
+
+        Preview p = previewService.preview(owner, season.getId(), SeasonFixture.draft("cut", new BigDecimal("80.0"),
+            null, List.of(0, 1, 2, 3, 4), SeasonFixture.SPORT));
+
+        assertThat(p.after().weekKcal()).isGreaterThan(p.before().weekKcal());
+    }
+
+    @Test
+    void weekKcalIsSevenTrainingDaysWithoutARestDay() {
+        UUID owner = fixture.owner("season-preview-weekkcal-allweek@test.local");
+        SeasonEntity season = fixture.plannedSeason(owner, SeasonFixture.draft());
+
+        SeasonNumbersJson n = previewService.preview(owner, season.getId(), SeasonFixture.draft("cut",
+            new BigDecimal("80.0"), null, List.of(0, 1, 2, 3, 4), List.of(new SeasonDraftJson.SportSlot(5, "10:00", 90,
+                "volleyball"), new SeasonDraftJson.SportSlot(6, "10:00", 90, "volleyball")))).after();
+
+        assertThat(n.weekKcal()).isEqualTo(n.trainDayKcal() * 7);
+    }
+
+    @Test
+    void seasonPastTheGoalsTargetKeepsComputingAndHolds() {
+        UUID owner = fixture.owner("season-preview-pasttarget@test.local");
+        // 84 → 82 at 0.4 kg/week = a 5-week goal inside a 12-week season that started 7 weeks ago.
+        SeasonDraftJson shortGoal = new SeasonDraftJson("Őszi évad", "cut", new BigDecimal("82.0"), null,
+            new BigDecimal("0.4"), java.time.LocalDate.now().minusWeeks(7), 12, SeasonFixture.GYM, "17:30",
+            SeasonFixture.SPORT, new SeasonDraftJson.SleepAnchor("WAKE", "06:30"), List.of(), null);
+        SeasonEntity season = fixture.plannedSeason(owner, shortGoal);
+        SeasonDraftJson maintain = new SeasonDraftJson("Őszi évad", "maintain", null, null, null,
+            java.time.LocalDate.now().minusWeeks(7), 12, SeasonFixture.GYM, "17:30", SeasonFixture.SPORT,
+            new SeasonDraftJson.SleepAnchor("WAKE", "06:30"), List.of(), null);
+
+        SeasonNumbersJson n = previewService.preview(owner, season.getId(), shortGoal).after();
+        SeasonNumbersJson hold = previewService.compute(owner, null, maintain).numbers();
+
+        assertThat(n.weeksToTarget()).isEqualTo(5);
+        // Past the target the goal holds: the same served targets as keeping the weight.
+        assertThat(n.restDayKcal()).isEqualTo(hold.restDayKcal());
+        assertThat(n.trainDayKcal()).isEqualTo(hold.trainDayKcal());
+    }
+
+    @Test
+    void draftPreviewWithALiveGoalPastItsTargetDateComputes() {
+        UUID owner = fixture.owner("season-preview-livepast@test.local");
+        goalPopulator.createGoal(owner, "cut", "active"); // 2026-06-01 → 2026-07-27, long over
+
+        Preview p = previewService.previewDraft(owner, SeasonFixture.draft());
+
+        assertThat(p.before().trainDayKcal()).isPositive();
     }
 
     /** Every row the preview could touch, as text: goals (prescription included), slots, sleep goal, seasons. */

@@ -51,6 +51,7 @@ class SeasonServiceIT extends AbstractIntegrationTest {
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private EntityManager em;
+    @Autowired private io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository gymSlotRepository;
 
     @Test
     void activateWritesSlotsSleepAndLink() {
@@ -165,6 +166,134 @@ class SeasonServiceIT extends AbstractIntegrationTest {
 
         assertThat(d.weeks()).isEqualTo(9);
         assertThat(d.block()).isEqualTo(new SeasonDraftJson.Block("adopt", meso.getId(), null));
+    }
+
+
+    @Test
+    void applyChangingGymDaysWithRunningBlockIs409() {
+        UUID owner = fixture.owner("season-lock-gym@test.local");
+        trainPopulator.createActiveMeso(owner);
+        SeasonEntity s = seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
+        em.flush();
+        SeasonDraftJson change = SeasonFixture.draft("cut", new BigDecimal("80.0"), null, List.of(0, 1, 2, 3, 4),
+            SeasonFixture.SPORT);
+        String fingerprint = previewService.preview(owner, s.getId(), change).fingerprint(); // preview stays allowed
+
+        assertThatThrownBy(() -> seasonService.apply(owner, s.getId(), change, fingerprint))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class, e -> {
+                assertThat(e.getMessage()).isEqualTo("SEASON_BLOCK_DAYS_LOCKED");
+                assertThat(e.getStatus().value()).isEqualTo(409);
+            });
+    }
+
+    @Test
+    void applyChangingSportWithRunningBlockPasses() {
+        UUID owner = fixture.owner("season-lock-sport@test.local");
+        trainPopulator.createActiveMeso(owner);
+        SeasonEntity s = seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
+        em.flush();
+        SeasonDraftJson change = SeasonFixture.draft("cut", new BigDecimal("80.0"), null, List.of(4, 3, 1, 0),
+            List.of(new SeasonDraftJson.SportSlot(5, "10:00", 90, "volleyball")));
+        String fingerprint = previewService.preview(owner, s.getId(), change).fingerprint();
+
+        seasonService.apply(owner, s.getId(), change, fingerprint);
+        em.flush();
+
+        assertThat(trainPort.currentSchedule(owner).sport()).extracting(SeasonDraftJson.SportSlot::dayOfWeek)
+            .containsExactly(5);
+    }
+
+    @Test
+    void applyChangingGymDaysWithoutBlockPasses() {
+        UUID owner = fixture.owner("season-lock-none@test.local");
+        SeasonEntity s = seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
+        em.flush();
+        SeasonDraftJson change = SeasonFixture.draft("cut", new BigDecimal("80.0"), null, List.of(0, 2, 4),
+            SeasonFixture.SPORT);
+        String fingerprint = previewService.preview(owner, s.getId(), change).fingerprint();
+
+        seasonService.apply(owner, s.getId(), change, fingerprint);
+        em.flush();
+
+        assertThat(trainPort.currentSchedule(owner).gymDays()).containsExactly(0, 2, 4);
+    }
+
+    @Test
+    void closeGivesTheSleepGoalItsBaseBack() {
+        UUID owner = fixture.owner("season-close-sleep@test.local");
+        SeasonEntity s = seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
+        em.flush();
+        assertThat(sleepPort.get(owner).targetMinutes()).isEqualTo(486);
+
+        seasonService.close(owner, s.getId());
+        em.flush();
+
+        assertThat(sleepPort.get(owner).targetMinutes()).isEqualTo(450);
+        assertThat(sleepPort.get(owner).anchorTime()).isEqualTo("06:30");
+        // The next season starts from the same base — the need does not stack.
+        SeasonEntity next = seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
+        assertThat(next.getSleepBaseMin()).isEqualTo(450);
+        assertThat(next.getSleepNeedMin()).isEqualTo(486);
+    }
+
+    @Test
+    void closeKeepsASleepGoalHeChangedHimself() {
+        UUID owner = fixture.owner("season-close-sleep-own@test.local");
+        SeasonEntity s = seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
+        em.flush();
+        sleepPort.setTargetMinutes(owner, 500);
+
+        seasonService.close(owner, s.getId());
+        em.flush();
+
+        assertThat(sleepPort.get(owner).targetMinutes()).isEqualTo(500);
+    }
+
+    @Test
+    void plannedSeasonConcurrentApplyIs409() {
+        UUID owner = fixture.owner("season-planned-race@test.local");
+        SeasonEntity s = seasonService.create(owner, SeasonFixture.draft());
+        em.flush();
+        SeasonDraftJson a = SeasonFixture.draft();
+        SeasonDraftJson b = new SeasonDraftJson(a.title(), a.trajectory(), a.targetWeightKg(), null, null, a.startDate(),
+            a.weeks(), a.gymDays(), a.gymTime(), a.sport(), a.sleepAnchor(), List.of(UUID.randomUUID()), null);
+        String fpA = previewService.preview(owner, s.getId(), a).fingerprint();
+        String fpB = previewService.preview(owner, s.getId(), b).fingerprint();
+
+        seasonService.apply(owner, s.getId(), b, fpB);
+        em.flush();
+
+        assertThatThrownBy(() -> seasonService.apply(owner, s.getId(), a, fpA)).hasMessage("SEASON_PREVIEW_STALE");
+    }
+
+    @Test
+    void applyAfterAnAcceptedBalanceAdjustmentIs409() {
+        UUID owner = fixture.owner("season-balance-race@test.local");
+        SeasonEntity s = seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
+        em.flush();
+        String fp = previewService.preview(owner, s.getId(), SeasonFixture.draft()).fingerprint();
+        GoalEntity goal = goalRepository.findById(s.getGoalId()).orElseThrow();
+        goal.setBalanceAdjustmentKcal(-120);
+        goalRepository.saveAndFlush(goal);
+
+        assertThatThrownBy(() -> seasonService.apply(owner, s.getId(), SeasonFixture.draft(), fp))
+            .hasMessage("SEASON_PREVIEW_STALE");
+    }
+
+    @Test
+    void activationKeepsEachGymDaysOwnTime() {
+        UUID owner = fixture.owner("season-gym-times@test.local");
+        trainPopulator.createGymSlot(owner, 5, "10:00"); // Saturday morning, the rest at 17:30
+        em.flush();
+
+        SeasonDraftJson first = firstSeasonAssembler.draft(owner);
+        assertThat(first.gymTime()).isNull();
+        seasonService.activate(owner, seasonService.create(owner, first).getId());
+        em.flush();
+
+        assertThat(gymSlotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner))
+            .extracting(g -> g.getDayOfWeek() + "@" + g.getTime())
+            .containsExactly("0@17:30", "1@17:30", "3@17:30", "4@17:30", "5@10:00");
     }
 
     private static SeasonDraftJson withBlock(SeasonDraftJson d, SeasonDraftJson.Block block) {

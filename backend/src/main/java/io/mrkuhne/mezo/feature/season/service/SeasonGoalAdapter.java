@@ -99,7 +99,7 @@ public class SeasonGoalAdapter implements SeasonGoalPort {
             return Optional.empty();
         }
         long week = Math.max(1, ChronoUnit.DAYS.between(draft.startDate(), on) / 7 + 1);
-        GoalPrescriptionJson.Segment seg = GoalPrescriptionJson.currentSegment(calc.prescription(), week);
+        GoalPrescriptionJson.Segment seg = segmentFor(calc.prescription(), week);
         if (seg == null || seg.kcal() == null) {
             return Optional.empty();
         }
@@ -145,6 +145,27 @@ public class SeasonGoalAdapter implements SeasonGoalPort {
         int startWeek = (int) Math.min(goalWeeks, Math.max(1, fromStart / 7 + 1));
         linkService.attachPlan(owner, goalId, GoalPlanAttachRequest.builder()
             .planType(PLAN_MESOCYCLE).planId(mesocycleId).startWeek(startWeek).build());
+    }
+
+    /**
+     * The segment covering {@code week}; before the first segment the first one; past the last one (the target is
+     * reached — a pace can make the goal shorter than the season) the last one HELD: the goal balance set to 0, so
+     * the day targets are the maintenance ones.
+     */
+    static GoalPrescriptionJson.Segment segmentFor(GoalPrescriptionJson prescription, long week) {
+        GoalPrescriptionJson.Segment seg = GoalPrescriptionJson.currentSegment(prescription, week);
+        if (seg != null || prescription.segments() == null || prescription.segments().isEmpty()) {
+            return seg;
+        }
+        List<GoalPrescriptionJson.Segment> all = prescription.segments();
+        GoalPrescriptionJson.Segment first = all.get(0);
+        if (first.fromWeek() != null && week < first.fromWeek()) {
+            return first;
+        }
+        GoalPrescriptionJson.Segment last = all.get(all.size() - 1);
+        return new GoalPrescriptionJson.Segment(last.fromWeek(), last.toWeek(), last.label(), last.kcal(),
+            last.proteinG(), last.carbsG(), last.fatG(), last.sleepTargetH(), last.restDays(), BigDecimal.ZERO, 0,
+            last.trainingDayKcal(), last.restDayKcal(), last.rationale());
     }
 
     /** A never-saved goal carrying the draft; the stored goal lends its id (links), overrides and adjustment. */
@@ -198,6 +219,7 @@ public class SeasonGoalAdapter implements SeasonGoalPort {
     private static GoalView view(GoalEntity g) {
         return new GoalView(g.getId(), g.getStatus(), new GoalFields(g.getTitle(), g.getTrajectory(), g.getStartDate(),
             g.getTargetDate(), g.getStartWeightKg(), g.getTargetWeightKg(),
-            g.getGuards() == null ? List.of() : List.copyOf(g.getGuards())));
+            g.getGuards() == null ? List.of() : List.copyOf(g.getGuards())),
+            g.getBalanceAdjustmentKcal(), g.getSegmentOverrides() == null ? null : g.getSegmentOverrides().toString());
     }
 }

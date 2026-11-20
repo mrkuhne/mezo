@@ -111,7 +111,7 @@ public class SeasonOverviewService {
             .weight(SeasonWeight.builder()
                 .series(new ArrayList<>(trend.stream().filter(p -> !p.date().isBefore(s.getStartDate()))
                     .map(p -> point(p.date(), p.kg())).toList()))
-                .projection(projection(s, today, trendKg != null ? trendKg : startKg, n))
+                .projection(projection(s, today, trendKg != null ? trendKg : startKg, n, computed.goal().targetWeightKg()))
                 .trendKg(trendKg)
                 .targetKg(computed.goal().targetWeightKg())
                 .band(SeasonMapper.band(n.bandLowKg(), n.bandHighKg()))
@@ -211,8 +211,12 @@ public class SeasonOverviewService {
         return out;
     }
 
-    /** The planned course from today to the season's end, one point a week (flat for maintain). */
-    private static List<SeasonWeightPoint> projection(SeasonEntity s, LocalDate today, BigDecimal fromKg, SeasonNumbersJson n) {
+    /**
+     * The planned course from today to the season's end, one point a week: at the planned pace until the target,
+     * then flat on it (a pace can reach the target before the season ends); flat for maintain.
+     */
+    private static List<SeasonWeightPoint> projection(SeasonEntity s, LocalDate today, BigDecimal fromKg,
+                                                      SeasonNumbersJson n, BigDecimal targetKg) {
         List<SeasonWeightPoint> out = new ArrayList<>();
         if (fromKg == null) {
             return out;
@@ -222,7 +226,13 @@ public class SeasonOverviewService {
         BigDecimal perWeek = n.kgPerWeek() == null ? BigDecimal.ZERO : n.kgPerWeek();
         for (LocalDate d = from; !d.isAfter(end); d = d.plusWeeks(1)) {
             long weeks = ChronoUnit.WEEKS.between(from, d);
-            out.add(point(d, fromKg.add(perWeek.multiply(BigDecimal.valueOf(weeks))).setScale(1, RoundingMode.HALF_UP)));
+            BigDecimal kg = fromKg.add(perWeek.multiply(BigDecimal.valueOf(weeks)));
+            if (targetKg != null && perWeek.signum() < 0 && kg.compareTo(targetKg) < 0) {
+                kg = targetKg;
+            } else if (targetKg != null && perWeek.signum() > 0 && kg.compareTo(targetKg) > 0) {
+                kg = targetKg;
+            }
+            out.add(point(d, kg.setScale(1, RoundingMode.HALF_UP)));
         }
         return out;
     }
