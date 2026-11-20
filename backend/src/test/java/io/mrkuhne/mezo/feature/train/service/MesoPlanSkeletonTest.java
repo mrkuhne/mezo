@@ -20,7 +20,7 @@ class MesoPlanSkeletonTest {
         "glute", new VolumeProperties.Baseline(8, 12, 18),
         "calf", new VolumeProperties.Baseline(6, 10, 16));
 
-    static final VolumeProperties.Bands BANDS = new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2);
+    static final VolumeProperties.Bands BANDS = new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2, 4);
 
     @Test
     void build_shouldDeriveUpperLower_whenFourDays() {

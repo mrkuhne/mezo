@@ -104,6 +104,33 @@ class MesoPlanEvaluateContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void evaluationCarriesBasisAndBudget() {
+        MesoPlanEvaluation e = evaluate(request(
+            day("Hét", ex("Fekvenyomás", "chest", 4), ex("Evezés", "back", 4)),
+            day("Kedd", ex("Húzódzkodás", "back", 4)))
+            .musclePriorities(Map.of("chest", "maintain")).sessionMinutesTarget(60).build());
+
+        assertThat(muscle(e, "chest").getBasis().getSource())
+            .isEqualTo(io.mrkuhne.mezo.api.dto.MuscleBasis.SourceEnum.MAINTAIN_THIRD);
+        assertThat(muscle(e, "back").getBasis().getSource())
+            .isEqualTo(io.mrkuhne.mezo.api.dto.MuscleBasis.SourceEnum.LANDMARKS_RP);
+        assertThat(muscle(e, "back").getConsecutiveHeavy()).singleElement().satisfies(c -> {
+            assertThat(c.getDayIndex()).isZero();
+            assertThat(c.getNextDayIndex()).isEqualTo(1);
+            assertThat(c.getSets()).isEqualTo(4);
+            assertThat(c.getNextSets()).isEqualTo(4);
+        });
+        assertThat(muscle(e, "chest").getConsecutiveHeavy()).isEmpty();
+
+        assertThat(e.getBudget()).isNotNull();
+        assertThat(e.getBudget().getCapacitySets()).isPositive();
+        assertThat(e.getBudget().getUsedSets()).isPositive();
+        assertThat(e.getBudget().getEmphasizeCount()).isZero();
+        assertThat(e.getBudget().getEmphasizeMax()).isEqualTo(2);
+        assertThat(e.getBudget().getRaiseCost()).containsKeys("chest", "back");
+    }
+
+    @Test
     void deficitSlowsThePath() {
         // an active cut goal through the real goal populator + the real adapter (no mock)
         MesoPlanEvaluateRequest req = request(day("Hét", ex("Fekvenyomás", "chest", 3)))

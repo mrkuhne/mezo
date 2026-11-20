@@ -2972,6 +2972,7 @@ mezo:
       sport-low-shift: 1          # sport-loaded group: band low - 1 (min 1)
       sport-high-shift: 2         # sport-loaded group: band high - 2 (min low + 1)
       emphasize-max: 2            # most muscles that may be Hangsúly (emphasize) at once
+      consecutive-heavy-sets: 4   # counting working sets of one muscle on two consecutive calendar days that flag it (core exempt)
     weekly-review:
       mode: auto                  # auto | manual
     signals:

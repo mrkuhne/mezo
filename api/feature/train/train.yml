@@ -2898,6 +2898,56 @@ components:
             $ref: '#/components/schemas/PlanProposalEdit'
         proposalBlocked:
           type: boolean
+        basis:
+          $ref: '#/components/schemas/MuscleBasis'
+        consecutiveHeavy:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsecutiveHeavyDay'
+          description: Pairs of consecutive calendar days (Vas wraps to Hét) on which this muscle gets at least the heavy-set threshold of counting working sets both days.
+    MuscleBasis:
+      type: object
+      required: [source]
+      description: Why the band is what it is (the phone words it).
+      properties:
+        source:
+          type: string
+          enum: [landmarks_rp, maintain_third, sport_adjusted]
+          description: landmarks_rp = the RP landmarks for the tier; maintain_third = the Tartás band (a third of MEV up to MEV); sport_adjusted = lowered because the sport already trains the muscle.
+    ConsecutiveHeavyDay:
+      type: object
+      required: [dayIndex, nextDayIndex, sets, nextSets]
+      properties:
+        dayIndex:
+          type: integer
+        nextDayIndex:
+          type: integer
+          description: The plan day on the next calendar day
+        sets:
+          type: integer
+        nextSets:
+          type: integer
+    TierBudgetView:
+      type: object
+      required: [usedSets, emphasizeCount, emphasizeMax, raiseCost]
+      description: The weekly set budget the tiers spend.
+      properties:
+        capacitySets:
+          type: integer
+          nullable: true
+          description: Working sets the training days fit in the session-minutes target; null without a target.
+        usedSets:
+          type: integer
+          description: Peak weekly total over the non-deload weeks of the projected path.
+        emphasizeCount:
+          type: integer
+        emphasizeMax:
+          type: integer
+        raiseCost:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Muscle -> extra peak weekly sets if it were raised one tier (maintain -> grow -> emphasize); emphasized muscles are absent.
     SessionCapWarning:
       type: object
       required: [muscle, sets, cap]
@@ -3029,6 +3079,11 @@ components:
           items:
             $ref: '#/components/schemas/TechniqueRecommendation'
           description: Per-exercise technique recommendation for every exercise that may carry a technique (a stable one); null when the block does not opt in.
+        budget:
+          allOf:
+            - $ref: '#/components/schemas/TierBudgetView'
+          nullable: true
+          description: The tier budget; null when the plan has no counting exercises.
     TechniqueRecommendation:
       type: object
       required: [dayIndex, exerciseIndex, technique, reason, challengeFit]

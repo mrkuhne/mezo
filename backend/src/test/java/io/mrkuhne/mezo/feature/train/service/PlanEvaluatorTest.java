@@ -33,7 +33,7 @@ class PlanEvaluatorTest {
         b.put("ham", new VolumeProperties.Baseline(6, 10, 14));
         b.put("glute", new VolumeProperties.Baseline(8, 12, 18));
         b.put("calf", new VolumeProperties.Baseline(6, 10, 16));
-        PROPS = new VolumeProperties(new BigDecimal("0.5"), 2, b, new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2),
+        PROPS = new VolumeProperties(new BigDecimal("0.5"), 2, b, new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2, 4),
             new VolumeProperties.WeeklyReview("auto"), 2, 1, 1, new VolumeProperties.Signals(3, 2, 7),
             new VolumeProperties.Evaluator(new BigDecimal("2.4"), new BigDecimal("1.0"), 6, 40, new BigDecimal("1")),
             Map.of("volleyball", List.of("quad", "ham", "glute", "calf")));
@@ -243,5 +243,55 @@ class PlanEvaluatorTest {
         assertThat(r.path().get(0).total()).isEqualTo(8);
         assertThat(r.path().get(1).total()).isEqualTo(9);
         assertThat(r.path().get(3).phase()).isEqualTo("Deload");
+    }
+
+    // --- why (basis) + heavy back-to-back days (mezo-r36n9.113, Task 4) ---
+
+    @Test void consecutiveHeavyFlagged() {
+        Result r = PlanEvaluator.evaluate(input(List.of(new PlanDay("Hét", List.of(ex("back", 4), ex("back", 3))),
+            new PlanDay("Kedd", List.of(ex("back", 4)))), Map.of()));
+        assertThat(muscle(r, "back").consecutiveHeavy())
+            .containsExactly(new PlanEvaluator.ConsecutiveHeavy(0, 1, 7, 4));
+    }
+
+    @Test void fullBodyLightNotFlagged() {
+        Result r = PlanEvaluator.evaluate(input(List.of(new PlanDay("Hét", List.of(ex("back", 3))),
+            new PlanDay("Kedd", List.of(ex("back", 3)))), Map.of()));
+        assertThat(muscle(r, "back").consecutiveHeavy()).isEmpty();
+    }
+
+    @Test void coreExempt() {
+        // even with a configured core landmark, core never counts as a heavy back-to-back day
+        Map<String, VolumeProperties.Baseline> b = new LinkedHashMap<>(PROPS.baselines());
+        b.put("core", new VolumeProperties.Baseline(6, 10, 16));
+        VolumeProperties withCore = new VolumeProperties(PROPS.deloadFraction(), PROPS.grindRirGap(), b,
+            PROPS.bands(), PROPS.weeklyReview(), PROPS.stepEmphasize(), PROPS.stepGrow(), PROPS.stepDeficit(),
+            PROPS.signals(), PROPS.evaluator(), PROPS.sportGroupsBySport());
+        Result r = PlanEvaluator.evaluate(new Input(4, List.of("MEV", "MAV", "MAV", "Deload"),
+            List.of(new PlanDay("Hét", List.of(ex("core", 7))), new PlanDay("Kedd", List.of(ex("core", 4)))),
+            Map.of(), Set.of(), false, null, Set.of(), withCore, false));
+        assertThat(muscle(r, "core").consecutiveHeavy()).isEmpty();
+    }
+
+    @Test void sundayMondayWraps() {
+        Result r = PlanEvaluator.evaluate(input(List.of(new PlanDay("Hét", List.of(ex("back", 4))),
+            new PlanDay("Sze", List.of(ex("back", 6))), new PlanDay("Vas", List.of(ex("back", 5)))), Map.of()));
+        assertThat(muscle(r, "back").consecutiveHeavy())
+            .containsExactly(new PlanEvaluator.ConsecutiveHeavy(2, 0, 5, 4));
+    }
+
+    @Test void nonWeekdayLabelSkipped() {
+        Result r = PlanEvaluator.evaluate(input(List.of(new PlanDay("A nap", List.of(ex("back", 6))),
+            new PlanDay("Hét", List.of(ex("back", 6)))), Map.of()));
+        assertThat(muscle(r, "back").consecutiveHeavy()).isEmpty();
+    }
+
+    @Test void basisNamesWhyTheBandIsWhatItIs() {
+        Result r = PlanEvaluator.evaluate(input(List.of(new PlanDay("Hét",
+                List.of(ex("chest", 4), ex("back", 4), ex("quad", 4)))),
+            Map.of("chest", "maintain"), Set.of("quad"), null, Set.of()));
+        assertThat(muscle(r, "chest").basis()).isEqualTo(PlanEvaluator.BasisSource.MAINTAIN_THIRD);
+        assertThat(muscle(r, "back").basis()).isEqualTo(PlanEvaluator.BasisSource.LANDMARKS_RP);
+        assertThat(muscle(r, "quad").basis()).isEqualTo(PlanEvaluator.BasisSource.SPORT_ADJUSTED);
     }
 }

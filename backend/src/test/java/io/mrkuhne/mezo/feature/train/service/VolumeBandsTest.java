@@ -7,7 +7,7 @@ import io.mrkuhne.mezo.feature.train.service.VolumeBands.Band;
 import org.junit.jupiter.api.Test;
 
 class VolumeBandsTest {
-    private static final VolumeProperties.Bands CFG = new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2);
+    private static final VolumeProperties.Bands CFG = new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2, 4);
 
     @Test void backBands() {
         var back = new VolumeProperties.Baseline(10, 16, 22);
