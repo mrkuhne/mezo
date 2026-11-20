@@ -106,6 +106,20 @@ struct KitGallery: View {
                                     hue: hue, placeholder: "Gyakorlat vagy izomcsoport")
             }
 
+            NKBare("Egy hír, amit megnyithatsz", hue: hue, glyph: "search-ink") {
+                VStack(alignment: .leading, spacing: 12) {
+                    NKNewsCard(hue: hue, holding: "Világ-ETF", sleeve: "10+ év", holdingGlyph: "star-sun",
+                               title: "A világ-ETF-ed 1,1%-ot esett a héten", effect: "\u{2212}18\u{00A0}400\u{00A0}Ft",
+                               effectNote: "a te részeden", negative: true,
+                               verdict: "Egy héten belüli mozgás a 10+ éves pénznél nem jelent semmit.",
+                               confidence: 2, confidenceText: "Magas", sourceCount: 6) { note = "Elemzés" }
+                    HStack(spacing: 14) {
+                        ForEach(0..<3, id: \.self) { NKConfidenceDots(level: $0) }
+                    }
+                    NKNothingToDo("Ez a pénz 10+ évre szól. Egy heti mozgás nem ok a lépésre.", hue: hue)
+                }
+            }
+
             NKMenuGrid([NKMenuItem(glyph: "plus-ink", name: "Újat kezdenék", sub: "Új blokk vagy egyedi edzés", badge: 2) { note = "Új" },
                         NKMenuItem(glyph: "repeat-deep", name: "Megismétlem", sub: "A legutóbbi edzés újra") { note = "Ismét" },
                         NKMenuItem(glyph: "medal-sun", name: "Rekordjaim", sub: "Amit idén megdöntöttél") { note = "Rekordok" },

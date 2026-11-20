@@ -113,7 +113,11 @@ public func penzErrorText(_ error: PlanFetchError) -> String {
         case "PENZ_EARLIER_MONTH_OPEN": "Előbb egy korábbi hónapot kell lezárni — a hónapok sorban zárulnak."
         case "PENZ_MONTH_ALREADY_CLOSED": "Ezt a hónapot már lezártad."
         case "PENZ_MONTH_NOT_OVER": "Ez a hónap még nem ért véget."
-        case "PENZ_CURRENCY_MISMATCH": "A számla pénzneme nem forint, így ezt most nem tudom elvégezni."
+        case "PENZ_CURRENCY_MISMATCH": "A pénznem nem egyezik a befektetés pénznemével, így ezt most nem tudom elvégezni."
+        case "PENZ_SYMBOL_UNKNOWN": "Ezt a jelet nem ismeri az árfolyamforrás. Nézd meg, jól írtad-e (például OTP.BD vagy VWCE.DE), vagy hagyd üresen, és a vételárán számolom."
+        case "PENZ_SELL_EXCEEDS_POSITION": "Ennyit nem adhatsz el belőle: több lenne, mint amennyi a nyilvántartás szerint van belőle."
+        case "PENZ_FX_UNAVAILABLE": "Arra a napra most nem érem el a hivatalos árfolyamot, ezért nem tudom forintra váltani. Próbáld újra kicsit később."
+        case "PENZ_HOLDING_NOT_FOUND": "Ezt a befektetést már nem találom a szerveren."
         default: "A szerver ezt most nem fogadta el."
         }
     case .server: "A szerver most nem válaszolt rendesen. Próbáld újra."

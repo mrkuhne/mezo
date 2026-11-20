@@ -7,6 +7,8 @@ import BoopDesign
 struct PenzMa: View {
     let store: PenzStore?
     let open: (PenzSheet) -> Void
+    let openNews: (PenzNewsCardModel) -> Void
+    let openPenzem: () -> Void
     let ask: () -> Void
     private let hue = penzHue
 
@@ -14,6 +16,7 @@ struct PenzMa: View {
         if store?.isEmpty == true {
             PenzEmptyCard()
             actions
+            digest
         } else if let store, let a = store.allowance {
             let v = store.verdict
             let copy = penzVerdictCopy(v, allowance: a)
@@ -24,12 +27,18 @@ struct PenzMa: View {
             NKInfoRow("Honnan tudom, van-e dolgod?", hue: hue) {
                 open(.info(title: "Honnan tudom, van-e dolgod?", body: penzVerdictRuleText))
             }
+            digest
             menu
         } else {
             PenzSection(label: "MA", state: penzBlockState(store)) { EmptyView() }
             actions
         }
         NKAskRow(hue: hue, text: "Kérdezd meg Boopot a pénzedről") { ask() }
+    }
+
+    /// L6: the day's digest — only stories touching his holdings — and how it is made.
+    private var digest: some View {
+        PenzDigestBlock(store: store, open: open, openNews: openNews, openPenzem: openPenzem)
     }
 
     /// The one thing, with its button — the verdict's own; "Ma nincs dolgod" needs none.

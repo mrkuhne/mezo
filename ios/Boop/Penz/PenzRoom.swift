@@ -8,10 +8,10 @@ import BoopDesign
 // screenshots `penz-1-ma.png`, `penz-4-koltes.png`; spec `2026-11-13-boop-penz-design.md` §5.1/§5.3/§5.6). The owner
 // does not want another visual round, so the order of the blocks is the spike's, and only what the server cannot know
 // yet is said instead of drawn:
-//   • the news digest at the bottom of Ma is L6 — Ma ends with the menu and the ask row;
+//   • the news digest at the bottom of Ma, Pénzem, the analysis page and the sleeve page are L6 (`PenzPenzem.swift`);
 //   • Ma's third number in the spike is "ennyit tudsz befektetni", which the server does not compute yet — it is the
 //     engine's per-day figure instead, never an invented one;
-//   • Pénzem and Gyakorlás have no data yet (L6/L7) and say so.
+//   • Gyakorlás has no data yet (L7) and says so.
 //
 // Copy rules (§6): never urge, never promise a return, never say sell, „Ma nincs dolgod" is a complete answer, always
 // say why. A negative figure is never lit in the hue (it would turn a loss green).
@@ -23,6 +23,8 @@ enum PenzTab: String, CaseIterable {
 /// The sheets the room opens.
 enum PenzSheet: Identifiable, Equatable {
     case capture, review, editLines, close, budgets, addGoal
+    /// L6: a buy / sell he made on his platform, and a portfolio event.
+    case record, addEvent
     case later(title: String, line: String)
     case info(title: String, body: String)
     var id: String {
@@ -30,6 +32,20 @@ enum PenzSheet: Identifiable, Equatable {
         case .later(let t, _): "later-\(t)"
         case .info(let t, _): "info-\(t)"
         default: "\(self)"
+        }
+    }
+}
+
+/// The full-screen pages the room pushes (page-level, `boop-ios.md` §9).
+enum PenzPage: Identifiable, Equatable {
+    case month
+    case news(PenzNewsCardModel)
+    case sleeve(String)
+    var id: String {
+        switch self {
+        case .month: "month"
+        case .news(let n): "news-\(n.id)"
+        case .sleeve(let s): "sleeve-\(s)"
         }
     }
 }
@@ -42,7 +58,7 @@ struct PenzRoom: View {
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @SceneStorage("penz.tab") private var selected: String = PenzTab.ma.rawValue
     @State private var sheet: PenzSheet?
-    @State private var monthList = false
+    @State private var page: PenzPage?
     @State private var toast: String?
     /// A refused cash row he tapped: *Újra* or *Törlöm*.
     @State private var refusedCash: UUID?
@@ -102,9 +118,7 @@ struct PenzRoom: View {
             Text("Még nem került fel a szerverre. Küldd újra, vagy töröld, ha rosszul írtad be.")
         }
         .sheet(item: $sheet) { s in sheetView(s) }
-        .fullScreenCover(isPresented: $monthList) {
-            if let store { PenzMonthPage(store: store) { monthList = false } }
-        }
+        .fullScreenCover(item: $page) { p in pageView(p) }
         #if DEBUG
         .task {
             try? await Task.sleep(for: .seconds(1.6))
@@ -116,7 +130,23 @@ struct PenzRoom: View {
             case "budgets": sheet = .budgets
             case "goal": sheet = .addGoal
             case "invest": sheet = investSheet
-            case "month": monthList = true
+            case "month": page = .month
+            case "record": sheet = .record
+            case "event": sheet = .addEvent
+            case "allocation": sheet = penzAllocationLater
+            default: break
+            }
+            // `-penzPage news|news2|news3|sleeve|sleeve-short`: the analysis page of a digest item, or a sleeve page.
+            switch UserDefaults.standard.string(forKey: "penzPage") {
+            case let n? where n.hasPrefix("news"):
+                let i = (Int(n.dropFirst(4)) ?? 1) - 1
+                if case .items(let cards) = penzDigestView(digest: store?.digest?.value, problem: nil,
+                                                           portfolio: store?.portfolio?.value), cards.indices.contains(i) {
+                    page = .news(cards[i])
+                }
+            case "sleeve": page = .sleeve("long")
+            case "sleeve-short": page = .sleeve("short")
+            case "sleeve-mid": page = .sleeve("mid")
             default: break
             }
             // `-penzPending 1890`: a cash expense typed now (with `-previewOffline YES` it waits in the outbox).
@@ -143,13 +173,13 @@ struct PenzRoom: View {
 
     @ViewBuilder private var content: some View {
         switch tab {
-        case .ma: PenzMa(store: store, open: { sheet = $0 }, ask: { openPlace(.boop) })
-        case .koltes: PenzKoltes(store: store, open: { sheet = $0 }, openMonth: { monthList = true },
+        case .ma: PenzMa(store: store, open: { sheet = $0 }, openNews: { page = .news($0) },
+                         openPenzem: { selected = PenzTab.penzem.rawValue }, ask: { openPlace(.boop) })
+        case .koltes: PenzKoltes(store: store, open: { sheet = $0 }, openMonth: { page = .month },
                                  onRefused: { refusedCash = $0 }, ask: { openPlace(.boop) })
         case .penzem:
-            NKNotLiveYet(hue: hue, title: "Ami a pénzedből van",
-                         line: "Itt lesz a három rekesz — a biztonsági tartalék (1–3 év), a középtáv (5–10 év) és a hosszú táv (10+ év) —, hogy melyik mennyit ér, és mire elég. Előbb a befektetéseidet kell rögzíteni; az a következő lépésben érkezik.")
-            NKAskRow(hue: hue, text: "Kérdezd meg Boopot a pénzedről") { openPlace(.boop) }
+            PenzPenzem(store: store, open: { sheet = $0 }, openSleeve: { page = .sleeve($0) },
+                       openPractice: { selected = PenzTab.gyakorlas.rawValue }, ask: { openPlace(.boop) })
         case .gyakorlas:
             NKNotLiveYet(hue: hue, title: "Gyakorlás",
                          line: "Papíron kereskedés játékpénzzel, napló és heti visszanézés, hogy a sajátod előtt gyakorolhass. A havi keretét már most levonom a költhető pénzből — a Költés oldalon külön sor. Maga a gyakorlás egy későbbi lépésben érkezik.")
@@ -159,6 +189,24 @@ struct PenzRoom: View {
 
     private var investSheet: PenzSheet {
         .later(title: "Befektetnék", line: "Itt fogok felosztást javasolni: mennyi menjen a biztonsági, a közép- és a hosszú távú rekeszbe, két-három konkrét lehetőséggel és azzal, hogy miért. Ez egy későbbi lépésben érkezik — addig semmit nem javaslok, amit nem tudok alátámasztani.")
+    }
+
+    @ViewBuilder private func pageView(_ p: PenzPage) -> some View {
+        switch p {
+        case .month:
+            if let store { PenzMonthPage(store: store) { page = nil } }
+        case .news(let item):
+            PenzNewsPage(item: item, onBack: { page = nil },
+                         ask: { page = nil; openPlace(.boop) },
+                         openPenzem: { page = nil; selected = PenzTab.penzem.rawValue })
+        case .sleeve(let s):
+            if let store {
+                PenzSleevePage(store: store, sleeve: s, onBack: { page = nil }, record: {
+                    page = nil
+                    Task { @MainActor in try? await Task.sleep(for: .milliseconds(450)); sheet = .record }
+                })
+            }
+        }
     }
 
     @ViewBuilder private func sheetView(_ s: PenzSheet) -> some View {
@@ -176,6 +224,10 @@ struct PenzRoom: View {
             if let store { PenzBudgetsSheet(store: store).penzSheetStyle() }
         case .addGoal:
             if let store { PenzAddGoalSheet(store: store) { sheet = nil; toast = "Hozzáadva" }.penzSheetStyle([.large]) }
+        case .record:
+            if let store { PenzRecordSheet(store: store) { done in sheet = nil; toast = done }.penzSheetStyle([.large]) }
+        case .addEvent:
+            if let store { PenzEventSheet(store: store) { done in sheet = nil; toast = done }.penzSheetStyle([.large]) }
         case .later(let title, let line):
             NKSheetFrame(hue: hue, eyebrow: "Pénz", title: title) {
                 NKNotLiveYet(hue: hue, title: "Később jön", line: line)
