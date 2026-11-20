@@ -63,6 +63,9 @@ struct NapView: View {
                             // Mozgás's room is the training room (B5): the same shared page, fed by the training
                             // API rather than by the brief alone.
                             EdzesRoom()
+                        } else if hue == .penz {
+                            // Pénz's room has its own data (L5): the money API, not the brief.
+                            PenzRoom()
                         } else {
                             AreaRoom(hue: hue, brief: morning.brief ?? brief, store: morning, ctx: ctx, desk: desk) { sheet = DetailSheet($0) }
                         }

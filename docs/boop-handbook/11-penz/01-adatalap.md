@@ -76,11 +76,9 @@ Boop csak akkor fogadja el, ha betű szerint benne van az üzenetben.
 | `penz_api_key` | a parancsikon kulcsa (csak egy ujjlenyomata, maga a kulcs nem) |
 
 ## Mi jön még
-- A Pénz oldal a telefonon, a heti maradékkal és a soronkénti levezetéssel (2. lépés).
-- A régi appod adatainak egyszeri átköltöztetése (a 2. lépés átállásakor).
-- A „mire gyűjtök” rész és a kategóriánkénti keretek a telefonon (2. lépés).
+- A régi appod adatainak egyszeri átköltöztetése.
+- (A Pénz oldal a telefonon, a „mire gyűjtök” rész és a keretek elkészültek — lásd: *A terület*.)
 
 ## Mi marad ki
-- Megtakarítási célok és vásárlási tervek — a 2. lépés hozza.
 - Egy SMS-ben jött befektetési vásárlás összepárosítása a rögzített vásárlással — a 3. lépés hozza.
 - Értesítés pénzügyekről — nem lesz.

@@ -1093,9 +1093,9 @@
       "Alapok"
     ],
     "szulo": "mezo-r36n9.33",
-    "allapot": "Később",
     "cim": "Pénz 2. · a terület — Ma és Költés oldal",
-    "mit_kapsz": "Megnyitod a Pénz területet, és nagyban látod, mennyi maradt a héten, meg hogy honnan jön ez a szám. A Ma oldalon megmondja, van-e ma dolgod. Készpénzt pár másodperc alatt felviszel, akkor is, ha nincs net. A Pénzem és a Gyakorlás oldal ilyenkor még őszintén kiírja, hogy ő még nem készült el."
+    "mit_kapsz": "Megnyílik a Pénz terület. A Költés oldalon látod, mennyi maradt a héten és mennyi jut egy napra, soronként levezetve (a gyakorlópénz és az előző hónap hiánya külön sorban), a hónap állását, hogy mire megy el a pénzed, a mai tételeket az ellenőrzésre váró banki üzenetekkel, és hogy mire gyűjtesz. A Ma oldal megmondja, van-e ma dolgod a pénzeddel — a legtöbb nap nincs. A készpénzes kiadást pár másodperc alatt rögzíted, térerő nélkül is. A Terv oldalon megjelenik a heti maradék.",
+    "munkamenet": "boop-penz-l5"
   },
   "mezo-r36n9.104": {
     "tipus": "Funkció",

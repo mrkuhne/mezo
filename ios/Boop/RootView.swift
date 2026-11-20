@@ -15,6 +15,8 @@ struct RootView: View {
     @State private var cache: ServerCache?
     /// Where a workout in progress is kept — with the outbox, because it is his own unsent work.
     @State private var workoutFolder: URL?
+    /// The Pénz area's data (L5): the area page, the Terv card and the cash capture read the same store.
+    @State private var penz: PenzStore?
 
     var body: some View {
         Group {
@@ -53,9 +55,11 @@ struct RootView: View {
         .environment(\.planClient, session.planClient)
         .environment(\.serverCache, cache)
         .environment(\.workoutFolder, workoutFolder)
+        .environment(penz)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
+        .background { if let ritmus, let penz, case .ready = session.state { PenzTriggers(env: ritmus, store: penz) } }
     }
 
     /// One Health link and one morning brief store per signed-in user; refreshed on open once the shell shows.
@@ -69,6 +73,7 @@ struct RootView: View {
         // the session's client already carries another token, or none).
         guard let me else {
             ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil; workoutFolder = nil
+            penz = nil
             BackgroundSyncHost.ritmus = nil; return
         }
         if link?.userId != me.id {
@@ -85,7 +90,11 @@ struct RootView: View {
                 ritmus = .preview(client: preview, train: previewTrain)
                 food = FoodClient(client: preview)
                 train = previewTrain
-                cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
+                let previewCache = RitmusEnvironment.directories(for: me.id).cache
+                cache = ServerCache(directory: previewCache)
+                let previewPenz = PenzStore(client: PenzPreview.client, cache: cache)
+                penz = previewPenz
+                Task { await PenzPreview.primeCache(previewCache) }
                 let previewFolder = RitmusEnvironment.directories(for: me.id).outbox
                 // A review launch starts the day over. The workout in progress is written to the user's own
                 // folder, not to the preview's scratch root, so without this a workout left running on one
@@ -99,10 +108,11 @@ struct RootView: View {
             let liveTrain = TrainClient(client: session.client)
             link = HealthLink(client: session.client, userId: me.id)
             morning = MorningStore(client: session.client, onUnauthorized: signOut)
-            ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id, train: liveTrain)
+            ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id, train: liveTrain, raw: session.raw)
             food = FoodClient(client: session.client)
             train = liveTrain
             cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
+            penz = PenzStore(client: PenzClient(raw: session.raw), cache: cache)
             workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
             BackgroundSyncHost.ritmus = ritmus
         }
@@ -156,6 +166,26 @@ private struct RitmusTriggers: View {
             .task(id: p) {
                 await env.reminders.refresh(ledger: env.ledger, bedtimeTarget: p.target, askPermission: p.saved)
             }
+    }
+}
+
+/// Pénz's upkeep, app-wide (L5 review): a cash expense queued, delivered or refused re-reads the outbox into the store,
+/// and a delivery or a capture re-reads the server — whether or not the Pénz page is open. Without it an expense the
+/// outbox delivered before the page was opened was neither pending nor among the transactions the store held, and the
+/// Terv card never counted unsent cash.
+private struct PenzTriggers: View {
+    let env: RitmusEnvironment
+    let store: PenzStore
+    var body: some View {
+        Color.clear
+            .task { store.setPending(await env.outbox.queue) }
+            .onChange(of: env.penzTick) {
+                Task {
+                    store.setPending(await env.outbox.queue)
+                    await store.load(force: true)
+                }
+            }
+            .onChange(of: env.refused.count) { Task { store.setPending(await env.outbox.queue) } }
     }
 }
 

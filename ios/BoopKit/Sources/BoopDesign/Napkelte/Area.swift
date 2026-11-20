@@ -87,16 +87,21 @@ public enum NKBlockState {
 /// the page — with that block's own loading and failed states.
 public struct NKBare<Content: View>: View {
     let label: String, hue: Hue, trailing: String?
+    /// The section's own glyph between the tick and the label (Pénz round 11, owner: "nincsenek ikonok" — every
+    /// section head that has a sensible glyph wears one). nil = the plain head every older caller keeps.
+    let glyph: String?
     let state: NKBlockState
     let content: Content
-    public init(_ label: String, hue: Hue, trailing: String? = nil, state: NKBlockState = .ready,
+    public init(_ label: String, hue: Hue, glyph: String? = nil, trailing: String? = nil, state: NKBlockState = .ready,
                 @ViewBuilder content: () -> Content) {
-        self.label = label; self.hue = hue; self.trailing = trailing; self.state = state; self.content = content()
+        self.label = label; self.hue = hue; self.glyph = glyph; self.trailing = trailing; self.state = state
+        self.content = content()
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Capsule().fill(hue.glow).frame(width: 3, height: 13)
+                if let glyph { NKGlyph(glyph, hue.glow.opacity(0.9), size: 14) }
                 NKMono(label.uppercased())
                 Spacer(minLength: 8)
                 if let trailing { Text(trailing).nkFont(12).foregroundStyle(.white.opacity(0.5)) }
@@ -217,6 +222,8 @@ public struct NKAreaPage<Content: View>: View {
     @State private var position = ScrollPosition()
     @State private var scrollY: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Simulator review (`-previewScroll N`): opens the page scrolled, as the tab pages already do.
+    @Environment(\.nkInitialScrollY) private var initialScrollY
 
     public init(hue: Hue, name: String, eyebrow: String, level: Double?, display: String? = nil,
                 headline: String, sentence: String, photo: Image? = nil, glyph: String? = nil,
@@ -253,6 +260,7 @@ public struct NKAreaPage<Content: View>: View {
         .scrollIndicators(.hidden)
         .scrollPosition($position)
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in scrollY = y }
+        .task { if let y = initialScrollY { try? await Task.sleep(for: .seconds(1)); position.scrollTo(y: y) } }
         // Switching tabs from deep inside a long list would leave the new tab scrolled into the middle of nothing.
         // The kit does it, so every room behaves the same: come back up to the tab row, but only when the page is
         // below it — a page already at the top does not jump.
@@ -353,7 +361,7 @@ public struct NKAreaBar: View {
     public static func glyph(_ name: String) -> String {
         switch name {
         case "Ma": "sun-ink"
-        case "Pénzem": "star-sun"
+        case "Pénzem": "e-penz"
         case "Költés": "scale-ink"
         case "Gyakorlás": "bolt-ink"
         case "Receptek": "book-sage"

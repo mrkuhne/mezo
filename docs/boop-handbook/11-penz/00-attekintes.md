@@ -15,11 +15,11 @@ a héten, és ma mennyit költhetsz nyugodtan?** A legtöbb napon a válasz az, 
 
 Négy lépésben épül:
 
-- **1. lépés — az alapok** (most épül): a számláid, a tételeid, az ismétlődő bevételeid és kiadásaid, a
+- **1. lépés — az alapok** (kész): a számláid, a tételeid, az ismétlődő bevételeid és kiadásaid, a
   hónapzárás, a heti maradék kiszámolása, a banki üzenetek automatikus átvétele és egy őr, amely nem engedi, hogy
-  Boop kitalált összeget mondjon. Képernyő még nincs — lásd: *Az adatalap*.
-- **2. lépés — a terület a telefonon**: a Pénz oldal (Ma · Pénzem · Költés · Gyakorlás), a heti maradék nagyban,
-  készpénzes költés rögzítése net nélkül is, a „mire gyűjtök” rész.
+  Boop kitalált összeget mondjon — lásd: *Az adatalap*.
+- **2. lépés — a terület a telefonon** (kész): a Pénz oldal (Ma · Pénzem · Költés · Gyakorlás), a heti maradék nagyban,
+  készpénzes költés rögzítése net nélkül is, a „mire gyűjtök” rész — lásd: *A terület*.
 - **3. lépés — portfólió és hírek**: a befektetéseid időtávok szerint, és reggelente, mi mozdult meg, ami téged
   érint.
 - **4. lépés — gyakorlás és javaslatok**: gyakorló kereskedés valódi pénz nélkül, és Boop javaslata, mit kezdj egy
@@ -40,7 +40,7 @@ Nincs.
 Lásd: *Az adatalap*.
 
 ## Mi jön még
-A 2–4. lépés, a fenti sorrendben.
+A 3–4. lépés, a fenti sorrendben.
 
 ## Mi marad ki
 Banki összekötés, automatikus vásárlás vagy utalás — soha. Értesítés pénzügyi hírekről — nem lesz.

@@ -2,7 +2,7 @@
 title: Day close — the Boop evening close record
 type: feature-domain
 status: done
-updated: 2026-11-16
+updated: 2026-11-20
 tags: [backend, ios, boop, dayclose, biometrics, data-layer]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/dayclose
@@ -15,6 +15,8 @@ related: [boop-ios, ritual, intention, journal, companion, today]
 ---
 
 # Day close — the Boop evening close record — Feature Documentation
+
+> **2026-11-20 — Boop L5 Pénz (`mezo-r36n9.103`): one more tenant of the outbox; no day-close change.** `RitmusClient.init` takes an optional `PenzOutboxSender`, and `send` routes the new `OutboxKind.penzExpense` (a cash expense typed on the phone) to it — `POST /api/penz/transactions` with the item id as `clientRef`. Its order group is the item itself (`penz|<id>`), so it never waits on, or holds back, the close, journal and check-in chain (see [`boop-ios.md`](boop-ios.md) §2 *The Pénz area*).
 
 > **2026-11-17 — Boop B5 Edzés, round 4 (`mezo-r36n9.15`): one `TrainClient`, not two; no day-close change.** `RitmusClient.init` now takes the app's own `TrainClient` instead of building its own. The two instances did not share the actor that remembers which **server** workout a queued set belongs to, so the queue learned the id and the player's online calls never saw it. Nothing about the close, the journal or the check-in chain changes.
 

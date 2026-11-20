@@ -64,7 +64,7 @@ public struct Trend: View {
 /// flatten into a blob, so they are drawn as thin outlines on the same 64-unit grid — as are the Napkelte-only glyphs
 /// `mic` (voice) and `offline` (a cloud with a slash, "nincs net"; B3, spike `RMicGlyph` / `ROfflineGlyph`).
 public struct NKGlyph: View {
-    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline"]
+    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz"]
     let name: String, color: Color, size: CGFloat
     public init(_ name: String, _ color: Color, size: CGFloat = 18) { self.name = name; self.color = color; self.size = size }
 
@@ -92,6 +92,14 @@ public struct NKGlyph: View {
                         ctx.stroke(P {
                             $0.move(to: CGPoint(x: 32, y: 46)); $0.addLine(to: CGPoint(x: 32, y: 56))
                             $0.move(to: CGPoint(x: 24, y: 56)); $0.addLine(to: CGPoint(x: 40, y: 56))
+                        }, with: .color(color), style: st)
+                    case "e-penz":
+                        // Pénz's own mark (the Élet spike's): a coin with the forint's F and its two bars.
+                        ctx.stroke(P { $0.addEllipse(in: CGRect(x: 8, y: 8, width: 48, height: 48)) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 36, y: 18)); $0.addLine(to: CGPoint(x: 26, y: 18)); $0.addLine(to: CGPoint(x: 26, y: 46))
+                            $0.move(to: CGPoint(x: 19, y: 29)); $0.addLine(to: CGPoint(x: 39, y: 29))
+                            $0.move(to: CGPoint(x: 19, y: 38)); $0.addLine(to: CGPoint(x: 39, y: 38))
                         }, with: .color(color), style: st)
                     case "offline":
                         ctx.stroke(P {
