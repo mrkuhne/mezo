@@ -123,20 +123,19 @@ struct EvadLogicTests {
 
     @Test func adherenceFactsArePlainCounts() {
         let a = EvadAdherence(foodInBand: 5, foodJudged: 6, sessionsDone: 3, sessionsPlanned: 4, nightsOk: 4, nightsJudged: 7, excusedDays: 1)
-        let facts = evadAdherenceFacts(a, needMin: 450)
+        let facts = evadAdherenceFacts(a)
         #expect(facts == [EvadFact(value: "5", target: "6", label: "napon belefértél a keretbe"),
                           EvadFact(value: "3", target: "4", label: "edzés megvolt"),
-                          EvadFact(value: "4", target: "7", label: "éjjel aludtál 7,5 órát")])
-        #expect(evadAdherenceFacts(a, needMin: nil).last?.label == "éjjel aludtál eleget")
-        #expect(evadAdherenceFacts(a, needMin: 480).last?.label == "éjjel aludtál 8 órát")
+                          EvadFact(value: "4", target: "7", label: "éjjel aludtál eleget")],
+                "a night counts at the need minus 15 minutes, so the label claims no hours")
         // a fact with nothing to count is left out, never a 0 / 0
         let quiet = EvadAdherence(foodInBand: 0, foodJudged: 0, sessionsDone: 0, sessionsPlanned: 2, nightsOk: 0, nightsJudged: 0, excusedDays: 0)
-        #expect(evadAdherenceFacts(quiet, needMin: 450).map(\.label) == ["edzés megvolt"])
+        #expect(evadAdherenceFacts(quiet).map(\.label) == ["edzés megvolt"])
     }
 
     @Test func excusedLineOnlyWhenADayWasLeftOut() {
         #expect(evadExcusedLine(0) == "Ez nem pontszám, csak összesítés.")
-        #expect(evadExcusedLine(1) == "1 nap nem számít bele: a kímélő és az indokkal kihagyott napok kimaradnak. Ez nem pontszám, csak összesítés.")
-        #expect(evadExcusedLine(2).hasPrefix("2 nap nem számít bele"))
+        #expect(evadExcusedLine(1) == "1 kímélő nap nem számít bele. Ez nem pontszám, csak összesítés.")
+        #expect(evadExcusedLine(2) == "2 kímélő nap nem számít bele. Ez nem pontszám, csak összesítés.")
     }
 }

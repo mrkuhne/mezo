@@ -56,8 +56,24 @@ struct EvadWallTests {
         #expect(c.why == "A terv napi 2650 kcal-lal számolt, de inkább 2580 körül égetsz.", "the why is the overview's own body")
         #expect(c.expiresAt == nil && !c.notifiable)
         #expect(evadWallOpens(c.id) == "modositas", "Átnézem opens Évad → Módosítás")
+        #expect(!c.why.isEmpty)
         // both at once near the end of the season: one per role
         let both = evadCandidates(Self.overview(insights: Self.learned), now: Self.at(2026, 12, 24), calendar: Self.cal)
         #expect(Set(both.map(\.role)) == [.improves, .happened])
+    }
+
+    @Test func learnedCardIdChangesOnlyWeekly() throws {
+        let id = { (d: Date) in evadCandidates(Self.overview(insights: Self.learned), now: d, calendar: Self.cal).first { $0.role == .improves }?.id }
+        // 2026-11-16 is a Monday (ISO week 47); Sunday 11-22 is still week 47, Monday 11-23 is week 48
+        let mon = try #require(id(Self.at(2026, 11, 16)))
+        #expect(id(Self.at(2026, 11, 18)) == mon && id(Self.at(2026, 11, 22, 21)) == mon, "the same card all week, so a dismissal holds")
+        #expect(id(Self.at(2026, 11, 23)) != mon, "a new week may say it again")
+        #expect(mon.contains("2026-W47") && mon.contains("s1"))
+        #expect(evadWallOpens(mon) == "modositas")
+    }
+
+    @Test func seasonEndWhyHasNoRepeatedEndLine() throws {
+        let c = try #require(evadCandidates(Self.overview(), now: Self.at(2026, 12, 22), calendar: Self.cal).first)
+        #expect(c.why == "Az évad utolsó napja: dec. 27.")
     }
 }

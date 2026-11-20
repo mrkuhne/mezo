@@ -22,9 +22,9 @@ struct EvadOverviewTab: View {
         NKBare("Az évad terve", hue: evadHue, glyph: "star-ink") {
             NKRowList(planRows, hue: evadHue)
         }
-        if let a = o.adherence, !evadAdherenceFacts(a, needMin: o.pillars.sleep.needMin).isEmpty || a.excusedDays > 0 {
+        if let a = o.adherence, !evadAdherenceFacts(a).isEmpty || a.excusedDays > 0 {
             NKBare("Hogy megy", hue: evadHue, glyph: "check-ink", trailing: "az elmúlt héten") {
-                let facts = evadAdherenceFacts(a, needMin: o.pillars.sleep.needMin)
+                let facts = evadAdherenceFacts(a)
                 if !facts.isEmpty {
                     NKStatRow(facts.map { NKStat(value: $0.value, target: $0.target, label: $0.label) }, hue: evadHue)
                 }

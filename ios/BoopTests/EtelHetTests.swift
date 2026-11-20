@@ -213,3 +213,43 @@ struct EtelHetTests {
         #expect(hetWeek(w, scores: [:], today: "2026-11-13", adherence: partial) == hetWeek(w, scores: [:], today: "2026-11-13"))
     }
 }
+
+/// The Hét tab's load (B6 S2 review): the week is on screen as soon as it is read; the server's day judgement arrives
+/// beside it and never holds the tab in its loading state.
+@MainActor
+struct EtelHetLoadTests {
+    private static let weekJSON = #"""
+    {"start":"2026-11-07","days":[{"date":"2026-11-13","targets":{"kcal":2350,"p":165,"c":280,"f":70,"water":3000},
+     "consumed":{"kcal":0,"p":0,"c":0,"f":0,"water":0},"skippedKcal":0}]}
+    """#
+
+    private func clients(adherence: @escaping ScriptedTransport.Handler) -> (FoodClient, EvadClient) {
+        let t = ScriptedTransport()
+        t.on("getFuelWeek", 200, Self.weekJSON)
+        t.on("getAdherence", adherence)
+        let food = FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: t))
+        let evad = EvadClient(raw: RawJSONClient(transport: t, baseURL: URL(string: "https://example.test")!, token: { "t" }))
+        return (food, evad)
+    }
+
+    @Test func aHungAdherenceCallNeverHoldsTheWeek() async {
+        let (food, evad) = clients { _ in try await Task.sleep(for: .seconds(30)); return (200, "{}") }
+        let store = EtelStore()
+        let started = Date()
+        await store.loadWeek(food: food, evad: evad, now: Date())
+        #expect(Date().timeIntervalSince(started) < 5, "the load returns without waiting for the judgement")
+        #expect(store.weekLoaded && store.week?.days.count == 1)
+        #expect(store.weekAdherence.isEmpty, "the local rule stands meanwhile")
+        store.weekAdherenceTask?.cancel()
+    }
+
+    @Test func theJudgementArrivesAfterTheWeek() async {
+        let (food, evad) = clients { _ in
+            (200, #"{"days":[{"date":"2026-11-13","judged":false,"excused":true,"excuse":"kimelo","sessionPlanned":false}],"summary":{"foodInBand":0,"foodJudged":0,"sessionsDone":0,"sessionsPlanned":0,"nightsOk":0,"nightsJudged":0,"excusedDays":1}}"#)
+        }
+        let store = EtelStore()
+        await store.loadWeek(food: food, evad: evad, now: Date())
+        await store.weekAdherenceTask?.value
+        #expect(store.weekAdherence.map(\.excuse) == ["kimelo"])
+    }
+}

@@ -23,7 +23,8 @@ public func evadCandidates(_ o: EvadOverview?, now: Date, calendar: Calendar = .
 
     if let i = o.insights.first(where: { $0.key == "learned_expenditure" }) {
         out.append(WallCandidate(
-            id: EvadWallID.learned + o.season.id, role: .improves, kind: .teendo, area: WallSources.evad, rank: 0.8,
+            // one card per season per ISO week: a dismissal holds for the week (the wall forgets "acted" daily)
+            id: EvadWallID.learned + o.season.id + "-" + evadISOWeek(now, calendar: calendar), role: .improves, kind: .teendo, area: WallSources.evad, rank: 0.8,
             text: "*\(i.title)*",
             sub: "Megmutatom, mi változna, mielőtt bármi változik.",
             primary: "Átnézem",
@@ -32,7 +33,6 @@ public func evadCandidates(_ o: EvadOverview?, now: Date, calendar: Calendar = .
     }
 
     if let left = evadDaysLeft(o.season.endDate, now: now, calendar: calendar), (0...7).contains(left) {
-        let end = o.upcoming.first { $0.kind == "end" }?.text
         out.append(WallCandidate(
             id: EvadWallID.end + o.season.id, role: .happened, kind: .tortent, area: WallSources.evad,
             happenedAt: calendar.startOfDay(for: now),
@@ -40,8 +40,8 @@ public func evadCandidates(_ o: EvadOverview?, now: Date, calendar: Calendar = .
             sub: evadEyebrow(o.head),
             primary: "Megnézem",
             settled: "Évad vége megnézve",
-            // "dec. 27." already ends the sentence
-            why: "Az évad utolsó napja: \(evadShortDate(o.season.endDate))" + (end.map { " Utána \($0)." } ?? "")))
+            // "dec. 27." already ends the sentence; the season-end line itself would only repeat the card
+            why: "Az évad utolsó napja: \(evadShortDate(o.season.endDate))"))
     }
     return out
 }
@@ -49,6 +49,13 @@ public func evadCandidates(_ o: EvadOverview?, now: Date, calendar: Calendar = .
 /// Where a tap on an Évad card lands: `modositas` for the correction proposal, nil for the Évad page itself.
 public func evadWallOpens(_ id: String) -> String? {
     id.hasPrefix(EvadWallID.learned) ? "modositas" : nil
+}
+
+/// "2026-W47": the ISO week `now` falls in, in the phone's time zone.
+func evadISOWeek(_ now: Date, calendar: Calendar) -> String {
+    var iso = Calendar(identifier: .iso8601); iso.timeZone = calendar.timeZone
+    let c = iso.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
+    return String(format: "%04d-W%02d", c.yearForWeekOfYear ?? 0, c.weekOfYear ?? 0)
 }
 
 /// Calendar days from `now`'s day to `yyyy-MM-dd` (0 = today, negative = past); nil when the date does not read.

@@ -49,6 +49,8 @@ final class EtelStore {
     /// The server's judgement of the week's days (B6 S2 — the single source); empty when it could not be read, and the
     /// tab then keeps its own rule (`hetWeek`).
     private(set) var weekAdherence: [EvadAdherenceDay] = []
+    /// The judgement's read in flight (kept so a reload cancels the older one, and tests can await it).
+    @ObservationIgnored private(set) var weekAdherenceTask: Task<Void, Never>?
     private(set) var groups: [SupplementGroup] = []
     /// The protocol's rows by name, for the list editor (B4 Task 14).
     private(set) var protocolRows: [SupplementRow] = []
@@ -188,17 +190,24 @@ final class EtelStore {
     func loadWeek(food: FoodClient, evad: EvadClient?, now: Date) async {
         self.food = food
         let start = Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now
-        async let judged: [EvadAdherenceDay]? = { () async -> [EvadAdherenceDay]? in
-            guard let evad else { return nil }
-            do throws(PlanFetchError) { return try await evad.adherence(from: food.ymd(start), to: food.ymd(now)).days }
-            catch { return nil }
-        }()
+        // The server's judgement runs on its own: the week is on screen the moment it is read (the local rule
+        // meanwhile), and a slow or hung judgement never holds the tab, its scores or the opened day.
+        weekAdherenceTask?.cancel()
+        weekAdherenceTask = evad.map { evad in
+            let (from, to) = (food.ymd(start), food.ymd(now))
+            return Task { [weak self] in
+                let days: [EvadAdherenceDay]
+                do throws(PlanFetchError) { days = try await evad.adherence(from: from, to: to).days }
+                catch { days = [] }   // offline or refused: the tab keeps its own rule rather than going blank
+                guard !Task.isCancelled else { return }
+                self?.weekAdherence = days
+            }
+        }
+        if evad == nil { weekAdherence = [] }
         switch await Self.attempt({ try await food.week(from: start) }) {
         case .success(let w): week = w; weekProblem = nil
         case .failure(let e): weekProblem = e
         }
-        // offline or refused: the tab falls back to its own rule rather than going blank
-        weekAdherence = await judged ?? []
         weekLoaded = true
         guard let week else { return }
         let wanted = week.days.filter { $0.consumed.kcal > 0 && $0.fuelMode == nil }.map(\.date)

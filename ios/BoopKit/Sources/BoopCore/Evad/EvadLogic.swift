@@ -287,8 +287,9 @@ public struct EvadFact: Equatable, Hashable, Sendable {
 }
 
 /// The last seven days as plain counts, from the server's adherence (never a score). A fact with nothing to count
-/// (nothing judged, nothing planned) is left out — never a „0 / 0". `needMin` is the season's sleep need.
-public func evadAdherenceFacts(_ a: EvadAdherence, needMin: Int?) -> [EvadFact] {
+/// (nothing judged, nothing planned) is left out — never a „0 / 0". The night fact says „eleget", no hours: the
+/// server counts a night at its need minus 15 minutes, so any hour figure would overclaim.
+public func evadAdherenceFacts(_ a: EvadAdherence) -> [EvadFact] {
     var out: [EvadFact] = []
     if a.foodJudged > 0 {
         out.append(EvadFact(value: "\(a.foodInBand)", target: "\(a.foodJudged)", label: "napon belefértél a keretbe"))
@@ -297,17 +298,17 @@ public func evadAdherenceFacts(_ a: EvadAdherence, needMin: Int?) -> [EvadFact] 
         out.append(EvadFact(value: "\(a.sessionsDone)", target: "\(a.sessionsPlanned)", label: "edzés megvolt"))
     }
     if a.nightsJudged > 0 {
-        let hours = needMin.map { "\(evadKg(Double($0) / 60)) órát" } ?? "eleget"
-        out.append(EvadFact(value: "\(a.nightsOk)", target: "\(a.nightsJudged)", label: "éjjel aludtál \(hours)"))
+        out.append(EvadFact(value: "\(a.nightsOk)", target: "\(a.nightsJudged)", label: "éjjel aludtál eleget"))
     }
     return out
 }
 
-/// The line under the facts: how many days were left out, only when some were.
+/// The line under the facts: how many kímélő days were left out, only when some were (a reasoned skip excuses only
+/// its session, so it is not a day left out).
 public func evadExcusedLine(_ excusedDays: Int) -> String {
     let rest = "Ez nem pontszám, csak összesítés."
     guard excusedDays > 0 else { return rest }
-    return "\(excusedDays) nap nem számít bele: a kímélő és az indokkal kihagyott napok kimaradnak. \(rest)"
+    return "\(excusedDays) kímélő nap nem számít bele. \(rest)"
 }
 
 // MARK: - Az évad terve
