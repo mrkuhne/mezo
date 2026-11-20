@@ -668,7 +668,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     re-reads the block after a save (`withKey`). `changes(since:)` compares the line-up **by key** (order, add, remove, swap
     and every field edit mark the day) and `carryEdits(onto:original:)` carries only his deltas onto a fresh read — a set-count
     delta is added to the server's value if the server moved too; a day whose line-up he changed keeps his line-up unless the
-    fresh read already shows it (its save reached the server) — such a day is taken as the server has it.
+    fresh read already shows it (its save reached the server) — such a day is taken as the server has it; a matching line-up that only a removed-then-re-added (new) row mimics counts as taken only when every row holds his values, else his other edits on the day carry on.
     **The save-time `workingSets` rule:** on a styled block a loaded row sends `workingSets` in `overrides` only when its set
     count differs from the server's (the style stamps the rest); on an unstyled one a count he did not touch drops the key; a
     swapped or new row sends no wire id and its drafted values (`overrides`) as his; unstyled steps send no overrides.
