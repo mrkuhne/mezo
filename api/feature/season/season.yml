@@ -1,0 +1,383 @@
+openapi: 3.0.3
+info: { title: mezo season fragment, version: 1.0.0 }
+tags:
+  - name: Season
+    description: >
+      Boop B6 Évad (mezo-r36n9.16) — one N-week season that owns its goal (1:1), the weekly gym + sport slots and the
+      training block (through goal_plan_link), derives the food targets, the sleep need and the weight course, and
+      previews every change without persisting anything. Nothing changes until the owner accepts (activate / apply).
+      A value the server cannot compute is null — the phone leaves it out, it never invents one.
+paths:
+  /api/seasons:
+    get:
+      tags: [Season]
+      operationId: listSeasons
+      summary: The owner's seasons, newest start first
+      responses:
+        '200':
+          description: Seasons
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SeasonResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    post:
+      tags: [Season]
+      operationId: createSeason
+      summary: Create a planned season (and its planned goal) from a draft — activates nothing
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SeasonDraft' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/draft:
+    get:
+      tags: [Season]
+      operationId: getFirstSeasonDraft
+      summary: A season draft assembled from the live goal, the running block, the weekly slots and the sleep goal (persists nothing)
+      responses:
+        '200': { description: Draft, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonDraft' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/draft/preview:
+    post:
+      tags: [Season]
+      operationId: previewSeasonDraft
+      summary: The live consequences of a draft before any season exists (the new-season summary). Persists nothing; before = the current state
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SeasonDraft' } } }
+      responses:
+        '200': { description: Preview, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonPreview' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/active/overview:
+    get:
+      tags: [Season]
+      operationId: getSeasonOverview
+      summary: The one read model the Évad tab renders
+      responses:
+        '200': { description: Overview, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonOverview' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No active season (the phone shows the empty state), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      tags: [Season]
+      operationId: applySeason
+      summary: Apply a previewed draft in one transaction (goal, slots, sleep need, block, revision). A stale fingerprint is 409 SEASON_PREVIEW_STALE
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SeasonApply' } } }
+      responses:
+        '200': { description: Applied, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: SEASON_PREVIEW_STALE or SEASON_NOT_EDITABLE, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/{id}/activate:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Season]
+      operationId: activateSeason
+      summary: Activate a planned season — its goal, the slots, the sleep need and the block in one transaction; the previous active season closes
+      responses:
+        '200': { description: Activated, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: SEASON_NOT_EDITABLE, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/{id}/close:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Season]
+      operationId: closeSeason
+      summary: Close a season
+      responses:
+        '200': { description: Closed, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/{id}/preview:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Season]
+      operationId: previewSeason
+      summary: The live consequences of a change to this season — before = the season as it is, after = the draft. Persists nothing
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SeasonDraft' } } }
+      responses:
+        '200': { description: Preview, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonPreview' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/{id}/rules:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      tags: [Season]
+      operationId: putSeasonRules
+      summary: Change the season's switches (no kcal effect, so no preview)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SeasonRules' } } }
+      responses:
+        '200': { description: Saved, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+components:
+  schemas:
+    SeasonSportSlot:
+      type: object
+      required: [dayOfWeek, time, durationMin, sport]
+      properties:
+        dayOfWeek: { type: integer, minimum: 0, maximum: 6, description: '0 = hétfő .. 6 = vasárnap' }
+        time: { type: string, pattern: '^\d{2}:\d{2}$' }
+        durationMin: { type: integer, minimum: 15, maximum: 360 }
+        sport: { type: string, pattern: '^(volleyball|cross|trx)$' }
+    SeasonSleepAnchor:
+      type: object
+      required: [anchor, time]
+      properties:
+        anchor: { type: string, enum: [WAKE, BED] }
+        time: { type: string, pattern: '^\d{2}:\d{2}$' }
+    SeasonBlockChoice:
+      type: object
+      required: [source]
+      properties:
+        source: { type: string, enum: [adopt, rerun, template] }
+        mesocycleId: { type: string, format: uuid, nullable: true, description: 'adopt / rerun: the mesocycle' }
+        templateId: { type: string, format: uuid, nullable: true, description: 'template: the template' }
+    SeasonDraft:
+      type: object
+      required: [title, trajectory, startDate, weeks, gymDays, sport, allowedRecipeIds]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 80 }
+        trajectory: { type: string, enum: [cut, bulk, maintain] }
+        targetWeightKg: { type: number, nullable: true, minimum: 0, description: 'cut / bulk only' }
+        ratePctPerWeek: { type: number, nullable: true, minimum: 0, maximum: 2, description: 'Weekly pace in %BW; when set (and no target) the target follows from it' }
+        kgPerWeek: { type: number, nullable: true, minimum: 0, maximum: 2, description: 'Weekly pace in kg; alternative to ratePctPerWeek' }
+        startDate: { type: string, format: date }
+        weeks: { type: integer, minimum: 4, maximum: 24 }
+        gymDays: { type: array, items: { type: integer, minimum: 0, maximum: 6 }, description: 'Gym weekdays, 0 = hétfő' }
+        gymTime: { type: string, nullable: true, pattern: '^\d{2}:\d{2}$' }
+        sport: { type: array, items: { $ref: '#/components/schemas/SeasonSportSlot' } }
+        sleepAnchor: { allOf: [{ $ref: '#/components/schemas/SeasonSleepAnchor' }], nullable: true }
+        allowedRecipeIds: { type: array, items: { type: string, format: uuid } }
+        block: { allOf: [{ $ref: '#/components/schemas/SeasonBlockChoice' }], nullable: true }
+    SeasonApply:
+      type: object
+      required: [draft, fingerprint]
+      properties:
+        draft: { $ref: '#/components/schemas/SeasonDraft' }
+        fingerprint: { type: string }
+    SeasonRules:
+      type: object
+      required: [processedFoodMaxNova, deloadMaintain, useLearnedExpenditure, proposeExperiments, menuDay, menuTime]
+      properties:
+        processedFoodMaxNova: { type: integer, minimum: 1, maximum: 4 }
+        deloadMaintain: { type: boolean }
+        useLearnedExpenditure: { type: boolean }
+        proposeExperiments: { type: boolean }
+        menuDay: { type: integer, minimum: 0, maximum: 6, nullable: true, description: 'null = no weekly menu' }
+        menuTime: { type: string, pattern: '^\d{2}:\d{2}$' }
+    SeasonResponse:
+      type: object
+      required: [id, title, status, startDate, endDate, weeks, goalId, rules, draft]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        status: { type: string, enum: [planned, active, closed] }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, description: 'startDate + weeks*7 - 1' }
+        weeks: { type: integer }
+        goalId: { type: string, format: uuid }
+        sleepNeedMin: { type: integer, nullable: true }
+        mesocycleId: { type: string, format: uuid, nullable: true }
+        rules: { $ref: '#/components/schemas/SeasonRules' }
+        draft: { $ref: '#/components/schemas/SeasonDraft' }
+    SeasonBand:
+      type: object
+      required: [lowKg, highKg]
+      properties:
+        lowKg: { type: number }
+        highKg: { type: number }
+    SeasonNumbers:
+      type: object
+      required: [trainDayKcal, proteinG, carbsTrainG, sleepNeedMin, bedtime]
+      properties:
+        trainDayKcal: { type: integer }
+        restDayKcal: { type: integer, nullable: true, description: 'null when gym + sport days cover all seven weekdays' }
+        proteinG: { type: integer }
+        carbsTrainG: { type: integer }
+        sleepNeedMin: { type: integer }
+        bedtime: { type: string, pattern: '^\d{2}:\d{2}$' }
+        targetDate: { type: string, format: date, nullable: true }
+        weeksToTarget: { type: integer, nullable: true }
+        paceVerdict: { type: string, enum: [feasible, warnings, aggressive], nullable: true }
+        kgPerWeek: { type: number, nullable: true, description: 'Signed planned weekly change (cut negative)' }
+        band: { allOf: [{ $ref: '#/components/schemas/SeasonBand' }], nullable: true }
+        gymPerWeek: { type: integer }
+        sportPerWeek: { type: integer }
+    SeasonTodo:
+      type: object
+      required: [key, title, body]
+      properties:
+        key: { type: string }
+        title: { type: string }
+        body: { type: string }
+    SeasonWarning:
+      type: object
+      required: [key, text]
+      properties:
+        key: { type: string }
+        text: { type: string }
+    SeasonPreview:
+      type: object
+      required: [before, after, todo, warnings, fingerprint]
+      properties:
+        before: { $ref: '#/components/schemas/SeasonNumbers' }
+        after: { $ref: '#/components/schemas/SeasonNumbers' }
+        todo: { type: array, items: { $ref: '#/components/schemas/SeasonTodo' } }
+        warnings: { type: array, items: { $ref: '#/components/schemas/SeasonWarning' } }
+        fingerprint: { type: string, description: 'Send back with applySeason; empty for a draft preview' }
+    SeasonOverviewHead:
+      type: object
+      required: [title, week, weeks, status, trajectory]
+      properties:
+        title: { type: string }
+        week: { type: integer, description: '1-based current week, clamped to 1..weeks' }
+        weeks: { type: integer }
+        status: { type: string, enum: [on_course, slower, faster, no_data, in_band, out_of_band] }
+        trajectory: { type: string, enum: [cut, bulk, maintain] }
+    SeasonMapPillar:
+      type: object
+      required: [key]
+      properties:
+        key: { type: string, enum: [edzes, etel, alvas, suly] }
+        value: { type: string, nullable: true, description: 'Headline already formatted by the server (e.g. "4 edzés"); null when unknown' }
+    SeasonMapLink:
+      type: object
+      required: [from, to, key]
+      properties:
+        from: { type: string, enum: [edzes, etel, alvas, suly] }
+        to: { type: string, enum: [edzes, etel, alvas, suly] }
+        key: { type: string, enum: [train_food, train_sleep, food_weight, sleep_food, food_train, sleep_train] }
+        value: { type: number, nullable: true, description: 'train_food kcal, train_sleep min, food_weight kg/week, sleep_food kcal; null when not computed' }
+    SeasonMap:
+      type: object
+      required: [pillars, links]
+      properties:
+        pillars: { type: array, items: { $ref: '#/components/schemas/SeasonMapPillar' } }
+        links: { type: array, items: { $ref: '#/components/schemas/SeasonMapLink' } }
+    SeasonWeightPoint:
+      type: object
+      required: [date, kg]
+      properties:
+        date: { type: string, format: date }
+        kg: { type: number }
+    SeasonWeight:
+      type: object
+      required: [series, projection]
+      properties:
+        series: { type: array, items: { $ref: '#/components/schemas/SeasonWeightPoint' }, description: 'Trend (EWMA) points inside the season so far' }
+        projection: { type: array, items: { $ref: '#/components/schemas/SeasonWeightPoint' }, description: 'The plan from today to the season end' }
+        trendKg: { type: number, nullable: true }
+        targetKg: { type: number, nullable: true }
+        band: { allOf: [{ $ref: '#/components/schemas/SeasonBand' }], nullable: true }
+        kgPerWeek: { type: number, nullable: true, description: 'Signed planned weekly change' }
+        paceVerdict: { type: string, enum: [feasible, warnings, aggressive], nullable: true }
+    SeasonSportLine:
+      type: object
+      required: [dayOfWeek, time, durationMin, sport]
+      properties:
+        dayOfWeek: { type: integer }
+        time: { type: string }
+        durationMin: { type: integer }
+        sport: { type: string }
+    SeasonBlockPillar:
+      type: object
+      required: [gymDays, sport]
+      properties:
+        title: { type: string, nullable: true, description: 'The running block name; null without a block' }
+        mesocycleId: { type: string, format: uuid, nullable: true }
+        blockWeeks: { type: integer, nullable: true }
+        fromWeek: { type: integer, nullable: true, description: 'Season week the block starts in' }
+        toWeek: { type: integer, nullable: true }
+        gymDays: { type: array, items: { type: integer } }
+        sport: { type: array, items: { $ref: '#/components/schemas/SeasonSportLine' } }
+    SeasonFoodPillar:
+      type: object
+      required: [trainDayKcal, proteinG, allowedCount, novaMax]
+      properties:
+        trainDayKcal: { type: integer }
+        restDayKcal: { type: integer, nullable: true }
+        proteinG: { type: integer }
+        allowedCount: { type: integer }
+        recipeCount: { type: integer, nullable: true, description: 'All of his recipes, for "24 / 53"' }
+        novaMax: { type: integer }
+    SeasonSleepPillar:
+      type: object
+      required: [needMin, bedtime, anchor, anchorTime]
+      properties:
+        needMin: { type: integer }
+        baseMin: { type: integer, nullable: true }
+        bedtime: { type: string }
+        anchor: { type: string, enum: [WAKE, BED] }
+        anchorTime: { type: string }
+        avgMin: { type: integer, nullable: true, description: 'Average of the last 7 nights; null without data' }
+    SeasonWeightPillar:
+      type: object
+      properties:
+        targetKg: { type: number, nullable: true }
+        targetDate: { type: string, format: date, nullable: true }
+        deltaKg: { type: number, nullable: true, description: 'Trend now minus season start' }
+        kgPerWeek: { type: number, nullable: true }
+        band: { allOf: [{ $ref: '#/components/schemas/SeasonBand' }], nullable: true }
+    SeasonPillars:
+      type: object
+      required: [block, food, sleep, weight]
+      properties:
+        block: { $ref: '#/components/schemas/SeasonBlockPillar' }
+        food: { $ref: '#/components/schemas/SeasonFoodPillar' }
+        sleep: { $ref: '#/components/schemas/SeasonSleepPillar' }
+        weight: { $ref: '#/components/schemas/SeasonWeightPillar' }
+    SeasonAdherence:
+      type: object
+      required: [foodInBand, foodJudged, sessionsDone, sessionsPlanned, nightsOk, nightsJudged, excusedDays]
+      properties:
+        foodInBand: { type: integer }
+        foodJudged: { type: integer }
+        sessionsDone: { type: integer }
+        sessionsPlanned: { type: integer }
+        nightsOk: { type: integer }
+        nightsJudged: { type: integer }
+        excusedDays: { type: integer }
+    SeasonInsight:
+      type: object
+      required: [key, title, body]
+      properties:
+        key: { type: string }
+        title: { type: string }
+        body: { type: string }
+    SeasonUpcoming:
+      type: object
+      required: [week, kind, text]
+      properties:
+        week: { type: integer }
+        kind: { type: string, enum: [deload, end] }
+        text: { type: string }
+    SeasonOverview:
+      type: object
+      required: [season, head, map, weight, pillars, insights, upcoming]
+      properties:
+        season: { $ref: '#/components/schemas/SeasonResponse' }
+        head: { $ref: '#/components/schemas/SeasonOverviewHead' }
+        map: { $ref: '#/components/schemas/SeasonMap' }
+        weight: { $ref: '#/components/schemas/SeasonWeight' }
+        pillars: { $ref: '#/components/schemas/SeasonPillars' }
+        adherence: { allOf: [{ $ref: '#/components/schemas/SeasonAdherence' }], nullable: true, description: 'S2; null in S1' }
+        insights: { type: array, items: { $ref: '#/components/schemas/SeasonInsight' }, description: 'S2; empty in S1' }
+        upcoming: { type: array, items: { $ref: '#/components/schemas/SeasonUpcoming' } }
