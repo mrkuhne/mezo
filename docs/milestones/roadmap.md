@@ -63,6 +63,16 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-20 — Train: per-class reserve, reachable weekly grind, generated blocks default to balanced (`mezo-r36n9.115`, closes `mezo-s5sd4`).**
+  From the Muscle Ladder re-check (owner choice „Alapstílus + tartalék”): style rows gain optional
+  `stable-compound-reserve` / `isolation-reserve` — balanced = free compound 2 (legs 3), stable compound 1, isolation 1;
+  heavy isolation 1; volume and allout unchanged (book PDF 322–324: heavy compounds further from failure than isolation).
+  The weekly grind signal (`GrindRule`) reads the ramped effective reserve on a styled run and, at ≤ 1, a set ≥ 2 reps
+  short of its target — the rule the load engine already used; unstyled runs unchanged. `mezo.meso-plan.default-training-style:
+  balanced` stamps a generated plan through the style path (no phone caller yet — the plan intake `mezo-r36n9.113` will use
+  it). The owner's running balanced block was restamped once with his OK (non-overridden stable-compound and isolation rows
+  2 → 1). Plan [2026-11-20-train-default-style](../superpowers/plans/2026-11-20-train-default-style.md);
+  [`train.md`](../features/train.md) §4, §9.
 - **2026-11-19 — Boop: reasoned exercise swap + „Mi van a termemben" (`mezo-r36n9.66`, `mezo-r36n9.67`).**
   Swapping an exercise mid-workout now suggests up to five replacements ranked on the server (same role → what hurt before →
   the block's goal → what he can track), each with one reason sentence; *ehhez nincs eszközöm* and *nem esik jól* re-rank at
