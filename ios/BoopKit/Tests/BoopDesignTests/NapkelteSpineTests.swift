@@ -4,7 +4,7 @@ import SwiftUI
 @testable import BoopDesign
 
 @Test func spineBarHasFourLabelsAndPlus() {
-    #expect(NKSpineBar.labels == ["Ma", "Terv", "Napló", "Boop"])
+    #expect(NKSpineBar.labels == ["Ma", "Évad", "Napló", "Boop"])
 }
 
 @Test @MainActor func spineBarRenders() {
