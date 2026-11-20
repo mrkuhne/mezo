@@ -366,8 +366,8 @@ components:
       properties:
         date: { type: string, format: date }
         judged: { type: boolean, description: 'The food side counts: not today, not a kímélő day, something logged' }
-        excused: { type: boolean, description: 'A kímélő day or a reasoned skip — left out of every count' }
-        excuse: { type: string, nullable: true, description: 'Why it is excused: kimelo or skip' }
+        excused: { type: boolean, description: 'A kímélő day — left out of every count. A reasoned skip only excuses the session (sessionDone null), the food and the night still count' }
+        excuse: { type: string, nullable: true, description: 'kimelo (the whole day is excused) or skip (only the session is)' }
         kcal: { type: integer, nullable: true }
         targetKcal: { type: integer, nullable: true, description: "The day's served target (DayTargetProjector); null when it cannot be computed" }
         proteinG: { type: integer, nullable: true }
