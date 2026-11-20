@@ -859,5 +859,57 @@
     "miert": "A mostani blokk az első hetében jár, így a futó blokk átszabása a sürgős; az új blokk összerakásán egy másik munkamenet már dolgozik.",
     "levaltotta": "Azt, hogy a blokképítőben csak a sorozatszám volt állítható.",
     "kovetkezmeny": "A szerkesztés a blokképítő meglévő Napok lapjára kerül, egy közös mentéssel. Napot átnevezni vagy áthelyezni ebben a lépésben még nem lehet."
+  },
+  "d-2026-11-20-evad-a-kozeppont": {
+    "datum": "2026-11-20",
+    "terulet": [
+      "Terv",
+      "Edzés",
+      "Étel",
+      "Alvás"
+    ],
+    "cim": "A Terv neve Évad lesz, és minden ebből indul",
+    "suly": "Nagy",
+    "valasztas": "Az alsó sáv második helye az Évad: egy néhány hetes terv céllal, amely magában foglalja az edzésblokkot és a heti edzés- és sportnapokat, és ebből számolja az étkezést, az alvásigényt és a súly menetét. Ha bármit módosítasz, azonnal látod, mire hat, és mit kell neked változtatnod. Csak az elfogadásod után változik bármi. Edzésblokkot évad nélkül nem lehet indítani.",
+    "miert": "Az edzés, az evés, az alvás és a súly egy rendszer, ezért szinkronban kell mozogniuk; egy hetekre szóló terv adja mindegyiknek a kiindulópontját.",
+    "levaltotta": "A Terv nevet és azt, hogy az edzésblokk a terv nélkül, önállóan is indulhatott.",
+    "kovetkezmeny": "Az első évadot a mostani súlycélodból és edzésblokkodból Boop összeállítja javaslatnak; a mostani blokk csak a jóváhagyásoddal kerül bele."
+  },
+  "d-2026-11-20-evad-mind-a-tiz-motor": {
+    "datum": "2026-11-20",
+    "terulet": [
+      "Terv"
+    ],
+    "cim": "Minden meglévő számítás bekerül az Évadba",
+    "suly": "Közepes",
+    "valasztas": "Mind a tíz, a szerveren már meglévő számítás bekerül: a mentés nélküli előnézet, a kalóriacél, az edzés energiája, a tempó realitása, a figyelmeztetések, a valódi energiaigény, a könnyebb edzéshetek, az alvásigény, a pihenős és kihagyott napok, és az előtte–utána mérő. A hiányzó részek újonnan épülnek.",
+    "miert": "Az élő összefüggés-oldal nagy része így meglévő, kipróbált számításokra épül.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A teljes tervre szóló előnézet, az alvásigény az edzésből, a heti menü, a bevásárlólista és a kísérletek új építés."
+  },
+  "d-2026-11-20-heti-menu": {
+    "datum": "2026-11-20",
+    "terulet": [
+      "Terv",
+      "Étel"
+    ],
+    "cim": "Az étrend heti menü, abból jön a bevásárlólista",
+    "suly": "Közepes",
+    "valasztas": "Boop minden hétre javasol egy menüt a kiválasztott receptekből, az edzés- és pihenőnapokhoz igazítva; te cserélgetsz és jóváhagyod, és a bevásárlólista ebből készül. A menü napokra bontott, lapozható kártyasor.",
+    "miert": "Csak így tudható, mit eszel ténylegesen, és csak így lesz pontos a bevásárlólista.",
+    "levaltotta": "Azt, hogy csak egy engedélyezett receptlista legyen, a listát pedig kézzel állítsd össze.",
+    "kovetkezmeny": "Hetente pár perc a menü átnézése; kevés recept esetén a menü ismétlődik, és ezt ki is írja."
+  },
+  "d-2026-11-20-kiserlet-boop-javasol": {
+    "datum": "2026-11-20",
+    "terulet": [
+      "Terv"
+    ],
+    "cim": "Kísérletet Boop is javasolhat",
+    "suly": "Kicsi",
+    "valasztas": "Hatáskövetésnél egyszerre egy kísérlet fut. Te is indíthatod, de ha Boop valami újat lát (új kiegészítő, új recept), a Ma oldalon felajánlja, és egy koppintással indul. Az eredmény őszinte: van különbség, nincs érezhető különbség, vagy kevés az adat.",
+    "miert": "Így nem sikkadnak el az új dolgok, a döntés mégis a tiéd marad.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A régi automatikus kísérlet-javaslatok kikapcsolnak, hogy egyszerre csak egy kísérlet fusson."
   }
 }
