@@ -159,7 +159,7 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
 
     /// The row now stands for another exercise than the server's row (added or swapped): the server cannot carry
     /// anything over to it, so the save sends the style, rest, overrides and technique explicitly.
-    var identityChanged: Bool { isNew || catalogId?.lowercased() != wire.catalogId?.lowercased() || name != wire.name }
+    public var identityChanged: Bool { isNew || catalogId?.lowercased() != wire.catalogId?.lowercased() || name != wire.name }
 
     /// What makes the row this exercise, for comparing a day's line-up across reads (ids are re-minted by a save).
     var identity: String { "\(catalogId?.lowercased() ?? "")|\(name.lowercased())" }
@@ -233,6 +233,11 @@ public struct DraftDay: Identifiable, Equatable, Sendable {
 
     /// „Hétfő" — the day the way he says it.
     public var name: String { Self.longName(weekday) }
+
+    /// 0 = Monday … 6 = Sunday, from the weekday label; nil for a label this build does not know.
+    public var weekdayIndex: Int? {
+        ["hét", "ked", "sze", "csü", "pén", "szo", "vas"].firstIndex(of: String(weekday.prefix(3)).lowercased())
+    }
 
     public static func longName(_ short: String) -> String {
         switch short.prefix(3).lowercased() {

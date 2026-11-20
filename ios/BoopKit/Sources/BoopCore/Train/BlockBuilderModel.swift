@@ -31,6 +31,16 @@ public final class BlockBuilderModel {
     public private(set) var saveState: SaveState = .idle
     /// The weekly AI's one-line reasons, by exercise id (from this week's proposal lines that carry a note).
     public private(set) var aiNotes: [String: String] = [:]
+    /// The day of today's open workout (started, not finished), as the caller knows it; its card is read-only
+    /// (mezo-r36n9.116, spec §6.4). nil when nothing is running.
+    public var lockedDay: LockedDay?
+    /// The rows of a weekly proposal still waiting for his approval (from the proposals the load already read — the
+    /// check never asks for a proposal to be generated): exercise ids and the weekday labels of their lines.
+    private var pendingExerciseIds: Set<String> = []
+    private var pendingWeekdays: Set<String> = []
+    /// The day line-up (row keys per day) the evaluation on screen was computed for: its exercise indices address
+    /// only that line-up.
+    private var evaluatedLineup: [[String]]?
 
     private let client: PlanClient
     private let debounce: Duration
@@ -39,9 +49,17 @@ public final class BlockBuilderModel {
     /// Set while the model itself swaps the draft (a re-read): that swap asks for one evaluation, not two.
     private var replacing = false
 
-    public init(client: PlanClient, debounce: Duration = .milliseconds(300)) {
+    public init(client: PlanClient, debounce: Duration = .milliseconds(300), lockedDay: LockedDay? = nil) {
         self.client = client
         self.debounce = debounce
+        self.lockedDay = lockedDay
+    }
+
+    /// Today's open workout's template day: its id, else its weekday label (`Hét`…`Vas`).
+    public struct LockedDay: Equatable, Sendable {
+        public let dayId: String?
+        public let weekday: String?
+        public init(dayId: String?, weekday: String?) { self.dayId = dayId; self.weekday = weekday }
     }
 
     // MARK: loading
@@ -70,6 +88,9 @@ public final class BlockBuilderModel {
                 aiNotes = proposals.flatMap(\.lines).reduce(into: [:]) { out, line in
                     if let note = line.note?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty { out[line.exerciseId] = note }
                 }
+                let waiting = proposals.filter { $0.status == "pending" }.flatMap(\.lines).filter { $0.decision == nil }
+                pendingExerciseIds = Set(waiting.map { $0.exerciseId.lowercased() })
+                pendingWeekdays = Set(waiting.compactMap { $0.dayName.map { String($0.prefix(3)).lowercased() } })
             }
             let d = BlockDraft(block: b, catalog: catalog)
             original = d
@@ -81,6 +102,63 @@ public final class BlockBuilderModel {
         } catch {
             phase = .failed(.server)
         }
+    }
+
+    // MARK: the day editor (mezo-r36n9.116)
+
+    /// The block's exercise catalogue, as loaded with the block (the add/swap sheets' full list).
+    public var catalogList: [WireCatalogItem] { catalog }
+
+    /// The index of the locked day in the draft (today's open workout), nil when none.
+    public var lockedDayIndex: Int? {
+        guard let lockedDay, let days = draft?.days else { return nil }
+        if let id = lockedDay.dayId?.lowercased(), let i = days.firstIndex(where: { $0.id.lowercased() == id }) { return i }
+        if let w = lockedDay.weekday.map({ String($0.prefix(3)).lowercased() }), !w.isEmpty,
+           let i = days.firstIndex(where: { $0.weekday.prefix(3).lowercased() == w }) { return i }
+        return nil
+    }
+
+    /// The days a waiting weekly proposal has lines on (indices of the saved line-up).
+    public var pendingReviewDays: Set<Int> {
+        guard let original, !(pendingExerciseIds.isEmpty && pendingWeekdays.isEmpty) else { return [] }
+        return Set(original.days.indices.filter { i in
+            let d = original.days[i]
+            return d.exercises.contains { pendingExerciseIds.contains($0.id.lowercased()) }
+                || pendingWeekdays.contains(String(d.weekday.prefix(3)).lowercased())
+        })
+    }
+
+    /// Identities or order of the day changed against what is saved: the save is a structural replace.
+    public func structurallyChanged(_ day: Int) -> Bool {
+        guard let draft, let original, draft.days.indices.contains(day), original.days.indices.contains(day) else { return false }
+        let now = draft.days[day].exercises, was = original.days[day].exercises
+        return now.map(\.id) != was.map(\.id) || zip(now, was).contains { $0.identity != $1.identity }
+    }
+
+    /// Saving would replace a day a waiting weekly proposal has lines on: ask him first (spec §6.4).
+    public var needsReviewConfirm: Bool { pendingReviewDays.contains { structurallyChanged($0) } }
+
+    /// The weekly AI's sentence for a row — none once the row stands for another exercise.
+    public func aiNote(_ exercise: DraftExercise) -> String? { exercise.identityChanged ? nil : aiNotes[exercise.id] }
+
+    /// The evaluation's exercise indices still address the draft on screen (no add / remove / move / swap since).
+    public var indicesFresh: Bool {
+        guard evaluation != nil, let evaluatedLineup, let draft else { return false }
+        return evaluatedLineup == Self.lineup(draft)
+    }
+
+    private static func lineup(_ d: BlockDraft) -> [[String]] { d.days.map { $0.exercises.map { "\($0.id)|\($0.identity)" } } }
+
+    /// The add / swap sheets' suggestions (`mode` `add` with a coarse muscle, `replace` with the outgoing row). The day
+    /// goes as its weekday (0 = Monday) with its current catalogue ids, lower-cased.
+    public func suggest(mode: String, day: Int, outgoing: DraftExercise? = nil, muscle: String? = nil) async throws(PlanFetchError) -> WireSuggestions {
+        guard let draft, draft.days.indices.contains(day) else { throw .server }
+        let d = draft.days[day]
+        let request = WireSuggestionsRequest(
+            mode: mode, dayIndex: d.weekdayIndex ?? day,
+            outgoing: outgoing.map { WireSuggestionOutgoing(catalogId: $0.catalogId?.lowercased(), name: $0.name, muscle: $0.muscleKey, type: $0.type) },
+            muscle: muscle, dayCatalogIds: d.exercises.compactMap { $0.catalogId?.lowercased() })
+        return try await client.suggestions(blockId: draft.blockId, request)
     }
 
     // MARK: evaluation
@@ -108,7 +186,8 @@ public final class BlockBuilderModel {
 
     /// The server's recommendation for one exercise of the draft, if it sent one.
     public func recommendation(day: Int, exercise: Int) -> TechniqueRecommendation? {
-        guard let r = evaluation?.recommendations?.first(where: { $0.dayIndex == day && $0.exerciseIndex == exercise }),
+        // After an add / remove / move the indices point at other rows until the fresh evaluation lands.
+        guard indicesFresh, let r = evaluation?.recommendations?.first(where: { $0.dayIndex == day && $0.exerciseIndex == exercise }),
               let t = SetTechnique(rawValue: r.technique) else { return nil }
         return TechniqueRecommendation(technique: t, reason: techniqueReasonText(r.reason), challengeFit: r.challengeFit ?? false)
     }
@@ -138,6 +217,7 @@ public final class BlockBuilderModel {
             // A newer edit already asked again; this answer belongs to an older draft.
             guard self.draft?.evaluateRequest() == request else { return }
             evaluation = result
+            evaluatedLineup = Self.lineup(draft)
             evaluationStale = false
             evaluationError = nil
         } catch {
@@ -152,7 +232,7 @@ public final class BlockBuilderModel {
 
     /// Proposals may be applied only against a fresh evaluation: until the server has answered for the edited draft the
     /// old proposal would be added a second time.
-    public var canApplyProposals: Bool { !evaluationStale && evaluation != nil && saveState != .saving }
+    public var canApplyProposals: Bool { !evaluationStale && indicesFresh && saveState != .saving }
 
     public func applyProposal(_ muscle: String) {
         guard canApplyProposals, let edits = self.muscle(muscle)?.proposal, !edits.isEmpty else { return }

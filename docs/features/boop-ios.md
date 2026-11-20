@@ -645,6 +645,23 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     motion (no deck/ring animation), VoiceOver labels on steppers, dial, tiles. DEBUG review without sign-in:
     `-previewBlokk YES` (+ `-previewBlokkOpen epito|het`, `-previewBlokkTab napok|blokk`, `-previewBlokkCard N`,
     `-previewBlokkState empty|loading|error|offline|applied`) over `PlanPreviewTransport` — whose evaluator is a fixture.
+  - **The Napok day editor (`mezo-r36n9.116`, spec
+    [`2026-11-20-boop-blokk-szerkeszto-design.md`](../superpowers/specs/2026-11-20-boop-blokk-szerkeszto-design.md) §6,
+    look: the spike on `spike/boop-blokk-szerkeszto`)** — `BuilderDayCard` rows are ≡ handle (drag reorders through
+    `BlockDraft.move`, no lift scale under reduced motion; VoiceOver *Feljebb/Lejjebb* actions), name, subtitle from the
+    row's own `repMin/repMax/targetRIR`, set stepper (wraps under the name when the card's inner width is under 364 pt),
+    ⋯ menu (*Csere · Beállítások · Törlés*); delete leaves an undo line; tap → `DayEditSettingsSheet` (rep range,
+    reserve, starting weight, warm-ups, *TE ÁLLÍTOTTAD*, *Visszaállítom az edzésmódra*); ＋ → `DayEditAddSheet` (muscle
+    chips *kevés* first, then the day's, then *Más izom*; ≤5 suggestions from `BlockBuilderModel.suggest`, then the
+    full list); ⋯ *Csere* → `DayEditSwapSheet`. Empty day line; the day of today's open workout
+    (`BlockBuilderModel.lockedDay`, passed by `EdzesRoom`) is read-only; *Mentés* on a structurally changed day that a
+    waiting weekly proposal touches (`pendingReviewDays`, from the proposals the load already read) asks *Függő heti
+    javaslat* first. Indices of the evaluation (recommendations, cap warnings, proposals) are hidden while the line-up
+    differs from the evaluated one (`indicesFresh`); a swapped/new row drops the weekly AI note (`aiNote(_:)`). The main
+    button falls back to *Nincs változás* where *Nincs mit menteni* does not fit (`mezo-r36n9.118`). DEBUG (with
+    `-previewBlokk YES -previewBlokkOpen epito -previewBlokkTab napok`): `-previewBlokkEdit
+    default|menu|settings|add|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` (day page),
+    `-previewBlokkSuggest fail` (suggestions 503 → the full list with its one-line note).
 - **The technique and the challenge in the player (`mezo-r36n9.84`, 2026-11-19; spec
   [`2026-11-17-train-style-and-techniques-design.md`](../superpowers/specs/2026-11-17-train-style-and-techniques-design.md)
   §6.4/§6.6/§6.10, look: the round-7 spike on `spike/boop-blokk-epito`, owner OK 2026-11-19)** — the player reads
