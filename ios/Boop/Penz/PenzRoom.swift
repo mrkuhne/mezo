@@ -208,6 +208,6 @@ struct PenzRoom: View {
 struct PenzEmptyCard: View {
     var body: some View {
         NKHighlight(hue: penzHue, label: "Még üres", text: "Még nincs itt pénzmozgás",
-                    sub: "A pénzed két úton érkezik ide: a banki SMS-ekből a parancsikonon át, és amit készpénzben kézzel beírsz. Ehhez előbb egy számla kell a szerveren.")
+                    sub: "A pénzed két úton érkezik ide: a banki SMS-ekből a parancsikonon át, és amit készpénzben kézzel beírsz. Az első készpénzes kiadásnál a *Kiadás* gomb egy érintéssel létrehozza a „Készpénz” számlát.")
     }
 }

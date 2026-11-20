@@ -43,7 +43,7 @@ struct PenzMa: View {
 
     private var actions: some View {
         PenzActionRow(actions: [
-            PenzAction(glyph: "plus-ink", title: "Kiadás", primary: true, enabled: store?.cashAccount != nil) { open(.capture) },
+            PenzAction(glyph: "plus-ink", title: "Kiadás", primary: true) { open(.capture) },
             PenzAction(glyph: "star-sun", title: "Befektetnék") {
                 open(.later(title: "Befektetnék", line: "Itt fogok felosztást javasolni: mennyi menjen a biztonsági, a közép- és a hosszú távú rekeszbe, két-három konkrét lehetőséggel és azzal, hogy miért. Ez egy későbbi lépésben érkezik — addig semmit nem javaslok, amit nem tudok alátámasztani."))
             },
@@ -110,7 +110,7 @@ struct PenzKoltes: View {
                           note: penzWeekNote(w), value: w.level, marker: w.marker)
                 .nkStale(store.ageText.map { NKStale(age: $0, loud: store.offline) })
             PenzActionRow(actions: [
-                PenzAction(glyph: "plus-ink", title: "Kiadás", primary: true, enabled: store.cashAccount != nil) { open(.capture) },
+                PenzAction(glyph: "plus-ink", title: "Kiadás", primary: true) { open(.capture) },
                 reviewAction(store.reviewRows.count),
             ])
             derivation(a, store)
