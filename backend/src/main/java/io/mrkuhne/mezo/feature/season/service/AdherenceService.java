@@ -88,7 +88,8 @@ public class AdherenceService {
         return s.empty() ? Optional.empty() : Optional.of(s);
     }
 
-    private List<AdherenceDay> days(UUID owner, LocalDate from, LocalDate to, LocalDate today) {
+    /** The days of {@code from..to} judged as of {@code today}, unvalidated (callers in this package bound it). */
+    List<AdherenceDay> days(UUID owner, LocalDate from, LocalDate to, LocalDate today) {
         List<SeasonMealPort.FoodDay> food = mealPort.foodDays(owner, from, to);
         Set<LocalDate> planned = trainPort.plannedSessionDays(owner, from, to);
         Set<LocalDate> done = trainPort.doneSessionDays(owner, from, to);

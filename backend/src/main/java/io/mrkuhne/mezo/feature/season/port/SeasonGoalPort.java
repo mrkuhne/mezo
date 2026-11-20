@@ -83,4 +83,14 @@ public interface SeasonGoalPort {
 
     /** Links the mesocycle to the goal from the week it starts in (week 1 when it started earlier); idempotent. */
     void link(UUID owner, UUID goalId, UUID mesocycleId, LocalDate mesocycleStart);
+
+    /** The planned (formula) and the learned daily expenditure, kcal; {@code learned} is what the engine now serves. */
+    record Expenditure(int plannedKcal, int learnedKcal) {
+    }
+
+    /**
+     * The goal's expenditure when the engine serves a LEARNED base ({@code LearnedBaseResolver}); empty while it still
+     * serves the formula (before learning, switch off, or no evaluated goal).
+     */
+    Optional<Expenditure> learnedExpenditure(UUID owner, UUID goalId);
 }

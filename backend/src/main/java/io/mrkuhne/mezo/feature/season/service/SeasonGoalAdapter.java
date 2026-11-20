@@ -20,6 +20,7 @@ import io.mrkuhne.mezo.feature.nutrition.service.EnergyBase;
 import io.mrkuhne.mezo.feature.season.port.SeasonGoalPort;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.DayMovement;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -75,6 +76,18 @@ public class SeasonGoalAdapter implements SeasonGoalPort {
     @Override
     public Optional<GoalView> goal(UUID owner, UUID goalId) {
         return goalRepository.findByIdAndCreatedByAndDeletedFalse(goalId, owner).map(SeasonGoalAdapter::view);
+    }
+
+    @Override
+    public Optional<Expenditure> learnedExpenditure(UUID owner, UUID goalId) {
+        return goalRepository.findByIdAndCreatedByAndDeletedFalse(goalId, owner)
+            .map(GoalEntity::getTdeeBootstrap)
+            .filter(b -> b.learned() && b.formulaNeatBaselineKcal() != null && b.neatBaselineKcal() != null)
+            .map(b -> {
+                BigDecimal eat = b.weeklyEatKcalPerDay() == null ? BigDecimal.ZERO : b.weeklyEatKcalPerDay();
+                return new Expenditure(b.formulaNeatBaselineKcal().add(eat).setScale(0, RoundingMode.HALF_UP).intValue(),
+                    b.neatBaselineKcal().add(eat).setScale(0, RoundingMode.HALF_UP).intValue());
+            });
     }
 
     @Override

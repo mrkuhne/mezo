@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.season.service;
 
 import io.mrkuhne.mezo.api.dto.SeasonBlockPillar;
 import io.mrkuhne.mezo.api.dto.SeasonFoodPillar;
+import io.mrkuhne.mezo.api.dto.SeasonInsight;
 import io.mrkuhne.mezo.api.dto.SeasonMap;
 import io.mrkuhne.mezo.api.dto.SeasonMapLink;
 import io.mrkuhne.mezo.api.dto.SeasonMapPillar;
@@ -42,7 +43,8 @@ import org.springframework.transaction.annotation.Transactional;
  * The one read model the Évad tab renders (spec §5.4) — composed server-side from the active season, the engine's
  * numbers for the season as it stands, the weight trend, the block and the sleep log. 404 without an active season
  * (the phone shows the empty state). {@code adherence} = the last seven days ending yesterday
- * ({@link AdherenceService#lastWeek}), null only when nothing at all could be judged.
+ * ({@link AdherenceService#lastWeek}), null only when nothing at all could be judged; {@code insights} and the
+ * {@code sleep_food} link come from {@link SeasonInsights} (absent / null below their gates).
  *
  * <p>Head status: {@code no_data} with fewer than 4 weigh-in days in the last 21; a maintain season is
  * {@code in_band} / {@code out_of_band} by the latest trend point; cut / bulk compare the engine's trend rate with
@@ -65,6 +67,7 @@ public class SeasonOverviewService {
     private final SeasonMetricsPort metricsPort;
     private final SeasonMapper mapper;
     private final AdherenceService adherenceService;
+    private final SeasonInsights seasonInsights;
 
     @Transactional(readOnly = true)
     public SeasonOverview overview(UUID owner) {
@@ -83,6 +86,7 @@ public class SeasonOverviewService {
         int sleepBase = s.getSleepBaseMin() != null ? s.getSleepBaseMin() : previewService.sleepBase(owner);
         String anchor = draft.sleepAnchor() == null ? "WAKE" : draft.sleepAnchor().anchor();
         String anchorTime = draft.sleepAnchor() == null ? null : draft.sleepAnchor().time();
+        SeasonInsights.Result insights = seasonInsights.compute(owner, s, draft.trajectory(), computed.warnings(), today);
 
         return SeasonOverview.builder()
             .season(mapper.toResponse(s, draft, block.map(SeasonTrainPort.Block::id).orElse(null)))
@@ -105,7 +109,8 @@ public class SeasonOverviewService {
                         BigDecimal.valueOf(n.sleepNeedMin() - sleepBase)),
                     link(SeasonMapLink.FromEnum.ETEL, SeasonMapLink.ToEnum.SULY, SeasonMapLink.KeyEnum.FOOD_WEIGHT,
                         n.kgPerWeek()),
-                    link(SeasonMapLink.FromEnum.ALVAS, SeasonMapLink.ToEnum.ETEL, SeasonMapLink.KeyEnum.SLEEP_FOOD, null),
+                    link(SeasonMapLink.FromEnum.ALVAS, SeasonMapLink.ToEnum.ETEL, SeasonMapLink.KeyEnum.SLEEP_FOOD,
+                        insights.sleepFoodKcal() == null ? null : BigDecimal.valueOf(insights.sleepFoodKcal())),
                     link(SeasonMapLink.FromEnum.ETEL, SeasonMapLink.ToEnum.EDZES, SeasonMapLink.KeyEnum.FOOD_TRAIN, null),
                     link(SeasonMapLink.FromEnum.ALVAS, SeasonMapLink.ToEnum.EDZES, SeasonMapLink.KeyEnum.SLEEP_TRAIN, null)
                 )))
@@ -142,7 +147,8 @@ public class SeasonOverviewService {
                     .build())
                 .build())
             .adherence(adherenceService.lastWeek(owner, today).map(mapper::toDto).orElse(null))
-            .insights(new ArrayList<>())
+            .insights(new ArrayList<>(insights.insights().stream().map(i -> SeasonInsight.builder()
+                .key(i.key()).title(i.title()).body(i.body()).build()).toList()))
             .upcoming(upcoming(s, block, week))
             .build();
     }
