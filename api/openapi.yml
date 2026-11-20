@@ -19085,6 +19085,15 @@ components:
         lengthenedFriendly:
           type: boolean
           description: Whether the exercise loads the muscle well at long length.
+        challengeAllowed:
+          type: boolean
+          description: >-
+            Whether the day's challenge (half reps in the stretched position)
+            may sit on this exercise (owner decision #61, mezo-r36n9.127): every
+            non-plyo exercise except a free-weight compound (type compound with
+            barbell, dumbbell or kettlebell in its gear). A row with no known
+            kit (no gear and no equipment) is false. Server-computed; the
+            template save enforces the same rule.
         gear:
           type: array
           nullable: true

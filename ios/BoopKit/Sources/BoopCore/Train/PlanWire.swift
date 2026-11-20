@@ -57,7 +57,8 @@ public struct WireExercise: Codable, Equatable, Sendable {
     public var challenge: Bool?
 }
 
-/// The catalog attributes the technique rules need (`stability`, `lengthenedFriendly`).
+/// The catalog attributes the technique rules need (`stability`, `lengthenedFriendly`) and the challenge rule's
+/// answer (`challengeAllowed`, server-computed, owner decision #61) with the kit it falls back on (`gear`).
 public struct WireCatalogItem: Decodable, Equatable, Sendable {
     public let id: String
     public let name: String
@@ -65,6 +66,8 @@ public struct WireCatalogItem: Decodable, Equatable, Sendable {
     public let type: String?
     public let stability: String?
     public let lengthenedFriendly: Bool?
+    public let gear: [String]?
+    public let challengeAllowed: Bool?
 }
 
 // MARK: - The evaluator (POST /api/train/meso-plans/evaluate)

@@ -19,10 +19,12 @@ import org.junit.jupiter.api.Test;
 
 class TechniquePlannerTest {
     private static final TrainTechniqueProperties.Planner CFG = new TrainTechniqueProperties.Planner(3, 2, 1, 2, 15);
-    private static final CatalogAttributes.Attrs MACHINE = new CatalogAttributes.Attrs(true, false, "machine");
-    private static final CatalogAttributes.Attrs CABLE = new CatalogAttributes.Attrs(true, false, "cable");
-    private static final CatalogAttributes.Attrs STABLE_DB = new CatalogAttributes.Attrs(true, false, "dumbbell");
-    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine");
+    // The fourth flag is the challenge rule's answer (owner decision #61): false on MACHINE / CABLE / STABLE_DB stands
+    // for a row the rule refuses, so LENGTHENED is the fixture that may carry the challenge.
+    private static final CatalogAttributes.Attrs MACHINE = new CatalogAttributes.Attrs(true, false, "machine", false);
+    private static final CatalogAttributes.Attrs CABLE = new CatalogAttributes.Attrs(true, false, "cable", false);
+    private static final CatalogAttributes.Attrs STABLE_DB = new CatalogAttributes.Attrs(true, false, "dumbbell", false);
+    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine", true);
 
     // ---- builders ------------------------------------------------------------------------------------------------
 
@@ -379,6 +381,18 @@ class TechniquePlannerTest {
             .containsExactly(org.assertj.core.groups.Tuple.tuple(2, Technique.DROP, "owner", null));
         assertThat(w.remainingByDay()).containsEntry(0, 0);
         assertThat(w.perGroup()).containsEntry("legs", 1);
+    }
+
+    @Test
+    void challengeMayFallOnAFreeIsolation_butNotAFreeCompound() {
+        // owner decision #61: a dumbbell curl takes the challenge (not stable, rule allows it); a barbell bench never
+        CatalogAttributes.Attrs dbCurl = new CatalogAttributes.Attrs(false, false, "dumbbell", true);
+        CatalogAttributes.Attrs bench = new CatalogAttributes.Attrs(false, false, "barbell", false);
+        Week w = TechniquePlanner.plan(input(1, Map.of(),
+            day(0, attrs(row(0, 0, "chest"), bench), attrs(row(0, 1, "arms"), dbCurl))));
+        assertThat(at(w.challenges())).containsExactly(new int[] {0, 1});
+        Week none = TechniquePlanner.plan(input(1, Map.of(), day(0, attrs(row(0, 0, "chest"), bench))));
+        assertThat(none.challenges()).isEmpty();
     }
 
     @Test

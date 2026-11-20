@@ -6,16 +6,22 @@ import io.mrkuhne.mezo.api.dto.SetLegKind;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class TechniqueRulesTest {
-    private static final CatalogAttributes.Attrs STABLE = new CatalogAttributes.Attrs(true, false, "machine");
-    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine");
+    private static final CatalogAttributes.Attrs STABLE = new CatalogAttributes.Attrs(true, false, "machine", true);
+    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine", true);
+    /** A free-weight compound (barbell bench): the challenge rule refuses it (owner decision #61). */
+    private static final CatalogAttributes.Attrs FREE_COMPOUND = new CatalogAttributes.Attrs(false, false, "barbell", false);
+    /** A free-weight isolation (dumbbell curl): not stable, but the challenge is fine on it. */
+    private static final CatalogAttributes.Attrs FREE_ISOLATION = new CatalogAttributes.Attrs(false, false, "dumbbell", true);
 
     @Test
     void testAttrs_nullOrUnknownEquipment_shouldReadAsOther() {
-        assertThat(new CatalogAttributes.Attrs(true, false, null).equipment()).isEqualTo("other");
-        assertThat(new CatalogAttributes.Attrs(true, false, "rope").equipment()).isEqualTo("other");
-        assertThat(new CatalogAttributes.Attrs(true, false, "cable").equipment()).isEqualTo("cable");
+        assertThat(new CatalogAttributes.Attrs(true, false, null, true).equipment()).isEqualTo("other");
+        assertThat(new CatalogAttributes.Attrs(true, false, "rope", true).equipment()).isEqualTo("other");
+        assertThat(new CatalogAttributes.Attrs(true, false, "cable", true).equipment()).isEqualTo("cable");
         assertThat(CatalogAttributes.Attrs.FREE.equipment()).isEqualTo("other");
     }
 
@@ -23,16 +29,60 @@ class TechniqueRulesTest {
     void testCheck_freeExercise_shouldReject() {
         assertThat(TechniqueRules.check(Technique.DROP, false, CatalogAttributes.Attrs.FREE))
             .contains("TRAIN_TECHNIQUE_NOT_STABLE");
+        // no catalogue link: unknown kit, no challenge either (owner decision #61)
         assertThat(TechniqueRules.check(Technique.NONE, true, CatalogAttributes.Attrs.FREE))
-            .contains("TRAIN_TECHNIQUE_NOT_STABLE");
+            .contains("TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND");
     }
 
     @Test
     void testCheck_partialsNeedsLengthened() {
         assertThat(TechniqueRules.check(Technique.PARTIALS, false, STABLE)).contains("TRAIN_TECHNIQUE_NOT_LENGTHENED");
-        assertThat(TechniqueRules.check(Technique.NONE, true, STABLE)).contains("TRAIN_TECHNIQUE_NOT_LENGTHENED");
         assertThat(TechniqueRules.check(Technique.PARTIALS, false, LENGTHENED)).isEmpty();
         assertThat(TechniqueRules.check(Technique.NONE, true, LENGTHENED)).isEmpty();
+    }
+
+    @Test
+    void testCheck_challenge_followsTheChallengeRuleNotLengthenedOrStable() {
+        // owner decision #61: the challenge no longer needs a lengthened-friendly or a stable exercise
+        assertThat(TechniqueRules.check(Technique.NONE, true, STABLE)).isEmpty();
+        assertThat(TechniqueRules.check(Technique.NONE, true, FREE_ISOLATION)).isEmpty();
+        assertThat(TechniqueRules.check(Technique.NONE, true, FREE_COMPOUND))
+            .contains("TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND");
+        // a technique still needs a stable exercise, challenge or not
+        assertThat(TechniqueRules.check(Technique.MYO, true, FREE_ISOLATION)).contains("TRAIN_TECHNIQUE_NOT_STABLE");
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(delimiter = '|', value = {
+        "cable curl          | isolation | cable          | cable      | true",
+        "triceps pushdown    | isolation | cable          | cable      | true",
+        "leg extension       | isolation | machine        | machine    | true",
+        "machine chest press | compound  | machine        | machine    | true",
+        "lat pulldown        | compound  | cable          | cable      | true",
+        "barbell bench       | compound  | barbell;bench  | barbell    | false",
+        "back squat          | compound  | barbell        | barbell    | false",
+        "conventional dead   | compound  | barbell        | barbell    | false",
+        "DB bench            | compound  | dumbbell;bench | dumbbell   | false",
+        "KB goblet squat     | compound  | kettlebell     | kettlebell | false",
+        "DB curl             | isolation | dumbbell       | dumbbell   | true",
+        "pull-up             | compound  | pullup-bar     | bodyweight | true",
+        "smith squat         | compound  | smith          | machine    | true",
+        "jump squat (plyo)   | plyo      | bodyweight     | bodyweight | false",
+    })
+    void testChallengeAllowed_table(String label, String type, String gear, String equipment, boolean expected) {
+        assertThat(TechniqueRules.challengeAllowed(type, List.of(gear.split(";")), equipment)).isEqualTo(expected);
+    }
+
+    @Test
+    void testChallengeAllowed_unknownKit_shouldRefuse() {
+        // no catalogue link at all
+        assertThat(CatalogAttributes.Attrs.FREE.challengeAllowed()).isFalse();
+        // a user-authored row without gear falls back to its equipment; neither known = unknown kit
+        assertThat(TechniqueRules.challengeAllowed("isolation", null, "cable")).isTrue();
+        assertThat(TechniqueRules.challengeAllowed("compound", null, "barbell")).isFalse();
+        assertThat(TechniqueRules.challengeAllowed("compound", null, null)).isFalse();
+        assertThat(TechniqueRules.challengeAllowed("compound", List.of(), "other")).isFalse();
+        assertThat(TechniqueRules.challengeAllowed(null, List.of("cable"), "cable")).isFalse();
     }
 
     @Test
@@ -45,8 +95,9 @@ class TechniqueRulesTest {
     }
 
     @Test
-    void testCheck_challengeWithTechnique_stillNeedsLengthenedAndStable() {
-        assertThat(TechniqueRules.check(Technique.REST_DROP, true, STABLE)).contains("TRAIN_TECHNIQUE_NOT_LENGTHENED");
+    void testCheck_challengeWithTechnique_stillNeedsTheChallengeRuleAndStable() {
+        assertThat(TechniqueRules.check(Technique.REST_DROP, true, STABLE)).isEmpty();
+        assertThat(TechniqueRules.check(Technique.PARTIALS, true, STABLE)).contains("TRAIN_TECHNIQUE_NOT_LENGTHENED");
         assertThat(TechniqueRules.check(Technique.MYO, true, CatalogAttributes.Attrs.FREE))
             .contains("TRAIN_TECHNIQUE_NOT_STABLE");
     }

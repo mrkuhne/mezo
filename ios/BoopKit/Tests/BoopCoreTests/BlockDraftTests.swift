@@ -198,4 +198,66 @@ struct BlockDraftTests {
         boop.setTechnique(day: 1, exercise: 1, .drop)
         #expect(!boop.days[1].exercises[1].pickedByBoop, "his change makes it his")
     }
+
+    // MARK: the challenge rule (owner decision #61, mezo-r36n9.127)
+
+    /// The fixture block with a catalogue whose rows carry the given extra JSON fields (`challengeAllowed`, `gear`).
+    private func draft(row: String, curl: String, press: String) throws -> BlockDraft {
+        let json = """
+        [{"id":"\(PlanFixtures.catRow)","name":"Chest Supported Row","muscle":"back","type":"compound","stability":"stable","lengthenedFriendly":false\(row)},
+         {"id":"\(PlanFixtures.catCurl)","name":"Preacher Curl","muscle":"biceps","type":"isolation","stability":"stable","lengthenedFriendly":true\(curl)},
+         {"id":"\(PlanFixtures.catPress)","name":"Barbell Bench Press","muscle":"chest","type":"compound","stability":"free","lengthenedFriendly":false\(press)}]
+        """
+        let catalog = try JSONDecoder().decode([WireCatalogItem].self, from: Data(json.utf8))
+        return BlockDraft(block: PlanFixtures.block, catalog: catalog)
+    }
+
+    @Test func challengeFollowsTheServerFlag() throws {
+        // the server's answer wins over everything the phone could compute
+        let d = try draft(row: #","challengeAllowed":true"#, curl: #","challengeAllowed":false"#,
+                          press: #","challengeAllowed":true"#)
+        #expect(d.days[0].exercises[0].canTakeChallenge, "stable but not lengthened: the challenge is fine now")
+        #expect(d.days[0].exercises[0].challengeUnavailableReason == nil)
+        #expect(!d.days[0].exercises[1].canTakeChallenge, "the server said no")
+        #expect(d.days[0].exercises[1].challengeUnavailableReason == "Szabadsúlyos alapgyakorlaton nincs kihívás.")
+        #expect(d.days[1].exercises[0].canTakeChallenge, "server flag true wins over the free stability")
+        #expect(!d.days[0].exercises[2].canTakeChallenge, "core: not judged, whatever the catalogue says")
+    }
+
+    @Test func challengeFallsBackToTheKitRuleWithoutTheFlag() throws {
+        // an older server: no flag, but the catalogue's kit is there — free-weight compounds only are out
+        let d = try draft(row: #","gear":["machine"]"#, curl: #","gear":["specialty"]"#,
+                          press: #","gear":["barbell","bench"]"#)
+        #expect(d.days[0].exercises[0].canTakeChallenge, "machine compound")
+        #expect(d.days[0].exercises[1].canTakeChallenge, "isolation")
+        #expect(!d.days[1].exercises[0].canTakeChallenge, "barbell compound")
+        #expect(d.days[1].exercises[0].challengeUnavailableReason == "Szabadsúlyos alapgyakorlaton nincs kihívás.")
+        #expect(d.days[1].exercises[1].canTakeChallenge, "the cable row shares the machine catalogue row")
+    }
+
+    @Test func challengeFallsBackToTheOldRuleWithoutFlagOrKit() throws {
+        // no flag, no kit: the old stable + lengthened rule, never the lengthened wording
+        let d = try draft(row: "", curl: "", press: "")
+        #expect(!d.days[0].exercises[0].canTakeChallenge)
+        #expect(d.days[0].exercises[1].canTakeChallenge)
+        #expect(!d.days[1].exercises[0].canTakeChallenge)
+        for e in d.days.flatMap(\.exercises) {
+            #expect(!(e.challengeUnavailableReason ?? "").contains("nyújtott"))
+        }
+    }
+
+    @Test func addedAndSwappedRowsReadTheServerFlag() throws {
+        var d = try draft(row: #","challengeAllowed":true"#, curl: #","challengeAllowed":true"#,
+                          press: #","challengeAllowed":false"#)
+        d.techniquesEnabled = true
+        d.setChallenge(day: 0, exercise: 0, true)
+        #expect(d.days[0].exercises[0].challenge)
+        let press = CatalogExercise(id: UUID(uuidString: PlanFixtures.catPress)!, slug: "barbell-bench-press",
+                                    name: "Barbell Bench Press", muscle: "chest-mid", type: .compound,
+                                    stim: 0.8, fatigue: 0.8)
+        d.replace(day: 0, at: 0, with: press, prescription: nil)
+        #expect(!d.days[0].exercises[0].challenge, "a free-weight compound drops the challenge on a swap")
+        d.add(day: 1, catalog: press, prescription: nil)
+        #expect(!d.days[1].exercises.last!.canTakeChallenge)
+    }
 }
