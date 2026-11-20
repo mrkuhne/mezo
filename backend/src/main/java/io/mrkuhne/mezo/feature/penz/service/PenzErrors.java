@@ -7,6 +7,13 @@ import org.springframework.http.HttpStatus;
 /** The typed errors of Boop Pénz (codes in both message bundles). */
 public final class PenzErrors {
 
+    // Boop Pénz L7 (mezo-r36n9.105): catalog and proposals
+    public static final String PRODUCT_NOT_FOUND = "PENZ_PRODUCT_NOT_FOUND";
+    public static final String PRODUCT_NOT_APPROVED = "PENZ_PRODUCT_NOT_APPROVED";
+    public static final String PROPOSAL_NOT_FOUND = "PENZ_PROPOSAL_NOT_FOUND";
+    public static final String PROPOSAL_STATE = "PENZ_PROPOSAL_STATE";
+    public static final String PROPOSAL_AMOUNT_INVALID = "PENZ_PROPOSAL_AMOUNT_INVALID";
+
     private PenzErrors() {
     }
 

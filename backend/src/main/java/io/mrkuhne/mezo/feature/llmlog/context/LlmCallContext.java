@@ -52,12 +52,19 @@ public record LlmCallContext(String feature, String operation, String entityKind
     public static final String FEATURE_PENZ_DIGEST = "penz_digest";
 
     /**
+     * Boop Pénz's investment proposal narration (mezo-r36n9.105). Payload-free: the prompt carries the amount he
+     * wants to invest, his fixed costs and what his emergency sleeve holds.
+     */
+    public static final String FEATURE_PENZ_PROPOSAL = "penz_proposal";
+
+    /**
      * False for a call whose prompt and answer must never be persisted in the audit log — the row keeps cost,
-     * tokens and the true payload size, and is stamped scrubbed at write time. {@link #FEATURE_PENZ_SMS} and
-     * {@link #FEATURE_PENZ_DIGEST}.
+     * tokens and the true payload size, and is stamped scrubbed at write time. {@link #FEATURE_PENZ_SMS},
+     * {@link #FEATURE_PENZ_DIGEST} and {@link #FEATURE_PENZ_PROPOSAL}.
      */
     public boolean keepsPayload() {
-        return !FEATURE_PENZ_SMS.equals(feature) && !FEATURE_PENZ_DIGEST.equals(feature);
+        return !FEATURE_PENZ_SMS.equals(feature) && !FEATURE_PENZ_DIGEST.equals(feature)
+            && !FEATURE_PENZ_PROPOSAL.equals(feature);
     }
 
     /** True when this context is the admin explorer's dry-run replay. */
