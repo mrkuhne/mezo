@@ -20,8 +20,8 @@ Négy lépésben épül:
   Boop kitalált összeget mondjon — lásd: *Az adatalap*.
 - **2. lépés — a terület a telefonon** (kész): a Pénz oldal (Ma · Pénzem · Költés · Gyakorlás), a heti maradék nagyban,
   készpénzes költés rögzítése net nélkül is, a „mire gyűjtök” rész — lásd: *A terület*.
-- **3. lépés — portfólió és hírek**: a befektetéseid időtávok szerint, és reggelente, mi mozdult meg, ami téged
-  érint.
+- **3. lépés — portfólió és hírek** (kész): a befektetéseid időtávok szerint, és minden nap, mi mozdult meg, ami
+  téged érint, forintban és megnyitható elemzéssel — lásd: *A vagyonod és a napi hírek*.
 - **4. lépés — gyakorlás és javaslatok**: gyakorló kereskedés valódi pénz nélkül, és Boop javaslata, mit kezdj egy
   nagyobb összeggel.
 
@@ -40,7 +40,7 @@ Nincs.
 Lásd: *Az adatalap*.
 
 ## Mi jön még
-A 3–4. lépés, a fenti sorrendben.
+A 4. lépés.
 
 ## Mi marad ki
 Banki összekötés, automatikus vásárlás vagy utalás — soha. Értesítés pénzügyi hírekről — nem lesz.

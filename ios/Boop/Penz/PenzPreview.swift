@@ -11,12 +11,20 @@ import BoopCore
 /// `-penzState review|calm|close|empty|offline|error` (default `review`): two bank messages to look at · nothing to do ·
 /// October still open · no account yet · no net (the cache is primed five hours old, so the stale mark shows) ·
 /// the server failing. `-previewOffline YES` keeps a typed cash expense in the outbox (the waiting row).
+///
+/// L6 (`mezo-r36n9.104`): `-penzPortfolio full|empty|stale|unpriced|error` (default `full`: holdings in all three sleeves,
+/// one ETF in two sleeves, an accruing bond, a euro cash line) and `-penzDigest ready|pending|quiet|unhealthy|failed|error`
+/// (default `ready`: three items like the spike — a holding falling, a rates decision at 0 Ft, a forint move). Writes
+/// are kept for the run; the symbol `NOPE` is refused as unknown, a sell above the value is refused, and a non-forint
+/// buy dated on a Sunday answers „no FX rate", so every server refusal can be seen.
 enum PenzPreview {
     static let raw = RawJSONClient(transport: PenzPreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
                                    token: { "preview" })
     static let client = PenzClient(raw: raw)
     static let sender = PenzOutboxSender(raw: raw)
     static var state: String { UserDefaults.standard.string(forKey: "penzState") ?? "review" }
+    static var portfolioState: String { UserDefaults.standard.string(forKey: "penzPortfolio") ?? "full" }
+    static var digestState: String { UserDefaults.standard.string(forKey: "penzDigest") ?? "ready" }
 
     /// `-penzState offline`: what the cache would hold from a read five hours ago.
     static func primeCache(_ directory: URL) async {
@@ -25,6 +33,8 @@ enum PenzPreview {
         let cache = ServerCache(directory: directory, clock: { earlier })
         let model = PenzPreviewModel(state: "review")
         try? await cache.put(model.snapshot(), endpoint: "penz/snapshot", date: "current")
+        try? await cache.put(model.portfolio(), endpoint: "penz/portfolio", date: "current")
+        try? await cache.put(model.digest(), endpoint: "penz/digest", date: model.today)
     }
 }
 
@@ -150,6 +160,182 @@ final class PenzPreviewModel: @unchecked Sendable {
                 .map { PenzAllowanceLine(key: $0.0, amount: .huf($0.1)) })
     }
 
+    // MARK: L6 — the portfolio and the digest
+
+    /// One holding with its invented valuation (HUF minor).
+    struct Line {
+        var holding: PenzHolding
+        var value: Int64, cost: Int64
+        var quantity: Double?
+        var changePct: Double?
+        var priceMove: Int64, fxMove: Int64
+        var valuation: String
+    }
+    lazy var lines: [Line] = PenzPreviewModel.seedLines(PenzPreview.portfolioState)
+    lazy var events: [PenzHoldingEvent] = PenzPreview.portfolioState == "empty" ? [] : PenzPreviewModel.seedEvents(today: today)
+
+    private static func h(_ id: Int, _ name: String, _ type: String, _ symbol: String?, _ platform: String, _ sleeve: String,
+                          _ currency: String, rate: Double? = nil) -> PenzHolding {
+        PenzHolding(id: String(format: "b0000000-0000-4000-8000-%012d", id), name: name, assetType: type, symbol: symbol,
+                    platform: platform, sleeve: sleeve, currency: currency, bondRatePct: rate, position: id)
+    }
+
+    static func seedLines(_ state: String) -> [Line] {
+        guard state != "empty" else { return [] }
+        let unpriced = state == "unpriced"
+        func line(_ h: PenzHolding, _ ft: Int64, cost: Int64, qty: Double?, pct: Double?, move: Int64, fx: Int64, valuation: String) -> Line {
+            Line(holding: h, value: ft * 100, cost: cost * 100, quantity: qty, changePct: unpriced ? nil : pct,
+                 priceMove: unpriced ? 0 : move * 100, fxMove: unpriced ? 0 : fx * 100, valuation: unpriced ? "cost" : valuation)
+        }
+        return [
+            line(h(1, "Állampapír", "bond", nil, "mbh", "short", "HUF", rate: 6.5), 2_400_000, cost: 2_310_000, qty: nil, pct: nil,
+                 move: 0, fx: 0, valuation: "accrual"),
+            line(h(2, "Kötvény-ETF", "etf", "AGGH.AS", "revolut", "mid", "EUR"), 920_000, cost: 905_000, qty: 400, pct: 0.3,
+                 move: 2_700, fx: -5_500, valuation: "quote"),
+            line(h(3, "Világ-ETF", "etf", "VWCE.DE", "revolut", "mid", "EUR"), 520_000, cost: 470_000, qty: 10, pct: 1.4,
+                 move: 7_200, fx: -3_100, valuation: "quote"),
+            line(h(4, "Deviza", "cash", nil, "revolut", "mid", "EUR"), 420_000, cost: 425_000, qty: nil, pct: nil,
+                 move: 0, fx: -2_500, valuation: "quote"),
+            line(h(5, "Világ-ETF", "etf", "VWCE.DE", "revolut", "long", "EUR"), 1_520_000, cost: 1_310_000, qty: 29, pct: 1.4,
+                 move: 21_000, fx: -9_200, valuation: "quote"),
+            line(h(6, "OTP részvény", "stock", "OTP.BD", "mbh", "long", "HUF"), 638_000, cost: 590_000, qty: 22, pct: 1.9,
+                 move: 11_900, fx: 0, valuation: "quote"),
+        ]
+    }
+
+    static func seedEvents(today: String) -> [PenzHoldingEvent] {
+        func day(_ n: Int) -> String {
+            penzDay(penzCalendar.date(byAdding: .day, value: n, to: Date()) ?? Date())
+        }
+        return [
+            PenzHoldingEvent(id: "e0000000-0000-4000-8000-000000000001", holdingId: "b0000000-0000-4000-8000-000000000001",
+                             holdingName: "Állampapír", sleeve: "short", kind: "coupon", date: day(18), amountMinor: 3_420_000,
+                             currency: "HUF", amountHufMinor: 3_420_000, note: "1 200 000 Ft-os rész"),
+            PenzHoldingEvent(id: "e0000000-0000-4000-8000-000000000002", holdingId: "b0000000-0000-4000-8000-000000000005",
+                             holdingName: "Világ-ETF", sleeve: "long", kind: "dividend", date: day(29), amountMinor: 2_280,
+                             currency: "EUR", amountHufMinor: 890_000),
+            PenzHoldingEvent(id: "e0000000-0000-4000-8000-000000000003", holdingId: "b0000000-0000-4000-8000-000000000001",
+                             holdingName: "Állampapír", sleeve: "short", kind: "maturity", date: day(74), amountMinor: 120_000_000,
+                             currency: "HUF", amountHufMinor: 120_000_000),
+        ]
+    }
+
+    func portfolio() -> PenzPortfolio {
+        let state = PenzPreview.portfolioState
+        let total = lines.reduce(Int64(0)) { $0 + $1.value }
+        let yesterday = penzDay(penzCalendar.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+        let weekAgo = penzDay(penzCalendar.date(byAdding: .day, value: -6, to: Date()) ?? Date())
+        let quoted = lines.filter { $0.valuation == "quote" }
+        let prev = quoted.reduce(Int64(0)) { $0 + $1.value - $1.priceMove - $1.fxMove }
+        let move = lines.reduce(Int64(0)) { $0 + $1.priceMove }, fx = lines.reduce(Int64(0)) { $0 + $1.fxMove }
+        let fixed: Int64 = 41_200_000
+        let sleeves = ["short", "mid", "long"].map { key -> PenzSleeve in
+            let mine = lines.filter { $0.holding.sleeve == key }
+            let value = mine.reduce(Int64(0)) { $0 + $1.value }
+            let positions = mine.map { l in
+                PenzPosition(holdingId: l.holding.id, name: l.holding.name, assetType: l.holding.assetType, symbol: l.holding.symbol,
+                             platform: l.holding.platform, currency: l.holding.currency, quantity: l.quantity,
+                             valueHufMinor: l.value, costHufMinor: l.cost,
+                             sharePct: value > 0 ? (Double(l.value) / Double(value) * 1000).rounded() / 10 : 0,
+                             priceMoveHufMinor: l.priceMove, fxMoveHufMinor: l.fxMove, changePct: l.changePct,
+                             priced: l.valuation != "cost", valuation: l.valuation,
+                             priceAsOf: l.valuation == "quote" ? (state == "stale" ? weekAgo : yesterday) : nil)
+            }
+            return PenzSleeve(sleeve: key, valueHufMinor: value, costHufMinor: mine.reduce(0) { $0 + $1.cost },
+                              sharePct: total > 0 ? (Double(value) / Double(total) * 1000).rounded() / 10 : 0,
+                              priceMoveHufMinor: mine.reduce(0) { $0 + $1.priceMove }, fxMoveHufMinor: mine.reduce(0) { $0 + $1.fxMove },
+                              coverageMonths: key == "long" && value > 0 ? Int(value / fixed) : nil, holdings: positions)
+        }
+        let unpriced = lines.filter { $0.valuation == "cost" }.count
+        return PenzPortfolio(
+            date: today, totalHufMinor: total, costHufMinor: lines.reduce(0) { $0 + $1.cost }, priceMoveHufMinor: move,
+            fxMoveHufMinor: fx,
+            priceMovePct: prev > 0 && state != "unpriced" ? (Double(move) / Double(prev) * 1000).rounded() / 10 : nil,
+            fxMovePct: prev > 0 && state != "unpriced" ? (Double(fx) / Double(prev) * 1000).rounded() / 10 : nil,
+            pricesAsOf: quoted.isEmpty ? nil : (state == "stale" ? weekAgo : yesterday), stale: state == "stale",
+            unpricedCount: unpriced, fixedCostsMonthlyHufMinor: fixed, sleeves: sleeves,
+            events: events.sorted { $0.date < $1.date },
+            practice: PenzPracticeRow(monthlyHufMinor: settings.practiceMonthlyHufMinor))
+    }
+
+    func digest() -> PenzDigest {
+        let state = PenzPreview.digestState
+        func at(_ hour: Int, _ minute: Int) -> String {
+            let d = penzCalendar.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
+            return ISO8601DateFormatter().string(from: d)
+        }
+        switch state {
+        case "pending": return PenzDigest(date: today, status: "pending")
+        case "quiet": return PenzDigest(date: today, status: "quiet", generatedAt: at(6, 40))
+        case "unhealthy": return PenzDigest(date: today, status: "quiet", generatedAt: at(6, 40), newsHealthy: false)
+        case "failed": return PenzDigest(date: today, status: "failed", generatedAt: at(6, 40))
+        default: break
+        }
+        func src(_ name: String, _ title: String, _ host: String) -> PenzDigestSource {
+            PenzDigestSource(name: name, title: title, url: "https://\(host)/")
+        }
+        return PenzDigest(date: today, status: "ready", generatedAt: at(6, 40), items: [
+            PenzDigestItem(
+                id: "d1", kind: "holding", holdingId: "b0000000-0000-4000-8000-000000000005", holdingName: "Világ-ETF", sleeve: "long",
+                title: "A világ-ETF-ed 1,1%-ot esett a héten", effectHufMinor: -1_840_000, effectNote: "a te részeden", changePct: -1.1,
+                confidence: 2,
+                verdict: "Egy héten belüli mozgás a 10+ éves pénznél nem jelent semmit — a rekesz mérőszáma sem változott.",
+                body: "A hét eleji esés a kamatvárakozások átárazódásából jött, nem egyetlen cégből vagy iparágból. Az alapod a világ nagyjából 1 500 nagyvállalatát tartja, tehát pontosan azt csinálta, amit ilyenkor szokott: együtt mozgott a piaccal.\n\nA te rekeszed mérőszáma — *hány hónapnyi fix kiadásodat fedezi* — ettől nem változott. Ez a fajta ingadozás havonta többször előfordul.\n\nAmiért ez egyáltalán felkerült ide: akkor szólok, ha a mozgás a *te* pénzedben forintban érzékelhető. 18 400 Ft az.",
+                uncertainty: "A hír megtörtént és az ár tény; a *miértje* viszont elemzői értelmezés, és a források sem értenek egyet abban, mennyi szól a kamatokról és mennyi a technológiai cégekről. Azt pedig, hogy innen merre megy, senki nem tudja — én sem.",
+                noAction: "Ez a pénz 10+ évre szól. Egy heti mozgás nem ok a lépésre, és nem is küldelek sehova.",
+                publishedAt: at(9, 30),
+                sources: [src("Portfolio", "A tengerentúli tőzsdék hete", "www.portfolio.hu"),
+                          src("Reuters", "Global equities slip on rate outlook", "www.reuters.com"),
+                          src("Bloomberg", "Tech leads the pullback", "www.bloomberg.com"),
+                          src("FT", "Investors trim risk before the data", "www.ft.com"),
+                          src("MNB", "Árfolyamok", "www.mnb.hu"),
+                          src("Az alapkezelő", "Napi árfolyamközlés", "www.vanguard.com")]),
+            PenzDigestItem(
+                id: "d2", kind: "rates", holdingId: "b0000000-0000-4000-8000-000000000001", holdingName: "Állampapír", sleeve: "short",
+                title: "A jegybank nem változtatott az alapkamaton", effectHufMinor: 0, effectNote: "változatlan hozam", confidence: 2,
+                verdict: "A 2,4 milliós részed hozama változatlan. Azért írom ki, mert kamatdöntés volt — nem mert lépni kellene.",
+                body: "A papírod kamata az alapkamathoz van kötve, tehát a döntés közvetlenül érint — csak éppen úgy, hogy *nem történik semmi*.\n\nEzt a hírt akkor is kiteszem, ha nulla a hatás. Ha csak a mozgásokat mutatnám, azt hinnéd, a hallgatásom azt jelenti, hogy nem történt semmi — pedig a „megtörtént, és nem érintett” más dolog, mint a „nem néztem meg”.",
+                uncertainty: "Itt kevés a bizonytalanság: a döntés hivatalos, a papírod képlete ismert. Amit nem tudok: hogy a következő üléseken mi lesz, és hogy az infláció hogyan alakul.",
+                noAction: "A hozamod változatlan, a papír fut tovább. A következő döntési pontod a lejárat.",
+                publishedAt: at(14, 10),
+                sources: [src("MNB", "A Monetáris Tanács közleménye", "www.mnb.hu"),
+                          src("Portfolio", "Maradt a kamatszint", "www.portfolio.hu"),
+                          src("Reuters", "Hungary holds rates", "www.reuters.com"),
+                          src("Index", "Mi lesz az állampapírokkal", "index.hu")]),
+            PenzDigestItem(
+                id: "d3", kind: "fx", sleeve: "mid", title: "A forint 0,6%-ot erősödött az euróval szemben",
+                effectHufMinor: -720_000, effectNote: "forintban mérve", changePct: -0.6, confidence: 1,
+                verdict: "Ez nem a befektetés mozgása, hanem az árfolyamé — ezt a kettőt mindig külön mutatom.",
+                body: "A devizában tartott részed ugyanannyi eurót ér, mint tegnap; forintban mérve kevesebbet, mert a forint erősödött. Ha holnap gyengül, ez magától visszajön — befektetési döntésed ettől nem lett se jobb, se rosszabb.\n\nEzért van a Pénzem oldalon két külön szám: *a befektetések mozgása* és *ebből az árfolyam*. Ha egybeolvasztanám őket, olyan teljesítményt mutatnék, amit a befektetés nem csinált.",
+                uncertainty: "Közepes biztonságra tettem, mert a magyarázat a bizonytalan rész: hogy pontosan mi erősítette a forintot ma, arról a három forrás három dolgot mond. Maga az árfolyam és a te forintértéked viszont tény.",
+                noAction: "Árfolyammozgás, nem befektetési esemény. Ha holnap gyengül a forint, magától visszajön.",
+                publishedAt: at(8, 5),
+                sources: [src("MNB", "Hivatalos középárfolyam", "www.mnb.hu"),
+                          src("Portfolio", "Erősödő forint", "www.portfolio.hu"),
+                          src("Reuters", "Forint firms", "www.reuters.com")]),
+        ])
+    }
+
+    /// A recorded buy or sell, applied to the invented valuation. nil = accepted; else the refusal code.
+    func record(_ r: PenzInvestTxnRequest) -> String? {
+        guard let i = lines.firstIndex(where: { $0.holding.id == r.holdingId }) else { return "PENZ_HOLDING_NOT_FOUND" }
+        let eur = lines[i].holding.currency != "HUF"
+        if eur, penzCalendar.component(.weekday, from: penzCalendar.date(from: DateComponents(
+            year: Int(r.date.prefix(4)), month: Int(r.date.dropFirst(5).prefix(2)), day: Int(r.date.suffix(2)))) ?? Date()) == 1 {
+            return "PENZ_FX_UNAVAILABLE"
+        }
+        let huf = eur ? r.amountMinor * 395 : r.amountMinor
+        if r.side == "sell" {
+            if huf > lines[i].value { return "PENZ_SELL_EXCEEDS_POSITION" }
+            lines[i].value -= huf; lines[i].cost = max(0, lines[i].cost - huf)
+            if let q = r.quantity, let have = lines[i].quantity { lines[i].quantity = max(0, have - q) }
+        } else {
+            lines[i].value += huf; lines[i].cost += huf
+            if let q = r.quantity { lines[i].quantity = (lines[i].quantity ?? 0) + q }
+        }
+        return nil
+    }
+
     func snapshot() -> PenzSnapshot {
         PenzSnapshot(allowance: allowance(), transactions: transactions, categories: Self.categories, accounts: Self.accounts,
                      openMonths: open, goals: goals, settings: settings)
@@ -173,6 +359,10 @@ struct PenzPreviewTransport: ClientTransport {
         let path = request.path ?? ""
         let segments = path.split(separator: "?")[0].split(separator: "/").map(String.init)
         let enc = JSONEncoder()
+        func refuse(_ status: Int, _ code: String) -> (HTTPResponse, HTTPBody?) {
+            var h = HTTPFields(); h[.contentType] = "application/json"
+            return (HTTPResponse(status: .init(code: status), headerFields: h), HTTPBody(#"{"messages":[{"code":"\#(code)"}]}"#))
+        }
         func json<T: Encodable>(_ value: T) throws -> (HTTPResponse, HTTPBody?) {
             var h = HTTPFields(); h[.contentType] = "application/json"
             return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(try enc.encode(value)))
@@ -217,6 +407,40 @@ struct PenzPreviewTransport: ClientTransport {
                 m.open.removeAll { $0.month == month }
                 return try json(PenzMonthClose(month: month, closed: true, finalRemaining: .huf(1_230_000), deficit: .zero,
                                                leftoverAction: c.leftoverAction))
+            case "getPenzPortfolio":
+                if PenzPreview.portfolioState == "error" { return (HTTPResponse(status: .internalServerError), nil) }
+                return try json(m.portfolio())
+            case "getPenzDigest":
+                if PenzPreview.digestState == "error" { return (HTTPResponse(status: .internalServerError), nil) }
+                return try json(m.digest())
+            case "listPenzHoldings":
+                return try json(m.lines.map(\.holding))
+            case "listPenzHoldingEvents":
+                return try json(m.events)
+            case "createPenzHolding":
+                let r = try JSONDecoder().decode(PenzHoldingRequest.self, from: sent)
+                if let same = m.lines.first(where: { $0.holding.clientRef == r.clientRef && r.clientRef != nil }) { return try json(same.holding) }
+                if r.symbol?.uppercased() == "NOPE" { return refuse(400, "PENZ_SYMBOL_UNKNOWN") }
+                let h = PenzHolding(id: UUID().uuidString.lowercased(), name: r.name, assetType: r.assetType, symbol: r.symbol,
+                                    platform: r.platform, platformName: r.platformName, sleeve: r.sleeve, currency: r.currency,
+                                    position: m.lines.count, clientRef: r.clientRef)
+                m.lines.append(.init(holding: h, value: 0, cost: 0, quantity: nil, changePct: nil, priceMove: 0, fxMove: 0,
+                                     valuation: r.symbol == nil ? "cost" : "quote"))
+                return try json(h)
+            case "createPenzInvestTransaction":
+                let r = try JSONDecoder().decode(PenzInvestTxnRequest.self, from: sent)
+                if let code = m.record(r) { return refuse(code == "PENZ_FX_UNAVAILABLE" ? 503 : (code == "PENZ_HOLDING_NOT_FOUND" ? 404 : 400), code) }
+                return try json(PenzInvestTxn(id: UUID().uuidString.lowercased(), holdingId: r.holdingId, side: r.side, quantity: r.quantity,
+                                              amount: PenzMoney(minor: r.amountMinor), date: r.date, clientRef: r.clientRef))
+            case "createPenzHoldingEvent":
+                let r = try JSONDecoder().decode(PenzHoldingEventRequest.self, from: sent)
+                guard let l = m.lines.first(where: { $0.holding.id == r.holdingId }) else { return refuse(404, "PENZ_HOLDING_NOT_FOUND") }
+                let e = PenzHoldingEvent(id: UUID().uuidString.lowercased(), holdingId: r.holdingId, holdingName: l.holding.name,
+                                         sleeve: l.holding.sleeve, kind: r.kind, date: r.date, amountMinor: r.amountMinor,
+                                         currency: l.holding.currency,
+                                         amountHufMinor: r.amountMinor.map { l.holding.currency == "HUF" ? $0 : $0 * 395 })
+                m.events.append(e)
+                return try json(e)
             case "createPenzSavingsGoal":
                 struct G: Decodable { let name: String; let kind: String; let targetHufMinor: Int64; let savedHufMinor: Int64?
                                       let dueDate: String?; let note: String? }

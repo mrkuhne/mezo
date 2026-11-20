@@ -54,4 +54,5 @@ inputs:
   - inputFile: ../feature/sensitivity/sensitivity.yml
   - inputFile: ../feature/penz/penz.yml
   - inputFile: ../feature/penz/penz-sms.yml
+  - inputFile: ../feature/penz/penz-portfolio.yml
 output: ../openapi.yml

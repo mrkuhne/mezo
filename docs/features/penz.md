@@ -1,5 +1,5 @@
 ---
-title: Pénz — the money foundation (Boop Pénz L4)
+title: Pénz — money foundation, portfolio and news digest (Boop Pénz L4–L6)
 type: feature-domain
 status: done
 updated: 2026-11-20
@@ -8,19 +8,24 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/penz
   - api/feature/penz/penz.yml
   - api/feature/penz/penz-sms.yml
-  - backend/src/main/resources/db/changelog/1.1.0/script/202611191400_mezo-r36n9.102_penz.sql
-  - backend/src/main/resources/db/changelog/1.1.0/script/202611201000_mezo-r36n9.103_penz_savings_goal.sql
+  - api/feature/penz/penz-portfolio.yml
+  - backend/src/main/resources/db/changelog/1.1.0/script/202611201600_mezo-r36n9.104_penz_portfolio.sql
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzSmsLlmAdapter.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzDigestLlmAdapter.java
   - backend/src/test/java/io/mrkuhne/mezo/feature/penz
 related: [boop-ios, _platform-api-backend, _platform-auth-security, companion, dayclose]
 ---
 
-# Pénz — the money foundation (Boop Pénz L4) — Feature Documentation
+# Pénz — money foundation, portfolio and news digest (Boop Pénz L4–L6) — Feature Documentation
 
 > Backend feature, no screen yet; its future client is **Boop**'s Pénz area (L5). Backend ✅ done (2026-11-19,
 > `mezo-r36n9.102`, slice **L4 · adatalap**) · iOS: none until L5 (`mezo-r36n9.103`) · web: none (retired, #52).
 > Two API tags: `Penz` (JWT) and `PenzSms` (the bank-SMS ingest, own API-key auth). L5 (`mezo-r36n9.103`, 2026-11-20)
-> added the **savings goals / purchase plans** backend (*mire gyűjtök*, §4.2, §4.3).
+> added the **savings goals / purchase plans** backend (*mire gyűjtök*, §4.2, §4.3). **L6** (`mezo-r36n9.104`,
+> 2026-11-20) added the **portfolio by horizon** (*Pénzem*: holdings in three sleeves, FIFO lots, a valuation policy,
+> Yahoo quotes) and the **daily news digest** (*Ma*: feeds → deterministic match → validated narration), under two
+> more tags: `PenzPortfolio` and `PenzNews` (§3.6–§3.11). Builder calls:
+> [`2026-11-20-boop-penz-l6-build.md`](../superpowers/plans/2026-11-20-boop-penz-l6-build.md).
 
 ## 1. Summary
 
@@ -41,6 +46,17 @@ What L4 adds, in one line each:
   converted to a review transaction server-side (§3.4).
 - **The Hungarian amount guard** that stops generated text naming money the engine did not compute (§3.5).
 
+What L6 adds:
+
+- **The portfolio** — holdings (one product in one sleeve: 1–3 év · 5–10 év · 10+ év), buys and sells recorded
+  after the fact, owner-entered events; FIFO lot-level cost basis; **the valuation policy** (distinct from the L4
+  booking policy, §4.1); sleeves, shares, the long sleeve's years of coverage, staleness (§3.6).
+- **Quotes** from the free Yahoo chart endpoint into a global cache, refreshed at most once a day per symbol (§3.7).
+- **The SSRF-guarded fetcher** every quote and news request goes through, with a host allow-list (§3.8).
+- **The daily news digest**: the twice-daily poll, a deterministic holding / macro match, story grouping, figures
+  computed from his own positions, one validated narration call, fallback copy (§3.9–§3.10).
+- **The provider-down alert** as a metric + vmalert rule (§3.11), and **seven `penz_*` tables** (§4.3).
+
 Driving docs: spec [`2026-11-13-boop-penz-design.md`](../superpowers/specs/2026-11-13-boop-penz-design.md) §6, §7,
 §9, §10.1; plan [`2026-11-19-boop-penz-plan.md`](../superpowers/plans/2026-11-19-boop-penz-plan.md) §2; the old-app
 map [`02-finance-tracker-map.md`](../superpowers/research/boop-life/02-finance-tracker-map.md).
@@ -59,6 +75,14 @@ Nothing visible on the phone yet. What the owner can already rely on:
   A phone retry never doubles a goal (`clientRef`); delete is soft.
 - Recurring items appear as transactions on their due date the next time anything reads the money (no cron).
 - Past months close **oldest first**, a leftover optionally moved to the savings-target account.
+
+**L6 on the phone** (backend side): **Pénzem** reads `GET /api/penz/portfolio` — the total, the move since the
+previous close (price and currency apart), the three sleeves (the long one with "N év M hónapnyi fix kiadásodat
+fedezi"), the price date with a stale flag, the forward timeline, the quiet *Gyakorlás* row. **Ma** shows the day's
+digest from `GET /api/penz/digest`: one card per story about *his* holdings (plus the forint / rates when they move
+something he owns), each with the backend-computed forint effect, Boop's one-line reading, confidence, sources and
+the five-part analysis (what it means for you · Boop's reading · how sure · where from · why there is nothing to do).
+The digest is built at 06:30 and 13:30 Budapest; *Frissítés* rebuilds it on demand (at most every 15 minutes).
 
 Seeded on first access: a settings row with the defaults, and **15 Hungarian categories** (12 expense, 3 income:
 *Élelmiszer*, *Étterem*, … — `PenzCategoryService.DEFAULTS`).
@@ -212,6 +236,187 @@ the bank's sender name so the SMS lands on the right account.
 In L4 its only production consumer is the SMS cross-check; L6's digest and every later Boop money sentence go
 through `verdict`. Fixtures: `backend/src/test/resources/penz/guard-brief-{consistent,overspend}.txt`.
 
+### 3.6 The portfolio — holdings, FIFO lots, the valuation policy (L6)
+
+`PenzPortfolioController` (tag `PenzPortfolio`) → `PenzHoldingService` / `PenzInvestTxnService` /
+`PenzHoldingEventService` / `PenzPortfolioService` → the pure package `service/portfolio` (`Lots`, `Valuation`,
+`PortfolioEngine`, no Spring).
+
+- **A holding** is one product in one **sleeve** (`short` 1–3 év · `mid` 5–10 év · `long` 10+ év); the same product
+  in two sleeves is two holdings (spec §10.1.3). Asset type `bond|etf|stock|fund|crypto|cash`, platform
+  `mbh|revolut|other`, currency, optional Yahoo `symbol`, optional `bondRatePct`, the owner's own `newsTerms`.
+  A symbol is checked against the quote source once on create / change: unknown → 400 `PENZ_SYMBOL_UNKNOWN`, an
+  unreachable source accepts the holding unpriced. The currency cannot change once a transaction exists.
+- **Buys and sells** (`penz_invest_txn`) are what he already did on his own platform; amount in the holding's
+  currency + the HUF twin **booked by the L4 FX policy** at the trade date. Idempotent on `clientRef`.
+- **FIFO lots** (`Lots`, build notes call 4): transactions by date, buys before sells on the same day; each buy is a
+  lot; a sell consumes the oldest lots first — by quantity when every transaction carries one (a partly consumed lot
+  gives up `cost × taken / lotQuantity`, HALF_UP; a fully consumed one all its remaining cost, so nothing drifts),
+  otherwise by HUF cost. A sell above the open position — or a delete that would leave a later sell above it — is
+  400 `PENZ_SELL_EXCEEDS_POSITION`. Realized P/L per sell.
+- **The valuation policy** (`Valuation`, build notes calls 2–3), every result HUF minor, HALF_UP once per figure:
+  - *quote* (symbol + cached quote + quantities + a cached rate unless HUF): value = qty × price × fx; the move since
+    the **previous close** splits into **price** = qty × (price − prev) × fxPrev and **currency** = qty × price ×
+    (fx − fxPrev); no previous close → no move. "Since the last look" is read as *since the previous close* so the
+    number does not depend on how often he opens the app;
+  - *accrual* (unquoted bond with a rate): per open lot `cost × (1 + rate × days / 365)` (old app);
+  - *cost* otherwise: the FIFO cost of the open lots, **not priced** (counted in `unpricedCount`) — except forint
+    cash, whose cost is its exact value.
+  A quote in another currency than the holding's is ignored.
+- **Pénzem** (`PortfolioEngine`): always the three sleeves in order; values, costs, moves, shares (percent, 1 decimal);
+  the long sleeve's **coverage** = `floor(longValue / fixedCostsMonthly)` months, fixed costs = the allowance
+  engine's `fixedCosts` line of the month (null when missing or ≤ 0) — iOS prints years + months "növekedést nem
+  feltételezve"; the prices' date; **stale** when the newest price is older than **3 days** or the quote source is
+  failing while he holds a quoted holding.
+- **Events** (`penz_holding_event`): owner-entered maturity / coupon / dividend / earnings / other dates (no free
+  source for Hungarian bond calendars); Pénzem shows the next 12 months.
+- **The practice row** carries the settings' monthly *Gyakorlás* cap and `monthPnlHufMinor: null` until L7's trades.
+
+### 3.7 Quotes (L6)
+
+`QuoteClient` reads the free Yahoo chart endpoint `{base}/v8/finance/chart/{symbol}?range=5d&interval=1d` for
+securities and FX pairs (`EURHUF=X`) through the fetcher (allow-list `mezo.penz.yahoo-allowed-host`). Price =
+`meta.regularMarketPrice`; the quote's date = the Budapest date of `regularMarketTime`; previous close = the last
+close dated before it. `PenzQuoteService` keeps one global `penz_quote` row per symbol and refetches a symbol only
+when its quote is dated before today **and** the last attempt is older than `mezo.penz.quote-refetch-minutes` (60) —
+a weekend or a dead source is not hammered; a failure keeps the cached quote. Pénzem's read refreshes the owner's due
+symbols first; the news poll calls `refreshAllHeld` (every held symbol + every held non-HUF pair). Every fetch records
+the provider's health (key `yahoo`, kind `quotes`): any answer — even "unknown symbol" — is a success.
+
+### 3.8 The SSRF-guarded fetcher (L6)
+
+`service/net/PenzHttpFetcher` — every quote and news request goes through it; it never throws (a `FetchResult` with
+the status or a short reason, never a body):
+
+- http/https only; no userinfo; no explicit port; no IP-literal host; never `localhost`;
+- a **host allow-list per call** (the host equals an allowed one or is its subdomain — `evilcnbc.com` and
+  `cnbc.com.evil.io` fail for `cnbc.com`);
+- **every** resolved address must be public (loopback, private, link-local, any-local, multicast, CGNAT, ULA,
+  reserved, the IPv4 documentation nets, Teredo `2001::/32` and `2001:db8::/32` refused; an IPv4 embedded in IPv6 —
+  `::a.b.c.d`, NAT64 `64:ff9b::/96`, 6to4 `2002::/16` — is judged by that IPv4) — `pantry/WebPageClient` checks only
+  the first;
+- **redirects are never followed** (a 30x is a failure); the body is streamed and dropped the moment it crosses the
+  cap; explicit timeouts (`mezo.penz.fetch-timeout-ms`) **and an overall per-fetch deadline**
+  (`mezo.penz.fetch-deadline-ms`, 20 s): a watchdog closes the stream at the deadline, so a slow drip cannot hold the
+  single news thread; a body cut off there is a failure (`deadline`), never a partial body.
+
+**Not pinned:** like `WebPageClient`, the connection is not pinned to the checked address (the request factory
+resolves again on connect). The DNS-rebinding window this leaves is bounded by the allow-list, which admits only a
+few public provider domains — pinning would mean a custom socket factory per call for little gain. The test-only
+`mezo.penz.allow-loopback-for-tests` admits a loopback WireMock and nothing else (false outside ITs).
+
+### 3.9 The daily news digest (L6)
+
+Pure core in `service/news` (no Spring), wiring in `PenzNewsClient`, `PenzDigestService`, `PenzDigestStore`,
+`PenzNewsRunner`, `PenzNewsJob`, `PenzNewsController` (tag `PenzNews`):
+
+1. **Poll** (`PenzNewsClient.poll`): the old app's eight seed feeds (`NewsSources.SEED`: CNBC Top, CNBC Economy,
+   MarketWatch, BBC Business, FT Markets, ECB, BBJ, Hungary Today, each with its own article hosts) + one Google News
+   RSS search (Hungarian edition) per distinct holding term of every user's live holdings (de-duplicated, ≤ 40), each
+   through the fetcher with the feed's own host and a 2 MB cap; `RssParser` (RSS + Atom, regex — no XML parser, so
+   no entity-expansion surface — CDATA, entities, http(s) links only); upsert by url (native `ON CONFLICT (url) DO
+   NOTHING`); prune articles older than 30 days. **Input hardening** (security review #5 / #6): the parser reads at
+   most the first 512 KB of a feed and is linear by construction (`indexOf` scans for blocks, tags, links and CDATA,
+   `<[^<>]*>` for tag stripping) — a run of 100 000 `<` or an unterminated tag costs milliseconds, not seconds;
+   titles, summaries and article text lose control characters (NUL included), format / bidi characters and lone
+   surrogates (`NewsText.clean`), and a link carrying one is refused; one item the database refuses is logged by
+   feed key and skipped, and a feed's health is its fetch + parse, not the store.
+2. **Match** (`NewsMatcher`, deterministic — no model decides relevance): articles of the last **36 h** whose title or
+   summary names a holding term (the symbol root `OTP.BD` → `OTP`, exact; distinctive name words ≥ 3 characters
+   minus generic / issuer / index words like *ETF, Nyrt, UCITS, Vanguard, MSCI, world, világ*, with Hungarian case
+   endings; the owner's `newsTerms`), whole-word, case- and diacritic-insensitive. Macro **fx** only when he holds a
+   non-HUF holding (a pair term, or *forint/HUF* together with a currency-move word — Hungarian news names forint
+   amounts all the time); **rates** only when he holds a bond (*MNB, alapkamat, kamatdöntés, interest rate…*).
+3. **Group** (`StoryClusterer`): per key, greedy title-token Jaccard ≥ 0.3; ≤ 3 stories per key, ≤ 6 in total (most
+   sources first, then newest), ≤ 6 sources per story; a stable id per story (`<kind>-<10 hex>` of the key and the
+   oldest url).
+4. **Figures** (`PenzDigestService.figures`, from `PenzPortfolioService.positions` — cached quotes only, the run
+   refreshes first): holding → its `priceMoveHufMinor`, `changePct`, value; **fx** → Σ `fxMoveHufMinor` over his
+   non-HUF holdings, the % from the pair of the currency he holds the most of (by HUF value); **rates** → 0 with the
+   fixed note *változatlan hozam*. A forint story whose pair % points the other way than the summed effect shows no %
+(`DigestFigures.fx`). `effectNote` is fixed copy (`DigestFallbackCopy`). Spelling (`DigestFigures`):
+   whole forints, plain-space grouping, real minus sign — `−18 400 Ft`; percent `1,1%`.
+5. **Bodies**: ≤ 2 article pages per story, only from that feed's article hosts (`NewsSources.isAllowedArticleUrl`),
+   HTML → text (`ArticleText`: the first 256 KB, cleaned, parsed by jsoup — linear — instead of regexes; ≤ 4 000
+   chars, < 600 = a paywall stub, no body). Google News links are redirects —
+   never fetched; those stories are narrated from headlines, and a story with no body is capped at confidence 1.
+6. **Narrate**: ONE call per digest, outside any transaction — penz-owned port `PenzDigestLlm`, adapter
+   `companion/llm/PenzDigestLlmAdapter` (cheap tier, tag `penz_digest/narrate`, **payload-free** in the LLM audit
+   log like the SMS parse — the prompt carries his holdings' names and forint effects; a budget refusal, a throttle
+   or a provider error is an empty answer, never an exception). Prompt marker `BOOP_PENZ_DIGEST_V1` (`DigestPrompt`);
+   scripted fake under `companion-fake` (a clean answer per story, or `[fake-penz-digest:<base64>]`).
+7. **Validate** (`DigestAssembler` + `DigestValidator`, §3.10): `keep: false` drops a story (M1's relevance rule:
+   lasting structure / regulation / technology / long-run financials; reactionary noise is dropped); an unknown id is
+   ignored; a story the model left out, an entry with any violation, or no answer at all → **fallback copy**
+   (`narratedBy: fallback`, confidence 0, an honest "could not summarise reliably", the source count in words, and a
+   per-kind / per-sleeve *nincs teendőd*).
+   A **holding story whose effect is not 0 Ft is never dropped**: the model's `keep: false` turns it into the fallback
+   item instead (an injection must not hide news about his money); zero-effect and macro stories still drop. Source
+   links are stored only when the url is https on that feed's article hosts (Google News: `news.google.com`) — the
+   rest of the source is omitted; source names and titles are cleaned of control / format characters.
+8. **Store** (`PenzDigestStore.replace`, one short transaction: hard-delete the day's row, save the new one):
+   `ready` (items), `quiet` (no story touched his holdings, or every story `keep: false`), `failed` (the build itself
+   broke). The GET answers `pending` when no row exists for the day, and `newsHealthy = !allFailing(news)`.
+   Rejections are logged as story id + rule names only — never prose, titles or bodies.
+
+**Schedule and switches.** `PenzNewsJob` fires at **06:30 and 13:30 Europe/Budapest** (`mezo.penz.news.cron` /
+`.zone`) and exists only with both `mezo.penz.news.enabled` (`FeaturesConfiguration.PENZ_NEWS_SWITCH`) and
+`mezo.techcore.cron.penz-news-job.enabled` — both on in `application.yml`, off in the test profile. The job only
+hands off to `PenzNewsRunner.runAsync` (`@Async("penzNewsExecutor")`): a dedicated **single-thread** executor
+(`PenzNewsAsyncConfig`, queue 4, a full queue drops the run with a warning; not a default `@Async` candidate), so a
+poll and a refresh never overlap and the size-1 scheduler pool is never held by network calls. A run = refresh the
+held quotes → poll the feeds → `UserFanOut.forEachActiveUser` → build each user's digest for **his own today** (money
+timezone); each step has its own try/catch. **Refresh** (`POST /api/penz/digest/refresh`): 202, the same three steps
+for the caller on the same executor; a second call within 15 minutes (`refresh-cooldown-minutes`, in memory per
+user) is 429 `PENZ_DIGEST_REFRESH_LIMITED`. The cooldown starts only when the executor took the run; a full queue
+answers the same 429 and leaves the next attempt free (the job logs a dropped poll).
+
+### 3.10 Untrusted text and the validator (L6)
+
+Build notes §4. **In the prompt:** every article title / summary / body appears only inside
+`<<<ARTICLE id=N source="…">>> … <<<END ARTICLE N>>>`, after `DigestPrompt.sanitizeUntrusted` removed invisible format
+characters, replaced every run of `<<` / `>>` by one guillemet (no article can close its fence or open a fake one)
+and collapsed whitespace to one line (no article can start a fake `STORY` / `FIGURES` line); the source name and the
+ledger name get the same treatment. The untrusted-data rule is stated in the system prompt and again before and after
+the articles; the only numbers the model may write are the story's `FIGURES` lines, verbatim; the holding is named
+from the ledger (`Tétel:`), and an `Irány:` line states the direction of the effect.
+
+**Before the prompt**, `sanitizeUntrusted` also NFKC-normalizes (fullwidth `＜` / small-form `﹤` become `<`) and
+collapses runs of two or more angle marks of any kind — ASCII, `‹ ›`, fullwidth, small form, spaced (`< < <`) — and
+strips lone surrogates. The FIGURES carry **no signs** (`Hatás: 18 400 Ft`, `Elmozdulás: 1,1%`) and an `Irány:` line
+for every story (*változatlan* when the effect rounds to 0 Ft); the prompt says to write no number but the FIGURES
+strings, never spell one out and never put a sign before a figure.
+
+**After the model — the real defence** (`DigestValidator`, every field, any violation → fallback), by the spec §6
+taxonomy (hardened after the L6 security review — its probe phrases are regression tests in
+`PenzDigestHardeningTest`):
+
+| Class | Rule |
+|---|---|
+| **Numerical Error** | every number in the prose (Hungarian formats normalized: `18 400`, `18.400`, `1,1`) is one of the story's figures (effect, %, value); a `%` / *százalék* only on the story's own percentage; no scale word (*ezer, millió, milliárd, mrd, mn, bn, k, m, e*) or other currency (*euró, dollár, frank, font, $, €, £*) next to a figure, even an allowed one; the horizon digits only inside the story's own horizon phrase (*10+ éves*, *5–10 év*, *1–3 év*); `HufAmountGuard.verdict` on every field (no derived sums); no spelled-out number beyond *egy..hat* (*tíz, húsz, száz, ezer, tizennyolcezer, kétmillió…*) and no `Ft` / `HUF` that does not follow a digit figure; digits inside his own ledger name are skipped |
+| **Entity Swap** | no other holding's name or match terms; a macro story may name the holdings it moves (fx: non-HUF, rates: bonds) |
+| **Negation Flip** | no signed figure at all (`+`, `−`, `-`, `–` before a digit — the card prints the signed effect); holding story with a non-zero effect (in whole forints): no rise / gain word (*emelkedett, nőtt, erősödött, drágult, szárnyalt, nyertél, nyereség, gyarapodott, gazdagabb, profit*, EN) with a negative effect, no fall / loss word (*esett, csökkent, gyengült, zuhant, visszaesett, veszített, veszteség, mínusz, kár*, EN) with a positive one — in **every** field; forint story: the same for the words about his money only (the currency's own *erősödött / gyengült* is inverted for foreign holdings) |
+| **Temporal Confusion** | no year and no weekday name (other dates are numbers → caught above) |
+| **Boundary** (§6) | no buy / sell / urge / promise wording, matched as word-start stems on the folded text **and** on a copy with letter-spaced words joined (`a d d  e l` → *add el*): *vedd meg, vegyél, vásárol-, add el, elad-, megválni, realizál-, pozíciód, növeld, csökkentsd, bővítsd, haladéktalan, mielőtt késő, most kell, azonnal, sürgős, garantál-, biztos nyereség*, EN *buy, sell, trim, exit, take profit, offload, dump, reduce / increase your, add to your, urgent, guarantee, act now*; no URL (incl. `domain.tld/` forms like `bit.ly/x`), no markup but `*emphasis*`, no prompt-leak marker (*BOOP_PENZ, ARTICLE, utasítás, instruction, ignore, system, prompt, FIGURES*). *eladás* in a news title is blocked too — accepted |
+| **Shape** | every text field non-blank; title ≤ 120, verdict ≤ 220, body ≤ 1 800, uncertainty ≤ 500, noAction ≤ 300; confidence 0..2 |
+
+The injection test (`PenzDigestInjectionTest`, `PenzDigestPipelineIT`): an article body carrying a fence breaker, an
+instruction to sell, a fake figure and a URL leaves the stored digest identical when the model ignores it, and a
+model that obeys it is replaced by fallback copy that leaks none of it.
+
+### 3.11 The provider-down alert (L6)
+
+There is no admin alert screen any more — `feature/admin` (and its `AdminAlertService`) left the server on
+2026-11-19 (decision #52, `mezo-r36n9.97.4`). Instead: `PenzProviderHealth` keeps one `penz_provider_status` row per
+outbound provider — each seed feed (`rss:<key>`), **one** row for all Google News searches (`rss:google-news`, a
+success when any search answered; per-term rows would leave stale rows behind when a term goes away) and the quote
+source (`yahoo`) — with `fail_streak`, last success / failure and a short error (never a body). Each row backs the
+Micrometer gauge `mezo.penz.provider.fail.streak{provider,kind}` (loaded from the table at startup, so it survives a
+restart), exported as `mezo_penz_provider_fail_streak` on `/actuator/prometheus`; `k8s/monitoring/vmrule-mezo.yaml`
+alerts **`PenzNewsProviderDown`** on `min(…{kind="news"}) >= 3` (every news source failed three runs in a row) and
+**`PenzQuotesProviderDown`** for the quote source. The digest's `newsHealthy` is false while every news provider's
+last fetch failed.
+
 ## 4. Data model & API
 
 ### 4.1 The money value type and THE one FX policy
@@ -231,8 +436,9 @@ through `verdict`. Fixtures: `backend/src/test/resources/penz/guard-brief-{consi
 - **Provider down or no rate**: the newest cached rate asked within **7 days before** the date
   (`mezo.penz.fx-fallback-days`) is used, marked by nothing — the stored rate date tells the truth; none →
   the write fails with **503 `PENZ_FX_UNAVAILABLE`**.
-- **Valuation is a different thing**: valuing a holding at today's rate (L6 portfolio) does not go through this
-  policy and will be documented as its own.
+- **Valuation is a different thing** (L6, §3.6): a holding's *value* uses the latest quote and the latest cached
+  `CURHUF=X` close, recomputed on every read and never stored; the *booking* policy above applies only to the
+  money a buy or sell cost (`penz_invest_txn.amount_huf_minor`, booked once at the trade date's ECB rate).
 
 The engine works only on the HUF twins; the allowance is HUF-based. Money on the wire is
 `PenzMoney {minor: int64, currency, hufMinor: int64}`.
@@ -240,7 +446,9 @@ The engine works only on the HUF twins; the allowance is HUF-based. Money on the
 ### 4.2 Endpoints
 
 Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (tag `Penz`, JWT) and
-[`penz-sms.yml`](../../api/feature/penz/penz-sms.yml) (tag `PenzSms`), both in `api/generate/merge.yml`.
+[`penz-sms.yml`](../../api/feature/penz/penz-sms.yml) (tag `PenzSms`), and since L6
+[`penz-portfolio.yml`](../../api/feature/penz/penz-portfolio.yml) (tags `PenzPortfolio` and `PenzNews`, JWT), all in
+`api/generate/merge.yml`.
 
 | Method · path | What |
 |---|---|
@@ -255,12 +463,20 @@ Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (
 | `GET /api/penz/month-closes` · `GET …/open` · `POST …/{month}` | closed months; open months with the figures a close would store; close (`leftoverAction`) |
 | `POST /api/penz/sms/ingest` | the Shortcut (API key, §3.4) |
 | `GET`/`POST /api/penz/sms/keys`, `DELETE …/{id}` | key management (JWT; plaintext once) |
+| `GET`/`POST /api/penz/holdings`, `PUT`/`DELETE …/{id}` | L6 holdings (archived included, flagged), by sleeve then position; create 201 idempotent on `clientRef`, symbol checked once (400 `PENZ_SYMBOL_UNKNOWN`); delete soft, with its transactions and events |
+| `GET /api/penz/holdings/{id}/transactions` · `POST /api/penz/invest-transactions` · `DELETE …/{id}` | L6 buys / sells, newest first; create 201 idempotent, FIFO guard 400 `PENZ_SELL_EXCEEDS_POSITION`, non-HUF booked by the FX policy (503 `PENZ_FX_UNAVAILABLE`) |
+| `GET`/`POST /api/penz/holding-events?from=`, `DELETE …/{id}` | L6 forward timeline (owner-entered), soonest first |
+| `GET /api/penz/portfolio?date=` | L6 Pénzem: totals, moves (price / currency), the three sleeves with holdings and coverage, price date + stale, timeline, practice row (refreshes due quotes first) |
+| `GET /api/penz/digest?date=` | L6 the day's digest (default his today); `pending` when not built; `newsHealthy` |
+| `POST /api/penz/digest/refresh` | L6 rebuild in the background → 202; 429 `PENZ_DIGEST_REFRESH_LIMITED` within 15 minutes |
 
 Error codes (both bundles): `PENZ_ACCOUNT_NOT_FOUND`, `PENZ_CATEGORY_NOT_FOUND`, `PENZ_CATEGORY_NAME_TAKEN`,
 `PENZ_TRANSACTION_NOT_FOUND`, `PENZ_RECURRING_RULE_NOT_FOUND`, `PENZ_TRANSFER_SAME_ACCOUNT`, `PENZ_FX_UNAVAILABLE`,
 `PENZ_MONTH_NOT_OVER`, `PENZ_EARLIER_MONTH_OPEN`, `PENZ_MONTH_ALREADY_CLOSED`, `PENZ_LAST_ACTIVE_ACCOUNT`,
 `PENZ_NO_SAVINGS_TARGET_ACCOUNT`, `PENZ_SMS_KEY_NOT_FOUND`, `PENZ_SMS_KEY_INVALID`, `PENZ_SMS_RATE_LIMITED`,
-`PENZ_CURRENCY_MISMATCH`, `PENZ_CLIENT_REF_CONFLICT`, `PENZ_SAVINGS_GOAL_NOT_FOUND` (L5).
+`PENZ_CURRENCY_MISMATCH`, `PENZ_CLIENT_REF_CONFLICT`, `PENZ_SAVINGS_GOAL_NOT_FOUND` (L5), and L6:
+`PENZ_HOLDING_NOT_FOUND`, `PENZ_INVEST_TXN_NOT_FOUND`, `PENZ_HOLDING_EVENT_NOT_FOUND`, `PENZ_SYMBOL_UNKNOWN`,
+`PENZ_SELL_EXCEEDS_POSITION`, `PENZ_DIGEST_REFRESH_LIMITED`.
 
 ### 4.3 Tables
 
@@ -279,6 +495,18 @@ One changelog, [`202611191400_mezo-r36n9.102_penz.sql`](../../backend/src/main/r
 | `penz_api_key` | name, `key_hash` (SHA-256 hex, unique), `last4`, revoked, `last_used_at` |
 | `penz_savings_goal` | L5, own changelog [`202611201000_mezo-r36n9.103_penz_savings_goal.sql`](../../backend/src/main/resources/db/changelog/1.1.0/script/202611201000_mezo-r36n9.103_penz_savings_goal.sql): name, kind `goal|purchase`, `target_minor` (> 0) and `saved_minor` (≥ 0) HUF minor units, `due_date`, note, position, `client_ref` (unique per owner among live rows) |
 
+L6 adds seven tables in [`202611201600_mezo-r36n9.104_penz_portfolio.sql`](../../backend/src/main/resources/db/changelog/1.1.0/script/202611201600_mezo-r36n9.104_penz_portfolio.sql):
+
+| Table | Holds |
+|---|---|
+| `penz_holding` | name, `asset_type`, `symbol`, platform (+ `platform_name`), `sleeve` `short|mid|long`, currency, `bond_rate_pct`, `news_terms` jsonb, note, position, archived, `client_ref` |
+| `penz_invest_txn` | holding, side `buy|sell`, quantity (optional), `amount_minor` in the holding's currency + `amount_huf_minor` + `fx_rate` / `fx_rate_date` (the L4 booking policy), date, note, `client_ref` |
+| `penz_holding_event` | holding, kind `maturity|coupon|dividend|earnings|other`, date, optional amount + currency, note, `client_ref` |
+| `penz_quote` | **global** quote cache, one row per symbol (securities and `CURHUF=X`): price, `previous_close`, `market_time`, `as_of` (Budapest date), `fetched_at` |
+| `penz_news_article` | **global** articles from the allow-listed feeds, unique url: `source_key`, `source_name`, title, summary (untrusted text), `published_at`, `fetched_at`; pruned after 30 days |
+| `penz_digest` | one live row per owner and `digest_date`: status `ready|quiet|failed`, `items` jsonb (contract-shaped `PenzDigestItemJson`), `generated_at`, `prices_as_of` |
+| `penz_provider_status` | **global** health per outbound provider: `provider_key` (unique), kind `news|quotes`, last success / failure, `fail_streak`, `last_error` (§3.11) |
+
 All registered in `support/ResetDatabase`; test rows through `PenzPopulator`.
 
 ## 5. Integrations
@@ -289,14 +517,25 @@ All registered in `support/ResetDatabase`; test rows through `PenzPopulator`.
 - **Auth platform.** The ingest's own filter chain sits beside the main JWT chain; the synthetic principal keeps
   `CurrentUser` / `created_by` unchanged — see [`_platform-auth-security.md`](_platform-auth-security.md).
 - **frankfurter.dev** (outbound HTTP, `FrankfurterClient`, `OffClient` shape: explicit timeouts, typed error).
+- **Yahoo chart endpoint and the news feeds** (L6, outbound through `PenzHttpFetcher`, §3.7–§3.9) — free, no key;
+  WireMock in every IT.
+- **Companion → LLM (digest narration, L6).** Penz-owned port `PenzDigestLlm`, adapter
+  `companion/llm/PenzDigestLlmAdapter` (cheap tier, tag `penz_digest/narrate`, payload-free audit:
+  `LlmCallContext.FEATURE_PENZ_DIGEST`).
+- **Monitoring (L6).** `mezo_penz_provider_fail_streak` + the `PenzNewsProviderDown` / `PenzQuotesProviderDown`
+  vmalert rules (§3.11).
+- **Auth platform (L6 cron).** The news run fans out with `UserFanOut.forEachActiveUser` (active + onboarded users,
+  each under `LlmActorContext.runAs`).
 - **Boop iOS (L5).** The Pénz area will read `allowance`, transactions, month closes, and write cash expenses through
   the outbox with `clientRef`; the iOS openapi-generator filter is untouched in L4.
-- **Later Boop money text (L6+).** Every generated sentence with a forint figure must pass `HufAmountGuard.verdict`
-  against the computed inputs (spec §6: the model narrates figures computed elsewhere).
+- **Boop money text.** Every generated sentence with a forint figure must pass `HufAmountGuard.verdict` against the
+  computed inputs (spec §6: the model narrates figures computed elsewhere) — since L6 the digest does, inside
+  `DigestValidator`.
 
 ## 6. How to use it (consume)
 
-From another backend feature: none yet — no other feature reads Pénz in L4. From a client: call the endpoints above
+From another backend feature: none yet — no other feature reads Pénz. Inside Pénz, the digest reads the
+portfolio through `PenzPortfolioService.positions(owner, date)` (cached quotes only — refresh first). From a client: call the endpoints above
 with the owner's JWT; render `lines[]` in order (each `amount` a `PenzMoney`; print `hufMinor / 100` as whole
 forints). Treat `PENZ_FX_UNAVAILABLE` (503) as "retry later", never as a validation error. Use `clientRef` (UUID) on
 every phone write so a retry returns the stored row.
@@ -312,6 +551,12 @@ every phone write so a retry returns the stored row.
 - A new table → into the same feature's changelog style, `ResetDatabase`, a populator, in the same change.
 - Generated money text → feed the engine's figures (and any total you want quoted) as the allowed set of
   `HufAmountGuard.verdict`; downgrade on `DOWNGRADE`.
+- A new news feed → a `NewsSources.SEED` entry (key, name, url, article hosts) — code, reviewed like code, because it
+  is an outbound allow-list entry; it gets its own `rss:<key>` health row automatically.
+- A new outbound provider → through `PenzHttpFetcher` with its own allow-list, health via `PenzProviderHealth` (the
+  gauge and the alert follow from the kind).
+- A new digest rule → a test in `PenzDigestValidatorTest` named by its taxonomy class first, then the rule; make sure
+  `DigestFallbackCopy` still passes it (`PenzDigestFallbackCopyTest`).
 
 ## 8. Testing
 
@@ -325,6 +570,17 @@ Backend only (`-Dmezo.test.use-testcontainers=true`, `ArchitectureTest` in the `
   flags, close guards), `PenzAllowanceApiIT` (10 lines with Gyakorlás and a real-close deficit, week + perDay,
   materialization), `PenzMonthCloseServiceIT`, `PenzSmsIngestApiIT` (chains, rate limit, dedupe, pre-filter, fake
   LLM, conversion). frankfurter.dev is always WireMock; every figure is invented.
+- L6 pure: `service/portfolio/{PenzLotsTest,PenzValuationTest,PenzPortfolioEngineTest}`, `PenzQuoteParseTest`,
+  `service/net/PenzHttpFetcherTest`, `service/news/{PenzRssParserTest,PenzNewsSourcesTest,PenzNewsMatcherTest,
+  PenzStoryClustererTest,PenzArticleTextTest,PenzDigestFiguresTest,PenzDigestFallbackCopyTest,PenzDigestPromptTest,
+  PenzDigestValidatorTest (by taxonomy),PenzDigestAssemblerTest,PenzDigestInjectionTest}`,
+  `companion/llm/PenzDigestFakeLlmTest`.
+- L6 ITs: `PenzPortfolioApiIT` (CRUD, ownership, FIFO and its guards, symbol check, FX booking, Pénzem figures),
+  `PenzQuoteServiceIT`, `PenzNewsDigestStoreIT` (article upsert / prune, digest round trip and replace),
+  `PenzDigestPipelineIT` (companion-fake + WireMock feeds, pages, Yahoo: a full run's figures equal the portfolio's,
+  holdings-only relevance, grouping, injection ignored / obeyed → fallback, quiet day, model failure, GET pending /
+  ready, refresh 202 → 429), `PenzNewsProviderAlertIT` (three failed runs → every news streak 3, gauge 3,
+  `newsHealthy=false`, the vmalert rule present, the job bean absent with its switch off).
 
 ### 8.1 Oracle — the old app's 603 vitest cases
 
@@ -354,8 +610,10 @@ where the rest goes.
 | `features/home/homeModel` | 15 | the perDay rule (no case 1:1) | Költés display model → L5 |
 | `features/plan/advice`, `purchaseRecord` | 15 + 6 | 0 | → L5 *mire gyűjtök* |
 | `features/sms/smsUi`, `lib/amountInput` | 2 + 2 | 0 | → L5 iOS |
-| `data/investments`, `features/invest/{investModel,record,catalog}` | 16 + 24 + 17 + 11 | 0 | → L6 investing (catalog curation L7) |
-| `collectNews/logic`, `quotes/logic`, `shared/{news,article,chart}`, `data/news`, `features/news/newsModel` | 20 + 6 + 15 + 8 + 8 + 3 + 30 | 0 | → L6 news |
+| `data/investments`, `features/invest/{investModel,record,catalog}` | 16 + 24 + 17 + 11 | 0 (L6 re-specified, see below) | catalog curation → L7 |
+| `shared/news` | 15 | 5 (L6: `parseFeed` ×3, seed list, `articleHostsFor`) | collect-prompt / labelling / due cases → never (no per-headline LLM labelling; the digest replaces it) |
+| `shared/article` | 8 | 4 (L6: host allow-list, `htmlToText`, short page, chrome dropped) | 4 redirect / fetch-error cases → replaced by `PenzHttpFetcherTest` (redirects are never followed) |
+| `collectNews/logic`, `quotes/logic`, `shared/chart`, `data/news`, `features/news/newsModel` | 20 + 6 + 8 + 3 + 30 | 0 | → re-specified in L6 (feeds, quotes, digest) or iOS display |
 | `morningBrief/{analyze,logic,due}`, `shared/brief`, `app/briefSnapshot*`, `domain/briefSnapshotSync`, `features/settings/briefSettings`, `data/settings` | 13 + 16 + 7 + 8 + 3 + 4 + 1 + 5 + 3 | 0 | → L6 digest |
 | `domain/invest`, `domain/planning`, `domain/guide`, `features/plan/{guideAi,planDraft,applyChanges}`, `features/invest/investAi` | 39 + 32 + 7 + 6 + 7 + 7 + 8 | 0 | → L7 practice / proposals / planning / invest suggestion |
 | `morningBrief/push`, `data/push` | 13 + 11 | 0 | never (no push, spec §10.2.4) |
@@ -363,7 +621,14 @@ where the rest goes.
 
 Total ported 1:1 in L4: **123** cases (allowance 17, dates 5, recurrence 7, monthClose 9, balances 7, money 2,
 savings 2, guard 15, ingest 15, smsConversion 6 + 2 via IT, materialize 5, fx 4, apiKeys 4, recurringMath 5,
-budgets 2, txLogic 2, accountRules 14). Sum of the table's cases: 603.
+budgets 2, txLogic 2, accountRules 14). **L6 ports 9 more** (news 5, article 4) → **132**. Sum of the table's cases:
+603.
+
+**Honest note on L6.** The investing and news groups were mostly **re-specified, not ported**: the old app used a
+pro-rata average cost (L6 is FIFO, lot-level), had no price / currency split, and labelled each headline with an LLM
+(L6 matches deterministically and narrates once per digest). Their behaviour is covered by new tests written against
+the build notes (`PenzLotsTest`, `PenzValuationTest`, `PenzPortfolioEngineTest`, the `service/news` suite), not by
+the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy adoption (3) stay unported (§9).
 
 ## 9. Decisions, gotchas & deferred
 
@@ -375,15 +640,46 @@ budgets 2, txLogic 2, accountRules 14). Sum of the table's cases: 603.
 - **Rate limiter is in memory** — single replica; a second replica or a restart-sensitive limit needs a shared store.
 - **`CategoryBudgets` is pure and tested but not on the wire** — the allowance contract has no room; L5's Terv screen.
 - **Out of L4:** the one-shot **importer** from the old app (its data is in Base44's cloud; L5 cut-over, bd
-  `mezo-r36n9.107`); holdings, quotes, news (L6);
-  **invest-buy adoption on SMS** (old `linkSmsToInvestBuy` / `matchInvestTxnForSms`, L6); every iOS screen (L5).
+  `mezo-r36n9.107`); holdings, quotes, news (shipped in L6);
+  **invest-buy adoption on SMS** (old `linkSmsToInvestBuy` / `matchInvestTxnForSms` — still a follow-up after L6);
+  every iOS screen (L5).
+- **L6 — valuation ≠ booking** (§4.1, §3.6): a holding's value is recomputed from the latest quote on every read;
+  only what a trade cost is booked and stored.
+- **L6 — "since the last look" = since the previous close**, labelled so; a per-view baseline would make the number
+  depend on how often he opens the app.
+- **Known, not fixed (security review, L6):** a company the owner does *not* hold, named in the narration as if it
+  were his (Entity Swap only knows his own holdings — a heuristic would block ordinary news context); the DNS-
+  rebinding window of the unpinned fetcher (§3.8, bounded by the allow-list); Google News receives his holdings'
+  match terms as search queries (a design choice: names of products he holds, nothing else about him).
+- **L6 — the strict validator means visible fallback.** Any number outside the figures, a "sell-off", a source domain
+  like *portfolio.hu*, an index name with digits (*S&P 500*) or a careful "nem kell eladni" sends the item to fallback
+  copy. Expect a noticeable share of `narratedBy: fallback` items in real use; loosening a rule needs a test that
+  shows it cannot let an invented figure or a sell instruction through.
+- **L6 — Google News stories have no body** (redirect links, never followed): narrated from headlines, confidence ≤ 1.
+- **L6 — refresh limit and executor are in memory** (one replica): a restart resets the 15-minute limit; a full
+  executor queue drops a run with a warning.
+- **L6 — no admin alert screen**: the provider-down alert is the gauge + vmalert path (§3.11), since `feature/admin`
+  left the server (#52, `mezo-r36n9.97.4`).
+- **Deferred after L6 (follow-up):** linking an investment buy to a cash account (a `penz_transaction` `invest_buy`
+  booked from the portfolio) and **adopting a bank-SMS invest buy** into a recorded investment (old
+  `linkSmsToInvestBuy` / `matchInvestTxnForSms`); the **weekly long-horizon review** (spec §5.1 designer's call — the
+  daily digest never carries a call to act on the 5–10 / 10+ sleeves); trades, the practice P/L and "ennyit tudsz
+  befektetni" (L7).
 - **Savings goals shipped in L5 as plain CRUD** (`mezo-r36n9.103`): `saved` is the owner's own figure, not linked to
   transactions or the savings-target account; the old app's `allocateGoals` / advice (§8.1) stay unported.
 
 ## 10. Key files
 
-- Contract: `api/feature/penz/penz.yml`, `api/feature/penz/penz-sms.yml`
-- Schema: `backend/src/main/resources/db/changelog/1.1.0/script/202611191400_mezo-r36n9.102_penz.sql`
+- Contract: `api/feature/penz/penz.yml`, `api/feature/penz/penz-sms.yml`, `api/feature/penz/penz-portfolio.yml` (L6)
+- Schema: `backend/src/main/resources/db/changelog/1.1.0/script/202611191400_mezo-r36n9.102_penz.sql`, L6:
+  `…/202611201600_mezo-r36n9.104_penz_portfolio.sql`
+- L6 portfolio: `…/penz/service/portfolio/`, `…/penz/service/{PenzHoldingService,PenzInvestTxnService,PenzHoldingEventService,PenzPortfolioService,PenzQuoteService,QuoteClient,PenzProviderHealth}.java`,
+  `…/penz/service/net/PenzHttpFetcher.java`, `…/penz/controller/PenzPortfolioController.java`
+- L6 digest: `…/penz/service/news/` (pure), `…/penz/service/{PenzNewsClient,PenzDigestService,PenzDigestStore,PenzNewsRunner,PenzNewsJob,PenzDigestLlm}.java`,
+  `…/penz/config/{PenzNewsProperties,PenzNewsAsyncConfig}.java`, `…/penz/controller/PenzNewsController.java`,
+  `…/penz/mapper/PenzDigestMapper.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzDigestLlmAdapter.java`
+- Alert: `k8s/monitoring/vmrule-mezo.yaml` (`PenzNewsProviderDown`, `PenzQuotesProviderDown`)
+- Builder calls: [`2026-11-20-boop-penz-l6-build.md`](../superpowers/plans/2026-11-20-boop-penz-l6-build.md)
 - Controllers / config: `backend/src/main/java/io/mrkuhne/mezo/feature/penz/controller/`,
   `…/penz/config/{PenzProperties,PenzSmsSecurityConfig,PenzSmsApiKeyFilter}.java`
 - Pure core: `…/penz/service/money/`, `…/penz/service/engine/`, `…/penz/service/guard/HufAmountGuard.java`,

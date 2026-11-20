@@ -186,6 +186,9 @@ struct PenzClientTests {
         stub.on("listOpenPenzMonths", .json(200, "[]"))
         stub.on("listPenzSavingsGoals", .status(404))
         stub.on("getPenzSettings", .json(200, #"{"savingsTargetHufMinor":20000000,"practiceMonthlyHufMinor":2000000}"#))
+        // L6 reads Pénzem and the digest alongside; these L5 tests do not look at them.
+        stub.on("getPenzPortfolio", .status(404))
+        stub.on("getPenzDigest", .status(404))
     }
 
     @Test func storeReadsEverythingCachesItAndShowsTheCacheWithItsAgeOffline() async throws {
@@ -204,7 +207,7 @@ struct PenzClientTests {
         clock.advance(3 * 3600)
         let offline = StubTransport()
         for op in ["getPenzAllowance", "listPenzTransactions", "listPenzCategories", "listPenzAccounts", "listOpenPenzMonths",
-                   "listPenzSavingsGoals", "getPenzSettings"] {
+                   "listPenzSavingsGoals", "getPenzSettings", "getPenzPortfolio", "getPenzDigest"] {
             offline.on(op, .fail(URLError(.notConnectedToInternet)))
         }
         let later = PenzStore(client: PenzClient(raw: Self.raw(offline)), cache: cache, clock: { clock.now })
@@ -263,6 +266,7 @@ struct PenzClientTests {
         for op in ["listPenzTransactions", "listPenzCategories", "listPenzAccounts", "listOpenPenzMonths", "listPenzSavingsGoals", "getPenzSettings"] {
             stub.on(op, .json(200, op == "getPenzSettings" ? #"{"savingsTargetHufMinor":1,"practiceMonthlyHufMinor":1}"# : "[]"))
         }
+        stub.on("getPenzPortfolio", .status(404)); stub.on("getPenzDigest", .status(404))
         scriptAll(stub)
         let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
         async let first: Void = store.load()
@@ -281,6 +285,7 @@ struct PenzClientTests {
                                                     : .json(200, op == "getPenzSettings" ? #"{"savingsTargetHufMinor":1,"practiceMonthlyHufMinor":1}"# : "[]"))
         }
         failing.on("listPenzTransactions", .status(500))
+        failing.on("getPenzPortfolio", .status(404)); failing.on("getPenzDigest", .status(404))
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("penz-month-\(UUID().uuidString)")
         let cache = ServerCache(directory: dir, clock: { clock.now })
         let old = PenzSnapshot(allowance: PenzFixtures.allowance(), transactions: [PenzFixtures.tx("old", 1, nil, date: "2026-11-19")])

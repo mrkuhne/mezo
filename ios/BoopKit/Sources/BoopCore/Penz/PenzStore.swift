@@ -42,10 +42,23 @@ public final class PenzStore {
     /// Cash expenses still in the outbox (refused ones flagged).
     public private(set) var pending: [PenzPendingExpense] = []
 
+    // L6 (`mezo-r36n9.104`): Pénzem and the digest load and fail on their own, next to the snapshot — a news source
+    // being down never takes the week's remaining with it.
+    /// Pénzem (fresh or cached).
+    public private(set) var portfolio: Cached<PenzPortfolio>?
+    public private(set) var portfolioProblem: PlanFetchError?
+    public private(set) var portfolioOffline = false
+    /// Today's digest (fresh, or today's cache — never yesterday's).
+    public private(set) var digest: Cached<PenzDigest>?
+    public private(set) var digestProblem: PlanFetchError?
+    public private(set) var digestOffline = false
+
     /// A cached answer older than this is not shown at all — a month-old remainder is not this week's.
     public static let maxAge: TimeInterval = 14 * 86_400
     static let endpoint = "penz/snapshot"
     static let key = "current"
+    static let portfolioEndpoint = "penz/portfolio"
+    static let digestEndpoint = "penz/digest"
 
     @ObservationIgnored public let client: PenzClient?
     @ObservationIgnored private let cache: ServerCache?
@@ -96,7 +109,12 @@ public final class PenzStore {
         async let o = Self.attempt { try await client.openMonths() }
         async let g = Self.attempt { try await client.goals() }
         async let s = Self.attempt { try await client.settings() }
+        async let pf = Self.attempt { try await client.portfolio() }
+        async let dg = Self.attempt { try await client.digest() }
         let (ra, rt, rc, racc, ro, rg, rs) = await (a, t, c, acc, o, g, s)
+        let (rpf, rdg) = await (pf, dg)
+        await applyPortfolio(rpf)
+        await applyDigest(rdg)
 
         let previous: PenzSnapshot?
         if let snapshot { previous = snapshot.value } else {
@@ -128,6 +146,79 @@ public final class PenzStore {
             try? await cache?.put(fresh, endpoint: Self.endpoint, date: Self.key)
         }
     }
+
+    // MARK: - Pénzem and the digest (L6)
+
+    /// What one independent read leaves on screen: the fresh answer (cached), or — with no net — the cache with its
+    /// age, or the problem. A server fault keeps what was already on screen and says so.
+    private func settle<T: Codable & Sendable>(_ result: Result<T, PlanFetchError>, current: Cached<T>?, endpoint: String,
+                                               key: String) async -> (Cached<T>?, PlanFetchError?, Bool) {
+        switch result {
+        case .success(let value):
+            try? await cache?.put(value, endpoint: endpoint, date: key)
+            return (Cached(value: value, fetchedAt: clock(), age: 0), nil, false)
+        case .failure(.offline):
+            if let hit = await cache?.get(T.self, endpoint: endpoint, date: key, maxAge: Self.maxAge) { return (hit, nil, true) }
+            return (current, current == nil ? .offline : nil, current != nil)
+        case .failure(let e):
+            return (current, e, false)
+        }
+    }
+
+    private func applyPortfolio(_ r: Result<PenzPortfolio, PlanFetchError>) async {
+        (portfolio, portfolioProblem, portfolioOffline) = await settle(r, current: portfolio, endpoint: Self.portfolioEndpoint,
+                                                                      key: Self.key)
+    }
+
+    private func applyDigest(_ r: Result<PenzDigest, PlanFetchError>) async {
+        // Keyed by the day: yesterday's stories are not this morning's.
+        let current = digest.flatMap { $0.value.date == today || $0.value.date.isEmpty ? $0 : nil }
+        (digest, digestProblem, digestOffline) = await settle(r, current: current, endpoint: Self.digestEndpoint, key: today)
+    }
+
+    /// Re-reads Pénzem alone (after a buy, a sell or an event).
+    public func reloadPortfolio() async {
+        guard let client else { return }
+        await applyPortfolio(await Self.attempt { try await client.portfolio() })
+    }
+
+    /// Re-reads the digest alone (the block's "Újra").
+    public func reloadDigest() async {
+        guard let client else { return }
+        await applyDigest(await Self.attempt { try await client.digest() })
+    }
+
+    /// The record sheet: a new holding first (idempotent on its `clientRef`, so a retry after a failed buy never makes
+    /// a second one), then the buy or sell. The error sentence, or nil on success — Pénzem is read again either way
+    /// once something was written.
+    public func recordInvestment(newHolding: PenzHoldingRequest?, holdingId: String?,
+                                 transaction: PenzInvestTxnRequest) async -> String? {
+        guard let client else { return penzErrorText(.unauthorized) }
+        var id = holdingId
+        if let newHolding {
+            do { id = try await client.createHolding(newHolding).id } catch { return penzErrorText(error) }
+        }
+        guard let id else { return "Válaszd ki, melyik befektetésről van szó." }
+        var request = transaction
+        request.holdingId = id
+        do { _ = try await client.createInvestTransaction(request) } catch {
+            if newHolding != nil { await reloadPortfolio() }
+            return penzErrorText(error)
+        }
+        await reloadPortfolio()
+        return nil
+    }
+
+    public func addEvent(_ request: PenzHoldingEventRequest) async -> String? {
+        guard let client else { return penzErrorText(.unauthorized) }
+        do { _ = try await client.createHoldingEvent(request) } catch { return penzErrorText(error) }
+        await reloadPortfolio()
+        return nil
+    }
+
+    /// "3 órás adat" for Pénzem when it is drawn from an older read.
+    public var portfolioAgeText: String? { penzAgeText(portfolio.map { clock().timeIntervalSince($0.fetchedAt) }) }
+    public var digestAgeText: String? { penzAgeText(digest.map { clock().timeIntervalSince($0.fetchedAt) }) }
 
     /// The outbox as it stands: its cash expenses become `pending` (a failed one is marked refused).
     public func setPending(_ queue: [OutboxItem]) {

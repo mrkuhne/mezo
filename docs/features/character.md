@@ -13,6 +13,8 @@ key_files:
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
+> **2026-11-20 — reviewed after Boop Pénz L6 (`mezo-r36n9.104`, no dossier change).** The shared `1.1.0/script` folder gained `202611201600_mezo-r36n9.104_penz_portfolio.sql` (seven `penz_*` tables: holdings, investment transactions, holding events, quotes, news articles, digests, provider status — owned by [`penz.md`](penz.md)); no Karakter table, detector or signal reads money or news.
+
 > **2026-11-19 — reviewed after `mezo-r36n9.66`:** the new `exercise_discomfort` / `gym_profile` changesets under `backend/src/main/resources/db/changelog/1.1.0/script` are train-owned and not part of the character dossier; no character behaviour changed (see [`train.md`](train.md) §4).
 
 > **2026-11-19 — reviewed after T3 (`mezo-r36n9.81`, one small change).** `CharacterSignalReads` now flags working sets that carry an intensity technique (`DetectorInput.SetPoint.technique`) and `RirCalibrationDetector` skips them (planner-placed techniques make them reachable without a manual pick); nothing else in the character feature changed ([`train.md`](train.md) §4 *Technique planner and challenge*).

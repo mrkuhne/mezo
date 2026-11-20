@@ -302,14 +302,14 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     purchase advice is L7 and is not invented) → *Hónap lezárása* (the oldest open month: transferred / kept, or
     none for a deficit; server codes said in words) · *Keretek* (read-only budgets vs this month's spend) →
     `NKInfoRow` "Mi történik a hónap végén?" (he chooses; nothing happens by itself) → ask row.
-  - **Ma** (no news digest — L6): the verdict highlight by a pure rule (`penzVerdict`): rows to review → that one thing
+  - **Ma**: the verdict highlight by a pure rule (`penzVerdict`): rows to review → that one thing
     with *Átnézem*; else the oldest open month → "Lezárhatod az októbert" with *Lezárom*; else "Ma nincs dolgod a
     pénzeddel" with a sub from the real figures. *Kiadás* · *Befektetnék* (an honest "comes later" sheet). Stats: left of
     the week (lit) · of the month, N days · **napi X Ft "ennyi jut ma egy napra"** — *deviation from the spike*: its third
     number "ennyit tudsz befektetni" is not computed by the server yet, so it is the engine's `perDay`, never an invented
     figure. `NKInfoRow` "Honnan tudom, van-e dolgod?" spells the rule out; menu *A PÉNZ TERÜLET* (Kiadás live; Nagyobb
-    összeg · Havi stratégia · Kimutatás open "later" sheets); ask row. **Pénzem** and **Gyakorlás** are `NKNotLiveYet`
-    (L6/L7) with what will be there and what must happen first.
+    összeg · Havi stratégia · Kimutatás open "later" sheets); ask row. Since L6 the news digest sits between the info
+    row and the menu (below). **Gyakorlás** is `NKNotLiveYet` (L7) with what will be there and what must happen first.
   - **The kit, additive only:** `NKBare(_:hue:glyph:…)` carries the section glyph (spike `sectionGlyph`; no caller
     changed); `NKGlyph` draws Pénz's coin `e-penz` (the spike's), now the area's eyebrow glyph and the bar's Pénzem
     icon; `NKAreaPage` honours `-previewScroll` like the tab pages. The two-button row (`PenzActionRow`, equal widths,
@@ -346,6 +346,47 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `-penzPending 1890` (+ `-previewOffline YES` keeps it waiting), `-previewOpen penzCapture` (the "+" route); invented
     figures from `Penz/PenzPreview.swift`. Checked on iPhone 17 Pro Max and SE (3rd gen, 375 pt) with reduced motion;
     320 pt was not available as a runtime.
+- **Pénz L6 — Pénzem, the news digest, the analysis page (`mezo-r36n9.104`, 2026-11-20; contract
+  `api/feature/penz/penz-portfolio.yml`, build notes `docs/superpowers/plans/2026-11-20-boop-penz-l6-build.md`; look =
+  spike `penz-2-hirek.png` / `penz-3-hirelemzes.png` / `penz-6-penzem.png`).** Screens in `Penz/PenzPenzem.swift`,
+  sheets in `Penz/PenzInvestSheets.swift`; full-screen pages ride one page-level `fullScreenCover(item: PenzPage)`
+  (`month` · `news` · `sleeve`).
+  - **Ma's digest** (`PenzDigestBlock`): *A MAI HÍREK · AMI TÉGED ÉRINT* (search glyph) → one `NKNewsCard` per item →
+    `NKInfoRow` "Hogyan készül ez az összefoglaló?" (the spike's text). States by `penzDigestView`: pending (an honest
+    "még nem készült el"), quiet (no story touched his holdings — said calmly), `newsHealthy=false` (`NKNoFreshData`),
+    build failed, no holdings (one line pointing to Pénzem, tappable), read failed (`NKBare` *Újra*), cached offline
+    (`NKStale`, loud). No push. Ma's third stat stays the per-day figure (build notes call 8).
+  - **The analysis page** (`PenzNewsPage`, `NKAreaSubPage`, crumb "Pénz · Ma", title = the item's): the spike's five
+    parts, none dropped — MIT JELENT NEKED (the backend's `effectHufMinor` in Outfit, warm when negative, with "Ezt a
+    számot a rendszer számolta ki…"), AMIT BOOP GONDOL RÓLA (`NKHueText` for `*emphasis*`), MENNYIRE BIZTOS (dots + level
+    + uncertainty), HONNAN VAN (each source opens its http(s) url in Safari; other schemes are not openable),
+    `NKNothingToDo` with the per-item `noAction`; buttons *Kérdezek róla* (Boop) · *A befektetésem* (Pénzem) only.
+  - **Pénzem** (`PenzPenzem`): hero `NKStatRow` (total · "a befektetések mozgása" = `priceMovePct` · "ebből az
+    árfolyam" = `fxMovePct`, never `hot`; a missing pct = "–") with a loud `NKStale` ("6 napos árak · November 14.")
+    when `stale`, `NKNoFreshData` when nothing is priced, a line when some holdings are at cost → *Befektetést rögzítek*
+    · *Felosztást kérek* (L7 "later" sheet) → "Mikoriak ezek az árak?" (daily closes, bond accrual or cost, daily FX
+    close) → *A HÁROM REKESZ* (always three; the long one's sub = coverage "N év M hónapnyi fix kiadásod", or "nincs
+    rögzített fix kiadás"; tap → `PenzSleevePage`: holdings with platform, value, share of the sleeve, "vételáron"
+    chip) → "Miért évek a hosszú rekesz mérőszáma?" (§10.2.2 sentence) → *MI VAN BENNE* (by product across sleeves,
+    five parts or top four + "Minden más"; same product in two sleeves → the spike's note) → *AMI JÖN…* (events by kind,
+    maturity ≤ 90 days badged; *Esemény hozzáadása*) → *GYAKORLÁS* (monthly cap + "még nincs kereskedés" chip until L7;
+    never an invented P/L; taps to the Gyakorlás tab) → ask row. Empty portfolio = an honest highlight with the record
+    button.
+  - **Writes (online, never the outbox)**: `PenzRecordSheet` (an existing holding, or a new one: name, kind, optional
+    symbol, platform, sleeve, currency; then Vettem/Eladtam, total amount in the holding currency, optional quantity,
+    date) → `PenzStore.recordInvestment` (POST holding with its own `clientRef`, then POST invest-transaction with
+    another; both refs live for the sheet so a retry never doubles); `PenzEventSheet` → POST holding-events. Pénzem is
+    re-read after each. `PENZ_SYMBOL_UNKNOWN` / `PENZ_SELL_EXCEEDS_POSITION` / `PENZ_FX_UNAVAILABLE` are said in
+    Hungarian (`penzErrorText`); `RawJSONClient` maps a 503 that carries a message code to `.conflict(code)`.
+  - **Data**: `PenzPortfolioWire.swift` (lenient), `PenzPortfolioClient.swift` (portfolio, digest, holdings CRUD,
+    invest-transactions, `holdings/{id}/transactions`, holding-events), `PenzStore.portfolio` / `.digest` read beside the
+    snapshot, each with its own problem/offline flags, cached in `ServerCache` (`penz/portfolio` "current", `penz/digest`
+    keyed by today — never yesterday's). Pure builders in `PenzPortfolioLogic.swift`, tests `PenzPortfolioTests.swift`.
+  - **Kit (additive)**: `Napkelte/News.swift` — `NKNewsCard`, `NKConfidenceDots`, `NKNewsEffect`, `NKNewsSection`,
+    `NKNothingToDo` (also in the `-previewKit YES` gallery).
+  - **Review (DEBUG)**: `-penzPortfolio full|empty|stale|unpriced|error`, `-penzDigest ready|pending|quiet|unhealthy|failed|error`,
+    `-penzPage news1|news2|news3|sleeve|sleeve-short|sleeve-mid`, `-penzSheet record|event|allocation`; the preview
+    refuses the symbol `NOPE`, a sell above the value, and a non-forint buy dated on a Sunday (no FX rate).
 - **The Edzés room (B5 phase 1, `mezo-r36n9.15`)** — the same page, with its own data. Edzés left `AreaRoom`
   for `ios/Boop/Edzes/EdzesRoom.swift`, branched beside `EtelRoom()` in `NapView`, because the morning brief
   cannot carry what the training API knows. **The frame is still the kit's** (`NKAreaPage`, the area's own bar,

@@ -9,6 +9,15 @@ public class FeaturesConfiguration {
     public static final String CHARACTER_COUNCIL_JOB_SWITCH = "mezo.techcore.cron.character-council-job.enabled";
 
     /**
+     * Boop Pénz L6 news digest (mezo-r36n9.104): the twice-daily poll (quotes + feeds + one digest per user). Needs
+     * {@link #PENZ_NEWS_JOB_SWITCH} too; the GET / refresh endpoints exist either way.
+     */
+    public static final String PENZ_NEWS_SWITCH = "mezo.penz.news.enabled";
+
+    /** The {@code PenzNewsJob} cron bean (schedule: {@code mezo.penz.news.cron}). */
+    public static final String PENZ_NEWS_JOB_SWITCH = "mezo.techcore.cron.penz-news-job.enabled";
+
+    /**
      * Spring's scheduling INFRASTRUCTURE ({@code @EnableScheduling}) — one level above the
      * per-job {@code mezo.techcore.cron.*} switches: those gate whether a job BEAN exists, this
      * gates whether a scheduler thread exists to fire it. True in production; false in the test

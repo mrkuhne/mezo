@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-11-19
+updated: 2026-11-20
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -15,6 +15,8 @@ related: [dayclose, boop-ios, insights, proactive, today, me, character, _platfo
 
 # Companion (AI chat brain) — Feature Documentation
 
+> **2026-11-20 — Boop Pénz L6 (`mezo-r36n9.104`): the digest adapter.** `companion/llm/PenzDigestLlmAdapter` adapts the penz-owned `PenzDigestLlm` port on the cheap tier (call tagged `penz_digest/narrate` inside the adapter; a budget refusal or provider error becomes an empty answer, so the digest falls back instead of failing); `FakeCompanionLlm` answers prompt marker `BOOP_PENZ_DIGEST_V1` with one validator-clean entry per story, or a scripted `[fake-penz-digest:<base64>]`. `llmlog`: `LlmCallContext.FEATURE_PENZ_DIGEST` is payload-free like `FEATURE_PENZ_SMS`. See [`penz.md`](penz.md) §3.9.
+>
 > **2026-11-19 — Boop Pénz L4 (`mezo-r36n9.102`): one more port adapter.** `companion/llm/PenzSmsLlmAdapter` adapts the penz-owned `PenzSmsLlm` port on the cheap tier (the `DayCloseLlmAdapter` shape; call tagged `penz_sms/parse`, prompt marker `BOOP_PENZ_SMS_V1`); `FakeCompanionLlm` answers it under `companion-fake`. Companion off ⇒ no bean ⇒ a money SMS is stored `failed/llm_error`. No chat tool reads money yet. See [`penz.md`](penz.md) §3.4.
 
 > **2026-11-19 — browser web push left the server (`mezo-r36n9.97.7`, #52).** The `ignored_nudge` flag reads sent pushes through `NudgeSendPort`, whose only adapter read the web push log; with no adapter it reports `notifications_off` until an APNs sender supplies one (`FlagEvaluatorIgnoredNudgeIT` pins the rule with a test-only port). References below to `AnchorResolver` (intervention push anchoring) describe the retired web push.
