@@ -87,6 +87,7 @@ class TechniqueRulesTest {
         assertThat(TechniqueRules.allowedLegKinds(Technique.REST_DROP)).containsExactly(SetLegKind.DROP);
         assertThat(TechniqueRules.allowedLegKinds(Technique.DROP)).containsExactly(SetLegKind.DROP);
         assertThat(TechniqueRules.allowedLegKinds(Technique.MYO)).containsExactly(SetLegKind.MINI);
+        assertThat(TechniqueRules.allowedLegKinds(Technique.REST_PAUSE)).containsExactly(SetLegKind.MINI);
         assertThat(TechniqueRules.allowedLegKinds(Technique.PARTIALS)).containsExactly(SetLegKind.PARTIALS);
         assertThat(TechniqueRules.allowedLegKinds(Technique.NONE)).isEmpty();
     }

@@ -16,6 +16,7 @@ public record TrainTechniqueProperties(
     @NotNull @Valid Drop restDrop,        // rest-pause drop: light leg after a short rest
     @NotNull @Valid Drop drop,            // straight drop set: lighter leg, no rest
     @NotNull @Valid Myo myo,
+    @NotNull @Valid RestPause restPause,  // the owner's fixed rest-pause: 20, then 4 x (10 s, 5) (mezo-r36n9.125)
     @NotNull @Valid Partials partials,
     @NotNull @Positive Integer capWeight,  // what a technique/challenge row's technique set weighs against the caps (2)
     @NotNull @Valid Planner planner        // the default technique planner (mezo-r36n9.81)
@@ -34,6 +35,19 @@ public record TrainTechniqueProperties(
         @NotNull @Positive Integer miniMinReps,
         @NotNull @Min(0) @Max(600) Integer miniRestSec,
         @NotNull @Positive Integer maxMinis
+    ) {}
+
+    /**
+     * The owner's fixed rest-pause (mezo-r36n9.125): a main part of {@code mainReps}, then {@code minis} mini-sets of
+     * {@code miniReps} each after {@code miniRestSec} — no minimum, a short mini-set does not end it. Picking it also
+     * pins the exercise's rep range to {@code mainReps}.
+     */
+    public record RestPause(
+        @NotNull @Positive Integer mainReps,
+        @NotNull @PositiveOrZero Integer mainReserve,
+        @NotNull @Positive Integer miniReps,
+        @NotNull @Min(0) @Max(600) Integer miniRestSec,
+        @NotNull @Positive Integer minis
     ) {}
 
     /** Lengthened partials after the main set. */

@@ -19801,6 +19801,7 @@ components:
         - drop
         - myo
         - partials
+        - rest_pause
       description: Intensity technique applied to the last working set of an exercise.
     TechniqueSource:
       type: string
