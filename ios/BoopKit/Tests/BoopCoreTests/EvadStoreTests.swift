@@ -60,4 +60,18 @@ struct EvadStoreTests {
         #expect(!store.empty && store.overview != nil)
         #expect(stub.ops == ["getSeasonOverview", "createSeason", "activateSeason", "getSeasonOverview"])
     }
+
+    @Test func startRetryAfterActivateFailureDoesNotCreateTwice() async throws {
+        let stub = StubTransport()
+        stub.on("createSeason", .json(201, EvadFixtures.seasonJSON))
+        stub.on("activateSeason", .fail(URLError(.notConnectedToInternet)))
+        stub.on("activateSeason", .json(200, EvadFixtures.seasonJSON))
+        stub.on("getSeasonOverview", .json(200, EvadFixtures.overviewJSON()))
+        let store = EvadStore(client: EvadClient(raw: EvadClientTests.raw(stub)), cache: nil)
+        await #expect(throws: PlanFetchError.offline) { try await store.start(EvadClientTests.draft) }
+        try await store.start(EvadClientTests.draft)
+        #expect(stub.ops == ["createSeason", "activateSeason", "activateSeason", "getSeasonOverview"],
+                "the retry activates the season already created, it never creates a second one")
+        #expect(stub.sent[2].path == "/api/seasons/s1/activate")
+    }
 }

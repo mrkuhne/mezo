@@ -105,11 +105,20 @@ public final class EvadStore {
         return try await client.previewDraft(d)
     }
 
-    /// "Indulhat az évad": create the planned season, activate it, re-read the page.
+    /// The season "Indulhat az évad" created but could not activate yet, with the draft it was made from: a retry of the
+    /// same draft activates this one, never a second.
+    @ObservationIgnored private var planned: (id: String, draft: EvadDraft)?
+
+    /// "Indulhat az évad": create the planned season (once), activate it, re-read the page.
     public func start(_ d: EvadDraft) async throws(PlanFetchError) {
         guard let client else { throw .unauthorized }
-        let planned = try await client.create(d)
-        _ = try await client.activate(id: planned.id)
+        let id: String
+        if let planned, planned.draft == d { id = planned.id } else {
+            id = try await client.create(d).id
+            planned = (id, d)
+        }
+        _ = try await client.activate(id: id)
+        planned = nil
         await load(force: true)
     }
 }

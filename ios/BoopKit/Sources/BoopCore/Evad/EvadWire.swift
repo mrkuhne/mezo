@@ -157,6 +157,8 @@ public struct EvadNumbers: Codable, Equatable, Hashable, Sendable {
     public let paceVerdict: String?
     public let kgPerWeek: Double?
     public let band: EvadBand?
+    /// The week's total planned intake (training days × their kcal + rest days × theirs); nil when not computed.
+    public let weekKcal: Int?
     public let gymPerWeek: Int?
     public let sportPerWeek: Int?
 }

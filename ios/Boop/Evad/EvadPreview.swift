@@ -13,7 +13,8 @@ import BoopCore
 /// season inside its band · no season yet (screen 13 → Új évad) · no net (the cache is primed five hours old) · the
 /// server failing. `-previewOffline YES` is the same as `offline`. `-evadOpen modositas|szabalyok|uj` opens a sub-page,
 /// `-evadLit 0…3` lights a pillar, `-evadSessions 5` / `-evadPace 0.6` pre-set Módosítás, `-evadStale YES` answers the
-/// first accept with 409 SEASON_PREVIEW_STALE.
+/// first accept with 409 SEASON_PREVIEW_STALE. The block runs by default (the gym days are locked in Módosítás);
+/// `-evadNoBlock YES` frees them.
 enum EvadPreviewFixtures {
     static let raw = RawJSONClient(transport: EvadPreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
                                    token: { "preview" })
@@ -44,6 +45,8 @@ final class EvadPreviewModel: @unchecked Sendable {
                                 "proposeExperiments": true, "menuDay": 6, "menuTime": "18:00"]
     var staleOnce = UserDefaults.standard.bool(forKey: "evadStale")
     let weight = 84.1, target = 82.0, tdee = 2_590.0
+    /// `-evadNoBlock YES`: the season's block is not running, so Módosítás may move the gym days.
+    let noBlock = UserDefaults.standard.bool(forKey: "evadNoBlock")
 
     init(state: String) {
         maintain = state == "maintain"
@@ -92,6 +95,10 @@ final class EvadPreviewModel: @unchecked Sendable {
             "bedtime": String(format: "%02d:%02d", (bedMin / 60) % 24, bedMin % 60),
             "gymPerWeek": sessions, "sportPerWeek": sport,
         ]
+        // the week's total: what moves when a sport day is added even when a day's own target barely does
+        let trainR = out["trainDayKcal"] as! Int
+        let restR = rest.map { Int(($0 / 10).rounded() * 10) }
+        out["weekKcal"] = trainR * Int(activeDays) + (restR ?? 0) * (7 - Int(activeDays))
         if trajectory == "maintain" {
             out["band"] = ["lowKg": weight - 1, "highKg": weight + 1]
         } else if tempo > 0 {
@@ -189,7 +196,8 @@ final class EvadPreviewModel: @unchecked Sendable {
                        "trendKg": 84.1, "targetKg": isMaintain ? NSNull() : 82.0 as Any, "band": band,
                        "kgPerWeek": kgPerWeek, "paceVerdict": n["paceVerdict"] ?? NSNull()],
             "pillars": [
-                "block": ["title": "V-forma és kar", "mesocycleId": "b0000000-0000-4000-8000-000000000001", "blockWeeks": 6,
+                "block": ["title": "V-forma és kar",
+                          "mesocycleId": noBlock ? NSNull() : "b0000000-0000-4000-8000-000000000001" as Any, "blockWeeks": 6,
                           "fromWeek": 4, "toWeek": 9, "gymDays": draft["gymDays"]!, "sport": draft["sport"]!],
                 "food": ["trainDayKcal": n["trainDayKcal"]!, "restDayKcal": n["restDayKcal"]!, "proteinG": n["proteinG"]!,
                          "allowedCount": 24, "recipeCount": 53, "novaMax": rules["processedFoodMaxNova"]!],

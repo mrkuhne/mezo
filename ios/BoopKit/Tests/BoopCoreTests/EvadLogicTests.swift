@@ -81,4 +81,35 @@ struct EvadLogicTests {
         #expect(evadAdjustGymDays([0, 2, 4, 5], to: 3, avoiding: [1, 3]) == [0, 2, 4])
         #expect(evadAdjustGymDays([0, 2, 4, 5, 6], to: 6, avoiding: [1, 3]).count == 6)
     }
+
+    static func numbers(_ week: Int?, train: Int = 2440, rest: Int? = 2270) -> EvadNumbers {
+        let json = EvadFixtures.numbers(train: train, rest: rest.map(String.init) ?? "null")
+            .replacingOccurrences(of: #""gymPerWeek""#, with: #""weekKcal":\#(week.map(String.init) ?? "null"),"gymPerWeek""#)
+        return try! JSONDecoder().decode(EvadNumbers.self, from: Data(json.utf8))
+    }
+
+    @Test func acceptOnlyWithAPreviewOfTheDraftOnScreen() {
+        let d = EvadClientTests.draft
+        var moved = d; moved.gymDays = [0, 2, 4]
+        #expect(evadCanAccept(previewOf: moved, current: moved))
+        #expect(!evadCanAccept(previewOf: d, current: moved), "a preview made for the draft before the last tap")
+        #expect(!evadCanAccept(previewOf: nil, current: moved), "no preview yet")
+    }
+
+    @Test func gymDaysLockedWhenBlockRuns() {
+        #expect(evadGymDaysLocked(EvadFixtures.overview()), "the fixture season's block m1 is running")
+        let noBlock = EvadFixtures.overview(blockId: "null")
+        #expect(!evadGymDaysLocked(noBlock))
+        #expect(evadGymDaysLockedLine.hasPrefix("Amíg fut az edzésblokk, az edzésnapok maradnak"))
+    }
+
+    @Test func compareRowsCarryTheWeeklyTotal() {
+        let rows = evadCompareRows(Self.numbers(17_080), Self.numbers(17_440, train: 2460, rest: nil))
+        let week = rows.first { $0.label == "Heti összesen" }
+        #expect(week?.left == "17\u{00A0}080 kcal" && week?.right == "17\u{00A0}440 kcal")
+        #expect(rows.first { $0.label == "Pihenőnapon" }?.right == "nincs")
+        #expect(rows.first { $0.label == "Edzésnapon" }?.left == "2440 kcal", "a day's kcal stays ungrouped")
+        #expect(!evadCompareRows(Self.numbers(nil), Self.numbers(nil)).contains { $0.label == "Heti összesen" },
+                "no weekly total from the server, no row")
+    }
 }

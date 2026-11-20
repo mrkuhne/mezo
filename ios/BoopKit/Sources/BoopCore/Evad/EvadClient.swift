@@ -63,6 +63,8 @@ public func evadErrorText(_ error: PlanFetchError) -> String {
         case "SEASON_PREVIEW_STALE": "Közben változott valami, újraszámoltam."
         case "SEASON_NOT_EDITABLE": "Ez az évad már lezárult, ezért nem változtatható."
         case "SEASON_ACTIVE_EXISTS": "Már fut egy évadod."
+        case "SEASON_PROFILE_REQUIRED": "Az évad számaihoz előbb a testadataid kellenek (magasság, születési dátum, nem)."
+        case "SEASON_BLOCK_DAYS_LOCKED": "Amíg fut az edzésblokk, az edzésnapok nem változhatnak."
         default: "A szerver ezt most nem fogadta el."
         }
     case .server: "A szerver most nem válaszolt rendesen. Próbáld újra."

@@ -12,12 +12,17 @@ struct EvadWhatIf: View {
     @State private var base: EvadDraft?
     @State private var draft: EvadDraft?
     @State private var preview: EvadPreview?
+    /// The draft `preview` was made for: Elfogadom only sends a fingerprint that belongs to the draft on screen.
+    @State private var previewFor: EvadDraft?
     @State private var problem: String?
     @State private var note: String?
     @State private var busy = false
     private let weekdays = ["H", "K", "Sz", "Cs", "P", "Sz", "V"]
 
     private var changed: Bool { draft != nil && draft != base }
+    /// The season's block is running: its weekdays are built on the gym days, so those stay.
+    private var gymLocked: Bool { store?.overview.map(evadGymDaysLocked) ?? false }
+    private var acceptable: Bool { evadCanAccept(previewOf: previewFor, current: draft) }
 
     var body: some View {
         NKAreaSubPage(hue: evadHue, crumb: "Évad", eyebrow: "Módosítás", title: "Mi változna?",
@@ -33,7 +38,8 @@ struct EvadWhatIf: View {
                 }
                 if let note { NKNote(note, hue: evadHue) }
                 if let problem { EvadLine(text: problem) }
-                NKActions([NKAction(glyph: "check-deep", title: busy ? "Elfogadom…" : "Elfogadom", primary: true, action: accept),
+                NKActions([NKAction(glyph: "check-deep", title: busy ? "Elfogadom…" : (changed && !acceptable ? "Számolom…" : "Elfogadom"),
+                                     primary: true, action: accept),
                            NKAction(title: "Mégsem", action: close)], hue: evadHue)
             } else {
                 NKBare("Beállítások", hue: evadHue, glyph: "pen-sun", state: .failed("Ezt az évadot most nem tudom betölteni.", close)) {
@@ -66,7 +72,7 @@ struct EvadWhatIf: View {
         var edit = d
         #if DEBUG
         // Simulator review: `-evadSessions 5`, `-evadPace 0.6` pre-set the page (screens 08–09).
-        if let n = Int(UserDefaults.standard.string(forKey: "evadSessions") ?? "") {
+        if let n = Int(UserDefaults.standard.string(forKey: "evadSessions") ?? ""), !gymLocked {
             edit.gymDays = evadAdjustGymDays(edit.gymDays, to: n, avoiding: edit.sport.map(\.dayOfWeek))
         }
         if let pace = Double(UserDefaults.standard.string(forKey: "evadPace") ?? "") { edit.kgPerWeek = pace; edit.ratePctPerWeek = nil }
@@ -79,7 +85,7 @@ struct EvadWhatIf: View {
         do throws(PlanFetchError) {
             let p = try await store.preview(d)
             guard d == draft else { return }
-            preview = p; problem = nil
+            preview = p; previewFor = d; problem = nil
         } catch {
             guard d == draft else { return }
             problem = evadErrorText(error)
@@ -89,7 +95,11 @@ struct EvadWhatIf: View {
     private func accept() {
         guard let store, let d = draft, !busy else { return }
         guard changed else { close(); return }
-        guard let fingerprint = preview?.fingerprint else { return }
+        // a tap inside the debounce (or after a failed re-preview): ask about this draft first, then let him look
+        guard acceptable, let fingerprint = preview?.fingerprint else {
+            Task { await runPreview(d) }
+            return
+        }
         busy = true
         Task {
             defer { busy = false }
@@ -114,9 +124,19 @@ struct EvadWhatIf: View {
                 HStack {
                     Text("Edzések hetente").nkFont(15).foregroundStyle(.white.opacity(0.85))
                     Spacer()
-                    EvadStepButton(plus: false, label: "Kevesebb edzés") { setSessions(d.gymDays.count - 1) }
-                    Text("\(d.gymDays.count)").font(.nkNumber(24)).foregroundStyle(.white).frame(width: 40)
-                    EvadStepButton(plus: true, label: "Több edzés") { setSessions(d.gymDays.count + 1) }
+                    Group {
+                        EvadStepButton(plus: false, label: "Kevesebb edzés") { setSessions(d.gymDays.count - 1) }
+                        Text("\(d.gymDays.count)").font(.nkNumber(24)).foregroundStyle(.white).frame(width: 40)
+                        EvadStepButton(plus: true, label: "Több edzés") { setSessions(d.gymDays.count + 1) }
+                    }
+                    .disabled(gymLocked)
+                    .opacity(gymLocked ? 0.35 : 1)
+                }
+                if gymLocked {
+                    Text(evadGymDaysLockedLine).nkFont(13).foregroundStyle(.white.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, -8)
                 }
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Sportnapok").nkFont(15).foregroundStyle(.white.opacity(0.85))
@@ -153,7 +173,7 @@ struct EvadWhatIf: View {
     }
 
     private func setSessions(_ n: Int) {
-        guard let d = draft, (1...6).contains(n) else { return }
+        guard !gymLocked, let d = draft, (1...6).contains(n) else { return }
         draft?.gymDays = evadAdjustGymDays(d.gymDays, to: n, avoiding: d.sport.map(\.dayOfWeek))
     }
 
@@ -188,26 +208,6 @@ struct EvadWhatIf: View {
     }
 
     private func compareLines(_ a: EvadNumbers, _ b: EvadNumbers) -> [NKCompareLine] {
-        func line(_ label: String, _ l: String, _ r: String) -> NKCompareLine {
-            NKCompareLine(label: label, left: l, right: r, favours: l != r ? 1 : 0)
-        }
-        var out = [
-            line("Edzésnapon", "\(evadKcal(a.trainDayKcal)) kcal", "\(evadKcal(b.trainDayKcal)) kcal"),
-            line("Pihenőnapon", restDayText(a.restDayKcal), restDayText(b.restDayKcal)),
-            line("Szénhidrát edzésnapon", "\(a.carbsTrainG) g", "\(b.carbsTrainG) g"),
-            line("Alvásigény", evadHM(a.sleepNeedMin), evadHM(b.sleepNeedMin)),
-            line("Lefekvés", a.bedtime, b.bedtime),
-        ]
-        if a.targetDate != nil || b.targetDate != nil {
-            out.append(line("Célba érsz", a.targetDate.map(evadShortDate) ?? "–", b.targetDate.map(evadShortDate) ?? "–"))
-        }
-        if a.paceVerdict != nil || b.paceVerdict != nil {
-            func word(_ v: String?) -> String { evadPaceWord(v).map { $0.prefix(1).uppercased() + $0.dropFirst() } ?? "–" }
-            out.append(line("A tempó", word(a.paceVerdict), word(b.paceVerdict)))
-        }
-        if a.targetDate == nil, b.targetDate == nil, let band = b.band {
-            out.append(line("A sáv", a.band.map(evadBandText) ?? "–", evadBandText(band)))
-        }
-        return out
+        evadCompareRows(a, b).map { NKCompareLine(label: $0.label, left: $0.left, right: $0.right, favours: $0.changed ? 1 : 0) }
     }
 }

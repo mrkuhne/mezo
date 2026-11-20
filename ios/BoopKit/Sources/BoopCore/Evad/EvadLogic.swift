@@ -20,8 +20,16 @@ public func evadSignedKg(_ kg: Double) -> String {
     return (kg < 0 ? "\u{2212}" : "+") + body
 }
 
-/// "2440" — kcal as the spike prints them.
-public func evadKcal(_ kcal: Int) -> String { String(kcal) }
+/// "2440" — a day's kcal as the spike prints them; five digits and more get a no-break space (the repo's grouping; Outfit has no narrow one) ("17 080").
+public func evadKcal(_ kcal: Int) -> String {
+    let digits = String(abs(kcal))
+    guard digits.count >= 5 else { return String(kcal) }
+    var groups: [String] = []
+    var rest = Substring(digits)
+    while rest.count > 3 { groups.insert(String(rest.suffix(3)), at: 0); rest = rest.dropLast(3) }
+    groups.insert(String(rest), at: 0)
+    return (kcal < 0 ? "-" : "") + groups.joined(separator: "\u{00A0}")
+}
 
 /// "8 ó 6 p" / "8 ó".
 public func evadHM(_ minutes: Int) -> String {
@@ -287,3 +295,57 @@ public func evadSleepSub(_ s: EvadSleepPillar) -> String? {
 
 /// "06:30" → "6:30".
 public func evadClock(_ hhmm: String) -> String { hhmm.hasPrefix("0") ? String(hhmm.dropFirst()) : hhmm }
+
+
+// MARK: - Módosítás
+
+/// Elfogadom only accepts the draft on screen: the preview (and its fingerprint) must have been made for exactly that
+/// draft — not for the one before the last tap (inside the debounce), nor after a failed re-preview.
+public func evadCanAccept(previewOf: EvadDraft?, current: EvadDraft?) -> Bool {
+    guard let previewOf, let current else { return false }
+    return previewOf == current
+}
+
+/// While the season's block runs, the gym days stay as they are: the block's weekdays are built on them.
+public func evadGymDaysLocked(_ o: EvadOverview) -> Bool { o.pillars.block.mesocycleId != nil }
+
+public let evadGymDaysLockedLine =
+    "Amíg fut az edzésblokk, az edzésnapok maradnak: a blokk napjai ezekhez igazodnak. Ha a blokk véget ér, átrendezheted."
+
+/// One Most | Utána line of „Ennyi változna".
+public struct EvadCompareRow: Equatable, Sendable {
+    public let label: String
+    public let left: String
+    public let right: String
+    public init(label: String, left: String, right: String) { self.label = label; self.left = left; self.right = right }
+    public var changed: Bool { left != right }
+}
+
+/// The lines of „Ennyi változna": a figure the server sent as null on both sides is left out.
+public func evadCompareRows(_ a: EvadNumbers, _ b: EvadNumbers) -> [EvadCompareRow] {
+    var out = [
+        EvadCompareRow(label: "Edzésnapon", left: "\(evadKcal(a.trainDayKcal)) kcal", right: "\(evadKcal(b.trainDayKcal)) kcal"),
+        EvadCompareRow(label: "Pihenőnapon", left: restDayText(a.restDayKcal), right: restDayText(b.restDayKcal)),
+    ]
+    if a.weekKcal != nil || b.weekKcal != nil {
+        out.append(EvadCompareRow(label: "Heti összesen", left: a.weekKcal.map { "\(evadKcal($0)) kcal" } ?? "–",
+                                  right: b.weekKcal.map { "\(evadKcal($0)) kcal" } ?? "–"))
+    }
+    out += [
+        EvadCompareRow(label: "Szénhidrát edzésnapon", left: "\(a.carbsTrainG) g", right: "\(b.carbsTrainG) g"),
+        EvadCompareRow(label: "Alvásigény", left: evadHM(a.sleepNeedMin), right: evadHM(b.sleepNeedMin)),
+        EvadCompareRow(label: "Lefekvés", left: a.bedtime, right: b.bedtime),
+    ]
+    if a.targetDate != nil || b.targetDate != nil {
+        out.append(EvadCompareRow(label: "Célba érsz", left: a.targetDate.map(evadShortDate) ?? "–",
+                                  right: b.targetDate.map(evadShortDate) ?? "–"))
+    }
+    if a.paceVerdict != nil || b.paceVerdict != nil {
+        func word(_ v: String?) -> String { evadPaceWord(v).map { $0.prefix(1).uppercased() + $0.dropFirst() } ?? "–" }
+        out.append(EvadCompareRow(label: "A tempó", left: word(a.paceVerdict), right: word(b.paceVerdict)))
+    }
+    if a.targetDate == nil, b.targetDate == nil, let band = b.band {
+        out.append(EvadCompareRow(label: "A sáv", left: a.band.map(evadBandText) ?? "–", right: evadBandText(band)))
+    }
+    return out
+}

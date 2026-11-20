@@ -28,7 +28,7 @@ enum EvadFixtures {
     """#
 
     static func overviewJSON(status: String = "on_course", trajectory: String = "cut", band: String = "null",
-                             links: String? = nil) -> String {
+                             links: String? = nil, blockId: String = #""m1""#) -> String {
         let l = links ?? #"""
         [{"from":"edzes","to":"etel","key":"train_food","value":290},{"from":"edzes","to":"alvas","key":"train_sleep","value":12},
          {"from":"etel","to":"suly","key":"food_weight","value":-0.4},{"from":"alvas","to":"suly","key":"sleep_food","value":null},
@@ -43,7 +43,7 @@ enum EvadFixtures {
          "weight":{"series":[{"date":"2026-10-05","kg":86.9},{"date":"2026-11-16","kg":84.1}],
                    "projection":[{"date":"2026-11-23","kg":83.7},{"date":"2026-12-27","kg":82.0}],
                    "trendKg":84.1,"targetKg":82,"band":\#(band),"kgPerWeek":-0.4,"paceVerdict":"feasible"},
-         "pillars":{"block":{"title":"V-forma és kar","mesocycleId":"m1","blockWeeks":6,"fromWeek":4,"toWeek":9,"gymDays":[0,2,4,5],
+         "pillars":{"block":{"title":"V-forma és kar","mesocycleId":\#(blockId),"blockWeeks":6,"fromWeek":4,"toWeek":9,"gymDays":[0,2,4,5],
                              "sport":[{"dayOfWeek":1,"time":"19:00","durationMin":90,"sport":"volleyball"},{"dayOfWeek":3,"time":"19:00","durationMin":90,"sport":"volleyball"}]},
                     "food":{"trainDayKcal":2440,"restDayKcal":2270,"proteinG":170,"allowedCount":24,"recipeCount":53,"novaMax":2},
                     "sleep":{"needMin":486,"baseMin":450,"bedtime":"22:09","anchor":"WAKE","anchorTime":"06:30","avgMin":null},
@@ -53,9 +53,9 @@ enum EvadFixtures {
     }
 
     static func overview(status: String = "on_course", trajectory: String = "cut", band: String = "null",
-                         links: String? = nil) -> EvadOverview {
+                         links: String? = nil, blockId: String = #""m1""#) -> EvadOverview {
         try! JSONDecoder().decode(EvadOverview.self, from: Data(overviewJSON(status: status, trajectory: trajectory,
-                                                                               band: band, links: links).utf8))
+                                                                               band: band, links: links, blockId: blockId).utf8))
     }
 }
 
@@ -130,5 +130,21 @@ struct EvadClientTests {
         _ = try await EvadClient(raw: Self.raw(stub)).putRules(id: "s1", r)
         #expect(stub.sent[0].path == "/api/seasons/s1/rules")
         #expect(stub.sent[0].body?.contains(#""menuDay":null"#) == true, "no weekly menu is said, not omitted")
+    }
+
+    @Test func seasonRefusalsSayWhatToDo() {
+        #expect(evadErrorText(.conflict("SEASON_PROFILE_REQUIRED"))
+                == "Az évad számaihoz előbb a testadataid kellenek (magasság, születési dátum, nem).")
+        #expect(evadErrorText(.conflict("SEASON_BLOCK_DAYS_LOCKED"))
+                == "Amíg fut az edzésblokk, az edzésnapok nem változhatnak.")
+    }
+
+    @Test func weekKcalAndAMissingMenuDayDecode() throws {
+        let n = try JSONDecoder().decode(EvadNumbers.self, from: Data(EvadFixtures.numbers().replacingOccurrences(
+            of: #""gymPerWeek""#, with: #""weekKcal":17080,"gymPerWeek""#).utf8))
+        #expect(n.weekKcal == 17_080)
+        #expect(try JSONDecoder().decode(EvadNumbers.self, from: Data(EvadFixtures.numbers().utf8)).weekKcal == nil)
+        let r = try JSONDecoder().decode(EvadRules.self, from: Data(#"{"processedFoodMaxNova":2,"deloadMaintain":true,"useLearnedExpenditure":true,"proposeExperiments":false,"menuTime":"18:00"}"#.utf8))
+        #expect(r.menuDay == nil)
     }
 }
