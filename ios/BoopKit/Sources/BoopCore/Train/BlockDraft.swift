@@ -159,7 +159,7 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
 
     /// The row now stands for another exercise than the server's row (added or swapped): the server cannot carry
     /// anything over to it, so the save sends the style, rest, overrides and technique explicitly.
-    var identityChanged: Bool { isNew || catalogId != wire.catalogId || name != wire.name }
+    var identityChanged: Bool { isNew || catalogId?.lowercased() != wire.catalogId?.lowercased() || name != wire.name }
 
     /// What makes the row this exercise, for comparing a day's line-up across reads (ids are re-minted by a save).
     var identity: String { "\(catalogId?.lowercased() ?? "")|\(name.lowercased())" }
@@ -200,7 +200,8 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
 
     /// The pick on screen is Boop's own (the planner or the AI put it there, he has not touched it).
     public var pickedByBoop: Bool {
-        guard ["planner", "ai"].contains(wire.techniqueSource ?? "") else { return false }
+        // An added or swapped-in exercise is his choice, whatever pick it carries over.
+        guard !identityChanged, ["planner", "ai"].contains(wire.techniqueSource ?? "") else { return false }
         return technique == SetTechnique(wire: wire.technique) && challenge == (wire.challenge ?? false) && (technique != .none || challenge)
     }
 
@@ -315,6 +316,13 @@ public struct BlockDraft: Equatable, Sendable {
     public mutating func step(day: Int, exercise: Int, by delta: Int) {
         guard days.indices.contains(day), days[day].exercises.indices.contains(exercise) else { return }
         days[day].exercises[exercise].sets = min(8, max(1, days[day].exercises[exercise].sets + delta))
+        noteSets(day: day, exercise: exercise)
+    }
+
+    /// A set count change is marked as his only on a styled row — on an unstyled one nothing would stamp over it, and
+    /// the save keeps sending no overrides, as before the day editor.
+    private mutating func noteSets(day: Int, exercise: Int) {
+        guard (days[day].exercises[exercise].ownStyle ?? style) != nil else { return }
         days[day].exercises[exercise].noteSets()
     }
 
@@ -322,7 +330,7 @@ public struct BlockDraft: Equatable, Sendable {
     public mutating func apply(_ edits: [WireEdit]) {
         for e in edits where days.indices.contains(e.dayIndex) && days[e.dayIndex].exercises.indices.contains(e.exerciseIndex) {
             days[e.dayIndex].exercises[e.exerciseIndex].sets = min(8, max(1, days[e.dayIndex].exercises[e.exerciseIndex].sets + e.delta))
-            days[e.dayIndex].exercises[e.exerciseIndex].noteSets()
+            noteSets(day: e.dayIndex, exercise: e.exerciseIndex)
         }
     }
 
@@ -394,15 +402,16 @@ public struct BlockDraft: Equatable, Sendable {
     }
 
     /// Takes the row off the day and hands it back, so the undo line can put it back where it was.
+    /// nil when there is no such row.
     @discardableResult
-    public mutating func remove(day: Int, at index: Int) -> DraftExercise {
-        guard has(day, index) else { return Self.placeholderRow }
+    public mutating func remove(day: Int, at index: Int) -> DraftExercise? {
+        guard has(day, index) else { return nil }
         return days[day].exercises.remove(at: index)
     }
 
     /// Puts a removed row back (undo); an index past the end appends.
     public mutating func insert(day: Int, _ row: DraftExercise, at index: Int) {
-        guard days.indices.contains(day), row.id != Self.placeholderRow.id else { return }
+        guard days.indices.contains(day) else { return }
         days[day].exercises.insert(row, at: min(max(0, index), days[day].exercises.count))
     }
 
@@ -481,13 +490,6 @@ public struct BlockDraft: Equatable, Sendable {
         days[day].exercises[index].overrides = []
     }
 
-    /// What `remove` hands back for an index that is not there; `insert` ignores it.
-    private static let placeholderRow = DraftExercise(
-        id: "", name: "", muscle: "", muscleKey: "", catalogId: nil, type: "compound", sets: 0, repMin: 0, repMax: 0,
-        targetRIR: 0, warmups: 0, anchorWeightKg: nil, restSec: nil, overrides: [], counts: false, isolation: false,
-        stable: false, lengthened: false, technique: .none, challenge: false, ownStyle: nil,
-        wire: WireExercise(name: "", muscle: "", workingSets: 0))
-
     // MARK: what is sent
 
     public func evaluateRequest() -> WireEvaluateRequest {
@@ -536,7 +538,8 @@ public struct BlockDraft: Equatable, Sendable {
         if !forSave {
             input.techniqueSource = w.techniqueSource
         } else if e.technique != .none || e.challenge {
-            input.techniqueSource = samePick ? (w.techniqueSource ?? "owner") : "owner"
+            // A new identity is his choice: a carried-over planner pick becomes his.
+            input.techniqueSource = samePick && !fresh ? (w.techniqueSource ?? "owner") : "owner"
         }
         return input
     }

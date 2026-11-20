@@ -36,10 +36,11 @@ struct BlockDraftEditTests {
         #expect(PlanFixtures.draft.days[0].exercises.allSatisfy { !$0.isNew })
     }
 
-    @Test(.timeLimit(.minutes(1))) func removeThenInsertRestoresTheOriginal() {
+    @Test(.timeLimit(.minutes(1))) func removeThenInsertRestoresTheOriginal() throws {
         let original = PlanFixtures.draft
         var d = original
-        let row = d.remove(day: 0, at: 1)
+        let removed = d.remove(day: 0, at: 1)
+        let row = try #require(removed)
         #expect(row.name == "Preacher Curl" && d.days[0].exercises.count == 2)
         #expect(d.changes(since: original).days == [0])
         d.insert(day: 0, row, at: 1)
@@ -110,7 +111,8 @@ struct BlockDraftEditTests {
         d.setAnchor(day: 0, at: 0, -5); #expect(d.days[0].exercises[0].anchorWeightKg == 0)
         d.setAnchor(day: 0, at: 0, nil); #expect(d.days[0].exercises[0].anchorWeightKg == nil)
         d.setReserve(day: 9, at: 9, 1)   // out of range: no crash
-        _ = d.remove(day: 9, at: 0)
+        let none1 = d.remove(day: 9, at: 0), none2 = d.remove(day: 0, at: 9)
+        #expect(none1 == nil && none2 == nil)
     }
 
     @Test(.timeLimit(.minutes(1))) func dayInputCarriesNoIdButTheOverrides() throws {
@@ -137,6 +139,41 @@ struct BlockDraftEditTests {
         #expect(input.name == "Preacher Curl" && input.catalogId == PlanFixtures.catCurl)
         #expect(input.restSec == 120 && input.overrides == ["restSec"], "the old row's rest and keys go explicitly")
         #expect(input.technique == nil && input.challenge == false, "the technique trio is explicit on a new identity")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func aSwappedRowsKeptPlannerPickIsHis() throws {
+        let json = PlanFixtures.blocksJSON().replacingOccurrences(of: #""technique":"rest_drop","techniqueSource":"owner""#,
+                                                                   with: #""technique":"rest_drop","techniqueSource":"planner""#)
+        let block = try JSONDecoder().decode([WireBlock].self, from: Data(json.utf8))[0]
+        var d = BlockDraft(block: block, catalog: PlanFixtures.catalog)
+        #expect(d.days[1].exercises[1].pickedByBoop)
+        d.replace(day: 1, at: 1, with: Self.curl, prescription: nil)
+        let row = d.days[1].exercises[1]
+        #expect(row.technique == .restDrop && !row.pickedByBoop, "he chose this exercise")
+        let input = d.dayInput(d.days[1], forSave: true).exercises[1]
+        #expect(input.technique == "rest_drop" && input.techniqueSource == "owner")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func aStepOnAnUnstyledBlockSendsNoOverrides() {
+        var d = PlanFixtures.draft
+        d.step(day: 0, exercise: 1, by: 1)
+        d.apply([WireEdit(dayIndex: 1, exerciseIndex: 0, delta: 1)])
+        #expect(d.days[0].exercises[1].overrides.isEmpty && d.days[1].exercises[0].overrides.isEmpty)
+        let mon = d.dayInput(d.days[0], forSave: true).exercises
+        #expect(mon[1].workingSets == 4 && mon[1].overrides == nil, "as before the day editor")
+        #expect(mon[0].overrides == nil, "an untouched row carries its keys by omission")
+        #expect(d.dayInput(d.days[1], forSave: true).exercises[0].overrides == nil)
+        d.setReserve(day: 0, at: 1, 1)
+        #expect(d.dayInput(d.days[0], forSave: true).exercises[1].overrides == ["targetRir"], "field edits mark on any block")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func catalogIdCaseDoesNotMakeANewIdentity() throws {
+        let json = PlanFixtures.blocksJSON().replacingOccurrences(of: "\"catalogId\":\"\(PlanFixtures.catCurl)\"",
+                                                                   with: "\"catalogId\":\"\(PlanFixtures.catCurl.uppercased())\"")
+        #expect(json.contains(PlanFixtures.catCurl.uppercased()))
+        var d = BlockDraft(block: try JSONDecoder().decode([WireBlock].self, from: Data(json.utf8))[0], catalog: PlanFixtures.catalog)
+        d.replace(day: 0, at: 1, with: Self.curl, prescription: nil)   // the same exercise, upper-case id on the wire
+        #expect(!d.days[0].exercises[1].identityChanged)
     }
 
     @Test(.timeLimit(.minutes(1))) func anEmptyDayWithOneAddedRow() throws {
