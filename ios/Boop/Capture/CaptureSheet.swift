@@ -7,6 +7,8 @@ enum CapturePick: Equatable {
     case soon(String)
     /// The meal composer, at an entrance (the "+" sheet's food chips and its free-text line).
     case meal(MealStart.Entrance, text: String)
+    /// Pénz L5: a cash expense, through the outbox.
+    case penzExpense
 
     /// What the shell opens for a pick: the composer's start (nil for the covers and the "hamarosan" items).
     var mealStart: MealStart? {
@@ -51,6 +53,7 @@ struct CaptureSheet: View {
                 tile("book-sage", "Napló", "egy sor, szóval is", .cover(.este))
                 tile("scale-ink", "Súly", "mérés felvétele", .soon("Súly"))
                 tile("dumbbell-ink", "Edzés indítása", "a mai terv szerint", .soon("Edzés indítása"))
+                tile("e-penz", "Kiadás", "készpénz, pár másodperc", .penzExpense)
             }
 
             HStack(spacing: 10) {

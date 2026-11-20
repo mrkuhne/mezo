@@ -73,7 +73,7 @@ func areaGlyph(_ hue: Hue) -> String {
     case .mozgas: "dumbbell-ink"
     case .pulzus: "heart-cream"
     case .forma: "spark-cream"
-    case .penz: "scale-ink"
+    case .penz: "e-penz"
     case .level: "book-sage"
     }
 }

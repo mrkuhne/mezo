@@ -2,8 +2,8 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-19
-tags: [ios, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
+updated: 2026-11-20
+tags: [ios, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
   - ios/BoopKit/Sources
@@ -13,7 +13,7 @@ key_files:
   - api/feature/boop/boop.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/dayclose
   - api/feature/dayclose/dayclose.yml
-related: [fuel, pantry, recipe, dayclose, intention, journal, companion, proactive, _platform-auth-security, _platform-api-backend, me, today]
+related: [penz, fuel, pantry, recipe, dayclose, intention, journal, companion, proactive, _platform-auth-security, _platform-api-backend, me, today]
 ---
 
 # Boop — native iOS app — Feature Documentation
@@ -273,8 +273,69 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     the spike's figures were drawn, not measured.
   - Blocks are filled from the brief, the day ledger and the food store only. Where the spike shows something the
     app cannot know yet (the mezociklus, exercise records, the six-week sleep curve), the tab says so.
-  The gaps that remain, said out loud: three areas have no mood photo (`mezo-r36n9.60`), Pénz and Levél have no
-  glyph of their own (a scale and a book stand in), and Edzés's three deeper tabs wait for B5.
+  The gaps that remain, said out loud: three areas have no mood photo (`mezo-r36n9.60`), Levél has no
+  glyph of its own (a book stands in; Pénz got its coin with L5), and Edzés's three deeper tabs wait for B5.
+- **The Pénz area (L5, `mezo-r36n9.103`, 2026-11-20; spec
+  [`2026-11-13-boop-penz-design.md`](../superpowers/specs/2026-11-13-boop-penz-design.md) §5.1/§5.3/§5.6/§6; look = the
+  approved round-11 spike, `BoopSpike/EletContent.swift` `penz` + `EletPenzKit.swift`, `penz-1-ma.png` /
+  `penz-4-koltes.png`).** Pénz left `AreaRoom`'s planned tab for its own room, `ios/Boop/Penz/PenzRoom.swift`, branched
+  beside `EtelRoom()` / `EdzesRoom()` in `NapView`. Head: the orb is the week's remaining / budget (clamped 0…1, never a
+  number in it); headline "Ezen a héten még 34 500 Ft-od van" + the per-day and month sentence; bar
+  *Ma · Pénzem · Költés · Gyakorlás* + Boop, Költés's badge = rows needing review; corner actions Keresés (soon) ·
+  Frissítés.
+  - **Költés** in the spike's order: the week's level card (*EZEN A HÉTEN*, days left, bar with the days-left marker,
+    "Napi *X Ft*. A hét eddigi költése Y Ft volt.") → *Kiadás* · *N tétel ellenőrzése* (disabled "Nincs ellenőrizendő"
+    at 0) → *HONNAN JÖN EZ A SZÁM*: the server's ten `lines[]` grouped into six rows (income = recurring + one-off ·
+    fixed · aside = savings target + invested · **Gyakorlás** on its own line · **the previous month's deficit, always**,
+    its sub saying why it is 0 — none, or the month still open · free, lit) with *Egy sor módosítása* (PUT settings:
+    savings target + Gyakorlás monthly, every other field carried over) → stats (spent · left, lit only when ≥ 0 · tempo
+    Ft/nap with the "worse" arrow only when it would overspend the month) → *MIRE MEGY EL* (day-to-day spend = expense
+    not linked to a rule, by category: top 4 + "Minden más", note with the top-two share) → *A MAI TÉTELEK* (category
+    glyphs, never photos; "banki üzenetből" / "készpénz, kézzel" / "rendszeres tétel"; pending cash drawn as a
+    still-to-come row "küldésre vár"; the hot "N üzenet ellenőrzésre vár" row with its badge; *A hónap összes tétele ·
+    N db* opens an `NKAreaSubPage` by day) → *MIRE GYŰJTÖK* (savings goals and purchases: level saved/target, "a X-ből",
+    "Júniusra kell · még 7 hónap"; empty = one honest line; *Cél vagy vásárlás hozzáadása* = online POST; Boop's
+    purchase advice is L7 and is not invented) → *Hónap lezárása* (the oldest open month: transferred / kept, or
+    none for a deficit; server codes said in words) · *Keretek* (read-only budgets vs this month's spend) →
+    `NKInfoRow` "Mi történik a hónap végén?" (he chooses; nothing happens by itself) → ask row.
+  - **Ma** (no news digest — L6): the verdict highlight by a pure rule (`penzVerdict`): rows to review → that one thing
+    with *Átnézem*; else the oldest open month → "Lezárhatod az októbert" with *Lezárom*; else "Ma nincs dolgod a
+    pénzeddel" with a sub from the real figures. *Kiadás* · *Befektetnék* (an honest "comes later" sheet). Stats: left of
+    the week (lit) · of the month, N days · **napi X Ft "ennyi jut ma egy napra"** — *deviation from the spike*: its third
+    number "ennyit tudsz befektetni" is not computed by the server yet, so it is the engine's `perDay`, never an invented
+    figure. `NKInfoRow` "Honnan tudom, van-e dolgod?" spells the rule out; menu *A PÉNZ TERÜLET* (Kiadás live; Nagyobb
+    összeg · Havi stratégia · Kimutatás open "later" sheets); ask row. **Pénzem** and **Gyakorlás** are `NKNotLiveYet`
+    (L6/L7) with what will be there and what must happen first.
+  - **The kit, additive only:** `NKBare(_:hue:glyph:…)` carries the section glyph (spike `sectionGlyph`; no caller
+    changed); `NKGlyph` draws Pénz's coin `e-penz` (the spike's), now the area's eyebrow glyph and the bar's Pénzem
+    icon; `NKAreaPage` honours `-previewScroll` like the tab pages. The two-button row (`PenzActionRow`, equal widths,
+    hue-filled primary) and the level card are Pénz's own faces (`Penz/PenzFaces.swift`) — the kit's `NKActions` is a
+    wrapping white-pill row other areas wear. Outfit has no U+202F glyph, so figures drawn in Outfit group with a plain
+    no-break space (`penzOutfit`); prose keeps the narrow one.
+  - **Data** (`BoopCore/Penz/`): `PenzWire` (lenient, hand-decoded — enums are strings) + `PenzClient` over the block
+    builder's `RawJSONClient` (no generator change): allowance, `transactions?month=`, categories, accounts,
+    `month-closes/open`, settings, `savings-goals` (L5 server half: `{id, name, kind: goal|purchase, target, saved,
+    dueDate?, note?, position, clientRef?}`); PUT settings, PUT transaction + POST `…/reviewed` (category first, then
+    reviewed), POST `month-closes/{month}`, POST/PUT/DELETE goals. `PenzStore` (one per user, `RootView`, shared by the
+    room, the Terv card and the capture) caches the whole read in `ServerCache` (`penz/snapshot`, 14 days): offline =
+    the cached answer with `NKStale` ("5 órás adat"), no cache = said; a fault is reported as itself. Money =
+    `PenzMoney`, printed as whole forints of `hufMinor / 100` (`penzFt`: narrow no-break space, U+2212 minus). Pure,
+    tested builders in `PenzLogic.swift`.
+  - **Cash, offline-first:** `OutboxKind.penzExpense` (never rename) + `PenzExpensePayload` (`RitmusPayloads`) sent by
+    `PenzOutboxSender` (`RitmusClient`'s new branch) as `POST /api/penz/transactions {clientRef: item id, accountId,
+    kind: expense, amountMinor, currency, categoryId?, date, note?}` — 2xx sent · no connection offline · 401/409/429/5xx
+    retry · other 4xx failed with *Újra*. Account = the HUF cash account, else the HUF default (a row's currency is its
+    account's); never loaded → the sheet says it needs the net once. The capture sheet (amount on the number pad,
+    expense chips, note, one button riding above the keyboard) is on Ma, Költés, the menu and the global "+" (*Kiadás*
+    tile). The row shows at once and the week's remaining drops by unsent cash (`penzPendingAdjusted`; a delivered
+    `clientRef` never counts twice); `RitmusEnvironment.penzTick` re-reads on delivery.
+  - **Terv** carries a read-only glass card "PÉNZ · EZEN A HÉTEN · 34 500 Ft maradt · napi X Ft" (no way to open an
+    area from Terv yet), hidden without Pénz data.
+  - **Review (DEBUG):** `-preview shell -previewHome penz -penzTab Ma|Pénzem|Költés|Gyakorlás`,
+    `-penzState review|calm|close|empty|offline|error`, `-penzSheet capture|review|edit|close|budgets|goal|invest|month`,
+    `-penzPending 1890` (+ `-previewOffline YES` keeps it waiting), `-previewOpen penzCapture` (the "+" route); invented
+    figures from `Penz/PenzPreview.swift`. Checked on iPhone 17 Pro Max and SE (3rd gen, 375 pt) with reduced motion;
+    320 pt was not available as a runtime.
 - **The Edzés room (B5 phase 1, `mezo-r36n9.15`)** — the same page, with its own data. Edzés left `AreaRoom`
   for `ios/Boop/Edzes/EdzesRoom.swift`, branched beside `EtelRoom()` in `NapView`, because the morning brief
   cannot carry what the training API knows. **The frame is still the kit's** (`NKAreaPage`, the area's own bar,
@@ -990,6 +1051,8 @@ B1: `ios/BoopKit/Sources/BoopCore/Health/{HealthKitReader,HealthReader,HealthSyn
 Blokképítő + heti átnézés: `ios/Boop/EdzesTerv/{BlockBuilderPage,WeekReviewDeck,PlanKit,PlanEnvironment,PlanPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Train/{PlanTransport,PlanWire,PlanClient,BlockDraft,WeekReview,BlockBuilderModel}.swift` · `backend/…/feature/train/service/{TrainService#updateSettings,ExerciseStyler#restampRows}`
 
 L0/b (az élő fal): `ios/BoopKit/Sources/BoopCore/Morning/{Wall,WallSources}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Wall.swift` · `ios/Boop/Nap/{MaWall,MaPhases,MaiView}.swift`
+
+L5 Pénz: `ios/Boop/Penz/{PenzRoom,PenzTabs,PenzSheets,PenzFaces,PenzPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Penz/{PenzWire,PenzClient,PenzStore,PenzLogic,PenzOutbox}.swift` · `OutboxKind.penzExpense` in `Ritmus/{Outbox,RitmusPayloads,RitmusClient}.swift` · tests `BoopCoreTests/{PenzLogicTests,PenzClientTests}.swift`, `BoopTests/PenzRoomTests.swift`
 
 Kezdőlap + L0: `ios/Boop/Kezdolap/{KezdolapView,Area,KitGallery}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/{Area,AreaBlocks,OrbRing,Fog}.swift` · `ios/BoopKit/Sources/BoopDesign/Resources/Photos.xcassets/p-hegy.imageset`
 

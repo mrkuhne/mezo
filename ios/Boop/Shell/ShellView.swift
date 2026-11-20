@@ -59,9 +59,13 @@ struct ShellView: View {
     /// The meal composer the "+" sheet asked for (opens once the sheet has gone), and the one on screen.
     @State private var mealAfterCapture: MealStart?
     @State private var meal: MealStart?
+    /// The cash expense sheet the "+" sheet asked for (opens once that sheet has gone), and whether it is up.
+    @State private var penzAfterCapture = false
+    @State private var penzCapture = false
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     /// The day's brief: Boop's own goals and the bedtime target for the close.
     @Environment(MorningStore.self) private var morning: MorningStore?
+    @Environment(PenzStore.self) private var penz: PenzStore?
     @State private var toast: String?
     /// A room is open over the page: the bar is hidden.
     @State private var roomOpen = false
@@ -73,6 +77,7 @@ struct ShellView: View {
     private func openCoverAfterSheet() {
         if let cover = coverAfterCapture { coverAfterCapture = nil; router.open(cover) }
         if let start = mealAfterCapture { mealAfterCapture = nil; meal = start }
+        if penzAfterCapture { penzAfterCapture = false; penzCapture = true }
     }
 
     var body: some View {
@@ -110,10 +115,11 @@ struct ShellView: View {
                 case .cover(let cover): coverAfterCapture = cover
                 case .soon(let name): toast = soonToast(name)
                 case .meal: mealAfterCapture = pick.mealStart
+                case .penzExpense: penzAfterCapture = true
                 }
                 capturing = false
             }
-                .presentationDetents([.height(560), .large])
+                .presentationDetents([.height(650), .large])
                 .presentationBackground(NK.ground)
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
@@ -127,6 +133,11 @@ struct ShellView: View {
             .presentationBackground(NK.ground)
             .presentationCornerRadius(34)
             .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $penzCapture) {
+            PenzCaptureSheet { done in penzCapture = false; if let done { toast = done } }
+                .task { await penz?.load() }
+                .penzSheetStyle([.large])
         }
         .sheet(isPresented: $account, onDismiss: openCoverAfterSheet) {
             AccountSheet(me: me)
@@ -173,6 +184,7 @@ struct ShellView: View {
             case "barcode": meal = MealStart(entrance: .barcode)
             case "mealText": meal = MealStart(entrance: .text, text: "csirkemell rizzsel és brokkolival")
             case "account": account = true
+            case "penzCapture": penzCapture = true
             case "checkin", "checkinDone": router.open(.checkin)
             case "este", "esteDone": router.open(.este)
             default: break

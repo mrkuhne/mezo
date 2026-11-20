@@ -19,7 +19,8 @@ extension RitmusEnvironment {
         let launched = Date()
         let start = opening ? Calendar.current.date(bySettingHour: 16, minute: 2, second: 0, of: launched) ?? launched
             : closing ? Calendar.current.date(bySettingHour: 21, minute: 32, second: 0, of: launched) ?? launched : launched
-        let ritmus = RitmusClient(client: client, audioDirectory: root.appendingPathComponent("outbox"), train: train)
+        let ritmus = RitmusClient(client: client, audioDirectory: root.appendingPathComponent("outbox"), train: train,
+                                  penz: PenzPreview.sender)
         let env = RitmusEnvironment(
             ledgerDirectory: root.appendingPathComponent("ledger"), outboxDirectory: root.appendingPathComponent("outbox"),
             sender: ritmus,

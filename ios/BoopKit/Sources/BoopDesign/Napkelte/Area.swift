@@ -222,6 +222,8 @@ public struct NKAreaPage<Content: View>: View {
     @State private var position = ScrollPosition()
     @State private var scrollY: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Simulator review (`-previewScroll N`): opens the page scrolled, as the tab pages already do.
+    @Environment(\.nkInitialScrollY) private var initialScrollY
 
     public init(hue: Hue, name: String, eyebrow: String, level: Double?, display: String? = nil,
                 headline: String, sentence: String, photo: Image? = nil, glyph: String? = nil,
@@ -258,6 +260,7 @@ public struct NKAreaPage<Content: View>: View {
         .scrollIndicators(.hidden)
         .scrollPosition($position)
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in scrollY = y }
+        .task { if let y = initialScrollY { try? await Task.sleep(for: .seconds(1)); position.scrollTo(y: y) } }
         // Switching tabs from deep inside a long list would leave the new tab scrolled into the middle of nothing.
         // The kit does it, so every room behaves the same: come back up to the tab row, but only when the page is
         // below it — a page already at the top does not jump.
@@ -358,7 +361,7 @@ public struct NKAreaBar: View {
     public static func glyph(_ name: String) -> String {
         switch name {
         case "Ma": "sun-ink"
-        case "Pénzem": "star-sun"
+        case "Pénzem": "e-penz"
         case "Költés": "scale-ink"
         case "Gyakorlás": "bolt-ink"
         case "Receptek": "book-sage"

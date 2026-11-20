@@ -15,6 +15,8 @@ struct RootView: View {
     @State private var cache: ServerCache?
     /// Where a workout in progress is kept — with the outbox, because it is his own unsent work.
     @State private var workoutFolder: URL?
+    /// The Pénz area's data (L5): the area page, the Terv card and the cash capture read the same store.
+    @State private var penz: PenzStore?
 
     var body: some View {
         Group {
@@ -53,6 +55,7 @@ struct RootView: View {
         .environment(\.planClient, session.planClient)
         .environment(\.serverCache, cache)
         .environment(\.workoutFolder, workoutFolder)
+        .environment(penz)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
@@ -69,6 +72,7 @@ struct RootView: View {
         // the session's client already carries another token, or none).
         guard let me else {
             ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil; workoutFolder = nil
+            penz = nil
             BackgroundSyncHost.ritmus = nil; return
         }
         if link?.userId != me.id {
@@ -85,7 +89,11 @@ struct RootView: View {
                 ritmus = .preview(client: preview, train: previewTrain)
                 food = FoodClient(client: preview)
                 train = previewTrain
-                cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
+                let previewCache = RitmusEnvironment.directories(for: me.id).cache
+                cache = ServerCache(directory: previewCache)
+                let previewPenz = PenzStore(client: PenzPreview.client, cache: cache)
+                penz = previewPenz
+                Task { await PenzPreview.primeCache(previewCache) }
                 let previewFolder = RitmusEnvironment.directories(for: me.id).outbox
                 // A review launch starts the day over. The workout in progress is written to the user's own
                 // folder, not to the preview's scratch root, so without this a workout left running on one
@@ -99,10 +107,11 @@ struct RootView: View {
             let liveTrain = TrainClient(client: session.client)
             link = HealthLink(client: session.client, userId: me.id)
             morning = MorningStore(client: session.client, onUnauthorized: signOut)
-            ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id, train: liveTrain)
+            ritmus = .live(client: session.client, health: HealthKitReader(), userId: me.id, train: liveTrain, raw: session.raw)
             food = FoodClient(client: session.client)
             train = liveTrain
             cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
+            penz = PenzStore(client: PenzClient(raw: session.raw), cache: cache)
             workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
             BackgroundSyncHost.ritmus = ritmus
         }

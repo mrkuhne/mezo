@@ -37,6 +37,10 @@ public func penzFt(_ minor: Int64) -> String {
     return whole < 0 ? penzMinus + out : out
 }
 
+/// The same text for a figure drawn in the Outfit numerals: Outfit has no narrow no-break space (U+202F), and the
+/// fallback glyph opens a wide gap ("95  000"), so a figure set in it groups with a plain no-break space instead.
+public func penzOutfit(_ text: String) -> String { text.replacingOccurrences(of: penzThin, with: "\u{00A0}") }
+
 /// `34 500 Ft` — the figure inside a sentence.
 public func penzFtUnit(_ minor: Int64) -> String { penzFt(minor) + "\u{00A0}Ft" }
 
@@ -58,6 +62,21 @@ public func penzParseFt(_ text: String) -> Int64? {
 }
 
 public enum PenzSign: Sendable { case plus, minus, none }
+
+/// The "-ból/-ből" a forint figure takes, read the Hungarian way ("a 2 100 000-ből", "az 1 000 000-ból"): the vowel
+/// of the last number word decides.
+public func penzFromSuffix(_ minor: Int64) -> String {
+    let n = abs(penzWhole(minor))
+    if n == 0 || n % 1_000_000 == 0 { return "ból" }          // nulla, millió, milliárd
+    if n % 1000 == 0 { return "ből" }                          // ezer
+    let last = n % 1000
+    if last % 100 == 0 { return "ból" }                        // száz
+    let tens = last % 100
+    if tens % 10 == 0 {                                        // tíz húsz harminc negyven ötven hatvan hetven nyolcvan kilencven
+        return [20, 30, 60, 80].contains(tens) ? "ból" : "ből"
+    }
+    return [3, 6, 8].contains(tens % 10) ? "ból" : "ből"      // három, hat, nyolc — the rest are front-vowelled
+}
 
 // MARK: - Dates
 
@@ -381,13 +400,17 @@ public struct PenzItem: Equatable, Sendable, Identifiable {
     /// Still in the outbox (typed on the phone, not on the server yet).
     public let pending: Bool
     public let needsReview: Bool
+    public init(id: String, title: String, sub: String, value: String, glyph: String, pending: Bool, needsReview: Bool) {
+        self.id = id; self.title = title; self.sub = sub; self.value = value; self.glyph = glyph
+        self.pending = pending; self.needsReview = needsReview
+    }
 }
 
 /// The glyph a category wears (category glyphs, never photos — the server has no picture of a purchase).
 public func penzCategoryGlyph(_ name: String?) -> String {
     let n = (name ?? "").folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "hu_HU"))
     let table: [(String, String)] = [
-        ("elelmiszer", "bowl-cream"), ("bevasarl", "bowl-cream"), ("etterem", "honey-sun"), ("kave", "honey-sun"),
+        ("elelmiszer", "bowl-cream"), ("bevasarl", "bowl-cream"), ("etterm", "honey-sun"), ("kave", "honey-sun"),
         ("kozlekedes", "repeat-deep"), ("auto", "repeat-deep"), ("uzemanyag", "repeat-deep"), ("sport", "dumbbell-ink"),
         ("egeszseg", "heart-cream"), ("lakas", "clock-ink"), ("rezsi", "clock-ink"), ("elofizet", "repeat-deep"),
         ("ruha", "shoe-cream"), ("szorakoz", "star-sun"), ("ajandek", "star-sun"), ("utazas", "leaf-sage"),

@@ -54,6 +54,11 @@ struct PenzLogicTests {
         #expect(penzFt(-320_000).contains("-") == false, "a hyphen is never the minus")
     }
 
+    @Test func outfitFiguresGroupWithAPlainNoBreakSpace() {
+        #expect(penzOutfit(penzFt(9_500_000)) == "95\u{00A0}000")
+        #expect(penzOutfit(penzFtSigned(41_200_000, sign: .minus)) == "\u{2212}\u{00A0}412\u{00A0}000")
+    }
+
     @Test func roundsHalfAwayFromZero() {
         #expect(penzWhole(150) == 2)
         #expect(penzWhole(149) == 1)
@@ -66,6 +71,16 @@ struct PenzLogicTests {
         #expect(penzFtSigned(41_200_000, sign: .minus) == "\u{2212}\u{00A0}412\u{202F}000")
         #expect(penzFtSigned(0, sign: .minus) == "0", "a zero line is not minus zero")
         #expect(penzFtUnit(3_450_000) == "34\u{202F}500\u{00A0}Ft")
+    }
+
+    @Test func fromSuffixFollowsTheLastNumberWord() {
+        #expect(penzFromSuffix(210_000_000) == "ből", "kétmillió-egyszázezer")
+        #expect(penzFromSuffix(60_000_000) == "ből")
+        #expect(penzFromSuffix(3_059_000) == "ből", "harmincezer-ötszázkilencven")
+        #expect(penzFromSuffix(100_000_000) == "ból", "egymillió")
+        #expect(penzFromSuffix(123_000) == "ból", "ezerkétszázharminc")
+        #expect(penzFromSuffix(50_000) == "ból", "ötszáz")
+        #expect(penzFromSuffix(700) == "ből", "hét")
     }
 
     @Test func parsesTypedForints() {
@@ -192,7 +207,7 @@ struct PenzLogicTests {
         #expect(items.map(\.title) == ["Kávézó", "Spar", "Éttermek"])
         #expect(items[0].pending && items[0].sub == "Éttermek · készpénz, kézzel · küldésre vár")
         #expect(items[1].sub == "Élelmiszer · banki üzenetből" && items[1].value == "8\u{202F}240")
-        #expect(items[1].glyph == "bowl-cream")
+        #expect(items[1].glyph == "bowl-cream" && items[2].glyph == "honey-sun", "Éttermek wears the cup")
         #expect(items[2].sub == "Éttermek · készpénz, kézzel")
     }
 

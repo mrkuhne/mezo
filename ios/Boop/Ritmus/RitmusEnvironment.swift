@@ -111,6 +111,8 @@ final class RitmusEnvironment {
             if item.kind == .chatQuestion { await chatRef.store?.delivered(item, body: body) }
             // A captured meal's draft is computed: the room shows its confirmation card (nothing is saved here).
             if item.kind == .mealDraft { await me.env?.mealDraftsChanged() }
+            // A cash expense reached the server: the Pénz area re-reads (its row stops waiting).
+            if item.kind == .penzExpense { await me.env?.penzChanged() }
             // The evening's line arrived after its relink went out (a retried recording): link it again.
             if let box = queue.outbox { await Self.relinkIfNeeded(item, ledger: ledger, outbox: box) }
             if await queue.outbox?.isQueued(item.id) == true { return }
@@ -168,6 +170,21 @@ final class RitmusEnvironment {
     }
 
     func mealDraftsChanged() { mealDraftsTick += 1 }
+
+    // MARK: - Pénz cash (L5)
+
+    /// Bumped when a cash expense is queued or reaches the server: the Pénz area re-reads the outbox (and the server).
+    private(set) var penzTick = 0
+    func penzChanged() { penzTick += 1 }
+
+    /// Queues a cash expense typed on the phone (`OutboxKind.penzExpense`) and sends it at once if the net allows.
+    /// Throws when the phone could not keep it — the capture then says so instead of pretending.
+    func capturePenzExpense(_ payload: PenzExpensePayload, id: UUID = UUID()) async throws {
+        try await outbox.enqueue(OutboxItem(id: id, kind: .penzExpense, date: payload.date, capturedAt: clock(),
+                                            payload: RitmusPayload.encode(payload)), rollbackOnFailure: true)
+        penzTick += 1
+        sendSoon()
+    }
 
     // MARK: - What the server refused (spec §7.1: a quiet "nem sikerült elküldeni" row with Újra)
 
@@ -259,11 +276,12 @@ final class RitmusEnvironment {
 
     /// The real wiring: the Boop API client, HealthKit for the snapshot, the user's own directories.
     static func live(client: Client, health: HealthReader, userId: UUID,
-                     train: TrainClient? = nil) -> RitmusEnvironment {
+                     train: TrainClient? = nil, raw: RawJSONClient? = nil) -> RitmusEnvironment {
         let dirs = directories(for: userId)
         // The outbox directory doubles as the audio directory AND the meal-photo directory (`MealDraftSender` and
         // `FoodOutbox` look for `meal-<id>.jpg` there): all of them must stay the same folder.
-        let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox, train: train)
+        let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox, train: train,
+                                  penz: raw.map(PenzOutboxSender.init(raw:)))
         let snapshots = SnapshotBuilder(reader: health)
         let calendarReader = CalendarKitReader()
         let env = RitmusEnvironment(
