@@ -378,18 +378,20 @@
     "terulet": [
       "Alapok"
     ],
-    "mit_kapsz": "A Boop reggel 8-kor és délután 3-kor belenéz a Gmail- és iCloud-postádba. A kulcsot te hozod létre és te írod be. Ebben a lépésben még csak megszámolja és kategóriákba rendezi, amit talál.",
-    "allapot": "Később"
+    "mit_kapsz": "A Gmailed és az iCloud-postád mindent továbbít egy új, csak Boopnak szánt Gmail-fiókba; a Boop reggel 8-kor és délután 3-kor ezt nézi át. Egyetlen kulcsot hozol létre és írsz be te magad. A bankos, hivatali és egészségügyi leveleket gép soha nem olvassa. Az L2-vel együtt, egy kiadásban érkezik.",
+    "allapot": "Később",
+    "munkamenet": "level-area-development-afe3fa"
   },
   "mezo-r36n9.39": {
-    "cim": "L2 · A napi levélösszefoglaló",
+    "cim": "L2 · A reggeli posta — pontozott összefoglaló",
     "tipus": "Funkció",
     "szakasz": "Életpanel",
     "terulet": [
       "Alapok"
     ],
-    "mit_kapsz": "Megkapod naponta, hogy mi jött: mit intézett el helyetted, és mi az a kettő-három, ami tényleg megér egy percet — mindegyik 1-10 pontot kap aszerint, mennyire számít neked.",
-    "allapot": "Később"
+    "mit_kapsz": "A posta négy részre bomlik: határidős (számlák, programok, foglalások, lejáró ajánlatok), csomagok (hol tart), akciók és lehetőségek 1-10 ponttal, és a többi összecsukva. Embertől jött levél és a bank mindig előre kerül. Érdekel / nem érdekel gombból tanul. Szól a telefon, ha egy jó akció vagy egy számla holnap lejár (napi 1-2 értesítésen belül).",
+    "allapot": "Később",
+    "munkamenet": "level-area-development-afe3fa"
   },
   "mezo-r36n9.40": {
     "cim": "L3 · Figyelt termékek és árellenőrzés",
