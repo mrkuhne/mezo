@@ -18,7 +18,7 @@ class VolumePropertiesIT extends AbstractIntegrationTest {
         assertThat(props.stepEmphasize()).isEqualTo(2);
         assertThat(props.stepGrow()).isEqualTo(1);
         assertThat(props.stepDeficit()).isEqualTo(1);
-        assertThat(props.bands()).isEqualTo(new VolumeProperties.Bands(3, 2, 5, 8, 1, 2));
+        assertThat(props.bands()).isEqualTo(new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2));
         assertThat(props.evaluator().minutesPerWorkingSet()).isEqualByComparingTo("2.4");
         assertThat(props.evaluator().minutesPerWarmupSet()).isEqualByComparingTo("1.0");
         assertThat(props.evaluator().sessionOverheadMinutes()).isEqualTo(6);

@@ -33,7 +33,7 @@ class PlanEvaluatorTest {
         b.put("ham", new VolumeProperties.Baseline(6, 10, 14));
         b.put("glute", new VolumeProperties.Baseline(8, 12, 18));
         b.put("calf", new VolumeProperties.Baseline(6, 10, 16));
-        PROPS = new VolumeProperties(new BigDecimal("0.5"), 2, b, new VolumeProperties.Bands(3, 2, 5, 8, 1, 2),
+        PROPS = new VolumeProperties(new BigDecimal("0.5"), 2, b, new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2),
             new VolumeProperties.WeeklyReview("auto"), 2, 1, 1, new VolumeProperties.Signals(3, 2, 7),
             new VolumeProperties.Evaluator(new BigDecimal("2.4"), new BigDecimal("1.0"), 6),
             Map.of("volleyball", List.of("quad", "ham", "glute", "calf")));

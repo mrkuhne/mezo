@@ -2789,6 +2789,11 @@ components:
           nullable: true
           maxLength: 400
           description: Free-text goal steering exercise choice (e.g. "röplabda mellett, vállra figyelve")
+        split:
+          type: string
+          nullable: true
+          pattern: '^[a-z0-9_]{2,16}$'
+          description: Key of a catalogued split for the chosen day count (GET /meso-plans/splits); absent = the default split
     MesoPlanEvaluateRequest:
       type: object
       required: [weeks, phaseCurve, days]

@@ -18,8 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 /**
@@ -51,9 +54,8 @@ public class MesoPlanGeneratorService {
      *  single repository read in {@link #candidates} is transactional on its own. */
     public MesoPlanGenerateResponse generate(UUID user, MesoPlanGenerateRequest req) {
         Map<String, String> priorities = PriorityTier.normalize(req.getPriorities());
-        MesoPlanSkeleton.Skeleton skeleton = MesoPlanSkeleton.build(
-            List.copyOf(req.getDaysOfWeek()), req.getWeeks(), priorities, volumeProperties.baselines(),
-            volumeProperties.bands());
+        PriorityGuard.checkEmphasizeCap(priorities, volumeProperties.bands().emphasizeMax());
+        MesoPlanSkeleton.Skeleton skeleton = buildSkeleton(req, priorities);
         List<MesoPlanFiller.Candidate> candidates = candidates(user);
         List<MesoPlanFiller.FilledDay> days = MesoPlanFiller.fill(skeleton, candidates, props);
 
@@ -84,6 +86,20 @@ public class MesoPlanGeneratorService {
             .rationale(rationale)
             .llmUsed(llmUsed)
             .build();
+    }
+
+    /** Default split when none is chosen; else the catalogued split of the clamped day count (400 when unknown). */
+    private MesoPlanSkeleton.Skeleton buildSkeleton(MesoPlanGenerateRequest req, Map<String, String> priorities) {
+        List<String> days = List.copyOf(req.getDaysOfWeek());
+        if (req.getSplit() == null) {
+            return MesoPlanSkeleton.build(days, req.getWeeks(), priorities, volumeProperties.baselines(),
+                volumeProperties.bands());
+        }
+        int n = Math.max(2, Math.min(6, days.size()));
+        MesoPlanProperties.Split split = SplitCatalog.find(props, n, req.getSplit()).orElseThrow(() ->
+            new SystemRuntimeErrorException(SystemMessage.error("TRAIN_MESO_SPLIT_UNKNOWN").build(), HttpStatus.BAD_REQUEST));
+        return MesoPlanSkeleton.build(days, req.getWeeks(), priorities, volumeProperties.baselines(),
+            volumeProperties.bands(), split.types(), split.label() + " · " + n + "×/hét");
     }
 
     /** Master rows + this user's own catalog rows; soft-deleted rows are already filtered by the entity. */

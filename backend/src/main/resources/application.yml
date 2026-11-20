@@ -2971,6 +2971,7 @@ mezo:
       session-cap: 8              # working sets per muscle group per day
       sport-low-shift: 1          # sport-loaded group: band low - 1 (min 1)
       sport-high-shift: 2         # sport-loaded group: band high - 2 (min low + 1)
+      emphasize-max: 2            # most muscles that may be Hangsúly (emphasize) at once
     weekly-review:
       mode: auto                  # auto | manual
     signals:

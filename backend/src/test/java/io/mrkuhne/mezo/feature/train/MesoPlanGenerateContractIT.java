@@ -173,4 +173,45 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
             "priorities", Map.of("back", "max")), auth, HttpStatus.BAD_REQUEST, String.class);
         assertHasRequestError(body, "TRAIN_MUSCLE_PRIORITY_TIER_INVALID");
     }
+
+    @Test
+    void generateWithSplitUsesItsDayTypes() {
+        MesoPlanGenerateResponse res = postForBody(GENERATE, MesoPlanGenerateRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Sze", "Pén", "Szo")).weeks(6).split("full4").build(),
+            ownerAuthHeaders(), HttpStatus.OK, MesoPlanGenerateResponse.class);
+        MesoTemplateUpsertRequest t = res.getTemplate();
+        assertThat(t.getDays().stream().map(MesoDayInput::getType).filter(ty -> !"Rest".equals(ty)))
+            .hasSize(4).containsOnly("Full");
+        assertThat(t.getSplit()).startsWith("Teljes test ×4");
+    }
+
+    @Test
+    void unknownSplitIs400() {
+        String body = postForBody(GENERATE, Map.of("daysOfWeek", List.of("Hét", "Sze", "Pén", "Szo"), "weeks", 6,
+            "split", "nope"), ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_MESO_SPLIT_UNKNOWN");
+    }
+
+    @Test
+    void splitOfAnotherDayCountIs400() {
+        String body = postForBody(GENERATE, Map.of("daysOfWeek", List.of("Hét", "Sze", "Pén", "Szo"), "weeks", 6,
+            "split", "full3"), ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_MESO_SPLIT_UNKNOWN");
+    }
+
+    @Test
+    void threeEmphasizeIs400() {
+        String body = postForBody(GENERATE, Map.of("daysOfWeek", List.of("Hét", "Sze", "Pén", "Szo"), "weeks", 6,
+            "priorities", Map.of("back", "emphasize", "chest", "emphasize", "quad", "emphasize")),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_MESO_EMPHASIZE_CAP");
+    }
+
+    @Test
+    void twoEmphasizeOk() {
+        postForBody(GENERATE, MesoPlanGenerateRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Sze", "Pén", "Szo")).weeks(6)
+            .priorities(Map.of("back", "emphasize", "chest", "emphasize")).build(),
+            ownerAuthHeaders(), HttpStatus.OK, MesoPlanGenerateResponse.class);
+    }
 }

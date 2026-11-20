@@ -59,7 +59,8 @@ public record VolumeProperties(
         @NotNull @Positive Integer exerciseCap,          // working sets per exercise (5)
         @NotNull @Positive Integer sessionCap,           // working sets per muscle group per day (8)
         @NotNull @PositiveOrZero Integer sportLowShift,  // sport-loaded group: low -= this (1)
-        @NotNull @PositiveOrZero Integer sportHighShift  // sport-loaded group: high -= this (2)
+        @NotNull @PositiveOrZero Integer sportHighShift, // sport-loaded group: high -= this (2)
+        @NotNull @Positive Integer emphasizeMax          // most muscles that may be Hangsúly at once (2)
     ) {}
 
     /** Weekly review proposal mode. */
