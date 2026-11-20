@@ -25,14 +25,22 @@ import io.mrkuhne.mezo.support.populator.PenzPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -196,8 +204,10 @@ class PenzPracticeApiIT extends ApiIntegrationTest {
         assertThat(getForList(TRADES + "?to=" + today.minusDays(1), u.headers(), HttpStatus.OK,
             PenzPaperTrade.class)).isEmpty();
 
-        deleteAndExpect(TRADES + "/" + planned.getId(), u.headers(), HttpStatus.NO_CONTENT);
-        assertThat(getForList(TRADES, u.headers(), HttpStatus.OK, PenzPaperTrade.class)).isEmpty();
+        // a closed trade is history: deleting it would drop its P/L (and a loss from the cap) — 409
+        assertHasRequestError(exchangeForResponse(HttpMethod.DELETE, TRADES + "/" + planned.getId(), null,
+            u.headers()).getBody(), "PENZ_PAPER_TRADE_STATE");
+        assertThat(getForList(TRADES, u.headers(), HttpStatus.OK, PenzPaperTrade.class)).hasSize(1);
         assertThat(rows.findAll()).allMatch(r -> r.isPaper());
     }
 
@@ -347,14 +357,16 @@ class PenzPracticeApiIT extends ApiIntegrationTest {
     @Test
     void testFx_shouldBookTheEurTwinsAtTheTradesOwnDates() {
         RegisteredUser u = registerUser("penz practice fx");
-        LocalDate yesterday = today.minusDays(1);
-        stubRate("EUR", today, "400.00");
+        // the entry may not precede this month: on the 1st the "earlier day" is today itself
+        boolean firstOfMonth = today.getDayOfMonth() == 1;
+        LocalDate yesterday = firstOfMonth ? today : today.minusDays(1);
         stubRate("EUR", yesterday, "395.00");
+        stubRate("EUR", today, firstOfMonth ? "395.00" : "400.00");
         // plan figures at today's rate: stop 50,00 EUR -> 20 000 Ft
         PenzPaperTrade p = create(u.headers(), new PenzPaperTradeRequest().instrument("Nasdaq-ETF")
             .direction("short").why("Visszateszt az ellenállásnál").currency("EUR").quantity(new BigDecimal("0.5"))
             .stopMinor(5_000L));
-        assertThat(p.getStop().getHufMinor()).isEqualTo(2_000_000L);
+        assertThat(p.getStop().getHufMinor()).isEqualTo(firstOfMonth ? 1_975_000L : 2_000_000L);
         // opened yesterday at 48,00 EUR: cost 24,00 EUR at 395 = 9 480 Ft; risk 1,00 EUR = 395 Ft
         PenzPaperTrade o = postForBody(TRADES + "/" + p.getId() + "/open", new PenzPaperTradeOpenRequest()
             .entryMinor(4_800L).entryDate(yesterday), u.headers(), HttpStatus.OK, PenzPaperTrade.class);
@@ -367,9 +379,117 @@ class PenzPracticeApiIT extends ApiIntegrationTest {
             u.headers(), HttpStatus.OK, PenzPaperTrade.class);
         assertThat(c.getPnl().getMinor()).isEqualTo(200L);
         assertThat(c.getPnl().getCurrency()).isEqualTo("EUR");
-        assertThat(c.getPnl().getHufMinor()).isEqualTo(80_000L);
+        assertThat(c.getPnl().getHufMinor()).isEqualTo(firstOfMonth ? 79_000L : 80_000L);
         assertThat(c.getrMultiple()).isEqualByComparingTo("2.00");
         assertThat(c.getStopRespected()).isTrue();
         assertThat(overview(u.headers()).getWeek().getDistribution().getBigWins()).isEqualTo(1);
     }
+
+    /** Review I1 (mezo-r36n9.105): the cap is this month's; an entry may not be booked into a closed month. */
+    @Test
+    void testEntryDate_shouldRefuseAnEntryBeforeThisMonth_soLastMonthCannotDodgeThisMonthsLosses() {
+        RegisteredUser u = registerUser("penz practice entry month");
+        // a loss this month uses up the whole 20 000 Ft cap
+        penz.closedPaperTrade(u.id(), "Vesztes", 2_000_000, 1_000_000, 1, 2, today, true, List.of("hirre"));
+        assertThat(overview(u.headers()).getCap().getLeftHufMinor()).isZero();
+        PenzPaperTrade p = create(u.headers(), plan("OTP", 1, null, 9_000));
+        LocalDate lastMonth = today.withDayOfMonth(1).minusDays(1);
+
+        String body = postForBody(TRADES + "/" + p.getId() + "/open", new PenzPaperTradeOpenRequest()
+            .entryMinor(10_000L).entryDate(lastMonth), u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "entryDate", "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(postForBody(TRADES, plan("Mol", 1, null, 9_000).entryMinor(10_000L)
+            .entryDate(lastMonth), u.headers(), HttpStatus.BAD_REQUEST, String.class), "entryDate",
+            "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(putForBody(TRADES + "/" + p.getId(), plan("OTP", 1, null, 9_000).entryMinor(10_000L)
+            .entryDate(lastMonth), u.headers(), HttpStatus.BAD_REQUEST, String.class), "entryDate",
+            "VALIDATION_INVALID_VALUE");
+        // this month the closed loss counts
+        assertHasRequestError(postForBody(TRADES + "/" + p.getId() + "/open", new PenzPaperTradeOpenRequest()
+            .entryMinor(10_000L).entryDate(today.withDayOfMonth(1)), u.headers(), HttpStatus.UNPROCESSABLE_CONTENT,
+            String.class), "PENZ_PRACTICE_CAP_EXCEEDED");
+    }
+
+    /** Review I2 (mezo-r36n9.105): two opens at once cannot both fit a cap only one of them fits. */
+    @Test
+    void testCap_shouldLetExactlyOneOfTwoConcurrentOpensThrough_whenTheirSumExceedsIt() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            for (int round = 0; round < 4; round++) {
+                RegisteredUser u = registerUser("penz practice race " + round);
+                // 15 000 Ft each against the 20 000 Ft cap
+                PenzPaperTrade a = create(u.headers(), plan("OTP", 10, null, 140_000));
+                PenzPaperTrade b = create(u.headers(), plan("Mol", 10, null, 140_000));
+                CountDownLatch go = new CountDownLatch(1);
+                List<Future<ResponseEntity<String>>> calls = new ArrayList<>();
+                for (PenzPaperTrade t : List.of(a, b)) {
+                    calls.add(pool.submit(() -> {
+                        go.await();
+                        return exchangeForResponse(HttpMethod.POST, TRADES + "/" + t.getId() + "/open",
+                            new PenzPaperTradeOpenRequest().entryMinor(150_000L).entryDate(today), u.headers());
+                    }));
+                }
+                go.countDown();
+                List<Integer> statuses = new ArrayList<>();
+                for (Future<ResponseEntity<String>> f : calls) {
+                    statuses.add(f.get(30, TimeUnit.SECONDS).getStatusCode().value());
+                }
+                assertThat(statuses).as("round %d", round).containsExactlyInAnyOrder(200, 422);
+                assertThat(overview(u.headers()).getCap().getUsedHufMinor()).isEqualTo(1_500_000L);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    /** Review I3 (mezo-r36n9.105): planned, open and cancelled rows may be deleted; closed ones may not. */
+    @Test
+    void testDelete_shouldRefuseAClosedTrade_andFreeTheCapOfAnOpenOne() {
+        RegisteredUser u = registerUser("penz practice delete");
+        PenzPaperTrade loser = create(u.headers(), plan("OTP", 10, null, 9_000).entryMinor(10_000L));
+        postForBody(TRADES + "/" + loser.getId() + "/close", closing(9_000, List.of("hirre")), u.headers(),
+            HttpStatus.OK, PenzPaperTrade.class);
+        assertThat(overview(u.headers()).getCap().getUsedHufMinor()).isEqualTo(10_000L);
+        ResponseEntity<String> refused = exchangeForResponse(HttpMethod.DELETE, TRADES + "/" + loser.getId(), null,
+            u.headers());
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertHasRequestError(refused.getBody(), "PENZ_PAPER_TRADE_STATE");
+        assertThat(overview(u.headers()).getCap().getUsedHufMinor()).isEqualTo(10_000L);
+
+        PenzPaperTrade open = create(u.headers(), plan("Mol", 10, null, 9_000).entryMinor(10_000L));
+        assertThat(overview(u.headers()).getCap().getUsedHufMinor()).isEqualTo(110_000L);
+        deleteAndExpect(TRADES + "/" + open.getId(), u.headers(), HttpStatus.NO_CONTENT);
+        assertThat(overview(u.headers()).getCap().getUsedHufMinor()).isEqualTo(10_000L);
+
+        PenzPaperTrade planned = create(u.headers(), plan("Richter", 1, null, 9_000));
+        deleteAndExpect(TRADES + "/" + planned.getId(), u.headers(), HttpStatus.NO_CONTENT);
+        PenzPaperTrade cancelled = create(u.headers(), plan("Magyar Telekom", 1, null, 9_000));
+        postForBody(TRADES + "/" + cancelled.getId() + "/cancel", null, u.headers(), HttpStatus.OK,
+            PenzPaperTrade.class);
+        deleteAndExpect(TRADES + "/" + cancelled.getId(), u.headers(), HttpStatus.NO_CONTENT);
+        assertThat(getForList(TRADES, u.headers(), HttpStatus.OK, PenzPaperTrade.class))
+            .extracting(PenzPaperTrade::getId).containsExactly(loser.getId());
+    }
+
+    /** Review M1/M2 (mezo-r36n9.105): an R or a HUF twin beyond its column is a 400 field error, never a 500. */
+    @Test
+    void testOverflow_shouldBeAFieldError_whenTheROrTheRiskTwinCannotBeStored() {
+        RegisteredUser u = registerUser("penz practice overflow");
+        // risk 1 minor unit per unit, exit far below: R ≈ −10^11, beyond numeric(10,2)
+        PenzPaperTrade tight = create(u.headers(), new PenzPaperTradeRequest().instrument("OTP").direction("long")
+            .why("Szűk stop").currency("HUF").quantity(new BigDecimal("0.00000001")).stopMinor(99_999_999_999L)
+            .entryMinor(100_000_000_000L));
+        assertThat(tight.getStatus()).isEqualTo(PenzPaperTrade.StatusEnum.OPEN);
+        assertHasFieldError(postForBody(TRADES + "/" + tight.getId() + "/close", closing(1, List.of("trend")),
+            u.headers(), HttpStatus.BAD_REQUEST, String.class), "exitMinor", "VALIDATION_INVALID_VALUE");
+
+        // a short EUR trade whose risk twin overflows a long once converted
+        stubRate("EUR", today, "400.00");
+        PenzPaperTrade wide = create(u.headers(), new PenzPaperTradeRequest().instrument("Nasdaq-ETF")
+            .direction("short").why("Széles stop").currency("EUR").quantity(new BigDecimal("50000000"))
+            .stopMinor(100_000_000_000L));
+        postForBody(TRADES + "/" + wide.getId() + "/open", new PenzPaperTradeOpenRequest().entryMinor(1L)
+            .entryDate(today), u.headers(), HttpStatus.BAD_REQUEST, String.class);
+    }
+
 }

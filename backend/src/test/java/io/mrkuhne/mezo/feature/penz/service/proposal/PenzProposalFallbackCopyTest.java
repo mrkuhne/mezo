@@ -20,7 +20,8 @@ class PenzProposalFallbackCopyTest {
             ProposalSplitter.split(1_000_000 * FT, 6, 300_000 * FT, 5_000_000 * FT), // fund full
             ProposalSplitter.split(1_234_567 * FT + 42, 6, null, 0),              // no fixed costs
             ProposalSplitter.split(500_500 * FT, 3, 300_000 * FT, 0),             // all short
-            ProposalSplitter.split(1_000 * FT, 6, 0L, 0));                          // smallest amount
+            ProposalSplitter.split(1_000 * FT, 6, 0L, 0),                          // smallest amount
+            ProposalSplitter.split(100_000 * FT, 6, 300_000 * FT, 1_799_500 * FT)); // shortfall rounds to 0
     }
 
     @ParameterizedTest
@@ -28,7 +29,7 @@ class PenzProposalFallbackCopyTest {
     void testNarration_shouldPassTheValidator_forEverySplitShape(Split split) {
         ProposalFigures figures = ProposalFixtures.figures(split, ProposalFixtures.CATALOG);
         assertThat(ProposalValidator.validate(ProposalFallbackCopy.narration(figures), figures,
-            ProposalFixtures.catalogNames())).isEmpty();
+            ProposalFixtures.CATALOG)).isEmpty();
     }
 
     @Test
@@ -38,6 +39,23 @@ class PenzProposalFallbackCopyTest {
         assertThat(n.why(Sleeve.SHORT)).contains("6 havi", "1 800 000 Ft", "250 500 Ft");
         assertThat(n.why(Sleeve.MID)).contains("40%");
         assertThat(n.why(Sleeve.LONG)).contains("60%");
+    }
+
+    @Test
+    void testShortWhy_shouldNotPrintZeroFt_whenTheShortfallRoundsAway() {
+        // shortfall 500 Ft: below the 1 000 Ft rounding step, so the short sleeve gets nothing
+        Split s = ProposalSplitter.split(100_000 * FT, 6, 300_000 * FT, 1_799_500 * FT);
+        assertThat(s.shortMinor()).isZero();
+        String why = ProposalFallbackCopy.narration(ProposalFixtures.figures(s, ProposalFixtures.CATALOG))
+            .why(Sleeve.SHORT);
+        assertThat(why).contains("500 Ft").contains("ide most nem kerül pénz").doesNotContain(" 0 Ft");
+    }
+
+    @Test
+    void testRules_shouldSayOnlyShortAndMidRoundDown_andTheRestGoesLong() {
+        assertThat(ProposalFallbackCopy.rules(ProposalFixtures.split())).contains(
+            "A rövid és a középtávú összeget lefelé kerekítem 1 000 Ft-ra; a kerekítésből maradó rész a hosszú "
+                + "rekeszbe megy.");
     }
 
     @Test

@@ -49,7 +49,9 @@ import org.springframework.transaction.annotation.Transactional;
  * ({@link ProposalSplitter}: emergency target from the allowance engine's {@code fixedCosts} and his settings, the
  * short sleeve's value from Pénzem) → the options per sleeve from his <b>approved</b> products only
  * ({@link ProductOptions}) → the figures → ONE narration call outside any transaction ({@link PenzProposalLlm};
- * absent, refused, unparsable or rejected by {@link ProposalValidator} → {@link ProposalFallbackCopy}) → one short
+ * the answer normalised ({@link ProposalNarration#normalised}: cleaned, NFKC, one kind of space) and both validated
+ * and stored in that form; absent, refused, unparsable or rejected by {@link ProposalValidator} →
+ * {@link ProposalFallbackCopy}) → one short
  * write ({@link PenzProposalStore}, superseding the still-proposed one of the same kind). Rejections are logged by rule
  * only, never prose.
  *
@@ -101,9 +103,8 @@ public class PenzProposalService {
             sleeves.add(ProductOptions.forSleeve(s, split.amount(s), all));
         }
         ProposalFigures figures = new ProposalFigures(split, sleeves);
-        List<String> catalogNames = all.stream().map(CatalogProduct::name).toList();
 
-        Narrated narrated = narrate(owner, kind, figures, catalogNames);
+        Narrated narrated = narrate(owner, kind, figures, all);
         PenzProposalJson body = body(kind, figures, narrated);
         return mapper.proposal(store.insert(owner, kind, amount, month.toString(), body));
     }
@@ -208,29 +209,23 @@ public class PenzProposalService {
     private record Narrated(ProposalNarration narration, String narratedBy) {
     }
 
-    private Narrated narrate(UUID owner, String kind, ProposalFigures figures, List<String> catalogNames) {
+    private Narrated narrate(UUID owner, String kind, ProposalFigures figures, List<CatalogProduct> catalog) {
         PenzProposalLlm model = llm.getIfAvailable();
         String raw = model == null ? null
             : model.narrate(ProposalPrompt.SYSTEM_PROMPT, ProposalPrompt.userMessage(kind, figures)).orElse(null);
-        Optional<ProposalNarration> parsed = ProposalNarration.parse(raw);
+        Optional<ProposalNarration> parsed = ProposalNarration.parse(raw).map(ProposalNarration::normalised);
         List<DigestViolation.Rule> rejected = List.of();
         if (parsed.isPresent()) {
-            List<DigestViolation> violations = ProposalValidator.validate(parsed.get(), figures, catalogNames);
+            List<DigestViolation> violations = ProposalValidator.validate(parsed.get(), figures, catalog);
             if (violations.isEmpty()) {
                 log.info("Penz proposal for owner {}: model narration kept", owner);
-                return new Narrated(stripped(parsed.get()), PenzProposalJson.NARRATED_BY_MODEL);
+                return new Narrated(parsed.get(), PenzProposalJson.NARRATED_BY_MODEL);
             }
             rejected = violations.stream().map(DigestViolation::rule).distinct().toList();
         }
         log.info("Penz proposal for owner {}: model answered={}, parsed={}, fallback, rejected={}", owner,
             raw != null, parsed.isPresent(), rejected);
         return new Narrated(ProposalFallbackCopy.narration(figures), PenzProposalJson.NARRATED_BY_FALLBACK);
-    }
-
-    private static ProposalNarration stripped(ProposalNarration n) {
-        Map<Sleeve, String> why = new EnumMap<>(Sleeve.class);
-        n.why().forEach((k, v) -> why.put(k, v.strip()));
-        return new ProposalNarration(n.summary().strip(), why, n.uncertainty().strip());
     }
 
     private static PenzProposalJson body(String kind, ProposalFigures figures, Narrated narrated) {

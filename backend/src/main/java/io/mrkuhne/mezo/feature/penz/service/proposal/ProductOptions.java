@@ -18,7 +18,7 @@ import java.util.Objects;
  *   <li>Fewer than two → the sleeve still gets its amount, with an honest {@code note}.</li>
  *   <li>Each option carries computed figures only: the yearly running cost in Ft for the sleeve's amount
  *       ({@code amount × TER}, rounded HALF_UP to 10 Ft; null without a TER) and the "how they differ" lines,
- *       computed here: the cost delta per year against the cheapest, the currency (only when the options differ),
+ *       computed here: "the lowest" only for a strictly cheapest option, the cost delta per year against the cheapest, the currency (only when the options differ),
  *       accumulating vs distributing (only when they differ), and a one-off entry fee.</li>
  * </ul>
  */
@@ -63,6 +63,8 @@ public final class ProductOptions {
         List<Long> costs = picked.stream().map(p -> yearlyCost(amountMinor, p.terPct())).toList();
         Long cheapest = costs.stream().filter(Objects::nonNull).min(Long::compare).orElse(null);
         long knownCosts = costs.stream().filter(Objects::nonNull).count();
+        // "the lowest" only when strictly lowest: a TER tie or a 0 Ft amount has no cheapest option
+        long atCheapest = costs.stream().filter(c -> c != null && c.equals(cheapest)).count();
         boolean currenciesDiffer = picked.stream().map(CatalogProduct::currency).distinct().count() > 1;
         boolean distributionsDiffer = picked.stream().map(CatalogProduct::distribution).distinct().count() > 1;
         List<Option> options = new ArrayList<>();
@@ -76,7 +78,9 @@ public final class ProductOptions {
                         ? "nincs egyszerű éves díja — lásd a díjmegjegyzést"
                         : "az éves költségét nem tudom forintban megmondani");
                 } else if (knownCosts > 1 && cost.equals(cheapest)) {
-                    differs.add("ebben a rekeszben ennek a legalacsonyabb az éves költsége");
+                    if (atCheapest == 1) {
+                        differs.add("ebben a rekeszben ennek a legalacsonyabb az éves költsége");
+                    }
                 } else if (knownCosts > 1) {
                     differs.add("évente " + ProposalFigures.huf(cost - cheapest) + "-tal többe kerül, mint a legolcsóbb");
                 }

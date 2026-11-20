@@ -51,9 +51,15 @@ public final class ProposalFallbackCopy {
             return "A tartalékod célja " + s.emergencyMonths() + " havi fix költség, "
                 + ProposalFigures.huf(s.emergencyTargetMinor()) + ", és ez már megvan. Ide most nem kerül pénz.";
         }
-        return "A tartalékod célja " + s.emergencyMonths() + " havi fix költség, "
+        String head = "A tartalékod célja " + s.emergencyMonths() + " havi fix költség, "
             + ProposalFigures.huf(s.emergencyTargetMinor()) + ". Ebből még " + ProposalFigures.huf(s.shortfallMinor())
-            + " hiányzik, ezért először ide kerül pénz: " + ProposalFigures.huf(s.shortMinor()) + ".";
+            + " hiányzik";
+        if (s.shortMinor() == 0) {
+            // the shortfall is below the rounding step: the short sleeve rounds to nothing, the rest goes long
+            return head + ", de ez kevesebb a kerekítési lépésnél, ezért ide most nem kerül pénz — ez a rész is a "
+                + "hosszú rekeszbe megy.";
+        }
+        return head + ", ezért először ide kerül pénz: " + ProposalFigures.huf(s.shortMinor()) + ".";
     }
 
     /** The proposal card's first line. */
@@ -81,7 +87,8 @@ public final class ProposalFallbackCopy {
         }
         out.add("A maradék " + ProposalSplitter.MID_PCT + "%-a a középtávú (5–10 év), " + ProposalSplitter.LONG_PCT
             + "%-a a hosszú (10+ év) rekeszbe kerül.");
-        out.add("Minden összeget lefelé kerekítek 1 000 Ft-ra; a kerekítésből maradó rész a hosszú rekeszbe megy.");
+        out.add("A rövid és a középtávú összeget lefelé kerekítem 1 000 Ft-ra; a kerekítésből maradó rész a hosszú "
+            + "rekeszbe megy.");
         out.add("A termékek csak a jóváhagyott termékjegyzékedből jönnek, rekeszenként a legalacsonyabb éves "
             + "költségűek elöl, legfeljebb " + ProductOptions.MAX_OPTIONS + ".");
         out.add("Ez javaslat, nem utasítás: minden számot te állítasz be, és a vételt te intézed a saját "

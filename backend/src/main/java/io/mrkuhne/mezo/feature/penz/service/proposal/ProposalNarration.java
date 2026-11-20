@@ -1,9 +1,12 @@
 package io.mrkuhne.mezo.feature.penz.service.proposal;
 
+import io.mrkuhne.mezo.feature.penz.service.news.NewsText;
 import io.mrkuhne.mezo.feature.penz.service.portfolio.Sleeve;
+import java.text.Normalizer;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -15,6 +18,7 @@ import tools.jackson.databind.json.JsonMapper;
 public record ProposalNarration(String summary, Map<Sleeve, String> why, String uncertainty) {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
+    private static final Pattern SEPARATORS = Pattern.compile("\\p{Z}");
 
     public ProposalNarration {
         why = Map.copyOf(why);
@@ -22,6 +26,30 @@ public record ProposalNarration(String summary, Map<Sleeve, String> why, String 
 
     public String why(Sleeve s) {
         return why.get(s);
+    }
+
+    /**
+     * Every field {@link #normalise normalised} — the form the validator checks AND the form that is stored (L7
+     * review I5), so a zero-width space, a soft hyphen, a no-break space or a full-width digit cannot hide a word or a
+     * number from the gate.
+     */
+    public ProposalNarration normalised() {
+        Map<Sleeve, String> w = new EnumMap<>(Sleeve.class);
+        why.forEach((k, v) -> w.put(k, normalise(v)));
+        return new ProposalNarration(normalise(summary), w, normalise(uncertainty));
+    }
+
+    /**
+     * {@link NewsText#clean} (control, format {@code \p{Cf}} — zero-width, soft hyphen, bidi — and lone surrogate
+     * characters out), Unicode NFKC (full-width digits → ASCII, compatibility spaces), cleaned again, every
+     * {@code \p{Z}} separator → a plain space, stripped. Null → null.
+     */
+    public static String normalise(String s) {
+        if (s == null) {
+            return null;
+        }
+        String nfkc = Normalizer.normalize(NewsText.clean(s), Normalizer.Form.NFKC);
+        return SEPARATORS.matcher(NewsText.clean(nfkc)).replaceAll(" ").strip();
     }
 
     /**

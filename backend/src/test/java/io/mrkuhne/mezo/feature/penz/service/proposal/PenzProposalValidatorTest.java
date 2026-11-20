@@ -37,7 +37,7 @@ class PenzProposalValidatorTest {
         why.put(Sleeve.MID, m);
         why.put(Sleeve.LONG, l);
         return ProposalValidator.validate(new ProposalNarration(summary, why, u), ProposalFixtures.figures(),
-            ProposalFixtures.catalogNames());
+            ProposalFixtures.CATALOG);
     }
 
     private static List<Rule> rules(List<DigestViolation> v) {
@@ -132,6 +132,148 @@ class PenzProposalValidatorTest {
         @Test
         void testValidate_shouldAllowSingleAsteriskEmphasis() {
             assertThat(check(SUMMARY, SHORT, MID, "A hosszú rekesz *450 000 Ft*-ot kap.", UNCERTAINTY)).isEmpty();
+        }
+    }
+
+    /** Review I4 (mezo-r36n9.105): return claims, spelled percentages and the missing buy / sell / urge stems. */
+    @Nested
+    class ReturnClaimsAndStems {
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+            // a return claim riding on an allowed percentage
+            "Évente akár 60%-os hozamot is hozhat.", "A hozama 40% lehet.", "Hosszú távon hozhat valamennyit.",
+            "Nyereséges lesz.", "Az értéke nő majd.", "Az értéke idővel nőni fog.", "Az árfolyam emelkedni fog.",
+            "Tíz év alatt megduplázódhat.", "A pénzed duplázódik.", "Várhatóan jól teljesít.",
+            // buy
+            "Érdemes megvenni.", "Vegye meg még ma.", "Vegyél belőle.",
+            // urge
+            "Ne hagyja ki ezt a lehetőséget.", "Ne maradj le róla.", "Ne várj vele.", "Minél előbb lépj.",
+            "Most érdemes beszállni.",
+            // sell
+            "Értékesítsd a régit.", "Szállj ki belőle.", "Zárd le a pozíciót.",
+        })
+        void testValidate_shouldFlagTheNewBoundaryStems_withAccentsAndInflections(String why) {
+            assertThat(rules(check(SUMMARY, SHORT, MID, why, UNCERTAINTY))).contains(Rule.BOUNDARY);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+            "Évi öt százalékos hozam.", "Évi öt százalék.", "Five percent a year.", "Évi öt % a díj.",
+        })
+        void testValidate_shouldFlagASpelledOutPercentage(String why) {
+            assertThat(rules(check(SUMMARY, SHORT, MID, why, UNCERTAINTY))).contains(Rule.NUMERICAL_ERROR);
+        }
+
+        @Test
+        void testValidate_shouldAllowAnAllowedDigitPercentage_andTheServersOwnHozamLines() {
+            assertThat(check(SUMMARY, SHORT, MID, "A hosszú rekesz a maradék 60 százalékát kapja: 450 000 Ft.",
+                UNCERTAINTY)).isEmpty();
+            assertThat(check(SUMMARY, SHORT, "Az Euró Kötvény ETF kifizeti a hozamot (osztalékfizető), a Világ "
+                + "Részvény ETF újrabefekteti a hozamot (felhalmozó).", LONG, UNCERTAINTY)).isEmpty();
+            assertThat(check(SUMMARY, SHORT, MID, LONG, "A díjak változhattak — a jövőbeli hozamról semmit nem "
+                + "állítok.")).isEmpty();
+        }
+    }
+
+    /** Review I5 (mezo-r36n9.105): the gate runs on NFKC text without format characters or odd spaces. */
+    @Nested
+    class Unicode {
+
+        private List<Rule> normalisedRules(String longWhy) {
+            Map<Sleeve, String> why = new EnumMap<>(Sleeve.class);
+            why.put(Sleeve.SHORT, SHORT);
+            why.put(Sleeve.MID, MID);
+            why.put(Sleeve.LONG, longWhy);
+            ProposalNarration n = new ProposalNarration(SUMMARY, why, UNCERTAINTY).normalised();
+            return rules(ProposalValidator.validate(n, ProposalFixtures.figures(), ProposalFixtures.CATALOG));
+        }
+
+        @Test
+        void testNormalised_shouldExposeHiddenBoundaryWords() {
+            assertThat(normalisedRules("Ez ga\u200Brantált.")).contains(Rule.BOUNDARY);
+            assertThat(normalisedRules("Ez garan\u00ADtált.")).contains(Rule.BOUNDARY);
+            assertThat(normalisedRules("Inkább add\u00A0el.")).contains(Rule.BOUNDARY);
+        }
+
+        @Test
+        void testNormalised_shouldExposeHiddenNumbers() {
+            assertThat(normalisedRules("Évi \uFF11\uFF12% lehet.")).contains(Rule.NUMERICAL_ERROR);
+            // 6 is a figure (6 havi) but not a percentage
+            assertThat(normalisedRules("Évi 6\u00A0% a díj.")).contains(Rule.NUMERICAL_ERROR);
+            assertThat(normalisedRules("Évi 6\u202F% a díj.")).contains(Rule.NUMERICAL_ERROR);
+        }
+
+        @Test
+        void testNormalised_shouldKeepCleanTextAsItIs_andStripIt() {
+            ProposalNarration n = new ProposalNarration("  " + SUMMARY + " ", Map.of(Sleeve.SHORT, SHORT,
+                Sleeve.MID, MID, Sleeve.LONG, "A\u2028hosszú\u200B rekesz"), UNCERTAINTY).normalised();
+            assertThat(n.summary()).isEqualTo(SUMMARY);
+            assertThat(n.why(Sleeve.LONG)).isEqualTo("A hosszú rekesz");
+            assertThat(normalisedRules(LONG)).isEmpty();
+        }
+    }
+
+    /** Review (mezo-r36n9.105): a product named by a short name, its ticker or its ISIN. */
+    @Nested
+    class ProductShortNames {
+
+        private static final CatalogProduct VG_AGG = ProposalFixtures.listed(
+            "Vanguard Global Aggregate Bond UCITS ETF EUR Hedged Accumulating", "bond_etf", List.of("mid"), "0.08",
+            "IE00BG47KH54", "VAGF.DE", CatalogProduct.STATUS_APPROVED);
+        private static final CatalogProduct ISH_AGG = ProposalFixtures.listed(
+            "iShares Core Global Aggregate Bond UCITS ETF EUR Hedged (Acc)", "bond_etf", List.of("mid"), "0.10",
+            "IE00BDBRDM35", "EUNA.DE", CatalogProduct.STATUS_SUGGESTED);
+        private static final CatalogProduct LS60 = ProposalFixtures.listed(
+            "Vanguard LifeStrategy 60% Equity UCITS ETF Accumulating", "mixed_fund", List.of("mid"), "0.25",
+            "IE00BMVB5P51", "V60A.DE", CatalogProduct.STATUS_SUGGESTED);
+        private static final CatalogProduct MSCI = ProposalFixtures.listed(
+            "iShares Core MSCI World UCITS ETF USD (Acc)", "equity_etf", List.of("long"), "0.20", "IE00B4L5Y983",
+            "EUNL.DE", CatalogProduct.STATUS_SUGGESTED);
+        private static final CatalogProduct SP500 = ProposalFixtures.listed(
+            "iShares Core S&P 500 UCITS ETF USD (Acc)", "equity_etf", List.of("long"), "0.07", "IE00B5BMR087",
+            "SXR8.DE", CatalogProduct.STATUS_DECLINED);
+        private static final CatalogProduct ALL_WORLD = ProposalFixtures.listed(
+            "Vanguard FTSE All-World UCITS ETF (USD) Accumulating", "equity_etf", List.of("long"), "0.14",
+            "IE00BK5BQT80", "VWCE.DE", CatalogProduct.STATUS_SUGGESTED);
+
+        private static final List<CatalogProduct> CATALOG = java.util.stream.Stream.concat(
+            ProposalFixtures.CATALOG.stream(), java.util.stream.Stream.of(VG_AGG, ISH_AGG, LS60, MSCI, SP500,
+                ALL_WORLD)).toList();
+        private static final String MID_OK = "A középtávú (5–10 év) rekesz 300 000 Ft-ot kap. A Vanguard Global "
+            + "Aggregate Bond UCITS ETF EUR Hedged Accumulating euróra fedezett.";
+
+        private static List<Rule> checkNamed(String mid, String longWhy) {
+            Map<Sleeve, String> why = new EnumMap<>(Sleeve.class);
+            why.put(Sleeve.SHORT, SHORT);
+            why.put(Sleeve.MID, mid);
+            why.put(Sleeve.LONG, longWhy);
+            return rules(ProposalValidator.validate(new ProposalNarration(SUMMARY, why, UNCERTAINTY),
+                ProposalFixtures.figures(ProposalFixtures.split(), CATALOG), CATALOG));
+        }
+
+        @Test
+        void testValidate_shouldPass_whenOnlyTheOfferedOptionsAreNamed() {
+            assertThat(checkNamed(MID_OK, LONG)).isEmpty();
+            // a short form of the sleeve's own option is not another product
+            assertThat(checkNamed("A Global Aggregate euróra fedezett.", LONG)).isEmpty();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+            "Az MSCI World is szóba jöhetne.", "Az iShares Core MSCI World olcsó.", "Az MSCI World-öt is nézd.",
+            "Az EUNL is ilyen.", "Az EUNL-t is nézd.", "A VWCE is ilyen.", "Az All-World is ilyen.",
+            "Az S&P 500 is ilyen.", "A LifeStrategy is ilyen.", "Az IE00B4L5Y983 is ilyen.",
+            "A Global Aggregate is ilyen.",
+        })
+        void testValidate_shouldFlagAForbiddenProductsShortNameTickerOrIsin(String longWhy) {
+            assertThat(checkNamed(MID_OK, longWhy)).contains(Rule.ENTITY_SWAP);
+        }
+
+        @Test
+        void testValidate_shouldFlagASuggestedProductsTicker_inItsOwnSleeve() {
+            assertThat(checkNamed(MID_OK + " Az EUNA hasonló.", LONG)).contains(Rule.ENTITY_SWAP);
+            assertThat(checkNamed(MID_OK + " A LifeStrategy hasonló.", LONG)).contains(Rule.ENTITY_SWAP);
         }
     }
 

@@ -128,7 +128,7 @@ public class PenzCatalogService {
     public static CatalogProduct toCatalog(PenzProductEntity e) {
         return new CatalogProduct(e.getId(), e.getName(), e.getWhatItIs(), e.getKind(), e.getCurrency(),
             e.getSleeves(), e.getTerPct(), e.getEntryFeePct(), e.getFeeNote(), e.getDistribution(),
-            e.getReviewedAt(), e.getStatus());
+            e.getReviewedAt(), e.getStatus(), e.getIsin(), e.getSymbol());
     }
 
     private List<PenzProductEntity> rows(UUID owner) {

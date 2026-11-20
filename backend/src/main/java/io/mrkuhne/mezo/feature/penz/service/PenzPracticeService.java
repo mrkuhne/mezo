@@ -50,7 +50,12 @@ import org.springframework.transaction.annotation.Transactional;
  *       figures at today's rate until opened. Stored once, never re-derived.</li>
  *   <li>The cap ({@link PracticeCap}) is the settings' {@code practice_monthly_minor} — the allowance's Gyakorlás line;
  *       opening above what is left is 422 {@code PENZ_PRACTICE_CAP_EXCEEDED}. Nothing reads another sleeve, the
- *       allowance or a holding.</li>
+ *       allowance or a holding. The cap is always the owner's CURRENT month ({@code today}); an entry date before
+ *       this month's first day is a 400 on {@code entryDate}, so nothing is booked into a closed month. Every
+ *       open-capable call takes the per-owner advisory lock first ({@link PenzPaperTradeRepository#lockOwner}), so
+ *       concurrent opens are serialized.</li>
+ *   <li>A {@code closed} row is history and cannot be deleted (409 {@code PENZ_PAPER_TRADE_STATE}) — its P/L, and a
+ *       loss in the cap, would vanish; planned, open and cancelled rows may be.</li>
  *   <li>No market data: every price is typed by the owner. Every row is {@code paper = true}.</li>
  * </ul>
  */
@@ -59,6 +64,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class PenzPracticeService {
 
     private static final int QUANTITY_SCALE = 8;
+    /** The largest |R| {@code penz_paper_trade.r_multiple numeric(10,2)} holds. */
+    private static final BigDecimal R_MAX = new BigDecimal("99999999.99");
     private static final String NOT_FOUND = "PENZ_PAPER_TRADE_NOT_FOUND";
     private static final String STATE = "PENZ_PAPER_TRADE_STATE";
 
@@ -121,6 +128,7 @@ public class PenzPracticeService {
 
     @Transactional
     public PenzPaperTrade create(UUID owner, PenzPaperTradeRequest req) {
+        repository.lockOwner(owner);
         if (req.getClientRef() != null) {
             Optional<PenzPaperTradeEntity> replay = repository.findByCreatedByAndClientRefAndDeletedFalse(owner,
                 req.getClientRef());
@@ -153,6 +161,7 @@ public class PenzPracticeService {
     /** Edit a plan (planned only); with {@code entryMinor} it is opened too. */
     @Transactional
     public PenzPaperTrade update(UUID owner, UUID id, PenzPaperTradeRequest req) {
+        repository.lockOwner(owner);
         PenzPaperTradeEntity row = require(owner, id);
         requireStatus(row, PenzPaperTradeEntity.PLANNED);
         LocalDate today = settings.today(owner);
@@ -167,6 +176,7 @@ public class PenzPracticeService {
 
     @Transactional
     public PenzPaperTrade open(UUID owner, UUID id, PenzPaperTradeOpenRequest req) {
+        repository.lockOwner(owner);
         PenzPaperTradeEntity row = require(owner, id);
         requireStatus(row, PenzPaperTradeEntity.PLANNED);
         openRow(owner, row, req.getEntryMinor(), req.getEntryDate(), settings.today(owner));
@@ -183,6 +193,10 @@ public class PenzPracticeService {
             throw PenzErrors.field("exitDate");
         }
         Direction d = Direction.of(row.getDirection());
+        BigDecimal r = PaperTradeMath.rMultiple(d, row.getEntryMinor(), row.getStopMinor(), req.getExitMinor());
+        if (r != null && r.abs().compareTo(R_MAX) > 0) {
+            throw PenzErrors.field("exitMinor");
+        }
         long pnlMinor = PaperTradeMath.pnlMinor(d, row.getEntryMinor(), req.getExitMinor(), row.getQuantity());
         Booking booking = fx.book(row.getCurrency(), pnlMinor, req.getExitDate(), today);
         row.setStatus(PenzPaperTradeEntity.CLOSED);
@@ -192,7 +206,7 @@ public class PenzPracticeService {
         row.setExitFxRateDate(booking.rateDate());
         row.setPnlMinor(pnlMinor);
         row.setPnlHufMinor(booking.hufMinor());
-        row.setRMultiple(PaperTradeMath.rMultiple(d, row.getEntryMinor(), row.getStopMinor(), req.getExitMinor()));
+        row.setRMultiple(r);
         row.setTags(new ArrayList<>(tags));
         row.setMistake(Boolean.TRUE.equals(req.getMistake()));
         row.setLine(blankToNull(req.getLine()));
@@ -230,9 +244,14 @@ public class PenzPracticeService {
         return mapper.trade(repository.saveAndFlush(row));
     }
 
+    /** Planned, open or cancelled only: a closed trade is history (its P/L, and a loss in the cap). */
     @Transactional
     public void delete(UUID owner, UUID id) {
-        repository.delete(require(owner, id));
+        PenzPaperTradeEntity row = require(owner, id);
+        if (isClosed(row)) {
+            throw PenzErrors.conflict(STATE);
+        }
+        repository.delete(row);
         repository.flush();
     }
 
@@ -268,10 +287,13 @@ public class PenzPracticeService {
         }
     }
 
-    /** planned → open: the stop check, the booking at the entry date, then the cap. */
+    /**
+     * planned → open (the caller holds the owner lock): the entry date within this month, the stop check, the
+     * booking at the entry date, then the cap of the CURRENT month.
+     */
     private void openRow(UUID owner, PenzPaperTradeEntity row, long entryMinor, LocalDate entryDate,
                          LocalDate today) {
-        if (entryDate.isAfter(today)) {
+        if (entryDate.isAfter(today) || entryDate.isBefore(today.withDayOfMonth(1))) {
             throw PenzErrors.field("entryDate");
         }
         Direction d = Direction.of(row.getDirection());
@@ -281,7 +303,8 @@ public class PenzPracticeService {
         long costMinor = PaperTradeMath.costMinor(entryMinor, row.getQuantity());
         long riskMinor = PaperTradeMath.riskMinor(entryMinor, row.getStopMinor(), row.getQuantity());
         Booking booking = fx.book(row.getCurrency(), costMinor, entryDate, today);
-        PracticeCap cap = cap(owner, all(owner), YearMonth.from(entryDate), row.getId());
+        long riskHufMinor = booking.rate() == null ? riskMinor : riskHuf(riskMinor, booking.rate());
+        PracticeCap cap = cap(owner, all(owner), YearMonth.from(today), row.getId());
         if (!cap.allows(booking.hufMinor())) {
             throw PenzErrors.unprocessable("PENZ_PRACTICE_CAP_EXCEEDED");
         }
@@ -290,11 +313,20 @@ public class PenzPracticeService {
         row.setEntryDate(entryDate);
         row.setCostHufMinor(booking.hufMinor());
         row.setRiskMinor(riskMinor);
-        row.setRiskHufMinor(booking.rate() == null ? riskMinor : FxConversion.toHufMinor(riskMinor, booking.rate()));
+        row.setRiskHufMinor(riskHufMinor);
         row.setFxRate(booking.rate());
         row.setFxRateDate(booking.rateDate());
         touch(row);
         repository.saveAndFlush(row);
+    }
+
+    /** The risk's HUF twin; one beyond a {@code long} is a 400 (like {@code PenzFxService.toHufMinor}), never a 500. */
+    private static long riskHuf(long riskMinor, BigDecimal rate) {
+        try {
+            return FxConversion.toHufMinor(riskMinor, rate);
+        } catch (ArithmeticException overflow) {
+            throw PenzErrors.field("quantity");
+        }
     }
 
     /** The month's cap from the settings' practice amount; {@code except} = the row being opened. */

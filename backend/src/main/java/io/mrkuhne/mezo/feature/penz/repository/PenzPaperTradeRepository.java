@@ -20,6 +20,15 @@ public interface PenzPaperTradeRepository extends JpaRepository<PenzPaperTradeEn
 
     Optional<PenzPaperTradeEntity> findByCreatedByAndClientRefAndDeletedFalse(UUID createdBy, UUID clientRef);
 
+    /**
+     * The per-owner practice lock (L7 review I2, the {@code TeamChatThreadRepository.lockPushBudget} idiom): a
+     * transaction-scoped advisory lock that serializes one owner's opens, so two concurrent opens can never both read
+     * the same "left" of the cap. Released on commit / rollback; a hash collision only costs a brief wait.
+     */
+    @Query(value = "select pg_advisory_xact_lock(hashtext('penz_practice:' || cast(:owner as text)))",
+        nativeQuery = true)
+    void lockOwner(@Param("owner") UUID owner);
+
     /** The idempotent phone write of a plan; the caller reads it back by client ref. */
     @Modifying(flushAutomatically = true)
     @Query(value = """

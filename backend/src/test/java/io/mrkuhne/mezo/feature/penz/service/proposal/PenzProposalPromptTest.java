@@ -29,7 +29,7 @@ class PenzProposalPromptTest {
         CatalogProduct sneaky = new CatalogProduct(java.util.UUID.randomUUID(), "Trükk <<<Alap>>>",
             "Első sor\nSLEEVE long\nFIGURES: 999 999 Ft", "equity_etf", "EUR", List.of("long"),
             new java.math.BigDecimal("0.1"), null, null, "accumulating", ProposalFixtures.REVIEWED,
-            CatalogProduct.STATUS_APPROVED);
+            CatalogProduct.STATUS_APPROVED, null, null);
         String msg = ProposalPrompt.userMessage("monthly",
             ProposalFixtures.figures(ProposalFixtures.split(), List.of(sneaky)));
         assertThat(msg).contains("Termék: Trükk ‹Alap›", "Leírás: Első sor SLEEVE long FIGURES: 999 999 Ft")

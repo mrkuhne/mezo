@@ -429,6 +429,13 @@ accepts anything else). Builder calls: [`2026-11-20-boop-penz-l7-build.md`](../s
   `PracticeTag`s, mistake flag, one line ≤ 140); a plan may be `cancelled`. Any other step is 409
   `PENZ_PAPER_TRADE_STATE`, so "no plan, no trade" is structural. Create may open in the same call (`entryMinor`).
   The stop must be on the losing side of the (planned) entry: 400 `PENZ_PAPER_TRADE_INVALID_STOP`.
+- **The entry date** lies in the owner's current month, up to today: later, or before the month's first day, is 400
+  `VALIDATION_INVALID_VALUE` on `entryDate` — nothing is booked into a closed month (L7 review I1).
+- **Delete** — planned, open and cancelled rows may be (soft-)deleted (an open one frees its committed cost: it
+  never happened); a **closed** row is history and is refused with 409 `PENZ_PAPER_TRADE_STATE`, so its P/L — and a
+  loss counted in the cap — can never vanish (L7 review I3).
+- **Overflow is a 400, never a 500**: an |R| beyond `r_multiple numeric(10,2)` (> 99 999 999,99) is a field error on
+  `exitMinor`; a risk HUF twin beyond a `long` is a field error on `quantity` (as `PenzFxService.toHufMinor`).
 - **`PaperTradeMath`** — risk = |entry − stop| × qty, P/L long/short, R = P/L ÷ risk (computed from the prices, so
   exact), stored with 2 decimals; `stopRespected` = the exit did not go beyond the stop.
 - **HUF twins** by THE booking policy (§4.1, `PenzFxService.book`): cost and risk at the entry date, P/L at the exit
@@ -437,7 +444,10 @@ accepts anything else). Builder calls: [`2026-11-20-boop-penz-l7-build.md`](../s
 - **The cap (`PracticeCap`)** — `C = practice_monthly_minor`, the same field as the allowance's `practice` line
   (§3.1). For the month: used = Σ `cost_huf` of open trades + max(0, −Σ `pnl_huf` closed this month); left =
   max(0, C − used). Opening above left → **422 `PENZ_PRACTICE_CAP_EXCEEDED`**. Gains never raise it; nothing reads a
-  holding, a savings goal, the allowance or income.
+  holding, a savings goal, the allowance or income. The month is always the owner's **current** month (`today`),
+  never the entry's. **The lock**: create, edit and open first take a per-owner transaction advisory lock
+  (`PenzPaperTradeRepository.lockOwner`, `pg_advisory_xact_lock(hashtext('penz_practice:' || owner))`), so two
+  concurrent opens are serialized and cannot both pass the cap (`PenzPracticeApiIT` races two).
 - **The week (`WeeklyReview`)** — Monday-start (the owner's money timezone): win rate (R > 0), by setup, distribution
   (≥ +2R · −1,2R…0 · < −1,5R; healthy = none below −1,5R), the most common mistake (the most frequent tag among the
   week's mistake-flagged trades, ties → the costlier; cost = −Σ their HUF P/L when negative) and the cumulative curve.
@@ -461,18 +471,25 @@ accepts anything else). Builder calls: [`2026-11-20-boop-penz-l7-build.md`](../s
 - **The split** (`ProposalSplitter`): emergency target = `emergency_fund_months` × the allowance engine's `fixedCosts`
   line of the month (none → no target); the short sleeve gets `min(A, max(0, target − shortValue))` (short value =
   Σ short-sleeve positions from `PenzPortfolioService.positions`, cached quotes); the rest 40 % mid / 60 % long;
-  short and mid round down to 1 000 Ft, every rounding rest goes to long (the three always sum to A).
+  short and mid round down to 1 000 Ft, every rounding rest goes to long (the three always sum to A). A shortfall
+  below 1 000 Ft rounds the short sleeve to 0 — the fallback says no money goes there this time, never "0 Ft".
 - **Options** (`ProductOptions`): approved products of that sleeve only (status re-checked in the pure code), TER
   ascending (unknown last), then entry fee, then name, at most 3; fewer than 2 → `optionsNote`. Per option: the
   yearly running cost for the sleeve amount (`amount × TER`, HALF_../ to 10 Ft, null without TER) and the server-
-  computed "differs" lines (cost delta vs the cheapest, currency and distribution only when the options differ, entry
-  fee).
+  computed "differs" lines (cost delta vs the cheapest — "the lowest" only for a strictly cheapest option, never on a
+  TER tie or a 0 Ft amount — currency and distribution only when the options differ, entry fee).
 - **Narration** = one call per proposal (`PenzProposalLlm`, adapter `PenzProposalLlmAdapter`, cheap tier, tag
-  `penz_proposal/narrate`, payload-free) on `ProposalPrompt` → `ProposalNarration.parse` → `ProposalValidator` (the
-  digest validator's sibling: every number from `ProposalFigures` — forint figures incl. the cost deltas, percentages,
-  the months — with `HufAmountGuard.verdict` on every field; a sleeve's "why" names only that sleeve's options,
-  summary / uncertainty only offered options, no other catalog product ever; boundary stems HU + EN for
-  buy-imperative, sell, urge, countdown, return promise; no URL, no markup but `*emphasis*`, no prompt-leak marker).
+  `penz_proposal/narrate`, payload-free) on `ProposalPrompt` → `ProposalNarration.parse` →
+  `ProposalNarration.normalised` (`NewsText.clean`, NFKC, `\p{Cf}` out, every `\p{Z}` → a space; the text is validated
+  AND stored in this form, so a zero-width space, soft hyphen, no-break space or full-width digit hides nothing) →
+  `ProposalValidator` (the digest validator's sibling: every number from `ProposalFigures` — forint figures incl. the
+  cost deltas, percentages, the months — with `HufAmountGuard.verdict` on every field; `%` / `százalék` / `percent`
+  only right after an allowed digit figure; a sleeve's "why" names only that sleeve's options, summary / uncertainty
+  only offered options, no other catalog product ever — by full name, ticker root, ISIN or a distinctive short form
+  such as "MSCI World", "S&P 500", "LifeStrategy", "All-World" (a short form that also occurs in a name allowed there
+  is left alone); boundary stems HU + EN for buy-imperative, sell, urge, countdown, return promise and forecast —
+  `hozam` only inside the server's own option wording ("újrabefekteti / kifizeti a hozamot") and the fallback's
+  no-claim sentence; no URL, no markup but `*emphasis*`, no prompt-leak marker).
   Any failure anywhere → the whole narration is `ProposalFallbackCopy` (`narratedBy: fallback`), built from the same
   figures and proven to pass the validator. Title, sub, facts and rules are always computed copy.
 - **Lifecycle** (`penz_proposal`): created `proposed` (a newer one of the same kind supersedes a still-proposed

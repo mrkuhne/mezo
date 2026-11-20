@@ -41,7 +41,14 @@ final class ProposalFixtures {
                                   String entry, String feeNote, String distribution, String status) {
         return new CatalogProduct(UUID.randomUUID(), name, "Leírás: " + name, kind, currency, sleeves,
             ter == null ? null : new BigDecimal(ter), entry == null ? null : new BigDecimal(entry), feeNote,
-            distribution, REVIEWED, status);
+            distribution, REVIEWED, status, null, null);
+    }
+
+    /** A product with a ticker and an ISIN (the seed's real-looking shape). */
+    static CatalogProduct listed(String name, String kind, List<String> sleeves, String ter, String isin,
+                                 String symbol, String status) {
+        return new CatalogProduct(UUID.randomUUID(), name, "Leírás: " + name, kind, "EUR", sleeves,
+            new BigDecimal(ter), null, null, "accumulating", REVIEWED, status, isin, symbol);
     }
 
     /** 1 000 000 Ft; target 6 × 300 000; short holds 1 549 500 → 250 000 short, 300 000 mid, 450 000 long. */
@@ -61,7 +68,5 @@ final class ProposalFixtures {
         return figures(split(), CATALOG);
     }
 
-    static List<String> catalogNames() {
-        return CATALOG.stream().map(CatalogProduct::name).toList();
-    }
+
 }

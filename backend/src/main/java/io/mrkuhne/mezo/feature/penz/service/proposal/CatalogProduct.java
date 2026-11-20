@@ -7,11 +7,13 @@ import java.util.UUID;
 
 /**
  * One catalog product as the pure proposal code reads it (mezo-r36n9.105) — the fields of {@code penz_product} a
- * proposal prints. {@code status} suggested|approved|declined; only approved products are ever offered.
+ * proposal prints. {@code status} suggested|approved|declined; only approved products are ever offered. {@code isin}
+ * and {@code symbol} (nullable) let the narration gate catch a product named by its ticker or ISIN.
  */
 public record CatalogProduct(UUID id, String name, String whatItIs, String kind, String currency,
                              List<String> sleeves, BigDecimal terPct, BigDecimal entryFeePct, String feeNote,
-                             String distribution, LocalDate reviewedAt, String status) {
+                             String distribution, LocalDate reviewedAt, String status, String isin,
+                             String symbol) {
 
     public static final String STATUS_SUGGESTED = "suggested";
     public static final String STATUS_APPROVED = "approved";

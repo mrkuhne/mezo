@@ -71,6 +71,24 @@ class PenzProductOptionsTest {
     }
 
     @Test
+    void testForSleeve_shouldClaimTheLowestCostOnlyWhenStrictlyLowest() {
+        String lowest = "ebben a rekeszben ennek a legalacsonyabb az éves költsége";
+        CatalogProduct twin = ProposalFixtures.product("Világ Ikertestvér ETF", "equity_etf", "EUR",
+            List.of("long"), "0.20", null, null, "accumulating", CatalogProduct.STATUS_APPROVED);
+        // a TER tie: neither is the cheapest
+        SleeveOptions tie = ProductOptions.forSleeve(Sleeve.LONG, 450_000 * FT,
+            List.of(ProposalFixtures.WORLD, twin, ProposalFixtures.WORLD_DIST));
+        assertThat(tie.options().get(0).differs()).doesNotContain(lowest);
+        assertThat(tie.options().get(1).differs()).doesNotContain(lowest);
+        assertThat(tie.options().get(2).differs()).contains("évente 90 Ft-tal többe kerül, mint a legolcsóbb");
+        // a zero amount: every cost is 0 Ft, nobody is cheaper
+        SleeveOptions zero = ProductOptions.forSleeve(Sleeve.LONG, 0,
+            List.of(ProposalFixtures.WORLD, ProposalFixtures.WORLD_DIST));
+        assertThat(zero.options()).allSatisfy(o -> assertThat(o.differs()).doesNotContain(lowest)
+            .noneMatch(d -> d.contains("többe kerül")));
+    }
+
+    @Test
     void testForSleeve_shouldSayHonestly_whenFewerThanTwoApproved() {
         SleeveOptions one = ProductOptions.forSleeve(Sleeve.LONG, 1_000 * FT, List.of(ProposalFixtures.WORLD));
         assertThat(one.note()).isEqualTo(
