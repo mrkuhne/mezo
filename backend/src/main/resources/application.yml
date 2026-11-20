@@ -2916,6 +2916,10 @@ mezo:
     target-rir: 1
     compound-warmup: 2
     isolation-warmup: 1
+    # Training style a generated block carries (mezo-r36n9.115): its exercises are stamped from the
+    # mezo.train.style row (rep range, reserve, rest), so the rep/target-rir frames above then only
+    # apply when this is blank (= the unstyled block of before). balanced | volume | heavy | allout.
+    default-training-style: balanced
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
     deload-fraction: 0.5    # deload target = round(prevSets * this)
@@ -2979,13 +2983,13 @@ mezo:
         other:      { light: 3.0, moderate: 4.0, hard: 6.0 }   # fallback for unmapped kinds (e.g. kajak); mirrors volleyball's generic band
     # Training styles (mezo-r36n9.79, spec §6.2) — binds onto TrainStyleProperties. Stamped onto every
     # exercise of a styled block; working-sets null = keep the plan's, leg-reserve null = reserve.
+    # Per-class reserve (mezo-r36n9.115, The Muscle Ladder p.322-324): a leg compound takes leg-reserve, a stable
+    # (machine) compound stable-compound-reserve, an isolation isolation-reserve; each null = reserve. Free compounds
+    # keep the heavier-compound reserve (fatigue management); volume/allout stay one reserve (high-rep RIR is noisy).
     style:
       allout-free-reserve: 1        # all-out asked on a free exercise -> heavy row at this reserve
       same-range-max-age-days: 56   # reference must be this fresh to count as the same-range reference
       stall-weeks: 2
-    # Per-class reserve (mezo-r36n9.115, The Muscle Ladder p.322-324): a leg compound takes leg-reserve, a stable
-    # (machine) compound stable-compound-reserve, an isolation isolation-reserve; each null = reserve. Free compounds
-    # keep the heavier-compound reserve (fatigue management); volume/allout stay one reserve (high-rep RIR is noisy).
       ramp: { middle-delta: 1, last-week-delta: 2, deload-delta: 2, free-floor: 1 }
       styles:
         balanced: { compound-rep-min: 6,  compound-rep-max: 10, isolation-rep-min: 10, isolation-rep-max: 15, reserve: 2, leg-reserve: 3, stable-compound-reserve: 1, isolation-reserve: 1, compound-rest-sec: 150, isolation-rest-sec: 90,  rep-overflow: 3 }
