@@ -141,6 +141,7 @@ accepted adaptive correction or a concurrent accept between preview and accept t
 - **close** (`POST …/{id}/close`) — status `closed` + a small `closed_summary`; goal and slots stay. **The sleep goal
   gets its base back** (`sleep_base_min`) unless he changed it himself since the season wrote it.
 - **putRules** (`PUT …/{id}/rules`) — the switches; no kcal effect, so no preview.
+- The phone's `evadErrorText` words every refusal it can meet, including train's shared `dayWorkoutRunning` case („Épp fut az edzésed…”), which no Évad call returns but the error type carries.
 - A closed season is not editable → 409 `SEASON_NOT_EDITABLE`. A second active season cannot exist: activation closes
   the previous one, and the partial unique index `uq_season_one_active` is the backstop. `SEASON_ACTIVE_EXISTS` is in
   the bundles (and the phone maps it) but no server path throws it today.

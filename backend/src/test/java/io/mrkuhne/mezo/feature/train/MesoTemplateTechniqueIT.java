@@ -125,6 +125,22 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
     }
 
     @Test
+    void restPauseTemplateExerciseIsTwentyReps() {
+        // mezo-r36n9.125: the template save pins the whole exercise to 20 and marks the range his
+        ownerId();
+        GymExerciseInput fly = tech(ex("Cable Fly", "chest-mid", catalog("cable-fly")), Technique.REST_PAUSE);
+
+        MesoTemplateResponse t = postForBody(TEMPLATES, request(true, List.of(fly)), ownerAuthHeaders(),
+            HttpStatus.OK, MesoTemplateResponse.class);
+
+        GymExercise e = t.getDays().get(0).getExercises().get(0);
+        assertThat(e.getTechnique()).isEqualTo(Technique.REST_PAUSE);
+        assertThat(e.getRepMin()).isEqualTo(20);
+        assertThat(e.getRepMax()).isEqualTo(20);
+        assertThat(e.getOverrides()).contains(io.mrkuhne.mezo.api.dto.StyleOverride.REP_RANGE);
+    }
+
+    @Test
     void freeExerciseTechniqueRejected() {
         ownerId();
         HttpHeaders auth = ownerAuthHeaders();

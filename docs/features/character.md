@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-11-20
+updated: 2026-11-21
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -19,6 +19,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 > **2026-11-20 — reviewed after Boop Pénz L6 (`mezo-r36n9.104`, no dossier change).** The shared `1.1.0/script` folder gained `202611201600_mezo-r36n9.104_penz_portfolio.sql` (seven `penz_*` tables: holdings, investment transactions, holding events, quotes, news articles, digests, provider status — owned by [`penz.md`](penz.md)); no Karakter table, detector or signal reads money or news.
 
 > **2026-11-19 — reviewed after `mezo-r36n9.66`:** the new `exercise_discomfort` / `gym_profile` changesets under `backend/src/main/resources/db/changelog/1.1.0/script` are train-owned and not part of the character dossier; no character behaviour changed (see [`train.md`](train.md) §4).
+
+> **2026-11-21 — reviewed after the rest-pause technique (`mezo-r36n9.125`, no character change).** The changelog gained `202611211100_mezo-r36n9.125_rest_pause.sql` (widens the two technique check constraints with `rest_pause`, owned by [`train`](train.md) §4). A `rest_pause` set carries a technique like any other, so `RirCalibrationDetector` skips it already; no character table is touched.
 
 > **2026-11-19 — reviewed after T3 (`mezo-r36n9.81`, one small change).** `CharacterSignalReads` now flags working sets that carry an intensity technique (`DetectorInput.SetPoint.technique`) and `RirCalibrationDetector` skips them (planner-placed techniques make them reachable without a manual pick); nothing else in the character feature changed ([`train.md`](train.md) §4 *Technique planner and challenge*).
 

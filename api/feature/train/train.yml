@@ -4264,7 +4264,7 @@ components:
           description: Rest after this set in seconds; set only on styled blocks.
     Technique:
       type: string
-      enum: [none, rest_drop, drop, myo, partials]
+      enum: [none, rest_drop, drop, myo, partials, rest_pause]
       description: Intensity technique applied to the last working set of an exercise.
     TechniqueSource:
       type: string

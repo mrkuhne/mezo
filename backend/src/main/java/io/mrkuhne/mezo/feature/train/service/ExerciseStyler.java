@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
+import io.mrkuhne.mezo.feature.train.config.TrainTechniqueProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
 import io.mrkuhne.mezo.feature.train.entity.json.GymExerciseJson;
@@ -32,6 +33,7 @@ public class ExerciseStyler {
     private final CatalogAttributes catalogAttributes;
     private final TrainStyleProperties props;
     private final TrainMapper mapper;
+    private final TrainTechniqueProperties techniqueProps;
 
     /** Template save: carry over per day (same index in the days array), then stamp every exercise. */
     public List<MesoDayJson> styleTemplateDays(List<MesoDayJson> stored, List<MesoDayJson> incoming,
@@ -46,7 +48,8 @@ public class ExerciseStyler {
         CatalogAttributes.Lookup stability = lookup(
             carried.stream().flatMap(d -> d.exercises().stream()).toList(), block);
         return carried.stream().map(day -> withExercises(day, day.exercises().stream()
-            .map(e -> noneAsNull(StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props))).toList()))
+            .map(e -> noneAsNull(pinRestPause(StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props),
+                restPauseReps()))).toList()))
             .toList();
     }
 
@@ -82,7 +85,8 @@ public class ExerciseStyler {
             if (!fresh.get(i).isCountsTowardVolume()) {
                 continue; // closing block / plyo rows keep their own fixed prescription
             }
-            applyTo(fresh.get(i), StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props));
+            applyTo(fresh.get(i), pinRestPause(StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props),
+                restPauseReps()));
         }
         return stability;
     }
@@ -101,7 +105,8 @@ public class ExerciseStyler {
                 continue;
             }
             GymExerciseJson e = current.get(i);
-            applyTo(rows.get(i), StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props));
+            applyTo(rows.get(i), pinRestPause(StyleStamper.stamp(e, block, stability.stable(e.catalogId()), props),
+                restPauseReps()));
         }
         return stability;
     }
@@ -313,6 +318,38 @@ public class ExerciseStyler {
         return a.catalogId() != null
             ? a.catalogId().equals(b.catalogId())
             : b.catalogId() == null && Objects.equals(a.name(), b.name());
+    }
+
+    /** {@link #pinRestPause} on one stored run row, in place (the per-exercise technique pick, mezo-r36n9.125). */
+    public void pinRestPause(ExerciseEntity row) {
+        GymExerciseJson current = mapper.toExerciseJson(row);
+        GymExerciseJson pinned = pinRestPause(current, restPauseReps());
+        if (pinned != current) {
+            applyTo(row, pinned);
+        }
+    }
+
+    private int restPauseReps() {
+        return techniqueProps.restPause().mainReps();
+    }
+
+    /**
+     * The owner's fixed rest-pause (mezo-r36n9.125) pins the WHOLE exercise to {@code reps} (owner 2026-11-20: every
+     * set, not only the technique set) and marks the rep range his, so no style stamps over it. Removing the
+     * technique later leaves the range as it is. Any other technique: unchanged.
+     */
+    static GymExerciseJson pinRestPause(GymExerciseJson e, int reps) {
+        if (!Technique.REST_PAUSE.wire().equals(e.technique())) {
+            return e;
+        }
+        List<String> overrides = new ArrayList<>(e.overrides() == null ? List.of() : e.overrides());
+        if (!overrides.contains("repRange")) {
+            overrides.add("repRange");
+        }
+        return new GymExerciseJson(e.id(), e.name(), e.muscle(), e.warmupSets(), e.workingSets(), reps, reps,
+            e.targetRir(), e.anchorWeightKg(), e.type(), e.warning(), e.catalogId(), e.countsTowardVolume(),
+            e.trainingStyle(), e.restSec(), List.copyOf(overrides), null, null, null)
+            .withTechnique(e.technique(), e.techniqueSource(), e.challenge());
     }
 
     /** "none" is stored as null everywhere (readers treat null as none); the wire "none" only means "clear it". */

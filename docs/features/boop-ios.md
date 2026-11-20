@@ -758,6 +758,12 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   the remaining technique steps to the challenge. The
   rest between sets is now the plan's own `restSec` on a styled block (else 90 s). Simulator switch:
   `-previewEdzesTechnique YES` (rest drop on the first exercise, the challenge on the second, myo on the last).
+  **Rest pause** (`SetTechnique.restPause`, wire `rest_pause`, `mezo-r36n9.125`, owner 2026-11-20): the owner's fixed
+  20 + 4 × (10 s, 5). It rides the myo path — `mini` legs, `TechniqueLines` shares the myo branch — but its legs carry
+  no `minReps`, so `WorkoutSession.logLeg` never ends it early; only „Elég volt" does. Offered wherever myo is
+  (`allowedTechniques`), drawn with the myo mark. `BlockDraft.setTechnique(.restPause)` pins the row to
+  `repMin = repMax = SetTechnique.restPauseReps` (20) and marks `repRange` his (the server pins it again on save);
+  taking the technique off leaves the range.
 
 - **The reasoned swap sheet (`mezo-r36n9.66`, 2026-11-19; spec
   [`2026-11-17-boop-gyakorlatvalasztas-design.md`](../superpowers/specs/2026-11-17-boop-gyakorlatvalasztas-design.md)

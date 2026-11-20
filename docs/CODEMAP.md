@@ -69,7 +69,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### auth
 
 *BE + API* · read next: [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-11-19, done) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-20, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-21, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
@@ -159,7 +159,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### character
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-20, shipped)
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-21, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -267,7 +267,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### companion
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-20, shipped) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-21, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-20, mixed) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-20, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
@@ -275,7 +275,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed) ·
   [docs/features/penz.md](features/penz.md) (updated 2026-11-20, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-20, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-21, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
@@ -1317,7 +1317,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/train/running-blocks · PUT /api/train/running-blocks/{id} · DELETE /api/train/running-blocks/{id} ·
     POST /api/train/running-blocks/{id}/activate · POST /api/train/running-blocks/{id}/close ·
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 133 IT + 51 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 133 IT + 52 unit
   - **ITs:** `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`,
     `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`,
     `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,

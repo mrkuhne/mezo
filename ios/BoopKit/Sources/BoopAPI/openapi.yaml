@@ -289,6 +289,67 @@ tags:
       (source sms, needsReview true); the same SMS again answers `duplicate` and
       never doubles. Keys are managed with the normal JWT; the plaintext key is
       returned ONCE, at creation.
+  - name: PenzPortfolio
+    description: >
+      Boop Pénz L6 (mezo-r36n9.104) — the portfolio by horizon. A holding is one
+      product in one sleeve (short = 1–3 év, mid = 5–10 év, long = 10+ év); the
+      same product in two sleeves is two holdings. Buys and sells keep lot-level
+      (FIFO) cost basis; every amount is a PenzMoney (own currency + HUF twin
+      booked once at the transaction's date by the L4 FX policy). The portfolio
+      read values holdings at the latest cached quote (Yahoo chart endpoint,
+      daily close) and the latest cached FX quote (CURHUF=X) — the VALUATION
+      policy, distinct from the booking policy — and splits the move since the
+      previous close into price and currency. Every figure is computed here;
+      nothing is generated.
+  - name: PenzNews
+    description: >
+      Boop Pénz L6 (mezo-r36n9.104) — the daily news digest at the bottom of Ma.
+      Only stories touching the caller's own holdings (plus macro moves that
+      touch something they own), grouped with a source count. Every figure in an
+      item (effectHufMinor, changePct) is computed by the backend and passed
+      through verbatim; the model writes only the prose, which is validated
+      (amount guard, numbers, entities, direction, boundary words) and replaced
+      by fixed copy when it fails. No verdict, no buy/sell. No push.
+  - name: PenzPractice
+    description: >
+      Boop Pénz L7 (mezo-r36n9.105) — Gyakorlás, day trading as learning, on
+      paper (every row paper = true; phase 1 never accepts anything else). A
+      trade starts as a plan (instrument, direction, why, stop, quantity), is
+      opened (entry price + date) and closed with a journal line (exit, ≥ 1 of
+      the eight fixed tags, mistake flag, one line) — no plan, no trade. Prices
+      are owner-typed; there is no market data and nothing watches a stop. R =
+      P/L ÷ initial risk. HUF twins follow the L4 booking policy at the trade's
+      own dates. The monthly cap is the settings' practice amount (the
+      allowance's Gyakorlás line): open costs + the month's net closed loss;
+      opening above what is left is 422 PENZ_PRACTICE_CAP_EXCEEDED. The weekly
+      review is computed figures with fixed Hungarian copy — no model call.
+  - name: PenzCatalog
+    description: >
+      Boop Pénz L7 (mezo-r36n9.105) — the curated product list a proposal may
+      name (spec §10.2.1). Per owner, seeded once from a researched list (every
+      seed row suggested / research, with fee fields, its source and the date
+      the figures were checked); the model never adds a product. The owner
+      approves or declines with one tap, adds one himself (approved at once) or
+      updates fees (reviewedAt = today). Only approved rows ever appear in a
+      proposal.
+  - name: PenzProposal
+    description: >
+      Boop Pénz L7 (mezo-r36n9.105) — the investment proposal flow and the
+      monthly strategy. A proposal splits one amount across the three sleeves by
+      fixed, printed rules (emergency shortfall first, then 40 % mid / 60 %
+      long, 1 000 Ft rounding), offers two or three approved products per sleeve
+      with server-computed costs, and carries a narration the model writes from
+      those figures only (validated; fixed copy when it fails). He adjusts every
+      number and accepts; the accepted plan is a checklist he ticks himself.
+      Nothing here moves money, records a transaction or creates a holding.
+  - name: Season
+    description: >
+      Boop B6 Évad (mezo-r36n9.16) — one N-week season that owns its goal (1:1),
+      the weekly gym + sport slots and the training block (through
+      goal_plan_link), derives the food targets, the sleep need and the weight
+      course, and previews every change without persisting anything. Nothing
+      changes until the owner accepts (activate / apply). A value the server
+      cannot compute is null — the phone leaves it out, it never invents one.
 paths:
   /api/auth/login:
     post:
@@ -1025,6 +1086,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/exercise-suggestions':
+    post:
+      tags:
+        - Train
+      operationId: getBlockExerciseSuggestions
+      summary: >-
+        Ranked, reasoned add/swap suggestions for one day of a training block's
+        plan (mezo-r36n9.116)
+      description: >-
+        The block day editor's suggestions — the workout swap's ranker over the
+        block's goal, the gym profile and the discomfort history, with today's
+        check-in pain only when the edited day is today's weekday. Replace ranks
+        alternatives to an outgoing exercise; add ranks the catalogue rows of
+        one coarse muscle group and explains a muscle under its weekly band.
+        Each suggestion carries the block style's prescription. Read-only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockExerciseSuggestionsRequest'
+      responses:
+        '200':
+          description: Suggestions and labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseSubstitutesResponse'
+        '400':
+          description: 'Validation error (replace without outgoing, add without muscle)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Block not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The block is archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/evaluation':
     get:
       tags:
@@ -1173,6 +1293,14 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Mesocycle/day not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            A structural change (reorder/add/remove/swap) while that day's
+            workout is running (TRAIN_DAY_WORKOUT_RUNNING)
           content:
             application/json:
               schema:
@@ -14783,6 +14911,1643 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/holdings:
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: listPenzHoldings
+      summary: >-
+        The caller's holdings (archived included, flagged), by sleeve then
+        position
+      responses:
+        '200':
+          description: Holdings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzHoldingResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzPortfolio
+      operationId: createPenzHolding
+      summary: >
+        Create a holding — idempotent on clientRef. A symbol is checked against
+        the quote source once; an unknown symbol is 400 PENZ_SYMBOL_UNKNOWN, an
+        unreachable source accepts the holding unpriced.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzHoldingRequest'
+      responses:
+        '201':
+          description: The stored holding (also the answer to a replayed clientRef)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzHoldingResponse'
+        '400':
+          description: Validation failure / PENZ_SYMBOL_UNKNOWN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/holdings/{id}':
+    put:
+      tags:
+        - PenzPortfolio
+      operationId: updatePenzHolding
+      summary: >-
+        Update a holding (clientRef ignored; the currency cannot change once a
+        transaction exists)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzHoldingRequest'
+      responses:
+        '200':
+          description: The updated holding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzHoldingResponse'
+        '400':
+          description: Validation failure / PENZ_SYMBOL_UNKNOWN / PENZ_CURRENCY_MISMATCH
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - PenzPortfolio
+      operationId: deletePenzHolding
+      summary: Soft-delete a holding with its transactions and events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/holdings/{id}/transactions':
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: listPenzInvestTransactions
+      summary: 'One holding''s buys and sells, newest first'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Investment transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzInvestTxnResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/invest-transactions:
+    post:
+      tags:
+        - PenzPortfolio
+      operationId: createPenzInvestTransaction
+      summary: >
+        Record a buy or a sell he already made on his own platform — idempotent
+        on clientRef. The currency is the holding's; a sell above the open
+        quantity (or, without quantities, above the open cost) is 400
+        PENZ_SELL_EXCEEDS_POSITION. Non-HUF amounts are booked at the date's ECB
+        rate (503 PENZ_FX_UNAVAILABLE).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzInvestTxnRequest'
+      responses:
+        '201':
+          description: The stored transaction (also the answer to a replayed clientRef)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzInvestTxnResponse'
+        '400':
+          description: >-
+            Validation failure / PENZ_SELL_EXCEEDS_POSITION /
+            PENZ_CURRENCY_MISMATCH
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/invest-transactions/{id}':
+    delete:
+      tags:
+        - PenzPortfolio
+      operationId: deletePenzInvestTransaction
+      summary: >-
+        Soft-delete a buy or sell (refused when it would leave a later sell
+        above the open position)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          description: PENZ_SELL_EXCEEDS_POSITION
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_INVEST_TXN_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/holding-events:
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: listPenzHoldingEvents
+      summary: 'The caller''s portfolio events from a date (default today), soonest first'
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzHoldingEventResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzPortfolio
+      operationId: createPenzHoldingEvent
+      summary: >-
+        Add a maturity / coupon / dividend / earnings date — idempotent on
+        clientRef
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzHoldingEventRequest'
+      responses:
+        '201':
+          description: The stored event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzHoldingEventResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/holding-events/{id}':
+    delete:
+      tags:
+        - PenzPortfolio
+      operationId: deletePenzHoldingEvent
+      summary: Soft-delete an event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_EVENT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/portfolio:
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: getPenzPortfolio
+      summary: >-
+        Pénzem — totals, the three sleeves with their holdings, the forward
+        timeline and the practice row
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The portfolio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPortfolioResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/digest:
+    get:
+      tags:
+        - PenzNews
+      operationId: getPenzDigest
+      summary: >-
+        The day's news digest (default today in the caller's money timezone);
+        status pending until built
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The digest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzDigestResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/digest/refresh:
+    post:
+      tags:
+        - PenzNews
+      operationId: refreshPenzDigest
+      summary: >-
+        Rebuild today's digest for the caller in the background (quotes + news +
+        narration); at most every 15 minutes
+      responses:
+        '202':
+          description: Accepted — read GET /api/penz/digest again later
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '429':
+          description: PENZ_DIGEST_REFRESH_LIMITED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/practice:
+    get:
+      tags:
+        - PenzPractice
+      operationId: getPenzPractice
+      summary: >-
+        The Gyakorlás tab — cap, month P/L, averages, the eight tags, the week's
+        review, open and planned trades
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The practice overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPracticeOverview'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/practice/trades:
+    get:
+      tags:
+        - PenzPractice
+      operationId: listPenzPaperTrades
+      summary: >-
+        The full journal, newest first (by exit, else entry, else creation
+        date), optionally within dates
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Paper trades
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzPaperTrade'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzPractice
+      operationId: createPenzPaperTrade
+      summary: >
+        Create a plan — idempotent on clientRef. With entryMinor it is opened in
+        the same call (cap checked). The stop must be on the losing side of the
+        (planned) entry (400 PENZ_PAPER_TRADE_INVALID_STOP).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeRequest'
+      responses:
+        '201':
+          description: The stored trade (also the answer to a replayed clientRef)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure / PENZ_PAPER_TRADE_INVALID_STOP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: PENZ_PRACTICE_CAP_EXCEEDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}':
+    put:
+      tags:
+        - PenzPractice
+      operationId: updatePenzPaperTrade
+      summary: >-
+        Edit a plan (planned only; clientRef ignored). With entryMinor it is
+        opened too (cap checked).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeRequest'
+      responses:
+        '200':
+          description: The updated trade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure / PENZ_PAPER_TRADE_INVALID_STOP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: PENZ_PRACTICE_CAP_EXCEEDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - PenzPractice
+      operationId: deletePenzPaperTrade
+      summary: Soft-delete a trade in any state
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}/open':
+    post:
+      tags:
+        - PenzPractice
+      operationId: openPenzPaperTrade
+      summary: Open a plan at the typed entry (planned only; the cap is checked here)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeOpenRequest'
+      responses:
+        '200':
+          description: The opened trade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure / PENZ_PAPER_TRADE_INVALID_STOP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: PENZ_PRACTICE_CAP_EXCEEDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}/close':
+    post:
+      tags:
+        - PenzPractice
+      operationId: closePenzPaperTrade
+      summary: >-
+        Close an open trade with its journal line (≥ 1 known tag, 400
+        PENZ_PRACTICE_TAG_UNKNOWN otherwise)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeCloseRequest'
+      responses:
+        '200':
+          description: The closed trade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure / PENZ_PRACTICE_TAG_UNKNOWN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}/last-close':
+    post:
+      tags:
+        - PenzPractice
+      operationId: setPenzPaperTradeLastClose
+      summary: >-
+        Record the last close he typed for an open trade (no market data is
+        fetched)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeLastCloseRequest'
+      responses:
+        '200':
+          description: The trade with its unrealized P/L
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}/cancel':
+    post:
+      tags:
+        - PenzPractice
+      operationId: cancelPenzPaperTrade
+      summary: Cancel a plan that was never opened (planned only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The cancelled trade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/catalog:
+    get:
+      tags:
+        - PenzCatalog
+      operationId: listPenzProducts
+      summary: >-
+        The caller's product list — approved, then suggested, then declined
+        (seeded once on first access)
+      responses:
+        '200':
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzProduct'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzCatalog
+      operationId: createPenzProduct
+      summary: >-
+        Add a product himself — stored approved, suggestedBy owner, reviewedAt
+        today
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProductRequest'
+      responses:
+        '201':
+          description: The stored product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProduct'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/catalog/{id}':
+    put:
+      tags:
+        - PenzCatalog
+      operationId: updatePenzProduct
+      summary: >-
+        Edit a product's text or fees — reviewedAt becomes today; the status
+        does not change
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProductRequest'
+      responses:
+        '200':
+          description: The updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProduct'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PRODUCT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/catalog/{id}/approve':
+    post:
+      tags:
+        - PenzCatalog
+      operationId: approvePenzProduct
+      summary: One tap — the product may now be named in a proposal (idempotent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The approved product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProduct'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PRODUCT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/catalog/{id}/decline':
+    post:
+      tags:
+        - PenzCatalog
+      operationId: declinePenzProduct
+      summary: >-
+        One tap — the product is never offered (idempotent; an approved product
+        may be declined later)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The declined product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProduct'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PRODUCT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/strategy:
+    get:
+      tags:
+        - PenzProposal
+      operationId: getPenzStrategy
+      summary: >
+        The monthly strategy figure (the old app's monthly-investable formula)
+        with its inputs, and the month's current monthly proposal if any.
+        Computed on every read; re-proposed only when he asks.
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The strategy figure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzStrategy'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/proposals:
+    get:
+      tags:
+        - PenzProposal
+      operationId: listPenzProposals
+      summary: 'The caller''s proposals, newest first, optionally of one status'
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: ^(proposed|accepted|dismissed|superseded)$
+      responses:
+        '200':
+          description: Proposals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzProposal'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzProposal
+      operationId: createPenzProposal
+      summary: >
+        Ask for a proposal — lump_sum with his amount, or monthly for the
+        strategy figure. A newer proposal of the same kind supersedes an
+        un-accepted older one. No amount (or a monthly figure of 0) is 400
+        PENZ_PROPOSAL_AMOUNT_INVALID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProposalRequest'
+      responses:
+        '201':
+          description: The new proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '400':
+          description: Validation failure / PENZ_PROPOSAL_AMOUNT_INVALID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/proposals/{id}':
+    get:
+      tags:
+        - PenzProposal
+      operationId: getPenzProposal
+      summary: One proposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PROPOSAL_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/proposals/{id}/accept':
+    post:
+      tags:
+        - PenzProposal
+      operationId: acceptPenzProposal
+      summary: >
+        Accept with his own numbers. Each sleeve at most once; a product must be
+        one of that sleeve's offered options and still approved (409
+        PENZ_PRODUCT_NOT_APPROVED), or null when the amount is 0; the total must
+        be above 0 (400 PENZ_PROPOSAL_AMOUNT_INVALID). Only a proposed proposal
+        can be accepted (409 PENZ_PROPOSAL_STATE).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProposalAcceptRequest'
+      responses:
+        '200':
+          description: The accepted proposal with its plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '400':
+          description: Validation failure / PENZ_PROPOSAL_AMOUNT_INVALID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PROPOSAL_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PROPOSAL_STATE / PENZ_PRODUCT_NOT_APPROVED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/proposals/{id}/dismiss':
+    post:
+      tags:
+        - PenzProposal
+      operationId: dismissPenzProposal
+      summary: Most nem — only a proposed proposal (409 PENZ_PROPOSAL_STATE otherwise)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The dismissed proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PROPOSAL_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PROPOSAL_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/proposals/{id}/steps/{index}':
+    post:
+      tags:
+        - PenzProposal
+      operationId: setPenzProposalStep
+      summary: >
+        Tick or untick one step of an accepted plan. Records nothing in Pénzem —
+        the real buy is recorded with the existing investment sheet. Not
+        accepted → 409 PENZ_PROPOSAL_STATE; no such step → 404
+        PENZ_PROPOSAL_NOT_FOUND.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: index
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProposalStepRequest'
+      responses:
+        '200':
+          description: The proposal with the step updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PROPOSAL_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PROPOSAL_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons:
+    get:
+      tags:
+        - Season
+      operationId: listSeasons
+      summary: 'The owner''s seasons, newest start first'
+      responses:
+        '200':
+          description: Seasons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SeasonResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Season
+      operationId: createSeason
+      summary: >-
+        Create a planned season (and its planned goal) from a draft — activates
+        nothing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonDraft'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/draft:
+    get:
+      tags:
+        - Season
+      operationId: getFirstSeasonDraft
+      summary: >-
+        A season draft assembled from the live goal, the running block, the
+        weekly slots and the sleep goal (persists nothing)
+      responses:
+        '200':
+          description: Draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonDraft'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/draft/preview:
+    post:
+      tags:
+        - Season
+      operationId: previewSeasonDraft
+      summary: >-
+        The live consequences of a draft before any season exists (the
+        new-season summary). Persists nothing; before = the current state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonDraft'
+      responses:
+        '200':
+          description: Preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonPreview'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/active/overview:
+    get:
+      tags:
+        - Season
+      operationId: getSeasonOverview
+      summary: The one read model the Évad tab renders
+      responses:
+        '200':
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonOverview'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No active season (the phone shows the empty state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/{id}':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - Season
+      operationId: applySeason
+      summary: >-
+        Apply a previewed draft in one transaction (goal, slots, sleep need,
+        block, revision). A stale fingerprint is 409 SEASON_PREVIEW_STALE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonApply'
+      responses:
+        '200':
+          description: Applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            SEASON_PREVIEW_STALE, SEASON_NOT_EDITABLE, or
+            SEASON_BLOCK_DAYS_LOCKED (the gym days differ from the season's
+            while its block is running — the block's weekdays would no longer
+            match; changes once the block can be re-arranged)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/{id}/activate':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - Season
+      operationId: activateSeason
+      summary: >-
+        Activate a planned season — its goal, the slots, the sleep need and the
+        block in one transaction; the previous active season closes
+      responses:
+        '200':
+          description: Activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: SEASON_NOT_EDITABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/{id}/close':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - Season
+      operationId: closeSeason
+      summary: Close a season
+      responses:
+        '200':
+          description: Closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/{id}/preview':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - Season
+      operationId: previewSeason
+      summary: >-
+        The live consequences of a change to this season — before = the season
+        as it is, after = the draft. Persists nothing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonDraft'
+      responses:
+        '200':
+          description: Preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonPreview'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/{id}/rules':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - Season
+      operationId: putSeasonRules
+      summary: 'Change the season''s switches (no kcal effect, so no preview)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonRules'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -17352,6 +19117,85 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/LastTopSet'
+        prescription:
+          nullable: true
+          description: >-
+            The block style's prescription for this exercise (block day editor
+            only, mezo-r36n9.116); null on an unstyled block, for a row the
+            style never stamps (plyo), and always on the workout swap read
+          allOf:
+            - $ref: '#/components/schemas/SuggestionPrescription'
+    SuggestionPrescription:
+      type: object
+      required:
+        - workingSets
+        - repMin
+        - repMax
+        - targetRIR
+        - restSec
+      properties:
+        workingSets:
+          type: integer
+        repMin:
+          type: integer
+        repMax:
+          type: integer
+        targetRIR:
+          type: integer
+          description: Reps in reserve (tartalék)
+        restSec:
+          type: integer
+    BlockExerciseSuggestionsRequest:
+      type: object
+      required:
+        - mode
+        - dayIndex
+        - dayCatalogIds
+      properties:
+        mode:
+          type: string
+          enum:
+            - replace
+            - add
+        dayIndex:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: 'Weekday of the edited day, 0 = Monday (Hét) … 6 = Sunday (Vas)'
+        outgoing:
+          nullable: true
+          description: The exercise being replaced; required when mode = replace
+          allOf:
+            - $ref: '#/components/schemas/BlockSuggestionOutgoing'
+        muscle:
+          type: string
+          nullable: true
+          description: >-
+            Coarse muscle group key (back, chest, quad, …); required when mode =
+            add
+        dayCatalogIds:
+          type: array
+          description: Catalogue ids of the draft day's current exercises — never suggested
+          items:
+            type: string
+            format: uuid
+    BlockSuggestionOutgoing:
+      type: object
+      required:
+        - name
+        - muscle
+        - type
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        muscle:
+          type: string
+        type:
+          type: string
     LastTopSet:
       type: object
       required:
@@ -17957,6 +19801,7 @@ components:
         - drop
         - myo
         - partials
+        - rest_pause
       description: Intensity technique applied to the last working set of an exercise.
     TechniqueSource:
       type: string
@@ -34380,3 +36225,2247 @@ components:
         plaintext:
           type: string
           description: 'mzp_<base64url 32 bytes> — shown once, never stored'
+    PenzHoldingRequest:
+      type: object
+      required:
+        - name
+        - assetType
+        - platform
+        - sleeve
+        - currency
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        assetType:
+          type: string
+          pattern: ^(bond|etf|stock|fund|crypto|cash)$
+        symbol:
+          type: string
+          nullable: true
+          pattern: '^[A-Za-z0-9.\-=^]{1,20}$'
+          description: 'Yahoo symbol, e.g. OTP.BD, VWCE.DE; null = not quoted (bond, cash)'
+        platform:
+          type: string
+          pattern: ^(mbh|revolut|other)$
+        platformName:
+          type: string
+          nullable: true
+          maxLength: 40
+        sleeve:
+          type: string
+          pattern: ^(short|mid|long)$
+        currency:
+          type: string
+          pattern: ^(HUF|EUR|USD|GBP|CHF)$
+        bondRatePct:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 100
+          description: Simple-interest accrual for an unquoted bond
+        newsTerms:
+          type: array
+          maxItems: 8
+          description: Extra words that tie a news story to this holding (aliases)
+          items:
+            type: string
+            minLength: 2
+            maxLength: 40
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
+        position:
+          type: integer
+          nullable: true
+          minimum: 0
+        archived:
+          type: boolean
+          nullable: true
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzHoldingResponse:
+      type: object
+      required:
+        - id
+        - name
+        - assetType
+        - platform
+        - sleeve
+        - currency
+        - newsTerms
+        - position
+        - archived
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        assetType:
+          type: string
+          enum:
+            - bond
+            - etf
+            - stock
+            - fund
+            - crypto
+            - cash
+        symbol:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum:
+            - mbh
+            - revolut
+            - other
+        platformName:
+          type: string
+          nullable: true
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        currency:
+          type: string
+        bondRatePct:
+          type: number
+          nullable: true
+        newsTerms:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+          nullable: true
+        position:
+          type: integer
+        archived:
+          type: boolean
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzInvestTxnRequest:
+      type: object
+      required:
+        - holdingId
+        - side
+        - amountMinor
+        - date
+      properties:
+        holdingId:
+          type: string
+          format: uuid
+        side:
+          type: string
+          pattern: ^(buy|sell)$
+        quantity:
+          type: number
+          nullable: true
+          exclusiveMinimum: true
+          minimum: 0
+          description: Units; null for a bond or cash held by value
+        amountMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+          description: 'Total paid / received in the holding currency, minor units'
+        date:
+          type: string
+          format: date
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzInvestTxnResponse:
+      type: object
+      required:
+        - id
+        - holdingId
+        - side
+        - amount
+        - date
+      properties:
+        id:
+          type: string
+          format: uuid
+        holdingId:
+          type: string
+          format: uuid
+        side:
+          type: string
+          enum:
+            - buy
+            - sell
+        quantity:
+          type: number
+          nullable: true
+        amount:
+          $ref: '#/components/schemas/PenzMoney'
+        fxRateDate:
+          type: string
+          format: date
+          nullable: true
+        date:
+          type: string
+          format: date
+        note:
+          type: string
+          nullable: true
+        realizedHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            A sell only: proceeds minus the FIFO cost of the lots it consumed
+            (HUF minor)
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzHoldingEventRequest:
+      type: object
+      required:
+        - holdingId
+        - kind
+        - date
+      properties:
+        holdingId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          pattern: ^(maturity|coupon|dividend|earnings|other)$
+        date:
+          type: string
+          format: date
+        amountMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: 'Expected amount in the holding currency, minor units'
+        note:
+          type: string
+          nullable: true
+          maxLength: 200
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzHoldingEventResponse:
+      type: object
+      required:
+        - id
+        - holdingId
+        - holdingName
+        - sleeve
+        - kind
+        - date
+      properties:
+        id:
+          type: string
+          format: uuid
+        holdingId:
+          type: string
+          format: uuid
+        holdingName:
+          type: string
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        kind:
+          type: string
+          enum:
+            - maturity
+            - coupon
+            - dividend
+            - earnings
+            - other
+        date:
+          type: string
+          format: date
+        amountMinor:
+          type: integer
+          format: int64
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        amountHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: Valued at the latest FX quote (valuation policy)
+        note:
+          type: string
+          nullable: true
+    PenzPortfolioResponse:
+      type: object
+      required:
+        - date
+        - totalHufMinor
+        - priceMoveHufMinor
+        - fxMoveHufMinor
+        - sleeves
+        - events
+        - practice
+        - stale
+        - unpricedCount
+      properties:
+        date:
+          type: string
+          format: date
+        totalHufMinor:
+          type: integer
+          format: int64
+          description: >-
+            Everything he has in the three sleeves now; the practice money is
+            NOT in it
+        costHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+        priceMoveHufMinor:
+          type: integer
+          format: int64
+          description: 'Since the previous close: the instruments'' own move'
+        fxMoveHufMinor:
+          type: integer
+          format: int64
+          description: 'Since the previous close: the currency part'
+        priceMovePct:
+          type: number
+          nullable: true
+          description: 'priceMove / the quoted holdings'' previous value, percent, 1 decimal'
+        fxMovePct:
+          type: number
+          nullable: true
+        pricesAsOf:
+          type: string
+          format: date
+          nullable: true
+          description: The oldest quote date among the priced holdings
+        stale:
+          type: boolean
+          description: 'pricesAsOf older than 3 days, or the quote source failing'
+        unpricedCount:
+          type: integer
+          description: 'Holdings valued at cost (no quote, no rate)'
+        fixedCostsMonthlyHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: The allowance engine's fixedCosts line for the month
+        sleeves:
+          type: array
+          description: 'Always three, in order short, mid, long'
+          items:
+            $ref: '#/components/schemas/PenzSleeve'
+        events:
+          type: array
+          description: 'The next 12 months, soonest first'
+          items:
+            $ref: '#/components/schemas/PenzHoldingEventResponse'
+        practice:
+          $ref: '#/components/schemas/PenzPracticeRow'
+    PenzSleeve:
+      type: object
+      required:
+        - sleeve
+        - valueHufMinor
+        - sharePct
+        - priceMoveHufMinor
+        - fxMoveHufMinor
+        - holdings
+      properties:
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        valueHufMinor:
+          type: integer
+          format: int64
+        costHufMinor:
+          type: integer
+          format: int64
+        sharePct:
+          type: number
+          description: 'Share of the total, percent, 1 decimal'
+        priceMoveHufMinor:
+          type: integer
+          format: int64
+        fxMoveHufMinor:
+          type: integer
+          format: int64
+        coverageMonths:
+          type: integer
+          nullable: true
+          description: >
+            The long sleeve only: as it stands today, with no growth assumed,
+            how many whole months of the current fixed costs it covers
+            (floor(value / fixedCostsMonthly)); null without fixed costs or for
+            other sleeves.
+        holdings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPosition'
+    PenzPosition:
+      type: object
+      required:
+        - holdingId
+        - name
+        - assetType
+        - platform
+        - currency
+        - valueHufMinor
+        - costHufMinor
+        - sharePct
+        - priced
+      properties:
+        holdingId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        assetType:
+          type: string
+          enum:
+            - bond
+            - etf
+            - stock
+            - fund
+            - crypto
+            - cash
+        symbol:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum:
+            - mbh
+            - revolut
+            - other
+        platformName:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        quantity:
+          type: number
+          nullable: true
+        valueHufMinor:
+          type: integer
+          format: int64
+        costHufMinor:
+          type: integer
+          format: int64
+          description: FIFO cost of the open lots (HUF twins)
+        sharePct:
+          type: number
+          description: 'Share of its sleeve, percent, 1 decimal'
+        priceMoveHufMinor:
+          type: integer
+          format: int64
+        fxMoveHufMinor:
+          type: integer
+          format: int64
+        changePct:
+          type: number
+          nullable: true
+          description: 'Price change since the previous close, percent, 2 decimals'
+        priced:
+          type: boolean
+          description: false = valued at cost (no quote / no FX rate)
+        valuation:
+          type: string
+          enum:
+            - quote
+            - accrual
+            - cost
+        priceAsOf:
+          type: string
+          format: date
+          nullable: true
+    PenzPracticeRow:
+      type: object
+      required:
+        - monthlyHufMinor
+      properties:
+        monthlyHufMinor:
+          type: integer
+          format: int64
+          description: The Gyakorlás monthly cap from the settings
+        monthPnlHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: 'Sum of the month''s closed paper trades (HUF twins, L7)'
+    PenzDigestResponse:
+      type: object
+      required:
+        - date
+        - status
+        - items
+        - newsHealthy
+      properties:
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - pending
+            - ready
+            - quiet
+            - failed
+        generatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        pricesAsOf:
+          type: string
+          format: date
+          nullable: true
+        newsHealthy:
+          type: boolean
+          description: false when every news source failed its last fetch
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzDigestItem'
+    PenzDigestItem:
+      type: object
+      required:
+        - id
+        - kind
+        - title
+        - effectHufMinor
+        - effectNote
+        - confidence
+        - verdict
+        - body
+        - uncertainty
+        - noAction
+        - sources
+        - narratedBy
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - holding
+            - fx
+            - rates
+        holdingId:
+          type: string
+          format: uuid
+          nullable: true
+        holdingName:
+          type: string
+          nullable: true
+          description: 'From his ledger, never from the model'
+        sleeve:
+          type: string
+          nullable: true
+          enum:
+            - short
+            - mid
+            - long
+        title:
+          type: string
+        effectHufMinor:
+          type: integer
+          format: int64
+          description: Computed by the backend from his own positions (signed)
+        effectNote:
+          type: string
+          description: 'Fixed backend copy: what the effect is measured on'
+        changePct:
+          type: number
+          nullable: true
+          description: 'Computed move behind the effect, percent, 1 decimal'
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 2
+          description: 0 alacsony · 1 közepes · 2 magas
+        verdict:
+          type: string
+          description: 'One line: what Boop makes of it (no instruction)'
+        body:
+          type: string
+          description: >-
+            The reading, paragraphs separated by a blank line; *emphasis*
+            allowed
+        uncertainty:
+          type: string
+          description: Where this could be wrong — never empty
+        noAction:
+          type: string
+          description: 'Why there is nothing to do, specific to this item'
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzDigestSource'
+        narratedBy:
+          type: string
+          enum:
+            - model
+            - fallback
+    PenzDigestSource:
+      type: object
+      required:
+        - name
+        - title
+        - url
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+    PenzPaperTradeRequest:
+      type: object
+      required:
+        - instrument
+        - direction
+        - why
+        - currency
+        - quantity
+        - stopMinor
+      properties:
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+        instrument:
+          type: string
+          minLength: 1
+          maxLength: 60
+        direction:
+          type: string
+          pattern: ^(long|short)$
+        why:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Why this trade — the plan
+        currency:
+          type: string
+          pattern: ^(HUF|EUR|USD|GBP|CHF)$
+        quantity:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          maximum: 1000000000
+        plannedEntryMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: 'Per unit, own currency minor units'
+        stopMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+          description: The exit level (per unit) where the plan says it was wrong
+        targetMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+        entryMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: Present = open it in the same call
+        entryDate:
+          type: string
+          format: date
+          nullable: true
+          description: With entryMinor; default his today
+    PenzPaperTradeOpenRequest:
+      type: object
+      required:
+        - entryMinor
+        - entryDate
+      properties:
+        entryMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+        entryDate:
+          type: string
+          format: date
+    PenzPaperTradeCloseRequest:
+      type: object
+      required:
+        - exitMinor
+        - exitDate
+        - tags
+      properties:
+        exitMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+        exitDate:
+          type: string
+          format: date
+        tags:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+            pattern: '^[a-z_]{1,30}$'
+        mistake:
+          type: boolean
+          nullable: true
+        line:
+          type: string
+          nullable: true
+          maxLength: 140
+          description: The one journal line
+    PenzPaperTradeLastCloseRequest:
+      type: object
+      required:
+        - closeMinor
+        - date
+      properties:
+        closeMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+        date:
+          type: string
+          format: date
+    PenzPaperTrade:
+      type: object
+      required:
+        - id
+        - paper
+        - status
+        - instrument
+        - direction
+        - why
+        - currency
+        - quantity
+        - stop
+        - tags
+        - mistake
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        paper:
+          type: boolean
+          description: Always true in phase 1
+        status:
+          type: string
+          enum:
+            - planned
+            - open
+            - closed
+            - cancelled
+        instrument:
+          type: string
+        direction:
+          type: string
+          enum:
+            - long
+            - short
+        why:
+          type: string
+        currency:
+          type: string
+        quantity:
+          type: number
+        plannedEntry:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        stop:
+          $ref: '#/components/schemas/PenzMoney'
+        target:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        entry:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        entryDate:
+          type: string
+          format: date
+          nullable: true
+        exit:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        exitDate:
+          type: string
+          format: date
+          nullable: true
+        lastClose:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        lastCloseDate:
+          type: string
+          format: date
+          nullable: true
+        riskMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            |entry − stop| × quantity, own currency (planned entry while
+            planned)
+        riskHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+        costHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            entry × quantity at the entry date's rate — what counts against the
+            cap
+        pnl:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        rMultiple:
+          type: number
+          nullable: true
+          description: 'P/L ÷ initial risk, 2 decimals'
+        unrealizedHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            Open only: (last close − entry) × qty by direction at the last
+            close's rate; 0 without a typed close
+        tags:
+          type: array
+          items:
+            type: string
+        mistake:
+          type: boolean
+        line:
+          type: string
+          nullable: true
+        stopRespected:
+          type: boolean
+          nullable: true
+          description: 'Closed only: false when the exit went beyond the stop'
+        createdAt:
+          type: string
+          format: date-time
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzPracticeOverview:
+      type: object
+      required:
+        - paper
+        - month
+        - cap
+        - monthPnlHufMinor
+        - closedCount
+        - taggedCount
+        - tags
+        - week
+        - open
+        - planned
+      properties:
+        paper:
+          type: boolean
+        month:
+          type: string
+          description: YYYY-MM of the asked date
+        cap:
+          $ref: '#/components/schemas/PenzPracticeCap'
+        monthPnlHufMinor:
+          type: integer
+          format: int64
+          description: Σ P/L (HUF) of the paper trades closed this month
+        avgR:
+          type: number
+          nullable: true
+          description: All-time closed paper trades
+        closedCount:
+          type: integer
+        taggedCount:
+          type: integer
+          description: All-time closed paper trades with ≥ 1 tag
+        noiseLine:
+          type: string
+          nullable: true
+          description: 'Under 50 tagged trades: the sample-size line'
+        tags:
+          type: array
+          description: 'The fixed eight, in order'
+          items:
+            $ref: '#/components/schemas/PenzPracticeTag'
+        week:
+          $ref: '#/components/schemas/PenzPracticeWeek'
+        open:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPaperTrade'
+        planned:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPaperTrade'
+    PenzPracticeCap:
+      type: object
+      required:
+        - capHufMinor
+        - usedHufMinor
+        - leftHufMinor
+      properties:
+        capHufMinor:
+          type: integer
+          format: int64
+        usedHufMinor:
+          type: integer
+          format: int64
+        leftHufMinor:
+          type: integer
+          format: int64
+    PenzPracticeTag:
+      type: object
+      required:
+        - key
+        - label
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+    PenzPracticeWeek:
+      type: object
+      required:
+        - weekStart
+        - weekEnd
+        - closedCount
+        - bySetup
+        - distribution
+        - observations
+        - curve
+        - trades
+      properties:
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        headline:
+          type: string
+          nullable: true
+          description: The highlight; null without a closed trade this week
+        sub:
+          type: string
+          nullable: true
+        closedCount:
+          type: integer
+        winRatePct:
+          type: integer
+          nullable: true
+        avgR:
+          type: number
+          nullable: true
+        bySetup:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPracticeSetup'
+        distribution:
+          $ref: '#/components/schemas/PenzPracticeDistribution'
+        commonMistake:
+          allOf:
+            - $ref: '#/components/schemas/PenzPracticeMistake'
+          nullable: true
+        observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPracticeObservation'
+        curve:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPracticeCurvePoint'
+        trades:
+          type: array
+          description: 'Closed this week, newest first'
+          items:
+            $ref: '#/components/schemas/PenzPaperTrade'
+    PenzPracticeSetup:
+      type: object
+      required:
+        - tag
+        - label
+        - count
+        - wins
+      properties:
+        tag:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+        wins:
+          type: integer
+        avgR:
+          type: number
+          nullable: true
+    PenzPracticeDistribution:
+      type: object
+      required:
+        - bigWins
+        - smallLosses
+        - worseThanLimit
+        - healthy
+      properties:
+        bigWins:
+          type: integer
+          description: R ≥ +2
+        smallLosses:
+          type: integer
+          description: '−1,2R ≤ R < 0'
+        worseThanLimit:
+          type: integer
+          description: 'R < −1,5'
+        healthy:
+          type: boolean
+          description: 'No trade below −1,5R'
+    PenzPracticeMistake:
+      type: object
+      required:
+        - tag
+        - label
+        - count
+        - costHufMinor
+      properties:
+        tag:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+        costHufMinor:
+          type: integer
+          format: int64
+    PenzPracticeObservation:
+      type: object
+      required:
+        - title
+        - body
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+    PenzPracticeCurvePoint:
+      type: object
+      required:
+        - date
+        - cumulativeHufMinor
+      properties:
+        date:
+          type: string
+          format: date
+        cumulativeHufMinor:
+          type: integer
+          format: int64
+    PenzProductRequest:
+      type: object
+      required:
+        - name
+        - kind
+        - currency
+        - sleeves
+        - whatItIs
+        - distribution
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        kind:
+          type: string
+          pattern: ^(state_bond|money_market|bond_etf|equity_etf|mixed_fund|deposit)$
+        currency:
+          type: string
+          pattern: ^(HUF|EUR|USD|GBP|CHF)$
+        sleeves:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items:
+            type: string
+            pattern: ^(short|mid|long)$
+        whatItIs:
+          type: string
+          minLength: 1
+          maxLength: 600
+        terPct:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 10
+          description: 'Yearly running cost (TER), percent'
+        entryFeePct:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 10
+          description: 'One-off entry fee, percent'
+        distribution:
+          type: string
+          pattern: ^(accumulating|distributing|interest)$
+        isin:
+          type: string
+          nullable: true
+          pattern: '^[A-Z]{2}[A-Z0-9]{9}[0-9]$'
+        symbol:
+          type: string
+          nullable: true
+          pattern: '^[A-Za-z0-9.\-=^]{1,20}$'
+        sourceName:
+          type: string
+          nullable: true
+          maxLength: 120
+        sourceUrl:
+          type: string
+          nullable: true
+          maxLength: 500
+          pattern: '^https://\S+$'
+    PenzProduct:
+      type: object
+      required:
+        - id
+        - name
+        - kind
+        - currency
+        - sleeves
+        - whatItIs
+        - distribution
+        - reviewedAt
+        - status
+        - suggestedBy
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        kind:
+          type: string
+          enum:
+            - state_bond
+            - money_market
+            - bond_etf
+            - equity_etf
+            - mixed_fund
+            - deposit
+        currency:
+          type: string
+        sleeves:
+          type: array
+          items:
+            type: string
+            enum:
+              - short
+              - mid
+              - long
+        whatItIs:
+          type: string
+        terPct:
+          type: number
+          nullable: true
+        entryFeePct:
+          type: number
+          nullable: true
+        feeNote:
+          type: string
+          nullable: true
+        distribution:
+          type: string
+          enum:
+            - accumulating
+            - distributing
+            - interest
+        isin:
+          type: string
+          nullable: true
+        symbol:
+          type: string
+          nullable: true
+        sourceName:
+          type: string
+          nullable: true
+        sourceUrl:
+          type: string
+          nullable: true
+        reviewedAt:
+          type: string
+          format: date
+          description: The date the fee figures were checked against the source
+        status:
+          type: string
+          enum:
+            - suggested
+            - approved
+            - declined
+        suggestedBy:
+          type: string
+          enum:
+            - research
+            - owner
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+    PenzStrategy:
+      type: object
+      required:
+        - availableHufMinor
+        - inputs
+        - note
+      properties:
+        availableHufMinor:
+          type: integer
+          format: int64
+          description: >-
+            The monthly figure a monthly proposal splits; 0 when nothing is
+            spare or there is no data
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzStrategyInput'
+        note:
+          type: string
+          description: 'How the figure came about, final Hungarian copy'
+        current:
+          allOf:
+            - $ref: '#/components/schemas/PenzProposal'
+          nullable: true
+    PenzStrategyInput:
+      type: object
+      required:
+        - key
+        - label
+        - hufMinor
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        hufMinor:
+          type: integer
+          format: int64
+    PenzProposalRequest:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          pattern: ^(lump_sum|monthly)$
+        amountHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: >-
+            lump_sum only: the amount to split, HUF minor units (at least 1 000
+            Ft)
+    PenzProposal:
+      type: object
+      required:
+        - id
+        - kind
+        - status
+        - amountHufMinor
+        - createdAt
+        - title
+        - sub
+        - summary
+        - uncertainty
+        - narratedBy
+        - facts
+        - rules
+        - sleeves
+        - plan
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - lump_sum
+            - monthly
+        status:
+          type: string
+          enum:
+            - proposed
+            - accepted
+            - dismissed
+            - superseded
+        amountHufMinor:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+        title:
+          type: string
+        sub:
+          type: string
+        summary:
+          type: string
+        uncertainty:
+          type: string
+        narratedBy:
+          type: string
+          enum:
+            - model
+            - fallback
+        facts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzProposalFact'
+        rules:
+          type: array
+          items:
+            type: string
+        sleeves:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzProposalSleeve'
+        plan:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzProposalStep'
+    PenzProposalFact:
+      type: object
+      required:
+        - value
+        - unit
+        - label
+      properties:
+        value:
+          type: string
+        unit:
+          type: string
+        label:
+          type: string
+    PenzProposalSleeve:
+      type: object
+      required:
+        - sleeve
+        - label
+        - amountHufMinor
+        - sharePct
+        - why
+        - options
+      properties:
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        label:
+          type: string
+        amountHufMinor:
+          type: integer
+          format: int64
+        sharePct:
+          type: number
+          description: 'Share of the proposal amount, percent, 1 decimal'
+        why:
+          type: string
+        optionsNote:
+          type: string
+          nullable: true
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzProposalOption'
+    PenzProposalOption:
+      type: object
+      required:
+        - productId
+        - name
+        - whatItIs
+        - kind
+        - currency
+        - distribution
+        - reviewedAt
+        - differs
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        whatItIs:
+          type: string
+        kind:
+          type: string
+          enum:
+            - state_bond
+            - money_market
+            - bond_etf
+            - equity_etf
+            - mixed_fund
+            - deposit
+        currency:
+          type: string
+        distribution:
+          type: string
+          enum:
+            - accumulating
+            - distributing
+            - interest
+        terPct:
+          type: number
+          nullable: true
+        entryFeePct:
+          type: number
+          nullable: true
+        feeNote:
+          type: string
+          nullable: true
+        yearlyCostHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: 'The sleeve amount × TER, rounded to 10 Ft; null without a TER'
+        reviewedAt:
+          type: string
+          format: date
+        differs:
+          type: array
+          items:
+            type: string
+    PenzProposalStep:
+      type: object
+      required:
+        - index
+        - sleeve
+        - amountHufMinor
+        - done
+      properties:
+        index:
+          type: integer
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        productId:
+          type: string
+          format: uuid
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        amountHufMinor:
+          type: integer
+          format: int64
+        done:
+          type: boolean
+        doneAt:
+          type: string
+          format: date-time
+          nullable: true
+    PenzProposalAcceptRequest:
+      type: object
+      required:
+        - sleeves
+      properties:
+        sleeves:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/PenzProposalAcceptSleeve'
+    PenzProposalAcceptSleeve:
+      type: object
+      required:
+        - sleeve
+        - amountHufMinor
+      properties:
+        sleeve:
+          type: string
+          pattern: ^(short|mid|long)$
+        amountHufMinor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000
+        productId:
+          type: string
+          format: uuid
+          nullable: true
+    PenzProposalStepRequest:
+      type: object
+      required:
+        - done
+      properties:
+        done:
+          type: boolean
+    SeasonSportSlot:
+      type: object
+      required:
+        - dayOfWeek
+        - time
+        - durationMin
+        - sport
+      properties:
+        dayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: 0 = hétfő .. 6 = vasárnap
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        durationMin:
+          type: integer
+          minimum: 15
+          maximum: 360
+        sport:
+          type: string
+          pattern: ^(volleyball|cross|trx)$
+    SeasonSleepAnchor:
+      type: object
+      required:
+        - anchor
+        - time
+      properties:
+        anchor:
+          type: string
+          enum:
+            - WAKE
+            - BED
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+    SeasonBlockChoice:
+      type: object
+      required:
+        - source
+      properties:
+        source:
+          type: string
+          enum:
+            - adopt
+            - rerun
+            - template
+        mesocycleId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'adopt / rerun: the mesocycle'
+        templateId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'template: the template'
+    SeasonDraft:
+      type: object
+      required:
+        - title
+        - trajectory
+        - startDate
+        - weeks
+        - gymDays
+        - sport
+        - allowedRecipeIds
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        trajectory:
+          type: string
+          enum:
+            - cut
+            - bulk
+            - maintain
+        targetWeightKg:
+          type: number
+          nullable: true
+          minimum: 0
+          description: cut / bulk only
+        ratePctPerWeek:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 2
+          description: >-
+            Weekly pace in %BW; when set (and no target) the target follows from
+            it
+        kgPerWeek:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 2
+          description: Weekly pace in kg; alternative to ratePctPerWeek
+        startDate:
+          type: string
+          format: date
+        weeks:
+          type: integer
+          minimum: 4
+          maximum: 24
+        gymDays:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+          description: 'Gym weekdays, 0 = hétfő'
+        gymTime:
+          type: string
+          nullable: true
+          pattern: '^\d{2}:\d{2}$'
+        sport:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonSportSlot'
+        sleepAnchor:
+          allOf:
+            - $ref: '#/components/schemas/SeasonSleepAnchor'
+          nullable: true
+        allowedRecipeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        block:
+          allOf:
+            - $ref: '#/components/schemas/SeasonBlockChoice'
+          nullable: true
+    SeasonApply:
+      type: object
+      required:
+        - draft
+        - fingerprint
+      properties:
+        draft:
+          $ref: '#/components/schemas/SeasonDraft'
+        fingerprint:
+          type: string
+    SeasonRules:
+      type: object
+      required:
+        - processedFoodMaxNova
+        - deloadMaintain
+        - useLearnedExpenditure
+        - proposeExperiments
+        - menuTime
+      properties:
+        processedFoodMaxNova:
+          type: integer
+          minimum: 1
+          maximum: 4
+        deloadMaintain:
+          type: boolean
+        useLearnedExpenditure:
+          type: boolean
+        proposeExperiments:
+          type: boolean
+        menuDay:
+          type: integer
+          minimum: 0
+          maximum: 6
+          nullable: true
+          description: null (or absent) = no weekly menu
+        menuTime:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+    SeasonResponse:
+      type: object
+      required:
+        - id
+        - title
+        - status
+        - startDate
+        - endDate
+        - weeks
+        - goalId
+        - rules
+        - draft
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+            - planned
+            - active
+            - closed
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          description: startDate + weeks*7 - 1
+        weeks:
+          type: integer
+        goalId:
+          type: string
+          format: uuid
+        sleepNeedMin:
+          type: integer
+          nullable: true
+        mesocycleId:
+          type: string
+          format: uuid
+          nullable: true
+        rules:
+          $ref: '#/components/schemas/SeasonRules'
+        draft:
+          $ref: '#/components/schemas/SeasonDraft'
+    SeasonBand:
+      type: object
+      required:
+        - lowKg
+        - highKg
+      properties:
+        lowKg:
+          type: number
+        highKg:
+          type: number
+    SeasonNumbers:
+      type: object
+      required:
+        - trainDayKcal
+        - proteinG
+        - carbsTrainG
+        - sleepNeedMin
+        - bedtime
+      properties:
+        trainDayKcal:
+          type: integer
+        restDayKcal:
+          type: integer
+          nullable: true
+          description: null when gym + sport days cover all seven weekdays
+        proteinG:
+          type: integer
+        carbsTrainG:
+          type: integer
+        sleepNeedMin:
+          type: integer
+        bedtime:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        targetDate:
+          type: string
+          format: date
+          nullable: true
+        weeksToTarget:
+          type: integer
+          nullable: true
+        paceVerdict:
+          type: string
+          enum:
+            - feasible
+            - warnings
+            - aggressive
+          nullable: true
+        kgPerWeek:
+          type: number
+          nullable: true
+          description: Signed planned weekly change (cut negative)
+        band:
+          allOf:
+            - $ref: '#/components/schemas/SeasonBand'
+          nullable: true
+        gymPerWeek:
+          type: integer
+        sportPerWeek:
+          type: integer
+        weekKcal:
+          type: integer
+          nullable: true
+          description: >-
+            The week's total planned intake: trainDayKcal × active days +
+            restDayKcal × rest days (active = distinct weekdays with gym or
+            sport). Moves when a session or sport day is added even though each
+            day's own target does not
+    SeasonTodo:
+      type: object
+      required:
+        - key
+        - title
+        - body
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+    SeasonWarning:
+      type: object
+      required:
+        - key
+        - text
+      properties:
+        key:
+          type: string
+        text:
+          type: string
+    SeasonPreview:
+      type: object
+      required:
+        - before
+        - after
+        - todo
+        - warnings
+        - fingerprint
+      properties:
+        before:
+          $ref: '#/components/schemas/SeasonNumbers'
+        after:
+          $ref: '#/components/schemas/SeasonNumbers'
+        todo:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonTodo'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonWarning'
+        fingerprint:
+          type: string
+          description: Send back with applySeason; empty for a draft preview
+    SeasonOverviewHead:
+      type: object
+      required:
+        - title
+        - week
+        - weeks
+        - status
+        - trajectory
+      properties:
+        title:
+          type: string
+        week:
+          type: integer
+          description: '1-based current week, clamped to 1..weeks'
+        weeks:
+          type: integer
+        status:
+          type: string
+          enum:
+            - on_course
+            - slower
+            - faster
+            - no_data
+            - in_band
+            - out_of_band
+        trajectory:
+          type: string
+          enum:
+            - cut
+            - bulk
+            - maintain
+    SeasonMapPillar:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          enum:
+            - edzes
+            - etel
+            - alvas
+            - suly
+        value:
+          type: string
+          nullable: true
+          description: >-
+            Headline already formatted by the server (e.g. "4 edzés"); null when
+            unknown
+    SeasonMapLink:
+      type: object
+      required:
+        - from
+        - to
+        - key
+      properties:
+        from:
+          type: string
+          enum:
+            - edzes
+            - etel
+            - alvas
+            - suly
+        to:
+          type: string
+          enum:
+            - edzes
+            - etel
+            - alvas
+            - suly
+        key:
+          type: string
+          enum:
+            - train_food
+            - train_sleep
+            - food_weight
+            - sleep_food
+            - food_train
+            - sleep_train
+        value:
+          type: number
+          nullable: true
+          description: >-
+            train_food kcal, train_sleep min, food_weight kg/week, sleep_food
+            kcal; null when not computed
+    SeasonMap:
+      type: object
+      required:
+        - pillars
+        - links
+      properties:
+        pillars:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonMapPillar'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonMapLink'
+    SeasonWeightPoint:
+      type: object
+      required:
+        - date
+        - kg
+      properties:
+        date:
+          type: string
+          format: date
+        kg:
+          type: number
+    SeasonWeight:
+      type: object
+      required:
+        - series
+        - projection
+      properties:
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonWeightPoint'
+          description: Trend (EWMA) points inside the season so far
+        projection:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonWeightPoint'
+          description: The plan from today to the season end
+        trendKg:
+          type: number
+          nullable: true
+        targetKg:
+          type: number
+          nullable: true
+        band:
+          allOf:
+            - $ref: '#/components/schemas/SeasonBand'
+          nullable: true
+        kgPerWeek:
+          type: number
+          nullable: true
+          description: Signed planned weekly change
+        paceVerdict:
+          type: string
+          enum:
+            - feasible
+            - warnings
+            - aggressive
+          nullable: true
+    SeasonSportLine:
+      type: object
+      required:
+        - dayOfWeek
+        - time
+        - durationMin
+        - sport
+      properties:
+        dayOfWeek:
+          type: integer
+        time:
+          type: string
+        durationMin:
+          type: integer
+        sport:
+          type: string
+    SeasonBlockPillar:
+      type: object
+      required:
+        - gymDays
+        - sport
+      properties:
+        title:
+          type: string
+          nullable: true
+          description: The running block name; null without a block
+        mesocycleId:
+          type: string
+          format: uuid
+          nullable: true
+        blockWeeks:
+          type: integer
+          nullable: true
+        fromWeek:
+          type: integer
+          nullable: true
+          description: Season week the block starts in
+        toWeek:
+          type: integer
+          nullable: true
+        gymDays:
+          type: array
+          items:
+            type: integer
+        sport:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonSportLine'
+    SeasonFoodPillar:
+      type: object
+      required:
+        - trainDayKcal
+        - proteinG
+        - allowedCount
+        - novaMax
+      properties:
+        trainDayKcal:
+          type: integer
+        restDayKcal:
+          type: integer
+          nullable: true
+        proteinG:
+          type: integer
+        allowedCount:
+          type: integer
+        recipeCount:
+          type: integer
+          nullable: true
+          description: 'All of his recipes, for "24 / 53"'
+        novaMax:
+          type: integer
+    SeasonSleepPillar:
+      type: object
+      required:
+        - needMin
+        - bedtime
+        - anchor
+        - anchorTime
+      properties:
+        needMin:
+          type: integer
+        baseMin:
+          type: integer
+          nullable: true
+        bedtime:
+          type: string
+        anchor:
+          type: string
+          enum:
+            - WAKE
+            - BED
+        anchorTime:
+          type: string
+        avgMin:
+          type: integer
+          nullable: true
+          description: Average of the last 7 nights; null without data
+    SeasonWeightPillar:
+      type: object
+      properties:
+        targetKg:
+          type: number
+          nullable: true
+        targetDate:
+          type: string
+          format: date
+          nullable: true
+        deltaKg:
+          type: number
+          nullable: true
+          description: Trend now minus season start
+        kgPerWeek:
+          type: number
+          nullable: true
+        band:
+          allOf:
+            - $ref: '#/components/schemas/SeasonBand'
+          nullable: true
+    SeasonPillars:
+      type: object
+      required:
+        - block
+        - food
+        - sleep
+        - weight
+      properties:
+        block:
+          $ref: '#/components/schemas/SeasonBlockPillar'
+        food:
+          $ref: '#/components/schemas/SeasonFoodPillar'
+        sleep:
+          $ref: '#/components/schemas/SeasonSleepPillar'
+        weight:
+          $ref: '#/components/schemas/SeasonWeightPillar'
+    SeasonAdherence:
+      type: object
+      required:
+        - foodInBand
+        - foodJudged
+        - sessionsDone
+        - sessionsPlanned
+        - nightsOk
+        - nightsJudged
+        - excusedDays
+      properties:
+        foodInBand:
+          type: integer
+        foodJudged:
+          type: integer
+        sessionsDone:
+          type: integer
+        sessionsPlanned:
+          type: integer
+        nightsOk:
+          type: integer
+        nightsJudged:
+          type: integer
+        excusedDays:
+          type: integer
+    SeasonInsight:
+      type: object
+      required:
+        - key
+        - title
+        - body
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+    SeasonUpcoming:
+      type: object
+      required:
+        - week
+        - kind
+        - text
+      properties:
+        week:
+          type: integer
+        kind:
+          type: string
+          enum:
+            - deload
+            - end
+        text:
+          type: string
+    SeasonOverview:
+      type: object
+      required:
+        - season
+        - head
+        - map
+        - weight
+        - pillars
+        - insights
+        - upcoming
+      properties:
+        season:
+          $ref: '#/components/schemas/SeasonResponse'
+        head:
+          $ref: '#/components/schemas/SeasonOverviewHead'
+        map:
+          $ref: '#/components/schemas/SeasonMap'
+        weight:
+          $ref: '#/components/schemas/SeasonWeight'
+        pillars:
+          $ref: '#/components/schemas/SeasonPillars'
+        adherence:
+          allOf:
+            - $ref: '#/components/schemas/SeasonAdherence'
+          nullable: true
+          description: S2; null in S1
+        insights:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonInsight'
+          description: S2; empty in S1
+        upcoming:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonUpcoming'

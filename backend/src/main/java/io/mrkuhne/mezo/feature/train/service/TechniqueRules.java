@@ -37,7 +37,7 @@ public final class TechniqueRules {
     public static Set<SetLegKind> allowedLegKinds(Technique t) {
         return switch (t == null ? Technique.NONE : t) {
             case REST_DROP, DROP -> Set.of(SetLegKind.DROP);
-            case MYO -> Set.of(SetLegKind.MINI);
+            case MYO, REST_PAUSE -> Set.of(SetLegKind.MINI);
             case PARTIALS -> Set.of(SetLegKind.PARTIALS);
             case NONE -> Set.of();
         };
